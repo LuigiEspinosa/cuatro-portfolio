@@ -1,0 +1,15 @@
+{
+  "name": "portfolio",
+  "version": "1.0.0",
+  "description": "Número Cuatro Personal Project",
+  "main": "index.js",
+  "repository": "git@github.com:LuigiEspinosa/cuatro-portfolio.git",
+  "author": "Número Cuatro <numerocuatro@pm.me>",
+  "license": "MIT",
+  "private": true,
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 8"
+  ]
+}
