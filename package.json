@@ -1,12 +1,30 @@
 {
   "name": "portfolio",
   "version": "1.0.0",
-  "description": "Número Cuatro Personal Project",
-  "main": "index.js",
+  "description": "Número Cuatro Portfolio",
   "repository": "git@github.com:LuigiEspinosa/cuatro-portfolio.git",
   "author": "Número Cuatro <numerocuatro@pm.me>",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@types/node": "20.4.1",
+    "@types/react": "18.2.14",
+    "@types/react-dom": "18.2.6",
+    "eslint": "8.44.0",
+    "eslint-config-next": "13.4.9",
+    "firebase": "^10.0.0",
+    "next": "13.4.9",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "sass": "^1.63.6",
+    "typescript": "5.1.6"
+  },
   "browserslist": [
     "> 1%",
     "last 2 versions",
