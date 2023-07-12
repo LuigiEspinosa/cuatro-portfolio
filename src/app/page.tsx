@@ -8,7 +8,7 @@ export default function Home() {
       <nav className='navbar'>
         <div className='logo'>
           <Image
-            src='/logo.png'
+            src='logo.png'
             width={368}
             height={132}
             alt='Numero Cuatro Logo in white'
@@ -37,4 +37,3 @@ export default function Home() {
     </main>
   );
 }
-
