@@ -1,4 +1,4 @@
-import Metadata from 'next';
+import { Metadata } from 'next';
 import '../app.scss';
 
 export const metadata: Metadata = {
@@ -13,4 +13,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-
