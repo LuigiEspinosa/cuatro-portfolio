@@ -10,6 +10,9 @@
 .runtimeconfig.json
 .firebase/
 
+### Firebase Logs ###
+firebase-debug.log
+
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false

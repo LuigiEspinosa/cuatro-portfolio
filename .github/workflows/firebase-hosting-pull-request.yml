@@ -9,12 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: yarn install
+      - run: yarn install && yarn build:dev
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ANIMATED_ROPE_365307 }}'
-          projectId: animated-rope-365307
-        env:
-          FIREBASE_CLI_EXPERIMENTS: webframeworks
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_NUMEROCUATRO_D3FD5 }}'
+          projectId: numerocuatro-d3fd5
 
