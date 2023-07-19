@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { Header } from '@/molecules/Header/Header';
 import { ComingSoon } from '@/atoms/ComingSoon/ComingSoon';
+import { Marquee } from '@/atoms/Marquee/Marquee';
 import Sticker from '@/components/Sticker';
 
 export default function Home() {
@@ -10,13 +11,14 @@ export default function Home() {
       <Header />
       <ComingSoon />
 
-      <div className='marquee'>
-        <span>
-          Coming Soon! Numero Cuatro. Frontend Developer. Coming Soon! Numero Cuatro. Frontend
-          Developer. Coming Soon! Numero Cuatro. Frontend Developer. Coming Soon! Numero Cuatro.
-          Frontend Developer.
-        </span>
-      </div>
+      <Marquee
+        label='
+          Coming Soon! Numero Cuatro. Frontend Developer.
+          Coming Soon! Numero Cuatro. Frontend Developer.
+          Coming Soon! Numero Cuatro. Frontend Developer.
+          Coming Soon! Numero Cuatro. Frontend Developer.
+        '
+      />
 
       <Sticker />
     </main>
