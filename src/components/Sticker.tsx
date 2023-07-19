@@ -20,7 +20,7 @@ export default function Sticker() {
   }, []);
 
   return (
-    <section>
+    <section className='stickers'>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src='/stickers/sticker-1.png'

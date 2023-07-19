@@ -1,18 +1,21 @@
 .navbar {
+  display: flex;
+  flex-wrap: wrap;
+
   a {
     font-family: sans-serif;
     font-size: 1.2em;
     font-weight: 300;
-    line-height: 60px;
     text-decoration: none;
     color: #fff;
+    margin-bottom: 0.8rem;
 
     &:hover {
       text-decoration: underline;
     }
 
-    &:not(:first-child) {
-      margin-left: 1rem;
+    &:not(:last-child) {
+      margin-right: 1rem;
     }
   }
 }

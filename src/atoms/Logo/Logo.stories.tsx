@@ -7,6 +7,9 @@ const meta: Meta<typeof Logo> = {
   component: Logo,
   tags: ['autodocs'],
   argTypes: {},
+  parameters: {
+    layout: 'centered',
+  },
 };
 
 export default meta;

@@ -7,6 +7,9 @@ const meta: Meta<typeof Navbar> = {
   component: Navbar,
   tags: ['autodocs'],
   argTypes: {},
+  parameters: {
+    layout: 'centered',
+  },
 };
 
 export default meta;
