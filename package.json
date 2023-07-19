@@ -9,6 +9,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+<<<<<<< HEAD
+=======
+    "build:dev": "env-cmd -f ./.env.development yarn build && firebase deploy -P dev",
+    "build:prod": "env-cmd -f ./.env.production yarn build && firebase deploy -P prod",
+>>>>>>> dev
     "start": "next start",
     "lint": "next lint"
   },
@@ -29,5 +34,8 @@
     "> 1%",
     "last 2 versions",
     "not ie <= 8"
-  ]
+  ],
+  "devDependencies": {
+    "env-cmd": "^10.1.0"
+  }
 }

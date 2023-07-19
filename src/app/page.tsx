@@ -8,7 +8,11 @@ export default function Home() {
       <nav className='navbar'>
         <div className='logo'>
           <Image
+<<<<<<< HEAD
             src='logo.png'
+=======
+            src='/logo.png'
+>>>>>>> dev
             width={368}
             height={132}
             alt='Numero Cuatro Logo in white'

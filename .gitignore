@@ -10,6 +10,12 @@
 .runtimeconfig.json
 .firebase/
 
+<<<<<<< HEAD
+=======
+### Firebase Logs ###
+firebase-debug.log
+
+>>>>>>> dev
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false
@@ -100,6 +106,11 @@ yarn-error.log*
 
 # local env files
 .env*.local
+<<<<<<< HEAD
+=======
+.env.development
+.env.production
+>>>>>>> dev
 
 # vercel
 .vercel
