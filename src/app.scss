@@ -83,6 +83,20 @@ section {
     width: 184px;
     height: auto;
   }
+
+  .menu-btn {
+    a {
+      line-height: 60px;
+      color: #fff;
+      margin-left: 1rem;
+      text-decoration: none;
+      font-size: 1.2;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
 }
 
 .header {
