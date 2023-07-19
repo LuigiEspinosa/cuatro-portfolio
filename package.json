@@ -15,7 +15,7 @@
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test-storybook": "test-storybook"
+    "test-storybook": "test-storybook --maxWorkers=2"
   },
   "dependencies": {
     "@types/node": "20.4.1",
@@ -51,6 +51,7 @@
     "axe-playwright": "^1.2.3",
     "env-cmd": "^10.1.0",
     "eslint-plugin-storybook": "^0.6.12",
-    "storybook": "7.1.0"
+    "storybook": "7.1.0",
+    "storybook-addon-performance": "^0.17.1"
   }
 }

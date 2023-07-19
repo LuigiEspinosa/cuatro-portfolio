@@ -11,6 +11,7 @@ const a11yConfig: TestRunnerConfig = {
   async preRender(page) {
     await injectAxe(page);
   },
+
   async postRender(page, context) {
     const storyContext = await getStoryContext(page, context);
 

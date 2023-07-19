@@ -1,0 +1,18 @@
+.navbar {
+  a {
+    font-family: sans-serif;
+    font-size: 1.2em;
+    font-weight: 300;
+    line-height: 60px;
+    text-decoration: none;
+    color: #fff;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:not(:first-child) {
+      margin-left: 1rem;
+    }
+  }
+}

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import Celeste from './Celeste';
 
 const meta: Meta<typeof Celeste> = {
-  title: 'Molecules/Celeste',
+  title: 'Organisms/Celeste',
   component: Celeste,
   argTypes: {},
 };
