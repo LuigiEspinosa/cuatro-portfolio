@@ -1,0 +1,10 @@
+.header {
+  width: min(80%, 1920px);
+  height: 140px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0 auto;
+  padding: 2rem 1rem 0;
+}

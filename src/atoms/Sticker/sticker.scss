@@ -1,0 +1,25 @@
+.stickers {
+  width: min(100%, 1920px);
+  height: 100vh;
+  overflow: hidden;
+
+  img {
+    width: min(40%, 240px);
+    height: auto;
+    object-fit: cover;
+
+    &.img-1 {
+      position: absolute;
+      bottom: 10%;
+      left: 10%;
+      transform: translate(-50%, -50%);
+    }
+
+    &.img-2 {
+      position: absolute;
+      top: 50%;
+      right: 10%;
+      transform: translate(-50%, -50%);
+    }
+  }
+}

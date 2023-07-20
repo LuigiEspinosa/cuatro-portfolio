@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
+import Image from 'next/image';
+import './sticker.scss';
 
-export default function Sticker() {
+export const Sticker = () => {
   useEffect(() => {
     const parallax = (e: { pageX: number; pageY: number }) => {
       Array.from(
@@ -20,10 +22,9 @@ export default function Sticker() {
   }, []);
 
   return (
-    <section>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src='/stickers/sticker-1.png'
+    <div className='stickers'>
+      <Image
+        src={`${process.env.NEXT_PUBLIC_FIREBASE_DOMAIN}/stickers/sticker-1.png`}
         width={500}
         height={500}
         data-speed='-10'
@@ -31,15 +32,14 @@ export default function Sticker() {
         alt=''
       />
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src='/stickers/sticker-2.png'
+      <Image
+        src={`${process.env.NEXT_PUBLIC_FIREBASE_DOMAIN}/stickers/sticker-2.png`}
         width={500}
         height={500}
         data-speed='8'
         className='layer img-2'
         alt=''
       />
-    </section>
+    </div>
   );
-}
+};

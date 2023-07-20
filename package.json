@@ -9,16 +9,15 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-<<<<<<< HEAD
-=======
-    "build:dev": "env-cmd -f ./.env.development yarn build && firebase deploy -P dev",
-    "build:prod": "env-cmd -f ./.env.production yarn build && firebase deploy -P prod",
->>>>>>> dev
+    "build:dev": "env-cmd -f ./env/.env.development yarn build && firebase deploy -P dev",
+    "build:prod": "env-cmd -f ./env/.env.production yarn build && firebase deploy -P prod",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test-storybook": "test-storybook --maxWorkers=2"
   },
   "dependencies": {
-    "@types/node": "20.4.1",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",
     "eslint": "8.44.0",
@@ -36,6 +35,23 @@
     "not ie <= 8"
   ],
   "devDependencies": {
-    "env-cmd": "^10.1.0"
+    "@storybook/addon-a11y": "^7.1.0",
+    "@storybook/addon-essentials": "7.1.0",
+    "@storybook/addon-interactions": "7.1.0",
+    "@storybook/addon-links": "7.1.0",
+    "@storybook/addon-onboarding": "1.0.7",
+    "@storybook/blocks": "7.1.0",
+    "@storybook/manager-api": "^7.1.0",
+    "@storybook/nextjs": "7.1.0",
+    "@storybook/react": "7.1.0",
+    "@storybook/test-runner": "^0.11.0",
+    "@storybook/testing-library": "0.2.0",
+    "@storybook/theming": "^7.1.0",
+    "@types/node": "^20.4.2",
+    "axe-playwright": "^1.2.3",
+    "env-cmd": "^10.1.0",
+    "eslint-plugin-storybook": "^0.6.12",
+    "storybook": "7.1.0",
+    "storybook-addon-performance": "^0.17.1"
   }
 }
