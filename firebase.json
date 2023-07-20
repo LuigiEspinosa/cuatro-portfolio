@@ -1,13 +1,13 @@
 {
   "hosting": {
     "source": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "**/*.@(jpg|jpeg|gif|png)"],
     "frameworksBackend": {
       "region": "us-central1"
-    }
+    },
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "appAssociation": "AUTO"
   }
 }
+

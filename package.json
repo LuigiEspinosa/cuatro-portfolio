@@ -9,8 +9,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:dev": "env-cmd -f ./.env.development yarn build && firebase deploy -P dev",
-    "build:prod": "env-cmd -f ./.env.production yarn build && firebase deploy -P prod",
+    "build:dev": "env-cmd -f env/.env.development yarn build && firebase deploy -P dev",
+    "build:prod": "env-cmd -f env/.env.production yarn build && firebase deploy -P prod",
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
@@ -18,13 +18,12 @@
     "test-storybook": "test-storybook --maxWorkers=2"
   },
   "dependencies": {
-    "@types/node": "20.4.1",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",
     "eslint": "8.44.0",
     "eslint-config-next": "13.4.9",
     "firebase": "^10.0.0",
-    "next": "^13.4.10",
+    "next": "13.4.9",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "sass": "^1.63.6",
@@ -48,6 +47,7 @@
     "@storybook/test-runner": "^0.11.0",
     "@storybook/testing-library": "0.2.0",
     "@storybook/theming": "^7.1.0",
+    "@types/node": "^20.4.2",
     "axe-playwright": "^1.2.3",
     "env-cmd": "^10.1.0",
     "eslint-plugin-storybook": "^0.6.12",
