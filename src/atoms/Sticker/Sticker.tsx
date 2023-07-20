@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import Image from 'next/image';
 import './sticker.scss';
 
 export const Sticker = () => {
@@ -23,8 +22,9 @@ export const Sticker = () => {
 
   return (
     <div className='stickers'>
-      <Image
-        src={`${process.env.NEXT_PUBLIC_FIREBASE_DOMAIN}/stickers/sticker-1.png`}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src='/stickers/sticker-1.png'
         width={500}
         height={500}
         data-speed='-10'
@@ -32,8 +32,9 @@ export const Sticker = () => {
         alt=''
       />
 
-      <Image
-        src={`${process.env.NEXT_PUBLIC_FIREBASE_DOMAIN}/stickers/sticker-2.png`}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src='/stickers/sticker-2.png'
         width={500}
         height={500}
         data-speed='8'
