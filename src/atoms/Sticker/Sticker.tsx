@@ -4,9 +4,6 @@ import { useEffect } from 'react';
 import Image from 'next/image';
 import './sticker.scss';
 
-import Sticker1 from '../../../public/stickers/sticker-1.png';
-import Sticker2 from '../../../public/stickers/sticker-2.png';
-
 export const Sticker = () => {
   useEffect(() => {
     const parallax = (e: { pageX: number; pageY: number }) => {
@@ -27,7 +24,7 @@ export const Sticker = () => {
   return (
     <div className='stickers'>
       <Image
-        src={Sticker1}
+        src={`${process.env.NEXT_PUBLIC_FIREBASE_DOMAIN}/stickers/sticker-1.png`}
         width={500}
         height={500}
         data-speed='-10'
@@ -36,7 +33,7 @@ export const Sticker = () => {
       />
 
       <Image
-        src={Sticker2}
+        src={`${process.env.NEXT_PUBLIC_FIREBASE_DOMAIN}/stickers/sticker-2.png`}
         width={500}
         height={500}
         data-speed='8'
