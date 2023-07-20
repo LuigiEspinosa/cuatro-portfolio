@@ -1,12 +1,12 @@
 /** @type {import('next').NextConfig} */
+require('dotenv').config();
+
 const nextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: `${process.env.NEXT_PUBLIC_FIREBASE_DOMAIN}`,
-        port: '',
-        pathname: '/**',
+        hostname: '**',
       },
     ],
   },
