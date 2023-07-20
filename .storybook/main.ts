@@ -21,7 +21,6 @@ const config: StorybookConfig = {
   webpackFinal: async (config) => {
     config.resolve!.alias = {
       ...config.resolve!.alias,
-      '@/components': path.resolve(__dirname, '../src/components'),
       '@/organisms': path.resolve(__dirname, '../src/organisms'),
       '@/molecules': path.resolve(__dirname, '../src/molecules'),
       '@/atoms': path.resolve(__dirname, '../src/atoms'),
