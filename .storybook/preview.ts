@@ -3,7 +3,7 @@ import { themes } from '@storybook/theming';
 import { action } from '@storybook/addon-actions';
 import { withPerformance } from 'storybook-addon-performance';
 
-import '../src/app.scss';
+import '../app/app.scss';
 
 const preview: Preview = {
   decorators: [withPerformance],

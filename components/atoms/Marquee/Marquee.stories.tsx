@@ -5,7 +5,6 @@ import { Marquee } from './Marquee';
 const meta: Meta<typeof Marquee> = {
   title: 'Atoms/Marquee',
   component: Marquee,
-  tags: ['autodocs'],
   argTypes: {
     label: { control: 'text' },
   },

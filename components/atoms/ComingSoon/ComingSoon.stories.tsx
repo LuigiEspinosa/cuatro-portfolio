@@ -5,7 +5,6 @@ import { ComingSoon } from './ComingSoon';
 const meta: Meta<typeof ComingSoon> = {
   title: 'Atoms/Coming Soon',
   component: ComingSoon,
-  tags: ['autodocs'],
   argTypes: {},
 };
 

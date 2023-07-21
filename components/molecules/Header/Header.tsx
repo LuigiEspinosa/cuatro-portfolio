@@ -1,7 +1,7 @@
 import './header.scss';
 
-import { Logo } from '@/atoms/Logo/Logo';
-import { Navbar } from '@/atoms/Navbar/Navbar';
+import { Logo } from '@/components/atoms/Logo/Logo';
+import { Navbar } from '@/components/atoms/Navbar/Navbar';
 
 export const Header = () => (
   <header className='header'>

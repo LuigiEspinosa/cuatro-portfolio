@@ -2,7 +2,7 @@ const path = require('path');
 import type { StorybookConfig } from '@storybook/nextjs';
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  stories: ['../**/*.mdx', '../**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   staticDirs: ['../public'],
   addons: [
     '@storybook/addon-links',
@@ -22,9 +22,8 @@ const config: StorybookConfig = {
   webpackFinal: async (config) => {
     config.resolve!.alias = {
       ...config.resolve!.alias,
-      '@/organisms': path.resolve(__dirname, '../src/organisms'),
-      '@/molecules': path.resolve(__dirname, '../src/molecules'),
-      '@/atoms': path.resolve(__dirname, '../src/atoms'),
+      '@/components': path.resolve(__dirname, '../components'),
+      '@/assets': path.resolve(__dirname, '../assets'),
     };
 
     return config;

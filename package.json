@@ -29,11 +29,6 @@
     "sass": "^1.63.6",
     "typescript": "5.1.6"
   },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not ie <= 8"
-  ],
   "devDependencies": {
     "@storybook/addon-a11y": "^7.1.0",
     "@storybook/addon-essentials": "7.1.0",
@@ -53,5 +48,10 @@
     "eslint-plugin-storybook": "^0.6.12",
     "storybook": "7.1.0",
     "storybook-addon-performance": "^0.17.1"
-  }
+  },
+    "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 8"
+  ]
 }

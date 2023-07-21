@@ -5,7 +5,6 @@ import { Sticker } from './Sticker';
 const meta: Meta<typeof Sticker> = {
   title: 'Atoms/Sticker',
   component: Sticker,
-  tags: ['autodocs'],
   argTypes: {},
   parameters: {
     layout: 'centered',

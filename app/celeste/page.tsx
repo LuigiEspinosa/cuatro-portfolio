@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import CelesteComponent from '@/organisms/Celeste/Celeste';
+import CelesteComponent from '@/components/organisms/Celeste/Celeste';
 
 export const metadata: Metadata = {
   title: 'I Love U <3',

@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import '../app.scss';
+import './app.scss';
 
 export const metadata: Metadata = {
   title: 'Luigi Espinosa | Frontend web developer',
