@@ -5,6 +5,10 @@
   min-height: 100vh;
   margin: 0;
 
+  .header {
+    display: none;
+  }
+
   h1 {
     font-family: system-ui;
     font-size: min(8vw, 5rem);

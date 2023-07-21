@@ -1,14 +1,12 @@
 import Link from 'next/link';
 
-import { Header } from '@/components/molecules/Header/Header';
 import { ComingSoon } from '@/components/atoms/ComingSoon/ComingSoon';
 import { Marquee } from '@/components/atoms/Marquee/Marquee';
 import { Sticker } from '@/components/atoms/Sticker/Sticker';
 
 export default function Home() {
   return (
-    <main className='container'>
-      <Header />
+    <main>
       <ComingSoon />
 
       <Marquee
