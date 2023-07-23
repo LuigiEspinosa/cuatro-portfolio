@@ -1,7 +1,7 @@
 {
   "name": "portfolio",
   "version": "1.0.0",
-  "description": "Número Cuatro Portfolio",
+  "description": "Número Cuatro's Portfolio",
   "repository": "git@github.com:LuigiEspinosa/cuatro-portfolio.git",
   "author": "Número Cuatro <numerocuatro@pm.me>",
   "license": "MIT",
@@ -9,8 +9,6 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:dev": "env-cmd -f ./.env.development yarn build && firebase deploy -P dev",
-    "build:prod": "env-cmd -f ./.env.production yarn build && firebase deploy -P prod",
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
@@ -22,18 +20,15 @@
     "@types/react-dom": "18.2.6",
     "eslint": "8.44.0",
     "eslint-config-next": "13.4.9",
-    "firebase": "^10.0.0",
+    "gray-matter": "^4.0.3",
     "next": "13.4.9",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "remark": "^14.0.3",
+    "remark-html": "^15.0.2",
     "sass": "^1.63.6",
     "typescript": "5.1.6"
   },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not ie <= 8"
-  ],
   "devDependencies": {
     "@storybook/addon-a11y": "^7.1.0",
     "@storybook/addon-essentials": "7.1.0",
@@ -53,5 +48,10 @@
     "eslint-plugin-storybook": "^0.6.12",
     "storybook": "7.1.0",
     "storybook-addon-performance": "^0.17.1"
-  }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 8"
+  ]
 }

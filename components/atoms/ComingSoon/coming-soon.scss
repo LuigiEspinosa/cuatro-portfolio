@@ -1,0 +1,18 @@
+.content {
+  padding: 14vh 0 2rem;
+  font-family: sans-serif;
+  color: #f3f7a8;
+  font-size: 1.4em;
+  font-weight: 300;
+  line-height: 1.4;
+  word-break: break-word;
+
+  a {
+    color: #f3f7a8;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
