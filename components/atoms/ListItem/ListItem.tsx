@@ -17,15 +17,7 @@ export default function ListItem({ post }: Props) {
           <div className='card-hero'>
             <div className='card-cover'>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={cover}
-                alt={coverAlt}
-                className=''
-                width='432'
-                height='540'
-                loading='eager'
-                decoding='async'
-              />
+              <img src={cover} alt={coverAlt} width='432' height='540' />
             </div>
 
             {/* eslint-disable-next-line @next/next/no-img-element */}

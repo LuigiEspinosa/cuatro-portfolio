@@ -19,20 +19,13 @@ const config: StorybookConfig = {
   docs: {
     autodocs: 'tag',
   },
-  webpackFinal: async (config, { configType }) => {
+  webpackFinal: async (config) => {
     if (config.resolve) {
-      config.resolve = {
-        ...config.resolve,
-        alias: {
-          ...(config.resolve || {}).alias,
-          '@/components': path.resolve(__dirname, '../components'),
-          '@/assets': path.resolve(__dirname, '../assets'),
-          '@/lib': path.resolve(__dirname, '../lib'),
-        },
-        fallback: {
-          ...(config.resolve || {}).fallback,
-          fs: false,
-        },
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@/components': path.resolve(__dirname, '../components'),
+        '@/assets': path.resolve(__dirname, '../assets'),
+        '@/lib': path.resolve(__dirname, '../lib'),
       };
     }
 
