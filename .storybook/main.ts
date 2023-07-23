@@ -1,5 +1,5 @@
-const path = require('path');
 import type { StorybookConfig } from '@storybook/nextjs';
+const path = require('path');
 
 const config: StorybookConfig = {
   stories: ['../**/*.mdx', '../**/*.stories.@(js|jsx|mjs|ts|tsx)'],
@@ -19,12 +19,22 @@ const config: StorybookConfig = {
   docs: {
     autodocs: 'tag',
   },
-  webpackFinal: async (config) => {
-    config.resolve!.alias = {
-      ...config.resolve!.alias,
-      '@/components': path.resolve(__dirname, '../components'),
-      '@/assets': path.resolve(__dirname, '../assets'),
-    };
+  webpackFinal: async (config, { configType }) => {
+    if (config.resolve) {
+      config.resolve = {
+        ...config.resolve,
+        alias: {
+          ...(config.resolve || {}).alias,
+          '@/components': path.resolve(__dirname, '../components'),
+          '@/assets': path.resolve(__dirname, '../assets'),
+          '@/lib': path.resolve(__dirname, '../lib'),
+        },
+        fallback: {
+          ...(config.resolve || {}).fallback,
+          fs: false,
+        },
+      };
+    }
 
     return config;
   },

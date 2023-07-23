@@ -1,7 +1,7 @@
 {
   "name": "portfolio",
   "version": "1.0.0",
-  "description": "Número Cuatro Portfolio",
+  "description": "Número Cuatro's Portfolio",
   "repository": "git@github.com:LuigiEspinosa/cuatro-portfolio.git",
   "author": "Número Cuatro <numerocuatro@pm.me>",
   "license": "MIT",
@@ -23,9 +23,12 @@
     "eslint": "8.44.0",
     "eslint-config-next": "13.4.9",
     "firebase": "^10.0.0",
+    "gray-matter": "^4.0.3",
     "next": "13.4.9",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "remark": "^14.0.3",
+    "remark-html": "^15.0.2",
     "sass": "^1.63.6",
     "typescript": "5.1.6"
   },
@@ -49,7 +52,7 @@
     "storybook": "7.1.0",
     "storybook-addon-performance": "^0.17.1"
   },
-    "browserslist": [
+  "browserslist": [
     "> 1%",
     "last 2 versions",
     "not ie <= 8"

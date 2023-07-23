@@ -3,6 +3,7 @@ import './navbar.scss';
 
 export const Navbar = () => (
   <nav className='navbar'>
+    <Link href='/blog'>Blog</Link>
     <Link href='https://linkedin.com/in/luigiespinosa' target='_blank'>
       LinkedIn
     </Link>

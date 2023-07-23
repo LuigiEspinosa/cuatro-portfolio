@@ -6,7 +6,7 @@ import { Body } from '@/components/atoms/Container/Container';
 
 export const metadata: Metadata = {
   title: 'Luigi Espinosa | Frontend web developer',
-  description: 'Número Cuatro Portfolio',
+  description: "Número Cuatro's Portfolio",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
