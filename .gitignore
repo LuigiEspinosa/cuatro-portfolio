@@ -1,17 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/yarn,linux,macos,nextjs,windows,firebase,visualstudiocode,git
-# Edit at https://www.toptal.com/developers/gitignore?templates=yarn,linux,macos,nextjs,windows,firebase,visualstudiocode,git
-
-### Firebase ###
-.idea
-**/node_modules/*
-**/.firebaserc
-
-### Firebase Patch ###
-.runtimeconfig.json
-.firebase/
-
-### Firebase Logs ###
-firebase-debug.log
+# Created by https://www.toptal.com/developers/gitignore/api/git,yarn,linux,macos,nextjs,windows,visualstudiocode,vercel
+# Edit at https://www.toptal.com/developers/gitignore?templates=git,yarn,linux,macos,nextjs,windows,visualstudiocode,vercel
 
 ### Git ###
 # Created by git for backups. To disable backups in Git:
@@ -103,8 +91,6 @@ yarn-error.log*
 
 # local env files
 .env*.local
-.env.development
-.env.production
 
 # vercel
 .vercel
@@ -112,6 +98,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+### Vercel ###
 
 ### VisualStudioCode ###
 .vscode/*
@@ -175,4 +163,4 @@ $RECYCLE.BIN/
 # and uncomment the following lines
 # .pnp.*
 
-# End of https://www.toptal.com/developers/gitignore/api/yarn,linux,macos,nextjs,windows,firebase,visualstudiocode,git
+# End of https://www.toptal.com/developers/gitignore/api/git,yarn,linux,macos,nextjs,windows,visualstudiocode,vercel

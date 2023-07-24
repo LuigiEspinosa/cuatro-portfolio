@@ -1,6 +1,6 @@
 ---
 title: 'Who Am I'
-date: '2023-07-22'
+date: '1999-12-16'
 cover: '/blog/who-am-i/cover.png'
 coverAlt: 'Renaissance Portrait AI Generated of a male with a Laptop'
 logo: '/blog/who-am-i/logo.png'

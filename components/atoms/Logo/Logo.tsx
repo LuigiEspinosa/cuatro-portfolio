@@ -1,11 +1,11 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import './logo.scss';
 
 export const Logo = () => (
   <div className='logo'>
     <Link href='/'>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src='/logo.png' width={368} height={132} alt='Numero Cuatro Logo in white' />
+      <Image src='/logo.png' width={368} height={132} alt='Numero Cuatro Logo in white' />
     </Link>
   </div>
 );
