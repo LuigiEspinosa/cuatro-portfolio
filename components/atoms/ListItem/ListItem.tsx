@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import getFormattedDate from '@/lib/getFormattedDate';
 import './list-item.scss';
 
@@ -16,12 +17,10 @@ export default function ListItem({ post }: Props) {
         <Link href={`/blog/${id}`}>
           <div className='card-hero'>
             <div className='card-cover'>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cover} alt={coverAlt} width='432' height='540' />
+              <Image src={cover} alt={coverAlt} width='432' height='540' />
             </div>
 
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logo} alt={logoAlt} className='card-logo' />
+            <Image src={logo} alt={logoAlt} className='card-logo' width='245' height='45' />
           </div>
 
           <div className='card-content'>
