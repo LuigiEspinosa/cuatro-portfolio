@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PostProps) {
   }
 
   return {
-    title: post?.title,
+    title: `${post?.title} | Luigi Espinosa - Frontend Developer`,
   };
 }
 

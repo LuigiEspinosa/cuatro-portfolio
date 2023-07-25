@@ -1,4 +1,3 @@
-import { Container } from '@/components/atoms/Container/Container';
 import './header.scss';
 
 import { Logo } from '@/components/atoms/Logo/Logo';

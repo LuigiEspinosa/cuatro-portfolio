@@ -61,6 +61,27 @@
         }
       }
 
+      img {
+        width: 1200px;
+        max-width: 100vw;
+        margin-left: -50vw;
+        left: 50%;
+        position: relative;
+      }
+
+      ul {
+        margin-left: 2rem;
+        margin-bottom: 2rem;
+
+        li {
+          font-size: 1.2em;
+
+          &:not(:last-child) {
+            margin-bottom: 1em;
+          }
+        }
+      }
+
       hr {
         border: 0;
         height: 1px;
