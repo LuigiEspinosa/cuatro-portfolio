@@ -3,7 +3,7 @@ title: 'Who Am I'
 date: '1999-12-16'
 cover: '/blog/who-am-i/cover.png'
 coverAlt: 'Renaissance Portrait AI Generated of a male with a Laptop'
-logo: '/blog/who-am-i/logo.png'
+logo: '/logo.png'
 logoAlt: "Numero Cuatro's Logo"
 ---
 
