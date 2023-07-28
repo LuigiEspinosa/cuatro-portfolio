@@ -8,6 +8,11 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: '/recommendation',
+        destination: '/pdf/recommendation-letter.pdf',
+        permanent: true,
+      },
+      {
         source: '/blog/covidmap',
         destination: 'https://covidmap.cuatro.dev/',
         permanent: true,
