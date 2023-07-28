@@ -1,0 +1,34 @@
+.intro-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  .text-container {
+    position: fixed;
+    width: 100%;
+    height: 100vh;
+    background: #063a21;
+    z-index: 1;
+  }
+
+  .text-wrapper {
+    position: fixed;
+    width: 100%;
+    height: 100vh;
+    left: -50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: default;
+    z-index: 1;
+
+    .text {
+      width: 300%;
+      font-family: 'Thunder';
+      font-size: 8vw;
+      text-transform: uppercase;
+      opacity: 0.4;
+      color: #fff;
+    }
+  }
+}
