@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Linear, gsap } from 'gsap';
 import './HomeLayout.scss';
+import Link from 'next/link';
 
 const HomeLayout = () => {
   useEffect(() => {
@@ -54,7 +55,7 @@ const HomeLayout = () => {
       delay: 2,
     });
 
-    gsap.to('h1, p', {
+    gsap.to('h1, p, a', {
       duration: 1,
       top: 0,
       ease: 'power4.out',
@@ -102,9 +103,15 @@ const HomeLayout = () => {
 
           <div className='brand-contact flex-center'>
             <div className='contact-container'>
-              <p>Github</p>
-              <p>LinkedIn</p>
-              <p>Email</p>
+              <Link href='https://www.github.com/luigiespinosa' target='_blank'>
+                Github
+              </Link>
+              <Link href='https://www.linkedin.com/in/luigiespinosa' target='_blank'>
+                LinkedIn
+              </Link>
+              <Link href='mailto:luigi@cuatro.dev' target='_blank'>
+                Email
+              </Link>
             </div>
           </div>
         </div>
@@ -114,10 +121,19 @@ const HomeLayout = () => {
             <div className='i-row i-row1'>
               <div className='col projects'>
                 <div className='project-list'>
-                  <p>CovidMap</p>
-                  <p>My Own Tracker</p>
-                  <p>Find Four</p>
-                  <p>Website Clones</p>
+                  <Link href='https://covidmap.cuatro.dev' target='_blank'>
+                    CovidMap
+                  </Link>
+                  <Link href='https://tracker.cuatro.dev' target='_blank'>
+                    My Own Tracker
+                  </Link>
+                  <p>~ More Projects soon!</p>
+                  {/* <Link href='' target='_blank'>
+                    Find Four
+                  </Link>
+                  <Link href='' target='_blank'>
+                    Website Clones
+                  </Link> */}
                 </div>
                 <div className='h-stripe'>
                   <span>personal_projects</span>
@@ -142,9 +158,15 @@ const HomeLayout = () => {
                 </div>
 
                 <div className='contact-container'>
-                  <p>Github</p>
-                  <p>LinkedIn</p>
-                  <p>Email</p>
+                  <Link href='https://www.github.com/luigiespinosa' target='_blank'>
+                    Github
+                  </Link>
+                  <Link href='https://www.linkedin.com/in/luigiespinosa' target='_blank'>
+                    LinkedIn
+                  </Link>
+                  <Link href='mailto:luigi@cuatro.dev' target='_blank'>
+                    Email
+                  </Link>
                 </div>
               </div>
             </div>
@@ -152,7 +174,7 @@ const HomeLayout = () => {
             <div className='i-row i-row2'>
               <div className='col lets-talk flex-center'>
                 <p>
-                  Work experience? &#x27A1; <span>Blog</span>
+                  Work experience? &#x27A1; <Link href='/blog'>Blog</Link>
                 </p>
               </div>
               <div className='col stripe'>
@@ -166,13 +188,12 @@ const HomeLayout = () => {
               <div className='box' />
               <div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src='/home/hero.jpg' alt='' className='image' />
+                <img
+                  src='/home/hero.jpg'
+                  alt='Here is a picture of me... if I had one.'
+                  className='image'
+                />
               </div>
-            </div>
-
-            <div className='empty-rows'>
-              <div className='white-space border-bottom' />
-              <div className='white-space' />
             </div>
           </div>
         </div>

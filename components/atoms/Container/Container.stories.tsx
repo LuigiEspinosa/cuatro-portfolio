@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { Container } from './Container';
-import { ComingSoon } from '../ComingSoon/ComingSoon';
 
 const meta: Meta<typeof Container> = {
   title: 'Atoms/Container',
@@ -19,6 +18,5 @@ export const Content: Story = {
 };
 
 Content.args = {
-  children: <ComingSoon />,
   className: 'custom-class',
 };
