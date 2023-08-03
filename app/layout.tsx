@@ -2,7 +2,6 @@ import { Analytics } from '@vercel/analytics/react';
 import { Metadata } from 'next';
 import './app.scss';
 
-import { Header } from '@/components/molecules/Header/Header';
 import { Body } from '@/components/atoms/Container/Container';
 
 export const metadata: Metadata = {
@@ -14,7 +13,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang='en'>
       <Body>
-        <Header />
         {children}
         <Analytics />
       </Body>

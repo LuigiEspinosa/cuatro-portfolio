@@ -1,11 +1,3 @@
-@font-face {
-  font-family: 'Thunder';
-  src: url('../../public/fonts/Thunder-BoldHC.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
 /**
  * @license
  *
@@ -69,6 +61,60 @@
   src: url('../../public/fonts/GeneralSans-Bold.woff2') format('woff2'),
     url('../../public/fonts/GeneralSans-Bold.woff') format('woff'),
     url('../../public/fonts/GeneralSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+}
+
+// Font Family: Monment Extended
+
+@font-face {
+  font-family: 'MonumentExtended-Light';
+  src: url('../../public/fonts/MonumentExtended-Light.woff2') format('woff2'),
+    url('../../public/fonts/MonumentExtended-Light.woff') format('woff'),
+    url('../../public/fonts/MonumentExtended-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'MonumentExtended-Regular';
+  src: url('../../public/fonts/MonumentExtended-Regular.woff2') format('woff2'),
+    url('../../public/fonts/MonumentExtended-Regular.woff') format('woff'),
+    url('../../public/fonts/MonumentExtended-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'MonumentExtended-Bold';
+  src: url('../../public/fonts/MonumentExtended-Bold.woff2') format('woff2'),
+    url('../../public/fonts/MonumentExtended-Bold.woff') format('woff'),
+    url('../../public/fonts/MonumentExtended-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+}
+
+// Font Family: Monment Extended
+
+@font-face {
+  font-family: 'Confillia Normal';
+  src: url('../../public/fonts/ConfilliaNormal-Regular.woff2') format('woff2'),
+    url('../../public/fonts/ConfilliaNormal-Regular.woff') format('woff'),
+    url('../../public/fonts/ConfilliaNormal-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Confillia';
+  src: url('../../public/fonts/ConfilliaBold-Regular.woff2') format('woff2'),
+    url('../../public/fonts/ConfilliaBold-Regular.woff') format('woff'),
+    url('../../public/fonts/ConfilliaBold-Regular.ttf') format('truetype');
   font-weight: 700;
   font-display: swap;
   font-style: normal;
