@@ -1,5 +1,26 @@
 @use './scss/' as *;
 
+:root {
+  // Colors
+  --white-color: #fff;
+  --black-color: #000;
+
+  --light-gray-color: #b3b0aa;
+  --gray-color: #545454;
+
+  // General Sans
+  --font-regular: 'GeneralSans-Regular';
+  --font-bold: 'GeneralSans-Bold';
+
+  // Confillia
+  --confillia-normal: 'Confillia Normal';
+  --confillia-bold: 'Confillia';
+
+  // Monument Extended
+  --monument-regular: 'MonumentExtended-Regular';
+  --monument-bold: 'MonumentExtended-Bold';
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -7,7 +28,7 @@
 }
 
 body {
-  background: #000;
+  background: var(--black-color);
   width: 100vw;
   height: 100vh;
   overflow-x: hidden;
