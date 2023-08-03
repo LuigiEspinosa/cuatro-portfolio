@@ -10,7 +10,7 @@ export const Header = () => {
   const path = usePathname();
 
   return path !== '/' ? (
-    <header className='header container'>
+    <header className='header-container container'>
       <Logo />
       <Navbar />
     </header>
