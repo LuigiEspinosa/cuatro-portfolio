@@ -12,6 +12,11 @@ const nextConfig = {
         destination: '/pdf/recommendation-letter.pdf',
         permanent: true,
       },
+      {
+        source: '/cv',
+        destination: '/pdf/cv.pdf',
+        permanent: true,
+      },
     ];
   },
 };
