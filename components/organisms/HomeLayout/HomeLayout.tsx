@@ -146,12 +146,11 @@ const HomeLayout = () => {
                   <Link href='https://tracker.cuatro.dev' target='_blank'>
                     My Own Tracker
                   </Link>
-                  <p>~ More Projects soon!</p>
+                  <Link href='https://github.com/LuigiEspinosa/web-clones' target='_blank'>
+                    Website Clones
+                  </Link>
                   {/* <Link href='' target='_blank'>
                     Find Four
-                  </Link>
-                  <Link href='' target='_blank'>
-                    Website Clones
                   </Link> */}
                 </div>
                 <div className='h-stripe'>

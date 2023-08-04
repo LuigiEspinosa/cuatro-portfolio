@@ -13,13 +13,8 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: '/blog/covidmap',
-        destination: 'https://covidmap.cuatro.dev/',
-        permanent: true,
-      },
-      {
-        source: '/blog/future-vizion',
-        destination: 'https://future-vizion.cuatro.dev/',
+        source: '/cv',
+        destination: '/pdf/cv.pdf',
         permanent: true,
       },
     ];
