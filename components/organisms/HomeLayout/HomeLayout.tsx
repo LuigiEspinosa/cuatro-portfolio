@@ -141,7 +141,7 @@ const HomeLayout = () => {
               <div className='col projects'>
                 <div className='project-list'>
                   <Link href='https://covidmap.cuatro.dev' target='_blank'>
-                    CovidMap
+                    CovidMap (RIP)
                   </Link>
                   <Link href='https://tracker.cuatro.dev' target='_blank'>
                     My Own Tracker
