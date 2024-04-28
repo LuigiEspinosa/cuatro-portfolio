@@ -2,8 +2,8 @@
 
 import { useLayoutEffect, useRef } from 'react';
 import { Linear, gsap } from 'gsap';
-import './HomeLayout.scss';
 import Link from 'next/link';
+import './HomeLayout.scss';
 
 const HomeLayout = () => {
   const homeRef = useRef<HTMLDivElement>(null);
@@ -140,8 +140,8 @@ const HomeLayout = () => {
             <div className='i-row i-row1'>
               <div className='col projects'>
                 <div className='project-list'>
-                  <Link href='https://covidmap.cuatro.dev' target='_blank'>
-                    CovidMap
+                  <Link href='https://covidmap.cuatro.dev/' target='_blank'>
+                    CovidMap (RIP)
                   </Link>
                   <Link href='https://tracker.cuatro.dev' target='_blank'>
                     My Own Tracker
@@ -149,9 +149,9 @@ const HomeLayout = () => {
                   <Link href='https://github.com/LuigiEspinosa/web-clones' target='_blank'>
                     Website Clones
                   </Link>
-                  {/* <Link href='' target='_blank'>
+                  <Link href='https://github.com/LuigiEspinosa/connect-four-react' target='_blank'>
                     Find Four
-                  </Link> */}
+                  </Link>
                 </div>
                 <div className='h-stripe'>
                   <span>personal_projects</span>
@@ -192,7 +192,10 @@ const HomeLayout = () => {
             <div className='i-row i-row2'>
               <div className='col lets-talk flex-center'>
                 <p>
-                  Work experience? &#x27A1; <Link href='/blog'>Blog</Link>
+                  Work experience? &#x27A1;{' '}
+                  <Link href='/cv' target='_blank'>
+                    CV
+                  </Link>
                 </p>
               </div>
               <div className='col stripe'>
