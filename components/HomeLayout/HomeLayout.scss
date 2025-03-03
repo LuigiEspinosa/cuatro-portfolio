@@ -207,6 +207,9 @@
 
       @media (max-width: 420px) {
         padding: 0 2em;
+        margin-top: 2em;
+        max-height: 215px;
+        overflow-y: hidden;
       }
     }
   }
@@ -238,10 +241,9 @@
   }
 
   .circle-text {
-    .text {
-      position: relative;
-      font-family: var(--confillia-normal);
-      text-transform: uppercase;
+    #gem-canvas {
+      height: 100%;
+      width: 100%;
 
       @media (max-width: 768px) {
         display: none;

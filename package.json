@@ -11,6 +11,8 @@
     "build": "next build"
   },
   "dependencies": {
+    "@react-three/drei": "^9.92.7",
+    "@react-three/fiber": "^8.15.12",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",
     "@vercel/analytics": "^1.0.1",
@@ -22,15 +24,18 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "sass": "^1.63.6",
+    "three": "^0.160.0",
     "typescript": "5.1.6"
   },
   "devDependencies": {
     "@types/node": "^20.4.2",
+    "@types/three": "^0.160.0",
     "env-cmd": "^10.1.0"
   },
   "browserslist": [
     "> 1%",
     "last 2 versions",
     "not ie <= 8"
-  ]
+  ],
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
