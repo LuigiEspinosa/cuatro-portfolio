@@ -98,7 +98,7 @@ const HomeLayout = () => {
         <div className='row row-1 border-bottom'>
           <div className='brand-name border-right'>
             <header className='header flex-center'>
-              <h1>Numero Cuatro</h1>
+              <h1>Luigi Espinosa</h1>
             </header>
           </div>
 
@@ -113,20 +113,20 @@ const HomeLayout = () => {
               <div className='col projects'>
                 <div className='project-list'>
                   <Link href='https://tracker.cuatro.dev' target='_blank'>
-                    My Own Tracker
+                    Cuatro&apos;s Tracker
                   </Link>
-                  <Link href='https://github.com/LuigiEspinosa/web-clones' target='_blank'>
+                  {/* <Link href='https://github.com/LuigiEspinosa/web-clones' target='_blank'>
                     Website Clones
-                  </Link>
-                  <Link href='https://github.com/LuigiEspinosa/connect-four-react' target='_blank'>
+                  </Link> */}
+                  {/* <Link href='https://github.com/LuigiEspinosa/connect-four-react' target='_blank'>
                     Find Four
-                  </Link>
+                  </Link> */}
                   <Link href='https://covidmap.cuatro.dev/' target='_blank'>
-                    CovidMap (RIP)
+                    Covid-19 Map
                   </Link>
-                  <Link href='/' target='_blank'>
+                  {/* <Link href='/' target='_blank'>
                     Other Work Related Projects
-                  </Link>
+                  </Link> */}
                 </div>
                 <div className='h-stripe'>
                   <span>personal_projects</span>
@@ -134,8 +134,21 @@ const HomeLayout = () => {
               </div>
 
               <div className='col circle-text flex-center'>
-                <GemComponent />
-                <ContactContainer />
+                <div className='text'>
+                  <svg viewBox='0 0 100 100' width='200' height='200'>
+                    <defs>
+                      <path
+                        id='circle'
+                        d='M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0'
+                      />
+                    </defs>
+                    <text fontSize='14'>
+                      <textPath xlinkHref='#circle'>
+                        contact me contact me contact me contact me
+                      </textPath>
+                    </text>
+                  </svg>
+                </div>
               </div>
             </div>
 
@@ -157,14 +170,7 @@ const HomeLayout = () => {
           <div className='hero-img'>
             <div className='img-container border-right'>
               <div className='box' />
-              <div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src='/home/hero.jpg'
-                  alt='Here is a picture of me... if I had one.'
-                  className='image'
-                />
-              </div>
+              <GemComponent />
             </div>
           </div>
         </div>
@@ -172,7 +178,7 @@ const HomeLayout = () => {
 
       <div className='marquee' ref={marqueeRef}>
         <span>
-          &nbsp; I&apos;m Luigi Espinosa :) &nbsp; / &nbsp; Frontend Developer &nbsp; / &nbsp; Team
+          &nbsp; I&apos;m Luigi Espinosa &nbsp; / &nbsp; Frontend Developer &nbsp; / &nbsp; Team
           Lead &nbsp; / &nbsp; Fullstack Developer
         </span>
       </div>
