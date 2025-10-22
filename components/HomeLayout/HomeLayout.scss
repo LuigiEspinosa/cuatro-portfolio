@@ -207,6 +207,9 @@
 
       @media (max-width: 420px) {
         padding: 0 2em;
+        margin-top: 2em;
+        max-height: 215px;
+        overflow-y: hidden;
       }
     }
   }
@@ -242,6 +245,8 @@
       position: relative;
       font-family: var(--confillia-normal);
       text-transform: uppercase;
+      animation: rotation 44s infinite linear;
+      transform-origin: center center;
 
       @media (max-width: 768px) {
         display: none;
@@ -254,6 +259,15 @@
       @media (max-width: 768px) {
         display: block;
       }
+    }
+  }
+
+  #gem-canvas {
+    height: 100%;
+    width: 100%;
+
+    @media (max-width: 768px) {
+      display: none;
     }
   }
 
@@ -334,5 +348,14 @@
 
   100% {
     transform: translate(-100%, 0);
+  }
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

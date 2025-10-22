@@ -1,9 +1,9 @@
 {
   "name": "portfolio",
   "version": "1.0.0",
-  "description": "Número Cuatro's Portfolio",
+  "description": "LuigiEspinosa's Portfolio",
   "repository": "git@github.com:LuigiEspinosa/cuatro-portfolio.git",
-  "author": "Número Cuatro <numerocuatro@pm.me>",
+  "author": "LuigiEspinosa <luigi@cuatro.dev>",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -11,9 +11,12 @@
     "build": "next build"
   },
   "dependencies": {
+    "@react-three/drei": "^9.92.7",
+    "@react-three/fiber": "^8.15.12",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",
     "@vercel/analytics": "^1.0.1",
+    "@vercel/speed-insights": "^1.0.10",
     "eslint": "8.44.0",
     "eslint-config-next": "13.4.9",
     "gsap": "^3.12.2",
@@ -21,15 +24,13 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "sass": "^1.63.6",
+    "three": "^0.160.0",
     "typescript": "5.1.6"
   },
   "devDependencies": {
     "@types/node": "^20.4.2",
+    "@types/three": "^0.160.0",
     "env-cmd": "^10.1.0"
   },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not ie <= 8"
-  ]
+  "packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8"
 }
