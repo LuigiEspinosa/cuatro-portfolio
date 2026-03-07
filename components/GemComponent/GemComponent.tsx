@@ -12,8 +12,7 @@ import {
   MeshPhysicalMaterial,
   Texture,
 } from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+import { GLTFLoader, RGBELoader } from 'three/examples/jsm/Addons.js';
 
 const Gem = () => {
   const [gem, setGem] = useState<Mesh | null>(null);
