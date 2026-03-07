@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [2.2.0] - 2026-03-07
+
+### Added
+
+- `content/work.ts`: typed TypeScript array of 4 work experience exntries.
+- `content/projects.ts`: typed TypeScript array with 1 project entry.
+- `app/work/page.ts`: static server-rendered work timeline page (unstyled).
+- `app/projects/page.ts`: static server-rendered projects page (unstyled).
+- Vitest + React Testing Library infraestructure (`vitest.config.ts`, `vitest.setup.ts`).
+- Nabar unit tests (covering links hrefs and external links attributes).
+
+### Changed
+
+- Navbar: replaced dead `/blog` link with `/work` and `/projects` internal links.
+- External Navbar links: added `rel='noopener noreferrer'` for security.
+- `tsconfig.json`: added `vitst/globals` to types for IDE support.
+- `package.json`: added `eslint-plugin-vitest-globals` for ESLint globals support.
+
 ## [2.1.0] - 2026-03-07
 
 ### Added
