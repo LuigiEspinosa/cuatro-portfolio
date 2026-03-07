@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  experimental: {
-    appDir: true,
+  output: 'standalone',
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [],
   },
-  transpilePackages: ['three'],
-
   async redirects() {
     return [
       {
@@ -22,4 +22,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
