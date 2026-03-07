@@ -127,6 +127,7 @@ export const work: WorkEntry[] = [
       'Figma',
       'Git',
       'Bitbucket',
+      'Emal Development',
     ],
   },
   {
