@@ -62,3 +62,32 @@ Copy `.env.example` and fill in values. Variables prefixed `NEXT_PUBLIC_` are in
 | `/projects`       | Case studies grid                                |
 | `/cv`             | Redirect to `public/pdf/cv.pdf`                  |
 | `/recommendation` | Redirect to `public/pdf/remmendation-letter.pdf` |
+
+## Animation Architecture
+
+Lenis owns the scroll position. GSAP owns the animation timeline. ScrollTrigger bridges them.
+
+```mermaid
+flowchart TD
+    subgraph providers["app/providers.tsx (client, app root)"]
+        L[new Lenis]
+        T[gsap.ticker]
+        L -->|lenis.on scroll| ST[ScrollTrigger.update]
+        T -->|lenis.raf time*1000| L
+    end
+
+    subgraph hook["hooks/useGsapContext"]
+        CTX[gsap.context fn ref]
+        CTX -->|ctx.revert on unmount| CLEAN[Cleanup]
+    end
+
+    subgraph components["Animated components"]
+        HL[HomeLayout]
+        WT[WorkTimeline]
+        PC[ProjectCard]
+    end
+
+    RM[useReducedMotion] -->|gates all animations| components
+    components -->|useGsapContext| hook
+    hook -->|ScrollTrigger triggers| providers
+```

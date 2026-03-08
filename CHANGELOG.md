@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## [2.3.0] - 2026-03-08
+
+### Added
+
+- `app/providers.tsx`: Lenis smooth scroll wired to GSAP ScrollTrigger; active on every route from the first render.
+- `hooks/useGsapContext.ts`: GSAP context hook scoped to a DOM ref, reverts on unmount, preventing stale tweens across route navigations.
+- `components/organisms/WorkTimeline/`: Accordion component with GSAP height animation and `ScrollTrigger.batch` staggered entrance (6 tests).
+- `components/molecules/ProjectCard/`: Scroll-triggered scale-in entrance animation per card (6 tests).
+- 12 new component and hook tests (23 total).
+
+### Changed
+
+- `components/organisms/HomeLayout`: Migrated from raw `useLayoutEffect` + manual `gsap.context` to `useGsapContext` hook.
+- `app/layout.tsx`: Children wrapped in `<Providers>` so Lenis is active on all routes.
+- `app/work/page.tsx`: Replaced plain list with `WorkTimeline` accordion.
+- `app/projects/page.tsx`: Replaced plain list with `ProjectCard` grid.
+
 ## [2.2.0] - 2026-03-07
 
 ### Added
