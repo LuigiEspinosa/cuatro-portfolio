@@ -8,6 +8,8 @@ import { useGsapContext } from '@/hooks/useGsapContext';
 import { work } from '@/content/work';
 import './WorkTimeline.scss';
 
+gsap.registerPlugin(ScrollTrigger);
+
 export function WorkTimeline() {
   const [openId, setOpenId] = useState<string | null>(work[0].id);
 

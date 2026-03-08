@@ -98,12 +98,8 @@ const HomeLayout = () => {
             <div className='i-row i-row1'>
               <div className='col projects'>
                 <div className='project-list'>
-                  <Link href='/work' target='_blank'>
-                    Professional Experience
-                  </Link>
-                  <Link href='/projects' target='_blank'>
-                    Personal Projects
-                  </Link>
+                  <Link href='/work'>Professional Experience</Link>
+                  <Link href='/projects'>Personal Projects</Link>
                 </div>
                 <div className='h-stripe'>
                   <span>what_i've_done</span>
