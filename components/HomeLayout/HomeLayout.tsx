@@ -1,95 +1,81 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import Link from 'next/link';
 import './HomeLayout.scss';
 
 import GemComponent from '@/components/GemComponent/GemComponent';
 import ContactContainer from '@/components/ContactContainer/ContactContainer';
+import { useGsapContext } from '@/hooks/useGsapContext';
 
 const HomeLayout = () => {
-  const homeRef = useRef<HTMLDivElement>(null);
-  const marqueeRef = useRef<HTMLDivElement>(null);
+  const homeRef = useGsapContext<HTMLDivElement>(() => {
+    gsap.to('.row-1, .row-2', {
+      duration: 1,
+      top: 0,
+      ease: 'power4.out',
+      delay: 1,
+      stagger: { amount: 0.5 },
+    });
 
-  useLayoutEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.to('.row-1, .row-2', {
-        duration: 1,
-        top: 0,
-        ease: 'power4.out',
-        delay: 1,
-        stagger: {
-          amount: 0.5,
-        },
-      });
+    gsap.to('.brand-name', {
+      duration: 1,
+      left: 0,
+      ease: 'power4.out',
+      delay: 2.5,
+      stagger: { amount: 0.5 },
+    });
 
-      gsap.to('.brand-name', {
-        duration: 1,
-        left: 0,
-        ease: 'power4.out',
-        delay: 2.5,
-        stagger: {
-          amount: 0.5,
-        },
-      });
+    gsap.from('.lets-talk p', {
+      duration: 0.1,
+      opacity: 0,
+      ease: 'power4.out',
+      delay: 2,
+    });
 
-      gsap.from('.lets-talk p', {
-        duration: 0.1,
-        opacity: 0,
-        ease: 'power4.out',
-        delay: 2,
-      });
+    gsap.to('.box', {
+      duration: 1,
+      top: '100%',
+      ease: 'power4.out',
+      delay: 2,
+    });
 
-      gsap.to('.box', {
-        duration: 1,
-        top: '100%',
-        ease: 'power4.out',
-        delay: 2,
-      });
+    gsap.to('p, a', {
+      duration: 1,
+      top: 0,
+      ease: 'power4.out',
+      delay: 2,
+    });
 
-      gsap.to('p, a', {
-        duration: 1,
-        top: 0,
-        ease: 'power4.out',
-        delay: 2,
-      });
+    gsap.from('.h-stripe', {
+      duration: 1,
+      top: '500%',
+      ease: 'power4.out',
+      delay: 4,
+    });
 
-      gsap.from('.h-stripe', {
-        duration: 1,
-        top: '500%',
-        ease: 'power4.out',
-        delay: 4,
-      });
+    gsap.from('.h-stripe span', {
+      duration: 1,
+      top: '300px',
+      ease: 'power4.out',
+      delay: 4,
+    });
 
-      gsap.from('.h-stripe span', {
-        duration: 1,
-        top: '300px',
-        ease: 'power4.out',
-        delay: 4,
-      });
+    gsap.from('.line', {
+      duration: 1,
+      scaleX: 0,
+      ease: 'power4.out',
+      delay: 3.5,
+    });
+  }, []);
 
-      gsap.from('.line', {
-        duration: 1,
-        scaleX: 0,
-        ease: 'power4.out',
-        delay: 3.5,
-      });
-    }, homeRef);
-
-    const ctx2 = gsap.context(() => {
-      gsap.to(marqueeRef?.current, {
-        duration: 1,
-        bottom: '0.5%',
-        ease: 'power4.out',
-        delay: 3,
-      });
-    }, marqueeRef);
-
-    return () => {
-      ctx.revert();
-      ctx2.revert();
-    };
+  const marqueeRef = useGsapContext<HTMLDivElement>(() => {
+    gsap.to(marqueeRef.current, {
+      duration: 1,
+      bottom: '0.5%',
+      ease: 'power4.out',
+      delay: 3,
+    });
   }, []);
 
   return (
@@ -112,24 +98,15 @@ const HomeLayout = () => {
             <div className='i-row i-row1'>
               <div className='col projects'>
                 <div className='project-list'>
-                  <Link href='https://tracker.cuatro.dev' target='_blank'>
-                    Cuatro&apos;s Tracker
+                  <Link href='/work' target='_blank'>
+                    Professional Experience
                   </Link>
-                  {/* <Link href='https://github.com/LuigiEspinosa/web-clones' target='_blank'>
-                    Website Clones
-                  </Link> */}
-                  {/* <Link href='https://github.com/LuigiEspinosa/connect-four-react' target='_blank'>
-                    Find Four
-                  </Link> */}
-                  <Link href='https://covidmap.cuatro.dev/' target='_blank'>
-                    Covid-19 Map
+                  <Link href='/projects' target='_blank'>
+                    Personal Projects
                   </Link>
-                  {/* <Link href='/' target='_blank'>
-                    Other Work Related Projects
-                  </Link> */}
                 </div>
                 <div className='h-stripe'>
-                  <span>personal_projects</span>
+                  <span>what_i've_done</span>
                 </div>
               </div>
 
@@ -155,7 +132,7 @@ const HomeLayout = () => {
             <div className='i-row i-row2'>
               <div className='col lets-talk flex-center'>
                 <p>
-                  Work experience? &#x27A1;{' '}
+                  &#x27A1;{' '}
                   <Link href='/cv' target='_blank'>
                     CV
                   </Link>
@@ -178,8 +155,8 @@ const HomeLayout = () => {
 
       <div className='marquee' ref={marqueeRef}>
         <span>
-          &nbsp; I&apos;m Luigi Espinosa &nbsp; / &nbsp; Frontend Developer &nbsp; / &nbsp; Team
-          Lead &nbsp; / &nbsp; Fullstack Developer
+          &nbsp; I&apos;m Luigi Espinosa &nbsp; / &nbsp; Senior Frontend Engineer &nbsp; / &nbsp;
+          Team Lead &nbsp; / &nbsp; Fullstack Developer
         </span>
       </div>
     </>
