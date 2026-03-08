@@ -4,8 +4,8 @@ import { gsap } from 'gsap';
 import Link from 'next/link';
 import './HomeLayout.scss';
 
-import GemComponent from '@/components/GemComponent/GemComponent';
-import ContactContainer from '@/components/ContactContainer/ContactContainer';
+import GemComponent from '@/components/molecules/GemComponent/GemComponent';
+import ContactContainer from '@/components/molecules/ContactContainer/ContactContainer';
 import { useGsapContext } from '@/hooks/useGsapContext';
 
 const HomeLayout = () => {
