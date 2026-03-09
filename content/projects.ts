@@ -28,9 +28,9 @@ export const projects: ProjectEntry[] = [
       'Nodemailer (SMTP)',
       'Caddy',
       'Hetzner VPS',
+      'Cloudflare',
     ],
     github: 'https://github.com/LuigiEspinosa/digital-library',
     live: 'https://library.cuatro.dev',
   },
 ];
-
