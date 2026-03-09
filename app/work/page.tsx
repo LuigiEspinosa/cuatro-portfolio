@@ -4,8 +4,13 @@ import { WorkHero } from '@/components/organisms/WorkHero/WorkHero';
 import { WorkTimeline } from '@/components/organisms/WorkTimeline/WorkTimeLine';
 
 export const metadata: Metadata = {
-  title: 'Luigi Espinosa | Work',
+  title: 'Work',
   description: 'Work experience and career timeline.',
+  openGraph: {
+    title: 'Work | Luigi Espinosa',
+    description: 'Work experience and career timeline.',
+    url: 'https://cuatro.dev/work',
+  },
 };
 
 export default function WorkPage() {

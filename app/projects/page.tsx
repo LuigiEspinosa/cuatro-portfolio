@@ -5,8 +5,13 @@ import { projects } from '@/content/projects';
 import { ProjectsHero } from '@/components/organisms/ProjectsHero/ProjectsHero';
 
 export const metadata: Metadata = {
-  title: 'Luigi Espinosa | Projects',
+  title: 'Projects',
   description: 'Personal and open-source projects.',
+  openGraph: {
+    title: 'Projects | Luigi Espinosa',
+    description: 'Personal and open-source projects.',
+    url: 'https://cuatro.dev/projects',
+  },
 };
 
 export default function ProjectsPage() {

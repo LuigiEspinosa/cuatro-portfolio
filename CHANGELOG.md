@@ -7,8 +7,11 @@
 - `atoms/Scene`: Shared R3F Canvas wrapper with ACESFilmic tone mapping, DPR cap, PerformanceMonitor, and WebGL context-loss handler.
 - `atoms/Gem`: Three.js gem mesh atom split from GemComponent; material set once in useEffect, scale normalised for camera distance.
 - `atoms/Torus`: Wireframe torus atom driven by a mutable scroll ref via useFrame.
+- `atoms/TorusKnot`: Wireframe torus knot atom driven by a mutable scroll ref via useFrame.
 - `molecules/TorusCanvas`: Scene + Torus canvas molecule with scroll ref bridge.
-- `organism/WorkHero`: full-width hero section with scroll-linked torus rotation (GSAP scrub -> mutable ref -> useFrame).
+- `molecules/TorusKnotCanvas`: Scene + Torus Knot canvas molecule with scroll ref bridge.
+- `organism/WorkHero`: Two-column hero section with scroll-linked torus rotation (GSAP scrub -> mutable ref -> useFrame).
+- `organism/ProjectsHero`: Two-column hero section with scroll-linked torus knot rotation (GSAP scrub -> mutable ref -> useFrame).
 - Bloom (luminanceThreshold: 0.85, intensity: 0.4, radius: 0.3) and Sparkles on GemComponent.
 - OrbitControls on GemComponent: auto-rotates on idle, pauses on drag, resumes after 0.8s.
 - CSS custom properties: `--page-padding`, `--hero-height`; `color: var(--white-color)` on body.
@@ -17,6 +20,7 @@
 
 - `GemComponent`: upgraded to use shared Scene atom, Gem atom, Bloom, Sparkles, OrbitControls; removed inline Canvas.
 - `app/work/page.tsx`: WorkHero added above the timeline.
+- `app/projects/page.tsx`: ProjectsHero added above the project cards grid.
 - `app.scss`: Body now sets `color: var(--white-color)` globally for internal pages.
 
 ## [2.3.0] - 2026-03-08
