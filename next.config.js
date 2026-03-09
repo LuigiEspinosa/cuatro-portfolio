@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
+const pkg = require('./package.json');
 
 const nextConfig = {
   output: 'standalone',
+  env: {
+    APP_VERSION: pkg.version,
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [],
