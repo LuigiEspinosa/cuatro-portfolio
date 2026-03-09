@@ -1,8 +1,16 @@
+.projects-grid {
+  margin-top: 1.5rem;
+
+  li {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+}
+
 .project-card {
   padding: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--white-color);
-  font-family: var(--font-regular);
 
   h2 {
     font-size: 1.2rem;
