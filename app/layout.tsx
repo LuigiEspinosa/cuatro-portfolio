@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './app.scss';
 
 import { Header } from '@/components/molecules/Header/Header';
@@ -40,6 +41,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Header />
           {children}
         </Providers>
+        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+          <Script
+            src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+            strategy='afterInteractive'
+          />
+        )}
       </Body>
     </html>
   );
