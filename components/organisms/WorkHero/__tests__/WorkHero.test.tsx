@@ -26,7 +26,7 @@ vi.mock('@/components/molecules/TorusCanvas/TorusCanvas', () => ({
   TorusCanvas: () => <div data-testid='torus-canvas' />,
 }));
 
-describe('WorkHer', () => {
+describe('WorkHero', () => {
   it('renders without crashing', () => {
     const { container } = render(<WorkHero />);
     expect(container.querySelector('.work-hero')).toBeInTheDocument();

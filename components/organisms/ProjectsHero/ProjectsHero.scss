@@ -1,0 +1,43 @@
+.project-hero {
+  display: flex;
+  width: 100%;
+  height: var(--hero-height);
+  background: var(--black-color);
+  overflow: hidden;
+
+  &__label {
+    flex: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    h1 {
+      font-family: vaR(--monument-bold);
+      font-size: clamp(0.8rem, 1vw, 1rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--white-color);
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: nowrap;
+      letter-spacing: 0.2rem;
+      margin-left: 4rem;
+
+      @media (max-width: 768px) {
+        display: none;
+      }
+    }
+  }
+
+  &__canvas {
+    flex: 3;
+
+    // The R3F canvas must fill the hero container completely
+    // next/dynamic renders a wrapper div.
+    &,
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  }
+}
