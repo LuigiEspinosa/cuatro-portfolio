@@ -10,18 +10,18 @@ export function Gem() {
 
   useEffect(() => {
     const gltfLoader = new GLTFLoader();
-    const hdrLoder = new HDRLoader();
+    const hdrLoader = new HDRLoader();
     let disposed = false;
 
     const load = async () => {
-      const hdr = await hdrLoder.loadAsync('/assets/home/environment_D.hdr');
+      const hdr = await hdrLoader.loadAsync('/assets/home/environment_D.hdr');
       hdr.mapping = EquirectangularReflectionMapping;
 
       gltfLoader.load('/assets/home/gem.glb', (gltf) => {
         if (disposed) return;
 
         const m = gltf.scene.children[0] as Mesh;
-        m.scale.set(1, 1, 1);
+        m.scale.set(0.014, 0.014, 0.014);
         m.rotation.z = -0.4;
 
         m.material = new MeshPhysicalMaterial({
