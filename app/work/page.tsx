@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Container } from '@/components/atoms/Container/Container';
+import { WorkHero } from '@/components/organisms/WorkHero/WorkHero';
 import { WorkTimeline } from '@/components/organisms/WorkTimeline/WorkTimeLine';
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 export default function WorkPage() {
   return (
     <Container>
-      <h1>Work</h1>
+      <WorkHero />
       <WorkTimeline />
     </Container>
   );

@@ -1,0 +1,19 @@
+.work-hero {
+  width: 100%;
+  height: var(--hero-height);
+  position: relative;
+  overflow: hidden;
+  background: var(--black-color);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+
+  // The R3F canvas must fill the hero container completely
+  // next/dynamic renders a wrapper div.
+  canvas,
+  &__canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}

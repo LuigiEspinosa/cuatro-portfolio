@@ -23,7 +23,7 @@ export function GemOrbitControls() {
     <OrbitControls
       ref={controlsRef}
       autoRotate
-      autoRotateSpeed={0.5}
+      autoRotateSpeed={0.8}
       enableZoom={false}
       enablePan={false}
       onStart={handleStart}
