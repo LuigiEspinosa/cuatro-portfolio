@@ -9,6 +9,10 @@ RUN corepack enable
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID
+ENV NEXT_PUBLIC_UMAMI_WEBSITE_ID=$NEXT_PUBLIC_UMAMI_WEBSITE_ID
+
 RUN pnpm build
 
 FROM node:22-slim AS runner

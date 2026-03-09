@@ -12,6 +12,7 @@
     "christian-kohler.path-intellisense",
     "formulahendry.auto-rename-tag",
     "wix.vscode-import-cost",
-    "cesium.gltf-vscode"
+    "cesium.gltf-vscode",
+    "matthewpi.caddyfile-support"
   ]
 }
