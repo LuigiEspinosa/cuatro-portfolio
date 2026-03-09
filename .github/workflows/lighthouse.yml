@@ -10,29 +10,32 @@ jobs:
   lighthouse:
     runs-on: ubuntu-latest
 
-  steps:
-    - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-    - uses: pnpm/action-setup@v4
-      with:
-        version: 10
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
-    - uses: action/setup-node@v4
-      with:
-        node-version: 22
-        cache: pnpm
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
 
-    - name: Install dependencies
-      run: pnpm build
-      env:
-        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ''
-        NEXT_PUBLIC_UMAMI_URL: ''
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Start production server
-      run: pnpm start &
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_UMAMI_WEBSITE_ID: ''
+          NEXT_PUBLIC_UMAMI_URL: ''
 
-    - name: Wait for server
-      run: npx wait-on http://localhost:3000 --timeout 30000
+      - name: Start production server
+        run: pnpm start &
 
-    - name: Run Lighthouse CLI
-      run: npx @lhci/cli autorun
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000 --timeout 30000
+
+      - name: Run Lighthouse CLI
+        run: npx @lhci/cli autorun
