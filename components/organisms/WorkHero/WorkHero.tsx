@@ -15,6 +15,14 @@ export function WorkHero() {
   const scrollRef = useRef<{ value: number }>({ value: 0 });
 
   const heroRef = useGsapContext<HTMLDivElement>(() => {
+    gsap.from('.work-hero__label h1', {
+      x: -60,
+      opacity: 0,
+      duration: 0.8,
+      ease: 'power3.out',
+      delay: 0.2,
+    });
+
     gsap.to(scrollRef.current, {
       value: 1,
       ease: 'none',
@@ -29,8 +37,10 @@ export function WorkHero() {
 
   return (
     <section className='work-hero' ref={heroRef} aria-hidden='true'>
-      <h1>Professional Experience</h1>
-      <TorusCanvas scrollRef={scrollRef} className='work-hero__canvas' />
+      <div className='work-hero__label'>
+        <h1>Professional Experience</h1>
+        <TorusCanvas scrollRef={scrollRef} className='work-hero__canvas' />
+      </div>
     </section>
   );
 }

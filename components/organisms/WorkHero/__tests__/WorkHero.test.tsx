@@ -32,6 +32,11 @@ describe('WorkHer', () => {
     expect(container.querySelector('.work-hero')).toBeInTheDocument();
   });
 
+  it('renders the label column', () => {
+    const { container } = render(<WorkHero />);
+    expect(container.querySelector('.work-hero')).toBeInTheDocument();
+  });
+
   it('renders the torus canvas', () => {
     const { getByTestId } = render(<WorkHero />);
     expect(getByTestId('torus-canvas')).toBeInTheDocument();

@@ -4,7 +4,7 @@ import { OrbitControls } from '@react-three/drei';
 import { useRef, useCallback } from 'react';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
-export function GemOrbitControls() {
+export function CanvasOrbitControls({ autoRotate = false }: { autoRotate?: boolean }) {
   const controlsRef = useRef<OrbitControlsImpl>(null!);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -15,14 +15,14 @@ export function GemOrbitControls() {
 
   const handleEnd = useCallback(() => {
     timerRef.current = setTimeout(() => {
-      if (controlsRef.current) controlsRef.current.autoRotate = true;
+      if (controlsRef.current) controlsRef.current.autoRotate = autoRotate;
     }, 800);
   }, []);
 
   return (
     <OrbitControls
       ref={controlsRef}
-      autoRotate
+      autoRotate={autoRotate}
       autoRotateSpeed={0.8}
       enableZoom={false}
       enablePan={false}

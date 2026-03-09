@@ -10,9 +10,11 @@ export const metadata: Metadata = {
 
 export default function WorkPage() {
   return (
-    <Container>
-      <WorkHero />
-      <WorkTimeline />
-    </Container>
+    <>
+      <Container>
+        <WorkHero />
+        <WorkTimeline />
+      </Container>
+    </>
   );
 }

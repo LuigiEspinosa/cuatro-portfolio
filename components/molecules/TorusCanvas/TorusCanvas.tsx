@@ -3,6 +3,7 @@
 import type { RefObject } from 'react';
 import dynamic from 'next/dynamic';
 import { Torus } from '@/components/atoms/Torus/Torus';
+import { CanvasOrbitControls } from '@/components/atoms/CanvasOrbitControls/CanvasOrbitControls';
 
 const Scene = dynamic(() => import('@/components/atoms/Scene/Scene').then((m) => m.Scene), {
   ssr: false,
@@ -18,6 +19,7 @@ export function TorusCanvas({ scrollRef, className }: TorusCanvasProps) {
     <Scene className={className}>
       <ambientLight intensity={0.5} />
       <Torus scrollRef={scrollRef} />
+      <CanvasOrbitControls />
     </Scene>
   );
 }
