@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
 import { Color, EquirectangularReflectionMapping, Mesh, MeshPhysicalMaterial } from 'three';
 import { GLTFLoader, HDRLoader } from 'three/examples/jsm/Addons.js';
 
@@ -54,10 +53,6 @@ export function Gem() {
       }
     };
   }, []);
-
-  useFrame(() => {
-    if (mesh) mesh.rotation.y += 0.004;
-  });
 
   if (!mesh) return null;
 

@@ -19,6 +19,7 @@ vi.mock('@/components/atoms/Gem/Gem', () => ({
 
 vi.mock('@react-three/drei', () => ({
   Sparkles: () => null,
+  OrbitControls: () => null,
 }));
 
 vi.mock('@react-three/postprocessing', () => ({
