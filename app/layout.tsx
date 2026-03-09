@@ -40,14 +40,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>
           <Header />
           {children}
+
+          {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+            <Script
+              src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
+              data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+              strategy='afterInteractive'
+            />
+          )}
         </Providers>
-        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
-          <Script
-            src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
-            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-            strategy='afterInteractive'
-          />
-        )}
       </Body>
     </html>
   );
