@@ -1,18 +1,37 @@
 # CHANGELOG
 
+## [2.4.0] - 2026-03-08
+
+### Added
+
+- `atoms/Scene`: Shared R3F Canvas wrapper with ACESFilmic tone mapping, DPR cap, PerformanceMonitor, and WebGL context-loss handler.
+- `atoms/Gem`: Three.js gem mesh atom split from GemComponent; material set once in useEffect, scale normalised for camera distance.
+- `atoms/Torus`: Wireframe torus atom driven by a mutable scroll ref via useFrame.
+- `molecules/TorusCanvas`: Scene + Torus canvas molecule with scroll ref bridge.
+- `organism/WorkHero`: full-width hero section with scroll-linked torus rotation (GSAP scrub -> mutable ref -> useFrame).
+- Bloom (luminanceThreshold: 0.85, intensity: 0.4, radius: 0.3) and Sparkles on GemComponent.
+- OrbitControls on GemComponent: auto-rotates on idle, pauses on drag, resumes after 0.8s.
+- CSS custom properties: `--page-padding`, `--hero-height`; `color: var(--white-color)` on body.
+
+## Changed
+
+- `GemComponent`: upgraded to use shared Scene atom, Gem atom, Bloom, Sparkles, OrbitControls; removed inline Canvas.
+- `app/work/page.tsx`: WorkHero added above the timeline.
+- `app.scss`: Body now sets `color: var(--white-color)` globally for internal pages.
+
 ## [2.3.0] - 2026-03-08
 
 ### Added
 
 - `app/providers.tsx`: Lenis smooth scroll wired to GSAP ScrollTrigger; active on every route from the first render.
 - `hooks/useGsapContext.ts`: GSAP context hook scoped to a DOM ref, reverts on unmount, preventing stale tweens across route navigations.
-- `components/organisms/WorkTimeline/`: Accordion component with GSAP height animation and `ScrollTrigger.batch` staggered entrance (6 tests).
-- `components/molecules/ProjectCard/`: Scroll-triggered scale-in entrance animation per card (6 tests).
+- `organisms/WorkTimeline/`: Accordion component with GSAP height animation and `ScrollTrigger.batch` staggered entrance (6 tests).
+- `molecules/ProjectCard/`: Scroll-triggered scale-in entrance animation per card (6 tests).
 - 12 new component and hook tests (23 total).
 
 ### Changed
 
-- `components/organisms/HomeLayout`: Migrated from raw `useLayoutEffect` + manual `gsap.context` to `useGsapContext` hook.
+- `organisms/HomeLayout`: Migrated from raw `useLayoutEffect` + manual `gsap.context` to `useGsapContext` hook.
 - `app/layout.tsx`: Children wrapped in `<Providers>` so Lenis is active on all routes.
 - `app/work/page.tsx`: Replaced plain list with `WorkTimeline` accordion.
 - `app/projects/page.tsx`: Replaced plain list with `ProjectCard` grid.
