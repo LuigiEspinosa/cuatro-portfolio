@@ -44,6 +44,20 @@ flowchart LR
     B -- public/ --> C
 ```
 
+## One-command deploy
+
+```bash
+docker compose --env-file .env.production up --build -d
+```
+
+```mermaid
+graph LR
+    Internet --> Caddy
+    Caddy -->|cuatro.dev| App
+    Caddy -->|analytics.cuatro.dev| Umami
+    Umami --> Postgres
+```
+
 ## Environment Varialbes
 
 Copy `.env.example` and fill in values. Variables prefixed `NEXT_PUBLIC_` are inlined at build time.

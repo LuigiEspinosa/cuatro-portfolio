@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [2.5.0] - 2026-03-09
+
+### Added
+
+- Open Graph and Twitter Card metadata for all pages with shared 1200x630 OG image.
+- `GET /api/health` route returning `status`, `version`, and `uptime`.
+- Print stylesheet: hides decorative canvases and header, redners text content cleanly.
+- Full Docker compose stack: Caddy (auto-HTTPS), Umami analytics, Postgres.
+- Umami analytics script wired via `next/script` with `afterInteractive` strategy.
+- Lighthouse CI Github Actions workflow with performance, accessibility, best-practices, and SEO budget checks.
+
 ## [2.4.0] - 2026-03-08
 
 ### Added
