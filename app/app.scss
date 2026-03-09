@@ -8,6 +8,12 @@
   --light-gray-color: #b3b0aa;
   --gray-color: #545454;
 
+  // Spacing
+  --page-padding: clamp(1.5rem, 4vw, 3rem);
+
+  // Hero
+  --hero-height: 40vh;
+
   // General Sans
   --font-regular: 'GeneralSans-Regular';
   --font-bold: 'GeneralSans-Bold';
@@ -29,6 +35,8 @@
 
 body {
   background: var(--black-color);
+  font-family: var(--font-regular);
+  color: var(--white-color);
   width: 100vw;
   height: 100vh;
   overflow-x: hidden;

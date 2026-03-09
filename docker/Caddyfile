@@ -1,0 +1,7 @@
+cuatro.dev {
+  reverse_proxy app:3000
+}
+
+analytics.cuatro.dev {
+  reverse_proxy umami:3000
+}

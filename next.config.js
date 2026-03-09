@@ -1,11 +1,15 @@
 /** @type {import('next').NextConfig} */
+const pkg = require('./package.json');
 
 const nextConfig = {
-  experimental: {
-    appDir: true,
+  output: 'standalone',
+  env: {
+    APP_VERSION: pkg.version,
   },
-  transpilePackages: ['three'],
-
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [],
+  },
   async redirects() {
     return [
       {

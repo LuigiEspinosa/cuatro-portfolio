@@ -1,0 +1,95 @@
+{
+  "asset": {
+    "generator": "Khronos glTF Blender I/O v1.6.16",
+    "version": "2.0"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "Cylinder",
+      "scale": [0.6848609447479248, 0.6848609447479248, 0.6848609447479248]
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Cylinder",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3
+        }
+      ]
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 17112,
+      "max": [39.921669006347656, 90.04839324951172, 44.987213134765625],
+      "min": [-39.921669006347656, -90.04839324951172, -44.987213134765625],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 17112,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 17112,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5123,
+      "count": 25692,
+      "type": "SCALAR"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 205344,
+      "byteOffset": 0,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 205344,
+      "byteOffset": 205344,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 136896,
+      "byteOffset": 410688,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 51384,
+      "byteOffset": 547584,
+      "target": 34963
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "gem_data.bin",
+      "byteLength": 598968
+    }
+  ]
+}

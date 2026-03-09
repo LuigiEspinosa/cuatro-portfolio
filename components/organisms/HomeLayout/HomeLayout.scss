@@ -1,0 +1,361 @@
+.home-container {
+  width: 100%;
+  height: 90vh;
+
+  p,
+  a {
+    display: block;
+    font-family: var(--confillia-normal);
+    color: var(--gray-color);
+    text-align: left;
+    font-size: 1.5rem;
+    line-height: 1.5;
+    text-decoration: none;
+  }
+
+  p,
+  a {
+    position: relative;
+    top: 400px;
+  }
+
+  a {
+    transition: all 0.4s cubic-bezier(0.075, 0.82, 0.165, 1);
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .row {
+    color: var(--black-color);
+  }
+
+  .border-right {
+    border-right: 2px solid var(--black-color);
+  }
+
+  .border-bottom {
+    border-bottom: 2px solid var(--black-color);
+  }
+
+  .flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .row-1 {
+    position: relative;
+    top: -100%;
+    width: 100%;
+    height: 30vh;
+    display: flex;
+    background: var(--light-gray-color);
+    z-index: 2;
+  }
+
+  .brand-name {
+    position: relative;
+    left: -100%;
+    flex: 5;
+
+    .header {
+      height: 100%;
+
+      h1 {
+        font-family: var(--monument-bold);
+        font-weight: 700;
+        font-size: min(7rem, 16vw);
+        line-height: 0.8;
+        text-transform: uppercase;
+        padding: 0 2em;
+      }
+    }
+  }
+
+  .brand-contact {
+    position: relative;
+    left: -4rem;
+    flex-direction: column;
+    flex: 2;
+
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+
+  .brand-name,
+  .brand-contact {
+    overflow: hidden;
+  }
+
+  .row-2 {
+    position: relative;
+    width: 100%;
+    height: 60vh;
+    display: flex;
+    z-index: 0;
+    top: -100%;
+  }
+
+  .hero-copy {
+    display: flex;
+    flex-direction: column;
+    flex: 5;
+  }
+
+  .hero-img {
+    flex: 2;
+
+    .img-container {
+      position: relative;
+      overflow: hidden;
+      flex: 3;
+      height: 100%;
+
+      img {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        color: white;
+        font-family: var(--monument-regular);
+        padding: 2em;
+      }
+    }
+
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+
+  .box {
+    background: var(--light-gray-color);
+    opacity: 1;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    z-index: 2;
+  }
+
+  .i-row {
+    width: 100%;
+    display: flex;
+
+    & > .col {
+      background: var(--light-gray-color);
+
+      &:nth-child(1) {
+        flex: 3;
+      }
+
+      &:nth-child(2) {
+        flex: 2;
+      }
+    }
+  }
+
+  .i-row1 {
+    flex: 3;
+
+    .col {
+      &:nth-child(1) {
+        border-radius: 0 0 40px 0;
+        border-right: 1px solid var(--black-color);
+        border-bottom: 1px solid var(--black-color);
+      }
+
+      &:nth-child(2) {
+        border-radius: 0 0 0 40px;
+        border-left: 1px solid var(--black-color);
+        border-bottom: 1px solid var(--black-color);
+      }
+    }
+  }
+
+  .i-row2 {
+    flex: 2;
+
+    .col {
+      &:nth-child(1) {
+        border-radius: 0 40px 0 0;
+        border-right: 1px solid var(--black-color);
+        border-top: 1px solid var(--black-color);
+      }
+
+      &:nth-child(2) {
+        border-radius: 40px 0 0 0;
+        border-left: 1px solid var(--black-color);
+        border-top: 1px solid var(--black-color);
+      }
+    }
+  }
+
+  .projects {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+
+    .project-list {
+      padding: 0 4em;
+
+      @media (max-width: 420px) {
+        padding: 0 2em;
+        margin-top: 2em;
+        max-height: 215px;
+        overflow-y: hidden;
+      }
+    }
+  }
+
+  .h-stripe {
+    position: absolute;
+    padding: 1em;
+    right: -8em;
+    transform: rotate(-90deg);
+    width: 100%;
+    background: var(--black-color);
+    color: var(--white-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: var(--monument-regular);
+    overflow: hidden;
+
+    span {
+      position: relative;
+    }
+
+    @media (max-width: 640px) {
+      transform: rotate(0);
+      right: 0;
+      left: 0;
+      top: 0 !important;
+    }
+  }
+
+  .circle-text {
+    .text {
+      position: relative;
+      font-family: var(--confillia-normal);
+      text-transform: uppercase;
+      animation: rotation 44s infinite linear;
+      transform-origin: center center;
+
+      @media (max-width: 768px) {
+        display: none;
+      }
+    }
+
+    .contact-container {
+      display: none;
+
+      @media (max-width: 768px) {
+        display: block;
+      }
+    }
+  }
+
+  #gem-canvas {
+    height: 100%;
+    width: 100%;
+
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+
+  .lets-talk {
+    overflow: hidden;
+
+    p {
+      font-size: 3rem;
+
+      a {
+        position: static;
+        display: inline-block;
+        font-size: 3rem;
+        font-family: var(--monument-bold);
+        color: var(--black-color);
+        text-transform: uppercase;
+      }
+    }
+
+    @media (max-width: 420px) {
+      padding: 0 2em;
+    }
+  }
+
+  .stripe {
+    position: relative;
+    overflow: hidden;
+    display: block;
+
+    @media (max-width: 1280px) {
+      display: none;
+    }
+  }
+
+  .line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 150%;
+    height: 2px;
+    background-color: var(--black-color);
+    transform: rotate(50%);
+  }
+}
+
+// Marquee
+.marquee {
+  position: fixed;
+  bottom: -10em;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.4em 0;
+  white-space: nowrap;
+  z-index: 3;
+  background: var(--black-color);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+
+  span {
+    font-family: var(--monument-regular);
+    text-transform: uppercase;
+    font-weight: 400;
+    color: var(--light-gray-color);
+    font-size: 4em;
+    text-transform: uppercase;
+    padding-left: -10%;
+    animation: marquee-animation 80s linear infinite;
+    letter-spacing: 1.4px;
+  }
+}
+
+@keyframes marquee-animation {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(-100%, 0);
+  }
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
