@@ -113,6 +113,7 @@ docker compose exec pnpm tsx prisma/seed/demo.ts
 
 Subsequent deploys are handled by Github Actions on push to `main`.
 
+> [!IMPORTANT]
 > **Critical**: Back up the PostgreSQL volume daily - it is the only irreplaceable data.
 
 ```shell
