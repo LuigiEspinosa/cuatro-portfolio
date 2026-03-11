@@ -64,23 +64,39 @@ enum SyncMethod {
 
 // ---- MODELS ----
 
-model Account {
-  id               String        @id @default(cuid())
-  name             String
-  institution      String
-  type             AccountType
-  currency         Currency      @default(COP)
-  balance_centavos BigInt        @default(0) // Balance stored as centavos (BIGINT) - Never float
-  belvo_account_id String?
-  belvo_link_token String? // AES-256-GCM encrypted at rest
-  sync_method      SyncMethod    @default(MANUAL)
-  last_synced_at   DateTime?
-  is_afc           Boolean       @default(false) // AFC: Contributions tracked for Anual tax benefit
-  is_uvr_mortgage  Boolean       @default(false) // Balance stored in UVR units
-  uvr_balance      Decimal?      @db.Decimal(20, 6) // Displayed as both UVR and COP
-  transactions     Transaction[]
-  created_at       DateTime      @default(now())
-  updated_at       DateTime      @updatedAt
+model BankAccount {
+  id                    String        @id @default(cuid())
+  name                  String
+  institution           String
+  type                  AccountType
+  currency              Currency      @default(COP)
+  balance_centavos      BigInt        @default(0) // Balance stored as centavos (BIGINT) - Never float
+  belvo_account_id      String?
+  belvo_link_token      String? // AES-256-GCM encrypted at rest
+  sync_method           SyncMethod    @default(MANUAL)
+  last_synced_at        DateTime?
+  is_afc                Boolean       @default(false) // AFC: Contributions tracked for Anual tax benefit
+  is_uvr_mortgage       Boolean       @default(false) // Balance stored in UVR units
+  uvr_balance           Decimal?      @db.Decimal(20, 6) // Displayed as both UVR and COP
+  transactions          Transaction[]
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([userId])
+  @@map("Account")
 }
 
 model Category {
@@ -96,7 +112,7 @@ model Category {
 model Transaction {
   id                  String          @id @default(cuid())
   account_id          String
-  account             Account         @relation(fields: [account_id], references: [id])
+  account             BankAccount     @relation(fields: [account_id], references: [id])
   amount_centavos     BigInt // Positive = credit, negative = debt
   currency            Currency        @default(COP)
   cop_rate            Decimal?        @db.Decimal(20, 6) // Exchange rate locaked at import time - never re-fetched retroactively
@@ -199,4 +215,82 @@ model CashFlowPoint {
   // low = irregular extrapolated from anual average
   confidence String   @default("medium")
   created_at DateTime @default(now())
+}
+
+model User {
+  id               String        @id
+  name             String
+  email            String
+  emailVerified    Boolean       @default(false)
+  image            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  twoFactorEnabled Boolean?      @default(false)
+  sessions         Session[]
+  accounts         Account[]
+  twofactors       TwoFactor[]
+  bankAccounts     BankAccount[]
+
+  @@unique([email])
+  @@map("auth_user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("auth_session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("auth_account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("auth_verification")
+}
+
+model TwoFactor {
+  id          String @id
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secret])
+  @@index([userId])
+  @@map("auth_two_factor")
 }

@@ -362,4 +362,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-/lib/generated/prisma
+# Prisma
+generated/prisma
