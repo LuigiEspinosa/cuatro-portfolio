@@ -5,10 +5,197 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---- EMUMS ----
+
+enum Currency {
+  COP
+  USD
+  EUR
+  BTC
+  ETH
+  USDT
+  UVR
+}
+
+enum AccountType {
+  SAVINGS
+  CHECKING
+  CREDIT_CARD
+  LOAN
+  MORTGAGE
+  AFC
+  INVESTMENT
+  CRYPTO
+}
+
+enum TransactionType {
+  DEBIT
+  CREDIT
+  TRANSFER
+}
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum DebType {
+  CREDIT_CARD
+  LOAN
+  MORTGAGE
+  LINE_OF_CREDIT
+}
+
+enum SyncMethod {
+  BELVO
+  MANUAL
+  CSV_IMPORT
+  OFX_IMPORT
+}
+
+// ---- MODELS ----
+
+model Account {
+  id               String        @id @default(cuid())
+  name             String
+  institution      String
+  type             AccountType
+  currency         Currency      @default(COP)
+  balance_centavos BigInt        @default(0) // Balance stored as centavos (BIGINT) - Never float
+  belvo_account_id String?
+  belvo_link_token String? // AES-256-GCM encrypted at rest
+  sync_method      SyncMethod    @default(MANUAL)
+  last_synced_at   DateTime?
+  is_afc           Boolean       @default(false) // AFC: Contributions tracked for Anual tax benefit
+  is_uvr_mortgage  Boolean       @default(false) // Balance stored in UVR units
+  uvr_balance      Decimal?      @db.Decimal(20, 6) // Displayed as both UVR and COP
+  transactions     Transaction[]
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  icon         String?
+  is_custom    Boolean       @default(false)
+  transactions Transaction[]
+  budgets      Budget[]
+  created_at   DateTime      @default(now())
+}
+
+model Transaction {
+  id                  String          @id @default(cuid())
+  account_id          String
+  account             Account         @relation(fields: [account_id], references: [id])
+  amount_centavos     BigInt // Positive = credit, negative = debt
+  currency            Currency        @default(COP)
+  cop_rate            Decimal?        @db.Decimal(20, 6) // Exchange rate locaked at import time - never re-fetched retroactively
+  cop_amount_centavos BigInt?
+  description         String
+  merchant_name       String?
+  category_id         String?
+  category            Category?       @relation(fields: [category_id], references: [id])
+  type                TransactionType
+  transacted_at       DateTime
+  imported_at         DateTime        @default(now())
+  external_id         String? // Belvo transaction ID or deterministic impoirt hash for dedup
+  is_duplicate        Boolean         @default(false)
+  is_subscription     Boolean         @default(false)
+  subscription_id     String?
+  subscription        Subscription?   @relation(fields: [subscription_id], references: [id])
+  notes               String?
+
+  @@unique([account_id, external_id])
+}
+
+model Budget {
+  id             String       @id @default(cuid())
+  name           String
+  category_id    String?
+  category       Category?    @relation(fields: [category_id], references: [id])
+  period         BudgetPeriod @default(MONTHLY)
+  limit_centavos BigInt
+  alert_pct      Int // Alert fires when (spent / limit) >= alert_pct / 100
+  start_date     DateTime?
+  end_date       DateTime?
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+}
+
+model Debt {
+  id                    String   @id @default(cuid())
+  name                  String
+  institution           String
+  type                  DebType
+  account_id            String?
+  principal_centavos    BigInt
+  balance_centavos      BigInt
+  interest_rate_pct     Decimal  @db.Decimal(8, 4) // Handles Colombian rates like 28.5000%
+  min_payment_centavos  BigInt
+  payment_due_day       Int
+  is_uvr                Boolean  @default(false)
+  credit_limit_centavos BigInt?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+}
+
+model Investment {
+  id                String   @id @default(cuid())
+  account_id        String
+  ticker            String?
+  name              String
+  institution       String
+  units             Decimal  @db.Decimal(20, 8) // High precision for fractional shares and crypto units
+  avg_cost_centavos BigInt
+  currency          Currency
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+}
+
+model FxRate {
+  id   String   @id @default(cuid())
+  from Currency
+  to   Currency
+  rate Decimal  @db.Decimal(20, 6)
+  date DateTime @default(now())
+
+  @@unique([from, to, date])
+}
+
+model Subscription {
+  id              String        @id @default(cuid())
+  merchant_name   String
+  amount_centavos BigInt
+  currency        Currency      @default(COP)
+  frequency_days  Int
+  last_charged    DateTime
+  next_expected   DateTime
+  is_flagged      Boolean       @default(false)
+  transactions    Transaction[]
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+}
+
+// Pre-computed 90-day forecast - rebuilt by cashflow-recalc BullMQ job
+model CashFlowPoint {
+  id                         String   @id @default(cuid())
+  date                       DateTime
+  projected_balance_centavos BigInt
+  scheduled_income           BigInt   @default(0)
+  scheduled_expenses         BigInt   @default(0)
+
+  // high = known fixed (salary, subscription)
+  // medium = 3-month avg.
+  // low = irregular extrapolated from anual average
+  confidence String   @default("medium")
+  created_at DateTime @default(now())
 }
