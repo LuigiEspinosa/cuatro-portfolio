@@ -4,7 +4,7 @@ import path from "path";
 export default defineConfig({
   test: {
     globals: true,
-    environment: "noe",
+    environment: "node",
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
