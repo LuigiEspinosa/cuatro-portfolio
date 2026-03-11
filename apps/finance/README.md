@@ -122,9 +122,49 @@ docker compose exec postgres pg_dump -U finance > backup-$(data +%Y%m%d).sql
 
 ## Environment Varialbes
 
-| Variable           | Description                                         |
-| ------------------ | --------------------------------------------------- |
-| DATABASE_URL       | PostgreSQL connection string                        |
-| REDIS_URL          | Redis connection URL                                |
-| ENCRYPTION_KEY     | 32-byte hex (`openssl rand -hex 32`) - back this up |
-| BETTER_AUTH_SECRET | 32-char secret (`openssl rand -base64 32`)          |
+| Variable                    | Description                                         |
+| --------------------------- | --------------------------------------------------- |
+| DATABASE_URL                | PostgreSQL connection string                        |
+| REDIS_URL                   | Redis connection URL                                |
+| ENCRYPTION_KEY              | 32-byte hex (`openssl rand -hex 32`) - back this up |
+| BETTER_AUTH_URL             | Domain connection url                               |
+| NEXT_PUBLIC_BETTER_AUTH_URL | Domain connection url                               |
+| BETTER_AUTH_SECRET          | 32-char secret (`openssl rand -base64 32`)          |
+| ADMIN_EMAIL                 | Admin email                                         |
+| ADMIN_PASSWORD              | Admin password                                      |
+
+---
+
+## Auth Flow
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant M as middleware.ts
+    participant L as (app)/layout.tsx
+    participant A as Better Auth
+
+    B->>M: GET /dashboard
+    M->>M: getSessionCookie() -- no cookie
+    M-->>B: redirect /login
+
+    B->>A: POST /api/auth/sign-in/email
+    A-->>B: Set session cookie
+
+    B->>M: GET /dashboard
+    M->>M: getSessionCookie() -- cookie found
+    M-->>L: pass through
+
+    L->>A: auth.api.getSession()
+    A-->>L: session (twoFactorVerified: false)
+    L-->>B: redirect /verify-mfa
+
+    B->>A: POST /api/auth/two-factor/verify-totp
+    A-->>B: session updated (twoFactorVerified: true)
+
+    B->>M: GET /dashboard
+    M-->>L: pass through
+    L->>A: auth.api.getSession()
+    A-->>L: session (twoFactorVerified: true)
+    L-->>B: render dashboard
+```
