@@ -13,6 +13,25 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    "rules": {
+      "no-restricted-syntax": [
+        'error',
+        {
+          selector: "BinaryExpression[operator='+'] > Identifier[name=/amount|balance|centavos/]",
+          message: 'Do not use + on monetary variables. Use money.add() from lib/money.ts',
+        },
+        {
+          selector: "BinaryExpression[operator='-'] > Identifier[name=/amount|balance|centavos/]",
+          message: 'Do not use - on monetary variables. Use money.subtract() from lib/money.ts',
+        },
+        {
+          selector: "BinaryExpression[operator='*'] > Identifier[name=/amount|balance|centavos/]",
+          message: 'Do not use * on monetary variables. Use money.multiply() from lib/money.ts',
+        },
+      ]
+    }
+  }
 ]);
 
 export default eslintConfig;
