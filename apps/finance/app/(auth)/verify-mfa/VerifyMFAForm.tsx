@@ -1,7 +1,6 @@
 "use client";
 
 import { type SubmitEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   CircleNotchIcon,
   ShieldWarningIcon,
@@ -19,7 +18,6 @@ import {
 } from "@/components/ui/input-otp";
 
 export function VerifyMFAForm() {
-  const router = useRouter();
   const [totpCode, setTotpCode] = useState<string>("");
   const [backupCode, setBackupCode] = useState<string>("");
   const [useBackup, setUseBackup] = useState<boolean>(false);
@@ -42,7 +40,7 @@ export function VerifyMFAForm() {
       return;
     }
 
-    router.push("/dashboard");
+    window.location.href = "/dashboard";
   }
 
   async function handleBackupSubmit(e: SubmitEvent) {
@@ -61,7 +59,7 @@ export function VerifyMFAForm() {
       return;
     }
 
-    router.push("/dashboard");
+    window.location.href = "/dashboard";
   }
 
   function toggleMode() {

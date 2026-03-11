@@ -18,14 +18,5 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect("/setup-mfa");
   }
 
-  // If the user as MFA enabled but has not verified it in this session,
-  // send them to the verify page.
-  const twoFactorSession = session.session as typeof session.session & {
-    twoFactorVerified?: boolean;
-  };
-  if (!twoFactorSession.twoFactorVerified) {
-    redirect("/verify-mfa");
-  }
-
   return <>{children}</>;
 }
