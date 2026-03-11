@@ -65,35 +65,24 @@ enum SyncMethod {
 // ---- MODELS ----
 
 model BankAccount {
-  id                    String        @id @default(cuid())
-  name                  String
-  institution           String
-  type                  AccountType
-  currency              Currency      @default(COP)
-  balance_centavos      BigInt        @default(0) // Balance stored as centavos (BIGINT) - Never float
-  belvo_account_id      String?
-  belvo_link_token      String? // AES-256-GCM encrypted at rest
-  sync_method           SyncMethod    @default(MANUAL)
-  last_synced_at        DateTime?
-  is_afc                Boolean       @default(false) // AFC: Contributions tracked for Anual tax benefit
-  is_uvr_mortgage       Boolean       @default(false) // Balance stored in UVR units
-  uvr_balance           Decimal?      @db.Decimal(20, 6) // Displayed as both UVR and COP
-  transactions          Transaction[]
-  created_at            DateTime      @default(now())
-  updated_at            DateTime      @updatedAt
-  accountId             String
-  providerId            String
-  userId                String
-  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  institution      String
+  type             AccountType
+  currency         Currency      @default(COP)
+  balance_centavos BigInt        @default(0) // Balance stored as centavos (BIGINT) - Never float
+  belvo_account_id String?
+  belvo_link_token String? // AES-256-GCM encrypted at rest
+  sync_method      SyncMethod    @default(MANUAL)
+  last_synced_at   DateTime?
+  is_afc           Boolean       @default(false) // AFC: Contributions tracked for Anual tax benefit
+  is_uvr_mortgage  Boolean       @default(false) // Balance stored in UVR units
+  uvr_balance      Decimal?      @db.Decimal(20, 6) // Displayed as both UVR and COP
+  transactions     Transaction[]
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
 
   @@index([userId])
   @@map("Account")
