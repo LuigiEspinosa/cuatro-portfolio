@@ -46,6 +46,12 @@ export const money = {
       currency: "USD",
     }).format(Number(money.fromCentavos(centavos))),
 
+  formatUVR: (uvrUnits: Decimal): string =>
+    `${new Intl.NumberFormat("es-CO", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    }).format(uvrUnits.toNumber())} UVR`,
+
   isPositive: (centavos: bigint): boolean => centavos > 0n,
   isZero: (centavos: bigint): boolean => centavos === 0n,
 

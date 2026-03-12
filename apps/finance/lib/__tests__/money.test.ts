@@ -228,3 +228,18 @@ describe("money.min", () => {
     expect(money.min(-5000n, -1000n)).toBe(-5000n);
   });
 });
+
+describe("money.formatUVR", () => {
+  it("formats UVR units with 2 decimal places", () => {
+    expect(money.formatUVR(new Decimal("1842.30"))).toBe("1.842,30 UVR");
+  });
+
+  it("formats zero", () => {
+    expect(money.formatUVR(new Decimal("0"))).toBe("0,00 UVR");
+  });
+
+  it("trims tailing zeros beyond 2 decimal places", () => {
+    // 1842.300000 -> "1.842,30 UVR" (maximumFractionDigits=6 trims trailing zeros)
+    expect(money.formatUVR(new Decimal("1842.300000"))).toBe("1.842,30 UVR");
+  });
+});
