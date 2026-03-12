@@ -29,7 +29,7 @@ A self-hosted personal finance web app for my personal finances.
 | ----------------- | ----------------------------------------------- |
 | Framework         | Next.js 15 (App Router)                         |
 | Language          | TypeScript 5.7                                  |
-| UI                | shadcn/ui + Radix UI + Tailwind v4              |
+| UI                | shadcn/ui + Base UI + Tailwind v4               |
 | Charts            | Recharts                                        |
 | Auth              | Better Auth (TOTP 2FA)                          |
 | Database          | PostgreSQL 16 + Prisma 7                        |

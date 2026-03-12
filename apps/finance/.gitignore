@@ -364,3 +364,6 @@ $RECYCLE.BIN/
 
 # Prisma
 generated/prisma
+
+*storybook.log
+storybook-static
