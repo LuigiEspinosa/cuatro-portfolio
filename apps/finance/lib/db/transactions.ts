@@ -18,7 +18,7 @@ export async function listTransactions(
   });
 }
 
-export async function CreateTransaction(
+export async function createTransaction(
   accountId: string,
   data: CreateTransactionInput,
 ): Promise<Transaction> {

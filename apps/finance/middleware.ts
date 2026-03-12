@@ -17,6 +17,6 @@ export function middleware(request: NextRequest) {
 export const config = {
   // Match everything except auth pages, API routes, static assets, and demo.
   matcher: [
-    "/((?!api/auth|demo|_next/static|_next/image|favicon\\.ico|login|setup-mfa|verify-mfa).*)",
+    "/((?!api/|demo|_next/static|_next/image|favicon\\.ico|login|setup-mfa|verify-mfa).*)",
   ],
 };

@@ -5,7 +5,7 @@ const centavosFromString = z
   .regex(/^-?\d+$/, "Must be an integer string (centavos)")
   .transform((s) => BigInt(s));
 
-export const CreateTransactionScheme = z.object({
+export const CreateTransactionSchema = z.object({
   // Positive = credit (money in), negative = debit (money out).
   amount_centavos: centavosFromString,
   currency: z.enum(["COP", "USD", "EUR", "BTC", "ETH", "USDT", "UVR"]),
@@ -15,4 +15,4 @@ export const CreateTransactionScheme = z.object({
   notes: z.string().max(1000).optional(),
 });
 
-export type CreateTransactionInput = z.output<typeof CreateTransactionScheme>;
+export type CreateTransactionInput = z.output<typeof CreateTransactionSchema>;

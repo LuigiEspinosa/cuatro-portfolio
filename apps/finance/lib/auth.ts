@@ -25,8 +25,8 @@ export const auth = betterAuth({
   ],
   session: {
     cookieCache: {
-      enabled: false,
-      // maxAge: 5 * 60, // 5-minute cache reduces DB hits per request
+      enabled: true,
+      maxAge: 5 * 60, // 5-minute cache reduces DB hits per request
     },
   },
 });
