@@ -4,9 +4,10 @@
   // Colors
   --white-color: #fff;
   --black-color: #000;
-
   --light-gray-color: #b3b0aa;
   --gray-color: #545454;
+  --accent: #cc00ff;
+  --accent-dim: rgba(204, 0, 255, 0.15);
 
   // Spacing
   --page-padding: clamp(1.5rem, 4vw, 3rem);
@@ -25,6 +26,8 @@
   // Monument Extended
   --monument-regular: 'MonumentExtended-Regular';
   --monument-bold: 'MonumentExtended-Bold';
+
+  --font-mono: 'Courier New', monospace;
 }
 
 * {
