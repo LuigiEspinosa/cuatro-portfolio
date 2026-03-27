@@ -1,0 +1,33 @@
+.hud-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+
+  &--left {
+    align-items: flex-start;
+    border-left: 1px solid var(--accent-dim);
+    padding-left: 0.6rem;
+  }
+
+  &--right {
+    align-items: flex-end;
+    border-right: 1px solid var(--accent-dim);
+    padding-right: 0.6rem;
+  }
+
+  &__text {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--light-gray-color);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+  }
+
+  &__sub {
+    font-family: var(--font-regular);
+    font-size: 0.62rem;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+  }
+}
