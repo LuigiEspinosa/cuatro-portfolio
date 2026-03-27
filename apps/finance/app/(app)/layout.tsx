@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { Sidebar } from "@/components/layout/Sidebar";
 
 // Security gate.
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -18,5 +19,18 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect("/setup-mfa");
   }
 
-  return <>{children}</>;
+  const sessionRow = session.session as typeof session.session & {
+    twoFactorVerified?: boolean;
+  };
+
+  if (!sessionRow.twoFactorVerified) {
+    redirect("/verify-mfa");
+  }
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <main className="flex-1 overflow-auto p-6">{children}</main>
+    </div>
+  );
 }
