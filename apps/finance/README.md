@@ -4,6 +4,7 @@ A self-hosted personal finance web app for my personal finances.
 
 - **Live:** [finance.cuatro.dev](https://finance.cuatro.dev)
 - **Demo (public, read-only):** [finance.cuatro.dev/demo](https://finance.cuatro.dev/demo)
+- **Design:** [Figma](https://www.figma.com/design/A6U0zXRsnRkzeCSevTc0mT/Cuatro-Finance?m=auto&t=NJ1NWELZaDxdanzU-1)
 
 ---
 
