@@ -16,7 +16,7 @@ export function Scene({ children, className }: SceneProps) {
   return (
     <Canvas
       className={className}
-      camera={{ position: [0, 0, 5], fov: 45 }}
+      camera={{ position: [0, 0, 4], fov: 45 }}
       gl={{ toneMapping: ACESFilmicToneMapping, antialias: true }}
       dpr={[1, 2]}
       onCreated={({ gl }) => {

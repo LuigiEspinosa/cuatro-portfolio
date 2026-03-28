@@ -48,8 +48,6 @@ const HomeLayout = () => {
       { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: 'power2.out' },
       2.2
     );
-
-    tl.to('.marquee', { opacity: 1, y: 0, duration: 0.5, ease: 'power4.out' }, 2.5);
   }, [useReduceMotion]);
 
   return (
@@ -97,13 +95,6 @@ const HomeLayout = () => {
         <ContactContainer />
         <span className='home-contact-jp' aria-hidden='true'>
           接続
-        </span>
-      </div>
-
-      <div className='marquee'>
-        <span>
-          &nbsp; I&apos;m Luigi Espinosa &nbsp; / &nbsp; Senior Frontend Engineer &nbsp; / &nbsp;
-          Team Lead &nbsp; / &nbsp; Fullstack Developer
         </span>
       </div>
     </div>
