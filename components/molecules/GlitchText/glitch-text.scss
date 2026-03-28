@@ -21,34 +21,50 @@
 
 @keyframes glitch-loop {
   0%,
-  91%,
+  87%,
   100% {
     text-shadow: none;
+    clip-path: none;
+    transform: none;
+  }
+
+  88% {
+    text-shadow:
+      -3px 0 rgba(255, 0, 80, 0.75),
+      3px 0 rgba(0, 255, 255, 0.75);
+    clip-path: inset(20% 0 65% 0);
+    transform: translateX(-2px);
+  }
+
+  89% {
+    text-shadow:
+      3px 0 rgba(255, 0, 80, 0.75),
+      -3px 0 rgba(0, 255, 255, 0.75);
+    clip-path: inset(65% 0 15% 0);
+    transform: translateX(2px);
+  }
+
+  90% {
+    text-shadow: none;
+    clip-path: none;
+    transform: none;
   }
 
   92% {
-    text-shadow:
-      -2px 0 #ff0040,
-      2px 0 #00ffff;
+    text-shadow: -2px 0 rgba(255, 0, 80, 0.5);
+    clip-path: inset(42% 0 42% 0);
   }
 
-  93% {
-    text-shadow:
-      2px 0 #ff0040,
-      -2px 0 #00ffff;
-  }
-
+  93%,
   94% {
     text-shadow: none;
+    clip-path: none;
+    transform: none;
   }
 
-  96% {
+  95% {
     text-shadow:
-      -2px 0 #ff0040,
-      2px 0 #00ffff;
-  }
-
-  97% {
-    text-shadow: none;
+      -1px 0 rgba(255, 0, 80, 0.4),
+      1px 0 rgba(0, 255, 255, 0.4);
   }
 }
