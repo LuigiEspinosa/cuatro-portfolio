@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [3.1.0] - 2026-03-28
+
+### Added
+
+- Background CSS grid on home route - subtle purple grid visible at edges, fades toward Particles Wave.
+- Sibling dimming on hover - hovering a HUD panel dims the other three to 0.2 opacity.
+
+### Chaged
+
+- Removed `atoms/ScanlineOverlay`.
+- Accent color updated from magenta (`#cc00ff`) to dark violet-800 (`#5b21b6`);
+- Particles wave increased over full viewport height.
+- `glitch-loop` keyframe enhanced with `clip-path` slice layers for chromatic aberration effect.
+- `--light-gray-color` updated from warm gray to purple-tinted `#bab4cc`.
+
 ## [3.0.0] - 2026-03-28
 
 ### Added

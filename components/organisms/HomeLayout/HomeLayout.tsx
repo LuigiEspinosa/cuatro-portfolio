@@ -4,7 +4,6 @@ import { gsap } from 'gsap';
 import Link from 'next/link';
 import GemComponent from '@/components/molecules/GemComponent/GemComponent';
 import ContactContainer from '@/components/molecules/ContactContainer/ContactContainer';
-import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import GlitchText from '@/components/molecules/GlitchText/GlitchText';
 import HudLabel from '@/components/atoms/HudLabel/HudLabel';
 import { useGsapContext } from '@/hooks/useGsapContext';
@@ -21,7 +20,6 @@ const HomeLayout = () => {
       '.home-role',
       '.nav-link',
       '.contact-container a',
-      '.marquee',
     ];
 
     if (reduceMotion) {
@@ -52,10 +50,6 @@ const HomeLayout = () => {
 
   return (
     <div className='home-container' ref={containerRef}>
-      {/* <div className='home-overlay'>
-        <ScanlineOverlay />
-      </div> */}
-
       <div className='home-panel home-panel--name'>
         <GlitchText text='Luigi Espinosa' delay={1.0} />
         <p className='home-role'>
@@ -67,12 +61,7 @@ const HomeLayout = () => {
       </div>
 
       <div className='home-panel home-panel--sys'>
-        <HudLabel label='// SYS_ONLINE' align='right' />
-        <span className='home-sys-coords' aria-hidden='true'>
-          35.6762 N
-          <br />
-          139.6503 E
-        </span>
+        <HudLabel label='// SYS_ONLINE ◕' align='right' />
       </div>
 
       <div className='home-gem'>
