@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [3.0.0] - 2026-03-28
+
+### Added
+
+- `atoms/ScanlineOverlay`: CSS VHS effect layers (scan lines, grain, CRT vignette) as reusable presentational atom.
+- `atoms/HudLabel`: Monospace HUD annotation atom with optional Japanese decorative sub text.
+- `molecules/GlitchText`: GSAP SplitText scramble boot animation with looping CSS glitch effect. Respects `prefers-reduced-motion`.
+- Home route background `#0a000f` (near-black with purple tint), scoped to `body[id='']`.
+- CSS custom properties: `--accent`, `--accent-dim`, `--font-mono`.
+
 ## [2.5.0] - 2026-03-09
 
 ### Added
