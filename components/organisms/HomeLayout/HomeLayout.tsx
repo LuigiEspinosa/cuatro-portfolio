@@ -54,14 +54,14 @@ const HomeLayout = () => {
 
   return (
     <div className='home-container' ref={containerRef}>
-      <div className='home-overlay'>
+      {/* <div className='home-overlay'>
         <ScanlineOverlay />
-      </div>
+      </div> */}
 
       <div className='home-panel home-panel--name'>
         <GlitchText text='Luigi Espinosa' delay={1.0} />
         <p className='home-role'>
-          <span>Senior Frontend Engineer / Team Lead</span>
+          <span>Senior Fullstack Engineer / Team Lead</span>
           <span className='home-role__jp' aria-hidden='true'>
             フロントエンドエンジニア
           </span>
