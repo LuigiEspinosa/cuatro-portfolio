@@ -30,10 +30,6 @@ vi.mock('@/components/molecules/GemComponent/GemComponent', () => ({
   default: () => <div data-testid='gem-component' />,
 }));
 
-vi.mock('@/components/atoms/ScanlineOverlay/ScanlineOverlay', () => ({
-  default: () => <div data-testid='scanline-overlay' />,
-}));
-
 vi.mock('@/components/molecules/GlitchText/GlitchText', () => ({
   default: ({ text }: { text: string }) => <div>{text}</div>,
 }));
@@ -59,7 +55,7 @@ describe('HomeLayout', () => {
 
   it('renders the role line', () => {
     render(<HomeLayout />);
-    expect(screen.getByText('Senior Frontend Engineer / Team Lead')).toBeInTheDocument();
+    expect(screen.getByText('Senior Fullstack Engineer / Team Lead')).toBeInTheDocument();
   });
 
   it('renders the work link with correct href', () => {
@@ -77,10 +73,5 @@ describe('HomeLayout', () => {
   it('renders the gem component', () => {
     render(<HomeLayout />);
     expect(screen.getByTestId('gem-component')).toBeInTheDocument();
-  });
-
-  it('renders the scanline overlay', () => {
-    render(<HomeLayout />);
-    expect(screen.getByTestId('scanline-overlay')).toBeInTheDocument();
   });
 });
