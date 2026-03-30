@@ -61,7 +61,7 @@ export function WorkItem({ entry, isOpen, onToggle }: WorkItemProps) {
   }, [isOpen, reducedMotion]);
 
   return (
-    <article className='work-item'>
+    <article className='work-item' data-open={isOpen}>
       <button
         className='work-item__header'
         onClick={onToggle}
