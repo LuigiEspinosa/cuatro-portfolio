@@ -5,7 +5,7 @@ import Link from 'next/link';
 import GemComponent from '@/components/molecules/GemComponent/GemComponent';
 import ContactContainer from '@/components/molecules/ContactContainer/ContactContainer';
 import GlitchText from '@/components/molecules/GlitchText/GlitchText';
-import { HudLabel } from '@/components/atoms/HudLabel/HudLabel';
+import HudLabel from '@/components/atoms/HudLabel/HudLabel';
 import { useGsapContext } from '@/hooks/useGsapContext';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import './HomeLayout.scss';

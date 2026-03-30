@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGsapContext } from '@/hooks/useGsapContext';
-import { HudLabel } from '@/components/atoms/HudLabel/HudLabel';
+import HudLabel from '@/components/atoms/HudLabel/HudLabel';
 import { TorusKnotCanvas } from '@/components/molecules/TorusKnotCanvas/TorusKnotCanvas';
 import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import { projects } from '@/content/projects';

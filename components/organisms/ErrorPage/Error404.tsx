@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { HudLabel } from '@/components/atoms/HudLabel/HudLabel';
+import HudLabel from '@/components/atoms/HudLabel/HudLabel';
 import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import { useGsapContext } from '@/hooks/useGsapContext';
 import { gsap } from 'gsap';

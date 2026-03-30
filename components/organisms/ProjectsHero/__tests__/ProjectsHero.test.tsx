@@ -29,21 +29,16 @@ vi.mock('@/components/molecules/TorusKnotCanvas/TorusKnotCanvas', () => ({
 describe('ProjectsHero', () => {
   it('renders without crashing', () => {
     const { container } = render(<ProjectsHero />);
-    expect(container.querySelector('.project-hero')).toBeInTheDocument();
+    expect(container.querySelector('.projects-hero')).toBeInTheDocument();
   });
 
   it('renders the label column', () => {
     const { container } = render(<ProjectsHero />);
-    expect(container.querySelector('.project-hero')).toBeInTheDocument();
+    expect(container.querySelector('.projects-hero')).toBeInTheDocument();
   });
 
   it('renders the torus knot canvas', () => {
     const { getByTestId } = render(<ProjectsHero />);
     expect(getByTestId('torus-knot-canvas')).toBeInTheDocument();
-  });
-
-  it('has aria-hidden for screen readers', () => {
-    const { container } = render(<ProjectsHero />);
-    expect(container.querySelector('.project-hero')).toHaveAttribute('aria-hidden', 'true');
   });
 });

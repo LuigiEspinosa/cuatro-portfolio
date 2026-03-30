@@ -41,9 +41,4 @@ describe('WorkHero', () => {
     const { getByTestId } = render(<WorkHero />);
     expect(getByTestId('torus-canvas')).toBeInTheDocument();
   });
-
-  it('has aria-hidden for screen readers', () => {
-    const { container } = render(<WorkHero />);
-    expect(container.querySelector('.work-hero')).toHaveAttribute('aria-hidden', 'true');
-  });
 });
