@@ -49,3 +49,12 @@ body {
     overflow: hidden;
   }
 }
+
+body#work,
+body#projects {
+  background-color: #0a000f;
+  background-image:
+    linear-gradient(rgba(140, 90, 210, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 90, 210, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+}

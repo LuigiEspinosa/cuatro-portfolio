@@ -1,5 +1,29 @@
 # CHANGELOG
 
+## [3.2.0] - 2026-03-28
+
+### Added
+
+- `atoms/ParticleWave`: 60x60 interactive particle mesh built on Three.js BufferGeometry. Particle as line segments share a single position buffer updated each frame via spring physics.
+- Mouse hover repulsion: particles lift toward the camera within a configurable radius, with quadratic falloff and sprinf return.
+- Click-drag rotation wuth intertia: window-level pointer listeners allow free rotation post canvas edges; releases coast to a stop via velocity damping.
+- Parabolic fold baked into base positions: centre of the grid is closest to the camera, edges curl away for a draped-cloth silhouette.
+- Fullscreen canvas: `.home-gem` uses `position: absolite; inset: 0;` so the wave fills the viewport wihout clipping during rotation.
+- Camera pulled back from z=5 to z=2 to preserve apparent figure size at 100vw x 100dvh.
+- Mobile canvas at `90vw x 90vw` (static, in flex flow).
+
+### Changed
+
+- `GemComponent`: replaced VenomSculpture, spot lights, Sparkles, and OrbitControls with ParticleWave and simplified Bloom (`luminanceThreshold: 0.2, intensity: 0.55`).
+- Home panel text sizes increased: nav and contact links at `clamp(1.5rem, 2.5vw, 2.5rem)`, role at `clamp(1rem, 1.5vw, 1.2rem)`.
+- HudLabel `__text` from `0.68rem` to `0.9rem`, `__sub` from `0.62rem` to `0.8rem`.
+
+### Removed
+
+- Marquee strip (visual conflict with the wave aesthetic).
+- HudConnectors (visual conflict with the wave aesthetic).
+- `atoms/VenomSculpture` (superseded by ParticleWave).
+
 ## [3.1.0] - 2026-03-28
 
 ### Added
@@ -9,11 +33,14 @@
 
 ### Chaged
 
-- Removed `atoms/ScanlineOverlay`.
 - Accent color updated from magenta (`#cc00ff`) to dark violet-800 (`#5b21b6`);
 - Particles wave increased over full viewport height.
 - `glitch-loop` keyframe enhanced with `clip-path` slice layers for chromatic aberration effect.
 - `--light-gray-color` updated from warm gray to purple-tinted `#bab4cc`.
+
+### Removed
+
+- `atoms/ScanlineOverlay` (visual conflict with the wave aesthetic).
 
 ## [3.0.0] - 2026-03-28
 

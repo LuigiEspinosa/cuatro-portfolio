@@ -18,6 +18,18 @@
     );
   }
 
+  &__light {
+    background: none;
+
+    &::before {
+      opacity: 0.35;
+    }
+
+    .scanline-overlay__grain {
+      opacity: 0.2;
+    }
+  }
+
   &__grain {
     position: absolute;
     inset: 0;
