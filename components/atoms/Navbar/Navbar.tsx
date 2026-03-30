@@ -5,6 +5,7 @@ export const Navbar = () => (
   <nav className='navbar'>
     <Link href='/work'>Work</Link>
     <Link href='/projects'>Projects</Link>
+    <Link href='/blog'>Blog</Link>
     <Link href='https://www.github.com/luigiespinosa' target='_blank'>
       Github
     </Link>
