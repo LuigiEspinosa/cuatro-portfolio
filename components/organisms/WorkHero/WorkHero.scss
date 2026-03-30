@@ -1,43 +1,50 @@
 .work-hero {
-  display: flex;
-  width: 100%;
-  height: var(--hero-height);
-  background: var(--black-color);
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  min-height: 42vh;
+  padding: 5rem var(--page-padding) 3rem;
+  border-bottom: 1px solid var(--accent-dim);
   overflow: hidden;
 
-  &__label {
-    flex: 2;
+  &__text {
     display: flex;
-    align-items: center;
-    justify-content: center;
-
-    h1 {
-      font-family: vaR(--monument-bold);
-      font-size: clamp(0.8rem, 1vw, 1rem);
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--white-color);
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      white-space: nowrap;
-      letter-spacing: 0.2rem;
-      margin-left: 4rem;
-
-      @media (max-width: 768px) {
-        display: none;
-      }
-    }
+    flex-direction: column;
+    gap: 1.25rem;
+    z-index: 2;
   }
 
-  &__canvas {
-    flex: 3;
+  &__heading {
+    font-family: var(--monument-bold);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    line-height: 1.1;
+    margin: 0;
+    color: var(--light-gray-color);
+  }
 
-    // The R3F canvas must fill the hero container completely
-    // next/dynamic renders a wrapper div.
-    &,
-    canvas {
-      width: 100% !important;
-      height: 100% !important;
+  &__meta {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin: 0;
+  }
+
+  &__canvas-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 420px;
+    z-index: 2;
+  }
+
+  @media (max-width: 767px) {
+    grid-template-columns: 1fr;
+    min-height: auto;
+
+    &__canvas-wrap {
+      height: 240px;
     }
   }
 }
