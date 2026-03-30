@@ -8,15 +8,16 @@ import { ACESFilmicToneMapping } from 'three';
 interface SceneProps {
   children: ReactNode;
   className?: string;
+  cameraZ?: number;
 }
 
 // A second canvas needing orthographic camera requries either a prop
 // override or a second Scene variant.
-export function Scene({ children, className }: SceneProps) {
+export function Scene({ children, className, cameraZ = 4 }: SceneProps) {
   return (
     <Canvas
       className={className}
-      camera={{ position: [0, 0, 4], fov: 45 }}
+      camera={{ position: [0, 0, cameraZ], fov: 45 }}
       gl={{ toneMapping: ACESFilmicToneMapping, antialias: true }}
       dpr={[1, 2]}
       onCreated={({ gl }) => {

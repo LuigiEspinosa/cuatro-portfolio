@@ -6,7 +6,7 @@ interface HubLabelProps {
   align?: 'left' | 'right';
 }
 
-const HudLabel = ({ label, sub, align = 'left' }: HubLabelProps) => (
+export const HudLabel = ({ label, sub, align = 'left' }: HubLabelProps) => (
   <div className={`hud-label hud-label--${align}`}>
     <span className='hud-label__text'>{label}</span>
     {sub && (
@@ -16,5 +16,3 @@ const HudLabel = ({ label, sub, align = 'left' }: HubLabelProps) => (
     )}
   </div>
 );
-
-export default HudLabel;

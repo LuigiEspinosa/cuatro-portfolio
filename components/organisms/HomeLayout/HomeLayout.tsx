@@ -5,7 +5,7 @@ import Link from 'next/link';
 import GemComponent from '@/components/molecules/GemComponent/GemComponent';
 import ContactContainer from '@/components/molecules/ContactContainer/ContactContainer';
 import GlitchText from '@/components/molecules/GlitchText/GlitchText';
-import HudLabel from '@/components/atoms/HudLabel/HudLabel';
+import { HudLabel } from '@/components/atoms/HudLabel/HudLabel';
 import { useGsapContext } from '@/hooks/useGsapContext';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import './HomeLayout.scss';
@@ -14,13 +14,7 @@ const HomeLayout = () => {
   const reduceMotion = useReduceMotion();
 
   const containerRef = useGsapContext<HTMLDivElement>(() => {
-    const finalState = [
-      '.home-overlay',
-      '.home-panel--sys',
-      '.home-role',
-      '.nav-link',
-      '.contact-container a',
-    ];
+    const finalState = ['.home-panel--sys', '.home-role', '.nav-link', '.contact-container a'];
 
     if (reduceMotion) {
       gsap.set(finalState, { opacity: 1, y: 0 });
@@ -29,8 +23,6 @@ const HomeLayout = () => {
     }
 
     const tl = gsap.timeline();
-
-    tl.to('.home-overlay', { opacity: 1, duration: 0.3 }, 0);
 
     tl.to('.home-gem', { filter: 'brightness(1.4)', duration: 0.4, ease: 'power2.out' }, 0.5);
     tl.to('.home-gem', { filter: 'brightness(1)', duration: 0.4, ease: 'power2.in' }, 0.9);
