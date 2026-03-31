@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { AccountBadge } from "@/components/atoms/AccountBadge/AccountBadge";
 import { CurrencyDisplay } from "@/components/atoms/CurrencyDisplay/CurrencyDisplay";
@@ -5,7 +8,6 @@ import { money } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { BankAccount } from "@/generated/prisma/client";
 import Decimal from "decimal.js";
-import { useState } from "react";
 
 interface AccountCardProps {
   account: BankAccount;
