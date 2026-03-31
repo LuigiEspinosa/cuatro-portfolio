@@ -5,10 +5,10 @@ import { money } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { BankAccount } from "@/generated/prisma/client";
 import Decimal from "decimal.js";
+import { useState } from "react";
 
 interface AccountCardProps {
   account: BankAccount;
-  now: number;
   onClick?: () => void;
   href?: string;
 }
@@ -47,7 +47,9 @@ const rtf = new Intl.RelativeTimeFormat("es-CO", { numeric: "auto" });
 const CARD_CLASS =
   "flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-accent/50 w-full";
 
-export function AccountCard({ account, now, onClick, href }: AccountCardProps) {
+export function AccountCard({ account, onClick, href }: AccountCardProps) {
+  const [now] = useState(() => Date.now());
+
   const isDebt =
     account.type === "CREDIT_CARD" ||
     account.type === "LOAN" ||

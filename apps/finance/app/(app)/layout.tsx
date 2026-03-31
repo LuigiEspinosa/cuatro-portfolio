@@ -19,14 +19,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect("/setup-mfa");
   }
 
-  const sessionRow = session.session as typeof session.session & {
-    twoFactorVerified?: boolean;
-  };
-
-  if (!sessionRow.twoFactorVerified) {
-    redirect("/verify-mfa");
-  }
-
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
