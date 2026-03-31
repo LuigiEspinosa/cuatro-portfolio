@@ -41,7 +41,6 @@ export const CreditCard: Story = {
       balance_centavos: -85000000n,
       sync_method: "CSV_IMPORT",
     },
-    now: Date.now(),
   },
 };
 
@@ -58,7 +57,6 @@ export const UVRMortgage: Story = {
       sync_method: "BELVO",
       last_synced_at: new Date(Date.now() - 2 * 60 * 60 * 1000),
     },
-    now: Date.now(),
   },
 };
 
@@ -72,6 +70,5 @@ export const AFC: Story = {
       balance_centavos: 12000000n,
       is_afc: true,
     },
-    now: Date.now(),
   },
 };

@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## [0.3.0] - 2026-3-31
+
+### Added
+
+- `lib/money.ts` - `formatUVR(Decimal): string` for UVR mortgage balance display.
+- `lib/validators/accounts.ts` and `lib/validators/transactions.ts` - Zod v4 schemas with BigInt-from-string transforms.
+- `lib/api-auth.ts` - shared `requireAuth()` helper; checks session and `twoFactorVerified`.
+- `lib/db/accounts.ts` - BankAccount repository (list, find, create, update, delete).
+- `lib/db/transactions.ts` - Transaction repository (list paginated, create manual).
+- `lib/utils/group-by-date.ts` - Pure utility to group transactions by calendar day (es-CO labels).
+- RES API : `GET/POST /api/accounts`, `GET/PATCH/DELETE /api/accounts/:id`, `GET/POST /api/accounts/:id/transactions`.
+- `components/atoms/CurrencyDisplay` - formats BigInt centavos to COP/USD strings; the only place money formatting ocurrs in JSX.
+- `components/atoms/AccountBadge` - type badge pill with color coding per account type.
+- `components/molecules/AccountCard` - 2-column detail grid card with sync status, UVR dual balance, AFC chip.
+- `components/molecules/TransactionRow` - transaction row for grouped date list.
+- Storybook (`@storybook/nextjs`) with dark decorator and Tailwind v4 CSS import.
+- `app/(app)/layout.tsx` - labeled sidebar shell; added missing `twoFactorVerified` MFA guard.
+- `app/(app)/accounts/page.tsx` - account grid with AddAccountModal.
+- `app/(app)/accounts/[id]/page.tsx` - account detail with grouped transaction list, AddTransactionModa, and EditAccountModal (with name-typed delete confirmation).
+- `app/(app)/dashboard/page.tsx` - net worth total and 4-account preview grid.
+
+### Fixed
+
+- `app/(app)/layout.tsx` - `twoFactorVerified` cehck was missing; users who completed login but skipped TOTP verify could access protected routes.
+
 ## [0.2.0] - 2026-3-11
 
 - `lib/crypto` - AES-256-GCM authenticated encryption with typed `CryptoError`; 100% test coverage.

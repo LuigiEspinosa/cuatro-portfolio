@@ -169,3 +169,23 @@ sequenceDiagram
     A-->>L: session (twoFactorVerified: true)
     L-->>B: render dashboard
 ```
+
+## Account + Transaction Flow
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant R as Route Handler
+    participant A as api-auth.ts
+    participant DB as Repository (lib/db/)
+
+    B->>R: POST /api/accounts/[id]/transactions
+    R->>A: requireAuth(request)
+    A-->>R: { user }
+    R->>DB: findAccount(id, user.id)
+    DB-->>R: account (ownership verified)
+    R->>DB: createTransaction(id, data)
+    DB-->>R: transaction
+    R->>DB: updateAccount(id, user.id, { balance_centavos })
+    R-->>B: 201 { transaction }
+```
