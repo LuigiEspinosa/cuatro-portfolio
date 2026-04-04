@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Header />
           {children}
 
-          {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+          {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && process.env.NEXT_PUBLIC_UMAMI_URL && (
             <Script
               src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
               data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
