@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGsapContext } from '@/hooks/useGsapContext';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import HudLabel from '@/components/atoms/HudLabel/HudLabel';
 import { TorusCanvas } from '@/components/molecules/TorusCanvas/TorusCanvas';
 import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
@@ -19,21 +20,24 @@ export function WorkHero() {
   // scrollRef is the bridge: GSAP writes, R3F useFrame reads.
   // It is a plain object so mutations do not trigger re-renders.
   const scrollRef = useRef<{ value: number }>({ value: 0 });
+  const reduceMotion = useReduceMotion();
 
   const heroRef = useGsapContext<HTMLDivElement>(() => {
-    gsap.from('.work-hero__heading', {
-      x: -40,
-      opacity: 0,
-      duration: 0.7,
-      ease: 'power3.out',
-      delay: 0.1,
-    });
-    gsap.from('.work-hero__meta', {
-      opacity: 0,
-      duration: 0.5,
-      ease: 'power2.out',
-      delay: 0.4,
-    });
+    if (!reduceMotion) {
+      gsap.from('.work-hero__heading', {
+        x: -40,
+        opacity: 0,
+        duration: 0.7,
+        ease: 'power3.out',
+        delay: 0.1,
+      });
+      gsap.from('.work-hero__meta', {
+        opacity: 0,
+        duration: 0.5,
+        ease: 'power2.out',
+        delay: 0.4,
+      });
+    }
 
     gsap.to(scrollRef.current, {
       value: 1,
@@ -45,7 +49,7 @@ export function WorkHero() {
         scrub: 1.5,
       },
     });
-  }, []);
+  }, [reduceMotion]);
 
   return (
     <section className='work-hero' ref={heroRef}>

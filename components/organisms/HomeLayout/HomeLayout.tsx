@@ -38,7 +38,7 @@ const HomeLayout = () => {
       { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: 'power2.out' },
       2.2
     );
-  }, [useReduceMotion]);
+  }, [reduceMotion]);
 
   return (
     <div className='home-container' ref={containerRef}>
