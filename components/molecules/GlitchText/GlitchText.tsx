@@ -34,30 +34,36 @@ const GlitchText = ({ text, tag: Tag = 'h1', delay = 0 }: GlitchTextProps) => {
 
     gsap.set(inner, { opacity: 0 });
 
-    const split = new SplitText(inner, { type: 'chars ' });
-    const chars = split.chars;
-    const originals = chars.map((c) => c.textContent ?? '');
+    // Wait for fonts to finish loading before SplitText
+    // measures character widths.
+    document.fonts.ready.then(() => {
+      if (!inner.isConnected) return;
 
-    gsap.to(inner, { opacity: 1, duration: 0, delay });
+      const split = new SplitText(inner, { type: 'chars' });
+      const chars = split.chars;
+      const originals = chars.map((c) => c.textContent ?? '');
 
-    chars.forEach((char, i) => {
-      const obj = { progress: 0 };
-      gsap.to(obj, {
-        progress: 1,
-        duration: 0.3,
-        delay: delay + i * 0.04,
-        ease: 'none',
-        onUpdate() {
-          if (obj.progress < 0.05) {
-            char.textContent = GLYPH_POOL[Math.floor(Math.random() * GLYPH_POOL.length)];
-          }
-        },
-        onComplete() {
-          char.textContent = originals[i];
-          if (i === chars.length - 1) {
-            wrapperRef.current?.classList.add('glitch');
-          }
-        },
+      gsap.to(inner, { opacity: 1, duration: 0, delay });
+
+      chars.forEach((char, i) => {
+        const obj = { progress: 0 };
+        gsap.to(obj, {
+          progress: 1,
+          duration: 0.3,
+          delay: delay + i * 0.04,
+          ease: 'none',
+          onUpdate() {
+            if (obj.progress < 0.05) {
+              char.textContent = GLYPH_POOL[Math.floor(Math.random() * GLYPH_POOL.length)];
+            }
+          },
+          onComplete() {
+            char.textContent = originals[i];
+            if (i === chars.length - 1) {
+              wrapperRef.current?.classList.add('glitch');
+            }
+          },
+        });
       });
     });
   }, [reduceMotion, delay]);
