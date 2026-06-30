@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InclusivCup — Ceremonia de la ruleta de premios (spec de estados)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --page: #0F1419;
+    --s1: #171E26;
+    --s2: #1E2832;
+    --hair: #232C36;
+    --tp: #F4F6F8;
+    --ts: #B7C2CE;
+    --tm: #8A97A6;
+    --blue: #2F81F7;
+    --gold: #FFB23E;
+    --win: #3FB950;
+    --loss: #F0556A;
+    --display: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--page); }
+  body {
+    font-family: var(--body);
+    color: var(--tp);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    padding: 28px 16px 64px;
+    line-height: 1.45;
+  }
+  .num { font-family: var(--display); font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; }
+
+  /* ---- doc header ---- */
+  .doc { max-width: 1180px; margin: 0 auto; }
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: 0.04em;
+    color: var(--tp);
+  }
+  h1 .brand { letter-spacing: 0.12em; }
+  .doc-cap {
+    margin-top: 8px;
+    color: var(--tm);
+    font-size: 12.5px;
+    max-width: 760px;
+    line-height: 1.6;
+  }
+  .doc-cap code {
+    font-family: var(--display);
+    color: var(--ts);
+    background: var(--s1);
+    border: 0.5px solid var(--hair);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 11.5px;
+  }
+  .rule { height: 0.5px; background: var(--hair); border: 0; margin: 22px 0 26px; }
+
+  /* ---- gallery ---- */
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px 34px;
+    align-items: flex-start;
+  }
+  .cell { width: 390px; }
+  .cap {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-left: 2px;
+  }
+  .cap .tag {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--blue);
+  }
+  .cap .tag.gold { color: var(--gold); }
+  .cap .lbl { font-size: 12px; color: var(--ts); }
+
+  /* ---- phone frame ---- */
+  .phone {
+    width: 390px;
+    border-radius: 38px;
+    background: #0a0d11;
+    border: 1px solid #2a333d;
+    padding: 9px;
+    box-shadow: 0 0 0 1px #05080b;
+  }
+  .screen {
+    position: relative;
+    border-radius: 30px;
+    background: var(--page);
+    overflow: hidden;
+    border: 0.5px solid var(--hair);
+  }
+  .notch {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 128px; height: 24px;
+    background: #0a0d11;
+    border-radius: 0 0 14px 14px;
+    z-index: 6;
+  }
+  .statusbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 22px 6px;
+    font-size: 11px; color: var(--ts);
+  }
+  .statusbar .num { font-size: 12px; color: var(--tp); }
+  .statusbar .icons { display: flex; gap: 6px; align-items: center; color: var(--ts); letter-spacing: 1px; }
+
+  /* app top bar */
+  .appbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px 12px;
+    border-bottom: 0.5px solid var(--hair);
+  }
+  .wordmark {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    color: var(--tp);
+  }
+  .wordmark .cup { color: var(--blue); }
+  .live-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--display); font-weight: 700;
+    font-size: 10px; letter-spacing: 0.10em;
+    color: var(--blue);
+    background: rgba(47,129,247,0.12);
+    border: 0.5px solid rgba(47,129,247,0.5);
+    padding: 3px 8px; border-radius: 999px;
+    text-transform: uppercase;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+
+  .body { padding: 16px 16px 18px; }
+
+  /* progress / award counter */
+  .counter-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .counter {
+    font-family: var(--display); font-weight: 700;
+    font-size: 12px; letter-spacing: 0.04em; color: var(--ts);
+  }
+  .counter b { color: var(--tp); }
+  .counter-sub { font-size: 11px; color: var(--tm); }
+  .progress {
+    height: 4px; border-radius: 999px; background: var(--s2);
+    overflow: hidden; margin: 8px 0 18px; border: 0.5px solid var(--hair);
+  }
+  .progress > i { display: block; height: 100%; background: var(--blue); border-radius: 999px; }
+
+  /* ---- roulette / 360 ring ---- */
+  .stage {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 6px 0 4px;
+  }
+  .wheel-wrap { position: relative; width: 248px; height: 248px; }
+  .pointer {
+    position: absolute; top: -3px; left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 18px solid var(--gold);
+    z-index: 5;
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,0.5));
+  }
+  .wheel {
+    width: 248px; height: 248px; border-radius: 50%;
+    position: relative;
+    border: 1px solid var(--hair);
+  }
+  .ring-gold {
+    position: absolute; inset: 6px; border-radius: 50%;
+    border: 2px solid var(--gold);
+    opacity: 0.85;
+  }
+  .ring-blue {
+    position: absolute; inset: 18px; border-radius: 50%;
+    border: 0.5px solid rgba(47,129,247,0.45);
+  }
+  .ticks { position: absolute; inset: 0; }
+  .tick {
+    position: absolute; top: 6px; left: 50%;
+    width: 0.5px; height: 12px; background: var(--hair);
+    transform-origin: 50% 118px;
+  }
+  .hub {
+    position: absolute; inset: 0; margin: auto;
+    width: 168px; height: 168px; border-radius: 50%;
+    background: var(--s1);
+    border: 0.5px solid var(--hair);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 0 18px;
+  }
+  .hub .eyebrow {
+    font-family: var(--display); font-weight: 700;
+    font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--tm);
+  }
+  .hub .glyph360 {
+    font-family: var(--display); font-weight: 800;
+    font-size: 34px; color: var(--ts); letter-spacing: 0.02em;
+    line-height: 1; margin: 4px 0 2px;
+  }
+  .hub .glyph360 b { color: var(--gold); }
+  .hub .sub { font-size: 10.5px; color: var(--tm); }
+
+  /* locked / blurred hub */
+  .hub.locked .lockface {
+    filter: blur(7px);
+    opacity: 0.55;
+    user-select: none;
+  }
+  .hub.locked { gap: 0; }
+  .lock-overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    text-align: center;
+  }
+  .lock-icon {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 0.5px solid var(--hair); background: var(--s2);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--tm); font-size: 15px;
+  }
+  .lock-overlay .lk-label {
+    font-size: 10.5px; color: var(--ts);
+    font-family: var(--display); font-weight: 600; letter-spacing: 0.04em;
+  }
+
+  /* spin-state hub face */
+  .spinning-segments {
+    position: absolute; inset: 6px; border-radius: 50%;
+    background:
+      conic-gradient(
+        from 0deg,
+        rgba(47,129,247,0.18) 0deg 60deg,
+        rgba(255,178,62,0.10) 60deg 120deg,
+        rgba(47,129,247,0.10) 120deg 180deg,
+        rgba(240,85,106,0.10) 180deg 240deg,
+        rgba(47,129,247,0.18) 240deg 300deg,
+        rgba(255,178,62,0.10) 300deg 360deg
+      );
+    -webkit-mask: radial-gradient(circle, transparent 52%, #000 53%);
+    mask: radial-gradient(circle, transparent 52%, #000 53%);
+  }
+
+  /* category label revealed */
+  .cat-card {
+    margin-top: 16px;
+    width: 100%;
+    background: var(--s1);
+    border: 0.5px solid var(--hair);
+    border-radius: 12px;
+    padding: 13px 15px;
+    text-align: center;
+  }
+  .cat-card .bucket {
+    display: inline-block;
+    font-family: var(--display); font-weight: 700;
+    font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--tm);
+    border: 0.5px solid var(--hair); border-radius: 999px;
+    padding: 3px 10px; margin-bottom: 9px;
+  }
+  .cat-card .cat-name {
+    font-family: var(--display); font-weight: 800;
+    font-size: 21px; letter-spacing: 0.01em; color: var(--tp);
+    line-height: 1.05;
+  }
+  .cat-card .cat-stat { margin-top: 4px; font-size: 12px; color: var(--ts); }
+  .cat-card.gold { border-color: rgba(255,178,62,0.45); }
+  .cat-card.gold .cat-name { color: var(--gold); }
+
+  .stage-flag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--display); font-weight: 700;
+    font-size: 10.5px; letter-spacing: 0.06em;
+    color: var(--blue);
+    margin-bottom: 10px;
+  }
+  .stage-flag .n { color: var(--tm); }
+  .stage-flag.gold { color: var(--gold); }
+
+  .spin-hint {
+    margin-top: 12px; font-size: 11.5px; color: var(--tm);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .spin-bar { width: 120px; height: 3px; border-radius: 999px; background: var(--s2); overflow: hidden; }
+  .spin-bar > i { display: block; height: 100%; width: 64%; background: var(--blue); border-radius: 999px; }
+
+  /* ---- winner card ---- */
+  .winner-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 14px;
+  }
+  .avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--s2); border: 1px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-weight: 800; font-size: 17px;
+    color: var(--gold); flex: none;
+  }
+  .winner-head .who .label {
+    font-size: 10.5px; letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--tm); font-family: var(--display); font-weight: 700;
+  }
+  .winner-head .who .name {
+    font-family: var(--display); font-weight: 800; font-size: 22px;
+    color: var(--tp); letter-spacing: 0.01em; line-height: 1.05;
+  }
+  .winner-head .who .name .seed { font-size: 12px; color: var(--tm); font-weight: 600; }
+  .trophy {
+    margin-left: auto; flex: none;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold);
+  }
+  .trophy svg { width: 34px; height: 34px; }
+
+  .award-strip {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--s1); border: 0.5px solid var(--hair);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+  }
+  .award-strip .a-name {
+    font-family: var(--display); font-weight: 800; font-size: 15px;
+    color: var(--gold); letter-spacing: 0.01em;
+  }
+  .award-strip .a-stat { font-size: 11.5px; color: var(--ts); margin-top: 2px; }
+  .stat-big {
+    text-align: right; flex: none; padding-left: 12px;
+  }
+  .stat-big .v { font-family: var(--display); font-weight: 800; font-size: 28px; color: var(--tp); }
+  .stat-big .u { font-size: 10px; color: var(--tm); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* prize chip + shirt glyph */
+  .prize-chip {
+    display: flex; align-items: center; gap: 11px;
+    background: var(--s2); border: 0.5px solid rgba(255,178,62,0.4);
+    border-radius: 12px; padding: 11px 13px; margin-bottom: 12px;
+  }
+  .shirt {
+    width: 34px; height: 34px; flex: none; color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .shirt svg { width: 30px; height: 30px; }
+  .prize-chip .p-t {
+    font-family: var(--display); font-weight: 700; font-size: 12.5px; color: var(--tp);
+  }
+  .prize-chip .p-s { font-size: 11px; color: var(--ts); margin-top: 2px; }
+  .prize-chip .p-tag {
+    margin-left: auto; flex: none;
+    font-family: var(--display); font-weight: 700; font-size: 9.5px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--gold); border: 0.5px solid rgba(255,178,62,0.4);
+    border-radius: 999px; padding: 3px 9px;
+  }
+
+  .rule-note {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; color: var(--tm); margin-bottom: 14px;
+  }
+  .rule-note .pin {
+    font-family: var(--display); font-weight: 700; font-size: 9.5px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ts);
+    border: 0.5px solid var(--hair); border-radius: 4px; padding: 2px 7px;
+  }
+
+  /* trophy shelf */
+  .shelf-h {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .shelf-h .t {
+    font-family: var(--display); font-weight: 700; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ts);
+  }
+  .shelf-h .c { font-family: var(--display); font-size: 11px; color: var(--tm); }
+  .shelf-h .c b { color: var(--gold); }
+  .shelf {
+    display: flex; gap: 7px;
+  }
+  .slot {
+    flex: 1; height: 42px; border-radius: 8px;
+    background: var(--s1); border: 0.5px solid var(--hair);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--hair);
+  }
+  .slot.filled {
+    border-color: rgba(255,178,62,0.45);
+    background: rgba(255,178,62,0.06);
+    color: var(--gold);
+  }
+  .slot.new {
+    border-color: var(--gold);
+    background: rgba(255,178,62,0.12);
+    color: var(--gold);
+  }
+  .slot svg { width: 20px; height: 20px; }
+
+  /* ---- verify strip ---- */
+  .verify {
+    margin-top: 14px;
+    background: var(--s1);
+    border: 0.5px solid var(--hair);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .verify .vrow {
+    display: flex; align-items: center; gap: 9px;
+  }
+  .verify .vshield {
+    width: 24px; height: 24px; flex: none; color: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .verify .vshield svg { width: 20px; height: 20px; }
+  .verify .vmain .vt {
+    font-size: 11.5px; color: var(--ts); font-weight: 500;
+  }
+  .verify .vmain .vh {
+    font-family: var(--display); font-size: 11px; color: var(--tm);
+    letter-spacing: 0.02em; margin-top: 2px;
+  }
+  .verify .vmain .vh b { color: var(--ts); }
+  .verify .vbtn {
+    margin-left: auto; flex: none;
+    font-family: var(--display); font-weight: 700; font-size: 10.5px;
+    letter-spacing: 0.04em; color: var(--blue);
+    background: rgba(47,129,247,0.10);
+    border: 0.5px solid rgba(47,129,247,0.45);
+    border-radius: 8px; padding: 7px 11px;
+    cursor: pointer; white-space: nowrap;
+  }
+
+  /* seed strip (compact, pre-spin) */
+  .seed-strip {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 16px; padding: 10px 13px;
+    background: var(--s1); border: 0.5px solid var(--hair);
+    border-radius: 10px;
+  }
+  .seed-strip .sh {
+    width: 16px; height: 16px; color: var(--blue); flex: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .seed-strip .sh svg { width: 15px; height: 15px; }
+  .seed-strip .stxt { font-size: 10.5px; color: var(--tm); line-height: 1.4; }
+  .seed-strip .stxt b { color: var(--ts); }
+  .seed-strip .stxt .hash { font-family: var(--display); color: var(--blue); }
+
+  /* pity teaser */
+  .pity {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 12px; padding: 12px 14px;
+    background: var(--s2); border: 0.5px solid var(--hair);
+    border-radius: 12px;
+  }
+  .pity .pi {
+    width: 26px; height: 26px; flex: none; color: var(--ts);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pity .pi svg { width: 21px; height: 21px; }
+  .pity .ptxt .pt { font-family: var(--display); font-weight: 700; font-size: 12.5px; color: var(--tp); }
+  .pity .ptxt .ps { font-size: 11px; color: var(--ts); margin-top: 2px; }
+  .pity .pnext {
+    margin-left: auto; flex: none; color: var(--blue);
+    font-family: var(--display); font-weight: 700; font-size: 11px;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ---- shared-screen / stream banner ---- */
+  .stream-cell { width: 100%; max-width: 1180px; }
+  .stream {
+    width: 100%;
+    background: var(--s1);
+    border: 0.5px solid var(--hair);
+    border-radius: 16px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 320px 1fr 300px;
+  }
+  .stream-l {
+    background: var(--page);
+    border-right: 0.5px solid var(--hair);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 26px 20px;
+    position: relative;
+  }
+  .stream-wheel { position: relative; width: 168px; height: 168px; }
+  .stream-wheel .pointer { border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 15px solid var(--gold); }
+  .stream-wheel .wheel { width: 168px; height: 168px; }
+  .stream-wheel .ring-gold { inset: 5px; }
+  .stream-wheel .ring-blue { inset: 14px; }
+  .stream-wheel .hub { width: 108px; height: 108px; padding: 0 10px; }
+  .stream-wheel .hub .glyph360 { font-size: 26px; }
+  .stream-wheel .spinning-segments { inset: 5px; }
+  .stream-l .live-pill { margin-top: 16px; }
+
+  .stream-c {
+    padding: 26px 30px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .stream-c .eyebrow {
+    font-family: var(--display); font-weight: 700; font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold);
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .stream-c .award {
+    font-family: var(--display); font-weight: 800; font-size: 17px;
+    color: var(--ts); letter-spacing: 0.02em;
+  }
+  .stream-c .winner {
+    font-family: var(--display); font-weight: 800; font-size: 44px;
+    color: var(--gold); letter-spacing: 0.01em; line-height: 1; margin: 6px 0 10px;
+  }
+  .stream-c .winner .seed { font-size: 18px; color: var(--tm); }
+  .stream-c .line {
+    display: flex; gap: 22px; flex-wrap: wrap;
+  }
+  .stream-c .line .it { display: flex; flex-direction: column; }
+  .stream-c .line .it .v { font-family: var(--display); font-weight: 800; font-size: 24px; color: var(--tp); }
+  .stream-c .line .it .k { font-size: 10.5px; color: var(--tm); letter-spacing: 0.05em; text-transform: uppercase; }
+  .stream-c .line .it.win .v { color: var(--win); }
+  .stream-tagline {
+    margin-top: 16px;
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    font-size: 13px; color: var(--ts); letter-spacing: 0.01em;
+  }
+
+  .stream-r {
+    background: var(--page);
+    border-left: 0.5px solid var(--hair);
+    padding: 22px 22px;
+    display: flex; flex-direction: column; gap: 14px; justify-content: center;
+  }
+  .stream-r .prize-chip { margin: 0; }
+  .stream-r .verify { margin: 0; }
+  .stream-brand-bar {
+    grid-column: 1 / -1;
+    border-top: 0.5px solid var(--hair);
+    padding: 9px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--page);
+  }
+  .stream-brand-bar .wm {
+    font-family: var(--display); font-weight: 800; font-size: 12px;
+    letter-spacing: 0.16em; color: var(--tp);
+  }
+  .stream-brand-bar .wm .cup { color: var(--blue); }
+  .stream-brand-bar .meta { font-size: 11px; color: var(--tm); }
+  .stream-brand-bar .meta b { color: var(--gold); }
+
+  .footer-note { margin-top: 30px; font-size: 11.5px; color: var(--tm); max-width: 760px; line-height: 1.6; }
+  .footer-note b { color: var(--ts); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <h1><span class="brand">INCLUSIVCUP</span> — Ceremonia de la ruleta de premios</h1>
+  <p class="doc-cap">
+    Spec de estados de pantallas clave · mobile-first · cubre <code>FR-24</code> <code>FR-25</code> <code>FR-26</code> <code>FR-27</code> <code>FR-28</code> <code>FR-29</code> <code>FR-30</code> y <code>UJ-4</code>.
+    El ritmo es un premio por giro. Fase 1 = la suerte elige la categoría en vivo; Fase 2 = las estadísticas eligen al ganador. El dorado se reserva para los reveals, los ganadores y el anillo INCLUSIV360. Marco de teléfono ~390px; la última variante es la pantalla compartida / banner de transmisión que exige el FR-30.
+  </p>
+  <hr class="rule" />
+
+  <div class="gallery">
+
+    <!-- ===================== ESTADO A — ANTES DEL GIRO ===================== -->
+    <div class="cell">
+      <div class="cap"><span class="tag">Estado a</span><span class="lbl">antes del giro · el próximo premio queda bloqueado hasta que gire</span></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span class="num">21:48</span>
+            <span class="icons">5G &nbsp; 86</span>
+          </div>
+          <div class="appbar">
+            <span class="wordmark">INCLUSIV<span class="cup">CUP</span></span>
+            <span class="live-pill"><span class="live-dot"></span>Ceremonia en vivo</span>
+          </div>
+          <div class="body">
+            <div class="counter-row">
+              <span class="counter">Premio <b>7</b> de <b>12</b></span>
+              <span class="counter-sub">bloqueado hasta que gire</span>
+            </div>
+            <div class="progress"><i style="width:50%"></i></div>
+
+            <div class="stage">
+              <div class="wheel-wrap">
+                <div class="pointer"></div>
+                <div class="wheel">
+                  <div class="ring-gold"></div>
+                  <div class="ring-blue"></div>
+                  <div class="ticks" id="ticks-a"></div>
+                  <div class="hub locked">
+                    <div class="lockface">
+                      <span class="eyebrow">A continuación</span>
+                      <span class="glyph360">3<b>6</b>0</span>
+                      <span class="sub">categoría oculta</span>
+                    </div>
+                    <div class="lock-overlay">
+                      <div class="lock-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                      </div>
+                      <span class="lk-label">Premio 7 de 12</span>
+                      <span class="lk-label" style="color:var(--tm);font-weight:500">gira para revelar</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="spin-hint">
+                <span>Mara gira por la mesa</span>
+                <span class="spin-bar"><i style="width:0%"></i></span>
+              </div>
+            </div>
+
+            <div class="seed-strip">
+              <span class="sh">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/></svg>
+              </span>
+              <span class="stxt">
+                <b>Sembrado por el demo final · reproducible.</b><br>
+                SHA-256 <span class="hash">a3f1c9e2…7b40</span> · publicado antes del primer giro.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== ESTADO B — GIRANDO / FASE 1 ===================== -->
+    <div class="cell">
+      <div class="cap"><span class="tag">Estado b</span><span class="lbl">girando · fase 1 — la suerte elige la categoría</span></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span class="num">21:48</span>
+            <span class="icons">5G &nbsp; 86</span>
+          </div>
+          <div class="appbar">
+            <span class="wordmark">INCLUSIV<span class="cup">CUP</span></span>
+            <span class="live-pill"><span class="live-dot"></span>Girando</span>
+          </div>
+          <div class="body">
+            <div class="counter-row">
+              <span class="counter">Premio <b>7</b> de <b>12</b></span>
+              <span class="counter-sub">resolviendo…</span>
+            </div>
+            <div class="progress"><i style="width:50%"></i></div>
+
+            <div class="stage">
+              <span class="stage-flag"><span class="n">Fase 1</span> · la suerte elige la categoría</span>
+              <div class="wheel-wrap">
+                <div class="pointer"></div>
+                <div class="wheel">
+                  <div class="spinning-segments"></div>
+                  <div class="ring-gold"></div>
+                  <div class="ring-blue"></div>
+                  <div class="ticks" id="ticks-b"></div>
+                  <div class="hub">
+                    <span class="eyebrow">Cayendo en</span>
+                    <span class="glyph360" style="font-size:18px;color:var(--gold);letter-spacing:0.04em">A<br>CUCHILLO</span>
+                    <span class="sub">rarezas del demo</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cat-card gold">
+                <span class="bucket">Categoría rarezas del demo</span>
+                <div class="cat-name">A Cuchillo</div>
+                <div class="cat-stat">estadística decisiva — más kills con cuchillo</div>
+              </div>
+
+              <div class="spin-hint">
+                <span>La rueda va frenando</span>
+                <span class="spin-bar"><i></i></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== ESTADO C — GANADOR / FASE 2 ===================== -->
+    <div class="cell">
+      <div class="cap"><span class="tag gold">Estado c</span><span class="lbl">ganador · fase 2 — las estadísticas eligen al ganador</span></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span class="num">21:49</span>
+            <span class="icons">5G &nbsp; 85</span>
+          </div>
+          <div class="appbar">
+            <span class="wordmark">INCLUSIV<span class="cup">CUP</span></span>
+            <span class="live-pill"><span class="live-dot"></span>Reveal</span>
+          </div>
+          <div class="body">
+            <div class="counter-row">
+              <span class="counter">Premio <b>7</b> de <b>12</b></span>
+              <span class="counter-sub">ganado</span>
+            </div>
+            <div class="progress"><i style="width:58%"></i></div>
+
+            <span class="stage-flag gold"><span class="n" style="color:var(--gold);opacity:0.7">Fase 2</span> · las estadísticas eligen al ganador</span>
+
+            <div class="winner-head">
+              <div class="avatar">T</div>
+              <div class="who">
+                <div class="label">Ganador</div>
+                <div class="name">Theo <span class="seed">· sembrado 4</span></div>
+              </div>
+              <div class="trophy" aria-label="trofeo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/><path d="M12 13v4M9 20h6M9.5 20l.5-3h4l.5 3"/></svg>
+              </div>
+            </div>
+
+            <div class="award-strip">
+              <div>
+                <div class="a-name">A Cuchillo</div>
+                <div class="a-stat">Verificado desde el demo · más kills con cuchillo</div>
+              </div>
+              <div class="stat-big">
+                <div class="v num">4</div>
+                <div class="u">kills con cuchillo</div>
+              </div>
+            </div>
+
+            <div class="prize-chip">
+              <span class="shirt" aria-label="Camiseta Inclusiv de premio">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3l-5 3 2 4 2-1v9h10v-9l2 1 2-4-5-3-2 2h-4z"/></svg>
+              </span>
+              <div>
+                <div class="p-t">Camiseta token Inclusiv</div>
+                <div class="p-s">Edición A Cuchillo · reclamable</div>
+              </div>
+              <span class="p-tag">Premio</span>
+            </div>
+
+            <div class="rule-note">
+              <span class="pin">Un trofeo por giro</span>
+              <span>anti-barrida — Theo queda fuera del premio 8.</span>
+            </div>
+
+            <div class="shelf-h">
+              <span class="t">Vitrina de trofeos de Theo</span>
+              <span class="c"><b>2</b> ganados</span>
+            </div>
+            <div class="shelf">
+              <div class="slot filled" aria-label="ganado antes">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M12 12v4M9 19h6"/></svg>
+              </div>
+              <div class="slot new" aria-label="recién ganado">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M12 12v4M9 19h6"/></svg>
+              </div>
+              <div class="slot" aria-label="vacío"></div>
+              <div class="slot" aria-label="vacío"></div>
+              <div class="slot" aria-label="vacío"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== ESTADO D — CONSOLACIÓN + VERIFICAR ===================== -->
+    <div class="cell">
+      <div class="cap"><span class="tag">Estado d</span><span class="lbl">franja de verificación persistente + adelanto de la ronda de consolación</span></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar">
+            <span class="num">21:49</span>
+            <span class="icons">5G &nbsp; 85</span>
+          </div>
+          <div class="appbar">
+            <span class="wordmark">INCLUSIV<span class="cup">CUP</span></span>
+            <span class="live-pill"><span class="live-dot"></span>Ceremonia en vivo</span>
+          </div>
+          <div class="body">
+            <div class="counter-row">
+              <span class="counter">Premio <b>7</b> de <b>12</b></span>
+              <span class="counter-sub">toca para verificar</span>
+            </div>
+            <div class="progress"><i style="width:58%"></i></div>
+
+            <div class="verify">
+              <div class="vrow">
+                <span class="vshield">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+                </span>
+                <div class="vmain">
+                  <div class="vt">Sembrado por el demo final · reproducible</div>
+                  <div class="vh">SHA-256 <b>a3f1c9e2…7b40</b></div>
+                </div>
+                <button class="vbtn" type="button">Verificar la ceremonia</button>
+              </div>
+            </div>
+
+            <div class="pity">
+              <span class="pi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3l-5 3 2 4 2-1v9h10v-9l2 1 2-4-5-3-2 2h-4z"/></svg>
+              </span>
+              <div class="ptxt">
+                <div class="pt">Nadie se va con las manos vacías</div>
+                <div class="ps">Sigue la ronda de consolación — cada jugador sin premio recibe una camiseta token.</div>
+              </div>
+              <span class="pnext">Siguiente
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+              </span>
+            </div>
+
+            <div class="seed-strip" style="margin-top:14px">
+              <span class="sh">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+              </span>
+              <span class="stxt">
+                <b>Orden de sorteo reproducible.</b><br>
+                Vuelve a correr la semilla contra el demo <span class="hash">a3f1c9e2…7b40</span> y obtienes esta misma ceremonia.
+              </span>
+            </div>
+
+            <div class="rule-note" style="margin-top:14px;margin-bottom:0">
+              <span class="pin">Elegibilidad</span>
+              <span>mín. 24 rondas / 20 kills · las partidas inactivas quedan descalificadas.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== PANTALLA COMPARTIDA / BANNER DE TRANSMISIÓN ===================== -->
+    <div class="stream-cell">
+      <div class="cap"><span class="tag gold">Pantalla compartida</span><span class="lbl">banner de transmisión / cast — ancho, listo para recap · presentación dual del FR-30</span></div>
+      <div class="stream">
+        <div class="stream-l">
+          <div class="stream-wheel">
+            <div class="pointer"></div>
+            <div class="wheel">
+              <div class="spinning-segments"></div>
+              <div class="ring-gold"></div>
+              <div class="ring-blue"></div>
+              <div class="hub">
+                <span class="eyebrow">Inclusiv</span>
+                <span class="glyph360">3<b>6</b>0</span>
+                <span class="sub">premio 7 de 12</span>
+              </div>
+            </div>
+          </div>
+          <span class="live-pill"><span class="live-dot"></span>Ceremonia en vivo</span>
+        </div>
+
+        <div class="stream-c">
+          <div class="eyebrow">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M12 12v4M9 19h6"/></svg>
+            A Cuchillo — rarezas del demo
+          </div>
+          <div class="award">más kills con cuchillo · fase 2, las estadísticas eligen al ganador</div>
+          <div class="winner">Theo <span class="seed">· sembrado 4</span></div>
+          <div class="line">
+            <div class="it"><span class="v num">4</span><span class="k">Kills con cuchillo</span></div>
+            <div class="it"><span class="v num">18/21/5</span><span class="k">K / D / A</span></div>
+            <div class="it"><span class="v num">124.1</span><span class="k">ADR</span></div>
+            <div class="it win"><span class="v num">2</span><span class="k">Trofeos ganados</span></div>
+          </div>
+          <div class="stream-tagline">"Fuerza en lo que otros ignoran."</div>
+        </div>
+
+        <div class="stream-r">
+          <div class="prize-chip">
+            <span class="shirt" aria-label="Camiseta Inclusiv de premio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3l-5 3 2 4 2-1v9h10v-9l2 1 2-4-5-3-2 2h-4z"/></svg>
+            </span>
+            <div>
+              <div class="p-t">Camiseta token Inclusiv</div>
+              <div class="p-s">Edición A Cuchillo</div>
+            </div>
+            <span class="p-tag">Premio</span>
+          </div>
+          <div class="verify">
+            <div class="vrow">
+              <span class="vshield">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+              </span>
+              <div class="vmain">
+                <div class="vt">Verificado desde el demo · reproducible</div>
+                <div class="vh">SHA-256 <b>a3f1c9e2…7b40</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stream-brand-bar">
+          <span class="wm">INCLUSIV<span class="cup">CUP</span> · 360</span>
+          <span class="meta">Un trofeo por giro · <b>nadie se va con las manos vacías</b> · sigue la ronda de consolación</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="footer-note">
+    <b>Reglas de reserva.</b> El dorado (#FFB23E) aparece solo en el anillo/puntero INCLUSIV360, la categoría revelada, el ganador, el trofeo y la camiseta Inclusiv de premio. El azul (#2F81F7) lleva todo el cromado de en vivo/seleccionado/verificación. El verde de victoria / rojo de derrota se reservan para la semántica de las partidas. Todas las estadísticas usan numerales tabulares de caja alta. El banner de pantalla compartida refleja el reveal del teléfono para que la mesa vea la misma verdad en ambas superficies (FR-30).
+  </p>
+
+</div>
+
+<script>
+  (function () {
+    ['ticks-a', 'ticks-b'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      for (var i = 0; i < 36; i++) {
+        var t = document.createElement('span');
+        t.className = 'tick';
+        t.style.transform = 'translateX(-50%) rotate(' + (i * 10) + 'deg)';
+        el.appendChild(t);
+      }
+    });
+  })();
+</script>
+</body>
+</html>
