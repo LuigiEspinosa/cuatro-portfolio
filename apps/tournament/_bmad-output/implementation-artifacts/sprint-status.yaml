@@ -1,0 +1,128 @@
+# generated: 2026-06-30
+# last_updated: 2026-06-30 (1-1 → review)
+# project: cs-tournament
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-06-30
+last_updated: 2026-06-30
+project: cs-tournament
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+  # --- Epic 1: Foundation & Schema (CAP-1) ---
+  epic-1: in-progress
+  1-1-provision-the-single-environment-and-server-only-secrets: review
+  1-2-identity-and-scope-schema-migration-0001: backlog
+  1-3-fail-closed-rls-framework-and-helper-functions-migration-0002: backlog
+  1-4-append-only-audit-and-snapshot-convention: backlog
+  epic-1-retrospective: optional
+
+  # --- Epic 2: Identity & Roster (CAP-2) ---
+  epic-2: backlog
+  2-1-steam-openid-2-0-server-side-login: backlog
+  2-2-bind-identity-and-role-into-app-metadata: backlog
+  2-3-canonical-steamid64-capture-and-display-name-tolerance: backlog
+  2-4-roles-admin-gating-and-revoke-invalidates-session: backlog
+  2-5-registration-window-and-roster-management: backlog
+  2-6-unreconciled-steamid64-list-roster-side: backlog
+  epic-2-retrospective: optional
+
+  # --- Epic 3: Demo Ingestion Worker (CAP-3) ---
+  epic-3: backlog
+  3-1-demo-acquisition-that-bypasses-vercel: backlog
+  3-2-hash-dedup-and-write-once-retention: backlog
+  3-3-parse-the-demo-to-stat-rows-as-the-single-writer: backlog
+  3-4-validation-and-anomaly-gate: backlog
+  3-5-stage-stats-to-pending-ingest-side-of-fr-13: backlog
+  3-6-re-parse-a-retained-demo-ingest-side-of-fr-14: backlog
+  3-7-demo-derived-score-from-ingest-ingest-side-of-fr-16: backlog
+  3-8-bounded-async-ingest-job-meeting-the-latency-budget: backlog
+  epic-3-retrospective: optional
+
+  # --- Epic 4: Bracket & Admin Command Routes (CAP-4) ---
+  epic-4: backlog
+  4-1-random-seeded-double-elimination-bracket-generation: backlog
+  4-2-pre-declared-match-format-and-tie-policy: backlog
+  4-3-idempotent-conditional-advance: backlog
+  4-4-grand-final-reset-as-two-ordered-match-rows: backlog
+  4-5-bye-and-forfeit-walkover-with-grace-timer: backlog
+  4-6-aprobar-atomic-publish-publish-side-of-fr-13: backlog
+  4-7-rollback-an-approved-match-rollback-side-of-fr-14: backlog
+  4-8-manual-score-override-manual-side-of-fr-16: backlog
+  4-9-server-gated-audited-command-routes: backlog
+  epic-4-retrospective: optional
+
+  # --- Epic 5: Stats, Leaderboards & Realtime Viewer Surfaces (CAP-5) ---
+  epic-5: backlog
+  5-1-core-stat-derivation: backlog
+  5-2-weird-demo-only-stat-derivation: backlog
+  5-3-derived-stat-derivation: backlog
+  5-4-anti-farm-floors-and-afk-idle-dq: backlog
+  5-5-single-normalized-leaderboard-view-rpc: backlog
+  5-6-timeline-feed-read-read-side-of-fr-31: backlog
+  5-7-spanish-mobile-first-read-only-viewer-surfaces: backlog
+  5-8-realtime-nudge-and-reconnect-reconcile: backlog
+  epic-5-retrospective: optional
+
+  # --- Epic 6: Awards Roulette — Producer & Verifier (CAP-6) ---
+  epic-6: backlog
+  6-1-award-catalog-and-buckets: backlog
+  6-2-fair-seed-freeze-and-immutable-snapshot-capture: backlog
+  6-3-prng-core-hmac-sha256-counter-mode: backlog
+  6-4-two-stage-draw: backlog
+  6-5-fr-29-tie-ladder: backlog
+  6-6-anti-sweep-and-luck-meter: backlog
+  6-7-pity-roulette: backlog
+  6-8-reveal-gating-and-commitment: backlog
+  6-9-verification-bundle-and-verificar-la-ceremonia: backlog
+  6-10-ceremony-reveal-ui-with-reduced-motion-parity: backlog
+  6-11-cross-language-golden-vector-suite: backlog
+  epic-6-retrospective: optional
+
+  # --- Epic 7: Hardening & Operations (CAP-7) ---
+  epic-7: backlog
+  7-1-demo-durability-object-lock-delete-guard: backlog
+  7-2-cost-guards-billing-alerts: backlog
+  7-3-dr-runbook: backlog
+  7-4-ingest-recovery-hardening-ops-slice: backlog
+  7-5-build-handoff-checklist-gate: backlog
+  epic-7-retrospective: optional
