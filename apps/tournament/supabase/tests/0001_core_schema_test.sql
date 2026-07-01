@@ -15,7 +15,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(28);
+select plan(30);
 
 -- ============================================================================
 -- player.steamid64 — AD-4 canonical key: text + CHECK (~ '^[0-9]{17}$')
@@ -132,6 +132,21 @@ select is(
   (select state from tournament where name = 'T1'),
   'registration_open',
   'tournament: state defaults to registration_open'
+);
+
+-- UNIQUE on names (added in code review 2026-07-01): the surrogate bigint id is the real key,
+-- but a duplicate season name, or a duplicate tournament name within one season, must be rejected
+-- so any lookup/display by name is deterministic. (throws_ok rolls each rejected insert back.)
+select throws_ok(
+  $$ insert into season (name) values ('Season 1') $$,
+  '23505', null,
+  'season: a duplicate season name is rejected by UNIQUE'
+);
+select throws_ok(
+  $$ insert into tournament (season_id, name)
+     values ((select id from season where name = 'Season 1'), 'T1') $$,
+  '23505', null,
+  'tournament: a duplicate (season_id, name) is rejected by UNIQUE'
 );
 select throws_ok(
   $$ insert into tournament (season_id, name, state)

@@ -18,7 +18,7 @@
 
 create table season (
   id          bigint generated always as identity primary key,
-  name        text not null,
+  name        text not null unique,   -- one season per name; surrogate id is the real key, UNIQUE blocks a duplicate 'Season 1' so lookup-by-name is deterministic [Review 2026-07-01]
   created_at  timestamptz not null default now()
 );
 
@@ -31,7 +31,8 @@ create table tournament (
   format_default text,
   final_match_id bigint,   -- nullable NOW; FK to match(id) added in the Epic-4 match migration (match table does not exist yet)
   fair_seed      text,     -- nullable NOW; = SHA-256(final demo). Write-once trigger + population is AD-13 / Epic 4-6, NOT here
-  created_at     timestamptz not null default now()
+  created_at     timestamptz not null default now(),
+  unique (season_id, name)   -- one tournament name per season; surrogate id is the real key, UNIQUE keeps name lookups within a season deterministic [Review 2026-07-01]
 );
 
 create table player (
