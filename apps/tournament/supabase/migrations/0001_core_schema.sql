@@ -44,6 +44,6 @@ create table player (
 create table app_role (                          -- event-global in v1 (per-season role scoping deferred, AD-18)
   steamid64   text primary key references player(steamid64) on delete cascade,   -- PK => UNIQUE + NOT NULL: one role per player
   role        text not null check (role in ('admin','viewer')),                  -- AD-12 closed set
-  granted_by  text references player(steamid64),                                 -- who granted (nullable; self-ref to player)
+  granted_by  text references player(steamid64) on delete set null,             -- who granted (nullable audit pointer; NULLed if the grantor player is deleted, never blocks the delete)
   granted_at  timestamptz not null default now()
 );

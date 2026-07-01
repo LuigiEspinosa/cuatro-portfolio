@@ -15,7 +15,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(19);
+select plan(28);
 
 -- ============================================================================
 -- player.steamid64 — AD-4 canonical key: text + CHECK (~ '^[0-9]{17}$')
@@ -38,6 +38,26 @@ select throws_ok(
   $$ insert into player (steamid64, display_name) values ('7656119abc0287930', 'NonNumeric') $$,
   '23514', null,
   'player: a 17-char steamid64 containing letters is rejected by the CHECK'
+);
+
+-- Regex-boundary hardening (added in code review 2026-06-30): the CHECK is anchored
+-- (^…$ in Postgres default `~` mode), so leading/trailing whitespace and a trailing newline
+-- must all be rejected even on an otherwise-valid 17-digit value. Locks the guard against a
+-- future pattern refactor (e.g. a switch to ~* or the newline-sensitive flag).
+select throws_ok(
+  $$ insert into player (steamid64, display_name) values (E'76561197960287930\n', 'TrailingNewline') $$,
+  '23514', null,
+  'player: a valid 17-digit value with a trailing newline is rejected ($ is end-of-string, not newline-anchored)'
+);
+select throws_ok(
+  $$ insert into player (steamid64, display_name) values (' 76561197960287930', 'LeadingSpace') $$,
+  '23514', null,
+  'player: a valid 17-digit value with a leading space is rejected by the CHECK'
+);
+select throws_ok(
+  $$ insert into player (steamid64, display_name) values ('76561197960287930 ', 'TrailingSpace') $$,
+  '23514', null,
+  'player: a valid 17-digit value with a trailing space is rejected by the CHECK'
 );
 select throws_ok(
   $$ insert into player (steamid64, display_name) values ('76561197960287933', null) $$,
@@ -82,6 +102,20 @@ select throws_ok(
   'app_role: a role for a non-existent player is rejected by the FK'
 );
 
+-- Closed-set exactness (added in code review 2026-06-30): the role CHECK is exact-match,
+-- so case- and whitespace-variants must be rejected. Locks against a future lower()/trim()
+-- normalization silently widening the closed set. (PlayerC …932 holds no role yet; throws_ok rolls each attempt back.)
+select throws_ok(
+  $$ insert into app_role (steamid64, role) values ('76561197960287932', 'Admin') $$,
+  '23514', null,
+  'app_role: role=Admin (wrong case) is rejected by the closed-set CHECK'
+);
+select throws_ok(
+  $$ insert into app_role (steamid64, role) values ('76561197960287932', ' admin') $$,
+  '23514', null,
+  'app_role: role=" admin" (leading space) is rejected by the closed-set CHECK'
+);
+
 -- ============================================================================
 -- season + tournament — AD-18 seasons-aware scope
 -- ============================================================================
@@ -106,6 +140,12 @@ select throws_ok(
   'tournament: an invalid state is rejected by the closed-set CHECK'
 );
 select throws_ok(
+  $$ insert into tournament (season_id, name, state)
+     values ((select id from season where name = 'Season 1'), 'TCase', 'Registration_Open') $$,
+  '23514', null,
+  'tournament: a case-variant state (Registration_Open) is rejected by the closed-set CHECK'
+);
+select throws_ok(
   $$ insert into tournament (season_id, name) values (null, 'TNull') $$,
   '23502', null,
   'tournament: a null season_id is rejected by NOT NULL'
@@ -121,6 +161,29 @@ select throws_ok(
   $$ delete from season where name = 'Season 1' $$,
   '23503', null,
   'season: delete is blocked while a tournament references it (ON DELETE RESTRICT)'
+);
+
+-- ============================================================================
+-- app_role.granted_by — ON DELETE SET NULL (added in code review 2026-06-30)
+-- The audit pointer must survive (as NULL), never block, when the grantor is deleted.
+-- ============================================================================
+-- PlayerC (…932) receives a role granted BY ValidPlayer (…930).
+select lives_ok(
+  $$ insert into app_role (steamid64, role, granted_by)
+     values ('76561197960287932', 'viewer', '76561197960287930') $$,
+  'app_role: a row recording granted_by (…930 grants …932) is accepted'
+);
+-- Deleting the grantor (…930) must NOT be blocked — granted_by is ON DELETE SET NULL,
+-- not the default NO ACTION that would raise 23503. (…930 also cascade-drops its own admin row.)
+select lives_ok(
+  $$ delete from player where steamid64 = '76561197960287930' $$,
+  'player: deleting a grantor is not blocked (app_role.granted_by is ON DELETE SET NULL)'
+);
+-- …and the audit pointer is NULLed, not left dangling at a deleted player.
+select is(
+  (select granted_by from app_role where steamid64 = '76561197960287932'),
+  null,
+  'app_role: granted_by is NULLed when the grantor player is deleted'
 );
 
 select * from finish();

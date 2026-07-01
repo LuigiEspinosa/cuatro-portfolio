@@ -4,7 +4,7 @@ baseline_commit: feae7a9f35cd9707f01caa9441164f8d61d8a808
 
 # Story 1.2: Identity and scope schema (migration 0001)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -208,3 +208,26 @@ claude-opus-4-8 (Claude Code, `bmad-dev-story` workflow).
 ### Change Log
 
 - 2026-06-30 — Implemented Story 1.2. Initialized the Supabase CLI substrate (`supabase init`) and added migration `0001_core_schema.sql` (identity & scope: `season`, `tournament`, `player`, `app_role` with all CHECK/closed-set/PK/FK constraints) plus a 19-assertion pgTAP constraint proof. Verified clean apply (`supabase db reset`) and constraints (`supabase test db`, 19/19 PASS). Status: ready-for-dev → in-progress → review.
+- 2026-06-30 — Code review (adversarial 3-layer: Blind Hunter · Edge Case Hunter · Acceptance Auditor). Verdict: **Accept with follow-ups**. Applied 3 patches: `app_role.granted_by` → `on delete set null` (Decision 1); +6 pgTAP boundary assertions (regex whitespace/newline ×3, role case/whitespace ×2, state case ×1); +3 assertions proving the `granted_by` SET-NULL-on-grantor-delete behavior. Test plan **19 → 28**. Regex kept shape-only (Decision 2); 2 items deferred (see deferred-work.md). **Re-verify:** `supabase db reset` + `supabase test db` (expect 28/28).
+
+### Review Findings
+
+_Code review 2026-06-30 — adversarial parallel layers (Blind Hunter · Edge Case Hunter · Acceptance Auditor). **Acceptance Auditor: all 4 ACs SATISFIED, no violations, no spec contradictions.** Overall verdict: **Accept with follow-ups** — 2 decisions, 2 optional test-hardening patches, 2 deferred, 6 dismissed as noise._
+
+**Decision-needed (resolved 2026-06-30 by Cuatro):**
+
+- [x] [Review][Decision→Patch] `app_role.granted_by` ON DELETE — **RESOLVED: `on delete set null`.** When a grantor player is deleted, keep the `app_role` row and null the audit pointer; removes the surprising delete-block vs. the cascading PK column. Now tracked as a patch below. [supabase/migrations/0001_core_schema.sql:47]
+- [x] [Review][Decision→Dismiss] SteamID64 regex shape-only — **RESOLVED: keep `^[0-9]{17}$` as-is.** Trusted server-side Steam OpenID source (Epic 2); casual event; tightening would reject other Steam universes. Dismissed by decision. [supabase/migrations/0001_core_schema.sql:38]
+
+**Patch:**
+
+- [x] [Review][Patch] `app_role.granted_by` → add `on delete set null`, plus a pgTAP assertion proving a grantor-player delete nulls the pointer (and is not blocked). Resolves Decision 1. [supabase/migrations/0001_core_schema.sql:47]
+- [x] [Review][Patch] Add regex-boundary assertions to the pgTAP suite — reject leading/trailing whitespace, trailing newline (`\n`), CR, tab, and Unicode digits; bump `plan()`. Postgres default `~` already rejects all of these (the "`$` allows a trailing newline" hypothesis is FALSE in default mode — empirically verified), so this proves an already-correct guard and locks it against a future pattern refactor. This migration sets the test-discipline precedent for the whole roadmap. [supabase/tests/0001_core_schema_test.sql:23-41]
+- [x] [Review][Patch] Add closed-set exactness assertions — reject case/whitespace variants (`'Admin'`, `' admin'`) for `role`, and a case-variant for `tournament.state`; bump `plan()`. Rejection is correct today; a future `lower()`/`trim()` normalization could regress it silently with no test to catch it. [supabase/tests/0001_core_schema_test.sql:46]
+
+**Deferred:**
+
+- [x] [Review][Defer] `granted_by` audit invariant unenforced (self-grant / grant-by-non-admin) [supabase/migrations/0001_core_schema.sql:47] — deferred to Story 1.3 (authorization / `is_admin()` belongs to the RLS slice, not 0001's scope).
+- [x] [Review][Defer] Optional non-empty (`char_length > 0`) guards on `display_name` / `season.name` / `tournament.name` / `avatar_url` [supabase/migrations/0001_core_schema.sql] — deferred, optional hardening (low value for a casual event; revisit if empty names surface in the UI).
+
+**Dismissed as noise (6):** non-idempotent bare `create table` (standard forward-only Supabase migration — applied once, wrapped in a txn by `db push`/`db reset`, verified clean); test ordering/coupling nitpicks (currently correct within the pgTAP transaction via `throws_ok` savepoints); `app_role`/`tournament` FK "doesn't inherit the 17-digit format" (false — the FK to `player` transitively enforces the CHECK); pgTAP `with schema extensions` portability (verified on target Supabase PG17); `supabase/.gitignore` bare-`.env` (handled by root `.gitignore` `.env*`, matches at any depth); AC#4 runtime not re-run in the static audit (already evidenced in the Dev Agent Record — 19/19 pgTAP PASS + clean `db reset`).
