@@ -1,5 +1,5 @@
 # generated: 2026-06-30
-# last_updated: 2026-06-30 (1-1 → review)
+# last_updated: 2026-06-30 (1-2 → review, dev-story)
 # project: cs-tournament
 # project_key: NOKEY
 # tracking_system: file-system
@@ -50,8 +50,8 @@ story_location: "{project-root}/_bmad-output/implementation-artifacts"
 development_status:
   # --- Epic 1: Foundation & Schema (CAP-1) ---
   epic-1: in-progress
-  1-1-provision-the-single-environment-and-server-only-secrets: review
-  1-2-identity-and-scope-schema-migration-0001: backlog
+  1-1-provision-the-single-environment-and-server-only-secrets: done
+  1-2-identity-and-scope-schema-migration-0001: review
   1-3-fail-closed-rls-framework-and-helper-functions-migration-0002: backlog
   1-4-append-only-audit-and-snapshot-convention: backlog
   epic-1-retrospective: optional
