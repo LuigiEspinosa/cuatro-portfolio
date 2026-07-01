@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-06-30
-last_updated: 2026-07-01 (1-4 → review; migration 0003 append-only audit_log + write-once snapshot substrate; supabase test db 116/116 [0001 30 + 0002 48 + 0003 38], db reset clean)
+last_updated: 2026-07-01 (1-4 → done via code-review: 1 patch applied [+4 snapshot admin/anon read-deny assertions], 0 code defects, decision kept stat_snapshot_row FK-less by design; supabase test db 120/120 [0001 30 + 0002 48 + 0003 42], db reset clean)
 project: cs-tournament
 project_key: NOKEY
 tracking_system: file-system
@@ -53,7 +53,7 @@ development_status:
   1-1-provision-the-single-environment-and-server-only-secrets: done
   1-2-identity-and-scope-schema-migration-0001: done
   1-3-fail-closed-rls-framework-and-helper-functions-migration-0002: done
-  1-4-append-only-audit-and-snapshot-convention: review
+  1-4-append-only-audit-and-snapshot-convention: done
   epic-1-retrospective: optional
 
   # --- Epic 2: Identity & Roster (CAP-2) ---

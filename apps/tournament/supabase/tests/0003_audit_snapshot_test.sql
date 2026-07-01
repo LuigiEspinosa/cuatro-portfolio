@@ -21,7 +21,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(38);
+select plan(42);
 
 -- Seed a minimal, deterministic fixture as postgres (BYPASSRLS) before any role switch.
 -- audit_log.tournament_id + stat_snapshot.tournament_id -> tournament; audit_log.actor_steamid64 -> player.
@@ -145,12 +145,20 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"app_metadata":{"role":"admin","steamid64":"76561197960287930"}}', true);
 select throws_ok($$ select count(*) from audit_log $$,
   '42501', null, 'authenticated ADMIN also CANNOT read audit_log via Data API — audit_admin_read dormant (no base grant)');
+select throws_ok($$ select count(*) from stat_snapshot $$,
+  '42501', null, 'authenticated ADMIN also CANNOT read stat_snapshot via Data API — snapshot_admin_read dormant (no base grant)');
+select throws_ok($$ select count(*) from stat_snapshot_row $$,
+  '42501', null, 'authenticated ADMIN also CANNOT read stat_snapshot_row via Data API — snaprow_admin_read dormant (no base grant)');
 set local role postgres;
 
 -- anon (unauthenticated public): no grant -> cannot read the admin-only trail.
 set local role anon;
 select throws_ok($$ select count(*) from audit_log $$,
   '42501', null, 'anon CANNOT read audit_log — fail closed');
+select throws_ok($$ select count(*) from stat_snapshot $$,
+  '42501', null, 'anon CANNOT read stat_snapshot — fail closed');
+select throws_ok($$ select count(*) from stat_snapshot_row $$,
+  '42501', null, 'anon CANNOT read stat_snapshot_row — fail closed');
 set local role postgres;
 
 select * from finish();

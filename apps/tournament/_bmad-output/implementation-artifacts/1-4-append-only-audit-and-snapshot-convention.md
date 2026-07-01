@@ -4,7 +4,7 @@ baseline_commit: 4010b51987acb8e9ae3176ebbd93cf4c8a9cb40a
 
 # Story 1.4: Append-only audit and snapshot convention
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -276,7 +276,7 @@ claude-opus-4-8 (via `bmad-dev-story`)
 ### File List
 
 - `supabase/migrations/0003_audit_snapshot.sql` (new) — migration 0003: `audit_log` + `stat_snapshot` + `stat_snapshot_row`, index, ENABLE/FORCE RLS, admin-only SELECT policies, append-only `service_role` SELECT+INSERT grants.
-- `supabase/tests/0003_audit_snapshot_test.sql` (new) — pgTAP suite (`plan(38)`) proving the append-only convention bites (Sections A/A2/B/C/D).
+- `supabase/tests/0003_audit_snapshot_test.sql` (new) — pgTAP suite (`plan(42)`) proving the append-only convention bites (Sections A/A2/B/C/D). _(plan(38)→plan(42) via the 2026-07-01 code-review patch: +4 admin/anon read-deny assertions on the two snapshot tables.)_
 - `_bmad-output/implementation-artifacts/1-4-append-only-audit-and-snapshot-convention.md` (modified) — Tasks/Subtasks checked, Dev Agent Record, File List, Change Log, Status → review.
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified) — `1-4` → `in-progress` → `review`; `last_updated` bumped.
 
@@ -286,6 +286,7 @@ claude-opus-4-8 (via `bmad-dev-story`)
 
 - 2026-07-01 — Story 1.4 implemented (migration 0003). Created append-only `audit_log` + write-once `stat_snapshot`/`stat_snapshot_row` substrate (SOLUTION-DESIGN §3 columns), ENABLE+FORCE RLS, dormant admin-only SELECT policies, and append-only `service_role` SELECT+INSERT grants (no UPDATE/DELETE). Added pgTAP suite `0003_audit_snapshot_test.sql` (38 assertions incl. the generic catalog FORCE-guard). `db reset` clean; `test db` **116/116** (0001 30 + 0002 48 + 0003 38). CAP-1 substrate complete. Status → review. (agent: claude-opus-4-8 via bmad-dev-story)
 - 2026-07-01 — Remote push (Cuatro-authorized, post-implementation): re-linked `inclusivcup` and `supabase db push --linked` landed 0001+0002+0003 on the production remote (`ufnumdqrhyvijreoyrxf`); `migration list --linked` confirms local/remote parity. Closes the long-deferred remote-push loose end from Stories 1.2/1.3/1.4.
+- 2026-07-01 — Code review (adversarial: Blind Hunter + Edge Case Hunter + Acceptance Auditor, fresh Opus-class contexts). Triage: 1 decision-needed · 1 patch · 2 deferred · 9 dismissed; **0 code defects**. Decision resolved: keep `stat_snapshot_row.steamid64` FK-less by design (immutable/offline-verifiable snapshot decoupled from mutable `player` rows). Patch applied: symmetrized Section D's dormant-policy/anon read-deny to `stat_snapshot` + `stat_snapshot_row` (+4 `throws_ok('42501')`), `plan(38)`→`plan(42)`; `supabase test db` **120/120** (0001 30 + 0002 48 + 0003 42), db reset clean. Two deferrals logged in `deferred-work.md` (tournament `on delete cascade` audit-trail wipe; loose column domains) — both documented-intentional, non-blocking. Status → done. (reviewer: claude-opus-4-8 via bmad-code-review)
 
 ---
 
@@ -295,3 +296,34 @@ claude-opus-4-8 (via `bmad-dev-story`)
 2. **Append-only via grant (`service_role` gets INSERT, not UPDATE/DELETE).** This is stricter than 0002's full-DML grant and is the real teeth behind AD-17 (BYPASSRLS makes policy-absence insufficient for the writer). Recommended and consistent with the data-integrity review — confirm you're comfortable making it the convention for all future append-only tables.
 3. **Admin-read policy is dormant** (no `authenticated` grant → admins read via server/service-role, like `app_role`). Kept as defense-in-depth + documented by a test, exactly as the 0002 review resolved. Say the word if you'd prefer no SELECT policy at all on these three.
 4. **Remote push** (`supabase db push`) stays deferred pending your go-ahead (outward-facing). Local `db reset` + `test db` is the "done" gate.
+
+---
+
+## Review Findings (code review — 2026-07-01)
+
+_Adversarial pass: Blind Hunter + Edge Case Hunter + Acceptance Auditor (all Opus-class, fresh context, no conversation history). Triage: **1 decision-needed · 1 patch · 2 deferred · 9 dismissed** (noise / by-design / false-positive). Every claim was re-verified against the actual `0003_audit_snapshot.sql` + `0003_audit_snapshot_test.sql` — the Acceptance Auditor reasoned from a paraphrased test summary, so its plan-count and coverage claims were checked against ground truth (its "plan(38) inconsistent, D=12" claim was an arithmetic error; D=13, plan is consistent, suite is 38/38 green — dismissed)._
+
+### Decision-needed
+
+- [x] [Review][Decision] **`stat_snapshot_row.steamid64` has no FK to `player`** [supabase/migrations/0003_audit_snapshot.sql:45] — Flagged independently by Blind Hunter (High) and Edge Case Hunter (Medium). `audit_log.actor_steamid64` (line 24) FKs `player(steamid64)`, but `stat_snapshot_row.steamid64` is bare `text not null` — no FK, no format CHECK. This is **faithful to SOLUTION-DESIGN §3** (columns copied verbatim), so it is not an implementation deviation — but it is a real referential-integrity asymmetry that needs Cuatro's intent: is the snapshot deliberately **standalone** (a frozen, offline-verifiable record decoupled from live `player` rows) or should it enforce the player reference? Architecture leans "standalone" (AD-19: "the offline verifier consumes the exact captured shape"; snapshot is immutable/frozen), which argues for keeping it FK-less. **→ RESOLVED 2026-07-01 (Cuatro): keep FK-less by design.** The `stat_snapshot_row` is an immutable, offline-verifiable frozen record; a live FK to mutable `player` rows would wrongly couple the frozen snapshot to player lifetime. `steamid64` is captured as data, not as a live reference. No code change.
+
+### Patch
+
+- [x] [Review][Patch] **Behavioral dormant-policy / anon read-deny proven only on `audit_log`, not the two snapshot tables** [supabase/tests/0003_audit_snapshot_test.sql:141] — In Section D the admin-dormant deny (line 147) and anon deny (line 152) run only against `audit_log`; `stat_snapshot`/`stat_snapshot_row` get the viewer-deny but not the admin/anon behavioral deny that AC #4 enumerates for the snapshot tables. **Section C already backstops this statically** (`has_table_privilege(authenticated, …, 'SELECT') = false` ×3), so it is a fidelity/symmetry gap, not a hole. Fix: add ~4 `throws_ok('42501')` (admin + anon SELECT on both snapshot tables) and bump `plan(38)` accordingly. Low priority, unambiguous. **→ APPLIED 2026-07-01:** added admin + anon SELECT `throws_ok('42501')` on `stat_snapshot` and `stat_snapshot_row` in Section D and bumped `plan(38)`→`plan(42)`. `supabase test db` now **120/120** (0001 30 + 0002 48 + 0003 42).
+
+### Deferred
+
+- [x] [Review][Defer] **`on delete cascade` on `tournament_id` lets a tournament deletion cascade-wipe the entire audit trail + snapshots** [supabase/migrations/0003_audit_snapshot.sql:23] — deferred, documented-intentional. Raised by Edge Case Hunter (Medium) + Blind Hunter (High). Contrasts with `actor_steamid64`'s deliberate `NO ACTION` "to keep the trail intact." Verbatim from §3; Dev Notes state "tournaments are not deleted in v1," so append-only (no UPDATE/DELETE grant) holds for every reachable path today. Revisit `cascade`→`restrict` for `audit_log` if/when tournament deletion becomes reachable (Epic 4+).
+- [x] [Review][Defer] **Loose column domains — no CHECK on `action` (enum-in-comment only), `content_sha256` (accepts non-hex / any length), non-negative `kills`/`rounds_played`, or jsonb object-shape** [supabase/migrations/0003_audit_snapshot.sql:25] — deferred, matches authoritative DDL. Raised by Blind Hunter + Edge Case Hunter (Medium/Low). All columns are verbatim from AD-19/§3, which deliberately keeps `stats_int`/`h2h`/`detail` open `jsonb` so the offline verifier consumes the exact captured shape; writes come only from service-role server routes that control the vocabulary. Optional future hardening for a casual private-friends event; not required for the CAP-1 substrate.
+
+### Dismissed (9 — recorded for the trail, not actionable)
+
+- Auditor: "plan(38) inconsistent (Section D = 12, not 13)" — **arithmetic error**; D = 7+4+1+1 = 13, plan(38) is consistent, suite runs 38/38.
+- Auditor: "A2 catalog-guard body not visible / may false-negative on views/partitions" — verified: guard correctly filters `relkind='r'` + `nspname='public'`. Correct as written.
+- Blind: "'append-only by construction' overstated; owner/`postgres` can still mutate" — the grant-withholding model **is** the intended AD-17 mechanism (extensively justified in Dev Notes); `postgres` is the migration role, not app-reachable.
+- Blind: "unlimited duplicate snapshots per tournament (no unique constraint)" — by design; Epic 6's `ceremony.snapshot_id` selects the authoritative snapshot.
+- Blind: "migration not idempotent (no `if not exists`)" — matches the 0001/0002 convention; Supabase migrations are versioned/run-once.
+- Blind: "admin-read policy never positively proven to return rows" — the policy is **dormant by design** (no `authenticated` grant); it cannot be positively exercised via the Data API without granting SELECT, which the design forbids. `is_admin()` is positively tested in the 0002 suite.
+- Blind: "`throws_ok('42501')` matches SQLSTATE only, not message" — `42501` is the correct code for both grant-gate and RLS denials; message-matching would be brittle.
+- Blind: "`plan(38)` is a fragile magic number" — pgTAP convention; the dev documented the exact accounting; it is consistent.
+- Blind: "`search_path = extensions, public` puts extensions first" — reuses the proven 0002 harness; no real name collision exists.
