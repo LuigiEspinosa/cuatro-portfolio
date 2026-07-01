@@ -246,7 +246,7 @@ Story 1.2/1.3 deliberately deferred the remote push (`supabase db push`) pending
 - [x] **Task 6: Verify clean apply + tests** (AC: 3, 4)
   - [x] `supabase db reset` (Docker, DB-only stack) — 0001 → 0002 → 0003 apply with zero errors.
   - [x] `supabase test db` — all green; confirm **0001 30/30**, **0002 48/48**, **0003 38/38** (total **116**). Recorded in the Dev Agent Record.
-  - [ ] *(Optional, confirm with Cuatro first — outward-facing)* `supabase db push` to land 0001 + 0002 + 0003 on the linked remote; confirm three rows in `supabase_migrations.schema_migrations`. **DEFERRED — pending Cuatro's go-ahead (outward-facing; not required for "done").**
+  - [x] *(Optional, confirm with Cuatro first — outward-facing)* `supabase db push` to land 0001 + 0002 + 0003 on the linked remote; confirm three rows in `supabase_migrations.schema_migrations`. **DONE 2026-07-01 — Cuatro authorized the push.** Re-linked `inclusivcup` (ref `ufnumdqrhyvijreoyrxf`, us-east-1) first (link state had been lost); `db push --linked` applied 0001→0002→0003; `migration list --linked` confirms local/remote parity on all three (no RLS-less window — all applied together with RLS on).
 - [x] **Task 7: Commit** (AC: 1–4)
   - [x] Commit `supabase/migrations/0003_audit_snapshot.sql` + `supabase/tests/0003_audit_snapshot_test.sql`. Do **not** commit `.env.local` / `supabase/.temp/`.
 
@@ -271,7 +271,7 @@ claude-opus-4-8 (via `bmad-dev-story`)
 - **AC #3 (clean apply / CAP-1 substrate).** `db reset` replays `0001 → 0002 → 0003` with zero errors. No forward FK to a non-existent table: `audit_log.target_match_id` is a plain nullable `bigint` (no `match` FK — Epic 4); no `ceremony.snapshot_id` FK added (`ceremony` is Epic 6). No env/secret written.
 - **AC #4 (convention generalized + provably bites).** Section A2 adds the generic catalog guard: `count(public base tables with relforcerowsecurity=false) = 0` — now covers all seven post-0003 tables and fails loudly if any future migration forgets `FORCE` (the deferred Story 1.3 item, homed here). 0001 (30) + 0002 (48) stay green.
 - **Fidelity to the authoritative DDL.** The migration uses the story's `SOLUTION-DESIGN §3` DDL block verbatim (bare-name `create table`, matching 0001's style); `public.`-qualified `regclass`/`has_table_privilege` casts stay in the test, matching 0002. No deviation from the authoritative definitions; no `ceremony`/`match` FK, no capture logic, no `granted_by` CHECK/trigger (all correctly out of scope).
-- **Optional remote push deferred.** Task 6's `supabase db push` subtask is intentionally left unchecked — outward-facing on the live `inclusivcup` project (`ufnumdqrhyvijreoyrxf`), deferred pending Cuatro's go-ahead. Local `db reset` + `test db` is the story's "done" gate and passed. Flagged-decision answers (Questions 1–4) were all implemented per the story's recommended readings.
+- **Remote push DONE (Cuatro authorized, 2026-07-01).** Landed 0001+0002+0003 on the live `inclusivcup` project (`ufnumdqrhyvijreoyrxf`, us-east-1, ACTIVE_HEALTHY). The CLI link state had been lost (`projects list` showed `linked:false`), so re-linked via `supabase link --project-ref ufnumdqrhyvijreoyrxf` (API auth was intact; DB password sourced from gitignored `.env.local` → `SUPABASE_DB_PASSWORD` env, never echoed). `db push --linked --yes` applied all three; `migration list --linked` confirms local/remote parity (0001/0002/0003 on both). All three applied together → no RLS-less window on production. A trailing `pg-delta` "failed to cache migrations catalog" warning is a benign post-apply local-caching step (missing `.temp/pgdelta/*-ca.crt`), printed after "Finished supabase db push" — the migrations themselves applied. Local `db reset` + `test db` remains the story's "done" gate (116/116). Flagged-decision answers (Questions 1–4) were all implemented per the story's recommended readings.
 
 ### File List
 
@@ -285,6 +285,7 @@ claude-opus-4-8 (via `bmad-dev-story`)
 ## Change Log
 
 - 2026-07-01 — Story 1.4 implemented (migration 0003). Created append-only `audit_log` + write-once `stat_snapshot`/`stat_snapshot_row` substrate (SOLUTION-DESIGN §3 columns), ENABLE+FORCE RLS, dormant admin-only SELECT policies, and append-only `service_role` SELECT+INSERT grants (no UPDATE/DELETE). Added pgTAP suite `0003_audit_snapshot_test.sql` (38 assertions incl. the generic catalog FORCE-guard). `db reset` clean; `test db` **116/116** (0001 30 + 0002 48 + 0003 38). CAP-1 substrate complete. Status → review. (agent: claude-opus-4-8 via bmad-dev-story)
+- 2026-07-01 — Remote push (Cuatro-authorized, post-implementation): re-linked `inclusivcup` and `supabase db push --linked` landed 0001+0002+0003 on the production remote (`ufnumdqrhyvijreoyrxf`); `migration list --linked` confirms local/remote parity. Closes the long-deferred remote-push loose end from Stories 1.2/1.3/1.4.
 
 ---
 
