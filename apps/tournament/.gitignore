@@ -17,12 +17,9 @@ dist/
 next-env.d.ts
 
 # Environment variables / secrets
-.env
-.env*.local
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*
+# ...but DO commit the example (variable names / placeholders only, never real values)
+!.env.example
 
 # Deploy
 .vercel/
@@ -53,11 +50,6 @@ Thumbs.db
 *.dem
 *.dem.gz
 *.dem.bz2
-
-.vercel
-.env*
-# ...but DO commit the example (variable names / placeholders only, never real values)
-!.env.example
 
 # Ops inventory with real refs/endpoints (keep account-specific values out of git)
 docs/ops/*.local.md

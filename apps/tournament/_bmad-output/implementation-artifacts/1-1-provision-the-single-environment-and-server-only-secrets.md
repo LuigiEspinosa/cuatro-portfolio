@@ -4,7 +4,7 @@ baseline_commit: 3ccc36ffa855c28296ecb4597c87e867ebbd74a6
 
 # Story 1.1: Provision the single environment and server-only secrets
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,7 +44,7 @@ so that the whole event runs on a single low-cost footprint and no credential ca
   - [x] Confirm reachability: Vercel app → Supabase; Railway worker → Supabase (service-role) and → R2 — all 3 probes HTTP 200 (Supabase anon auth, service-role admin, R2 S3 SigV4)
   - [x] Generate the worker↔MatchZy shared secret; store it server-only on Railway (and wherever MatchZy will post) — used to authenticate auto-upload in Epic 3 — 32-byte secret on Railway + `.env.local`
 - [x] Task 6: Leak check — prove no secret reaches the client (AC: 3)
-  - [x] Scan the repo and any production build output for `NEXT_PUBLIC_` misuse and for literal secret values — repo scan across 298 committable files: **0** secret-literal hits; only URL + anon use `NEXT_PUBLIC_`
+  - [x] Scan the repo and any production build output for `NEXT_PUBLIC_` misuse and for literal secret values — repo scan across 296 committable files: **0** secret-literal hits; only URL + anon use `NEXT_PUBLIC_`
   - [x] Confirm a production client bundle contains no service-role key, no R2 credentials, and no shared secret — NOTE: no Next.js app exists yet (Stories 1.2+); enforced structurally (only URL+anon are `NEXT_PUBLIC_`) + scan procedure documented for the first build
 - [x] Task 7: Capture the environment inventory (AC: 4)
   - [x] Create a repo-root `.env.example` listing server-only var **names only** (no values) plus the client-safe vars
@@ -100,7 +100,7 @@ Provisioning-only story (no app/migration code; no unit tests — per the Dev No
 - **Railway** (Hobby): project `inclusivcup`, service `worker` (Offline until Epic 3 → $0). Server env = service-role, R2 creds, MatchZy shared secret.
 - **Cloudflare R2**: bucket `inclusivcup-demos`; "Object Read & Write" S3 token (server-only).
 - **Reachability** verified (all HTTP 200): Vercel→Supabase (anon auth), worker→Supabase (service-role admin), worker→R2 (S3 SigV4 ListObjects).
-- **Leak check**: 0 secret literals across 298 committable files; `.env.local` + `docs/ops/*.local.md` gitignored; `.env.example` committable.
+- **Leak check**: 0 secret literals across 296 committable files; `.env.local` + `docs/ops/*.local.md` gitignored; `.env.example` committable.
 
 Deviations / handoff notes:
 - AC-3 production client-bundle scan deferred — no app to build until Stories 1.2+; structural guarantee (only URL+anon are `NEXT_PUBLIC_`) + documented procedure stand in.
@@ -121,3 +121,17 @@ Deviations / handoff notes:
 ### Change Log
 
 - 2026-06-30 — Provisioned single-environment footprint (Supabase / Vercel / Railway / R2), wired + reachability-verified, committed server-only secret inventory + `.env.example`, leak check clean. Status → review.
+
+## Review Findings
+
+**Code review — 2026-06-30** (adversarial: Blind Hunter · Edge Case Hunter · Acceptance Auditor). **Verdict: Accept-with-follow-ups.** No acceptance criterion violated; no secret value committed — independently verified: 0 secret literals across 296 tracked files; only `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` are client-exposed; `.env.local` + `docs/ops/*.local.md` confirmed untracked/ignored; scope respected.
+
+**Resolved 2026-06-30** — all decision items dispositioned, both patches applied; story → `done`.
+
+- [x] [Review][Decision→Patch] Un-rotated secrets in local transcript — Resolved: **accepted, no rotation** (private event; repo verified clean, values never reached git). The inventory's absolute "ONLY in provider env vars + .env.local" wording was softened to acknowledge the one-time local-transcript exposure so the doc is no longer self-contradicting.
+- [x] [Review][Decision] AC4 billing identifiers only in gitignored local file — Resolved: **accepted**; the operator holds the per-service identifiers in `docs/ops/environment-inventory.local.md`, sufficient for Story 7.2 to read when it wires billing alerts.
+- [x] [Review][Decision→Defer] AC3 client-bundle scan follow-up — Resolved: **logged** to `_bmad-output/implementation-artifacts/deferred-work.md`; intended home is the Story 7.5 build-handoff checklist gate (run the leak scan at the first real Next.js build).
+- [x] [Review][Decision] Real account identifiers in story prose — Resolved: **accepted**; the Supabase ref is client-public via `NEXT_PUBLIC_SUPABASE_URL` and this story file is an internal record.
+- [x] [Review][Patch] Consolidate redundant .gitignore rules — **applied**: single `.env*` + `!.env.example` block, dropped duplicate bare `.vercel` (kept `.vercel/`) and dead `.env*.local` family. Verified via `git check-ignore` — `.env.example` stays committable; all secret/local paths remain ignored.
+- [x] [Review][Patch] Correct leak-check file count (298 → 296) — **applied**.
+- Dismissed as noise (5): `.env.local` already-tracked concern (refuted — verified untracked); gitignore negation brittleness / case-insensitive un-ignore / luck-of-ordering (×3, current state verified correct); empty Steam placeholders (self-noted, no defect).

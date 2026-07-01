@@ -2,8 +2,11 @@
 
 > **Provisioned by Story 1.1.** One low-cost footprint; **every secret server-side only** (AD-25).
 > This committed file is a **template (placeholders + generic facts)**. Account-specific refs live in
-> the gitignored `environment-inventory.local.md`; credentials live ONLY in provider env vars +
-> the gitignored `.env.local`. **Never commit real secret values.**
+> the gitignored `environment-inventory.local.md`; credentials belong only in provider env vars +
+> the gitignored `.env.local` (the canonical stores — the repo itself never holds a real value).
+> **Never commit real secret values.** *(One-time exception logged: during provisioning the Railway
+> CLI echoed 4 secret values into a local dev-session transcript; reviewed and accepted for this
+> private event — see Story 1.1 deviations. Values never reached the repo.)*
 
 ## Services (single env — no staging/prod split, AD-25/AD-26)
 
