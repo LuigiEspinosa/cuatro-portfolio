@@ -20,7 +20,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(39);
+select plan(48);  -- 39 original + 9 from 2026-07-01 code-review patches (P1 dormancy, P2 helper matrix, P3 write-denial cells)
 
 -- Seed a minimal, deterministic fixture as postgres (BYPASSRLS) before any role switch.
 insert into player (steamid64, display_name)
@@ -81,6 +81,22 @@ select is(public.is_admin(), false, 'empty/unset claims -> is_admin() false (the
 set local request.jwt.claims = '{"app_metadata":{"role":"Admin"}}';
 select is(public.is_admin(), false, 'wrong-case role "Admin" -> is_admin() false (exact match, not case-folded)');
 
+-- jwt_steamid64() across non-admin / malformed claims (role-independent: returns the id when
+-- present, else null — fail-closed). Complements the admin+missing cases above (AC #3).
+set local request.jwt.claims = '{"app_metadata":{"role":"viewer","steamid64":"76561197960287931"}}';
+select is(public.jwt_steamid64(), '76561197960287931', 'viewer claim -> jwt_steamid64() returns the steamid64 (role-independent)');
+set local request.jwt.claims = '{"app_metadata":{"role":"viewer"}}';
+select is(public.jwt_steamid64(), null, 'app_metadata present but no steamid64 -> jwt_steamid64() null');
+set local request.jwt.claims = '';
+select is(public.jwt_steamid64(), null, 'empty/unset claims -> jwt_steamid64() null (fail-closed)');
+
+-- is_admin() stays false on malformed app_metadata: a non-object app_metadata and a non-string role
+-- both yield null/coerced-text via ->/->>, so coalesce(... = 'admin', false) is false (fail-closed).
+set local request.jwt.claims = '{"app_metadata":"admin"}';
+select is(public.is_admin(), false, 'non-object app_metadata (scalar "admin") -> is_admin() false');
+set local request.jwt.claims = '{"app_metadata":{"role":123}}';
+select is(public.is_admin(), false, 'non-string role (123) -> is_admin() false');
+
 -- Structural: both helpers are STABLE (depend on the request JWT, constant within a statement)
 -- and pin search_path (defense-in-depth for use inside RLS policies).
 select is((select provolatile::text from pg_proc where oid = 'public.is_admin()'::regprocedure),      's', 'is_admin() is STABLE');
@@ -115,6 +131,22 @@ select throws_ok($$ update player set display_name = 'Hacked' where steamid64 = 
   '42501', null, 'authenticated viewer CANNOT update player — fail closed');
 select throws_ok($$ delete from player where steamid64 = '76561197960287930' $$,
   '42501', null, 'authenticated viewer CANNOT delete player — fail closed');
+-- write-denial also holds on the other reference tables (not just player): AC #4 across more cells.
+select throws_ok($$ insert into season (name) values ('ViewerNope') $$,
+  '42501', null, 'authenticated viewer CANNOT insert season — fail closed');
+select throws_ok($$ insert into tournament (season_id, name) values ((select id from season where name = 'Season 1'), 'ViewerNope') $$,
+  '42501', null, 'authenticated viewer CANNOT insert tournament — fail closed');
+set local role postgres;
+
+-- authenticated ADMIN: app_role_admin_read is DORMANT by design. app_role has no base SELECT grant
+-- to authenticated, so even a valid admin claim 42501s at the table-grant gate BEFORE RLS is consulted
+-- — the policy's is_admin() USING clause is never reached. Admins read app_role via server routes with
+-- the service key (Epic 2/4), never the client Data API. Asserting this documents the dormancy so a
+-- future grant that accidentally activates the policy is a conscious, caught change.
+set local role authenticated;
+select set_config('request.jwt.claims', '{"app_metadata":{"role":"admin","steamid64":"76561197960287930"}}', true);
+select throws_ok($$ select count(*) from app_role $$,
+  '42501', null, 'authenticated ADMIN also CANNOT read app_role via Data API — app_role_admin_read dormant (no base grant)');
 set local role postgres;
 
 -- anon (unauthenticated public): reads reference data, but NOT app_role.
@@ -122,6 +154,8 @@ set local role anon;
 select is((select count(*)::int from player), 3, 'anon reads player (public viewer surface)');
 select throws_ok($$ select count(*) from app_role $$,
   '42501', null, 'anon CANNOT read app_role — fail closed');
+select throws_ok($$ insert into player (steamid64, display_name) values ('76561197960287666', 'AnonNope') $$,
+  '42501', null, 'anon CANNOT insert player — fail closed');
 set local role postgres;
 
 select * from finish();

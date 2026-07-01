@@ -4,7 +4,7 @@ baseline_commit: c1bfd76db90ce1a28376cfbff1898ddd25b4b67f
 
 # Story 1.3: Fail-closed RLS framework and helper functions (migration 0002)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -266,3 +266,19 @@ Behavioral note: because `app_role` has no `authenticated` grant, its admin-read
 ### Change Log
 
 - 2026-07-01 — Story 1.3 implemented: migration 0002 (fail-closed RLS framework + `is_admin()`/`jwt_steamid64()` helpers) + pgTAP proof. Added explicit base-table grants (documented deviation) because the project's always-revoked Data-API default left the roles ungranted. Verified: clean apply 0001→0002, `supabase test db` 69/69 (0001 30/30, 0002 39/39). Status → review. Remote push deferred pending Cuatro's confirmation.
+
+---
+
+### Review Findings — Adversarial Code Review (2026-07-01)
+
+_Three parallel review layers (Blind Hunter · Edge Case Hunter · Acceptance Auditor), run in fresh contexts. **Outcome: no code-correctness defects.** `is_admin()` is byte-for-byte the required expression and fail-closed across the whole claim matrix; ACs #1–#4 fully satisfied; the explicit base-table GRANT deviation is sound (preserves fail-closed — the auditor confirmed it never widens client access); nothing out-of-scope leaked in. Every surviving finding is test-coverage or a design-confirmation, not a bug. **10 findings dismissed as noise**, including two "the suite is broken" false positives — `plan(39)` is exactly right (recounted: A=8, B=8, C=12, D=11) and `set local role postgres` is legal from the superuser `supabase test db` session — both refuted by the recorded 39/39 green._
+
+**Resolution (2026-07-01):** the [Decision] was resolved by Cuatro → keep the dormant policy + add a documenting test. All 3 resulting `patch` findings were applied to `supabase/tests/0002_rls_test.sql` (no change to `0002_rls.sql` — the migration SQL had no defects). Test plan bumped `plan(39)` → `plan(48)` (+9 assertions); re-ran `supabase test db` → **PASS, Files=2, Tests=78** (0001 30/30 regression-green, 0002 48/48). The 1 `defer` item is logged in `deferred-work.md` for Story 1.4.
+
+- [x] [Review][Patch] **`app_role_admin_read` is a dormant, unreachable SELECT policy — document the dormancy with a test** _(applied 2026-07-01: added Section-D assert that an authenticated admin also 42501s)_ _(resolved from [Decision] 2026-07-01: Cuatro chose **keep the policy + add a documenting test**)._ Its `USING ((select public.is_admin()))` clause can never admit rows, because `app_role` has no `grant select … to authenticated`, so an authenticated admin `42501`s at the table-grant gate *before* RLS is consulted; it is also never behaviorally exercised. All three layers flagged it; the dev documented it as intentional (admins read `app_role` via Epic-2/4 server routes with the service key, not the client Data API), and AC #5 only requires proving viewers *cannot* read `app_role` (which IS proven). **Patch:** keep the policy as forward-precedent / defense-in-depth, and add a pgTAP assertion that an `authenticated` **admin** claim *also* `42501`s on `app_role` — making the dormancy explicit and tested, so any future `grant` that accidentally activates the policy is a conscious, caught change. [supabase/migrations/0002_rls.sql:55] · [supabase/tests/0002_rls_test.sql]
+
+- [x] [Review][Patch] **Thin fail-closed coverage on the non-admin / malformed helper paths (AC #3)** _(applied 2026-07-01: +5 Section-C asserts)_ — `jwt_steamid64()` is asserted only for the admin claim and no-`app_metadata`; add viewer-claim (→ returns the id), empty-claims `''` (→ null), and present-but-missing-`steamid64` (→ null); plus `is_admin()` for a non-object `app_metadata` (e.g. `"app_metadata":"admin"`) and a non-string `role`. All are correct-by-construction today but unasserted, so a regression would pass silently. Bump `plan(N)`. [supabase/tests/0002_rls_test.sql:66]
+
+- [x] [Review][Patch] **Behavioral write-denial covers only 1 of 8 client (role×table) write cells** _(applied 2026-07-01: +anon insert-denial, +season/tournament insert-denial)_ (authenticated→player); add an `anon` write-denial and at least one `season`/`tournament` write-denial. NOTE: AC #4 is *already* structurally proven by Section B's exact `policies_are` (no write policy exists on any of the four tables), so this is complementary hardening — low priority. [supabase/tests/0002_rls_test.sql:112]
+
+- [x] [Review][Defer] **No catalog-level guard enforcing the ENABLE+FORCE+grant convention for future tables** [supabase/tests/0002_rls_test.sql:37] — deferred, forward-looking framework guard. Section A hard-codes the four current tables by name, so a later migration that forgets `FORCE` on a new table passes this suite unnoticed. A generic assertion ("no base table in `public` has `relforcerowsecurity = false`") would make it fail loudly. Belongs with Story 1.4 (migration 0003) or a shared pgTAP helper, not the four-table 1.3 slice.

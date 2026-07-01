@@ -14,3 +14,7 @@ Tracked follow-ups surfaced during reviews. Each item names its origin and its i
 ## Deferred from: second-opinion code review of story-1.2 (2026-07-01)
 
 _A fresh independent review pass re-confirmed both story-1.2 deferrals above are still valid and added no new deferrals. The one new item it surfaced — missing `UNIQUE` on `season.name` / `tournament(season_id, name)` — is a **decision-needed**, not a defer; its disposition is tracked in the story file's "Review Findings — Second-Opinion Pass (2026-07-01)" section pending Cuatro's call. It also empirically **refuted** a claimed HIGH (trailing-newline regex bypass) against a live PostgreSQL 18.4 cluster — no action needed._
+
+## Deferred from: code review of story-1.3 (2026-07-01)
+
+- [ ] **No catalog-level guard enforcing the ENABLE+FORCE+grant convention for future tables.** `0002_rls_test.sql` Section A (`[supabase/tests/0002_rls_test.sql:37]`) hard-codes the four current tables by name when asserting `relforcerowsecurity = true`; a table added by a later migration that forgets `FORCE` (or its base-table grants) would pass this suite unnoticed, quietly breaking the "framework provably bites" guarantee (AC #5) for the forward roadmap. Add a generic catalog assertion — e.g. "no base table in `public` has `relforcerowsecurity = false`" — so the convention bites for every future table, not just the four. **Intended home:** Story 1.4 (audit/snapshot, migration 0003) or a shared pgTAP helper. **Reason deferred:** forward-looking framework hardening, not a defect in the four-table 1.3 slice.
