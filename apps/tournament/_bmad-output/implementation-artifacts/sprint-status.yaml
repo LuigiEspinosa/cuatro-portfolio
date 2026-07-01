@@ -1,5 +1,5 @@
 # generated: 2026-06-30
-# last_updated: 2026-06-30 (1-2 → done, code-review: 3 patches applied, 28/28 pgTAP PASS)
+# last_updated: 2026-07-01 (1-3 → review via dev-story: RLS framework + is_admin/jwt_steamid64 + explicit grants, migration 0002; 69/69 tests)
 # project: cs-tournament
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-06-30
-last_updated: 2026-06-30
+last_updated: 2026-07-01
 project: cs-tournament
 project_key: NOKEY
 tracking_system: file-system
@@ -52,7 +52,7 @@ development_status:
   epic-1: in-progress
   1-1-provision-the-single-environment-and-server-only-secrets: done
   1-2-identity-and-scope-schema-migration-0001: done
-  1-3-fail-closed-rls-framework-and-helper-functions-migration-0002: backlog
+  1-3-fail-closed-rls-framework-and-helper-functions-migration-0002: review
   1-4-append-only-audit-and-snapshot-convention: backlog
   epic-1-retrospective: optional
 
