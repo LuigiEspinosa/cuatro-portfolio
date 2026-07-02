@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-06-30
-last_updated: 2026-07-01 (Epic 1 retrospective DONE — first retro; epic-1-retrospective optional → done; 5 action items recorded [Steam creds for 2.1, ES256/JWKS binding, 0004 grants, granted_by→2.4, plan(N) habit]; no epic-update required, Epic 2 plan stands; retro doc epic-1-retro-2026-07-01.md)
+last_updated: 2026-07-02 (Story 2.1 dev-story COMPLETE → review; first Next.js 16.2 app scaffolded [app/ + lib/, npm]; Steam OpenID 2.0 login built — check_authentication verify + signed CSRF nonce + service-role player upsert + app_metadata.steamid64 session, fail-closed; 28 Vitest tests green, next build clean, client-bundle secret scan 0 leaks, live smoke test OK; NO migration [supabase/ untouched, pgTAP 120/120 unaffected]; DEFERRED: live Supabase session-mint needs manual QA, Vercel/Cloudflare prod domain = Epic 7)
 project: cs-tournament
 project_key: NOKEY
 tracking_system: file-system
@@ -57,8 +57,8 @@ development_status:
   epic-1-retrospective: done
 
   # --- Epic 2: Identity & Roster (CAP-2) ---
-  epic-2: backlog
-  2-1-steam-openid-2-0-server-side-login: backlog
+  epic-2: in-progress
+  2-1-steam-openid-2-0-server-side-login: review
   2-2-bind-identity-and-role-into-app-metadata: backlog
   2-3-canonical-steamid64-capture-and-display-name-tolerance: backlog
   2-4-roles-admin-gating-and-revoke-invalidates-session: backlog
@@ -130,9 +130,9 @@ development_status:
 # Action items recorded during retrospectives (sprint-status surfaces open ones).
 action_items:
   - epic: 1
-    action: "Obtain Steam Web API key + register production domain before Story 2.1 (deferred from Story 1.1 Task 2)"
+    action: "Obtain Steam Web API key + register production domain before Story 2.1 (deferred from Story 1.1 Task 2). RESOLVED 2026-07-02: Steam Web API key obtained + set in .env.local + local realm wired (localhost) → local dev unblocked; production domain decided = inclusivcup.cuatro.dev (Cuatro owns cuatro.dev via Squarespace Domains + Cloudflare DNS). Remaining is deploy-time infra only (Vercel Production env vars STEAM_REALM/STEAM_RETURN_URL=https://inclusivcup.cuatro.dev[/auth/steam/callback] + Vercel custom-domain + Cloudflare CNAME) — tracked for first prod deploy (Epic 7), not a Story 2.1 blocker."
     owner: "Cuatro"
-    status: open
+    status: done
   - epic: 1
     action: "Bind identity/role using the ES256 + JWKS scheme recorded in 1.1 (not legacy HS256) in Story 2.2"
     owner: "Amelia"
