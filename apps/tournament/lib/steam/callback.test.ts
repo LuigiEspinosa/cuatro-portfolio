@@ -102,6 +102,27 @@ describe('resolveSteamCallback (AC1, AC3, AC4 / AC7b,c)', () => {
     expect(result).toEqual({ ok: false, reason: 'realm_mismatch' });
   });
 
+  it('rejects HTTP parameter pollution — a duplicated openid.claimed_id (id spoofing)', async () => {
+    const nonce = mintNonce(CONFIG.nonceSecret);
+    // Attacker prepends a spoofed claimed_id before their genuine one: .get() would return
+    // the first (spoof) while the verifier validates the last (genuine) with Steam. The
+    // guard must reject before either value is ever read.
+    const spoof = 'https://steamcommunity.com/openid/id/76561190000000000';
+    const params = new URLSearchParams();
+    params.set('nonce', nonce);
+    params.set('openid.mode', 'id_res');
+    params.append('openid.claimed_id', spoof); // first — what .get() picks
+    params.append('openid.claimed_id', CLAIMED); // last — what Steam would validate
+    params.set('openid.return_to', `${CONFIG.returnUrl}?nonce=${nonce}`);
+    const result = await resolveSteamCallback({
+      params,
+      nonceCookie: nonce,
+      verifier: okVerifier,
+      config: CONFIG,
+    });
+    expect(result).toEqual({ ok: false, reason: 'duplicate_openid_params' });
+  });
+
   it('fails closed when Steam does not confirm the assertion', async () => {
     const nonce = mintNonce(CONFIG.nonceSecret);
     const result = await resolveSteamCallback({

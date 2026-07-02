@@ -30,7 +30,9 @@ export async function fetchSteamProfile(steamid64: string, apiKey: string): Prom
     const url = new URL('https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/');
     url.searchParams.set('key', apiKey);
     url.searchParams.set('steamids', steamid64);
-    const res = await fetch(url, { cache: 'no-store' });
+    // Cosmetic hydration: bound the outbound call so a hung Steam Web API can't stall
+    // login. A timeout throws → the catch below falls back to the placeholder name.
+    const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
       return { displayName: steamid64, avatarUrl: null };
     }

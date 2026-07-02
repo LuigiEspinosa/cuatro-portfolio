@@ -92,6 +92,20 @@ describe('createSteamVerifier (AC1 / AC7b)', () => {
     expect(await verifier.verify(paramsFor('https://steamcommunity.com/openid/id/999'))).toBeNull();
   });
 
+  it('extracts the claimed_id it actually validated with Steam, not a polluted first duplicate', async () => {
+    // Defense in depth (the callback rejects duplicates first): even if a duplicated
+    // openid.claimed_id reaches the verifier, the id returned is the one sent to Steam
+    // (body = last value), never the attacker-chosen first raw param.
+    const spoof = 'https://steamcommunity.com/openid/id/76561190000000000';
+    const params = new URLSearchParams();
+    params.append('openid.claimed_id', spoof); // first — what .get() would pick
+    params.append('openid.claimed_id', VALID_CLAIMED); // last — what body.set keeps + Steam sees
+    params.set('openid.ns', 'http://specs.openid.net/auth/2.0');
+    const post: HttpPost = async () => 'is_valid:true\n';
+    const verifier = createSteamVerifier(post);
+    expect(await verifier.verify(params)).toBe(VALID_ID);
+  });
+
   it('re-POSTs all openid.* params with mode=check_authentication and drops non-openid params', async () => {
     const post = vi.fn<HttpPost>(async () => 'is_valid:true\n');
     const verifier = createSteamVerifier(post);

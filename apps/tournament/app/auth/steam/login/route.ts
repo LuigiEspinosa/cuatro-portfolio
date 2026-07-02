@@ -28,7 +28,9 @@ export async function GET() {
   response.cookies.set(NONCE_COOKIE, nonce, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: returnUrlBase.startsWith('https://'),
+    // Derive Secure from the parsed protocol, not a string prefix — an uppercase scheme
+    // or stray whitespace in the env must not silently ship a non-Secure auth cookie.
+    secure: new URL(returnUrlBase).protocol === 'https:',
     path: '/',
     maxAge: 60 * 10, // 10 minutes to complete the round-trip
   });

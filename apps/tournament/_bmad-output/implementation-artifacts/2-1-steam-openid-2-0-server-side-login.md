@@ -4,7 +4,7 @@ baseline_commit: 3f6765253f5f199e7eda3fea5fb1b00401e9e095
 
 # Story 2.1: Steam OpenID 2.0 server-side login
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -285,3 +285,30 @@ _Generated (gitignored, not in File List): `node_modules/`, `.next/`, `next-env.
 | Date | Change |
 |---|---|
 | 2026-07-02 | Story 2.1 implemented: first Next.js 16.2 app scaffold + Steam OpenID 2.0 server-side login (check_authentication verify, signed CSRF nonce, service-role `player` upsert, `app_metadata.steamid64` session, fail-closed). 28 Vitest tests pass; `next build` clean; client-bundle secret scan 0 leaks. Status → review. |
+
+### Review Findings
+
+_Adversarial code review 2026-07-02 (fresh context, 3 parallel layers: Blind Hunter · Edge Case Hunter · Acceptance Auditor). Triage: 1 decision-needed, 4 patch, 6 defer, 7 dismissed._
+
+**Decision-needed → CORRECTED + RESOLVED (2026-07-02):** On applying the fix, a direct re-read of `session.ts` showed the earlier "code contradicts its own doc comment" framing was WRONG. The code (`verifyOtp({ type: 'email' })`, line 80) MATCHES its own doc comment (`session.ts:16-19`, which also states `verifyOtp({ type: 'email', token_hash })`). The Acceptance Auditor had misread the spec's Task 5 *recommended-pattern prose* (`type: 'magiclink'`) as the module comment — there is NO internal code contradiction. The dev deliberately implemented the documented `@supabase/ssr` `'email'` pattern, departing from the spec's recommendation and noting it. Which of `'email'`/`'magiclink'` is correct against `@supabase/supabase-js@2.110.0` is a purely empirical question. **Disposition (Cuatro, 2026-07-02): keep the code at `type: 'email'`** (self-consistent, documented pattern; a blind flip would create a new code/comment divergence and might break a working call) and let the standing QA gate below decide the value empirically. Story 2.1 stays `in-progress` until a live login QA confirms a session is minted AND the JWT carries `app_metadata.steamid64` (so `jwt_steamid64()` from migration 0002 resolves).
+
+> ⛔ **SIGN-OFF GATE (blocks `review → done`):** run the live happy-path login (real Steam → landed authenticated on `/`) and inspect the minted JWT for `app_metadata.steamid64`. If `verifyOtp({ type: 'magiclink' })` rejects the token against the installed versions, try `type: 'email'` and record which the live instance accepts.
+
+**Patch (fixable without human input):**
+
+- [x] [Review][Patch] ✅ applied 2026-07-02 — **CRITICAL — HTTP Parameter Pollution → Steam identity spoofing.** Duplicate `openid.*` query params diverge between validation and trust: the `check_authentication` re-POST builds its body with `body.set(key,value)` (last value wins → Steam validates account B), but the SteamID64 is extracted from `params.get('openid.claimed_id')` which returns the FIRST value (attacker-chosen A). An attacker holding ANY valid Steam assertion can inject `?openid.claimed_id=<victimA>&…&openid.claimed_id=<genuineB>` and authenticate as ANY SteamID64 (incl. a future admin, given Story 2.2 gates on steamid64). Fix: fail closed on any duplicated `openid.*` key AND extract `claimed_id` from the exact validated set. [lib/steam/openid.ts:81-96] · [lib/steam/callback.ts:82] — blind+edge
+- [x] [Review][Patch] ✅ applied 2026-07-02 — Callback route has no `try/catch` around `runSteamLogin` — a thrown side-effect (Steam endpoint non-200, Supabase Auth error, `verifyOtp` version mismatch, DB error) escapes to an HTTP 500 instead of the documented fail-closed `/?login=error` redirect, and leaves the 10-min nonce cookie uncleared. (Security invariant "no session on failure" still holds; the UX/robustness contract in the route docstring does not.) [app/auth/steam/callback/route.ts:31-58] — edge+blind
+- [x] [Review][Patch] ✅ applied 2026-07-02 — No outbound timeout on the `check_authentication` and `GetPlayerSummaries` fetches — a hung Steam endpoint stalls the Node-runtime auth-path invocation indefinitely (`AbortSignal.timeout`). [lib/steam/openid.ts:55-66] · [lib/players.ts:33] — blind
+- [x] [Review][Patch] ✅ applied 2026-07-02 — `Secure` nonce-cookie flag derived from `returnUrlBase.startsWith('https://')` — a fragile string prefix (uppercase scheme / whitespace / env drift ships a non-Secure auth cookie). Derive from the parsed URL protocol instead. [app/auth/steam/login/route.ts:31] — blind
+- [x] [Review][Patch] (from decision D1) ~~Flip `verifyOtp` `type: 'email'` → `'magiclink'`~~ **WITHDRAWN** — premised on an Acceptance Auditor misread; the code already matches its own doc comment (`'email'`). No static change made; the QA gate (above) resolves the value empirically. [lib/auth/session.ts:80-83]
+
+**Deferred (real, low priority for a casual private slice — logged to deferred-work.md):**
+
+- [x] [Review][Defer] Nonce cookie value == URL `return_to` nonce value, so any callback-URL leak (history/Referer/proxy logs) discloses the "secret" half; token also carries no embedded expiry (only the 10-min cookie maxAge bounds it). [app/auth/steam/login/route.ts:22-34] · [lib/steam/nonce.ts] — deferred, hardening
+- [x] [Review][Defer] `ensureAuthUser` doesn't re-assert `app_metadata.steamid64` on the "already exists" path — a pre-existing auth user lacking the claim would mint a session where `jwt_steamid64()` returns null (latent; low prob in a fresh single-env project). [lib/auth/session.ts:46-56] — deferred, latent
+- [x] [Review][Defer] Over-broad "already exists" match — `isAlreadyExists` treats any `status === 422` as duplicate-user, which can mask other Supabase validation failures; narrow to `code === 'email_exists'` once live error shapes are confirmed (tie to the AC5 QA above). [lib/auth/session.ts:30-39] — deferred, pending QA
+- [x] [Review][Defer] `display_name` from the Steam persona is written unbounded/un-length-checked (no length or control-char guard; DB `text` has no CHECK). [lib/players.ts:42,68] — deferred, cosmetic
+- [x] [Review][Defer] `check_authentication` hardening — also require `parsed['ns'] === OPENID_NS` alongside `is_valid === 'true'`. [lib/steam/openid.ts:90] — deferred, hardening
+- [x] [Review][Defer] Home page loads Valve's "Sign in through Steam" button `<img>` from a remote host — self-host the asset to drop the third-party render dependency (the `<a>` login link still works if it 404s). [app/page.tsx:39-44] — deferred, cosmetic
+
+**Dismissed as noise / verified non-issues (7):** `return_to` case/port sensitivity (both sides go through `new URL().origin` — normalized identically); realm checked via `return_to` origin rather than the `openid.realm` param (AC intent met via the Steam round-trip); "cosmetic upsert blocks login" (the `player` row is a legitimate identity prerequisite, not cosmetic — profile *fetch* is the cosmetic part and can't throw); `return_to` query not constrained (bounded by Steam signing the full `return_to`); `parseKeyValueBody` CRLF (`.trim()` neutralizes `\r` on both sides); `verifyNonce` odd/invalid-hex (length gate fails closed before `timingSafeEqual`); open-redirect (retracted by the layer — redirect targets are server-config only).

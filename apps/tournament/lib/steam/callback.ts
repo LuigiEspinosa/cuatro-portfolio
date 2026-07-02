@@ -1,5 +1,5 @@
 import { verifyNonce } from '@/lib/steam/nonce';
-import type { SteamVerifier } from '@/lib/steam/openid';
+import { hasDuplicateOpenidParams, type SteamVerifier } from '@/lib/steam/openid';
 
 /**
  * Pure resolver for the Steam OpenID callback (AC1, AC3, AC4). No side effects: given
@@ -8,6 +8,7 @@ import type { SteamVerifier } from '@/lib/steam/openid';
  * the login-flow orchestrator build on this; tests drive it directly.
  *
  * Order of checks is deliberate so each guard is independently testable:
+ *   0. no duplicated openid.* params (HTTP parameter-pollution → id spoofing)
  *   1. nonce present (cookie + returned query param)
  *   2. nonce cookie === returned nonce
  *   3. nonce signature verifies (HMAC, server secret)
@@ -30,6 +31,7 @@ export type CallbackResult =
   | { ok: false; reason: CallbackFailure };
 
 export type CallbackFailure =
+  | 'duplicate_openid_params'
   | 'missing_nonce'
   | 'nonce_mismatch'
   | 'nonce_bad_signature'
@@ -61,6 +63,13 @@ export async function resolveSteamCallback(args: {
   config: CallbackConfig;
 }): Promise<CallbackResult> {
   const { params, nonceCookie, verifier, config } = args;
+
+  // 0. Reject HTTP parameter pollution up front: a duplicated openid.* key can diverge
+  //    between the set validated by Steam and the value we read the identity from. Any
+  //    downstream `.get()` (return_to here, claimed_id in the verifier) would be unsafe.
+  if (hasDuplicateOpenidParams(params)) {
+    return { ok: false, reason: 'duplicate_openid_params' };
+  }
 
   // 1. Both the cookie and the round-tripped query nonce must be present.
   const returnedNonce = params.get(NONCE_QUERY_PARAM) ?? undefined;

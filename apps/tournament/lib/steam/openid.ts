@@ -12,6 +12,9 @@ export const STEAM_OPENID_ENDPOINT = 'https://steamcommunity.com/openid/login';
 const OPENID_NS = 'http://specs.openid.net/auth/2.0';
 const IDENTIFIER_SELECT = 'http://specs.openid.net/auth/2.0/identifier_select';
 
+/** Hard timeout for outbound calls to Steam on the auth path — never a hung invocation. */
+const STEAM_HTTP_TIMEOUT_MS = 10_000;
+
 // Claimed id is exactly `https://steamcommunity.com/openid/id/<17 digits>`.
 const CLAIMED_ID_RE = /^https?:\/\/steamcommunity\.com\/openid\/id\/(\d{17})$/;
 
@@ -49,6 +52,23 @@ export function parseKeyValueBody(text: string): Record<string, string> {
   return out;
 }
 
+/**
+ * True if any `openid.*` key appears more than once — an HTTP parameter-pollution attempt.
+ * A duplicated `openid.claimed_id` would otherwise diverge between the value we validate
+ * with Steam (`URLSearchParams.set` → last wins) and the value we read the identity from
+ * (`.get()` → first wins), letting a genuine assertion be trusted under a spoofed id.
+ * The callback rejects such requests before doing anything else.
+ */
+export function hasDuplicateOpenidParams(params: URLSearchParams): boolean {
+  const seen = new Set<string>();
+  for (const key of params.keys()) {
+    if (!key.startsWith('openid.')) continue;
+    if (seen.has(key)) return true;
+    seen.add(key);
+  }
+  return false;
+}
+
 /** Injectable HTTP transport (POST form-encoded, return raw body text). */
 export type HttpPost = (url: string, body: URLSearchParams) => Promise<string>;
 
@@ -58,6 +78,7 @@ const defaultPost: HttpPost = async (url, body) => {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
     cache: 'no-store',
+    signal: AbortSignal.timeout(STEAM_HTTP_TIMEOUT_MS),
   });
   if (!res.ok) {
     throw new Error(`check_authentication HTTP ${res.status}`);
@@ -91,8 +112,11 @@ export function createSteamVerifier(post: HttpPost = defaultPost): SteamVerifier
         return null; // tampered / replayed / is_valid:false → fail closed
       }
 
-      // Steam confirmed the assertion; the claimed_id is now trustworthy.
-      const claimedId = params.get('openid.claimed_id') ?? '';
+      // Steam confirmed the assertion. Read claimed_id from the EXACT set we validated
+      // (`body`), never from the raw `params` — otherwise a duplicated openid.claimed_id
+      // could diverge (get()=first, set()=last) and be trusted under a spoofed id. The
+      // callback also rejects duplicated openid.* params outright (hasDuplicateOpenidParams).
+      const claimedId = body.get('openid.claimed_id') ?? '';
       return extractSteamId64(claimedId);
     },
   };

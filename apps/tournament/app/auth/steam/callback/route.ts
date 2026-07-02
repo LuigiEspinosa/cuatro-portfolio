@@ -28,36 +28,51 @@ export async function GET(request: NextRequest) {
   const ssr = createSupabaseRouteClient(request, successResponse);
   const admin = getAdminClient();
 
-  const result = await runSteamLogin(
-    {
-      params: request.nextUrl.searchParams,
-      nonceCookie,
-      verifier: createSteamVerifier(),
-      config: {
-        realm: env.steamRealm(),
-        returnUrl: env.steamReturnUrl(),
-        nonceSecret: env.authNonceSecret(),
-      },
-    },
-    {
-      async upsertPlayer(steamid64) {
-        const profile = await fetchSteamProfile(steamid64, env.steamApiKey());
-        await upsertPlayer(admin, steamid64, profile);
-      },
-      async establishSession(steamid64) {
-        await establishSession(admin, ssr, steamid64);
-      },
-    },
-  );
-
-  if (!result.ok) {
-    // Fail closed — establishSession never ran, so no session cookies were written.
+  // Any failure — a fail-closed verification result OR a thrown side effect (Steam
+  // endpoint down/timeout, Supabase Auth/DB error, version mismatch) — must land on the
+  // same graceful redirect. A fresh response guarantees no partial session cookies that
+  // may have been written onto successResponse leak out.
+  const failClosed = () => {
     const failResponse = NextResponse.redirect(new URL('/?login=error', env.steamRealm()));
     failResponse.cookies.delete(NONCE_COOKIE);
     return failResponse;
-  }
+  };
 
-  // Success: session cookies are already on successResponse; consume the nonce.
-  successResponse.cookies.delete(NONCE_COOKIE);
-  return successResponse;
+  try {
+    const result = await runSteamLogin(
+      {
+        params: request.nextUrl.searchParams,
+        nonceCookie,
+        verifier: createSteamVerifier(),
+        config: {
+          realm: env.steamRealm(),
+          returnUrl: env.steamReturnUrl(),
+          nonceSecret: env.authNonceSecret(),
+        },
+      },
+      {
+        async upsertPlayer(steamid64) {
+          const profile = await fetchSteamProfile(steamid64, env.steamApiKey());
+          await upsertPlayer(admin, steamid64, profile);
+        },
+        async establishSession(steamid64) {
+          await establishSession(admin, ssr, steamid64);
+        },
+      },
+    );
+
+    if (!result.ok) {
+      // establishSession never ran, so no session cookies were written.
+      return failClosed();
+    }
+
+    // Success: session cookies are already on successResponse; consume the nonce.
+    successResponse.cookies.delete(NONCE_COOKIE);
+    return successResponse;
+  } catch (err) {
+    // A verified-but-post-verification effect threw. Never surface a 500 (or a partial
+    // session) — fail closed to the login-error page. Server-log for diagnosis.
+    console.error('[steam/callback] login failed after verification:', err);
+    return failClosed();
+  }
 }
