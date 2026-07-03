@@ -4,7 +4,7 @@ baseline_commit: 3b0f161455f85440cad75f117b62afc5813b7ae1
 
 # Story 2.2: Bind identity and role into app_metadata
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -64,10 +64,10 @@ So that RLS can trust identity and role from the JWT and a client cannot self-es
   - [x] `lib/auth/session.test.ts` (3 tests, NEW file): `createUser` + `updateUserById` both carry `{ steamid64, role }`; existing-user backfill (already-exists → no throw); viewer path; AC4 call-order asserted. Needed a `server-only` stub — wired a global alias in `vitest.config.ts` (`test/stubs/server-only.ts`) so server-only modules are unit-testable.
   - [x] `npm test` → **42/42**; `next build` → clean (routes still `ƒ`, TS passes).
 
-- [ ] **Task 6 — Live QA (AC3) — ⛔ SIGN-OFF GATE (mirrors 2.1; run during/after code-review)** — `ADMIN_STEAMIDS` already pre-set with Cuatro's id.
-  - [ ] With `ADMIN_STEAMIDS` containing `76561198388441171`, log in as Cuatro → confirm `auth.users.raw_app_meta_data` = `{ …, "steamid64":"76561198388441171", "role":"admin" }` and an `app_role` row `(76561198388441171, 'admin', null, …)`.
-  - [ ] Confirm `is_admin()` resolves: `select public.is_admin()` → `true` for the admin; a non-allowlisted login → `role: 'viewer'`, `is_admin()` → `false`.
-  - [ ] Confirm the **backfill** path: Cuatro's user already exists from 2.1 (had `steamid64`, no `role`) → after this login it carries `role` AND still `steamid64` (not clobbered).
+- [x] **Task 6 — Live QA (AC3) — ✅ SIGN-OFF GATE CLEARED (Cuatro, 2026-07-02)**
+  - [x] With `ADMIN_STEAMIDS=76561198388441171`, Cuatro logged in → `auth.users.raw_app_meta_data` = `{"role":"admin","provider":"email","providers":["email"],"steamid64":"76561198388441171"}` and `app_role` row `(76561198388441171,'admin',null,…)` present. ✅
+  - [x] `is_admin()` resolves from the LIVE session JWT: a temporary `GET /api/whoami` (authenticated SSR client → RPC) returned `is_admin: true`, `jwt_app_metadata.role: "admin"`, `jwt_steamid64: "76561198388441171"` — end-to-end proof, then the temp route was deleted. ✅
+  - [x] **Backfill confirmed:** Cuatro's pre-existing 2.1 user (`steamid64` only, no `role`) → after this login carries `role:'admin'` AND still `steamid64` (not clobbered). The `updateUserById`(after `generateLink`)→`verifyOtp` ordering DID land role in the FIRST JWT — the version-sensitive assumption is empirically confirmed; no contingency reorder needed. ✅
 
 ## Dev Notes
 
@@ -241,3 +241,25 @@ claude-opus-4-8 (Claude Opus 4.8) — bmad-dev-story workflow, 2026-07-02.
 | Date | Change |
 |---|---|
 | 2026-07-02 | Story 2.2 implemented: bind `app_metadata.role` via Admin API + `ADMIN_STEAMIDS` allowlist bootstrap + `app_role` write (read-first, revoke-durable) + `updateUserById` backfill before the mint. New `lib/auth/roles.ts`; extended `session.ts`/`env.ts`/callback route. 42/42 Vitest (added `roles.test.ts` + `session.test.ts` + a `server-only` test stub); `next build` clean; no migration. Status → review (⛔ live-QA sign-off gate pending, mirrors 2.1). |
+
+### Review Findings
+
+_Adversarial code review 2026-07-02 (fresh context, 3 parallel layers on diff `3b0f161..7784eca`). **Strong result: 0 confirmed Critical/High; all 8 ACs met at code level; scope cleanly held (no enforcement/revoke/`granted_by` invariant/rename/migration leaked).** Triage: 1 decision (the known live-QA gate) · 3 patch · 3 defer · 6 dismissed._
+
+**Decision-needed (the live-QA sign-off gate — already Task 6):**
+
+- [x] [Review][Decision] ✅ **RESOLVED — live QA passed (2026-07-02): `/api/whoami` returned `is_admin: true` + `jwt_app_metadata.role: "admin"` for Cuatro's pre-existing 2.1 user, so the backfill DID land role in the first JWT; `verifyOtp` re-reads current `app_metadata` as assumed — no reorder needed.** **AC3/AC4 can't be proven from code — the "first login's JWT carries `role`" behavior for the BACKFILL path (existing 2.1-era user) is version-sensitive.** `establishSession` does `generateLink` → `updateUserById` (sets role) → `verifyOtp`. Whether the minted JWT reflects the `app_metadata` updated *after* `generateLink` depends on Supabase re-reading the user at `verifyOtp` time (standard behavior — high confidence it works) vs snapshotting at `generateLink` time. New admins are safe regardless (`createUser` sets role before `generateLink`); the exposed case is exactly Cuatro's pre-existing 2.1 user. **Live QA (Task 6) must diff a pre-existing user's first post-2.2 login JWT.** Contingency if it fails: move the role-write before `generateLink` (resolve the id via `listUsers`). [lib/auth/session.ts:79-106] — auditor
+
+**Patch (fixable without human input):**
+
+- [x] [Review][Patch] ✅ applied 2026-07-02 (+regression test) — **Fail-closed gap (both Blind + Edge converged):** the `if (userId)` guard silently SKIPS the role backfill and still mints a session — for an existing 2.1-era user that yields a role-less JWT with **no error**, contradicting the module's own fail-closed contract. Fix: **throw when `data.user?.id` is absent** (fail the login closed) instead of skipping + minting. [lib/auth/session.ts:91-99] — blind+edge
+- [x] [Review][Patch] ✅ applied 2026-07-02 — Tighten `isAlreadyExists` per the story's own Dev Notes — drop the over-broad `error.status === 422` match (keep `code === 'email_exists'` + message checks) so a genuine non-duplicate 422 fails the login closed instead of being swallowed. Tests stay green (they key off `code: 'email_exists'`). [lib/auth/session.ts:30-39] — auditor
+- [x] [Review][Patch] ✅ applied 2026-07-02 — Document the allowlist gotcha at the env layer: `ADMIN_STEAMIDS` is a **one-time bootstrap**, consulted only when no `app_role` row exists (read-first = revoke-durable, AC6). Adding an id after that user's first login does NOT promote them — that needs the Story 2.4 grant route. Add a warning line to `.env.example`. [.env.example ADMIN_STEAMIDS] — blind
+
+**Deferred (real, low priority — logged to deferred-work.md):**
+
+- [x] [Review][Defer] `existing.role`/`raced.role` are cast `as Role` with no runtime validation — fully guarded today by the 0001 `CHECK (role in ('admin','viewer'))` + strict `is_admin()` (`= 'admin'`), so an unexpected value fails closed to non-admin. Keep the `Role` union in lockstep with the DB CHECK; revisit if a third role is ever added. [lib/auth/roles.ts:47-57] — blind+edge, deferred (DB-guarded)
+- [x] [Review][Defer] The `23505` race re-read discards its own `error` (`const { data: raced }`) and depends on the exact PostgREST error `code` string; a re-read fault is reported as "insert failed". Near-impossible race for a private roster (concurrent first-login of the SAME id). [lib/auth/roles.ts:64-74] — blind+edge, deferred
+- [x] [Review][Defer] A fully-malformed non-empty `ADMIN_STEAMIDS` parses to an empty set (everyone `viewer`) with no operator signal — conformant with AC7 (fail-closed), but a `console.warn` when the var is set-but-empty would help ops. The live QA is the backstop. [lib/auth/roles.ts:26-34] — auditor, deferred
+
+**Dismissed as noise / verified non-issues (6):** FK `23503` on the `app_role` insert (masked by `upsertPlayer`-before-`establishSession` ordering — fails closed, generic message is fine); `assertNoLeakedSecrets()` invocation (IS called at `env.ts` module load — not a gap); `updateUserById`-before-`verifyOtp` divergence on a `verifyOtp` failure (benign — self-heals next login, reviewer cleared it); `resolveRole` trusts its `steamid64` shape (upstream `extractSteamId64`/`upsertPlayer` already guarantee 17-digit); partial `app_role` write on a later login failure (idempotent — correct row, read-first on retry); `verifyOtp('email')` type (confirmed working in 2.1 live QA).

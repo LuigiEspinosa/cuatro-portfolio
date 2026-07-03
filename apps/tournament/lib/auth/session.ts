@@ -31,9 +31,10 @@ export function steamEmail(steamid64: string): string {
 
 function isAlreadyExists(error: { message?: string; code?: string; status?: number }): boolean {
   const msg = (error.message ?? '').toLowerCase();
+  // Match the duplicate-user signal specifically — NOT a bare status===422, which Supabase
+  // also returns for other validation failures (those must fail the login closed, not no-op).
   return (
     error.code === 'email_exists' ||
-    error.status === 422 ||
     msg.includes('already been registered') ||
     msg.includes('already registered') ||
     msg.includes('already exists')
@@ -90,14 +91,18 @@ export async function establishSession(
   // have the id here without a lookup. The Admin API REPLACES `app_metadata` (no deep-merge),
   // so pass BOTH keys or the `steamid64` claim is clobbered. Done BEFORE `verifyOtp` so the
   // minted JWT already carries `role` — `is_admin()` resolves on the first admin login.
+  // Fail closed if we cannot identify the user to bind the claim onto — never mint a
+  // session whose app_metadata we could not set (an existing 2.1-era user would otherwise
+  // get a role-less JWT with no error). generateLink returns the full user in practice.
   const userId = data.user?.id;
-  if (userId) {
-    const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
-      app_metadata: { steamid64, role },
-    });
-    if (updateError) {
-      throw new Error(`updateUserById failed: ${updateError.message}`);
-    }
+  if (!userId) {
+    throw new Error('generateLink returned no user id — cannot bind role claim');
+  }
+  const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { steamid64, role },
+  });
+  if (updateError) {
+    throw new Error(`updateUserById failed: ${updateError.message}`);
   }
 
   const { error: verifyError } = await ssr.auth.verifyOtp({

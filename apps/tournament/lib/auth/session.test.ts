@@ -4,10 +4,15 @@ import { establishSession, steamEmail } from '@/lib/auth/session';
 
 const STEAMID = '76561198388441171';
 
-function makeAdmin(opts: { createError?: { message: string; code?: string } | null } = {}) {
+function makeAdmin(
+  opts: { createError?: { message: string; code?: string } | null; noUser?: boolean } = {},
+) {
   const createUser = vi.fn(async () => ({ error: opts.createError ?? null }));
   const generateLink = vi.fn(async () => ({
-    data: { user: { id: 'user-1' }, properties: { hashed_token: 'tok-abc' } },
+    data: {
+      user: opts.noUser ? null : { id: 'user-1' },
+      properties: { hashed_token: 'tok-abc' },
+    },
     error: null,
   }));
   const updateUserById = vi.fn(async () => ({ error: null }));
@@ -61,6 +66,14 @@ describe('establishSession — app_metadata { steamid64, role } (AC1 / AC4 / AC5
     expect(updateUserById).toHaveBeenCalledWith('user-1', {
       app_metadata: { steamid64: STEAMID, role: 'admin' },
     });
+  });
+
+  it('fails closed if generateLink returns no user id (cannot bind role → no session)', async () => {
+    const { admin, updateUserById } = makeAdmin({ noUser: true });
+    const { ssr, verifyOtp } = makeSsr();
+    await expect(establishSession(admin, ssr, STEAMID, 'admin')).rejects.toThrow(/no user id/);
+    expect(updateUserById).not.toHaveBeenCalled();
+    expect(verifyOtp).not.toHaveBeenCalled(); // never mints a session with an unbound claim
   });
 
   it('carries the viewer role through both writes', async () => {
