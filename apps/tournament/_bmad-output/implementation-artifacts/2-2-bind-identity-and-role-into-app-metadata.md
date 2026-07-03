@@ -4,7 +4,7 @@ baseline_commit: 3b0f161455f85440cad75f117b62afc5813b7ae1
 
 # Story 2.2: Bind identity and role into app_metadata
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -38,35 +38,35 @@ So that RLS can trust identity and role from the JWT and a client cannot self-es
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Admin allowlist env var (AC2, AC7)**
-  - [ ] Add server-only `ADMIN_STEAMIDS` to `.env.example` (names-only, per the Story 1.1 discipline) — documented as a comma-separated list of 17-digit SteamID64s.
-  - [ ] Add a lazy getter `adminSteamIds()` to `lib/env.ts` (mirror the `steamApiKey`/`authNonceSecret` pattern; return `process.env.ADMIN_STEAMIDS ?? ''` so an unset var → empty allowlist → everyone `viewer`, fail-closed — do NOT `required()` it).
-  - [ ] Add `NEXT_PUBLIC_ADMIN_STEAMIDS` to the `FORBIDDEN_PUBLIC_MIRRORS` list in `lib/env.ts` so a leaked client mirror fails the build.
-  - [ ] Set the real value in gitignored `.env.local` for QA (include Cuatro's `76561198388441171` so the live QA can prove the `admin` path).
+- [x] **Task 1 — Admin allowlist env var (AC2, AC7)** ✅
+  - [x] Added server-only `ADMIN_STEAMIDS` to `.env.example` (names-only, its own section) — comma-separated 17-digit SteamID64s.
+  - [x] Added lazy getter `adminSteamIds()` to `lib/env.ts` (`process.env.ADMIN_STEAMIDS ?? ''`, not `required()` — unset ⇒ everyone `viewer`, fail-closed).
+  - [x] Added `NEXT_PUBLIC_ADMIN_STEAMIDS` to `FORBIDDEN_PUBLIC_MIRRORS`.
+  - [x] Set `ADMIN_STEAMIDS=76561198388441171` in gitignored `.env.local` (Cuatro's public id) so the live QA can prove the `admin` path.
 
-- [ ] **Task 2 — Pure allowlist + role resolution module `lib/auth/roles.ts` (AC2, AC6, AC7, AC8)** — `import 'server-only'` at top.
-  - [ ] `parseAdminAllowlist(raw: string): Set<string>` — split on `,`, trim, drop blanks, keep only entries matching `^[0-9]{17}$` (defensive; a malformed entry must not throw). Pure, unit-tested.
-  - [ ] `resolveRole(admin: SupabaseClient, steamid64: string, allowlist: Set<string>): Promise<'admin' | 'viewer'>` — (1) `select role from app_role where steamid64 = $1` via the service-role client; (2) if a row exists → return its `role` (authoritative; respects future 2.4 revokes); (3) if no row → `role = allowlist.has(steamid64) ? 'admin' : 'viewer'`, INSERT `app_role { steamid64, role, granted_by: null }` (service-role; `granted_at` defaults), return `role`. Default `'viewer'` on any read error is acceptable ONLY if it also does not silently grant admin — prefer to throw on a hard DB error so the callback's `failClosed()` catches it (no session on an indeterminate role).
-  - [ ] Keep the `app_role` read/write behind the injected `admin` client so tests mock it (no live Supabase).
+- [x] **Task 2 — Pure allowlist + role resolution module `lib/auth/roles.ts` (AC2, AC6, AC7, AC8)** ✅ — `import 'server-only'`.
+  - [x] `parseAdminAllowlist(raw: string | undefined): Set<string>` — split on `,`, trim, keep only `^[0-9]{17}$` (blanks/malformed ignored, never throws). Pure.
+  - [x] `resolveRole(admin, steamid64, allowlist): Promise<Role>` — reads `app_role` first (`.maybeSingle()`); existing row wins (revoke durability); else bootstrap `allowlist.has(id) ? 'admin' : 'viewer'`, INSERT `{ steamid64, role, granted_by: null }`; throws on hard DB error (login fails closed). Handles the concurrent-first-login `23505` race by re-reading.
+  - [x] `app_role` read/write is behind the injected `admin` client → fully mockable (tests never hit live Supabase).
 
-- [ ] **Task 3 — Extend `lib/auth/session.ts` to bind role (AC1, AC3, AC4, AC5)**
-  - [ ] Change `ensureAuthUser(admin, steamid64)` → `ensureAuthUser(admin, steamid64, role)`. On the **create** branch set `app_metadata: { steamid64, role }` (both keys).
-  - [ ] Add the **already-exists backfill branch**: when `isAlreadyExists(error)` is true, resolve the user id and call `admin.auth.admin.updateUserById(id, { app_metadata: { steamid64, role } })`. Pass **both** keys (the Admin API replaces `app_metadata`, it does not deep-merge — never clobber `steamid64`).
-  - [ ] **Getting the existing user's id (the gotcha):** `getUserById` needs an id you don't have, and there's no clean `getUserByEmail` in `@supabase/supabase-js@2.110.0`. Cleanest path: **`generateLink({ type: 'magiclink', email })` already returns the full user object** (`data.user.id`) alongside `data.properties.hashed_token`. So the robust ordering for existing users is: `generateLink` (get `user.id` + token) → `updateUserById(user.id, { app_metadata: { steamid64, role } })` → **then** `verifyOtp(token_hash)` — the JWT is minted at `verifyOtp` from the user's **then-current** `app_metadata`, so role lands in the first JWT. Verify this minting behavior during live QA (version-sensitive, like 2.1's `verifyOtp` type). For a brand-new user, `createUser` already returns the id and the role is set at creation. (Alternative if `generateLink` ordering proves awkward: paginate `admin.auth.admin.listUsers()` and match `steamEmail(steamid64)` — fine for a small private roster.)
-  - [ ] In `establishSession(admin, ssr, steamid64)`: resolve role via `resolveRole(admin, steamid64, parseAdminAllowlist(env.adminSteamIds()))` and pass it into `ensureAuthUser` — **before** `generateLink → verifyOtp`, so the minted JWT carries role on first login (AC4).
-  - [ ] **Do NOT touch** `verifyOtp({ type: 'email' })` — it is the live-QA-confirmed value against `@supabase/supabase-js@2.110.0` + `@supabase/ssr@0.12.0` (2.1). Do NOT flip to `'magiclink'`.
+- [x] **Task 3 — Extend `lib/auth/session.ts` to bind role (AC1, AC3, AC4, AC5)** ✅
+  - [x] `ensureAuthUser(admin, steamid64, role)` — create branch sets `app_metadata: { steamid64, role }` (both keys).
+  - [x] Backfill via `updateUserById` (in `establishSession`, not inside `ensureAuthUser`) — using the id from `generateLink`'s returned `data.user`; passes BOTH `{ steamid64, role }` so the existing `steamid64` is never clobbered. Runs on every login (covers new + existing 2.1-era users + role refresh).
+  - [x] Ordering: `ensureAuthUser` → `generateLink` (returns `user.id` + `hashed_token`) → `updateUserById(id, { app_metadata: { steamid64, role } })` → `verifyOtp` — so the minted JWT already carries role (AC4). Unit-asserted call order.
+  - [x] `establishSession(admin, ssr, steamid64, role)` now takes `role`; the callback route resolves it via `resolveRole(admin, steamid64, parseAdminAllowlist(env.adminSteamIds()))` and passes it in (keeps `session.ts` free of the env dependency → testable).
+  - [x] `verifyOtp({ type: 'email' })` left UNTOUCHED (2.1 live-QA-confirmed).
 
-- [ ] **Task 4 — Never write role to `user_metadata` (AC1)**
-  - [ ] Confirm (and unit-assert where feasible) that role is written ONLY through `app_metadata` via the Admin API; `user_metadata` is never touched. `is_admin()`/`jwt_steamid64()` read `app_metadata` exclusively.
+- [x] **Task 4 — Never write role to `user_metadata` (AC1)** ✅
+  - [x] Role is written ONLY through `app_metadata` (Admin API `createUser`/`updateUserById`); `user_metadata` is never referenced anywhere in the auth spine. `is_admin()`/`jwt_steamid64()` read `app_metadata` exclusively.
 
-- [ ] **Task 5 — Tests (AC8)** with Vitest.
-  - [ ] `lib/auth/roles.test.ts`: allowlist parse (comma/space/blank/non-17-digit); `resolveRole` admin vs viewer vs existing-row-respected (mock the `admin` client's `.from('app_role').select/insert`).
-  - [ ] Extend `lib/auth/login-flow.test.ts` / add `session` coverage: the `app_metadata` object handed to `createUser` (create path) and `updateUserById` (backfill path) equals `{ steamid64, role }`; a non-allowlisted id yields `role: 'viewer'`.
-  - [ ] Keep `npm test` green (was 30/30 after the 2.1 review) and `next build` clean.
+- [x] **Task 5 — Tests (AC8)** with Vitest ✅ — **42/42 green** (30 prior + 12 new).
+  - [x] `lib/auth/roles.test.ts` (9 tests): allowlist parse (comma/space/blank/non-17-digit/empty); `resolveRole` admin-bootstrap, viewer-default, **existing-row-respected (revoke durability)**, existing-admin, read-error-throws — mocks `.from('app_role').select/insert`.
+  - [x] `lib/auth/session.test.ts` (3 tests, NEW file): `createUser` + `updateUserById` both carry `{ steamid64, role }`; existing-user backfill (already-exists → no throw); viewer path; AC4 call-order asserted. Needed a `server-only` stub — wired a global alias in `vitest.config.ts` (`test/stubs/server-only.ts`) so server-only modules are unit-testable.
+  - [x] `npm test` → **42/42**; `next build` → clean (routes still `ƒ`, TS passes).
 
-- [ ] **Task 6 — Live QA (AC3) — the sign-off gate, mirrors 2.1**
+- [ ] **Task 6 — Live QA (AC3) — ⛔ SIGN-OFF GATE (mirrors 2.1; run during/after code-review)** — `ADMIN_STEAMIDS` already pre-set with Cuatro's id.
   - [ ] With `ADMIN_STEAMIDS` containing `76561198388441171`, log in as Cuatro → confirm `auth.users.raw_app_meta_data` = `{ …, "steamid64":"76561198388441171", "role":"admin" }` and an `app_role` row `(76561198388441171, 'admin', null, …)`.
-  - [ ] Confirm `is_admin()` resolves: run (as the authenticated user, or via a temporary RPC) `select public.is_admin()` → `true` for the admin; a non-allowlisted login → `role: 'viewer'`, `is_admin()` → `false`.
+  - [ ] Confirm `is_admin()` resolves: `select public.is_admin()` → `true` for the admin; a non-allowlisted login → `role: 'viewer'`, `is_admin()` → `false`.
   - [ ] Confirm the **backfill** path: Cuatro's user already exists from 2.1 (had `steamid64`, no `role`) → after this login it carries `role` AND still `steamid64` (not clobbered).
 
 ## Dev Notes
@@ -192,8 +192,52 @@ Recent commits: `3b0f161` (2.1 sign-off), `42f497e` (2.1 review patches — HPP 
 
 ### Agent Model Used
 
+claude-opus-4-8 (Claude Opus 4.8) — bmad-dev-story workflow, 2026-07-02.
+
 ### Debug Log References
+
+- `npm test` (`vitest run`) → **6 files / 42 tests passed** (30 prior + 9 `roles.test.ts` + 3 `session.test.ts`).
+- `npm run build` (`next build`, Next 16.2.10 + Turbopack) → compiled + TypeScript passed; routes `/`, `/auth/steam/callback`, `/auth/steam/login` all `ƒ` (dynamic/Node).
+- `server-only` throws under plain Node (Vitest) — added `test/stubs/server-only.ts` + a `vitest.config.ts` alias so `lib/auth/session.ts` / `lib/auth/roles.ts` (and future server-only modules) are unit-testable. This is why 2.1 never tested `session.ts`; that gap is now closed.
+- `ADMIN_STEAMIDS=76561198388441171` appended to gitignored `.env.local` for the live QA (public SteamID64, not a secret).
 
 ### Completion Notes List
 
+**Implemented (AC1–AC8, code complete):** role binding on top of 2.1's session mint.
+- **Allowlist (AC2):** new server-only `ADMIN_STEAMIDS` (`.env.example` + `lib/env.ts` lazy getter + `FORBIDDEN_PUBLIC_MIRRORS` guard). `parseAdminAllowlist` (comma-split, 17-digit filter, fail-closed to empty).
+- **Resolution (AC6):** `lib/auth/roles.ts` `resolveRole` reads `app_role` FIRST (authoritative → 2.4 revoke durable, re-login never re-promotes), else bootstraps from the allowlist and INSERTs `{ steamid64, role, granted_by: null }`; throws on hard DB error (login fails closed via the callback's `try/catch`). Concurrent-first-login `23505` race handled by re-read.
+- **Binding + mint (AC1/AC3/AC4/AC5):** `session.ts` `ensureAuthUser`/`establishSession` now carry `{ steamid64, role }` via the Admin API. Backfill via `updateUserById` (id from `generateLink`'s returned user) runs BEFORE `verifyOtp`, so the first admin login's JWT already resolves `is_admin()`. Both keys always passed (never clobber `steamid64`) — also closes 2.1's deferred `steamid64` re-assert gap. `verifyOtp('email')` untouched.
+- **No `user_metadata` (AC1):** role is only ever in `app_metadata`.
+- **Scope held:** no role enforcement, no revoke/session-invalidation, no rename tolerance, no `roster_entry`, **no migration** (`supabase/` untouched — pgTAP 120/120 unaffected; `app_role` + `is_admin()`/`jwt_steamid64()` + `service_role` grant all pre-exist).
+- **ES256/JWKS:** no app-code work (Supabase Auth signs; project already ES256 per 1.1).
+
+**Decision honored:** write BOTH stores (`app_role` row + `app_metadata` mirror) per AD-12, Cuatro-confirmed.
+
+**⛔ Manual-QA sign-off gate (Task 6, could not be exercised headlessly — needs a real Steam login + live Supabase, exactly like 2.1's session-mint QA):** with `ADMIN_STEAMIDS` = Cuatro's id, a live login must confirm (1) `auth.users.raw_app_meta_data` gains `role:'admin'` (keeping `steamid64`), (2) an `app_role` row `(id,'admin',null,…)` is inserted, (3) `is_admin()` → `true` for the admin / `false` for a viewer, (4) the backfill promotes Cuatro's pre-existing 2.1 user. The `updateUserById`-before-`verifyOtp` ordering that lands role in the first JWT is version-sensitive (like 2.1's `verifyOtp` type) — confirm live.
+
+**Recommendation:** run `code-review` (different LLM) focusing `roles.ts` resolution + the `session.ts` backfill ordering, then clear the live-QA gate.
+
 ### File List
+
+**New — application code (to be committed):**
+- `lib/auth/roles.ts`
+
+**New — tests:**
+- `lib/auth/roles.test.ts`, `lib/auth/session.test.ts`
+- `test/stubs/server-only.ts` (Vitest stub)
+
+**Modified:**
+- `lib/auth/session.ts` — `ensureAuthUser`/`establishSession` take `role`; `updateUserById` backfill before the mint
+- `lib/env.ts` — `adminSteamIds()` getter + `NEXT_PUBLIC_ADMIN_STEAMIDS` forbidden mirror
+- `app/auth/steam/callback/route.ts` — resolve role and pass into `establishSession`
+- `vitest.config.ts` — `server-only` alias to the stub
+- `.env.example` — documented `ADMIN_STEAMIDS` (names only)
+- `.env.local` — added `ADMIN_STEAMIDS` (**gitignored — not committed**)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — status tracking (2.2 → in-progress → review)
+- `_bmad-output/implementation-artifacts/2-2-bind-identity-and-role-into-app-metadata.md` — this story (task checkboxes, Dev Agent Record)
+
+## Change Log
+
+| Date | Change |
+|---|---|
+| 2026-07-02 | Story 2.2 implemented: bind `app_metadata.role` via Admin API + `ADMIN_STEAMIDS` allowlist bootstrap + `app_role` write (read-first, revoke-durable) + `updateUserById` backfill before the mint. New `lib/auth/roles.ts`; extended `session.ts`/`env.ts`/callback route. 42/42 Vitest (added `roles.test.ts` + `session.test.ts` + a `server-only` test stub); `next build` clean; no migration. Status → review (⛔ live-QA sign-off gate pending, mirrors 2.1). |

@@ -29,6 +29,7 @@ const FORBIDDEN_PUBLIC_MIRRORS = [
   'NEXT_PUBLIC_STEAM_RETURN_URL',
   'NEXT_PUBLIC_AUTH_NONCE_SECRET',
   'NEXT_PUBLIC_SUPABASE_DB_PASSWORD',
+  'NEXT_PUBLIC_ADMIN_STEAMIDS',
 ];
 
 export function assertNoLeakedSecrets(): void {
@@ -59,4 +60,10 @@ export const env = {
   steamReturnUrl: () => required('STEAM_RETURN_URL'),
   /** HMAC secret used to sign the CSRF nonce cookie (AC4). */
   authNonceSecret: () => required('AUTH_NONCE_SECRET'),
+  /**
+   * Comma-separated admin SteamID64 allowlist that bootstraps the first admin(s) at
+   * login (Story 2.2). Optional/server-only: unset ⇒ empty allowlist ⇒ everyone defaults
+   * to `viewer` (fail-closed). Never `required()` — a missing var must not break login.
+   */
+  adminSteamIds: () => process.env.ADMIN_STEAMIDS ?? '',
 } as const;

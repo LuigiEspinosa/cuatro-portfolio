@@ -8,6 +8,7 @@ import { getAdminClient } from '@/lib/supabase/admin';
 import { createSupabaseRouteClient } from '@/lib/supabase/server';
 import { fetchSteamProfile, upsertPlayer } from '@/lib/players';
 import { establishSession } from '@/lib/auth/session';
+import { parseAdminAllowlist, resolveRole } from '@/lib/auth/roles';
 
 // Steam verify (fetch), crypto, and the Auth Admin API require Node APIs (AC6).
 export const runtime = 'nodejs';
@@ -56,7 +57,9 @@ export async function GET(request: NextRequest) {
           await upsertPlayer(admin, steamid64, profile);
         },
         async establishSession(steamid64) {
-          await establishSession(admin, ssr, steamid64);
+          // Resolve role (app_role-first, else allowlist bootstrap) then bind + mint (2.2).
+          const role = await resolveRole(admin, steamid64, parseAdminAllowlist(env.adminSteamIds()));
+          await establishSession(admin, ssr, steamid64, role);
         },
       },
     );

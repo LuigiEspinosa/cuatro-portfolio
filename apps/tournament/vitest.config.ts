@@ -7,6 +7,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(process.cwd()),
+      // `import 'server-only'` throws under plain Node — stub it so server-only modules
+      // (lib/auth/session.ts, lib/auth/roles.ts, …) are unit-testable.
+      'server-only': path.resolve(process.cwd(), 'test/stubs/server-only.ts'),
     },
   },
   test: {
