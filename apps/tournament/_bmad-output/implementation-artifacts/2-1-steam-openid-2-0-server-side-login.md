@@ -4,7 +4,7 @@ baseline_commit: 3f6765253f5f199e7eda3fea5fb1b00401e9e095
 
 # Story 2.1: Steam OpenID 2.0 server-side login
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -292,7 +292,7 @@ _Adversarial code review 2026-07-02 (fresh context, 3 parallel layers: Blind Hun
 
 **Decision-needed → CORRECTED + RESOLVED (2026-07-02):** On applying the fix, a direct re-read of `session.ts` showed the earlier "code contradicts its own doc comment" framing was WRONG. The code (`verifyOtp({ type: 'email' })`, line 80) MATCHES its own doc comment (`session.ts:16-19`, which also states `verifyOtp({ type: 'email', token_hash })`). The Acceptance Auditor had misread the spec's Task 5 *recommended-pattern prose* (`type: 'magiclink'`) as the module comment — there is NO internal code contradiction. The dev deliberately implemented the documented `@supabase/ssr` `'email'` pattern, departing from the spec's recommendation and noting it. Which of `'email'`/`'magiclink'` is correct against `@supabase/supabase-js@2.110.0` is a purely empirical question. **Disposition (Cuatro, 2026-07-02): keep the code at `type: 'email'`** (self-consistent, documented pattern; a blind flip would create a new code/comment divergence and might break a working call) and let the standing QA gate below decide the value empirically. Story 2.1 stays `in-progress` until a live login QA confirms a session is minted AND the JWT carries `app_metadata.steamid64` (so `jwt_steamid64()` from migration 0002 resolves).
 
-> ⛔ **SIGN-OFF GATE (blocks `review → done`):** run the live happy-path login (real Steam → landed authenticated on `/`) and inspect the minted JWT for `app_metadata.steamid64`. If `verifyOtp({ type: 'magiclink' })` rejects the token against the installed versions, try `type: 'email'` and record which the live instance accepts.
+> ✅ **SIGN-OFF GATE CLEARED — live QA PASSED (Cuatro, 2026-07-02).** Real Steam login landed authenticated on `/` (no error); SQL confirmed the `player` row upserted with the real persona/avatar AND `auth.users.raw_app_meta_data` carries `steamid64` (no `role`, per 2.1 scope) — so the minted JWT resolves `jwt_steamid64()` (migration 0002). **`verifyOtp({ type: 'email' })` minted the session as-is against `@supabase/supabase-js@2.110.0` + `@supabase/ssr@0.12.0` — no flip to `'magiclink'` needed**, empirically resolving decision D1 in favour of the shipped `'email'` value. AC5 is now verified end-to-end; all seven ACs met → Story 2.1 `done`.
 
 **Patch (fixable without human input):**
 

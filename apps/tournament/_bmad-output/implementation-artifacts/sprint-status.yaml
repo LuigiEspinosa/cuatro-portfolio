@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-06-30
-last_updated: 2026-07-02 (Story 2.1 code-review DONE → back to in-progress; 3 parallel adversarial layers [blind/edge/auditor]; triage 1 decision + 4 patch + 6 defer + 7 dismissed. FIXED: P1 CRITICAL HTTP-param-pollution Steam identity-spoof [duplicated openid.claimed_id: .get()=first vs Steam-validated last → auth as any SteamID64] now fails closed + reads claimed_id from validated set +2 regression tests; P2 callback try/catch → fail-closed redirect not 500; P3 AbortSignal.timeout on both Steam fetches; P4 Secure cookie from parsed protocol. 30/30 Vitest green, next build clean, NO migration. verifyOtp 'email'→'magiclink' flip WITHDRAWN [auditor misread; code matches its own doc comment]. ⛔ SIGN-OFF GATE unresolved → in-progress: AC5 session-mint [generateLink→verifyOtp, session.ts zero tests] needs LIVE QA confirming session minted + JWT carries app_metadata.steamid64 so jwt_steamid64() resolves. 6 deferrals logged to deferred-work.md)
+last_updated: 2026-07-02 (Story 2.1 code-review DONE → back to in-progress; 3 parallel adversarial layers [blind/edge/auditor]; triage 1 decision + 4 patch + 6 defer + 7 dismissed. FIXED: P1 CRITICAL HTTP-param-pollution Steam identity-spoof [duplicated openid.claimed_id: .get()=first vs Steam-validated last → auth as any SteamID64] now fails closed + reads claimed_id from validated set +2 regression tests; P2 callback try/catch → fail-closed redirect not 500; P3 AbortSignal.timeout on both Steam fetches; P4 Secure cookie from parsed protocol. 30/30 Vitest green, next build clean, NO migration. verifyOtp 'email'→'magiclink' flip WITHDRAWN [auditor misread; code matches its own doc comment]. ✅ SIGN-OFF GATE CLEARED → 2-1 DONE (live QA 2026-07-02: real Steam login → player upserted [cuatro/76561198388441171] + auth.users app_metadata.steamid64 present, no role, sb-* session cookie minted; verifyOtp 'email' CONFIRMED working vs supabase-js@2.110.0/ssr@0.12.0 — no magiclink flip). 6 deferrals logged to deferred-work.md)
 project: cs-tournament
 project_key: NOKEY
 tracking_system: file-system
@@ -58,7 +58,7 @@ development_status:
 
   # --- Epic 2: Identity & Roster (CAP-2) ---
   epic-2: in-progress
-  2-1-steam-openid-2-0-server-side-login: in-progress
+  2-1-steam-openid-2-0-server-side-login: done
   2-2-bind-identity-and-role-into-app-metadata: backlog
   2-3-canonical-steamid64-capture-and-display-name-tolerance: backlog
   2-4-roles-admin-gating-and-revoke-invalidates-session: backlog
