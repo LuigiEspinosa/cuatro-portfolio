@@ -53,6 +53,10 @@ export async function GET(request: NextRequest) {
       },
       {
         async upsertPlayer(steamid64) {
+          // fetchSteamProfile returns null when Steam can't be reached (no key / non-200 /
+          // timeout). That null threads straight into upsertPlayer, which then uses
+          // ON CONFLICT DO NOTHING so a transient outage never clobbers a stored good
+          // display_name/avatar with the 17-digit placeholder (AC6).
           const profile = await fetchSteamProfile(steamid64, env.steamApiKey());
           await upsertPlayer(admin, steamid64, profile);
         },
