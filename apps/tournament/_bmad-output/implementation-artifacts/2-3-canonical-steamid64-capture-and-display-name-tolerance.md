@@ -4,7 +4,7 @@ baseline_commit: 3006dbac4ab7003435f69d84685ced0522bde062
 
 # Story 2.3: Canonical SteamID64 capture and display-name tolerance
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -63,9 +63,9 @@ so that renaming on Steam never detaches me from my results.
   - [x] `npm run build` (`next build`) clean; no new `NEXT_PUBLIC_` secret; `/auth/steam/*` stay `ƒ` (Node runtime). Confirm no migration was added (`supabase/migrations/` unchanged — only `supabase/tests/` may gain a file). **DONE:** build compiled + TypeScript clean; `/auth/steam/callback` + `/auth/steam/login` both `ƒ`; `supabase/migrations/` unchanged (`git status` empty for that path); no `NEXT_PUBLIC_` added (`players.ts` is `server-only`).
   - [x] Confirm scope held: no `roster_entry`/`stat_row`/unreconciled/role code touched. **DONE:** only `lib/players.ts`, `app/auth/steam/callback/route.ts` (comment), and the two test files changed. No role/session/roster/stat_row code touched.
 
-- [ ] **Task 5 — Live QA (AC2 end-to-end) — SIGN-OFF GATE (mirrors 2.1/2.2; needs a real Steam login + live Supabase)** — ⛔ **PENDING: human gate, cannot be automated by the dev agent.** Requires Cuatro's real Steam account. Left unchecked deliberately (all automated gates are green; this mirrors 2.1/2.2, where the live-QA sign-off was cleared by Cuatro after code-review, not during dev-story).
-  - [ ] With Cuatro's real Steam account: log in once, then **change the Steam persona name**, then log in again. Confirm via SQL that `player` for that `steamid64` shows the **new** `display_name`, the **same** `steamid64` PK, the **same** `created_at`, and the `app_role` row (and `auth.users.app_metadata.steamid64`) are unchanged/still attached. (This is the human-observable form of AC2/AC3.)
-  - [ ] (If AC6 is in scope) Sanity-check the transient-failure path if feasible (e.g. temporarily blank `STEAM_API_KEY` locally): re-login does not overwrite the stored real name with the 17-digit id.
+- [x] **Task 5 — Live QA (AC2 end-to-end) — SIGN-OFF GATE (mirrors 2.1/2.2; needs a real Steam login + live Supabase)** — ✅ **CLEARED (Cuatro, 2026-07-03):** local `npm run dev` (localhost realm) real Steam login → renamed the Steam persona → re-login showed the NEW `display_name` with the SAME `steamid64` PK + SAME `created_at` + `app_role` row still attached (the human-observable form of AC2/AC3). Verified via SQL against the remote Supabase (`ufnumdqrhyvijreoyrxf`).
+  - [x] With Cuatro's real Steam account: log in once, then **change the Steam persona name**, then log in again. Confirm via SQL that `player` for that `steamid64` shows the **new** `display_name`, the **same** `steamid64` PK, the **same** `created_at`, and the `app_role` row (and `auth.users.app_metadata.steamid64`) are unchanged/still attached. (This is the human-observable form of AC2/AC3.) **DONE — PASSED.**
+  - [x] (If AC6 is in scope) Sanity-check the transient-failure path if feasible (e.g. temporarily blank `STEAM_API_KEY` locally): re-login does not overwrite the stored real name with the 17-digit id. **DONE — PASSED (AC6 preserve confirmed live).**
 
 ## Dev Notes
 
@@ -213,6 +213,7 @@ claude-opus-4-8 (Claude Code, `bmad-dev-story` workflow)
 |---|---|
 | 2026-07-03 | Story 2.3 implemented via `bmad-dev-story`. AC6 placeholder-clobber guard: `fetchSteamProfile` → `SteamProfile\|null`, `upsertPlayer` `ignoreDuplicates` branch (`ON CONFLICT DO NOTHING`), injectable `HttpGetJson` seam. Proof: new pgTAP `canonical_steamid64_invariant_test.sql` (`plan(10)` — AC3 rename tolerance + AC4 catalog guard) and new `lib/players.test.ts` (15 tests). Vitest 43→58; pgTAP 120→130; `next build` clean; no migration. Status → review. Task 5 (live-QA sign-off) pending as a human gate. |
 | 2026-07-03 | **Code review** (`bmad-code-review`, 3 adversarial layers — all Opus-4.8, converged on the AC6 gap). Triage: 1 decision + 2 patch + 3 defer + 6 dismissed. **Decision → Option A (Cuatro):** `fetchSteamProfile` now returns `null` on a blank/absent persona (was an id-fallback that took the UPDATE path and clobbered a stored good name) → routes to the DO-NOTHING preserve path; avatar-only partial-200 case deferred to Epic 5. **Patches applied:** P0 (Option A + softened doc comments + revised Vitest case); P1 (new DB-level AC6 behavioral proof — insert good row → placeholder upsert `on conflict do nothing` → assert `display_name`/`avatar_url` unchanged + brand-new placeholder still inserts); P2 (AC4 catalog guard extended to `EXCLUDE` constraints `contype='x'`; expression/partial-index blind spot noted as Epic-5 residual). **Verified green:** Vitest **59/59** (58→59), `supabase test db` **133/133** (`plan(10)`→`plan(13)`, 130→133), `next build` clean, `/auth/steam/*` stay `ƒ`, no migration. 4 defers → [[deferred-work]]. Status `review` → **in-progress** (code review clean; **Task 5 live-QA sign-off remains the human gate before `done`** — mirrors 2.1/2.2). |
+| 2026-07-03 | Impl + review patches committed `c830e8a` + pushed to remote main (`85b293a..c830e8a`). **✅ Task 5 live-QA SIGN-OFF CLEARED (Cuatro):** local real Steam login → renamed persona → re-login showed the NEW `display_name`, SAME `steamid64` PK + `created_at`, `app_role` still attached; AC6 transient-outage preserve also confirmed (blanked `STEAM_API_KEY` → good name not clobbered). All 7 ACs met end-to-end. Status **in-progress → done**. Epic 2 now 3/6 stories done (2.1, 2.2, 2.3). |
 
 ### Review Findings — Code Review (2026-07-03)
 
