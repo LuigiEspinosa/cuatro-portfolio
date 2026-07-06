@@ -171,12 +171,13 @@ function makeAuthAdmin(
   opts: {
     pages?: { id: string; email: string }[][];
     updateError?: { message: string } | null;
+    listError?: { message: string } | null;
   } = {},
 ) {
   const pages = opts.pages ?? [[]];
   const listUsers = vi.fn(async ({ page }: { page: number; perPage: number }) => ({
     data: { users: pages[page - 1] ?? [] },
-    error: null,
+    error: opts.listError ?? null,
   }));
   const updateUserById = vi.fn(async () => ({ error: opts.updateError ?? null }));
   const admin = { auth: { admin: { listUsers, updateUserById } } } as unknown as SupabaseClient;
@@ -218,5 +219,13 @@ describe('healRoleMirror (AC2 / AC6 — re-mint the app_metadata JWT mirror)', (
       updateError: { message: 'db down' },
     });
     await expect(healRoleMirror(admin, OTHER_ID, 'viewer')).rejects.toThrow(/updateUserById failed/);
+  });
+
+  it('throws on a real listUsers error and never reaches updateUserById (fail-closed, not a no-op)', async () => {
+    // A listUsers infra error is NOT "user not found" — it must fail closed rather than
+    // pretend-heal. Symmetric with the updateUserById-error case above.
+    const { admin, updateUserById } = makeAuthAdmin({ listError: { message: 'auth db down' } });
+    await expect(healRoleMirror(admin, OTHER_ID, 'admin')).rejects.toThrow(/listUsers failed/);
+    expect(updateUserById).not.toHaveBeenCalled();
   });
 });

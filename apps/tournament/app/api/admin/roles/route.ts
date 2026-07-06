@@ -43,30 +43,34 @@ function parseRoleBody(raw: unknown): RoleBody | null {
 }
 
 export async function POST(request: NextRequest) {
-  const admin = getAdminClient();
-  const ssr = await createSupabaseServerClient();
-
-  // AC1/AC3: server-enforced admin gate. Non-admin → 403, no write. requireAdmin re-reads the
-  // authoritative app_role (Option A), so a revoked admin is rejected on their very next call —
-  // independent of when their stale access token expires.
-  const gate = await requireAdmin(ssr, admin);
-  if (!gate.ok) {
-    return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
-  }
-
-  // AC4: validate the body — malformed / missing / invalid role → 400 (no write).
-  let raw: unknown;
+  // One controlled fail-closed boundary around the WHOLE handler: a throw from client
+  // construction, the requireAdmin gate's transport calls (getUser / the app_role re-read),
+  // or a setRole/healRoleMirror infra failure all land here as a JSON 500 — never Next's
+  // default HTML error page. The early returns below (403 / 400) exit before the catch.
   try {
-    raw = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-  }
-  const body = parseRoleBody(raw);
-  if (!body) {
-    return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
-  }
+    const admin = getAdminClient();
+    const ssr = await createSupabaseServerClient();
 
-  try {
+    // AC1/AC3: server-enforced admin gate. Non-admin → 403, no write. requireAdmin re-reads the
+    // authoritative app_role (Option A), so a revoked admin is rejected on their very next call —
+    // independent of when their stale access token expires.
+    const gate = await requireAdmin(ssr, admin);
+    if (!gate.ok) {
+      return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
+    }
+
+    // AC4: validate the body — malformed / missing / invalid role → 400 (no write).
+    let raw: unknown;
+    try {
+      raw = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+    }
+    const body = parseRoleBody(raw);
+    if (!body) {
+      return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+    }
+
     // AC5/AC6: durable app_role write. granted_by = the acting admin (a DIFFERENT id by the
     // no-self-grant guard, so it is a genuine accountability pointer); a revoke UPDATEs the
     // row to viewer, never deletes it (keeps the revoke durable against re-login + allowlist).
@@ -92,9 +96,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     // Never surface a raw 500. A thrown side effect (e.g. a listUsers/updateUserById infra
-    // failure in healRoleMirror) fails closed to a controlled JSON error. The durable app_role
-    // write may already have landed and the whole operation is idempotent, so a retry is safe.
-    console.error('[api/admin/roles] role write failed:', err);
+    // failure in healRoleMirror, or a transport error in the gate) fails closed to a controlled
+    // JSON error. A durable app_role write may already have landed and the whole operation is
+    // idempotent, so a retry is safe.
+    console.error('[api/admin/roles] request failed:', err);
     return NextResponse.json({ error: 'internal_error' }, { status: 500 });
   }
 }
