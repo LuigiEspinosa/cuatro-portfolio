@@ -4,7 +4,7 @@ baseline_commit: 71b8652cf1a16d45c16f130216bb8721f995a69a
 
 # Story 3.2: Hash, dedup, and write-once retention
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -76,13 +76,13 @@ Hashing and dedup live entirely in the Go worker; the worker is still the only w
   - [x] Whole bar green: `go build ./...`, `go vet ./...`, `gofmt -l` clean; `go test ./...` all 5 packages pass. `vitest run` unchanged at **110**; `git diff lib/ app/` **empty**; `next build` clean. `supabase test db` green with `0005` updated + `0006` added (Files=7, Tests=216).
   - [x] No `NEXT_PUBLIC_*` leak; `lib/env.ts` untouched (worker-only hash; empty `lib/` diff confirms it).
 
-- [ ] **Task 6 — Live-QA sign-off (human gate; Deploy-posture = local verify, live Railway/MatchZy deferred to Epic 7)** ⛔ **PENDING (Cuatro).** Mirrors the 3.1 rhythm — the dev agent cannot run it.
-  - [ ] **Prereq:** the same real Source-2 `.dem` used in 3.1 live-QA (`demos/cuatro-luisito.dem`, `PBDEMS2`, 31,005,788 bytes) + real `R2_*` creds. Note the 3.1 infra finding: the worker's hosted-DB DSN is IPv6-only with no Supavisor-pooler path, so DB writes run against the **local** Supabase stack on an IPv4-only host (R2 is the real bucket) — logged in `deferred-work.md`, not a 3.2 blocker.
-  - [ ] **CLI:** `worker ingest <path.dem> --match <id>` → object in R2 + `demo` row with a **non-NULL `demo_sha256`**; re-download the R2 object via `aws s3api` and confirm its SHA-256 **equals the recorded `demo_sha256`** (AD-1, live). Run the **same** command again → `already_ingested=true`, **no second `demo` row**, and R2 did not gain a second object for that hash.
-  - [ ] **MatchZy HTTP:** POST the `.dem.gz` to `/ingest/matchzy?token=…` → gzip auto-decompressed, hashed, stored, `demo` row with the sha256 of the **decompressed canonical** `.dem`. Re-POST the identical body → `200 {"already_ingested": true}`, no duplicate row. Wrong token → `401`, nothing stored (fail-closed, from 3.1).
-  - [ ] Confirm `demo_sha256` is a lowercase 64-hex string and matches `sha256sum` of the local canonical `.dem`.
-  - [ ] **QA cleanup:** delete the test R2 objects; local rows are disposable.
-  - [ ] **Deferred to Epic 7:** live Railway deploy + rented MatchZy server (unchanged from 3.1); the worker hosted-DB IPv4/pooler gap.
+- [x] **Task 6 — Live-QA sign-off (human gate; Deploy-posture = local verify, live Railway/MatchZy deferred to Epic 7)** ✅ **PASSED — Cuatro signed off 2026-07-11.** Executed against the **real** `inclusivcup` R2 bucket + the local Supabase stack, using `cuatro-luisito` (31,005,788-byte canonical `.dem`, `sha256 fd28235d…a8215e`).
+  - [x] **Prereq:** real Source-2 `.dem` (`demos/cuatro-luisito.dem.gz` → decompressed `PBDEMS2`, 31,005,788 bytes) + real `R2_*` creds from `.env.local`. Per the 3.1 infra finding, DB writes ran against the **local** Supabase stack (`SUPABASE_URL=http://127.0.0.1:54321` → `:54322`); R2 was the real bucket.
+  - [x] **CLI:** `worker ingest cuatro-luisito.dem --match 990001` → R2 object `demos/990001/7d1192ed….dem` + `demo` row with non-NULL `demo_sha256=fd28235d…a8215e`; re-downloaded the R2 object via `aws s3api` and its SHA-256 **equalled the recorded `demo_sha256`** (AD-1, live). Re-ran the same command → `already_ingested=true`, prior key, **no second row**, R2 stayed at **1** object (redundant upload deleted).
+  - [x] **MatchZy HTTP:** POSTed the compressed `.dem.gz` to `/ingest/matchzy?token=…` (match 990002) → gzip auto-decompressed, hashed, stored; `demo` row `source=matchzy`, `size=31005788`, `demo_sha256=fd28235d…a8215e` (**== the decompressed-canonical hash, byte-identical to the CLI path**). Re-POST identical → `200 {"already_ingested": true}`, no dup row, redundant object deleted. Wrong token → `401`, **no row + no object** (fail-closed).
+  - [x] Confirmed `demo_sha256` is lowercase 64-hex and matches `sha256sum` of the local canonical `.dem` (`fd28235d5c218d5dd146d002345be15b8542bf7393484b30a9530421e7a8215e`).
+  - [x] **QA cleanup:** deleted both test R2 objects (verified `demos/99000*` returns none); local test rows cleared (demo table back to 0 rows).
+  - [ ] **Deferred to Epic 7:** live Railway deploy + rented MatchZy server (unchanged from 3.1); the worker hosted-DB IPv4/pooler gap. _(Correctly out of scope — the local-verify posture is exactly what Task 6 specifies.)_
 
 ### Review Findings
 
@@ -241,3 +241,4 @@ claude-opus-4-8 (Amelia / bmad-dev-story)
 |------------|---------------------------------------------------------------------------------------------------------|
 | 2026-07-11 | Story 3.2 implemented: migration `0006` adds `UNIQUE(match_id, demo_sha256)`; worker computes SHA-256 while streaming (single-pass tee), dedups at the DB writer (`ON CONFLICT DO NOTHING`), short-circuits an identical re-upload (`AlreadyIngested` + orphan-delete). `0005` canary flipped. Green: Go 5 pkgs, pgTAP Files=7/Tests=216, Vitest 110, next build. Status → review (Task 6 live-QA is a pending human gate). |
 | 2026-07-11 | Code review (`bmad-code-review`, 3 adversarial layers): 0 decision-needed, 2 patch (both **applied** — `RetentionEventArchive` named constant at the orphan-delete site + a new end-to-end AC1 recorded-hash round-trip test), 0 defer, 1 dismissed (Blind Hunter BH-1 — false positive re: the flipped `0005` canary). No correctness bugs, no unhandled edge cases; AC1–AC5 + both Resolved Decisions verified met. Green after patches: `go build`/`vet`/`gofmt`/`test`. Status review → in-progress (code review clean; Task 6 live-QA sign-off remains the pending human gate before `done`). |
+| 2026-07-11 | **Live-QA sign-off → done.** Task 6 executed against the real `inclusivcup` R2 bucket + local Supabase (`cuatro-luisito`, 31,005,788-byte canonical `.dem`, `sha256 fd28235d…a8215e`). CLI (match 990001) + MatchZy HTTP (match 990002) both green: recorded `demo_sha256` == local sha; the stored R2 object re-downloads + re-hashes byte-for-byte to the recorded hash (AD-1, live); an identical re-run/re-POST → `already_ingested` with no dup row + the redundant object deleted; wrong token → `401`, nothing stored. Both paths converge on the same canonical hash. Test R2 objects + local rows cleaned up. Status in-progress → done. |
