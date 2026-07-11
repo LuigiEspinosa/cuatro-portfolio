@@ -23,6 +23,11 @@ const BackendR2 StorageBackend = "r2"
 // Go-side guard below; storage-layer object-lock hardening is Epic 7.
 const RetentionPermanentSeed = "permanent_seed"
 
+// RetentionEventArchive is the default retention class (recorded since Story 3.1). Unlike
+// permanent_seed it is freely deletable — the Story-3.2 orphan-cleanup path (deleting the redundant
+// object left by an AlreadyIngested re-upload) relies on the guard permitting it.
+const RetentionEventArchive = "event_archive"
+
 // ErrPermanentSeedProtected is returned by Delete when asked to remove a permanent_seed object without
 // an explicit override — the Go-side half of AD-16 delete-proofing.
 var ErrPermanentSeedProtected = errors.New("store: refusing to delete a permanent_seed object without force")

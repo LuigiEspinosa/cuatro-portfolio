@@ -11,24 +11,26 @@ import (
 	"cs-tournament/worker/store"
 )
 
-// RunCLI ingests a local .dem (AC3): validate the Source-2 header, stream the file to object storage,
-// and record the acquisition row (source=manual_upload). The same store→record core as the HTTP paths.
-func RunCLI(ctx context.Context, s store.DemoStore, rec db.DemoRecorder, path string, matchID int64) (string, error) {
+// RunCLI ingests a local .dem (AC3): validate the Source-2 header, stream the file to object storage
+// (computing its SHA-256 in the same pass), and record the acquisition row (source=manual_upload). The
+// same store→record core as the HTTP paths. Returns the acquire result, including AlreadyIngested so a
+// re-run on the same .dem reports the short-circuit rather than a silent second store.
+func RunCLI(ctx context.Context, s store.DemoStore, rec db.DemoRecorder, path string, matchID int64) (AcquireResult, error) {
 	if matchID <= 0 {
-		return "", fmt.Errorf("--match <id> is required and must be a positive integer")
+		return AcquireResult{}, fmt.Errorf("--match <id> is required and must be a positive integer")
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		return "", fmt.Errorf("open %q: %w", path, err)
+		return AcquireResult{}, fmt.Errorf("open %q: %w", path, err)
 	}
 	defer f.Close()
 
 	info, err := f.Stat()
 	if err != nil {
-		return "", fmt.Errorf("stat %q: %w", path, err)
+		return AcquireResult{}, fmt.Errorf("stat %q: %w", path, err)
 	}
 	if err := checkDemHeader(f); err != nil {
-		return "", err
+		return AcquireResult{}, err
 	}
 
 	return Acquire(ctx, s, rec, AcquireMeta{

@@ -89,11 +89,11 @@ func runIngest(args []string) error {
 		return err
 	}
 	defer rec.Close()
-	key, err := ingest.RunCLI(ctx, s, rec, path, matchID)
+	res, err := ingest.RunCLI(ctx, s, rec, path, matchID)
 	if err != nil {
 		return err
 	}
-	log.Printf("ingested %s -> %s", path, key)
+	log.Printf("ingested %s -> %s (already_ingested=%t)", path, res.StorageKey, res.AlreadyIngested)
 	return nil
 }
 

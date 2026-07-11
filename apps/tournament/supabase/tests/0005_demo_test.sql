@@ -75,13 +75,16 @@ select throws_ok(
 select throws_ok(
   $$ insert into demo (match_id, storage_key, source) values (3, null, 'matchzy') $$,
   '23502', null, 'demo: a null storage_key is rejected by NOT NULL');
--- The Story-3.2 UNIQUE(match_id, demo_sha256) is NOT here yet: two rows sharing (match_id, demo_sha256)
--- both insert. This one statement 23505s the day 3.2 adds the constraint — a canary for premature dedup.
-select lives_ok(
+-- FLIPPED CANARY (Story 3.2): migration 0006 added UNIQUE(match_id, demo_sha256), so two rows sharing
+-- (match_id, demo_sha256) now 23505. This assertion started life as a `lives_ok` (a canary for premature
+-- dedup); it flipped to `throws_ok` the day 0006 landed. NULL-sha256 rows still insert (see Section B
+-- above + the 0006 suite) because NULLs are distinct — the manual path is unaffected.
+select throws_ok(
   $$ insert into demo (match_id, storage_key, source, demo_sha256) values
        (9, 'demos/9/one.dem', 'matchzy', 'dupsha'),
        (9, 'demos/9/two.dem', 'matchzy', 'dupsha') $$,
-  'demo: two rows sharing (match_id, demo_sha256) both insert — no UNIQUE(match_id, demo_sha256) yet (that is Story 3.2)');
+  '23505', null,
+  'demo: UNIQUE(match_id, demo_sha256) now rejects a duplicate (match_id, sha256) — Story 3.2');
 
 -- ============================================================================
 -- Section C — exact policy set + grants (AC6/AC7). policies_are asserts the COMPLETE set.

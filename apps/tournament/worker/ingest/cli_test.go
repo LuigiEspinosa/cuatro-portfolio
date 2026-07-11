@@ -24,11 +24,14 @@ func TestRunCLIHappyPath(t *testing.T) {
 	rec := db.NewFakeRecorder()
 	path := writeTemp(t, "cache.dem", demoBytes())
 
-	key, err := RunCLI(context.Background(), s, rec, path, 33)
+	res, err := RunCLI(context.Background(), s, rec, path, 33)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := s.Object(key); !ok {
+	if res.AlreadyIngested {
+		t.Fatal("a fresh CLI ingest must not be already_ingested")
+	}
+	if _, ok := s.Object(res.StorageKey); !ok {
 		t.Fatal("object not stored")
 	}
 	rows := rec.Recorded()
@@ -37,6 +40,22 @@ func TestRunCLIHappyPath(t *testing.T) {
 	}
 	if rows[0].SizeBytes != int64(len(demoBytes())) {
 		t.Fatal("CLI size should be the file size")
+	}
+	if rows[0].SHA256 == "" {
+		t.Fatal("the CLI path must record a non-empty demo_sha256")
+	}
+
+	// Re-running the CLI on the SAME .dem + match short-circuits (an operator sees already_ingested, not
+	// a silent second store).
+	again, err := RunCLI(context.Background(), s, rec, path, 33)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !again.AlreadyIngested || again.StorageKey != res.StorageKey {
+		t.Fatalf("re-running the CLI on the same .dem must report already_ingested with the prior key, got %+v", again)
+	}
+	if len(rec.Recorded()) != 1 || s.Len() != 1 {
+		t.Fatalf("the re-run must not add a row/object: rows=%d objects=%d", len(rec.Recorded()), s.Len())
 	}
 }
 

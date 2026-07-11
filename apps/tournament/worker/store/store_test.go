@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"strings"
 	"testing"
@@ -51,6 +52,37 @@ func TestFakeStoreRoundTrip(t *testing.T) {
 	}
 }
 
+// TestPutTeeHashRoundTrip proves the AD-1 invariant over the RECORDED hash (not merely byte-equality):
+// hashing WHILE Put streams (the io.TeeReader the acquire path uses) yields a sha256 that a later Get +
+// re-hash reproduces byte-for-byte. "The stored demo re-hashes byte-for-byte to its recorded SHA-256."
+func TestPutTeeHashRoundTrip(t *testing.T) {
+	s := NewFakeStore()
+	ctx := context.Background()
+	input := []byte("PBDEMS2\x00 canonical demo bytes for the recorded-hash round-trip …")
+	key := "demos/1/tee.dem"
+
+	// Compute the hash in the SAME single pass that streams to storage (mirrors ingest.Acquire).
+	hasher := sha256.New()
+	if err := s.Put(ctx, key, io.TeeReader(bytes.NewReader(input), hasher), int64(len(input))); err != nil {
+		t.Fatal(err)
+	}
+	recorded := hex.EncodeToString(hasher.Sum(nil))
+
+	rc, err := s.Get(ctx, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rc.Close()
+	stored, err := io.ReadAll(rc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rehash := sha256.Sum256(stored)
+	if hex.EncodeToString(rehash[:]) != recorded {
+		t.Fatalf("stored object does not re-hash to the recorded sha256: got %s want %s", hex.EncodeToString(rehash[:]), recorded)
+	}
+}
+
 func TestFakeStoreDeleteRetentionGuard(t *testing.T) {
 	s := NewFakeStore()
 	ctx := context.Background()
@@ -62,7 +94,7 @@ func TestFakeStoreDeleteRetentionGuard(t *testing.T) {
 
 	// event_archive deletes freely.
 	put("demos/1/a.dem")
-	if err := s.Delete(ctx, "demos/1/a.dem", "event_archive", false); err != nil {
+	if err := s.Delete(ctx, "demos/1/a.dem", RetentionEventArchive, false); err != nil {
 		t.Fatalf("event_archive delete should succeed: %v", err)
 	}
 	if _, ok := s.Object("demos/1/a.dem"); ok {

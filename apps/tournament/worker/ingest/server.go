@@ -88,7 +88,7 @@ func (s *Server) handleMatchZy(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dem.Close()
 
-	key, err := Acquire(r.Context(), s.Store, s.Recorder, AcquireMeta{
+	res, err := Acquire(r.Context(), s.Store, s.Recorder, AcquireMeta{
 		MatchID: matchID,
 		Source:  SourceMatchzy,
 	}, dem)
@@ -97,8 +97,10 @@ func (s *Server) handleMatchZy(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "acquire failed", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("[matchzy] acquired match %d -> %s", matchID, key)
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "storage_key": key})
+	// A re-uploaded identical demo returns 200 with already_ingested:true and the prior key, so MatchZy
+	// can safely retry (idempotent — AD-3).
+	log.Printf("[matchzy] acquired match %d -> %s (already_ingested=%t)", matchID, res.StorageKey, res.AlreadyIngested)
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "storage_key": res.StorageKey, "already_ingested": res.AlreadyIngested})
 }
 
 type presignRequest struct {

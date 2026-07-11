@@ -51,6 +51,51 @@ func TestMatchZyHappyPathBearer(t *testing.T) {
 	if rows[0].SizeBytes != int64(len(demoBytes())) {
 		t.Fatalf("streamed size should be the decompressed .dem length, got %d", rows[0].SizeBytes)
 	}
+	var resp map[string]any
+	if err := json.Unmarshal(rw.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp["ok"] != true || resp["already_ingested"] != false {
+		t.Fatalf("unexpected success body: %v", resp)
+	}
+	if _, ok := resp["storage_key"].(string); !ok {
+		t.Fatalf("success body must carry a storage_key: %v", resp)
+	}
+}
+
+func TestMatchZyReUploadIsAlreadyIngested(t *testing.T) {
+	srv, s, rec := newTestServer()
+	post := func() *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/ingest/matchzy", gzipped(demoBytes()))
+		req.Header.Set("Authorization", "Bearer "+testSecret)
+		req.Header.Set("MatchZy-MatchId", "77")
+		rw := httptest.NewRecorder()
+		srv.Routes().ServeHTTP(rw, req)
+		return rw
+	}
+
+	first := post()
+	if first.Code != http.StatusOK {
+		t.Fatalf("first POST: want 200, got %d (%s)", first.Code, first.Body.String())
+	}
+
+	second := post()
+	if second.Code != http.StatusOK {
+		t.Fatalf("re-POST: want 200 (idempotent retry), got %d", second.Code)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(second.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp["already_ingested"] != true {
+		t.Fatalf("an identical re-POST must return already_ingested:true, got %v", resp)
+	}
+	if len(rec.Recorded()) != 1 {
+		t.Fatalf("an identical re-POST must not add a demo row, have %d", len(rec.Recorded()))
+	}
+	if s.Len() != 1 {
+		t.Fatalf("the redundant re-uploaded object must be deleted, objects=%d", s.Len())
+	}
 }
 
 func TestMatchZyTokenQueryParam(t *testing.T) {
