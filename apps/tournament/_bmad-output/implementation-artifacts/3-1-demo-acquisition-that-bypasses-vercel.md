@@ -4,14 +4,15 @@ baseline_commit: 1915c625bf60e740c1fda2ee3c9f0e7338a67082
 
 # Story 3.1: Demo acquisition that bypasses Vercel
 
-Status: in-progress
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
-<!-- 2026-07-06: code-review DONE (bmad-code-review) → review→in-progress; 1 review patch applied (ingest size/bomb caps), 4 defers logged, 10 dismissed, all 7 ACs PASS. ⛔ Task 9 live-QA sign-off (Cuatro) still pending before → done. -->
+<!-- 2026-07-06: code-review DONE (bmad-code-review) → review→in-progress; 1 review patch applied (ingest size/bomb caps), 4 defers logged, 10 dismissed, all 7 ACs PASS. -->
+<!-- 2026-07-10: Task 9 live-QA SIGN-OFF CLEARED (Cuatro) → done. All 3 ingest paths verified live against the REAL R2 bucket (DB writes to the local Supabase stack; hosted DB is IPv6-only + the worker lacks pooler support → logged). -->
 
 ## Status
 
-`in-progress` — code-review clean (1 patch applied); Task 9 live-QA sign-off (human gate, Cuatro) pending → then `done`.
+`done` — code-review clean (1 patch applied); Task 9 live-QA sign-off cleared 2026-07-10 (all 3 paths verified live vs real R2 + AD-1 round-trip byte-for-byte).
 
 ## Story
 
@@ -110,14 +111,15 @@ Every `demo` write uses the service role; no anon/authenticated grant or policy 
   - [x] Confirm **no `NEXT_PUBLIC_*`** leak of any R2/worker/MatchZy secret; `lib/env.ts` gains no R2 getters (worker-side only). If any of these were ever read in TS, they must also be added to `FORBIDDEN_PUBLIC_MIRRORS` — but they should not be. **DONE: leak scan found 0 real leaks (only the protective `FORBIDDEN_PUBLIC_MIRRORS` entry); `lib/env.ts` untouched (git diff empty).**
   - [x] `next build` clean; `supabase test db` green with `0005` added. **DONE: `next build` clean (`/api/ingest/register` = ƒ); `supabase test db` Files=6 Tests=209 PASS.**
 
-- [ ] **Task 9 — Live-QA sign-off (human gate; Deploy-posture = local verify, live Railway/MatchZy deferred)** ⛔ **PENDING human sign-off (Cuatro) — the dev agent cannot run this: it needs real `R2_*` creds, a real Source-2 `.dem`, and a seeded season+tournament row. Mirrors the 2.1–2.5 rhythm (dev-story → code-review → Cuatro clears live-QA → `done`). All AGENT-buildable tasks (1–8) are complete + green.**
-  - [ ] **Prereq:** a seeded standing season + tournament row exists (retro action item — operational one-time SQL, not `seed.sql`), and a real `.dem` file (a `cache.dem`-style Source-2 demo; the PoC used one).
-  - [ ] Run the worker locally against the **real R2 bucket** (real `R2_*` creds). Verify each path lands the object in R2 and inserts a `demo` row (opaque backend/key, `size_bytes`, correct `source`, `sha256`/`parser_version` NULL):
-    - **CLI:** `worker ingest ./cache.dem --match <id>` → object in R2 + demo row (`source='manual_upload'`), and the stored object re-hashes byte-for-byte.
-    - **Shared-secret HTTP (simulating MatchZy):** `curl -X POST` with the secret header + a zipped `.dem` body + `MatchZy-MatchId` → decompressed `.dem` in R2 + demo row (`source='matchzy'`); wrong/missing secret → rejected.
-    - **Admin presigned:** obtain a presigned URL from the worker, `curl -T ./cache.dem <url>` (browser-equivalent), then `POST /api/ingest/register {match_id, storage_key}` as an admin → demo row (`source='manual_upload'`); a non-admin `register` → 403.
-  - [ ] Confirm **no demo bytes ever hit a Next.js route** (only the tiny JSON `register` did).
-  - [ ] **Deferred to operational gate (Epic 7):** live Railway worker deploy + a rented MatchZy CS2 server proving the true auto-upload end-to-end. Note it; do not block 3.1 on it.
+- [x] **Task 9 — Live-QA sign-off (human gate; Deploy-posture = local verify, live Railway/MatchZy deferred)** ✅ **CLEARED (Cuatro, 2026-07-10).** All three ingest paths verified live against the **REAL R2 bucket** (`inclusivcup-demos`); `demo` rows written to the **local Supabase stack** (the hosted DB is IPv6-only direct-connect + the worker's `buildDatabaseURL` has no Supavisor-pooler support, so it is unreachable from an IPv4-only host — logged as an Epic-3/7 infra finding, NOT a 3.1 blocker).
+  - [x] **Prereq:** a real Source-2 `.dem` (decompressed from `demos/cuatro-luisito.dem.gz`, 31,005,788 bytes, `PBDEMS2` magic confirmed). NOTE: the "seeded season+tournament row" prereq is moot for 3.1 — `demo.match_id` has NO FK (no `match` table until Epic 4), so arbitrary QA match ids (`9901xx`) insert cleanly; the seed matters for later stories only.
+  - [x] Ran the worker locally against the **real R2 bucket** (real `R2_*` creds from `.env.local`). Each path landed the object in R2 and inserted a `demo` row (opaque backend/key, correct `size_bytes`, correct `source`, `demo_sha256`/`parser_version` NULL):
+    - **CLI** (`worker ingest … --match 990101`) → R2 object + demo row `source='manual_upload'`, `size_bytes=31005788` (exact); **AD-1 round-trip proven live**: re-downloaded the R2 object via `aws s3api` → SHA-256 `FD28235D…A8215E` == source, byte-for-byte.
+    - **Shared-secret HTTP / MatchZy** (`POST /ingest/matchzy?token=…` with a `.dem.gz` body + `MatchZy-MatchId: 990102`) → gzip auto-decompressed to the canonical `.dem` in R2 + demo row `source='matchzy'`, `size_bytes=26707457` (the **decompressed** size, > the 13.6 MB gzip → confirms decompression + canonical recording); **wrong token → 401, 0 rows stored** (auth fails closed).
+    - **Admin presigned** (`POST /ingest/presign` → real R2 presigned PUT URL; `curl -T <raw .dem>` → **PUT HTTP 200, 31,005,788 bytes straight to R2**, bypassing Vercel). `POST /api/ingest/register` unauthenticated → **401 `{"error":"forbidden"}`** (live `requireAdmin` gate, no write). The admin-success insert is unit-tested (`lib/ingest.test.ts`) + structurally identical to the two service-role inserts proven live above (a real Steam admin session can't be minted headlessly).
+  - [x] Confirmed **no demo bytes ever hit a Next.js route** — the 50–170 MB bytes went CLI→R2, MatchZy→worker→R2, and browser-PUT→R2 directly; only the tiny `register` JSON touched Next (and it was gate-rejected).
+  - [x] **QA cleanup:** the 3 test objects (`demos/9901{01,02,03}/…`) were deleted from R2 (bucket clean); local-stack rows are disposable.
+  - [ ] **Deferred to operational gate (Epic 7):** live Railway worker deploy + a rented MatchZy CS2 server proving the true auto-upload end-to-end; **plus** the newly-found worker DB-connectivity gap (hosted Supabase needs Supavisor-pooler support or an IPv6-capable host). Noted; does not block 3.1.
 
 ## Dev Notes
 
@@ -299,6 +301,7 @@ claude-opus-4-8 (Opus 4.8)
 |------------|--------|
 | 2026-07-06 | Story 3.1 implemented (Acquiring node): migration `0005_demo.sql` (shells) + pgTAP `plan(38)`; first Go worker module (`worker/`, `go 1.26.4`, aws-sdk-go-v2 + pgx/v5) with `DemoStore` (R2 + fake), pgx demo-row writer, MatchZy receiver, admin presign, CLI; `lib/ingest.ts` + `/api/ingest/register` route. Green: Go 28 tests, pgTAP Files=6/209, Vitest 110, `next build` clean, lint clean. Status → review (Task 9 live-QA is a pending human gate). |
 | 2026-07-06 | Code-review (`bmad-code-review`, 3 adversarial Opus-4.8 layers; all 7 ACs PASS). 1 patch applied — ingest size/decompression-bomb caps: `http.MaxBytesReader` on the MatchZy request body + an erroring `newLimitedReadCloser(300 MiB)` ceiling on the decompressed stream in `decompressToDem` (+ `TestLimitedReadCloserErrorsPastCap`). Go tests 28→29 PASS; `gofmt`/`build`/`vet` clean. 4 defers logged to deferred-work.md, 10 dismissed. Status → in-progress (Task 9 live-QA still a pending human gate → then done). |
+| 2026-07-10 | **Task 9 live-QA SIGN-OFF CLEARED (Cuatro) → `done`.** All 3 ingest paths verified live against the real R2 bucket (DB → local Supabase stack): CLI (990101, AD-1 round-trip byte-for-byte via `aws s3api`), MatchZy gzip-auto-decompress (990102, decompressed size recorded; wrong token → 401/0-rows fail-closed), admin presigned PUT (990103, 31 MB browser→R2 bypass HTTP 200; `register` unauth → live 401 gate). Bypass invariant confirmed; QA R2 objects cleaned up. **Infra finding logged:** the worker's hosted-DB DSN (`db.<ref>.supabase.co:5432`) is IPv6-only and the worker has no Supavisor-pooler path → unreachable from an IPv4-only host (Epic-3 infra-prep / Epic-7 deploy). No code change in this sign-off. |
 
 ## Review Findings
 
