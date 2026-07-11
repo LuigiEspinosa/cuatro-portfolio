@@ -50,6 +50,8 @@ Thumbs.db
 *.dem
 *.dem.gz
 *.dem.bz2
+# Local match demo downloads
+demos/
 
 # Ops inventory with real refs/endpoints (keep account-specific values out of git)
 docs/ops/*.local.md
