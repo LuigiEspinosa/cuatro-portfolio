@@ -117,10 +117,10 @@ func TestFakeRecorderAssignsDemoID(t *testing.T) {
 func TestFakeStatRecorderUpsertIdempotency(t *testing.T) {
 	rec := NewFakeStatRecorder()
 	ctx := context.Background()
-	if err := rec.RecordParse(ctx, 1, "v", []StatRow{{MatchID: 33, SteamID64: "76561197960287930", DemoID: 1, Kills: 20, Deaths: 14, RoundsPlayed: 24}}); err != nil {
+	if err := rec.RecordParse(ctx, 1, "v", []StatRow{{MatchID: 33, SteamID64: "76561197960287930", DemoID: 1, Kills: 20, Deaths: 14, RoundsPlayed: 24}}, ValidationOutcome{}); err != nil {
 		t.Fatal(err)
 	}
-	if err := rec.RecordParse(ctx, 2, "v", []StatRow{{MatchID: 33, SteamID64: "76561197960287930", DemoID: 2, Kills: 25, Deaths: 10, RoundsPlayed: 26}}); err != nil {
+	if err := rec.RecordParse(ctx, 2, "v", []StatRow{{MatchID: 33, SteamID64: "76561197960287930", DemoID: 2, Kills: 25, Deaths: 10, RoundsPlayed: 26}}, ValidationOutcome{}); err != nil {
 		t.Fatal(err)
 	}
 	up := rec.Upserted()
@@ -138,10 +138,54 @@ func TestFakeStatRecorderUpsertIdempotency(t *testing.T) {
 func TestFakeStatRecorderReturnsConfiguredErr(t *testing.T) {
 	rec := NewFakeStatRecorder()
 	rec.Err = errors.New("boom")
-	if err := rec.RecordParse(context.Background(), 1, "v", []StatRow{{MatchID: 1, SteamID64: "76561197960287930", DemoID: 1}}); err == nil {
+	if err := rec.RecordParse(context.Background(), 1, "v", []StatRow{{MatchID: 1, SteamID64: "76561197960287930", DemoID: 1}}, ValidationOutcome{}); err == nil {
 		t.Fatal("expected the configured error")
 	}
 	if len(rec.Calls()) != 0 || len(rec.Upserted()) != 0 {
 		t.Fatal("must not capture/upsert anything when Err is set")
+	}
+}
+
+// TestFakeStatRecorderCapturesValidationOutcome proves the fake records the Story-3.4 validation outcome
+// passed to RecordParse (so cli_test can assert the anomaly flag + reasons the worker persisted).
+func TestFakeStatRecorderCapturesValidationOutcome(t *testing.T) {
+	rec := NewFakeStatRecorder()
+	val := ValidationOutcome{Anomalous: true, Reasons: []AnomalyReason{{Gate: "unreconciled", Detail: "76561197960287930"}}}
+	if err := rec.RecordParse(context.Background(), 7, "v", []StatRow{{MatchID: 9, SteamID64: "76561197960287930", DemoID: 7}}, val); err != nil {
+		t.Fatal(err)
+	}
+	calls := rec.Calls()
+	if len(calls) != 1 {
+		t.Fatalf("expected one captured call, got %d", len(calls))
+	}
+	if !calls[0].Val.Anomalous || len(calls[0].Val.Reasons) != 1 || calls[0].Val.Reasons[0].Gate != "unreconciled" {
+		t.Fatalf("the captured validation outcome must round-trip, got %+v", calls[0].Val)
+	}
+}
+
+// TestFakeRosterReader proves the seam: NewFakeRosterReader seeds an active set, ActiveSteamIDs returns it
+// (as a copy), and a configured Err surfaces (the fail-closed roster-read path).
+func TestFakeRosterReader(t *testing.T) {
+	r := NewFakeRosterReader("76561197960287930", "76561198000000042")
+	set, err := r.ActiveSteamIDs(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := set["76561197960287930"]; !ok {
+		t.Fatal("seeded id must be present in the active set")
+	}
+	if len(set) != 2 {
+		t.Fatalf("expected 2 active ids, got %d", len(set))
+	}
+	// Mutating the returned set must not corrupt the fake's state (defensive copy).
+	delete(set, "76561197960287930")
+	again, _ := r.ActiveSteamIDs(context.Background())
+	if _, ok := again["76561197960287930"]; !ok {
+		t.Fatal("mutating the returned set must not affect the fake (ActiveSteamIDs must return a copy)")
+	}
+
+	r.Err = errors.New("db down")
+	if _, err := r.ActiveSteamIDs(context.Background()); err == nil {
+		t.Fatal("a configured Err must surface (fail-closed roster read)")
 	}
 }

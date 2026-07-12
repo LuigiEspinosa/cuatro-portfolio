@@ -81,11 +81,13 @@ type FakeStatRecorder struct {
 	Err   error
 }
 
-// RecordParseCall is one captured RecordParse invocation.
+// RecordParseCall is one captured RecordParse invocation (incl. the Story-3.4 validation outcome, so
+// cli_test can assert the flag + reasons the worker persisted).
 type RecordParseCall struct {
 	DemoID        int64
 	ParserVersion string
 	Rows          []StatRow
+	Val           ValidationOutcome
 }
 
 var _ StatRecorder = (*FakeStatRecorder)(nil)
@@ -93,8 +95,9 @@ var _ StatRecorder = (*FakeStatRecorder)(nil)
 // NewFakeStatRecorder returns an empty capturing stat recorder.
 func NewFakeStatRecorder() *FakeStatRecorder { return &FakeStatRecorder{} }
 
-// RecordParse captures the call and applies each row to the in-memory upsert mirror (or returns Err).
-func (f *FakeStatRecorder) RecordParse(_ context.Context, demoID int64, parserVersion string, rows []StatRow) error {
+// RecordParse captures the call (incl. the validation outcome) and applies each row to the in-memory
+// upsert mirror (or returns Err).
+func (f *FakeStatRecorder) RecordParse(_ context.Context, demoID int64, parserVersion string, rows []StatRow, val ValidationOutcome) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.Err != nil {
@@ -102,7 +105,7 @@ func (f *FakeStatRecorder) RecordParse(_ context.Context, demoID int64, parserVe
 	}
 	captured := make([]StatRow, len(rows))
 	copy(captured, rows)
-	f.calls = append(f.calls, RecordParseCall{DemoID: demoID, ParserVersion: parserVersion, Rows: captured})
+	f.calls = append(f.calls, RecordParseCall{DemoID: demoID, ParserVersion: parserVersion, Rows: captured, Val: val})
 	if f.rows == nil {
 		f.rows = make(map[string]StatRow)
 	}
@@ -130,4 +133,36 @@ func (f *FakeStatRecorder) Upserted() []StatRow {
 		out = append(out, r)
 	}
 	return out
+}
+
+// FakeRosterReader is a RosterReader for unit tests (no real DB): it returns a settable active-id set, or
+// the configured Err to exercise the fail-closed roster-read path (RunCLI must not record a parse it could
+// not validate). Mirrors the FakeStore/FakeStatRecorder in-package seams.
+type FakeRosterReader struct {
+	IDs map[string]struct{}
+	Err error
+}
+
+var _ RosterReader = (*FakeRosterReader)(nil)
+
+// NewFakeRosterReader builds a fake seeded with the given active steamid64s.
+func NewFakeRosterReader(ids ...string) *FakeRosterReader {
+	set := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		set[id] = struct{}{}
+	}
+	return &FakeRosterReader{IDs: set}
+}
+
+// ActiveSteamIDs returns the configured Err, or a COPY of the seeded set (so a caller mutating the result
+// cannot corrupt the fake's state).
+func (f *FakeRosterReader) ActiveSteamIDs(context.Context) (map[string]struct{}, error) {
+	if f.Err != nil {
+		return nil, f.Err
+	}
+	out := make(map[string]struct{}, len(f.IDs))
+	for id := range f.IDs {
+		out[id] = struct{}{}
+	}
+	return out, nil
 }

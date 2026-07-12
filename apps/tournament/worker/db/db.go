@@ -8,6 +8,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -131,13 +132,34 @@ type StatRow struct {
 	RoundsPlayed int
 }
 
+// AnomalyReason is one machine-readable validation-gate failure (Story 3.4). Gate is the gate id
+// (conservation | empty_stats | unreconciled); Detail is a log/human-readable description. The struct is
+// DB-serialized — it is marshaled to the jsonb array persisted in demo.anomaly_reasons, so the json tags
+// ARE the on-disk shape. It lives in db (not ingest) so RecordParse marshals it with no ingest→db type
+// leak (ingest already imports db).
+type AnomalyReason struct {
+	Gate   string `json:"gate"`
+	Detail string `json:"detail"`
+}
+
+// ValidationOutcome is the result of the AC1 gates over a fresh parse (Story 3.4): Anomalous is true iff
+// ANY gate failed; Reasons is the ordered, machine-readable failure list (nil/empty when clean). The worker
+// stamps demo.validation_state='anomalous' + anomaly_reasons=Reasons when Anomalous, else 'pending' + NULL
+// — both in the same transaction as the stat_row upsert (RecordParse).
+type ValidationOutcome struct {
+	Anomalous bool
+	Reasons   []AnomalyReason
+}
+
 // StatRecorder upserts a match's parsed stat rows and stamps the demo's parser_version — the worker is the
 // single writer of stat_row (AD-2), just as it is of demo. Injectable for tests (FakeStatRecorder).
 type StatRecorder interface {
-	// RecordParse stamps demo.parser_version and upserts rows in ONE transaction (the AD-3/AD-26
-	// idempotent-parse spirit). A re-parse REPLACES a player's row via ON CONFLICT (match_id, steamid64)
-	// DO UPDATE; it does NOT delete SteamIDs absent from the new parse (that delete-missing is Story 3.6).
-	RecordParse(ctx context.Context, demoID int64, parserVersion string, rows []StatRow) error
+	// RecordParse stamps demo.parser_version + the validation outcome (validation_state/anomaly_reasons/
+	// validated_at, Story 3.4) and upserts rows in ONE transaction (the AD-3/AD-26 idempotent-parse spirit).
+	// A re-parse REPLACES a player's row via ON CONFLICT (match_id, steamid64) DO UPDATE; it does NOT delete
+	// SteamIDs absent from the new parse (that delete-missing is Story 3.6). Rows are upserted regardless of
+	// the outcome — an anomaly is a HOLD FLAG on demo, never a write-block.
+	RecordParse(ctx context.Context, demoID int64, parserVersion string, rows []StatRow, val ValidationOutcome) error
 }
 
 // PgxStatRecorder is the production StatRecorder. It borrows the PgxRecorder's pool (see PgxRecorder.Pool)
@@ -153,24 +175,45 @@ func NewPgxStatRecorder(pool *pgxpool.Pool) *PgxStatRecorder {
 	return &PgxStatRecorder{pool: pool}
 }
 
-// RecordParse stamps demo.parser_version and upserts the match's stat rows in ONE transaction, so a parse
-// is all-or-nothing. The upsert is ON CONFLICT (match_id, steamid64) DO UPDATE, so a re-parse REPLACES a
-// player's row rather than duplicating it; status keeps its 'pending' default (the anomaly gate is Story
-// 3.4). It does NOT delete SteamIDs missing from the new parse — that delete-missing is Story 3.6. An
-// empty rows slice still stamps parser_version + commits (a zero-player parse is written unconditionally;
-// Story 3.4 owns the non-zero-rows validation).
-func (r *PgxStatRecorder) RecordParse(ctx context.Context, demoID int64, parserVersion string, rows []StatRow) error {
+// RecordParse stamps demo.parser_version + the Story-3.4 validation outcome and upserts the match's stat
+// rows in ONE transaction, so a parse is all-or-nothing. The upsert is ON CONFLICT (match_id, steamid64) DO
+// UPDATE, so a re-parse REPLACES a player's row rather than duplicating it; stat_row.status keeps its
+// 'pending' publish-axis default (orthogonal to the demo anomaly axis). It does NOT delete SteamIDs missing
+// from the new parse — that delete-missing is Story 3.6. An empty rows slice still stamps the demo row +
+// commits (a zero-player parse is written unconditionally; it is flagged 'anomalous' via the empty_stats
+// gate, but the anomaly is a hold flag on demo, never a write-block).
+func (r *PgxStatRecorder) RecordParse(ctx context.Context, demoID int64, parserVersion string, rows []StatRow, val ValidationOutcome) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin parse tx (demo %d): %w", demoID, err)
 	}
 	defer tx.Rollback(ctx) // a no-op once Commit succeeds; rolls back on any early return (fail-closed)
 
+	// Stamp the anomaly-hold outcome on the SAME demo row as parser_version (AD-2 single writer). A gate
+	// failure => validation_state='anomalous' + the machine-readable reasons jsonb; a clean parse =>
+	// 'pending' + NULL reasons (validated & clean). validated_at=now() marks the row validated either way.
+	validationState := "pending"
+	var reasons *string // nil => SQL NULL (no reasons when clean, or anomalous with no reasons)
+	if val.Anomalous {
+		validationState = "anomalous"
+		// Only marshal when there is at least one reason: json.Marshal of a nil/empty slice yields the
+		// jsonb literal `null`, so guarding here keeps anomaly_reasons a clean SQL NULL rather than a jsonb
+		// null scalar. Unreachable via Validate (Anomalous <=> len(Reasons)>0) but RecordParse is a reusable
+		// seam (Stories 3.6/3.8), so keep the state flag authoritative and the payload well-formed.
+		if len(val.Reasons) > 0 {
+			b, err := json.Marshal(val.Reasons)
+			if err != nil {
+				return fmt.Errorf("marshal anomaly reasons (demo %d): %w", demoID, err)
+			}
+			s := string(b)
+			reasons = &s
+		}
+	}
 	if _, err := tx.Exec(ctx,
-		`update demo set parser_version = $1 where id = $2`,
-		parserVersion, demoID,
+		`update demo set parser_version = $1, validation_state = $2, anomaly_reasons = $3::jsonb, validated_at = now() where id = $4`,
+		parserVersion, validationState, reasons, demoID,
 	); err != nil {
-		return fmt.Errorf("stamp parser_version (demo %d): %w", demoID, err)
+		return fmt.Errorf("stamp parser_version + validation (demo %d): %w", demoID, err)
 	}
 
 	if len(rows) > 0 {
@@ -203,4 +246,49 @@ func (r *PgxStatRecorder) RecordParse(ctx context.Context, demoID int64, parserV
 		return fmt.Errorf("commit parse tx (demo %d): %w", demoID, err)
 	}
 	return nil
+}
+
+// RosterReader reads the ACTIVE roster's SteamID64 set — the reconciliation target for the AC1 roster gate
+// (Story 3.4). Injectable for tests (FakeRosterReader), the Go analogue of the DemoStore/StatRecorder seams.
+type RosterReader interface {
+	// ActiveSteamIDs returns the set of steamid64s on the active roster (roster_entry.status='active').
+	ActiveSteamIDs(ctx context.Context) (map[string]struct{}, error)
+}
+
+// PgxRosterReader is the production RosterReader. Like PgxStatRecorder it borrows the PgxRecorder's shared
+// pool (see PgxRecorder.Pool) — the PgxRecorder owns Close; this reader only borrows it.
+type PgxRosterReader struct {
+	pool *pgxpool.Pool
+}
+
+var _ RosterReader = (*PgxRosterReader)(nil)
+
+// NewPgxRosterReader builds a roster reader over an existing (shared) pool.
+func NewPgxRosterReader(pool *pgxpool.Pool) *PgxRosterReader {
+	return &PgxRosterReader{pool: pool}
+}
+
+// ActiveSteamIDs reads the active roster into a set. v1 is single-tournament (AD-18) and there is no
+// match→tournament link yet (no match table until Epic 4), so a match's parsed ids can only be reconciled
+// against the ONE active roster — there is deliberately NO tournament_id filter here. Forward-scope: when
+// Epic 4 links match→tournament, scope BOTH this read and the unreconciled_stat_row view to the match's
+// tournament.
+func (r *PgxRosterReader) ActiveSteamIDs(ctx context.Context) (map[string]struct{}, error) {
+	rows, err := r.pool.Query(ctx, `select steamid64 from roster_entry where status = 'active'`)
+	if err != nil {
+		return nil, fmt.Errorf("read active roster: %w", err)
+	}
+	defer rows.Close()
+	set := make(map[string]struct{})
+	for rows.Next() {
+		var sid string
+		if err := rows.Scan(&sid); err != nil {
+			return nil, fmt.Errorf("scan roster steamid64: %w", err)
+		}
+		set[sid] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate active roster: %w", err)
+	}
+	return set, nil
 }

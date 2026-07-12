@@ -14,13 +14,16 @@ import (
 )
 
 // CLIResult reports what `worker ingest` did: the underlying acquire (StorageKey/SHA256/AlreadyIngested/
-// DemoID) plus, when a FRESH acquire triggered a parse, the parsed player + round counts. Parsed is false
-// when an AlreadyIngested re-run short-circuited the parse (AD-3).
+// DemoID) plus, when a FRESH acquire triggered a parse, the parsed player + round counts and the Story-3.4
+// validation outcome. Parsed is false when an AlreadyIngested re-run short-circuited the parse (AD-3) —
+// which also skips validation (the prior ingest already validated).
 type CLIResult struct {
 	AcquireResult
-	Parsed  bool // true => this run parsed + upserted stat_row; false => AlreadyIngested skipped the parse
-	Players int  // stat_row rows upserted (0 when Parsed is false)
-	Rounds  int  // rounds played reported by the parser (0 when Parsed is false)
+	Parsed    bool               // true => this run parsed + upserted stat_row; false => AlreadyIngested skipped the parse
+	Players   int                // stat_row rows upserted (0 when Parsed is false)
+	Rounds    int                // rounds played reported by the parser (0 when Parsed is false)
+	Anomalous bool               // Story 3.4: a validation gate failed → the match is HELD (demo.validation_state='anomalous')
+	Reasons   []db.AnomalyReason // the machine-readable gate failures (nil when clean or not parsed)
 }
 
 // RunCLI ingests a local .dem end-to-end (AC5): validate the Source-2 header, stream the file to object
@@ -30,7 +33,7 @@ type CLIResult struct {
 // verify path 3.1/3.2 QA used). An AlreadyIngested re-run reports the short-circuit and SKIPS the parse
 // (its stat rows already exist — AD-3; deliberate re-parse is Story 3.6). The MatchZy-HTTP-triggered
 // parse + the bounded async queue are Story 3.8 (not wired here).
-func RunCLI(ctx context.Context, s store.DemoStore, rec db.DemoRecorder, parser Parser, statRec db.StatRecorder, path string, matchID int64) (CLIResult, error) {
+func RunCLI(ctx context.Context, s store.DemoStore, rec db.DemoRecorder, parser Parser, statRec db.StatRecorder, roster db.RosterReader, path string, matchID int64) (CLIResult, error) {
 	if matchID <= 0 {
 		return CLIResult{}, fmt.Errorf("--match <id> is required and must be a positive integer")
 	}
@@ -101,12 +104,29 @@ func RunCLI(ctx context.Context, s store.DemoStore, rec db.DemoRecorder, parser 
 			RoundsPlayed: result.RoundsPlayed,
 		})
 	}
-	if err := statRec.RecordParse(ctx, acq.DemoID, ParserVersion, rows); err != nil {
+	// Validate the just-parsed rows against the ACTIVE roster BEFORE recording (Story 3.4, the Validating
+	// node). Fail CLOSED: if the roster read errors, do NOT record a parse we could not validate — the
+	// acquired demo row + object persist (write-once), recovery is Story 3.6/3.8.
+	rosterSet, err := roster.ActiveSteamIDs(ctx)
+	if err != nil {
+		return CLIResult{}, fmt.Errorf("read active roster to validate (match %d): %w", matchID, err)
+	}
+	val := Validate(result, rows, rosterSet)
+	if val.Anomalous {
+		// Never silent (SOLUTION-DESIGN §6): a structured warn line names the match + the reasons. The
+		// worker only SETS + logs the hold flag; the admin accept-anomaly decision is Epic 4.
+		log.Printf("warn: match %d ANOMALOUS: %v", matchID, val.Reasons)
+	}
+	// The stat rows are upserted either way (the anomaly is a hold flag on demo, not a write-block); the
+	// validation outcome is stamped on the demo row in the SAME transaction.
+	if err := statRec.RecordParse(ctx, acq.DemoID, ParserVersion, rows, val); err != nil {
 		return CLIResult{}, fmt.Errorf("record stat rows (match %d): %w", matchID, err)
 	}
 	res.Parsed = true
 	res.Players = len(rows)
 	res.Rounds = result.RoundsPlayed
+	res.Anomalous = val.Anomalous
+	res.Reasons = val.Reasons
 	return res, nil
 }
 

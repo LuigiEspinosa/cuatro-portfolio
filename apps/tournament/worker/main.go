@@ -90,16 +90,21 @@ func runIngest(args []string) error {
 		return err
 	}
 	defer rec.Close()
-	// The parse core (demoinfocs) + the stat_row writer share the recorder's pool (rec owns Close).
+	// The parse core (demoinfocs), the stat_row writer, and the roster reader all share the recorder's pool
+	// (rec owns Close). The roster reader supplies the active-roster set for the Story-3.4 validation gate.
 	parser := ingest.DemoinfocsParser{}
 	statRec := db.NewPgxStatRecorder(rec.Pool())
-	res, err := ingest.RunCLI(ctx, s, rec, parser, statRec, path, matchID)
+	roster := db.NewPgxRosterReader(rec.Pool())
+	res, err := ingest.RunCLI(ctx, s, rec, parser, statRec, roster, path, matchID)
 	if err != nil {
 		return err
 	}
-	if res.Parsed {
-		log.Printf("ingested %s -> %s; parsed match %d: %d players, %d rounds -> stat_row", path, res.StorageKey, matchID, res.Players, res.Rounds)
-	} else {
+	switch {
+	case res.Parsed && res.Anomalous:
+		log.Printf("ingested %s -> %s; parsed match %d: %d players, %d rounds -> stat_row ANOMALOUS (held): %v", path, res.StorageKey, matchID, res.Players, res.Rounds, res.Reasons)
+	case res.Parsed:
+		log.Printf("ingested %s -> %s; parsed match %d: %d players, %d rounds -> stat_row (validation=pending)", path, res.StorageKey, matchID, res.Players, res.Rounds)
+	default:
 		log.Printf("ingested %s -> %s (already_ingested=true; parse skipped)", path, res.StorageKey)
 	}
 	return nil
