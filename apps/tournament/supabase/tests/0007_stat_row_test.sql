@@ -4,16 +4,21 @@
 --   AC4 table + FULL column set (stat columns nullable) + status default + the CHECKs               -> Section B
 --   AC3 UNIQUE(match_id, steamid64) = the re-parse idempotency key                                    -> Section B (col_is_unique + behavioral 23505)
 --   AC4 demo_id NOT NULL + FK -> demo; match_id NOT NULL and NO FK to match (deferred to Epic 4)       -> Section B
---   AC1/AC4 admin-only stat_admin SELECT (dormant, mirrors demo); FORCE RLS; NO viewer stat_view yet   -> Section A + C
---   AC1 single-writer: service_role select/insert/update/DELETE; anon/authenticated no priv            -> Section C + D
+--   AC1/AC4 stat_admin SELECT policy + FORCE RLS; the policy set is {stat_admin, stat_view} post-0009      -> Section A + C
+--   AC1 single-writer: service_role select/insert/update/DELETE; anon/authenticated SELECT-only (no write) -> Section C + D
 -- Runs inside a transaction and rolls back — no data persists.
+--
+-- NOTE (post-Story-3.5): this file runs against the fully-migrated (0001→0009) schema, so it reflects the
+-- world AFTER 0009 added the viewer model: the policy set is now {stat_admin, stat_view} and anon/
+-- authenticated hold a SELECT grant. This suite proves the TABLE STRUCTURE + the SINGLE-WRITER grant
+-- (service_role writes; anon/authenticated cannot write); the row-level VISIBILITY teeth (viewer sees
+-- approved-only, admin sees pending too) are owned by supabase/tests/0009_stat_pending_visibility_test.sql.
 --
 -- WHY role-switching: postgres (this session) and service_role both have BYPASSRLS, so they insert
 -- regardless of policy. The single-writer teeth bite at the GRANT gate, not RLS: service_role holds
 -- SELECT+INSERT+UPDATE+DELETE (DELETE is granted here — UNLIKE demo — for the Story-3.6 re-parse
--- delete-missing path); anon/authenticated hold ZERO grants -> every read and write fails closed
--- (stat_row is admin/worker-only until Story 3.5's viewer policy — stat_admin is DORMANT because there
--- is no base grant to reach it). `stat_row.match_id` is a plain bigint with NO FK (match does not exist
+-- delete-missing path); anon/authenticated hold only SELECT (0009) and NO write grant -> every write fails
+-- closed (the single-writer invariant is unchanged). `stat_row.match_id` is a plain bigint with NO FK (match does not exist
 -- yet); `stat_row.demo_id` IS a FK to demo, so this test seeds ONE demo row as the FK parent.
 -- SQLSTATE: 23514 check, 23502 not-null, 23503 fk, 23505 unique, 42501 insufficient_privilege.
 
@@ -24,7 +29,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(36);
+select plan(33);
 
 -- Seed the single FK parent as postgres (BYPASSRLS) before any role switch: stat_row.demo_id -> demo(id).
 -- demo.match_id has no FK (match does not exist), so this seed needs no match/season fixture.
@@ -93,23 +98,23 @@ select col_is_unique('public'::name, 'stat_row'::name, ARRAY['match_id','steamid
 -- ============================================================================
 select policies_are(
   'public', 'stat_row',
-  ARRAY['stat_admin'],
-  'stat_row: exactly one policy (admin read); NO viewer stat_view policy yet (Story 3.5 adds it), no write policy'
+  ARRAY['stat_admin','stat_view'],
+  'stat_row: exactly two SELECT policies (stat_admin from 0007 + stat_view added by 0009); no write policy'
 );
 select policy_cmd_is('public', 'stat_row', 'stat_admin', 'SELECT', 'stat_admin is a SELECT-only policy');
 
 -- Grants (has_table_privilege reads the grant, not RLS). service_role: SELECT/INSERT/UPDATE AND DELETE
 -- (DELETE is the distinctive proof — granted here for Story-3.6 re-parse delete-missing, unlike demo);
--- anon/authenticated: nothing (admin/worker-only until Story 3.5's viewer grant).
+-- anon/authenticated: SELECT only (granted by 0009's viewer model); still NO write grant (single-writer).
 select is(has_table_privilege('service_role',  'public.stat_row', 'SELECT'), true,  'service_role CAN SELECT stat_row');
 select is(has_table_privilege('service_role',  'public.stat_row', 'INSERT'), true,  'service_role CAN INSERT stat_row (parse upsert — insert half)');
 select is(has_table_privilege('service_role',  'public.stat_row', 'UPDATE'), true,  'service_role CAN UPDATE stat_row (parse upsert — ON CONFLICT DO UPDATE half)');
 select is(has_table_privilege('service_role',  'public.stat_row', 'DELETE'), true,  'service_role CAN DELETE stat_row (Story-3.6 re-parse delete-missing — DELETE IS granted, unlike demo)');
-select is(has_table_privilege('anon',          'public.stat_row', 'SELECT'), false, 'anon CANNOT SELECT stat_row (admin/worker-only until Story 3.5)');
+select is(has_table_privilege('anon',          'public.stat_row', 'SELECT'), true,  'anon HAS the SELECT grant on stat_row (granted by 0009''s viewer model; RLS stat_view then filters to approved-only)');
 select is(has_table_privilege('anon',          'public.stat_row', 'INSERT'), false, 'anon CANNOT INSERT stat_row (single-writer — fail closed)');
 select is(has_table_privilege('anon',          'public.stat_row', 'UPDATE'), false, 'anon CANNOT UPDATE stat_row (fail closed)');
 select is(has_table_privilege('anon',          'public.stat_row', 'DELETE'), false, 'anon CANNOT DELETE stat_row (fail closed)');
-select is(has_table_privilege('authenticated', 'public.stat_row', 'SELECT'), false, 'authenticated has NO SELECT grant on stat_row (admin-only; stat_admin is dormant until Story 3.5)');
+select is(has_table_privilege('authenticated', 'public.stat_row', 'SELECT'), true,  'authenticated HAS the SELECT grant on stat_row (granted by 0009''s viewer model; stat_view/stat_admin then govern which rows)');
 select is(has_table_privilege('authenticated', 'public.stat_row', 'INSERT'), false, 'authenticated CANNOT INSERT stat_row (single-writer — fail closed)');
 select is(has_table_privilege('authenticated', 'public.stat_row', 'UPDATE'), false, 'authenticated CANNOT UPDATE stat_row (fail closed)');
 select is(has_table_privilege('authenticated', 'public.stat_row', 'DELETE'), false, 'authenticated CANNOT DELETE stat_row (fail closed)');
@@ -133,30 +138,15 @@ select lives_ok(
   'service_role DELETEs a stat_row (Story-3.6 delete-missing — DELETE grant genuinely usable, unlike demo)');
 set local role postgres;
 
--- authenticated viewer: no grant of any kind -> cannot read (admin-only) and cannot write (fail closed).
--- The insert uses a literal demo_id so it fails at the stat_row GRANT gate, not on a demo read.
+-- authenticated viewer: SELECT is now granted (0009), but no WRITE grant/policy -> writes still fail closed.
+-- The row-level READ visibility (anon/authenticated viewer see approved-only; admin sees pending too) is
+-- the AD-7 viewer model 0009 introduces — proven behaviorally in supabase/tests/0009_stat_pending_visibility_test.sql.
+-- The insert uses a literal demo_id so it fails at the stat_row INSERT-grant gate, not on a demo read.
 set local role authenticated;
 select set_config('request.jwt.claims', '{"app_metadata":{"role":"viewer","steamid64":"76561197960287931"}}', true);
-select throws_ok($$ select count(*) from stat_row $$,
-  '42501', null, 'authenticated viewer CANNOT read stat_row (no grant, admin-only) — fail closed');
 select throws_ok(
   $$ insert into stat_row (match_id, steamid64, demo_id) values (990, '76561197960287999', 1) $$,
-  '42501', null, 'authenticated viewer CANNOT insert stat_row (no write grant/policy) — fail closed');
-set local role postgres;
-
--- authenticated ADMIN: stat_admin is DORMANT by design. No base SELECT grant to authenticated, so even a
--- valid admin claim 42501s at the grant gate BEFORE RLS is consulted (is_admin() never reached). Admins
--- read stat_row via server routes with the service key; Story 3.5 adds the LIVE viewer surface.
-set local role authenticated;
-select set_config('request.jwt.claims', '{"app_metadata":{"role":"admin","steamid64":"76561197960287930"}}', true);
-select throws_ok($$ select count(*) from stat_row $$,
-  '42501', null, 'authenticated ADMIN also CANNOT read stat_row via Data API — stat_admin dormant (no base grant until Story 3.5)');
-set local role postgres;
-
--- anon (unauthenticated public): no grant -> cannot read the admin/worker-only stat table (yet).
-set local role anon;
-select throws_ok($$ select count(*) from stat_row $$,
-  '42501', null, 'anon CANNOT read stat_row — fail closed (Story 3.5 adds the approved-only viewer surface)');
+  '42501', null, 'authenticated viewer CANNOT insert stat_row (SELECT granted by 0009 but NO write grant/policy) — writes still fail closed');
 set local role postgres;
 
 select * from finish();
