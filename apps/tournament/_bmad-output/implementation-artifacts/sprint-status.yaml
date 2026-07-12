@@ -43,7 +43,7 @@
 
 generated: 2026-06-30
 # last_updated convention (2026-07-11): the value below is the LATEST change only. Do not grow a "PREVIOUSLY" chain here — every transition is already recorded in git log + the per-story files.
-last_updated: "2026-07-11 (Story 3.2 live-QA sign-off -> DONE. Task 6 executed against the REAL inclusivcup R2 bucket + the local Supabase stack (worker hosted-DB is IPv6-only so DB writes ran local per the 3.1 infra finding; R2 was the real bucket), using cuatro-luisito (31,005,788-byte canonical .dem, sha256 fd28235d…a8215e). CLI (match 990001): fresh ingest -> R2 object + demo row demo_sha256=fd28235d… == local sha; aws s3api re-download re-hashes byte-for-byte to the RECORDED hash (AD-1 live); re-run -> already_ingested=true + prior key + no 2nd row + R2 stays 1 object (redundant deleted). MatchZy HTTP (match 990002): POSTed the compressed .dem.gz -> server decompressed + hashed the canonical .dem -> demo_sha256 IDENTICAL to the CLI path (proves decompress correctness), size=31005788; identical re-POST -> 200 already_ingested:true + no dup row + redundant object deleted; wrong token -> 401 + nothing stored (fail-closed). QA cleanup: both test R2 objects deleted (verified none) + local test rows cleared (demo back to 0). Docs committed + pushed to main. Epic 3 (CAP-3) 2/8 done (3.1 + 3.2); Railway/rented-MatchZy live deploy stays deferred to Epic 7. Next: Story 3.3 (parse -> stat_row), currently backlog.)"
+last_updated: "2026-07-11 (Story 3.3 (parse the demo to stat rows as the single writer) -> DONE. Task 7 live-QA PASS (Cuatro sign-off): ran worker ingest on the real cuatro-luisito.dem (31,005,788 B, sha fd28235d...a8215e, decompressed from demos/cuatro-luisito.dem.gz) against the local Supabase stack (127.0.0.1:54322) + the real R2 bucket -> fresh parse 2 players/15 rounds, one stat_row per 17-digit SteamID64 (demo_id + parser_version=demoinfocs-golang/v5 v5.2.0 stamped, status=pending), Sigma-kills 16 == Sigma-deaths 16 (pre-stages the 3.4 conservation gate); re-run already_ingested (no re-parse, counts unchanged); QA cleanup done (R2 object + local rows deleted). PRIOR (code-review, bmad-code-review): 3 adversarial layers, no Critical/High, AC1-AC5 satisfied; 2 decision-needed -> 2 patches applied (D1 non-17-digit SteamID64 skip+log guard at the RunCLI mapping site + TestRunCLISkipsMalformedSteamID; D2 defer/recover in DemoinfocsParser.Parse) + TestRunCLISkipsMalformedSteamID; 2 deferred (deferred-work.md: parser_version RowsAffected -> 3.8; 0K/0D-player no-row -> 3.4), 6 dismissed; green bar clean. baseline_commit e375b1f. Epic 3 (CAP-3) now 3/8 done (3.1+3.2+3.3); next backlog story 3.4 validation-and-anomaly-gate.)"
 project: cs-tournament
 project_key: NOKEY
 tracking_system: file-system
@@ -72,7 +72,7 @@ development_status:
   epic-3: in-progress
   3-1-demo-acquisition-that-bypasses-vercel: done
   3-2-hash-dedup-and-write-once-retention: done
-  3-3-parse-the-demo-to-stat-rows-as-the-single-writer: backlog
+  3-3-parse-the-demo-to-stat-rows-as-the-single-writer: done
   3-4-validation-and-anomaly-gate: backlog
   3-5-stage-stats-to-pending-ingest-side-of-fr-13: backlog
   3-6-re-parse-a-retained-demo-ingest-side-of-fr-14: backlog
