@@ -81,9 +81,20 @@ func runServe() error {
 	if cfg.MatchZySharedSecret == "" {
 		return fmt.Errorf("WORKER_MATCHZY_SHARED_SECRET is required for serve mode")
 	}
-	srv := &ingest.Server{Store: s, Recorder: rec, Secret: cfg.MatchZySharedSecret}
+	// Story 3.8: build the bounded async parse-job Runner from the SAME shared pool the CLI paths use
+	// (DemoinfocsParser + stat writer + roster reader), plus the never-silent logging Alerter (the real
+	// admin:<id> Broadcast is Story 7.4). Start the worker pool and drain it on shutdown. The DemoReader
+	// backs the POST /ingest/parse manual/re-parse trigger (as runReparse builds it).
+	parser := ingest.DemoinfocsParser{}
+	statRec := db.NewPgxStatRecorder(rec.Pool())
+	roster := db.NewPgxRosterReader(rec.Pool())
+	reader := db.NewPgxDemoReader(rec.Pool())
+	runner := ingest.NewRunner(s, parser, statRec, roster, ingest.LogAlerter{})
+	runner.Start(ctx)
+	defer runner.Close()
+	srv := &ingest.Server{Store: s, Recorder: rec, Secret: cfg.MatchZySharedSecret, Enqueuer: runner, Demos: reader}
 	addr := ":" + port()
-	log.Printf("worker listening on %s (POST /ingest/matchzy, POST /ingest/presign)", addr)
+	log.Printf("worker listening on %s (POST /ingest/matchzy, POST /ingest/parse, POST /ingest/presign)", addr)
 	return http.ListenAndServe(addr, srv.Routes())
 }
 

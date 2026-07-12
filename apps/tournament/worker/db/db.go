@@ -375,6 +375,12 @@ func (r *PgxRosterReader) ActiveSteamIDs(ctx context.Context) (map[string]struct
 	return set, nil
 }
 
+// ErrNoDemo is the sentinel a DemoReader returns (wrapped) when a match has no retained demo of record — the
+// fail-closed "nothing to re-parse" condition. Callers (e.g. the worker's POST /ingest/parse) errors.Is
+// against it to map a genuinely-absent demo to a client 404, distinct from a transient DB/infra lookup fault
+// (which must surface as a 500, not masquerade as "no demo").
+var ErrNoDemo = errors.New("no retained demo for match")
+
 // DemoRef identifies a match's retained demo of record for a re-parse (Story 3.6): the demo row's PK
 // (stat_row.demo_id provenance), its opaque storage_key (the object the re-parse reads back — never
 // re-acquires, AD-1), and the recorded SHA-256 (the AD-1 re-hash-verify target; empty when the demo was
@@ -424,7 +430,7 @@ func (r *PgxDemoReader) DemoForMatch(ctx context.Context, matchID int64) (DemoRe
 		}
 		return ref, nil
 	case errors.Is(err, pgx.ErrNoRows):
-		return DemoRef{}, fmt.Errorf("no retained demo for match %d (nothing to re-parse)", matchID)
+		return DemoRef{}, fmt.Errorf("%w %d (nothing to re-parse)", ErrNoDemo, matchID)
 	default:
 		return DemoRef{}, fmt.Errorf("look up demo for match %d: %w", matchID, err)
 	}
