@@ -4,8 +4,9 @@
 //	worker serve                        # HTTP: MatchZy auto-upload receiver + admin presign endpoint
 //	worker ingest <path.dem> --match <id>   # CLI: ingest a local .dem
 //
-// Story 3.1 covers acquisition only (store the .dem in R2 + record the demo row). Hashing/dedup is
-// Story 3.2; parse→stat_row is Story 3.3; the async job queue is Story 3.8.
+// Story 3.1 covers acquisition (store the .dem in R2 + record the demo row); Story 3.2 hashing/dedup;
+// Story 3.3 parses a FRESH CLI ingest into stat_row (this file wires the parser + stat writer into
+// `worker ingest`). The MatchZy-HTTP-triggered parse + the bounded async job queue are Story 3.8.
 package main
 
 import (
@@ -89,11 +90,18 @@ func runIngest(args []string) error {
 		return err
 	}
 	defer rec.Close()
-	res, err := ingest.RunCLI(ctx, s, rec, path, matchID)
+	// The parse core (demoinfocs) + the stat_row writer share the recorder's pool (rec owns Close).
+	parser := ingest.DemoinfocsParser{}
+	statRec := db.NewPgxStatRecorder(rec.Pool())
+	res, err := ingest.RunCLI(ctx, s, rec, parser, statRec, path, matchID)
 	if err != nil {
 		return err
 	}
-	log.Printf("ingested %s -> %s (already_ingested=%t)", path, res.StorageKey, res.AlreadyIngested)
+	if res.Parsed {
+		log.Printf("ingested %s -> %s; parsed match %d: %d players, %d rounds -> stat_row", path, res.StorageKey, matchID, res.Players, res.Rounds)
+	} else {
+		log.Printf("ingested %s -> %s (already_ingested=true; parse skipped)", path, res.StorageKey)
+	}
 	return nil
 }
 

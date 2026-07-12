@@ -83,3 +83,65 @@ func TestFakeRecorderReturnsConfiguredErr(t *testing.T) {
 		t.Fatal("must not capture a row when Err is set")
 	}
 }
+
+// TestFakeRecorderAssignsDemoID proves the 3.3 provenance ripple in the fake: a fresh record gets a
+// non-zero id, distinct demos get distinct ids, and a dedup returns the FIRST row's id (the provenance
+// the prior parse used) rather than minting a new one.
+func TestFakeRecorderAssignsDemoID(t *testing.T) {
+	rec := NewFakeRecorder()
+	first, err := rec.RecordDemo(context.Background(), DemoRow{MatchID: 5, StorageBackend: "r2", StorageKey: "demos/5/a.dem", Source: "matchzy", SHA256: "sha-a"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.DemoID == 0 {
+		t.Fatal("a fresh record must get a non-zero fake DemoID (stat_row.demo_id provenance)")
+	}
+	second, err := rec.RecordDemo(context.Background(), DemoRow{MatchID: 6, StorageBackend: "r2", StorageKey: "demos/6/b.dem", Source: "matchzy", SHA256: "sha-b"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.DemoID == first.DemoID {
+		t.Fatalf("distinct demos must get distinct ids, both %d", first.DemoID)
+	}
+	dup, err := rec.RecordDemo(context.Background(), DemoRow{MatchID: 5, StorageBackend: "r2", StorageKey: "demos/5/dup.dem", Source: "matchzy", SHA256: "sha-a"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dup.Inserted || dup.DemoID != first.DemoID {
+		t.Fatalf("a dedup must return the FIRST row's id: got inserted=%v id=%d want id=%d", dup.Inserted, dup.DemoID, first.DemoID)
+	}
+}
+
+// TestFakeStatRecorderUpsertIdempotency proves the in-memory upsert mirror behaves like ON CONFLICT
+// (match_id, steamid64) DO UPDATE: a repeated pair REPLACES (latest wins), it does not append.
+func TestFakeStatRecorderUpsertIdempotency(t *testing.T) {
+	rec := NewFakeStatRecorder()
+	ctx := context.Background()
+	if err := rec.RecordParse(ctx, 1, "v", []StatRow{{MatchID: 33, SteamID64: "76561197960287930", DemoID: 1, Kills: 20, Deaths: 14, RoundsPlayed: 24}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := rec.RecordParse(ctx, 2, "v", []StatRow{{MatchID: 33, SteamID64: "76561197960287930", DemoID: 2, Kills: 25, Deaths: 10, RoundsPlayed: 26}}); err != nil {
+		t.Fatal(err)
+	}
+	up := rec.Upserted()
+	if len(up) != 1 {
+		t.Fatalf("a repeated (match_id, steamid64) must upsert to ONE row, got %d", len(up))
+	}
+	if up[0].Kills != 25 || up[0].Deaths != 10 || up[0].RoundsPlayed != 26 || up[0].DemoID != 2 {
+		t.Fatalf("the upsert must keep the LATEST values, got %+v", up[0])
+	}
+	if len(rec.Calls()) != 2 {
+		t.Fatalf("both RecordParse calls must be captured, got %d", len(rec.Calls()))
+	}
+}
+
+func TestFakeStatRecorderReturnsConfiguredErr(t *testing.T) {
+	rec := NewFakeStatRecorder()
+	rec.Err = errors.New("boom")
+	if err := rec.RecordParse(context.Background(), 1, "v", []StatRow{{MatchID: 1, SteamID64: "76561197960287930", DemoID: 1}}); err == nil {
+		t.Fatal("expected the configured error")
+	}
+	if len(rec.Calls()) != 0 || len(rec.Upserted()) != 0 {
+		t.Fatal("must not capture/upsert anything when Err is set")
+	}
+}

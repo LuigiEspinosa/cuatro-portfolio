@@ -25,6 +25,9 @@ func TestAcquireStoresThenRecords(t *testing.T) {
 	if res.AlreadyIngested {
 		t.Fatal("a fresh demo must not be reported already_ingested")
 	}
+	if res.DemoID == 0 {
+		t.Fatal("a fresh acquire must carry a non-zero demo provenance id (stat_row.demo_id)")
+	}
 
 	obj, ok := s.Object(res.StorageKey)
 	if !ok {
@@ -125,6 +128,9 @@ func TestAcquireDedupSecondIsAlreadyIngested(t *testing.T) {
 	}
 	if second.SHA256 != first.SHA256 {
 		t.Fatalf("the recomputed sha256 must match the first: got %q want %q", second.SHA256, first.SHA256)
+	}
+	if second.DemoID != first.DemoID {
+		t.Fatalf("an already_ingested acquire must return the PRIOR row's demo id: got %d want %d", second.DemoID, first.DemoID)
 	}
 	if len(rec.Recorded()) != 1 {
 		t.Fatalf("a duplicate must not add a second row, have %d", len(rec.Recorded()))

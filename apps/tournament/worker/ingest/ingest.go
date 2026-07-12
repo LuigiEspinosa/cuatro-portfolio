@@ -36,11 +36,14 @@ type AcquireMeta struct {
 // AcquireResult is the outcome of an acquire. StorageKey is the authoritative object key (the just-
 // stored key on a fresh demo; the PRIOR row's key when AlreadyIngested). SHA256 is the hex SHA-256 of
 // the exact stored .dem bytes. AlreadyIngested is true when a byte-identical demo for this match was
-// already recorded, so this acquire short-circuited to the prior result (AD-3).
+// already recorded, so this acquire short-circuited to the prior result (AD-3). DemoID is the demo row's
+// PK (the new row's id on a fresh acquire; the prior row's id when AlreadyIngested) — Story 3.3's parse
+// stamps it as stat_row.demo_id provenance.
 type AcquireResult struct {
 	StorageKey      string
 	SHA256          string
 	AlreadyIngested bool
+	DemoID          int64
 }
 
 // Acquire streams the canonical .dem to object storage, computing its SHA-256 in the SAME single pass
@@ -82,7 +85,7 @@ func Acquire(ctx context.Context, s store.DemoStore, rec db.DemoRecorder, meta A
 		return AcquireResult{}, err
 	}
 	if outcome.Inserted {
-		return AcquireResult{StorageKey: key, SHA256: sha}, nil
+		return AcquireResult{StorageKey: key, SHA256: sha, DemoID: outcome.DemoID}, nil
 	}
 
 	// AlreadyIngested: a byte-identical demo for this match already exists. The object we just uploaded
@@ -92,7 +95,7 @@ func Acquire(ctx context.Context, s store.DemoStore, rec db.DemoRecorder, meta A
 	if delErr := s.Delete(ctx, key, store.RetentionEventArchive, false); delErr != nil {
 		log.Printf("[acquire] match %d already ingested; failed to delete redundant object %s: %v", meta.MatchID, key, delErr)
 	}
-	return AcquireResult{StorageKey: outcome.ExistingKey, SHA256: sha, AlreadyIngested: true}, nil
+	return AcquireResult{StorageKey: outcome.ExistingKey, SHA256: sha, AlreadyIngested: true, DemoID: outcome.DemoID}, nil
 }
 
 // countingReader tallies the bytes read through it (to record a streamed body's size after Put).
