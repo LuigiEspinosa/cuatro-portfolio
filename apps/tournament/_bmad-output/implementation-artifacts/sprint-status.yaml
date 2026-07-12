@@ -43,7 +43,7 @@
 
 generated: 2026-06-30
 # last_updated convention (2026-07-11): the value below is the LATEST change only. Do not grow a "PREVIOUSLY" chain here — every transition is already recorded in git log + the per-story files.
-last_updated: "2026-07-12 (Story 3.8 -> DONE via bmad-code-review: 3-layer review clean, 4 LOW-sev patches applied + re-verified green (go build/vet/test + -race, worker-only boundary git diff supabase/ app/ lib/ + go.mod EMPTY, demoinfocs pinned v5.2.0). Task 7 live-QA EXECUTED + PASSED vs local Supabase 127.0.0.1:54322 + real R2: off-request 200 (0 rows->2 rows, landing->visible 2.17s log), idempotent re-POST already_ingested+no-2nd-enqueue+1 R2 obj (AD-3), POST /ingest/parse 202 (anomalous->pending re-parse) + 404 (ErrNoDemo), corrupt-demo bounded retry 3s/6s + exactly-one never-silent alert + 0 stat_row, bounded-concurrency 3-POST burst all-land; DB+R2 cleaned to baseline. Epic 3 (CAP-3) now fully resolved: 3.1-3.6 + 3.8 done (7), 3.7 deferred->Epic 4 (Story 4.6); epic-3 retro is optional/open. Original -> review note (Tasks 1-6: shared parseAndRecord core reused by CLI+async job; bounded in-process Runner off handleMatchZy, capped ctx-aware retry/backoff + LogAlerter seam, AC3 elapsed log, POST /ingest/parse trigger seam). Original create-story note: bounded async ingest job meeting the latency budget, ingest side of FR-11/AD-26 -> ready-for-dev via bmad-create-story. Exhaustive analysis: WORKER-ONLY slice (Go code + Go tests, NO migration, NO app/TS change — git diff supabase/ app/ lib/ empty, the 3.6 mirror). The MatchZy receiver (handleMatchZy) today stops at Acquire (store R2 + record demo row) and produces NO stat_row from the HTTP path — 3.8 enqueues a bounded IN-PROCESS async parse job after a fresh Acquire, returns 200 off-request, reuses RunCLI's parse tail (extract -> parseAndRecord), with capped-retry+backoff on ParseFailed + an injectable Alerter seam (logging default; real admin:<id> Broadcast = Story 7.4/Epic 5) on exhaustion. NO jobs table (0005:21/0007:21 call it 'transiently-queued'; recovery of a lost job = Story 7.4 durable sweep, R2 is the durable backstop AD-1). golang.org/x/sync already a dep. AD-26 is DUAL-OWNED: 3.8 = the mechanism; Story 7.4 (Epic 7 ingest-recovery-hardening) = real admin-channel alert wiring + event tuning + durable restart recovery + P50/P95 validation under real load. Cuatro confirmed at story creation (2026-07-12): (1) build the mechanism now (3.8/7.4 split as scoped — 3.8 mechanism, 7.4 real admin:<id> wiring + tuning + durable recovery + P50/P95); (2) 3.8 ADDS the worker-side POST /ingest/parse {match_id} shared-secret trigger seam (wiring the Next.js register route to call it stays deferred -> keeps git diff app/ lib/ empty). Epic 3 (CAP-3) = 6 done (3.1-3.6), 3.7 deferred, 3.8 ready-for-dev.)"
+last_updated: "2026-07-12 (Epic 3 retrospective DONE via bmad-retrospective: epic-3-retrospective optional->done. Reviewed 7/8 stories (3.1-3.6 + 3.8 done; 3.7 re-sequenced to Epic 4/Story 4.6 at create-story). Retro doc: _bmad-output/implementation-artifacts/epic-3-retro-2026-07-12.md. 5 action items recorded (epic 3): #2 DONE IN-SESSION = worker IPv4/pooler fix (full-DSN DATABASE_URL override in buildDatabaseURL wins over the derived db.<ref>.supabase.co DSN -- Supavisor-pooler/IPv4 escape hatch, also unblocks local-QA on IPv4 boxes; TestBuildDatabaseURLOverrideWins + .env.example doc; worker go build/vet/test ./... green, gofmt clean; diff = worker/config + .env.example only, no app/lib/supabase); #1 standing season+tournament+roster live-QA fixture (Cuatro, open); #3 carry demo_match_fk+stat_row_match_fk+roster-lock TOCTOU into Epic 4; #4 flag Story 4.6 expanded scope (3.7 demo-derived score + score-derivation parser ext); #5 relax conservation gate to sum(kills)>sum(deaths) in Epic 5 (all open). Epic 2 follow-through: #6 done; #7 open (Epic 4, not yet due); #8 -> in-progress (R2+MatchZy done, connectivity fixed, deploy-host = Epic 7); #9 open (never operationalized -> re-committed as epic-3 #1). Readiness: NO significant discovery -- Epic 4 plan stands (only additive input = 4.6 carries 3.7). Next: seed the standing fixture, then create-story Story 4.1 (Epic 4 -> in-progress on first story).)"
 project: cs-tournament
 project_key: NOKEY
 tracking_system: file-system
@@ -78,7 +78,7 @@ development_status:
   3-6-re-parse-a-retained-demo-ingest-side-of-fr-14: done
   3-7-demo-derived-score-from-ingest-ingest-side-of-fr-16: deferred  # RE-SEQUENCED to Epic 4 via bmad-create-story (Cuatro 2026-07-12): the ingest-side of FR-16 has NO schema home in Epic 3 — score_a/score_b/score_source + the AD-5 score_source_guard all live on the `match` table (SOLUTION-DESIGN §3 L125-139), created only in Epic 4; AC2's AD-23 Forfeit/Bye precedence is a `match.state` guard (no match table yet). Unlike 3.5 (status) / 3.6 (parse_generation+DELETE grant), NO score column was pre-provisioned anywhere the worker can write (grep -i score migrations = 0). Architecture sets the demo-derived score INSIDE the Aprobar tx (§8 L372-373) = Story 4.6. Direct analogue of the 2.6 deferral. Stays 'deferred' (not auto-picked). Intended home: Story 4.6 (Aprobar sets score_source='demo_derived'+score_a/b+state='resolved', incl. the score-derivation parser extension) + match state machine 4.5/4.6 (AD-23 precedence); 4.8 owns the manual-override sibling. No story file/migration/code produced. See deferred-work.md.
   3-8-bounded-async-ingest-job-meeting-the-latency-budget: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # --- Epic 4: Bracket & Admin Command Routes (CAP-4) ---
   epic-4: backlog
@@ -160,10 +160,30 @@ action_items:
     owner: "Amelia"
     status: open
   - epic: 2
-    action: "Epic 3 infra prep (decide at Epic 3 planning, per Cuatro): choose the Go-worker deploy host (must bypass Vercel), provision the Cloudflare R2 bucket + MatchZy shared-secret path. poc-cs2-demo-parse de-risks parsing; hosting/integration is the open call."
+    action: "Epic 3 infra prep (decide at Epic 3 planning, per Cuatro): choose the Go-worker deploy host (must bypass Vercel), provision the Cloudflare R2 bucket + MatchZy shared-secret path. poc-cs2-demo-parse de-risks parsing; hosting/integration is the open call. IN-PROGRESS (Epic 3 retro 2026-07-12): R2 bucket (inclusivcup-demos) provisioned + used live across all 3.x live-QA; MatchZy shared-secret receiver built + unit-tested (live rented MatchZy server -> Epic 7); the IPv4/pooler connectivity gap FIXED via the DATABASE_URL full-DSN override (epic-3 action #2). REMAINING: the deploy-host choice itself -> Epic 7."
+    owner: "Cuatro"
+    status: in-progress
+  - epic: 2
+    action: "Seed a standing season + tournament row as the local/prod fixture for all Epic 3 ingest live-QA (was also the 2.5 live-QA prereq). Not shipped as seed.sql -- would collide with the 0001-0003 pgTAP 'Season 1' fixtures -- so it is an operational one-time SQL step. STILL OPEN after Epic 3 (retro 2026-07-12): every 3.x live-QA improvised its own fixture (3.6 ran with an EMPTY roster) -- never operationalized as a standing seed; re-committed as epic-3 action #1."
     owner: "Cuatro"
     status: open
-  - epic: 2
-    action: "Seed a standing season + tournament row as the local/prod fixture for all Epic 3 ingest live-QA (was also the 2.5 live-QA prereq). Not shipped as seed.sql -- would collide with the 0001-0003 pgTAP 'Season 1' fixtures -- so it is an operational one-time SQL step."
+  - epic: 3
+    action: "Operationalize the standing season + tournament + roster fixture as a documented one-time SQL seed step for all future live-QA (closes the recurring Epic-2 #9 papercut: 3.4/3.5/3.6/3.8 each improvised; 3.6 ran with an empty roster). Unblocks cleaner Epic 4 live-QA too."
     owner: "Cuatro"
+    status: open
+  - epic: 3
+    action: "Resolve the worker<->hosted-Supabase IPv4/pooler gap (3.1 live-QA finding) via a full-DSN DATABASE_URL override in buildDatabaseURL. DONE 2026-07-12 (Epic 3 retro, in-session): DATABASE_URL now wins verbatim over the derived db.<ref>.supabase.co:5432 DSN -- the Supavisor-pooler / IPv4-only escape hatch (also unblocks local-QA on IPv4 dev boxes); TestBuildDatabaseURLOverrideWins added + .env.example documented; worker go build/vet/test ./... green, gofmt clean; diff scoped to worker/config + .env.example (no app/lib/supabase). Choosing the deploy host itself remains Epic 7 (see epic-2 #8)."
+    owner: "Amelia"
+    status: done
+  - epic: 3
+    action: "Carry the two deferred FKs (demo_match_fk + stat_row_match_fk, deferred since 3.1/3.3) + the roster-lock TOCTOU (epic-2 #7) into Epic 4's match/bracket slice as first-class planning items: add both FKs when the match table lands (4.x); add the TOCTOU write-side state guard in 4.1 before the first concurrent bracket_live writer."
+    owner: "Amelia"
+    status: open
+  - epic: 3
+    action: "Flag Story 4.6's expanded scope at Epic 4 planning: 4.6 absorbs deferred Story 3.7 (demo-derived score set inside the atomic Aprobar tx: score_source='demo_derived' + score_a/score_b + state='resolved') PLUS the score-derivation parser extension (widen ParseResult with score_a/score_b from events.RoundEnd) -- unbuilt, rides with 4.6."
+    owner: "Amelia"
+    status: open
+  - epic: 3
+    action: "Relax the conservation gate to sum(kills) > sum(deaths) (flag only the impossible over-count direction, not the normal unattributed-death under-count) as a planned Epic-5 change -- approved at the Epic 3 retro after real demos balanced 16==16 at live-QA. Home: validate.go or the Epic-5 rich-stat derivation."
+    owner: "Amelia"
     status: open
