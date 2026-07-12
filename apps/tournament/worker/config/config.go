@@ -54,7 +54,7 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("missing required worker env: %s", strings.Join(missing, ", "))
 	}
 
-	dbURL, err := buildDatabaseURL(get("SUPABASE_URL"), get("SUPABASE_DB_PASSWORD"))
+	dbURL, err := buildDatabaseURL(get("DATABASE_URL"), get("SUPABASE_URL"), get("SUPABASE_DB_PASSWORD"))
 	if err != nil {
 		return Config{}, err
 	}
@@ -63,14 +63,24 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
-// buildDatabaseURL derives the Postgres DSN for the worker's direct (owner/service-role) DB access
-// from the Supabase project URL and the database password — no net-new env name. Supabase's hosted
-// direct-connection pattern is db.<ref>.supabase.co:5432 (user postgres, db postgres, TLS required).
-// The local dev stack (`supabase start`) instead exposes Postgres on 127.0.0.1:54322 (no TLS), so for
-// local verify (Task 9) point SUPABASE_URL at http://127.0.0.1:54321 and this maps to the local DB.
-func buildDatabaseURL(supabaseURL, password string) (string, error) {
+// buildDatabaseURL resolves the Postgres DSN for the worker's direct (owner/service-role) DB access.
+//
+// DATABASE_URL, if set, wins verbatim — the full-DSN escape hatch for any host the derived
+// db.<ref>.supabase.co pattern cannot reach. Supabase made direct-connect IPv6-only, so an IPv4-only
+// host MUST use the Supavisor pooler instead (aws-0-<region>.pooler.supabase.com, user postgres.<ref>,
+// port 6543 transaction / 5432 session) — a host+user the project URL alone cannot derive (the region
+// is not in it). Setting DATABASE_URL also unblocks local-QA on an IPv4-only dev box. The operator owns
+// the whole DSN (host, user, port, sslmode), so nothing is re-derived. [Story 3.1 live-QA finding.]
+//
+// Otherwise the DSN is derived (no net-new env) from the Supabase project URL + the DB password:
+//   - hosted  https://<ref>.supabase.co -> db.<ref>.supabase.co:5432 (user postgres, db postgres, TLS required)
+//   - local   http://127.0.0.1:54321    -> 127.0.0.1:54322 (the `supabase start` Postgres port, no TLS)
+func buildDatabaseURL(override, supabaseURL, password string) (string, error) {
+	if override != "" {
+		return override, nil
+	}
 	if supabaseURL == "" {
-		return "", fmt.Errorf("SUPABASE_URL is required to derive the worker DB connection")
+		return "", fmt.Errorf("SUPABASE_URL is required to derive the worker DB connection (or set DATABASE_URL to a full DSN)")
 	}
 	if password == "" {
 		return "", fmt.Errorf("SUPABASE_DB_PASSWORD is required for direct worker DB access")
