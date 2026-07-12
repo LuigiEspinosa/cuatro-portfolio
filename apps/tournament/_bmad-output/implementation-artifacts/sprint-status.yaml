@@ -43,7 +43,7 @@
 
 generated: 2026-06-30
 # last_updated convention (2026-07-11): the value below is the LATEST change only. Do not grow a "PREVIOUSLY" chain here — every transition is already recorded in git log + the per-story files.
-last_updated: "2026-07-11 (Story 3.3 (parse the demo to stat rows as the single writer) -> DONE. Task 7 live-QA PASS (Cuatro sign-off): ran worker ingest on the real cuatro-luisito.dem (31,005,788 B, sha fd28235d...a8215e, decompressed from demos/cuatro-luisito.dem.gz) against the local Supabase stack (127.0.0.1:54322) + the real R2 bucket -> fresh parse 2 players/15 rounds, one stat_row per 17-digit SteamID64 (demo_id + parser_version=demoinfocs-golang/v5 v5.2.0 stamped, status=pending), Sigma-kills 16 == Sigma-deaths 16 (pre-stages the 3.4 conservation gate); re-run already_ingested (no re-parse, counts unchanged); QA cleanup done (R2 object + local rows deleted). PRIOR (code-review, bmad-code-review): 3 adversarial layers, no Critical/High, AC1-AC5 satisfied; 2 decision-needed -> 2 patches applied (D1 non-17-digit SteamID64 skip+log guard at the RunCLI mapping site + TestRunCLISkipsMalformedSteamID; D2 defer/recover in DemoinfocsParser.Parse) + TestRunCLISkipsMalformedSteamID; 2 deferred (deferred-work.md: parser_version RowsAffected -> 3.8; 0K/0D-player no-row -> 3.4), 6 dismissed; green bar clean. baseline_commit e375b1f. Epic 3 (CAP-3) now 3/8 done (3.1+3.2+3.3); next backlog story 3.4 validation-and-anomaly-gate.)"
+last_updated: "2026-07-11 (Story 3.4 (validation and anomaly gate) -> DONE. Task 6 live-QA SIGNED OFF (Cuatro): ran the real cuatro-luisito.dem (31,005,788 B, sha fd28235d...a8215e) + real R2 + local Supabase (127.0.0.1:54322). PASS -- clean parse --match 700 (validation_state=pending, 2 rows status=pending, validated_at set, anomaly_reasons NULL, Sigma-kills 16==Sigma-deaths 16, unreconciled_stat_row empty); anomalous parse --match 701 (SAME demo/NEW match = fresh parse via the (match_id,demo_sha256) dedup key, one id unrostered -> validation_state=anomalous, anomaly_reasons=[{unreconciled,76561199176839714}], warn log fired, view listed the (701,id,demo_id) row); live unreconciled-view reconcile (remove id -> match-700 row appears LIVE, re-add -> clears; match-701 STORED anomalous flag persists = live view != stored hold, un-hold is Epic 4 accept-anomaly); conservation 16==16 (real demo balances -> empirically backs the deferred == decision); idempotency re-run --match 700 -> already_ingested, no re-parse, counts/state unchanged. QA cleanup done (2 R2 objects deleted + verified GONE via head-object; all local stat_row/demo/roster/tournament/season/player QA rows cleared). PRIOR same-day (code-review via bmad-code-review, baseline 70d94bc): 3 adversarial layers (Blind/Edge/Acceptance, Opus 4.8) -> Acceptance Auditor verified AC1-AC5 + AD-2/AD-7/fail-closed satisfied, no scope creep, no Critical/High; 1 decision-needed DEFERRED (strict Sigma-k==Sigma-d conservation gate false-positives on unattributed deaths -> keep spec ==, verify at live-QA [NOW DONE: real demo balanced 16==16], relax to Sigma-k>Sigma-d only if imbalance routine; deferred-work.md); 4 patches applied+green (P1 security_invoker pgTAP now bites via regex; P2 RecordParse len(Reasons)>0 guard; P3 skip-guard comment softened; P4 col_type_is added, plan 26->28); 1 dismissed. Green bar: go build/vet/gofmt/test ./... clean; supabase test db Files 9 Tests 280 PASS; git diff lib/ app/ empty. Story 2.6: the unreconciled_stat_row DATA SURFACE is now confirmed working end-to-end (folded into 3.4 per Resolved Decision 2 / action-item epic-2 #6 = DONE); the roster-side reconcile UI remainder stays deferred to the app-surface epic (2-6 stays deferred with that note). Epic 3 (CAP-3) now 4/8 done (3.1+3.2+3.3+3.4); next backlog story 3.5 (stage stats to Pending, ingest side of FR-13).)"
 project: cs-tournament
 project_key: NOKEY
 tracking_system: file-system
@@ -65,7 +65,7 @@ development_status:
   2-3-canonical-steamid64-capture-and-display-name-tolerance: done
   2-4-roles-admin-gating-and-revoke-invalidates-session: done
   2-5-registration-window-and-roster-management: done
-  2-6-unreconciled-steamid64-list-roster-side: deferred  # -> Epic 3, build AFTER Story 3.4 (Cuatro 2026-07-06): the unreconciled list is an AD-4 left-join over stat_row, which is not created until Story 3.3 (Epic 3) -- no data source exists yet; 'deferred' so it is not auto-picked next. See deferred-work.md.
+  2-6-unreconciled-steamid64-list-roster-side: deferred  # DATA SURFACE DONE via Story 3.4 (Cuatro 2026-07-11): the unreconciled_stat_row view (migration 0008) IS the AD-4 left-join, confirmed working end-to-end at 3.4 Task-6 live-QA (unrostered id surfaced live; mechanical reconcile on roster-add). Per Resolved Decision 2 only the roster-side reconcile UI remains -> deferred to the app-surface epic; stays 'deferred' (not auto-picked) with the data half satisfied. See deferred-work.md + action-item epic-2 #6 (done).
   epic-2-retrospective: done
 
   # --- Epic 3: Demo Ingestion Worker (CAP-3) ---
@@ -73,7 +73,7 @@ development_status:
   3-1-demo-acquisition-that-bypasses-vercel: done
   3-2-hash-dedup-and-write-once-retention: done
   3-3-parse-the-demo-to-stat-rows-as-the-single-writer: done
-  3-4-validation-and-anomaly-gate: backlog
+  3-4-validation-and-anomaly-gate: done
   3-5-stage-stats-to-pending-ingest-side-of-fr-13: backlog
   3-6-re-parse-a-retained-demo-ingest-side-of-fr-14: backlog
   3-7-demo-derived-score-from-ingest-ingest-side-of-fr-16: backlog
@@ -152,9 +152,9 @@ action_items:
     owner: "Amelia"
     status: done
   - epic: 2
-    action: "Fold Story 2.6 (unreconciled-SteamID64 list) into the Story 3.4 hydration -- 2.6 has no data source until stat_row exists (created 3.3, populated/flagged 3.4) and epics.md:535 already names it by number. Move 2.6 from deferred to built as part of / adjacent to Story 3.4."
+    action: "Fold Story 2.6 (unreconciled-SteamID64 list) into the Story 3.4 hydration -- 2.6 has no data source until stat_row exists (created 3.3, populated/flagged 3.4) and epics.md:535 already names it by number. Move 2.6 from deferred to built as part of / adjacent to Story 3.4. RESOLVED 2026-07-11 (Story 3.4 done): the DATA SURFACE half is delivered -- migration 0008's unreconciled_stat_row view (AD-4 left-join, security_invoker, service_role-only) was built in 3.4 and confirmed working end-to-end at Task-6 live-QA (an unrostered parsed id surfaced in the view live; mechanical reconcile on roster-add, no re-parse). Per Resolved Decision 2 only the roster-side reconcile UI remains, deferred to the app-surface epic; 2-6 stays 'deferred' in development_status for that UI remainder."
     owner: "Amelia"
-    status: open
+    status: done
   - epic: 2
     action: "Close the roster-lock TOCTOU (deferred W1) in the Epic 4 bracket-generation slice: add the write-side state predicate (WHERE-clause / RPC guard) to adminAddPlayer/removePlayer/enrollSelf BEFORE a concurrent bracket_live writer exists. Unexploitable until then; must not be forgotten when Epic 4 starts."
     owner: "Amelia"
