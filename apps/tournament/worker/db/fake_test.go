@@ -163,6 +163,110 @@ func TestFakeStatRecorderCapturesValidationOutcome(t *testing.T) {
 	}
 }
 
+// TestFakeStatRecorderRecordReparse proves the fake's re-parse semantics: (1) the fresh rows upsert
+// (replace), (2) a prior SteamID absent from the new set is DELETED (delete-missing), (3) an approved row's
+// status is PRESERVED while a new id lands pending, and (4) the per-demo generation counter bumps.
+func TestFakeStatRecorderRecordReparse(t *testing.T) {
+	rec := NewFakeStatRecorder()
+	ctx := context.Background()
+	// Prior state: an approved …930 (stale K/D), a pending …042, and a phantom …999 the new parse drops.
+	rec.SeedRow("approved", StatRow{MatchID: 5, SteamID64: "76561197960287930", DemoID: 3, Kills: 1, Deaths: 1})
+	rec.SeedRow("pending", StatRow{MatchID: 5, SteamID64: "76561198000000042", DemoID: 3})
+	rec.SeedRow("pending", StatRow{MatchID: 5, SteamID64: "76561198000000999", DemoID: 3})
+
+	newRows := []StatRow{
+		{MatchID: 5, SteamID64: "76561197960287930", DemoID: 3, Kills: 20, Deaths: 14, RoundsPlayed: 24}, // replace
+		{MatchID: 5, SteamID64: "76561198000000042", DemoID: 3, Kills: 14, Deaths: 20, RoundsPlayed: 24},
+		{MatchID: 5, SteamID64: "76561198000000111", DemoID: 3, Kills: 7, Deaths: 3, RoundsPlayed: 24}, // brand-new id
+	}
+	if err := rec.RecordReparse(ctx, 5, 3, "v", newRows, ValidationOutcome{}); err != nil {
+		t.Fatal(err)
+	}
+
+	up := rec.Upserted()
+	if len(up) != 3 {
+		t.Fatalf("after re-parse the match must have exactly 3 rows (…999 deleted, …111 added), got %d", len(up))
+	}
+	byID := map[string]StatRow{}
+	for _, r := range up {
+		byID[r.SteamID64] = r
+	}
+	if _, gone := byID["76561198000000999"]; gone {
+		t.Fatal("the phantom …999 (absent from the new parse) must be delete-missing'd")
+	}
+	if r := byID["76561197960287930"]; r.Kills != 20 || r.Deaths != 14 {
+		t.Fatalf("…930 must be replaced with the fresh K/D, got %+v", r)
+	}
+	if st, ok := rec.StatusOf(5, "76561197960287930"); !ok || st != "approved" {
+		t.Fatalf("…930 must STAY approved (status preserved), got %q ok=%v", st, ok)
+	}
+	if st, ok := rec.StatusOf(5, "76561198000000111"); !ok || st != "pending" {
+		t.Fatalf("the brand-new …111 must land pending, got %q ok=%v", st, ok)
+	}
+	if g := rec.Generation(3); g != 1 {
+		t.Fatalf("the demo generation must bump once, got %d", g)
+	}
+	if len(rec.Reparsed()) != 1 || rec.Reparsed()[0].MatchID != 5 {
+		t.Fatalf("the re-parse call must be captured with its match, got %+v", rec.Reparsed())
+	}
+}
+
+// TestFakeStatRecorderReparseEmptyDeletesAll proves the empty-set revert: a zero-row re-parse removes ALL
+// of the match's rows (the ARRAY[]::text[] <> ALL is-true-for-every-row case) — and only that match's.
+func TestFakeStatRecorderReparseEmptyDeletesAll(t *testing.T) {
+	rec := NewFakeStatRecorder()
+	rec.SeedRow("approved", StatRow{MatchID: 5, SteamID64: "76561197960287930", DemoID: 3})
+	rec.SeedRow("pending", StatRow{MatchID: 5, SteamID64: "76561198000000042", DemoID: 3})
+	rec.SeedRow("pending", StatRow{MatchID: 6, SteamID64: "76561198000000042", DemoID: 4}) // a DIFFERENT match — must survive
+
+	if err := rec.RecordReparse(context.Background(), 5, 3, "v", nil, ValidationOutcome{Anomalous: true}); err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rec.Upserted() {
+		if r.MatchID == 5 {
+			t.Fatalf("match 5 must have no rows after an empty re-parse, found %+v", r)
+		}
+	}
+	if _, ok := rec.StatusOf(6, "76561198000000042"); !ok {
+		t.Fatal("a DIFFERENT match's rows must NOT be touched by match 5's re-parse")
+	}
+}
+
+// TestFakeStatRecorderReparseReturnsConfiguredErr proves the fail-closed seam: a set Err aborts before any
+// mutation (no generation bump, no delete, no capture).
+func TestFakeStatRecorderReparseReturnsConfiguredErr(t *testing.T) {
+	rec := NewFakeStatRecorder()
+	rec.SeedRow("approved", StatRow{MatchID: 5, SteamID64: "76561197960287930", DemoID: 3})
+	rec.Err = errors.New("boom")
+	if err := rec.RecordReparse(context.Background(), 5, 3, "v", []StatRow{{MatchID: 5, SteamID64: "76561198000000042", DemoID: 3}}, ValidationOutcome{}); err == nil {
+		t.Fatal("expected the configured error")
+	}
+	if len(rec.Reparsed()) != 0 || rec.Generation(3) != 0 {
+		t.Fatal("a fail-closed re-parse must not capture a call or bump the generation")
+	}
+	if st, ok := rec.StatusOf(5, "76561197960287930"); !ok || st != "approved" {
+		t.Fatal("a fail-closed re-parse must leave the prior mirror untouched")
+	}
+}
+
+// TestFakeDemoReader proves the seam: NewFakeDemoReader returns the seeded ref; a configured Err surfaces
+// (the fail-closed no-demo path).
+func TestFakeDemoReader(t *testing.T) {
+	ref := DemoRef{DemoID: 9, StorageKey: "demos/5/x.dem", SHA256: "abc"}
+	r := NewFakeDemoReader(ref)
+	got, err := r.DemoForMatch(context.Background(), 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != ref {
+		t.Fatalf("the fake must return the seeded ref, got %+v", got)
+	}
+	r.Err = errors.New("no retained demo")
+	if _, err := r.DemoForMatch(context.Background(), 5); err == nil {
+		t.Fatal("a configured Err must surface (fail-closed no-demo path)")
+	}
+}
+
 // TestFakeRosterReader proves the seam: NewFakeRosterReader seeds an active set, ActiveSteamIDs returns it
 // (as a copy), and a configured Err surfaces (the fail-closed roster-read path).
 func TestFakeRosterReader(t *testing.T) {

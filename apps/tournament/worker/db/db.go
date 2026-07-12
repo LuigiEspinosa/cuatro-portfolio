@@ -157,9 +157,21 @@ type StatRecorder interface {
 	// RecordParse stamps demo.parser_version + the validation outcome (validation_state/anomaly_reasons/
 	// validated_at, Story 3.4) and upserts rows in ONE transaction (the AD-3/AD-26 idempotent-parse spirit).
 	// A re-parse REPLACES a player's row via ON CONFLICT (match_id, steamid64) DO UPDATE; it does NOT delete
-	// SteamIDs absent from the new parse (that delete-missing is Story 3.6). Rows are upserted regardless of
-	// the outcome — an anomaly is a HOLD FLAG on demo, never a write-block.
+	// SteamIDs absent from the new parse (that delete-missing is RecordReparse, below). Rows are upserted
+	// regardless of the outcome — an anomaly is a HOLD FLAG on demo, never a write-block. It leaves
+	// demo.parse_generation untouched (a first parse stays generation 1).
 	RecordParse(ctx context.Context, demoID int64, parserVersion string, rows []StatRow, val ValidationOutcome) error
+
+	// RecordReparse re-derives a match's rows from a deliberate re-parse of the RETAINED demo, in ONE
+	// transaction (the AD-3 revert→reparse): it (a) re-stamps parser_version + the Story-3.4 validation
+	// outcome AND bumps demo.parse_generation, (b) upserts every freshly-parsed row ON CONFLICT
+	// (match_id, steamid64) DO UPDATE — PRESERVING status (the set-list omits it, so an approved row stays
+	// approved: AD-7, no Pending flicker), and (c) DELETES every stat_row for matchID whose steamid64 is
+	// absent from the new parse (the AD-3 "delete of SteamIDs absent from the new parse"). matchID is passed
+	// EXPLICITLY (not derived from rows) so a zero-player re-parse deletes ALL of the match's rows. It
+	// touches only derived rows — the raw demo + its sha256 are never written (AD-1). All-or-nothing
+	// (fail-closed on any error), so published truth jumps old→corrected with no intermediate state visible.
+	RecordReparse(ctx context.Context, matchID, demoID int64, parserVersion string, rows []StatRow, val ValidationOutcome) error
 }
 
 // PgxStatRecorder is the production StatRecorder. It borrows the PgxRecorder's pool (see PgxRecorder.Pool)
@@ -189,17 +201,81 @@ func (r *PgxStatRecorder) RecordParse(ctx context.Context, demoID int64, parserV
 	}
 	defer tx.Rollback(ctx) // a no-op once Commit succeeds; rolls back on any early return (fail-closed)
 
-	// Stamp the anomaly-hold outcome on the SAME demo row as parser_version (AD-2 single writer). A gate
-	// failure => validation_state='anomalous' + the machine-readable reasons jsonb; a clean parse =>
-	// 'pending' + NULL reasons (validated & clean). validated_at=now() marks the row validated either way.
+	// A first parse stamps the validation outcome (bumpGeneration=false leaves parse_generation at 1) and
+	// upserts the rows. It does NOT delete SteamIDs absent from the parse — that delete-missing is
+	// RecordReparse's revert half.
+	if err := stampDemo(ctx, tx, demoID, parserVersion, val, false); err != nil {
+		return err
+	}
+	if err := upsertStatRows(ctx, tx, demoID, rows); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit parse tx (demo %d): %w", demoID, err)
+	}
+	return nil
+}
+
+// RecordReparse re-derives a match's stat rows from a deliberate re-parse of the RETAINED demo, in ONE
+// transaction (AD-3 revert→reparse — no observable Pending window). It (a) re-stamps parser_version + the
+// Story-3.4 validation outcome AND bumps demo.parse_generation, (b) upserts every freshly-parsed row
+// PRESERVING status (the status-preserving upsert shared with RecordParse — an approved row stays approved,
+// AD-7), and (c) DELETES every stat_row for matchID whose steamid64 is absent from the new parse. matchID
+// is passed EXPLICITLY so a zero-player re-parse (empty rows) deletes ALL of the match's rows (correct: it
+// then trips the empty_stats gate). All statements run inside the SAME tx — fail-closed on any error. It
+// writes only derived rows + demo parse-metadata; the raw demo + demo_sha256/storage_key are never touched
+// (AD-1).
+func (r *PgxStatRecorder) RecordReparse(ctx context.Context, matchID, demoID int64, parserVersion string, rows []StatRow, val ValidationOutcome) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin reparse tx (match %d, demo %d): %w", matchID, demoID, err)
+	}
+	defer tx.Rollback(ctx) // a no-op once Commit succeeds; rolls back on any early return (fail-closed)
+
+	// (a) re-stamp + BUMP parse_generation (the ONLY stamp delta vs RecordParse).
+	if err := stampDemo(ctx, tx, demoID, parserVersion, val, true); err != nil {
+		return err
+	}
+	// (b) status-preserving upsert (identical to the first-parse upsert — the DO UPDATE omits `status`).
+	if err := upsertStatRows(ctx, tx, demoID, rows); err != nil {
+		return err
+	}
+	// (c) delete-missing: every stat_row for THIS match whose steamid64 is absent from the new parse's set.
+	// The set is passed as a non-nil text[] so an EMPTY set encodes as ARRAY[]::text[] (not NULL): in
+	// Postgres `steamid64 <> ALL(ARRAY[]::text[])` is TRUE for every row, so a zero-player re-parse deletes
+	// ALL of the match's rows (the correct revert). Scoped by match_id (NOT demo_id) and run INSIDE the tx.
+	newIDs := make([]string, 0, len(rows)) // make() => non-nil even when len==0 (avoids a NULL that would delete nothing)
+	for _, row := range rows {
+		newIDs = append(newIDs, row.SteamID64)
+	}
+	if _, err := tx.Exec(ctx,
+		`delete from stat_row where match_id = $1 and steamid64 <> all($2::text[])`,
+		matchID, newIDs,
+	); err != nil {
+		return fmt.Errorf("delete-missing stat_row (match %d): %w", matchID, err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit reparse tx (match %d, demo %d): %w", matchID, demoID, err)
+	}
+	return nil
+}
+
+// stampDemo writes the Story-3.4 validation outcome (validation_state/anomaly_reasons/validated_at) and
+// parser_version onto the demo row, in the caller's tx (AD-2 single writer). A gate failure =>
+// validation_state='anomalous' + the machine-readable reasons jsonb; a clean parse => 'pending' + NULL
+// reasons. When bumpGeneration is set (a re-parse) it also bumps parse_generation — the sole difference
+// between the first-parse and re-parse stamps.
+func stampDemo(ctx context.Context, tx pgx.Tx, demoID int64, parserVersion string, val ValidationOutcome, bumpGeneration bool) error {
 	validationState := "pending"
 	var reasons *string // nil => SQL NULL (no reasons when clean, or anomalous with no reasons)
 	if val.Anomalous {
 		validationState = "anomalous"
 		// Only marshal when there is at least one reason: json.Marshal of a nil/empty slice yields the
 		// jsonb literal `null`, so guarding here keeps anomaly_reasons a clean SQL NULL rather than a jsonb
-		// null scalar. Unreachable via Validate (Anomalous <=> len(Reasons)>0) but RecordParse is a reusable
-		// seam (Stories 3.6/3.8), so keep the state flag authoritative and the payload well-formed.
+		// null scalar. Unreachable via Validate (Anomalous <=> len(Reasons)>0) but this seam is reused by
+		// both parse paths, so keep the state flag authoritative and the payload well-formed.
 		if len(val.Reasons) > 0 {
 			b, err := json.Marshal(val.Reasons)
 			if err != nil {
@@ -209,41 +285,47 @@ func (r *PgxStatRecorder) RecordParse(ctx context.Context, demoID int64, parserV
 			reasons = &s
 		}
 	}
-	if _, err := tx.Exec(ctx,
-		`update demo set parser_version = $1, validation_state = $2, anomaly_reasons = $3::jsonb, validated_at = now() where id = $4`,
-		parserVersion, validationState, reasons, demoID,
-	); err != nil {
+	sql := `update demo set parser_version = $1, validation_state = $2, anomaly_reasons = $3::jsonb, validated_at = now() where id = $4`
+	if bumpGeneration {
+		sql = `update demo set parser_version = $1, validation_state = $2, anomaly_reasons = $3::jsonb, validated_at = now(), parse_generation = parse_generation + 1 where id = $4`
+	}
+	if _, err := tx.Exec(ctx, sql, parserVersion, validationState, reasons, demoID); err != nil {
 		return fmt.Errorf("stamp parser_version + validation (demo %d): %w", demoID, err)
 	}
+	return nil
+}
 
-	if len(rows) > 0 {
-		batch := &pgx.Batch{}
-		for _, row := range rows {
-			batch.Queue(
-				`insert into stat_row (match_id, steamid64, demo_id, kills, deaths, rounds_played)
-				 values ($1, $2, $3, $4, $5, $6)
-				 on conflict (match_id, steamid64) do update set
-				   kills = excluded.kills,
-				   deaths = excluded.deaths,
-				   rounds_played = excluded.rounds_played,
-				   demo_id = excluded.demo_id`,
-				row.MatchID, row.SteamID64, row.DemoID, row.Kills, row.Deaths, row.RoundsPlayed,
-			)
-		}
-		br := tx.SendBatch(ctx, batch)
-		for range rows {
-			if _, err := br.Exec(); err != nil {
-				_ = br.Close()
-				return fmt.Errorf("upsert stat_row (demo %d): %w", demoID, err)
-			}
-		}
-		if err := br.Close(); err != nil {
-			return fmt.Errorf("close stat_row batch (demo %d): %w", demoID, err)
+// upsertStatRows runs the status-preserving ON CONFLICT (match_id, steamid64) DO UPDATE batch inside the
+// caller's tx: a repeat pair REPLACES the row (never duplicates — the AD-3 UNIQUE key) and the DO UPDATE
+// set-list deliberately OMITS `status`, so an already-approved row keeps its status (AD-7). An empty rows
+// slice is a no-op (a zero-player parse still stamps the demo row via stampDemo). Shared by RecordParse
+// (first parse) and RecordReparse (re-parse).
+func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	batch := &pgx.Batch{}
+	for _, row := range rows {
+		batch.Queue(
+			`insert into stat_row (match_id, steamid64, demo_id, kills, deaths, rounds_played)
+			 values ($1, $2, $3, $4, $5, $6)
+			 on conflict (match_id, steamid64) do update set
+			   kills = excluded.kills,
+			   deaths = excluded.deaths,
+			   rounds_played = excluded.rounds_played,
+			   demo_id = excluded.demo_id`,
+			row.MatchID, row.SteamID64, row.DemoID, row.Kills, row.Deaths, row.RoundsPlayed,
+		)
+	}
+	br := tx.SendBatch(ctx, batch)
+	for range rows {
+		if _, err := br.Exec(); err != nil {
+			_ = br.Close()
+			return fmt.Errorf("upsert stat_row (demo %d): %w", demoID, err)
 		}
 	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("commit parse tx (demo %d): %w", demoID, err)
+	if err := br.Close(); err != nil {
+		return fmt.Errorf("close stat_row batch (demo %d): %w", demoID, err)
 	}
 	return nil
 }
@@ -291,4 +373,59 @@ func (r *PgxRosterReader) ActiveSteamIDs(ctx context.Context) (map[string]struct
 		return nil, fmt.Errorf("iterate active roster: %w", err)
 	}
 	return set, nil
+}
+
+// DemoRef identifies a match's retained demo of record for a re-parse (Story 3.6): the demo row's PK
+// (stat_row.demo_id provenance), its opaque storage_key (the object the re-parse reads back — never
+// re-acquires, AD-1), and the recorded SHA-256 (the AD-1 re-hash-verify target; empty when the demo was
+// recorded on the un-hashed manual path — a NULL demo_sha256).
+type DemoRef struct {
+	DemoID     int64
+	StorageKey string
+	SHA256     string
+}
+
+// DemoReader looks up a match's retained demo of record for a deliberate re-parse (Story 3.6). Injectable
+// for tests (FakeDemoReader), the Go analogue of the RosterReader/StatRecorder seams — the re-parse reads
+// the RETAINED object back (via the returned storage_key), it never re-acquires.
+type DemoReader interface {
+	// DemoForMatch returns the match's demo of record (the latest by id if >1 — v1 is one demo per match,
+	// AD-18; a stray second demo re-parses the newest). It returns an error if the match has no retained
+	// demo (fail closed — there is nothing to re-parse).
+	DemoForMatch(ctx context.Context, matchID int64) (DemoRef, error)
+}
+
+// PgxDemoReader is the production DemoReader. Like PgxStatRecorder/PgxRosterReader it borrows the
+// PgxRecorder's shared pool (see PgxRecorder.Pool) — the PgxRecorder owns Close; this reader only borrows it.
+type PgxDemoReader struct {
+	pool *pgxpool.Pool
+}
+
+var _ DemoReader = (*PgxDemoReader)(nil)
+
+// NewPgxDemoReader builds a demo reader over an existing (shared) pool.
+func NewPgxDemoReader(pool *pgxpool.Pool) *PgxDemoReader { return &PgxDemoReader{pool: pool} }
+
+// DemoForMatch reads the match's demo of record — the highest id (the latest ingest) when a match somehow
+// has >1 demo row (v1 is single-demo-per-match, AD-18; scoping demo→tournament is Epic 4). demo_sha256 is
+// NULL on the un-hashed manual path, surfaced as an empty SHA256 (the re-hash-verify then skips). A match
+// with no demo row fails closed with a clear error (nothing to re-parse).
+func (r *PgxDemoReader) DemoForMatch(ctx context.Context, matchID int64) (DemoRef, error) {
+	var ref DemoRef
+	var sha *string
+	err := r.pool.QueryRow(ctx,
+		`select id, storage_key, demo_sha256 from demo where match_id = $1 order by id desc limit 1`,
+		matchID,
+	).Scan(&ref.DemoID, &ref.StorageKey, &sha)
+	switch {
+	case err == nil:
+		if sha != nil {
+			ref.SHA256 = *sha
+		}
+		return ref, nil
+	case errors.Is(err, pgx.ErrNoRows):
+		return DemoRef{}, fmt.Errorf("no retained demo for match %d (nothing to re-parse)", matchID)
+	default:
+		return DemoRef{}, fmt.Errorf("look up demo for match %d: %w", matchID, err)
+	}
 }

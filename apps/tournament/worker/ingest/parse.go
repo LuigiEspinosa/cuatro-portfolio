@@ -110,8 +110,7 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 }
 
 // FakeParser is a Parser for `go test`: it returns a canned Result (or Err) so the read→parse→upsert
-// wiring is unit-tested without a real .dem. It does not read r (the caller Closes it). Mirrors the
-// FakeStore/FakeRecorder in-package seams.
+// wiring is unit-tested without a real .dem. Mirrors the FakeStore/FakeRecorder in-package seams.
 type FakeParser struct {
 	Result ParseResult
 	Err    error
@@ -119,8 +118,12 @@ type FakeParser struct {
 
 var _ Parser = FakeParser{}
 
-// Parse returns the configured Err (fail-closed seam) or the canned Result.
-func (f FakeParser) Parse(io.Reader) (ParseResult, error) {
+// Parse DRAINS r to EOF (as the real DemoinfocsParser does via ParseToEnd) and then returns the configured
+// Err (fail-closed seam) or the canned Result. Draining matters for the Story-3.6 re-parse: RunReparse tees
+// the retained object through a sha256 hasher WHILE parsing, so the parser must consume every byte for the
+// re-hash-verify to see the whole object (a non-draining fake would leave the hash over an empty stream).
+func (f FakeParser) Parse(r io.Reader) (ParseResult, error) {
+	_, _ = io.Copy(io.Discard, r) // drain so a tee'd hasher observes the full stream (the caller Closes r)
 	if f.Err != nil {
 		return ParseResult{}, f.Err
 	}

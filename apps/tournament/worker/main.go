@@ -3,10 +3,13 @@
 //
 //	worker serve                        # HTTP: MatchZy auto-upload receiver + admin presign endpoint
 //	worker ingest <path.dem> --match <id>   # CLI: ingest a local .dem
+//	worker reparse --match <id>             # CLI: deliberately re-parse a match's RETAINED demo (Story 3.6)
 //
 // Story 3.1 covers acquisition (store the .dem in R2 + record the demo row); Story 3.2 hashing/dedup;
 // Story 3.3 parses a FRESH CLI ingest into stat_row (this file wires the parser + stat writer into
-// `worker ingest`). The MatchZy-HTTP-triggered parse + the bounded async job queue are Story 3.8.
+// `worker ingest`); Story 3.6 adds `worker reparse`, which reads the RETAINED object back and re-derives
+// the rows in one atomic revert→reparse transaction (never re-acquires). The MatchZy-HTTP-triggered parse +
+// the bounded async job queue are Story 3.8.
 package main
 
 import (
@@ -38,6 +41,10 @@ func main() {
 		if err := runIngest(os.Args[2:]); err != nil {
 			log.Fatalf("ingest: %v", err)
 		}
+	case "reparse":
+		if err := runReparse(os.Args[2:]); err != nil {
+			log.Fatalf("reparse: %v", err)
+		}
 	default:
 		usage()
 		os.Exit(2)
@@ -48,6 +55,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "usage:")
 	fmt.Fprintln(os.Stderr, "  worker serve")
 	fmt.Fprintln(os.Stderr, "  worker ingest <path.dem> --match <id>")
+	fmt.Fprintln(os.Stderr, "  worker reparse --match <id>")
 }
 
 // build wires the real R2 store + pgx recorder from the environment (fail-fast on missing config).
@@ -108,6 +116,67 @@ func runIngest(args []string) error {
 		log.Printf("ingested %s -> %s (already_ingested=true; parse skipped)", path, res.StorageKey)
 	}
 	return nil
+}
+
+// runReparse deliberately re-parses a match's RETAINED demo (Story 3.6). It reuses build() + the same
+// shared-pool recorders as `ingest`, plus the new PgxDemoReader that looks up the match's demo of record.
+// RunReparse reads the retained object back (never re-acquires), re-hash-verifies it, re-validates, and
+// records the atomic revert→reparse (upsert + delete-missing + parse_generation bump).
+func runReparse(args []string) error {
+	matchID, err := parseReparseArgs(args)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	s, rec, _, err := build(ctx)
+	if err != nil {
+		return err
+	}
+	defer rec.Close()
+	parser := ingest.DemoinfocsParser{}
+	statRec := db.NewPgxStatRecorder(rec.Pool())
+	roster := db.NewPgxRosterReader(rec.Pool())
+	reader := db.NewPgxDemoReader(rec.Pool())
+	res, err := ingest.RunReparse(ctx, s, reader, parser, statRec, roster, matchID)
+	if err != nil {
+		return err
+	}
+	if res.Anomalous {
+		log.Printf("re-parsed match %d from retained %s: %d players, %d rounds -> stat_row ANOMALOUS (held): %v; parse_generation bumped", res.MatchID, res.StorageKey, res.Players, res.Rounds, res.Reasons)
+	} else {
+		log.Printf("re-parsed match %d from retained %s: %d players, %d rounds -> stat_row (validation=pending); parse_generation bumped", res.MatchID, res.StorageKey, res.Players, res.Rounds)
+	}
+	return nil
+}
+
+// parseReparseArgs parses the reparse flags — only `--match <id>` (no path: the retained object is looked
+// up, never a local file). Accepts --match <id> and --match=<id>.
+func parseReparseArgs(args []string) (matchID int64, err error) {
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--match" || a == "-match":
+			if i+1 >= len(args) {
+				return 0, fmt.Errorf("--match requires a value")
+			}
+			matchID, err = strconv.ParseInt(args[i+1], 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("--match: %w", err)
+			}
+			i++
+		case strings.HasPrefix(a, "--match="):
+			matchID, err = strconv.ParseInt(strings.TrimPrefix(a, "--match="), 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("--match: %w", err)
+			}
+		default:
+			return 0, fmt.Errorf("unexpected argument %q (usage: worker reparse --match <id>)", a)
+		}
+	}
+	if matchID <= 0 {
+		return 0, fmt.Errorf("--match <id> is required and must be a positive integer: worker reparse --match <id>")
+	}
+	return matchID, nil
 }
 
 // parseIngestArgs accepts the flag in any position (Go's flag package would stop at the first

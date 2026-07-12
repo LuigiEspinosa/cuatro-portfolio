@@ -69,16 +69,28 @@ func (f *FakeRecorder) Recorded() []DemoRow {
 	return out
 }
 
-// FakeStatRecorder captures RecordParse calls for unit tests (no real DB). Besides recording each call
-// (the demoID, parserVersion, and rows), it keeps an in-memory upsert MIRROR keyed on (MatchID,
-// SteamID64) so a repeat pair REPLACES rather than appends — tests assert idempotency against Upserted()
-// exactly as the DB's ON CONFLICT (match_id, steamid64) DO UPDATE behaves. Set Err to exercise the
-// fail-closed paths.
+// FakeStatRecorder captures RecordParse/RecordReparse calls for unit tests (no real DB). Besides recording
+// each call, it keeps an in-memory upsert MIRROR keyed on (MatchID, SteamID64) so a repeat pair REPLACES
+// rather than appends — tests assert idempotency against Upserted() exactly as the DB's ON CONFLICT
+// (match_id, steamid64) DO UPDATE behaves. Each mirror entry also carries a `status` so tests prove the
+// AD-7 status-preservation guarantee (a re-parse must NOT flicker an approved row back to pending); a
+// per-demo generation counter mirrors the demo.parse_generation bump. Set Err to exercise the fail-closed
+// paths.
 type FakeStatRecorder struct {
-	mu    sync.Mutex
-	calls []RecordParseCall
-	rows  map[string]StatRow // "matchID\x00steamid64" -> latest upserted row
-	Err   error
+	mu           sync.Mutex
+	calls        []RecordParseCall
+	reparseCalls []RecordReparseCall
+	rows         map[string]mirrorRow // "matchID\x00steamid64" -> latest upserted row + its status
+	generations  map[int64]int        // demoID -> number of re-parses (parse_generation bumps)
+	Err          error
+}
+
+// mirrorRow is one in-memory stat_row: the upserted payload plus the `status` the DB column carries (which
+// the worker never writes — it is DB-defaulted 'pending' on insert and PRESERVED across upserts). Tracking
+// it here lets orchestration tests prove status preservation without a real DB.
+type mirrorRow struct {
+	row    StatRow
+	status string
 }
 
 // RecordParseCall is one captured RecordParse invocation (incl. the Story-3.4 validation outcome, so
@@ -90,13 +102,54 @@ type RecordParseCall struct {
 	Val           ValidationOutcome
 }
 
+// RecordReparseCall is one captured RecordReparse invocation (Story 3.6). MatchID is carried explicitly (it
+// drives the delete-missing scope) so tests assert the exact match the re-parse reverted.
+type RecordReparseCall struct {
+	MatchID       int64
+	DemoID        int64
+	ParserVersion string
+	Rows          []StatRow
+	Val           ValidationOutcome
+}
+
 var _ StatRecorder = (*FakeStatRecorder)(nil)
 
 // NewFakeStatRecorder returns an empty capturing stat recorder.
 func NewFakeStatRecorder() *FakeStatRecorder { return &FakeStatRecorder{} }
 
+func mirrorKey(matchID int64, steamID string) string {
+	return fmt.Sprintf("%d\x00%s", matchID, steamID)
+}
+
+// upsertLocked applies one row to the mirror with the DB's status semantics (caller holds f.mu): a NEW key
+// takes the 'pending' column default; an EXISTING key preserves its current status (the DO UPDATE set-list
+// omits `status`). Shared by RecordParse and RecordReparse so both model the AD-7 preservation identically.
+func (f *FakeStatRecorder) upsertLocked(row StatRow) {
+	if f.rows == nil {
+		f.rows = make(map[string]mirrorRow)
+	}
+	key := mirrorKey(row.MatchID, row.SteamID64)
+	status := "pending" // a brand-new steamid lands pending (the stat_row column default)
+	if existing, ok := f.rows[key]; ok {
+		status = existing.status // preserve (upsert DO UPDATE omits status)
+	}
+	f.rows[key] = mirrorRow{row: row, status: status}
+}
+
+// SeedRow pre-populates the mirror with a row at the given status (test helper): it simulates a
+// pre-existing published row — e.g. an 'approved' row a future Story-4.6 Aprobar created — so a re-parse
+// test can prove that status is PRESERVED (the 3.5 "seed an approved row" technique).
+func (f *FakeStatRecorder) SeedRow(status string, row StatRow) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.rows == nil {
+		f.rows = make(map[string]mirrorRow)
+	}
+	f.rows[mirrorKey(row.MatchID, row.SteamID64)] = mirrorRow{row: row, status: status}
+}
+
 // RecordParse captures the call (incl. the validation outcome) and applies each row to the in-memory
-// upsert mirror (or returns Err).
+// upsert mirror (or returns Err). It does NOT delete-missing or bump a generation — that is RecordReparse.
 func (f *FakeStatRecorder) RecordParse(_ context.Context, demoID int64, parserVersion string, rows []StatRow, val ValidationOutcome) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -106,11 +159,43 @@ func (f *FakeStatRecorder) RecordParse(_ context.Context, demoID int64, parserVe
 	captured := make([]StatRow, len(rows))
 	copy(captured, rows)
 	f.calls = append(f.calls, RecordParseCall{DemoID: demoID, ParserVersion: parserVersion, Rows: captured, Val: val})
-	if f.rows == nil {
-		f.rows = make(map[string]StatRow)
-	}
 	for _, row := range rows {
-		f.rows[fmt.Sprintf("%d\x00%s", row.MatchID, row.SteamID64)] = row // upsert: a repeat pair replaces
+		f.upsertLocked(row)
+	}
+	return nil
+}
+
+// RecordReparse mirrors the real re-parse transaction in memory: it (a) bumps the per-demo generation
+// counter, (b) status-preservingly upserts the fresh rows, and (c) DELETES mirror rows for matchID whose
+// steamid64 is absent from the new set (empty rows => ALL of the match's rows are removed). Tests assert the
+// surviving row set + preserved status + the generation bump. Returns Err (fail-closed) without touching
+// the mirror.
+func (f *FakeStatRecorder) RecordReparse(_ context.Context, matchID, demoID int64, parserVersion string, rows []StatRow, val ValidationOutcome) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.Err != nil {
+		return f.Err
+	}
+	captured := make([]StatRow, len(rows))
+	copy(captured, rows)
+	f.reparseCalls = append(f.reparseCalls, RecordReparseCall{MatchID: matchID, DemoID: demoID, ParserVersion: parserVersion, Rows: captured, Val: val})
+	if f.generations == nil {
+		f.generations = make(map[int64]int)
+	}
+	f.generations[demoID]++
+	// (b) status-preserving upsert of the fresh rows; collect the new steamid set for the delete-missing.
+	newSet := make(map[string]struct{}, len(rows))
+	for _, row := range rows {
+		f.upsertLocked(row)
+		newSet[row.SteamID64] = struct{}{}
+	}
+	// (c) delete-missing: drop mirror rows for THIS match whose steamid64 is absent from the new set.
+	for key, mr := range f.rows {
+		if mr.row.MatchID == matchID {
+			if _, ok := newSet[mr.row.SteamID64]; !ok {
+				delete(f.rows, key)
+			}
+		}
 	}
 	return nil
 }
@@ -124,13 +209,40 @@ func (f *FakeStatRecorder) Calls() []RecordParseCall {
 	return out
 }
 
+// Reparsed returns a snapshot copy of the captured RecordReparse invocations (empty when none fired — the
+// fail-closed assertion that a re-parse never recorded).
+func (f *FakeStatRecorder) Reparsed() []RecordReparseCall {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]RecordReparseCall, len(f.reparseCalls))
+	copy(out, f.reparseCalls)
+	return out
+}
+
+// Generation reports how many times the given demo was re-parsed (the fake analogue of the delta between
+// demo.parse_generation and its default 1) — 0 before any re-parse, +1 per RecordReparse.
+func (f *FakeStatRecorder) Generation(demoID int64) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.generations[demoID]
+}
+
+// StatusOf returns the mirror status for (matchID, steamid64) and whether such a row exists — the accessor
+// tests use to prove an approved row survived a re-parse (or that a new id landed 'pending').
+func (f *FakeStatRecorder) StatusOf(matchID int64, steamID string) (string, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	mr, ok := f.rows[mirrorKey(matchID, steamID)]
+	return mr.status, ok
+}
+
 // Upserted returns the in-memory upsert mirror — one row per distinct (MatchID, SteamID64), latest wins.
 func (f *FakeStatRecorder) Upserted() []StatRow {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	out := make([]StatRow, 0, len(f.rows))
 	for _, r := range f.rows {
-		out = append(out, r)
+		out = append(out, r.row)
 	}
 	return out
 }
@@ -165,4 +277,25 @@ func (f *FakeRosterReader) ActiveSteamIDs(context.Context) (map[string]struct{},
 		out[id] = struct{}{}
 	}
 	return out, nil
+}
+
+// FakeDemoReader is a DemoReader for unit tests (no real DB): it returns a settable DemoRef, or the
+// configured Err to exercise the fail-closed no-demo path (a re-parse of a match with no retained demo).
+// Mirrors the FakeRosterReader/FakeStatRecorder in-package seams.
+type FakeDemoReader struct {
+	Ref DemoRef
+	Err error
+}
+
+var _ DemoReader = (*FakeDemoReader)(nil)
+
+// NewFakeDemoReader builds a fake that returns ref for any match.
+func NewFakeDemoReader(ref DemoRef) *FakeDemoReader { return &FakeDemoReader{Ref: ref} }
+
+// DemoForMatch returns the configured Err (fail-closed no-demo path) or the seeded DemoRef.
+func (f *FakeDemoReader) DemoForMatch(context.Context, int64) (DemoRef, error) {
+	if f.Err != nil {
+		return DemoRef{}, f.Err
+	}
+	return f.Ref, nil
 }
