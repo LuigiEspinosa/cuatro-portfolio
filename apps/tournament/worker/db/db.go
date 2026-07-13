@@ -88,10 +88,15 @@ func (r *PgxRecorder) RecordDemo(ctx context.Context, row DemoRow) (RecordOutcom
 	}
 	var insertedID int64
 	var insertedKey string
+	// NOTE the column is `matchzy_match_id` (migration 0010): MatchID here is the EXTERNAL ingest id —
+	// MatchZy's game-server matchid, or the CLI's --match. It is NOT a bracket `match.id` and never was.
+	// 0010 renamed the column to say so and added a separate nullable `demo.match_id` FK, which Story 4.6
+	// (Aprobar) populates when it binds a demo to the match it decided. The AD-3 dedup key travelled with
+	// the rename, so (matchzy_match_id, demo_sha256) still dedups exactly what it always did.
 	err := r.pool.QueryRow(ctx,
-		`insert into demo (match_id, storage_backend, storage_key, size_bytes, source, demo_sha256)
+		`insert into demo (matchzy_match_id, storage_backend, storage_key, size_bytes, source, demo_sha256)
 		 values ($1, $2, $3, $4, $5, $6)
-		 on conflict (match_id, demo_sha256) do nothing
+		 on conflict (matchzy_match_id, demo_sha256) do nothing
 		 returning id, storage_key`,
 		row.MatchID, row.StorageBackend, row.StorageKey, sizeBytes, row.Source, sha,
 	).Scan(&insertedID, &insertedKey)
@@ -99,12 +104,12 @@ func (r *PgxRecorder) RecordDemo(ctx context.Context, row DemoRow) (RecordOutcom
 	case err == nil:
 		return RecordOutcome{Inserted: true, ExistingKey: insertedKey, DemoID: insertedID}, nil
 	case errors.Is(err, pgx.ErrNoRows):
-		// Conflict on (match_id, demo_sha256): the row already exists. Fetch its id + storage_key so the
-		// caller returns the prior result (AD-3 short-circuit) with the prior row's provenance id.
+		// Conflict on (matchzy_match_id, demo_sha256): the row already exists. Fetch its id + storage_key
+		// so the caller returns the prior result (AD-3 short-circuit) with the prior row's provenance id.
 		var existingID int64
 		var existingKey string
 		if e := r.pool.QueryRow(ctx,
-			`select id, storage_key from demo where match_id = $1 and demo_sha256 = $2`,
+			`select id, storage_key from demo where matchzy_match_id = $1 and demo_sha256 = $2`,
 			row.MatchID, row.SHA256,
 		).Scan(&existingID, &existingKey); e != nil {
 			return RecordOutcome{}, fmt.Errorf("fetch existing demo key (match %d): %w", row.MatchID, e)
@@ -250,7 +255,7 @@ func (r *PgxStatRecorder) RecordReparse(ctx context.Context, matchID, demoID int
 		newIDs = append(newIDs, row.SteamID64)
 	}
 	if _, err := tx.Exec(ctx,
-		`delete from stat_row where match_id = $1 and steamid64 <> all($2::text[])`,
+		`delete from stat_row where matchzy_match_id = $1 and steamid64 <> all($2::text[])`,
 		matchID, newIDs,
 	); err != nil {
 		return fmt.Errorf("delete-missing stat_row (match %d): %w", matchID, err)
@@ -307,9 +312,11 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 	batch := &pgx.Batch{}
 	for _, row := range rows {
 		batch.Queue(
-			`insert into stat_row (match_id, steamid64, demo_id, kills, deaths, rounds_played)
+			// `matchzy_match_id` is the EXTERNAL ingest id (see RecordDemo). The AD-3 re-parse key
+			// travelled with 0010's rename, so this upserts on exactly the pair it always did.
+			`insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played)
 			 values ($1, $2, $3, $4, $5, $6)
-			 on conflict (match_id, steamid64) do update set
+			 on conflict (matchzy_match_id, steamid64) do update set
 			   kills = excluded.kills,
 			   deaths = excluded.deaths,
 			   rounds_played = excluded.rounds_played,
@@ -420,7 +427,7 @@ func (r *PgxDemoReader) DemoForMatch(ctx context.Context, matchID int64) (DemoRe
 	var ref DemoRef
 	var sha *string
 	err := r.pool.QueryRow(ctx,
-		`select id, storage_key, demo_sha256 from demo where match_id = $1 order by id desc limit 1`,
+		`select id, storage_key, demo_sha256 from demo where matchzy_match_id = $1 order by id desc limit 1`,
 		matchID,
 	).Scan(&ref.DemoID, &ref.StorageKey, &sha)
 	switch {

@@ -22,13 +22,22 @@ export const dynamic = 'force-dynamic';
 
 // Map each refusal reason (from resolveOpenTournament + enrollSelf) to an HTTP status.
 const STATUS_FOR: Record<
-  'registration_not_open' | 'ambiguous_tournament' | 'read_failed' | 'no_such_player' | 'write_failed',
+  | 'registration_not_open'
+  | 'ambiguous_tournament'
+  | 'read_failed'
+  | 'no_such_player'
+  | 'locked'
+  | 'write_failed',
   number
 > = {
   registration_not_open: 409,
   ambiguous_tournament: 409,
   read_failed: 500,
   no_such_player: 404,
+  // The D3 roster-lock trigger (migration 0011) refused the write: the bracket went live between
+  // `resolveOpenTournament` and the insert. A conflict, not a server fault — same 409 the admin roster
+  // route already returns for the un-raced case.
+  locked: 409,
   write_failed: 500,
 };
 

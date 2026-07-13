@@ -77,12 +77,17 @@ describe('recordManualUpload (AC2/AC7 — service-role demo insert; the one app-
 
     const insert = opsFor('demo', 'insert');
     expect(insert).toHaveLength(1);
+    // The wire field is still `match_id` (the worker's presign→register contract is unchanged), but it
+    // lands in `matchzy_match_id` — the EXTERNAL ingest id. `demo.match_id` is the bracket FK added by
+    // migration 0010 and stays NULL until Story 4.6 (Aprobar) binds this demo to the match it decided;
+    // writing the MatchZy id into it would 23503 on every single ingest.
     expect(insert[0].args[0]).toEqual({
-      match_id: 42,
+      matchzy_match_id: 42,
       storage_backend: 'r2',
       storage_key: STORAGE_KEY,
       source: 'manual_upload',
     });
+    expect(insert[0].args[0]).not.toHaveProperty('match_id');
   });
 
   it('maps a write error to write_failed (the route maps it to 500)', async () => {

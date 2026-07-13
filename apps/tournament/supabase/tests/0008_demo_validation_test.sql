@@ -12,7 +12,7 @@
 -- regardless of RLS. The teeth bite at the GRANT gate: service_role holds UPDATE on demo (0005 — the
 -- worker anomaly-stamp path) and SELECT on the view (0008); anon/authenticated hold NO grant on either the
 -- view (admin/worker-only, like stat_row/demo) -> every read fails closed. The view is security_invoker=on,
--- so the caller's grants + BYPASSRLS apply. `demo.match_id`/`stat_row.match_id` are plain bigints with NO
+-- so the caller's grants + BYPASSRLS apply. `demo.matchzy_match_id`/`stat_row.matchzy_match_id` are plain bigints with NO
 -- FK (no match table yet); `stat_row.demo_id` IS a FK to demo, and roster_entry.steamid64 is a FK to
 -- player, so Section C seeds the player→season→tournament→roster_entry chain + one demo FK parent.
 -- SQLSTATE: 23514 check, 23502 not-null, 42501 insufficient_privilege.
@@ -31,7 +31,7 @@ select plan(28);
 -- Run as postgres; constraints fire regardless of RLS.
 -- ============================================================================
 -- A minimal acquisition row: validation_state defaults, the other two are NULL (parsed, not yet validated).
-insert into demo (match_id, storage_key, source) values (700, 'demos/val/a.dem', 'matchzy');
+insert into demo (matchzy_match_id, storage_key, source) values (700, 'demos/val/a.dem', 'matchzy');
 select is((select validation_state from demo where storage_key = 'demos/val/a.dem'), 'pending',
   'demo: validation_state defaults to pending (parsed, not yet validated / validated-clean; NOT the held state)');
 select ok((select anomaly_reasons from demo where storage_key = 'demos/val/a.dem') is null,
@@ -48,14 +48,14 @@ select col_type_is('public', 'demo', 'validated_at', 'timestamp with time zone',
   'demo: validated_at is timestamptz (the validation timestamp)');
 -- NOT NULL: an explicit null on validation_state is rejected (the column is not-null with a default).
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source, validation_state) values (701, 'demos/val/nn.dem', 'matchzy', null) $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source, validation_state) values (701, 'demos/val/nn.dem', 'matchzy', null) $$,
   '23502', null, 'demo: an explicit null validation_state is rejected by NOT NULL');
 -- CHECK: an out-of-set value is rejected; 'anomalous' (the held state) is accepted.
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source, validation_state) values (702, 'demos/val/bad.dem', 'matchzy', 'bogus') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source, validation_state) values (702, 'demos/val/bad.dem', 'matchzy', 'bogus') $$,
   '23514', null, 'demo: validation_state=bogus is rejected by the closed-set CHECK (only pending/anomalous)');
 select lives_ok(
-  $$ insert into demo (match_id, storage_key, source, validation_state) values (703, 'demos/val/anom.dem', 'matchzy', 'anomalous') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source, validation_state) values (703, 'demos/val/anom.dem', 'matchzy', 'anomalous') $$,
   'demo: validation_state=anomalous is accepted (the held state the worker stamps on a gate failure)');
 
 -- ============================================================================
@@ -92,8 +92,8 @@ insert into tournament (season_id, name) values ((select id from season where na
 insert into roster_entry (tournament_id, steamid64, status) values
   ((select id from tournament where name = 'T1'), '76561197960287930', 'active'),
   ((select id from tournament where name = 'T1'), '76561197960287931', 'removed');
-insert into demo (match_id, storage_key, source) values (555, 'demos/val/view.dem', 'matchzy');
-insert into stat_row (match_id, steamid64, demo_id) values
+insert into demo (matchzy_match_id, storage_key, source) values (555, 'demos/val/view.dem', 'matchzy');
+insert into stat_row (matchzy_match_id, steamid64, demo_id) values
   (555, '76561197960287930', (select id from demo where storage_key = 'demos/val/view.dem')),  -- active-rostered
   (555, '76561197960287931', (select id from demo where storage_key = 'demos/val/view.dem')),  -- removed-rostered
   (555, '76561197960287932', (select id from demo where storage_key = 'demos/val/view.dem'));   -- unrostered
@@ -113,8 +113,8 @@ select is(
   (select demo_id from unreconciled_stat_row where steamid64 = '76561197960287932'),
   (select id from demo where storage_key = 'demos/val/view.dem'),
   'unreconciled_stat_row: the row exposes demo_id provenance (the parse that produced the orphaned stat)');
-select is((select match_id from unreconciled_stat_row where steamid64 = '76561197960287932'), 555::bigint,
-  'unreconciled_stat_row: the row exposes match_id (the admin one-tap reconcile surface: match_id + steamid64 + demo_id)');
+select is((select matchzy_match_id from unreconciled_stat_row where steamid64 = '76561197960287932'), 555::bigint,
+  'unreconciled_stat_row: the row exposes matchzy_match_id (the admin one-tap reconcile surface: matchzy_match_id + steamid64 + demo_id)');
 
 -- ============================================================================
 -- Section D — the view grant matrix (AC3/AC4). service_role SELECT only; anon/authenticated fail closed.

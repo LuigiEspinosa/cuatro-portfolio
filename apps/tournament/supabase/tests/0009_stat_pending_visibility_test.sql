@@ -16,7 +16,7 @@
 -- as two permissive policies (AD-7): Postgres ORs them, so a malformed admin policy could only ADD admin's
 -- own rows, never widen the viewer's approved-only set. is_admin() is driven by request.jwt.claims via
 -- set_config (app_metadata.role). `stat_row.demo_id` is a FK to demo, so we seed ONE demo FK parent;
--- `match_id` is a plain bigint (no FK), mirroring the 0007/0008 seeding.
+-- `matchzy_match_id` is a plain bigint (no FK), mirroring the 0007/0008 seeding.
 -- SQLSTATE: n/a here (this suite proves visibility, not fail-closed writes — that stays in 0007).
 
 begin;
@@ -29,11 +29,11 @@ set local search_path = extensions, public;
 select plan(23);
 
 -- Seed as postgres (BYPASSRLS) before any role switch: one demo FK parent, then two stat_rows sharing a
--- match_id — one 'approved' (…930, viewer-visible), one 'pending' (…931, default; admin-only).
-insert into demo (match_id, storage_key, source) values (444, 'demos/pending/vis.dem', 'matchzy');
-insert into stat_row (match_id, steamid64, demo_id, status) values
+-- matchzy_match_id — one 'approved' (…930, viewer-visible), one 'pending' (…931, default; admin-only).
+insert into demo (matchzy_match_id, storage_key, source) values (444, 'demos/pending/vis.dem', 'matchzy');
+insert into stat_row (matchzy_match_id, steamid64, demo_id, status) values
   (444, '76561197960287930', (select id from demo where storage_key = 'demos/pending/vis.dem'), 'approved');  -- viewer-visible
-insert into stat_row (match_id, steamid64, demo_id) values
+insert into stat_row (matchzy_match_id, steamid64, demo_id) values
   (444, '76561197960287931', (select id from demo where storage_key = 'demos/pending/vis.dem'));  -- status defaults to 'pending' (admin-only)
 
 -- ============================================================================

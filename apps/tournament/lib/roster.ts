@@ -25,6 +25,34 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const STEAMID64_RE = /^[0-9]{17}$/;
 const FK_VIOLATION = '23503'; // roster_entry.steamid64 → player(steamid64): a target that never logged in
 
+/**
+ * The `roster_entry_lock` trigger's refusal (migration 0011, D3): the tournament is past
+ * `registration_closed`, so the roster is frozen. This is the WRITE-SIDE half of the lock — the
+ * `requireMutableTournament` read-check below is a friendly early exit, but it is a check-then-write, so
+ * a generate that commits in between still lands here. That race is the entire reason the trigger exists,
+ * and it MUST surface as the same typed `locked` refusal (→ 409) the un-raced path already returns.
+ * Without this mapping it would fall through to `write_failed` → 500: the one code path D3 was built for
+ * would be the one that reports an internal server error.
+ */
+const ROSTER_LOCKED = 'P0001';
+
+/**
+ * Classify a `roster_entry` write error into the typed refusal union. Shared by all three write paths
+ * (`enrollSelf` / `adminAddPlayer` / `removePlayer`) so the trigger is mapped uniformly — the trigger
+ * covers all three, so its refusal must too.
+ *
+ * NOTE on 23503: it is ambiguous by construction — both `steamid64 → player` and a non-existent
+ * `tournament_id` raise it (0004_roster_test pins the latter), and the D3 trigger deliberately reuses it
+ * for an absent-or-invisible tournament so those two indistinguishable cases report identically. In
+ * practice every caller resolves the tournament BEFORE writing (`requireMutableTournament` /
+ * `resolveOpenTournament`), so a 23503 reaching here is the player FK. Pre-existing, unchanged.
+ */
+function classifyRosterWriteError(code: string | undefined): 'locked' | 'no_such_player' | 'write_failed' {
+  if (code === ROSTER_LOCKED) return 'locked';
+  if (code === FK_VIOLATION) return 'no_such_player';
+  return 'write_failed';
+}
+
 /** The tournament.state closed set (0001:29–30). Roster mutations are gated on it. */
 export type RegistrationState =
   | 'registration_open'
@@ -195,7 +223,7 @@ export async function resolveOpenTournament(admin: SupabaseClient): Promise<Reso
 
 export type EnrollResult =
   | { ok: true }
-  | { ok: false; reason: 'no_such_player' | 'write_failed' };
+  | { ok: false; reason: 'no_such_player' | 'locked' | 'write_failed' };
 
 /**
  * Enroll the CALLER in a tournament (AC5). The `steamid64` is the caller's OWN verified id (from
@@ -204,7 +232,14 @@ export type EnrollResult =
  * previously-`removed` self REACTIVATES the row (idempotent; a duplicate active enroll is a harmless
  * no-op). No state check here — `resolveOpenTournament` (the route's prior step) is the "only while
  * open" gate, so `tournamentId` is already the open event. `23503` (no player row — should not
- * happen for a logged-in caller, but fail closed) → `no_such_player`; else → `write_failed`.
+ * happen for a logged-in caller, but fail closed) → `no_such_player`; the D3 trigger's `P0001` (the
+ * event went `bracket_live` between `resolveOpenTournament` and this write) → `locked`; else →
+ * `write_failed`.
+ *
+ * ⚠ The upsert's ON CONFLICT does NOT make this immune to the trigger: a BEFORE-INSERT trigger fires
+ * before the conflict is detected, so once the roster is frozen even a duplicate-enroll that WOULD have
+ * been a harmless no-op is refused. That is correct — it is a write to a frozen roster — and it now
+ * reports as `locked` (409) rather than a 500.
  */
 export async function enrollSelf(
   admin: SupabaseClient,
@@ -216,10 +251,7 @@ export async function enrollSelf(
     { onConflict: 'tournament_id,steamid64' },
   );
   if (error) {
-    if (error.code === FK_VIOLATION) {
-      return { ok: false, reason: 'no_such_player' };
-    }
-    return { ok: false, reason: 'write_failed' };
+    return { ok: false, reason: classifyRosterWriteError(error.code) };
   }
   return { ok: true };
 }
@@ -257,10 +289,9 @@ export async function adminAddPlayer(
     { onConflict: 'tournament_id,steamid64' },
   );
   if (error) {
-    if (error.code === FK_VIOLATION) {
-      return { ok: false, reason: 'no_such_player' };
-    }
-    return { ok: false, reason: 'write_failed' };
+    // Includes the D3 trigger's `locked`: the gate above is a check-then-write, so a generation that
+    // commits in between still lands here — and the trigger blocks on it, then rejects.
+    return { ok: false, reason: classifyRosterWriteError(error.code) };
   }
 
   await writeAudit(admin, {
@@ -302,7 +333,8 @@ export async function removePlayer(
     .eq('steamid64', steamid64)
     .select('id');
   if (error) {
-    return { ok: false, reason: 'write_failed' };
+    // Includes the D3 trigger's `locked` — the soft-delete is an UPDATE, which the trigger also covers.
+    return { ok: false, reason: classifyRosterWriteError(error.code) };
   }
   if (!updated || updated.length === 0) {
     return { ok: false, reason: 'not_on_roster' }; // no matching row (state already confirmed mutable)

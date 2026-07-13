@@ -4,15 +4,18 @@
 --   AC6 table columns + shells (sha256/parser_version nullable) + the three CHECKs             -> Section B
 --   AC6 admin-only read policy (dormant, mirrors audit_log) + FORCE RLS                          -> Section A + C
 --   AC7 single-writer: service_role select/insert/update, NO delete; anon/authenticated no priv  -> Section C + D
---   AC6 UNIQUE(match_id, demo_sha256) is NOT added yet (deferred to Story 3.2)                    -> Section B (behavioral)
+--   AC6 UNIQUE(matchzy_match_id, demo_sha256) is NOT added yet (deferred to Story 3.2)                    -> Section B (behavioral)
 -- Runs inside a transaction and rolls back — no data persists.
 --
 -- WHY role-switching: postgres (this session) and service_role both have BYPASSRLS, so they insert
 -- regardless of policy. The single-writer teeth bite at the GRANT gate, not RLS: service_role holds
 -- SELECT+INSERT+UPDATE but NOT DELETE (write-once ceiling) -> its DELETE 42501s. anon/authenticated hold
 -- ZERO grants -> every read and write fails closed (demo is admin/worker-only, like audit_log — the
--- admin_read policy is DORMANT because there is no base grant to reach it). `demo.match_id` is a plain
--- bigint with NO FK (match does not exist yet), so this test needs NO fixture rows.
+-- admin_read policy is DORMANT because there is no base grant to reach it). `demo.matchzy_match_id` is the
+-- EXTERNAL ingest id (MatchZy's game-server matchid / the CLI's --match) and deliberately carries NO FK —
+-- it names no bracket node and never did. The real `demo.match_id -> match(id)` FK is added by migration
+-- 0010 on a SEPARATE nullable column (NULL until Story 4.6 binds it), and is proven in 0010's suite. So
+-- this test still needs NO match fixture rows.
 -- SQLSTATE: 23514 check, 23502 not-null, 23505 unique, 42501 insufficient_privilege.
 
 begin;
@@ -34,12 +37,12 @@ select is((select relforcerowsecurity from pg_class where oid = 'public.demo'::r
 
 -- ============================================================================
 -- Section B — columns, shells, defaults, CHECKs, NOT NULLs (AC6). Run as postgres; constraints
--- fire regardless of RLS. Minimal valid insert is (match_id, storage_key, source).
+-- fire regardless of RLS. Minimal valid insert is (matchzy_match_id, storage_key, source).
 -- ============================================================================
 -- Happy path: a minimal valid acquisition row is accepted.
 select lives_ok(
-  $$ insert into demo (match_id, storage_key, source) values (1, 'demos/1/aaa.dem', 'matchzy') $$,
-  'demo: a valid (match_id, storage_key, source) acquisition row is accepted'
+  $$ insert into demo (matchzy_match_id, storage_key, source) values (1, 'demos/1/aaa.dem', 'matchzy') $$,
+  'demo: a valid (matchzy_match_id, storage_key, source) acquisition row is accepted'
 );
 -- Defaults land as specified.
 select is((select storage_backend  from demo where storage_key = 'demos/1/aaa.dem'), 'r2',            'demo: storage_backend defaults to r2');
@@ -50,41 +53,41 @@ select is((select demo_sha256    from demo where storage_key = 'demos/1/aaa.dem'
 select is((select parser_version from demo where storage_key = 'demos/1/aaa.dem'), null, 'demo: parser_version is a NULL shell at acquisition (Story 3.3 backfills it)');
 -- The three CHECK constraints reject out-of-set values.
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source) values (1, 'demos/1/bad.dem', 'foo') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source) values (1, 'demos/1/bad.dem', 'foo') $$,
   '23514', null, 'demo: source=foo is rejected by the closed-set CHECK');
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source, storage_backend) values (1, 'demos/1/bad.dem', 'matchzy', 's3') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source, storage_backend) values (1, 'demos/1/bad.dem', 'matchzy', 's3') $$,
   '23514', null, 'demo: storage_backend=s3 is rejected by the closed-set CHECK');
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source, retention_class) values (1, 'demos/1/bad.dem', 'matchzy', 'forever') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source, retention_class) values (1, 'demos/1/bad.dem', 'matchzy', 'forever') $$,
   '23514', null, 'demo: retention_class=forever is rejected by the closed-set CHECK');
 -- …and accept every in-set enum value.
 select lives_ok(
-  $$ insert into demo (match_id, storage_key, source, storage_backend) values (2, 'demos/2/sb.dem', 'matchzy', 'supabase') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source, storage_backend) values (2, 'demos/2/sb.dem', 'matchzy', 'supabase') $$,
   'demo: storage_backend=supabase is accepted (AD-16 swap-ready backend)');
 select lives_ok(
-  $$ insert into demo (match_id, storage_key, source, retention_class) values (2, 'demos/2/ps.dem', 'matchzy', 'permanent_seed') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source, retention_class) values (2, 'demos/2/ps.dem', 'matchzy', 'permanent_seed') $$,
   'demo: retention_class=permanent_seed is accepted');
 select lives_ok(
-  $$ insert into demo (match_id, storage_key, source) values (2, 'demos/2/mu.dem', 'manual_upload') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source) values (2, 'demos/2/mu.dem', 'manual_upload') $$,
   'demo: source=manual_upload is accepted');
--- NOT NULL on match_id and storage_key.
+-- NOT NULL on matchzy_match_id and storage_key.
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source) values (null, 'demos/x/n.dem', 'matchzy') $$,
-  '23502', null, 'demo: a null match_id is rejected by NOT NULL');
+  $$ insert into demo (matchzy_match_id, storage_key, source) values (null, 'demos/x/n.dem', 'matchzy') $$,
+  '23502', null, 'demo: a null matchzy_match_id is rejected by NOT NULL');
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source) values (3, null, 'matchzy') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source) values (3, null, 'matchzy') $$,
   '23502', null, 'demo: a null storage_key is rejected by NOT NULL');
--- FLIPPED CANARY (Story 3.2): migration 0006 added UNIQUE(match_id, demo_sha256), so two rows sharing
--- (match_id, demo_sha256) now 23505. This assertion started life as a `lives_ok` (a canary for premature
+-- FLIPPED CANARY (Story 3.2): migration 0006 added UNIQUE(matchzy_match_id, demo_sha256), so two rows sharing
+-- (matchzy_match_id, demo_sha256) now 23505. This assertion started life as a `lives_ok` (a canary for premature
 -- dedup); it flipped to `throws_ok` the day 0006 landed. NULL-sha256 rows still insert (see Section B
 -- above + the 0006 suite) because NULLs are distinct — the manual path is unaffected.
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source, demo_sha256) values
+  $$ insert into demo (matchzy_match_id, storage_key, source, demo_sha256) values
        (9, 'demos/9/one.dem', 'matchzy', 'dupsha'),
        (9, 'demos/9/two.dem', 'matchzy', 'dupsha') $$,
   '23505', null,
-  'demo: UNIQUE(match_id, demo_sha256) now rejects a duplicate (match_id, sha256) — Story 3.2');
+  'demo: UNIQUE(matchzy_match_id, demo_sha256) now rejects a duplicate (matchzy_match_id, sha256) — Story 3.2');
 
 -- ============================================================================
 -- Section C — exact policy set + grants (AC6/AC7). policies_are asserts the COMPLETE set.
@@ -119,7 +122,7 @@ select is(has_table_privilege('authenticated', 'public.demo', 'DELETE'), false, 
 -- 42501 at the grant gate) — the retention ceiling bites even the privileged writer.
 set local role service_role;
 select lives_ok(
-  $$ insert into demo (match_id, storage_key, source, size_bytes) values (100, 'demos/100/svc.dem', 'matchzy', 170000000) $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source, size_bytes) values (100, 'demos/100/svc.dem', 'matchzy', 170000000) $$,
   'service_role inserts a demo acquisition row (grant + BYPASSRLS) — the single-writer acquire path');
 select lives_ok(
   $$ update demo set demo_sha256 = 'backfilled' where storage_key = 'demos/100/svc.dem' $$,
@@ -135,7 +138,7 @@ select set_config('request.jwt.claims', '{"app_metadata":{"role":"viewer","steam
 select throws_ok($$ select count(*) from demo $$,
   '42501', null, 'authenticated viewer CANNOT read demo (no grant, admin-only) — fail closed');
 select throws_ok(
-  $$ insert into demo (match_id, storage_key, source) values (200, 'demos/200/v.dem', 'manual_upload') $$,
+  $$ insert into demo (matchzy_match_id, storage_key, source) values (200, 'demos/200/v.dem', 'manual_upload') $$,
   '42501', null, 'authenticated viewer CANNOT insert demo (no write grant/policy) — fail closed');
 set local role postgres;
 

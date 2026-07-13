@@ -2,8 +2,8 @@
 -- pgTAP proof for migration 0007 (Story 3.3): the `stat_row` derived-stats table (the Parsing node).
 -- Proves the stat_row slice BITES (not merely that it exists) across AC1/AC3/AC4. Run via: supabase test db
 --   AC4 table + FULL column set (stat columns nullable) + status default + the CHECKs               -> Section B
---   AC3 UNIQUE(match_id, steamid64) = the re-parse idempotency key                                    -> Section B (col_is_unique + behavioral 23505)
---   AC4 demo_id NOT NULL + FK -> demo; match_id NOT NULL and NO FK to match (deferred to Epic 4)       -> Section B
+--   AC3 UNIQUE(matchzy_match_id, steamid64) = the re-parse idempotency key                                    -> Section B (col_is_unique + behavioral 23505)
+--   AC4 demo_id NOT NULL + FK -> demo; matchzy_match_id NOT NULL and NO FK (it is the EXTERNAL ingest id) -> Section B
 --   AC1/AC4 stat_admin SELECT policy + FORCE RLS; the policy set is {stat_admin, stat_view} post-0009      -> Section A + C
 --   AC1 single-writer: service_role select/insert/update/DELETE; anon/authenticated SELECT-only (no write) -> Section C + D
 -- Runs inside a transaction and rolls back — no data persists.
@@ -18,7 +18,7 @@
 -- regardless of policy. The single-writer teeth bite at the GRANT gate, not RLS: service_role holds
 -- SELECT+INSERT+UPDATE+DELETE (DELETE is granted here — UNLIKE demo — for the Story-3.6 re-parse
 -- delete-missing path); anon/authenticated hold only SELECT (0009) and NO write grant -> every write fails
--- closed (the single-writer invariant is unchanged). `stat_row.match_id` is a plain bigint with NO FK (match does not exist
+-- closed (the single-writer invariant is unchanged). `stat_row.matchzy_match_id` is a plain bigint with NO FK (match does not exist
 -- yet); `stat_row.demo_id` IS a FK to demo, so this test seeds ONE demo row as the FK parent.
 -- SQLSTATE: 23514 check, 23502 not-null, 23503 fk, 23505 unique, 42501 insufficient_privilege.
 
@@ -32,8 +32,8 @@ set local search_path = extensions, public;
 select plan(33);
 
 -- Seed the single FK parent as postgres (BYPASSRLS) before any role switch: stat_row.demo_id -> demo(id).
--- demo.match_id has no FK (match does not exist), so this seed needs no match/season fixture.
-insert into demo (match_id, storage_key, source) values (990, 'demos/990/seed.dem', 'matchzy');
+-- demo.matchzy_match_id has no FK (match does not exist), so this seed needs no match/season fixture.
+insert into demo (matchzy_match_id, storage_key, source) values (990, 'demos/990/seed.dem', 'matchzy');
 
 -- ============================================================================
 -- Section A — the table exists + ENABLE + FORCE RLS on stat_row (AC1/AC4)
@@ -46,52 +46,56 @@ select is((select relforcerowsecurity from pg_class where oid = 'public.stat_row
 
 -- ============================================================================
 -- Section B — columns, defaults, CHECKs, NOT NULLs, keys (AC3/AC4). Run as postgres;
--- constraints fire regardless of RLS. Minimal valid insert is (match_id, steamid64, demo_id).
+-- constraints fire regardless of RLS. Minimal valid insert is (matchzy_match_id, steamid64, demo_id).
 -- ============================================================================
 -- Happy path: a minimal valid parsed row is accepted (and proves the table + FK resolve).
 select lives_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id)
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id)
        values (990, '76561197960287930', (select id from demo where storage_key = 'demos/990/seed.dem')) $$,
-  'stat_row: a valid (match_id, steamid64, demo_id) parsed row is accepted'
+  'stat_row: a valid (matchzy_match_id, steamid64, demo_id) parsed row is accepted'
 );
 -- Defaults + nullable shells land as specified.
-select is((select status  from stat_row where match_id = 990 and steamid64 = '76561197960287930'), 'pending', 'stat_row: status defaults to pending (3.3 writes pending; approve is Story 3.5/4.6)');
-select is((select idle_dq from stat_row where match_id = 990 and steamid64 = '76561197960287930'), false,     'stat_row: idle_dq defaults to false (Epic-5 AFK/idle shell)');
-select is((select kills   from stat_row where match_id = 990 and steamid64 = '76561197960287930'), null,      'stat_row: kills is a NULL shell on a minimal row (the parser fills it; Epic-5 stat columns stay NULL)');
+select is((select status  from stat_row where matchzy_match_id = 990 and steamid64 = '76561197960287930'), 'pending', 'stat_row: status defaults to pending (3.3 writes pending; approve is Story 3.5/4.6)');
+select is((select idle_dq from stat_row where matchzy_match_id = 990 and steamid64 = '76561197960287930'), false,     'stat_row: idle_dq defaults to false (Epic-5 AFK/idle shell)');
+select is((select kills   from stat_row where matchzy_match_id = 990 and steamid64 = '76561197960287930'), null,      'stat_row: kills is a NULL shell on a minimal row (the parser fills it; Epic-5 stat columns stay NULL)');
 -- steamid64 CHECK: a non-17-digit id is rejected (AD-4 canonical-key discipline).
 select throws_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id)
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id)
        values (990, '123', (select id from demo where storage_key = 'demos/990/seed.dem')) $$,
   '23514', null, 'stat_row: a non-17-digit steamid64 is rejected by the CHECK (~ ^[0-9]{17}$)');
 -- status closed-set CHECK bites on an out-of-set value.
 select throws_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id, status)
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id, status)
        values (990, '76561197960287931', (select id from demo where storage_key = 'demos/990/seed.dem'), 'foo') $$,
   '23514', null, 'stat_row: status=foo is rejected by the closed-set CHECK (only pending/approved)');
 -- demo_id NOT NULL + FK -> demo.
 select throws_ok(
-  $$ insert into stat_row (match_id, steamid64) values (990, '76561197960287932') $$,
+  $$ insert into stat_row (matchzy_match_id, steamid64) values (990, '76561197960287932') $$,
   '23502', null, 'stat_row: a null demo_id is rejected by NOT NULL (every row carries its parse provenance)');
 select throws_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id) values (990, '76561197960287932', 999999) $$,
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id) values (990, '76561197960287932', 999999) $$,
   '23503', null, 'stat_row: a demo_id with no demo row is rejected by the FK -> demo(id)');
--- match_id NOT NULL, and NO FK to match (the deferred-FK proof: a match_id with no matching row inserts).
+-- matchzy_match_id is the EXTERNAL ingest id: NOT NULL, and deliberately carries NO FK to `match`. It
+-- names a MatchZy game-server matchid, never a bracket node, so an arbitrary value MUST still insert —
+-- that is the whole reason migration 0010 renamed it instead of FK-ing it (FK-ing this column would
+-- 23503 every demo ingest and every parse). The real `stat_row.match_id -> match(id)` FK lives on a
+-- SEPARATE nullable column added by 0010, and is proven to bite in 0010's suite.
 select throws_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id)
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id)
        values (null, '76561197960287932', (select id from demo where storage_key = 'demos/990/seed.dem')) $$,
-  '23502', null, 'stat_row: a null match_id is rejected by NOT NULL');
+  '23502', null, 'stat_row: a null matchzy_match_id is rejected by NOT NULL');
 select lives_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id)
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id)
        values (888888, '76561197960287933', (select id from demo where storage_key = 'demos/990/seed.dem')) $$,
-  'stat_row: a match_id with NO matching match row still inserts — proves the match FK is DEFERRED to Epic 4 (no match table yet)');
--- UNIQUE(match_id, steamid64): a duplicate pair is the AD-3 re-parse key (worker upserts via ON CONFLICT).
+  'stat_row: an arbitrary matchzy_match_id (an external MatchZy id, naming no bracket match) still inserts — it carries no FK, by design');
+-- UNIQUE(matchzy_match_id, steamid64): a duplicate pair is the AD-3 re-parse key (worker upserts via ON CONFLICT).
 select throws_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id) values
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id) values
        (777, '76561197960287944', (select id from demo where storage_key = 'demos/990/seed.dem')),
        (777, '76561197960287944', (select id from demo where storage_key = 'demos/990/seed.dem')) $$,
-  '23505', null, 'stat_row: a duplicate (match_id, steamid64) is rejected by UNIQUE — the AD-3 re-parse idempotency key');
-select col_is_unique('public'::name, 'stat_row'::name, ARRAY['match_id','steamid64']::name[],
-  'stat_row: UNIQUE(match_id, steamid64) exists on exactly those columns (the ON CONFLICT target)');
+  '23505', null, 'stat_row: a duplicate (matchzy_match_id, steamid64) is rejected by UNIQUE — the AD-3 re-parse idempotency key');
+select col_is_unique('public'::name, 'stat_row'::name, ARRAY['matchzy_match_id','steamid64']::name[],
+  'stat_row: UNIQUE(matchzy_match_id, steamid64) exists on exactly those columns (the ON CONFLICT target)');
 
 -- ============================================================================
 -- Section C — exact policy set + grants (AC1/AC4). policies_are asserts the COMPLETE set.
@@ -127,14 +131,14 @@ select is(has_table_privilege('authenticated', 'public.stat_row', 'DELETE'), fal
 -- The DELETE succeeding is the distinctive contrast with demo (whose write-once ceiling 42501s DELETE).
 set local role service_role;
 select lives_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id, kills, deaths, rounds_played)
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played)
        values (990, '76561197960287950', (select id from demo where storage_key = 'demos/990/seed.dem'), 20, 14, 24) $$,
   'service_role inserts a stat_row (grant + BYPASSRLS) — the single-writer parse path');
 select lives_ok(
-  $$ update stat_row set kills = 21 where match_id = 990 and steamid64 = '76561197960287950' $$,
+  $$ update stat_row set kills = 21 where matchzy_match_id = 990 and steamid64 = '76561197960287950' $$,
   'service_role UPDATEs a stat_row (the ON CONFLICT DO UPDATE re-parse half — UPDATE grant is genuinely usable)');
 select lives_ok(
-  $$ delete from stat_row where match_id = 990 and steamid64 = '76561197960287950' $$,
+  $$ delete from stat_row where matchzy_match_id = 990 and steamid64 = '76561197960287950' $$,
   'service_role DELETEs a stat_row (Story-3.6 delete-missing — DELETE grant genuinely usable, unlike demo)');
 set local role postgres;
 
@@ -145,7 +149,7 @@ set local role postgres;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"app_metadata":{"role":"viewer","steamid64":"76561197960287931"}}', true);
 select throws_ok(
-  $$ insert into stat_row (match_id, steamid64, demo_id) values (990, '76561197960287999', 1) $$,
+  $$ insert into stat_row (matchzy_match_id, steamid64, demo_id) values (990, '76561197960287999', 1) $$,
   '42501', null, 'authenticated viewer CANNOT insert stat_row (SELECT granted by 0009 but NO write grant/policy) — writes still fail closed');
 set local role postgres;
 

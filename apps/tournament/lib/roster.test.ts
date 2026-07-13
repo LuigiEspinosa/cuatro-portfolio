@@ -185,6 +185,18 @@ describe('enrollSelf (AC5 — a player enrolls THEMSELVES; reactivate-on-conflic
     });
   });
 
+  it('maps the D3 roster-lock trigger P0001 to locked, NOT write_failed (the race the trigger exists for)', async () => {
+    // enrollSelf has no state check of its own — `resolveOpenTournament` is its gate, and that is a
+    // check-then-write. If the bracket goes live in between, the trigger (migration 0011) is what stops
+    // the write. That refusal MUST surface as `locked` (→ 409): mapping it to write_failed would report
+    // the one code path D3 was built for as an internal server error.
+    const { admin } = makeAdmin({ roster_entry: [{ error: { code: 'P0001', message: 'roster is frozen' } }] });
+    expect(await enrollSelf(admin, { steamid64: TARGET, tournamentId: T_ID })).toEqual({
+      ok: false,
+      reason: 'locked',
+    });
+  });
+
   it('maps any other write error to write_failed', async () => {
     const { admin } = makeAdmin({ roster_entry: [{ error: { code: 'XYZ', message: 'boom' } }] });
     expect(await enrollSelf(admin, { steamid64: TARGET, tournamentId: T_ID })).toEqual({
@@ -242,6 +254,22 @@ describe('adminAddPlayer (AC6 — admin add; allowed while closed; state gate be
       await adminAddPlayer(admin, { actingAdmin: ADMIN, tournamentId: T_ID, steamid64: TARGET }),
     ).toEqual({ ok: false, reason: 'no_such_player' });
   });
+
+  it('maps the D3 trigger P0001 to locked when a generate RACES past the read-gate', async () => {
+    // ⭐ THIS is the TOCTOU D3 closes, and the exact shape of it: the read-gate below says the tournament
+    // is still mutable, then a bracket generation COMMITS, and only then does the roster write land — where
+    // the trigger blocks on the tournament lock, re-reads 'bracket_live', and rejects. Before the P0001
+    // mapping this returned `write_failed` → HTTP 500: the single scenario the whole guard was built for
+    // was the one that looked like a server crash.
+    const { admin, opsFor } = makeAdmin({
+      tournament: [{ data: { state: 'registration_open' }, error: null }], // the read says mutable…
+      roster_entry: [{ error: { code: 'P0001', message: 'roster is frozen' } }], // …the trigger disagrees
+    });
+    expect(
+      await adminAddPlayer(admin, { actingAdmin: ADMIN, tournamentId: T_ID, steamid64: TARGET }),
+    ).toEqual({ ok: false, reason: 'locked' });
+    expect(opsFor('audit_log', 'insert')).toHaveLength(0); // a refused write is never audited
+  });
 });
 
 describe('removePlayer (AC3/AC6 — SOFT-delete; never DELETE; state gate + not_on_roster)', () => {
@@ -270,6 +298,16 @@ describe('removePlayer (AC3/AC6 — SOFT-delete; never DELETE; state gate + not_
     });
     const result = await removePlayer(admin, { actingAdmin: ADMIN, tournamentId: T_ID, steamid64: TARGET });
     expect(result).toEqual({ ok: false, reason: 'not_on_roster' });
+    expect(opsFor('audit_log', 'insert')).toHaveLength(0);
+  });
+
+  it('maps the D3 trigger P0001 to locked — the soft-delete is an UPDATE, which the trigger also covers', async () => {
+    const { admin, opsFor } = makeAdmin({
+      tournament: [{ data: { state: 'registration_open' }, error: null }], // the read-gate says mutable…
+      roster_entry: [{ error: { code: 'P0001', message: 'roster is frozen' } }], // …the trigger disagrees
+    });
+    const result = await removePlayer(admin, { actingAdmin: ADMIN, tournamentId: T_ID, steamid64: TARGET });
+    expect(result).toEqual({ ok: false, reason: 'locked' });
     expect(opsFor('audit_log', 'insert')).toHaveLength(0);
   });
 

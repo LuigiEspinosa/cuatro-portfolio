@@ -26,8 +26,14 @@ export interface RegisterBody {
 
 /**
  * Validate the register notify body. Returns null on anything malformed (→ 400, no write): `match_id`
- * must be a positive integer (a real match id) and `storage_key` a non-empty string (the opaque R2 key
- * the worker's presign step returned). The key is treated as opaque — its structure is the worker's.
+ * must be a positive integer and `storage_key` a non-empty string (the opaque R2 key the worker's
+ * presign step returned). The key is treated as opaque — its structure is the worker's.
+ *
+ * ⚠ `match_id` here is the EXTERNAL ingest id (the operator's / MatchZy's), NOT a bracket `match.id`.
+ * It lands in `demo.matchzy_match_id` (migration 0010 renamed the column to stop it lying: it never held
+ * a match.id, and FK-ing it would 23503 every ingest). `demo.match_id` — the real FK — stays NULL until
+ * Story 4.6 (Aprobar) binds this demo to the match it decided. The wire field keeps its name so the
+ * worker's presign→register contract is unchanged.
  */
 export function parseRegisterBody(raw: unknown): RegisterBody | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -52,7 +58,7 @@ export async function recordManualUpload(
   params: { matchId: number; storageKey: string },
 ): Promise<RegisterResult> {
   const { error } = await admin.from('demo').insert({
-    match_id: params.matchId,
+    matchzy_match_id: params.matchId, // the EXTERNAL ingest id — see parseRegisterBody
     storage_backend: 'r2',
     storage_key: params.storageKey,
     source: 'manual_upload',
