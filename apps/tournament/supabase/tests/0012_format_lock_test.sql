@@ -86,8 +86,18 @@ $fn$;
 --        (at INSERT)           format_overridden_at but NO audit row in this transaction, which is exactly
 --                              the shape of a match overridden by some EARLIER transaction.
 --        (INSERT is deliberately unguarded — see 0012. Only UPDATE is gated, so a fixture may be born locked.)
-insert into match (tournament_id, bracket, bracket_position, bracket_slot, state, format, tie_policy, format_locked, format_overridden_at)
-select pg_temp.tid('TFMT'), 'winners', 'Winners R1', v.slot, 'declared', v.fmt, v.tie, v.locked, v.ovr
+--
+-- ⚠ STORY 4.3 (D1): every `winners` row now carries ROUTING EDGES. Migration 0013's
+-- `match_routing_complete` CHECK makes a bracket row with no way out UNREPRESENTABLE, and these fixtures
+-- are hand-built match rows, not generated brackets — so they must declare an exit like any other row.
+-- The target (slot 999) is deliberately non-existent: the CHECK's contract is that a row DECLARES an
+-- exit, not that the exit resolves (there is no self-FK). Nothing in this suite advances these rows.
+-- It also keeps this suite HONEST: a routing-CHECK violation is 23514, the same SQLSTATE the format
+-- CHECKs below assert — so a fixture without edges would let those tests pass for the wrong reason.
+insert into match (tournament_id, bracket, bracket_position, bracket_slot, state, format, tie_policy, format_locked, format_overridden_at,
+                   winner_to_bracket, winner_to_slot, winner_to_side, loser_to_bracket, loser_to_slot, loser_to_side)
+select pg_temp.tid('TFMT'), 'winners', 'Winners R1', v.slot, 'declared', v.fmt, v.tie, v.locked, v.ovr,
+       'winners', 999, 'a', 'losers', 999, 'a'
   from (values
     (1, null,   null,     false, null::timestamptz),
     (2, 'mr12', 'ot_mr3', true,  null),
@@ -105,16 +115,20 @@ select pg_temp.tid('TFMT'), 'winners', 'Winners R1', v.slot, 'declared', v.fmt, 
 -- Slot 5 doubles as Section H's `not_declarable` target: the TARGETED path must refuse it too, which is
 -- the bug the review found (the first cut filtered `state = 'declared'` on the BULK path only, so one
 -- route call could irreversibly lock a format onto a bye — and the LATCH made that unrecoverable).
-insert into match (tournament_id, bracket, bracket_position, bracket_slot, state)
-select pg_temp.tid('TBULK'), 'winners', 'Winners R1', v.slot, v.st
+insert into match (tournament_id, bracket, bracket_position, bracket_slot, state,
+                   winner_to_bracket, winner_to_slot, winner_to_side, loser_to_bracket, loser_to_slot, loser_to_side)
+select pg_temp.tid('TBULK'), 'winners', 'Winners R1', v.slot, v.st,
+       'winners', 999, 'a', 'losers', 999, 'a'
   from (values
     (1, 'declared'), (2, 'declared'), (3, 'declared'), (4, 'declared'),
     (5, 'bye'), (6, 'bye'), (7, 'void')
   ) as v(slot, st);
 
 -- TOTHER — a single match in a DIFFERENT event. Targeting it from TFMT must be refused `bad_match`.
-insert into match (tournament_id, bracket, bracket_position, bracket_slot, state)
-  values (pg_temp.tid('TOTHER'), 'winners', 'Winners R1', 1, 'declared');
+insert into match (tournament_id, bracket, bracket_position, bracket_slot, state,
+                   winner_to_bracket, winner_to_slot, winner_to_side, loser_to_bracket, loser_to_slot, loser_to_side)
+  values (pg_temp.tid('TOTHER'), 'winners', 'Winners R1', 1, 'declared',
+          'winners', 999, 'a', 'losers', 999, 'a');
 
 -- The RPC returns jsonb. Capture each call ONCE (calling it twice would double-write) and assert against
 -- the captured reply. Created as postgres and GRANTed, because Sections E/G/H invoke the RPC as
@@ -163,9 +177,14 @@ select throws_ok(
   'AC1: an UNLOCKED match cannot reach manual_resolved (Story 4.8 inherits a lock it cannot bypass)'
 );
 -- The CHECK is a TABLE constraint, so it constrains INSERT too — not merely the UPDATE path.
+-- (Edges supplied so the ONLY thing this row can violate is match_live_requires_locked_format — see the
+-- fixture note: match_routing_complete raises the same 23514 and would otherwise mask it.)
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, state)
-       values (pg_temp.tid('TFMT'), 'winners', 'Winners R9', 99, 'live') $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, state,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values (pg_temp.tid('TFMT'), 'winners', 'Winners R9', 99, 'live',
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null,
   'AC1: a match cannot be INSERTED straight into live with no locked format (the CHECK binds every writer, not just UPDATEs)'
 );

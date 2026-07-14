@@ -122,26 +122,60 @@ $fn$;
 --   losers  slots 0-1 = R1, 2-3 = R2, 4 = R3, 5 = R4 (Losers Final)
 --   grand_final slot 0, gf_order 1  (the AD-21 reset row, gf_order=2, is Story 4.4's — NOT here)
 -- An 8-field is a power of two, so it has NO byes: every row is 'declared'. Byes are Section B2's.
+--
+-- ⭐ STORY 4.3 (D1) — THE ROUTING EDGES ARE PART OF THE PAYLOAD NOW, and `match_routing_complete` (0013)
+-- rejects a row that omits them (23514). The `wt`/`lt` literals below are NOT hand-derived: they are the
+-- ACTUAL output of `generateBracket()` for an 8-field, pasted verbatim, so this fixture is a golden
+-- snapshot of what the generator really emits rather than a second (drifting) guess at the routing.
+-- Re-derive them by dumping `winner_to`/`loser_to` from the real generator — never by writing `index ^ 1`
+-- in SQL. (Fixing the FIXTURE rather than weakening the CHECK is the 4.1 review's headline lesson: a
+-- fixture that no longer resembles what the generator emits proves less than it claims.)
+-- One routing edge, in the jsonb shape generate_bracket reads (and match.winner_to_*/loser_to_* store).
+create function pg_temp.edge(b text, sl int, gf int, side text) returns jsonb language sql immutable as $fn$
+  select jsonb_build_object('bracket', b, 'slot', sl, 'gf_order', gf, 'side', side)
+$fn$;
+
 create function pg_temp.matches8(tname text) returns jsonb language sql stable as $fn$
   select jsonb_agg(jsonb_build_object(
            'bracket', v.b, 'bracket_position', v.p, 'bracket_slot', v.sl, 'gf_order', v.gf,
-           'competitor_a', v.ca, 'competitor_b', v.cb, 'winner_entry', null::bigint, 'state', 'declared'))
+           'competitor_a', v.ca, 'competitor_b', v.cb, 'winner_entry', null::bigint, 'state', 'declared',
+           'winner_to', v.wt, 'loser_to', v.lt))
     from (values
-      ('winners',     'Winners R1',  0, null::int, pg_temp.re(tname, 1), pg_temp.re(tname, 8)),
-      ('winners',     'Winners R1',  1, null::int, pg_temp.re(tname, 4), pg_temp.re(tname, 5)),
-      ('winners',     'Winners R1',  2, null::int, pg_temp.re(tname, 2), pg_temp.re(tname, 7)),
-      ('winners',     'Winners R1',  3, null::int, pg_temp.re(tname, 3), pg_temp.re(tname, 6)),
-      ('winners',     'Winners R2',  4, null::int, null::bigint,         null::bigint),
-      ('winners',     'Winners R2',  5, null::int, null::bigint,         null::bigint),
-      ('winners',     'Winners R3',  6, null::int, null::bigint,         null::bigint),
-      ('losers',      'Losers R1',   0, null::int, null::bigint,         null::bigint),
-      ('losers',      'Losers R1',   1, null::int, null::bigint,         null::bigint),
-      ('losers',      'Losers R2',   2, null::int, null::bigint,         null::bigint),
-      ('losers',      'Losers R2',   3, null::int, null::bigint,         null::bigint),
-      ('losers',      'Losers R3',   4, null::int, null::bigint,         null::bigint),
-      ('losers',      'Losers R4',   5, null::int, null::bigint,         null::bigint),
-      ('grand_final', 'Grand Final', 0, 1,         null::bigint,         null::bigint)
-    ) as v(b, p, sl, gf, ca, cb)
+      -- bracket / position / slot / gf / competitor_a / competitor_b / winner_to / loser_to
+      ('winners',     'Winners R1',  0, null::int, pg_temp.re(tname, 1), pg_temp.re(tname, 8),
+        pg_temp.edge('winners', 4, null, 'a'),      pg_temp.edge('losers', 0, null, 'a')),
+      ('winners',     'Winners R1',  1, null::int, pg_temp.re(tname, 4), pg_temp.re(tname, 5),
+        pg_temp.edge('winners', 4, null, 'b'),      pg_temp.edge('losers', 0, null, 'b')),
+      ('winners',     'Winners R1',  2, null::int, pg_temp.re(tname, 2), pg_temp.re(tname, 7),
+        pg_temp.edge('winners', 5, null, 'a'),      pg_temp.edge('losers', 1, null, 'a')),
+      ('winners',     'Winners R1',  3, null::int, pg_temp.re(tname, 3), pg_temp.re(tname, 6),
+        pg_temp.edge('winners', 5, null, 'b'),      pg_temp.edge('losers', 1, null, 'b')),
+      -- R2's drops are CROSSED (`index ^ 1`): a loser must not meet the player who just beat them.
+      ('winners',     'Winners R2',  4, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('winners', 6, null, 'a'),      pg_temp.edge('losers', 3, null, 'b')),
+      ('winners',     'Winners R2',  5, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('winners', 6, null, 'b'),      pg_temp.edge('losers', 2, null, 'b')),
+      -- The Winners Final: winner -> GF side A, loser -> the Losers Final.
+      ('winners',     'Winners R3',  6, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('grand_final', 0, 1, 'a'),     pg_temp.edge('losers', 5, null, 'b')),
+      -- Every losers row: a winner edge, and NO loser edge — the absence IS two-loss elimination (FR-6).
+      ('losers',      'Losers R1',   0, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('losers', 2, null, 'a'),       null::jsonb),
+      ('losers',      'Losers R1',   1, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('losers', 3, null, 'a'),       null::jsonb),
+      ('losers',      'Losers R2',   2, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('losers', 4, null, 'a'),       null::jsonb),
+      ('losers',      'Losers R2',   3, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('losers', 4, null, 'b'),       null::jsonb),
+      ('losers',      'Losers R3',   4, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('losers', 5, null, 'a'),       null::jsonb),
+      -- The Losers Final: winner -> GF side B.
+      ('losers',      'Losers R4',   5, null::int, null::bigint,         null::bigint,
+        pg_temp.edge('grand_final', 0, 1, 'b'),     null::jsonb),
+      -- The Grand Final: NEITHER edge. Its winner is the champion; its loser is the runner-up.
+      ('grand_final', 'Grand Final', 0, 1,         null::bigint,         null::bigint,
+        null::jsonb,                                null::jsonb)
+    ) as v(b, p, sl, gf, ca, cb, wt, lt)
 $fn$;
 
 -- A 9-player field: bracketSize 16, so 2*16-2 = 30 rows and SEVEN byes. This payload exists to prove the
@@ -150,6 +184,48 @@ $fn$;
 -- their winner_entry. Losers slot 0 is 'void' (both its Winners feeders were byes, so no loser can ever
 -- arrive) and slot 1 is a 'bye' walkover. The ROUTING that decides which nodes those are is
 -- lib/bracket/generate.ts's job and is tested there; here we only prove the columns land.
+-- The 16-bracket's routing edges (D1), as `generateBracket()` ACTUALLY emits them — dumped from the real
+-- generator and pasted, never hand-derived here. Keyed by (bracket, slot); merged into each row with `||`.
+-- Note the CROSSED winners drops from R2 on (`index ^ 1`: W8 -> L5, W9 -> L4, W10 -> L7, W11 -> L6, …) —
+-- that crossover is exactly the routing detail a hand-written fixture gets wrong, which is why this one
+-- is a snapshot of the generator instead of a second guess at it.
+create function pg_temp.edges16(b text, sl int) returns jsonb language sql stable as $fn$
+  select v.e
+    from (values
+      ('winners',  0, jsonb_build_object('winner_to', pg_temp.edge('winners',  8, null, 'a'), 'loser_to', pg_temp.edge('losers',  0, null, 'a'))),
+      ('winners',  1, jsonb_build_object('winner_to', pg_temp.edge('winners',  8, null, 'b'), 'loser_to', pg_temp.edge('losers',  0, null, 'b'))),
+      ('winners',  2, jsonb_build_object('winner_to', pg_temp.edge('winners',  9, null, 'a'), 'loser_to', pg_temp.edge('losers',  1, null, 'a'))),
+      ('winners',  3, jsonb_build_object('winner_to', pg_temp.edge('winners',  9, null, 'b'), 'loser_to', pg_temp.edge('losers',  1, null, 'b'))),
+      ('winners',  4, jsonb_build_object('winner_to', pg_temp.edge('winners', 10, null, 'a'), 'loser_to', pg_temp.edge('losers',  2, null, 'a'))),
+      ('winners',  5, jsonb_build_object('winner_to', pg_temp.edge('winners', 10, null, 'b'), 'loser_to', pg_temp.edge('losers',  2, null, 'b'))),
+      ('winners',  6, jsonb_build_object('winner_to', pg_temp.edge('winners', 11, null, 'a'), 'loser_to', pg_temp.edge('losers',  3, null, 'a'))),
+      ('winners',  7, jsonb_build_object('winner_to', pg_temp.edge('winners', 11, null, 'b'), 'loser_to', pg_temp.edge('losers',  3, null, 'b'))),
+      ('winners',  8, jsonb_build_object('winner_to', pg_temp.edge('winners', 12, null, 'a'), 'loser_to', pg_temp.edge('losers',  5, null, 'b'))),
+      ('winners',  9, jsonb_build_object('winner_to', pg_temp.edge('winners', 12, null, 'b'), 'loser_to', pg_temp.edge('losers',  4, null, 'b'))),
+      ('winners', 10, jsonb_build_object('winner_to', pg_temp.edge('winners', 13, null, 'a'), 'loser_to', pg_temp.edge('losers',  7, null, 'b'))),
+      ('winners', 11, jsonb_build_object('winner_to', pg_temp.edge('winners', 13, null, 'b'), 'loser_to', pg_temp.edge('losers',  6, null, 'b'))),
+      ('winners', 12, jsonb_build_object('winner_to', pg_temp.edge('winners', 14, null, 'a'), 'loser_to', pg_temp.edge('losers', 11, null, 'b'))),
+      ('winners', 13, jsonb_build_object('winner_to', pg_temp.edge('winners', 14, null, 'b'), 'loser_to', pg_temp.edge('losers', 10, null, 'b'))),
+      ('winners', 14, jsonb_build_object('winner_to', pg_temp.edge('grand_final', 0, 1, 'a'), 'loser_to', pg_temp.edge('losers', 13, null, 'b'))),
+      ('losers',   0, jsonb_build_object('winner_to', pg_temp.edge('losers',  4, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',   1, jsonb_build_object('winner_to', pg_temp.edge('losers',  5, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',   2, jsonb_build_object('winner_to', pg_temp.edge('losers',  6, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',   3, jsonb_build_object('winner_to', pg_temp.edge('losers',  7, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',   4, jsonb_build_object('winner_to', pg_temp.edge('losers',  8, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',   5, jsonb_build_object('winner_to', pg_temp.edge('losers',  8, null, 'b'), 'loser_to', null::jsonb)),
+      ('losers',   6, jsonb_build_object('winner_to', pg_temp.edge('losers',  9, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',   7, jsonb_build_object('winner_to', pg_temp.edge('losers',  9, null, 'b'), 'loser_to', null::jsonb)),
+      ('losers',   8, jsonb_build_object('winner_to', pg_temp.edge('losers', 10, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',   9, jsonb_build_object('winner_to', pg_temp.edge('losers', 11, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',  10, jsonb_build_object('winner_to', pg_temp.edge('losers', 12, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',  11, jsonb_build_object('winner_to', pg_temp.edge('losers', 12, null, 'b'), 'loser_to', null::jsonb)),
+      ('losers',  12, jsonb_build_object('winner_to', pg_temp.edge('losers', 13, null, 'a'), 'loser_to', null::jsonb)),
+      ('losers',  13, jsonb_build_object('winner_to', pg_temp.edge('grand_final', 0, 1, 'b'), 'loser_to', null::jsonb)),
+      ('grand_final', 0, jsonb_build_object('winner_to', null::jsonb, 'loser_to', null::jsonb))
+    ) as v(b, sl, e)
+   where v.b = $1 and v.sl = $2
+$fn$;
+
 create function pg_temp.matches16(tname text) returns jsonb language sql stable as $fn$
   select jsonb_agg(x)
     from (
@@ -160,14 +236,14 @@ create function pg_temp.matches16(tname text) returns jsonb language sql stable 
                'competitor_b', case when s = 0 then pg_temp.re(tname, 9) else null::bigint end,
                'winner_entry', case when s = 0 then null::bigint else pg_temp.re(tname, s + 1) end,
                'state',        case when s = 0 then 'declared' else 'bye' end
-             ) as x
+             ) || pg_temp.edges16('winners', s) as x
         from generate_series(0, 7) as s
       union all
       -- Winners R2/R3/R4, slots 8-14: empty, declared.
       select jsonb_build_object(
                'bracket', 'winners', 'bracket_position', 'Winners R' || v.r, 'bracket_slot', v.s, 'gf_order', null::int,
                'competitor_a', null::bigint, 'competitor_b', null::bigint, 'winner_entry', null::bigint,
-               'state', 'declared')
+               'state', 'declared') || pg_temp.edges16('winners', v.s)
         from (values (8,2),(9,2),(10,2),(11,2),(12,3),(13,3),(14,4)) as v(s, r)
       union all
       -- Losers, slots 0-13: slot 0 void, slot 1 a bye walkover, the rest declared.
@@ -175,12 +251,13 @@ create function pg_temp.matches16(tname text) returns jsonb language sql stable 
                'bracket', 'losers', 'bracket_position', 'Losers', 'bracket_slot', s, 'gf_order', null::int,
                'competitor_a', null::bigint, 'competitor_b', null::bigint, 'winner_entry', null::bigint,
                'state', case when s = 0 then 'void' when s = 1 then 'bye' else 'declared' end)
+             || pg_temp.edges16('losers', s)
         from generate_series(0, 13) as s
       union all
       select jsonb_build_object(
                'bracket', 'grand_final', 'bracket_position', 'Grand Final', 'bracket_slot', 0, 'gf_order', 1,
                'competitor_a', null::bigint, 'competitor_b', null::bigint, 'winner_entry', null::bigint,
-               'state', 'declared')
+               'state', 'declared') || pg_temp.edges16('grand_final', 0)
     ) as t
 $fn$;
 

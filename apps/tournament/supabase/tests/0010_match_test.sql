@@ -64,9 +64,26 @@ insert into roster_entry (tournament_id, steamid64)
 --   by the demo RESTRICT — that isolation is what lets one delete prove CASCADE + both SET NULLs.
 -- Note both rows carry matchzy_match_id (NOT NULL, the external ingest id) AND match_id (the FK).
 -- Story 4.6 is what populates match_id in production; here we set it by hand to exercise the FK.
-insert into match (tournament_id, bracket, bracket_position, bracket_slot)
-  values ((select id from tournament where name = 'T2'), 'winners', 'Winners R1', 900),
-         ((select id from tournament where name = 'T2'), 'winners', 'Winners R1', 901);
+-- ⚠ STORY 4.3 (D1): every `winners`/`losers` row below now carries ROUTING EDGES, because migration
+-- 0013's `match_routing_complete` CHECK makes a bracket row with no way out UNREPRESENTABLE (a row with
+-- no outbound edge is a brick — nothing can advance out of it, and `match` has no DELETE grant). These
+-- fixtures are not brackets, so their edges point at a deliberately NON-EXISTENT slot 999: the CHECK's
+-- contract is that a row DECLARES an exit, not that the exit resolves (there is no self-FK — see 0013's
+-- header for why the edges are structural rather than match_ids). That every REAL edge resolves is
+-- proven where the routing actually lives: lib/bracket/generate.test.ts asserts the edge set is a
+-- fixpoint of the skeleton, and `advance_match` raises on a dangling edge.
+--
+-- ⚠ AND IT IS LOAD-BEARING FOR THIS SUITE, not cosmetic. A CHECK violation is 23514 — the SAME SQLSTATE
+-- the `throws_ok`s below assert for match_gf_order_guard / score_source_guard / the closed sets. Without
+-- valid edges, every one of those would still go green while actually failing on match_routing_complete,
+-- i.e. passing for the wrong reason. Giving each row a legal exit is what keeps them honest.
+insert into match (tournament_id, bracket, bracket_position, bracket_slot,
+                   winner_to_bracket, winner_to_slot, winner_to_side,
+                   loser_to_bracket, loser_to_slot, loser_to_side)
+  values ((select id from tournament where name = 'T2'), 'winners', 'Winners R1', 900,
+          'winners', 999, 'a', 'losers', 999, 'a'),
+         ((select id from tournament where name = 'T2'), 'winners', 'Winners R1', 901,
+          'winners', 999, 'a', 'losers', 999, 'a');
 insert into demo (matchzy_match_id, match_id, storage_key, source)
   values (900900,
           (select id from match where tournament_id = (select id from tournament where name = 'T2') and bracket_slot = 900),
@@ -98,11 +115,15 @@ select is(
 -- ============================================================================
 -- Section B — the DDL constraints BITE (29 assertions). Run as postgres on T1.
 -- ============================================================================
--- Happy path + the three column defaults.
+-- Happy path + the three column defaults. ("Minimal" now includes the routing edges — a winners row
+-- without them is a brick, and 0013's match_routing_complete refuses it. See the fixture note above.)
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 1) $$,
-  'match: a minimal (tournament, bracket, position, slot) row is accepted'
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 1,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
+  'match: a minimal (tournament, bracket, position, slot) row + its routing edges is accepted'
 );
 select is((select state           from match where tournament_id = (select id from tournament where name='T1') and bracket_slot = 1 and bracket = 'winners'), 'declared', 'match: state defaults to declared (4.1 creates every real match declared)');
 select is((select format_locked   from match where tournament_id = (select id from tournament where name='T1') and bracket_slot = 1 and bracket = 'winners'), false,     'match: format_locked defaults to false (the AD-10 lock is Story 4.2)');
@@ -110,62 +131,93 @@ select is((select manual_override from match where tournament_id = (select id fr
 
 -- Closed-set CHECKs bite.
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, state)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 20, 'finished') $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, state,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 20, 'finished',
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'match: state=finished (out of the 10-value closed set) is rejected by the CHECK'
 );
+-- No edges here, deliberately: `consolation` is not a real bracket, so match_routing_complete's CASE
+-- falls to its grand_final arm (which wants NO edges) and is satisfied — leaving the bracket closed-set
+-- CHECK as the only thing that can fire. Exactly what this assertion claims to test.
 select throws_ok(
   $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
        values ((select id from tournament where name = 'T1'), 'consolation', 'Nope', 21) $$,
   '23514', null, 'match: bracket=consolation is rejected — only winners|losers|grand_final exist'
 );
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 22, 'guessed') $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 22, 'guessed',
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'match: score_source=guessed is rejected — AD-5 admits only demo_derived|admin_manual'
 );
 -- NOT NULLs bite.
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
-       values ((select id from tournament where name = 'T1'), 'winners', null, 23) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', null, 23,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23502', null, 'match: a null bracket_position is rejected by NOT NULL (the label is structural)'
 );
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', null) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', null,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23502', null, 'match: a null bracket_slot is rejected by NOT NULL (the routing index is structural)'
 );
 -- Outbound FKs bite.
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
-       values (999999, 'winners', 'Winners R1', 24) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values (999999, 'winners', 'Winners R1', 24,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23503', null, 'match: a non-existent tournament_id is rejected by the FK'
 );
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, competitor_a)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 25, 999999) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, competitor_a,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 25, 999999,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23503', null, 'match: competitor_a must be a real roster_entry (AD-4 — matches join the seeded roster, never player/display_name)'
 );
 -- The competitor FK is COMPOSITE (tournament_id, competitor) -> roster_entry(tournament_id, id): a
 -- match may only seat players from ITS OWN event. A plain roster_entry(id) FK would accept this row.
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, competitor_a)
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, competitor_a,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 28,
-               (select id from roster_entry where tournament_id = (select id from tournament where name = 'T2'))) $$,
+               (select id from roster_entry where tournament_id = (select id from tournament where name = 'T2')),
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23503', null, 'match: a competitor from ANOTHER tournament is rejected (the composite FK confines a match to its own roster)'
 );
 
 -- AC3: the two structural bye states are first-class.
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, state, competitor_a, winner_entry)
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, state, competitor_a, winner_entry,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 2, 'bye',
                (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931'),
-               (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931')) $$,
+               (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931'),
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   'match: state=bye with one competitor who is the winner is accepted (AC3 — a walkover advances a player, no opponent)'
 );
+-- A `losers` row carries a winner edge and NO loser edge: its loser has taken their SECOND loss and is
+-- eliminated. The absence IS the rule (FR-6), and match_routing_complete enforces it in that direction too.
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, state)
-       values ((select id from tournament where name = 'T1'), 'losers', 'Losers R1', 6, 'void') $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, state,
+                        winner_to_bracket, winner_to_slot, winner_to_side)
+       values ((select id from tournament where name = 'T1'), 'losers', 'Losers R1', 6, 'void',
+               'losers', 999, 'a') $$,
   'match: state=void with NO competitors is accepted (AC3 — a Losers node both of whose feeders were byes; never played, advances nobody)'
 );
 
@@ -174,8 +226,11 @@ select lives_ok(
 -- GF row. The `gf_order is not null and …` half matters: a bare IN would evaluate to NULL, and a CHECK
 -- PASSES on NULL.
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, gf_order)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 29, 1) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, gf_order,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 29, 1,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'match: a non-grand_final row carrying gf_order is rejected (it would dodge the coalesce(gf_order,0) slot fold)'
 );
 select throws_ok(
@@ -193,53 +248,77 @@ select throws_ok(
 -- routing bug would otherwise land silently. `is not distinct from` matters: with both competitors NULL,
 -- `winner = competitor_a` is NULL, and a CHECK passes on NULL.
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, competitor_a, winner_entry)
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, competitor_a, winner_entry,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 30,
                (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931'),
-               (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287932')) $$,
+               (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287932'),
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'match: a winner_entry who is neither competitor is rejected (you cannot win a match you were not in)'
 );
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, winner_entry)
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, winner_entry,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 31,
-               (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931')) $$,
+               (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931'),
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'match: a winner_entry with NO competitors at all is rejected (the NULL-passes-a-CHECK trap)'
 );
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, competitor_a, competitor_b)
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, competitor_a, competitor_b,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 32,
                (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931'),
-               (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931')) $$,
+               (select id from roster_entry where tournament_id = (select id from tournament where name='T1') and steamid64 = '76561197960287931'),
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'match: a player cannot be seated against themselves (competitor_a <> competitor_b)'
 );
 
 -- The AD-5 score_source_guard: the two illegal shapes bite, the three legal shapes live.
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, score_a, score_b)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 26, 'demo_derived', 16, 14) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, score_a, score_b,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 26, 'demo_derived', 16, 14,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'score_source_guard: demo_derived with demo_id IS NULL is rejected (a demo-derived score REQUIRES the demo)'
 );
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id)
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 27, 'admin_manual',
-               (select id from demo where storage_key = 'r2://qa/anchor.dem')) $$,
+               (select id from demo where storage_key = 'r2://qa/anchor.dem'),
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'score_source_guard: admin_manual WITH a demo and manual_override=false is rejected (silently overriding evidence is the exact AD-5 hazard)'
 );
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id, manual_override)
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id, manual_override,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 3, 'admin_manual',
-               (select id from demo where storage_key = 'r2://qa/anchor.dem'), true) $$,
+               (select id from demo where storage_key = 'r2://qa/anchor.dem'), true,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   'score_source_guard: admin_manual WITH a demo IS allowed once manual_override=true (the audited escape hatch — Story 4.8)'
 );
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 4, 'admin_manual') $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 4, 'admin_manual',
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   'score_source_guard: admin_manual with NO demo is allowed (nothing to contradict)'
 );
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id)
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 5, 'demo_derived',
-               (select id from demo where storage_key = 'r2://qa/anchor.dem')) $$,
+               (select id from demo where storage_key = 'r2://qa/anchor.dem'),
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   'score_source_guard: demo_derived WITH its demo is allowed (the Story-4.6 Aprobar shape)'
 );
 
@@ -247,13 +326,18 @@ select lives_ok(
 -- silently pass with a naive UNIQUE(...gf_order): Postgres treats every NULL as distinct, so a plain
 -- UNIQUE would enforce NOTHING on the ~29 non-GF rows of a real bracket.
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1 (dup)', 1) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1 (dup)', 1,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23505', null, 'match: a duplicate (tournament, winners, slot 1) with NULL gf_order is rejected — coalesce(gf_order,0) folds the NULLs so they COLLIDE'
 );
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
-       values ((select id from tournament where name = 'T1'), 'losers', 'Losers R1', 1) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot,
+                        winner_to_bracket, winner_to_slot, winner_to_side)
+       values ((select id from tournament where name = 'T1'), 'losers', 'Losers R1', 1,
+               'losers', 999, 'a') $$,
   'match: the same bracket_slot in a DIFFERENT bracket is allowed (slots are scoped per bracket)'
 );
 select lives_ok(
@@ -365,8 +449,11 @@ select is(has_table_privilege('authenticated', 'public.match', 'DELETE'), false,
 -- prove is the service_role UPDATE **grant**, which is unchanged.
 set local role service_role;
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R2', 10) $$,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot,
+                        winner_to_bracket, winner_to_slot, winner_to_side,
+                        loser_to_bracket, loser_to_slot, loser_to_side)
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R2', 10,
+               'winners', 999, 'a', 'losers', 999, 'a') $$,
   'service_role inserts a match (grant + BYPASSRLS) — the single-writer generation path'
 );
 -- AC1 of Story 4.2, from 0010's side: the match above has no declared format (format_locked defaults
@@ -386,8 +473,11 @@ select throws_ok(
 -- `declare_match_format` is the only thing that writes one. INSERT is left unguarded on purpose (0011's
 -- generation creates every row unlocked, and 0012's two CHECKs already bind an INSERT), so a fixture may be
 -- born locked. That is the whole trick here.
-insert into match (tournament_id, bracket, bracket_position, bracket_slot, format, tie_policy, format_locked)
-  values ((select id from tournament where name = 'T1'), 'winners', 'Winners R2', 11, 'mr12', 'ot_mr3', true);
+insert into match (tournament_id, bracket, bracket_position, bracket_slot, format, tie_policy, format_locked,
+                   winner_to_bracket, winner_to_slot, winner_to_side,
+                   loser_to_bracket, loser_to_slot, loser_to_side)
+  values ((select id from tournament where name = 'T1'), 'winners', 'Winners R2', 11, 'mr12', 'ot_mr3', true,
+          'winners', 999, 'a', 'losers', 999, 'a');
 select lives_ok(
   $$ update match set state = 'live'
        where tournament_id = (select id from tournament where name = 'T1') and bracket = 'winners' and bracket_slot = 11 $$,

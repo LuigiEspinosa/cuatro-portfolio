@@ -79,6 +79,24 @@ export type BracketName = 'winners' | 'losers' | 'grand_final';
  */
 export type GeneratedMatchState = 'declared' | 'bye' | 'void';
 
+/**
+ * A routing EDGE, in the jsonb shape the `generate_bracket` RPC reads into match.winner_to_* /
+ * loser_to_* (migration 0013, D1). It is the `Edge` type below in snake_case — a MAPPING of the routing,
+ * never a second definition of it.
+ *
+ * ⭐ WHY THE EDGES ARE PERSISTED AT ALL. Story 4.3's advance runs INSIDE Story 4.6's Aprobar transaction
+ * (SOLUTION-DESIGN §8), and a plpgsql transaction cannot call back out to TypeScript to ask where a
+ * winner goes — so the DB has to know. The alternative was porting `index ^ 1` into plpgsql, which would
+ * give the routing a SECOND implementation, in the layer nobody unit-tests. These fields exist so that
+ * cannot happen: the routing is computed exactly once, here, by the functions below.
+ */
+export interface EdgeRef {
+  bracket: BracketName;
+  slot: number;
+  gf_order: number | null;
+  side: 'a' | 'b';
+}
+
 /** A `match` row as generation emits it (the RPC inserts these verbatim under `p_matches`). */
 export interface MatchRow {
   bracket: BracketName;
@@ -89,6 +107,14 @@ export interface MatchRow {
   competitor_b: number | null;
   winner_entry: number | null;
   state: GeneratedMatchState;
+  /** Where this row's WINNER goes. NULL only on the grand-final row — its winner is the champion. */
+  winner_to: EdgeRef | null;
+  /**
+   * Where this row's LOSER drops. NULL on a `losers` row — and that ABSENCE *is* two-loss elimination
+   * (FR-6): a Losers loser has already lost once, so there is nowhere below to drop to. NULL on the
+   * grand-final row too (its loser is the runner-up).
+   */
+  loser_to: EdgeRef | null;
 }
 
 /** The raw draw, recorded in the audit row's `detail` for traceability (AD-17). */
@@ -195,6 +221,17 @@ export interface Edge {
   side: 'a' | 'b';
   gfOrder: number | null;
 }
+
+/**
+ * Project an `Edge` into the persisted `EdgeRef` shape (D1). A pure rename of `gfOrder` -> `gf_order` to
+ * match the column names the RPC reads — deliberately NOT a place where routing is decided.
+ */
+const edgeRef = (e: Edge): EdgeRef => ({
+  bracket: e.bracket,
+  slot: e.slot,
+  gf_order: e.gfOrder,
+  side: e.side,
+});
 
 /** Where the WINNER of Winners round `round`, match `index` goes. The Winners Final winner takes GF side A. */
 export function winnersWinnerTarget(bracketSize: number, round: number, index: number): Edge {
@@ -344,7 +381,14 @@ export function generateBracket(entries: readonly RosterEntryRef[], rng: Rng = c
 
   // ── Build the full skeleton first; fill competitors afterwards. ────────────
   const rows = new Map<string, MatchRow>();
-  const add = (bracket: BracketName, position: string, slot: number, gfOrder: number | null) => {
+  const add = (
+    bracket: BracketName,
+    position: string,
+    slot: number,
+    gfOrder: number | null,
+    winnerTo: EdgeRef | null,
+    loserTo: EdgeRef | null,
+  ) => {
     rows.set(key(bracket, slot, gfOrder), {
       bracket,
       bracket_position: position,
@@ -354,21 +398,46 @@ export function generateBracket(entries: readonly RosterEntryRef[], rng: Rng = c
       competitor_b: null,
       winner_entry: null,
       state: 'declared',
+      winner_to: winnerTo,
+      loser_to: loserTo,
     });
   };
 
+  // ⭐ D1 — the edges are PERSISTED, and they are computed HERE, by the routing functions above and by
+  // nothing else. Story 4.3's advance follows these pointers instead of re-deriving the routing in
+  // plpgsql. If you ever feel the need to write `index ^ 1` or `losersSlot(...)` again below this line,
+  // stop: the routing must have exactly one implementation, or the DB's copy is the one nobody tests.
   for (let r = 1; r <= wRounds; r++) {
     for (let i = 0; i < winnersRoundSize(bracketSize, r); i++) {
-      add('winners', `Winners R${r}`, winnersSlot(bracketSize, r, i), null);
+      add(
+        'winners',
+        `Winners R${r}`,
+        winnersSlot(bracketSize, r, i),
+        null,
+        edgeRef(winnersWinnerTarget(bracketSize, r, i)),
+        // EVERY winners row drops its loser — that is what fills the Losers bracket, and without it no
+        // tournament can ever complete.
+        edgeRef(winnersLoserTarget(bracketSize, r, i)),
+      );
     }
   }
   for (let r = 1; r <= lRounds; r++) {
     for (let i = 0; i < losersRoundSize(bracketSize, r); i++) {
-      add('losers', `Losers R${r}`, losersSlot(bracketSize, r, i), null);
+      add(
+        'losers',
+        `Losers R${r}`,
+        losersSlot(bracketSize, r, i),
+        null,
+        edgeRef(losersWinnerTarget(bracketSize, r, i)),
+        // NO loser edge: a Losers loser has taken their SECOND loss and is eliminated. The absence IS the
+        // rule (FR-6) — elimination is derived from the edges, never stored as a flag.
+        null,
+      );
     }
   }
   // Exactly ONE grand-final row this story. The AD-21 reset row (gf_order=2) is Story 4.4's.
-  add('grand_final', 'Grand Final', 0, 1);
+  // Neither edge: the winner is the CHAMPION and goes nowhere; the loser is the runner-up.
+  add('grand_final', 'Grand Final', 0, 1, null, null);
 
   /** Write an entry into an edge's competitor slot. */
   const place = (edge: Edge, entryId: number) => {

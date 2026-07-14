@@ -19,6 +19,7 @@ import {
   MAX_FIELD,
   type Rng,
   type Edge,
+  type EdgeRef,
   type MatchRow,
   type RosterEntryRef,
 } from '@/lib/bracket/generate';
@@ -447,6 +448,8 @@ describe('generateBracket — byes on non-power-of-two fields (AC3)', () => {
     // never gets one. Pin the emitted key set exactly: if anyone ever adds a `demo_id` or a `score_a` to
     // a generated row, a stat-write path becomes reachable from a bye and THIS goes red.
     // (`expect(m).not.toHaveProperty('demo_id')` would assert nothing — the object literal never had it.)
+    // `winner_to`/`loser_to` joined the payload in Story 4.3 (D1 — the persisted routing edges). They are
+    // ROUTING, not results: no score, no demo, no stat-write path. The pin is what proves that.
     for (const m of b.matches) {
       expect(Object.keys(m).sort()).toEqual([
         'bracket',
@@ -455,8 +458,10 @@ describe('generateBracket — byes on non-power-of-two fields (AC3)', () => {
         'competitor_a',
         'competitor_b',
         'gf_order',
+        'loser_to',
         'state',
         'winner_entry',
+        'winner_to',
       ]);
     }
 
@@ -527,6 +532,138 @@ describe('generateBracket — byes on non-power-of-two fields (AC3)', () => {
       const b = ok(n, seededRng(n));
       const keys = b.matches.map((m) => `${m.bracket}:${m.bracket_slot}:${m.gf_order ?? 0}`);
       expect(new Set(keys).size, `N=${n}`).toBe(b.matches.length);
+    }
+  });
+});
+
+// ── The PERSISTED routing edges (Story 4.3, D1) ─────────────────────────────
+//
+// The advance runs inside Story 4.6's Aprobar TRANSACTION, so plpgsql has to know where a winner goes
+// without calling back out to TypeScript — hence the edges are emitted here and stored on `match`
+// (migration 0013). These tests exist to keep that mapping HONEST, and they assert VALUES, not shapes:
+// the 4.1 review's headline lesson was that a suite asserting shape/counts stays green through a broken
+// payload. `match_routing_complete` (0013) enforces the same structure at the DB; this is the layer that
+// proves the structure is also CORRECT.
+
+const edgeKey = (e: EdgeRef) => `${e.bracket}:${e.slot}:${e.gf_order ?? 0}:${e.side}`;
+
+describe('routing EDGES on every emitted row (Story 4.3 D1 — persisted, never re-derived in SQL)', () => {
+  it.each([[8], [16]])(
+    'bracketSize %i: winners rows carry BOTH edges, losers rows carry a winner edge and NO loser edge, the GF carries neither',
+    (size) => {
+      const b = ok(size, seededRng(size));
+
+      for (const m of b.matches) {
+        if (m.bracket === 'winners') {
+          // Both. The loser edge is what fills the Losers bracket — without it the LB never receives
+          // anybody, the GF's side B never fills, and NO tournament can complete.
+          expect(m.winner_to, `winners slot ${m.bracket_slot}`).not.toBeNull();
+          expect(m.loser_to, `winners slot ${m.bracket_slot}`).not.toBeNull();
+        } else if (m.bracket === 'losers') {
+          expect(m.winner_to, `losers slot ${m.bracket_slot}`).not.toBeNull();
+          // The ABSENCE *is* two-loss elimination (FR-6) — a Losers loser is out. Assert the absence, or
+          // it is not proven.
+          expect(m.loser_to, `losers slot ${m.bracket_slot}`).toBeNull();
+        } else {
+          // The champion goes nowhere; the runner-up goes nowhere.
+          expect(m.winner_to).toBeNull();
+          expect(m.loser_to).toBeNull();
+        }
+      }
+    },
+  );
+
+  it.each([[8], [16]])(
+    'bracketSize %i: every edge is EXACTLY the routing function that owns it (values, not merely keys)',
+    (size) => {
+      const b = ok(size, seededRng(size));
+
+      for (let r = 1; r <= winnersRoundCount(size); r++) {
+        for (let i = 0; i < winnersRoundSize(size, r); i++) {
+          const m = find(b.matches, 'winners', winnersSlot(size, r, i));
+          const w: Edge = winnersWinnerTarget(size, r, i);
+          const l: Edge = winnersLoserTarget(size, r, i);
+          expect(m.winner_to, `W R${r}m${i} winner`).toEqual({
+            bracket: w.bracket,
+            slot: w.slot,
+            gf_order: w.gfOrder,
+            side: w.side,
+          });
+          expect(m.loser_to, `W R${r}m${i} loser`).toEqual({
+            bracket: l.bracket,
+            slot: l.slot,
+            gf_order: l.gfOrder,
+            side: l.side,
+          });
+        }
+      }
+
+      for (let r = 1; r <= losersRoundCount(size); r++) {
+        for (let i = 0; i < losersRoundSize(size, r); i++) {
+          const m = find(b.matches, 'losers', losersSlot(size, r, i));
+          const w: Edge = losersWinnerTarget(size, r, i);
+          expect(m.winner_to, `L R${r}m${i} winner`).toEqual({
+            bracket: w.bracket,
+            slot: w.slot,
+            gf_order: w.gfOrder,
+            side: w.side,
+          });
+        }
+      }
+    },
+  );
+
+  it.each([[8], [16]])(
+    'bracketSize %i: the two finals converge on the Grand Final — Winners Final -> side A, Losers Final -> side B',
+    (size) => {
+      const b = ok(size, seededRng(size));
+
+      const wf = find(b.matches, 'winners', winnersSlot(size, winnersRoundCount(size), 0));
+      expect(wf.winner_to).toEqual({ bracket: 'grand_final', slot: 0, gf_order: 1, side: 'a' });
+
+      const lf = find(b.matches, 'losers', losersSlot(size, losersRoundCount(size), 0));
+      expect(lf.winner_to).toEqual({ bracket: 'grand_final', slot: 0, gf_order: 1, side: 'b' });
+    },
+  );
+
+  // ⭐ THE EDGES MUST BE A FIXPOINT OF THE SKELETON. A dangling edge would commit a bracket that
+  // `advance_match` can only ever RAISE on — and `match` has no DELETE grant, so it would be
+  // unrecoverable. A DUPLICATED destination (row, side) means two players routed into ONE seat.
+  it.each([[8], [9], [10], [11], [12], [13], [14], [15], [16]])(
+    'N=%i: every edge target resolves to a row that EXISTS, and no two edges share a destination seat',
+    (n) => {
+      const b = ok(n, seededRng(n));
+      const rows = new Set(b.matches.map((m) => `${m.bracket}:${m.bracket_slot}:${m.gf_order ?? 0}`));
+      const seats = new Map<string, string>();
+
+      for (const m of b.matches) {
+        const from = `${m.bracket}:${m.bracket_slot}`;
+        for (const [kind, e] of [
+          ['winner', m.winner_to],
+          ['loser', m.loser_to],
+        ] as const) {
+          if (!e) continue;
+
+          expect(rows.has(`${e.bracket}:${e.slot}:${e.gf_order ?? 0}`), `${from} ${kind} -> ${edgeKey(e)}`).toBe(true);
+
+          const seat = edgeKey(e);
+          expect(seats.has(seat), `${from} ${kind} collides with ${seats.get(seat)} on seat ${seat}`).toBe(false);
+          seats.set(seat, `${from}:${kind}`);
+        }
+      }
+    },
+  );
+
+  // The gf_order guard mirrors the table's own (0013 match_*_edge_gf_order): an edge carries a gf_order
+  // IFF it targets the grand final. An edge to ('grand_final', 0, NULL) would resolve through
+  // coalesce(gf_order,0)=0 and match NOTHING — the bracket would dead-end at the final.
+  it.each([[8], [11], [16]])('N=%i: gf_order is set on an edge exactly when it targets the grand final', (n) => {
+    const b = ok(n, seededRng(n));
+    for (const m of b.matches) {
+      for (const e of [m.winner_to, m.loser_to]) {
+        if (!e) continue;
+        expect(e.gf_order === null, `edge ${edgeKey(e)}`).toBe(e.bracket !== 'grand_final');
+      }
     }
   });
 });
