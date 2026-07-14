@@ -30,7 +30,9 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(68);
+-- plan: 68 at Story 4.1, +1 at Story 4.2 (Section E gains the `an unlocked match cannot go live` throws_ok
+-- that migration 0012's AD-10 CHECK now makes true). Exact assertion-accounting is a standing convention.
+select plan(69);
 
 -- ── Fixture (as postgres, bypasses RLS) ─────────────────────────────────────
 -- T1 = the constraint/behavioral playground. T2 = the FK/ON-DELETE playground.
@@ -353,18 +355,43 @@ select is(has_table_privilege('authenticated', 'public.match', 'UPDATE'), false,
 select is(has_table_privilege('authenticated', 'public.match', 'DELETE'), false, 'authenticated CANNOT DELETE match (fail closed)');
 
 -- ============================================================================
--- Section E — behavioral: the grants bite for real callers (5 assertions). On T1.
+-- Section E — behavioral: the grants bite for real callers (6 assertions). On T1.
 -- ============================================================================
+-- ⚠ UPDATED BY STORY 4.2. This block used to `lives_ok` a bare `update match set state = 'live'` on a
+-- freshly inserted (therefore format_locked = false) match. Migration 0012's `match_live_requires_locked_format`
+-- CHECK now REFUSES exactly that — which is AD-10 working, not a regression: a match may not go live
+-- until its format and tie policy are declared and frozen. So the transition is proven BOTH ways here,
+-- and the original `lives_ok` is kept (with the format declared first) because what it is really there to
+-- prove is the service_role UPDATE **grant**, which is unchanged.
 set local role service_role;
 select lives_ok(
   $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot)
        values ((select id from tournament where name = 'T1'), 'winners', 'Winners R2', 10) $$,
   'service_role inserts a match (grant + BYPASSRLS) — the single-writer generation path'
 );
-select lives_ok(
+-- AC1 of Story 4.2, from 0010's side: the match above has no declared format (format_locked defaults
+-- false), so it CANNOT go live. Proven here as service_role — the writer that actually exists.
+select throws_ok(
   $$ update match set state = 'live'
        where tournament_id = (select id from tournament where name = 'T1') and bracket = 'winners' and bracket_slot = 10 $$,
-  'service_role UPDATEs a match state (the advance/approve/rollback path)'
+  '23514', null,
+  'match: an UNLOCKED match CANNOT go live — AD-10 freezes format+tie_policy BEFORE the match starts (Story 4.2, migration 0012)'
+);
+-- A match whose format was declared + frozen AT INSERT. Not an assertion — it is the setup that makes the
+-- grant test below reachable again.
+--
+-- ⚠ It is an INSERT, deliberately, and NOT `update match set format=…, format_locked=true`. Migration
+-- 0012's `match_format_audited` constraint trigger refuses ANY update that touches a format column unless a
+-- `declare_format` audit_log row from the same transaction already describes the result — and
+-- `declare_match_format` is the only thing that writes one. INSERT is left unguarded on purpose (0011's
+-- generation creates every row unlocked, and 0012's two CHECKs already bind an INSERT), so a fixture may be
+-- born locked. That is the whole trick here.
+insert into match (tournament_id, bracket, bracket_position, bracket_slot, format, tie_policy, format_locked)
+  values ((select id from tournament where name = 'T1'), 'winners', 'Winners R2', 11, 'mr12', 'ot_mr3', true);
+select lives_ok(
+  $$ update match set state = 'live'
+       where tournament_id = (select id from tournament where name = 'T1') and bracket = 'winners' and bracket_slot = 11 $$,
+  'service_role UPDATEs a match state once the format is LOCKED (the advance/approve/rollback path — this is the UPDATE grant)'
 );
 select throws_ok(
   $$ delete from match where tournament_id = (select id from tournament where name = 'T1') and bracket = 'winners' and bracket_slot = 10 $$,
