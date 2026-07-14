@@ -56,6 +56,20 @@
 --     explicit rollback first", SOLUTION-DESIGN §7 L357-358).
 --   * `tournament.final_match_id` — left DORMANT. Which row is the LAST grand-final row is 4.4's question
 --     (the reset row), and writing it now would be wrong for exactly the field 4.4 exists to handle.
+--
+-- ⚠⚠ DEPLOY CONSTRAINT — THIS MIGRATION REQUIRES AN EMPTY (OR ALREADY EDGE-COMPLETE) `match` TABLE.
+-- `match_routing_complete` below is an IMMEDIATE, VALIDATED CHECK added over eight NULLABLE, UN-BACKFILLED
+-- columns. `ALTER TABLE ... ADD CONSTRAINT ... CHECK` validates every EXISTING row, and every pre-0013
+-- `winners`/`losers` row has all-NULL edges — so on a database that already holds a generated bracket this
+-- migration ABORTS with `23514: check constraint "match_routing_complete" ... is violated by some row`.
+-- Verified at the 4.3 code review. `supabase db reset` STRUCTURALLY CANNOT CATCH THIS (it starts from an
+-- empty `match`), which is why it is written here rather than left to be remembered.
+--   * Safe as of 2026-07-14: the remote has never had a bracket generated against it, and local
+--     `db reset` is the only path until first deploy.
+--   * ⚠ IF A DEPLOYED DB EVER DOES HOLD BRACKET ROWS: CLEAR AND REGENERATE THE BRACKETS. Do NOT attempt an
+--     SQL backfill of the edge columns — deriving them in plpgsql means re-implementing `index ^ 1`, which
+--     is the ONE thing this migration exists to forbid (see the D1 note above). Regenerate through
+--     `generateBracket()`; that is the only implementation of the routing, and it must stay that way.
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- (a) D1 — the routing edges. The bracket DAG, as STRUCTURE.
@@ -95,17 +109,30 @@ alter table public.match add constraint match_loser_edge_shape check (
   and (loser_to_bracket is null) = (loser_to_side is null)
 );
 
--- An edge's gf_order EXISTS iff it targets a grand-final row — the exact mirror of match_gf_order_guard
--- (0010:84-89) applied to the DESTINATION. Without it, an edge to ('grand_final', 0, NULL) would resolve
--- through `coalesce(gf_order,0) = 0` and match NOTHING (every GF row is 1 or 2), so a structurally
--- complete bracket would still dead-end at the final. Make it unrepresentable rather than raise at
--- advance time — the bracket is already committed by then, and there is no DELETE grant to undo it.
+-- An edge's gf_order EXISTS iff it targets a grand-final row, AND IT NAMES A LEGAL ORDER — the exact
+-- mirror of match_gf_order_guard (0010:84-89) applied to the DESTINATION. Without the NOT NULL half, an
+-- edge to ('grand_final', 0, NULL) would resolve through `coalesce(gf_order,0) = 0` and match NOTHING
+-- (every GF row is 1 or 2), so a structurally complete bracket would still dead-end at the final.
+--
+-- ⚠ THE `in (1,2)` HALF IS NOT DECORATION, AND OMITTING IT WAS A REAL HOLE (4.3 code review). The table's
+-- own guard pins a GF row to gf_order in (1,2); an EDGE that named gf_order = 7 (or 0) satisfied the
+-- NOT NULL test, resolved to no row, and raised at advance time on a bracket that was already
+-- `bracket_live` — which is exactly the outcome the paragraph above says this constraint exists to
+-- prevent. Make it unrepresentable rather than raise at advance time: the bracket is already committed by
+-- then, and there is no DELETE grant to undo it.
+--
+-- ⚠ `is not null AND in (1,2)` — BOTH halves, and the order matters. `NULL in (1,2)` evaluates to NULL,
+-- not FALSE, and a CHECK constraint PASSES on NULL — so `in (1,2)` ALONE would silently re-open the very
+-- NULL hole the paragraph above exists to close. Three-valued logic; the table's own guard (0010:86) spells
+-- it out the same way for the same reason.
 alter table public.match add constraint match_winner_edge_gf_order check (
-  case when winner_to_bracket = 'grand_final' then winner_to_gf_order is not null
+  case when winner_to_bracket = 'grand_final'
+         then winner_to_gf_order is not null and winner_to_gf_order in (1, 2)
        else winner_to_gf_order is null end
 );
 alter table public.match add constraint match_loser_edge_gf_order check (
-  case when loser_to_bracket = 'grand_final' then loser_to_gf_order is not null
+  case when loser_to_bracket = 'grand_final'
+         then loser_to_gf_order is not null and loser_to_gf_order in (1, 2)
        else loser_to_gf_order is null end
 );
 
@@ -122,11 +149,18 @@ alter table public.match add constraint match_loser_edge_gf_order check (
 -- ⚠ STORY 4.4 MUST WIDEN THE grand_final ARM. The AD-21 reset row (gf_order=2) means the gf_order=1 row
 -- gains a CONDITIONAL winner edge (-> the reset, iff the LB survivor won it). When 4.4's suite goes red
 -- here, that is this constraint doing its job — widen the arm, do not weaken the CHECK.
+--
+-- ⚠ EVERY ARM IS NAMED, AND THE `else` IS `false` — NOT a catch-all (4.3 code review). Written as
+-- `else /* grand_final */ ...`, the final arm silently swallowed grand_final AND every other value: a
+-- fourth bracket value added to the closed set would have inherited "no edges allowed" and been BORN A
+-- BRICK — the precise thing this constraint exists to make unrepresentable. Name grand_final explicitly
+-- and let `match.bracket`'s own closed-set CHECK (0010:49) own the unknown-bracket case.
 alter table public.match add constraint match_routing_complete check (
   case bracket
-    when 'winners' then winner_to_bracket is not null and loser_to_bracket is not null
-    when 'losers'  then winner_to_bracket is not null and loser_to_bracket is null
-    else /* grand_final */ winner_to_bracket is null  and loser_to_bracket is null
+    when 'winners'     then winner_to_bracket is not null and loser_to_bracket is not null
+    when 'losers'      then winner_to_bracket is not null and loser_to_bracket is null
+    when 'grand_final' then winner_to_bracket is null     and loser_to_bracket is null
+    else false  -- an unknown bracket has no defined routing truth. Fail closed; never guess.
   end
 );
 
@@ -260,6 +294,67 @@ begin
    where r.id = s.id
      and r.tournament_id = p_tournament_id;
 
+  -- ⭐ 6b. EVERY EDGE MUST POINT AT A ROW THE PAYLOAD ACTUALLY CONTAINS (4.3 code review).
+  --    `match_routing_complete` proves an edge is DECLARED; it cannot prove it POINTS SOMEWHERE. There is
+  --    no self-FK to lean on — generation INSERTs every row in ONE statement, so no row has an id yet when
+  --    its neighbours are written (that is the whole reason the edges are structural, not match_ids).
+  --
+  --    ⚠ WITHOUT THIS, A SINGLE TYPO'D EDGE BRICKS A TOURNAMENT PERMANENTLY. A payload with the correct
+  --    row COUNT (so `bad_skeleton` above passes) but one edge naming a slot no row occupies satisfies
+  --    every CHECK, commits, and flips the tournament to `bracket_live` — and then EVERY advance down that
+  --    edge RAISES ("no such match row exists"), aborting the caller's whole Aprobar transaction, on every
+  --    retry, forever. `match` has NO DELETE grant (0010:227) and this function refuses to re-run
+  --    (`already_live`), so there is no way back. It is the identical hazard the gf_order guard invokes to
+  --    justify itself ("make it unrepresentable rather than raise at advance time — the bracket is already
+  --    committed by then, and there is no DELETE grant to undo it"); it was simply never applied to the
+  --    larger version of the same thing.
+  --
+  --    ⚠ IT IS CHECKED AGAINST THE PAYLOAD, AND BEFORE THE INSERT, ON PURPOSE. A typed refusal RETURNS —
+  --    it does not raise — so it does NOT roll the caller's transaction back. Validating after the INSERT
+  --    would hand the caller {ok:false} with 30 match rows committed underneath it. Every guard before any
+  --    write (0011/0012 convention); a refusal writes NOTHING.
+  --
+  --    Only reachable via a DIRECT RPC call with a hand-built payload — which is exactly why it belongs
+  --    here: the DB is the authority, not the caller. It is also the shape Story 4.4 will produce if the
+  --    AD-21 reset row's conditional edge names the wrong target.
+  if exists (
+    with r as (
+      select m ->> 'bracket'                        as bracket,
+             (m ->> 'bracket_slot')::int            as slot,
+             (m ->> 'gf_order')::int                as gf,
+             m -> 'winner_to' ->> 'bracket'         as w_b,
+             (m -> 'winner_to' ->> 'slot')::int     as w_s,
+             (m -> 'winner_to' ->> 'gf_order')::int as w_g,
+             m -> 'loser_to'  ->> 'bracket'         as l_b,
+             (m -> 'loser_to' ->> 'slot')::int      as l_s,
+             (m -> 'loser_to' ->> 'gf_order')::int  as l_g
+        from jsonb_array_elements(p_matches) as m
+    )
+    select 1
+      from r
+     where (
+             r.w_b is not null
+             and not exists (
+               select 1 from r t
+                where t.bracket = r.w_b and t.slot = r.w_s
+                  and coalesce(t.gf, 0) = coalesce(r.w_g, 0)
+             )
+           )
+        or (
+             r.l_b is not null
+             and not exists (
+               select 1 from r t
+                where t.bracket = r.l_b and t.slot = r.l_s
+                  and coalesce(t.gf, 0) = coalesce(r.l_g, 0)
+             )
+           )
+  ) then
+    return jsonb_build_object(
+      'ok', false, 'reason', 'bad_skeleton',
+      'detail', 'a routing edge names a (bracket, slot, gf_order) that no match in the payload occupies'
+    );
+  end if;
+
   -- 7. The bracket itself: every row at once, NOW INCLUDING ITS ROUTING EDGES (D1 — the only change in
   --    this function). `m -> 'winner_to' ->> 'bracket'` yields SQL NULL both when the edge is JSON `null`
   --    (the grand-final row, and every losers row's loser edge) and when the key is absent — and
@@ -368,6 +463,15 @@ begin
     raise exception 'match_place_competitor: side must be ''a'' or ''b'', got %', coalesce(p_side, 'NULL');
   end if;
 
+  -- ⚠ A PLACEMENT OF NOBODY IS NOT A PLACEMENT (4.3 code review). Without this, `p_entry => NULL` with
+  -- `p_walkover => true` passed the seat predicate (the seat IS null), wrote NULL into winner_entry —
+  -- ERASING a walkover's winner — and RETURNED TRUE, reporting success for a call that destroyed data.
+  -- `NULL` is exactly the shape a caller trivially produces by passing a bye's (non-existent) loser.
+  -- Fail closed; never a silent no-op (lib/roster.ts:180-182).
+  if p_entry is null then
+    raise exception 'match_place_competitor: entry must not be NULL (dest %, side %)', p_dest, p_side;
+  end if;
+
   update public.match d
      set competitor_a = case when p_side = 'a'  then p_entry else d.competitor_a end,
          competitor_b = case when p_side = 'b'  then p_entry else d.competitor_b end,
@@ -377,9 +481,26 @@ begin
      and (
        case when p_side = 'a' then d.competitor_a else d.competitor_b end is null
        or case when p_side = 'a' then d.competitor_a else d.competitor_b end = p_entry
-     );
+     )
+     -- ⭐⭐ AC1 GUARDS THE WINNER TOO — NOT JUST THE SEAT. This half was MISSING, and its absence made
+     -- this function — the one the story calls "literally the AC" — perform the exact double-route AC1
+     -- exists to prevent (4.3 code review; found independently by all three review layers and reproduced
+     -- as service_role). The SET writes `winner_entry` whenever p_walkover, but the predicate guarded only
+     -- the SEAT named by p_side — so crowning arrival Y on side 'b' of a bye ALREADY WON by X passed
+     -- (side 'b' was empty), silently DEPOSED X, and returned TRUE. match_winner_is_competitor did not
+     -- catch it: Y is a competitor by the time the row settles.
+     --
+     -- advance_match itself was never exposed (its pass-1 validation carries an equivalent guard) — but
+     -- this helper is GRANTED TO service_role precisely so 4.5/4.6 can call it WITHOUT pass 1 in front of
+     -- it, so the guard has to live HERE, in the function whose contract is AC1. A backstop that only
+     -- works when something else already checked is not a backstop.
+     and (not p_walkover or d.winner_entry is null or d.winner_entry = p_entry);
 
   get diagnostics v_placed = row_count;
+  -- row_count = 1 -> placed, OR it was already exactly this entry (a replay). BOTH are success — that IS
+  -- AC1's idempotency. row_count = 0 -> a DIFFERENT player holds the seat (or the crown): the caller must
+  -- refuse (`slot_taken`), never overwrite. Re-routing a different winner requires an explicit rollback
+  -- first (AD-8 / SOLUTION-DESIGN §7 L357-358) -> Story 4.7.
   return v_placed = 1;
 end;
 $$;
@@ -420,9 +541,25 @@ grant  execute on function public.match_place_competitor(bigint, text, bigint, b
 -- cannot go stale) and validates every placement; PASS 2 applies them. A refusal from pass 1 has written
 -- NOTHING. (This is the 0011/0012 convention, and here it is load-bearing rather than stylistic.)
 --
--- LOCK ORDER / DEADLOCKS: every lock is taken in TOPOLOGICAL order (a node before its successors), because
--- that is the only direction the DAG is walked. Two concurrent advances therefore acquire their shared
--- locks in the same relative order and cannot form a cycle.
+-- ⚠⚠ LOCK ORDER / DEADLOCKS — READ THIS BEFORE CHANGING HOW ROWS ARE LOCKED.
+-- The original version of this function claimed its locks were taken in "TOPOLOGICAL order (a node before
+-- its successors) … two concurrent advances cannot form a cycle." THAT WAS FALSE, and the 4.3 code review
+-- reproduced the deadlock (`40P01`). Walking the DAG from a source is a BFS order, NOT a topological order
+-- of the graph: the WINNERS FINAL's winner edge points at the GRAND FINAL, and its loser edge points at the
+-- LOSERS FINAL — which is itself a PARENT of the Grand Final. So advancing the Winners Final locked
+-- (WF -> GF -> LF) while a concurrent advance of the Losers Final locked (LF -> GF): opposite order on the
+-- shared pair, and Postgres killed one of them. Reachable in the ordinary course of play, because AC1
+-- explicitly SUPPORTS the idempotent replay (a double-tap / an HTTP retry) that races it — and because
+-- `advance_match` runs INSIDE 4.6's Aprobar transaction, the victim loses its whole approval (score, demo
+-- binding, state) to an untyped 500 rather than a typed refusal.
+--
+-- THE FIX, and the invariant to preserve: take EVERY lock this advance could need in ONE statement, in a
+-- CANONICAL order (by `id`), BEFORE touching anything. Every advance in a tournament then locks the same
+-- rows in the same order, so a cycle is impossible BY CONSTRUCTION rather than by an argument about the
+-- shape of the DAG — which is precisely the argument that was wrong. It locks the whole bracket (~30 rows
+-- for an 11-player field), which serialises concurrent advances WITHIN one tournament; that is the correct
+-- trade here (the bracket is one logical object, advances happen at human pace, and a lost Aprobar is far
+-- more expensive than a brief wait). ⚠ DO NOT reintroduce a `for update` that runs BEFORE this one.
 create function public.advance_match(
   p_match_id        bigint,
   p_actor_steamid64 text,
@@ -446,13 +583,34 @@ declare
   v_champ  bigint;
   v_iter   int := 0;
   v_hops   int;
+  v_tid    bigint;
 begin
-  -- ══ 1. THE SOURCE. Locked, so its result and its edges cannot move under us.
+  -- ══ 1. WHICH BRACKET ARE WE IN? An UNLOCKED peek, and it learns exactly one thing: the tournament.
+  --    It must not lock, because the very next statement takes every lock in canonical order and a lock
+  --    acquired ahead of that one would be OUT of that order — which is the whole bug this replaced.
+  --    (`match` has NO DELETE grant (0010:227), so a row cannot vanish between this read and the lock.)
+  select m.tournament_id into v_tid from public.match m where m.id = p_match_id;
+
+  if not found then
+    return jsonb_build_object('ok', false, 'reason', 'bad_match');
+  end if;
+
+  -- ══ 1b. ⭐ EVERY LOCK, IN ONE STATEMENT, IN CANONICAL (id) ORDER. See the header: this is what makes a
+  --    deadlock impossible BY CONSTRUCTION. Every advance in this tournament locks the same rows in the
+  --    same order, so two of them can queue but can never form a cycle. The old code locked the source and
+  --    then each destination as the DAG was walked, which put the Winners Final and the Losers Final into
+  --    opposite orders on the Grand Final and deadlocked (reproduced at review as `40P01`).
+  perform 1
+     from public.match m
+    where m.tournament_id = v_tid
+    order by m.id
+      for update;
+
+  -- ══ 1c. NOW read the source, under the lock. Its result and its edges cannot move under us.
   select m.id, m.tournament_id, m.state, m.winner_entry, m.competitor_a, m.competitor_b
     into v_m
     from public.match m
-   where m.id = p_match_id
-     for update;
+   where m.id = p_match_id;
 
   if not found then
     return jsonb_build_object('ok', false, 'reason', 'bad_match');
@@ -502,6 +660,17 @@ begin
       from public.match m2
      where m2.id = (v_task->>'src')::bigint;
 
+    -- ⚠ A MISS HERE MUST NOT BE SILENT (4.3 code review). Every row in the worklist is one we already hold
+    -- under the canonical lock, so this cannot miss — but if it ever did, v_src would be all-NULL, the
+    -- champion test below would read `winner_to_bracket is null` as TRUE, and the function would CROWN THE
+    -- ENTRY AS CHAMPION and return ok:true. That is the one place a silent miss turns into a POSITIVE,
+    -- WRONG outcome, in a function that raises loudly on four other "impossible" conditions. Fail closed.
+    if not found then
+      raise exception
+        'advance_match: worklist referenced match % but it no longer exists (tournament %)',
+        (v_task->>'src')::bigint, v_tid;
+    end if;
+
     -- NEVER A SILENT NO-OP (lib/roster.ts:180-182) — but the Grand Final is the ONE legitimate
     -- "advanced nobody": it has no outbound edge (match_routing_complete), so its winner is the CHAMPION.
     -- Checked HERE rather than at the source, so it covers both a direct advance of the GF and a walkover
@@ -525,15 +694,16 @@ begin
        order by e.ord
     loop
       -- Resolve the structural edge to a row through match_slot_uniq (0010:112-113) — one indexed lookup.
-      -- FOR UPDATE: the plan built here is applied in pass 2, so every row it depends on must be held.
+      -- No FOR UPDATE here, and that is deliberate: step 1b already holds EVERY row of this tournament,
+      -- taken in canonical id order, so this row is locked and the plan built here cannot go stale. Taking
+      -- a lock at THIS point is what produced the Winners-Final/Losers-Final deadlock (see the header).
       select d.id, d.state, d.winner_entry, d.competitor_a, d.competitor_b, d.winner_to_bracket
         into v_dest
         from public.match d
        where d.tournament_id            = v_m.tournament_id
          and d.bracket                  = v_edge.b
          and d.bracket_slot             = v_edge.slot
-         and coalesce(d.gf_order, 0)    = coalesce(v_edge.gf, 0)
-         for update;
+         and coalesce(d.gf_order, 0)    = coalesce(v_edge.gf, 0);
 
       if not found then
         -- match_routing_complete guarantees the edge EXISTS; it cannot guarantee it POINTS somewhere real.
@@ -544,8 +714,9 @@ begin
       end if;
 
       if v_dest.state = 'void' then
-        -- IMPOSSIBLE BY CONSTRUCTION: a void node has ZERO possible arrivals (generate.ts:428) — both of
-        -- its feeders were byes, so neither ever produces a loser. Reaching one means the routing is
+        -- IMPOSSIBLE BY CONSTRUCTION: a void node has ZERO possible arrivals (generate.ts:531 — the
+        -- `arrivals === 2 ? 'declared' : arrivals === 1 ? 'bye' : 'void'` propagation) — both of its
+        -- feeders were byes, so neither ever produces a loser. Reaching one means the routing is
         -- broken. Raise; do not paper over it.
         raise exception
           'advance_match: match % routed a % into VOID node % — the bracket routing is broken',
@@ -657,7 +828,14 @@ begin
   --    transaction it may fold the advance into its single `match.approved` message and pass
   --    `p_emit => false`. It defaults to TRUE so an advance is never silently unannounced.
   --    ⚠ DO NOT BUILD A SECOND EMITTER ANYWHERE.
-  if coalesce(p_emit, true) and v_hops > 0 then
+  --
+  --    ⚠ `or v_champ is not null` IS LOAD-BEARING (4.3 code review). The gate used to be `v_hops > 0`
+  --    alone — and the GRAND FINAL plans ZERO placements (it has no outbound edge; its winner IS the
+  --    champion). So crowning the champion, the single most significant event in a tournament, EMITTED
+  --    NOTHING — while an idempotent replay that changed nothing re-planned the same hops and emitted a
+  --    SECOND nudge. Since nothing else is permitted to emit (see above), the champion would have reached
+  --    viewers only on their next manual refresh.
+  if coalesce(p_emit, true) and (v_hops > 0 or v_champ is not null) then
     perform realtime.send(
       jsonb_build_object(
         'tournament_id', v_m.tournament_id,

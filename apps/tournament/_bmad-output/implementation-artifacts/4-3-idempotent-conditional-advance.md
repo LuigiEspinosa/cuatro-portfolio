@@ -4,7 +4,7 @@ baseline_commit: 7208608
 
 # Story 4.3: Idempotent conditional advance
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -815,6 +815,130 @@ The Go worker is untouched, and re-confirmed by grep (not assumed) to contain no
 | `supabase/tests/0012_format_lock_test.sql` | Same. `plan(78)` unchanged. |
 | `_bmad-output/implementation-artifacts/sprint-status.yaml` | 4.3 -> review. |
 | `_bmad-output/implementation-artifacts/4-3-idempotent-conditional-advance.md` | This file. |
+
+### Review Findings
+
+**Code review 2026-07-14** (`bmad-code-review`, baseline `7208608`). Three parallel layers, all Opus 4.8:
+Blind Hunter (diff only) · Edge Case Hunter (diff + project) · Acceptance Auditor (diff + spec + context docs).
+**3 decision-needed · 15 patch · 6 defer · 2 dismissed.**
+
+**⭐ THE HEADLINE: three of the story's own load-bearing claims are FALSE, and each was proven by EXECUTION, not argued.**
+The story applied the "mutation-test your own suite" lesson *before* review — and it was right to. It just did not
+apply it far enough: it mutation-tested **AC1's predicate** and shipped a suite that is equally blind to **AC2's gate**.
+
+| Story claim | Verdict |
+|---|---|
+| *"Locks are taken in TOPOLOGICAL order, so two concurrent advances cannot deadlock."* | **FALSE** — `40P01 deadlock detected`, reproduced. |
+| *"`match_place_competitor`… its contract is AC1's literal SQL."* | **FALSE** — it re-crowns a decided match and erases winners. |
+| *"Section L (+3) now asserts the predicate DIRECTLY"* (the mutation-testing fix) | **True but insufficient** — deleting **AC2's** gate still leaves 79/79 green. |
+
+**What HELD, and was re-verified rather than trusted:** the two-pass design is sound (pass 1's approval condition is a
+strict *superset* of pass 2's predicate — the asymmetry runs the safe way); D1's routing keeps exactly one
+implementation (no `index ^ 1` in SQL anywhere); D2's `v_loser` CASE is correct for all four competitor/winner NULL
+arrangements; D3's cascade terminates (max 1 walkover hop for any field 8–16; the cap of 32 is ~10× generous); the
+0012 format lock genuinely does not bite; the fixture edits to 0010/0011/0012 do **not** make any pre-existing test
+pass for the wrong reason; `plan(79)` and the 591/212 gate arithmetic are exact; and 23 of 24 sampled story citations
+are accurate. **D5 confirmed independently:** zero hits for an advance route or `Avanzar` anywhere in `app/`.
+
+#### Decisions (RESOLVED by Cuatro, 2026-07-14)
+
+- [x] **[Review][Decision] Migration 0013 CANNOT apply to any database that already holds a bracket — PROVEN.** The eight edge columns are added nullable with **no backfill**, then `match_routing_complete` is added as an **immediate, validated** CHECK. Every pre-0013 `winners`/`losers` row has NULL edges and therefore violates it. Reproduced verbatim: `ERROR: check constraint "match_routing_complete" of relation "match" is violated by some row`. `supabase db reset` **structurally cannot see this** (it starts from an empty `match`), which is why 591 green assertions missed it. → **RESOLVED (a): the remote has never had a bracket generated against it, and local `db reset` is the only path until first deploy.** No schema change. **Downgraded to a documentation patch** (below): the constraint is recorded in the migration header so the first real deploy is not surprised by it. ⚠ **The trap, recorded for whoever does that deploy:** back-filling the edges in SQL would require re-deriving `index ^ 1` in plpgsql — the one thing this migration exists to forbid — so if a deployed DB ever *does* hold bracket rows, the honest fix is to **clear and regenerate the brackets**, never to compute the edges in SQL. [blind+edge, verified by execution]
+- [x] **[Review][Decision] The `Avanzar` control (the story's open question #1).** PRD **FR-7** (`prd.md:185`) and the UX's `{components.advance-control}` (`EXPERIENCE.md:87`) both describe an admin tap/drag advance button. **AD-8** and the epic's **AC2** both forbid an independent advance control. → **RESOLVED: AD-8 STANDS. Keep it exactly as shipped — no route, no button.** The auditor confirmed AC2 is a real **mechanism**, not a convention: the DB result gate refuses a `pending` match for *every* caller, so even a future route could not reintroduce the race AD-8 names. `Avanzar` is therefore re-read as the **result-entry** action (Aprobar / W.O.), owned by 4.5/4.6 and the Epic-5 console. **No action.**
+- [x] **[Review][Decision] Public vs private `tournament:<id>` (the story's open question #2).** AD-11 says the topic is public, so `private => false` shipped. A public Broadcast topic is also client-*writable*, but a spoofed nudge only makes a viewer re-fetch published truth (Broadcast is never the source of truth), so the blast radius is a wasted read. → **RESOLVED: DEFER to Story 5.8**, to be locked down uniformly across all three channels rather than bolted onto this one. Moved to the deferred list below.
+
+#### Patch
+
+- [x] **[Review][Patch] `match_place_competitor` writes `winner_entry` OUTSIDE AC1's predicate — it silently re-crowns a decided match and can erase a winner. FOUND BY ALL THREE LAYERS; PROVEN BY EXECUTION.** [supabase/migrations/0013_advance.sql:371-380] The `WHERE` guards only the **seat**; the `SET` writes `winner_entry` gated **only** on `p_walkover`, with no condition on its prior value, and `p_entry` is never validated. As `service_role`: `match_place_competitor(dest,'b',Y,true)` on a bye **already won by X** returned **`true`** and flipped `winner_entry` **X → Y** — precisely the double-route AD-8 exists to prevent, executed by the function the story calls *"literally the AC"*. And `(dest,'b',NULL,true)` returned **`true`** while **NULLing `winner_entry`** — a winner erased, reported as success (also violating the repo's own never-a-silent-no-op rule). Inside `advance_match` this is unreachable only because **pass 1 carries a separate guard the helper does not** [0013_advance.sql:569] — but the migration grants the helper to `service_role` and the suite's Section L explicitly tells 4.5/4.6 to call it *"WITHOUT pass 1 in front of it"*. **All three of Section L's assertions pass `p_walkover => false`, so the one dimension that is actually unsafe is the one dimension left untested.** Fix: add `and (not p_walkover or d.winner_entry is null or d.winner_entry = p_entry)` to the predicate, `raise` on `p_entry is null`, and add Section L cases with `p_walkover => true`. [blind+edge+auditor]
+- [x] **[Review][Patch] AC2's result-state gate is UNTESTED — deleting it leaves all 79 assertions GREEN and double-routes a `pending` match. PROVEN BY MUTATION.** [supabase/tests/0013_advance_test.sql Section D] The two gates at [0013_advance.sql:464] and [:470] return a **byte-identical** payload, and **every** Section-D fixture has `winner_entry IS NULL` — so the second gate satisfies all six assertions on its own, including the story's flagship `ok 26 — AC2 ⭐ a 'pending' match is REFUSED … the AD-8 case, pinned by name`. With the state gate deleted, the suite ran **79/79 green**, and `advance_match` on a `pending` match holding a winner returned `{"ok":true,"advanced":2}` and **moved the bracket off an unpublished match** — the exact AD-8 failure. The shipped **code is correct**; the **suite is blind to it**. This is the third consecutive story in which "the suite proved materially less than it claimed" (4.1, 4.2, now 4.3) — and the bitter irony is that this story mutation-tested **AC1's** predicate, found that hole, fixed it with Section L, and shipped the identical hole on **AC2**. Fix: one fixture — a `pending` match **with** a real `winner_entry` — asserted `not_resolved`. [blind, verified by execution]
+- [x] **[Review][Patch] The lock order is NOT topological — the Winners Final and the Losers Final DEADLOCK on the Grand Final. PROVEN: `40P01 deadlock detected`.** [supabase/migrations/0013_advance.sql:515-536] `order by e.ord` takes the **winner** edge (ord 1) before the **loser** edge (ord 2). For the Winners Final the winner edge points at the **Grand Final** and the loser edge points at the **Losers Final** — and the Losers Final is itself a **parent** of the Grand Final. So `advance(WF)` locks `WF → GF → LF` while a concurrent `advance(LF)` locks `LF → GF`: opposite order on the shared pair. Reproduced against the real function with a real bracket topology. **The story's "Deadlock note" is false** — BFS-from-source is not a topological order of the DAG. Reachable via an idempotent **replay/double-tap** of the WF (which AC1 explicitly supports and AD-8 explicitly worries about) concurrent with the LF's advance, and again via 4.7's rollback→re-advance. Consequence is severe: `advance_match` runs **inside 4.6's Aprobar transaction**, so the victim loses its entire approval (score, demo binding, state) to an **untyped 500**, not a typed refusal. Note the deadlock fires during **pass 1's lock acquisition**, before any verdict — so it happens whether the advance would have succeeded *or* refused. Fix: collect the destinations and lock them in a **canonical global order** (e.g. `order by id`), not per-source BFS order; and correct the header's claim. [blind+edge, verified by execution]
+- [x] **[Review][Patch] `generate_bracket` validates the row COUNT but never that the edges RESOLVE — one dangling edge commits a permanently un-advanceable bracket.** [supabase/migrations/0013_advance.sql:240-292] `match_routing_complete` proves an edge is **declared**, never that it **points anywhere** (the 0010/0012 fixtures now demonstrate exactly that, by pointing at a deliberately non-existent slot 999). I hit this live while probing: `ERROR: advance_match: match 707 has a winner-edge to (losers,999,<NULL>) but no such match row exists` — a bare `raise` that **aborts the caller's whole transaction**, permanently, on every retry. `match` has **no DELETE grant** and `generate_bracket` refuses to re-run (`already_live`), so the tournament is **bricked**. The migration's own comment invokes precisely this hazard to justify the `gf_order` guard (*"Make it unrepresentable rather than raise at advance time — the bracket is already committed by then, and there is no DELETE grant to undo it"*) and then does not apply it to the larger version of the same hazard. Fix: after the INSERT and **before** the state flip, a `not exists` self-join proving every non-null edge resolves through `match_slot_uniq` → typed `bad_skeleton`. Same shape and cost as the row-count assertion already there. [blind+edge]
+- [x] **[Review][Patch] The Broadcast fires on a no-op replay but NOT for the champion.** [supabase/migrations/0013_advance.sql:660] The emit is gated on `v_hops > 0`, and `v_hops := jsonb_array_length(v_plan)` counts **planned placements, not changes**. The Grand Final has no outbound edge → `v_hops = 0` → **crowning the champion, the single most significant event in a tournament, emits nothing** — while an idempotent replay that changes nothing emits a **second** `bracket.advanced`. The suite asserts *both* as desired (2 messages for the replay [:2112-2117]; 0 for the champion [:2176-2180]) — and the comment at [:2118] states the opposite invariant in words: *"an emit is a consequence of a WRITE, not of a call."* It is not; it is a consequence of a **call**. Two assertions in one section contradict each other and the one describing the design intent is the one that is wrong. The migration also forbids a second emitter anywhere, so no other layer may announce the champion. Fix: gate on `v_hops > 0 or v_champ is not null` at minimum. [blind+auditor]
+- [x] **[Review][Patch] The edge `gf_order` CHECKs constrain NULL-ness but not the VALUE — the "exact mirror" claim is false.** [supabase/migrations/0013_advance.sql:103-110] 0010's `match_gf_order_guard` pins real GF rows to `gf_order in (1,2)` [0010_match.sql:84-89]; the edge mirror drops the second half. An edge to `('grand_final', 0, gf_order = 7)` is representable, resolves to **no row** (the lookup coalesces to 0), and raises at advance time on a bracket that is already `bracket_live` — the exact outcome the comment three lines above says the constraint exists to prevent. Fix: `... then winner_to_gf_order in (1, 2) else winner_to_gf_order is null end` (same for `loser_to_*`). [edge+auditor]
+- [x] **[Review][Patch] `match_routing_complete`'s `else` arm is a catch-all, not the grand-final arm its comment claims.** [supabase/migrations/0013_advance.sql:125-131] `case bracket when 'winners' … when 'losers' … else /* grand_final */ …` catches `grand_final` **and every other value**. This is already load-bearing in a test (0010's new comment relies on `consolation` falling through to it), so the mislabelling is not hypothetical. If a fourth bracket value is ever added to the closed set it silently inherits *"no edges allowed"* — i.e. it is **born a brick**, the precise thing this constraint exists to make unrepresentable. Fix: `when 'grand_final' then … else false end`, and let the closed-set CHECK own the unknown-bracket case. [blind]
+- [x] **[Review][Patch] Section D's "seated ZERO competitors" assertion only checks `competitor_a`.** [supabase/tests/0013_advance_test.sql:1944-1947] The message claims *"seated ZERO competitors"*; the query reads `competitor_a` only. In this very fixture the drop from `winners/1` targets `losers/0` **side b** — so a leaked write from a broken guard would land in exactly the column the assertion does not read, and it would stay green. Fix: `or competitor_b is not null`. [blind+auditor]
+- [x] **[Review][Patch] Section G asserts the advance *planned* one placement, never that the winner *arrived*.** [supabase/tests/0013_advance_test.sql:2049-2055] `advanced` is `jsonb_array_length(v_plan)` — a count of pass-1 plans, not a check of *where*. A regression routing the winner into the wrong seat would still report `advanced = 1`, and the elimination check would be unaffected. Fix: one line asserting the winner actually landed in `losers/8 side a`. [blind]
+- [x] **[Review][Patch] `pg_temp.mid` / `pg_temp.comp` don't filter `gf_order` — the suite will die the moment Story 4.4 lands, and it will look like 4.4's bug.** [supabase/tests/0013_advance_test.sql:1654-1667] Both helpers key on `(tournament, bracket, bracket_slot)`. Story 4.4 adds the AD-21 reset row at `grand_final / slot 0 / gf_order = 2` — at which point `mid('TADV','grand_final',0)` returns **two rows** → `21000 more than one row returned by a subquery` → **the entire file aborts**, not just Section K. The migration header warns 4.4 about the CHECK; nobody warned it about this. Fix: add a `coalesce(gf_order, 0)` parameter now. [blind]
+- [x] **[Review][Patch] Section B's seven `throws_ok` are SQLSTATE-only — the exact hazard this story documents at length elsewhere, and then reproduces in its own new file.** [supabase/tests/0013_advance_test.sql:1809-1862] All seven pass `'23514', null` — no message, no constraint name. `match` now carries ~10 CHECK constraints, every one of which raises `23514`, so Section B cannot distinguish `match_routing_complete` from `match_winner_edge_gf_order` from `match_gf_order_guard` — which is the entire distinction the section is named for. The author writes two extended warnings about precisely this in the *edited* 0010/0011/0012 suites. Each of the seven does currently trip its intended constraint (traced), so this is latent fragility, not a live false pass. Fix: use pgTAP's third argument (the message pattern). [blind]
+- [x] **[Review][Patch] The `authenticated` grant is unasserted for `match_place_competitor`.** [supabase/tests/0013_advance_test.sql:1792-1795] Task 7 demands the matrix `service_role = true; anon / authenticated = false`. `advance_match` gets all three; the helper gets only `service_role` and `anon`. Given the first patch above, the helper is the one whose grant matrix matters most. [auditor]
+- [x] **[Review][Patch] No `if not found` after the source-edge re-read — a silent miss would report the entry as CHAMPION.** [supabase/migrations/0013_advance.sql, the worklist's `select … into v_src`] If the re-read ever missed, every field is NULL, `v_src.winner_to_bracket is null` fires, and the function reports `{ok:true, champion:<entry>}`. Unreachable today (every `src` in the worklist is already held under `FOR UPDATE`) — but it is the one place a silent miss becomes a *positive, wrong* outcome, in a file that raises loudly on four other "impossible" conditions. Fix: `if not found then raise …`. [blind]
+- [x] **[Review][Patch] Stale citation, invalidated by this very commit: `generate.ts:428`.** [supabase/migrations/0013_advance.sql:547] The void-node comment cites `generate.ts:428` for *"a void node has ZERO possible arrivals"*; after this diff's own edits to `generate.ts`, line 428 is a bracket-position **string label**. The logic now lives at `lib/bracket/generate.ts:531`. The story repeats the stale number at D3/Task 3. (The auditor verified 23 of 24 other sampled citations as exact — this story's reasoning was genuinely done; this is a self-inflicted line shift.) [auditor]
+- [x] **[Review][Patch] The test file's section legend is inverted relative to the shipped sections.** [supabase/tests/0013_advance_test.sql:5-14] The legend maps *D2 the loser drops → F* and *D3 the bye cascade → G*; the shipped headers are the **reverse** (Section F is D3, Section G is D2). The Debug Log records the deliberate reorder; the legend was not updated with it. The `plan(79)` breakdown comment *does* match the shipped order. [auditor]
+
+- [x] **[Review][Patch] Record the "cannot apply to a non-empty `match` table" constraint in the migration header** (from resolved Decision 1). [supabase/migrations/0013_advance.sql — header] `match_routing_complete` is an **immediate, validated** CHECK added over eight **nullable, un-backfilled** columns, so it rejects every pre-0013 `winners`/`losers` row. Confirmed safe **today** — the remote has never generated a bracket, and `db reset` is the only path until first deploy — but `db reset` **structurally cannot ever catch this**, so it must be written down rather than remembered. Note in the header: (1) the migration requires an empty-or-edge-complete `match` table; (2) if a deployed DB ever holds bracket rows, **clear and regenerate the brackets** — do **not** attempt an SQL backfill, because deriving the edges in plpgsql means re-implementing `index ^ 1`, which is the exact thing this migration exists to forbid. [blind+edge, verified by execution]
+
+#### Deferred
+
+- [x] **[Review][Defer] Public vs private `tournament:<id>` — the Broadcast topic is client-writable.** (Resolved Decision 3.) `private => false` per AD-11. A spoofed nudge costs a viewer one wasted re-fetch, since Broadcast is never the source of truth. [supabase/migrations/0013_advance.sql:660] — deferred to **Story 5.8**, to be locked down uniformly across all three channels
+- [x] **[Review][Defer] AC1's guarantee binds one function, not the table — `service_role` can seat any competitor with a bare `UPDATE`.** [supabase/migrations/0010_match.sql:227] — deferred, needs 4.7's design
+- [x] **[Review][Defer] A returned `{ok:false}` does not roll back the CALLER's transaction, and nothing requires the caller to.** [supabase/migrations/0013_advance.sql:721-726] — deferred, lands with 4.5/4.6
+- [x] **[Review][Defer] `realtime.messages` is day-partitioned by a background job and `realtime.send` swallows its own errors — in PRODUCTION a missing partition makes AC3 fail SILENTLY.** [supabase/tests/0013_advance_test.sql:1690-1709] — deferred, ops/5.8
+- [x] **[Review][Defer] `advance_match` raises bare `P0001` in five places, against the story's own Dev Notes.** [supabase/migrations/0013_advance.sql:368,513,545,552,600] — deferred, joins the existing P0001 item
+- [x] **[Review][Defer] `advance_match` never checks `tournament.state`.** [supabase/migrations/0013_advance.sql:450-455] — deferred, 4.7
+- [x] **[Review][Defer] The `advance` audit row carries no before/after, though AD-17's letter asks for it.** [ARCHITECTURE-SPINE.md:163] — deferred, story-compliant as specced
+
+#### Dismissed (2)
+
+- ~~**The `index ^ 1` crossover is asserted nowhere; the new TS edge test is a tautology.**~~ **DISPROVEN BY MUTATION.** The Blind Hunter was right that the *new* value test recomputes `winnersLoserTarget` and compares it to itself — but wrong that the property is unguarded. Story **4.1** already ships a property-based test (`reachableLbNodes` / `loserPath`, present at baseline `7208608`). Inverting `index ^ 1 → index` turns it **red**: *"the 8-bracket LB dropdown never lets a Winners loser replay the player who knocked them down"* and its 16-bracket sibling both fail (2 failed / 210 passed). The crossover **is** protected. A textbook diff-only false positive. (It also independently confirms the story's **Vitest 212** claim.)
+- ~~**`state not in (...)` fails OPEN on a NULL state** (three-valued logic).~~ `match.state` is `text **not null**` with a closed-set CHECK [supabase/migrations/0010_match.sql:64-65]. Unreachable. The Blind Hunter, who could not read 0010, flagged this caveat himself.
+
+### Review Fixes Applied (2026-07-14)
+
+**All 3 decisions resolved by Cuatro · all 16 patches applied · 7 deferred · 2 dismissed. Story → `done`.**
+
+**⭐ THE PATCHES ARE MUTATION-VERIFIED, NOT MERELY GREEN.** That distinction is the whole lesson of this
+review, so the fixes were held to it:
+
+| Mutation re-injected into the PATCHED code | Before the review | After |
+|---|---|---|
+| Delete AC2's result-state gate | **0 red / 79 green** ⚠ | **5 RED** ✅ |
+| Remove AC1's `winner_entry` guard from the helper | **0 red** ⚠ (untestable — the guard did not exist) | **2 RED** ✅ |
+| Concurrent advance of the Winners Final + Losers Final | **`40P01 deadlock detected`** ⚠ | **serialises cleanly, no deadlock** ✅ |
+| `match_place_competitor(bye, 'b', Y, walkover)` on a match won by X | returned `true`, **deposed X** ⚠ | returns **`false`**, X untouched ✅ |
+| `match_place_competitor(…, p_entry => NULL, walkover)` | returned `true`, **erased the winner** ⚠ | **raises** ✅ |
+
+**What changed, and why each one mattered:**
+
+- **`match_place_competitor` now guards the WINNER, not just the seat** (the headline; all three layers).
+  The `SET` wrote `winner_entry` whenever `p_walkover`, while the `WHERE` guarded only the seat named by
+  `p_side` — so crowning a different arrival on a bye's free seat silently re-crowned a decided match, and a
+  NULL entry erased the winner outright, both returning `true`. Added
+  `and (not p_walkover or d.winner_entry is null or d.winner_entry = p_entry)`, plus a `raise` on a NULL
+  entry. **Section M (+3)** now asserts it — Section L's three calls all passed `p_walkover => false`, which
+  is exactly the dimension that was safe.
+- **Deadlock fixed by locking the whole bracket in canonical `id` order, in ONE statement, up front.** The
+  old code locked the source and then each destination as the DAG was walked (`order by e.ord`, winner edge
+  first), which put the Winners Final and the Losers Final into opposite orders on the Grand Final. BFS from
+  a source is **not** a topological order of the graph — that was the false premise. Concurrent advances now
+  queue instead of cycling.
+- **AC2's state gate is finally tested.** Every Section-D fixture had `winner_entry IS NULL`, and the two
+  gates return a byte-identical payload, so the winner-less ones proved nothing. A **`pending` match WITH a
+  winner** is now fixtured and asserted — the actual AD-8 race.
+- **`generate_bracket` now proves every edge RESOLVES** (checked against the payload, **before** the INSERT,
+  so a refusal still writes nothing). A single dangling edge previously committed a `bracket_live` tournament
+  that every advance could only `raise` on — unrecoverable, since `match` has no DELETE grant.
+- **The champion now gets a Broadcast.** The emit was gated on `v_hops > 0` — planned *placements* — and the
+  Grand Final plans zero, so crowning a champion announced nothing while a no-op replay announced twice.
+- **Constraints tightened:** the edge `gf_order` guard now pins the VALUE `in (1,2)`, not merely NOT NULL
+  (⚠ and `is not null AND in (1,2)` — `NULL in (1,2)` is NULL, and a CHECK *passes* on NULL; the existing
+  suite caught that trap the moment it was introduced); `match_routing_complete` names `grand_final`
+  explicitly with `else false`, so a future fourth bracket value cannot be born a brick.
+- **Test integrity:** Section B's seven `throws_ok` now name their constraint (ten CHECKs on `match` all
+  raise 23514); Section D checks **both** seats; Section G asserts the winner *arrived* rather than that a
+  placement was *planned*; `pg_temp.mid`/`comp` now key on `gf_order` (they would have aborted the entire
+  file when Story 4.4 lands its reset row); the helper's `authenticated` grant is asserted.
+- **Docs:** the migration header records that **0013 cannot apply to a non-empty `match` table** (proven —
+  and `db reset` structurally cannot catch it), with the instruction to *regenerate* brackets rather than
+  attempt an SQL backfill; the stale `generate.ts:428` citation and the inverted F/G legend are corrected.
+
+**FINAL GATES: pgTAP 599** (591 → +8, `plan(87)` on 0013) **· Vitest 212 · lint 0 · build 0 · go build/vet
+clean.** D5 re-verified by grep (zero `advance`/`Avanzar` hits in `app/`); the Go worker re-confirmed by grep
+to contain no SQL touching `match`.
+
+**NOT re-executed: the full Task-9 live-QA drive to a champion.** The `advance_match` signature is unchanged,
+so the `supabase-js → PostgREST → RPC` seam proven at the original run still holds. The DB layer — where
+AC1/AC2/D1–D4 actually live — was proven **adversarially and by mutation**, which is strictly more than the
+original sign-off did. ⚠ The lock-acquisition change is the one thing a re-run would exercise differently;
+it was verified directly with two concurrent live sessions (no deadlock, clean serialisation).
 
 ## Change Log
 
