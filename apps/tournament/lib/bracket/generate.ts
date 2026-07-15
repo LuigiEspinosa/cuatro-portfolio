@@ -36,8 +36,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  *     places a player into a Losers node already marked `'bye'`, it MUST advance them straight through
  *     it (that match is won, unplayed) instead of waiting for an opponent who can never arrive; a
  *     `'void'` node is never played and never advances anyone. Without that, the Losers bracket stalls.
- *   * the Grand-Final RESET row (gf_order=2) -> Story 4.4. 4.1 emits only gf_order=1.
  *   * format/tie_policy (4.2), forfeit + grace timer (4.5), scores/Aprobar (4.6), rollback (4.7).
+ *
+ * STORY 4.4 (AD-21) added the second grand-final row: generation now emits gf_order=1 (with the two
+ * conditional reset edges) AND the terminal gf_order=2 reset row. See the `add('grand_final', …)` block.
  */
 
 // ── Field bounds (AC1) ──────────────────────────────────────────────────────
@@ -360,7 +362,8 @@ const key = (bracket: BracketName, slot: number, gfOrder: number | null) =>
 /**
  * Draw the bracket. PURE: identical `entries` + identical `rng` sequence => byte-identical output.
  *
- * Emits the COMPLETE skeleton — every Winners row, every Losers row, and the single Grand-Final row —
+ * Emits the COMPLETE skeleton — every Winners row, every Losers row, and the two Grand-Final rows (the
+ * game, gf_order=1, plus the AD-21 reset, gf_order=2) —
  * with only the Winners-R1 competitors filled (from the draw) plus any bye winners pre-advanced into
  * Winners R2. Every other competitor slot is NULL and is filled by Story 4.3's advance as results land.
  */
@@ -435,9 +438,29 @@ export function generateBracket(entries: readonly RosterEntryRef[], rng: Rng = c
       );
     }
   }
-  // Exactly ONE grand-final row this story. The AD-21 reset row (gf_order=2) is Story 4.4's.
-  // Neither edge: the winner is the CHAMPION and goes nowhere; the loser is the runner-up.
-  add('grand_final', 'Grand Final', 0, 1, null, null);
+  // ⭐ AD-21 — THE GRAND FINAL IS UP TO TWO ORDERED ROWS. Side A of gf_order=1 is ALWAYS the Winners
+  // champion (0 losses — winnersWinnerTarget routes there), side B ALWAYS the Losers survivor (1 loss).
+  //   * If side A wins game 1 they are champion outright — no reset (advance_match's AD-21 conditional
+  //     follows NEITHER edge and crowns them).
+  //   * If side B wins, they hand A its first loss and force the reset: the winner (B) travels to the
+  //     reset's side b and the loser (A) to the reset's side a. THOSE are the two conditional edges below.
+  // The reset (gf_order=2) is a fresh, terminal, edgeless row — its winner is champion by the same
+  // "edgeless -> champion" rule that crowned the single GF row before this story. Two SEPARATE rows means
+  // the champion slot is a different column on a different row across the two games, so it is never
+  // overwritten in place — that is the whole of AD-21 (it dissolves the H4 double-route dilemma).
+  //
+  // These edges are a CONSTANT structural fact (the reset is always slot 0, gf_order 2), not derived
+  // arithmetic like `index ^ 1`, so they are written as literal EdgeRefs rather than a routing function.
+  add(
+    'grand_final',
+    'Grand Final',
+    0,
+    1,
+    { bracket: 'grand_final', slot: 0, gf_order: 2, side: 'b' }, // winner (LB survivor) -> reset side b
+    { bracket: 'grand_final', slot: 0, gf_order: 2, side: 'a' }, // loser  (WB champion) -> reset side a
+  );
+  // The reset row: terminal, both edges NULL -> its winner is the champion. Seated ONLY if the reset fires.
+  add('grand_final', 'Grand Final (reset)', 0, 2, null, null);
 
   /** Write an entry into an edge's competitor slot. */
   const place = (edge: Edge, entryId: number) => {
@@ -537,6 +560,11 @@ export function generateBracket(entries: readonly RosterEntryRef[], rng: Rng = c
   // unless the Losers bracket produced nobody at all (not reachable for a field of 8..16, but the state
   // is derived rather than assumed, so a future field range cannot silently regress it).
   rows.get(key('grand_final', 0, 1))!.state = gfArrivals === 2 ? 'declared' : 'bye';
+  // The AD-21 reset row (gf_order=2). Its competitors are NULL at generation and are seated only if the
+  // reset fires — the same shape as every other not-yet-filled `declared` row. It MUST be `declared`, never
+  // `void`: advance_match RAISES when routing into a void node (0013:716-724), and gf_order=1's conditional
+  // edges route into this row when the Losers survivor wins game 1.
+  rows.get(key('grand_final', 0, 2))!.state = 'declared';
 
   const matches = [...rows.values()];
   return {
@@ -571,7 +599,7 @@ export type BracketCommandResult =
         | 'roster_changed'   // a roster write landed between our read and the RPC's lock (optimistic concurrency)
         | 'bad_field_count'  // outside the AC1 8..16 range
         | 'bad_seeds'        // p_seeds was not a permutation of 1..N (only reachable on a direct RPC call)
-        | 'bad_skeleton'     // p_matches was not the complete 2*bracketSize-2 skeleton (ditto)
+        | 'bad_skeleton'     // p_matches was not the complete 2*bracketSize-1 skeleton (ditto)
         | 'write_failed';
     };
 

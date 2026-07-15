@@ -35,8 +35,12 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
--- plan: A 8 + B 10 + C 7 + D 11 + E 9 + F 6 + G 5 + H 7 + I 5 + J 6 + K 7 + L 3 + M 3 = 87.
+-- plan: A 8 + B 11 + C 7 + D 11 + E 9 + F 6 + G 5 + H 7 + I 5 + J 6 + K 8 + L 3 + M 3 = 89.
 -- Exact assertion-accounting is a standing convention (Epic-1 retro).
+-- ⚠ Story 4.4 (+2): Section B +1 — the "grand_final row with a winner edge is REFUSED" assertion split into
+-- two (a gf_order=1 row carrying the AD-21 reset edges is now ACCEPTED; a gf_order=2 terminal row with any
+-- edge is still REFUSED — the widened arm did not weaken the CHECK). Section K +1 — the no-reset champion
+-- path now also asserts tournament.final_match_id was set to the crowning row (DECISION A).
 --
 -- ⚠ SECTION L (+3) WAS ADDED AFTER MUTATION-TESTING THIS SUITE. Four defects were injected into the shipped
 -- code to check the suite could see them: removing the loser drop (D2) -> 3 red; removing the bye cascade
@@ -58,7 +62,7 @@ set local search_path = extensions, public;
 --
 -- The lesson, three stories running (4.1, 4.2, 4.3): a suite is not evidence until a mutation makes it red.
 -- Assert the VALUE, not the shape; assert the GUARD, not merely the path that happens to reach it.
-select plan(87);
+select plan(89);
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- Fixture (as postgres — bypasses RLS). Four tournaments, three real brackets.
@@ -220,7 +224,10 @@ create function pg_temp.matches11(t text) returns jsonb language sql stable as $
       ('losers', 'Losers R4', 11, null::int, null::bigint, null::bigint, null::bigint, 'declared', pg_temp.edge('losers', 12, null, 'b'), null::jsonb),
       ('losers', 'Losers R5', 12, null::int, null::bigint, null::bigint, null::bigint, 'declared', pg_temp.edge('losers', 13, null, 'a'), null::jsonb),
       ('losers', 'Losers R6', 13, null::int, null::bigint, null::bigint, null::bigint, 'declared', pg_temp.edge('grand_final', 0, 1, 'b'), null::jsonb),
-      ('grand_final', 'Grand Final', 0, 1, null::bigint, null::bigint, null::bigint, 'declared', null::jsonb, null::jsonb)
+      -- AD-21 (Story 4.4): gf_order=1 carries the CONDITIONAL reset edges (winner -> reset side b, loser ->
+      -- reset side a); gf_order=2 is the terminal edgeless reset row (its winner is the champion).
+      ('grand_final', 'Grand Final', 0, 1, null::bigint, null::bigint, null::bigint, 'declared', pg_temp.edge('grand_final', 0, 2, 'b'), pg_temp.edge('grand_final', 0, 2, 'a')),
+      ('grand_final', 'Grand Final (reset)', 0, 2, null::bigint, null::bigint, null::bigint, 'declared', null::jsonb, null::jsonb)
     ) as v(b, p, sl, gf, ca, cb, we, st, wt, lt)
 $fn$;
 
@@ -272,7 +279,7 @@ select is(has_function_privilege('authenticated', 'public.match_place_competitor
   'authenticated CANNOT execute match_place_competitor — a logged-in viewer cannot seat a competitor, nor crown one, off the Data API');
 
 -- ════════════════════════════════════════════════════════════════════════════
--- Section B — D1: match_routing_complete makes a BRICK unrepresentable (9)
+-- Section B — D1: match_routing_complete makes a BRICK unrepresentable (11)
 -- ════════════════════════════════════════════════════════════════════════════
 -- A bracket row with no way out is a BRICK: nothing can ever advance out of it, and `match` has NO DELETE
 -- grant — so it is unrecoverable. This is the constraint that makes shipping one impossible.
@@ -315,12 +322,23 @@ select throws_ok(
   '23514', 'new row for relation "match" violates check constraint "match_routing_complete"',
   'D1/FR-6: a `losers` row carrying a LOSER edge is REFUSED by match_routing_complete — a Losers loser has taken their SECOND loss, and the ABSENCE of the edge IS two-loss elimination');
 
+-- ⭐ AD-21 (Story 4.4) — THE WIDENED ARM, PROVEN IN BOTH DIRECTIONS. gf_order=1 MAY carry the two reset
+-- edges (winner/loser -> the reset row, grand_final gf_order=2); gf_order=2 stays TERMINAL. The widening
+-- did NOT weaken the CHECK — a GF-1 edge aimed anywhere but the reset, and ANY edge on the terminal reset
+-- row, are both still unrepresentable.
+select lives_ok(
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, gf_order,
+                        winner_to_bracket, winner_to_slot, winner_to_gf_order, winner_to_side,
+                        loser_to_bracket,  loser_to_slot,  loser_to_gf_order,  loser_to_side)
+       values (pg_temp.tid('TCHK'), 'grand_final', 'Grand Final', 0, 1,
+               'grand_final', 0, 2, 'b', 'grand_final', 0, 2, 'a') $$,
+  'D1/AD-21: a `grand_final` gf_order=1 row carrying the two reset edges (-> grand_final gf_order=2) is ACCEPTED — the widened arm makes the AD-21 conditional representable');
 select throws_ok(
   $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, gf_order,
                         winner_to_bracket, winner_to_slot, winner_to_side)
-       values (pg_temp.tid('TCHK'), 'grand_final', 'Grand Final', 0, 1, 'winners', 9, 'a') $$,
+       values (pg_temp.tid('TCHK'), 'grand_final', 'Grand Final (reset)', 0, 2, 'winners', 9, 'a') $$,
   '23514', 'new row for relation "match" violates check constraint "match_routing_complete"',
-  'D1: a `grand_final` row with a winner edge is REFUSED by match_routing_complete — its winner is the CHAMPION and advances nowhere (Story 4.4 widens this arm for the AD-21 reset row)');
+  'D1/AD-21: the TERMINAL reset row (gf_order=2) carrying ANY edge is REFUSED by match_routing_complete — its winner is the CHAMPION and advances nowhere');
 
 select throws_ok(
   $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot,
@@ -371,8 +389,8 @@ select lives_ok(
 -- ════════════════════════════════════════════════════════════════════════════
 select is((select (r->>'ok')::boolean from rpc_log where tag = 'TADV'), true,
   'D1: generate_bracket accepted the edge-bearing payload (create-or-replace kept its signature AND its grants)');
-select is((select (r->>'match_count')::int from rpc_log where tag = 'TADV'), 30,
-  'D1: an 11-player field commits 30 match rows (2*16-2) — the complete skeleton');
+select is((select (r->>'match_count')::int from rpc_log where tag = 'TADV'), 31,
+  'D1: an 11-player field commits 31 match rows (2*16-1, incl. the AD-21 reset row) — the complete skeleton');
 
 select is(
   (select count(*)::int from match where tournament_id = pg_temp.tid('TADV') and bracket = 'winners'
@@ -389,8 +407,8 @@ select is(
 
 select ok(
   (select winner_to_bracket is null and loser_to_bracket is null
-     from match where tournament_id = pg_temp.tid('TADV') and bracket = 'grand_final'),
-  'D1: the grand-final row carries NEITHER edge — the champion goes nowhere, the runner-up goes nowhere');
+     from match where tournament_id = pg_temp.tid('TADV') and bracket = 'grand_final' and gf_order = 2),
+  'D1/AD-21: the RESET grand-final row (gf_order=2) carries NEITHER edge — the champion goes nowhere, the runner-up goes nowhere');
 
 -- The two finals converge, and on the RIGHT sides. A swap here would seat both finalists on one seat.
 select is(
@@ -692,10 +710,12 @@ select is(pg_temp.msgs('TALT'), 0,
   'AC1/AC3: the refusal emitted NO Broadcast');
 
 -- ════════════════════════════════════════════════════════════════════════════
--- Section K — the champion, and the Story-4.2 cross-story regression (6)
+-- Section K — the champion, and the Story-4.2 cross-story regression (8)
 -- ════════════════════════════════════════════════════════════════════════════
--- The Grand Final is the ONE legitimate "advanced nobody": it has no outbound edge, so its winner is the
--- CHAMPION. Never a silent no-op (lib/roster.ts:180-182) — it is a distinct, POSITIVE outcome.
+-- ⭐ AD-21 (Story 4.4) — SIDE A WINS GAME 1, SO THERE IS NO RESET. gf_order=1's competitor_a is the Winners
+-- champion (0 losses); their win makes them champion OUTRIGHT. advance_match's AD-21 conditional crowns them
+-- and follows NEITHER reset edge (the reset row, gf_order=2, stays empty). The reset path itself — side B
+-- wins and the champion falls out of gf_order=2 — is the flagship of the new 0014 suite.
 -- (Seating the GF by hand here is a FIXTURE, not a feature: 4.6 owns the result that gets it there.)
 update match
    set competitor_a = pg_temp.re('TADV', 1), competitor_b = pg_temp.re('TADV', 9),
@@ -708,9 +728,11 @@ insert into rpc_log values
 select is((select (r ->> 'ok')::boolean from rpc_log where tag = 'gf'), true,
   'the Grand Final advances SUCCESSFULLY even though it moves nobody');
 select is((select (r ->> 'advanced')::int from rpc_log where tag = 'gf'), 0,
-  'advanced = 0: the champion goes nowhere — the GF has no outbound edge (match_routing_complete guarantees it)');
+  'advanced = 0: side A (the Winners champion) won game 1, so the AD-21 conditional crowns them and follows NEITHER reset edge — no reset, nobody moves');
 select is((select (r ->> 'champion')::bigint from rpc_log where tag = 'gf'), pg_temp.re('TADV', 1),
   '…and the champion is REPORTED, not silently swallowed — a distinct POSITIVE outcome, not a bare zero (the repo''s never-a-silent-no-op convention)');
+select is((select final_match_id from tournament where id = pg_temp.tid('TADV')), pg_temp.mid('TADV', 'grand_final', 0, 1),
+  'DECISION A: crowning set tournament.final_match_id to the LAST GF row played (here gf_order=1, since side A won outright)');
 -- ⭐⭐ THE CHAMPION *DOES* GET A NUDGE, AND THIS ASSERTION IS WHY IT NOW DOES (4.3 code review).
 -- The emit used to be gated on `v_hops > 0` alone — a count of PLANNED PLACEMENTS. The Grand Final plans
 -- ZERO (it has no outbound edge; its winner IS the champion), so crowning the champion — the single most

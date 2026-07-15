@@ -120,7 +120,7 @@ $fn$;
 -- The complete 8-player double-elim skeleton, slot-for-slot as lib/bracket/generate.ts emits it:
 --   winners slots 0-3 = R1 (seeded 1v8 / 4v5 / 2v7 / 3v6), 4-5 = R2, 6 = R3 (Winners Final)
 --   losers  slots 0-1 = R1, 2-3 = R2, 4 = R3, 5 = R4 (Losers Final)
---   grand_final slot 0, gf_order 1  (the AD-21 reset row, gf_order=2, is Story 4.4's — NOT here)
+--   grand_final slot 0, gf_order 1 (the game) + gf_order 2 (the AD-21 reset row — Story 4.4)
 -- An 8-field is a power of two, so it has NO byes: every row is 'declared'. Byes are Section B2's.
 --
 -- ⭐ STORY 4.3 (D1) — THE ROUTING EDGES ARE PART OF THE PAYLOAD NOW, and `match_routing_complete` (0013)
@@ -172,8 +172,13 @@ create function pg_temp.matches8(tname text) returns jsonb language sql stable a
       -- The Losers Final: winner -> GF side B.
       ('losers',      'Losers R4',   5, null::int, null::bigint,         null::bigint,
         pg_temp.edge('grand_final', 0, 1, 'b'),     null::jsonb),
-      -- The Grand Final: NEITHER edge. Its winner is the champion; its loser is the runner-up.
+      -- AD-21 (Story 4.4): the FIRST grand-final row carries the two CONDITIONAL reset edges — winner (LB
+      -- survivor) -> reset side b, loser (WB champion) -> reset side a.
       ('grand_final', 'Grand Final', 0, 1,         null::bigint,         null::bigint,
+        pg_temp.edge('grand_final', 0, 2, 'b'),     pg_temp.edge('grand_final', 0, 2, 'a')),
+      -- The reset row (gf_order=2): terminal, NEITHER edge. Its winner is the champion; its loser is the
+      -- runner-up. Seated only if the reset fires.
+      ('grand_final', 'Grand Final (reset)', 0, 2, null::bigint,         null::bigint,
         null::jsonb,                                null::jsonb)
     ) as v(b, p, sl, gf, ca, cb, wt, lt)
 $fn$;
@@ -220,8 +225,8 @@ create function pg_temp.edges16(b text, sl int) returns jsonb language sql stabl
       ('losers',  10, jsonb_build_object('winner_to', pg_temp.edge('losers', 12, null, 'a'), 'loser_to', null::jsonb)),
       ('losers',  11, jsonb_build_object('winner_to', pg_temp.edge('losers', 12, null, 'b'), 'loser_to', null::jsonb)),
       ('losers',  12, jsonb_build_object('winner_to', pg_temp.edge('losers', 13, null, 'a'), 'loser_to', null::jsonb)),
-      ('losers',  13, jsonb_build_object('winner_to', pg_temp.edge('grand_final', 0, 1, 'b'), 'loser_to', null::jsonb)),
-      ('grand_final', 0, jsonb_build_object('winner_to', null::jsonb, 'loser_to', null::jsonb))
+      ('losers',  13, jsonb_build_object('winner_to', pg_temp.edge('grand_final', 0, 1, 'b'), 'loser_to', null::jsonb))
+      -- (the two grand_final rows are built inline in matches16 — edges16 keys only on (bracket, slot))
     ) as v(b, sl, e)
    where v.b = $1 and v.sl = $2
 $fn$;
@@ -254,10 +259,20 @@ create function pg_temp.matches16(tname text) returns jsonb language sql stable 
              || pg_temp.edges16('losers', s)
         from generate_series(0, 13) as s
       union all
+      -- AD-21 (Story 4.4): TWO grand-final rows. gf_order=1 carries the conditional reset edges; the
+      -- terminal gf_order=2 reset row carries neither. (Both are built inline rather than via edges16,
+      -- which keys only on (bracket, slot) and cannot tell the two grand-final rows apart.)
       select jsonb_build_object(
                'bracket', 'grand_final', 'bracket_position', 'Grand Final', 'bracket_slot', 0, 'gf_order', 1,
                'competitor_a', null::bigint, 'competitor_b', null::bigint, 'winner_entry', null::bigint,
-               'state', 'declared') || pg_temp.edges16('grand_final', 0)
+               'state', 'declared',
+               'winner_to', pg_temp.edge('grand_final', 0, 2, 'b'),
+               'loser_to',  pg_temp.edge('grand_final', 0, 2, 'a'))
+      union all
+      select jsonb_build_object(
+               'bracket', 'grand_final', 'bracket_position', 'Grand Final (reset)', 'bracket_slot', 0, 'gf_order', 2,
+               'competitor_a', null::bigint, 'competitor_b', null::bigint, 'winner_entry', null::bigint,
+               'state', 'declared', 'winner_to', null::jsonb, 'loser_to', null::jsonb)
     ) as t
 $fn$;
 
@@ -325,7 +340,7 @@ select public.generate_bracket(
 select is((select r ->> 'ok'           from gen), 'true', 'generate_bracket: a registration_closed 8-field draw SUCCEEDS');
 select is((select r ->> 'field_size'   from gen), '8',    'generate_bracket: reports the field size it committed');
 select is((select r ->> 'bracket_size' from gen), '8',    'generate_bracket: reports the bracket size it derived under the lock (8 -> 8)');
-select is((select r ->> 'match_count'  from gen), '14',   'generate_bracket: reports 14 rows ACTUALLY inserted (GET DIAGNOSTICS ROW_COUNT, not the caller''s array length)');
+select is((select r ->> 'match_count'  from gen), '15',   'generate_bracket: reports 15 rows ACTUALLY inserted (2*8-1 incl. the AD-21 reset row — GET DIAGNOSTICS ROW_COUNT, not the caller''s array length)');
 
 -- (1) bracket_seed recorded — AC1's "a random bracket_seed is recorded". Every ACTIVE entry gets a
 --     position, and the positions are exactly 1..N (a permutation, not a partial or duplicated set).
@@ -336,14 +351,15 @@ select is((select array_agg(bracket_seed order by bracket_seed) from roster_entr
   'AC1: the recorded seeds are exactly the positions 1..8 — a permutation, no gaps and no duplicates');
 
 -- (2) the bracket itself — row counts…
-select is((select count(*)::int from match where tournament_id = pg_temp.tid('TGEN')), 14,
-  'AC2: all 14 match rows are inserted in the one transaction');
+select is((select count(*)::int from match where tournament_id = pg_temp.tid('TGEN')), 15,
+  'AC2: all 15 match rows are inserted in the one transaction (2*8-1, incl. the AD-21 reset row)');
 select is((select count(*)::int from match where tournament_id = pg_temp.tid('TGEN') and bracket = 'winners'), 7,
   'AC2: the full Winners skeleton is pre-created (bracketSize-1 = 7)');
 select is((select count(*)::int from match where tournament_id = pg_temp.tid('TGEN') and bracket = 'losers'), 6,
   'AC2: the full Losers skeleton is pre-created (bracketSize-2 = 6) — the two-loss route exists from the start');
-select is((select gf_order from match where tournament_id = pg_temp.tid('TGEN') and bracket = 'grand_final'), 1,
-  'AC2: exactly one Grand Final row, gf_order=1 (the AD-21 reset row is Story 4.4''s)');
+select is((select array_agg(gf_order order by gf_order) from match where tournament_id = pg_temp.tid('TGEN') and bracket = 'grand_final'),
+  ARRAY[1, 2],
+  'AC2 (AD-21): TWO grand-final rows — gf_order=1 (the game) and gf_order=2 (the reset)');
 
 -- …and the COLUMN VALUES. This is the block that catches a broken JSONB extraction: with `m->>'competitorA'`
 -- every competitor would land NULL and every count above would STILL pass.
@@ -385,7 +401,7 @@ select is((select detail #>> '{bracket_seed,algorithm}' from audit_log where tou
   'fisher-yates',
   'AD-17: the audit detail carries the RAW DRAW (p_bracket_seed) — the traceability artifact AC1 asks for');
 select is((select detail ->> 'match_count' from audit_log where tournament_id = pg_temp.tid('TGEN') and action = 'generate_bracket'),
-  '14',
+  '15',
   'AD-17: the audit records the count actually committed, not the count requested');
 
 -- ============================================================================
@@ -403,7 +419,7 @@ select public.generate_bracket(
 
 select is((select r ->> 'ok'           from genbye), 'true', 'AC3: a 9-player (non-power-of-two) field generates');
 select is((select r ->> 'bracket_size' from genbye), '16',   'AC3: a 9-field is drawn into a 16-bracket (the DB derives this itself, under the lock)');
-select is((select r ->> 'match_count'  from genbye), '30',   'AC3: 30 rows = 2*16-2 (15 winners + 14 losers + 1 GF) — the full skeleton, byes and all');
+select is((select r ->> 'match_count'  from genbye), '31',   'AC3: 31 rows = 2*16-1 (15 winners + 14 losers + 2 GF incl. the AD-21 reset) — the full skeleton, byes and all');
 select is(
   (select count(*)::int from match where tournament_id = pg_temp.tid('TBYE') and state = 'bye'),
   8,
@@ -433,8 +449,8 @@ select public.generate_bracket(
        ) as r;
 select is((select r ->> 'reason' from gen2), 'already_live',
   'D2 SINGLE-SHOT: a second generate on a live bracket is REFUSED with already_live');
-select is((select count(*)::int from match where tournament_id = pg_temp.tid('TGEN')), 14,
-  'D2 SINGLE-SHOT: …and it did NOT duplicate the bracket — still exactly 14 rows (the whole point)');
+select is((select count(*)::int from match where tournament_id = pg_temp.tid('TGEN')), 15,
+  'D2 SINGLE-SHOT: …and it did NOT duplicate the bracket — still exactly 15 rows (the whole point)');
 
 -- Wrong state: registration is still open.
 create temp table gen3 as

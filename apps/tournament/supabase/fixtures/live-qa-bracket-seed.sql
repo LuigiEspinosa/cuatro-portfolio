@@ -9,7 +9,8 @@
 -- WHY ELEVEN. 11 is deliberately NOT a power of two: bracketSize = 16, so the draw must hand out
 -- 16 - 11 = 5 BYES (AC3) — the trickiest acceptance criterion, and the one unit tests alone should never
 -- be trusted to close. A field of 8 or 16 would generate a bye-free bracket and quietly skip AC3.
--- Expected shape: 15 winners + 14 losers + 1 grand-final = 30 match rows, 5 byes on the top 5 seeds.
+-- Expected shape (after Story 4.4's AD-21 reset row): 15 winners + 14 losers + 2 grand-final = 31 match
+-- rows, 5 byes on the top 5 seeds. (Before 4.4 it was 30 rows / 1 grand-final.)
 --
 -- HOW TO APPLY — against the LOCAL Supabase stack:
 --   supabase db reset    # REQUIRED FIRST TIME on a DB with pre-4.1 data — see the caveat below

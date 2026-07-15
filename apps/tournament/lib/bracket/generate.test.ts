@@ -89,7 +89,7 @@ describe('structure sizing (AC2 — the double-elim skeleton)', () => {
   });
 
   it.each([
-    // bracketSize, winners, losers  — winners = size-1, losers = size-2, +1 GF => 2*size-2 total
+    // bracketSize, winners, losers  — winners = size-1, losers = size-2, +2 GF (AD-21) => 2*size-1 total
     [8, 7, 6],
     [16, 15, 14],
   ])('a %i-bracket has %i winners and %i losers matches', (size, wCount, lCount) => {
@@ -362,8 +362,8 @@ describe('generateBracket — the draw (AC1)', () => {
 
 describe('generateBracket — power-of-two fields have NO byes (AC2)', () => {
   it.each([
-    [8, 8, 7, 6, 14],
-    [16, 16, 15, 14, 30],
+    [8, 8, 7, 6, 15],
+    [16, 16, 15, 14, 31],
   ])(
     'N=%i: bracketSize %i, Winners %i, Losers %i, %i rows total, zero byes',
     (n, size, wCount, lCount, total) => {
@@ -374,11 +374,14 @@ describe('generateBracket — power-of-two fields have NO byes (AC2)', () => {
       expect(b.matches.filter((m) => m.bracket === 'winners')).toHaveLength(wCount);
       expect(b.matches.filter((m) => m.bracket === 'losers')).toHaveLength(lCount);
 
-      // Exactly ONE grand final, gf_order = 1. The AD-21 reset row (gf_order=2) is Story 4.4's.
-      const gf = b.matches.filter((m) => m.bracket === 'grand_final');
-      expect(gf).toHaveLength(1);
-      expect(gf[0].gf_order).toBe(1);
+      // TWO grand final rows now (AD-21): gf_order=1 (the game) + gf_order=2 (the reset).
+      const gf = b.matches
+        .filter((m) => m.bracket === 'grand_final')
+        .sort((x, y) => (x.gf_order ?? 0) - (y.gf_order ?? 0));
+      expect(gf).toHaveLength(2);
+      expect(gf.map((m) => m.gf_order)).toEqual([1, 2]);
       expect(gf[0].bracket_position).toBe('Grand Final');
+      expect(gf[1].bracket_position).toBe('Grand Final (reset)');
 
       // No byes => every match is 'declared' and nobody is pre-advanced.
       expect(b.matches.every((m) => m.state === 'declared')).toBe(true);
@@ -549,7 +552,7 @@ const edgeKey = (e: EdgeRef) => `${e.bracket}:${e.slot}:${e.gf_order ?? 0}:${e.s
 
 describe('routing EDGES on every emitted row (Story 4.3 D1 — persisted, never re-derived in SQL)', () => {
   it.each([[8], [16]])(
-    'bracketSize %i: winners rows carry BOTH edges, losers rows carry a winner edge and NO loser edge, the GF carries neither',
+    'bracketSize %i: winners carry BOTH edges, losers a winner edge and NO loser edge, GF-1 the two reset edges, GF-2 neither',
     (size) => {
       const b = ok(size, seededRng(size));
 
@@ -564,8 +567,25 @@ describe('routing EDGES on every emitted row (Story 4.3 D1 — persisted, never 
           // The ABSENCE *is* two-loss elimination (FR-6) — a Losers loser is out. Assert the absence, or
           // it is not proven.
           expect(m.loser_to, `losers slot ${m.bracket_slot}`).toBeNull();
+        } else if (m.gf_order === 1) {
+          // ⭐ AD-21 — the FIRST grand-final row carries the TWO conditional reset edges: its winner (the
+          // LB survivor) travels to the reset's side b, its loser (the WB champion) to the reset's side a.
+          // Assert the VALUES, not merely that they are non-null (the 4.1 review's headline lesson).
+          expect(m.winner_to, 'GF-1 winner -> reset side b').toEqual({
+            bracket: 'grand_final',
+            slot: 0,
+            gf_order: 2,
+            side: 'b',
+          });
+          expect(m.loser_to, 'GF-1 loser -> reset side a').toEqual({
+            bracket: 'grand_final',
+            slot: 0,
+            gf_order: 2,
+            side: 'a',
+          });
         } else {
-          // The champion goes nowhere; the runner-up goes nowhere.
+          // The reset row (gf_order=2): terminal. Its winner is the champion; nobody drops out of it.
+          expect(m.gf_order).toBe(2);
           expect(m.winner_to).toBeNull();
           expect(m.loser_to).toBeNull();
         }
@@ -723,7 +743,7 @@ describe('generateAndPersistBracket — the atomic admin command (D2)', () => {
   it('generates from the closed roster and hands the whole bracket to the RPC in ONE call', async () => {
     const { admin, rpc } = makeAdmin(
       { tournament: closedTournament, roster_entry: activeRoster(8) },
-      rpcOk(8, 8, 14),
+      rpcOk(8, 8, 15),
     );
 
     const result = await generateAndPersistBracket(admin, {
@@ -731,7 +751,7 @@ describe('generateAndPersistBracket — the atomic admin command (D2)', () => {
       tournamentId: T_ID,
       rng: identityRng,
     });
-    expect(result).toEqual({ ok: true, fieldSize: 8, bracketSize: 8, matchCount: 14, byeSeeds: [] });
+    expect(result).toEqual({ ok: true, fieldSize: 8, bracketSize: 8, matchCount: 15, byeSeeds: [] });
 
     expect(rpc).toHaveBeenCalledTimes(1);
     const [fn, args] = rpc.mock.calls[0];
@@ -739,7 +759,7 @@ describe('generateAndPersistBracket — the atomic admin command (D2)', () => {
     expect(args.p_tournament_id).toBe(T_ID);
     expect(args.p_actor_steamid64).toBe(ADMIN); // the audit row's actor, inside the txn
     expect(args.p_seeds).toHaveLength(8);
-    expect(args.p_matches).toHaveLength(14); // 7 winners + 6 losers + 1 GF — the COMPLETE skeleton
+    expect(args.p_matches).toHaveLength(15); // 7 winners + 6 losers + 2 GF (AD-21 reset) — the COMPLETE skeleton
     expect(args.p_bracket_seed).toMatchObject({ algorithm: 'fisher-yates', field_size: 8, bracket_size: 8 });
   });
 
