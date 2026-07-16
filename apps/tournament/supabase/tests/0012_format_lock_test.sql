@@ -106,7 +106,14 @@ select pg_temp.tid('TFMT'), 'winners', 'Winners R1', v.slot, 'declared', v.fmt, 
     (5, null,   null,     false, null),
     (6, 'mr12', 'ot_mr3', true,  null),
     (7, 'mr12', 'ot_mr3', true,  null),
-    (8, 'mr12', 'ot_mr3', true,  now())
+    (8, 'mr12', 'ot_mr3', true,  now()),
+    -- 9/10/11 = unlocked -> Section B's four never-played exclusions each need their OWN declared row:
+    --   Story 4.5's match_terminal_state_guard (0015) makes bye/forfeit/void TERMINAL, so a single row
+    --   cannot be cycled declared->bye->void->… (that flip is now — correctly — refused). One row per
+    --   state = one legal declared->X transition each.
+    (9,  null,  null,     false, null),
+    (10, null,  null,     false, null),
+    (11, null,  null,     false, null)
   ) as v(slot, fmt, tie, locked, ovr);
 
 -- TBULK — a bracket-shaped field for D2: 4 playable nodes + the never-played rows generation emits.
@@ -219,15 +226,15 @@ select lives_ok(
   'AC1 exclusion: a BYE needs no format — it is a walkover, never played (AD-9). Story 4.1 generates these.'
 );
 select lives_ok(
-  $$ update match set state = 'void' where id = pg_temp.mid('TFMT', 3) $$,
+  $$ update match set state = 'void' where id = pg_temp.mid('TFMT', 9) $$,
   'AC1 exclusion: a VOID node needs no format — nothing can ever reach it (AD-9)'
 );
 select lives_ok(
-  $$ update match set state = 'forfeit' where id = pg_temp.mid('TFMT', 3) $$,
+  $$ update match set state = 'forfeit' where id = pg_temp.mid('TFMT', 10) $$,
   'AC1 exclusion: a FORFEIT needs no format — it is a no-show walkover, never played (Story 4.5)'
 );
 select lives_ok(
-  $$ update match set state = 'awaiting_grace' where id = pg_temp.mid('TFMT', 3) $$,
+  $$ update match set state = 'awaiting_grace' where id = pg_temp.mid('TFMT', 11) $$,
   'AC1 exclusion: awaiting_grace needs no format — the 10-min grace timer runs BEFORE a match is played (Story 4.5)'
 );
 
