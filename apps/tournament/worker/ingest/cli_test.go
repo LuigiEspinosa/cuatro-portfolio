@@ -23,12 +23,17 @@ func writeTemp(t *testing.T, name string, content []byte) string {
 // cannedParse is the FakeParser result the CLI wiring tests upsert. Two real 17-digit SteamID64s with a
 // BALANCED Σkills==Σdeaths (34==34) so a run with both ids rostered validates CLEAN (Story 3.4). (bots/world
 // skip-zero is a property of the REAL DemoinfocsParser, exercised only at live-QA — Task 6.)
+//
+// RoundsWon (Story 4.6a) is the FR-16 demo-derived tally: 16-8 over 24 rounds, so ΣRoundsWon == RoundsPlayed
+// — the conservation the real parser must satisfy on a decided 1v1. Note it is deliberately NOT proportional
+// to K/D: the score comes from RoundEnd, never from kills (Σkills < Σdeaths on unattributed deaths, the 3.4
+// review's finding), and a fixture that let the two agree would hide a kills-derived score.
 func cannedParse() ParseResult {
 	return ParseResult{
 		RoundsPlayed: 24,
 		Players: []PlayerStat{
-			{SteamID64: 76561197960287930, Kills: 20, Deaths: 14},
-			{SteamID64: 76561198000000042, Kills: 14, Deaths: 20},
+			{SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16},
+			{SteamID64: 76561198000000042, Kills: 14, Deaths: 20, RoundsWon: 8},
 		},
 	}
 }
@@ -100,8 +105,21 @@ func TestRunCLIHappyPathParsesAndUpserts(t *testing.T) {
 	if r930.MatchID != 33 || r930.DemoID != res.DemoID || r930.Kills != 20 || r930.Deaths != 14 || r930.RoundsPlayed != 24 {
 		t.Fatalf("unexpected mapped stat row for …930: %+v", r930)
 	}
-	if _, ok := byID["76561198000000042"]; !ok {
+	// Story 4.6a: the FR-16 demo-derived tally rides the SAME AD-4 steamid64 key onto the row. This is the
+	// assembly seam — if cli.go stops carrying RoundsWon, the score silently becomes 0 for every player.
+	if r930.RoundsWon != 16 {
+		t.Fatalf("…930's demo-derived RoundsWon must be carried to the stat row: got %d want 16", r930.RoundsWon)
+	}
+	r042, ok := byID["76561198000000042"]
+	if !ok {
 		t.Fatalf("missing stat row for 76561198000000042 (got %+v)", call.Rows)
+	}
+	if r042.RoundsWon != 8 {
+		t.Fatalf("…042's demo-derived RoundsWon must be carried to the stat row: got %d want 8", r042.RoundsWon)
+	}
+	// FR-16's conservation, at the assembly seam: the per-player tally sums to the match's rounds played.
+	if r930.RoundsWon+r042.RoundsWon != r930.RoundsPlayed {
+		t.Fatalf("ΣRoundsWon must equal RoundsPlayed: %d + %d != %d", r930.RoundsWon, r042.RoundsWon, r930.RoundsPlayed)
 	}
 
 	// Re-running the CLI on the SAME .dem + match short-circuits (AlreadyIngested) and SKIPS the parse AND

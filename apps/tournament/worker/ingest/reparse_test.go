@@ -62,8 +62,10 @@ func TestRunReparseHappyPathReplacesAndBumpsGeneration(t *testing.T) {
 	if len(byID) != 2 {
 		t.Fatalf("the match must have exactly 2 rows after re-parse, got %d", len(byID))
 	}
-	if r := byID["76561197960287930"]; r.Kills != 20 || r.Deaths != 14 || r.RoundsPlayed != 24 {
-		t.Fatalf("…930 must be REPLACED with the fresh K/D, got %+v", r)
+	// The re-parse path assembles rows independently of RunCLI, so it carries RoundsWon independently too
+	// (Story 4.6a): a re-parse must re-derive the score, not blank it. The seeded prior row had none.
+	if r := byID["76561197960287930"]; r.Kills != 20 || r.Deaths != 14 || r.RoundsPlayed != 24 || r.RoundsWon != 16 {
+		t.Fatalf("…930 must be REPLACED with the fresh K/D + demo-derived RoundsWon, got %+v", r)
 	}
 	if reparses := statRec.Reparsed(); len(reparses) != 1 || reparses[0].MatchID != 33 || reparses[0].ParserVersion != ParserVersion {
 		t.Fatalf("RecordReparse must fire exactly once with the match + pinned parser version, got %+v", reparses)

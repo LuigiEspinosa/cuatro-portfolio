@@ -127,7 +127,14 @@ func (r *PgxRecorder) Pool() *pgxpool.Pool { return r.pool }
 // StatRow is one parsed player's row destined for the single-writer stat_row table (AD-2). SteamID64 is
 // the 17-digit decimal TEXT (the caller converts the parser's uint64 via strconv.FormatUint — the DB
 // layer never sees the numeric form). Story 3.3 fills MatchID/SteamID64/DemoID + Kills/Deaths/
-// RoundsPlayed; the rich Epic-5 stat columns stay NULL (the parser does not compute them yet).
+// RoundsPlayed; Story 4.6a adds RoundsWon; the rich Epic-5 stat columns stay NULL (the parser does not
+// compute them yet).
+//
+// ⚠ MatchID is the EXTERNAL matchzy_match_id, NOT a bracket match(id) — at parse time no bracket row is
+// associated with the demo at all (the bind is a later admin act), and the worker never learns one.
+// RoundsWon is therefore per-player and NOT score_a/score_b; Story 4.6b maps the tally onto the match's
+// competitor seats. See ingest.PlayerStat for the full reasoning (DECISION B, and why "by AD-2 design" was
+// the wrong shorthand for it).
 type StatRow struct {
 	MatchID      int64
 	SteamID64    string
@@ -135,6 +142,7 @@ type StatRow struct {
 	Kills        int
 	Deaths       int
 	RoundsPlayed int
+	RoundsWon    int
 }
 
 // AnomalyReason is one machine-readable validation-gate failure (Story 3.4). Gate is the gate id
@@ -314,14 +322,24 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 		batch.Queue(
 			// `matchzy_match_id` is the EXTERNAL ingest id (see RecordDemo). The AD-3 re-parse key
 			// travelled with 0010's rename, so this upserts on exactly the pair it always did.
-			`insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played)
-			 values ($1, $2, $3, $4, $5, $6)
+			// `rounds_won` is the Story-4.6a demo-derived tally (FR-16); it re-derives on every parse
+			// exactly like kills/deaths. ⚠ `status` stays ABSENT from BOTH lists — see the note above.
+			//
+			// ⚠⚠ `match_id` MUST STAY ABSENT FROM BOTH LISTS TOO, and unlike `status` its absence is
+			// silent — nothing here names it. It is the BRACKET match(id), written ONLY by 0016's
+			// bind_match_demo (Story 4.6a); this worker holds no bracket knowledge (AD-2) and never sets
+			// it. Adding it "for symmetry" would make the DO UPDATE write `match_id = excluded.match_id`
+			// = NULL, so EVERY re-parse would silently UNBIND every bound match — a bound, `pending`
+			// match whose stat rows no longer point at it. Leave it out.
+			`insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played, rounds_won)
+			 values ($1, $2, $3, $4, $5, $6, $7)
 			 on conflict (matchzy_match_id, steamid64) do update set
 			   kills = excluded.kills,
 			   deaths = excluded.deaths,
 			   rounds_played = excluded.rounds_played,
+			   rounds_won = excluded.rounds_won,
 			   demo_id = excluded.demo_id`,
-			row.MatchID, row.SteamID64, row.DemoID, row.Kills, row.Deaths, row.RoundsPlayed,
+			row.MatchID, row.SteamID64, row.DemoID, row.Kills, row.Deaths, row.RoundsPlayed, row.RoundsWon,
 		)
 	}
 	br := tx.SendBatch(ctx, batch)

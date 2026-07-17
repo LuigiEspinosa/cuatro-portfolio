@@ -10,7 +10,7 @@ import (
 // TestFakeParserEchoesResultAndErr proves the test seam: the canned Result is returned verbatim, and the
 // Err seam wins (fail-closed) so the wiring tests can force a parse failure.
 func TestFakeParserEchoesResultAndErr(t *testing.T) {
-	want := ParseResult{RoundsPlayed: 24, Players: []PlayerStat{{SteamID64: 76561197960287930, Kills: 20, Deaths: 14}}}
+	want := ParseResult{RoundsPlayed: 24, Players: []PlayerStat{{SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16}}}
 	got, err := FakeParser{Result: want}.Parse(strings.NewReader("ignored stream"))
 	if err != nil {
 		t.Fatal(err)

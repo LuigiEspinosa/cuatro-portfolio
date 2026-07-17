@@ -117,7 +117,7 @@ func parseAndRecord(ctx context.Context, s store.DemoStore, parser Parser, statR
 
 	// Map each parsed player to a stat_row, converting SteamID64 uint64 -> 17-digit decimal text (AD-4;
 	// the DB layer never sees the numeric form) and stamping match/demo/rounds provenance. Only
-	// kills/deaths/rounds_played — the Epic-5 stat columns stay NULL.
+	// kills/deaths/rounds_played/rounds_won — the Epic-5 stat columns stay NULL.
 	rows := make([]db.StatRow, 0, len(result.Players))
 	for _, pl := range result.Players {
 		sid := strconv.FormatUint(pl.SteamID64, 10)
@@ -138,6 +138,7 @@ func parseAndRecord(ctx context.Context, s store.DemoStore, parser Parser, statR
 			Kills:        pl.Kills,
 			Deaths:       pl.Deaths,
 			RoundsPlayed: result.RoundsPlayed,
+			RoundsWon:    pl.RoundsWon, // the FR-16 demo-derived tally (Story 4.6a)
 		})
 	}
 	// Validate the just-parsed rows against the ACTIVE roster BEFORE recording (Story 3.4, the Validating

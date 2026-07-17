@@ -100,6 +100,7 @@ func RunReparse(ctx context.Context, s store.DemoStore, reader db.DemoReader, pa
 			Kills:        pl.Kills,
 			Deaths:       pl.Deaths,
 			RoundsPlayed: result.RoundsPlayed,
+			RoundsWon:    pl.RoundsWon, // re-derived on every re-parse, exactly like K/D (Story 4.6a)
 		})
 	}
 
