@@ -278,6 +278,11 @@ select throws_ok(
 );
 
 -- The AD-5 score_source_guard: the two illegal shapes bite, the three legal shapes live.
+-- ⚠ SINCE 0017 (Story 4.6b) score_source_guard also requires `(score_a is null) = (score_source is null)` — a
+-- score and its provenance travel together. Every legal shape below therefore carries score_a/score_b WITH its
+-- score_source (the old fixtures set a source with NO score, which the tightened guard now correctly rejects).
+-- The disjunct each row exercises (demo_derived-needs-demo, admin_manual-needs-no-demo-or-override) is
+-- unchanged — the added scores just make each row a COMPLETE, representative score.
 select throws_ok(
   $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, score_a, score_b,
                         winner_to_bracket, winner_to_slot, winner_to_side,
@@ -287,36 +292,36 @@ select throws_ok(
   '23514', null, 'score_source_guard: demo_derived with demo_id IS NULL is rejected (a demo-derived score REQUIRES the demo)'
 );
 select throws_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, score_a, score_b, demo_id,
                         winner_to_bracket, winner_to_slot, winner_to_side,
                         loser_to_bracket, loser_to_slot, loser_to_side)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 27, 'admin_manual',
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 27, 'admin_manual', 16, 14,
                (select id from demo where storage_key = 'r2://qa/anchor.dem'),
                'winners', 999, 'a', 'losers', 999, 'a') $$,
   '23514', null, 'score_source_guard: admin_manual WITH a demo and manual_override=false is rejected (silently overriding evidence is the exact AD-5 hazard)'
 );
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id, manual_override,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, score_a, score_b, demo_id, manual_override,
                         winner_to_bracket, winner_to_slot, winner_to_side,
                         loser_to_bracket, loser_to_slot, loser_to_side)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 3, 'admin_manual',
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 3, 'admin_manual', 16, 14,
                (select id from demo where storage_key = 'r2://qa/anchor.dem'), true,
                'winners', 999, 'a', 'losers', 999, 'a') $$,
   'score_source_guard: admin_manual WITH a demo IS allowed once manual_override=true (the audited escape hatch — Story 4.8)'
 );
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, score_a, score_b,
                         winner_to_bracket, winner_to_slot, winner_to_side,
                         loser_to_bracket, loser_to_slot, loser_to_side)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 4, 'admin_manual',
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 4, 'admin_manual', 16, 14,
                'winners', 999, 'a', 'losers', 999, 'a') $$,
   'score_source_guard: admin_manual with NO demo is allowed (nothing to contradict)'
 );
 select lives_ok(
-  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, demo_id,
+  $$ insert into match (tournament_id, bracket, bracket_position, bracket_slot, score_source, score_a, score_b, demo_id,
                         winner_to_bracket, winner_to_slot, winner_to_side,
                         loser_to_bracket, loser_to_slot, loser_to_side)
-       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 5, 'demo_derived',
+       values ((select id from tournament where name = 'T1'), 'winners', 'Winners R1', 5, 'demo_derived', 16, 14,
                (select id from demo where storage_key = 'r2://qa/anchor.dem'),
                'winners', 999, 'a', 'losers', 999, 'a') $$,
   'score_source_guard: demo_derived WITH its demo is allowed (the Story-4.6 Aprobar shape)'

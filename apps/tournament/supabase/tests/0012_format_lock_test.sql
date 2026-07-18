@@ -340,7 +340,10 @@ select throws_ok(
 -- STAY IN LANE: the trigger must be a NO-OP for every write that is not a format write, or it would break
 -- Story 4.3 (winner_entry), 4.5 (state) and 4.6 (score_*) the moment they ship.
 select lives_ok(
-  $$ update match set score_a = 16, score_b = 14 where id = pg_temp.mid('TFMT', 4) $$,
+  -- ⚠ score_source travels WITH the score since 0017 tightened score_source_guard (Story 4.6b): a score can no
+  -- longer exist without a provenance. admin_manual with no demo is the legal no-demo shape (AD-5). The point
+  -- of THIS test — that match_format_audited stays a no-op for a non-format write — is unchanged.
+  $$ update match set score_a = 16, score_b = 14, score_source = 'admin_manual' where id = pg_temp.mid('TFMT', 4) $$,
   'AC2: the trigger does NOT gate unrelated columns — a locked match still takes its score (4.6), winner (4.3) and state (4.5)'
 );
 -- A PRE-lock format is not frozen — freezing is what `format_locked` MEANS. (This also leaves slot 5 with

@@ -1,10 +1,13 @@
 ---
-baseline_commit: 13dc05f9577a1d5df32d7e426780cc8e500de2a6
+baseline_commit: ad47f40
 ---
+
+<!-- baseline note: contexted 2026-07-16 against 13dc05f (pre-4.6a); rebaselined to ad47f40 on 2026-07-18 now that Story 4.6a is merged + done (bind_match_demo, stat_row.rounds_won, migration 0016 all land at HEAD). Slot for this story is 0017. -->
+
 
 # Story 4.6b: "Aprobar" atomic publish (publish side of FR-13)
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -77,17 +80,17 @@ _Traces: FR-13 (publish), FR-31 (post) · AD-6, AD-5_
 ## Tasks / Subtasks
 
 ### Task 0 — Re-read the load-bearing code before editing (do not skip) (AC: all)
-- [ ] `0014_grand_final_reset.sql:357-652` — `advance_match` end to end: the signature + `p_emit` (`:357-364`), the canonical lock (`:392-400`), the **result gate** (`:414-425`), the loser drop (`:430`), the AD-21 GF-1 conditional (`:436-445`), the pass-1/pass-2 boundary (`:575` — *"Past this line everything writes"*), `final_match_id` on a crown (`:601-605`), the return shape (`:648-650`), and every `{ok:false}` reason (`:389,411,418,424,538-541,551-554`).
-- [ ] `0015_walkover_grace.sql:280-415` — `mark_walkover` **in full**. Your template. Especially the lock header (`:274-296`), the three-step opening (`:297-317`), the `{ok:false}`→`IC902` RAISE (`:372-387`), the audit row (`:393-405`), the forwarding return (`:407-413`).
-- [ ] `0013_advance.sql:809-851` — the post-commit-by-construction rationale and the **exact `realtime.send` shape** to mirror.
-- [ ] `0010_match.sql:46-128` — the `match` column set + `score_source_guard` (`:124-128`).
-- [ ] `lib/match/walkover.ts` + `app/api/admin/match/walkover/route.ts` end to end — the lib (discriminated union → `Set` of reasons → SQLSTATE consts → fail closed) and route (`requireAdmin` → `parseBody`/`isPositiveInt` → `STATUS_FOR`) shapes.
-- [ ] **Story 4.6a's shipped `0016`** — `bind_match_demo`'s guards and what `pending` means when you receive it. Do not duplicate its refusals.
-- [ ] `ARCHITECTURE-SPINE.md:299-317` + `SOLUTION-DESIGN.md:370-383` (§8). **Confirm for yourself:** `Pending → Resolved: Aprobar`, and **`Resolved → Pending: rollback`** — `resolved` is deliberately **NOT** terminal.
+- [x] `0014_grand_final_reset.sql:357-652` — `advance_match` end to end: the signature + `p_emit` (`:357-364`), the canonical lock (`:392-400`), the **result gate** (`:414-425`), the loser drop (`:430`), the AD-21 GF-1 conditional (`:436-445`), the pass-1/pass-2 boundary (`:575` — *"Past this line everything writes"*), `final_match_id` on a crown (`:601-605`), the return shape (`:648-650`), and every `{ok:false}` reason (`:389,411,418,424,538-541,551-554`).
+- [x] `0015_walkover_grace.sql:280-415` — `mark_walkover` **in full**. Your template. Especially the lock header (`:274-296`), the three-step opening (`:297-317`), the `{ok:false}`→`IC902` RAISE (`:372-387`), the audit row (`:393-405`), the forwarding return (`:407-413`).
+- [x] `0013_advance.sql:809-851` — the post-commit-by-construction rationale and the **exact `realtime.send` shape** to mirror.
+- [x] `0010_match.sql:46-128` — the `match` column set + `score_source_guard` (`:124-128`).
+- [x] `lib/match/walkover.ts` + `app/api/admin/match/walkover/route.ts` end to end — the lib (discriminated union → `Set` of reasons → SQLSTATE consts → fail closed) and route (`requireAdmin` → `parseBody`/`isPositiveInt` → `STATUS_FOR`) shapes.
+- [x] **Story 4.6a's shipped `0016`** — `bind_match_demo`'s guards and what `pending` means when you receive it. Do not duplicate its refusals.
+- [x] `ARCHITECTURE-SPINE.md:299-317` + `SOLUTION-DESIGN.md:370-383` (§8). **Confirm for yourself:** `Pending → Resolved: Aprobar`, and **`Resolved → Pending: rollback`** — `resolved` is deliberately **NOT** terminal.
 
 ### Task 1 — Schema: the feed + the two guards (migration `0017_aprobar_publish.sql`) (AC: 1, 3)
-- [ ] New `supabase/migrations/0017_aprobar_publish.sql`. Header in the house style: the ONE concern, SCOPE, OUT-OF-SCOPE (each with its owning story), and the SQLSTATE table.
-- [ ] **⭐ CREATE `timeline_feed`** (DECISION C). **No shell to inherit** — the first table since Epic 1 with no prior art. The name is the one thing that IS specified (`SOLUTION-DESIGN.md:374`).
+- [x] New `supabase/migrations/0017_aprobar_publish.sql`. Header in the house style: the ONE concern, SCOPE, OUT-OF-SCOPE (each with its owning story), and the SQLSTATE table.
+- [x] **⭐ CREATE `timeline_feed`** (DECISION C). **No shell to inherit** — the first table since Epic 1 with no prior art. The name is the one thing that IS specified (`SOLUTION-DESIGN.md:374`).
   ```sql
   create table timeline_feed (
     id            bigint generated always as identity primary key,  -- ⭐ ALSO the deterministic ordering key
@@ -103,8 +106,8 @@ _Traces: FR-13 (publish), FR-31 (post) · AD-6, AD-5_
   - **⚠ ENABLE + FORCE RLS or you break the *0003* suite, not your own.** `0003_audit_snapshot_test.sql` Section A2 asserts **no public base table may have FORCE off** (cited at `0005:42-43`, `0007:57-58`, `0010:204-205`).
   - **An EXPLICIT viewer policy is mandatory** (AD-7 `SPINE:113`: *"No status-less table is left ungated"*; data-integrity **H2** names status-less child tables as the leak class). `timeline_feed` has no `status` — it is **safe by construction because a row is only ever written post-approval** (FR-31 `prd.md:417`: *"The feed reflects only Approved events; Pending Ingestion does not post"*). So `create policy timeline_view on public.timeline_feed for select to anon, authenticated using (true);` — **and write that reasoning into the migration**, because a bare `using (true)` with no justification is exactly what H2 warns about.
   - Grants: `grant select on public.timeline_feed to anon, authenticated;` + `grant select, insert on public.timeline_feed to service_role;` — **deliberately NO UPDATE/DELETE**: append-only like `audit_log` (`0003:68,78-84`). A rollback (4.7) posts a **correcting** entry; it never edits history.
-- [ ] **Tighten `score_source_guard`** (hand-off #3). Drop + re-add with the missing conjunct `and (score_a is null) = (score_source is null)`. ⚠ Keep AD-5's three disjuncts **verbatim** — you are ADDING a conjunct, not rewriting AD-5. ⚠ **CLEAN-APPLY NOTE required** (the 4.3 trap, `0013:60-72`): an immediate validated CHECK cannot apply to a DB holding violating rows, and **`supabase db reset` structurally cannot catch it**. Verify by grep that nothing writes a score today and state it (`0015:65-67`'s counter-precedent wording).
-- [ ] **⭐ Extend the AD-23 guard — SURGICALLY (DECISION G, hand-off #2).** `create or replace` `match_terminal_state_guard()` (`0015:108-122`), adding a second rule with a **new distinct SQLSTATE `IC904`**:
+- [x] **Tighten `score_source_guard`** (hand-off #3). Drop + re-add with the missing conjunct `and (score_a is null) = (score_source is null)`. ⚠ Keep AD-5's three disjuncts **verbatim** — you are ADDING a conjunct, not rewriting AD-5. ⚠ **CLEAN-APPLY NOTE required** (the 4.3 trap, `0013:60-72`): an immediate validated CHECK cannot apply to a DB holding violating rows, and **`supabase db reset` structurally cannot catch it**. Verify by grep that nothing writes a score today and state it (`0015:65-67`'s counter-precedent wording).
+- [x] **⭐ Extend the AD-23 guard — SURGICALLY (DECISION G, hand-off #2).** `create or replace` `match_terminal_state_guard()` (`0015:108-122`), adding a second rule with a **new distinct SQLSTATE `IC904`**:
   ```
   if old.state in ('resolved','manual_resolved') and new.state in ('bye','forfeit','void') then raise … IC904
   ```
@@ -112,13 +115,13 @@ _Traces: FR-13 (publish), FR-31 (post) · AD-6, AD-5_
   - Keep 4.5's existing rule byte-identical. This closes `deferred-work.md:11` and makes AD-23 true **by construction in both directions**.
 
 ### Task 2 — `approve_match`: the atomic Aprobar (same migration) (AC: 1, 2)
-- [ ] **`approve_match(p_match_id bigint, p_actor_steamid64 text) returns jsonb`** — the §8 transaction as a **reusable RPC, not route-local logic** (DECISION J).
-- [ ] **Open exactly as `mark_walkover` does** (`0015:297-317`): unlocked peek for `tournament_id` → the **byte-identical** `order by m.id for update` whole-bracket lock → read the source under the lock.
-- [ ] Guards, all before any write, typed refusals RETURNED: `bad_match`; `not_pending` (state is not `pending` — this is what makes 4.6a's bind mandatory); `not_bound` (`demo_id is null` — refuse, do NOT bind here); `bad_score` (a `stat_row.rounds_won` missing **or NULL** for either competitor — ⚠ `rounds_won` is nullable and every row parsed before 0016 has it NULL, so test for NULL, not merely for an absent row); **`tied`** (`score_a = score_b` — DECISION K).
-- [ ] ⭐⭐ **TWO MORE GUARDS, ADDED BY 4-6a's CODE REVIEW (2026-07-16) — see hand-off #7. A BINDING EXISTING DOES NOT MEAN IT IS VALID.** 4-6a binds on the admin's say-so and verifies nothing about the demo's relationship to the match; both gaps were homed here BY NAME and both are nearly free once you have resolved the seats:
+- [x] **`approve_match(p_match_id bigint, p_actor_steamid64 text) returns jsonb`** — the §8 transaction as a **reusable RPC, not route-local logic** (DECISION J).
+- [x] **Open exactly as `mark_walkover` does** (`0015:297-317`): unlocked peek for `tournament_id` → the **byte-identical** `order by m.id for update` whole-bracket lock → read the source under the lock.
+- [x] Guards, all before any write, typed refusals RETURNED: `bad_match`; `not_pending` (state is not `pending` — this is what makes 4.6a's bind mandatory); `not_bound` (`demo_id is null` — refuse, do NOT bind here); `bad_score` (a `stat_row.rounds_won` missing **or NULL** for either competitor — ⚠ `rounds_won` is nullable and every row parsed before 0016 has it NULL, so test for NULL, not merely for an absent row); **`tied`** (`score_a = score_b` — DECISION K).
+- [x] ⭐⭐ **TWO MORE GUARDS, ADDED BY 4-6a's CODE REVIEW (2026-07-16) — see hand-off #7. A BINDING EXISTING DOES NOT MEAN IT IS VALID.** 4-6a binds on the admin's say-so and verifies nothing about the demo's relationship to the match; both gaps were homed here BY NAME and both are nearly free once you have resolved the seats:
   - **`wrong_demo`** — every `stat_row.steamid64` for this demo must be one of the two seats' `steamid64`. Found LIVE at 4-6a's BAR: binding a demo to a match between two *other people* was accepted. Your seat mapping has no answer in that case; `bad_score` catches the wholly-unrelated demo but **not a partial/superset overlap**.
   - **`demo_mismatch`** — ⭐ **the data-integrity M5 assertion** (`review-data-integrity.md:285-314`), which 4-6a's migration explicitly hands you: `stat_row.demo_id = match.demo_id` for every row you are about to approve. A re-upload legitimately creates a second `demo` sharing one `matchzy_match_id` (`0006`: `unique(matchzy_match_id, demo_sha256)`), and `upsertStatRows` conflicts on `(matchzy_match_id, steamid64)` setting `demo_id = excluded.demo_id` — so a re-parse can leave `match.demo_id = D_a` while every `stat_row.demo_id = D_b`, i.e. **a score derived from one demo while the evidence link names another**. One predicate closes both this and the re-homed 3.6 delete-missing item.
-- [ ] **The §8 steps, in this order** (`SOLUTION-DESIGN.md:372-375`):
+- [x] **The §8 steps, in this order** (`SOLUTION-DESIGN.md:372-375`):
   1. **`stat_row.status='approved'`** for the match — plus `approved_at = now()`, `approved_by = p_actor_steamid64` (AC1's fourth clause). Scope by `match_id` (4.6a's bind is what made that possible).
   2. **The score + state.** Map `competitor_a`/`competitor_b` → `roster_entry.steamid64` (`0004:29`) → `stat_row.rounds_won` → `score_a`/`score_b`. Set `score_source='demo_derived'`, `winner_entry` = the higher tally's entry, `state='resolved'`. ⚠ `demo_id` is already set by 4.6a — `score_source_guard` needs it.
   3. **`v_adv := public.advance_match(p_match_id, p_actor_steamid64, false);`** — ⭐ `p_emit => false` (AD-11). **Then honor `{ok:false}`:**
@@ -130,24 +133,24 @@ _Traces: FR-13 (publish), FR-31 (post) · AD-6, AD-5_
      ```
      Hand-off #1. **Mint `IC903`** — `IC901`/`IC902` are taken (`0015:37-42`); **never bare `P0001`**.
   4. **One `timeline_feed` row**, `entry_type='match_result'` (DECISION D). `detail` carries what the feed card renders (`mock-home.html:577-591` + the aria-live string `EXPERIENCE.md:145` — *"Resultado aprobado: Dex venció a Theo 16-13"*): `{winner_entry, loser_entry, score_a, score_b, bracket_position, demo_sha256}`. **Do NOT build a leaderboard refresh** — DECISION E.
-- [ ] **The audit row** (AD-17, `action='approve'` — already enumerated, no migration). ⭐ **Carry a real before/after** (hand-off #6): `{before:{state,score_source,score_a,score_b}, after:{…}, stat_rows_approved:N}`.
-- [ ] **⭐ The single emit (AC2).** After the writes, one `realtime.send(payload, 'match.approved', 'tournament:' || v_tid, false)` — mirror `0013:839-851`. The event name **`match.approved` is specified** (`SPINE:230`), not invented.
-- [ ] Return `{ok:true, stat_rows_approved, score_a, score_b, winner_entry, advanced: v_adv->'advanced', champion: v_adv->'champion'}` (mirror `0015:407-413`).
-- [ ] Service-role-only EXECUTE grant.
+- [x] **The audit row** (AD-17, `action='approve'` — already enumerated, no migration). ⭐ **Carry a real before/after** (hand-off #6): `{before:{state,score_source,score_a,score_b}, after:{…}, stat_rows_approved:N}`.
+- [x] **⭐ The single emit (AC2).** After the writes, one `realtime.send(payload, 'match.approved', 'tournament:' || v_tid, false)` — mirror `0013:839-851`. The event name **`match.approved` is specified** (`SPINE:230`), not invented.
+- [x] Return `{ok:true, stat_rows_approved, score_a, score_b, winner_entry, advanced: v_adv->'advanced', champion: v_adv->'champion'}` (mirror `0015:407-413`).
+- [x] Service-role-only EXECUTE grant.
 
 ### Task 3 — lib `lib/match/approve.ts` (AC: 1, 2)
-- [ ] New `lib/match/approve.ts` — mirror `lib/match/walkover.ts` exactly: `import 'server-only'`, injected `admin: SupabaseClient` first arg, the "THIS FILE IS UX, NOT TEETH" header, a discriminated-union result, a `Set` of the RPC's typed reasons, named SQLSTATE consts, **validate the ok-payload's shape before trusting it**, **fail closed** (`write_failed`) on an unrecognized reason.
-- [ ] SQLSTATE map: **`IC903` → `advance_refused`**, **`IC904` → `terminal`**, **`23514` → `format_not_declared`**. ⚠ Do NOT map `P0001` (`format.ts`'s) or `IC901`/`IC902` (`walkover.ts`'s).
-- [ ] `lib/match/approve.test.ts` (Vitest) — payload shape (`p_*` names), every typed reason, each SQLSTATE branch, `P0001` NOT hijacked, fail-closed on unknown.
+- [x] New `lib/match/approve.ts` — mirror `lib/match/walkover.ts` exactly: `import 'server-only'`, injected `admin: SupabaseClient` first arg, the "THIS FILE IS UX, NOT TEETH" header, a discriminated-union result, a `Set` of the RPC's typed reasons, named SQLSTATE consts, **validate the ok-payload's shape before trusting it**, **fail closed** (`write_failed`) on an unrecognized reason.
+- [x] SQLSTATE map: **`IC903` → `advance_refused`**, **`IC904` → `terminal`**, **`23514` → `format_not_declared`**. ⚠ Do NOT map `P0001` (`format.ts`'s) or `IC901`/`IC902` (`walkover.ts`'s).
+- [x] `lib/match/approve.test.ts` (Vitest) — payload shape (`p_*` names), every typed reason, each SQLSTATE branch, `P0001` NOT hijacked, fail-closed on unknown.
 
 ### Task 4 — route `app/api/admin/approve/route.ts` (AC: 1)
-- [ ] **The path is specified: `POST /api/admin/approve`** (`SOLUTION-DESIGN.md:372`). ⚠ It sits at `api/admin/`, **not** under `api/admin/match/` like 4.2/4.5/4.6a. Follow the spec.
-- [ ] Mirror `app/api/admin/match/walkover/route.ts`: `runtime='nodejs'`, `dynamic='force-dynamic'`, `getAdminClient` + `createSupabaseServerClient` + `requireAdmin`, `parseBody` with `isPositiveInt` (keep the `MAX_SAFE_INTEGER` bound — `Number.isInteger(1e21)` is `true`), and `STATUS_FOR: Record<Extract<TResult,{ok:false}>['reason'], number>` (**the `Extract<>` typing is load-bearing** — a reason with no status entry must be a compile error).
-- [ ] Statuses (the shipped convention): `bad_match` → **404**; `not_pending`/`not_bound`/`advance_refused`/`terminal`/`format_not_declared`/`tied` → **409**; `bad_score` → **422**; `write_failed` → **500**. Actor is **always** `gate.steamid64`, never from the body. JSON only, **no i18n** (Epic 5 owns Spanish); CSRF stays deferred to Epic 7 uniformly.
+- [x] **The path is specified: `POST /api/admin/approve`** (`SOLUTION-DESIGN.md:372`). ⚠ It sits at `api/admin/`, **not** under `api/admin/match/` like 4.2/4.5/4.6a. Follow the spec.
+- [x] Mirror `app/api/admin/match/walkover/route.ts`: `runtime='nodejs'`, `dynamic='force-dynamic'`, `getAdminClient` + `createSupabaseServerClient` + `requireAdmin`, `parseBody` with `isPositiveInt` (keep the `MAX_SAFE_INTEGER` bound — `Number.isInteger(1e21)` is `true`), and `STATUS_FOR: Record<Extract<TResult,{ok:false}>['reason'], number>` (**the `Extract<>` typing is load-bearing** — a reason with no status entry must be a compile error).
+- [x] Statuses (the shipped convention): `bad_match` → **404**; `not_pending`/`not_bound`/`advance_refused`/`terminal`/`format_not_declared`/`tied` → **409**; `bad_score` → **422**; `write_failed` → **500**. Actor is **always** `gate.steamid64`, never from the body. JSON only, **no i18n** (Epic 5 owns Spanish); CSRF stays deferred to Epic 7 uniformly.
 
 ### Task 5 — pgTAP: new `0017` suite (AC: 1, 2, 3) — with EXACT `plan(N)`
-- [ ] **New `supabase/tests/0017_aprobar_publish_test.sql`.** Mirror `0015_walkover_grace_test.sql`: the header mapping each AC → lettered sections, the `pg_temp` helper set (`tid`/`re`/`seeds`/`mid`/`comp`/`audit_ct`/`audit_all`/`matches8` — **reuse the golden snapshot, never hand-derive edges**), `plan(N)` with per-section arithmetic, `finish(); rollback;`. Fixtures need a real `player` for the audit FK (`0003:24`), a generated bracket, a demo, `stat_row`s with `rounds_won`, and a **bound, `pending`** match (drive 4.6a's `bind_match_demo` to get there — do not hand-build the state).
-- [ ] Cover, with exact plan accounting:
+- [x] **New `supabase/tests/0017_aprobar_publish_test.sql`.** Mirror `0015_walkover_grace_test.sql`: the header mapping each AC → lettered sections, the `pg_temp` helper set (`tid`/`re`/`seeds`/`mid`/`comp`/`audit_ct`/`audit_all`/`matches8` — **reuse the golden snapshot, never hand-derive edges**), `plan(N)` with per-section arithmetic, `finish(); rollback;`. Fixtures need a real `player` for the audit FK (`0003:24`), a generated bracket, a demo, `stat_row`s with `rounds_won`, and a **bound, `pending`** match (drive 4.6a's `bind_match_demo` to get there — do not hand-build the state).
+- [x] Cover, with exact plan accounting:
   - **AC1 the atomic publish (flagship):** every `stat_row` → `approved` **plus `approved_at`/`approved_by` stamped**; `score_a`/`score_b` = the `rounds_won` tallies **mapped to the right seats** — assert seat orientation explicitly, **a transposed score is the bug this catches**; `score_source='demo_derived'`; `state='resolved'`; the winner **ARRIVED** at the destination seat (assert the seat, not just `advanced`'s count — the 4.3 lesson, `deferred-work.md:141`); exactly ONE `timeline_feed` row with the right `entry_type` + `detail`; TWO audit rows (`approve` + `advance`), the `approve` row carrying a real before/after.
   - **AC2 the emit:** exactly ONE `realtime.messages` row for the Aprobar, event `match.approved`, topic `tournament:<id>` — and **ZERO** `bracket.advanced` (proving `p_emit => false` worked). ⚠ Create the day-partition the suite needs, as `0013` does (`deferred-work.md:146` — `realtime.send` swallows its own errors).
   - **AC3 the feed:** the row's shape; and that `anon` can SELECT it (the policy) while `service_role` **cannot** UPDATE or DELETE it (the append-only grant ceiling — the `0003` precedent).
@@ -155,24 +158,24 @@ _Traces: FR-13 (publish), FR-31 (post) · AD-6, AD-5_
   - **`score_source_guard`:** `throws_ok` that `score_a=16, score_b=14, score_source=null` is now **REFUSED** (23514). ⚠ This assertion does not exist today — hand-off #3.
   - **`tied`** → refused, nothing written. **`not_pending`** / **`not_bound`** → refused.
   - **⭐⭐ THE `{ok:false}` ROLLBACK:** engineer a `slot_taken` (a destination seat held by a DIFFERENT player), call `approve_match`, assert it RAISES `IC903` **and** the match is still `pending` with NO score, NO approved `stat_row`, NO `timeline_feed` row, NO audit rows. The whole publish rolled back. **The single most important assertion in the suite.**
-- [ ] **⭐ MUTATION-TEST EACH OF THE FOUR EFFECTS INDEPENDENTLY** (`deferred-work.md:141`: 4.3 mutation-tested AC1 and **shipped the identical hole on AC2** — deleting the result gate left all 79 assertions green). **A four-effect story has four ways to be blind:**
+- [x] **⭐ MUTATION-TEST EACH OF THE FOUR EFFECTS INDEPENDENTLY** (`deferred-work.md:141`: 4.3 mutation-tested AC1 and **shipped the identical hole on AC2** — deleting the result gate left all 79 assertions green). **A four-effect story has four ways to be blind:**
   - Remove the `stat_row` status flip → RED. · Remove the score write → RED. · Remove the `timeline_feed` insert → RED. · Swallow the `{ok:false}` RAISE → RED. · Neuter the `IC904` rule → RED. · Flip `p_emit => false` to `true` → the "zero `bracket.advanced`" assertion → RED. · **Transpose `score_a`/`score_b` → RED.**
   - A green suite after any mutation is a blind suite — **fix the test, not the mutation.**
 
 ### Task 6 — Regression sweep (AC: all)
-- [ ] Full `supabase db reset` + `supabase test db`. Baseline is **4.6a's total** (659 + 4.6a's delta); account for every delta. ⚠ **Predicted regressions:** the tightened `score_source_guard` may redden `0010_match_test.sql:280-322`'s score fixtures and `0012_format_lock_test.sql:343`; the extended terminal guard may redden any fixture leaving `resolved`. **Fix the FIXTURE from real behavior, never the guard** — the standing 4.1/4.2/4.3/4.5 lesson. Keep every `plan(N)` exact.
-- [ ] `npm test` (Vitest), `npm run lint` → 0, `npm run build` → 0 (the new route must register). Worker `go build ./... && go vet ./...` → 0 — and re-confirm **BY GREP** it touches no `match`/feed surface: `grep -riE '(from|into|update)\s+match\b|advance_match|score_a|score_b|timeline_feed' worker/` → **0**.
+- [x] Full `supabase db reset` + `supabase test db`. Baseline is **4.6a's total** (659 + 4.6a's delta); account for every delta. ⚠ **Predicted regressions:** the tightened `score_source_guard` may redden `0010_match_test.sql:280-322`'s score fixtures and `0012_format_lock_test.sql:343`; the extended terminal guard may redden any fixture leaving `resolved`. **Fix the FIXTURE from real behavior, never the guard** — the standing 4.1/4.2/4.3/4.5 lesson. Keep every `plan(N)` exact.
+- [x] `npm test` (Vitest), `npm run lint` → 0, `npm run build` → 0 (the new route must register). Worker `go build ./... && go vet ./...` → 0 — and re-confirm **BY GREP** it touches no `match`/feed surface: `grep -riE '(from|into|update)\s+match\b|advance_match|score_a|score_b|timeline_feed' worker/` → **0**.
 
 ### Task 7 — THE BAR: live-QA a real Aprobar over the production seam (AC: 1, 2, 3)
-- [ ] `supabase db reset` + re-apply `supabase/fixtures/live-qa-bracket-seed.sql`. Ingest a **real demo** from `demos/` through the real worker and bind it via 4.6a, so the score is genuinely demo-derived.
-- [ ] Drive over the **supabase-js → PostgREST → RPC** seam (not just in-DB):
+- [x] `supabase db reset` + re-apply `supabase/fixtures/live-qa-bracket-seed.sql`. Ingest a **real demo** from `demos/` through the real worker and bind it via 4.6a, so the score is genuinely demo-derived.
+- [x] Drive over the **supabase-js → PostgREST → RPC** seam (not just in-DB):
   1. Confirm a pre-bind Aprobar is refused `not_pending`.
   2. `approve_match` → one tap: stat rows `approved` + `approved_by`/`approved_at` stamped; `score_a`/`score_b` **match the real demo's final round tally, in the right seats**; `state='resolved'`; the winner advanced; exactly one `timeline_feed` row.
   3. **AC2 live:** a real **ANON WebSocket** subscriber receives exactly ONE `match.approved` on `tournament:<id>` — and **NO** `bracket.advanced` (proving `p_emit => false` over the real relay). Verify `realtime.messages` too.
   4. **AC3 live:** an **anon** client can read the feed row; `service_role` cannot UPDATE/DELETE it.
   5. **AD-23 live:** flip the resolved match to `forfeit` as `service_role` → refused (`IC904`); Aprobar a committed forfeit → refused (`IC901`).
   6. Prove the rollback live if feasible: engineer a `slot_taken` → `IC903`, match still `pending`, nothing published (or accept the pgTAP proof — the seam is proven by the succeeding paths).
-- [ ] **Report the leaderboard no-op honestly:** there is no leaderboard to check (Story 5.5 owns it). State that in the Completion Notes rather than claiming a recompute you did not do.
+- [x] **Report the leaderboard no-op honestly:** there is no leaderboard to check (Story 5.5 owns it). State that in the Completion Notes rather than claiming a recompute you did not do.
 
 ---
 
@@ -265,8 +268,54 @@ _Traces: FR-13 (publish), FR-31 (post) · AD-6, AD-5_
 
 ### Agent Model Used
 
+claude-opus-4-8 (bmad-dev-story workflow).
+
 ### Debug Log References
+
+- **pgTAP regressions from the tightened `score_source_guard` (predicted by Task 6, fixed the FIXTURE):** `0010_match_test.sql` tests 27–29 and `0012_format_lock_test.sql` test 29 set a `score_source` without a `score` (or a score without a source) — the pre-0017 permissive shape. The new `(score_a is null) = (score_source is null)` conjunct correctly rejects them. Fixed by adding `score_a`/`score_b` to each AD-5 fixture so every row is a complete, representative score (and `admin_manual` for the format-lock no-op probe). Guard NOT touched — real behaviour won.
+- **0017 test — `mid()` under `anon`:** the anon-read assertion (Section C) originally called `pg_temp.mid()`, which reads `public.match` (no anon grant → `permission denied`). Rewritten to count the whole anon-visible `timeline_feed` (exactly one row exists at that point) — proves the policy without touching `match`.
+- **0017 test — `audit_all` off by one:** two "nothing written" assertions expected `audit_all = 1`, but the whole-tournament `declare_match_format` writes a per-match audit row too (declare + bind = 2). Re-pinned to the specific `approve`/`advance` action counts (`= 0`), which is the actual rollback/refusal property.
+- **THE BAR environment — Windows port exclusions:** the local Supabase host ports (543xx, and the DB's 54322) fell inside Hyper-V/WSL dynamic excluded ranges (54251–54450, …–55063), so containers couldn't (re)bind them after a reset. Relocated the local stack's host ports to the free window (55321/55432/…) via `supabase/config.toml`, ran the whole BAR, then **reverted `config.toml`** — it is NOT in the story diff (a pure local-env workaround). No product code involved.
 
 ### Completion Notes List
 
+Implemented the atomic **Aprobar** publish (AD-6 / FR-13 / FR-31) — one admin action, one DB transaction.
+
+- **Migration `0017_aprobar_publish.sql`:** (a) `timeline_feed` (DECISION C — a table that did not exist; append-only like `audit_log`, ordered by `id`, an explicit `using(true)` viewer policy with its H2 safety reasoned); (b) tightened `score_source_guard` with the missing `(score_a is null) = (score_source is null)` conjunct (hand-off #3, CLEAN-APPLY verified — nothing writes a score today); (c) extended `match_terminal_state_guard` with the surgical **`IC904`** rule (DECISION G — blocks `resolved/manual_resolved → bye/forfeit/void`, deliberately leaves `resolved → pending` for Story 4.7); (d) **`approve_match(match, actor)`** RPC (DECISION J — reusable, callable from inside a txn), mirroring `mark_walkover`: canonical whole-bracket lock up front → guards (`bad_match`/`not_pending`/`not_bound`/`demo_mismatch`/`wrong_demo`/`bad_score`/`tied`) → the §8 four effects (status flip + `approved_by/at`; the score mapped seat→`rounds_won`; state `resolved`; the folded-in `advance_match(…, p_emit⇒false)` with the **`IC903`** `{ok:false}`→RAISE rollback; one `timeline_feed` row) → the audit row with a real before/after → one `match.approved` emit.
+- **`lib/match/approve.ts` + `.test.ts`** (mirrors `walkover.ts`): discriminated union, `IC903→advance_refused`, `IC904→terminal`, `23514→format_not_declared`; does NOT hijack `P0001` / `IC901` / `IC902`; validates the ok-payload shape; fails closed.
+- **`app/api/admin/approve/route.ts`** — the spec'd path (`POST /api/admin/approve`, NOT under `api/admin/match/`); `Extract<>`-typed `STATUS_FOR`; actor always from the gate.
+- **The two 4-6a-review integrity guards landed here BY NAME:** `wrong_demo` (every `stat_row.steamid64 ∈ {seat_a, seat_b}`) and `demo_mismatch` (`stat_row.demo_id = match.demo_id`, data-integrity M5).
+
+**Validation:**
+- **pgTAP `0017` — 43 assertions, plan exact; full suite 742 tests / 18 files PASS** (`supabase db reset` + `supabase test db`).
+- **MUTATION-TESTED BY EXECUTION (each of the four effects independently), observed 2026-07-18** via create-or-replace against the live DB: transpose score (2 red), `p_emit⇒true` (1), swallow `IC903` (6), remove status flip (3), remove score write (3), remove feed insert (5), neuter `IC904` (2), neuter the `score_source_guard` conjunct (1). Baseline and restored both 0 red — the suite is not blind.
+- **Vitest 275 / 16 files PASS · `npm run lint` 0 · `npm run build` 0** (`/api/admin/approve` registers). **Worker `go build`/`go vet` 0**; the match/feed-surface grep hits only two explanatory COMMENTS (no DML) — the worker touches no `match`/`timeline_feed`/`advance_match`/score columns.
+- **THE BAR (live-QA over the real seam, 18/20):** an 8-player bracket seating the two REAL `cuatro-luisito.dem` duelists in Winners R1/0, bound over the **supabase-js → PostgREST → RPC** seam, then Aprobar over the same seam: score `9-6` mapped to the RIGHT seats (…171 seat a = 9, …714 seat b = 6 — the demo's verified real tally), `resolved`, winner advanced to WR2, one `timeline_feed` row, both stat rows approved+stamped. A **real anon WebSocket** received exactly **ONE `match.approved` and ZERO `bracket.advanced`** on `tournament:1` (p_emit⇒false held over the live relay), carrying the 9-6 payload. Anon read the feed; `service_role` UPDATE/DELETE refused `42501`; `resolved→forfeit` refused `IC904`; re-Aprobar → `not_pending`. (The 2 non-passing checks are a redundant fallback — querying `realtime.messages` via PostgREST, which does not expose the `realtime` schema, PGRST106 — superseded by the real WebSocket proof.)
+- **Honest scope note:** the BAR used the real duelists' **verified** 9-6 tally rather than re-running the R2-backed Go `worker ingest` — the worker writes the demo to shared R2 and derives the DB URL from the hosted `SUPABASE_URL` (a production-write hazard I did not trigger in this session). 4-6a already proved the `rounds_won` derivation against 14 real demos and 4-6b changes nothing in the parser; the score MAPPING (transpose-caught) is proven exhaustively in pgTAP. **Leaderboard "recompute" (DECISION E) is a NO-OP** — there is no leaderboard to check (Story 5.5 owns it); the `status='approved'` flip IS the recompute (AD-20).
+- **deferred-work.md:** logged the dev-story-4-6b section — 5 items homed here are now CLOSED (AD-23 IC904 half, `wrong_demo`, `demo_mismatch`/M5, `score_source_guard` tightening, NULL-`rounds_won` via `bad_score`); 2 open (the ceremony-lock check → Story 6.2; `approved_by` anon-exposure accepted). DECISION D's `bracket_advance` writer was already homed at create-story.
+
 ### File List
+
+- `supabase/migrations/0017_aprobar_publish.sql` (new) — `timeline_feed`, tightened `score_source_guard`, extended `match_terminal_state_guard` (`IC904`), `approve_match` RPC + grant.
+- `supabase/tests/0017_aprobar_publish_test.sql` (new) — 43-assertion pgTAP suite (AC1/AC2/AC3, AD-23 both ways, the `{ok:false}` rollback), mutation-tested.
+- `lib/match/approve.ts` (new) — the `approveMatch` UX wrapper over `approve_match`.
+- `lib/match/approve.test.ts` (new) — Vitest for the payload + SQLSTATE classification + fail-closed.
+- `app/api/admin/approve/route.ts` (new) — `POST /api/admin/approve`.
+- `supabase/tests/0010_match_test.sql` (modified) — AD-5 fixtures carry a complete score+source (tightened guard).
+- `supabase/tests/0012_format_lock_test.sql` (modified) — the format-lock no-op score write carries `score_source='admin_manual'`.
+- `_bmad-output/implementation-artifacts/deferred-work.md` (modified) — dev-story-4-6b section (5 closed, 2 open).
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified) — status → in-progress → review.
+
+### Change Log
+
+- 2026-07-18 — Story 4.6b implemented: `approve_match` atomic Aprobar (AD-6/FR-13), `timeline_feed` (FR-31), tightened `score_source_guard`, `IC904` AD-23 half; lib + route; 43-assertion pgTAP (mutation-tested); full regression green; live-seam BAR passed. Status → review.
+
+### Review Findings
+
+Code review 2026-07-18 (three parallel adversarial layers — Blind Hunter, Edge Case Hunter, Acceptance Auditor — + reviewer verification against the base schema/`advance_match` contract). **No code-correctness bugs found** — the implementation faithfully delivers AC1/AC2/AC3, all DECISIONS, and all hand-offs (Acceptance Auditor: no violations). Findings are two test-coverage gaps that defeat the story's own per-effect mutation guarantee, plus one deliberate-scope question. 11 further items dismissed as unreachable, accepted (per Cuatro), or established convention.
+
+- [x] [Review][Patch] (resolved from Decision, 2026-07-18 — Cuatro chose "tighten now") `score_source_guard` binds only `score_a` to provenance — the conjunct `(score_a is null) = (score_source is null)` leaves `score_b` unconstrained, so `score_a=NULL, score_b=5, score_source=NULL` still passes. **APPLIED:** added `and (score_b is null) = (score_source is null)` to the global CHECK so a score and its provenance travel together on both columns. Breaks nothing today (`approve_match` + the 0010/0012 fixtures write score_a/score_b/source together). [supabase/migrations/0017_aprobar_publish.sql:165-167]
+- [x] [Review][Patch] Winner-selection b-wins branch is never exercised — every driven approve in the 0017 suite had seat **a** winning 16-13, so the `else v_m.competitor_b` winner branch and a b-wins score orientation went untested; a mutation to always pick `competitor_a` survived green, defeating the story's own per-effect mutation guarantee for one of the four effects. **APPLIED:** new Section H (6 assertions) drives a b-wins approve on TROLL winners/2 (Db, 11-16, b wins) asserting `winner_entry = competitor_b`, `score_a=11`/`score_b=16` mapped to the right seats, and the winner arriving at its own Winners R2 destination. [supabase/tests/0017_aprobar_publish_test.sql]
+- [x] [Review][Patch] The `match.approved` emit payload contents were unasserted — Section B checked count=1, zero `bracket.advanced`, and `private=false`, but never the payload fields. A mutation garbling the Broadcast body stayed green (the payload was pinned only in the Vitest mock, never against the real emit). **APPLIED:** added a Section B assertion reading the emitted `realtime.messages` payload directly (winner/loser entries + the 16-13 score in the right seats). [supabase/tests/0017_aprobar_publish_test.sql]
+
+**Review actions applied 2026-07-18** — all 3 patches applied and verified: `supabase db reset` + `supabase test db` → **18 files / 749 tests PASS** (0017 suite now 50 assertions, up from 43; 0010/0012 still green under the tightened `score_b` guard). No TS changed (lib/route untouched), so Vitest/lint/build are unaffected. 11 review items dismissed as unreachable/accepted/convention; 0 deferred. Status → done.
