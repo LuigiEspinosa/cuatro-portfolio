@@ -21,17 +21,19 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  *     (its `not_bindable` guard refuses a terminal state first, BY DESIGN — that is AC2), but mapped anyway:
  *     Story 4.1's review found that the one path its trigger existed for reported an HTTP 500 because the
  *     code was unmapped. A refusal is a REFUSAL, not a server fault. 4.7's un-seat path will make it live.
- *   * 23514 — 0012's `match_live_requires_locked_format` (0012:123-126) -> `format_not_declared`. This closes
- *     deferred-work.md's "Nothing in TypeScript maps 23514" item, open since Story 4.2: "whoever lands
- *     `declared -> live` inherits an opaque check_violation". 4.6a lands `pending`, so it inherits it. The
- *     RPC's own guard means this should never be reached — it is the honest report if it ever is.
- *     ⚠ 23514 is NOT unique to that constraint. `score_source_guard` (0010:124-128) is also a CHECK on
- *     `match` and this same UPDATE re-evaluates it: a row with `score_source='admin_manual'`,
- *     `manual_override=false`, `demo_id IS NULL` is legal today and becomes illegal the instant the bind
- *     sets `demo_id` — which would report here as "declare the format first" on a match whose format is
- *     locked. Unreachable until Story 4.8 writes `score_source`; tracked in deferred-work.md and homed
- *     there, where the fix is to discriminate on the constraint name in `error.message`. (Code review
- *     2026-07-16.)
+ *   * 23514 — a `match` check_violation, DISAMBIGUATED by the constraint name in `error.message` (Story 4.8,
+ *     DECISION I — closing the deferred-work.md item this file carried since Story 4.6a):
+ *       · `match_live_requires_locked_format` (0012:123-126) -> `format_not_declared`. This closes the "whoever
+ *         lands `declared -> live` inherits an opaque check_violation" item open since Story 4.2; 4.6a lands
+ *         `pending`, so it inherits it. The RPC's own guard means this should never be reached — it is the honest
+ *         report if it ever is.
+ *       · `score_source_guard` (0010:124-128) -> `write_failed`. A row with `score_source='admin_manual'`,
+ *         `manual_override=false`, `demo_id IS NULL` is legal today and becomes illegal the instant the bind sets
+ *         `demo_id`. ⚠ UNREACHABLE via bind (analysis, recorded in Story 4.8 Completion Notes): the RPC's
+ *         `not_bindable` guard refuses anything that is not `declared`/`live`, and a `manual_resolved` match — the
+ *         only thing 4.8 sets `score_source` on — is neither, so no bind ever touches a score_source-set row.
+ *         Discriminating the name means a future path that DID reach it reports honestly, never "declare the
+ *         format first". (Was: EVERY 23514 mapped to `format_not_declared`. Code review 2026-07-16; fixed 4.8.)
  *
  * ⚠ DELIBERATELY NOT MAPPED: bare `P0001` (that is lib/match/format.ts's `already_locked` — deferred-work.md,
  * "P0001 is PL/pgSQL's GENERIC exception code") and `IC902` (that is lib/match/walkover.ts's
@@ -44,7 +46,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  */
 
 const TERMINAL_STATE = 'IC901'; // match_terminal_state_guard — a committed bye/forfeit/void cannot be flipped
-const CHECK_VIOLATION = '23514'; // match_live_requires_locked_format — `pending` needs a locked format
+const CHECK_VIOLATION = '23514'; // a match CHECK — DISAMBIGUATED by constraint name below (two CHECKs fire 23514)
+// The bind's UPDATE re-evaluates every CHECK on `match`. TWO of them raise 23514, and they mean DIFFERENT things,
+// so the raw code cannot be the discriminator — the CONSTRAINT NAME in error.message is (Story 4.8, DECISION I,
+// closing the deferred-work.md "bind.ts maps EVERY 23514 to format_not_declared" item):
+const FORMAT_LOCK_CONSTRAINT = 'match_live_requires_locked_format'; // -> format_not_declared (the honest UX)
+const SCORE_SOURCE_CONSTRAINT = 'score_source_guard'; // -> write_failed (unreachable via bind today — see below)
 
 /** The RPC's typed reply. `ok:false` carries a `reason` string; the ok payload carries the binding's fields. */
 interface RpcResult {
@@ -110,7 +117,24 @@ export async function bindMatchDemo(
       return { ok: false, reason: 'terminal' };
     }
     if (error.code === CHECK_VIOLATION) {
-      return { ok: false, reason: 'format_not_declared' };
+      // ⚠ 23514 is NOT unique to one constraint (Story 4.8, DECISION I). match_live_requires_locked_format means
+      // "declare the format first" (a real, actionable admin UX); score_source_guard tripping on this UPDATE is a
+      // should-never-happen (a row already carrying `score_source='admin_manual', manual_override=false,
+      // demo_id IS NULL` becomes illegal the instant the bind sets demo_id). ⚠ UNREACHABLE via bind TODAY, by
+      // analysis: bind_match_demo's `not_bindable` guard refuses anything that is not `declared`/`live`, and a
+      // `manual_resolved` match (the only thing Story 4.8 writes score_source onto) is neither — so no bind ever
+      // touches a score_source-set row. Discriminating the constraint name means a future path that DID reach it
+      // reports honestly instead of lying "declare the format first". Anything unrecognised fails CLOSED.
+      if (error.message?.includes(FORMAT_LOCK_CONSTRAINT)) {
+        return { ok: false, reason: 'format_not_declared' };
+      }
+      if (error.message?.includes(SCORE_SOURCE_CONSTRAINT)) {
+        console.error('[bindMatchDemo] score_source_guard tripped on bind (should be unreachable):', error.message);
+        return { ok: false, reason: 'write_failed' };
+      }
+      // A 23514 from some other match CHECK — fail closed rather than mislabel it "declare the format first".
+      console.error('[bindMatchDemo] unrecognised 23514 on bind:', error.message);
+      return { ok: false, reason: 'write_failed' };
     }
     console.error('[bindMatchDemo] bind_match_demo RPC failed:', error.message);
     return { ok: false, reason: 'write_failed' };

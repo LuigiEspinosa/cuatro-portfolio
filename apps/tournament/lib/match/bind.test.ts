@@ -180,6 +180,32 @@ describe('bindMatchDemo — the RPC payload + classification', () => {
     });
   });
 
+  it('maps a 23514 from score_source_guard to write_failed, NOT format_not_declared (Story 4.8, DECISION I)', async () => {
+    // ⭐ THE DISAMBIGUATION. Two CHECKs on `match` raise 23514 and mean different things — the raw code cannot be
+    // the discriminator, the constraint NAME is. A score_source_guard trip is a should-never-happen (unreachable
+    // via bind: a manual_resolved match is never declared/live), so it fails closed rather than lying "declare
+    // the format first". Before 4.8 this reported format_not_declared — the exact mislabel this closes.
+    const { admin } = makeAdmin({
+      data: null,
+      error: { code: '23514', message: 'violates check constraint "score_source_guard"' },
+    });
+    await expect(bindMatchDemo(admin, { actingAdmin: ADMIN, matchId: MATCH, demoId: DEMO })).resolves.toEqual({
+      ok: false,
+      reason: 'write_failed',
+    });
+  });
+
+  it('fails CLOSED on a 23514 whose constraint name is unrecognised (never mislabels it format_not_declared)', async () => {
+    const { admin } = makeAdmin({
+      data: null,
+      error: { code: '23514', message: 'violates check constraint "some_future_match_check"' },
+    });
+    await expect(bindMatchDemo(admin, { actingAdmin: ADMIN, matchId: MATCH, demoId: DEMO })).resolves.toEqual({
+      ok: false,
+      reason: 'write_failed',
+    });
+  });
+
   it('does NOT hijack a bare P0001 (that belongs to lib/match/format.ts) — it fails closed', async () => {
     // deferred-work.md, "P0001 is PL/pgSQL's GENERIC exception code" (cited by title — the `:127` this used
     // to cite was never that item). format.ts maps P0001 to already_locked; reading it as a bind reason here
