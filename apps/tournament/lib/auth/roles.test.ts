@@ -102,18 +102,43 @@ describe('resolveRole (AC2 / AC6 / AC8b)', () => {
   });
 });
 
-/** Mock the service-role `app_role` upsert surface for setRole. */
-function makeRoleWriter(opts: { upsertError?: { message: string; code?: string } | null } = {}) {
+/**
+ * Mock the service-role client for setRole — now table-aware (Story 4.9): `app_role` carries the prior-role
+ * pre-read + the durable upsert; `audit_log` carries the grant_role audit insert.
+ */
+function makeRoleWriter(
+  opts: {
+    upsertError?: { message: string; code?: string } | null;
+    priorRole?: Role | null; // what the app_role pre-read returns (the audit row's `before`)
+    auditError?: { message: string } | null; // an audit_log insert failure (must NOT fail the grant)
+  } = {},
+) {
   const upsertCalls: { row: Record<string, unknown>; options: unknown }[] = [];
-  const builder = {
+  const auditInserts: Record<string, unknown>[] = [];
+  const appRoleBuilder = {
+    select() {
+      return this;
+    },
+    eq() {
+      return this;
+    },
+    async maybeSingle() {
+      return { data: opts.priorRole ? { role: opts.priorRole } : null, error: null };
+    },
     async upsert(row: Record<string, unknown>, options: unknown) {
       upsertCalls.push({ row, options });
       return { error: opts.upsertError ?? null };
     },
   };
-  const from = vi.fn(() => builder);
+  const auditBuilder = {
+    async insert(row: Record<string, unknown>) {
+      auditInserts.push(row);
+      return { error: opts.auditError ?? null };
+    },
+  };
+  const from = vi.fn((table: string) => (table === 'audit_log' ? auditBuilder : appRoleBuilder));
   const admin = { from } as unknown as SupabaseClient;
-  return { admin, from, upsertCalls };
+  return { admin, from, upsertCalls, auditInserts };
 }
 
 describe('setRole (AC5 / AC6 — durable role write + granted_by / no-self-grant)', () => {
@@ -163,6 +188,48 @@ describe('setRole (AC5 / AC6 — durable role write + granted_by / no-self-grant
     const { admin, upsertCalls } = makeRoleWriter();
     await setRole(admin, { actingAdmin: ADMIN_ID, target: OTHER_ID, role: 'viewer' });
     expect(upsertCalls[0].row).toMatchObject({ steamid64: OTHER_ID, role: 'viewer' });
+  });
+
+  // ── ⭐ Story 4.9 (DELIVERABLE 2 / DECISION B): the grant_role audit row ──
+  it('writes an EVENT-GLOBAL grant_role audit row (tournament_id null, actor = acting admin, before/after)', async () => {
+    // A first grant: no prior app_role row → before.role is null; after.role is the granted role.
+    const { admin, auditInserts } = makeRoleWriter({ priorRole: null });
+    const result = await setRole(admin, { actingAdmin: ADMIN_ID, target: OTHER_ID, role: 'admin' });
+    expect(result).toEqual({ ok: true });
+    expect(auditInserts).toHaveLength(1);
+    expect(auditInserts[0]).toEqual({
+      tournament_id: null, // event-global (AD-18) — the 0020 widening enables it
+      actor_steamid64: ADMIN_ID, // the ACTING admin, never the target/body
+      action: 'grant_role',
+      target_match_id: null,
+      detail: { target: OTHER_ID, before: { role: null }, after: { role: 'admin' } },
+    });
+  });
+
+  it('captures the target’s PRIOR role in the audit before/after (a revoke of an existing admin)', async () => {
+    const { admin, auditInserts } = makeRoleWriter({ priorRole: 'admin' });
+    await setRole(admin, { actingAdmin: ADMIN_ID, target: OTHER_ID, role: 'viewer' });
+    expect(auditInserts[0].detail).toEqual({
+      target: OTHER_ID,
+      before: { role: 'admin' },
+      after: { role: 'viewer' },
+    });
+  });
+
+  it('does NOT write the audit row when the app_role upsert fails (no phantom grant logged)', async () => {
+    const { admin, auditInserts } = makeRoleWriter({ upsertError: { message: 'connection reset' } });
+    await setRole(admin, { actingAdmin: ADMIN_ID, target: OTHER_ID, role: 'admin' });
+    expect(auditInserts).toHaveLength(0);
+  });
+
+  it('a failed audit insert LOGS but does NOT fail the (already-durable, idempotent) grant', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { admin, upsertCalls } = makeRoleWriter({ auditError: { message: 'audit_log down' } });
+    const result = await setRole(admin, { actingAdmin: ADMIN_ID, target: OTHER_ID, role: 'admin' });
+    expect(result).toEqual({ ok: true }); // the grant still succeeded — the app_role row landed
+    expect(upsertCalls).toHaveLength(1);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
   });
 });
 

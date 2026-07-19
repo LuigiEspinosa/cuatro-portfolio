@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getAdminClient } from '@/lib/supabase/admin';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/auth/admin-guard';
+import { type NextRequest } from 'next/server';
+import { handleAdminCommand, isPositiveInt } from '@/lib/admin/command-route';
 import { setRegistrationOpen, type SetRegistrationResult } from '@/lib/roster';
 
 // Service-role writes + the per-request admin gate need Node APIs; never statically prerendered.
@@ -11,10 +9,16 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/admin/registration — admin opens/closes the registration window (Story 2.5, AC1/AC6).
  *
- * Under the AD-8 app/api/admin/ tree, `requireAdmin`-gated (reuses 2.4's gate verbatim → instant
- * revoke via the app_role re-read). Transitions `tournament.state` between `registration_open` ↔
- * `registration_closed`; the lib's `WHERE state IN (...)` guard means it cannot re-open once the
- * bracket is live (→ 409 locked). Writes an audit row. Thin wrapper — all logic in `lib/roster.ts`.
+ * Under the AD-8 app/api/admin/ tree, gated by `requireAdmin` (reuses 2.4's gate → instant revoke via the
+ * app_role re-read). Transitions `tournament.state` between `registration_open` ↔ `registration_closed`; the
+ * lib's `WHERE state IN (...)` guard means it cannot re-open once the bracket is live (→ 409 locked). Writes an
+ * audit row. Thin definition over the shared `handleAdminCommand` envelope (Story 4.9) — all logic in
+ * `lib/roster.ts`.
+ *
+ * `tournament_id` validates through the shared range-capped `isPositiveInt` (Story 4.9 follow-up): a bare
+ * `Number.isInteger` check passes `1e21` (an out-of-`bigint`-range id) straight through to a 22003/500, and
+ * passes `0`/negatives to the lib's `bad_tournament` 404. Capping here makes both a clean 400 — the same fix
+ * `bracket` carries; the tiny contract shift is `tournament_id <= 0` moving 404→400 (a malformed id IS a 400).
  *
  * Body: `{ tournament_id: number; open: boolean }`. Returns JSON (a machine surface, no i18n).
  */
@@ -34,45 +38,18 @@ interface RegistrationBody {
 function parseBody(raw: unknown): RegistrationBody | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const { tournament_id, open } = raw as Record<string, unknown>;
-  if (typeof tournament_id !== 'number' || !Number.isInteger(tournament_id)) return null;
+  if (!isPositiveInt(tournament_id)) return null;
   if (typeof open !== 'boolean') return null;
   return { tournament_id, open };
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const admin = getAdminClient();
-    const ssr = await createSupabaseServerClient();
-
-    // AC1/AC6: server-enforced admin gate. Non-admin → 403, no write.
-    const gate = await requireAdmin(ssr, admin);
-    if (!gate.ok) {
-      return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
-    }
-
-    let raw: unknown;
-    try {
-      raw = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-    }
-    const body = parseBody(raw);
-    if (!body) {
-      return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
-    }
-
-    const result = await setRegistrationOpen(admin, {
-      actingAdmin: gate.steamid64,
-      tournamentId: body.tournament_id,
-      open: body.open,
-    });
-    if (!result.ok) {
-      return NextResponse.json({ error: result.reason }, { status: STATUS_FOR[result.reason] });
-    }
-
-    return NextResponse.json({ ok: true, state: result.state });
-  } catch (err) {
-    console.error('[api/admin/registration] request failed:', err);
-    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
-  }
+export function POST(request: NextRequest) {
+  return handleAdminCommand<RegistrationBody, SetRegistrationResult>(request, {
+    parseBody,
+    run: (admin, gate, body) =>
+      setRegistrationOpen(admin, { actingAdmin: gate.steamid64, tournamentId: body.tournament_id, open: body.open }),
+    statusFor: STATUS_FOR,
+    ok: (r) => ({ ok: true, state: r.state }),
+    logLabel: 'api/admin/registration',
+  });
 }

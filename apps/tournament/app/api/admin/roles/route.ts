@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getAdminClient } from '@/lib/supabase/admin';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/auth/admin-guard';
+import { type NextRequest } from 'next/server';
+import { handleAdminCommand } from '@/lib/admin/command-route';
 import { setRole, healRoleMirror, type Role, type SetRoleResult } from '@/lib/auth/roles';
 
 // The Auth Admin API + service-role writes need Node APIs (like the callback route), and the
@@ -12,9 +10,10 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/admin/roles — admin-only grant/revoke (Story 2.4, AC1/AC4/AC5/AC6).
  *
- * The FIRST route under the AD-8 `app/api/admin/` tree. A THIN wrapper: all logic lives in
- * the injectable `lib/` functions (mirrors the callback route delegating to `login-flow.ts`),
- * so this file is glue and is covered indirectly by the `lib/auth/*` unit tests.
+ * The FIRST route under the AD-8 `app/api/admin/` tree. A THIN definition over the shared `handleAdminCommand`
+ * envelope (Story 4.9): the gate, body-parse, refusal→status mapping and 500 boundary live in the helper; the
+ * durable role write + JWT-mirror heal live in the injectable `lib/auth/*` functions (covered by the
+ * `lib/auth/*` unit tests).
  *
  * Body: `{ steamid64: string; role: 'admin' | 'viewer' }`. Returns JSON — a machine surface,
  * no i18n (the UX docs define no role-management/forbidden page; this is backend-only).
@@ -42,64 +41,31 @@ function parseRoleBody(raw: unknown): RoleBody | null {
   return { steamid64, role };
 }
 
-export async function POST(request: NextRequest) {
-  // One controlled fail-closed boundary around the WHOLE handler: a throw from client
-  // construction, the requireAdmin gate's transport calls (getUser / the app_role re-read),
-  // or a setRole/healRoleMirror infra failure all land here as a JSON 500 — never Next's
-  // default HTML error page. The early returns below (403 / 400) exit before the catch.
-  try {
-    const admin = getAdminClient();
-    const ssr = await createSupabaseServerClient();
-
-    // AC1/AC3: server-enforced admin gate. Non-admin → 403, no write. requireAdmin re-reads the
-    // authoritative app_role (Option A), so a revoked admin is rejected on their very next call —
-    // independent of when their stale access token expires.
-    const gate = await requireAdmin(ssr, admin);
-    if (!gate.ok) {
-      return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
-    }
-
-    // AC4: validate the body — malformed / missing / invalid role → 400 (no write).
-    let raw: unknown;
-    try {
-      raw = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-    }
-    const body = parseRoleBody(raw);
-    if (!body) {
-      return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
-    }
-
-    // AC5/AC6: durable app_role write. granted_by = the acting admin (a DIFFERENT id by the
-    // no-self-grant guard, so it is a genuine accountability pointer); a revoke UPDATEs the
-    // row to viewer, never deletes it (keeps the revoke durable against re-login + allowlist).
-    const result = await setRole(admin, {
-      actingAdmin: gate.steamid64,
-      target: body.steamid64,
-      role: body.role,
-    });
-    if (!result.ok) {
-      return NextResponse.json({ error: result.reason }, { status: STATUS_FOR[result.reason] });
-    }
-
-    // AC6: heal the JWT mirror so the target's POST-REFRESH token carries the new role and
-    // is_admin() converges on any RLS-read path. (Enforcement is already instant via the
-    // app_role re-read in requireAdmin; this is the refresh-convergence half.)
-    //
-    // Audit note (NOT a write): the audit_log row for action='grant_role' is DEFERRED to
-    // Story 4.9 — audit_log.tournament_id is NOT NULL, but a role change is event-global
-    // (AD-18). app_role.granted_by / granted_at is the interim durable record. Do NOT write
-    // audit_log here.
-    await healRoleMirror(admin, body.steamid64, body.role);
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    // Never surface a raw 500. A thrown side effect (e.g. a listUsers/updateUserById infra
-    // failure in healRoleMirror, or a transport error in the gate) fails closed to a controlled
-    // JSON error. A durable app_role write may already have landed and the whole operation is
-    // idempotent, so a retry is safe.
-    console.error('[api/admin/roles] request failed:', err);
-    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
-  }
+export function POST(request: NextRequest) {
+  return handleAdminCommand<RoleBody, SetRoleResult>(request, {
+    parseBody: parseRoleBody,
+    // AC5/AC6: durable app_role write. granted_by = the acting admin (a DIFFERENT id by the no-self-grant
+    // guard, so it is a genuine accountability pointer); a revoke UPDATEs the row to viewer, never deletes it.
+    // setRole ALSO writes the `grant_role` audit row (Story 4.9, DECISION B — the audit deferral roles/route.ts
+    // once carried is now lifted; the row is written in setRole, in migration 0020's now-nullable
+    // audit_log.tournament_id event-global shape). On success we heal the JWT mirror so the target's
+    // POST-REFRESH token carries the new role and is_admin() converges (enforcement is already instant via the
+    // app_role re-read in requireAdmin; this is the refresh-convergence half). A healRoleMirror throw
+    // propagates to the helper's outer try/catch → JSON 500 (the durable app_role write already landed and the
+    // whole operation is idempotent, so a retry is safe).
+    run: async (admin, gate, body) => {
+      const result = await setRole(admin, {
+        actingAdmin: gate.steamid64,
+        target: body.steamid64,
+        role: body.role,
+      });
+      if (result.ok) {
+        await healRoleMirror(admin, body.steamid64, body.role);
+      }
+      return result;
+    },
+    statusFor: STATUS_FOR,
+    ok: () => ({ ok: true }),
+    logLabel: 'api/admin/roles',
+  });
 }

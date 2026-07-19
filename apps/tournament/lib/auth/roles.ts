@@ -107,6 +107,15 @@ export type SetRoleResult =
  * on revoke — a persistent `viewer` row is what keeps the revoke durable against re-login +
  * allowlist re-promotion (`resolveRole` reads `app_role` first).
  *
+ * ⭐ Story 4.9 (DELIVERABLE 2 / DECISION B): setRole now ALSO writes the AD-17 `grant_role`
+ * audit_log row — the one previously-un-logged audited action (the deferral roles/route.ts:90-93
+ * once carried is lifted here). It is EVENT-GLOBAL (tournament_id NULL — a role is event-global,
+ * AD-18; migration 0020 dropped audit_log.tournament_id's NOT NULL to permit it) and NON-ATOMIC
+ * with the app_role write: the durable `app_role` row is the source of truth and lands FIRST, so
+ * the audit insert is best-effort append-only logging — a failure logs and does NOT roll back an
+ * idempotent grant. `before`/`after` capture the target's prior and new role (a pre-read gets the
+ * prior; `before.role` is null on a first grant).
+ *
  * Fail-closed guards run BEFORE any DB write: a non-17-digit target → `bad_target`; a
  * self-target → `self_target` (no-self-grant prevents a self-demote lockout / self-promote
  * loop and guarantees `granted_by` is always a DIFFERENT admin). A `23503` FK violation
@@ -126,6 +135,16 @@ export async function setRole(
     return { ok: false, reason: 'self_target' };
   }
 
+  // Capture the prior role for the audit row's before/after. Best-effort: a read error does not block the
+  // grant — `before.role` falls back to null ("no prior role recorded"), and the durable app_role write below
+  // is still the source of truth.
+  const { data: prior } = await admin
+    .from('app_role')
+    .select('role')
+    .eq('steamid64', target)
+    .maybeSingle();
+  const beforeRole = (prior?.role as Role | undefined) ?? null;
+
   // `granted_at` is set explicitly (not left to the column default) so it refreshes on every
   // grant/revoke — a conflict UPDATE does not re-apply the INSERT default.
   const { error } = await admin.from('app_role').upsert(
@@ -143,6 +162,28 @@ export async function setRole(
     }
     return { ok: false, reason: 'write_failed' };
   }
+
+  // ⭐ AD-17 / Story 4.9: the grant_role audit row, written AFTER the durable app_role write (which already
+  // landed). Event-global (tournament_id NULL, AD-18) and non-atomic: a failure LOGS and does not roll back the
+  // idempotent grant. actor is the acting admin (a real player — actor_steamid64 is NOT NULL + FK to player).
+  const { error: auditError } = await admin.from('audit_log').insert({
+    tournament_id: null,
+    actor_steamid64: actingAdmin,
+    action: 'grant_role',
+    target_match_id: null,
+    detail: {
+      target,
+      before: { role: beforeRole },
+      after: { role },
+    },
+  });
+  if (auditError) {
+    console.error(
+      '[setRole] grant_role audit_log insert failed (the grant already landed and is idempotent):',
+      auditError.message,
+    );
+  }
+
   return { ok: true };
 }
 

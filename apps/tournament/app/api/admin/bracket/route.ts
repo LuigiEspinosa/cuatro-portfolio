@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getAdminClient } from '@/lib/supabase/admin';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/auth/admin-guard';
+import { type NextRequest } from 'next/server';
+import { handleAdminCommand, isPositiveInt } from '@/lib/admin/command-route';
 import { generateAndPersistBracket, type BracketCommandResult } from '@/lib/bracket/generate';
 
 // Service-role writes + the per-request admin gate need Node APIs (and the draw needs node:crypto);
@@ -15,12 +13,16 @@ export const dynamic = 'force-dynamic';
  * The FIRST atomic admin command route (AD-6/AD-8): unlike the roster routes, whose writes are each
  * individually idempotent, this one cannot be decomposed — a partial failure would leave a half-built
  * bracket. So the whole thing (seed the roster, insert every match, flip the state, append the audit
- * row) commits inside the `generate_bracket` RPC, in one transaction. Story 4.6 (Aprobar) reuses this
- * shape; Story 4.9 generalizes the audited-command-route boilerplate.
+ * row) commits inside the `generate_bracket` RPC, in one transaction. Story 4.9 GENERALIZED this
+ * audited-command-route boilerplate into the shared `handleAdminCommand` envelope, which this route now uses.
  *
- * Thin wrapper — all logic lives in `lib/bracket/generate.ts` (Vitest) and migration 0011 (pgTAP).
- * `requireAdmin` is the authorization gate (server-side app_role re-read = instant revoke); the RPC's
- * service-role-only EXECUTE grant is the second lock on the same door.
+ * Thin definition over `handleAdminCommand` — all command logic lives in `lib/bracket/generate.ts` (Vitest)
+ * and migration 0011 (pgTAP). `requireAdmin` (inside the helper) is the authorization gate (server-side
+ * app_role re-read = instant revoke); the RPC's service-role-only EXECUTE grant is the second lock.
+ *
+ * ⚠ Story 4.9 also CLOSED the deferred unbounded-integer 400-gap here: `tournament_id` now validates through
+ * the shared `isPositiveInt` (range-capped), so an out-of-`bigint`-range id (`1e21`) is a clean 400 instead of
+ * overflowing to a 22003/500 (deferred-work.md, 4.2 review — "the shared isPositiveInt/body-parse helper").
  *
  * Body: `{ tournament_id: number }`. Returns JSON (a machine surface, no i18n — the Spanish viewer
  * bracket, including the `Pase directo` bye badge, is Epic 5).
@@ -45,53 +47,28 @@ interface BracketBody {
   tournament_id: number;
 }
 
-/** Validate the body. Returns null on anything malformed (→ 400, no write). */
+/** Validate the body. Returns null on anything malformed (→ 400, no write). `tournament_id` uses the shared,
+ *  range-capped `isPositiveInt` (Story 4.9) — closing the pre-existing unbounded-integer gap. */
 function parseBody(raw: unknown): BracketBody | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const { tournament_id } = raw as Record<string, unknown>;
-  if (typeof tournament_id !== 'number' || !Number.isInteger(tournament_id)) return null;
+  if (!isPositiveInt(tournament_id)) return null;
   return { tournament_id };
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const admin = getAdminClient();
-    const ssr = await createSupabaseServerClient();
-
-    // AC1: server-enforced admin gate. Non-admin → 403, no draw, no write.
-    const gate = await requireAdmin(ssr, admin);
-    if (!gate.ok) {
-      return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
-    }
-
-    let raw: unknown;
-    try {
-      raw = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-    }
-    const body = parseBody(raw);
-    if (!body) {
-      return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
-    }
-
-    const result = await generateAndPersistBracket(admin, {
-      actingAdmin: gate.steamid64,
-      tournamentId: body.tournament_id,
-    });
-    if (!result.ok) {
-      return NextResponse.json({ error: result.reason }, { status: STATUS_FOR[result.reason] });
-    }
-
-    return NextResponse.json({
+export function POST(request: NextRequest) {
+  return handleAdminCommand<BracketBody, BracketCommandResult>(request, {
+    parseBody,
+    run: (admin, gate, body) =>
+      generateAndPersistBracket(admin, { actingAdmin: gate.steamid64, tournamentId: body.tournament_id }),
+    statusFor: STATUS_FOR,
+    ok: (r) => ({
       ok: true,
-      field_size: result.fieldSize,
-      bracket_size: result.bracketSize,
-      match_count: result.matchCount,
-      bye_seeds: result.byeSeeds,
-    });
-  } catch (err) {
-    console.error('[api/admin/bracket] request failed:', err);
-    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
-  }
+      field_size: r.fieldSize,
+      bracket_size: r.bracketSize,
+      match_count: r.matchCount,
+      bye_seeds: r.byeSeeds,
+    }),
+    logLabel: 'api/admin/bracket',
+  });
 }

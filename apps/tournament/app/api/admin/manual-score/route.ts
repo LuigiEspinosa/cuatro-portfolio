@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getAdminClient } from '@/lib/supabase/admin';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/auth/admin-guard';
+import { type NextRequest } from 'next/server';
+import { handleAdminCommand, isPositiveInt } from '@/lib/admin/command-route';
 import { manualResolveMatch, type ManualResolveMatchResult } from '@/lib/match/manual-score';
 
 // Service-role writes + the per-request admin gate need Node APIs; never statically prerendered.
@@ -13,18 +11,17 @@ export const dynamic = 'force-dynamic';
  *
  * ⚠ THE PATH mirrors POST /api/admin/approve + /api/admin/rollback (DECISION G) — a manual resolution is
  * approve's manual sibling, so it sits at `api/admin/`, symmetric with them, NOT under `api/admin/match/`.
- * ⚠ Story 4.9's audited-route list (epics.md:812) OMITS manual score — it should be corrected to include it
- * (the same omission 4.6a flagged for the accept-anomaly route). Flagged in deferred-work.md.
+ * ⚠ Story 4.9 CORRECTS the epics.md:812 audited-route list, which omitted manual-score (and accept-anomaly).
  *
  * On a demo-less (`declared`/`live`) match, one tap writes the hand-entered score + `state='manual_resolved'`,
  * advances the bracket, posts one timeline_feed entry, and emits one `match.manual_resolved` Broadcast — all in
  * ONE DB transaction (AD-6). On a demo-bound (`pending`) match it is an AUDITED override (`override:true`) that
  * discards the demo's score, gated by the DB's audit-row-as-precondition trigger.
  *
- * Thin wrapper, exactly like POST /api/admin/approve — all logic lives in lib/match/manual-score.ts (Vitest) +
- * migration 0019 (pgTAP). `requireAdmin` is the authorization gate; the RPC's service-role-only EXECUTE grant is
- * the second lock; the DB's whole-bracket lock, AD-5 override rule, override-audit gate and {ok:false}-advance
- * rollback are the teeth that bind even the service role.
+ * Thin definition over the shared `handleAdminCommand` envelope (Story 4.9) — the gate/body-parse/500 boundary
+ * live there. All command logic lives in lib/match/manual-score.ts (Vitest) + migration 0019 (pgTAP).
+ * `requireAdmin` is the authorization gate; the RPC's service-role-only EXECUTE grant is the second lock; the
+ * DB's whole-bracket lock, AD-5 override rule, override-audit gate and {ok:false}-advance rollback are the teeth.
  *
  * Body: `{ match_id, score_a, score_b, override? }` — the winner is DERIVED from the score, never supplied.
  * Returns JSON — a machine surface, no i18n (Epic 5 owns Spanish). CSRF is deferred to Epic 7, uniformly.
@@ -53,16 +50,12 @@ interface ManualScoreBody {
   override: boolean;
 }
 
-// See app/api/admin/approve/route.ts for why the range test makes `Number.isInteger(1e21)` load-bearing.
-const isPositiveInt = (v: unknown): v is number =>
-  typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= Number.MAX_SAFE_INTEGER;
-
 // A score is a NON-NEGATIVE integer (0 is a valid CS score). Rejects negatives / non-ints / NaN → 400, and caps
 // at INT4_MAX: score_a/score_b are `int4` in the RPC signature + `match` (0010:66), so a value in the
 // (2^31-1, 2^53-1] band would pass a bare MAX_SAFE_INTEGER check but overflow the argument at the PostgREST
 // boundary (22003) BEFORE the RPC's `bad_score` guard runs — surfacing as an opaque 500 rather than a clean 400.
 // Capping here is what actually makes "never lets a garbage score reach it" true. The RPC's `bad_score` guard
-// stays the authority for null/negative.
+// stays the authority for null/negative. (match_id uses the shared isPositiveInt from the 4.9 helper.)
 const INT4_MAX = 2147483647;
 const isScore = (v: unknown): v is number =>
   typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= INT4_MAX;
@@ -77,51 +70,29 @@ function parseBody(raw: unknown): ManualScoreBody | null {
   return { match_id, score_a, score_b, override: override === true };
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const admin = getAdminClient();
-    const ssr = await createSupabaseServerClient();
-
-    const gate = await requireAdmin(ssr, admin);
-    if (!gate.ok) {
-      return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
-    }
-
-    let raw: unknown;
-    try {
-      raw = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-    }
-    const body = parseBody(raw);
-    if (!body) {
-      return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
-    }
-
+export function POST(request: NextRequest) {
+  return handleAdminCommand<ManualScoreBody, ManualResolveMatchResult>(request, {
+    parseBody,
     // Actor is ALWAYS the authenticated admin (never from the body).
-    const result = await manualResolveMatch(admin, {
-      actingAdmin: gate.steamid64,
-      matchId: body.match_id,
-      scoreA: body.score_a,
-      scoreB: body.score_b,
-      override: body.override,
-    });
-    if (!result.ok) {
-      return NextResponse.json({ error: result.reason }, { status: STATUS_FOR[result.reason] });
-    }
-
-    return NextResponse.json({
+    run: (admin, gate, body) =>
+      manualResolveMatch(admin, {
+        actingAdmin: gate.steamid64,
+        matchId: body.match_id,
+        scoreA: body.score_a,
+        scoreB: body.score_b,
+        override: body.override,
+      }),
+    statusFor: STATUS_FOR,
+    ok: (r) => ({
       ok: true,
-      state: result.state,
-      score_a: result.scoreA,
-      score_b: result.scoreB,
-      winner_entry: result.winnerEntry,
-      override: result.override,
-      advanced: result.advanced,
-      champion: result.champion,
-    });
-  } catch (err) {
-    console.error('[api/admin/manual-score] request failed:', err);
-    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
-  }
+      state: r.state,
+      score_a: r.scoreA,
+      score_b: r.scoreB,
+      winner_entry: r.winnerEntry,
+      override: r.override,
+      advanced: r.advanced,
+      champion: r.champion,
+    }),
+    logLabel: 'api/admin/manual-score',
+  });
 }

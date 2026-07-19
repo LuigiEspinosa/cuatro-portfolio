@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getAdminClient } from '@/lib/supabase/admin';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/auth/admin-guard';
+import { type NextRequest } from 'next/server';
+import { handleAdminCommand, isPositiveInt } from '@/lib/admin/command-route';
 import { approveMatch, type ApproveMatchResult } from '@/lib/match/approve';
 
 // Service-role writes + the per-request admin gate need Node APIs; never statically prerendered.
@@ -18,10 +16,11 @@ export const dynamic = 'force-dynamic';
  * bracket, posts one timeline_feed entry, and emits one `match.approved` Broadcast — all in ONE DB transaction
  * (AD-6). "The line between 'the Admin sees it' and 'everyone sees it' is the Aprobar action" (EXPERIENCE:160).
  *
- * Thin wrapper, exactly like POST /api/admin/match/walkover — all logic lives in lib/match/approve.ts (Vitest)
- * + migration 0017 (pgTAP). `requireAdmin` is the authorization gate; the RPC's service-role-only EXECUTE
- * grant is the second lock; the DB's whole-bracket lock, {ok:false}-advance rollback and AD-23 guards are the
- * teeth that bind even the service role.
+ * Thin definition over the shared `handleAdminCommand` envelope (Story 4.9) — the gate, body-parse, refusal→
+ * status mapping and 500 boundary all live there, once. All command logic lives in lib/match/approve.ts
+ * (Vitest) + migration 0017 (pgTAP). `requireAdmin` (inside the helper) is the authorization gate; the RPC's
+ * service-role-only EXECUTE grant is the second lock; the DB's whole-bracket lock, {ok:false}-advance rollback
+ * and AD-23 guards are the teeth that bind even the service role.
  *
  * Body: `{ match_id }` — the winner is DERIVED from the demo score, never supplied. Returns JSON — a machine
  * surface, no i18n (Epic 5 owns Spanish). CSRF is deferred to Epic 7, uniformly.
@@ -47,10 +46,6 @@ interface ApproveBody {
   match_id: number;
 }
 
-// See app/api/admin/match/format/route.ts for why `Number.isInteger(1e21)` makes the range test load-bearing.
-const isPositiveInt = (v: unknown): v is number =>
-  typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= Number.MAX_SAFE_INTEGER;
-
 /** Validate the body. Returns null on anything malformed (→ 400, no write). */
 function parseBody(raw: unknown): ApproveBody | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -59,47 +54,21 @@ function parseBody(raw: unknown): ApproveBody | null {
   return { match_id };
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const admin = getAdminClient();
-    const ssr = await createSupabaseServerClient();
-
-    const gate = await requireAdmin(ssr, admin);
-    if (!gate.ok) {
-      return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
-    }
-
-    let raw: unknown;
-    try {
-      raw = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-    }
-    const body = parseBody(raw);
-    if (!body) {
-      return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
-    }
-
+export function POST(request: NextRequest) {
+  return handleAdminCommand<ApproveBody, ApproveMatchResult>(request, {
+    parseBody,
     // Actor is ALWAYS the authenticated admin (never from the body).
-    const result = await approveMatch(admin, {
-      actingAdmin: gate.steamid64,
-      matchId: body.match_id,
-    });
-    if (!result.ok) {
-      return NextResponse.json({ error: result.reason }, { status: STATUS_FOR[result.reason] });
-    }
-
-    return NextResponse.json({
+    run: (admin, gate, body) => approveMatch(admin, { actingAdmin: gate.steamid64, matchId: body.match_id }),
+    statusFor: STATUS_FOR,
+    ok: (r) => ({
       ok: true,
-      stat_rows_approved: result.statRowsApproved,
-      score_a: result.scoreA,
-      score_b: result.scoreB,
-      winner_entry: result.winnerEntry,
-      advanced: result.advanced,
-      champion: result.champion,
-    });
-  } catch (err) {
-    console.error('[api/admin/approve] request failed:', err);
-    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
-  }
+      stat_rows_approved: r.statRowsApproved,
+      score_a: r.scoreA,
+      score_b: r.scoreB,
+      winner_entry: r.winnerEntry,
+      advanced: r.advanced,
+      champion: r.champion,
+    }),
+    logLabel: 'api/admin/approve',
+  });
 }

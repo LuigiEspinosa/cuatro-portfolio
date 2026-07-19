@@ -21,6 +21,12 @@ export const dynamic = 'force-dynamic';
  * Thin wrappers over lib/match/walkover.ts (Vitest) + migration 0015 (pgTAP), mirroring
  * POST /api/admin/match/format. `requireAdmin` gates both; the RPC grants + DB triggers are the teeth.
  *
+ * ⚠ DOCUMENTED EXCEPTION to Story 4.9's shared `handleAdminCommand` helper: this is the ONE dual-verb route
+ * (POST begin-grace + DELETE resume), so it stays HAND-WRITTEN with its own `gateAndParse` (which calls
+ * `requireAdmin` on BOTH verbs). The AC1 route-coverage test (lib/admin/route-coverage.test.ts) allow-lists
+ * this file to reference `requireAdmin` directly instead of the helper; every other admin route MUST use the
+ * helper, or CI reddens. Both verbs re-verify admin server-side — the AC1 guarantee holds here too.
+ *
  * Body (both verbs): `{ match_id }`. JSON reply, no i18n (Epic 5). CSRF deferred to Epic 7, uniformly.
  */
 

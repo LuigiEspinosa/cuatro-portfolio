@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getAdminClient } from '@/lib/supabase/admin';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/auth/admin-guard';
+import { type NextRequest } from 'next/server';
+import { handleAdminCommand, isPositiveInt } from '@/lib/admin/command-route';
 import { declareMatchFormat, type FormatCommandResult } from '@/lib/match/format';
 
 // Service-role writes + the per-request admin gate need Node APIs; never statically prerendered.
@@ -14,11 +12,11 @@ export const dynamic = 'force-dynamic';
  * The AD-10 lock: `format` and `tie_policy` are frozen BEFORE a match may go live, and a later change is
  * only ever an explicit audited override — never a silent edit.
  *
- * Thin wrapper, exactly like `POST /api/admin/bracket` — all logic lives in `lib/match/format.ts`
- * (Vitest) and migration 0012 (pgTAP). `requireAdmin` is the authorization gate (server-side app_role
- * re-read = instant revoke); the RPC's service-role-only EXECUTE grant is the second lock on the same
- * door; and the DB's CHECK constraints + `match_format_lock` trigger are the teeth that bite even the
- * service role.
+ * Thin definition over the shared `handleAdminCommand` envelope (Story 4.9) — the gate/body-parse/500 boundary
+ * live there. All command logic lives in `lib/match/format.ts` (Vitest) and migration 0012 (pgTAP).
+ * `requireAdmin` is the authorization gate (server-side app_role re-read = instant revoke); the RPC's
+ * service-role-only EXECUTE grant is the second lock on the same door; and the DB's CHECK constraints +
+ * `match_format_lock` trigger are the teeth that bite even the service role.
  *
  * Body: `{ tournament_id, format, tie_policy, match_ids?, override? }`.
  *   * OMIT `match_ids` to declare the WHOLE tournament (every still-`declared`, unlocked match) in one
@@ -57,14 +55,8 @@ interface FormatBody {
  */
 const MAX_MATCH_IDS = 256;
 
-// `Number.isInteger(1e21)` is TRUE, and `1e21 > 0`, so an out-of-`bigint`-range id used to sail through
-// here, bind as a bigint, and make PostgreSQL raise `22003` — which surfaced as a 500. A malformed id is a
-// 400. (app/api/admin/bracket/route.ts has the same gap; it is pre-existing and deferred to the Story 4.9
-// shared body-parse helper rather than patched piecemeal here.)
-const isPositiveInt = (v: unknown): v is number =>
-  typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= Number.MAX_SAFE_INTEGER;
-
-/** Validate the body. Returns null on anything malformed (→ 400, no write). */
+/** Validate the body. Returns null on anything malformed (→ 400, no write). Every id uses the shared,
+ *  range-capped `isPositiveInt` (Story 4.9) — `Number.isInteger(1e21)` is TRUE, so the cap is load-bearing. */
 function parseBody(raw: unknown): FormatBody | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const { tournament_id, match_ids, format, tie_policy, override } = raw as Record<string, unknown>;
@@ -96,47 +88,24 @@ function parseBody(raw: unknown): FormatBody | null {
   };
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const admin = getAdminClient();
-    const ssr = await createSupabaseServerClient();
-
-    // Server-enforced admin gate. Non-admin → 403, before any read or write.
-    const gate = await requireAdmin(ssr, admin);
-    if (!gate.ok) {
-      return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
-    }
-
-    let raw: unknown;
-    try {
-      raw = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-    }
-    const body = parseBody(raw);
-    if (!body) {
-      return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
-    }
-
-    const result = await declareMatchFormat(admin, {
-      actingAdmin: gate.steamid64,
-      tournamentId: body.tournament_id,
-      matchIds: body.match_ids,
-      format: body.format,
-      tiePolicy: body.tie_policy,
-      override: body.override,
-    });
-    if (!result.ok) {
-      return NextResponse.json({ error: result.reason }, { status: STATUS_FOR[result.reason] });
-    }
-
-    return NextResponse.json({
+export function POST(request: NextRequest) {
+  return handleAdminCommand<FormatBody, FormatCommandResult>(request, {
+    parseBody,
+    run: (admin, gate, body) =>
+      declareMatchFormat(admin, {
+        actingAdmin: gate.steamid64,
+        tournamentId: body.tournament_id,
+        matchIds: body.match_ids,
+        format: body.format,
+        tiePolicy: body.tie_policy,
+        override: body.override,
+      }),
+    statusFor: STATUS_FOR,
+    ok: (r) => ({
       ok: true,
-      declared: result.declared,
-      override: result.override,
-    });
-  } catch (err) {
-    console.error('[api/admin/match/format] request failed:', err);
-    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
-  }
+      declared: r.declared,
+      override: r.override,
+    }),
+    logLabel: 'api/admin/match/format',
+  });
 }

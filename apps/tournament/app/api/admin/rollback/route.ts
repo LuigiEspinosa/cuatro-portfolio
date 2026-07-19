@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getAdminClient } from '@/lib/supabase/admin';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/auth/admin-guard';
+import { type NextRequest } from 'next/server';
+import { handleAdminCommand, isPositiveInt } from '@/lib/admin/command-route';
 import { rollbackMatch, type RollbackMatchResult } from '@/lib/match/rollback';
 
 // Service-role writes + the per-request admin gate need Node APIs; never statically prerendered.
@@ -21,9 +19,10 @@ export const dynamic = 'force-dynamic';
  * DB transaction (AD-6). The AD-8 flag REFUSES (never cascades) when a dependent downstream match stands on its
  * own state.
  *
- * Thin wrapper, exactly like POST /api/admin/approve — all logic lives in lib/match/rollback.ts (Vitest) +
- * migration 0018 (pgTAP). `requireAdmin` is the authorization gate; the RPC's service-role-only EXECUTE grant
- * is the second lock; the DB's whole-bracket lock, two-pass revert and AD-8 flag are the teeth.
+ * Thin definition over the shared `handleAdminCommand` envelope (Story 4.9) — the gate/body-parse/500 boundary
+ * live there. All command logic lives in lib/match/rollback.ts (Vitest) + migration 0018 (pgTAP).
+ * `requireAdmin` is the authorization gate; the RPC's service-role-only EXECUTE grant is the second lock; the
+ * DB's whole-bracket lock, two-pass revert and AD-8 flag are the teeth.
  *
  * Body: `{ match_id }`. Returns JSON — a machine surface, no i18n (Epic 5 owns Spanish). CSRF is deferred to
  * Epic 7, uniformly.
@@ -42,10 +41,6 @@ interface RollbackBody {
   match_id: number;
 }
 
-// See app/api/admin/approve/route.ts for why the range test makes `Number.isInteger(1e21)` load-bearing.
-const isPositiveInt = (v: unknown): v is number =>
-  typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= Number.MAX_SAFE_INTEGER;
-
 /** Validate the body. Returns null on anything malformed (→ 400, no write). */
 function parseBody(raw: unknown): RollbackBody | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -54,51 +49,23 @@ function parseBody(raw: unknown): RollbackBody | null {
   return { match_id };
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const admin = getAdminClient();
-    const ssr = await createSupabaseServerClient();
-
-    const gate = await requireAdmin(ssr, admin);
-    if (!gate.ok) {
-      return NextResponse.json({ error: 'forbidden' }, { status: gate.status });
-    }
-
-    let raw: unknown;
-    try {
-      raw = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-    }
-    const body = parseBody(raw);
-    if (!body) {
-      return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
-    }
-
+export function POST(request: NextRequest) {
+  return handleAdminCommand<RollbackBody, RollbackMatchResult>(request, {
+    parseBody,
     // Actor is ALWAYS the authenticated admin (never from the body).
-    const result = await rollbackMatch(admin, {
-      actingAdmin: gate.steamid64,
-      matchId: body.match_id,
-    });
-    if (!result.ok) {
-      // ⭐ The AD-8 flag returns the blocking list so the admin sees which downstream match to roll back first.
-      if (result.reason === 'downstream_active') {
-        return NextResponse.json(
-          { error: 'downstream_active', blocking: result.blocking ?? [] },
-          { status: STATUS_FOR.downstream_active },
-        );
-      }
-      return NextResponse.json({ error: result.reason }, { status: STATUS_FOR[result.reason] });
-    }
-
-    return NextResponse.json({
+    run: (admin, gate, body) => rollbackMatch(admin, { actingAdmin: gate.steamid64, matchId: body.match_id }),
+    statusFor: STATUS_FOR,
+    // ⭐ The AD-8 flag returns the blocking list so the admin sees which downstream match to roll back first.
+    errorBody: (r) =>
+      r.reason === 'downstream_active'
+        ? { error: 'downstream_active', blocking: r.blocking ?? [] }
+        : { error: r.reason },
+    ok: (r) => ({
       ok: true,
-      stat_rows_unpublished: result.statRowsUnpublished,
-      reverted: result.reverted,
-      uncrowned: result.uncrowned,
-    });
-  } catch (err) {
-    console.error('[api/admin/rollback] request failed:', err);
-    return NextResponse.json({ error: 'internal_error' }, { status: 500 });
-  }
+      stat_rows_unpublished: r.statRowsUnpublished,
+      reverted: r.reverted,
+      uncrowned: r.uncrowned,
+    }),
+    logLabel: 'api/admin/rollback',
+  });
 }
