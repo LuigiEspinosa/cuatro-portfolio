@@ -127,8 +127,9 @@ func (r *PgxRecorder) Pool() *pgxpool.Pool { return r.pool }
 // StatRow is one parsed player's row destined for the single-writer stat_row table (AD-2). SteamID64 is
 // the 17-digit decimal TEXT (the caller converts the parser's uint64 via strconv.FormatUint — the DB
 // layer never sees the numeric form). Story 3.3 fills MatchID/SteamID64/DemoID + Kills/Deaths/
-// RoundsPlayed; Story 4.6a adds RoundsWon; the rich Epic-5 stat columns stay NULL (the parser does not
-// compute them yet).
+// RoundsPlayed; Story 4.6a adds RoundsWon; Story 5.1 adds the FR-18 CORE SEVEN (Assists, ADRDamage, HSKills,
+// MVPs, FlashAssists, UtilityDamage, KASTRounds) — all raw counts/totals, the leaderboard view divides
+// (AD-20). The still-later weird/derived/idle columns (5.2–5.4) stay NULL at their column defaults.
 //
 // ⚠ MatchID is the EXTERNAL matchzy_match_id, NOT a bracket match(id) — at parse time no bracket row is
 // associated with the demo at all (the bind is a later admin act), and the worker never learns one.
@@ -143,6 +144,15 @@ type StatRow struct {
 	Deaths       int
 	RoundsPlayed int
 	RoundsWon    int
+	// The FR-18 core seven (Story 5.1). Raw numerators/counts; ADR/HS%/KAST% are ratios computed in the 5.5
+	// leaderboard view (AD-20), so ADRDamage is the TOTAL capped damage, HSKills/KASTRounds are counts.
+	Assists       int
+	ADRDamage     int
+	HSKills       int
+	MVPs          int
+	FlashAssists  int
+	UtilityDamage int
+	KASTRounds    int
 }
 
 // AnomalyReason is one machine-readable validation-gate failure (Story 3.4). Gate is the gate id
@@ -322,8 +332,10 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 		batch.Queue(
 			// `matchzy_match_id` is the EXTERNAL ingest id (see RecordDemo). The AD-3 re-parse key
 			// travelled with 0010's rename, so this upserts on exactly the pair it always did.
-			// `rounds_won` is the Story-4.6a demo-derived tally (FR-16); it re-derives on every parse
-			// exactly like kills/deaths. ⚠ `status` stays ABSENT from BOTH lists — see the note above.
+			// `rounds_won` is the Story-4.6a demo-derived tally (FR-16); the seven Story-5.1 core columns
+			// (assists..kast_rounds) are the FR-18 derivation. All re-derive on every parse exactly like
+			// kills/deaths — present in BOTH lists with excluded.<col>. ⚠ `status` stays ABSENT from BOTH
+			// lists — see the note above.
 			//
 			// ⚠⚠ `match_id` MUST STAY ABSENT FROM BOTH LISTS TOO, and unlike `status` its absence is
 			// silent — nothing here names it. It is the BRACKET match(id), written ONLY by 0016's
@@ -331,15 +343,24 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			// it. Adding it "for symmetry" would make the DO UPDATE write `match_id = excluded.match_id`
 			// = NULL, so EVERY re-parse would silently UNBIND every bound match — a bound, `pending`
 			// match whose stat rows no longer point at it. Leave it out.
-			`insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played, rounds_won)
-			 values ($1, $2, $3, $4, $5, $6, $7)
+			`insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played, rounds_won,
+			   assists, adr_damage, hs_kills, mvps, flash_assists, utility_damage, kast_rounds)
+			 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 			 on conflict (matchzy_match_id, steamid64) do update set
 			   kills = excluded.kills,
 			   deaths = excluded.deaths,
 			   rounds_played = excluded.rounds_played,
 			   rounds_won = excluded.rounds_won,
+			   assists = excluded.assists,
+			   adr_damage = excluded.adr_damage,
+			   hs_kills = excluded.hs_kills,
+			   mvps = excluded.mvps,
+			   flash_assists = excluded.flash_assists,
+			   utility_damage = excluded.utility_damage,
+			   kast_rounds = excluded.kast_rounds,
 			   demo_id = excluded.demo_id`,
 			row.MatchID, row.SteamID64, row.DemoID, row.Kills, row.Deaths, row.RoundsPlayed, row.RoundsWon,
+			row.Assists, row.ADRDamage, row.HSKills, row.MVPs, row.FlashAssists, row.UtilityDamage, row.KASTRounds,
 		)
 	}
 	br := tx.SendBatch(ctx, batch)

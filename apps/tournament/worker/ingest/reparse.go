@@ -101,6 +101,16 @@ func RunReparse(ctx context.Context, s store.DemoStore, reader db.DemoReader, pa
 			Deaths:       pl.Deaths,
 			RoundsPlayed: result.RoundsPlayed,
 			RoundsWon:    pl.RoundsWon, // re-derived on every re-parse, exactly like K/D (Story 4.6a)
+			// The FR-18 core seven (Story 5.1). ⚠ MUST mirror cli.go's first-parse map verbatim — dropping
+			// any field here silently writes NULL over that column on every re-parse (the recurring Epic-4
+			// "second path" failure mode). Both sites map PlayerStat -> StatRow; both carry all seven.
+			Assists:       pl.Assists,
+			ADRDamage:     pl.ADRDamage,
+			HSKills:       pl.HSKills,
+			MVPs:          pl.MVPs,
+			FlashAssists:  pl.FlashAssists,
+			UtilityDamage: pl.UtilityDamage,
+			KASTRounds:    pl.KASTRounds,
 		})
 	}
 

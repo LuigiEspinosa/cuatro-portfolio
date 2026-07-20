@@ -32,9 +32,43 @@ func cannedParse() ParseResult {
 	return ParseResult{
 		RoundsPlayed: 24,
 		Players: []PlayerStat{
-			{SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16},
-			{SteamID64: 76561198000000042, Kills: 14, Deaths: 20, RoundsWon: 8},
+			// The FR-18 core seven (Story 5.1) ride the same map->row assembly as K/D/RoundsWon. Values are
+			// deliberately distinct per field + per player so a dropped mapping (either site) reddens: no two
+			// fields share a value, and FlashAssists <= Assists / HSKills <= Kills / KASTRounds <= RoundsPlayed
+			// so the fixture is a plausible scoreboard.
+			{SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16,
+				Assists: 4, ADRDamage: 2529, HSKills: 6, MVPs: 5, FlashAssists: 1, UtilityDamage: 233, KASTRounds: 18},
+			{SteamID64: 76561198000000042, Kills: 14, Deaths: 20, RoundsWon: 8,
+				Assists: 3, ADRDamage: 1801, HSKills: 7, MVPs: 2, FlashAssists: 2, UtilityDamage: 147, KASTRounds: 13},
 		},
+	}
+}
+
+// assertCoreSeven checks a mapped StatRow carries every FR-18 core-seven field from its PlayerStat source.
+// Both mapping sites (cli.go parseAndRecord, reparse.go) must copy all seven; dropping ANY one silently
+// writes a 0 (a NULL/zeroed column), so this single helper is the per-stat mutation net for both paths.
+func assertCoreSeven(t *testing.T, got db.StatRow, want PlayerStat) {
+	t.Helper()
+	if got.Assists != want.Assists {
+		t.Fatalf("assists not carried: got %d want %d", got.Assists, want.Assists)
+	}
+	if got.ADRDamage != want.ADRDamage {
+		t.Fatalf("adr_damage not carried: got %d want %d", got.ADRDamage, want.ADRDamage)
+	}
+	if got.HSKills != want.HSKills {
+		t.Fatalf("hs_kills not carried: got %d want %d", got.HSKills, want.HSKills)
+	}
+	if got.MVPs != want.MVPs {
+		t.Fatalf("mvps not carried: got %d want %d", got.MVPs, want.MVPs)
+	}
+	if got.FlashAssists != want.FlashAssists {
+		t.Fatalf("flash_assists not carried: got %d want %d", got.FlashAssists, want.FlashAssists)
+	}
+	if got.UtilityDamage != want.UtilityDamage {
+		t.Fatalf("utility_damage not carried: got %d want %d", got.UtilityDamage, want.UtilityDamage)
+	}
+	if got.KASTRounds != want.KASTRounds {
+		t.Fatalf("kast_rounds not carried: got %d want %d", got.KASTRounds, want.KASTRounds)
 	}
 }
 
@@ -117,6 +151,10 @@ func TestRunCLIHappyPathParsesAndUpserts(t *testing.T) {
 	if r042.RoundsWon != 8 {
 		t.Fatalf("…042's demo-derived RoundsWon must be carried to the stat row: got %d want 8", r042.RoundsWon)
 	}
+	// Story 5.1: the FR-18 core seven ride the SAME first-parse map (cli.go parseAndRecord). Dropping any one
+	// field from that literal writes a 0 for it — this asserts all seven landed for BOTH players.
+	assertCoreSeven(t, r930, cannedParse().Players[0])
+	assertCoreSeven(t, r042, cannedParse().Players[1])
 	// FR-16's conservation, at the assembly seam: the per-player tally sums to the match's rounds played.
 	if r930.RoundsWon+r042.RoundsWon != r930.RoundsPlayed {
 		t.Fatalf("ΣRoundsWon must equal RoundsPlayed: %d + %d != %d", r930.RoundsWon, r042.RoundsWon, r930.RoundsPlayed)

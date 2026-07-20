@@ -67,6 +67,11 @@ func TestRunReparseHappyPathReplacesAndBumpsGeneration(t *testing.T) {
 	if r := byID["76561197960287930"]; r.Kills != 20 || r.Deaths != 14 || r.RoundsPlayed != 24 || r.RoundsWon != 16 {
 		t.Fatalf("…930 must be REPLACED with the fresh K/D + demo-derived RoundsWon, got %+v", r)
 	}
+	// Story 5.1: the re-parse map (reparse.go) assembles rows INDEPENDENTLY of cli.go, so it must carry the
+	// FR-18 core seven independently too — the recurring "second path drops the widening" failure mode. A
+	// dropped field here silently writes NULL over that column on every re-parse.
+	assertCoreSeven(t, byID["76561197960287930"], cannedParse().Players[0])
+	assertCoreSeven(t, byID["76561198000000042"], cannedParse().Players[1])
 	if reparses := statRec.Reparsed(); len(reparses) != 1 || reparses[0].MatchID != 33 || reparses[0].ParserVersion != ParserVersion {
 		t.Fatalf("RecordReparse must fire exactly once with the match + pinned parser version, got %+v", reparses)
 	}
