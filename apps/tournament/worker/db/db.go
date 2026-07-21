@@ -128,8 +128,12 @@ func (r *PgxRecorder) Pool() *pgxpool.Pool { return r.pool }
 // the 17-digit decimal TEXT (the caller converts the parser's uint64 via strconv.FormatUint — the DB
 // layer never sees the numeric form). Story 3.3 fills MatchID/SteamID64/DemoID + Kills/Deaths/
 // RoundsPlayed; Story 4.6a adds RoundsWon; Story 5.1 adds the FR-18 CORE SEVEN (Assists, ADRDamage, HSKills,
-// MVPs, FlashAssists, UtilityDamage, KASTRounds) — all raw counts/totals, the leaderboard view divides
-// (AD-20). The still-later weird/derived/idle columns (5.2–5.4) stay NULL at their column defaults.
+// MVPs, FlashAssists, UtilityDamage, KASTRounds); Story 5.2 adds the FR-19 WEIRD FIVE (KnifeKills,
+// WallbangKills, ThroughSmokeKills, NoScopeKills, BlindKills) — all raw counts/totals, the leaderboard view
+// divides (AD-20). The still-later derived/idle columns (FR-20/FR-21, Stories 5.3–5.4) stay NULL at their
+// column defaults. Rows written BEFORE a widening keep NULL in the new columns until their demo is
+// re-parsed (Story 3.6 RunReparse re-derives everything through this same upsert) — that is expected, and
+// is not a backfill.
 //
 // ⚠ MatchID is the EXTERNAL matchzy_match_id, NOT a bracket match(id) — at parse time no bracket row is
 // associated with the demo at all (the bind is a later admin act), and the worker never learns one.
@@ -153,6 +157,21 @@ type StatRow struct {
 	FlashAssists  int
 	UtilityDamage int
 	KASTRounds    int
+	// The FR-19 weird five (Story 5.2). Per-kill counts credited to the KILLER off native events.Kill
+	// flags; each is an overlapping subset of Kills. A zero count is written as an explicit 0 (never
+	// omitted/NULL) — FR-19's testable consequence — because all five are unconditionally in the INSERT
+	// column list below.
+	//
+	// ⚠ BlindKills / `blind_kills` is ATTACKER-blind: the KILLER was flashed when they got the kill (the
+	// "blind justice" sense). events.Kill carries no victim-blind field at all, so there is no other
+	// reading — but the column name does not say so, and the common CS reading is the opposite ("killed
+	// someone who was flashed"). Whoever labels this in the Story-5.5 leaderboard/awards UI must say
+	// "killer was blind", or the award goes to the wrong behaviour and the data can never contradict it.
+	KnifeKills        int
+	WallbangKills     int
+	ThroughSmokeKills int
+	NoScopeKills      int
+	BlindKills        int
 }
 
 // AnomalyReason is one machine-readable validation-gate failure (Story 3.4). Gate is the gate id
@@ -333,9 +352,11 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			// `matchzy_match_id` is the EXTERNAL ingest id (see RecordDemo). The AD-3 re-parse key
 			// travelled with 0010's rename, so this upserts on exactly the pair it always did.
 			// `rounds_won` is the Story-4.6a demo-derived tally (FR-16); the seven Story-5.1 core columns
-			// (assists..kast_rounds) are the FR-18 derivation. All re-derive on every parse exactly like
-			// kills/deaths — present in BOTH lists with excluded.<col>. ⚠ `status` stays ABSENT from BOTH
-			// lists — see the note above.
+			// (assists..kast_rounds) are the FR-18 derivation; the five Story-5.2 columns
+			// (knife_kills..blind_kills) are the FR-19 weird five. All re-derive on every parse exactly like
+			// kills/deaths — present in BOTH lists with excluded.<col>. The weird five are UNCONDITIONALLY
+			// in the INSERT list, which is what makes a zero count land as 0 rather than NULL (FR-19 AC2).
+			// ⚠ `status` stays ABSENT from BOTH lists — see the note above.
 			//
 			// ⚠⚠ `match_id` MUST STAY ABSENT FROM BOTH LISTS TOO, and unlike `status` its absence is
 			// silent — nothing here names it. It is the BRACKET match(id), written ONLY by 0016's
@@ -344,8 +365,9 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			// = NULL, so EVERY re-parse would silently UNBIND every bound match — a bound, `pending`
 			// match whose stat rows no longer point at it. Leave it out.
 			`insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played, rounds_won,
-			   assists, adr_damage, hs_kills, mvps, flash_assists, utility_damage, kast_rounds)
-			 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			   assists, adr_damage, hs_kills, mvps, flash_assists, utility_damage, kast_rounds,
+			   knife_kills, wallbang_kills, through_smoke_kills, no_scope_kills, blind_kills)
+			 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 			 on conflict (matchzy_match_id, steamid64) do update set
 			   kills = excluded.kills,
 			   deaths = excluded.deaths,
@@ -358,9 +380,18 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			   flash_assists = excluded.flash_assists,
 			   utility_damage = excluded.utility_damage,
 			   kast_rounds = excluded.kast_rounds,
+			   knife_kills = excluded.knife_kills,
+			   wallbang_kills = excluded.wallbang_kills,
+			   through_smoke_kills = excluded.through_smoke_kills,
+			   no_scope_kills = excluded.no_scope_kills,
+			   blind_kills = excluded.blind_kills,
 			   demo_id = excluded.demo_id`,
+			// ⚠ POSITIONAL: these arguments must line up 1:1 with $1..$19 in the column list above. A silent
+			// off-by-one writes the wrong stat into the wrong column and NO unit test catches it (the fakes
+			// store the StatRow struct, they never execute this SQL).
 			row.MatchID, row.SteamID64, row.DemoID, row.Kills, row.Deaths, row.RoundsPlayed, row.RoundsWon,
 			row.Assists, row.ADRDamage, row.HSKills, row.MVPs, row.FlashAssists, row.UtilityDamage, row.KASTRounds,
+			row.KnifeKills, row.WallbangKills, row.ThroughSmokeKills, row.NoScopeKills, row.BlindKills,
 		)
 	}
 	br := tx.SendBatch(ctx, batch)

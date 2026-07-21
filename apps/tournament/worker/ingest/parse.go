@@ -17,13 +17,18 @@ import (
 const ParserVersion = "demoinfocs-golang/v5 v5.2.0"
 
 // PlayerStat is one parsed player's payload: the Story-3.3 minimum-viable (kills/deaths), the Story-4.6a
-// demo-derived RoundsWon tally, and — as of Story 5.1 — the FR-18 CORE SEVEN (assists, ADR damage, headshot
-// kills, MVPs, flash assists, utility damage, KAST rounds). The parser stores raw NUMERATORS/COUNTS, never
+// demo-derived RoundsWon tally, the Story-5.1 FR-18 CORE SEVEN (assists, ADR damage, headshot kills, MVPs,
+// flash assists, utility damage, KAST rounds), and — as of Story 5.2 — the FR-19 WEIRD FIVE (knife,
+// wallbang, through-smoke, no-scope and blind kills). The parser stores raw NUMERATORS/COUNTS, never
 // ratios: ADR/HS%/KAST% are divided ONCE in the Epic-5 leaderboard view (AD-20 one-owner), so ADRDamage is
 // the TOTAL overkill-capped damage (view: ADRDamage/RoundsPlayed), HSKills a count (view: HSKills/Kills),
-// KASTRounds a count (view: KASTRounds/RoundsPlayed). The still-later weird/derived/idle stats (FR-19/20/21)
-// are Stories 5.2–5.4 and stay at their nullable column defaults. This widens the struct + the writer, never
-// the schema (every stat_row column already exists, nullable, since migration 0007).
+// KASTRounds a count (view: KASTRounds/RoundsPlayed). The still-later DERIVED/IDLE stats (FR-20/FR-21 —
+// entry frags, opening deaths, clutches, idle_dq, idle_round_count) are Stories 5.3–5.4 and stay at their
+// nullable column defaults. This widens the struct + the writer, never the schema (every stat_row column
+// already exists, nullable, since migration 0007).
+//
+// ⚠ FR-19's trailing "molotov/HE damage" clause is ALREADY SHIPPED as UtilityDamage by Story 5.1 (one
+// utility_damage column, 0007:43). There is no molotov/HE split to build; 5.2 is exactly five counters.
 //
 // ⭐ RoundsWon is PER-PLAYER, never score_a/score_b (Story 4.6a DECISION B). `a`/`b` name the MATCH's
 // competitor seats, and this worker cannot resolve them. Three reasons, in the order that actually binds:
@@ -55,6 +60,14 @@ type PlayerStat struct {
 	FlashAssists  int // the subset of Assists where the assist was a flash (AssistedFlash) — always <= Assists
 	UtilityDamage int // overkill-capped HE + molotov/incendiary damage dealt (a subset of ADRDamage)
 	KASTRounds    int // rounds the player got a Kill/Assist/Survived/was Traded (KAST% = KASTRounds/RoundsPlayed in 5.5)
+	// The FR-19 WEIRD FIVE (Story 5.2) — the comedy/weird award tracks. All credited to the KILLER, each
+	// tallied from a NATIVE events.Kill field (never a heuristic), each an overlapping SUBSET of Kills: one
+	// kill can earn several at once, so any one is <= Kills while their SUM may legitimately exceed it.
+	KnifeKills        int // Weapon.Type == EqKnife (every knife SKIN normalizes to that one type)
+	WallbangKills     int // Kill.IsWallBang() (≡ PenetratedObjects > 0)
+	ThroughSmokeKills int // Kill.ThroughSmoke
+	NoScopeKills      int // Kill.NoScope
+	BlindKills        int // Kill.AttackerBlind — the KILLER was flashed ("blind justice"); events.Kill carries NO victim-blind field
 }
 
 // kastTradeWindow is the KAST "traded" window (FR-18, prd.md:103): a round counts for a player who died if
@@ -95,10 +108,18 @@ type roundStats struct {
 	hsKills       map[uint64]int
 	adrDamage     map[uint64]int
 	utilityDamage map[uint64]int
-	gotKill       map[uint64]bool // players who got >=1 kill this round (KAST "K")
-	gotAssist     map[uint64]bool // players who got >=1 assist this round (KAST "A")
-	deathEvents   []roundDeath    // every death this round in order (KAST "S"/"T")
-	kast          map[uint64]bool // participating players credited a KAST round (computed at RoundEnd)
+	// The FR-19 weird five (Story 5.2). Additive per-kill counters, so they ride this scratch like every
+	// other additive stat — a bare `stats[k].KnifeKills++` at event time would silently carry the discarded
+	// MatchZy pre-match round (a MEASURED +1 on 14 of 14 real demos — see the trap-4 block in Parse).
+	knifeKills        map[uint64]int
+	wallbangKills     map[uint64]int
+	throughSmokeKills map[uint64]int
+	noScopeKills      map[uint64]int
+	blindKills        map[uint64]int
+	gotKill           map[uint64]bool // players who got >=1 kill this round (KAST "K")
+	gotAssist         map[uint64]bool // players who got >=1 assist this round (KAST "A")
+	deathEvents       []roundDeath    // every death this round in order (KAST "S"/"T")
+	kast              map[uint64]bool // participating players credited a KAST round (computed at RoundEnd)
 }
 
 func newRoundStats() *roundStats {
@@ -110,9 +131,16 @@ func newRoundStats() *roundStats {
 		hsKills:       map[uint64]int{},
 		adrDamage:     map[uint64]int{},
 		utilityDamage: map[uint64]int{},
-		gotKill:       map[uint64]bool{},
-		gotAssist:     map[uint64]bool{},
-		kast:          map[uint64]bool{},
+
+		knifeKills:        map[uint64]int{},
+		wallbangKills:     map[uint64]int{},
+		throughSmokeKills: map[uint64]int{},
+		noScopeKills:      map[uint64]int{},
+		blindKills:        map[uint64]int{},
+
+		gotKill:   map[uint64]bool{},
+		gotAssist: map[uint64]bool{},
+		kast:      map[uint64]bool{},
 	}
 }
 
@@ -209,6 +237,32 @@ func foldRounds(byRound map[int]*roundStats, roundWinners map[int][]uint64, mvpB
 				s.UtilityDamage += n
 			}
 		}
+		// The FR-19 weird five (Story 5.2) — same survivor fold, same stranded-round bound.
+		for sid, n := range rs.knifeKills {
+			if s := get(sid); s != nil {
+				s.KnifeKills += n
+			}
+		}
+		for sid, n := range rs.wallbangKills {
+			if s := get(sid); s != nil {
+				s.WallbangKills += n
+			}
+		}
+		for sid, n := range rs.throughSmokeKills {
+			if s := get(sid); s != nil {
+				s.ThroughSmokeKills += n
+			}
+		}
+		for sid, n := range rs.noScopeKills {
+			if s := get(sid); s != nil {
+				s.NoScopeKills += n
+			}
+		}
+		for sid, n := range rs.blindKills {
+			if s := get(sid); s != nil {
+				s.BlindKills += n
+			}
+		}
 		for sid := range rs.kast {
 			if s := get(sid); s != nil {
 				s.KASTRounds++
@@ -236,6 +290,65 @@ func foldRounds(byRound map[int]*roundStats, roundWinners map[int][]uint64, mvpB
 	return stats
 }
 
+// weirdKinds are the FR-19 weird flags one non-warmup kill earns its KILLER (Story 5.2). They are NOT
+// mutually exclusive — one kill can be several at once (a blind no-scope wallbang is all three), so each
+// counter increments independently and Σ(weird five) may legitimately exceed kills.
+type weirdKinds struct{ knife, wallbang, throughSmoke, noScope, blind bool }
+
+// classifyWeirdKill reads the FR-19 weird flags off ONE kill. It is PURE over events.Kill — the deliberate
+// split (the DECISION here, the flag->counter BINDING in addWeirdKills, and NOTHING but the call in the
+// parser closure) is what makes every branch unit-testable without a real demo, exactly as kastQualified
+// is. Every flag is a NATIVE demoinfocs field; none is a heuristic:
+//
+//   - knife: Weapon.Type == common.EqKnife. Every knife SKIN normalizes to that one type (equipment.go maps
+//     ids 41/42/59/80 and 500–556 — weapon_knife_t, bayonet, karambit, kukri, … — plus a name-contains
+//     fallback), so this single test covers them all; do NOT hand-roll a skin list. The zeus/taser is
+//     EqZeus and correctly does NOT count. Weapon is nil for world/corrupt damage — guarded, since this is
+//     the only test that dereferences it.
+//   - wallbang: the library's own IsWallBang() (≡ PenetratedObjects > 0) — states intent and cannot drift.
+//   - blind: AttackerBlind means THE KILLER WAS FLASHED (the "blind justice" sense). events.Kill carries no
+//     victim-blind field at all, so "blind kills" is unambiguously attacker-blind. Do not "fix" this to the
+//     victim — there is nothing to fix it to.
+func classifyWeirdKill(e events.Kill) weirdKinds {
+	return weirdKinds{
+		knife:        e.Weapon != nil && e.Weapon.Type == common.EqKnife,
+		wallbang:     e.IsWallBang(),
+		throughSmoke: e.ThroughSmoke,
+		noScope:      e.NoScope,
+		blind:        e.AttackerBlind,
+	}
+}
+
+// addWeirdKills credits one kill's FR-19 flags into this round's scratch, one counter per flag. It is split
+// out of the events.Kill closure ON PURPOSE (Story 5.2 code review): FakeParser cannot drive a real parser
+// event handler, so ANY logic left inside that closure is unreachable by every Go test — and the failure
+// this seam hides is not a missing increment but a TRANSPOSED one. A swap (w.noScope crediting blindKills)
+// keeps every counter <= kills, leaves Σkills/Σdeaths/ΣroundsWon untouched, and therefore satisfies every
+// live-QA invariant THE BAR asserts: two columns silently trade places forever with a green suite AND a
+// green BAR. Binding flag->counter here is what makes a transposition reddenable, by
+// TestAddWeirdKillsBindsEachFlagToItsOwnCounter.
+//
+// No outer "is anything set?" guard: the five conditionals are the complete statement of intent, and a
+// struct-equality shortcut would restate "what counts as weird" a second time and start silently skipping
+// real kills the moment weirdKinds gains a field whose zero value is meaningful.
+func (rs *roundStats) addWeirdKills(sid uint64, w weirdKinds) {
+	if w.knife {
+		rs.knifeKills[sid]++
+	}
+	if w.wallbang {
+		rs.wallbangKills[sid]++
+	}
+	if w.throughSmoke {
+		rs.throughSmokeKills[sid]++
+	}
+	if w.noScope {
+		rs.noScopeKills[sid]++
+	}
+	if w.blind {
+		rs.blindKills[sid]++
+	}
+}
+
 // ParseResult is a parsed demo's per-player payload plus the match-level rounds played (the same value
 // stamped on every row this match). Players is deterministically ordered (by SteamID64) so tests + logs
 // are stable across runs.
@@ -258,8 +371,9 @@ type DemoinfocsParser struct{}
 var _ Parser = DemoinfocsParser{}
 
 // Parse reads a whole Source-2 .dem stream and derives, per SteamID64: the Story-3.3 kills/deaths, the
-// Story-4.6a RoundsWon tally, and the Story-5.1 FR-18 core seven (assists, ADR damage, HS kills, MVPs, flash
-// assists, utility damage, KAST rounds) + the rounds played. It adapts the proven PoC (research/poc-cs2-demo-
+// Story-4.6a RoundsWon tally, the Story-5.1 FR-18 core seven (assists, ADR damage, HS kills, MVPs, flash
+// assists, utility damage, KAST rounds) and the Story-5.2 FR-19 weird five (knife/wallbang/through-smoke/
+// no-scope/blind kills, all off native events.Kill flags) + the rounds played. It adapts the proven PoC (research/poc-cs2-demo-
 // parse/main.go), registers Kill/PlayerHurt/RoundMVPAnnouncement/RoundEnd handlers (all skipping warmup and
 // bots/world id 0), runs ParseToEnd, and folds the surviving per-round buffers. It stores raw counts/totals,
 // never ratios (AD-20: ADR/HS%/KAST% are divided once in the 5.5 view). demoinfocs is CPU/RAM-heavy and
@@ -303,6 +417,14 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 	// destructive move, so it needs to know a round actually happened.
 	roundStarted := false
 
+	// ⭐ POST-ROUND KILLS COUNT — DELIBERATE, do not "fix" it (Story 5.2 code review, Cuatro's call
+	// 2026-07-21). This handler filters warmup and nothing else: a kill landed between RoundEnd and the next
+	// RoundStart is not warmup, and `cur` was already reset, so it accumulates into the FOLLOWING round's
+	// scratch. That is scoreboard-correct for kills/deaths (CS2 counts post-round kills, which is why the
+	// conservation gate can never see it), and for the FR-19 weird five it is what we WANT: the post-round
+	// knife-around is precisely the comedy the weird awards exist to capture. Keeping the weird five on the
+	// identical event path as kills/deaths is also what makes them auditable against it. The known cost: if
+	// that following round is later stranded by a rewind (idx > final), those kills are dropped with it.
 	p.RegisterEventHandler(func(e events.Kill) {
 		if p.GameState().IsWarmupPeriod() {
 			return // warmup kills are not scored (PoC discipline)
@@ -313,6 +435,11 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 			if e.IsHeadshot {
 				cur.hsKills[k]++
 			}
+			// The FR-19 weird five (Story 5.2), all credited to the KILLER. Both halves are unit-tested and
+			// live OUTSIDE this closure — classifyWeirdKill decides, addWeirdKills binds each flag to its own
+			// counter — leaving nothing here a test cannot reach. It goes through `cur` like every other
+			// additive stat, so the trap-4 pre-match round is discarded by the RoundEnd overwrite.
+			cur.addWeirdKills(k, classifyWeirdKill(e))
 		}
 		if v := idOf(e.Victim); v != 0 {
 			cur.deaths[v]++

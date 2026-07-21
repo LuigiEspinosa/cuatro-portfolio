@@ -36,18 +36,29 @@ func cannedParse() ParseResult {
 			// deliberately distinct per field + per player so a dropped mapping (either site) reddens: no two
 			// fields share a value, and FlashAssists <= Assists / HSKills <= Kills / KASTRounds <= RoundsPlayed
 			// so the fixture is a plausible scoreboard.
+			// The FR-19 weird five (Story 5.2) ride the same assembly again — likewise distinct per field +
+			// per player, and each <= that player's Kills (they are overlapping SUBSETS of kills, so any one
+			// is <= Kills while their SUM may legitimately exceed it — no fixture invariant on the sum).
+			// ⚠ The distinctness rule is WITHIN a player row and it is load-bearing, not decoration: two
+			// fields sharing a value make a cross-wire between them (ThroughSmokeKills: pl.Kills) invisible
+			// for that player. The 5.2 review caught three collisions on …042 — check the whole row, not
+			// just your new field, when you widen this fixture. (Cross-PLAYER repeats are fine and sometimes
+			// required: …930's Deaths == …042's Kills is the Σkills == Σdeaths conservation the tests assert.)
 			{SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16,
-				Assists: 4, ADRDamage: 2529, HSKills: 6, MVPs: 5, FlashAssists: 1, UtilityDamage: 233, KASTRounds: 18},
+				Assists: 4, ADRDamage: 2529, HSKills: 6, MVPs: 5, FlashAssists: 1, UtilityDamage: 233, KASTRounds: 18,
+				KnifeKills: 8, WallbangKills: 9, ThroughSmokeKills: 10, NoScopeKills: 11, BlindKills: 12},
 			{SteamID64: 76561198000000042, Kills: 14, Deaths: 20, RoundsWon: 8,
-				Assists: 3, ADRDamage: 1801, HSKills: 7, MVPs: 2, FlashAssists: 2, UtilityDamage: 147, KASTRounds: 13},
+				Assists: 3, ADRDamage: 1801, HSKills: 7, MVPs: 6, FlashAssists: 2, UtilityDamage: 147, KASTRounds: 13,
+				KnifeKills: 9, WallbangKills: 5, ThroughSmokeKills: 11, NoScopeKills: 1, BlindKills: 4},
 		},
 	}
 }
 
-// assertCoreSeven checks a mapped StatRow carries every FR-18 core-seven field from its PlayerStat source.
-// Both mapping sites (cli.go parseAndRecord, reparse.go) must copy all seven; dropping ANY one silently
-// writes a 0 (a NULL/zeroed column), so this single helper is the per-stat mutation net for both paths.
-func assertCoreSeven(t *testing.T, got db.StatRow, want PlayerStat) {
+// assertDerivedStats checks a mapped StatRow carries every derived field from its PlayerStat source: the
+// FR-18 core seven (Story 5.1) AND the FR-19 weird five (Story 5.2). Both mapping sites (cli.go
+// parseAndRecord, reparse.go) must copy all twelve; dropping ANY one silently writes a 0 (a NULL/zeroed
+// column), so this single helper is the per-stat mutation net for both paths.
+func assertDerivedStats(t *testing.T, got db.StatRow, want PlayerStat) {
 	t.Helper()
 	if got.Assists != want.Assists {
 		t.Fatalf("assists not carried: got %d want %d", got.Assists, want.Assists)
@@ -69,6 +80,23 @@ func assertCoreSeven(t *testing.T, got db.StatRow, want PlayerStat) {
 	}
 	if got.KASTRounds != want.KASTRounds {
 		t.Fatalf("kast_rounds not carried: got %d want %d", got.KASTRounds, want.KASTRounds)
+	}
+	// The FR-19 weird five (Story 5.2). Same net, same reason: a field dropped from either map literal
+	// writes 0/NULL into a comedy-award column and nothing else notices.
+	if got.KnifeKills != want.KnifeKills {
+		t.Fatalf("knife_kills not carried: got %d want %d", got.KnifeKills, want.KnifeKills)
+	}
+	if got.WallbangKills != want.WallbangKills {
+		t.Fatalf("wallbang_kills not carried: got %d want %d", got.WallbangKills, want.WallbangKills)
+	}
+	if got.ThroughSmokeKills != want.ThroughSmokeKills {
+		t.Fatalf("through_smoke_kills not carried: got %d want %d", got.ThroughSmokeKills, want.ThroughSmokeKills)
+	}
+	if got.NoScopeKills != want.NoScopeKills {
+		t.Fatalf("no_scope_kills not carried: got %d want %d", got.NoScopeKills, want.NoScopeKills)
+	}
+	if got.BlindKills != want.BlindKills {
+		t.Fatalf("blind_kills not carried: got %d want %d", got.BlindKills, want.BlindKills)
 	}
 }
 
@@ -151,10 +179,11 @@ func TestRunCLIHappyPathParsesAndUpserts(t *testing.T) {
 	if r042.RoundsWon != 8 {
 		t.Fatalf("…042's demo-derived RoundsWon must be carried to the stat row: got %d want 8", r042.RoundsWon)
 	}
-	// Story 5.1: the FR-18 core seven ride the SAME first-parse map (cli.go parseAndRecord). Dropping any one
-	// field from that literal writes a 0 for it — this asserts all seven landed for BOTH players.
-	assertCoreSeven(t, r930, cannedParse().Players[0])
-	assertCoreSeven(t, r042, cannedParse().Players[1])
+	// Stories 5.1 + 5.2: the FR-18 core seven and the FR-19 weird five ride the SAME first-parse map
+	// (cli.go parseAndRecord). Dropping any one field from that literal writes a 0 for it — this asserts
+	// all twelve landed for BOTH players.
+	assertDerivedStats(t, r930, cannedParse().Players[0])
+	assertDerivedStats(t, r042, cannedParse().Players[1])
 	// FR-16's conservation, at the assembly seam: the per-player tally sums to the match's rounds played.
 	if r930.RoundsWon+r042.RoundsWon != r930.RoundsPlayed {
 		t.Fatalf("ΣRoundsWon must equal RoundsPlayed: %d + %d != %d", r930.RoundsWon, r042.RoundsWon, r930.RoundsPlayed)
@@ -178,6 +207,63 @@ func TestRunCLIHappyPathParsesAndUpserts(t *testing.T) {
 	if len(rec.Recorded()) != 1 || s.Len() != 1 {
 		t.Fatalf("the re-run must not add a demo row/object: rows=%d objects=%d", len(rec.Recorded()), s.Len())
 	}
+}
+
+// TestRunCLIZeroWeirdStatsRecordedAsZeroNotOmitted is AC2 of Story 5.2 (FR-19's testable consequence: "a
+// weird stat with a zero count is recorded as zero, not omitted"). A player who earned NONE of the five is
+// still UPSERTED — a full row, never skipped and never partially mapped — which is the half of AC2 that is
+// reachable from here and the half a "skip the player if they have nothing weird" optimization would break.
+//
+// ⚠ Read what this test does NOT prove (5.2 review). The five `!= 0` assertions below are 0 == 0: db.StatRow
+// carries plain ints, so they hold identically whether the map literal copies the fields or omits them. They
+// are a tripwire for a row going MISSING, not for a field going missing — the per-field net is
+// assertDerivedStats over the NON-zero cannedParse fixture, which is where a dropped mapping actually
+// reddens. And no Go test can reach the 0-vs-NULL distinction at all: FakeStatRecorder stores StatRow
+// structs and never executes SQL, and no Go int can be NULL. That the five columns sit unconditionally in
+// the INSERT list (db.go) is what makes zero land as 0, and it is verified by reading that statement — not
+// by this test.
+func TestRunCLIZeroWeirdStatsRecordedAsZeroNotOmitted(t *testing.T) {
+	s := store.NewFakeStore()
+	rec := db.NewFakeRecorder()
+	statRec := db.NewFakeStatRecorder()
+	// The canned fixture with the weird five zeroed out for BOTH players — everything else unchanged, so a
+	// row that goes missing or loses its K/D is a skip/partial-map, not a zero.
+	zeroed := cannedParse()
+	for i := range zeroed.Players {
+		zeroed.Players[i].KnifeKills = 0
+		zeroed.Players[i].WallbangKills = 0
+		zeroed.Players[i].ThroughSmokeKills = 0
+		zeroed.Players[i].NoScopeKills = 0
+		zeroed.Players[i].BlindKills = 0
+	}
+	path := writeTemp(t, "cache.dem", demoBytes())
+
+	res, err := RunCLI(context.Background(), s, rec, FakeParser{Result: zeroed}, statRec, cannedRoster(), path, 77)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Parsed || res.Players != 2 {
+		t.Fatalf("both players must still be parsed+recorded, got %+v", res)
+	}
+	calls := statRec.Calls()
+	if len(calls) != 1 || len(calls[0].Rows) != 2 {
+		t.Fatalf("a zero-weird-stat parse must upsert a row for EVERY player (none omitted), got %+v", calls)
+	}
+	for _, r := range calls[0].Rows {
+		if r.Kills == 0 || r.RoundsPlayed != 24 {
+			t.Fatalf("row for %s lost its non-weird payload — partially mapped: %+v", r.SteamID64, r)
+		}
+		if r.KnifeKills != 0 || r.WallbangKills != 0 || r.ThroughSmokeKills != 0 || r.NoScopeKills != 0 || r.BlindKills != 0 {
+			t.Fatalf("row for %s must carry the weird five as explicit zeros: %+v", r.SteamID64, r)
+		}
+	}
+	// And the whole mapping still holds against the zeroed source (the same twelve-field net).
+	byID := map[string]db.StatRow{}
+	for _, r := range calls[0].Rows {
+		byID[r.SteamID64] = r
+	}
+	assertDerivedStats(t, byID["76561197960287930"], zeroed.Players[0])
+	assertDerivedStats(t, byID["76561198000000042"], zeroed.Players[1])
 }
 
 // TestRunCLIConservationAnomaly: an imbalanced Σkills!=Σdeaths parse is HELD (validation_state='anomalous')

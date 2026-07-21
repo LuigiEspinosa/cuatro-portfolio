@@ -97,7 +97,8 @@ type parseOutcome struct {
 // and the Story-3.8 bounded async job run the SAME core with NO duplicated parse logic: read the RETAINED
 // object back (AD-1 source of truth — never a tee of the upload; demoinfocs consumes the whole stream), map
 // each parsed player to a stat_row (SteamID64 uint64 -> 17-digit decimal text, AD-4; stamping match/demo/
-// rounds provenance; the Epic-5 stat columns stay NULL), validate against the ACTIVE roster (Story 3.4),
+// rounds provenance plus the twelve derived stats of FR-18 + FR-19; only FR-20/FR-21's entry frags, opening
+// deaths, clutches and idle columns stay NULL), validate against the ACTIVE roster (Story 3.4),
 // and upsert via RecordParse. It NEVER acquires — the demo bytes are already durable in R2; the caller
 // supplies the demoID + storageKey of the retained object (the AcquireResult on the CLI/MatchZy path).
 //
@@ -117,7 +118,8 @@ func parseAndRecord(ctx context.Context, s store.DemoStore, parser Parser, statR
 
 	// Map each parsed player to a stat_row, converting SteamID64 uint64 -> 17-digit decimal text (AD-4;
 	// the DB layer never sees the numeric form) and stamping match/demo/rounds provenance, plus the FR-18
-	// core seven (Story 5.1). The still-later weird/derived/idle columns (5.2–5.4) stay NULL.
+	// core seven (Story 5.1) and the FR-19 weird five (Story 5.2). Only the still-later derived/idle columns
+	// (FR-20/FR-21, Stories 5.3–5.4) stay NULL.
 	rows := make([]db.StatRow, 0, len(result.Players))
 	for _, pl := range result.Players {
 		sid := strconv.FormatUint(pl.SteamID64, 10)
@@ -147,6 +149,13 @@ func parseAndRecord(ctx context.Context, s store.DemoStore, parser Parser, statR
 			FlashAssists:  pl.FlashAssists,
 			UtilityDamage: pl.UtilityDamage,
 			KASTRounds:    pl.KASTRounds,
+			// The FR-19 weird five (Story 5.2) — carried UNCONDITIONALLY, so a player who earned none of
+			// them writes explicit zeros rather than NULLs (FR-19 AC2: recorded as zero, not omitted).
+			KnifeKills:        pl.KnifeKills,
+			WallbangKills:     pl.WallbangKills,
+			ThroughSmokeKills: pl.ThroughSmokeKills,
+			NoScopeKills:      pl.NoScopeKills,
+			BlindKills:        pl.BlindKills,
 		})
 	}
 	// Validate the just-parsed rows against the ACTIVE roster BEFORE recording (Story 3.4, the Validating
