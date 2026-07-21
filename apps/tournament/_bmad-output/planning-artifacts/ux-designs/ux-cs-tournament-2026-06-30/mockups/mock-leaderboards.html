@@ -487,12 +487,14 @@
               <span class="bv num">— —</span>
               <span class="lockico">⬚</span>
             </div>
-            <div class="lockrow">
-              <span class="badge">▦</span>
-              <span class="bk"><span class="bn">Don Clutch</span><span class="bs">clutch · 1vX ganados</span></span>
-              <span class="bv num">— —</span>
-              <span class="lockico">⬚</span>
-            </div>
+            <!-- "Don Clutch · clutch · 1vX ganados" REMOVED (decisión de Cuatro, 2026-07-21, tras la medición
+                 de Story 5.3): con la regla de clutch por TRANSICIÓN y un torneo enteramente 1v1 wingman, el
+                 premio no tiene ningún ganador posible — `clutches` es {} para todo jugador de todo partido,
+                 probado estructuralmente (T:1 CT:1 en 221/221 rondas medidas). El BUCKET 'clutch' se MANTIENE
+                 en el esquema y en FR-24: la derivación del parser es correcta y se llenaría sola en un
+                 formato 5v5. Lo que se retira es este premio del catálogo semilla, no la categoría. ⚠ Este
+                 mockup queda demostrando 3 de los 4 buckets; si 5.5/Epic 6 quiere volver a mostrar 'clutch',
+                 necesita un premio cuya stat decisoria sí se llene en el formato vigente. -->
             <div class="lockrow">
               <span class="badge">▦</span>
               <span class="bk"><span class="bn">El Más Generoso</span><span class="bs">comedia · más muertes</span></span>

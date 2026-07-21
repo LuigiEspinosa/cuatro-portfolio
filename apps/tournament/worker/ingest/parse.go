@@ -18,14 +18,15 @@ const ParserVersion = "demoinfocs-golang/v5 v5.2.0"
 
 // PlayerStat is one parsed player's payload: the Story-3.3 minimum-viable (kills/deaths), the Story-4.6a
 // demo-derived RoundsWon tally, the Story-5.1 FR-18 CORE SEVEN (assists, ADR damage, headshot kills, MVPs,
-// flash assists, utility damage, KAST rounds), and — as of Story 5.2 — the FR-19 WEIRD FIVE (knife,
-// wallbang, through-smoke, no-scope and blind kills). The parser stores raw NUMERATORS/COUNTS, never
-// ratios: ADR/HS%/KAST% are divided ONCE in the Epic-5 leaderboard view (AD-20 one-owner), so ADRDamage is
-// the TOTAL overkill-capped damage (view: ADRDamage/RoundsPlayed), HSKills a count (view: HSKills/Kills),
-// KASTRounds a count (view: KASTRounds/RoundsPlayed). The still-later DERIVED/IDLE stats (FR-20/FR-21 —
-// entry frags, opening deaths, clutches, idle_dq, idle_round_count) are Stories 5.3–5.4 and stay at their
-// nullable column defaults. This widens the struct + the writer, never the schema (every stat_row column
-// already exists, nullable, since migration 0007).
+// flash assists, utility damage, KAST rounds), the Story-5.2 FR-19 WEIRD FIVE (knife, wallbang,
+// through-smoke, no-scope and blind kills), and — as of Story 5.3 — the FR-20 DERIVED THREE (entry frags,
+// opening deaths, 1vX clutches). The parser stores raw NUMERATORS/COUNTS, never ratios: ADR/HS%/KAST% AND
+// FR-20's ENTRY SUCCESS RATE are divided ONCE in the Epic-5 leaderboard view (AD-20 one-owner), so
+// ADRDamage is the TOTAL overkill-capped damage (view: ADRDamage/RoundsPlayed), HSKills a count (view:
+// HSKills/Kills), KASTRounds a count (view: KASTRounds/RoundsPlayed) and EntryFrags/OpeningDeaths two raw
+// counts (view: EntryFrags/(EntryFrags+OpeningDeaths)). Store counts; divide nowhere. Only FR-21's IDLE
+// stats (idle_dq, idle_round_count — Story 5.4) remain at their nullable column defaults. This widens the
+// struct + the writer, never the schema (every stat_row column already exists, nullable, since 0007).
 //
 // ⚠ FR-19's trailing "molotov/HE damage" clause is ALREADY SHIPPED as UtilityDamage by Story 5.1 (one
 // utility_damage column, 0007:43). There is no molotov/HE split to build; 5.2 is exactly five counters.
@@ -68,6 +69,12 @@ type PlayerStat struct {
 	ThroughSmokeKills int // Kill.ThroughSmoke
 	NoScopeKills      int // Kill.NoScope
 	BlindKills        int // Kill.AttackerBlind — the KILLER was flashed ("blind justice"); events.Kill carries NO victim-blind field
+	// The FR-20 DERIVED THREE (Story 5.3) — not read off any single event field but DERIVED from the event
+	// stream's per-round shape: an opening-duel latch and an alive-count transition. Entry success rate is
+	// NOT here — it is the ratio EntryFrags/(EntryFrags+OpeningDeaths), computed once in the 5.5 view (AD-20).
+	EntryFrags    int         // killer of the round's first live kill (FR-20 opening duel)
+	OpeningDeaths int         // victim of that same kill
+	Clutches      map[int]int // X -> count of 1vX clutches WON; nil/empty when none (the writer renders {} , never null)
 }
 
 // kastTradeWindow is the KAST "traded" window (FR-18, prd.md:103): a round counts for a player who died if
@@ -120,6 +127,21 @@ type roundStats struct {
 	gotAssist         map[uint64]bool // players who got >=1 assist this round (KAST "A")
 	deathEvents       []roundDeath    // every death this round in order (KAST "S"/"T")
 	kast              map[uint64]bool // participating players credited a KAST round (computed at RoundEnd)
+	// The FR-20 derived three (Story 5.3). Unlike every counter above, these are NOT per-event tallies: the
+	// opening duel is a one-shot LATCH over the round and the clutch is an alive-count TRANSITION, so the
+	// round carries the latched pair + the awarded result and foldRounds turns them into counts.
+	//
+	// ⭐ `live` is the whole reason post-round kills cannot corrupt FR-20. It is false in a fresh scratch and
+	// only becomes true at RoundFreezetimeEnd, so a kill landing between RoundEnd and the next freeze-time end
+	// — which we DELIBERATELY count for kills/deaths and the FR-19 weird five (see the Kill handler) — can
+	// neither claim an entry frag nor move the clutch alive counts. Both behaviours are correct; do not unify.
+	live         bool           // the round is in its LIVE window (freeze time has ended, RoundEnd has not fired)
+	entryFrag    uint64         // killer of this round's opening duel (0 until latched)
+	openingDeath uint64         // victim of this round's opening duel (0 until latched)
+	duelDone     bool           // the opening duel has been latched — a later kill must not overwrite it
+	clutch       *clutchTracker // alive-count state machine, armed at RoundFreezetimeEnd (nil until then)
+	clutchWon    map[uint64]int // the AWARDED result at RoundEnd: player -> X. Rides the scratch like every
+	// other stat so it gets the trap-4 assign/overwrite commit for free.
 }
 
 func newRoundStats() *roundStats {
@@ -176,6 +198,151 @@ func (rs *roundStats) kastQualified(player uint64, tradeWindow time.Duration) bo
 		}
 	}
 	return false
+}
+
+// armLiveWindow arms the round for FR-20: it opens the live window and resets BOTH halves of the derived
+// state — the opening-duel latch and the clutch tracker — so a re-arm can never mix an aborted attempt's duel
+// into the round that actually commits. Pure over roundStats (the DECISION here, only the CALL in the
+// RoundFreezetimeEnd closure), which is what makes the reset mutation-testable; the handler itself is
+// unreachable by FakeParser. See the handler for why a re-arm happens at all (measured: 221 freeze-time ends
+// against 204 counted rounds).
+func (rs *roundStats) armLiveWindow() {
+	rs.live = true
+	rs.entryFrag, rs.openingDeath, rs.duelDone = 0, 0, false
+	rs.clutch = newClutchTracker()
+}
+
+// recordOpeningDuel latches this round's OPENING DUEL (FR-20) on the FIRST kill of the LIVE round that has a
+// real killer who is not the victim, and reports whether it latched. Like kastQualified it is PURE over
+// roundStats — the DECISION lives here, only the CALL lives in the events.Kill closure — which is what makes
+// every branch below mutation-testable with no real demo (the seam the Story-5.2 review had to retro-fit).
+//
+// The three guards are FR-20 REQUIREMENTS, not defensive noise:
+//   - !rs.live — the round's opening duel is the first kill after FREEZE TIME ENDS. A post-round kill lands in
+//     the NEXT round's scratch (see roundStats.live) with live still false, so it cannot steal that round's
+//     entry frag. This gate is INSIDE the method on purpose, so removing it reddens a unit test.
+//   - killer == 0 (world/bomb) and killer == victim (suicide) — "bomb/suicide deaths are not opening deaths"
+//     (prd.md:310). Crucially such a death must not latch AND must not BLOCK: duelDone stays false, so the
+//     first REAL kill of the round still wins the duel.
+//   - rs.duelDone — one duel per round; a second real kill must never overwrite the first.
+//
+// victim == 0 is guarded for the same reason a killer of 0 is: an unattributable actor is not a duel side.
+func (rs *roundStats) recordOpeningDuel(killer, victim uint64) bool {
+	if !rs.live || rs.duelDone {
+		return false
+	}
+	if killer == 0 || victim == 0 || killer == victim {
+		return false
+	}
+	rs.entryFrag, rs.openingDeath, rs.duelDone = killer, victim, true
+	return true
+}
+
+// clutchTracker is the FR-20 1vX state machine for ONE round: who is alive, on which team, and who BECAME
+// the last player alive on their team (and against how many opponents at that instant). It holds NO
+// demoinfocs type — plain uint64 ids and plain int team codes — so every branch is table-testable with no
+// real demo, exactly as kastQualified and classifyWeirdKill are. That purity is not stylistic: alive-tracking
+// derived from the EVENT STREAM is what lets AC2 be proven, whereas Player.IsAlive() routes through the
+// unexported demoInfoProvider and degrades on a test-constructed player (the Story-5.2a hazard).
+//
+// ⭐ A CLUTCH IS A TRANSITION (Cuatro's decision, 2026-07-21). A player must GO from a team of >=2 alive to
+// being its only survivor; a player who STARTS as their team's only member never becomes last alive and is
+// never a candidate. In the 1v1 wingman format of the first tournament the victim's team goes 1 -> 0, never
+// -> 1, so `clutches` is legitimately {} for every player of every match. That falls out of the rule — there
+// is deliberately NO branch named "1v1" anywhere here, and the empty result must not be "fixed".
+type clutchTracker struct {
+	// ⚠ "alive" here means PRESUMED-ALIVE: a player who was on a team at the arming instant and whose death has
+	// not been seen in the event stream. It is NOT a checked liveness property — see the accepted 5v5 limitation
+	// pinned at the RoundFreezetimeEnd handler. On a 1v1 corpus the two coincide exactly.
+	team       map[uint64]int // presumed-alive player -> their team id (snapshotted at arming); deleted on death
+	aliveOn    map[int]int    // team id -> presumed-alive count
+	candidates map[uint64]int // player who BECAME last alive -> X (presumed-alive opponents AT THAT INSTANT)
+}
+
+func newClutchTracker() *clutchTracker {
+	return &clutchTracker{
+		team:       map[uint64]int{},
+		aliveOn:    map[int]int{},
+		candidates: map[uint64]int{},
+	}
+}
+
+// addAlive puts one presumed-alive player on a team at the round's arming instant — "presumed" because the
+// caller's roster is a TEAM filter, not a liveness check (see the limitation pinned at the RoundFreezetimeEnd
+// handler). A repeat id is idempotent (it does not double-count the team), so a duplicated roster entry cannot
+// inflate X.
+func (ct *clutchTracker) addAlive(sid uint64, team int) {
+	if sid == 0 {
+		return
+	}
+	if _, seen := ct.team[sid]; seen {
+		return
+	}
+	ct.team[sid] = team
+	ct.aliveOn[team]++
+}
+
+// kill applies one death to the alive counts and records a candidate on the >=2 -> exactly-1 TRANSITION.
+//
+// An UNKNOWN victim (a late joiner who was not in the freeze-time snapshot) or an ALREADY-DEAD one (a
+// duplicate event) returns without touching any counter — that idempotence is what keeps aliveOn from going
+// negative and what stops a phantom death from manufacturing a candidate.
+//
+// ⚠ A CANDIDATE WHO LATER DIES KEEPS THEIR CANDIDACY, deliberately: FR-20 names "bomb explosion" as a
+// winning path (prd.md:310-312), so the plant-and-die clutch counts. award() resolves it by whether their
+// team won, which is exactly the right question. Do not add a "still alive" test here.
+//
+// Counts only ever decrease, so a team passes through exactly-1 at most once and cannot be credited twice.
+func (ct *clutchTracker) kill(victim uint64) {
+	t, known := ct.team[victim]
+	if !known {
+		return
+	}
+	delete(ct.team, victim)
+	ct.aliveOn[t]--
+	if ct.aliveOn[t] != 1 {
+		return // still >=2 alive (no transition yet), or wiped out (0) — neither makes anyone last alive
+	}
+	var surv uint64
+	for sid, team := range ct.team {
+		if team == t {
+			surv = sid
+			break // aliveOn[t] == 1, so this is the team's only living member
+		}
+	}
+	if surv == 0 {
+		// Counts and roster disagree — record nothing rather than a phantom candidate. This also ABSORBS the
+		// aliveOn[t] == 0 (team wiped) case, which is why mutating the test above to `> 1` is an EQUIVALENT
+		// mutant that no test can redden (recorded as the single survivor in this story's mutation table): a
+		// wiped team has no living member to find, so the search leaves surv at 0 and we return here anyway.
+		// Two independent guards enforce "a wiped team produces no candidate"; keep both.
+		return
+	}
+	x := 0
+	for team, n := range ct.aliveOn {
+		if team != t {
+			x += n
+		}
+	}
+	if x == 0 {
+		return // every opponent is already dead: the round is over, there is nobody to clutch against
+	}
+	ct.candidates[surv] = x
+}
+
+// award resolves the round's candidates against the WINNING side's membership, returning player -> X for the
+// winners only. Membership, never a side identifier: e.RoundEnd.WinnerState.Members() resolves the winners AT
+// THAT INSTANT, so this is halftime-proof by construction — the same trap-2-safe move RoundsWon makes. Both
+// teams can hold a candidate at once (a 5v5 that decays to 1v1); only the winning one is credited. An empty
+// winners set (a draw, where WinnerState is nil — trap 3) credits nobody.
+func (ct *clutchTracker) award(winners map[uint64]bool) map[uint64]int {
+	out := map[uint64]int{}
+	for sid, x := range ct.candidates {
+		if winners[sid] {
+			out[sid] = x
+		}
+	}
+	return out
 }
 
 // foldRounds sums the SURVIVING per-round buffers into each player's PlayerStat totals. A round index ABOVE
@@ -266,6 +433,25 @@ func foldRounds(byRound map[int]*roundStats, roundWinners map[int][]uint64, mvpB
 		for sid := range rs.kast {
 			if s := get(sid); s != nil {
 				s.KASTRounds++
+			}
+		}
+		// The FR-20 derived three (Story 5.3) — same survivor fold, same stranded-round bound. The opening
+		// duel is at most ONE pair per round (so Σentry_frags == Σopening_deaths across a demo), and a round
+		// that never latched one (no live kill, or only world/suicide deaths) contributes nothing.
+		if rs.duelDone {
+			if s := get(rs.entryFrag); s != nil {
+				s.EntryFrags++
+			}
+			if s := get(rs.openingDeath); s != nil {
+				s.OpeningDeaths++
+			}
+		}
+		for sid, x := range rs.clutchWon {
+			if s := get(sid); s != nil {
+				if s.Clutches == nil {
+					s.Clutches = map[int]int{}
+				}
+				s.Clutches[x]++
 			}
 		}
 	}
@@ -382,10 +568,13 @@ var _ Parser = DemoinfocsParser{}
 // Parse reads a whole Source-2 .dem stream and derives, per SteamID64: the Story-3.3 kills/deaths, the
 // Story-4.6a RoundsWon tally, the Story-5.1 FR-18 core seven (assists, ADR damage, HS kills, MVPs, flash
 // assists, utility damage, KAST rounds) and the Story-5.2 FR-19 weird five (knife/wallbang/through-smoke/
-// no-scope/blind kills, all off native events.Kill flags) + the rounds played. It adapts the proven PoC (research/poc-cs2-demo-
-// parse/main.go), registers Kill/PlayerHurt/RoundMVPAnnouncement/RoundEnd handlers (all skipping warmup and
-// bots/world id 0), runs ParseToEnd, and folds the surviving per-round buffers. It stores raw counts/totals,
-// never ratios (AD-20: ADR/HS%/KAST% are divided once in the 5.5 view). demoinfocs is CPU/RAM-heavy and
+// no-scope/blind kills, all off native events.Kill flags) and the Story-5.3 FR-20 derived three (entry frags,
+// opening deaths, 1vX clutches — DERIVED from the round's shape, not read off one field) + the rounds played.
+// It adapts the proven PoC (research/poc-cs2-demo-
+// parse/main.go), registers Kill/PlayerHurt/RoundMVPAnnouncement/RoundStart/RoundFreezetimeEnd/RoundEnd
+// handlers (all skipping warmup and bots/world id 0), runs ParseToEnd, and folds the surviving per-round
+// buffers. It stores raw counts/totals, never ratios (AD-20: ADR/HS%/KAST% and FR-20's entry success rate are
+// divided once in the 5.5 view). demoinfocs is CPU/RAM-heavy and
 // consumes the entire stream, so callers pass the retained R2 object read back in full (AD-1), never a tee of
 // the live upload.
 func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
@@ -469,6 +658,66 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 			if e.AssistedFlash {
 				cur.flashAssists[a]++
 			}
+		}
+		// The FR-20 derived three (Story 5.3): both DECISIONS are pure (recordOpeningDuel / clutchTracker),
+		// only these two CALLS live in the closure — the seam that keeps AC1/AC2 mutation-testable.
+		//
+		// ⚠ THE TWO GATES DIFFER ON PURPOSE — do not collapse them into one condition. The opening duel
+		// EXCLUDES world/bomb deaths and suicides (FR-20: they are not opening deaths); the clutch alive count
+		// must include EVERY death, because a teammate dying to the bomb still reduces the team to one.
+		cur.recordOpeningDuel(idOf(e.Killer), idOf(e.Victim))
+		if cur.live && cur.clutch != nil {
+			if v := idOf(e.Victim); v != 0 {
+				cur.clutch.kill(v)
+			}
+		}
+	})
+
+	// THE FR-20 LIVE WINDOW (Story 5.3). RoundFreezetimeEnd is the "buy time is over, the round is playable"
+	// signal, dispatched from the Source-1 legacy event round_freeze_end that the default parser's game-event
+	// mimicry re-emits (demoinfocs v5.2.0: game_events.go:363, datatables.go:1101-1115). Per round the order is
+	// RoundStart -> RoundFreezetimeEnd -> ... -> RoundEnd, so `cur` (reset at the previous RoundEnd) is the
+	// correct scratch to arm.
+	//
+	// It ARMS the round: it opens the live window (so the opening duel can latch) and snapshots the roster into
+	// a fresh clutch tracker. `live` returns to false for free when RoundEnd installs a new scratch — which is
+	// precisely why a post-round kill can neither claim an entry frag nor move an alive count, while still
+	// counting for kills/deaths + the FR-19 weird five as Cuatro decided it should.
+	//
+	// ⚠ ARMING IS A FULL RESET OF THE FR-20 STATE, both halves together (code review, 2026-07-21). This handler
+	// is NOT guaranteed to fire once per committed round: THE BAR measured 221 freeze-time ends against 204
+	// counted rounds on the 14 real demos, because a MatchZy restart re-arms a round that never reached a
+	// RoundEnd. A re-arm that dropped every recorded death (fresh tracker) while KEEPING an already-latched duel
+	// would commit the aborted attempt's entry frag as the replayed round's opening duel — crediting two players
+	// who took no part in it, with every invariant still green (Σentry == Σopening, Σentry <= rounds). Measured
+	// as unreachable on today's corpus (0 re-arms carried a stale latch across all 14 demos) and therefore NOT a
+	// live defect — but the two halves must be reset together or the asymmetry becomes one the day a demo
+	// restarts mid-round. Reset the duel latch here; do not "simplify" it back out.
+	//
+	// ⚠ pl.Team is a PLAIN STRUCT FIELD (common.Player.Team) — no entity dereference, no panic risk. IsAlive()
+	// and GetTeam() are deliberately NOT used anywhere in this story: both route through PlayerPawnEntity(),
+	// the live-state class of call Story 5.2a had to route around. Alive-tracking is derived from the event
+	// stream instead, which is what keeps the clutch machine pure and table-testable.
+	//
+	// ⚠ ACCEPTED LIMITATION, 5v5 ONLY (Cuatro's decision at the 5.3 code review, 2026-07-21). Participants()
+	// .Playing() filters on TEAM, not on aliveness, and events.Kill is the only thing that ever decrements the
+	// alive counts (there is deliberately no PlayerDisconnected handler). So a player who is on a team here but
+	// never dies — a mid-round disconnect, or someone already dead when freeze time ends — stays counted: their
+	// team may never reach exactly-1 (a genuine clutch silently dropped) or the opposing X may be inflated by
+	// one. UNREACHABLE on the 1v1 corpus (T:1 CT:1 on all 221 rounds, Σclutches 0 — measured, not assumed), and
+	// the fix was declined ON PURPOSE: keeping clutchTracker free of every demoinfocs type is what makes AC2
+	// table-testable at all. Filed to deferred-work for the first 5v5/substitution demo, where the cheap and
+	// still-pure fix is a PlayerDisconnected handler calling ct.kill(sid).
+	p.RegisterEventHandler(func(e events.RoundFreezetimeEnd) {
+		if p.GameState().IsWarmupPeriod() {
+			return // warmup is not scored — the same discipline as every other handler here
+		}
+		cur.armLiveWindow()
+		for _, pl := range p.GameState().Participants().Playing() {
+			if pl == nil || pl.SteamID64 == 0 {
+				continue
+			}
+			cur.clutch.addAlive(pl.SteamID64, int(pl.Team))
 		}
 	})
 
@@ -572,12 +821,22 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 		// (trap 3) → nobody won. Assignment for this round index IS the trap-4 correction (last write wins).
 		if e.WinnerState != nil {
 			winners := make([]uint64, 0, 5)
+			winnerSet := make(map[uint64]bool, 5)
 			for _, pl := range e.WinnerState.Members() {
 				if pl != nil && pl.SteamID64 != 0 {
 					winners = append(winners, pl.SteamID64)
+					winnerSet[pl.SteamID64] = true
 				}
 			}
 			roundWinners[idx] = winners
+			// (1b) The FR-20 1vX clutch (Story 5.3): a candidate is credited only if THEIR TEAM WON, resolved
+			// by membership in the SAME winners set built above — never by a side identifier (trap 2), and
+			// never by a second Members() walk. A draw leaves WinnerState nil, so this whole block is skipped
+			// and nobody clutches (trap 3, unchanged). The tracker is nil for a round whose RoundFreezetimeEnd
+			// never fired (a truncated demo), which credits nobody rather than panicking.
+			if cur.clutch != nil {
+				cur.clutchWon = cur.clutch.award(winnerSet)
+			}
 		}
 		// (2) KAST close-out: over the completed round's scratch, credit every PARTICIPATING player (on T/CT
 		// now, via Playing() — benched/spectators excluded) who got a K/A, Survived, or was Traded.

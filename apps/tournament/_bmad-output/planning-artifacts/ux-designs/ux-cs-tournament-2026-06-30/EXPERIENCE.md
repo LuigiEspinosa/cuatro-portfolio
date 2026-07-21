@@ -142,7 +142,7 @@ Behavioral. Visual contrast lives in `DESIGN.md`.
 - **Tabular-numeral legibility.** All stats, scores, seeds, timers, counters, and hashes render with tabular lining numerals (`{typography.numeral}`) so live-updating columns align and never reflow as values tick.
 - **Focus order follows reading order** on every surface. `Esc` closes the topmost overlay. The Ceremony's persistent verify-strip is reachable in tab order at all times.
 - **One-handed reach.** Primary actions sit in the lower two-thirds on the phone; the four-up nav row is thumb-reachable; nothing essential lives in a top corner.
-- **Screen-reader labels for live updates + reveals.** New feed entries announce via `aria-live` ("Resultado aprobado: Dex venció a Theo 16-13"). Each Award reveal announces name + bucket + deciding stat ("Don Clutch — Clutch — 4 clutches 1vX"). The grace timer announces threshold crossings, not every tick. Live/Final pill state changes are announced.
+- **Screen-reader labels for live updates + reveals.** New feed entries announce via `aria-live` ("Resultado aprobado: Dex venció a Theo 16-13"). Each Award reveal announces name + bucket + deciding stat ("Máquina de Frags — Habilidad — 21 muertes"). The grace timer announces threshold crossings, not every tick. Live/Final pill state changes are announced.
 
 ## Provably-Fair & Verification
 

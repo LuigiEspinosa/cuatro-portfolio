@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"cs-tournament/worker/db"
@@ -44,20 +45,27 @@ func cannedParse() ParseResult {
 			// for that player. The 5.2 review caught three collisions on …042 — check the whole row, not
 			// just your new field, when you widen this fixture. (Cross-PLAYER repeats are fine and sometimes
 			// required: …930's Deaths == …042's Kills is the Σkills == Σdeaths conservation the tests assert.)
+			// The FR-20 derived three (Story 5.3) ride the same assembly a third time: EntryFrags <= Kills and
+			// OpeningDeaths <= Deaths keep the fixture a plausible scoreboard, and BOTH players carry a
+			// NON-EMPTY Clutches map — a nil `want` would make a dropped `Clutches:` mapping invisible, since
+			// the dropped field is nil too.
 			{SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16,
 				Assists: 4, ADRDamage: 2529, HSKills: 6, MVPs: 5, FlashAssists: 1, UtilityDamage: 233, KASTRounds: 18,
-				KnifeKills: 8, WallbangKills: 9, ThroughSmokeKills: 10, NoScopeKills: 11, BlindKills: 12},
+				KnifeKills: 8, WallbangKills: 9, ThroughSmokeKills: 10, NoScopeKills: 11, BlindKills: 12,
+				EntryFrags: 7, OpeningDeaths: 3, Clutches: map[int]int{1: 2, 2: 1}},
 			{SteamID64: 76561198000000042, Kills: 14, Deaths: 20, RoundsWon: 8,
 				Assists: 3, ADRDamage: 1801, HSKills: 7, MVPs: 6, FlashAssists: 2, UtilityDamage: 147, KASTRounds: 13,
-				KnifeKills: 9, WallbangKills: 5, ThroughSmokeKills: 11, NoScopeKills: 1, BlindKills: 4},
+				KnifeKills: 9, WallbangKills: 5, ThroughSmokeKills: 11, NoScopeKills: 1, BlindKills: 4,
+				EntryFrags: 10, OpeningDeaths: 12, Clutches: map[int]int{1: 3, 4: 1}},
 		},
 	}
 }
 
 // assertDerivedStats checks a mapped StatRow carries every derived field from its PlayerStat source: the
-// FR-18 core seven (Story 5.1) AND the FR-19 weird five (Story 5.2). Both mapping sites (cli.go
-// parseAndRecord, reparse.go) must copy all twelve; dropping ANY one silently writes a 0 (a NULL/zeroed
-// column), so this single helper is the per-stat mutation net for both paths.
+// FR-18 core seven (Story 5.1), the FR-19 weird five (Story 5.2) AND the FR-20 derived three (Story 5.3).
+// Both mapping sites (cli.go parseAndRecord, reparse.go) must copy all fifteen; dropping ANY one silently
+// writes a 0 (a NULL/zeroed column) — or, for Clutches, a `{}` that ERASES a player's clutch history on
+// every re-parse — so this single helper is the per-stat mutation net for both paths.
 func assertDerivedStats(t *testing.T, got db.StatRow, want PlayerStat) {
 	t.Helper()
 	if got.Assists != want.Assists {
@@ -97,6 +105,17 @@ func assertDerivedStats(t *testing.T, got db.StatRow, want PlayerStat) {
 	}
 	if got.BlindKills != want.BlindKills {
 		t.Fatalf("blind_kills not carried: got %d want %d", got.BlindKills, want.BlindKills)
+	}
+	// The FR-20 derived three (Story 5.3). Clutches is a MAP — compared with DeepEqual, and the fixture keeps
+	// it non-empty precisely so a dropped mapping (which leaves nil) reddens here.
+	if got.EntryFrags != want.EntryFrags {
+		t.Fatalf("entry_frags not carried: got %d want %d", got.EntryFrags, want.EntryFrags)
+	}
+	if got.OpeningDeaths != want.OpeningDeaths {
+		t.Fatalf("opening_deaths not carried: got %d want %d", got.OpeningDeaths, want.OpeningDeaths)
+	}
+	if !reflect.DeepEqual(got.Clutches, want.Clutches) {
+		t.Fatalf("clutches not carried: got %v want %v", got.Clutches, want.Clutches)
 	}
 }
 
@@ -210,24 +229,26 @@ func TestRunCLIHappyPathParsesAndUpserts(t *testing.T) {
 }
 
 // TestRunCLIZeroWeirdStatsRecordedAsZeroNotOmitted is AC2 of Story 5.2 (FR-19's testable consequence: "a
-// weird stat with a zero count is recorded as zero, not omitted"). A player who earned NONE of the five is
-// still UPSERTED — a full row, never skipped and never partially mapped — which is the half of AC2 that is
-// reachable from here and the half a "skip the player if they have nothing weird" optimization would break.
+// weird stat with a zero count is recorded as zero, not omitted"), extended by Story 5.3 AC3 to the FR-20
+// derived three. A player who earned NONE of them is still UPSERTED — a full row, never skipped and never
+// partially mapped — which is the half of the AC that is reachable from here and the half a "skip the player
+// if they have nothing weird" optimization would break.
 //
-// ⚠ Read what this test does NOT prove (5.2 review). The five `!= 0` assertions below are 0 == 0: db.StatRow
+// ⚠ Read what this test does NOT prove (5.2 review). The `!= 0` assertions below are 0 == 0: db.StatRow
 // carries plain ints, so they hold identically whether the map literal copies the fields or omits them. They
 // are a tripwire for a row going MISSING, not for a field going missing — the per-field net is
 // assertDerivedStats over the NON-zero cannedParse fixture, which is where a dropped mapping actually
 // reddens. And no Go test can reach the 0-vs-NULL distinction at all: FakeStatRecorder stores StatRow
-// structs and never executes SQL, and no Go int can be NULL. That the five columns sit unconditionally in
-// the INSERT list (db.go) is what makes zero land as 0, and it is verified by reading that statement — not
-// by this test.
+// structs and never executes SQL, and no Go int can be NULL. That the columns sit unconditionally in the
+// INSERT list (db.go) is what makes zero land as 0, and it is verified by reading that statement — not by
+// this test. The same holds for Clutches: a nil map reaching the writer is rendered `{}` rather than the
+// jsonb scalar `null`, and THAT is proven by db.TestClutchesJSON, not here.
 func TestRunCLIZeroWeirdStatsRecordedAsZeroNotOmitted(t *testing.T) {
 	s := store.NewFakeStore()
 	rec := db.NewFakeRecorder()
 	statRec := db.NewFakeStatRecorder()
-	// The canned fixture with the weird five zeroed out for BOTH players — everything else unchanged, so a
-	// row that goes missing or loses its K/D is a skip/partial-map, not a zero.
+	// The canned fixture with the weird five AND the FR-20 derived three zeroed out for BOTH players —
+	// everything else unchanged, so a row that goes missing or loses its K/D is a skip/partial-map, not a zero.
 	zeroed := cannedParse()
 	for i := range zeroed.Players {
 		zeroed.Players[i].KnifeKills = 0
@@ -235,6 +256,9 @@ func TestRunCLIZeroWeirdStatsRecordedAsZeroNotOmitted(t *testing.T) {
 		zeroed.Players[i].ThroughSmokeKills = 0
 		zeroed.Players[i].NoScopeKills = 0
 		zeroed.Players[i].BlindKills = 0
+		zeroed.Players[i].EntryFrags = 0
+		zeroed.Players[i].OpeningDeaths = 0
+		zeroed.Players[i].Clutches = nil // the real parser's shape for a player who clutched nothing
 	}
 	path := writeTemp(t, "cache.dem", demoBytes())
 
@@ -255,6 +279,11 @@ func TestRunCLIZeroWeirdStatsRecordedAsZeroNotOmitted(t *testing.T) {
 		}
 		if r.KnifeKills != 0 || r.WallbangKills != 0 || r.ThroughSmokeKills != 0 || r.NoScopeKills != 0 || r.BlindKills != 0 {
 			t.Fatalf("row for %s must carry the weird five as explicit zeros: %+v", r.SteamID64, r)
+		}
+		// Story 5.3 AC3: the derived three are on the row too — two explicit zeros and an empty (not
+		// populated-by-accident) clutch tally that the writer renders as the empty jsonb object.
+		if r.EntryFrags != 0 || r.OpeningDeaths != 0 || len(r.Clutches) != 0 {
+			t.Fatalf("row for %s must carry the FR-20 derived three as zeros/empty: %+v", r.SteamID64, r)
 		}
 	}
 	// And the whole mapping still holds against the zeroed source (the same twelve-field net).

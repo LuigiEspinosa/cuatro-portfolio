@@ -3,6 +3,7 @@ package ingest
 import (
 	"bytes"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -14,12 +15,22 @@ import (
 // TestFakeParserEchoesResultAndErr proves the test seam: the canned Result is returned verbatim, and the
 // Err seam wins (fail-closed) so the wiring tests can force a parse failure.
 func TestFakeParserEchoesResultAndErr(t *testing.T) {
-	want := ParseResult{RoundsPlayed: 24, Players: []PlayerStat{{SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16}}}
+	// Clutches (Story 5.3) makes PlayerStat non-comparable with ==, so the echo is asserted with
+	// reflect.DeepEqual. ⚠ That switch was FORCED BY COMPILATION, not chosen for evidence: FakeParser returns
+	// its canned Result, so got.Players[0].Clutches is the same map header as want's and DeepEqual is comparing
+	// an object with itself. It would only redden against a FakeParser that rebuilt PlayerStat field by field.
+	// The real proof that the map survives the PlayerStat -> StatRow mapping is assertDerivedStats over
+	// cannedParse in cli_test.go / reparse_test.go. (Corrected at the Story 5.3 code review, 2026-07-21 — the
+	// prior comment claimed this test proved the map "rides through the seam"; it does not.)
+	want := ParseResult{RoundsPlayed: 24, Players: []PlayerStat{{
+		SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16,
+		EntryFrags: 7, OpeningDeaths: 3, Clutches: map[int]int{1: 2, 2: 1},
+	}}}
 	got, err := FakeParser{Result: want}.Parse(strings.NewReader("ignored stream"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.RoundsPlayed != 24 || len(got.Players) != 1 || got.Players[0] != want.Players[0] {
+	if got.RoundsPlayed != 24 || len(got.Players) != 1 || !reflect.DeepEqual(got.Players[0], want.Players[0]) {
 		t.Fatalf("FakeParser did not echo its canned result: %+v", got)
 	}
 	if _, err := (FakeParser{Result: want, Err: errors.New("boom")}).Parse(strings.NewReader("x")); err == nil {
@@ -230,17 +241,326 @@ func TestAddWeirdKillsBindsEachFlagToItsOwnCounter(t *testing.T) {
 	}
 }
 
+// TestRecordOpeningDuelLatchesFirstRealKill covers every branch of the FR-20 opening-duel latch (Story 5.3)
+// over the PURE roundStats method — the same "decision here, call in the closure" seam kastQualified and
+// classifyWeirdKill use, so each guard reddens on its own when removed.
+//
+// The two exclusions are FR-20 REQUIREMENTS, not defensive noise (prd.md:310 — bomb/suicide deaths are not
+// opening deaths), and the "bomb then a real kill" case pins the half that is easy to get wrong: a
+// world/suicide death must not latch the duel AND must not block it either.
+func TestRecordOpeningDuelLatchesFirstRealKill(t *testing.T) {
+	const killer = uint64(76561197960287930)
+	const victim = uint64(76561198000000042)
+	const other = uint64(76561198000000999)
+
+	liveRound := func() *roundStats {
+		rs := newRoundStats()
+		rs.live = true // armed by RoundFreezetimeEnd in the real parser
+		return rs
+	}
+
+	// A round that is NOT live (a post-round kill landing in the next round's fresh scratch) never latches —
+	// this is the gate that keeps the deliberately-counted post-round knife-around out of FR-20.
+	rsDead := newRoundStats()
+	if rsDead.recordOpeningDuel(killer, victim) || rsDead.duelDone {
+		t.Fatal("a kill outside the LIVE window must not latch the opening duel")
+	}
+
+	// World/bomb death (killer id 0) — not an opening death, and it must NOT latch.
+	rsWorld := liveRound()
+	if rsWorld.recordOpeningDuel(0, victim) || rsWorld.duelDone {
+		t.Fatal("a world/bomb death (killer 0) must not latch the opening duel")
+	}
+	// Suicide (killer == victim) — likewise.
+	rsSuicide := liveRound()
+	if rsSuicide.recordOpeningDuel(victim, victim) || rsSuicide.duelDone {
+		t.Fatal("a suicide (killer == victim) must not latch the opening duel")
+	}
+	// A victimless kill event is not a duel either.
+	rsNoVictim := liveRound()
+	if rsNoVictim.recordOpeningDuel(killer, 0) || rsNoVictim.duelDone {
+		t.Fatal("a kill with no resolvable victim must not latch the opening duel")
+	}
+
+	// A bomb death BEFORE the first real kill must not consume the round's duel: the first REAL kill still
+	// wins it. (A guard that latched-or-blocked on the bomb death would lose this round's entry frag.)
+	rsBombThenReal := liveRound()
+	rsBombThenReal.recordOpeningDuel(0, other)
+	if !rsBombThenReal.recordOpeningDuel(killer, victim) {
+		t.Fatal("a bomb death must not block the round's first REAL kill from latching")
+	}
+	if rsBombThenReal.entryFrag != killer || rsBombThenReal.openingDeath != victim {
+		t.Fatalf("the REAL kill must be the latched duel: entry=%d opening=%d", rsBombThenReal.entryFrag, rsBombThenReal.openingDeath)
+	}
+
+	// The first real kill latches, and a SECOND real kill must not overwrite it.
+	rs := liveRound()
+	if !rs.recordOpeningDuel(killer, victim) {
+		t.Fatal("the first real kill of a live round must latch the opening duel")
+	}
+	if !rs.duelDone || rs.entryFrag != killer || rs.openingDeath != victim {
+		t.Fatalf("latched duel wrong: done=%v entry=%d opening=%d", rs.duelDone, rs.entryFrag, rs.openingDeath)
+	}
+	if rs.recordOpeningDuel(other, killer) {
+		t.Fatal("a SECOND kill must not re-latch the opening duel")
+	}
+	if rs.entryFrag != killer || rs.openingDeath != victim {
+		t.Fatalf("a second kill overwrote the latched duel: entry=%d opening=%d", rs.entryFrag, rs.openingDeath)
+	}
+
+	// A round with no kills at all leaves the duel unlatched, so foldRounds credits nobody.
+	if newRoundStats().duelDone {
+		t.Fatal("a fresh round must start with no latched duel")
+	}
+}
+
+// TestArmLiveWindowResetsBothHalvesOfTheFR20State pins the re-arm contract (added by the Story 5.3 code
+// review, 2026-07-21). RoundFreezetimeEnd is NOT guaranteed to fire once per committed round — THE BAR
+// measured 221 freeze-time ends against 204 counted rounds on the 14 real demos, because a MatchZy restart
+// re-arms a round that never reached a RoundEnd. Arming must therefore discard the aborted attempt's opening
+// duel exactly as it discards its recorded deaths (a fresh tracker); resetting only ONE half would commit the
+// aborted duel as the replayed round's entry frag, crediting two players who took no part in it while every
+// aggregate invariant stayed green (Σentry == Σopening, Σentry <= rounds). Measured unreachable on today's
+// corpus — 0 re-arms carried a stale latch across all 14 demos — so this test is the ONLY thing standing
+// between that asymmetry and a future demo that restarts mid-round.
+func TestArmLiveWindowResetsBothHalvesOfTheFR20State(t *testing.T) {
+	const killer = uint64(76561197960287930)
+	const victim = uint64(76561198000000042)
+	const other = uint64(76561198000000999)
+
+	rs := newRoundStats()
+
+	// Arm, play out an attempt: a duel latches and a death moves the alive counts.
+	rs.armLiveWindow()
+	rs.clutch.addAlive(killer, 2)
+	rs.clutch.addAlive(other, 2)
+	rs.clutch.addAlive(victim, 3)
+	if !rs.recordOpeningDuel(killer, victim) {
+		t.Fatal("setup: the first real kill of an armed round must latch")
+	}
+	rs.clutch.kill(victim)
+
+	// The round is aborted and re-armed with no RoundEnd in between.
+	rs.armLiveWindow()
+
+	if rs.duelDone || rs.entryFrag != 0 || rs.openingDeath != 0 {
+		t.Fatalf("re-arming must discard the aborted attempt's opening duel: done=%v entry=%d opening=%d",
+			rs.duelDone, rs.entryFrag, rs.openingDeath)
+	}
+	if !rs.live {
+		t.Fatal("re-arming must leave the round live")
+	}
+	if len(rs.clutch.team) != 0 || len(rs.clutch.aliveOn) != 0 || len(rs.clutch.candidates) != 0 {
+		t.Fatalf("re-arming must install a FRESH clutch tracker: team=%v aliveOn=%v candidates=%v",
+			rs.clutch.team, rs.clutch.aliveOn, rs.clutch.candidates)
+	}
+
+	// The replayed round's OWN first kill must now win the duel — the whole point of the reset.
+	if !rs.recordOpeningDuel(other, killer) {
+		t.Fatal("after a re-arm the replayed round's first real kill must latch")
+	}
+	if rs.entryFrag != other || rs.openingDeath != killer {
+		t.Fatalf("the replayed round's duel is wrong: entry=%d opening=%d", rs.entryFrag, rs.openingDeath)
+	}
+}
+
+// TestClutchTrackerTransitionOnly is the AC2 table: a 1vX clutch candidate exists ONLY where a player
+// TRANSITIONS from a team of >=2 alive to being its sole survivor, with X locked at that instant. Pure ints,
+// no demoinfocs types — which is what makes every branch reddenable without a real demo.
+func TestClutchTrackerTransitionOnly(t *testing.T) {
+	const (
+		teamT  = 2 // the plain int team codes common.Team carries; the tracker never interprets them
+		teamCT = 3
+	)
+	// Two five-player rosters; the cases use as many as they need.
+	a := [5]uint64{76561198000000001, 76561198000000002, 76561198000000003, 76561198000000004, 76561198000000005}
+	b := [5]uint64{76561198000000011, 76561198000000012, 76561198000000013, 76561198000000014, 76561198000000015}
+
+	setup := func(nA, nB int) *clutchTracker {
+		ct := newClutchTracker()
+		for i := 0; i < nA; i++ {
+			ct.addAlive(a[i], teamT)
+		}
+		for i := 0; i < nB; i++ {
+			ct.addAlive(b[i], teamCT)
+		}
+		return ct
+	}
+
+	cases := []struct {
+		name  string
+		build func() *clutchTracker
+		want  map[uint64]int
+	}{
+		{
+			// ⭐ THE TOURNAMENT-FORMAT CASE — do not delete it. The whole first tournament is 1v1 wingman, so
+			// this is what every real round looks like: a team of one goes 1 -> 0 and NEVER -> 1, so nobody
+			// ever BECOMES last alive. `clutches` is legitimately {} for every player. Chosen behaviour
+			// (Cuatro, 2026-07-21), and it falls out of the rule — there is no "1v1" branch in the tracker.
+			name: "1v1 never produces a candidate (the tournament format)",
+			build: func() *clutchTracker {
+				ct := setup(1, 1)
+				ct.kill(a[0])
+				ct.kill(b[0])
+				return ct
+			},
+			want: map[uint64]int{},
+		},
+		{
+			name: "2v2: a teammate's death makes the survivor a candidate at X=2",
+			build: func() *clutchTracker {
+				ct := setup(2, 2)
+				ct.kill(a[0])
+				return ct
+			},
+			want: map[uint64]int{a[1]: 2},
+		},
+		{
+			// X is LOCKED at the instant of the transition: killing an opponent afterwards does not shrink it
+			// (a 1v2 that becomes a 1v1 was still clutched from 1v2). The second transition also shows both
+			// teams can hold a candidate at once — award() resolves that by winner membership, never by side.
+			name: "X stays locked when an opponent dies later; both teams can hold a candidate",
+			build: func() *clutchTracker {
+				ct := setup(2, 2)
+				ct.kill(a[0]) // a[1] becomes last alive vs 2
+				ct.kill(b[0]) // b[1] becomes last alive vs 1 (a[1]); a[1]'s X must NOT move
+				return ct
+			},
+			want: map[uint64]int{a[1]: 2, b[1]: 1},
+		},
+		{
+			name: "5v5 chain: four teammates die, the survivor is a candidate at the opponents then alive",
+			build: func() *clutchTracker {
+				ct := setup(5, 5)
+				ct.kill(b[0]) // an opponent dies first, so X is 4 rather than 5
+				ct.kill(a[0])
+				ct.kill(a[1])
+				ct.kill(a[2])
+				ct.kill(a[3])
+				return ct
+			},
+			want: map[uint64]int{a[4]: 4},
+		},
+		{
+			// FR-20 names "bomb explosion" as a winning path, so the plant-and-die clutch counts: candidacy is
+			// recorded at the transition and is NOT revoked when the candidate later dies. award() then asks
+			// the only question that matters — did their team win.
+			name: "a candidate who later dies KEEPS candidacy (the bomb-explosion path)",
+			build: func() *clutchTracker {
+				ct := setup(2, 2)
+				ct.kill(a[0])
+				ct.kill(a[1]) // the candidate themselves dies
+				return ct
+			},
+			want: map[uint64]int{a[1]: 2},
+		},
+		{
+			name: "X == 0 is not a clutch: every opponent is already dead",
+			build: func() *clutchTracker {
+				ct := setup(2, 1)
+				ct.kill(b[0]) // the lone opponent dies (1 -> 0: no transition on that team)
+				ct.kill(a[0]) // a[1] is now last alive, but there is nobody left to clutch against
+				return ct
+			},
+			want: map[uint64]int{},
+		},
+		{
+			// An unknown victim (a late joiner absent from the freeze-time snapshot) and a DUPLICATE death are
+			// both no-ops — the idempotence that keeps aliveOn off negative numbers and stops a phantom death
+			// from manufacturing a candidate.
+			name: "unknown victim and duplicate death are no-ops",
+			build: func() *clutchTracker {
+				ct := setup(2, 2)
+				ct.kill(76561198000000777) // never added
+				ct.kill(a[0])
+				ct.kill(a[0]) // duplicate
+				return ct
+			},
+			want: map[uint64]int{a[1]: 2},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ct := tc.build()
+			if !reflect.DeepEqual(ct.candidates, tc.want) {
+				t.Fatalf("candidates: got %v want %v", ct.candidates, tc.want)
+			}
+			for team, n := range ct.aliveOn {
+				if n < 0 {
+					t.Fatalf("aliveOn[%d] went NEGATIVE (%d) — a death was applied to an unknown/dead victim", team, n)
+				}
+			}
+		})
+	}
+
+	// A repeated addAlive for the same id must not inflate the team (which would inflate every X computed
+	// against it) — the arming snapshot is walked from live parser state, so it must be idempotent.
+	ct := newClutchTracker()
+	ct.addAlive(a[0], teamT)
+	ct.addAlive(a[0], teamT)
+	if ct.aliveOn[teamT] != 1 {
+		t.Fatalf("a duplicate addAlive must not double-count the team: got %d want 1", ct.aliveOn[teamT])
+	}
+}
+
+// TestClutchAwardOnlyWinningTeam pins the AC2 half that decides whether a candidate is CREDITED: their team
+// won the round. Resolution is by MEMBERSHIP in the winners set (RoundEnd's WinnerState.Members(), resolved
+// at that instant), never by a side identifier — halftime-proof by construction, the same trap-2-safe move
+// RoundsWon makes. An empty set is a DRAW (WinnerState nil, trap 3): nobody clutches.
+func TestClutchAwardOnlyWinningTeam(t *testing.T) {
+	const (
+		teamT  = 2
+		teamCT = 3
+	)
+	const a1, a2 = uint64(76561198000000001), uint64(76561198000000002)
+	const b1, b2 = uint64(76561198000000011), uint64(76561198000000012)
+
+	build := func() *clutchTracker {
+		ct := newClutchTracker()
+		ct.addAlive(a1, teamT)
+		ct.addAlive(a2, teamT)
+		ct.addAlive(b1, teamCT)
+		ct.addAlive(b2, teamCT)
+		ct.kill(a1) // a2 becomes a candidate at X=2
+		ct.kill(b1) // b2 becomes a candidate at X=1
+		return ct
+	}
+
+	// The winning team's candidate is credited; the losing team's is NOT.
+	got := build().award(map[uint64]bool{a2: true})
+	if !reflect.DeepEqual(got, map[uint64]int{a2: 2}) {
+		t.Fatalf("only the WINNING team's candidate may be credited: got %v want map[%d:2]", got, a2)
+	}
+	got = build().award(map[uint64]bool{b2: true})
+	if !reflect.DeepEqual(got, map[uint64]int{b2: 1}) {
+		t.Fatalf("the other team's candidate must be credited when THEY win: got %v", got)
+	}
+	// A winner who is not a candidate earns nothing (winning a round is not clutching it).
+	if got = build().award(map[uint64]bool{b1: true}); len(got) != 0 {
+		t.Fatalf("a winner who never became last alive must not be credited: got %v", got)
+	}
+	// A draw (WinnerState nil ⇒ no winners set built) credits nobody.
+	if got = build().award(map[uint64]bool{}); len(got) != 0 {
+		t.Fatalf("a draw must credit no clutch: got %v", got)
+	}
+}
+
 // TestFoldRoundsDropsStrandedRounds proves the trap-4 fold: a round index ABOVE the final count (a
 // higher-water-mark rewind, e.g. an admin !restore) is dropped from EVERY additive stat, RoundsWon and MVPs,
 // while surviving rounds sum.
 func TestFoldRoundsDropsStrandedRounds(t *testing.T) {
 	const p = uint64(76561197960287930)
+	const opponent = uint64(76561198000000042)
 	const final = 4
 
 	r1 := newRoundStats()
 	r1.kills[p], r1.deaths[p], r1.assists[p] = 2, 1, 1
 	r1.flashAssists[p], r1.hsKills[p], r1.adrDamage[p], r1.utilityDamage[p] = 1, 1, 100, 20
 	r1.kast[p] = true
+	// The FR-20 derived three (Story 5.3): a LATCHED duel credits one entry frag to the killer and one
+	// opening death to the victim, and an awarded clutch tallies under its own X.
+	r1.duelDone, r1.entryFrag, r1.openingDeath = true, p, opponent
+	r1.clutchWon = map[uint64]int{p: 2}
 	// The FR-19 weird five (Story 5.2) fold on the SAME path and under the SAME stranded-round bound.
 	// Distinct per-counter values so a fold loop copy/pasted onto the wrong map reddens.
 	r1.knifeKills[p], r1.wallbangKills[p], r1.throughSmokeKills[p] = 1, 2, 3
@@ -251,14 +571,33 @@ func TestFoldRoundsDropsStrandedRounds(t *testing.T) {
 	r2.kast[p] = true
 	r2.knifeKills[p], r2.wallbangKills[p], r2.throughSmokeKills[p] = 10, 20, 30
 	r2.noScopeKills[p], r2.blindKills[p] = 40, 50
+	// Round 2 latched the duel the OTHER way round (and clutched at a different X), so the two counters and
+	// the two jsonb keys are proven independent rather than moving together.
+	r2.duelDone, r2.entryFrag, r2.openingDeath = true, opponent, p
+	r2.clutchWon = map[uint64]int{p: 1}
+
+	// A counted round that latched NOTHING must contribute nothing. It carries duel ids anyway so that
+	// `duelDone` — not the presence of the ids — is proven to be the authority: drop that fold guard and this
+	// round starts crediting a duel that never happened.
+	r3 := newRoundStats()
+	r3.entryFrag, r3.openingDeath = p, opponent // ids without duelDone == false: no duel
+
+	// ⚠ r4 exists to make the fixture ASYMMETRIC. With only r1 + r2 (one duel each way) a TRANSPOSED fold —
+	// crediting EntryFrags to rs.openingDeath and vice versa — produces the identical totals for both players
+	// and passes: exactly the swap the Story-5.2 review found surviving both the suite and THE BAR. A third
+	// duel latched the SAME way as r1 breaks the symmetry, so a transposition reddens.
+	r4 := newRoundStats()
+	r4.duelDone, r4.entryFrag, r4.openingDeath = true, p, opponent
 
 	stranded := newRoundStats() // idx 5 > final 4 — must be dropped whole
 	stranded.kills[p], stranded.assists[p], stranded.adrDamage[p] = 99, 99, 9999
 	stranded.kast[p] = true
 	stranded.knifeKills[p], stranded.wallbangKills[p], stranded.throughSmokeKills[p] = 99, 99, 99
 	stranded.noScopeKills[p], stranded.blindKills[p] = 99, 99
+	stranded.duelDone, stranded.entryFrag, stranded.openingDeath = true, p, opponent
+	stranded.clutchWon = map[uint64]int{p: 5}
 
-	byRound := map[int]*roundStats{1: r1, 2: r2, 5: stranded}
+	byRound := map[int]*roundStats{1: r1, 2: r2, 3: r3, 4: r4, 5: stranded}
 	roundWinners := map[int][]uint64{1: {p}, 5: {p}} // idx 5 winner dropped
 	mvpByRound := map[int]uint64{2: p, 5: p}         // idx 5 MVP dropped
 
@@ -303,5 +642,31 @@ func TestFoldRoundsDropsStrandedRounds(t *testing.T) {
 	}
 	if got.BlindKills != 55 { // 5 + 50
 		t.Fatalf("blind_kills: got %d want 55 (stranded round dropped)", got.BlindKills)
+	}
+	// The FR-20 derived three (Story 5.3), same bound: rounds 1 + 2 count (one entry frag and one opening
+	// death each way), round 3 latched nothing and contributes nothing, and the stranded round is dropped
+	// whole — its duel AND its clutch.
+	if got.EntryFrags != 2 { // rounds 1 + 4 (round 2's entry frag belongs to the opponent)
+		t.Fatalf("entry_frags: got %d want 2 (stranded duel dropped, unlatched round ignored)", got.EntryFrags)
+	}
+	if got.OpeningDeaths != 1 { // round 2 only
+		t.Fatalf("opening_deaths: got %d want 1 (stranded duel dropped, unlatched round ignored)", got.OpeningDeaths)
+	}
+	if !reflect.DeepEqual(got.Clutches, map[int]int{1: 1, 2: 1}) { // the stranded 1v5 is dropped
+		t.Fatalf("clutches: got %v want map[1:1 2:1] (stranded clutch dropped)", got.Clutches)
+	}
+	// The other side of every duel folds onto the OPPONENT's row (asymmetrically — see r4), and the two
+	// columns still balance across the demo: Σentry_frags == Σopening_deaths, the conservation THE BAR
+	// asserts live.
+	opp := stats[opponent]
+	if opp == nil || opp.EntryFrags != 1 || opp.OpeningDeaths != 2 {
+		t.Fatalf("the duel's other side must fold onto the opponent's row (1 entry / 2 opening): %+v", opp)
+	}
+	if got.EntryFrags+opp.EntryFrags != got.OpeningDeaths+opp.OpeningDeaths {
+		t.Fatalf("Σentry_frags must equal Σopening_deaths: %d != %d",
+			got.EntryFrags+opp.EntryFrags, got.OpeningDeaths+opp.OpeningDeaths)
+	}
+	if opp.Clutches != nil {
+		t.Fatalf("a player with no awarded clutch must keep a NIL map (the writer renders it {}): got %v", opp.Clutches)
 	}
 }

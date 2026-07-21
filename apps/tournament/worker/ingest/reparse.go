@@ -103,9 +103,9 @@ func RunReparse(ctx context.Context, s store.DemoStore, reader db.DemoReader, pa
 			RoundsWon:    pl.RoundsWon, // re-derived on every re-parse, exactly like K/D (Story 4.6a)
 			// The FR-18 core seven (Story 5.1). ⚠ MUST mirror cli.go's first-parse map verbatim — dropping
 			// any field here silently writes NULL over that column on every re-parse (the recurring Epic-4
-			// "second path" failure mode). Both sites map PlayerStat -> StatRow; both carry all TWELVE
-			// derived fields (the core seven here, the FR-19 weird five below). Widen this count whenever
-			// you widen the map, or the warning stops describing what it is guarding.
+			// "second path" failure mode). Both sites map PlayerStat -> StatRow; both carry all FIFTEEN
+			// derived fields (the core seven here, the FR-19 weird five and the FR-20 derived three below).
+			// Widen this count whenever you widen the map, or the warning stops describing what it guards.
 			Assists:       pl.Assists,
 			ADRDamage:     pl.ADRDamage,
 			HSKills:       pl.HSKills,
@@ -120,6 +120,12 @@ func RunReparse(ctx context.Context, s store.DemoStore, reader db.DemoReader, pa
 			ThroughSmokeKills: pl.ThroughSmokeKills,
 			NoScopeKills:      pl.NoScopeKills,
 			BlindKills:        pl.BlindKills,
+			// The FR-20 derived three (Story 5.3), under the SAME mirror warning. Dropping Clutches here is
+			// WORSE than dropping an int: a nil map renders as `{}`, so a re-parse would silently ERASE a
+			// player's clutch history with no error anywhere.
+			EntryFrags:    pl.EntryFrags,
+			OpeningDeaths: pl.OpeningDeaths,
+			Clutches:      pl.Clutches,
 		})
 	}
 

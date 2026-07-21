@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -129,11 +130,12 @@ func (r *PgxRecorder) Pool() *pgxpool.Pool { return r.pool }
 // layer never sees the numeric form). Story 3.3 fills MatchID/SteamID64/DemoID + Kills/Deaths/
 // RoundsPlayed; Story 4.6a adds RoundsWon; Story 5.1 adds the FR-18 CORE SEVEN (Assists, ADRDamage, HSKills,
 // MVPs, FlashAssists, UtilityDamage, KASTRounds); Story 5.2 adds the FR-19 WEIRD FIVE (KnifeKills,
-// WallbangKills, ThroughSmokeKills, NoScopeKills, BlindKills) — all raw counts/totals, the leaderboard view
-// divides (AD-20). The still-later derived/idle columns (FR-20/FR-21, Stories 5.3–5.4) stay NULL at their
-// column defaults. Rows written BEFORE a widening keep NULL in the new columns until their demo is
-// re-parsed (Story 3.6 RunReparse re-derives everything through this same upsert) — that is expected, and
-// is not a backfill.
+// WallbangKills, ThroughSmokeKills, NoScopeKills, BlindKills); Story 5.3 adds the FR-20 DERIVED THREE
+// (EntryFrags, OpeningDeaths, Clutches) — all raw counts/totals, the leaderboard view divides (AD-20;
+// FR-20's entry success rate = EntryFrags/(EntryFrags+OpeningDeaths) is computed THERE, never here). Only
+// FR-21's idle columns (Story 5.4) stay NULL at their column defaults. Rows written BEFORE a widening keep
+// NULL in the new columns until their demo is re-parsed (Story 3.6 RunReparse re-derives everything through
+// this same upsert) — that is expected, and is not a backfill.
 //
 // ⚠ MatchID is the EXTERNAL matchzy_match_id, NOT a bracket match(id) — at parse time no bracket row is
 // associated with the demo at all (the bind is a later admin act), and the worker never learns one.
@@ -172,6 +174,14 @@ type StatRow struct {
 	ThroughSmokeKills int
 	NoScopeKills      int
 	BlindKills        int
+	// The FR-20 derived three (Story 5.3). EntryFrags/OpeningDeaths are plain counts landing as explicit 0s
+	// (both sit unconditionally in the INSERT list below). Clutches is the ONE field that can go wrong three
+	// ways — SQL NULL (column omitted), the jsonb scalar `null` (a nil map marshaled) or `{}` (correct) — so
+	// it is rendered through clutchesJSON, which returns "{}" for a nil/empty map. Story 5.5's view can then
+	// read clutches->>'1' with no NULL branch.
+	EntryFrags    int
+	OpeningDeaths int
+	Clutches      map[int]int // X -> count of 1vX clutches won; nil/empty is written as the empty object {}
 }
 
 // AnomalyReason is one machine-readable validation-gate failure (Story 3.4). Gate is the gate id
@@ -337,6 +347,32 @@ func stampDemo(ctx context.Context, tx pgx.Tx, demoID int64, parserVersion strin
 	return nil
 }
 
+// clutchesJSON renders one player's 1vX tally as the {"1":n,"2":n,…} jsonb shape (SOLUTION-DESIGN §3): the
+// key is X (the number of living opponents at the instant they became last alive) as a STRING, the value the
+// count of such clutches won. A player with no clutches yields "{}" — an EMPTY OBJECT, never the jsonb scalar
+// `null` (Story 5.3 AC3) — so the Story-5.5 leaderboard view reads clutches->>'1' with no NULL branch.
+//
+// ⚠ json.Marshal of a NIL map yields the literal `null`. The make() below is what makes "{}" correct; it is
+// the same nil-vs-empty trap already documented for RecordReparse's newIDs and stampDemo's anomaly_reasons.
+// Do not "simplify" it away — TestClutchesJSON's nil case reddens the moment you do.
+//
+// Non-positive counts are skipped: a 0 entry is the absence of a clutch, and publishing "1":0 would make the
+// view's `clutches->>'1'` read as a present-but-zero award rather than no award.
+func clutchesJSON(c map[int]int) (string, error) {
+	out := make(map[string]int, len(c)) // make() => an EMPTY OBJECT for a nil/empty map, never `null`
+	for x, n := range c {
+		if n <= 0 {
+			continue
+		}
+		out[strconv.Itoa(x)] = n
+	}
+	b, err := json.Marshal(out) // map keys marshal sorted, so the stored text is deterministic
+	if err != nil {
+		return "", fmt.Errorf("marshal clutches: %w", err)
+	}
+	return string(b), nil
+}
+
 // upsertStatRows runs the status-preserving ON CONFLICT (match_id, steamid64) DO UPDATE batch inside the
 // caller's tx: a repeat pair REPLACES the row (never duplicates — the AD-3 UNIQUE key) and the DO UPDATE
 // set-list deliberately OMITS `status`, so an already-approved row keeps its status (AD-7). An empty rows
@@ -348,14 +384,23 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 	}
 	batch := &pgx.Batch{}
 	for _, row := range rows {
+		// Render the FR-20 jsonb BEFORE queueing so a marshal failure fails CLOSED inside the caller's tx
+		// (nothing queued, nothing committed) rather than being swallowed into a silent `{}`.
+		clutches, err := clutchesJSON(row.Clutches)
+		if err != nil {
+			return fmt.Errorf("upsert stat_row (demo %d, steamid64 %s): %w", demoID, row.SteamID64, err)
+		}
 		batch.Queue(
 			// `matchzy_match_id` is the EXTERNAL ingest id (see RecordDemo). The AD-3 re-parse key
 			// travelled with 0010's rename, so this upserts on exactly the pair it always did.
 			// `rounds_won` is the Story-4.6a demo-derived tally (FR-16); the seven Story-5.1 core columns
 			// (assists..kast_rounds) are the FR-18 derivation; the five Story-5.2 columns
-			// (knife_kills..blind_kills) are the FR-19 weird five. All re-derive on every parse exactly like
-			// kills/deaths — present in BOTH lists with excluded.<col>. The weird five are UNCONDITIONALLY
-			// in the INSERT list, which is what makes a zero count land as 0 rather than NULL (FR-19 AC2).
+			// (knife_kills..blind_kills) are the FR-19 weird five; the three Story-5.3 columns
+			// (entry_frags, opening_deaths, clutches) are the FR-20 derived three. All re-derive on every
+			// parse exactly like kills/deaths — present in BOTH lists with excluded.<col>. The weird five and
+			// the derived three are UNCONDITIONALLY in the INSERT list, which is what makes a zero count land
+			// as 0 rather than NULL (FR-19 AC2 / FR-20 AC3) — and `clutches` lands as the empty object `{}`
+			// (never SQL NULL, never the jsonb scalar `null`), which is clutchesJSON's whole job.
 			// ⚠ `status` stays ABSENT from BOTH lists — see the note above.
 			//
 			// ⚠⚠ `match_id` MUST STAY ABSENT FROM BOTH LISTS TOO, and unlike `status` its absence is
@@ -366,8 +411,10 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			// match whose stat rows no longer point at it. Leave it out.
 			`insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played, rounds_won,
 			   assists, adr_damage, hs_kills, mvps, flash_assists, utility_damage, kast_rounds,
-			   knife_kills, wallbang_kills, through_smoke_kills, no_scope_kills, blind_kills)
-			 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+			   knife_kills, wallbang_kills, through_smoke_kills, no_scope_kills, blind_kills,
+			   entry_frags, opening_deaths, clutches)
+			 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19,
+			   $20, $21, $22::jsonb)
 			 on conflict (matchzy_match_id, steamid64) do update set
 			   kills = excluded.kills,
 			   deaths = excluded.deaths,
@@ -385,13 +432,17 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			   through_smoke_kills = excluded.through_smoke_kills,
 			   no_scope_kills = excluded.no_scope_kills,
 			   blind_kills = excluded.blind_kills,
+			   entry_frags = excluded.entry_frags,
+			   opening_deaths = excluded.opening_deaths,
+			   clutches = excluded.clutches,
 			   demo_id = excluded.demo_id`,
-			// ⚠ POSITIONAL: these arguments must line up 1:1 with $1..$19 in the column list above. A silent
+			// ⚠ POSITIONAL: these arguments must line up 1:1 with $1..$22 in the column list above. A silent
 			// off-by-one writes the wrong stat into the wrong column and NO unit test catches it (the fakes
 			// store the StatRow struct, they never execute this SQL).
 			row.MatchID, row.SteamID64, row.DemoID, row.Kills, row.Deaths, row.RoundsPlayed, row.RoundsWon,
 			row.Assists, row.ADRDamage, row.HSKills, row.MVPs, row.FlashAssists, row.UtilityDamage, row.KASTRounds,
 			row.KnifeKills, row.WallbangKills, row.ThroughSmokeKills, row.NoScopeKills, row.BlindKills,
+			row.EntryFrags, row.OpeningDeaths, clutches,
 		)
 	}
 	br := tx.SendBatch(ctx, batch)
