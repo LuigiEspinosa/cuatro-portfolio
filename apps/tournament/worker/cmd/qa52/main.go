@@ -129,16 +129,20 @@ func main() {
 					knifeWeapons[w]++
 				}
 			}
-			if (e.Weapon != nil && e.Weapon.Type == common.EqKnife) || e.IsWallBang() || e.ThroughSmoke || e.NoScope || e.AttackerBlind {
+			// ⚠ blind is read from the LIVE Killer.IsBlinded(), not e.AttackerBlind (Story 5.2a): that field is
+			// dead on these demos, so filtering on it here would under-count the raw pass and break the 1:1
+			// reconciliation against the aggregate that this second pass exists to prove.
+			killerBlind := e.Killer != nil && e.Killer.IsBlinded()
+			if (e.Weapon != nil && e.Weapon.Type == common.EqKnife) || e.IsWallBang() || e.ThroughSmoke || e.NoScope || killerBlind {
 				rawFlagged++
 				// round = the game's own TotalRoundsPlayed() at kill time. A flagged kill at an index that
 				// the FINAL fold no longer keeps (the discarded MatchZy pre-match round, which is NOT
 				// warmup) is CORRECTLY absent from the aggregate — that is trap-4 working, not a miss.
 				idx := p2.GameState().TotalRoundsPlayed()
 				rawByRound[idx]++
-				fmt.Printf("    raw kill: round=%-3d weapon=%-16s knife=%-5v pen=%d wallbang=%-5v smoke=%-5v noscope=%-5v attackerBlind=%v\n",
+				fmt.Printf("    raw kill: round=%-3d weapon=%-16s knife=%-5v pen=%d wallbang=%-5v smoke=%-5v noscope=%-5v blind=%-5v (deadAttackerBlindField=%v)\n",
 					idx, w, e.Weapon != nil && e.Weapon.Type == common.EqKnife, e.PenetratedObjects,
-					e.IsWallBang(), e.ThroughSmoke, e.NoScope, e.AttackerBlind)
+					e.IsWallBang(), e.ThroughSmoke, e.NoScope, killerBlind, e.AttackerBlind)
 			}
 		})
 		if err := p2.ParseToEnd(); err != nil {

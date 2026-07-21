@@ -124,36 +124,46 @@ func TestKASTTradeWindowBoundary(t *testing.T) {
 // kastQualified made, so each branch is mutation-testable with no real demo. It also pins the two guards
 // that are easy to get wrong: PenetratedObjects == 0 is NOT a wallbang, and a nil Weapon (world/corrupt
 // damage) must neither panic nor count a knife kill.
+//
+// blind arrives as the killerBlind PARAMETER, not off e.AttackerBlind (Story 5.2a — that field is dead on
+// our demos; see classifyWeirdKill). The cases below pin the consequence that matters: e.AttackerBlind must
+// have NO effect on the result in either direction, so nobody "restores" it later thinking it is redundant.
 func TestClassifyWeirdKillBranches(t *testing.T) {
 	knife := &common.Equipment{Type: common.EqKnife}
 	ak := &common.Equipment{Type: common.EqAK47}
 
 	cases := []struct {
-		name string
-		kill events.Kill
-		want weirdKinds
+		name        string
+		kill        events.Kill
+		killerBlind bool
+		want        weirdKinds
 	}{
-		{"knife", events.Kill{Weapon: knife}, weirdKinds{knife: true}},
-		{"non-knife weapon is not a knife kill", events.Kill{Weapon: ak}, weirdKinds{}},
-		{"nil weapon does not panic and is not a knife kill", events.Kill{Weapon: nil}, weirdKinds{}},
-		{"wallbang", events.Kill{Weapon: ak, PenetratedObjects: 1}, weirdKinds{wallbang: true}},
-		{"zero penetrated objects is NOT a wallbang", events.Kill{Weapon: ak, PenetratedObjects: 0}, weirdKinds{}},
-		{"through smoke", events.Kill{Weapon: ak, ThroughSmoke: true}, weirdKinds{throughSmoke: true}},
-		{"no scope", events.Kill{Weapon: ak, NoScope: true}, weirdKinds{noScope: true}},
-		{"blind (the KILLER was flashed)", events.Kill{Weapon: ak, AttackerBlind: true}, weirdKinds{blind: true}},
+		{"knife", events.Kill{Weapon: knife}, false, weirdKinds{knife: true}},
+		{"non-knife weapon is not a knife kill", events.Kill{Weapon: ak}, false, weirdKinds{}},
+		{"nil weapon does not panic and is not a knife kill", events.Kill{Weapon: nil}, false, weirdKinds{}},
+		{"wallbang", events.Kill{Weapon: ak, PenetratedObjects: 1}, false, weirdKinds{wallbang: true}},
+		{"zero penetrated objects is NOT a wallbang", events.Kill{Weapon: ak, PenetratedObjects: 0}, false, weirdKinds{}},
+		{"through smoke", events.Kill{Weapon: ak, ThroughSmoke: true}, false, weirdKinds{throughSmoke: true}},
+		{"no scope", events.Kill{Weapon: ak, NoScope: true}, false, weirdKinds{noScope: true}},
+		{"blind comes from killerBlind (the KILLER was flashed)", events.Kill{Weapon: ak}, true, weirdKinds{blind: true}},
+		// ⭐ Story 5.2a: e.AttackerBlind is DEAD INPUT. It must not grant blind when the live state says the
+		// killer could see, and must not suppress it when the live state says they could not.
+		{"e.AttackerBlind=true does NOT grant blind on its own", events.Kill{Weapon: ak, AttackerBlind: true}, false, weirdKinds{}},
+		{"e.AttackerBlind=false does NOT suppress a live blind kill", events.Kill{Weapon: ak, AttackerBlind: false}, true, weirdKinds{blind: true}},
 		// The five are NOT mutually exclusive — one kill can earn several at once, so Σ(weird five) may
 		// legitimately exceed kills. These two cases pin that independence.
-		{"combined: blind knife kill", events.Kill{Weapon: knife, AttackerBlind: true}, weirdKinds{knife: true, blind: true}},
+		{"combined: blind knife kill", events.Kill{Weapon: knife}, true, weirdKinds{knife: true, blind: true}},
 		{
 			"combined: blind no-scope wallbang",
-			events.Kill{Weapon: ak, PenetratedObjects: 2, NoScope: true, AttackerBlind: true},
+			events.Kill{Weapon: ak, PenetratedObjects: 2, NoScope: true},
+			true,
 			weirdKinds{wallbang: true, noScope: true, blind: true},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := classifyWeirdKill(tc.kill); got != tc.want {
-				t.Fatalf("classifyWeirdKill(%s): got %+v want %+v", tc.name, got, tc.want)
+			if got := classifyWeirdKill(tc.kill, tc.killerBlind); got != tc.want {
+				t.Fatalf("classifyWeirdKill(%s, killerBlind=%v): got %+v want %+v", tc.name, tc.killerBlind, got, tc.want)
 			}
 		})
 	}

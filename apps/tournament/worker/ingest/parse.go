@@ -306,16 +306,25 @@ type weirdKinds struct{ knife, wallbang, throughSmoke, noScope, blind bool }
 //     EqZeus and correctly does NOT count. Weapon is nil for world/corrupt damage — guarded, since this is
 //     the only test that dereferences it.
 //   - wallbang: the library's own IsWallBang() (≡ PenetratedObjects > 0) — states intent and cannot drift.
-//   - blind: AttackerBlind means THE KILLER WAS FLASHED (the "blind justice" sense). events.Kill carries no
-//     victim-blind field at all, so "blind kills" is unambiguously attacker-blind. Do not "fix" this to the
-//     victim — there is nothing to fix it to.
-func classifyWeirdKill(e events.Kill) weirdKinds {
+//   - blind: passed IN as killerBlind, NOT read off e.AttackerBlind. See the Story 5.2a note below.
+//
+// ⚠ blind is a PARAMETER, and that is deliberate (Story 5.2a, 2026-07-21). The obvious source,
+// e.AttackerBlind, is DEAD on our demos: measured over the same 14 MatchZy Source-2 demos, 172 FlashExplode
+// events and 4 non-warmup kills where the killer was genuinely blind at trigger time (one with 2.13s of
+// flash still remaining) ALL reported e.AttackerBlind == false, while wallbang and through-smoke fired
+// normally on that same data. Left as-is, blind_kills would read 0 for every player forever — an award with
+// no possible winner and nothing to signal it. The live source that DOES work is Killer.IsBlinded(), but it
+// cannot be read here: IsBlinded() -> FlashDurationTimeRemaining() dereferences the unexported
+// demoInfoProvider, so a test-constructed common.Player panics and the classifier would stop being
+// unit-testable — the exact property the 5.2 review was fought over. So the caller evaluates it and passes
+// a plain bool, keeping every branch here pure and table-testable.
+func classifyWeirdKill(e events.Kill, killerBlind bool) weirdKinds {
 	return weirdKinds{
 		knife:        e.Weapon != nil && e.Weapon.Type == common.EqKnife,
 		wallbang:     e.IsWallBang(),
 		throughSmoke: e.ThroughSmoke,
 		noScope:      e.NoScope,
-		blind:        e.AttackerBlind,
+		blind:        killerBlind,
 	}
 }
 
@@ -439,7 +448,13 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 			// live OUTSIDE this closure — classifyWeirdKill decides, addWeirdKills binds each flag to its own
 			// counter — leaving nothing here a test cannot reach. It goes through `cur` like every other
 			// additive stat, so the trap-4 pre-match round is discarded by the RoundEnd overwrite.
-			cur.addWeirdKills(k, classifyWeirdKill(e))
+			//
+			// e.Killer.IsBlinded() is the ONE expression that must live here (Story 5.2a): it needs the live
+			// parser flash state, which no fake can supply — see classifyWeirdKill's note on why
+			// e.AttackerBlind is dead and why this is a parameter rather than a read inside the classifier.
+			// k != 0 already implies e.Killer != nil; the guard is kept because it costs nothing and this is
+			// the one line no unit test can redden.
+			cur.addWeirdKills(k, classifyWeirdKill(e, e.Killer != nil && e.Killer.IsBlinded()))
 		}
 		if v := idOf(e.Victim); v != 0 {
 			cur.deaths[v]++
