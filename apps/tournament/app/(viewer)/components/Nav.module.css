@@ -1,0 +1,35 @@
+/* Four-up nav — lifted from mock-home.html:161-181. */
+.nav {
+  display: flex;
+  gap: var(--sp-1);
+  margin-top: 13px;
+}
+
+.navitem {
+  flex: 1;
+  text-align: center;
+  padding: 7px var(--sp-1) 9px;
+  font-size: 12px;
+  color: var(--tm);
+  border-bottom: 1.5px solid transparent;
+  text-decoration: none;
+  /* ≥44px combined tap target with the topbar padding; min-height keeps each tab tappable. */
+  min-height: 34px;
+}
+
+.active {
+  color: var(--tp);
+  font-weight: 600;
+  border-bottom-color: var(--blue);
+}
+
+.locked {
+  color: var(--ink-locked);
+  cursor: default;
+}
+
+.lock {
+  font-size: 9px;
+  vertical-align: 1px;
+  margin-left: 3px;
+}

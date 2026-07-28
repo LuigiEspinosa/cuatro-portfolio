@@ -2,6 +2,13 @@
 
 Tracked follow-ups surfaced during reviews. Each item names its origin and its intended home.
 
+## Deferred from: code review of story-5.6 (timeline feed read — FR-31) (2026-07-28)
+
+_Baseline `f067362`; layers: Blind Hunter + Edge Case Hunter + Acceptance Auditor (all Opus 4.8) + reviewer verification against the mock + migrations. No AC violated in a way that ships an incorrect or leaking feed. 2 decision-needed + 3 patches handled in-story; the two items below are real but not actionable now._
+
+- [ ] **`resolveCurrentTournament` binds "current" to `max(id)`, not `state`.** `[lib/feed/read.ts:44-49]` The read is `order by id desc limit 1`, so any second `tournament` row (a prematurely-created future event, next season's) shadows the intended live one — the layout pill, the Ceremonia lock, the feed read, and the registered count all bind to the wrong tournament. **Intended home:** whenever a second tournament is introduced — replace the newest-row heuristic with an explicit "current" flag or a state-based selector. **Reason deferred:** deliberate, dev-flagged single-private-event v1 assumption confirmed by Cuatro; there is no schema singleton constraint, so this is an accepted scope boundary, not a defect in the first tournament.
+- [ ] **A transient roster/player read outage is indistinguishable from "all players removed."** `[lib/feed/read.ts:144-146]` If the `roster_entry` batch read errors or returns zero rows, `resolveNames` returns an empty map and every card renders `Jugador retirado`, with only a `console.error` to distinguish a real outage from a legitimately all-removed roster. **Intended home:** whenever the read layer is next touched (5.7/5.8) — surface a distinct degraded signal (e.g. an error state or a "names unavailable" marker) rather than reusing the removed-player label. **Reason deferred:** the graceful soft-fail is by design (an approved, published result must never blank the feed) and the "measure don't assume" trap is partly mitigated by the log line; a distinct signal is a refinement, not a correctness fix for this story.
+
 ## Deferred from: code review of story-5.2 (weird demo-only stat derivation — FR-19) (2026-07-21)
 
 _Baseline `3b22fa0`; layers: Blind Hunter + Edge Case Hunter + Acceptance Auditor (all Opus 4.8) + reviewer verification against the real files, an independent re-run of the mutation set, and a re-run of THE BAR. **No AC and no spec prohibition violated.** 1 decision-needed (post-round kills COUNT — resolved by Cuatro, pinned in the handler comment), 9 patches applied, 3 dismissed. The five items below are real but not actionable in this story._
