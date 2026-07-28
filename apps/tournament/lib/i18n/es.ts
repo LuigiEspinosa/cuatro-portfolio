@@ -92,6 +92,96 @@ export const es = {
     stats: 'Las estadísticas llegan en la próxima entrega.',
     ceremony: 'La ceremonia llega en la próxima entrega.',
   },
+
+  /**
+   * Bracket surface (Story 5.7). Group labels + per-state badges. Round labels are NOT here — they come
+   * from the DB `bracket_position` column ("Winners R1", "Grand Final") verbatim (UX-DR3: never a running
+   * match number). Fixed strings VERBATIM: `Pase directo`, `W.O. / Ausente`, `sin estadísticas`.
+   */
+  bracket: {
+    winners: 'Ganadores',
+    losers: 'Perdedores',
+    grandFinal: 'Gran final',
+    tbd: 'Por definir', // an unfilled competitor slot (a null roster_entry — the match is not seated yet)
+    seed: 'siembra', // `siembra {n}` for the seed chip (the DB bracket_seed position)
+    porJugar: 'por jugar', // declared / pending — no score yet
+    awaiting: 'en espera', // awaiting_grace — the grace window
+    liveBadge: 'en vivo', // the blue live badge (lowercase per the mock node — distinct from es.live.on)
+    bye: 'Pase directo', // FIXED — a walkover (UX-DR29)
+    forfeit: 'W.O. / Ausente', // FIXED — a no-show forfeit, in --loss red (UX-DR30)
+    noStats: 'sin estadísticas', // FIXED — a bye/forfeit records none
+    champion: 'Campeón', // the resolved grand-final champion node (the ONLY gold on the screen — UX-DR6)
+    victory: 'victoria', // the winner tag on the focused match (mock-bracket.html:665)
+    back: 'Volver a la llave', // focused-match → back to the map
+    empty: 'La llave se dibuja cuando arranca el evento.', // no match rows yet (pre-bracket)
+    notFound: 'No encontramos esa partida.', // a ?match= id that is not in the bracket
+  },
+
+  /** Leaderboards surface (Story 5.7). All standings numbers come from the single `public.leaderboard` view. */
+  leaderboards: {
+    sechead: 'Estadísticas',
+    updated: 'Actualizado desde el último demo', // the subhead
+    players: 'jugadores', // `{n} jugadores`
+    rate: 'Tasa',
+    volume: 'Volumen',
+    rateHint: 'por oportunidad',
+    volumeHint: 'totales · contados',
+    // The `segnote` line each class states about itself (AC4 — a class states its class).
+    rateNote: 'Eficiencia por oportunidad — ADR, HS%, KAST. El número de rondas se normaliza, así que una racha corta aún puede liderar.',
+    volumeNote: 'Totales brutos en todas las rondas. Más rondas jugadas pueden significar más conteos.',
+    // Column headers (fixed narrow columns — no horizontal scroll).
+    colRank: '#',
+    colPlayer: 'Jugador',
+    colAdr: 'ADR',
+    colHs: 'HS%',
+    colKast: 'KAST',
+    colKills: 'Kills',
+    colKnife: 'Cuchillo',
+    colDeaths: 'Muertes',
+    colRounds: 'Rondas',
+    roundsUnit: 'rondas', // `{n} rondas` in a row's meta line
+    eligibility: 'Elegibilidad',
+    eligible: 'elegible · todos los pisos superados',
+    notEligible: 'aún no elegible · Mín. 24 rondas', // FIXED — the below-floor label (UX-DR39)
+    dq: 'DQ',
+    // FIXED callout copy (EXPERIENCE.md:72) — note the em dash.
+    floorCallout: 'Mín. 24 rondas — partidas inactivas descalificadas de los premios',
+    floorSub: 'Piso anti-farmeo: 24 rondas y 20 bajas para calificar. Si te quedas AFK, el demo lo marca.',
+    empty: 'Las estadísticas aparecen cuando se aprueba la primera partida.',
+  },
+
+  /** Player stat detail (Story 5.7). Headline from the leaderboard row; weird totals + matches-behind. */
+  player: {
+    baseStats: 'Estadísticas base', // FIXED
+    weirdStats: 'Estadísticas raras solo del demo', // FIXED
+    kda: 'Muertes / Bajas / Asist.', // FIXED (K / D / A order per the mock label)
+    adr: 'ADR',
+    hsPct: '% de cabeza', // FIXED
+    kast: 'KAST',
+    noData: 'sin datos', // FIXED — a NULL rate (0-opportunity denominator)
+    matches: 'Partidas', // the matches-behind section header (FR-23)
+    lostTo: 'Perdió contra',
+    beat: 'Venció a',
+    backToStats: 'Volver a estadísticas',
+    notFound: 'No encontramos a este jugador.',
+    // The weird demo-only stat labels (mock: mock-leaderboards.html:611-635).
+    weird: {
+      knife: 'Muertes con cuchillo',
+      wallbang: 'Atraviesa-muros',
+      smoke: 'A través del humo',
+      noScope: 'Sin mira',
+      blind: 'Muertes a ciegas',
+    },
+  },
+
+  /**
+   * Provenance line (Story 5.7 player detail). `verified` is the CAPITALIZED, sentence-initial form —
+   * DISTINCT from the lowercase feed/bracket chip `es.result.verified` = 'verificado desde el demo'. Keep both.
+   */
+  provenance: {
+    verified: 'Verificado desde el demo', // FIXED — do not paraphrase
+    seedPublished: 'semilla publicada', // `· semilla publicada {hash}`
+  },
 } as const;
 
 /**

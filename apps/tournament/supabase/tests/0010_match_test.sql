@@ -420,10 +420,15 @@ select is((select final_match_id from tournament where name = 'T2'), null,
 -- ============================================================================
 -- Section D — the exact policy set + the grant matrix (14 assertions)
 -- ============================================================================
+-- ⚠ UPDATED BY STORY 5.7 (migration 0022). At Story 4.1 this asserted exactly ONE policy (the dormant
+-- admin read) — the viewer bracket policy was explicitly deferred to Epic 5 (0010:30,210-214). Story 5.7's
+-- 0022 closes that deferral: it ADDS match_viewer_read alongside the untouched match_admin_read (two
+-- SEPARATE policies, never OR'd — AD-7). So the final-schema policy set is now BOTH. The write side is
+-- unchanged (still no write policy — proven by the grant matrix below), which is what this really guards.
 select policies_are(
   'public', 'match',
-  ARRAY['match_admin_read'],
-  'match: exactly ONE policy — the dormant admin-only read. No viewer policy (the Spanish bracket surface is Epic 5); no write policy (single-writer).'
+  ARRAY['match_admin_read', 'match_viewer_read'],
+  'match: TWO SELECT policies on the final schema — the dormant admin read (4.1) + the viewer read (5.7/0022). Still NO write policy (single-writer).'
 );
 select policy_cmd_is('public', 'match', 'match_admin_read', 'SELECT', 'match_admin_read is a SELECT-only policy');
 
@@ -433,12 +438,14 @@ select is(has_table_privilege('service_role',  'public.match', 'SELECT'), true, 
 select is(has_table_privilege('service_role',  'public.match', 'INSERT'), true,  'service_role CAN INSERT match (bracket generation creates every row)');
 select is(has_table_privilege('service_role',  'public.match', 'UPDATE'), true,  'service_role CAN UPDATE match (advance 4.3 / GF 4.4 / forfeit 4.5 / approve 4.6 / rollback 4.7)');
 select is(has_table_privilege('service_role',  'public.match', 'DELETE'), false, 'service_role CANNOT DELETE match (no-hard-delete ceiling — the grant is the teeth)');
--- anon/authenticated: NOTHING at all this slice (admin/worker-only — mirrors demo/stat_row-at-0007).
-select is(has_table_privilege('anon',          'public.match', 'SELECT'), false, 'anon CANNOT SELECT match (no viewer bracket until Epic 5 — fail closed)');
+-- anon/authenticated: at Story 4.1 this slice granted NOTHING (admin/worker-only). ⚠ UPDATED BY STORY 5.7
+-- (migration 0022): anon/authenticated now hold SELECT (the viewer bracket read) — but STILL no write of
+-- any kind. The SELECT assertions flip to true; every write assertion below is unchanged and is the point.
+select is(has_table_privilege('anon',          'public.match', 'SELECT'), true,  'anon CAN SELECT match on the final schema (Story 5.7/0022 viewer bracket — the 4.1 deferral is closed)');
 select is(has_table_privilege('anon',          'public.match', 'INSERT'), false, 'anon CANNOT INSERT match (fail closed)');
 select is(has_table_privilege('anon',          'public.match', 'UPDATE'), false, 'anon CANNOT UPDATE match (fail closed)');
 select is(has_table_privilege('anon',          'public.match', 'DELETE'), false, 'anon CANNOT DELETE match (fail closed)');
-select is(has_table_privilege('authenticated', 'public.match', 'SELECT'), false, 'authenticated CANNOT SELECT match (the admin_read policy is DORMANT — no base grant to reach it)');
+select is(has_table_privilege('authenticated', 'public.match', 'SELECT'), true,  'authenticated CAN SELECT match on the final schema (same 5.7/0022 viewer read grant)');
 select is(has_table_privilege('authenticated', 'public.match', 'INSERT'), false, 'authenticated CANNOT INSERT match (fail closed — writes go via the service role)');
 select is(has_table_privilege('authenticated', 'public.match', 'UPDATE'), false, 'authenticated CANNOT UPDATE match (fail closed)');
 select is(has_table_privilege('authenticated', 'public.match', 'DELETE'), false, 'authenticated CANNOT DELETE match (fail closed)');
@@ -495,22 +502,25 @@ select throws_ok(
 );
 set local role postgres;
 
--- Even a valid ADMIN claim 42501s at the table-grant gate before RLS runs: match_admin_read is
--- DORMANT defense-in-depth this slice (admins read the bracket through a service-role server route).
+-- ⚠ UPDATED BY STORY 5.7 (migration 0022). At Story 4.1 both callers 42501'd here — match had no
+-- anon/authenticated grant, so even a valid admin claim was refused at the grant gate before RLS ran, and
+-- the public bracket read was deferred to Epic 5. 0022 lands that read: match_viewer_read using(true) + the
+-- anon/authenticated SELECT grant. So on the final schema both callers CAN read the bracket. (An authenticated
+-- admin now satisfies BOTH match_viewer_read and match_admin_read — Postgres OR's the two permissive policies;
+-- either alone would return the rows.) The write-side fail-closed proof for these roles lives above (grant
+-- matrix) and in 0022's own suite — this block now proves the READ is live, which is the whole of Story 5.7 AC1.
 set local role authenticated;
 select set_config('request.jwt.claims', '{"app_metadata":{"role":"admin","steamid64":"76561197960287930"}}', true);
-select throws_ok(
+select lives_ok(
   $$ select count(*) from match $$,
-  '42501', null,
-  'authenticated ADMIN CANNOT read match — no base grant, so the admin policy never even runs (dormant, mirrors demo/audit_log)'
+  'authenticated ADMIN CAN read match on the final schema (viewer grant + match_viewer_read/match_admin_read — 5.7/0022)'
 );
 set local role postgres;
 
 set local role anon;
-select throws_ok(
+select lives_ok(
   $$ select count(*) from match $$,
-  '42501', null,
-  'anon CANNOT read match — fail closed (the public bracket surface arrives in Epic 5)'
+  'anon CAN read match on the final schema — the public bracket surface (Story 5.7/0022 closes the Epic-5 deferral)'
 );
 set local role postgres;
 

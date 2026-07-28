@@ -2,6 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { FeedRow } from '@/lib/feed/types';
 import { type CardModel, collectRosterIds, toCardModel } from '@/lib/feed/model';
+import { resolveNames } from '@/lib/roster/names';
 
 /**
  * The reusable snapshot read (Story 5.6, AC1/AC4/AC8) — the AD-11 seam.
@@ -120,58 +121,9 @@ export async function fetchFeedSnapshot(
     return { ok: true, cards: [] };
   }
 
-  const names = await resolveNames(client, rows);
+  // Batch-resolve names via the shared roster→player resolver (Story 5.7 extracted it to lib/roster/names
+  // so the bracket reuses it verbatim). Behavior is identical to 5.6's inlined version: a removed player's
+  // id is absent from the map → toCardModel degrades to a neutral label; a join error → empty map → neutral.
+  const names = await resolveNames(client, collectRosterIds(rows));
   return { ok: true, cards: rows.map((row) => toCardModel(row, names)) };
-}
-
-/**
- * roster_entry.id → player.display_name, via two batched `in(...)` queries. Any read error here is
- * non-fatal: it yields an empty map so cards fall back to neutral labels (the feed still renders —
- * a broken join must not blank an approved-and-published result).
- */
-async function resolveNames(
-  client: SupabaseClient,
-  rows: FeedRow[],
-): Promise<Map<number, string>> {
-  const names = new Map<number, string>();
-  const rosterIds = collectRosterIds(rows);
-  if (rosterIds.length === 0) return names;
-
-  const { data: rosterRows, error: rosterErr } = await client
-    .from('roster_entry')
-    .select('id, steamid64')
-    .in('id', rosterIds);
-  if (rosterErr || !rosterRows || rosterRows.length === 0) {
-    if (rosterErr) console.error('[fetchFeedSnapshot] roster_entry resolve failed:', rosterErr.message);
-    return names; // no visible roster rows (all removed?) → neutral labels downstream
-  }
-
-  const rosterToSteam = new Map<number, string>();
-  const steamIds: string[] = [];
-  for (const r of rosterRows as Array<{ id: number; steamid64: string }>) {
-    rosterToSteam.set(r.id, r.steamid64);
-    steamIds.push(r.steamid64);
-  }
-
-  const { data: playerRows, error: playerErr } = await client
-    .from('player')
-    .select('steamid64, display_name')
-    .in('steamid64', steamIds);
-  if (playerErr) {
-    console.error('[fetchFeedSnapshot] player resolve failed:', playerErr.message);
-    return names;
-  }
-
-  const steamToName = new Map<string, string>();
-  for (const p of (playerRows ?? []) as Array<{ steamid64: string; display_name: string | null }>) {
-    if (p.display_name) steamToName.set(p.steamid64, p.display_name);
-  }
-
-  for (const [rosterId, steamid64] of rosterToSteam) {
-    const name = steamToName.get(steamid64);
-    // Prefer the display name; if the player row is somehow missing a name, fall back to the
-    // steamid64 tail (a stable, if ugly, identifier) rather than dropping the player entirely.
-    names.set(rosterId, name ?? `#${steamid64.slice(-4)}`);
-  }
-  return names;
 }
