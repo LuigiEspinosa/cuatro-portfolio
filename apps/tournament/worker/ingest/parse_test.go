@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/geo/r3"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 )
@@ -542,6 +543,194 @@ func TestClutchAwardOnlyWinningTeam(t *testing.T) {
 	// A draw (WinnerState nil ⇒ no winners set built) credits nobody.
 	if got = build().award(map[uint64]bool{}); len(got) != 0 {
 		t.Fatalf("a draw must credit no clutch: got %v", got)
+	}
+}
+
+// TestIsIdleRound covers every branch of the FR-21 idle classifier (Story 5.4) over the PURE roundStats
+// method — the same "decision here, sampling in the closure" seam kastQualified/recordOpeningDuel use, so each
+// of the three guards reddens on its own when removed. epsilon is passed IN, so the whole test is plain
+// float64/bool with no demo. The three guards are FR-21 requirements, not defensive noise:
+//   - !sampled → NOT idle (idle undecidable without a sample; the SAFE direction that turns a dead Position()
+//     signal into "nobody idle" rather than "everyone idle" — trap 2 / SM-C1).
+//   - acted → NOT idle even when motionless.
+//   - maxDisp < epsilon is STRICT: exactly-epsilon is NOT idle.
+func TestIsIdleRound(t *testing.T) {
+	const p = uint64(76561197960287930)
+	const eps = 64.0
+
+	// unsampled → NOT idle (undecidable; never DQ on missing data). Note maxDisp is 0 (< eps) and acted is
+	// false here, so ONLY the !sampled guard keeps this from reading idle — removing it reddens this case.
+	if newRoundStats().isIdleRound(p, eps) {
+		t.Fatal("an unsampled player must NOT be idle (undecidable — the safe direction)")
+	}
+
+	// sampled + no action + maxDisp < epsilon → idle.
+	rsIdle := newRoundStats()
+	rsIdle.sampled[p] = true
+	rsIdle.posMaxDisp[p] = 10
+	if !rsIdle.isIdleRound(p, eps) {
+		t.Fatal("sampled, no action, displacement below epsilon → idle")
+	}
+
+	// sampled + moved (maxDisp >= epsilon) → NOT idle.
+	rsMoved := newRoundStats()
+	rsMoved.sampled[p] = true
+	rsMoved.posMaxDisp[p] = 100
+	if rsMoved.isIdleRound(p, eps) {
+		t.Fatal("a player who moved >= epsilon must NOT be idle")
+	}
+
+	// sampled + acted, even with maxDisp == 0 (motionless) → NOT idle (the acted guard alone decides).
+	rsActed := newRoundStats()
+	rsActed.sampled[p] = true
+	rsActed.acted[p] = true
+	if rsActed.isIdleRound(p, eps) {
+		t.Fatal("a player who acted must NOT be idle, even if motionless")
+	}
+
+	// sampled + DIED this round, even motionless and having not acted → NOT idle (the survival guard, review
+	// 2026-07-27). A player rushed and killed near spawn before moving epsilon or firing was involuntarily
+	// stopped, not idle-farming — flagging them would wrongly DQ an active duelist in the 1v1 wingman format.
+	// Removing the deaths>0 guard reddens THIS case (maxDisp 0 < eps and acted false, so only the guard saves it).
+	rsDied := newRoundStats()
+	rsDied.sampled[p] = true
+	rsDied.deaths[p] = 1
+	if rsDied.isIdleRound(p, eps) {
+		t.Fatal("a player who DIED this round must NOT be idle (involuntarily stopped — the safe direction)")
+	}
+
+	// The boundary: maxDisp EXACTLY epsilon → NOT idle (strict <). Inverting < to <= or > reddens here.
+	rsBoundary := newRoundStats()
+	rsBoundary.sampled[p] = true
+	rsBoundary.posMaxDisp[p] = eps
+	if rsBoundary.isIdleRound(p, eps) {
+		t.Fatal("displacement EXACTLY at epsilon must NOT be idle (strict <)")
+	}
+}
+
+// TestIdleDQThreshold pins the fold's idle-DQ ratio (Story 5.4): idle_dq is set when idle*Denom >= present*Numer
+// (>= 50%), computed as an INTEGER ratio with no float. It drives the REAL formula through foldRounds (the
+// formula lives inline there, not in a separate function), building `present` rounds with the first `idle` of
+// them idle. This is the AC2 money boundary — flipping the >= to > (so exactly-50% no longer DQs) or swapping
+// present/idle in the ratio reddens a case below.
+func TestIdleDQThreshold(t *testing.T) {
+	const p = uint64(76561197960287930)
+
+	// foldIdle builds `present` counted rounds (idx 1..present, all within final) where the first `idle` are
+	// idle for p, folds them, and returns p's PlayerStat.
+	foldIdle := func(idle, present int) *PlayerStat {
+		byRound := map[int]*roundStats{}
+		for i := 1; i <= present; i++ {
+			rs := newRoundStats()
+			rs.present[p] = true
+			if i <= idle {
+				rs.idleRound[p] = true
+			}
+			byRound[i] = rs
+		}
+		stats := foldRounds(byRound, map[int][]uint64{}, map[int]uint64{}, present)
+		return stats[p]
+	}
+
+	cases := []struct {
+		idle, present int
+		wantDQ        bool
+	}{
+		{0, 10, false}, // 0% → not DQ
+		{4, 10, false}, // 40% → not DQ (4*2=8 >= 10*1=10 is false)
+		{5, 10, true},  // exactly 50% → DQ (10 >= 10) — the boundary the > mutant breaks
+		{6, 10, true},  // 60% → DQ
+		{10, 10, true}, // 100% → DQ
+	}
+	for _, tc := range cases {
+		s := foldIdle(tc.idle, tc.present)
+		if s == nil {
+			t.Fatalf("idle=%d/present=%d: player missing from the fold", tc.idle, tc.present)
+		}
+		if s.IdleRoundCount != tc.idle {
+			t.Fatalf("idle=%d/present=%d: IdleRoundCount got %d want %d", tc.idle, tc.present, s.IdleRoundCount, tc.idle)
+		}
+		if s.IdleDQ != tc.wantDQ {
+			t.Fatalf("idle=%d/present=%d: IdleDQ got %v want %v", tc.idle, tc.present, s.IdleDQ, tc.wantDQ)
+		}
+	}
+
+	// present == 0: a player with a row (they got a kill) but never Playing at any RoundEnd is NOT DQ'd —
+	// undecidable, safe direction, and no div-by-zero. Their idle_round_count is the struct-zero 0.
+	rs := newRoundStats()
+	rs.kills[p] = 1 // in the fold via kills, but present is never set
+	stats := foldRounds(map[int]*roundStats{1: rs}, map[int][]uint64{}, map[int]uint64{}, 1)
+	if s := stats[p]; s == nil || s.IdleDQ || s.IdleRoundCount != 0 {
+		t.Fatalf("present==0 must be NOT DQ'd with idle_round_count 0, got %+v", s)
+	}
+}
+
+// TestFoldRoundsAfkIdle proves the FR-21 fold (Story 5.4): idle/present tally across surviving rounds, respect
+// the idx > final stranded-round bound, and — the case that matters — a stranded idle round that WOULD have
+// flipped idle_dq if counted is dropped. Surviving alone: present 3, idle 1 (33%) → NOT DQ. If the stranded
+// round (present + idle) were wrongly counted: present 4, idle 2 (50%) → DQ. So the bound is load-bearing here,
+// not decorative.
+func TestFoldRoundsAfkIdle(t *testing.T) {
+	const p = uint64(76561197960287930)
+	const final = 3
+
+	mk := func(present, idle bool) *roundStats {
+		rs := newRoundStats()
+		if present {
+			rs.present[p] = true
+		}
+		if idle {
+			rs.idleRound[p] = true
+		}
+		return rs
+	}
+
+	byRound := map[int]*roundStats{
+		1: mk(true, true),  // present + idle
+		2: mk(true, false), // present, not idle
+		3: mk(true, false), // present, not idle
+		4: mk(true, true),  // STRANDED (idx 4 > final 3): present + idle, must be dropped whole
+	}
+	stats := foldRounds(byRound, map[int][]uint64{}, map[int]uint64{}, final)
+	got := stats[p]
+	if got == nil {
+		t.Fatal("player must be present in the fold")
+	}
+	if got.IdleRoundCount != 1 { // round 1 only; the stranded round-4 idle is dropped
+		t.Fatalf("idle_round_count: got %d want 1 (stranded idle round dropped)", got.IdleRoundCount)
+	}
+	if got.IdleDQ { // surviving 1/3 = 33% → not DQ; counting the stranded round would flip it to 50%
+		t.Fatal("idle_dq must be false — a stranded idle round must NOT flip the verdict")
+	}
+}
+
+// TestArmLiveWindowResetsAfkState pins the FR-21 half of the re-arm contract (Story 5.4), the twin of the
+// FR-20 reset TestArmLiveWindowResetsBothHalvesOfTheFR20State guards: a MatchZy restart re-arms a round that
+// never reached a RoundEnd, so arming must discard the aborted attempt's movement/action or it leaks into the
+// replayed round and could flip its idle verdict. All six FR-21 maps must come back empty.
+func TestArmLiveWindowResetsAfkState(t *testing.T) {
+	const p = uint64(76561197960287930)
+	rs := newRoundStats()
+
+	// Arm, then play out an attempt: a sample, movement, an action, and a computed presence/idle verdict.
+	rs.armLiveWindow()
+	rs.sampled[p] = true
+	rs.posAnchor[p] = r3.Vector{X: 1, Y: 2, Z: 3}
+	rs.posMaxDisp[p] = 42
+	rs.acted[p] = true
+	rs.present[p] = true
+	rs.idleRound[p] = true
+
+	// The round is aborted and re-armed with no RoundEnd in between.
+	rs.armLiveWindow()
+
+	if len(rs.acted) != 0 || len(rs.posAnchor) != 0 || len(rs.posMaxDisp) != 0 ||
+		len(rs.sampled) != 0 || len(rs.present) != 0 || len(rs.idleRound) != 0 {
+		t.Fatalf("re-arming must clear ALL FR-21 per-round maps: acted=%v posAnchor=%v posMaxDisp=%v sampled=%v present=%v idleRound=%v",
+			rs.acted, rs.posAnchor, rs.posMaxDisp, rs.sampled, rs.present, rs.idleRound)
+	}
+	if !rs.live {
+		t.Fatal("re-arming must leave the round live")
 	}
 }
 

@@ -132,10 +132,12 @@ func (r *PgxRecorder) Pool() *pgxpool.Pool { return r.pool }
 // MVPs, FlashAssists, UtilityDamage, KASTRounds); Story 5.2 adds the FR-19 WEIRD FIVE (KnifeKills,
 // WallbangKills, ThroughSmokeKills, NoScopeKills, BlindKills); Story 5.3 adds the FR-20 DERIVED THREE
 // (EntryFrags, OpeningDeaths, Clutches) — all raw counts/totals, the leaderboard view divides (AD-20;
-// FR-20's entry success rate = EntryFrags/(EntryFrags+OpeningDeaths) is computed THERE, never here). Only
-// FR-21's idle columns (Story 5.4) stay NULL at their column defaults. Rows written BEFORE a widening keep
-// NULL in the new columns until their demo is re-parsed (Story 3.6 RunReparse re-derives everything through
-// this same upsert) — that is expected, and is not a backfill.
+// FR-20's entry success rate = EntryFrags/(EntryFrags+OpeningDeaths) is computed THERE, never here). Story 5.4
+// adds the FR-21 AFK/idle pair (IdleDQ, IdleRoundCount) — so as of 5.4 EVERY stat_row column is written by the
+// worker; none stays at a nullable default. Rows written BEFORE a widening keep NULL in the new columns until
+// their demo is re-parsed (Story 3.6 RunReparse re-derives everything through this same upsert) — that is
+// expected, and is not a backfill. (idle_dq is already `not null default false`, so a pre-5.4 row reads false
+// — correctly "not DQ'd" — but the worker still writes it so a re-parse is deterministic.)
 //
 // ⚠ MatchID is the EXTERNAL matchzy_match_id, NOT a bracket match(id) — at parse time no bracket row is
 // associated with the demo at all (the bind is a later admin act), and the worker never learns one.
@@ -182,6 +184,12 @@ type StatRow struct {
 	EntryFrags    int
 	OpeningDeaths int
 	Clutches      map[int]int // X -> count of 1vX clutches won; nil/empty is written as the empty object {}
+	// The FR-21 AFK/idle pair (Story 5.4). Both sit UNCONDITIONALLY in the INSERT list below, so a never-idle
+	// player writes IdleRoundCount 0 (never SQL NULL) and IdleDQ false explicitly — the zero-not-omitted
+	// convention Stories 5.2/5.3 established. Written only by the worker (AD-2); the ≥24-round/≥20-kill floors
+	// that consume idle_dq gate eligibility in Story 5.5's cumulative view, never here.
+	IdleDQ         bool
+	IdleRoundCount int
 }
 
 // AnomalyReason is one machine-readable validation-gate failure (Story 3.4). Gate is the gate id
@@ -396,11 +404,12 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			// `rounds_won` is the Story-4.6a demo-derived tally (FR-16); the seven Story-5.1 core columns
 			// (assists..kast_rounds) are the FR-18 derivation; the five Story-5.2 columns
 			// (knife_kills..blind_kills) are the FR-19 weird five; the three Story-5.3 columns
-			// (entry_frags, opening_deaths, clutches) are the FR-20 derived three. All re-derive on every
-			// parse exactly like kills/deaths — present in BOTH lists with excluded.<col>. The weird five and
-			// the derived three are UNCONDITIONALLY in the INSERT list, which is what makes a zero count land
-			// as 0 rather than NULL (FR-19 AC2 / FR-20 AC3) — and `clutches` lands as the empty object `{}`
-			// (never SQL NULL, never the jsonb scalar `null`), which is clutchesJSON's whole job.
+			// (entry_frags, opening_deaths, clutches) are the FR-20 derived three; the two Story-5.4 columns
+			// (idle_dq, idle_round_count — $23/$24) are the FR-21 AFK/idle pair. All re-derive on every parse
+			// exactly like kills/deaths — present in BOTH lists with excluded.<col>. The weird five, the derived
+			// three AND the idle pair are UNCONDITIONALLY in the INSERT list, which is what makes a zero count
+			// land as 0 rather than NULL (FR-19 AC2 / FR-20 AC3 / FR-21 AC3) — and `clutches` lands as the empty
+			// object `{}` (never SQL NULL, never the jsonb scalar `null`), which is clutchesJSON's whole job.
 			// ⚠ `status` stays ABSENT from BOTH lists — see the note above.
 			//
 			// ⚠⚠ `match_id` MUST STAY ABSENT FROM BOTH LISTS TOO, and unlike `status` its absence is
@@ -412,9 +421,9 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			`insert into stat_row (matchzy_match_id, steamid64, demo_id, kills, deaths, rounds_played, rounds_won,
 			   assists, adr_damage, hs_kills, mvps, flash_assists, utility_damage, kast_rounds,
 			   knife_kills, wallbang_kills, through_smoke_kills, no_scope_kills, blind_kills,
-			   entry_frags, opening_deaths, clutches)
+			   entry_frags, opening_deaths, clutches, idle_dq, idle_round_count)
 			 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19,
-			   $20, $21, $22::jsonb)
+			   $20, $21, $22::jsonb, $23, $24)
 			 on conflict (matchzy_match_id, steamid64) do update set
 			   kills = excluded.kills,
 			   deaths = excluded.deaths,
@@ -435,14 +444,17 @@ func upsertStatRows(ctx context.Context, tx pgx.Tx, demoID int64, rows []StatRow
 			   entry_frags = excluded.entry_frags,
 			   opening_deaths = excluded.opening_deaths,
 			   clutches = excluded.clutches,
+			   idle_dq = excluded.idle_dq,
+			   idle_round_count = excluded.idle_round_count,
 			   demo_id = excluded.demo_id`,
-			// ⚠ POSITIONAL: these arguments must line up 1:1 with $1..$22 in the column list above. A silent
+			// ⚠ POSITIONAL: these arguments must line up 1:1 with $1..$24 in the column list above. A silent
 			// off-by-one writes the wrong stat into the wrong column and NO unit test catches it (the fakes
-			// store the StatRow struct, they never execute this SQL).
+			// store the StatRow struct, they never execute this SQL). $23/$24 are the FR-21 idle pair, plain
+			// (no ::jsonb), appended AFTER clutches.
 			row.MatchID, row.SteamID64, row.DemoID, row.Kills, row.Deaths, row.RoundsPlayed, row.RoundsWon,
 			row.Assists, row.ADRDamage, row.HSKills, row.MVPs, row.FlashAssists, row.UtilityDamage, row.KASTRounds,
 			row.KnifeKills, row.WallbangKills, row.ThroughSmokeKills, row.NoScopeKills, row.BlindKills,
-			row.EntryFrags, row.OpeningDeaths, clutches,
+			row.EntryFrags, row.OpeningDeaths, clutches, row.IdleDQ, row.IdleRoundCount,
 		)
 	}
 	br := tx.SendBatch(ctx, batch)

@@ -38,18 +38,32 @@ func TestValidateAllClean(t *testing.T) {
 	}
 }
 
-// TestValidateConservation: Σkills != Σdeaths → exactly one conservation reason with the delta detail.
-func TestValidateConservation(t *testing.T) {
-	rows := []db.StatRow{row(sidA, 20, 14), row(sidB, 11, 18)} // Σkills 31, Σdeaths 32, delta -1
-	out := Validate(ParseResult{}, rows, rosterSet(sidA, sidB))
-	if !out.Anomalous || len(out.Reasons) != 1 {
-		t.Fatalf("an imbalanced K/D must be anomalous with one reason, got %+v", out)
+// TestValidateConservationFlagsOnlyOvercount is the AC7 money test (Story 5.4): the conservation gate was
+// RELAXED from `Σkills != Σdeaths` to `Σkills > Σdeaths`, so it now flags ONLY the impossible over-count
+// direction (a double-counted kill) and NO LONGER the normal Σkills < Σdeaths under-count (an unattributed
+// fall/world/bomb death). Over → held; under → clean (the relaxation); equal → clean.
+func TestValidateConservationFlagsOnlyOvercount(t *testing.T) {
+	// Σkills > Σdeaths — impossible in a completed match → held with the direction named in the detail.
+	over := []db.StatRow{row(sidA, 20, 14), row(sidB, 16, 18)} // Σkills 36 > Σdeaths 32, delta +4
+	out := Validate(ParseResult{}, over, rosterSet(sidA, sidB))
+	if !out.Anomalous || len(out.Reasons) != 1 || out.Reasons[0].Gate != "conservation" {
+		t.Fatalf("an over-count (Σkills > Σdeaths) must be a single conservation anomaly, got %+v", out)
 	}
-	if out.Reasons[0].Gate != "conservation" {
-		t.Fatalf("expected a conservation reason, got %+v", out.Reasons[0])
-	}
-	if want := "Σkills=31 Σdeaths=32 delta=-1"; out.Reasons[0].Detail != want {
+	if want := "Σkills=36 > Σdeaths=32 delta=4 (impossible over-count: a double-counted kill, or a non-17-digit id dropped by the skip-guard whose kills exceeded its deaths — see the D1 note above)"; out.Reasons[0].Detail != want {
 		t.Fatalf("conservation detail = %q, want %q", out.Reasons[0].Detail, want)
+	}
+
+	// Σkills < Σdeaths — the normal unattributed-death under-count → NO conservation reason (THE RELAX). This
+	// is the case that used to over-flag clean matches; changing the gate back to `!= d` or `< d` reddens here.
+	under := []db.StatRow{row(sidA, 14, 20), row(sidB, 11, 14)} // Σkills 25 < Σdeaths 34
+	if out := Validate(ParseResult{}, under, rosterSet(sidA, sidB)); out.Anomalous {
+		t.Fatalf("an under-count (unattributed deaths) must NOT be anomalous after the relax, got %+v", out)
+	}
+
+	// Σkills == Σdeaths — the decided-match norm → clean.
+	bal := []db.StatRow{row(sidA, 17, 17), row(sidB, 17, 17)}
+	if out := Validate(ParseResult{}, bal, rosterSet(sidA, sidB)); out.Anomalous {
+		t.Fatalf("a balanced match must not be anomalous, got %+v", out)
 	}
 }
 
@@ -81,12 +95,13 @@ func TestValidateUnreconciled(t *testing.T) {
 	}
 }
 
-// TestValidateMultipleFailuresDeterministic: an imbalanced K/D AND two unrostered ids (given out of order)
+// TestValidateMultipleFailuresDeterministic: an OVER-count K/D AND two unrostered ids (given out of order)
 // → both reasons present in the fixed order (conservation, unreconciled) with the offending ids SORTED and
-// comma-joined. (empty_stats cannot co-occur — it requires zero rows, which zeroes the other two gates.)
+// comma-joined. (empty_stats cannot co-occur — it requires zero rows, which zeroes the other two gates.) Uses
+// an over-count (Σkills > Σdeaths) since the Story-5.4 relax no longer flags the under-count.
 func TestValidateMultipleFailuresDeterministic(t *testing.T) {
 	// sidC before sidA in the rows to prove the detail is sorted, not input-ordered.
-	rows := []db.StatRow{row(sidC, 5, 3), row(sidA, 2, 5)} // Σkills 7, Σdeaths 8, delta -1
+	rows := []db.StatRow{row(sidC, 5, 3), row(sidA, 4, 2)} // Σkills 9 > Σdeaths 5, delta +4
 	out := Validate(ParseResult{}, rows, rosterSet())      // neither id rostered
 	if !out.Anomalous || len(out.Reasons) != 2 {
 		t.Fatalf("two simultaneous failures must yield two reasons, got %+v", out)

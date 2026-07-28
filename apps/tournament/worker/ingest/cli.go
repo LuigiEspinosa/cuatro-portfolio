@@ -97,8 +97,8 @@ type parseOutcome struct {
 // and the Story-3.8 bounded async job run the SAME core with NO duplicated parse logic: read the RETAINED
 // object back (AD-1 source of truth — never a tee of the upload; demoinfocs consumes the whole stream), map
 // each parsed player to a stat_row (SteamID64 uint64 -> 17-digit decimal text, AD-4; stamping match/demo/
-// rounds provenance plus the fifteen derived stats of FR-18 + FR-19 + FR-20; only FR-21's idle columns stay
-// NULL), validate against the ACTIVE roster (Story 3.4),
+// rounds provenance plus the SEVENTEEN derived stats of FR-18 + FR-19 + FR-20 + FR-21 — as of Story 5.4 no
+// column stays NULL), validate against the ACTIVE roster (Story 3.4),
 // and upsert via RecordParse. It NEVER acquires — the demo bytes are already durable in R2; the caller
 // supplies the demoID + storageKey of the retained object (the AcquireResult on the CLI/MatchZy path).
 //
@@ -118,8 +118,8 @@ func parseAndRecord(ctx context.Context, s store.DemoStore, parser Parser, statR
 
 	// Map each parsed player to a stat_row, converting SteamID64 uint64 -> 17-digit decimal text (AD-4;
 	// the DB layer never sees the numeric form) and stamping match/demo/rounds provenance, plus the FR-18
-	// core seven (Story 5.1), the FR-19 weird five (Story 5.2) and the FR-20 derived three (Story 5.3). Only
-	// FR-21's idle columns (Story 5.4) stay NULL.
+	// core seven (Story 5.1), the FR-19 weird five (Story 5.2), the FR-20 derived three (Story 5.3) and the
+	// FR-21 AFK/idle pair (Story 5.4). As of Story 5.4 no column stays NULL.
 	rows := make([]db.StatRow, 0, len(result.Players))
 	for _, pl := range result.Players {
 		sid := strconv.FormatUint(pl.SteamID64, 10)
@@ -163,6 +163,11 @@ func parseAndRecord(ctx context.Context, s store.DemoStore, parser Parser, statR
 			EntryFrags:    pl.EntryFrags,
 			OpeningDeaths: pl.OpeningDeaths,
 			Clutches:      pl.Clutches,
+			// The FR-21 AFK/idle pair (Story 5.4) — unconditional, so a never-idle player writes an explicit
+			// 0 / false rather than NULL. ⚠ MUST stay mirrored with reparse.go's map (the recurring "second
+			// path drops the widening" failure mode); assertDerivedStats covers all seventeen for BOTH paths.
+			IdleDQ:         pl.IdleDQ,
+			IdleRoundCount: pl.IdleRoundCount,
 		})
 	}
 	// Validate the just-parsed rows against the ACTIVE roster BEFORE recording (Story 3.4, the Validating

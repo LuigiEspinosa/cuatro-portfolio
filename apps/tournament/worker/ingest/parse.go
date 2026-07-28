@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/golang/geo/r3" // demoinfocs's plain 3-float position vector (Player.Position() → r3.Vector)
 	dem "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	"github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
@@ -24,9 +25,15 @@ const ParserVersion = "demoinfocs-golang/v5 v5.2.0"
 // FR-20's ENTRY SUCCESS RATE are divided ONCE in the Epic-5 leaderboard view (AD-20 one-owner), so
 // ADRDamage is the TOTAL overkill-capped damage (view: ADRDamage/RoundsPlayed), HSKills a count (view:
 // HSKills/Kills), KASTRounds a count (view: KASTRounds/RoundsPlayed) and EntryFrags/OpeningDeaths two raw
-// counts (view: EntryFrags/(EntryFrags+OpeningDeaths)). Store counts; divide nowhere. Only FR-21's IDLE
-// stats (idle_dq, idle_round_count — Story 5.4) remain at their nullable column defaults. This widens the
-// struct + the writer, never the schema (every stat_row column already exists, nullable, since 0007).
+// counts (view: EntryFrags/(EntryFrags+OpeningDeaths)). Store counts; divide nowhere. As of Story 5.4 the
+// parser also fills the FR-21 AFK/idle pair (idle_dq, idle_round_count), so NOTHING now remains at a nullable
+// column default — every stat_row column is written by the worker. This widens the struct + the writer, never
+// the schema (every stat_row column already exists, nullable/defaulted, since 0007).
+//
+// ⚠ The FR-21 ≥24-round / ≥20-kill participation FLOORS are NOT applied here. They gate award ELIGIBILITY and
+// are summed CUMULATIVELY across a player's approved matches in Story 5.5's single leaderboard view (AD-20, one
+// normalization site) — never per-match in the worker. A wingman match is ≤ ~22 rounds, so a per-match ≥24
+// floor would fail EVERY player. The worker writes raw facts (rounds_played, kills, idle_dq); 5.5 judges them.
 //
 // ⚠ FR-19's trailing "molotov/HE damage" clause is ALREADY SHIPPED as UtilityDamage by Story 5.1 (one
 // utility_damage column, 0007:43). There is no molotov/HE split to build; 5.2 is exactly five counters.
@@ -75,6 +82,14 @@ type PlayerStat struct {
 	EntryFrags    int         // killer of the round's first live kill (FR-20 opening duel)
 	OpeningDeaths int         // victim of that same kill
 	Clutches      map[int]int // X -> count of 1vX clutches WON; nil/empty when none (the writer renders {} , never null)
+	// The FR-21 AFK/idle pair (Story 5.4) — the only demo-derived facts computed from a per-TICK signal
+	// (events.FrameDone + Player.Position() displacement) rather than the event stream. A round is idle for a
+	// player when they got a position sample, their round displacement stayed below afkPositionEpsilon, AND
+	// they fired no shot / threw no utility / dealt no damage; a player idle in ≥ 50% of the rounds they were
+	// PRESENT for is idle_dq for the match. Written UNCONDITIONALLY (0 / false, never NULL) like every stat
+	// above — a never-idle player writes IdleRoundCount 0 and IdleDQ false. The floors stay in the 5.5 view.
+	IdleDQ         bool // true when the player was idle in >= 50% of the rounds they were present for (FR-21)
+	IdleRoundCount int  // per-match count of idle rounds; 0 (never NULL) when never idle
 }
 
 // kastTradeWindow is the KAST "traded" window (FR-18, prd.md:103): a round counts for a player who died if
@@ -84,6 +99,22 @@ type PlayerStat struct {
 // documented at the PlayerHurt handler: ALWAYS the overkill-capped events.PlayerHurt.HealthDamageTaken,
 // NEVER the raw HealthDamage — that is what makes ADR match the in-game scoreboard (AC2).
 const kastTradeWindow = 5 * time.Second
+
+// FR-21 AFK/idle config (Story 5.4). PUBLISHED, fairness-affecting build-time config — the SAME "code-level
+// stat convention, NOT a secret/endpoint" home as kastTradeWindow above, so it lives here and NEVER in
+// worker/config (AD-25 = server-only secrets). These three values are surfaced forward into the Epic-6
+// verification_bundle so a tuned run reproduces (epics.md:897-899, AC6). Starting defaults to validate against
+// real event data (prd.md:519, Open Question 5); tune within the SM-5 parse budget.
+//
+// ⚠ Sampling cadence is EVERY events.FrameDone (the finest cadence) — documented at the FrameDone handler, not
+// as a constant, because "every frame" is the absence of a skip, not a number. If a future demo makes
+// per-frame sampling too costly, coarsen by sampling every Nth frame and express that N as a constant HERE.
+const (
+	afkPositionEpsilon = 64.0 // game units: max round displacement (from the round's first sample) below
+	//                           which a player is "not moving". ~1.2 m; a peek/reposition is 100s of units.
+	afkIdleDQNumer = 1 // idle_dq when idle rounds / present rounds >= afkIdleDQNumer/afkIdleDQDenom
+	afkIdleDQDenom = 2 //  i.e. >= 50%. Integer ratio, NO float: idle*Denom >= present*Numer.
+)
 
 // roundDeath is one death inside a counted round — the victim, the killer (0 = world / unattributed) and the
 // ingame time (p.CurrentTime()) it happened. It is the raw material for the KAST "survived"/"traded" tests.
@@ -142,6 +173,17 @@ type roundStats struct {
 	clutch       *clutchTracker // alive-count state machine, armed at RoundFreezetimeEnd (nil until then)
 	clutchWon    map[uint64]int // the AWARDED result at RoundEnd: player -> X. Rides the scratch like every
 	// other stat so it gets the trap-4 assign/overwrite commit for free.
+	// The FR-21 AFK/idle per-round state (Story 5.4). Rides `cur` on the same trap-4 assign discipline as every
+	// stat above: the movement/action accumulated in-round is committed whole at RoundEnd, so a discarded
+	// MatchZy pre-match round's idle state is OVERWRITTEN by its replay, never merged. `acted`/`posAnchor`/
+	// `posMaxDisp`/`sampled` are fed by the per-tick FrameDone sampler + the action handlers; `present` and
+	// `idleRound` are computed once at RoundEnd (present = Playing() at RoundEnd; idleRound = isIdleRound).
+	acted      map[uint64]bool      // player fired / threw utility / dealt damage this round (any action event)
+	posAnchor  map[uint64]r3.Vector // first sampled position this round (the displacement origin)
+	posMaxDisp map[uint64]float64   // max distance from posAnchor seen this round
+	sampled    map[uint64]bool      // player got >=1 FrameDone position sample this round (idle undecidable without one)
+	present    map[uint64]bool      // player was Playing() at RoundEnd this round (the idle-ratio denominator)
+	idleRound  map[uint64]bool      // computed at RoundEnd: this player was idle this round (the fold input)
 }
 
 func newRoundStats() *roundStats {
@@ -163,6 +205,13 @@ func newRoundStats() *roundStats {
 		gotKill:   map[uint64]bool{},
 		gotAssist: map[uint64]bool{},
 		kast:      map[uint64]bool{},
+
+		acted:      map[uint64]bool{},
+		posAnchor:  map[uint64]r3.Vector{},
+		posMaxDisp: map[uint64]float64{},
+		sampled:    map[uint64]bool{},
+		present:    map[uint64]bool{},
+		idleRound:  map[uint64]bool{},
 	}
 }
 
@@ -200,16 +249,65 @@ func (rs *roundStats) kastQualified(player uint64, tradeWindow time.Duration) bo
 	return false
 }
 
-// armLiveWindow arms the round for FR-20: it opens the live window and resets BOTH halves of the derived
-// state — the opening-duel latch and the clutch tracker — so a re-arm can never mix an aborted attempt's duel
-// into the round that actually commits. Pure over roundStats (the DECISION here, only the CALL in the
-// RoundFreezetimeEnd closure), which is what makes the reset mutation-testable; the handler itself is
-// unreachable by FakeParser. See the handler for why a re-arm happens at all (measured: 221 freeze-time ends
-// against 204 counted rounds).
+// armLiveWindow arms the round for FR-20 AND resets the FR-21 AFK/idle per-round state: it opens the live
+// window and resets the opening-duel latch, the clutch tracker, AND the movement/action maps — so a re-arm can
+// never mix an aborted attempt's duel OR its accumulated movement/action into the round that actually commits.
+// The FR-21 half is the exact twin of the FR-20 fix (code review, 2026-07-21): a MatchZy restart re-arms a
+// round that never reached a RoundEnd (measured: 221 freeze-time ends against 204 counted rounds), so an
+// aborted attempt's shots/utility/displacement must be discarded here or they leak into the replayed round and
+// could flip its idle verdict. Pure over roundStats (the DECISION here, only the CALL in the
+// RoundFreezetimeEnd closure), which is what makes the reset mutation-testable; the handler is unreachable by
+// FakeParser.
 func (rs *roundStats) armLiveWindow() {
 	rs.live = true
 	rs.entryFrag, rs.openingDeath, rs.duelDone = 0, 0, false
 	rs.clutch = newClutchTracker()
+	// FR-21 (Story 5.4): fresh, empty maps so an aborted attempt's movement/action cannot survive the re-arm.
+	rs.acted = map[uint64]bool{}
+	rs.posAnchor = map[uint64]r3.Vector{}
+	rs.posMaxDisp = map[uint64]float64{}
+	rs.sampled = map[uint64]bool{}
+	rs.present = map[uint64]bool{}
+	rs.idleRound = map[uint64]bool{}
+}
+
+// isIdleRound decides whether `sid` was idle THIS round (FR-21, Story 5.4): it got at least one position
+// sample, it did NOT die this round, its max displacement from the round's first sample stayed BELOW epsilon,
+// AND it produced no action event (no shot / no utility / no damage dealt). Like kastQualified/recordOpeningDuel
+// it is PURE over roundStats — the DECISION here, only the position SAMPLING (a demoInfoProvider deref) in the
+// FrameDone closure — which is what makes every branch mutation-testable with plain float64/bool values, no demo.
+//
+// All four conditions are FR-21 REQUIREMENTS, not defensive noise, and each must redden a named mutation test:
+//   - !sampled → NOT idle. Idle is UNDECIDABLE without a position sample, and the SAFE direction is "not idle":
+//     never DQ on missing data (SM-C1 — a dead sampler must not disqualify the tournament). This is exactly the
+//     guard that turns the trap-2 catastrophe (a dead Position() making everyone look motionless) into "nobody
+//     idle" rather than "everyone idle" IF sampling ever fails to fire — the fail-safe-toward-inclusion default.
+//   - died this round (rs.deaths[sid] > 0) → NOT idle. A player who was KILLED did not choose to stand around —
+//     they were involuntarily stopped, and a dead player is not "farming participation" (the SM-C1 anti-farm
+//     intent FR-21 exists to serve). Without this guard, a player rushed and killed near spawn — before moving
+//     epsilon (≈1.2m) and before firing — reads idle, and at ≥50% of present rounds is wrongly disqualified from
+//     every award. That false-positive is MOST acute in the 1v1 wingman format (short duels, fast opening deaths),
+//     where the [[tournament-format-1v1-wingman]] "it reads 0 because these are duels" trap bites hardest — the
+//     original all-`false` corpus result did not exercise it, so it was a latent DQ-an-active-player defect (added
+//     at the 2026-07-27 code review, the SM-C1 "never WRONGLY DQ" direction). NOTE: post-death FrameDone frames
+//     keep sampling a dead player (Playing() still lists them), so a sample-COUNT proxy for "alive long enough"
+//     would be defeated by those frames; the event-stream death fact (deaths[sid], already tallied + reset per
+//     round) is the robust signal. A truly-AFK-and-then-killed player is left UNFLAGGED here — the safe direction,
+//     and the ≥24-round / ≥20-kill participation floors (Story 5.5) already exclude a player who contributes zero.
+//   - acted → NOT idle. A player who fired, threw utility, or dealt damage acted, regardless of displacement.
+//   - maxDisp < epsilon (STRICT): a player who moved epsilon or more is not idle. The four are ANDed
+//     (FR-20-style ANDed gate, prd.md:321): dying, moving, OR acting is enough to not be idle.
+func (rs *roundStats) isIdleRound(sid uint64, epsilon float64) bool {
+	if !rs.sampled[sid] {
+		return false // no sample → undecidable → SAFE direction is "not idle" (never DQ on missing data)
+	}
+	if rs.deaths[sid] > 0 {
+		return false // killed this round → involuntarily stopped, not idle-farming → not idle (review 2026-07-27)
+	}
+	if rs.acted[sid] {
+		return false // shot / utility / damage dealt → acted → not idle
+	}
+	return rs.posMaxDisp[sid] < epsilon
 }
 
 // recordOpeningDuel latches this round's OPENING DUEL (FR-20) on the FIRST kill of the LIVE round that has a
@@ -365,6 +463,12 @@ func foldRounds(byRound map[int]*roundStats, roundWinners map[int][]uint64, mvpB
 		}
 		return s
 	}
+	// FR-21 AFK/idle (Story 5.4). idle_dq is a ratio over the WHOLE match (idle rounds / present rounds), so it
+	// cannot be decided per round — accumulate two per-player tallies across surviving rounds first, then set
+	// IdleRoundCount + IdleDQ after the fold. Both tallies come from `cur` (via byRound), never a bare
+	// event-time counter — the trap-4 discipline, so a discarded pre-match round contributes nothing.
+	idleCount := map[uint64]int{}
+	presentCount := map[uint64]int{}
 	for idx, rs := range byRound {
 		if idx > final {
 			continue // a stranded round from a rewind — the game drops it, so do we
@@ -453,6 +557,25 @@ func foldRounds(byRound map[int]*roundStats, roundWinners map[int][]uint64, mvpB
 				}
 				s.Clutches[x]++
 			}
+		}
+		// FR-21 (Story 5.4): tally presence + idle rounds under the SAME stranded-round bound. present is set
+		// for every player Playing() at RoundEnd; idleRound is the subset flagged idle (always ⊆ present).
+		for sid := range rs.present {
+			presentCount[sid]++
+		}
+		for sid := range rs.idleRound {
+			idleCount[sid]++
+		}
+	}
+	// FR-21 (Story 5.4): now that every surviving round is folded, set the per-match idle pair. IdleRoundCount
+	// is the raw idle tally (0 by the struct zero value for a never-idle player). IdleDQ is the >= 50% threshold
+	// as an INTEGER ratio, no float: idle*Denom >= present*Numer. present == 0 (a player with a row but never
+	// Playing at any RoundEnd) is NOT DQ'd — undecidable, the safe direction (SM-C1). Iterating presentCount
+	// covers every idle player (idleCount ⊆ presentCount by construction).
+	for sid, present := range presentCount {
+		if s := get(sid); s != nil {
+			s.IdleRoundCount = idleCount[sid]
+			s.IdleDQ = present > 0 && idleCount[sid]*afkIdleDQDenom >= present*afkIdleDQNumer
 		}
 	}
 	for idx, winners := range roundWinners {
@@ -729,6 +852,9 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 		if a == 0 {
 			return // world damage (fall/bomb) or a disconnected/corrupt attacker — nobody to credit
 		}
+		// FR-21 (Story 5.4): dealing damage is ACTING — the attacker is not idle this round. Damage DEALT
+		// (attacker side), consistent with the ADR convention below; the victim taking damage is not "acting".
+		cur.acted[a] = true
 		// AC2 ADR CONVENTION (the documented build-time constant): use HealthDamageTaken — the OVERKILL-CAPPED
 		// damage (capped at the victim's remaining HP) — NEVER the raw/uncapped HealthDamage. The cap is what
 		// makes the total match the in-game scoreboard. Mirrors the verified PoC exactly (no self/team-damage
@@ -742,6 +868,71 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 			switch e.Weapon.Type {
 			case common.EqHE, common.EqMolotov, common.EqIncendiary:
 				cur.utilityDamage[a] += e.HealthDamageTaken
+			}
+		}
+	})
+
+	// THE FR-21 PER-TICK POSITION SAMPLER (Story 5.4). events.FrameDone is an empty struct dispatched ONCE PER
+	// DEMO FRAME — the finest sampling cadence available. SM-5 gives minutes of budget against a ~3.4 s
+	// event-only parse (prd.md:489), so per-frame sampling is well within budget; THE BAR (qa54) reports the
+	// measured parse wall-time. If a future demo makes per-frame sampling too costly, coarsen to every Nth frame
+	// and pin N as a constant next to afkPositionEpsilon — do not bury it here.
+	//
+	// ⚠ pl.Position() is the ONE expression in this whole story that MUST live in a live closure: it routes
+	// through PlayerPawnEntity() → the unexported demoInfoProvider (the IsAlive()/GetTeam() deref class Story
+	// 5.2a routed around), so no FakeParser can drive it and it is unreachable by every Go test. We read it here
+	// and hand the pure classifier plain float64 deltas (posMaxDisp) — the isIdleRound DECISION stays pure and
+	// table-testable. THE BAR's GATE A is this line's only coverage, and it PROVES the signal is alive (varying
+	// real coordinates) before a single idle verdict is trusted — because a dead Position() would read < epsilon
+	// for everyone and DQ the entire tournament (trap 2, the 5.2a failure at maximum blast radius).
+	//
+	// ⚠ Position() AND THE DEAD PLAYER. After a player dies Position() may return the last live position (frozen)
+	// or the zero vector, and Playing() KEEPS listing them, so this sampler keeps recording samples post-death.
+	// That is harmless for the idle verdict: isIdleRound short-circuits to NOT idle for any player who died this
+	// round (rs.deaths[sid] > 0, the 2026-07-27 review guard), so a dead player's post-death displacement — frozen
+	// OR zero-vector — never decides anything. This is why we do NOT need to track aliveness IN the sampler or stop
+	// sampling at death: the pure classifier already excludes the dead from the idle judgment (a player who was
+	// KILLED did not choose to be idle — SM-C1 "never wrongly DQ"). The idle verdict therefore rests only on the
+	// ALIVE-and-survived players, exactly the population the anti-farm rule targets.
+	p.RegisterEventHandler(func(e events.FrameDone) {
+		if p.GameState().IsWarmupPeriod() {
+			return // warmup frames are not scored — the same discipline as every handler here
+		}
+		for _, pl := range p.GameState().Participants().Playing() {
+			if pl == nil || pl.SteamID64 == 0 {
+				continue
+			}
+			sid := pl.SteamID64
+			pos := pl.Position() // ⚠ demoInfoProvider deref — MUST stay in this live closure, never a pure fn
+			if !cur.sampled[sid] {
+				cur.sampled[sid], cur.posAnchor[sid] = true, pos
+				continue // the first sample is the anchor; displacement is measured from it
+			}
+			if d := pos.Sub(cur.posAnchor[sid]).Norm(); d > cur.posMaxDisp[sid] {
+				cur.posMaxDisp[sid] = d
+			}
+		}
+	})
+
+	// FR-21 action signals (Story 5.4): firing a shot and throwing utility both mean the player ACTED this round
+	// (isIdleRound: acted → not idle). Damage-dealt is the third action signal, flagged in the PlayerHurt
+	// handler above on the attacker side. All three feed the same cur.acted flag; no new counter, no fold — a
+	// bare per-round bool that armLiveWindow resets on a re-arm like every FR-21 map. Warmup-skipped, id-0-safe.
+	p.RegisterEventHandler(func(e events.WeaponFire) {
+		if p.GameState().IsWarmupPeriod() {
+			return
+		}
+		if s := idOf(e.Shooter); s != 0 {
+			cur.acted[s] = true
+		}
+	})
+	p.RegisterEventHandler(func(e events.GrenadeProjectileThrow) {
+		if p.GameState().IsWarmupPeriod() {
+			return
+		}
+		if e.Projectile != nil {
+			if s := idOf(e.Projectile.Thrower); s != 0 {
+				cur.acted[s] = true
 			}
 		}
 	})
@@ -846,6 +1037,13 @@ func (DemoinfocsParser) Parse(r io.Reader) (result ParseResult, err error) {
 			}
 			if cur.kastQualified(pl.SteamID64, kastTradeWindow) {
 				cur.kast[pl.SteamID64] = true
+			}
+			// FR-21 (Story 5.4): mark presence (the idle-ratio denominator) and compute the completed round's
+			// idle verdict for this PARTICIPATING player. Reuses this SAME Playing() walk — do NOT add a second
+			// one. The verdict rides `cur`, so the commit below carries it on the trap-4 assign like every stat.
+			cur.present[pl.SteamID64] = true
+			if cur.isIdleRound(pl.SteamID64, afkPositionEpsilon) {
+				cur.idleRound[pl.SteamID64] = true
 			}
 		}
 		// (3) Commit the completed round's additive+KAST scratch under the game's own index (ASSIGN → a

@@ -20,27 +20,33 @@ import (
 //
 // The gates run over `rows` (the mapped, post-skip-guard stat rows actually written), not result.Players:
 // a non-17-digit id dropped by the cli.go D1 skip-guard is deliberately absent here. When that dropped id
-// had UNEQUAL kills/deaths, the leftover K/D imbalance surfaces as a conservation anomaly — a PARTIAL safety
-// net only (a dropped id with equal kills==deaths leaves Σkills==Σdeaths intact and is not caught here).
-// `result` carries the match-level rounds for provenance/future gates; the three current gates need only the
-// rows + roster.
+// had MORE kills than deaths, the leftover Σkills > Σdeaths over-count surfaces as a conservation anomaly — a
+// PARTIAL safety net only, and NARROWER since the Story-5.4 relax below: a dropped id whose absence makes the
+// match UNDER-count (Σkills < Σdeaths, the common case for a real player) is no longer caught here, and a
+// dropped id with equal kills==deaths leaves Σkills==Σdeaths intact and never was. `result` carries the
+// match-level rounds for provenance/future gates; the three current gates need only the rows + roster.
 func Validate(result ParseResult, rows []db.StatRow, roster map[string]struct{}) db.ValidationOutcome {
 	_ = result // rounds/other match-level fields are available for future gates (Epic 5); the AC1 gates use rows+roster.
 
 	var reasons []db.AnomalyReason
 
-	// Gate 1 — conservation: Σkills == Σdeaths across the match (every kill is exactly one death in a
-	// completed CS2 match). A mismatch means the parse missed or double-counted an event, or an id was
-	// dropped by the skip-guard — hold it.
+	// Gate 1 — conservation, RELAXED to flag ONLY the impossible over-count direction Σkills > Σdeaths
+	// (Story 5.4, closing the Epic-3 retro action item pinned at sprint-status.yaml:197-200; approved after
+	// real demos balanced 16==16 at live-QA). Every kill is exactly one death, so Σkills > Σdeaths is
+	// IMPOSSIBLE in a completed match — it can only mean a double-counted kill, so hold it. The reverse,
+	// Σkills < Σdeaths, is the NORMAL under-count: an unattributed fall/world/bomb death credits a death with
+	// no kill (the same reason RoundsWon is never derived from kills — validate at the RoundEnd tally, not the
+	// K/D sum). That under-count was over-flagging clean matches, so it is no longer held. (No FR-21 gate is
+	// added: an all-zero idle_round_count is the EXPECTED result, not an anomaly — THE BAR proves it, not this.)
 	var k, d int
 	for _, r := range rows {
 		k += r.Kills
 		d += r.Deaths
 	}
-	if k != d {
+	if k > d {
 		reasons = append(reasons, db.AnomalyReason{
 			Gate:   "conservation",
-			Detail: fmt.Sprintf("Σkills=%d Σdeaths=%d delta=%d", k, d, k-d),
+			Detail: fmt.Sprintf("Σkills=%d > Σdeaths=%d delta=%d (impossible over-count: a double-counted kill, or a non-17-digit id dropped by the skip-guard whose kills exceeded its deaths — see the D1 note above)", k, d, k-d),
 		})
 	}
 

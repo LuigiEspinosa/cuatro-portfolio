@@ -49,23 +49,31 @@ func cannedParse() ParseResult {
 			// OpeningDeaths <= Deaths keep the fixture a plausible scoreboard, and BOTH players carry a
 			// NON-EMPTY Clutches map — a nil `want` would make a dropped `Clutches:` mapping invisible, since
 			// the dropped field is nil too.
+			// The FR-21 AFK/idle pair (Story 5.4) rides the same assembly a fourth time. …930 is IdleDQ:true
+			// with a NON-ZERO IdleRoundCount (15 — distinct from every other int on the row); …042 is the
+			// zero/false case (IdleDQ:false, IdleRoundCount:0). A DQ'd player is not realistic in a real
+			// tournament, but this is a MAPPING fixture — the point is that both fields land, distinct enough
+			// that a copy/paste swap or a dropped mapping reddens assertDerivedStats.
 			{SteamID64: 76561197960287930, Kills: 20, Deaths: 14, RoundsWon: 16,
 				Assists: 4, ADRDamage: 2529, HSKills: 6, MVPs: 5, FlashAssists: 1, UtilityDamage: 233, KASTRounds: 18,
 				KnifeKills: 8, WallbangKills: 9, ThroughSmokeKills: 10, NoScopeKills: 11, BlindKills: 12,
-				EntryFrags: 7, OpeningDeaths: 3, Clutches: map[int]int{1: 2, 2: 1}},
+				EntryFrags: 7, OpeningDeaths: 3, Clutches: map[int]int{1: 2, 2: 1},
+				IdleDQ: true, IdleRoundCount: 15},
 			{SteamID64: 76561198000000042, Kills: 14, Deaths: 20, RoundsWon: 8,
 				Assists: 3, ADRDamage: 1801, HSKills: 7, MVPs: 6, FlashAssists: 2, UtilityDamage: 147, KASTRounds: 13,
 				KnifeKills: 9, WallbangKills: 5, ThroughSmokeKills: 11, NoScopeKills: 1, BlindKills: 4,
-				EntryFrags: 10, OpeningDeaths: 12, Clutches: map[int]int{1: 3, 4: 1}},
+				EntryFrags: 10, OpeningDeaths: 12, Clutches: map[int]int{1: 3, 4: 1},
+				IdleDQ: false, IdleRoundCount: 0},
 		},
 	}
 }
 
 // assertDerivedStats checks a mapped StatRow carries every derived field from its PlayerStat source: the
-// FR-18 core seven (Story 5.1), the FR-19 weird five (Story 5.2) AND the FR-20 derived three (Story 5.3).
-// Both mapping sites (cli.go parseAndRecord, reparse.go) must copy all fifteen; dropping ANY one silently
-// writes a 0 (a NULL/zeroed column) — or, for Clutches, a `{}` that ERASES a player's clutch history on
-// every re-parse — so this single helper is the per-stat mutation net for both paths.
+// FR-18 core seven (Story 5.1), the FR-19 weird five (Story 5.2), the FR-20 derived three (Story 5.3) AND the
+// FR-21 AFK/idle pair (Story 5.4). Both mapping sites (cli.go parseAndRecord, reparse.go) must copy all
+// SEVENTEEN; dropping ANY one silently writes a 0/false (a NULL/zeroed column) — or, for Clutches, a `{}` that
+// ERASES a player's clutch history on every re-parse — so this single helper is the per-stat mutation net for
+// both paths.
 func assertDerivedStats(t *testing.T, got db.StatRow, want PlayerStat) {
 	t.Helper()
 	if got.Assists != want.Assists {
@@ -116,6 +124,14 @@ func assertDerivedStats(t *testing.T, got db.StatRow, want PlayerStat) {
 	}
 	if !reflect.DeepEqual(got.Clutches, want.Clutches) {
 		t.Fatalf("clutches not carried: got %v want %v", got.Clutches, want.Clutches)
+	}
+	// The FR-21 AFK/idle pair (Story 5.4). Same net, same reason: a field dropped from either map literal
+	// writes 0/false into an anti-farm column on every parse/re-parse and nothing else notices.
+	if got.IdleDQ != want.IdleDQ {
+		t.Fatalf("idle_dq not carried: got %v want %v", got.IdleDQ, want.IdleDQ)
+	}
+	if got.IdleRoundCount != want.IdleRoundCount {
+		t.Fatalf("idle_round_count not carried: got %d want %d", got.IdleRoundCount, want.IdleRoundCount)
 	}
 }
 
@@ -259,6 +275,9 @@ func TestRunCLIZeroWeirdStatsRecordedAsZeroNotOmitted(t *testing.T) {
 		zeroed.Players[i].EntryFrags = 0
 		zeroed.Players[i].OpeningDeaths = 0
 		zeroed.Players[i].Clutches = nil // the real parser's shape for a player who clutched nothing
+		// Story 5.4 AC3: a never-idle player. idle_round_count 0 + idle_dq false must be WRITTEN, not skipped.
+		zeroed.Players[i].IdleDQ = false
+		zeroed.Players[i].IdleRoundCount = 0
 	}
 	path := writeTemp(t, "cache.dem", demoBytes())
 
@@ -284,6 +303,12 @@ func TestRunCLIZeroWeirdStatsRecordedAsZeroNotOmitted(t *testing.T) {
 		// populated-by-accident) clutch tally that the writer renders as the empty jsonb object.
 		if r.EntryFrags != 0 || r.OpeningDeaths != 0 || len(r.Clutches) != 0 {
 			t.Fatalf("row for %s must carry the FR-20 derived three as zeros/empty: %+v", r.SteamID64, r)
+		}
+		// Story 5.4 AC3: a never-idle player's row carries idle_round_count 0 + idle_dq false WRITTEN (the
+		// columns sit unconditionally in the INSERT list — db.go — so 0/false lands, not NULL; the 0-vs-NULL
+		// distinction itself is unreachable from a Go test that stores structs and never executes SQL).
+		if r.IdleRoundCount != 0 || r.IdleDQ {
+			t.Fatalf("row for %s must carry the FR-21 idle pair as 0/false: %+v", r.SteamID64, r)
 		}
 	}
 	// And the whole mapping still holds against the zeroed source (the same twelve-field net).

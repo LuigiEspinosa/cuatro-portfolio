@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.27
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.31
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.0
+	github.com/golang/geo v0.0.0-20230421003525-6adc56603217
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/markus-wa/demoinfocs-golang/v5 v5.2.0
 )
@@ -21,7 +22,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.30 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.31 // indirect
 	github.com/aws/smithy-go v1.27.3 // indirect
-	github.com/golang/geo v0.0.0-20230421003525-6adc56603217 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
