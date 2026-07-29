@@ -1,33 +1,24 @@
 import type { ReactNode } from 'react';
-import {
-  ceremonyUnlocked,
-  livePillState,
-  type TournamentState,
-} from '@/lib/feed/read';
+import { ceremonyUnlocked, type TournamentState } from '@/lib/feed/read';
 import { currentTournament } from './current-tournament';
-import { es } from '@/lib/i18n/es';
 import { Nav } from './components/Nav';
+import { RealtimeNudge } from './components/RealtimeNudge';
 import styles from './viewer.module.css';
 
 /**
  * The viewer shell (Story 5.6) — the mobile-first, dark, single-column frame every read-only surface
- * shares (Feed / Llave / Estadísticas / Ceremonia). Established here as the convention Stories 5.7/5.8
- * inherit. Server Component: it resolves the tournament state (anon RLS client) to drive the live pill
- * + the Ceremonia lock, then hands those to the `<Nav>` island. The feed read itself lives in the page.
+ * shares (Feed / Llave / Estadísticas / Ceremonia). Server Component: it resolves the tournament (anon RLS
+ * client) to drive the Ceremonia lock and to SEED the live pill, then mounts the ONE `RealtimeNudge` island.
+ *
+ * Story 5.8 makes the shell LIVE: `RealtimeNudge` subscribes to `tournament:<id>` and, on any nudge, calls
+ * `router.refresh()` — which re-runs THIS layout + the active route together, so every viewer surface
+ * (`/`, `/bracket`, `/leaderboards`, `/jugador/[id]`) re-fetches published truth and the pill re-resolves,
+ * from a single island. The pill (formerly a static span here) is now rendered by that client island so it
+ * can reflect the realtime connection status (En vivo / final / sin transmisión / Reconectando…).
  */
-const PILL_COPY: Record<'on' | 'off' | 'final', string> = {
-  on: es.live.on,
-  off: es.live.off,
-  final: es.live.final,
-};
-
 export default async function ViewerLayout({ children }: { children: ReactNode }) {
   const resolved = await currentTournament();
   const state: TournamentState = resolved.ok ? resolved.state : 'registration_open';
-
-  const pill = livePillState(state);
-  const pillClass =
-    pill === 'on' ? styles.pillLive : pill === 'final' ? styles.pillDone : styles.pillSoft;
 
   return (
     <div className={styles.shell}>
@@ -36,10 +27,11 @@ export default async function ViewerLayout({ children }: { children: ReactNode }
           <div className={styles.wordmark}>
             INCLUSIV<span className={styles.cup}>CUP</span>
           </div>
-          <span className={`${styles.pill} ${pillClass}`}>
-            <span className={styles.pulse} aria-hidden="true" />
-            {PILL_COPY[pill]}
-          </span>
+          {/* Connection-aware pill + realtime subscription (Story 5.8). `null` id ⇒ no channel, `loading` pill. */}
+          <RealtimeNudge
+            tournamentId={resolved.ok ? resolved.id : null}
+            state={resolved.ok ? resolved.state : null}
+          />
         </div>
         <Nav ceremonyUnlocked={ceremonyUnlocked(state)} />
       </header>
