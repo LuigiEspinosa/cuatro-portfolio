@@ -263,6 +263,180 @@
   font-weight: 600;
 }
 
+/*
+ * Locked "Posiciones de premios" block (Story 6.1, AC4). Lifted from mock-leaderboards.html (.lockhdr/.lockwrap/
+ * .lockrow/.lockcover 188-226) with TWO deliberate divergences, both design-rule wins over the mock:
+ *   1. ⚠ NO GOLD (UX-DR6, DESIGN.md:274). The mock's `.gico` dot and `.reveal` pill are gold; gold is reserved
+ *      for reveals/winners/champion, and DESIGN.md's blurred-lock token says "no gold leak" in as many words.
+ *      Both render in --tm here. The cover's provenance line stays BLUE (verify chrome is blue, not gold).
+ *   2. blur is 7px, not the mock's 4.5px (DESIGN.md:155-159 blurred-lock token = 7px) — and it sits over a
+ *      decorative placeholder bar, never over real text, because no award identity is ever sent (AD-22).
+ */
+/* Own horizontal padding: the block is a SIBLING of the boards' `.body`, not a child (it renders even when the
+   boards are empty, because it is independent of stats). */
+.lockSection {
+  padding: var(--sp-4) var(--sp-4) 0;
+}
+.lockhdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+.lockhdr .lk {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.lkIco {
+  color: var(--tm); /* NOT gold — see divergence 1 */
+  font-size: 14px;
+  flex: none;
+}
+.htxt {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--tp);
+}
+.reveal {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--tm); /* NOT gold — see divergence 1 */
+  border: 0.5px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  flex: none;
+  white-space: nowrap;
+}
+.lockSub {
+  color: var(--tm);
+  font-size: 11.5px;
+  margin: 0 0 13px;
+}
+.lockwrap {
+  position: relative;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 0.5px solid var(--line);
+  background: var(--s1);
+}
+.lockrows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lockrow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 13px;
+  min-height: 44px;
+  border-bottom: 0.5px solid var(--line);
+}
+.lockrow:last-child {
+  border-bottom: 0;
+}
+.badge {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-sm);
+  flex: none;
+  background: var(--page);
+  border: 0.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tm);
+  font-size: 14px;
+}
+.bk {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.bn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ts);
+}
+.bs {
+  font-size: 11px;
+  color: var(--tm);
+}
+/* The blurred placeholder. It stands in for an identity that was never sent — there is nothing behind it. */
+.redact {
+  width: 46px;
+  height: 12px;
+  flex: none;
+  border-radius: 3px;
+  background: var(--node-muted);
+  filter: blur(7px);
+}
+.lockico {
+  color: var(--tm);
+  font-size: 15px;
+  flex: none;
+}
+.lockcover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(15, 20, 25, 0.42);
+  text-align: center;
+  padding: 0 24px;
+}
+.glock {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--tm); /* NOT gold — see divergence 1 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.lc1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--tp);
+  letter-spacing: 0.02em;
+}
+.lc2 {
+  font-size: 11px;
+  color: var(--ts);
+  line-height: 1.5;
+}
+.lc2 .gd {
+  color: var(--blue); /* verify/provenance chrome is BLUE, never gold (DESIGN.md:265) */
+}
+
+/* visually-hidden text carrying the AC4 accessible name (mirrors feed.module.css:302). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* empty state */
 .empty {
   padding: 54px 26px 60px;

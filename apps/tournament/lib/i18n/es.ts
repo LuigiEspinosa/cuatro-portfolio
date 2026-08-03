@@ -150,6 +150,27 @@ export const es = {
     empty: 'Las estadísticas aparecen cuando se aprueba la primera partida.',
   },
 
+  /**
+   * The locked "Posiciones de premios" block on /leaderboards (Story 6.1, AC4 — FR-24/AD-22).
+   *
+   * ⚠ EVERY STRING HERE IS GENERIC ON PURPOSE. The block is rendered from the award COUNT and nothing else: an
+   * award's name, bucket, class or deciding stat must not reach the client before its spin (AD-22 is the absence
+   * of a viewer read grant, not the mock's blurred-real-names DOM). There is deliberately no place here to put an
+   * award name — if you find yourself wanting one, that is Story 6.8's reveal gate, not a copy change.
+   *
+   * ⚠ NO GOLD in this block (UX-DR6): gold is reserved for reveals, winners and the champion. The cover's
+   * provenance line REUSES the already-fixed `es.ceremony.seededByDemo` — never retype it.
+   */
+  awards: {
+    sechead: 'Posiciones de premios', // mock-leaderboards.html:477
+    reveal: 'SE DESBLOQUEA EN LA CEREMONIA', // mock-leaderboards.html:478
+    subhead: 'Quién gana una camiseta sigue siendo un misterio hasta que gire la ruleta.',
+    lockedUntilSpin: 'bloqueado hasta que gire', // the second half of the AC4 accessible name
+    coverTitle: 'Posiciones de premios ocultas hasta la ceremonia', // mock-leaderboards.html:512
+    sealedSuffix: 'categorías selladas.', // `{n} categorías selladas.` — see categoriasSelladas()
+    sealedSuffixOne: 'categoría sellada.', // the SINGULAR — a 1-award catalog is a legal curation (6.1 review)
+  },
+
   /** Player stat detail (Story 5.7). Headline from the leaderboard row; weird totals + matches-behind. */
   player: {
     baseStats: 'Estadísticas base', // FIXED
@@ -190,6 +211,33 @@ export const es = {
  */
 export function resultadoAprobado(winner: string, loser: string, a: number, b: number): string {
   return `Resultado aprobado: ${winner} ${es.result.vs} ${loser} ${a}-${b}`;
+}
+
+/**
+ * The visible counter on a locked award card: `Premio 7 de 12`. Called out BY NAME at DESIGN.md:236 as one of the
+ * values that must use tabular lining numerals — the caller wraps it in `.num`.
+ */
+export function premioDe(index: number, total: number): string {
+  return `Premio ${index} de ${total}`;
+}
+
+/**
+ * The ACCESSIBLE NAME of a locked award card (Story 6.1, AC4) — verbatim, EM DASH included:
+ * `Premio 7 de 12 — bloqueado hasta que gire`. The visual may split it across two spans; the accessible name is
+ * this one string. ⚠ It names an award by its POSITION and never by its identity — that is the whole point.
+ */
+export function premioBloqueado(index: number, total: number): string {
+  return `${premioDe(index, total)} — ${es.awards.lockedUntilSpin}`;
+}
+
+/**
+ * The cover line's count: `12 categorías selladas.` (mock-leaderboards.html:513).
+ *
+ * ⚠ Agrees in NUMBER (6.1 code review). The catalog may legally hold a single award — `curate_award_catalog`
+ * accepts 1..64 — and `1 categorías selladas.` is wrong Spanish on the one fixed-copy line of the locked block.
+ */
+export function categoriasSelladas(total: number): string {
+  return `${total} ${total === 1 ? es.awards.sealedSuffixOne : es.awards.sealedSuffix}`;
 }
 
 /** entry_type → human label (AD-24 machine-value → label). Node COLOR is a separate pure map (AC3). */
