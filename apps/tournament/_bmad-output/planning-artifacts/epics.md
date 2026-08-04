@@ -1067,7 +1067,7 @@ So that the ceremony is dramatic yet fully reproducible.
 
 **Given** the Stage-2 deterministic rule (FR-25, AD-14),
 **When** a live category resolves,
-**Then** eligible players (FR-21 floors) are iterated in byte-lex sorted SteamID64 order, the best deciding value wins, rate stats compare by cross-multiplication (`p.num*q.den vs q.num*p.den`), and an equal value/cross-product is a tie that enters the FR-29 ladder — never a silent argmax.
+**Then** eligible players (FR-21 floors) are iterated in byte-lex sorted SteamID64 order, the best deciding value wins, rate stats compare by cross-multiplication (`p.num*q.den vs q.num*p.den`), and an equal value/cross-product is a tie that enters the FR-29 ladder — never a silent argmax — **except under DECISION E** (Cuatro 2026-08-04, recorded here by the 6-4a code review): a `max` **volume** award whose best value is `0` returns `no_awardable_value` carrying the suppressed set, rather than walking a whole-roster zero tie to a shared trophy. `min` and `rate` awards tie normally at zero.
 
 _Traces: FR-25, FR-26 · AD-14_
 

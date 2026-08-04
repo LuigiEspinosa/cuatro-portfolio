@@ -25,18 +25,26 @@ is regenerated.
 
 ## Ownership
 
-`SOLUTION-DESIGN.md §9.6` orders the conformance gates. This directory is built up across two stories:
+`SOLUTION-DESIGN.md §9.6` orders the conformance gates. This directory is built up across several
+stories:
 
 | Gate | File | Owner | Status |
 |---|---|---|---|
 | 1 — block function | `prng-block.json` | **Story 6.3** | ✅ shipped |
 | 2 — `uniform_int` | `prng-uniform-int.json` | **Story 6.3** | ✅ shipped |
-| 3 — Stage-1 weighted pick | *(not yet)* | **Story 6.4 / 6.6** | ⏳ |
+| — Stage-2 deterministic winner + tie detection | `stage2-resolve.json` | **Story 6-4a** | ✅ shipped |
+| 3 — Stage-1 weighted pick | *(not yet)* | **Story 6-4b** | ⏳ |
 | 4 — canonical JSON + `bundle_sha256` (RFC-8785) | *(not yet)* | **Story 6.9** | ⏳ |
 | 5 — end-to-end ceremony vector + suite completeness | *(not yet)* | **Story 6.11** | ⏳ |
 
-**This directory is not finished.** 6.3 owns the two *primitive* vectors only. The weighted-pick,
-canonicalization/`bundle_sha256` and end-to-end ceremony vectors are still to come.
+Stage 2 is not one of §9.6's five numbered gates because §9.6 numbers the *stream* gates and Stage 2
+consumes no stream — it is pure integer arithmetic over the frozen snapshot. AD-14 requires it to be
+vector-gated all the same ("includes equal-value and equal-cross-product ties"), so it sits here
+between gates 2 and 3, which is also the build order §9.6 prescribes (`Stage 2 + ladder` before
+`Stage 1 + anti-sweep`).
+
+**This directory is not finished.** The weighted-pick, canonicalization/`bundle_sha256` and
+end-to-end ceremony vectors are still to come.
 
 ## File format
 
@@ -47,8 +55,9 @@ commas, stable key order so a diff is readable.
 array of numbers and never base64. Every number that appears as a JSON number is an exact
 integer within IEEE-754 safe range (`n ≤ 2^32`, positions and counters far below). **No floats,
 and no big integer is ever written as a JSON number** — if a value could exceed 2^53 it is
-carried as hex. This is what lets Go's `encoding/json` and JS's `JSON.parse` read the same file
-without either one silently rounding.
+carried as hex, or (in `stage2-resolve.json`, where the values are magnitudes rather than bytes)
+as a **decimal string**. This is what lets Go's `encoding/json` and JS's `JSON.parse` read the
+same file without either one silently rounding.
 
 ### `prng-block.json`
 
@@ -152,6 +161,95 @@ interesting rows quietly disappeared would still pass every conformance check:
 | `k3-n65537-and-n16777216` | ⭐ the **`k = 3`** width. The 6.3 code review found `k = 3` was reached by no case in either language, so a three-byte assembly bug — including big-endian/little-endian at that width alone — was caught by nothing. |
 | `k4-lower-edge-n16777217` | the *lower* edge of `k = 4` (`2^24 + 1`). An off-by-one in `while space < n` picks `k = 3` here and reads one byte too few on every draw. |
 
+### `stage2-resolve.json`
+
+```jsonc
+{
+  "vector": "stage2-resolve",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "…",
+  "value_encoding": "…",                    // why magnitudes are decimal STRINGS — see below
+  "outcome_kinds": ["winner", "tie", "no_eligible_players", "no_awardable_value"],
+  "tie_reasons":   ["equal_value", "equal_cross_product"],
+  "refusals": [                             // inputs BOTH runtimes must REFUSE
+    { "why": "two players share a steamid64 …", "award": {…}, "players": […] }
+  ],
+  "cases": [
+    {
+      "name": "rate-max-equal-cross-product-different-pairs",
+      "note": "prose describing what this case pins",
+      "award":   { "deciding_stat": "entry_success", "class": "rate",
+                   "direction": "max", "floor_rounds": 0, "floor_kills": 0 },
+      "players": [
+        { "steamid64": "76561198000000011",
+          "rounds_played": "6", "kills": "3", "idle_dq": false,
+          "stats_int": { "volume": { "kills": "3", … },
+                         "rate":   { "entry_success": { "num": "3", "den": "6" }, … } } }
+      ],
+      "expected": { "kind": "tie",
+                    "tied": ["76561198000000011", "76561198000000033"],
+                    "reason": "equal_cross_product" }
+    }
+  ]
+}
+```
+
+⭐ **Magnitudes are decimal STRINGS; award fields are JSON integers.** The split is by
+*provenance*, not by taste: `steamid64`, `rounds_played`, `kills` and every `stats_int` entry come
+from the **snapshot**, where AD-19 makes them unbounded integers — and `JSON.parse` silently
+rounds anything past 2^53, so the cross-multiplication case below would be corrupted *at parse
+time* if written as a JSON number. `floor_rounds` and `floor_kills` come from the **award
+catalog**, whose columns are bounded `int` (`0023:74-75`), so they stay JSON integers.
+
+⭐ **Every player carries decoy keys in both tables.** With a single-key fixture, a resolver that
+read the wrong deciding stat would be indistinguishable from a correct one. The decoys are
+adversarial where it matters — in `volume-max-plain` the leader on `kills` and `hs_kills` is *not*
+the leader on the deciding `knife_kills`.
+
+⭐ `refusals` carries the inputs both runtimes must reject, for the same reason
+`invalid_seed_hex` and `invalid_stage1_spin` exist: a refusal has no expected winner, but it is
+still shared contract, and the 6.3 review measured a mutation surviving precisely because one
+side's refusals were hand-written locally instead of travelling in the vector.
+
+#### The Stage-2 cases that carry the weight
+
+| Case | What only it can catch |
+|---|---|
+| `rate-max-cross-multiplication-only` | ⭐ that the comparison is **exact integer** arithmetic. At or below 2^53 an inversion is *impossible* (both operands are exact doubles and IEEE division is correctly rounded, so `a/b > c/d ⇒ fl(a/b) ≥ fl(c/d)`) — so the case is built at `2^53+1`, where a float compare picks the **other** player and `Number`/`float64` corrupts the input before any arithmetic runs. |
+| `rate-max-equal-cross-product-different-pairs` | `3/6` vs `2/4` — an equality check written as `num == num && den == den` misses it and silently crowns whichever the loop held. |
+| `byte-lex-is-a-string-order-not-a-numeric-one` | ⭐ byte-lex vs numeric sort. Every real SteamID64 is 17 digits, so the two orders agree on every *other* case in the file; only the short synthetic ids `"9"`, `"10"`, `"100"` can tell them apart. |
+| `players-supplied-out-of-byte-lex-order` | that the resolver sorts, rather than inheriting the fixture's order. |
+| `floors-are-inclusive-at-the-boundary` | `>=` vs `>` on **both** floors — the exact off-by-one that survived the whole suite in both languages at 6.3. |
+| `rate-zero-denominator-is-equal-to-everyone` | that a `0/0` player is neither divided by, thrown on, nor filtered out — and the tie that applying the formula verbatim therefore produces. |
+| `rate-zero-denominator-clears-a-real-floor` | ⭐ added by the 6-4a code review. Every other den-0 row sits at `rounds_played = 0` and is excluded by any non-zero floor, which left the whole 0/0-ties-everyone behaviour reachable only at floors `0/0`. `entry_success`'s denominator has no volume counterpart, so a den-0 player clears **24/20** — and an award with an unambiguous winner becomes a tie the refusing ladder turns into a hard failure. The shape 6.5 must be designed against. |
+| `rate-max-positive-numerator-over-zero-beats-every-finite-rate` | ⭐ added by the 6-4a code review: the *other* half of legal den-0, which no row covered because every den-0 fixture used `num = 0`. With `n > 0` the same formula makes `n/0` behave as **+infinity** — `1/0` beats `9999/30` — and `deciding_value` is rendered as `1/0`. |
+| `an-absent-RATE-key-on-an-INELIGIBLE-player-is-not-an-error` | ⭐ added by the 6-4a code review: the rate twin of the volume row below it. Every fixture materialised all four rate keys, so "the deciding magnitudes are read only for the eligible" was proven for volume and merely asserted for rate. |
+| `volume-max-all-zero-no-awardable-value` | DECISION E, over the shape 6.1 measured (`knife_kills` non-zero for 1 of 28 players). |
+| `volume-min-zero-is-awardable` / `rate-max-zero-numerator-is-awardable` | DECISION E's **scope** — widening it beyond `max` volume awards reddens these two. |
+| `volume-max-three-way-tie` | tie **width**: a resolver returning a pair passes every 2-way case and fails here. |
+| `idle-dq-leaves-nobody-eligible` | the one shape where the `idle_dq` filter is all that stands between a DQ'd player and a trophy. |
+
+**DECISION E** (Cuatro, 2026-08-04) is the one rule here that is a *product* call rather than a
+transcription of SOLUTION-DESIGN §9.3: a `max` **volume** award whose best deciding value is `0`
+has **no winner** (`no_awardable_value`) instead of crowning a whole-roster co-win over a stat
+nobody scored on. `min` awards and `rate` awards are deliberately untouched. It lives in the
+vector because both runtimes must implement it identically.
+
+⚠ **`no_awardable_value` carries `tied`**, added by the 6-4a code review. The zero check runs
+*before* the `|best| == 1` branch, so the tie that would have formed never becomes a `tie`
+outcome — and without the set travelling on the outcome, 6.5 / 6.6 / 6.7 receive a bare kind and
+cannot see how wide it was. `tied.length` **is** that width, and it is `1` when a lone eligible
+player sat at zero (still no winner: the rule is about the value, not the width). The
+corresponding carve-out is recorded in **AD-14** — before that amendment the architecture said
+every equal deciding value MUST enter the FR-29 ladder, which this rule contradicts.
+
+⚠ **The refusal list covers the award itself.** `direction` outside `{max, min}`, a negative
+floor and an empty `deciding_stat` became shared rows only when the 6-4a code review gave
+`generate_vectors.py` a `validate_award` of its own. Until then the anchor's refusal surface was
+*smaller* than both implementations' — an unknown direction resolved silently as `min` — so
+`build_stage2_file`'s "a refusal row must actually refuse" guard rejected those rows and they
+lived in two hand-written per-language lists, the exact asymmetry this array exists to prevent.
+
 ## The spec these files encode
 
 ```
@@ -184,10 +282,16 @@ Each label is an independent stream and each starts at counter `i = 0`.
 
 ## Anchoring
 
-`prng-block.json` and `prng-uniform-int.json` are generated by a **third** implementation —
-[`generate_vectors.py`](generate_vectors.py), Python 3 stdlib `hmac` + `hashlib`, written from the
-spec above — so they are neither Go's output nor the browser's. The block cases are additionally
-reproducible from a **fourth**, unrelated HMAC (.NET/CNG via PowerShell).
+All three files are generated by a **third** implementation —
+[`generate_vectors.py`](generate_vectors.py), Python 3 stdlib `hmac` + `hashlib` plus Python's
+own unbounded integers, written from the spec above — so they are neither Go's output nor the
+browser's. The block cases are additionally reproducible from a **fourth**, unrelated HMAC
+(.NET/CNG via PowerShell).
+
+For `stage2-resolve.json` the anchor is arithmetic rather than cryptographic: Python's `int` is
+unbounded by construction, which is exactly the property Go takes from `math/big` and TypeScript
+from `BigInt`. A generator that quietly used floats would disagree with both implementations on
+`rate-max-cross-multiplication-only` rather than agreeing with them by accident.
 
 **The generator is committed, and that is deliberate.** The 6.3 code review found that leaving it
 out made a *deleted file* the de facto reference: 12 of 13 block cases and every draw rested on a

@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -76,7 +77,7 @@ type uniformCase struct {
 }
 
 type uniformVector struct {
-	Vector  string        `json:"vector"`
+	Vector  string `json:"vector"`
 	NBounds struct {
 		Min uint64 `json:"min"`
 		Max uint64 `json:"max"`
@@ -783,17 +784,52 @@ func productionSources(t *testing.T) map[string]struct {
 	return out
 }
 
+// The exact set of shipped files this package scans.
+//
+// Asserted as an EXACT EQUALITY, mirroring lib/roulette's module list: every non-test .go file
+// here is production code bound by the bans below, so a new one added without thinking about
+// them should fail loudly rather than slip in unscanned. Story 6-4a added stage2.go, and the
+// per-file ban exemption below is only meaningful if the file set itself is pinned.
+func TestScannedSourceFilesAreExactlyTheShippedModules(t *testing.T) {
+	var got []string
+	for name := range productionSources(t) {
+		got = append(got, name)
+	}
+	sort.Strings(got)
+	want := []string{"labels.go", "prng.go", "stage2.go"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("scanned %v, want %v", got, want)
+	}
+}
+
 func TestPackageSourceHasNoBannedConstructs(t *testing.T) {
 	// AC3 — integer-only, locale-free, no language-specific RNG. Each of these would compile
 	// fine and quietly make the Go producer irreproducible in a browser, and an import that
 	// merely *should* be absent reddens nothing when someone deletes it — hence this test.
-	bannedImports := []struct{ path, why string }{
-		{"math/rand", "language-specific RNG: the stream must come from HMAC only"},
-		{"math/rand/v2", "language-specific RNG: the stream must come from HMAC only"},
-		{"time", "no clock in the draw path — a ceremony must replay identically forever"},
-		{"crypto/rand", "OS entropy is the BRACKET seed's business (AD-13), never the roulette's"},
-		{"math/big", "the bound n <= 2^32 exists precisely so uint64 suffices"},
-		{"os", "the primitives take the seed as an argument; no ambient configuration"},
+	//
+	// `exceptIn` scopes a ban to everything BUT the named files. It is an exception list rather
+	// than an allowlist on purpose: a file added later is banned by default.
+	bannedImports := []struct {
+		path     string
+		why      string
+		exceptIn []string
+	}{
+		{path: "math/rand", why: "language-specific RNG: the stream must come from HMAC only"},
+		{path: "math/rand/v2", why: "language-specific RNG: the stream must come from HMAC only"},
+		{path: "time", why: "no clock in the draw path — a ceremony must replay identically forever"},
+		{path: "crypto/rand", why: "OS entropy is the BRACKET seed's business (AD-13), never the roulette's"},
+		{path: "os", why: "the primitives take the seed as an argument; no ambient configuration"},
+		// ⭐ SCOPED BY STORY 6-4a, not relaxed. In the PRNG files the bound n <= 2^32 keeps 256^k
+		// inside a uint64 by construction, so reaching for math/big there would mean the bound had
+		// been abandoned. Stage 2 has no such bound: its operands are snapshot magnitudes and its
+		// cross-products are their PRODUCT, so unbounded arithmetic is the requirement (S4) rather
+		// than a symptom — and it is what the TypeScript verifier gets from BigInt. Widening the
+		// exception to another file needs the same argument made again.
+		{
+			path:     "math/big",
+			why:      "the bound n <= 2^32 exists precisely so uint64 suffices",
+			exceptIn: []string{"stage2.go"},
+		},
 	}
 	bannedCode := []struct{ needle, why string }{
 		{"float64", "SPEC Constraint 7: integer-only arithmetic"},
@@ -806,12 +842,28 @@ func TestPackageSourceHasNoBannedConstructs(t *testing.T) {
 		// correct. fmt is legitimately imported for errors, so the ban is on the formatting verb.
 		{"fmt.Sprintf", "a width/flag verb silently pads the spin — use strconv.Itoa in the label path"},
 		{"fmt.Sprint", "number formatting in the draw path must be strconv, not fmt"},
+		// ⭐ Added by 6-4a alongside the math/big exception. Importing math/big and then leaving
+		// its range is the same defect as never importing it: each of these silently narrows an
+		// unbounded value back to a machine word or a float, and the result is a PLAUSIBLE winner.
+		{"big.Float", "an arbitrary-precision FLOAT is still a float — SPEC Constraint 7"},
+		{".Int64()", "silently truncates a big.Int past 2^63 — the exact wrap S4 exists to prevent"},
+		{".Uint64()", "silently truncates a big.Int past 2^64"},
+		{".Float64()", "converts an exact integer into a rounded float"},
 	}
 
 	for name, src := range productionSources(t) {
 		for _, imp := range src.imports {
 			for _, b := range bannedImports {
-				if imp == b.path {
+				if imp != b.path {
+					continue
+				}
+				exempt := false
+				for _, f := range b.exceptIn {
+					if f == name {
+						exempt = true
+					}
+				}
+				if !exempt {
 					t.Errorf("%s imports banned %q — %s", name, b.path, b.why)
 				}
 			}

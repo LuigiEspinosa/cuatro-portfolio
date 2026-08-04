@@ -663,7 +663,8 @@ describe('lib/roulette source pinning', () => {
     // Every non-test module under lib/roulette is production code that can reach a client bundle,
     // so the list is asserted exactly rather than as a lower bound: a new module added here
     // without thinking about the bans below should fail loudly, not slip in unscanned.
-    expect(shipped.map(([f]) => f)).toEqual(['labels.ts', 'prng.ts']);
+    // `stage2.ts` was added by Story 6-4a and had to be registered here to be scanned at all.
+    expect(shipped.map(([f]) => f)).toEqual(['labels.ts', 'prng.ts', 'stage2.ts']);
   });
 
   it('the walk really is recursive (a nested module could not hide)', () => {
@@ -698,6 +699,54 @@ describe('lib/roulette source pinning', () => {
       // Relative only: the whole point of HMAC-SHA256 is that both runtimes already have it.
       expect(spec.startsWith('.')).toBe(true);
     }
+  });
+
+  // ⭐⭐ THE POSITIVE CONTROL, and the closure of deferred-work.md:291 (Story 6-4a).
+  //
+  // THE FINDING: the three bans above iterate `importSpecifiers(src)`, and every shipped module
+  // in this directory has ZERO imports — so `expect([]).not.toContain('server-only')` and both
+  // `for` loops execute NO assertion at all. They pass vacuously, and a regression in
+  // `importSpecifiers` itself would be invisible to them. Silent green is the worst failure mode
+  // a pinning test has.
+  //
+  // ⚠ THE DEFERRAL'S EXPECTED CLOSURE DID NOT HAPPEN, and that is recorded rather than papered
+  // over: it assumed "6.4 will bring the first real import". Stage 2 shares nothing with the PRNG
+  // — no seed, no stream, no labels — so `stage2.ts` legitimately imports nothing either, and
+  // manufacturing an import purely to make a test non-vacuous would be the tail wagging the dog.
+  //
+  // The STRONGER closure is this: prove each ban FIRES on a source that violates it. A real
+  // import would only ever have shown that the list is non-empty; this shows the predicate
+  // actually discriminates, which is the property the three tests above claim to have.
+  describe('the import bans are proven to FIRE, not merely to pass over an empty list', () => {
+    it('catches server-only when it is present', () => {
+      expect(importSpecifiers("import 'server-only';\nexport const x = 1;")).toContain('server-only');
+    });
+
+    it('catches a node: builtin when it is present', () => {
+      const specs = importSpecifiers("import { createHmac } from 'node:crypto';");
+      expect(specs.some((s) => s.startsWith('node:'))).toBe(true);
+    });
+
+    it('catches a third-party dependency when it is present', () => {
+      const specs = importSpecifiers("import { createClient } from '@supabase/supabase-js';");
+      expect(specs.length).toBeGreaterThan(0);
+      expect(specs.every((s) => s.startsWith('.'))).toBe(false);
+    });
+
+    it('accepts a relative import, so the ban is not simply refusing everything', () => {
+      const specs = importSpecifiers("import type { Award } from './stage2';");
+      expect(specs).toEqual(['./stage2']);
+      expect(specs.every((s) => s.startsWith('.'))).toBe(true);
+    });
+
+    // The measured record of WHY the control above is needed. The day a shipped module gains a
+    // real import, this reddens — which is the moment to notice that the three bans have started
+    // executing real assertions, and to update this line deliberately rather than silently.
+    it('records that every shipped module currently imports nothing', () => {
+      for (const [file, src] of shipped) {
+        expect(importSpecifiers(src), `${file} gained its first import`).toEqual([]);
+      }
+    });
   });
 
   // AC3 — integer-only, locale-free, no language-specific RNG. Scanned over source with

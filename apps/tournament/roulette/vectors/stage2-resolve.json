@@ -1,0 +1,4168 @@
+{
+  "vector": "stage2-resolve",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "the award is validated FIRST (deciding_stat non-empty; class in {volume, rate}; direction in {max, min}; both floors non-negative integers) and refuses before eligibility is computed; eligible = players with rounds_played >= floor_rounds and kills >= floor_kills and not idle_dq, iterated byte-lex on the decimal steamid64 STRING; value = stats_int.volume[deciding_stat] (class volume) or stats_int.rate[deciding_stat] {num,den} (class rate); cmp = sign(p - q) for volume and sign(p.num*q.den - q.num*p.den) for rate; beats = cmp > 0 for direction max, cmp < 0 for min; best = the SET of players nobody beats; empty eligible set -> no_eligible_players; a max VOLUME award whose best value is 0 -> no_awardable_value CARRYING `tied`, the full byte-lex set that shared that zero (length 1 when a lone eligible player sat at zero); |best| == 1 -> winner; otherwise -> tie over the full byte-lex-ordered set with reason equal_value (volume) or equal_cross_product (rate)",
+  "value_encoding": "Every SNAPSHOT magnitude — steamid64, rounds_played, kills, each stats_int.volume entry and each stats_int.rate num/den — is a DECIMAL STRING, because they are unbounded integers (AD-19) and JSON.parse silently rounds anything past 2^53: the cross-multiplication-only case is corrupted at PARSE time if written as a JSON number. Every AWARD field is a JSON integer, because floor_rounds and floor_kills come from bounded `int` columns (0023:74-75).",
+  "generated_by": "roulette/vectors/generate_vectors.py — python stdlib hmac+hashlib, a THIRD implementation written from the spec text, neither Go's crypto/hmac nor the browser's SubtleCrypto",
+  "outcome_kinds": [
+    "winner",
+    "tie",
+    "no_eligible_players",
+    "no_awardable_value"
+  ],
+  "tie_reasons": [
+    "equal_value",
+    "equal_cross_product"
+  ],
+  "refusals": [
+    {
+      "why": "the deciding volume key is absent from an ELIGIBLE player's stats_int.volume",
+      "award": {
+        "deciding_stat": "knife_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "1",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "the deciding rate key is absent from stats_int.rate",
+      "award": {
+        "deciding_stat": "no_such_rate",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "class 'rate' with a VOLUME deciding stat — the key is not in the rate table",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "class 'volume' with a RATE deciding stat — the key is not in the volume table",
+      "award": {
+        "deciding_stat": "adr",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "an award class outside the closed set {volume, rate}",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "ratio",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "an award direction outside the closed set {max, min}",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "highest",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "a negative floor_rounds",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": -1,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "an empty deciding_stat",
+      "award": {
+        "deciding_stat": "",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "two players share a steamid64 — a snapshot holds one row per player",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "steamid64 is not a decimal string",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "7656119800000001x",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "steamid64 is empty",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "rounds_played is negative",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "-1",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "-1",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "-1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "-1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "-1"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "kills is negative",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "-20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "-20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "-20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "the deciding VOLUME magnitude is negative",
+      "award": {
+        "deciding_stat": "knife_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "-1",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "a rate DENOMINATOR is negative — it would silently invert the cross-multiplication",
+      "award": {
+        "deciding_stat": "entry_success",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "5",
+                "den": "-10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "1",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "why": "a rate NUMERATOR is negative",
+      "award": {
+        "deciding_stat": "entry_success",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "-5",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "name": "volume-max-plain",
+      "note": "The ordinary shape: a volume `max` award decided by an integer compare. The decoy keys are adversarial on purpose — B leads on `kills` and `hs_kills` while A leads on the deciding `knife_kills`, so a resolver reading the wrong volume key crowns the wrong player instead of coincidentally the right one.",
+      "award": {
+        "deciding_stat": "knife_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "12",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "3",
+              "kills": "12",
+              "knife_kills": "4",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "3",
+                "den": "12"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "9",
+              "kills": "25",
+              "knife_kills": "2",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "9",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "18",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "5",
+              "kills": "18",
+              "knife_kills": "1",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "5",
+                "den": "18"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000011",
+        "deciding_value": {
+          "class": "volume",
+          "value": "4"
+        }
+      }
+    },
+    {
+      "name": "volume-max-equal-integer-tie",
+      "note": "AD-14's equal-INTEGER tie. A and C both hold 7; B holds 6. The answer is the full tied set with reason `equal_value` — never the first of the pair (a running max on `>`), never the last (`>=`), never the lowest SteamID64.",
+      "award": {
+        "deciding_stat": "wallbang_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0",
+              "wallbang_kills": "7"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0",
+              "wallbang_kills": "6"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0",
+              "wallbang_kills": "7"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000033"
+        ],
+        "reason": "equal_value"
+      }
+    },
+    {
+      "name": "volume-max-three-way-tie",
+      "note": "Tie WIDTH is part of the outcome: three of four players share the best value. A resolver that returned a pair would pass a two-player tie case and fail here.",
+      "award": {
+        "deciding_stat": "utility_damage",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "313"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "313"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "12"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000044",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "313"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000022",
+          "76561198000000044"
+        ],
+        "reason": "equal_value"
+      }
+    },
+    {
+      "name": "volume-min-plain",
+      "note": "S1 — `direction: 'min'` inverts BEST and only best. C holds the FEWEST deaths and wins; the floors are not inverted and equality is unchanged.",
+      "award": {
+        "deciding_stat": "deaths",
+        "class": "volume",
+        "direction": "min",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "14",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "22",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "9",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000033",
+        "deciding_value": {
+          "class": "volume",
+          "value": "9"
+        }
+      }
+    },
+    {
+      "name": "volume-min-equal-integer-tie",
+      "note": "S1 — a `min` award ties on equality exactly as a `max` award does.",
+      "award": {
+        "deciding_stat": "deaths",
+        "class": "volume",
+        "direction": "min",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "9",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "22",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "9",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000033"
+        ],
+        "reason": "equal_value"
+      }
+    },
+    {
+      "name": "rate-max-realistic-adr",
+      "note": "The ordinary rate shape, with the real catalog's floors for a rate award (`Rey del Daño`: 24 rounds, 20 kills). B's 2600/26 = 100.0 beats A's 2400/25 = 96.0 and C's 2350/24 ≈ 97.9. Cross-multiplication and a float compare agree here — which is precisely why this case alone proves nothing about the arithmetic.",
+      "award": {
+        "deciding_stat": "adr",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 24,
+        "floor_kills": 20
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "25",
+          "kills": "21",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "21",
+              "knife_kills": "0",
+              "rounds_played": "25",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "2400",
+                "den": "25"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "25"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "21"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "25"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "26",
+          "kills": "22",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "22",
+              "knife_kills": "0",
+              "rounds_played": "26",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "2600",
+                "den": "26"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "26"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "22"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "26"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "24",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "24",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "2350",
+                "den": "24"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "24"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "24"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000022",
+        "deciding_value": {
+          "class": "rate",
+          "num": "2600",
+          "den": "26"
+        }
+      }
+    },
+    {
+      "name": "rate-max-cross-multiplication-only",
+      "note": "⭐ THE CASE THAT ONLY EXACT INTEGER ARITHMETIC GETS RIGHT, and the search for it is recorded here because the search itself is the finding: with operands at or below 2^53 an inversion is IMPOSSIBLE. Both operands are then exact doubles and IEEE-754 division is correctly rounded, so a/b > c/d implies fl(a/b) >= fl(c/d) — a float compare can only collapse a winner into a tie, never swap the two. Producing a real inversion therefore REQUIRES operands past 2^53, where the values themselves round. A = (2^53+1)/(2^53+2), B = 2^53/(2^53+1). Exactly, A > B: cross-multiplying gives A.num*B.den = (2^53+1)^2 and B.num*A.den = (2^53+1)^2 - 1, a difference of ONE in ~2^106. As doubles, 2^53+1 rounds to 2^53 (ties-to-even) in BOTH fractions, so fl(A) = 2^53/(2^53+2) < 1 while fl(B) = 2^53/2^53 = 1.0 — the float compare picks B, the other player. In JavaScript the corruption happens at JSON.parse, before any arithmetic, which is why every magnitude in this file is a decimal STRING. The magnitudes are synthetic: no real snapshot reaches them. The ARITHMETIC WIDTH they pin is not synthetic, and a wrapped or rounded product yields a PLAUSIBLE winner.",
+      "award": {
+        "deciding_stat": "entry_success",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "9007199254740993",
+                "den": "9007199254740994"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "9007199254740992",
+                "den": "9007199254740993"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000011",
+        "deciding_value": {
+          "class": "rate",
+          "num": "9007199254740993",
+          "den": "9007199254740994"
+        }
+      }
+    },
+    {
+      "name": "rate-max-equal-cross-product-different-pairs",
+      "note": "AD-14's equal-CROSS-PRODUCT tie. A is 3/6 and C is 2/4 — the same value carried by DIFFERENT pairs, so a `num == num and den == den` equality check misses it entirely and silently crowns whichever the loop happened to hold. The reason is `equal_cross_product`, not `equal_value`.",
+      "award": {
+        "deciding_stat": "entry_success",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "6",
+          "kills": "3",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "3",
+              "knife_kills": "0",
+              "rounds_played": "6",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "6"
+              },
+              "entry_success": {
+                "num": "3",
+                "den": "6"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "3"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "6"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "8",
+          "kills": "2",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "2",
+              "knife_kills": "0",
+              "rounds_played": "8",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "8"
+              },
+              "entry_success": {
+                "num": "3",
+                "den": "8"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "2"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "8"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "4",
+          "kills": "2",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "2",
+              "knife_kills": "0",
+              "rounds_played": "4",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "4"
+              },
+              "entry_success": {
+                "num": "2",
+                "den": "4"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "2"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "4"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000033"
+        ],
+        "reason": "equal_cross_product"
+      }
+    },
+    {
+      "name": "rate-min-el-inofensivo",
+      "note": "Award #12 `El Inofensivo` reproduced verbatim — the catalog's ONLY `direction: 'min'` award and the only consumer of the direction column. Note DECISION C in action: the `floor_kills = 20` is applied as written even though a kill floor on a min award is anti-QUALIFICATION (deferred-work.md:268). C is the least harmful of those who cleared it; the genuinely harmless player below is excluded by the floor, not by ADR.",
+      "award": {
+        "deciding_stat": "adr",
+        "class": "rate",
+        "direction": "min",
+        "floor_rounds": 24,
+        "floor_kills": 20
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "25",
+          "kills": "21",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "21",
+              "knife_kills": "0",
+              "rounds_played": "25",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "2400",
+                "den": "25"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "25"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "21"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "25"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "26",
+          "kills": "22",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "22",
+              "knife_kills": "0",
+              "rounds_played": "26",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "1560",
+                "den": "26"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "26"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "22"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "26"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "24",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "24",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "960",
+                "den": "24"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "24"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "24"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000044",
+          "rounds_played": "24",
+          "kills": "8",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "8",
+              "knife_kills": "0",
+              "rounds_played": "24",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "120",
+                "den": "24"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "24"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "8"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "24"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000033",
+        "deciding_value": {
+          "class": "rate",
+          "num": "960",
+          "den": "24"
+        }
+      }
+    },
+    {
+      "name": "rate-min-equal-cross-product-tie",
+      "note": "S1 — a `min` rate award ties on an equal cross product exactly as `max` does.",
+      "award": {
+        "deciding_stat": "adr",
+        "class": "rate",
+        "direction": "min",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "10",
+          "kills": "5",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "5",
+              "knife_kills": "0",
+              "rounds_played": "10",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "700",
+                "den": "10"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "5"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "10"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "20",
+          "kills": "5",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "5",
+              "knife_kills": "0",
+              "rounds_played": "20",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "1400",
+                "den": "20"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "20"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "5"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "20"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "10",
+          "kills": "5",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "5",
+              "knife_kills": "0",
+              "rounds_played": "10",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "900",
+                "den": "10"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "5"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "10"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000022"
+        ],
+        "reason": "equal_cross_product"
+      }
+    },
+    {
+      "name": "rate-zero-denominator-pair-ties",
+      "note": "S3 — a zero denominator is REAL and reachable: a rostered player with zero approved rows is `idle_dq = false` with zero stats (0024:909-916), so `adr` is 0/0. Two such players cross-multiply to 0 vs 0 and therefore TIE. Nothing divides, nothing throws, and neither player is filtered out — a silent den-0 filter is an argmax by another name.",
+      "award": {
+        "deciding_stat": "adr",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "0",
+          "kills": "0",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "0",
+              "knife_kills": "0",
+              "rounds_played": "0",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "0"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "0"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "0"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "0"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "0",
+          "kills": "0",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "0",
+              "knife_kills": "0",
+              "rounds_played": "0",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "0"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "0"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "0"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "0"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000022"
+        ],
+        "reason": "equal_cross_product"
+      }
+    },
+    {
+      "name": "rate-zero-denominator-is-equal-to-everyone",
+      "note": "⭐ THE CONSEQUENCE OF APPLYING THE FORMULA VERBATIM, recorded rather than patched around. A 0/0 player cross-multiplies to 0 against EVERY opponent, so they are equal to all of them: A(0/0) ties B(10/5) even though B beats C(6/5) outright. `best` is therefore {A, B} — a tie, loudly, into the ladder. Special-casing 0/0 out of the race would be exactly the silent filter S3 forbids, so the outcome is reported.",
+      "award": {
+        "deciding_stat": "adr",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "0",
+          "kills": "0",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "0",
+              "knife_kills": "0",
+              "rounds_played": "0",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "0"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "0"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "0"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "0"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "5",
+          "kills": "3",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "3",
+              "knife_kills": "0",
+              "rounds_played": "5",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "10",
+                "den": "5"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "5"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "3"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "5"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "5",
+          "kills": "3",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "3",
+              "knife_kills": "0",
+              "rounds_played": "5",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "6",
+                "den": "5"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "5"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "3"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "5"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000022"
+        ],
+        "reason": "equal_cross_product"
+      }
+    },
+    {
+      "name": "rate-zero-denominator-clears-a-real-floor",
+      "note": "⭐ S3'S FIRST CONSEQUENCE, UNDER THE CATALOG'S OWN FLOORS. The two den-0 cases above both sit at rounds_played = 0 and so are excluded by any non-zero floor — which left the whole 0/0-ties-everyone behaviour reachable only where the floors are 0/0. It is NOT: `entry_success`'s denominator is entry_opportunities, which has no volume counterpart and is therefore free of the snapshot's internal coherence (0024:667-708), so A clears 24 rounds and 20 kills comfortably while holding 0/0. A then ties B AND C even though B beats C outright, `best` is {A, B}, and an award that had an unambiguous winner becomes a tie that the refusing ladder turns into a hard failure. This is the shape 6.5 must be designed against, so it is a vector row rather than a remark.",
+      "award": {
+        "deciding_stat": "entry_success",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 24,
+        "floor_kills": 20
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "0"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "3",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "2",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000022"
+        ],
+        "reason": "equal_cross_product"
+      }
+    },
+    {
+      "name": "rate-max-positive-numerator-over-zero-beats-every-finite-rate",
+      "note": "⭐ S3'S SECOND CONSEQUENCE, and the half no row covered before the 6-4a review: every den-0 fixture used num = 0, so only the 0/0-is-equal-to-everything behaviour was pinned. With n > 0 the same formula makes n/0 behave as +INFINITY — 1*30 = 30 beats 9999*0 = 0 — so A wins outright over a player with three orders of magnitude more production, and `deciding_value` is rendered as 1/0 for the UI to display. Verbatim cross-multiplication, no special case, reported rather than patched: filtering den-0 out of the race is the silent argmax S3 forbids.",
+      "award": {
+        "deciding_stat": "entry_success",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "1",
+                "den": "0"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "9999",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "5000",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000011",
+        "deciding_value": {
+          "class": "rate",
+          "num": "1",
+          "den": "0"
+        }
+      }
+    },
+    {
+      "name": "floors-exclude-everyone",
+      "note": "S5 — `no_eligible_players`, a typed outcome rather than a crash or a zero-winner. This is the SHIPPED catalog's floor pair (24 rounds / 20 kills) over the shape 6.2 measured on the real corpus: rounds_played min 10 / max 21, 0/28 clearing either floor (deferred-work.md:269). It is reachable TODAY, not hypothetically.",
+      "award": {
+        "deciding_stat": "adr",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 24,
+        "floor_kills": 20
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "21",
+          "kills": "13",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "13",
+              "knife_kills": "0",
+              "rounds_played": "21",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "1900",
+                "den": "21"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "21"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "13"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "21"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "10",
+          "kills": "6",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "6",
+              "knife_kills": "0",
+              "rounds_played": "10",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "900",
+                "den": "10"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "6"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "10"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "18",
+          "kills": "19",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "19",
+              "knife_kills": "0",
+              "rounds_played": "18",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "1700",
+                "den": "18"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "18"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "19"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "18"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "no_eligible_players"
+      }
+    },
+    {
+      "name": "floors-are-inclusive-at-the-boundary",
+      "note": "S2 — the test is `>=`, on BOTH floors. A sits EXACTLY on 24/20 and is eligible; B is one round short with kills to spare; C has the rounds and is one kill short. An off-by-one to `>` empties the field and turns this into `no_eligible_players`, which is precisely the mutation that survived the entire suite in both languages at 6.3.",
+      "award": {
+        "deciding_stat": "adr",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 24,
+        "floor_kills": 20
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "24",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "24",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "1200",
+                "den": "24"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "24"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "24"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "23",
+          "kills": "30",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "30",
+              "knife_kills": "0",
+              "rounds_played": "23",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "2300",
+                "den": "23"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "23"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "23"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "24",
+          "kills": "19",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "19",
+              "knife_kills": "0",
+              "rounds_played": "24",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "2400",
+                "den": "24"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "24"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "19"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "24"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000011",
+        "deciding_value": {
+          "class": "rate",
+          "num": "1200",
+          "den": "24"
+        }
+      }
+    },
+    {
+      "name": "floor-kills-zero-still-compares",
+      "note": "S2 — `floor_kills = 0` is the VOLUME awards' real value and must still run the comparison rather than being special-cased away. A player with zero kills clears it and here actually wins the award.",
+      "award": {
+        "deciding_stat": "utility_damage",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 10,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "12",
+          "kills": "0",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "0",
+              "knife_kills": "0",
+              "rounds_played": "12",
+              "utility_damage": "240"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "12"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "12"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "0"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "12"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "12",
+          "kills": "9",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "9",
+              "knife_kills": "0",
+              "rounds_played": "12",
+              "utility_damage": "60"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "12"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "12"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "9"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "12"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000011",
+        "deciding_value": {
+          "class": "volume",
+          "value": "240"
+        }
+      }
+    },
+    {
+      "name": "idle-dq-excluded",
+      "note": "The idle-DQ'd player holds the best value and must not win. ⚠ SNAPSHOT semantics: `idle_dq` here means FULLY DQ'd — at least one approved row and EVERY one of them idle (0024:909-916) — not the per-match reading of `stat_row.idle_dq`.",
+      "award": {
+        "deciding_stat": "hs_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "40",
+          "idle_dq": true,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "30",
+              "kills": "40",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "30",
+                "den": "40"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "11",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "11",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "8",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "8",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000022",
+        "deciding_value": {
+          "class": "volume",
+          "value": "11"
+        }
+      }
+    },
+    {
+      "name": "idle-dq-leaves-nobody-eligible",
+      "note": "Dropping the `idle_dq` filter turns this into a winner instead of `no_eligible_players` — the one shape where the filter is the ONLY thing standing between a DQ'd player and a trophy.",
+      "award": {
+        "deciding_stat": "hs_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 24,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "40",
+          "idle_dq": true,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "30",
+              "kills": "40",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "30",
+                "den": "40"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "12",
+          "kills": "6",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "4",
+              "kills": "6",
+              "knife_kills": "0",
+              "rounds_played": "12",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "12"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "12"
+              },
+              "hs_pct": {
+                "num": "4",
+                "den": "6"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "12"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "no_eligible_players"
+      }
+    },
+    {
+      "name": "players-supplied-out-of-byte-lex-order",
+      "note": "The fixture hands the players in DESCENDING id order, so the returned tied set can only be ascending if the resolver sorted them itself. Removing the sort entirely reverses the tied array here.",
+      "award": {
+        "deciding_stat": "blind_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000044",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "blind_kills": "3",
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "blind_kills": "3",
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "blind_kills": "1",
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "blind_kills": "3",
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000033",
+          "76561198000000044"
+        ],
+        "reason": "equal_value"
+      }
+    },
+    {
+      "name": "byte-lex-is-a-string-order-not-a-numeric-one",
+      "note": "⭐ THE ONLY CASE THAT CAN TELL THE TWO SORTS APART, and the ids are short on purpose. Every real SteamID64 is 17 digits, so byte-lex and numeric order AGREE on all of them and a numeric-sort mutation is invisible across the rest of this file. On \"9\", \"10\", \"100\" byte-lex gives 10, 100, 9 while a numeric sort gives 9, 10, 100. The snapshot aggregates `order by p.steamid64 collate \"C\"` (0024:732), which is byte-wise for the same reason, so the resolver must agree with it — and `localeCompare` must never appear.",
+      "award": {
+        "deciding_stat": "knife_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "5",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "5",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "5",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "10",
+          "100",
+          "9"
+        ],
+        "reason": "equal_value"
+      }
+    },
+    {
+      "name": "volume-max-all-zero-no-awardable-value",
+      "note": "⭐ DECISION E, over the exact shape 6.1's review measured: `knife_kills` is non-zero for 1 of 28 players, so if that player misses the floors award #6 is a whole-roster tie AT ZERO (deferred-work.md:270). Rather than walk four players to a shared trophy for a stat nobody scored on, a `max` volume award whose best value is 0 has NO winner. Note the decoys are non-zero: it is the DECIDING key that is zero.",
+      "award": {
+        "deciding_stat": "knife_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "9",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "9",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "4",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "4",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "7",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "7",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000044",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "2",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "2",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "no_awardable_value",
+        "tied": [
+          "76561198000000011",
+          "76561198000000022",
+          "76561198000000033",
+          "76561198000000044"
+        ]
+      }
+    },
+    {
+      "name": "volume-max-single-eligible-at-zero-no-awardable-value",
+      "note": "DECISION E is a rule about the VALUE, not about the tie width: one lone eligible player sitting at zero still yields no winner. A resolver that applied the rule only when |best| > 1 would crown this player.",
+      "award": {
+        "deciding_stat": "through_smoke_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 24,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "through_smoke_kills": "0",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "12",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "12",
+              "through_smoke_kills": "6",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "12"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "12"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "12"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "no_awardable_value",
+        "tied": [
+          "76561198000000011"
+        ]
+      }
+    },
+    {
+      "name": "volume-max-nonzero-best-over-zeros",
+      "note": "The control for DECISION E: zeros BELOW the best value change nothing. Only a best value of zero suppresses the award.",
+      "award": {
+        "deciding_stat": "knife_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "1",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000022",
+        "deciding_value": {
+          "class": "volume",
+          "value": "1"
+        }
+      }
+    },
+    {
+      "name": "volume-min-zero-is-awardable",
+      "note": "DECISION E's SCOPE, half one: it is deliberately confined to `max`. Fewest deaths is an achievement, so a `min` volume award whose best value is 0 has a real winner. Widening the rule to every direction would redden exactly this case.",
+      "award": {
+        "deciding_stat": "deaths",
+        "class": "volume",
+        "direction": "min",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "5",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000011",
+        "deciding_value": {
+          "class": "volume",
+          "value": "0"
+        }
+      }
+    },
+    {
+      "name": "rate-max-zero-numerator-is-awardable",
+      "note": "DECISION E's SCOPE, half two: it is deliberately confined to VOLUME. A rate award whose best value is 0/n stays a real outcome — here both players are at 0/n, so the answer is an ordinary equal-cross-product TIE and not `no_awardable_value`. Widening the rule to rate awards would redden exactly this case.",
+      "award": {
+        "deciding_stat": "hs_pct",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "tie",
+        "tied": [
+          "76561198000000011",
+          "76561198000000022"
+        ],
+        "reason": "equal_cross_product"
+      }
+    },
+    {
+      "name": "an-absent-key-on-an-INELIGIBLE-player-is-not-an-error",
+      "note": "The mirror of the refusals below: a missing deciding key refuses only for a player who is actually in the race. B fails the round floor, so their absent `knife_kills` entry is never read. This is what keeps the refusal a real signal rather than a tripwire on rows nobody consults.",
+      "award": {
+        "deciding_stat": "knife_kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 24,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "2",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "10",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "rounds_played": "10",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "10"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "10"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000011",
+        "deciding_value": {
+          "class": "volume",
+          "value": "2"
+        }
+      }
+    },
+    {
+      "name": "an-absent-RATE-key-on-an-INELIGIBLE-player-is-not-an-error",
+      "note": "The RATE arm of the row above, added by the 6-4a code review. Every fixture materialised all four rate keys, so 'the deciding magnitudes are read only for the eligible' was proven for volume and merely asserted for rate — a mutation hoisting the rate-arm value read above the eligibility filter reddened nothing in either language. B fails the round floor, so their missing `entry_success` pair is never consulted.",
+      "award": {
+        "deciding_stat": "entry_success",
+        "class": "rate",
+        "direction": "max",
+        "floor_rounds": 24,
+        "floor_kills": 0
+      },
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "4",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "10",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "10",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "10"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "10"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "kind": "winner",
+        "steamid64": "76561198000000011",
+        "deciding_value": {
+          "class": "rate",
+          "num": "4",
+          "den": "10"
+        }
+      }
+    }
+  ]
+}

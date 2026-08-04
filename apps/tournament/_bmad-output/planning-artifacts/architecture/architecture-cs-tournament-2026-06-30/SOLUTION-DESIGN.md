@@ -414,7 +414,11 @@ pick over awards in **ascending priority**; shelf is frozen at spin start for we
 Eligible (FR-21: `rounds_played≥24`; `kills≥20` for rate/HS; not `idle_dq`) candidates iterated in
 `players_sorted` order (byte-lex on decimal SteamID64). Best deciding-stat value: volume = integer
 compare; rate = cross-multiply `p.num*q.den vs q.num*p.den`. **Equal value/cross-product = tie →
-ladder** (never silent argmax). FR-29 ladder: (1) secondary stat → (2) efficiency (cross-multiply)
+ladder** (never silent argmax). ⚠ **DECISION E** (Cuatro 2026-08-04; recorded here by the 6-4a code
+review): the single carve-out is a `max` **volume** award whose best value is `0` — it returns
+`no_awardable_value` **carrying the suppressed byte-lex set** (its length is the width of the tie
+that did not form, `1` when a lone eligible player sat at zero) and never reaches the ladder.
+Scoped deliberately: `min` awards and `rate` awards tie at zero like any other value. FR-29 ladder: (1) secondary stat → (2) efficiency (cross-multiply)
 → (3) head-to-head (a strict dominator over the remaining set, else skip) → (4) earliest
 `achievement_ts` (integer) → (5) shared co-winner.
 
