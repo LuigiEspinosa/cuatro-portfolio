@@ -70,7 +70,9 @@ describe('approveMatch — the RPC payload + classification', () => {
     });
   });
 
-  it.each([['bad_match'], ['not_pending'], ['not_bound'], ['wrong_demo'], ['demo_mismatch'], ['bad_score'], ['tied']])(
+  // `ceremony_locked` is Story 6.2's (migration 0024, AD-15). It must be TRUSTED here, or a locked ceremony
+  // surfaces as an opaque 500 `write_failed` instead of the 409 the admin needs — exactly what THE BAR found.
+  it.each([['bad_match'], ['ceremony_locked'], ['not_pending'], ['not_bound'], ['wrong_demo'], ['demo_mismatch'], ['bad_score'], ['tied']])(
     'surfaces the RPC %s refusal unchanged',
     async (reason) => {
       const { admin } = makeAdmin({ data: { ok: false, reason }, error: null });

@@ -31,6 +31,7 @@ export const dynamic = 'force-dynamic';
 // can never silently fall through to an undefined status.
 const STATUS_FOR: Record<Extract<ManualResolveMatchResult, { ok: false }>['reason'], number> = {
   bad_match: 404,
+  ceremony_locked: 409, // AD-15: the ceremony is locked and the snapshot frozen — a hand-entered result is refused before any write
   not_manual_resolvable: 409, // state is not declared/live/pending — nothing else can be hand-resolved
   undetermined: 409, // a competitor seat is NULL — no winner to derive
   format_not_declared: 409, // the format was never locked (AD-10)

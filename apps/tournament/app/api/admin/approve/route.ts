@@ -30,6 +30,7 @@ export const dynamic = 'force-dynamic';
 // can never silently fall through to an undefined status.
 const STATUS_FOR: Record<Extract<ApproveMatchResult, { ok: false }>['reason'], number> = {
   bad_match: 404,
+  ceremony_locked: 409, // AD-15: the ceremony is locked and the snapshot frozen — a late approve is refused before any write
   not_pending: 409, // the match is not `pending` — nothing else is approvable
   not_bound: 409, // no demo bound — bind it first (4.6a)
   wrong_demo: 409, // the bound demo is between other players — re-bind the right demo (4.7 rollback)

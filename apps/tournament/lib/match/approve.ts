@@ -55,6 +55,7 @@ export type ApproveMatchResult =
       ok: false;
       reason:
         | 'bad_match' // no such match
+        | 'ceremony_locked' // Story 6.2 / AD-15: the ceremony is locked — the snapshot is frozen, so no late approve
         | 'not_pending' // state is not `pending` — nothing else is approvable (4.6a's bind is what produces `pending`)
         | 'not_bound' // demo_id is null — the match was never bound; refuse, do NOT bind (that is 4.6a's job)
         | 'wrong_demo' // a stat_row's player is not one of the two seated competitors (the demo is for other people)
@@ -69,6 +70,7 @@ export type ApproveMatchResult =
 
 const APPROVE_REASONS = new Set([
   'bad_match',
+  'ceremony_locked',
   'not_pending',
   'not_bound',
   'wrong_demo',

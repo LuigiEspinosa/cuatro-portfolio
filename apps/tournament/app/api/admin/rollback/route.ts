@@ -32,6 +32,7 @@ export const dynamic = 'force-dynamic';
 // can never silently fall through to an undefined status.
 const STATUS_FOR: Record<Extract<RollbackMatchResult, { ok: false }>['reason'], number> = {
   bad_match: 404,
+  ceremony_locked: 409, // AD-15: the ceremony is locked and the snapshot frozen — un-publishing now is refused before any write
   not_resolved: 409, // the match is not a demo-derived Approved result — nothing to roll back (also idempotency)
   downstream_active: 409, // ⭐ AD-8: a dependent advance stands on its own state — the `blocking` list says which to roll back first
   write_failed: 500,

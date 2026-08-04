@@ -59,6 +59,7 @@ export type ManualResolveMatchResult =
       ok: false;
       reason:
         | 'bad_match' // no such match
+        | 'ceremony_locked' // Story 6.2 / AD-15: the ceremony is locked — a hand-entered result now would diverge the live standings from the frozen snapshot
         | 'not_manual_resolvable' // state is not declared/live/pending — nothing else can be hand-resolved (AC2)
         | 'undetermined' // a competitor seat is NULL — no winner to derive
         | 'format_not_declared' // 23514 backstop: the match's format was never locked (AD-10)
@@ -74,6 +75,7 @@ export type ManualResolveMatchResult =
 /** Every reason the RPC can RETURN (guards). A reason outside this set is not trusted — the lib fails closed. */
 const MANUAL_REASONS = new Set([
   'bad_match',
+  'ceremony_locked',
   'not_manual_resolvable',
   'undetermined',
   'format_not_declared',

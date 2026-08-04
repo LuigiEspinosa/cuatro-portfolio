@@ -58,13 +58,14 @@ export type RollbackMatchResult =
       ok: false;
       reason:
         | 'bad_match' // no such match
+        | 'ceremony_locked' // Story 6.2 / AD-15: the ceremony is locked — un-publishing now would diverge the live standings from the frozen snapshot
         | 'not_resolved' // state is not a demo-derived `resolved` — nothing to unpublish (also AC2's idempotency: a second rollback is not_resolved). manual_resolved is Story 4.8's to invert (DECISION C)
         | 'downstream_active' // ⭐ the AD-8 flag: a dependent advance stands on its own state — refuse, leaf-first. `blocking` lists which matches to roll back first
         | 'write_failed';
       blocking?: BlockingMatch[]; // present ONLY on downstream_active — the matches the admin must address first
     };
 
-const ROLLBACK_REASONS = new Set(['bad_match', 'not_resolved', 'downstream_active']);
+const ROLLBACK_REASONS = new Set(['bad_match', 'ceremony_locked', 'not_resolved', 'downstream_active']);
 
 /**
  * Roll back a demo-derived Approved (`resolved`) match: revert its dependent advances transitively, then

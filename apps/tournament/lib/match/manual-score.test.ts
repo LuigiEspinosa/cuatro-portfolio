@@ -94,6 +94,8 @@ describe('manualResolveMatch — the RPC payload + classification', () => {
 
   it.each([
     ['bad_match'],
+    // Story 6.2's (migration 0024, AD-15) — see the note in approve.test.ts.
+    ['ceremony_locked'],
     ['not_manual_resolvable'],
     ['undetermined'],
     ['format_not_declared'],

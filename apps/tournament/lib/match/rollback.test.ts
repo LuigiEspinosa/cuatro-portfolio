@@ -61,7 +61,8 @@ describe('rollbackMatch — the RPC payload + classification', () => {
     });
   });
 
-  it.each([['bad_match'], ['not_resolved']])(
+  // `ceremony_locked` is Story 6.2's (migration 0024, AD-15) — see the note in approve.test.ts.
+  it.each([['bad_match'], ['ceremony_locked'], ['not_resolved']])(
     'surfaces the RPC %s refusal unchanged (no blocking list)',
     async (reason) => {
       const { admin } = makeAdmin({ data: { ok: false, reason }, error: null });
