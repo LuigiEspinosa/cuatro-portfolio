@@ -365,7 +365,13 @@ func TestVectorStage2Refusals(t *testing.T) {
 func TestVectorStage2ClosedSetsMatchThePackage(t *testing.T) {
 	v := loadStage2(t)
 
-	wantKinds := []OutcomeKind{KindWinner, KindTie, KindNoEligiblePlayers, KindNoAwardableValue}
+	// ⭐ `KindShared` IS APPENDED BY STORY 6.5, AND THIS PIN REDDENING IS WHY IT EXISTS. The fifth
+	// arm is something an award can conclude, so it belongs in the closed set both runtimes agree
+	// on — but the PURE stage can never produce it, which
+	// `TestPureStage2NeverProducesALadderOutcome` asserts over every case in this same file.
+	wantKinds := []OutcomeKind{
+		KindWinner, KindTie, KindNoEligiblePlayers, KindNoAwardableValue, KindShared,
+	}
 	if len(v.OutcomeKinds) != len(wantKinds) {
 		t.Fatalf("vector outcome_kinds = %v, package has %v", v.OutcomeKinds, wantKinds)
 	}
@@ -705,13 +711,19 @@ func TestResolveStage2DoesNotMutateTheCallerSlice(t *testing.T) {
 type spyLadder struct {
 	calls int
 	tie   Outcome
-	out   Outcome
-	err   error
+	// ⭐ WIDENED BY STORY 6.5: the spy records the PLAYERS it was handed as well as the tie, so
+	// "the ladder receives the same roster Stage 2 resolved over" is an assertion rather than an
+	// assumption. Rungs 1-4 read four snapshot blocks, and a port that passed a re-filtered or
+	// re-read roster would let the ladder disagree with the caller about who is in the race (L12).
+	players []SnapshotPlayer
+	out     Outcome
+	err     error
 }
 
-func (s *spyLadder) Resolve(award Award, tie Outcome) (Outcome, error) {
+func (s *spyLadder) Resolve(award Award, tie Outcome, players []SnapshotPlayer) (Outcome, error) {
 	s.calls++
 	s.tie = tie
+	s.players = players
 	return s.out, s.err
 }
 
@@ -729,6 +741,17 @@ func TestResolveAwardHandsTheWholeTieToTheLadder(t *testing.T) {
 	}
 	if spy.calls != 1 {
 		t.Fatalf("the ladder was consulted %d times on a tie, want 1 — the port is declared but not USED", spy.calls)
+	}
+	// Story 6.5 — the SAME roster, in the SAME order, not a copy filtered or sorted on the way
+	// through. The ladder's rungs read four snapshot blocks off these rows.
+	if len(spy.players) != len(players) {
+		t.Fatalf("the ladder received %d players, want %d", len(spy.players), len(players))
+	}
+	for i := range players {
+		if spy.players[i].SteamID64 != players[i].SteamID64 {
+			t.Errorf("the ladder received the roster reordered at %d: %q, want %q",
+				i, spy.players[i].SteamID64, players[i].SteamID64)
+		}
 	}
 	// The ladder receives the tie WHOLE: the full set and the reason, not a pre-picked player.
 	if spy.tie.Kind != KindTie || len(spy.tie.Tied) != 2 || spy.tie.Reason != ReasonEqualValue {

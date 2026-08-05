@@ -43,10 +43,11 @@ import (
 // reference and neither may be corrected by reading the other's source. When they disagree the
 // vector decides; when the vector is silent, add a vector.
 //
-// ⛔ NOT IN THIS FILE, each with an owner: the FR-29 tiebreak ladder (6.5 — this file defines
-// and injects the PORT and ships an implementation that refuses), Stage 1's weighted pick
-// (6-4b), anti-sweep (6.6), pity (6.7), and any persistence at all (6.8 — worker/awards stays
-// the leaf `TestPackageIsALeaf` pins).
+// ⛔ NOT IN THIS FILE, each with an owner: the FR-29 tiebreak ladder's RUNGS (6.5 — this file
+// defines the PORT, ships the implementation that refuses, and carries the shapes the rungs read;
+// `ladder.go` holds the five rungs), Stage 1's weighted pick (6-4b), anti-sweep (6.6), pity
+// (6.7), and any persistence at all (6.8 — worker/awards stays the leaf `TestPackageIsALeaf`
+// pins).
 
 // ErrStage2 is the sentinel every programmer/data refusal in this file wraps.
 //
@@ -88,15 +89,44 @@ const (
 // is deliberate: `floor_rounds`/`floor_kills` are bounded `int` columns (0023:74-75) while every
 // snapshot magnitude is an unbounded integer (AD-19). Provenance, not taste.
 //
-// ⚠ `secondary_stat` / `eff_num_key` / `eff_den_key` are deliberately absent. They are NULL in
-// the shipped seed (0024 DECISION B) and they are the FR-29 ladder's rungs 1 and 2 — Story 6.5's
-// to define, not this file's to guess.
+// ⭐ WIDENED BY STORY 6.5 with the three FR-29 rung keys (0023:71-73). They were deliberately
+// omitted at 6-4a because the ladder had made no decisions yet; rungs 1 and 2 cannot read a key
+// they were never handed, so the projection grows.
 type Award struct {
 	DecidingStat string
 	Class        AwardClass
 	Direction    AwardDirection
 	FloorRounds  int
 	FloorKills   int
+
+	// The FR-29 rung keys, all three NULLABLE (0023:97-115 declares them `text` with closed-set
+	// CHECKs that admit NULL).
+	//
+	// ⭐ ABSENT IS THE EMPTY STRING, and that is a DELIBERATE representation choice stated here
+	// rather than left to a reader. Go has no nullable string, and a `*string` would put a
+	// pointer identity into a value type that is compared and copied freely. `""` costs nothing
+	// and buys the property the vector actually needs: `encoding/json` leaves this field at its
+	// zero value for a JSON `null` AND for an OMITTED key, so both spell "absent" here without a
+	// single line of loader code. `stage2-resolve.json`'s award objects carry none of the three
+	// and must keep not carrying them — that file has to regenerate with `outcome_kinds` as its
+	// only changed bytes.
+	//
+	// ⚠ THE COST, AND WHY IT IS PAID ON PURPOSE: Go cannot tell "absent" from "present and
+	// empty". So `""` MUST mean absent in the other two runtimes too, or the seam disagrees on
+	// an input neither would report — the same class of divergence the 6-4b review resolved for
+	// an absent container. The vector carries it as a CASE (not a refusal) whose expected block
+	// is byte-identical to its `null` twin, in the shape `an-omitted-shelf-key-is-the-empty-
+	// shelf` established.
+	//
+	// ⚠ ALL THREE ARE NOW FILLED FOR ALL TWELVE SHIPPED AWARDS — 6.5's catalog pass (Question 2,
+	// measured) set `secondary_stat` and the `kills`/`deaths` efficiency pair on every one, so the
+	// deterministic SKIP these fields describe (ladder.go's L2) is exercised by the VECTOR and by a
+	// reduced 6.6 award, never by a shipped ceremony. The fields stay nullable because 0023's
+	// columns are. (Comment corrected at the Group-1 code review, 2026-08-04 — it still said "absent
+	// until 6.5 fills them" in the commit that filled them.)
+	SecondaryStat string
+	EffNumKey     string
+	EffDenKey     string
 }
 
 // RatePair is one AD-19 `{num, den}` integer pair. It is NEVER pre-divided: the snapshot
@@ -127,7 +157,62 @@ type SnapshotPlayer struct {
 	// 0024:918-923 applies to an absent h2h opponent.
 	Volume map[string]*big.Int
 	Rate   map[string]RatePair
+
+	// ── The four AD-19 blocks Story 6.5 is the FIRST consumer of (0024:716-737). ──────────────
+	//
+	// Nothing had ever read them: 6-4a took `volume` / `rate` / `rounds_played` / `kills` /
+	// `idle_dq` and stopped, because the FR-29 rungs that need these had made no decisions yet.
+
+	// Secondary is rung 1's block: `volume || rate` (0024:723), so every one of the 21
+	// vocabulary keys in its CLASS-SHAPED form — an integer for a volume key, a `{num,den}` pair
+	// for a rate key.
+	//
+	// ⭐ IT IS THE SAME TYPE `H2H`'s inner map uses, deliberately, because 0024 builds both from
+	// the same `p.vol || p.rat` expression (`:650`, `:723`). Two near-identical types is how the
+	// two runtimes drift.
+	Secondary map[string]StatValue
+
+	// Efficiency is rung 2's block: every key in the UNIFORM `{num,den}` form, so a volume key
+	// `k` with value `v` arrives as `{v, 1}` (`snapshot_efficiency_form`, 0024:338-370 — the ONE
+	// definition site; do not restate the shape at a call site). That uniformity is what lets a
+	// rung-2 ratio over two arbitrary vocabulary keys resolve by pure integer cross-
+	// multiplication with no class branching and no division.
+	Efficiency map[string]RatePair
+
+	// H2H is rung 3's block: `{opponent_steamid64: {the same class-shaped union}}` over the
+	// matches the two players SHARED.
+	//
+	// ⛔ AN ABSENT OPPONENT KEY IS THE `NEVER MET` SIGNAL AND IS NEVER A ZERO (0024:918-923,
+	// verbatim: "a zero would silently become a real comparison"). It is `{}` for a player with
+	// no shared approved matches, and a player is never a key in their own map.
+	H2H map[string]map[string]StatValue
+
+	// AchievementTS is rung 4's value: an epoch-MILLISECOND integer with the PUBLISHED ABSENT
+	// SENTINEL `-1` (0024:703-709, 898-907). It is NEVER NULL in the snapshot.
+	//
+	// ⭐ `-1` IS NUMERICALLY THE SMALLEST VALUE IN THE COLUMN, which is the whole reason
+	// ladder.go's L9 exists: a naive `min` over this field crowns the player with NO APPROVED
+	// ROWS AT ALL, for a rung whose entire meaning is "did it first".
+	//
+	// ⚠ It is a DOCUMENTED PROXY — `min(stat_row.approved_at)`, i.e. admin approval order, not a
+	// demo tick (deferred-work.md:282).
+	AchievementTS *big.Int
 }
+
+// StatValue is AD-19's CLASS-SHAPED integer union: an integer for a volume key, a `{num,den}`
+// pair for a rate key.
+//
+// ⭐ IT IS `DecidingValue`, REUSED RATHER THAN RESTATED. The two are the same shape because they
+// are the same thing — one integer value read out of the frozen snapshot, branched on the key's
+// class — and Story 6.5's rungs 1 and 3 must compare them with the EXACT arithmetic Stage 2 uses
+// (`compareValues`: cross-multiplication, never `num == num && den == den`, and 6-4a's verbatim
+// zero-denominator total order). A second near-identical type would be a second comparator
+// waiting to be written, which is precisely how the producer and the verifier drift apart.
+//
+// ⚠ THE `DISPLAY ONLY` WARNING ON `DecidingValue` IS ABOUT THE OUTCOME FIELD, not about the
+// shape. `Outcome.DecidingValue` is display-only and nothing re-derives a winner from it; the
+// TYPE is just "a class-shaped integer", and `Secondary` / `H2H` are genuine resolution inputs.
+type StatValue = DecidingValue
 
 // OutcomeKind is the closed set of things Stage 2 can conclude.
 //
@@ -142,6 +227,36 @@ const (
 	KindTie               OutcomeKind = "tie"
 	KindNoEligiblePlayers OutcomeKind = "no_eligible_players"
 	KindNoAwardableValue  OutcomeKind = "no_awardable_value"
+
+	// KindShared is Story 6.5's FIFTH ARM: the FR-29 ladder bottomed out at rung 5 and the award
+	// is genuinely SHARED by every survivor.
+	//
+	// ⭐ A DESIGNED OUTCOME, NEVER AN ERROR STATE — EXPERIENCE.md:123 says so in those words, and
+	// FR-29, AD-14, epics.md:1084 and SOLUTION-DESIGN §9.3 all end the ladder here. It is the
+	// deterministic TERMINAL rung (DECISION H, Cuatro 2026-08-04): there is no seeded rung below
+	// it, which is what keeps the ladder a zero-byte function and 6-4b's measured 22-byte
+	// ceremony valid.
+	//
+	// ⚠ THE PURE STAGE CAN NEVER PRODUCE IT. `ResolveStage2` resolves no tie, so `shared` only
+	// ever comes out of a ladder — pinned over every case in the vector by
+	// `TestPureStage2NeverProducesALadderOutcome`.
+	KindShared OutcomeKind = "shared"
+)
+
+// LadderExitStep is which FR-29 rung decided a ladder-resolved award: 1..5, or 0 for "no ladder
+// was involved".
+//
+// ⭐ AS LOAD-BEARING AS THE WINNER, and 6.8 is why: it persists this as
+// `award_result.tie_ladder_exit_step` (SOLUTION-DESIGN:222, nullable), so a ladder that reaches
+// the RIGHT player by the WRONG rung ships a false explanation to the audience. Every vector case
+// pins it.
+const (
+	LadderExitNone       = 0 // no ladder ran — the column is NULL
+	LadderExitSecondary  = 1
+	LadderExitEfficiency = 2
+	LadderExitH2H        = 3
+	LadderExitAchieved   = 4
+	LadderExitShared     = 5
 )
 
 // TieReason records WHICH equality tied the award, because the two are different bugs when they
@@ -188,6 +303,17 @@ type Outcome struct {
 	// Reason is KindTie only: nothing "tied" when the suppressed set holds one player.
 	Tied   []string
 	Reason TieReason
+
+	// Winners is KindShared only: the FULL surviving set in byte-lex order, never a first and
+	// never a lowest SteamID64. It is a SEPARATE field from Tied on purpose — Tied is the tie
+	// that FORMED, Winners is who actually WON, and on a narrowed ladder those differ (a width-3
+	// tie can share between two).
+	Winners []string
+
+	// LadderExitStep is 1..5 when the FR-29 ladder decided this award and LadderExitNone (0)
+	// otherwise. It rides on KindWinner (rungs 1-4) as well as on KindShared (always 5), because
+	// "A won" and "A won at rung 3" are different facts and 6.8 stores the second.
+	LadderExitStep int
 }
 
 // Ladder is the FR-29 tiebreak PORT (Story 6.5).
@@ -204,8 +330,19 @@ type Outcome struct {
 // an Outcome rather than a bare winner on purpose: what a LADDER-resolved award looks like is
 // 6.5's design, and inventing a field for it here would be inventing a contract for a story that
 // has not made its decisions.
+//
+// ⭐ WIDENED BY STORY 6.5 TO CARRY THE PLAYERS, and the reason is structural rather than
+// convenient: rungs 1-4 read `Secondary`, `Efficiency`, `H2H` and `AchievementTS`, none of which
+// is on an `Award` or on a tie's `[]string`. The 6-4a signature could not see the data the ladder
+// exists to read, so the port grows rather than the ladder guessing.
+//
+// ⛔ THERE IS NO `*Stream` PARAMETER, AND THE SIGNATURE IS THE PROOF (ladder.go's L1). The FR-29
+// ladder consumes ZERO PRNG bytes: rung 5 is deterministic, so nothing below it needs randomness.
+// A runtime assertion that "the ladder drew nothing" is VACUOUS against a function that cannot
+// reach a stream — the 6-4b code review deleted exactly that assertion — so the property is
+// carried here, by the type, where no implementation can opt out of it.
 type Ladder interface {
-	Resolve(award Award, tie Outcome) (Outcome, error)
+	Resolve(award Award, tie Outcome, players []SnapshotPlayer) (Outcome, error)
 }
 
 // LadderRefusedError is what a ladder that cannot resolve a tie returns. It carries the tie
@@ -226,11 +363,20 @@ func (e *LadderRefusedError) Error() string {
 // RefusingLadder is the 6-4a-era Ladder: it refuses, loudly, naming the story that supplies the
 // real one. It is the DEFAULT and there is deliberately no dev-only fallback ladder in this
 // package — a fallback that exists is a fallback someone wires into production.
+//
+// ⭐ IT SURVIVES STORY 6.5 AND IT STAYS REFUSING (DECISION J). Now that `FR29Ladder` exists, the
+// temptation is to delete this — but it is what EVERY tie row in `stage2-resolve.json` is driven
+// through, and 6-4a's mutation M13 (the ladder's refusal swallowed by `ResolveAward`) only became
+// vector-killable that way. Deleting it would silently weaken the Stage-2 gate while this story
+// was busy elsewhere, and would make that file impossible to regenerate byte-identically.
 type RefusingLadder struct{}
 
 // Resolve returns the tie unchanged alongside the refusal. Both halves matter: the error is what
 // makes the refusal impossible to ignore, and the Outcome is what makes the tied set readable.
-func (RefusingLadder) Resolve(award Award, tie Outcome) (Outcome, error) {
+//
+// `players` is accepted and deliberately unused: this ladder refuses before it could read
+// anything, and the parameter exists so the type satisfies the widened port.
+func (RefusingLadder) Resolve(award Award, tie Outcome, _ []SnapshotPlayer) (Outcome, error) {
 	return tie, &LadderRefusedError{Award: award, Tie: tie}
 }
 
@@ -251,7 +397,11 @@ func ResolveAward(award Award, players []SnapshotPlayer, ladder Ladder) (Outcome
 	if out.Kind != KindTie {
 		return out, nil
 	}
-	return ladder.Resolve(award, out)
+	// ⭐ THE PLAYERS TRAVEL WITH THE TIE (Story 6.5). The ladder receives the SAME slice Stage 2
+	// resolved over — not a re-read and not a re-filter — because L12 forbids the ladder from
+	// re-applying the FR-21 floors or re-deriving the deciding value: doing either could empty
+	// the set or disagree with the caller about who is even in the race.
+	return ladder.Resolve(award, out, players)
 }
 
 // ladderIsNil reports whether the injected Ladder is unusable.

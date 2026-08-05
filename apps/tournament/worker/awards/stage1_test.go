@@ -15,9 +15,13 @@ import (
 // regenerated and silently stops testing the contract.
 
 type stage1VectorCandidate struct {
-	AwardID  string      `json:"award_id"`
-	Priority int         `json:"priority"`
-	Award    stage2Award `json:"award"`
+	AwardID  string `json:"award_id"`
+	Priority int    `json:"priority"`
+	// ⭐ `ladderAward` SINCE STORY 6.5 — it is `stage2Award` plus the three FR-29 rung keys as
+	// PLAIN STRINGS. The fourteen pre-6.5 rows carry none of the three and load identically (an
+	// omitted JSON key leaves a Go string at ""), which is the same loader rule the ladder vector
+	// pins by name; the appended ladder rows can carry them.
+	Award ladderAward `json:"award"`
 }
 
 type stage1VectorDraw struct {
@@ -43,8 +47,14 @@ type stage1VectorCase struct {
 	Shelf       map[string]int          `json:"shelf"`
 	LiveCount   int                     `json:"live_count"`
 	Candidates  []stage1VectorCandidate `json:"candidates"`
-	Players     []stage2Player          `json:"players"`
-	Expected    stage1VectorExpected    `json:"expected"`
+	// ⭐ `ladderPlayer` SINCE STORY 6.5, for the same reason as the award above: a row that INJECTS
+	// a ladder must carry the four FR-29 blocks the rungs read, while the pre-6.5 rows carry none
+	// of them and load with empty maps and a nil AchievementTS — which is correct, because nothing
+	// on a no-ladder path ever consults them.
+	Players  []ladderPlayer       `json:"players"`
+	Expected stage1VectorExpected `json:"expected"`
+	// Absent on every pre-6.5 row, which IS the no-ladder contract.
+	Ladder bool `json:"ladder"`
 }
 
 type stage1VectorRefusal struct {
@@ -58,7 +68,8 @@ type stage1VectorRefusal struct {
 	Shelf       map[string]int          `json:"shelf"`
 	LiveCount   int                     `json:"live_count"`
 	Candidates  []stage1VectorCandidate `json:"candidates"`
-	Players     []stage2Player          `json:"players"`
+	Players     []ladderPlayer          `json:"players"`
+	Ladder      bool                    `json:"ladder"`
 }
 
 type stage1Vector struct {
@@ -122,7 +133,7 @@ func toCandidates(t *testing.T, rows []stage1VectorCandidate, strict bool) []Sta
 		out = append(out, Stage1Candidate{
 			AwardID:  r.AwardID,
 			Priority: r.Priority,
-			Award:    toAward(r.Award),
+			Award:    toLadderAward(r.Award),
 		})
 	}
 	return out
@@ -151,11 +162,27 @@ func toInput(t *testing.T, c stage1VectorCase) Stage1Input {
 	t.Helper()
 	return Stage1Input{
 		Candidates: toCandidates(t, c.Candidates, true),
-		Players:    toPlayers(t, c.Players),
+		Players:    toLadderPlayers(t, c.Players),
 		Shelf:      c.Shelf,
 		Table:      c.WeightTable,
 		LiveCount:  c.LiveCount,
+		// ⭐ INJECTED ONLY WHEN THE ROW SAYS SO. A nil Ladder is the 6-4b contract — a tie refuses —
+		// and that is the state all fourteen pre-6.5 rows are in, which is what keeps every one of
+		// gate 3's eighteen refusal rows valid.
+		Ladder: ladderFor(c.Ladder),
 	}
+}
+
+// ladderFor returns the real FR-29 ladder or a genuine nil interface.
+//
+// ⚠ IT MUST RETURN AN UNTYPED NIL on the false branch. Returning a typed nil (`var l *FR29Ladder`)
+// would produce a non-nil interface holding a nil pointer — the exact shape `ladderIsNil` exists to
+// catch, and it would make every no-ladder row silently take the ladder path.
+func ladderFor(inject bool) Ladder {
+	if inject {
+		return FR29Ladder{}
+	}
+	return nil
 }
 
 // ⭐ THE CASE-NAME SET IS PINNED BY EXACT EQUALITY, exactly as `stage2CaseNames` is and for the
@@ -167,7 +194,11 @@ func toInput(t *testing.T, c stage1VectorCase) Stage1Input {
 // cumulative boundary, so deleting it would make `cum > r` versus `cum >= r` untested while
 // twelve other rows kept passing. Adding a case reddens this deliberately.
 var stage1CaseNames = []string{
+	// ⭐ Story 6.5 appended two rows, and adding them here is the deliberate update this pin asks
+	// for. They are the only rows in the file that INJECT a ladder.
+	"a-SHARED-co-winner-weights-at-the-MINIMUM-shelf",
 	"an-absent-shelf-map-is-shelf-zero-for-everyone",
+	"an-injected-ladder-RESOLVES-a-tie-that-would-otherwise-refuse",
 	"an-omitted-shelf-key-is-the-empty-shelf",
 	"candidates-supplied-out-of-priority-order",
 	"every-candidate-has-no-eligible-players-and-weights-heaviest",
@@ -348,10 +379,11 @@ func TestVectorStage1Refusals(t *testing.T) {
 		t.Run(bad.Why, func(t *testing.T) {
 			in := Stage1Input{
 				Candidates: toCandidates(t, bad.Candidates, false),
-				Players:    toPlayers(t, bad.Players),
+				Players:    toLadderPlayers(t, bad.Players),
 				Shelf:      bad.Shelf,
 				Table:      bad.WeightTable,
 				LiveCount:  bad.LiveCount,
+				Ladder:     ladderFor(bad.Ladder),
 			}
 			s := stage1Stream(t, bad.SeedHex, bad.Label, bad.LabelSource)
 
@@ -450,9 +482,13 @@ func TestVectorStage1RefusalKindsAreBothExercised(t *testing.T) {
 	// reachable, both emitted — were unpinned on the Go side and absent from TypeScript's declared
 	// set entirely, which made `detail` a "closed set" that was not closed. A tenth added on one
 	// side alone would have reddened nothing.
+	// ⭐ `DetailLadder` IS APPENDED BY STORY 6.5, and this pin reddening is exactly what it is for.
+	// "The injected ladder ran and refused" is a different fact from "no ladder was injected"
+	// (DetailTie) and from "the award or the snapshot is malformed" (DetailStage2); reusing either
+	// label to avoid growing the set would rebuild 6-4b's closed-set-that-was-not-closed by choice.
 	wantDetails := []string{
 		DetailWeightTable, DetailShelf, DetailPool, DetailLiveCount,
-		DetailTotalWeight, DetailStage2, DetailTie, DetailStream, DetailInternal,
+		DetailTotalWeight, DetailStage2, DetailTie, DetailStream, DetailInternal, DetailLadder,
 	}
 	if strings.Join(v.RefusalDetails, ",") != strings.Join(wantDetails, ",") {
 		t.Errorf("refusal_details = %v, package has %v", v.RefusalDetails, wantDetails)
@@ -465,7 +501,14 @@ func TestVectorStage1RefusalKindsAreBothExercised(t *testing.T) {
 	// them. They are covered instead by TestStage1PickRefusesANilStream and by the unreachable
 	// arms being loud. The generator enforces the same split from the other side: it refuses to
 	// write a row whose detail is one of these two.
-	rowRepresentable := wantDetails[:7]
+	//
+	// ⭐ `DetailLadder` IS ROW-REPRESENTABLE, unlike the two above it: an injected ladder handed a
+	// tied award whose `secondary_stat` is outside the vocabulary is a set of INPUTS, and the
+	// appended refusal row is exactly that. So the unrepresentable pair stays exactly two, and the
+	// representable list is the first seven PLUS this one — spelled out rather than re-sliced,
+	// because a slice bound is the kind of thing a later append silently shifts.
+	rowRepresentable := append(append([]string{}, wantDetails[:7]...), DetailLadder)
+	unrepresentable := []string{DetailStream, DetailInternal}
 	seenDetail := map[string]int{}
 	for _, r := range v.Refusals {
 		seenDetail[r.Detail]++
@@ -478,7 +521,7 @@ func TestVectorStage1RefusalKindsAreBothExercised(t *testing.T) {
 			t.Errorf("no refusal row of detail %q — the label is declared and never exercised", d)
 		}
 	}
-	for _, d := range wantDetails[7:] {
+	for _, d := range unrepresentable {
 		if seenDetail[d] != 0 {
 			t.Errorf("a refusal row carries detail %q, which no set of INPUTS can produce — the row "+
 				"is not testing what it claims", d)
@@ -597,7 +640,7 @@ func TestVectorStage1CoversTheHardCases(t *testing.T) {
 	// through the real Stage 2 — the same check the generator now runs at the anchor.
 	frozenWinners := map[string]struct{}{}
 	for _, c := range toCandidates(t, frozen.Candidates, true) {
-		out, err := ResolveStage2(c.Award, toPlayers(t, frozen.Players))
+		out, err := ResolveStage2(c.Award, toLadderPlayers(t, frozen.Players))
 		if err != nil {
 			t.Fatalf("the frozen-shelf row's candidate %s no longer resolves: %v", c.AwardID, err)
 		}
@@ -681,7 +724,7 @@ func TestVectorStage1CoversTheHardCases(t *testing.T) {
 	// shelf, so without this the no_eligible_players branch could go untested while AC3 still
 	// claimed it covered — the 6-4b review's finding, and the same class as the frozen-shelf gap.
 	for _, c := range toCandidates(t, noEligible.Candidates, true) {
-		out, err := ResolveStage2(c.Award, toPlayers(t, noEligible.Players))
+		out, err := ResolveStage2(c.Award, toLadderPlayers(t, noEligible.Players))
 		if err != nil {
 			t.Fatalf("the no_eligible_players row's candidate %s no longer resolves: %v", c.AwardID, err)
 		}

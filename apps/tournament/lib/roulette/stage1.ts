@@ -71,7 +71,7 @@
 // to produce. Go's `*Stream` parameter makes the equivalent unrepresentable.
 import { N_BOUNDS, Stream, uniformInt } from './prng';
 import { Stage2Error, resolveStage2 } from './stage2';
-import type { Award, SnapshotPlayer } from './stage2';
+import type { Award, Ladder, SnapshotPlayer } from './stage2';
 
 /**
  * One award in a spin's candidate pool.
@@ -124,6 +124,28 @@ export interface Stage1Input {
    */
   readonly table: readonly number[];
   readonly liveCount: number;
+  /**
+   * Story 6.5's FR-29 tiebreak ladder, and it is OPTIONAL.
+   *
+   * ⭐ OPTIONAL IS THE WHOLE DESIGN. When it is absent, Stage 1 behaves EXACTLY as 6-4b shipped it
+   * — a tied provisional winner is a {@link Stage1TieError} naming Story 6.5 — which is what keeps
+   * all eighteen of gate 3's refusal rows valid and every byte of the measured ceremony unchanged.
+   * When it is supplied, the tie is genuinely resolved and the RESOLVED winner's shelf is what
+   * indexes the luck weight table.
+   *
+   * ⭐⭐ A SHARED OUTCOME HAS MORE THAN ONE SHELF, AND THE PUBLISHED RULE IS THE **MINIMUM**
+   * (Cuatro, 2026-08-04). FR-26 biases toward the empty shelf, and `min` is the only aggregation
+   * that keeps a co-win from REDUCING the luck owed to the emptiest shelf in it: with `max`, a
+   * player holding nothing who shares a trophy with a player holding four would be weighted as if
+   * they held four.
+   *
+   * ⚠ THIS IS NOT 6-4b's FORBIDDEN "min shelf over the tied set" FALLBACK. There, the WEIGHTER
+   * would have been inventing a winner that 6.5 would later contradict, changing every drawn byte
+   * with nothing red anywhere. Here the LADDER has already decided who won — deterministically,
+   * reproducibly and with ZERO bytes drawn — and this rule only aggregates the shelves of players
+   * who genuinely share the award.
+   */
+  readonly ladder?: Ladder;
 }
 
 /** One draw, including what it cost the stream. */
@@ -203,6 +225,13 @@ export const REFUSAL_DETAILS: readonly string[] = Object.freeze([
   'tie', // W9 — which is a refusal KIND, not an invalid input
   'stream', // no stream was supplied at all
   'internal', // an invariant this module believes unreachable
+  // ⭐ Story 6.5: the INJECTED FR-29 ladder ran and refused. ITS OWN LABEL, not `tie` and not
+  // `stage2` — the three mean genuinely different things to a caller: `tie` is "no ladder was
+  // injected, so this seam is unfilled", `stage2` is "the award or the snapshot is malformed", and
+  // this is "the ladder ran and refused" (a malformed rung key, say). 6-4b's headline was a closed
+  // set that was not closed; reusing an existing label to avoid growing the set would be the same
+  // defect chosen deliberately.
+  'ladder',
 ]);
 
 /**
@@ -320,7 +349,7 @@ function weighted(
 
   // W1 — THE SHELF IS FROZEN HERE. Every weight is computed once, from the shelf as it stood at
   // spin start, BEFORE the first draw. See the note in stage1Pick for why that matters.
-  const weights = ordered.map((c) => weightOf(c, players, shelf, input.table));
+  const weights = ordered.map((c) => weightOf(c, players, shelf, input.table, input.ladder));
   return { ordered, weights };
 }
 
@@ -351,6 +380,7 @@ function weightOf(
   players: readonly SnapshotPlayer[],
   shelf: Readonly<Record<string, number>>,
   table: readonly number[],
+  ladder: Ladder | undefined,
 ): number {
   let outcome;
   try {
@@ -371,10 +401,91 @@ function weightOf(
     throw err;
   }
 
+  // ⭐ STORY 6.5 — THE OPTIONAL LADDER RESOLVES THE TIE, IF ONE WAS INJECTED. The resolution
+  // happens HERE, before the switch, so everything below reads one already-decided outcome; a
+  // ladder wired in further down would leave the tie arm below both reachable and dead.
+  //
+  // ⛔ THE LADDER DRAWS NOTHING (L1) and is SYNCHRONOUS, so this call cannot move the stream —
+  // which is what makes W7's "validate before any draw" and the whole byte accounting survive the
+  // wiring, and why `weightOf` stays sync inside an `async` `stage1Pick`.
+  //
+  // ⛔ THE PRESENCE TEST IS STRUCTURAL, NOT `!== undefined` — it mirrors `stage2.ts:432` and Go's
+  // `ladderIsNil` (`stage1.go:404`), which `stage2.go:409` names as the sanctioned pair. A bare
+  // `!== undefined` treats `ladder: null` — reachable from any JSON- or config-driven caller — as
+  // PRESENT, calls `null.resolve`, and the `catch` below relabels the resulting `TypeError` as
+  // detail `ladder`; Go's typed-nil guard calls the same input ABSENT and returns `tie`. One input,
+  // two different closed-set details across the seam, and invisible to the vector gate because a row
+  // can carry only one expected `detail` — the exact 6-4b class the comment below is about.
+  // (Code review, Group 1, 2026-08-04.)
+  const ladderIsUsable =
+    ladder !== undefined &&
+    ladder !== null &&
+    typeof ladder === 'object' &&
+    typeof ladder.resolve === 'function';
+  if (outcome.kind === 'tie' && ladderIsUsable) {
+    try {
+      outcome = ladder.resolve(candidate.award, outcome, players);
+    } catch (err) {
+      // PROPAGATED, never swallowed, and under its OWN label: "the ladder ran and refused" is a
+      // different fact from "no ladder was injected" (`tie`) and from "the award or the snapshot is
+      // malformed" (`stage2`).
+      throw new Stage1Error(
+        'ladder',
+        `the FR-29 ladder refused the tie on award "${candidate.awardId}": ` +
+          (err instanceof Error ? err.message : String(err)),
+        { cause: err },
+      );
+    }
+  }
+
   switch (outcome.kind) {
     case 'tie':
       // W9 — propagated, never swallowed.
+      //
+      // ⚠ STILL REACHABLE, AND DELIBERATELY SO: this is the NO-LADDER contract. Story 6.5 made the
+      // ladder OPTIONAL precisely so an absent one behaves exactly as 6-4b shipped it, which is what
+      // keeps all eighteen of gate 3's refusal rows valid. It is not dead code.
       throw new Stage1TieError(candidate.awardId, outcome.tied, outcome.reason);
+
+    case 'shared': {
+      // ⭐⭐ THE PUBLISHED CO-WINNER RULE: **THE MINIMUM SHELF ACROSS THE CO-WINNERS** (Cuatro,
+      // 2026-08-04). FR-26 biases toward the empty shelf, and `min` is the only aggregation that
+      // keeps a co-win from REDUCING the luck owed to the emptiest shelf in it — with `max`, a
+      // player holding nothing who shares with a player holding four is weighted as if they held
+      // four, which is FR-26 running backwards for exactly the players it exists to protect.
+      //
+      // ⚠ AND THE MIRROR, STATED RATHER THAN LEFT IMPLICIT (code review, Group 1, 2026-08-04;
+      // `min` RE-CONFIRMED by Cuatro with this consequence on the table): `min` launders the OTHER
+      // co-winner's shelf. A player holding FOUR who shares with a player holding NONE has this
+      // award weighted as if THEY held none, so FR-26's damping of the sweeper is switched off for
+      // every shared trophy. There is no aggregation that avoids both directions — one co-winner's
+      // shelf must speak for the pair — and `min` is chosen because protecting the empty shelf is
+      // the bias FR-26 names. ⭐ Measured on the real corpus: 0 of 12 awards end SHARED, so neither
+      // direction is currently reachable in production.
+      //
+      // ⚠ NOT 6-4b's forbidden "min shelf over the TIED set": there the weighter would have been
+      // inventing a winner; here the ladder already decided, deterministically and with zero bytes
+      // drawn, and this only aggregates the shelves of players who genuinely share.
+      if (outcome.winners.length === 0) {
+        throw new Stage1Error(
+          'internal',
+          `award "${candidate.awardId}" resolved to a SHARED outcome with no winners`,
+        );
+      }
+      const tableMax = table.length - 1;
+      // ⛔ `Object.hasOwn`, not a bare lookup, for the same prototype hazard `winner` guards below.
+      const shelfOf = (sid: string): number =>
+        Object.hasOwn(shelf, sid) ? (shelf[sid] as number) : 0;
+      let index = shelfOf(outcome.winners[0] as string);
+      for (const sid of outcome.winners) {
+        const held = shelfOf(sid);
+        if (held < index) index = held;
+      }
+      // W8 — clamp AFTER the minimum. Clamping each shelf first would be the same answer today and
+      // a different one the moment `tableMax` sits below a co-winner's real shelf.
+      if (index > tableMax) index = tableMax;
+      return table[index] as number;
+    }
 
     case 'no_eligible_players':
     case 'no_awardable_value':
@@ -382,6 +493,18 @@ function weightOf(
       return table[0] as number;
 
     case 'winner': {
+      // ⛔ SYMMETRIC WITH THE SHARED ARM'S EMPTY-WINNERS GUARD. `Ladder` is an INJECTED port, so
+      // this arm can carry an outcome no code in this module built: a `winner` with an empty
+      // `steamid64` would miss the shelf, read the absent-is-0 default, and silently draw index 0 —
+      // the HEAVIEST luck weight. Unreachable through the shipped ladder (`validateLadder` refuses
+      // an empty tied member), reachable through any other implementation of the port.
+      // (Code review, Group 1, 2026-08-04.)
+      if (outcome.steamid64 === '') {
+        throw new Stage1Error(
+          'internal',
+          `award "${candidate.awardId}" resolved to a WINNER with no steamid64`,
+        );
+      }
       // W8 — `tableMax` is `table.length - 1`, NOT a length. Using the length indexes one past
       // the end for any shelf at or beyond it, which is `undefined` here and a panic in Go.
       const tableMax = table.length - 1;

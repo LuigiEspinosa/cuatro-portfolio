@@ -10,8 +10,9 @@ import type { Stage1Candidate, Stage1Input } from './stage1';
 // `resolveStage2` is imported as a VALUE so the coverage guards below can RE-DERIVE the outcome
 // kind each row is named for, rather than inferring it from the weights the row happens to
 // produce. See the guard-the-guards notes on the frozen-shelf and DECISION-F rows.
+import { fr29Ladder } from './ladder';
 import { resolveStage2 } from './stage2';
-import type { Award, SnapshotPlayer } from './stage2';
+import type { Award, SnapshotPlayer, StatValue } from './stage2';
 
 // NOTE: `node:fs` is imported HERE, in the test. The banned-`node:` rule applies to the shipped
 // modules (scanned in prng.test.ts), not to the suite that reads the vector files off disk.
@@ -33,6 +34,12 @@ interface VectorAward {
   direction: string;
   floor_rounds: number;
   floor_kills: number;
+  // ⭐ ADDED BY STORY 6.5, ALL THREE OPTIONAL AND NULLABLE. The fourteen pre-6.5 rows carry none of
+  // them and must keep not carrying them — an absent key IS an absent rung, which is the loader
+  // rule `ladder.test.ts` pins by name.
+  secondary_stat?: string | null;
+  eff_num_key?: string | null;
+  eff_den_key?: string | null;
 }
 
 interface VectorCandidate {
@@ -40,6 +47,8 @@ interface VectorCandidate {
   priority: number;
   award: VectorAward;
 }
+
+type VectorStat = string | { num: string; den: string };
 
 interface VectorPlayer {
   steamid64: string;
@@ -49,7 +58,14 @@ interface VectorPlayer {
   stats_int: {
     volume: Record<string, string>;
     rate: Record<string, { num: string; den: string }>;
+    // ⭐ ADDED BY STORY 6.5 AND OPTIONAL: a row that INJECTS a ladder carries the four FR-29 blocks
+    // its rungs read, while the pre-6.5 rows carry none of them and load with empty containers —
+    // which is correct, because nothing on a no-ladder path ever consults them.
+    secondary?: Record<string, VectorStat>;
+    efficiency?: Record<string, { num: string; den: string }>;
   };
+  h2h?: Record<string, Record<string, VectorStat>>;
+  achievement_ts?: string;
 }
 
 interface VectorDraw {
@@ -85,6 +101,8 @@ interface VectorCase {
   candidates: VectorCandidate[];
   players: VectorPlayer[];
   expected: VectorExpected;
+  /** Absent on every pre-6.5 row, which IS the no-ladder contract. */
+  ladder?: boolean;
 }
 
 interface VectorRefusal {
@@ -99,6 +117,8 @@ interface VectorRefusal {
   live_count: number;
   candidates: VectorCandidate[];
   players: VectorPlayer[];
+  /** Absent on every pre-6.5 row, which IS the no-ladder contract. */
+  ladder?: boolean;
 }
 
 const vector = JSON.parse(readFileSync(VECTOR_PATH, 'utf8')) as {
@@ -130,7 +150,18 @@ function toAward(a: VectorAward): Award {
     direction: a.direction as Award['direction'],
     floorRounds: a.floor_rounds,
     floorKills: a.floor_kills,
+    // ⚠ Passed through VERBATIM — `undefined` on every pre-6.5 row. Normalising here would move
+    // the "absent key is an absent rung" rule out of `ladder.ts` and into the loader.
+    secondaryStat: a.secondary_stat,
+    effNumKey: a.eff_num_key,
+    effDenKey: a.eff_den_key,
   };
+}
+
+/** A class-shaped value as the vector encodes it — branched on the JSON SHAPE, not the vocabulary. */
+function toStat(what: string, v: VectorStat): StatValue {
+  if (typeof v === 'string') return { class: 'volume', value: big(what, v) };
+  return { class: 'rate', num: big(`${what}.num`, v.num), den: big(`${what}.den`, v.den) };
 }
 
 function toCandidates(rows: VectorCandidate[]): Stage1Candidate[] {
@@ -150,6 +181,26 @@ function toPlayers(rows: VectorPlayer[]): SnapshotPlayer[] {
         den: big(`${r.steamid64}.rate.${k}.den`, v.den),
       };
     }
+    // ── The four FR-29 blocks, present only on the rows that inject a ladder. ─────────────────
+    const secondary: Record<string, StatValue> = {};
+    for (const [k, v] of Object.entries(r.stats_int.secondary ?? {})) {
+      secondary[k] = toStat(`${r.steamid64}.secondary.${k}`, v);
+    }
+    const efficiency: Record<string, { num: bigint; den: bigint }> = {};
+    for (const [k, v] of Object.entries(r.stats_int.efficiency ?? {})) {
+      efficiency[k] = {
+        num: big(`${r.steamid64}.efficiency.${k}.num`, v.num),
+        den: big(`${r.steamid64}.efficiency.${k}.den`, v.den),
+      };
+    }
+    const h2h: Record<string, Record<string, StatValue>> = {};
+    for (const [opp, block] of Object.entries(r.h2h ?? {})) {
+      const inner: Record<string, StatValue> = {};
+      for (const [k, v] of Object.entries(block)) {
+        inner[k] = toStat(`${r.steamid64}.h2h.${opp}.${k}`, v);
+      }
+      h2h[opp] = inner;
+    }
     return {
       steamid64: r.steamid64,
       roundsPlayed: big(`${r.steamid64}.rounds_played`, r.rounds_played),
@@ -157,6 +208,13 @@ function toPlayers(rows: VectorPlayer[]): SnapshotPlayer[] {
       idleDq: r.idle_dq,
       volume,
       rate,
+      secondary,
+      efficiency,
+      h2h,
+      achievementTs:
+        r.achievement_ts === undefined
+          ? undefined
+          : big(`${r.steamid64}.achievement_ts`, r.achievement_ts),
     };
   });
 }
@@ -168,6 +226,10 @@ function toInput(c: VectorCase | VectorRefusal): Stage1Input {
     shelf: c.shelf,
     table: c.weight_table,
     liveCount: c.live_count,
+    // ⭐ INJECTED ONLY WHEN THE ROW SAYS SO. An absent `ladder` is the 6-4b contract — a tie refuses
+    // — and that is the state all fourteen pre-6.5 rows are in, which is what keeps every one of
+    // gate 3's eighteen refusal rows valid.
+    ladder: c.ladder === true ? fr29Ladder : undefined,
   };
 }
 
@@ -202,7 +264,11 @@ async function openStream(row: { seed_hex: string; label: string; label_source: 
 // exactly on a cumulative boundary, so deleting it would leave `cum > r` versus `cum >= r`
 // untested while twelve other rows kept passing.
 const CASE_NAMES = [
+  // ⭐ Story 6.5 appended two rows, and adding them here is the deliberate update this pin asks
+  // for. They are the only rows in the file that INJECT a ladder.
+  'a-SHARED-co-winner-weights-at-the-MINIMUM-shelf',
   'an-absent-shelf-map-is-shelf-zero-for-everyone',
+  'an-injected-ladder-RESOLVES-a-tie-that-would-otherwise-refuse',
   'an-omitted-shelf-key-is-the-empty-shelf',
   'candidates-supplied-out-of-priority-order',
   'every-candidate-has-no-eligible-players-and-weights-heaviest',
@@ -335,14 +401,21 @@ describe('stage1-pick.json refusals', () => {
     // were missing from this module's declared set entirely while the module threw them anyway,
     // which made `Stage1Error.detail`'s own JSDoc false on two live paths. They are declared now,
     // and this split is what keeps "declared" from silently meaning "unreachable".
-    const rowRepresentable = REFUSAL_DETAILS.slice(0, 7);
+    //
+    // ⭐ Story 6.5's `ladder` IS ROW-REPRESENTABLE, unlike those two: an injected ladder handed a
+    // tied award whose `secondary_stat` is outside the vocabulary is a set of INPUTS, and the
+    // appended refusal row is exactly that. The unrepresentable pair therefore stays exactly two,
+    // and both are named rather than sliced — a slice bound is the kind of thing a later append
+    // silently shifts.
+    const unrepresentable = ['stream', 'internal'];
+    const rowRepresentable = REFUSAL_DETAILS.filter((d) => !unrepresentable.includes(d));
     for (const detail of rowRepresentable) {
       expect(
         vector.refusals.some((r) => r.detail === detail),
         `no refusal row of detail "${detail}" — the label is declared and never exercised`,
       ).toBe(true);
     }
-    for (const detail of REFUSAL_DETAILS.slice(7)) {
+    for (const detail of unrepresentable) {
       expect(
         vector.refusals.some((r) => r.detail === detail),
         `a refusal row carries "${detail}", which no set of INPUTS can produce`,

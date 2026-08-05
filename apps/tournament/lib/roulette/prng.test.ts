@@ -663,9 +663,15 @@ describe('lib/roulette source pinning', () => {
     // Every non-test module under lib/roulette is production code that can reach a client bundle,
     // so the list is asserted exactly rather than as a lower bound: a new module added here
     // without thinking about the bans below should fail loudly, not slip in unscanned.
-    // `stage2.ts` was added by Story 6-4a and `stage1.ts` by 6-4b; each had to be registered here
-    // to be scanned at all.
-    expect(shipped.map(([f]) => f)).toEqual(['labels.ts', 'prng.ts', 'stage1.ts', 'stage2.ts']);
+    // `stage2.ts` was added by Story 6-4a, `stage1.ts` by 6-4b and `ladder.ts` by 6.5; each had to
+    // be registered here to be scanned at all.
+    expect(shipped.map(([f]) => f)).toEqual([
+      'labels.ts',
+      'ladder.ts',
+      'prng.ts',
+      'stage1.ts',
+      'stage2.ts',
+    ]);
   });
 
   it('the walk really is recursive (a nested module could not hide)', () => {
@@ -767,6 +773,13 @@ describe('lib/roulette source pinning', () => {
       );
       expect(graph).toEqual({
         'labels.ts': [],
+        // ⭐ Story 6.5. The FR-29 ladder imports `./stage2` and NOTHING ELSE, and that emptiness
+        // elsewhere is load-bearing: no `./prng`, because the ladder draws ZERO bytes (L1) and a
+        // stream import appearing here would be the first visible sign that somebody had added a
+        // seeded rung — which would move every byte position after it and invalidate 6-4b's
+        // measured 22-byte ceremony. It shares `stage2`'s comparator on purpose (`beatsBy`), so
+        // rungs 1-3 inherit 6-4a's verbatim zero-denominator semantics rather than restating them.
+        'ladder.ts': ['./stage2'],
         'prng.ts': [],
         // Stage 1 composes the other two stages: `uniformInt` draws the pick and `resolveStage2`
         // IS the provisional winner whose shelf the weight is indexed by.
@@ -780,7 +793,7 @@ describe('lib/roulette source pinning', () => {
     // the bans would silently stop asserting and the pin above would still pass.
     it('at least one shipped module has a non-empty specifier list, so the bans are not vacuous', () => {
       const withImports = shipped.filter(([, src]) => importSpecifiers(src).length > 0);
-      expect(withImports.map(([f]) => f)).toEqual(['stage1.ts']);
+      expect(withImports.map(([f]) => f)).toEqual(['ladder.ts', 'stage1.ts']);
     });
   });
 

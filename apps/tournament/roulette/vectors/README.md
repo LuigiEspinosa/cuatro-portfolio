@@ -33,7 +33,8 @@ stories:
 | 1 — block function | `prng-block.json` | **Story 6.3** | ✅ shipped |
 | 2 — `uniform_int` | `prng-uniform-int.json` | **Story 6.3** | ✅ shipped |
 | — Stage-2 deterministic winner + tie detection | `stage2-resolve.json` | **Story 6-4a** | ✅ shipped |
-| 3 — Stage-1 weighted pick | `stage1-pick.json` | **Story 6-4b** | ✅ shipped |
+| — FR-29 tie ladder | `ladder-resolve.json` | **Story 6.5** | ✅ shipped |
+| 3 — Stage-1 weighted pick | `stage1-pick.json` | **Story 6-4b** (+ 6.5's ladder rows) | ✅ shipped |
 | 4 — canonical JSON + `bundle_sha256` (RFC-8785) | *(not yet)* | **Story 6.9** | ⏳ |
 | 5 — end-to-end ceremony vector + suite completeness | *(not yet)* | **Story 6.11** | ⏳ |
 
@@ -43,9 +44,17 @@ vector-gated all the same ("includes equal-value and equal-cross-product ties"),
 between gates 2 and 3, which is also the build order §9.6 prescribes (`Stage 2 + ladder` before
 `Stage 1 + anti-sweep`).
 
+**The FR-29 ladder is not a numbered gate for the same reason, and more strongly.** It consumes no
+stream *by design*: rung 5 — the shared co-winner — is the deterministic terminal rung, so the ladder
+draws **zero bytes** and takes no stream parameter in any of the three implementations. The signature
+is the proof, and it is what keeps Story 6-4b's measured **22-byte** twelve-spin ceremony valid: a
+seeded rung would move every byte position after every resolved tie. It sits next to `stage2-resolve`
+because §9.6 prescribes `Stage 2 + ladder` as one build step.
+
 **This directory is not finished.** Gate 4 (canonicalization + `bundle_sha256`, Story 6.9) and
-gate 5 (the end-to-end ceremony vector, Story 6.11) are still to come. Everything the two-stage
-draw itself needs — the block function, `uniform_int`, Stage 2 and Stage 1 — is here.
+gate 5 (the end-to-end ceremony vector with forced ties across *every* ladder rung, Story 6.11) are
+still to come. Everything the draw itself needs — the block function, `uniform_int`, Stage 2, the
+FR-29 ladder and Stage 1 — is here.
 
 ## File format
 
@@ -251,6 +260,107 @@ floor and an empty `deciding_stat` became shared rows only when the 6-4a code re
 `build_stage2_file`'s "a refusal row must actually refuse" guard rejected those rows and they
 lived in two hand-written per-language lists, the exact asymmetry this array exists to prevent.
 
+### `ladder-resolve.json`
+
+```jsonc
+{
+  "vector": "ladder-resolve",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "…",                              // the FIVE rungs and the VALIDATION ORDER, in full
+  "value_encoding": "…",
+  "exit_steps": [1, 2, 3, 4, 5],
+  "stat_vocabulary": { "volume": [ …17… ], "rate": [ …4… ] },
+  "absent_achievement_ts": "-1",
+  "refusal_details": ["stage2", "award", "tied", "player", "internal"],
+  "refusals": [
+    { "why": "…", "detail": "award", "award": {…}, "tied": […], "players": […] }
+  ],
+  "cases": [
+    {
+      "name": "rung-1-a-VOLUME-secondary-breaks-the-tie",
+      "note": "prose describing what this case pins",
+      "award": { "deciding_stat": "kills", "class": "volume", "direction": "max",
+                 "floor_rounds": 0, "floor_kills": 0,
+                 "secondary_stat": "hs_kills",       // ⭐ null / omitted / "" all mean ABSENT
+                 "eff_num_key": null, "eff_den_key": null },
+      "tied": ["76561198000000011", "76561198000000022"],   // byte-lex, width >= 2
+      "players": [
+        { "steamid64": "…", "rounds_played": "30", "kills": "20", "idle_dq": false,
+          "stats_int": { "volume": {…}, "rate": {…},
+                         "secondary":  { "kills": "20", "hs_pct": { "num": "9", "den": "20" } },
+                         "efficiency": { "kills": { "num": "20", "den": "1" }, … } },
+          "h2h": { "<opponent>": { "kills": "9", … } },
+          "achievement_ts": "5000" }
+      ],
+      "expected": { "kind": "winner", "steamid64": "…", "ladder_exit_step": 1 }
+    }
+  ]
+}
+```
+
+⭐ **`ladder_exit_step` is as load-bearing as the winner, and every case pins it.** A vector that
+pinned only *who* won would let a ladder that reached the right player **by the wrong rung** pass —
+and Story 6.8 persists the step as `award_result.tie_ladder_exit_step`, so a wrong rung ships a
+false explanation to the audience.
+
+⭐ **A ladder-resolved outcome carries NO `deciding_value`, and both suites assert that.** The tie it
+resolves carries none (Stage 2's `tie` arm has no value) and the ladder never re-derives one — a
+fabricated `0` would be a plausible-looking lie rendered on stage. Go leaves the struct field at its
+zero value; TypeScript omits the optional key. The invariant is `deciding_value` **XOR**
+`ladder_exit_step`.
+
+⭐ **`secondary` and each `h2h[opponent]` are the SAME class-shaped union** (`volume || rate`,
+0024:650 and 0024:723): a **decimal string** for a volume key and a `{num, den}` object for a rate
+key. `efficiency` is uniformly `{num, den}` — a volume `v` arrives as `{v, 1}`
+(`snapshot_efficiency_form`, 0024:338-370, *the one definition site*). Both loaders branch on the
+**JSON shape**, never on the vocabulary: consulting the 17/4 split there would re-implement the rule
+under test, so a rung that read the wrong shape would be handed a value the loader had already
+coerced into the right one.
+
+⭐ **`stat_vocabulary` travels in the file** because both runtimes necessarily restate 0023's closed
+set in source — `worker/awards` is a leaf that cannot read the database, and `lib/roulette` may not
+import `server-only` `lib/awards/catalog.ts`. That is four restatements with nothing tying them
+together; both suites pin their own constant against this block by exact equality.
+
+⚠ **`achievement_ts` is a decimal STRING even though it comfortably fits in 2^53.** The split is by
+**provenance**, not magnitude: it comes from the snapshot, so it travels as a string like every other
+snapshot value. `ladder_exit_step` and the floors come from the algorithm and the catalog's bounded
+`int` columns and stay JSON integers.
+
+⚠ **`refusal_details` declares FIVE and only the first FOUR are row-representable.** `internal` is a
+plural strict dominator, and that is unreachable from any *input*: the comparator is antisymmetric
+(`cmp(a,b) == -cmp(b,a)`), so `p` beating `q` means `q` does not beat `p`, so two players can never
+both beat everyone. It is a **typed refusal** rather than a fall-through (Cuatro, 2026-08-04) because
+falling through would convert a comparator bug into a silently *shared* trophy — indistinguishable
+from a legitimate rung-5 bottom-out, which is the outcome this ceremony produces most.
+
+#### The ladder cases that carry the weight
+
+| Case | What only it can catch |
+|---|---|
+| `rung-1-a-RATE-secondary-cross-multiplies-and-crosses-CLASS` | ⭐ **L5** — the rung branches on the **KEY's** class, not `award.class`. A `volume` award with the rate secondary `hs_pct`: an implementation branching on `award.class` reads a `{num,den}` pair as a bare integer. A also has the *smaller* numerator and *smaller* raw `hs_kills`, so a naive numerator compare picks the other player. |
+| `rung-2-a-ratio-of-two-ratios-the-naive-single-pair-compare-gets-BACKWARDS` | ⭐ that rung 2 is a ratio of **two** ratios. `utility_damage / rounds_played`: A is 300/30 = 10, B is 400/50 = 8. Comparing `eff[eff_num_key]` alone picks **B**. An efficiency case both methods agree on proves nothing — the same finding 6-4a recorded for its float search. |
+| `rung-2-four-term-products-past-2-pow-53` | ⭐ **L6's arithmetic width.** Four multiplications of unbounded magnitudes per side: `(2^53+1)^2` against `(2^53+1)^2 − 1`, a difference of **one** in ~2^106. `int64` wraps, a double rounds and picks the other player, and `JSON.parse` corrupts it before any arithmetic — which is why every magnitude here is a decimal string. This is why `math/big`'s ban gains `ladder.go` where 6-4b was told not to widen it. |
+| `rung-3-a-ONE-SIDED-h2h-record-is-not-comparable` | ⭐ **L8** — an absent `h2h` key is *never met*, **never a zero**, and both directions are required. A records 5 against B; B has no record of A. Reading the absent side as 0 makes A a dominator and exits at rung **3** instead of rung 4, with a different winner. |
+| `rung-3-has-NO-strict-dominator-and-SKIPS-without-eliminating-anyone` | ⭐ "beats **all**", not "beats **any**", and that a skip eliminates **nobody**. A beat B, C beat B, A and C never met — a relaxed comparator finds two claimants. |
+| `rung-4-the-MINUS-ONE-sentinel-must-NEVER-win` | ⭐⭐ **L9.** `-1` is the published absent sentinel *and* numerically the smallest value in the column, so a naive `min` crowns the player with **no approved rows at all** — for a rung whose whole meaning is "did it first". The guard re-derives that the naive minimum really would have picked the sentinel holder. |
+| `rung-4-BYTE-IDENTICAL-timestamps-fall-through-to-the-shared-rung-5` | ⭐⭐ the `deferred-work.md:281` shape, answered. `approve_match` stamps one transaction timestamp on every row of a match, so both competitors of a 1v1 duel tie **exactly** — rung 4 provably cannot separate them, and rung 5 is what resolves it. |
+| `a-width-3-tie-NARROWS-to-2-at-rung-1-and-is-SHARED-at-rung-5` | ⭐⭐ **L3** — each rung narrows the **survivors**, never restarting from the original tie. The player rung 1 eliminates holds the **strictly earliest** timestamp in the whole tie, so a rung 4 that re-read `tied` would crown them, at a different rung, over a player already out. |
+| `rung-keys-spelled-as-explicit-JSON-null` / `-OMITTED-` / `-as-EMPTY-STRINGS` | ⭐ the **loader rule**, and what makes `stage2-resolve.json` regenerable. Three rows whose only difference is how absence is spelled, with byte-identical expected blocks — that identity *is* the assertion. `""` is in the list because Go has no nullable string: `Award.SecondaryStat` is a plain `string` whose zero value is what `encoding/json` leaves for both `null` and an omitted key, so Go cannot tell "absent" from "present and empty" and the other two must agree. |
+| `rung-1-a-zero-denominator-secondary-ties-everyone-S3-verbatim` / `rung-2-…-PLUS-INFINITY` | that 6-4a's **S3** semantics are inherited verbatim rather than "fixed": `0/0` ties everyone (so a rung can narrow and resolve nothing) and `n/0` with `n > 0` beats every finite value. Filtering den-0 out is the silent argmax S3 forbids. |
+| `…-MALFORMED IN TWO WAYS AT ONCE` (refusal) | ⭐ **validation order is contract.** A width-1 `tied` whose award *also* names a bogus `secondary_stat`. The published order puts the **award** group before the **tied** group, so it must refuse as `award`; every other row is malformed in exactly one way and cannot see the difference. This is 6-4b's headline defect closed from the first commit rather than after a review. |
+
+**DECISION H** (Cuatro, 2026-08-04) is the product call here, and it answers a **named blocker**
+(`deferred-work.md:281`): rung 5 — the shared co-winner — **is** the deterministic terminal rung,
+satisfied by *recognising* the rung FR-29 already ends with rather than by adding a seeded one. A
+seeded rung would make the ladder a stream **consumer**. The consequence is reported rather than
+engineered away: on a 1v1 corpus where rung 4 provably cannot separate duel opponents, **shared
+trophies are common**. `EXPERIENCE.md:123` calls that "a designed outcome, never an error state".
+
+**DECISION I** covers the three rules no spec document states — each rung **narrows** the survivors,
+a NULL rung key is a deterministic **skip**, and `direction` inverts rungs 1–3 but **never** rung 4
+(it is a recency rule, not a stat). All three are decided in this file and pinned by their own rows.
+
 ### `stage1-pick.json`
 
 ```jsonc
@@ -379,6 +489,8 @@ the wrong reason.
 | `min-and-rate-candidates-resolve-through-the-real-stage-2` | that `provisional_winner` is genuinely Stage 2's outcome — over a `min` volume award and a cross-multiplied `rate` award, where re-deriving the winner lands on a different player and therefore a different weight. |
 | `an-absent-shelf-map-is-shelf-zero-for-everyone` | W8 — the **first spin** of every ceremony. Same pool and players as the mapping row, so the shelf is the only input that changed. |
 | `an-omitted-shelf-key-is-the-empty-shelf` | ⭐ its twin, with **no `shelf` key at all**; its `expected` block is byte-identical, and that identity *is* the assertion. The 6-4b review found the seam disagreeing here — Go's nil map ranged zero times and **published a ceremony**, TypeScript refused it, and this generator raised a bare `AttributeError` — so a correctly produced ceremony would have been called unfair by the verifier. Go cannot tell nil from empty without a pointer, so "absent is empty" is the rule the other two were brought to. `null` and structurally-wrong shelves are still refused by TypeScript and Python and are deliberately **not** vectorable: Go cannot express them. |
+| `an-injected-ladder-RESOLVES-a-tie-that-would-otherwise-refuse` | ⭐ Story 6.5, and the row that un-halts the ceremony. The same tie that refuses one row below is resolved by the injected FR-29 ladder, and the **resolved** winner's shelf is what is looked up: B sits at shelf 1 and weighs 40, where the tie's *first* member would have weighed 100. The `ladder` key is absent on all fourteen pre-6.5 rows, which **is** the no-ladder contract. |
+| `a-SHARED-co-winner-weights-at-the-MINIMUM-shelf` | ⭐⭐ Story 6.5's published co-winner rule, and the only row that can pin it. Both co-winners have **different** shelves (0 and 1), so `min` gives `table[0] = 100` and `max` would give `table[1] = 40` — a different total, a different `n` and a different drawn award. FR-26 biases toward the empty shelf, and `min` is the only aggregation that keeps a co-win from *reducing* the luck owed to the emptiest shelf in it. The guard re-derives that the shelves genuinely differ, without which the row cannot distinguish the two rules at all. |
 | `live-count-equal-to-the-whole-pool-drains-it-in-draw-order` | W6's upper edge. Draining the pool is legal, and the final pick is where a re-draw against a stale total finally produces an out-of-range index rather than a plausible answer. ⚠ Its draw order happens to *equal* priority order (1, 2, 3, 4), so it does **not** discriminate draw order from a sorted output — an earlier note claimed it did. The row that carries that property is the `live_count = 2` re-draw, and both suites now assert it **by name** and assert it is the only one. |
 
 **DECISION F** and **DECISION G** (Cuatro, 2026-08-04) are the two rules here that are *product*
@@ -424,7 +536,7 @@ Each label is an independent stream and each starts at counter `i = 0`.
 
 ## Anchoring
 
-All four files are generated by a **third** implementation —
+All five files are generated by a **third** implementation —
 [`generate_vectors.py`](generate_vectors.py), Python 3 stdlib `hmac` + `hashlib` plus Python's
 own unbounded integers, written from the spec above — so they are neither Go's output nor the
 browser's. The block cases are additionally reproducible from a **fourth**, unrelated HMAC
@@ -449,8 +561,14 @@ implementations with every gate still green. Committed, it is auditable and re-r
 
 ```bash
 python roulette/vectors/generate_vectors.py --check   # verify committed files, write nothing
-python roulette/vectors/generate_vectors.py           # regenerate all four files
+python roulette/vectors/generate_vectors.py           # regenerate all five files
 ```
+
+For `ladder-resolve.json` the anchor is arithmetic, as it is for `stage2-resolve.json`: Python's
+`int` is unbounded by construction, which is exactly the property Go takes from `math/big` and
+TypeScript from `BigInt`, and it is what the four-term rung-2 products need. It carries **no**
+`seed_hex` and **no** byte accounting at all — the ladder is not on the cryptographic axis, because
+it draws nothing.
 
 ⚠ Nothing runs `--check` automatically — this repo has no CI (`deferred-work.md:299`, deferred to
 6.11). It is a manual gate, run at every story's sign-off.

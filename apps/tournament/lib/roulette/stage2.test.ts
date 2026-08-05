@@ -189,12 +189,22 @@ describe('stage2-resolve.json conformance', () => {
       expect(got.steamid64, c.note).toBe(c.expected.steamid64);
       const want = c.expected.deciding_value;
       expect(want).toBeDefined();
-      expect(got.decidingValue.class).toBe(want?.class);
-      if (got.decidingValue.class === 'volume') {
-        expect(got.decidingValue.value).toBe(big('expected', want?.value ?? ''));
+      // ⭐ THE XOR STORY 6.5 INTRODUCED, ASSERTED HERE ON EVERY STAGE-2 WINNER. `decidingValue`
+      // became OPTIONAL when the ladder gained its own winner arm — a ladder-resolved winner
+      // carries `ladderExitStep` and NO value, because the tie it resolved carried none and L12
+      // forbids re-deriving one. The PURE stage is the other half of that XOR: it must always set
+      // the value and never the step. Narrowing here rather than asserting `!== undefined` would
+      // let a Stage-2 regression that dropped the value slip through as "optional, so absent".
+      const decidingValue = got.decidingValue;
+      expect(decidingValue, c.note).toBeDefined();
+      if (decidingValue === undefined) throw new Error('unreachable');
+      expect(got.ladderExitStep, 'the pure stage ran no ladder').toBeUndefined();
+      expect(decidingValue.class).toBe(want?.class);
+      if (decidingValue.class === 'volume') {
+        expect(decidingValue.value).toBe(big('expected', want?.value ?? ''));
       } else {
-        expect(got.decidingValue.num).toBe(big('expected.num', want?.num ?? ''));
-        expect(got.decidingValue.den).toBe(big('expected.den', want?.den ?? ''));
+        expect(decidingValue.num).toBe(big('expected.num', want?.num ?? ''));
+        expect(decidingValue.den).toBe(big('expected.den', want?.den ?? ''));
       }
     } else if (got.kind === 'tie') {
       // ⭐ ORDER IS PART OF THE ANSWER. The set is byte-lex, so this compares positionally rather
@@ -521,11 +531,15 @@ describe('the FR-29 ladder is an injected port whose 6-4a implementation refuses
     // A fallback that exists is a fallback someone wires into production. The only exported
     // Ladder must refuse.
     expect(() =>
-      refusingLadder.resolve(award, {
-        kind: 'tie',
-        tied: ['1', '2'],
-        reason: 'equal_value',
-      }),
+      refusingLadder.resolve(
+        award,
+        { kind: 'tie', tied: ['1', '2'], reason: 'equal_value' },
+        // ⭐ THE PORT CARRIES THE PLAYERS SINCE STORY 6.5 — rungs 1-4 read four snapshot blocks
+        // that are on neither an `Award` nor a tie's `string[]`. `refusingLadder` SURVIVES that
+        // widening and stays refusing (DECISION J): it is what every tie row in this file is driven
+        // through, and 6-4a's mutation M13 only became vector-killable that way.
+        [],
+      ),
     ).toThrow(LadderRefusedError);
   });
 

@@ -82,6 +82,56 @@ export interface SeedAward {
   readonly floorRounds: number;
   readonly floorKills: number;
   readonly priority: number;
+  /**
+   * FR-29 rung 1 — the secondary stat the tie ladder narrows on before anything else (0023:71).
+   *
+   * ⭐⭐ MEASURED, NOT NARRATED (Story 6.5, Question 2 — Cuatro's call, 2026-08-04). 0024's DECISION B
+   * left all three keys NULL for 6.5 to fill, and filling them by name would have been exactly the
+   * mistake Story 6.1's clone probe caught at the deciding stat. So every candidate key was run
+   * against the FIVE REAL TIES the corpus produces (floors forced to 0 in the harness only), and the
+   * measurement reproduced `MEASURED_DEGENERATE` at the LADDER: `entry_frags` and `rounds_won` do
+   * NOT break the `kills` tie and `opening_deaths` does NOT break the `deaths` tie, because each is
+   * an exact per-player clone of the stat that tied. `adr` breaks ALL FIVE.
+   *
+   * So `adr` is the secondary for every award that is not already decided by it, and the two `adr`
+   * awards fall back to `kills`. It is also the semantically right answer — damage per round is the
+   * ordinary "who actually played better" measure — and, being a RATE key on the EIGHT VOLUME
+   * awards (8 volume + 4 rate = 12; `adr` is the secondary on all eight of the volume ones plus the
+   * two rate awards not already decided by it), it is what makes the ladder's L5 cross-class path
+   * the NORMAL case rather than an exotic one. ⚠ The count was "nine" until the Group-1 code review
+   * counted it: measure, never narrate, applies to the comments too.
+   */
+  readonly secondaryStat: StatKey;
+  /**
+   * FR-29 rung 2 — the efficiency ratio `eff_num_key / eff_den_key`, resolved by pure integer
+   * cross-multiplication over AD-19's uniform `{num, den}` form (0023:72-73).
+   *
+   * ⚠ BOTH-OR-NEITHER: the ladder refuses a half-configured pair (a skip means "this award declines
+   * rung 2"; half a ratio means somebody edited the catalog and stopped). `kills / deaths` is the
+   * universal second-order CS measure and is the BACKSTOP behind `adr` — on today's corpus rung 1
+   * resolves every real tie, so rung 2 never executes; it is filled so the rung is CONFIGURED rather
+   * than permanently skipped, and `direction` inverts it for `El Inofensivo` exactly as it inverts
+   * rung 1.
+   *
+   * ⭐⭐ THE DENOMINATOR IS `deaths`, AND A ZERO DENOMINATOR IS A REAL SHAPE ON A 1v1 CORPUS —
+   * ACCEPTED AND DOCUMENTED RATHER THAN ENGINEERED AWAY (Cuatro, Group-1 code review, 2026-08-04).
+   * Under 6-4a's S3 semantics, which L6 forbids this story from changing, the rung-2 ratio
+   * `kills·1 / 1·deaths` produces two degenerate cases that the choice of `deaths` makes ordinary
+   * rather than exotic:
+   *
+   *   - a survivor with **0 deaths** yields `n/0`, which BEATS every finite value — so they win
+   *     rung 2 outright on every `max` award, and are eliminated by everyone on `El Inofensivo`;
+   *   - a survivor with **0 kills AND 0 deaths** yields `0/0`, which compares EQUAL to everything —
+   *     so they can never be eliminated at rung 1 or rung 2 and ride to the shared rung 5.
+   *
+   * Both are consistent with Stage 2, which is the point: the ladder shares `compareValues` so that
+   * "the ladder agrees with Stage 2" stays a fact rather than a claim. Neither is reachable on
+   * today's corpus (rung 1 resolves all five real ties), and the alternative — a denominator that
+   * cannot be zero, e.g. `rounds_played` — was left for a future measured pass rather than swapped
+   * in unmeasured. ⛔ If you change this pair, re-run the Question-2 probe; do not reason about it.
+   */
+  readonly effNumKey: StatKey;
+  readonly effDenKey: StatKey;
 }
 
 /** FR-21 anti-farm floors. Value-parity with `public.leaderboard`'s literals (0021:56) and 0023's defaults. */
@@ -172,6 +222,9 @@ const SEED_CATALOG = [
     statLabel: 'Bajas', // Bajas = kills (NEVER "muertes" — deferred-work.md:255)
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_VOLUME,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 1,
   },
   {
@@ -183,6 +236,11 @@ const SEED_CATALOG = [
     statLabel: 'Daño por ronda',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_RATE,
+    // ⚠ `kills`, not `adr` — an award cannot break its own tie on its own deciding stat, which is
+    // the one value every tied player is equal on by construction.
+    secondaryStat: 'kills',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 2,
   },
   {
@@ -194,6 +252,9 @@ const SEED_CATALOG = [
     statLabel: '% de cabeza',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_RATE,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 3,
   },
   {
@@ -205,6 +266,9 @@ const SEED_CATALOG = [
     statLabel: 'Bajas a la cabeza',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_VOLUME,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 4,
   },
   {
@@ -216,6 +280,9 @@ const SEED_CATALOG = [
     statLabel: 'Duelos de apertura ganados',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_RATE,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 5,
   },
   {
@@ -227,6 +294,9 @@ const SEED_CATALOG = [
     statLabel: 'Bajas con cuchillo',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_VOLUME,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 6,
   },
   {
@@ -238,6 +308,9 @@ const SEED_CATALOG = [
     statLabel: 'Bajas a través de un muro',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_VOLUME,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 7,
   },
   {
@@ -249,6 +322,9 @@ const SEED_CATALOG = [
     statLabel: 'Bajas a través del humo',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_VOLUME,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 8,
   },
   {
@@ -260,6 +336,9 @@ const SEED_CATALOG = [
     statLabel: 'Bajas a ciegas',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_VOLUME,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 9,
   },
   {
@@ -271,6 +350,9 @@ const SEED_CATALOG = [
     statLabel: 'Daño con utilidad',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_VOLUME,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 10,
   },
   {
@@ -282,6 +364,9 @@ const SEED_CATALOG = [
     statLabel: 'Muertes', // Muertes = deaths (NEVER "bajas" — deferred-work.md:255)
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_VOLUME,
+    secondaryStat: 'adr',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 11,
   },
   {
@@ -293,6 +378,13 @@ const SEED_CATALOG = [
     statLabel: 'Menor daño por ronda',
     floorRounds: FLOOR_ROUNDS,
     floorKills: FLOOR_KILLS_RATE,
+    // ⚠ `kills`, not `adr` — see `Rey del Daño`. ⭐ And `direction: 'min'` INVERTS this rung, so the
+    // most harmless player's tie is broken by the FEWEST kills, which is the coherent reading rather
+    // than an accident: `El Inofensivo` is the catalog's only `min` award and the ladder's L4 says
+    // direction inverts rungs 1-3 and never rung 4.
+    secondaryStat: 'kills',
+    effNumKey: 'kills',
+    effDenKey: 'deaths',
     priority: 12,
   },
 ] as const satisfies readonly SeedAward[];
@@ -309,15 +401,25 @@ export interface CurateAwardPayload {
   floor_rounds: number;
   floor_kills: number;
   priority: number;
+  /**
+   * The FR-29 rung keys (Story 6.5). ⭐ NO MIGRATION WAS NEEDED: 0023 already declares all three
+   * columns with closed-set CHECKs that admit NULL (0023:71-73, 98-115) and `curate_award_catalog`
+   * already validates and inserts them (0023:344-346, 380-390, 458-462) — 6.1 simply had no values
+   * to send. This is the story that measured them.
+   */
+  secondary_stat: StatKey;
+  eff_num_key: StatKey;
+  eff_den_key: StatKey;
 }
 
 /**
  * Project the catalog onto the RPC's payload shape. The ONLY producer of a curate payload — a caller that hand-
  * built one would be a second definition site of the catalog, which is exactly what AC1 forbids.
  *
- * `secondary_stat` / `eff_num_key` / `eff_den_key` are deliberately omitted (the RPC defaults them to NULL): the
- * FR-29 tiebreak ladder is Story 6.5's, and seeding a rung the ladder does not yet read would be inventing a
- * contract for a story that has not made its decisions.
+ * ⭐ `secondary_stat` / `eff_num_key` / `eff_den_key` ARE SENT SINCE STORY 6.5. 6.1 omitted them because the
+ * FR-29 ladder had made no decisions yet and seeding a rung nothing read would have been inventing a contract;
+ * 6.5 built the ladder, MEASURED which keys actually break the real corpus's five ties, and filled them. Omitting
+ * them now would leave rungs 1 and 2 permanently skipped at the real ceremony.
  */
 export function toCuratePayload(catalog: readonly SeedAward[] = AWARD_CATALOG): CurateAwardPayload[] {
   return catalog.map((a) => ({
@@ -329,5 +431,8 @@ export function toCuratePayload(catalog: readonly SeedAward[] = AWARD_CATALOG): 
     floor_rounds: a.floorRounds,
     floor_kills: a.floorKills,
     priority: a.priority,
+    secondary_stat: a.secondaryStat,
+    eff_num_key: a.effNumKey,
+    eff_den_key: a.effDenKey,
   }));
 }

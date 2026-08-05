@@ -8,7 +8,8 @@
     "winner",
     "tie",
     "no_eligible_players",
-    "no_awardable_value"
+    "no_awardable_value",
+    "shared"
   ],
   "tie_reasons": [
     "equal_value",

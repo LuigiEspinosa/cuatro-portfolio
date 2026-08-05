@@ -60,9 +60,9 @@ export type AwardDirection = 'max' | 'min';
  * magnitudes is deliberate: `floor_rounds`/`floor_kills` are bounded `int` columns (0023:74-75)
  * while every snapshot magnitude is an unbounded integer (AD-19). Provenance, not taste.
  *
- * ⚠ `secondaryStat` / `effNumKey` / `effDenKey` are deliberately absent. They are NULL in the
- * shipped seed (0024 DECISION B) and they are the FR-29 ladder's rungs 1 and 2 — Story 6.5's to
- * define, not this file's to guess.
+ * ⭐ WIDENED BY STORY 6.5 with the three FR-29 rung keys (0023:71-73). They were deliberately
+ * omitted at 6-4a because the ladder had made no decisions yet; rungs 1 and 2 cannot read a key
+ * they were never handed, so the projection grows.
  */
 export interface Award {
   readonly decidingStat: string;
@@ -76,6 +76,47 @@ export interface Award {
   readonly direction: AwardDirection;
   readonly floorRounds: number;
   readonly floorKills: number;
+
+  /**
+   * The FR-29 rung keys, all three NULLABLE (0023:97-115 declares them `text` with closed-set
+   * CHECKs that admit NULL).
+   *
+   * ⭐ THREE SPELLINGS OF ABSENT, ALL EQUIVALENT, AND THAT IS THE CONTRACT: `undefined` (the key
+   * omitted), `null` (the column's NULL, which is what the vector writes) and `''`. The first two
+   * are the obvious pair; the third is forced by the producer — Go has no nullable string, so
+   * `Award.SecondaryStat` is a plain `string` whose zero value `""` is what `encoding/json` leaves
+   * behind for BOTH a JSON `null` and an omitted key. Go therefore cannot distinguish "absent"
+   * from "present and empty", and if this side treated `''` as a present-but-invalid key the seam
+   * would disagree on an input neither runtime would report — exactly the class of divergence the
+   * 6-4b review resolved by making an absent container the empty one. {@link rungKey} is the one
+   * place that normalisation happens.
+   *
+   * ⚠ `stage2-resolve.json`'s award objects carry NONE of the three and must keep not carrying
+   * them: that file has to regenerate with `outcome_kinds` as its only changed bytes.
+   *
+   * ⚠ ALL THREE ARE NOW FILLED FOR ALL TWELVE SHIPPED AWARDS — 6.5's catalog pass (Question 2,
+   * measured) set `secondaryStat` and the `kills`/`deaths` efficiency pair on every one, so the
+   * deterministic SKIP these fields describe (`ladder.ts`'s L2) is exercised by the VECTOR and by a
+   * reduced 6.6 award, never by a shipped ceremony. The fields stay nullable because 0023's columns
+   * are. (Comment corrected at the Group-1 code review, 2026-08-04 — it still said "absent until 6.5
+   * fills them" in the commit that filled them.)
+   */
+  readonly secondaryStat?: string | null;
+  readonly effNumKey?: string | null;
+  readonly effDenKey?: string | null;
+}
+
+/**
+ * The ONE normalisation of a nullable rung key: `undefined`, `null` and `''` all mean ABSENT, and
+ * everything else is the key itself.
+ *
+ * Exported because `ladder.ts` and both suites must agree with it exactly — a second copy of this
+ * three-way test is a second place for the producer and the verifier to drift apart. See the note
+ * on {@link Award.secondaryStat} for why `''` is in the list.
+ */
+export function rungKey(value: string | null | undefined): string | null {
+  if (value === undefined || value === null || value === '') return null;
+  return value;
 }
 
 /**
@@ -111,7 +152,75 @@ export interface SnapshotPlayer {
    */
   readonly volume: Readonly<Record<string, bigint>>;
   readonly rate: Readonly<Record<string, RatePair>>;
+
+  // ── The four AD-19 blocks Story 6.5 is the FIRST consumer of (0024:716-737). ─────────────────
+  //
+  // Nothing had ever read them: 6-4a took `volume` / `rate` / `roundsPlayed` / `kills` / `idleDq`
+  // and stopped, because the FR-29 rungs that need these had made no decisions yet.
+
+  /**
+   * Rung 1's block: `volume || rate` (0024:723), so every one of the 21 vocabulary keys in its
+   * CLASS-SHAPED form — an integer for a volume key, a `{num,den}` pair for a rate key.
+   *
+   * ⭐ IT IS THE SAME TYPE `h2h`'s inner record uses, deliberately, because 0024 builds both from
+   * the same `p.vol || p.rat` expression (`:650`, `:723`). Two near-identical types is how the two
+   * runtimes drift.
+   *
+   * ⚠ OPTIONAL BECAUSE ABSENT IS THE EMPTY BLOCK. Go's `map[string]StatValue` cannot tell a nil
+   * map from an empty one, so `undefined` normalises to `{}` inside `ladder.ts` — never by
+   * loosening this module, which the scope boundary forbids.
+   */
+  readonly secondary?: Readonly<Record<string, StatValue>>;
+
+  /**
+   * Rung 2's block: every key in the UNIFORM `{num,den}` form, so a volume key `k` with value `v`
+   * arrives as `{v, 1n}` (`snapshot_efficiency_form`, 0024:338-370 — the ONE definition site; do
+   * not restate the shape at a call site). That uniformity is what lets a rung-2 ratio over two
+   * arbitrary vocabulary keys resolve by pure integer cross-multiplication with no class branching
+   * and no division.
+   */
+  readonly efficiency?: Readonly<Record<string, RatePair>>;
+
+  /**
+   * Rung 3's block: `{opponentSteamid64: {the same class-shaped union}}` over the matches the two
+   * players SHARED.
+   *
+   * ⛔ AN ABSENT OPPONENT KEY IS THE `NEVER MET` SIGNAL AND IS NEVER A ZERO (0024:918-923,
+   * verbatim: "a zero would silently become a real comparison"). It is `{}` for a player with no
+   * shared approved matches, and a player is never a key in their own map.
+   */
+  readonly h2h?: Readonly<Record<string, Readonly<Record<string, StatValue>>>>;
+
+  /**
+   * Rung 4's value: an epoch-MILLISECOND integer with the PUBLISHED ABSENT SENTINEL `-1n`
+   * (0024:703-709, 898-907). It is NEVER NULL in the snapshot.
+   *
+   * ⭐ `-1` IS NUMERICALLY THE SMALLEST VALUE IN THE COLUMN, which is the whole reason `ladder.ts`'s
+   * L9 exists: a naive `min` over this field crowns the player with NO APPROVED ROWS AT ALL, for a
+   * rung whose entire meaning is "did it first".
+   *
+   * ⚠ It is a DOCUMENTED PROXY — `min(stat_row.approved_at)`, i.e. admin approval order, not a demo
+   * tick (deferred-work.md:282).
+   */
+  readonly achievementTs?: bigint;
 }
+
+/**
+ * AD-19's CLASS-SHAPED integer union: an integer for a volume key, a `{num,den}` pair for a rate
+ * key.
+ *
+ * ⭐ IT IS {@link DecidingValue}, REUSED RATHER THAN RESTATED. The two are the same shape because
+ * they are the same thing — one integer value read out of the frozen snapshot, branched on the
+ * key's class — and Story 6.5's rungs 1 and 3 must compare them with the EXACT arithmetic Stage 2
+ * uses ({@link compareStatValues}: cross-multiplication, never `num === num && den === den`, and
+ * 6-4a's verbatim zero-denominator total order). A second near-identical type would be a second
+ * comparator waiting to be written, which is precisely how the producer and the verifier drift.
+ *
+ * ⚠ THE `DISPLAY ONLY` WARNING ON `DecidingValue` IS ABOUT THE OUTCOME FIELD, not about the shape.
+ * `Outcome.decidingValue` is display-only and nothing re-derives a winner from it; the TYPE is just
+ * "a class-shaped integer", and `secondary` / `h2h` are genuine resolution inputs.
+ */
+export type StatValue = DecidingValue;
 
 /** Which equality tied the award. The two are different bugs when they are wrong. */
 export type TieReason = 'equal_value' | 'equal_cross_product';
@@ -140,9 +249,52 @@ export type DecidingValue =
  * project onto the same vector JSON, which is the contract they actually share.
  */
 export type Outcome =
-  | { readonly kind: 'winner'; readonly steamid64: string; readonly decidingValue: DecidingValue }
+  | {
+      readonly kind: 'winner';
+      readonly steamid64: string;
+      /**
+       * ⭐ OPTIONAL SINCE STORY 6.5, AND THE INVARIANT IS `decidingValue` XOR `ladderExitStep`.
+       * {@link resolveStage2} always sets it and never sets the exit step; a LADDER-resolved winner
+       * always sets the exit step and never sets this — because the tie a ladder resolves carries
+       * no value (Stage 2's `tie` arm has none) and L12 forbids the ladder from re-deriving one.
+       *
+       * ⛔ FABRICATING A ZERO HERE WOULD BE WORSE THAN ABSENCE: a plausible-looking `0` is exactly
+       * the silent wrongness this package refuses everywhere else, and `award_result.deciding_value`
+       * is display-only, so a rendered zero would simply be a lie on stage. Go's mirror leaves the
+       * struct field at its zero value, which is the same statement in that language. Both suites
+       * assert the XOR over every case in both vector files.
+       */
+      readonly decidingValue?: DecidingValue;
+      /**
+       * Which FR-29 rung decided this award — 1..4 — or absent when no ladder was involved.
+       *
+       * ⭐ AS LOAD-BEARING AS THE WINNER, and 6.8 is why: it persists this as
+       * `award_result.tie_ladder_exit_step` (SOLUTION-DESIGN:222, nullable), so a ladder that
+       * reaches the RIGHT player by the WRONG rung ships a false explanation to the audience.
+       * Every ladder vector case pins it.
+       *
+       * ⚠ NEVER SET BY {@link resolveStage2}. The pure stage resolves no tie, so this field is
+       * absent on every outcome it produces — pinned over every case in `stage2-resolve.json`.
+       */
+      readonly ladderExitStep?: 1 | 2 | 3 | 4;
+    }
   | { readonly kind: 'tie'; readonly tied: readonly string[]; readonly reason: TieReason }
   | { readonly kind: 'no_eligible_players' }
+  /**
+   * ⭐ STORY 6.5's FIFTH ARM: the FR-29 ladder bottomed out at rung 5 and the award is genuinely
+   * SHARED by every survivor.
+   *
+   * A DESIGNED OUTCOME, NEVER AN ERROR STATE — EXPERIENCE.md:123 says so in those words, and
+   * FR-29, AD-14, epics.md:1084 and SOLUTION-DESIGN §9.3 all end the ladder here. It is the
+   * deterministic TERMINAL rung (DECISION H, Cuatro 2026-08-04): there is no seeded rung below it,
+   * which is what keeps the ladder a zero-byte function and 6-4b's measured 22-byte ceremony valid.
+   *
+   * `winners` is the FULL surviving set in byte-lex order, never a first and never a lowest
+   * SteamID64. It is a SEPARATE field from a tie's `tied` on purpose — `tied` is the tie that
+   * FORMED, `winners` is who actually WON, and on a narrowed ladder those differ (a width-3 tie can
+   * share between two).
+   */
+  | { readonly kind: 'shared'; readonly winners: readonly string[]; readonly ladderExitStep: 5 }
   /**
    * ⭐ CARRIES THE SUPPRESSED SET (6-4a code review). DECISION E's zero check runs BEFORE the
    * `|best| === 1` branch, so the tie that would have formed never becomes a `'tie'` outcome;
@@ -170,6 +322,11 @@ export const OUTCOME_KINDS: readonly string[] = Object.freeze([
   'tie',
   'no_eligible_players',
   'no_awardable_value',
+  // ⭐ APPENDED BY STORY 6.5, DELIBERATELY. This list is asserted by EXACT EQUALITY against the
+  // vector's `outcome_kinds` and against Go's const block, so adding the ladder's fifth arm
+  // reddens all three at once — which is exactly what those pins exist for. It is appended rather
+  // than inserted so `stage2-resolve.json` regenerates with these bytes as its ONLY change.
+  'shared',
 ]);
 
 export const TIE_REASONS: readonly string[] = Object.freeze(['equal_value', 'equal_cross_product']);
@@ -204,9 +361,21 @@ export class Stage2Error extends Error {
  * `Outcome` rather than a bare winner on purpose: what a ladder-resolved award looks like is 6.5's
  * design, and inventing a field for it here would be inventing a contract for a story that has not
  * made its decisions.
+ *
+ * ⭐ WIDENED BY STORY 6.5 TO CARRY THE PLAYERS, and the reason is structural rather than
+ * convenient: rungs 1-4 read `secondary`, `efficiency`, `h2h` and `achievementTs`, none of which is
+ * on an `Award` or on a tie's `readonly string[]`. The 6-4a signature could not see the data the
+ * ladder exists to read, so the port grows rather than the ladder guessing.
+ *
+ * ⛔ IT IS SYNCHRONOUS AND TAKES NO `Stream`, AND THE SIGNATURE IS THE PROOF (`ladder.ts`'s L1).
+ * The FR-29 ladder consumes ZERO PRNG bytes: rung 5 is deterministic, so nothing below it needs
+ * randomness. A runtime assertion that "the ladder drew nothing" is VACUOUS against a function that
+ * cannot reach a stream — the 6-4b code review deleted exactly that assertion — so the property is
+ * carried here, by the type, where no implementation can opt out of it. (`stage1Pick` is `async`
+ * because it draws; this is not.)
  */
 export interface Ladder {
-  resolve(award: Award, tie: TieOutcome): Outcome;
+  resolve(award: Award, tie: TieOutcome, players: readonly SnapshotPlayer[]): Outcome;
 }
 
 /**
@@ -237,8 +406,16 @@ export class LadderRefusedError extends Error {
  *
  * It is the DEFAULT and there is deliberately no dev-only fallback ladder in this module — a
  * fallback that exists is a fallback someone wires into production.
+ *
+ * ⭐ IT SURVIVES STORY 6.5 AND IT STAYS REFUSING (DECISION J). Now that `resolveLadder` exists, the
+ * temptation is to delete this — but it is what EVERY tie row in `stage2-resolve.json` is driven
+ * through, and 6-4a's mutation M13 (the ladder's refusal swallowed by `resolveAward`) only became
+ * vector-killable that way. Deleting it would silently weaken the Stage-2 gate while this story was
+ * busy elsewhere, and would make that file impossible to regenerate byte-identically.
  */
 export const refusingLadder: Ladder = Object.freeze({
+  // `players` is accepted and deliberately unused: this ladder refuses before it could read
+  // anything, and the parameter exists so the object satisfies the widened port.
   resolve(award: Award, tie: TieOutcome): Outcome {
     throw new LadderRefusedError(award, tie);
   },
@@ -261,7 +438,11 @@ export function resolveAward(
   }
   const outcome = resolveStage2(award, players);
   if (outcome.kind !== 'tie') return outcome;
-  return ladder.resolve(award, outcome);
+  // ⭐ THE PLAYERS TRAVEL WITH THE TIE (Story 6.5). The ladder receives the SAME array Stage 2
+  // resolved over — not a re-read and not a re-filter — because L12 forbids the ladder from
+  // re-applying the FR-21 floors or re-deriving the deciding value: doing either could empty the
+  // set or disagree with the caller about who is even in the race.
+  return ladder.resolve(award, outcome, players);
 }
 
 /**
@@ -359,8 +540,26 @@ export function resolveStage2(award: Award, players: readonly SnapshotPlayer[]):
  * is still equal in both directions.
  */
 function beats(award: Award, a: DecidingValue, b: DecidingValue): boolean {
-  const c = compareValues(a, b);
-  return award.direction === 'max' ? c > 0 : c < 0;
+  return beatsBy(award.direction, a, b);
+}
+
+/**
+ * `beats`, taking the direction alone.
+ *
+ * ⭐ EXPORTED FOR `ladder.ts` (Story 6.5), and sharing it is the point rather than a convenience.
+ * FR-29's rungs 1, 2 and 3 are all "who is best under `direction`" over a class-shaped value, which
+ * is the SAME question Stage 2 asks — including 6-4a's verbatim zero-denominator semantics (S3):
+ * cross-multiplication stays total, `0/0` compares equal to everything, and `n/0` with `n > 0`
+ * beats every finite value. A ladder with its own comparator would be a second place for those to
+ * be got wrong, and the two would disagree only on inputs no row happens to carry.
+ *
+ * ⚠ It takes an {@link AwardDirection}, NOT an {@link Award}, because rung 4 must NOT be inverted
+ * (`ladder.ts`'s L4) and rung 2 compares a COMPUTED ratio that belongs to no award's class. Passing
+ * the whole award would invite both mistakes.
+ */
+export function beatsBy(direction: AwardDirection, a: DecidingValue, b: DecidingValue): boolean {
+  const c = compareStatValues(a, b);
+  return direction === 'max' ? c > 0 : c < 0;
 }
 
 /**
@@ -398,7 +597,7 @@ function beats(award: Award, a: DecidingValue, b: DecidingValue): boolean {
  * ⚠ EQUALITY IS THE CROSS PRODUCT, never `num === num && den === den`. `3/6` and `2/4` are the
  * same value carried by different pairs, and a pair-equality check misses that tie entirely.
  */
-function compareValues(a: DecidingValue, b: DecidingValue): number {
+export function compareStatValues(a: DecidingValue, b: DecidingValue): number {
   if (a.class === 'volume' && b.class === 'volume') {
     return a.value > b.value ? 1 : a.value < b.value ? -1 : 0;
   }

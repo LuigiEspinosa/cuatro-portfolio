@@ -260,6 +260,59 @@ describe('THIN_BUT_REAL — the 6.4/6.5 hand-off anchor (AC3)', () => {
   });
 });
 
+describe('the FR-29 rung keys (Story 6.5, Question 2 — MEASURED)', () => {
+  it('every award declares all three, so no rung is permanently skipped at the ceremony', () => {
+    for (const a of AWARD_CATALOG) {
+      expect(STAT_VOCABULARY, `${a.name}.secondaryStat`).toContain(a.secondaryStat);
+      expect(STAT_VOCABULARY, `${a.name}.effNumKey`).toContain(a.effNumKey);
+      expect(STAT_VOCABULARY, `${a.name}.effDenKey`).toContain(a.effDenKey);
+    }
+  });
+
+  it('no award breaks its own tie on its own deciding stat', () => {
+    // The one value every tied player is EQUAL on by construction. A secondary that repeated it
+    // would make rung 1 a guaranteed no-op — real code that can never resolve anything.
+    for (const a of AWARD_CATALOG) {
+      expect(a.secondaryStat, a.name).not.toBe(a.decidingStat);
+    }
+  });
+
+  it('⭐ no secondary is MEASURED_DEGENERATE against its own deciding stat', () => {
+    // ⭐⭐ THE MEASURED RULE, PINNED. `entry_frags` / `rounds_won` / `kast_pct` are exact per-player
+    // CLONES of `kills` and `opening_deaths` of `deaths` (28/28 players, Story 6.1's Task-0 probe),
+    // so choosing one as the secondary for a `kills` or `deaths` award produces a rung that CANNOT
+    // BREAK A TIE IT IS EVER HANDED. Story 6.5's BAR reproduced that at the ladder itself: over the
+    // real corpus's five ties, `entry_frags` and `rounds_won` left the `kills` tie unresolved and
+    // `opening_deaths` left the `deaths` tie unresolved, while `adr` broke all five.
+    const clonesOf: Record<string, readonly StatKey[]> = {
+      kills: ['entry_frags', 'rounds_won', 'kast_pct'],
+      deaths: ['opening_deaths'],
+    };
+    for (const a of AWARD_CATALOG) {
+      const clones = clonesOf[a.decidingStat] ?? [];
+      expect(clones, `${a.name}: a clone of ${a.decidingStat} cannot break its tie`).not.toContain(
+        a.secondaryStat,
+      );
+    }
+  });
+
+  it('no secondary is MEASURED_EMPTY — a Σ0 stat breaks nothing', () => {
+    for (const a of AWARD_CATALOG) {
+      expect(MEASURED_EMPTY.has(a.secondaryStat), `${a.name}.secondaryStat`).toBe(false);
+    }
+  });
+
+  it('the efficiency pair is BOTH-OR-NEITHER, and never a stat over itself', () => {
+    for (const a of AWARD_CATALOG) {
+      // The ladder REFUSES a half-configured pair, so shipping one would refuse at the ceremony.
+      expect(typeof a.effNumKey, a.name).toBe('string');
+      expect(typeof a.effDenKey, a.name).toBe('string');
+      // `k / k` is 1 for everyone — a rung that cannot discriminate.
+      expect(a.effNumKey, a.name).not.toBe(a.effDenKey);
+    }
+  });
+});
+
 describe('toCuratePayload — the RPC projection (AC1/AC4)', () => {
   it('maps every award, argument by argument, into the RPC snake_case shape', () => {
     const payload = toCuratePayload();
@@ -274,6 +327,12 @@ describe('toCuratePayload — the RPC projection (AC1/AC4)', () => {
       floor_rounds: first.floorRounds,
       floor_kills: first.floorKills,
       priority: first.priority,
+      // ⭐ Story 6.5 — the three FR-29 rung keys now RIDE the payload. 6.1 omitted them because the
+      // ladder had made no decisions yet; 6.5 MEASURED which keys break the real corpus's five ties
+      // and filled them, and omitting them now would leave rungs 1 and 2 permanently skipped.
+      secondary_stat: first.secondaryStat,
+      eff_num_key: first.effNumKey,
+      eff_den_key: first.effDenKey,
     });
   });
 
@@ -281,7 +340,19 @@ describe('toCuratePayload — the RPC projection (AC1/AC4)', () => {
     for (const row of toCuratePayload()) {
       expect(Object.keys(row)).not.toContain('statLabel');
       expect(Object.keys(row).sort()).toEqual(
-        ['bucket', 'class', 'deciding_stat', 'direction', 'floor_kills', 'floor_rounds', 'name', 'priority'],
+        [
+          'bucket',
+          'class',
+          'deciding_stat',
+          'direction',
+          'eff_den_key',
+          'eff_num_key',
+          'floor_kills',
+          'floor_rounds',
+          'name',
+          'priority',
+          'secondary_stat',
+        ],
       );
     }
   });

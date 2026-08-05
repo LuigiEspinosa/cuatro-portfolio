@@ -801,7 +801,12 @@ func TestScannedSourceFilesAreExactlyTheShippedModules(t *testing.T) {
 		got = append(got, name)
 	}
 	sort.Strings(got)
-	want := []string{"labels.go", "prng.go", "stage1.go", "stage2.go"}
+	// ⭐ Story 6.5 added `ladder.go` and DID widen the `math/big` exemption below — the opposite
+	// call from 6-4b's, and the difference is the ARITHMETIC rather than the convenience. Rung 2
+	// compares a ratio of two ratios, which is four multiplications of unbounded snapshot
+	// magnitudes per side (L6); there is no `n <= 2^32` bounding them the way Stage 1's weights are
+	// bounded. That is the same argument `stage2.go` made, made again.
+	want := []string{"labels.go", "ladder.go", "prng.go", "stage1.go", "stage2.go"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("scanned %v, want %v", got, want)
 	}
@@ -830,10 +835,19 @@ func TestPackageSourceHasNoBannedConstructs(t *testing.T) {
 		// cross-products are their PRODUCT, so unbounded arithmetic is the requirement (S4) rather
 		// than a symptom — and it is what the TypeScript verifier gets from BigInt. Widening the
 		// exception to another file needs the same argument made again.
+		// ⭐ WIDENED BY STORY 6.5 TO `ladder.go`, DELIBERATELY, and the justification is the same
+		// one stage2.go made rather than a relaxation of it. FR-29's rung 2 is a RATIO OF TWO
+		// RATIOS: comparing two players cross-multiplies four snapshot magnitudes per side, so the
+		// operands are products of unbounded values with no bound anywhere in sight. Story 6-4b was
+		// explicitly told NOT to add stage1.go here and that was right — Stage 1's operands are
+		// weights and a total bounded by uniform_int's own n <= 2^32, so reaching for math/big
+		// there would have meant the bound had been abandoned. The list stays an EXCEPTION list, so
+		// a file added later is banned by default, and the four narrowing needles below (big.Float,
+		// .Int64(), .Uint64(), .Float64()) still apply to every file including these two.
 		{
 			path:     "math/big",
 			why:      "the bound n <= 2^32 exists precisely so uint64 suffices",
-			exceptIn: []string{"stage2.go"},
+			exceptIn: []string{"stage2.go", "ladder.go"},
 		},
 	}
 	bannedCode := []struct{ needle, why string }{
