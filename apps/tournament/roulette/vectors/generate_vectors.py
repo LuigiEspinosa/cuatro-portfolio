@@ -62,7 +62,13 @@ whole-roster co-win over a stat nobody scored on. `min` awards and `rate` awards
 deliberately untouched — a minimal ADR of 0 is a legitimate win. It is written here
 because the vector is the shared contract; both runtimes must implement it identically.
 
-Usage:  python roulette/vectors/generate_vectors.py          # writes all three JSON files
+STAGE 1 (Story 6-4b), transcribed from SOLUTION-DESIGN §9.2 / ARCHITECTURE-SPINE:218 /
+epics.md:1066. This is the first stage that CONSUMES the stream, so the byte accounting
+below is contract rather than a side effect — see the section comment above
+`stage1_pick`, which carries the full transcription and the two product decisions
+(DECISION F, DECISION G) it turns on.
+
+Usage:  python roulette/vectors/generate_vectors.py          # writes all four JSON files
         python roulette/vectors/generate_vectors.py --check  # verify, write nothing
 
 `--check` is the mode a CI job or a reviewer wants: it regenerates in memory and diffs
@@ -1268,6 +1274,1207 @@ def build_stage2_file() -> dict:
     }
 
 
+# ── Stage 1 (Story 6-4b): the seeded weighted live-category pick ──────────────
+#
+# Transcribed from SOLUTION-DESIGN §9.2 / ARCHITECTURE-SPINE:218 / epics.md:1066. Unlike
+# Stage 2 this stage CONSUMES THE STREAM, so its byte accounting is contract rather than a
+# side effect: every draw below records `bytes_consumed_after`, exactly as the uniform_int
+# vector does, because that is the only externally visible proof that both runtimes walked
+# the same stream — and the only way a rejection inside uniform_int is observable at all.
+#
+#     weight(a, players, shelf, table):
+#         out = resolve_stage2(a.award, players)          # the provisional winner
+#         if out.kind == tie:            REFUSE (typed, names Story 6.5)        # W9
+#         if out.kind in {no_eligible_players, no_awardable_value}:
+#                                        idx = 0          # no player => empty shelf => heaviest
+#         else:                          idx = min(shelf.get(out.steamid64, 0), len(table) - 1)
+#         return table[idx]
+#
+#     stage1_pick(stream, candidates, players, shelf, table, live_count):
+#         validate(table)         # non-empty, strictly decreasing, every entry > 0      W7
+#         validate(shelf)         # every size a NON-NEGATIVE integer                    W8
+#         validate(candidates, live_count)
+#                                 # non-empty pool, no duplicate award_id, no duplicate
+#                                 # priority, every priority >= 1, 1 <= live_count <= |pool|
+#                                                                                     W2, W6
+#         cand = sort(candidates, key = priority)          # ASCENDING, a TOTAL order    W2
+#         w    = [ weight(c) for c in cand ]               # the shelf is FROZEN here    W1
+#         live = []
+#         for _ in range(live_count):
+#             total = sum(w[i] for i in remaining)         # RECOMPUTED each pick        W4
+#             r     = uniform_int(stream, total)           # ALWAYS drawn; no short-circuit W5
+#             cum   = 0
+#             for i in remaining:                          # still ascending priority
+#                 cum += w[i]
+#                 if cum > r:                              # STRICTLY greater            W3
+#                     live.append(cand[i].award_id); remove i; break
+#         return live                                      # in DRAW order
+#
+# DECISION F (Cuatro, 2026-08-04) is a PRODUCT rule, not a spec transcription, and it is the
+# one place two honest implementers would diverge on more than a byte: a `tie` has SEVERAL
+# candidate shelves and choosing among them is the silent argmax AD-14 forbids, so it refuses
+# naming Story 6.5; a `no_eligible_players` / `no_awardable_value` outcome has NO player at
+# all, therefore no shelf, therefore index 0 — the heaviest weight, which is exactly what
+# FR-26's "empty shelf => heaviest" is written to produce. Collapsing the two is a silent
+# argmax on one side and an unrunnable ceremony on the other: Story 6-4a MEASURED all twelve
+# real awards resolving to `no_eligible_players`.
+#
+# DECISION G (Cuatro, 2026-08-04): there is NO single-candidate short-circuit. The draw is
+# ALWAYS uniform_int(stream, total_weight), so a one-candidate pool of weight 100 draws n=100
+# and CONSUMES a byte; n = 1 — and therefore the zero-byte draw — arises ONLY when
+# total_weight == 1. The two rules produce identical PICKS and different STREAM POSITIONS,
+# which is invisible until the browser verifier calls a correct ceremony unfair. Both halves
+# have their own case below.
+
+
+class Stage1Refusal(Exception):
+    """A programmer/data error BOTH runtimes must refuse loudly — never a business outcome.
+
+    ⭐ IT NAMES WHICH INPUT WAS REJECTED (`detail`), and that is shared contract rather than
+    decoration. Story 6-4b's mutation pass found the reason: deleting the NEGATIVE-SHELF guard
+    left every gate green in TypeScript, because a negative index yields `undefined`, which
+    becomes `NaN` in the weight sum and is refused three functions later — a `Stage1Error` all
+    the same. Go, meanwhile, PANICS on `table[-1]`. So with `refusal_kind` alone the shared row
+    could not tell "refused by the guard that exists for this" from "refused by accident, or by
+    a crash". `detail` makes the two distinguishable in both languages, and it sharpens all
+    seventeen invalid rows rather than only that one.
+
+    This is the same lesson 6-4a learned one level up (an untyped refusal let a mutation that
+    rejected EVERYTHING pass every row), applied one level deeper.
+    """
+
+    def __init__(self, detail: str, message: str) -> None:
+        super().__init__(f"[{detail}] {message}")
+        self.detail = detail
+
+
+# The closed set of things a Stage-1 refusal can be ABOUT. Both runtimes must agree on it, so it
+# travels in the vector alongside the rows.
+REFUSAL_DETAILS = (
+    "weight_table",   # W7 — the published luck table's shape
+    "shelf",          # W8 — a shelf size
+    "pool",           # W2/W6 — the candidate pool's shape
+    "live_count",     # W6 — how many awards the spin asked for
+    "total_weight",   # the sum left uniform_int's [1, 2^32]
+    "stage2",         # a Stage-2 refusal propagated rather than swallowed
+    "tie",            # W9 — which is `refusal_kind: tie`, not an invalid input
+    "stream",         # no stream was supplied at all
+    "internal",       # an invariant the implementation believes unreachable
+)
+
+# ⚠ THE LAST TWO ARE DECLARED BUT NOT ROW-REPRESENTABLE, and the distinction is the point. A row
+# is a set of INPUTS; "no stream was supplied" and "an invariant broke" are not inputs, so no row
+# can produce them — but both are reachable in both runtimes, which made a "closed set" that was
+# not closed. The 6-4b code review found all three ways that went wrong: Go declared nine while
+# TypeScript and this file declared seven, TypeScript threw 'stream'/'internal' anyway while its
+# own JSDoc promised one of the seven, and the unreachable unknown-outcome arm refused as
+# `internal` in Go and `stage2` in TypeScript — one input, two values, in the field this file
+# calls shared contract. All three now declare the same nine; `refusal_details` carries all nine
+# so the suites can pin the set; and a ROW may still only carry these seven.
+ROW_REPRESENTABLE_DETAILS = REFUSAL_DETAILS[:7]
+
+
+class Stage1TieRefusal(Stage1Refusal):
+    """W9 — a TIED provisional winner has no single shelf to look up.
+
+    Its own subclass, not a message, because the two refusal kinds mean different things to
+    the caller: an invalid input is a bug to fix, while a tie is the FR-29 seam Story 6.5
+    fills. The vector carries `refusal_kind` so both runtimes must keep them distinguishable
+    rather than collapsing every refusal into "some error".
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__("tie", message)
+
+
+def _validate_weight_table(table) -> None:
+    """W7 — the table is validated BEFORE any draw, so a malformed table cannot consume bytes.
+
+    Non-empty, STRICTLY DECREASING, every entry > 0. Each clause earns its place:
+      * a non-decreasing table INVERTS FR-26's bias — the luck meter would favour the loaded
+        shelf, which is the opposite of the underdog rule the whole feature exists for;
+      * a `0` entry makes a candidate unpickable while it still occupies the cumulative walk,
+        so the pool silently shrinks without any refusal;
+      * an empty table has no index 0 to give the empty shelf.
+    """
+    if not isinstance(table, list) or not table:
+        raise Stage1Refusal("weight_table", "luck_weight_table must be a non-empty list")
+    prev = None
+    for w in table:
+        if isinstance(w, bool) or not isinstance(w, int):
+            raise Stage1Refusal("weight_table", f"luck_weight_table entries must be integers, got {w!r}")
+        if w <= 0:
+            raise Stage1Refusal(
+                "weight_table",
+                f"luck_weight_table entries must be > 0, got {w} — a non-positive weight makes a "
+                "candidate unpickable while it still occupies the cumulative walk"
+            )
+        if prev is not None and w >= prev:
+            raise Stage1Refusal(
+                "weight_table",
+                f"luck_weight_table must be STRICTLY DECREASING, got {prev} then {w} — a "
+                "non-decreasing table inverts FR-26's bias toward the empty shelf"
+            )
+        prev = w
+
+
+def _validate_shelf(shelf) -> None:
+    """W8 — a shelf size is a NON-NEGATIVE integer; absent means 0, which is the normal case.
+
+    A NEGATIVE size is refused rather than trusted because it is silently plausible in every
+    language and differently wrong in each: Python and Ruby index from the END of the table
+    (handing the LIGHTEST weight to the emptiest shelf, FR-26 exactly backwards), Go panics,
+    and JavaScript yields `undefined`. Three behaviours, no error, one contract.
+
+    An ABSENT shelf is the EMPTY shelf (Cuatro, 2026-08-04, resolving the 6-4b code review).
+    Go cannot tell a nil map from an empty one, so `None` must mean here what nil means there
+    or the anchor would arbitrate against the producer. A non-mapping is still a refusal —
+    this used to raise a bare `AttributeError`, which is not a `Stage1Refusal`, so the
+    generator would have died with a traceback instead of emitting a row.
+    """
+    if shelf is None:
+        return
+    if not isinstance(shelf, dict):
+        raise Stage1Refusal(
+            "shelf", f"shelf must be a mapping of steamid64 to a trophy count, got {shelf!r}"
+        )
+    for sid, size in shelf.items():
+        if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+            raise Stage1Refusal(
+                "shelf", f"shelf[{sid!r}] must be a non-negative integer, got {size!r}"
+            )
+
+
+def _validate_pool(candidates) -> None:
+    """W2 / W6 — the pool's own shape, and why every clause is a refusal and not a repair.
+
+    W2: the walk order is ascending `priority`, and `UNIQUE(tournament_id, priority)`
+    (0023:150) is the ONLY reason that order is total. A duplicate priority is therefore a
+    refusal, not a stable-sort coin flip — two implementations would break the tie differently
+    and the whole cumulative walk would shift. `priority > 0` mirrors 0023:139.
+
+    W6: an empty pool, `live_count < 1` and `live_count > |pool|` are refusals rather than a
+    short return or a clamp. A short return produces a spin with FEWER live categories than
+    the plan promised, and nothing downstream can distinguish that from a plan that asked for
+    fewer.
+    """
+    if not isinstance(candidates, list) or not candidates:
+        raise Stage1Refusal(
+            "pool",
+            "the candidate pool is empty — a spin with nothing to draw is a refusal, never a "
+            "short return"
+        )
+    seen_ids: set = set()
+    seen_priorities: set = set()
+    for c in candidates:
+        # A malformed candidate used to raise a bare KeyError/TypeError here. That is not a
+        # `Stage1Refusal`, so the generator aborted with a traceback rather than the deliberate
+        # diagnostics it uses everywhere else — and the anchor's refusal surface has to be the
+        # SHARED one, since it is what arbitrates between the two runtimes.
+        if not isinstance(c, dict) or "award_id" not in c or "priority" not in c:
+            raise Stage1Refusal(
+                "pool", f"each candidate must be a mapping with award_id and priority, got {c!r}"
+            )
+        aid = c["award_id"]
+        if not isinstance(aid, str) or aid == "":
+            raise Stage1Refusal("pool", f"award_id must be a non-empty string, got {aid!r}")
+        if aid in seen_ids:
+            raise Stage1Refusal(
+                "pool",
+                f"duplicate award_id {aid!r} — one award appears at most once in a spin's pool"
+            )
+        seen_ids.add(aid)
+        prio = c["priority"]
+        if isinstance(prio, bool) or not isinstance(prio, int) or prio < 1:
+            raise Stage1Refusal(
+                "pool",
+                f"priority must be a positive integer — 0023's award_priority_positive, got {prio!r}"
+            )
+        if prio in seen_priorities:
+            raise Stage1Refusal(
+                "pool",
+                f"duplicate priority {prio} — UNIQUE(tournament_id, priority) is what makes "
+                "ascending priority a TOTAL order, so a duplicate is a refusal rather than a "
+                "stable-sort coin flip"
+            )
+        seen_priorities.add(prio)
+
+
+def _validate_live_count(live_count, pool_size: int) -> None:
+    """W6 — split from `_validate_pool` so all three implementations share one surface.
+
+    The pool's own shape is checked by anything that WEIGHTS a pool; `live_count` is checked
+    only by what DRAWS from it. Keeping the two separate is what lets `stage1_weights` be a
+    public, side-effect-free entry point in both runtimes without inventing a `live_count` it
+    does not use — and without the two ending up with different refusal surfaces, which is the
+    asymmetry the shared `refusals` array exists to prevent.
+    """
+    if isinstance(live_count, bool) or not isinstance(live_count, int) or live_count < 1:
+        raise Stage1Refusal("live_count", f"live_count must be an integer >= 1, got {live_count!r}")
+    if live_count > pool_size:
+        raise Stage1Refusal(
+            "live_count",
+            f"live_count {live_count} exceeds the {pool_size}-candidate pool — never a "
+            "clamp: a clamped spin reveals fewer categories than the spin plan promised"
+        )
+
+
+def stage1_weight(award: dict, players: list, shelf: dict, table: list) -> int:
+    """The integer weight of ONE candidate — DECISION F lives here.
+
+    `provisional_winner` is Stage 2's RAW outcome (`resolve_stage2`), never `resolve_award`:
+    the refusing ladder would turn a tie into an error this function cannot inspect, and Stage
+    1 must SEE the tie in order to refuse for the right reason.
+    """
+    try:
+        out = resolve_stage2(award, players)
+    except Stage2Refusal as err:
+        # A Stage-2 refusal PROPAGATES rather than being swallowed into a weight — and it is
+        # re-labelled `stage2` so both runtimes report WHERE it came from. Treating an
+        # unresolvable award as a zero, or as the heaviest weight, would let a malformed catalog
+        # draw a whole ceremony.
+        raise Stage1Refusal("stage2", str(err)) from err
+    if out["kind"] == "tie":
+        raise Stage1TieRefusal(
+            f"the provisional winner of {award['deciding_stat']!r} is a {len(out['tied'])}-way "
+            f"{out['reason']} tie, so it has no single shelf to look up — resolving it is Story "
+            "6.5's FR-29 ladder. Stage 1 will not pick one: min-shelf-over-the-tied-set, "
+            "byte-lex-first and lowest-SteamID64 are all a silent argmax that 6.5 would later "
+            "contradict, changing the drawn bytes from this spin onward"
+        )
+    if out["kind"] in ("no_eligible_players", "no_awardable_value"):
+        # DECISION F — no player at all, so no shelf, so the maximal EMPTY shelf: index 0.
+        idx = 0
+    else:
+        # W8 — `table_max` is len(table) - 1, NOT a length, and an absent player is shelf 0
+        # (the normal case at the first spin, never an error).
+        idx = min(shelf.get(out["steamid64"], 0), len(table) - 1)
+    return table[idx]
+
+
+def stage1_weights(candidates: list, players: list, shelf: dict, table: list):
+    """The candidates in ASCENDING priority order, and their weights aligned to that order.
+
+    ⭐ The returned weights are indexed by the SORTED order, not by the order the caller
+    supplied — which is what makes the `candidates-supplied-out-of-priority-order` case
+    load-bearing rather than decorative.
+    """
+    # An ABSENT container is the EMPTY one, matching Go's nil map / nil slice. See
+    # `_validate_shelf`.
+    shelf = {} if shelf is None else shelf
+    players = [] if players is None else players
+    _validate_weight_table(table)
+    _validate_shelf(shelf)
+    _validate_pool(candidates)
+    ordered = sorted(candidates, key=lambda c: c["priority"])
+    return ordered, [stage1_weight(c["award"], players, shelf, table) for c in ordered]
+
+
+def stage1_pick(stream: Stream, candidates: list, players: list, shelf: dict, table: list, live_count: int) -> dict:
+    """The stream-driven weighted pick. Every byte it moves is part of the contract.
+
+    ⭐ VALIDATION ORDER IS PART OF THE CONTRACT. `live_count` is checked with the other shape
+    checks, BEFORE the weight loop, because that is where this story's transcribed algorithm
+    and the `spec` string below put it. The 6-4b code review found both shipped runtimes
+    weighting first, so an input that was malformed in two ways at once — a bad `live_count`
+    over a tied pool — refused as `invalid`/`live_count` here and as `tie` there, which routes
+    a broken spin plan into Story 6.5's ladder. The `live-count-zero-over-a-tied-pool` refusal
+    row is the only row that carries two defects and therefore the only one that can redden it.
+    """
+    shelf = {} if shelf is None else shelf
+    players = [] if players is None else players
+    _validate_weight_table(table)
+    _validate_shelf(shelf)
+    _validate_pool(candidates)
+    _validate_live_count(live_count, len(candidates))
+
+    # W1 — THE SHELF IS FROZEN AT SPIN START. The weights are computed ONCE, before the first
+    # draw, and are not recomputed between the `live_count` picks of one spin even though the
+    # first pick's award is about to be awarded. Recomputing would make the ceremony depend on
+    # resolution order and would be unverifiable from the published bundle.
+    ordered, weights = stage1_weights(candidates, players, shelf, table)
+
+    remaining = list(range(len(ordered)))
+    draws: list[dict] = []
+    live: list[str] = []
+    for _ in range(live_count):
+        # W4 — the total is RECOMPUTED over the remaining candidates for every pick. Never
+        # `r - cumulative`, never a second walk over the first draw's remainder: two picks are
+        # two uniform_int calls and two byte movements, and `bytes_consumed_after` is what
+        # proves it.
+        total = sum(weights[i] for i in remaining)
+        if total < N_MIN or total > N_MAX:
+            raise Stage1Refusal(
+                "total_weight",
+                f"total_weight {total} is outside uniform_int's [{N_MIN}, {N_MAX}] — the largest "
+                "REAL total is about 1200 (12 awards x weight 100), so a total near the bound "
+                "means the weight table is wrong, not that the bound is tight"
+            )
+        # W5 / DECISION G — ALWAYS drawn. No single-candidate short-circuit.
+        r = uniform_int(stream, total)
+        draws.append({"n": total, "r": r, "bytes_consumed_after": stream.pos})
+        cum = 0
+        picked = -1
+        for i in list(remaining):
+            cum += weights[i]
+            # W3 — STRICTLY greater. With weights [3, 2] and r = 3, `>` gives the second
+            # candidate (correct: r in {0,1,2} -> first, {3,4} -> second) while `>=` gives the
+            # first and silently hands it 4/5 of the probability mass. The off-by-one is
+            # invisible in the result SHAPE and shifts every award from here on.
+            if cum > r:
+                picked = i
+                live.append(ordered[i]["award_id"])
+                remaining.remove(i)
+                break
+        if picked < 0:
+            # Unreachable: r < total = the sum of the remaining weights, so the cumulative
+            # necessarily exceeds it on some candidate. LOUD rather than silent, because both
+            # shipped runtimes refuse here and this anchor used to fall through — which would
+            # have written a vector whose `live` was SHORTER than `live_count` while `draws`
+            # was full length. Go and TypeScript would then both refuse the row, and the
+            # failure would read as "both runtimes are broken" rather than "the generator is".
+            raise Stage1Refusal(
+                "internal",
+                f"the cumulative walk selected nothing for r={r} over total {total} — "
+                "uniform_int's range broke"
+            )
+    return {
+        "weights": weights,
+        # The WHOLE pool's total, pinned separately from each draw's `n` so a summation bug is
+        # its own failure rather than hiding inside a draw that happened to land the same way.
+        "total_weight": sum(weights),
+        "draws": draws,
+        "live": live,
+    }
+
+
+# ── Stage 1: the case manifest — INPUTS only; every expected value is computed ─
+
+
+def _c(award_id: str, priority: int, award: dict) -> dict:
+    return {"award_id": award_id, "priority": priority, "award": award}
+
+
+# SOLUTION-DESIGN §9.2's own example table. table_max = 5.
+TABLE = [100, 40, 16, 6, 2, 1]
+
+# The Stage-1 roster: four players, each the OUTRIGHT leader on a different deciding stat, so
+# a candidate's provisional winner is a function of its `deciding_stat` and nothing else. A
+# resolver that read the wrong key, or that ignored `direction`, lands on a different player
+# and therefore a different weight — never coincidentally the right one.
+#
+#   knife_kills -> A   hs_kills -> B   wallbang_kills -> C   through_smoke_kills -> D
+#   adr (rate)  -> C   deaths (min)   -> D
+STAGE1_ROSTER: list[dict] = [
+    _p(S_A, rounds=30, kills=20,
+       vol={"knife_kills": 4, "hs_kills": 1, "wallbang_kills": 1, "through_smoke_kills": 1, "deaths": 20},
+       rate={"adr": (600, 30)}),
+    _p(S_B, rounds=30, kills=20,
+       vol={"knife_kills": 2, "hs_kills": 9, "wallbang_kills": 2, "through_smoke_kills": 2, "deaths": 15},
+       rate={"adr": (900, 30)}),
+    _p(S_C, rounds=30, kills=20,
+       vol={"knife_kills": 1, "hs_kills": 5, "wallbang_kills": 7, "through_smoke_kills": 3, "deaths": 10},
+       rate={"adr": (1200, 30)}),
+    _p(S_D, rounds=30, kills=20,
+       vol={"knife_kills": 0, "hs_kills": 2, "wallbang_kills": 3, "through_smoke_kills": 8, "deaths": 5},
+       rate={"adr": (300, 30)}),
+]
+
+# The shelf as it stands mid-ceremony. A is ABSENT (the normal shape at the first spin), D is
+# PAST table_max so the clamp is exercised.
+#   A absent -> 0 -> idx 0 -> 100      B 1 -> idx 1 -> 40
+#   C 2      -> idx 2 -> 16            D 9 -> min(9, 5) -> idx 5 -> 1
+SHELF = {S_B: 1, S_C: 2, S_D: 9}
+
+AW_KNIFE = _c("aw-knife", 1, _award("knife_kills", "volume", "max", 0, 0))
+AW_HS = _c("aw-hs", 2, _award("hs_kills", "volume", "max", 0, 0))
+AW_WALLBANG = _c("aw-wallbang", 3, _award("wallbang_kills", "volume", "max", 0, 0))
+AW_SMOKE = _c("aw-smoke", 4, _award("through_smoke_kills", "volume", "max", 0, 0))
+
+# A roster where ONE player sweeps every deciding stat, so all three candidates weight
+# identically — the shape that makes a recomputed shelf visible in `draws[1].n`.
+STAGE1_ROSTER_ONE_SWEEPER: list[dict] = [
+    _p(S_A, rounds=30, kills=20, vol={"knife_kills": 4, "wallbang_kills": 7, "through_smoke_kills": 8}),
+    _p(S_B, rounds=30, kills=20, vol={"knife_kills": 1, "wallbang_kills": 2, "through_smoke_kills": 3}),
+    _p(S_C, rounds=30, kills=20, vol={"knife_kills": 0, "wallbang_kills": 1, "through_smoke_kills": 1}),
+]
+
+# The 6.2/6-4a-measured real shape: rounds_played min 10 / max 21 against floor_rounds 24, so
+# NOBODY clears the floors and every award resolves to `no_eligible_players`.
+STAGE1_ROSTER_BELOW_FLOORS: list[dict] = [
+    _p(S_A, rounds=21, kills=13, vol={"knife_kills": 1, "hs_kills": 4, "wallbang_kills": 2}),
+    _p(S_B, rounds=10, kills=6, vol={"knife_kills": 0, "hs_kills": 2, "wallbang_kills": 1}),
+    _p(S_C, rounds=18, kills=19, vol={"knife_kills": 0, "hs_kills": 7, "wallbang_kills": 3}),
+]
+
+# Nobody scored a knife kill, so a `max` volume award on it is DECISION E's
+# `no_awardable_value` — which DECISION F weights as an empty shelf, not as a refusal.
+STAGE1_ROSTER_ZERO_KNIFE: list[dict] = [
+    _p(S_A, rounds=30, kills=20, vol={"knife_kills": 0, "hs_kills": 1}),
+    _p(S_B, rounds=30, kills=20, vol={"knife_kills": 0, "hs_kills": 9}),
+    _p(S_C, rounds=30, kills=20, vol={"knife_kills": 0, "hs_kills": 5}),
+]
+
+# Two players tied on the deciding stat: there is no single provisional winner, so no shelf.
+STAGE1_ROSTER_TIED: list[dict] = [
+    _p(S_A, rounds=30, kills=20, vol={"knife_kills": 7}),
+    _p(S_B, rounds=30, kills=20, vol={"knife_kills": 7}),
+    _p(S_C, rounds=30, kills=20, vol={"knife_kills": 3}),
+]
+
+STAGE1_CASES: list[dict] = [
+    {
+        "name": "shelf-to-weight-mapping-with-clamp-and-empty-shelf",
+        "note": (
+            "The weight rule itself, over all four of its branches at once: A is ABSENT from "
+            "the shelf map (shelf 0 -> index 0 -> the HEAVIEST weight, which is the normal "
+            "shape at the first spin and never an error), B sits mid-table at 1, C at 2, and D "
+            "at 9 — PAST table_max — so `min(shelf, len(table) - 1)` clamps D to the last entry "
+            "instead of indexing off the end. ⭐ `expected.weights` is as load-bearing as "
+            "`expected.live` here: a vector that pinned only the winner would let a wrong shelf "
+            "lookup pass on every spin where it happened to draw the same award."
+        ),
+        "src": {"kind": "stage1", "spin": 3},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS, AW_WALLBANG, AW_SMOKE],
+        "pins": lambda e: e["weights"] == [100, 40, 16, 1] and e["total_weight"] == 157,
+    },
+    {
+        "name": "heaviest-weighted-candidate-is-not-the-one-drawn",
+        "note": (
+            "⭐ WITHOUT THIS ROW, 'weighted pick' AND 'argmax over the weights' ARE "
+            "INDISTINGUISHABLE. The same four candidates, on a spin whose first draw lands at "
+            "r >= 100 — past the heaviest candidate's whole share — so the award that is drawn "
+            "is NOT the one holding the largest weight. An implementation that skipped the "
+            "stream entirely and returned the maximum-weight candidate passes every other case "
+            "in this file and fails here."
+        ),
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS, AW_WALLBANG, AW_SMOKE],
+        "pins": lambda e: e["draws"][0]["r"] >= e["weights"][0] and e["live"] != ["aw-knife"],
+    },
+    {
+        "name": "candidates-supplied-out-of-priority-order",
+        "note": (
+            "W2 — byte-identical to `heaviest-weighted-candidate-is-not-the-one-drawn` in every "
+            "input EXCEPT the order the candidates are handed in, which is DESCENDING priority "
+            "here. The expected weights, total, draw and pick are therefore identical: the "
+            "resolver must do its own ascending-priority sort rather than inherit the fixture's "
+            "order. It is not cosmetic — walking the supplied order would accumulate "
+            "1, 17, 57, 157 instead of 100, 140, 156, 157, so the same `r` selects a different "
+            "award."
+        ),
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_SMOKE, AW_WALLBANG, AW_HS, AW_KNIFE],
+        "pins": lambda e: e["weights"] == [100, 40, 16, 1],
+    },
+    {
+        "name": "r-lands-exactly-on-a-cumulative-boundary",
+        "note": (
+            "⭐⭐ THE HIGHEST-VALUE ROW IN THIS FILE — W3's `cum > r` versus `cum >= r`. The "
+            "table is [3, 2]: A is absent from the shelf (weight 3) and B sits at 1 (weight 2), "
+            "so total_weight is 5 and the cumulative boundary after the first candidate is "
+            "EXACTLY 3. This spin's first draw returns r = 3. The rule is `the first candidate "
+            "whose running cumulative is STRICTLY GREATER than r`, so 3 > 3 is false and the "
+            "SECOND candidate is drawn — which is correct, because r in {0,1,2} is the first "
+            "candidate's share and {3,4} is the second's. An implementation using `>=` picks the "
+            "FIRST and silently hands it 4/5 of the probability mass. The result SHAPE is "
+            "identical either way, and every other draw in this file has r strictly inside a "
+            "candidate's span and cannot tell the two apart. This is the same off-by-one class "
+            "`exact-threshold-rejection-x-equals-limit` pins for uniform_int, which the 6.3 "
+            "mutation pass found surviving the ENTIRE suite in BOTH languages."
+        ),
+        "src": {"kind": "stage1", "spin": 2},
+        "table": [3, 2],
+        "shelf": {S_B: 1},
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS],
+        "pins": lambda e: (
+            e["weights"] == [3, 2]
+            and e["total_weight"] == 5
+            and e["draws"][0]["r"] == e["weights"][0]
+            and e["live"] == ["aw-hs"]
+        ),
+    },
+    {
+        "name": "live-count-2-redraws-against-the-recomputed-total",
+        "note": (
+            "W4 — a `live_count > 1` spin REMOVES the candidate it picked and draws again "
+            "against the RECOMPUTED total, never against the first draw's remainder and never "
+            "against the original total. Three candidates weigh 100/40/16, so the first draw is "
+            "over n = 156 and the second over 156 minus whatever was removed. `draws[1].n` is "
+            "the assertion: reusing the remainder consumes no second draw at all, and re-drawing "
+            "against the original total leaves n unchanged. Two picks means two uniform_int "
+            "calls and two byte movements, which `bytes_consumed_after` records. ⚠ The first "
+            "draw here also REJECTS inside uniform_int (n = 156 -> k = 1, limit 156), so "
+            "bytes_consumed_after advances by more than one byte — a Stage-1 draw inherits "
+            "rejection sampling and must not assume one byte per pick."
+        ),
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 2,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS, AW_WALLBANG],
+        "pins": lambda e: (
+            len(e["draws"]) == 2
+            and e["draws"][0]["n"] == 156
+            and e["draws"][1]["n"] != e["draws"][0]["n"]
+            and e["draws"][1]["n"] == 156 - e["weights"][["aw-knife", "aw-hs", "aw-wallbang"].index(e["live"][0])]
+            and len(set(e["live"])) == 2
+            # ⭐ THIS ROW IS THE ONLY ONE WHOSE DRAW ORDER DIFFERS FROM PRIORITY ORDER, so it is
+            # the only row that can catch a selector which sorted its output. The drain row's
+            # note used to claim the same property and does not have it (its draw order IS
+            # 1,2,3,4) — the 6-4b review caught that, so the property is asserted here, by name,
+            # rather than by an any-row scan that could silently go vacuous.
+            and e["live"] == ["aw-hs", "aw-knife"]
+            and e["draws"][0]["bytes_consumed_after"] > 1
+        ),
+    },
+    {
+        "name": "the-shelf-is-frozen-across-the-picks-of-one-spin",
+        "note": (
+            "⭐ W1 — the shelf is frozen at SPIN start, not at PICK start (SOLUTION-DESIGN:411). "
+            "One player is the provisional winner of all three candidates and holds an empty "
+            "shelf, so every weight is the heaviest and the first draw is over n = 300. Because "
+            "the shelf is frozen, the second draw is over n = 200. An implementation that "
+            "credited the first pick to its winner before the second pick would reweight the two "
+            "survivors from 100 to 40 and draw over n = 80 instead — a different byte count and "
+            "a different ceremony, from a rule nothing else in this file constrains. Recomputing "
+            "would also make the ceremony depend on resolution order, which is unverifiable from "
+            "the published bundle."
+        ),
+        "src": {"kind": "stage1", "spin": 5},
+        "table": TABLE,
+        "shelf": {},
+        "live_count": 2,
+        "players": STAGE1_ROSTER_ONE_SWEEPER,
+        "candidates": [AW_KNIFE, AW_WALLBANG, AW_SMOKE],
+        "pins": lambda e: (
+            e["weights"] == [100, 100, 100]
+            and e["draws"][0]["n"] == 300
+            and e["draws"][1]["n"] == 200
+        ),
+        # ⭐ THE PROPERTY THAT MAKES THIS ROW DISCRIMINATE IS AN INPUT PROPERTY, so it has to be
+        # re-derived from the INPUTS. The 6-4b code review found that all three guards checked
+        # only "weights all equal" and 300/200 — which ANY roster with real winners satisfies —
+        # so `STAGE1_ROSTER_ONE_SWEEPER` could have been swapped for a roster where each
+        # candidate has a DIFFERENT winner and every gate would have stayed green while the row
+        # silently stopped killing the recomputed-shelf mutation. It only discriminates because
+        # ONE player wins ALL THREE candidates: crediting the first pick to its winner then
+        # reweights the two survivors from 100 to 40. That is what is asserted here.
+        "pins_inputs": lambda e, c: (
+            all(
+                resolve_stage2(x["award"], c["players"])["kind"] == "winner"
+                for x in c["candidates"]
+            )
+            and len(
+                {
+                    resolve_stage2(x["award"], c["players"])["steamid64"]
+                    for x in c["candidates"]
+                }
+            ) == 1
+        ),
+    },
+    {
+        "name": "single-candidate-pool-still-draws-and-consumes-a-byte",
+        "note": (
+            "DECISION G, half one. A one-candidate pool is NOT short-circuited: the draw is "
+            "always uniform_int(stream, total_weight), and here total_weight is 100, so n = 100, "
+            "k = 1 and the stream MOVES. The pick is a foregone conclusion; the byte is not. An "
+            "implementation that special-cased |pool| == 1 returns the same award and leaves the "
+            "stream one byte behind, and every subsequent spin in that ceremony then diverges — "
+            "invisibly, until the browser verifier disagrees."
+        ),
+        "src": {"kind": "stage1", "spin": 6},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE],
+        "pins": lambda e: (
+            e["weights"] == [100]
+            and e["draws"][0]["n"] == 100
+            and e["draws"][0]["bytes_consumed_after"] >= 1
+            and e["live"] == ["aw-knife"]
+        ),
+    },
+    {
+        "name": "total-weight-one-is-the-only-zero-byte-draw",
+        "note": (
+            "DECISION G, half two, and the E1 path. `n = 1` arises ONLY when total_weight is 1 — "
+            "one candidate whose provisional winner sits at or past table_max, on the table's "
+            "smallest entry. minimal k with 256^k >= 1 is k = 0, so this draw reads NOTHING and "
+            "bytes_consumed_after stays 0. Read together with the row above, the pair pins "
+            "DECISION G exactly: the zero-byte draw is a property of the WEIGHT, never of the "
+            "pool SIZE."
+        ),
+        "src": {"kind": "stage1", "spin": 7},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_SMOKE],
+        "pins": lambda e: (
+            e["weights"] == [1]
+            and e["draws"][0]["n"] == 1
+            and e["draws"][0]["r"] == 0
+            and e["draws"][0]["bytes_consumed_after"] == 0
+        ),
+    },
+    {
+        "name": "every-candidate-has-no-eligible-players-and-weights-heaviest",
+        "note": (
+            "⭐ DECISION F OVER THE MEASURED REAL CORPUS. Story 6-4a measured all twelve real "
+            "awards resolving to `no_eligible_players` under the shipped 24/20 floors "
+            "(rounds_played min 10 / max 21), so this is TODAY's shape, not a hypothetical. A "
+            "no-winner outcome has no player, therefore no shelf, therefore index 0 — the "
+            "HEAVIEST weight, which is exactly what FR-26's 'empty shelf => heaviest' is written "
+            "to produce. Every candidate weighs the same, so Stage 1 on the real corpus draws "
+            "UNIFORMLY: a correct consequence of a measured input rather than a bug. Refusing "
+            "here instead would make the ceremony unrunnable today. Note the shelf map is "
+            "supplied and deliberately NOT consulted — there is no winner to look up."
+        ),
+        "src": {"kind": "stage1", "spin": 4},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER_BELOW_FLOORS,
+        "candidates": [
+            _c("aw-knife", 1, _award("knife_kills", "volume", "max", 24, 20)),
+            _c("aw-hs", 2, _award("hs_kills", "volume", "max", 24, 20)),
+            _c("aw-wallbang", 3, _award("wallbang_kills", "volume", "max", 24, 20)),
+        ],
+        "pins": lambda e: e["weights"] == [100, 100, 100] and e["total_weight"] == 300,
+        # ⭐ RE-DERIVE THE OUTCOME KIND THIS ROW IS NAMED FOR. "every weight is table[0]" is also
+        # true of a roster whose players simply WIN with an empty shelf, so without this the
+        # `no_eligible_players` branch could go untested while AC3 still claimed it covered.
+        "pins_inputs": lambda e, c: all(
+            resolve_stage2(x["award"], c["players"])["kind"] == "no_eligible_players"
+            for x in c["candidates"]
+        ),
+    },
+    {
+        "name": "no-awardable-value-weights-as-an-empty-shelf",
+        "note": (
+            "DECISION F's other no-winner arm, kept distinct from the row above because they "
+            "arrive by different routes: here players ARE eligible, but the best deciding value "
+            "is 0 on a `max` volume award, so DECISION E returns `no_awardable_value` carrying "
+            "the suppressed set. That outcome still has no single winner and therefore no shelf, "
+            "so it weighs heaviest — while the second candidate resolves normally to a player "
+            "who already holds one trophy and weighs 40. An implementation that refused on "
+            "`no_awardable_value`, or that tried to read a shelf for the suppressed set, "
+            "diverges here and nowhere else."
+        ),
+        "src": {"kind": "stage1", "spin": 8},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER_ZERO_KNIFE,
+        "candidates": [AW_KNIFE, AW_HS],
+        "pins": lambda e: e["weights"] == [100, 40],
+        # Same reasoning as the row above: `[100, 40]` is satisfiable without any
+        # `no_awardable_value` outcome ever occurring, so the KIND is re-derived here.
+        "pins_inputs": lambda e, c: (
+            resolve_stage2(c["candidates"][0]["award"], c["players"])["kind"]
+            == "no_awardable_value"
+            and resolve_stage2(c["candidates"][1]["award"], c["players"])["kind"] == "winner"
+        ),
+    },
+    {
+        "name": "min-and-rate-candidates-resolve-through-the-real-stage-2",
+        "note": (
+            "The provisional winner really is Stage 2's outcome, over both of the branches the "
+            "catalog actually uses: a `min` VOLUME award (fewest deaths -> D, who sits past "
+            "table_max and weighs 1) and a `rate` award compared by cross-multiplication "
+            "(highest ADR -> C, who sits at shelf 2 and weighs 16), alongside an ordinary `max` "
+            "volume award (-> A, absent from the shelf, weight 100). An implementation that "
+            "re-derived the winner itself — reading `stat_row`, or ignoring `direction`, or "
+            "dividing the rate pair — lands on a different player and therefore a different "
+            "weight for two of these three."
+        ),
+        "src": {"kind": "stage1", "spin": 9},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [
+            AW_KNIFE,
+            _c("aw-adr", 5, _award("adr", "rate", "max", 0, 0)),
+            _c("aw-deaths", 6, _award("deaths", "volume", "min", 0, 0)),
+        ],
+        "pins": lambda e: e["weights"] == [100, 16, 1] and e["total_weight"] == 117,
+    },
+    {
+        "name": "an-absent-shelf-map-is-shelf-zero-for-everyone",
+        "note": (
+            "W8 — the FIRST spin of every ceremony: nobody holds anything, the shelf map is "
+            "EMPTY, and an absent player is shelf 0 rather than a lookup failure. All four "
+            "candidates therefore weigh the heaviest entry and the draw is uniform over 400. "
+            "Read against `shelf-to-weight-mapping-with-clamp-and-empty-shelf`, which uses the "
+            "same pool and the same players, this isolates the shelf as the only input that "
+            "changed."
+        ),
+        "src": {"kind": "stage1", "spin": 10},
+        "table": TABLE,
+        "shelf": {},
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS, AW_WALLBANG, AW_SMOKE],
+        "pins": lambda e: e["weights"] == [100, 100, 100, 100] and e["total_weight"] == 400,
+    },
+    {
+        "name": "an-omitted-shelf-key-is-the-empty-shelf",
+        "note": (
+            "⭐ THE TWIN OF `an-absent-shelf-map-is-shelf-zero-for-everyone`, and the only "
+            "difference is that this row has NO `shelf` KEY AT ALL rather than an empty object. "
+            "Its expected block is therefore byte-identical to its twin's, and that identity IS "
+            "the assertion: an absent container is the EMPTY container, in all three "
+            "implementations. The 6-4b code review found the seam disagreeing here — Go's nil "
+            "map ranged zero times and PUBLISHED a ceremony, TypeScript's `typeof undefined !== "
+            "'object'` REFUSED it, and this generator raised a bare AttributeError — so a "
+            "correctly produced ceremony would have been called unfair by the verifier, which is "
+            "the exact W10-class divergence the vector seam exists to catch. Go cannot tell nil "
+            "from empty without a pointer and W8 already says an absent PLAYER is shelf 0, so "
+            "'absent is empty' is the rule the other two were brought to (Cuatro, 2026-08-04). "
+            "⚠ `null` and structurally-wrong shelves are still refused by TypeScript and Python "
+            "and are deliberately NOT vectorable: Go cannot express them."
+        ),
+        "src": {"kind": "stage1", "spin": 10},
+        "table": TABLE,
+        # None means OMIT the key entirely — see build_stage1_file.
+        "shelf": None,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS, AW_WALLBANG, AW_SMOKE],
+        "pins": lambda e: e["weights"] == [100, 100, 100, 100] and e["total_weight"] == 400,
+    },
+    {
+        "name": "live-count-equal-to-the-whole-pool-drains-it-in-draw-order",
+        "note": (
+            "The upper edge of W6's `1 <= live_count <= |pool|`: drawing the entire pool is "
+            "LEGAL, and the last pick is the one whose total_weight has shrunk to a single "
+            "candidate's weight — which is where a re-draw that reused the previous remainder, "
+            "or that kept drawing against the original total, finally produces an out-of-range "
+            "index rather than a plausible answer. `expected.live` is in DRAW order, which is "
+            "the reveal order, and 6.6 re-sorts by priority for anti-sweep rather than expecting "
+            "this to be sorted. ⚠ THIS ROW'S DRAW ORDER HAPPENS TO EQUAL PRIORITY ORDER "
+            "(1, 2, 3, 4), so it does NOT discriminate draw order from a selector that sorted "
+            "its output — an earlier version of this note claimed it did, and the 6-4b code "
+            "review caught the claim. The row that carries that property is "
+            "`live-count-2-redraws-against-the-recomputed-total`, whose live is "
+            "[aw-hs, aw-knife]; its `pins` and both suites now assert it BY NAME."
+        ),
+        "src": {"kind": "stage1", "spin": 11},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 4,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS, AW_WALLBANG, AW_SMOKE],
+        "pins": lambda e: (
+            len(e["draws"]) == 4
+            and len(set(e["live"])) == 4
+            and e["draws"][3]["n"] == e["total_weight"] - sum(
+                e["weights"][["aw-knife", "aw-hs", "aw-wallbang", "aw-smoke"].index(a)] for a in e["live"][:3]
+            )
+        ),
+    },
+]
+
+# Inputs BOTH runtimes must REFUSE, and — like `stage2-resolve.json`'s list — they travel in
+# the vector rather than in two hand-written per-language lists. Only refusals both languages
+# can REPRESENT appear here (README.md:104-109): a non-integer `live_count` or a fractional
+# weight is unrepresentable in Go's `int`, so those stay per-suite runtime assertions.
+#
+# ⭐ `refusal_kind` distinguishes the TIE from every invalid input. They are different things
+# to the caller: an invalid input is a bug to fix, a tie is the FR-29 seam Story 6.5 fills.
+# Collapsing them — or asserting only "some error" — is precisely what let a 6-4a mutation
+# that made validation reject EVERYTHING pass every refusal row.
+STAGE1_REFUSALS: list[dict] = [
+    {
+        "why": "the provisional winner is a TIE, which has no single shelf — Story 6.5's FR-29 ladder",
+        "refusal_kind": "tie",
+        "detail": "tie",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER_TIED,
+        "candidates": [AW_KNIFE, AW_HS],
+    },
+    {
+        "why": (
+            "live_count = 0 over a pool whose first candidate TIES — the ONLY row carrying two "
+            "defects at once, and therefore the only row that pins VALIDATION ORDER. The 6-4b "
+            "code review found Go and TypeScript weighting first and refusing as `tie` here, "
+            "while this anchor validated live_count first and refused as `invalid`/`live_count`. "
+            "One input, two refusal KINDS — and a caller routing on refusal_kind hands a "
+            "malformed spin plan to Story 6.5's ladder. The story's transcribed algorithm and "
+            "this file's `spec` string both put `1 <= live_count <= |pool|` in the POOL group, "
+            "before the weight loop, so the runtimes were brought here rather than the reverse. "
+            "Every other row is malformed in exactly one way and cannot see the difference."
+        ),
+        "refusal_kind": "invalid",
+        "detail": "live_count",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 0,
+        "players": STAGE1_ROSTER_TIED,
+        "candidates": [AW_KNIFE, AW_HS],
+    },
+    {
+        "why": "a malformed award — Stage 2's own refusal PROPAGATES rather than being swallowed into a weight",
+        "refusal_kind": "invalid",
+        "detail": "stage2",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [_c("aw-bad", 1, _award("knife_kills", "ratio", "max", 0, 0))],
+    },
+    {
+        "why": "the deciding key is absent from an ELIGIBLE player — Stage 2 refuses and Stage 1 must not weight it as a zero",
+        "refusal_kind": "invalid",
+        "detail": "stage2",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": [
+            _p(S_A, rounds=30, kills=20, drop_volume=("knife_kills",)),
+            _p(S_B, rounds=30, kills=20, vol={"knife_kills": 1}),
+        ],
+        "candidates": [AW_KNIFE],
+    },
+    {
+        "why": "an EMPTY candidate pool — never a short return",
+        "refusal_kind": "invalid",
+        "detail": "pool",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [],
+    },
+    {
+        "why": "live_count = 0 — a spin that reveals nothing is a refusal, not a no-op",
+        "refusal_kind": "invalid",
+        "detail": "live_count",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 0,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS],
+    },
+    {
+        "why": "a NEGATIVE live_count",
+        "refusal_kind": "invalid",
+        "detail": "live_count",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": -1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS],
+    },
+    {
+        "why": "live_count exceeds the pool — never a clamp, or the spin reveals fewer categories than the plan promised",
+        "refusal_kind": "invalid",
+        "detail": "live_count",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 3,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS],
+    },
+    {
+        "why": "a duplicate award_id in the pool",
+        "refusal_kind": "invalid",
+        "detail": "pool",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, _c("aw-knife", 2, _award("hs_kills", "volume", "max", 0, 0))],
+    },
+    {
+        "why": "a duplicate priority — UNIQUE(tournament_id, priority) is what makes the walk order TOTAL",
+        "refusal_kind": "invalid",
+        "detail": "pool",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, _c("aw-hs", 1, _award("hs_kills", "volume", "max", 0, 0))],
+    },
+    {
+        "why": "a non-positive priority — 0023's award_priority_positive",
+        "refusal_kind": "invalid",
+        "detail": "pool",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [_c("aw-knife", 0, _award("knife_kills", "volume", "max", 0, 0))],
+    },
+    {
+        "why": "an EMPTY weight table — there is no index 0 to give the empty shelf",
+        "refusal_kind": "invalid",
+        "detail": "weight_table",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": [],
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE],
+    },
+    {
+        "why": "a weight table containing 0 — a candidate that cannot be picked while it still occupies the walk",
+        "refusal_kind": "invalid",
+        "detail": "weight_table",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": [100, 40, 0],
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE],
+    },
+    {
+        "why": "a weight table that is not STRICTLY decreasing (two equal adjacent entries)",
+        "refusal_kind": "invalid",
+        "detail": "weight_table",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": [100, 40, 40, 6],
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE],
+    },
+    {
+        "why": "an INCREASING weight table — it would invert FR-26's bias and favour the loaded shelf",
+        "refusal_kind": "invalid",
+        "detail": "weight_table",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": [1, 2, 3],
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE],
+    },
+    {
+        "why": "a NEGATIVE weight-table entry — strictly decreasing yet not all > 0, so the two clauses are independent",
+        "refusal_kind": "invalid",
+        "detail": "weight_table",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": [100, 40, -5],
+        "shelf": SHELF,
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE],
+    },
+    {
+        "why": "a NEGATIVE shelf size — it indexes from the END of the table in some languages and is out of range in others",
+        "refusal_kind": "invalid",
+        "detail": "shelf",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": TABLE,
+        "shelf": {S_A: -1},
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE],
+    },
+    {
+        "why": "total_weight above uniform_int's 2^32 bound — the table is wrong, not the bound tight",
+        "refusal_kind": "invalid",
+        "detail": "total_weight",
+        "src": {"kind": "stage1", "spin": 1},
+        "table": [4294967296, 1],
+        "shelf": {},
+        "live_count": 1,
+        "players": STAGE1_ROSTER,
+        "candidates": [AW_KNIFE, AW_HS],
+    },
+]
+
+
+def _render_candidate(c: dict) -> dict:
+    """`priority` and every weight stay JSON INTEGERS — see the value_encoding note.
+
+    The split is by PROVENANCE, exactly as in `stage2-resolve.json`: snapshot magnitudes are
+    unbounded (AD-19) and travel as decimal strings, while priorities, weights, live_count,
+    shelf sizes, `n`, `r` and byte positions come from the award catalog, the organizer's
+    published config and the PRNG — all bounded, all safely JSON integers.
+    """
+    return {"award_id": c["award_id"], "priority": c["priority"], "award": c["award"]}
+
+
+def build_stage1_file() -> dict:
+    cases = []
+    for c in STAGE1_CASES:
+        label = label_from_source(c["src"])
+        stream = Stream(decode_seed(REAL_SEED), label)
+        expected = stage1_pick(
+            stream, c["candidates"], c["players"], c["shelf"], c["table"], c["live_count"]
+        )
+        # ⭐ THE ANCHOR GUARDS ITS OWN CASES. Every row above declares, as executable code, the
+        # property it was CHOSEN for — that r lands exactly on a boundary, that the re-draw's n
+        # really is recomputed, that the zero-byte draw really consumes zero. Those properties
+        # depend on the real seed's bytes, so a future edit to a spin number or a weight could
+        # silently turn the file's most valuable row into an ordinary one with every gate still
+        # green. That is the 6-4a review's headline finding (a coverage guard satisfied by a row
+        # unrelated to the property it names) closed at the source rather than only in the two
+        # suites.
+        if not c["pins"](expected):
+            raise SystemExit(
+                f"case {c['name']!r} no longer exhibits the property it was chosen for: {expected!r}"
+            )
+        # ⭐ THE SECOND HALF OF GUARDING THE GUARDS. `pins` sees only the OUTPUT, and the 6-4b
+        # code review found three rows whose discriminating property lives in the INPUT — one
+        # player sweeping every candidate, an outcome kind of `no_eligible_players`,
+        # `no_awardable_value` — so their fixtures could be swapped for ones that produce the
+        # same numbers by a different route and every gate would stay green. `pins_inputs` gets
+        # the whole case and re-derives the property through the real Stage 2.
+        if "pins_inputs" in c and not c["pins_inputs"](expected, c):
+            raise SystemExit(
+                f"case {c['name']!r} no longer exhibits the INPUT property it was chosen for — "
+                "its fixture has drifted and the row no longer tests what its name claims"
+            )
+        row = {
+            "name": c["name"],
+            "note": c["note"],
+            "seed_hex": REAL_SEED,
+            "label": label,
+            "label_source": c["src"],
+            "weight_table": c["table"],
+        }
+        # ⭐ A `shelf` of None means the key is OMITTED from the row entirely — the input shape
+        # that proves "an absent container is the empty container" in all three runtimes. It has
+        # to be an absence rather than an empty object, because an empty object is exactly what
+        # it must be shown to be EQUIVALENT to.
+        if c["shelf"] is not None:
+            row["shelf"] = {k: c["shelf"][k] for k in sorted(c["shelf"])}
+        cases.append(
+            {
+                **row,
+                "live_count": c["live_count"],
+                "candidates": [_render_candidate(x) for x in c["candidates"]],
+                "players": [_render_player(p) for p in c["players"]],
+                "expected": expected,
+            }
+        )
+
+    refusals = []
+    for r in STAGE1_REFUSALS:
+        label = label_from_source(r["src"])
+        stream = Stream(decode_seed(REAL_SEED), label)
+        try:
+            got = stage1_pick(
+                stream, r["candidates"], r["players"], r["shelf"], r["table"], r["live_count"]
+            )
+        except Stage1TieRefusal as err:
+            kind, detail = "tie", err.detail
+        except Stage1Refusal as err:
+            kind, detail = "invalid", err.detail
+        else:
+            raise SystemExit(f"refusal row {r['why']!r} did NOT refuse — it returned {got!r}")
+        if kind != r["refusal_kind"]:
+            raise SystemExit(
+                f"refusal row {r['why']!r} refused as {kind!r}, declared {r['refusal_kind']!r}"
+            )
+        # ⭐ THE ROW DECLARES WHICH INPUT IT IS ABOUT, and the anchor checks that the refusal
+        # really came from that guard. Without this a row could keep passing while being refused
+        # by something else entirely three functions downstream — which is exactly the survivor
+        # Story 6-4b's mutation pass found (see the note on Stage1Refusal).
+        if detail != r["detail"]:
+            raise SystemExit(
+                f"refusal row {r['why']!r} refused on {detail!r}, declared {r['detail']!r}"
+            )
+        # ⛔ The NARROWER set: a row is a set of inputs, so it can never legitimately land on
+        # `stream` or `internal`. If one does, the row is not testing what it claims.
+        if detail not in ROW_REPRESENTABLE_DETAILS:
+            raise SystemExit(
+                f"refusal row {r['why']!r} used a detail no row can represent: {detail!r}"
+            )
+        # ⛔ A REFUSAL MUST NOT HAVE MOVED THE STREAM. W7's "validate before any draw" is only
+        # meaningful if it is checked: a malformed table that consumed a byte and then failed
+        # would leave the ceremony's stream position depending on the failure, and a retry after
+        # fixing the config would produce a different ceremony. Every refusal above is reachable
+        # before the first uniform_int call, and this is what keeps that true.
+        if stream.pos != 0:
+            raise SystemExit(
+                f"refusal row {r['why']!r} consumed {stream.pos} byte(s) before refusing — "
+                "validation must run BEFORE the first draw"
+            )
+        refusals.append(
+            {
+                "why": r["why"],
+                "refusal_kind": r["refusal_kind"],
+                "detail": r["detail"],
+                "seed_hex": REAL_SEED,
+                "label": label,
+                "label_source": r["src"],
+                "weight_table": r["table"],
+                "shelf": {k: r["shelf"][k] for k in sorted(r["shelf"])},
+                "live_count": r["live_count"],
+                "candidates": [_render_candidate(x) for x in r["candidates"]],
+                "players": [_render_player(p) for p in r["players"]],
+            }
+        )
+
+    return {
+        "vector": "stage1-pick",
+        "algo_version": ALGO_VERSION,
+        "spec": (
+            "the weight table is validated FIRST (non-empty, strictly decreasing, every entry > "
+            "0), then the shelf (every size a non-negative integer), then the pool (non-empty, "
+            "no duplicate award_id, no duplicate priority, every priority >= 1, "
+            "1 <= live_count <= |pool|) — all BEFORE any byte is drawn; candidates are then "
+            "sorted ASCENDING by award.priority and each is weighted as "
+            "luck_weight_table[min(shelf[provisional_winner], len(table) - 1)] where "
+            "provisional_winner is Stage 2's raw outcome over the frozen snapshot, a TIE outcome "
+            "refuses (Story 6.5) and a no_eligible_players / no_awardable_value outcome has no "
+            "player and therefore weights at index 0 (the heaviest); the shelf is FROZEN at this "
+            "point and is not recomputed between the picks of one spin; then live_count times: "
+            "total = the sum of the REMAINING weights, r = uniform_int(stream, total), and the "
+            "first remaining candidate in ascending priority whose running cumulative is STRICTLY "
+            "GREATER than r is picked and removed; live is returned in DRAW order"
+        ),
+        "value_encoding": (
+            "Every SNAPSHOT magnitude is a DECIMAL STRING (AD-19 makes them unbounded and "
+            "JSON.parse silently rounds past 2^53), exactly as in stage2-resolve.json. Every "
+            "weight, priority, shelf size, live_count, n, r and byte position is a JSON INTEGER: "
+            "they come from the award catalog's bounded int columns (0023:74-76), from the "
+            "organizer's published luck weight table, or from the PRNG, whose n is bounded by "
+            "2^32. The split is by PROVENANCE, not by taste."
+        ),
+        "generated_by": GENERATED_BY,
+        "refusal_kinds": ["tie", "invalid"],
+        "refusal_details": list(REFUSAL_DETAILS),
+        "refusals": refusals,
+        "cases": cases,
+    }
+
+
 # ── rendering ─────────────────────────────────────────────────────────────────
 
 
@@ -1344,6 +2551,7 @@ def main() -> int:
         HERE / "prng-block.json": render(build_block_file()),
         HERE / "prng-uniform-int.json": render(build_uniform_file()),
         HERE / "stage2-resolve.json": render(build_stage2_file()),
+        HERE / "stage1-pick.json": render(build_stage1_file()),
     }
 
     if args.check:

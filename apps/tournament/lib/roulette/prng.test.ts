@@ -663,8 +663,9 @@ describe('lib/roulette source pinning', () => {
     // Every non-test module under lib/roulette is production code that can reach a client bundle,
     // so the list is asserted exactly rather than as a lower bound: a new module added here
     // without thinking about the bans below should fail loudly, not slip in unscanned.
-    // `stage2.ts` was added by Story 6-4a and had to be registered here to be scanned at all.
-    expect(shipped.map(([f]) => f)).toEqual(['labels.ts', 'prng.ts', 'stage2.ts']);
+    // `stage2.ts` was added by Story 6-4a and `stage1.ts` by 6-4b; each had to be registered here
+    // to be scanned at all.
+    expect(shipped.map(([f]) => f)).toEqual(['labels.ts', 'prng.ts', 'stage1.ts', 'stage2.ts']);
   });
 
   it('the walk really is recursive (a nested module could not hide)', () => {
@@ -703,20 +704,24 @@ describe('lib/roulette source pinning', () => {
 
   // ⭐⭐ THE POSITIVE CONTROL, and the closure of deferred-work.md:291 (Story 6-4a).
   //
-  // THE FINDING: the three bans above iterate `importSpecifiers(src)`, and every shipped module
-  // in this directory has ZERO imports — so `expect([]).not.toContain('server-only')` and both
-  // `for` loops execute NO assertion at all. They pass vacuously, and a regression in
-  // `importSpecifiers` itself would be invisible to them. Silent green is the worst failure mode
-  // a pinning test has.
+  // THE ORIGINAL FINDING: the three bans above iterate `importSpecifiers(src)`, and at 6-4a every
+  // shipped module in this directory had ZERO imports — so `expect([]).not.toContain(…)` and both
+  // `for` loops executed NO assertion at all. They passed vacuously, and a regression in
+  // `importSpecifiers` itself would have been invisible to them. Silent green is the worst
+  // failure mode a pinning test has.
   //
-  // ⚠ THE DEFERRAL'S EXPECTED CLOSURE DID NOT HAPPEN, and that is recorded rather than papered
-  // over: it assumed "6.4 will bring the first real import". Stage 2 shares nothing with the PRNG
-  // — no seed, no stream, no labels — so `stage2.ts` legitimately imports nothing either, and
-  // manufacturing an import purely to make a test non-vacuous would be the tail wagging the dog.
+  // ⚠ THE DEFERRAL'S EXPECTED CLOSURE DID NOT HAPPEN AT 6-4a, and that was recorded rather than
+  // papered over: it assumed "6.4 will bring the first real import". Stage 2 shares nothing with
+  // the PRNG — no seed, no stream, no labels — so `stage2.ts` legitimately imports nothing
+  // either, and manufacturing an import purely to make a test non-vacuous would have been the
+  // tail wagging the dog.
   //
-  // The STRONGER closure is this: prove each ban FIRES on a source that violates it. A real
-  // import would only ever have shown that the list is non-empty; this shows the predicate
-  // actually discriminates, which is the property the three tests above claim to have.
+  // ⭐ STORY 6-4b CLOSED IT FOR REAL. `stage1.ts` imports `./prng` (for `uniformInt` and the
+  // `Stream` type) and `./stage2` (for `resolveStage2`, which IS the provisional winner), because
+  // Stage 1 genuinely composes the other two stages. The three bans above therefore now execute
+  // REAL assertions over a non-empty specifier list for the first time. The 6-4a controls below
+  // are KEPT: a non-empty list only proves the list is non-empty, whereas these prove the
+  // predicate actually discriminates — which is the property the three tests claim to have.
   describe('the import bans are proven to FIRE, not merely to pass over an empty list', () => {
     it('catches server-only when it is present', () => {
       expect(importSpecifiers("import 'server-only';\nexport const x = 1;")).toContain('server-only');
@@ -739,13 +744,43 @@ describe('lib/roulette source pinning', () => {
       expect(specs.every((s) => s.startsWith('.'))).toBe(true);
     });
 
-    // The measured record of WHY the control above is needed. The day a shipped module gains a
-    // real import, this reddens — which is the moment to notice that the three bans have started
-    // executing real assertions, and to update this line deliberately rather than silently.
-    it('records that every shipped module currently imports nothing', () => {
-      for (const [file, src] of shipped) {
-        expect(importSpecifiers(src), `${file} gained its first import`).toEqual([]);
-      }
+    // ⭐ UPDATED DELIBERATELY BY STORY 6-4b, which is exactly what the previous version of this
+    // test asked for: "the day a shipped module gains a real import, this reddens — which is the
+    // moment to notice that the three bans have started executing real assertions, and to update
+    // this line deliberately rather than silently." That day is `stage1.ts`.
+    //
+    // It is now the MEASURED truth rather than a blanket claim: the exact import graph is pinned
+    // per module, so a module quietly gaining an import still reddens here — including the two
+    // that must stay leaves. `labels.ts` and `prng.ts` importing nothing is load-bearing: they are
+    // the primitives, and an import appearing in either would mean the browser bundle grew a
+    // dependency the producer does not have.
+    // ⚠ THE PIN IS OVER THE SET OF MODULES IMPORTED, NOT THE RAW SPECIFIER LIST. The 6-4b code
+    // review found the raw list encoding `['./prng', './prng', './stage2', './stage2']` — the
+    // duplicates existing only because the module split its value and `import type` statements —
+    // so a behaviour-neutral refactor that merged them reddened this pin for no semantic reason,
+    // and that is precisely what happened when `Stream` moved into the value import. Deduping
+    // loses nothing that matters: the property this pin protects is WHICH modules a shipped file
+    // depends on, and a set states that exactly.
+    it('pins each shipped module’s exact import graph', () => {
+      const graph = Object.fromEntries(
+        shipped.map(([file, src]) => [file, [...new Set(importSpecifiers(src))].sort()]),
+      );
+      expect(graph).toEqual({
+        'labels.ts': [],
+        'prng.ts': [],
+        // Stage 1 composes the other two stages: `uniformInt` draws the pick and `resolveStage2`
+        // IS the provisional winner whose shelf the weight is indexed by.
+        'stage1.ts': ['./prng', './stage2'],
+        'stage2.ts': [],
+      });
+    });
+
+    // …and at least one shipped module really does have a non-empty list, so the three bans above
+    // are no longer vacuous. Guards the guard: if every module went back to importing nothing,
+    // the bans would silently stop asserting and the pin above would still pass.
+    it('at least one shipped module has a non-empty specifier list, so the bans are not vacuous', () => {
+      const withImports = shipped.filter(([, src]) => importSpecifiers(src).length > 0);
+      expect(withImports.map(([f]) => f)).toEqual(['stage1.ts']);
     });
   });
 

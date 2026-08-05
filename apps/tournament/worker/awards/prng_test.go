@@ -790,13 +790,18 @@ func productionSources(t *testing.T) map[string]struct {
 // here is production code bound by the bans below, so a new one added without thinking about
 // them should fail loudly rather than slip in unscanned. Story 6-4a added stage2.go, and the
 // per-file ban exemption below is only meaningful if the file set itself is pinned.
+//
+// ⭐ Story 6-4b added stage1.go and did NOT add it to the `math/big` exemption, which is the
+// intended outcome: Stage 1's operands are weights, priorities and a total bounded by
+// uniform_int's own n <= 2^32, so reaching for math/big there would mean the bound had been
+// abandoned. The exception list is scoped precisely so a new file is banned by default.
 func TestScannedSourceFilesAreExactlyTheShippedModules(t *testing.T) {
 	var got []string
 	for name := range productionSources(t) {
 		got = append(got, name)
 	}
 	sort.Strings(got)
-	want := []string{"labels.go", "prng.go", "stage2.go"}
+	want := []string{"labels.go", "prng.go", "stage1.go", "stage2.go"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("scanned %v, want %v", got, want)
 	}
