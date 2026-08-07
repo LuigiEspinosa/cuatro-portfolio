@@ -4,7 +4,7 @@ baseline_commit: 4c9cf36
 
 # Story 6.5b: FR-29 ladder — close the vector and suite debt
 
-Status: in-progress
+Status: done
 
 > **This story exists because 6.5's own review says so, in its own words.** The last line of
 > [6-5-fr-29-tie-ladder.md:779](_bmad-output/implementation-artifacts/6-5-fr-29-tie-ladder.md#L779):
@@ -327,10 +327,59 @@ already flagged as too weak. The `claim()` machinery caught its own blind spot t
 had not been written against arrived, which is the strongest available evidence both that the finding
 was real and that the machinery is sound.
 
-⛔ **STILL OWED, AND NOT DONE HERE: the FULL Task-6 mutation re-run.** The pass above is a targeted
-falsifiability check on the review's own patches (7 mutations), NOT the story's 51-application set.
-Six new vector rows, two new refusal rows and a shipped-source change to `stage1.go`/`stage1.ts`
-re-open AC10. The complete set must be re-run before this story returns to `review`.
+## AC10 — the FULL mutation set, RE-RUN after the review patches (2026-08-06)
+
+⚠ **THIS IS A REBUILT HARNESS, NOT THE STORY'S ORIGINAL, AND THAT IS STATED RATHER THAN GLOSSED.**
+`mutate65b.py` was scratchpad-only and is gone, so its 30 themes / 51 applications cannot be
+re-executed byte for byte. What ran is an independently authored set over the same surface — every
+rung, every narrowing, every refusal guard, both loaders and the Stage-1 arms, in both languages
+wherever the mutation is expressible. Same protocol, every clause of which was earned by a real
+failure here: control pass first, **bytes not text**, anchors rewritten into each file's own
+line-ending convention, **exact-once** matching, `NOT-APPLIED` reported as an outcome distinct from
+`killed`, SHA-256 restoration, and the **whole** vector-driven test set per mutation (`vitest run
+lib/` + `go test ./...`), never a `-run` filter.
+
+```
+CONTROL PASS (unmutated)      vitest GREEN · go GREEN      -> the run is not void
+42 applications · 38 KILLED · 4 SURVIVED · 0 NOT-APPLIED · restoration clean on every file
+```
+
+Killed, by rung: **rung 1** argmax-on-plural-best (ts+go) · narrowing deleted (ts+go) · **rung 2**
+both factors dropped (ts+go) · hardcoded `max` (ts+go) · narrowing deleted (ts+go) · **rung 3**
+dominators over the original tie (ts+go) · relaxed to "beats at least one" (ts) · **rung 4** sentinel
+filter deleted (ts+go) · `ts <= 0` filter (ts) · inverted to LATEST (ts+go) · skip-instead-of-narrow
+(ts+go) · folded over the roster (ts) · **rung 5** one winner returned (ts+go) · **validation**
+duplicate-`players`, byte-lex order, width ≥ 2, both-or-neither, three negative-magnitude guards,
+`achievement_ts` scoped to the roster (go) · the transcribed Stage-2 clause drifting by one character
+· rung 3's `internal` message removed from the code · **Stage 1** the shared arm's empty-id,
+empty-winners, W8 clamp, and `min`→`max` aggregation.
+
+### The four survivors — reported, not counted
+
+⛔ *A new row that kills nothing is a row that proves nothing.* None of these four is a vector gap,
+and each is a different reason:
+
+1. **`M08` — rung 3's PLURAL-dominator refusal deleted (Go + TS).** A **behavioural no-op on every
+   reachable input.** This is the `internal` producer both suites already declare unreachable **by
+   ANTISYMMETRY**: `compareStatValues(a,b) === -compareStatValues(b,a)`, so two players can never
+   both beat everyone, so no set of INPUTS produces `|D| > 1` and there is nothing for a row to
+   carry. Deleting the branch removes code that cannot execute. This is precisely the state
+   DECISION D exists to name, and it is named in both languages.
+2. **`M16` — the duplicate-`tied` guard deleted (TS).** A **recorded closed-set limitation, already
+   documented in the vector's own refusal #23.** The byte-lex ORDER guard immediately below catches
+   the same input and refuses with the **same `detail` (`tied`)**, so no row can separate them —
+   verified on both shapes: adjacent (`[A, A]`, the committed row) and non-adjacent (`[A, B, A]`).
+   Messages are not contract; details are, and a closed set of five labels has nothing finer to say.
+   Identical in kind to `M23`'s `efficiencyPair` limitation the story already recorded.
+3. **`M20` — a refusal MESSAGE edited without touching its guard.** ⭐ **This one is a DELIBERATE
+   NEGATIVE CONTROL and it is supposed to survive.** Its survival is what proves the suites assert
+   the **typed error and the declared `detail`** rather than string-matching prose — if it had been
+   killed, the refusal gates would be pinned to wording and every message edit would be a false
+   alarm. A mutation set with no expected-survivor has no way to distinguish a strict suite from a
+   brittle one.
+
+**Net: two genuine survivors, both structurally unkillable and both already declared; one control
+behaving correctly.** Nothing here is a coverage hole, and no row was added to chase one.
 
 ## Review Findings
 
@@ -705,3 +754,4 @@ untouched and no second orphan was added.
 | 2026-08-06 | ⭐ Mutation pass, TWO RUNS. Run 1 reported **33 of 51 NOT-APPLIED** — the anchors were `\n` and the files are CRLF, which is 6-4a's exact failure mode caught by the harness instead of hidden by it. Run 2 (CRLF-aware, still exact-once) gave **47 killed · 4 SURVIVED · 0 NOT-APPLIED**, control green, SHA-256 restoration clean. The four survivors are two themes and neither is a vector gap: rung 1 over `tied` is a behavioural NO-OP (`survivors` is a fresh copy of `tied` one line above), and `efficiencyPair`'s absent-key guard is indistinguishable from the guard directly below it because both refuse the same input with the same `detail` — a recorded limitation, reported rather than counted. |
 | 2026-08-06 | CODE REVIEW (bmad-code-review, 3 parallel adversarial layers, all Opus 5, baseline `4c9cf36`, ~9,810 lines). 25 findings after dedup: 2 decision-needed, 15 patch, 4 deferred, 4 dismissed. ⭐ Every gate re-derived independently and every one MATCHES the author's printed numbers (lint 0 · Vitest 1183/41 · build 0 · Go clean · gofmt empty · `--check` OK ×5 · 37/29 and 17/19 rows · 0 CRLF ×5 · scope byte-untouched · `0025` free · `qa65b` absent). AC1, AC2, AC3, AC5, AC8, AC9 MET; AC4, AC6, AC10 PARTIAL; AC7's guard MET but its measurement UNVERIFIABLE (harness deleted). The headline: this pass closed the vacuous-guard defect in the anchor and re-opened it in the two consumer suites. |
 | 2026-08-06 | Implemented, ANCHOR FIRST (DECISION C): `generate_vectors.py` gained 13 cases, 10 refusals, five guard helpers and the six-group `spec` string before either runtime was touched. `ladder-resolve.json` 24/19 → **37/29** and `stage1-pick.json` 16 → **17 cases by ADDITION ONLY (373/0)**, with every pre-existing row in both files proved byte-identical by parsing both revisions. `prng-block.json`, `prng-uniform-int.json` and `stage2-resolve.json` are byte-unmoved. Both suites levelled, `catalog.test.ts`'s clone guard rewritten against the measurement, and the nine outstanding findings in 6.5's file ticked with T9c/T9f/T9g/T7 settled. Status → review. |
+| 2026-08-06 | ⭐⭐ AC10 DISCHARGED — the full mutation set RE-RUN after the review patches, and the harness rebuilt rather than quoted (`mutate65b.py` was scratchpad-only and is gone, so its 51 applications cannot be re-executed byte for byte; that is stated, not glossed). 42 applications over every rung, every narrowing, every refusal guard, both loaders and the Stage-1 arms, in both languages wherever expressible: **38 KILLED · 4 SURVIVED · 0 NOT-APPLIED**, control pass green FIRST, bytes not text, anchors rewritten into each file''s own line endings, exact-once matching, whole test set per mutation, and restoration proved by `git status` clean rather than by SHA-256 alone. The four survivors are THREE reasons and no coverage hole: `M08` rung 3''s plural-dominator refusal is a behavioural no-op unreachable BY ANTISYMMETRY (the `internal` producer both suites already declare); `M16` the duplicate-`tied` guard is caught by the byte-lex ORDER guard below it with the SAME `detail`, verified on the adjacent AND non-adjacent shapes — the closed-set limitation refusal #23 already documents; and `M20` is a DELIBERATE NEGATIVE CONTROL that MUST survive, because a refusal-message edit reddening anything would mean the gates are pinned to prose rather than to the typed error and its `detail`. Story 6-5b -> done. |
