@@ -8,6 +8,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -747,15 +748,33 @@ func productionSources(t *testing.T) map[string]struct {
 		imports []string
 	}{}
 
-	entries, err := os.ReadDir(".")
-	if err != nil {
-		t.Fatalf("read package dir: %v", err)
-	}
-	for _, e := range entries {
-		name := e.Name()
-		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
-			continue
+	// ⭐ RECURSIVE (Story 6-5b, T10). The scan used to be a flat `os.ReadDir(".")`, so a SUBPACKAGE
+	// under `worker/awards/` was invisible to every ban below while the TypeScript side's module walk
+	// is recursive and says so — a one-sided gate over a shared rule. There is no subdirectory today,
+	// which is exactly why the weakness was cheap to leave and cheap to close: the file-set pin below
+	// comes out unchanged, and a subpackage added tomorrow is scanned rather than exempt by accident.
+	var files []string
+	err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
+		if d.IsDir() {
+			// `testdata` is the one directory the go tool itself ignores; nothing else is skipped.
+			if path != "." && d.Name() == "testdata" {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		files = append(files, filepath.ToSlash(path))
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk package dir: %v", err)
+	}
+	for _, name := range files {
 		fset := token.NewFileSet()
 		file, err := parser.ParseFile(fset, name, nil, 0 /* comments discarded */)
 		if err != nil {
@@ -870,7 +889,57 @@ func TestPackageSourceHasNoBannedConstructs(t *testing.T) {
 		{".Float64()", "converts an exact integer into a rounded float"},
 	}
 
-	for name, src := range productionSources(t) {
+	sources := productionSources(t)
+
+	// ⭐⭐ NON-VACUITY AND A POSITIVE CONTROL, BEFORE ANY BAN IS CHECKED (Story 6-5b, T10). A ban list
+	// that scans an empty corpus passes; so does one whose needles cannot match anything. Both are
+	// "green" in exactly the way this whole file exists to prevent, and neither was asserted.
+	if len(sources) == 0 {
+		t.Fatal("scanned no source files — every ban below is vacuous")
+	}
+	totalImports := 0
+	for _, src := range sources {
+		totalImports += len(src.imports)
+	}
+	if totalImports == 0 {
+		t.Fatal("scanned no imports at all — the import bans are vacuous")
+	}
+	// THE POSITIVE CONTROL: a needle that MUST be found, run through the identical matcher. If the
+	// scan is looking at the wrong text — stripped too hard, read from the wrong directory, or
+	// silently empty — this fails while every real ban keeps passing. `func ` is in every Go file
+	// that has code at all, and it survives comment stripping because it is code.
+	for name, src := range sources {
+		if !strings.Contains(src.code, "func ") {
+			t.Errorf("positive control failed: %s contains no %q — the scan is not reading the code "+
+				"it claims to be reading, so every ban below is passing for the wrong reason",
+				name, "func ")
+		}
+	}
+	// …and the math/big EXEMPTION LIST is non-vacuous: every file it names must exist in the scan AND
+	// must actually import math/big. An exemption for a file that does not import it is dead text
+	// that makes the list look scoped while scoping nothing.
+	for _, b := range bannedImports {
+		for _, exempt := range b.exceptIn {
+			src, ok := sources[exempt]
+			if !ok {
+				t.Errorf("the %q exemption names %q, which is not in the scanned source set — the "+
+					"exemption is dead text", b.path, exempt)
+				continue
+			}
+			found := false
+			for _, imp := range src.imports {
+				if imp == b.path {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("%s is exempted from the %q ban but does not import it — the exemption is "+
+					"vacuous and should be removed rather than carried", exempt, b.path)
+			}
+		}
+	}
+
+	for name, src := range sources {
 		for _, imp := range src.imports {
 			for _, b := range bannedImports {
 				if imp != b.path {

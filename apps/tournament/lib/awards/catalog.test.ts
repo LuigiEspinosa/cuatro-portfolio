@@ -14,6 +14,10 @@ import {
   toCuratePayload,
   type StatKey,
 } from './catalog';
+// ⚠ IMPORTED BY THE TEST, NOT BY `catalog.ts`. `lib/roulette` is the one `lib/**` package that ships
+// to the browser and must never import this `server-only` module; the dependency runs the other way
+// here, in the suite, which is where "does the shipped catalog survive the shipped ladder" belongs.
+import { LadderError, resolveLadder } from '../roulette/ladder';
 
 /**
  * The seed catalog's guardrails (Story 6.1, AC1/AC3) — asserted on the CONSTANT itself, so a future edit that
@@ -277,22 +281,78 @@ describe('the FR-29 rung keys (Story 6.5, Question 2 — MEASURED)', () => {
     }
   });
 
-  it('⭐ no secondary is MEASURED_DEGENERATE against its own deciding stat', () => {
-    // ⭐⭐ THE MEASURED RULE, PINNED. `entry_frags` / `rounds_won` / `kast_pct` are exact per-player
-    // CLONES of `kills` and `opening_deaths` of `deaths` (28/28 players, Story 6.1's Task-0 probe),
-    // so choosing one as the secondary for a `kills` or `deaths` award produces a rung that CANNOT
-    // BREAK A TIE IT IS EVER HANDED. Story 6.5's BAR reproduced that at the ladder itself: over the
-    // real corpus's five ties, `entry_frags` and `rounds_won` left the `kills` tie unresolved and
-    // `opening_deaths` left the `deaths` tie unresolved, while `adr` broke all five.
-    const clonesOf: Record<string, readonly StatKey[]> = {
-      kills: ['entry_frags', 'rounds_won', 'kast_pct'],
-      deaths: ['opening_deaths'],
-    };
+  /**
+   * ⭐⭐ THE CLONE RELATION, RE-MEASURED AND SYMMETRIC (Story 6-5b, AC7 / T8).
+   *
+   * The previous table said `kast_pct` was a clone of `kills`, cited `catalog.ts:163-166` as the
+   * measurement, and CONTRADICTED it: that measurement records `kast_rounds == kills` and concludes
+   * `kast_pct` ranks identically to **`entry_success`**, not to `kills`. It was re-measured over the
+   * real 14-demo corpus (`worker/cmd/qa65b`, deleted before commit; 204 counted rounds, 28 distinct
+   * SteamID64) rather than re-argued, and the numbers are:
+   *
+   *   kast_rounds == kills                       28/28 players   (the recorded premise HOLDS)
+   *   kast_pct    == entry_success  EXACTLY      28/28 players   → a clone, as rationals
+   *   kast_pct    == kills          EXACTLY       0/28 players
+   *   kast_pct    ranks identically to kills      FALSE
+   *   entry_frags ranks identically to kills      TRUE
+   *   rounds_won  ranks identically to kills      TRUE
+   *   opening_deaths ranks identically to deaths  TRUE
+   *
+   * And the operative fact for rung 1, which is stronger than "ranks identically": of the SIX `kills`
+   * ties the corpus produces, `kast_pct` BREAKS ONE (the width-14 tie at kills = 9, where 7 distinct
+   * values appear) while `entry_frags` breaks NONE. The cause is that `kast_pct` is
+   * `kast_rounds / rounds_played` and `rounds_played` differs across matches — so it can break a
+   * `kills` tie whenever the tied players played different numbers of rounds. Of the TEN
+   * `entry_success` ties, `kast_pct` is constant on all ten: degenerate there, and only there.
+   *
+   * ⚠ `kast_pct` STAYS IN `MEASURED_DEGENERATE` — that set records "clone of something already
+   * seeded", and `entry_success` IS seeded (#5 Rey del Duelo). Only this table was wrong.
+   *
+   * ⭐ SYMMETRIC, because the relation is. An award deciding on `entry_frags` whose secondary is
+   * `kills` is the identical defect as the reverse, and passed unchallenged when the table was read
+   * one-way only.
+   */
+  const CLONE_PAIRS: readonly (readonly [StatKey, StatKey])[] = [
+    ['kills', 'entry_frags'],
+    ['kills', 'rounds_won'],
+    ['entry_frags', 'rounds_won'],
+    ['deaths', 'opening_deaths'],
+    ['entry_success', 'kast_pct'],
+  ];
+
+  const areClones = (a: StatKey, b: StatKey): boolean =>
+    CLONE_PAIRS.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+
+  it('⭐ the clone table is a MEASURED fact about keys that are actually in play', () => {
+    // ⛔ THE VACUITY THE OLD GUARD SHIPPED WITH. `clonesOf[a.decidingStat] ?? []` made the assertion
+    // below trivially true for every award NOT deciding on `kills` or `deaths` — and nothing asserted
+    // that any award decided on either. Ten of the twelve decided on neither, so the guard was live
+    // for two awards and vacuous for ten.
+    const decided = new Set<string>(AWARD_CATALOG.map((a) => a.decidingStat));
+    const covered = CLONE_PAIRS.filter(([x, y]) => decided.has(x) || decided.has(y));
+    expect(
+      covered.length,
+      'no seeded award decides on a key that has a measured clone — the guard below is vacuous',
+    ).toBeGreaterThanOrEqual(3);
+    // Every key named in the table is a real vocabulary key, or the table is describing nothing.
+    for (const [x, y] of CLONE_PAIRS) {
+      expect(STAT_VOCABULARY).toContain(x);
+      expect(STAT_VOCABULARY).toContain(y);
+      expect(x).not.toBe(y);
+    }
+  });
+
+  it('⭐ no secondary is a MEASURED CLONE of its own deciding stat, in EITHER direction', () => {
+    // ⭐⭐ THE MEASURED RULE, PINNED. A secondary that is an exact per-player clone of the stat that
+    // TIED produces a rung that CANNOT BREAK A TIE IT IS EVER HANDED. Story 6.5's BAR reproduced that
+    // at the ladder itself: over the corpus's five real ties, `entry_frags` and `rounds_won` left the
+    // `kills` tie unresolved and `opening_deaths` left the `deaths` tie unresolved, while `adr` broke
+    // all five.
     for (const a of AWARD_CATALOG) {
-      const clones = clonesOf[a.decidingStat] ?? [];
-      expect(clones, `${a.name}: a clone of ${a.decidingStat} cannot break its tie`).not.toContain(
-        a.secondaryStat,
-      );
+      expect(
+        areClones(a.decidingStat, a.secondaryStat),
+        `${a.name}: ${a.secondaryStat} is a measured clone of ${a.decidingStat}, so rung 1 can never break its tie`,
+      ).toBe(false);
     }
   });
 
@@ -302,11 +362,80 @@ describe('the FR-29 rung keys (Story 6.5, Question 2 — MEASURED)', () => {
     }
   });
 
-  it('the efficiency pair is BOTH-OR-NEITHER, and never a stat over itself', () => {
+  it('⭐ the RUNG-2 keys are held to the same measured rules as the secondary', () => {
+    // ⛔ NEITHER THE CLONE TABLE NOR `MEASURED_EMPTY` WAS APPLIED TO THE EFFICIENCY PAIR AT ALL
+    // (Story 6-5b, T8). Rung 2 is a real rung with a real published contract; a pair over a Σ0 stat,
+    // or over two clones of each other, is a rung that ships configured and cannot discriminate —
+    // exactly what rung 1's guards exist to prevent, one rung down.
     for (const a of AWARD_CATALOG) {
-      // The ladder REFUSES a half-configured pair, so shipping one would refuse at the ceremony.
-      expect(typeof a.effNumKey, a.name).toBe('string');
-      expect(typeof a.effDenKey, a.name).toBe('string');
+      for (const key of [a.effNumKey, a.effDenKey] as const) {
+        expect(MEASURED_EMPTY.has(key), `${a.name}: rung 2 over the Σ0 stat ${key}`).toBe(false);
+        expect(STAT_VOCABULARY, `${a.name}: rung-2 key ${key}`).toContain(key);
+      }
+      // `num / den` where the two are exact clones is 1 for EVERYONE — a configured rung that cannot
+      // discriminate, which is worse than a skipped one because it looks like coverage.
+      expect(
+        areClones(a.effNumKey, a.effDenKey),
+        `${a.name}: ${a.effNumKey}/${a.effDenKey} is a ratio of two clones — 1 for everyone`,
+      ).toBe(false);
+    }
+  });
+
+  it('⭐ the efficiency pair is one the SHIPPED LADDER accepts, driven rather than asserted', () => {
+    // ⛔ THE OLD GUARD WAS A TYPE TAUTOLOGY. `expect(typeof a.effNumKey).toBe('string')` cannot fail:
+    // `SeedAward.effNumKey` is declared `StatKey`, a union of string literals, so the compiler has
+    // already proved it — which left `effNumKey !== effDenKey` as the only load-bearing line in the
+    // test. The real risk it claimed to cover is that the ladder REFUSES a half-configured or
+    // out-of-vocabulary pair AT THE CEREMONY, so this drives the shipped ladder over the shipped
+    // catalog and asserts it does not refuse on the AWARD group.
+    for (const a of AWARD_CATALOG) {
+      const award = {
+        decidingStat: a.decidingStat,
+        class: a.class,
+        direction: a.direction,
+        floorRounds: a.floorRounds,
+        floorKills: a.floorKills,
+        secondaryStat: a.secondaryStat,
+        effNumKey: a.effNumKey,
+        effDenKey: a.effDenKey,
+      };
+      const roster = ['76561198000000011', '76561198000000022'].map((steamid64, i) => ({
+        steamid64,
+        roundsPlayed: 30n,
+        kills: 20n,
+        idleDq: false,
+        volume: {},
+        rate: {},
+        achievementTs: BigInt(1000 + i),
+      }));
+      let detail: string | undefined;
+      try {
+        resolveLadder(award, [roster[0]!.steamid64, roster[1]!.steamid64], roster);
+      } catch (err) {
+        detail = err instanceof LadderError ? err.detail : 'not-a-LadderError';
+      }
+      // ⚠ A `player` refusal is EXPECTED and CORRECT: this synthetic roster carries no `secondary`
+      // block, so rung 1 lands on the absent-KEY refusal. What must NEVER happen is `award` or
+      // `stage2` — those mean the CATALOG itself is malformed, which is the thing under test.
+      //
+      // ⛔⛔ THE POSITIVE ASSERTION COMES FIRST, AND IT USED TO BE MISSING. Two `not.toBe` checks
+      // are both satisfied by `detail === undefined` — i.e. by `resolveLadder` NOT THROWING AT ALL
+      // — and by `'not-a-LadderError'`. So an award that fell through to rung 4 and resolved on
+      // `achievementTs` (1000n vs 1001n, which this roster supplies) passed a test whose entire
+      // claim is "the shipped catalog survives the shipped ladder", proving nothing for that award.
+      // Today every one of the twelve refuses `player`, but only by accident of the catalog's
+      // current shape — one award losing its `secondaryStat` would have silently gone unchecked.
+      // (Story 6-5b code review, 2026-08-06.)
+      expect(
+        detail,
+        `${a.name}: the ladder RESOLVED this synthetic roster instead of refusing it — the row proves nothing, because the assertions below pass for an award that never reached a guard`,
+      ).toBe('player');
+      expect(detail, `${a.name}: the shipped ladder refuses this award's own surface`).not.toBe(
+        'award',
+      );
+      expect(detail, `${a.name}: the shipped ladder refuses this award's Stage-2 surface`).not.toBe(
+        'stage2',
+      );
       // `k / k` is 1 for everyone — a rung that cannot discriminate.
       expect(a.effNumKey, a.name).not.toBe(a.effDenKey);
     }

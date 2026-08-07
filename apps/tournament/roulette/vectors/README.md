@@ -33,8 +33,8 @@ stories:
 | 1 — block function | `prng-block.json` | **Story 6.3** | ✅ shipped |
 | 2 — `uniform_int` | `prng-uniform-int.json` | **Story 6.3** | ✅ shipped |
 | — Stage-2 deterministic winner + tie detection | `stage2-resolve.json` | **Story 6-4a** | ✅ shipped |
-| — FR-29 tie ladder | `ladder-resolve.json` | **Story 6.5** | ✅ shipped |
-| 3 — Stage-1 weighted pick | `stage1-pick.json` | **Story 6-4b** (+ 6.5's ladder rows) | ✅ shipped |
+| — FR-29 tie ladder | `ladder-resolve.json` | **Story 6.5** (+ 6-5b's coverage pass) | ✅ shipped |
+| 3 — Stage-1 weighted pick | `stage1-pick.json` | **Story 6-4b** (+ 6.5's ladder rows, + 6-5b's shared-arm clamp row) | ✅ shipped |
 | 4 — canonical JSON + `bundle_sha256` (RFC-8785) | *(not yet)* | **Story 6.9** | ⏳ |
 | 5 — end-to-end ceremony vector + suite completeness | *(not yet)* | **Story 6.11** | ⏳ |
 
@@ -317,6 +317,17 @@ key. `efficiency` is uniformly `{num, den}` — a volume `v` arrives as `{v, 1}`
 under test, so a rung that read the wrong shape would be handed a value the loader had already
 coerced into the right one.
 
+⚠ **THE RULE ABOVE IS FOR THE TWO LOADERS, NOT FOR THE THREE RESOLVERS, AND THE DISTINCTION IS THE
+WHOLE POINT** *(corrected by Story 6-5b, T9d — the sentence used to read as a blanket instruction and
+a loader following it literally could never emit the L5 refusal row that exists)*. A **loader**
+branches on the shape because it must not pre-judge the answer. A **resolver** — `statValue` in both
+runtimes and `_stat_value` in the anchor — does the opposite: it derives the key's class from the
+**vocabulary** (`_class_of(key)`) and then **refuses** a value whose shape disagrees. That refusal is
+L5 itself, it has a row (`the secondary block carries a {num,den} PAIR under a VOLUME key`), and a
+resolver that branched on the shape instead would have nothing to refuse — it would read whatever
+arrived and compare it. Shape-first in the loader, vocabulary-first in the resolver; the disagreement
+between the two is the defect being caught.
+
 ⭐ **`stat_vocabulary` travels in the file** because both runtimes necessarily restate 0023's closed
 set in source — `worker/awards` is a leaf that cannot read the database, and `lib/roulette` may not
 import `server-only` `lib/awards/catalog.ts`. That is four restatements with nothing tying them
@@ -327,12 +338,31 @@ together; both suites pin their own constant against this block by exact equalit
 snapshot value. `ladder_exit_step` and the floors come from the algorithm and the catalog's bounded
 `int` columns and stay JSON integers.
 
-⚠ **`refusal_details` declares FIVE and only the first FOUR are row-representable.** `internal` is a
-plural strict dominator, and that is unreachable from any *input*: the comparator is antisymmetric
-(`cmp(a,b) == -cmp(b,a)`), so `p` beating `q` means `q` does not beat `p`, so two players can never
-both beat everyone. It is a **typed refusal** rather than a fall-through (Cuatro, 2026-08-04) because
-falling through would convert a comparator bug into a silently *shared* trophy — indistinguishable
-from a legitimate rung-5 bottom-out, which is the outcome this ceremony produces most.
+⚠ **`refusal_details` declares FIVE and only the first FOUR are row-representable**, and `internal`
+has **TWO producers whose unreachability arguments genuinely differ**. Do not collapse them into one
+sentence — a later reader who "simplifies" this against the wrong reason removes a guard that is
+load-bearing for the other:
+
+1. **Rung 3's plural strict dominator** is unreachable by **ANTISYMMETRY**: `cmp(a,b) == -cmp(b,a)`,
+   so `p` beating `q` means `q` does not beat `p`, so two players can never both beat everyone.
+2. **`bestSurvivors`' empty best set** is unreachable by **ACYCLICITY** — strictly weaker than
+   transitivity, which the comparator genuinely does *not* have (`0/0` compares equal to everything,
+   so `0/0 ~ 10/5` and `0/0 ~ 6/5` while `10/5 > 6/5`). Every non-empty set has an unbeaten member
+   while the strict part is acyclic. That is the property the negative-magnitude refusals protect: a
+   negative half inverts one pair's comparison without inverting the others, which is exactly how a
+   3-cycle forms.
+
+Both are **typed refusals** rather than fall-throughs (Cuatro, 2026-08-04): falling through converts
+a comparator bug into a silently *shared* trophy, indistinguishable from a legitimate rung-5
+bottom-out. Both ladder suites now carry the declaration in words — a `detail` nothing inspects is a
+compartment, not a contract.
+
+⚠ **The `player`/`tied` boundary is not where the four-group reading suggests.** The published order
+is **six** alternating groups, because the duplicate-`players` scan is part of *building* the index
+that the tied-membership check then *reads*, so it refuses as `player` **before** membership refuses
+as `tied`. All three implementations always did this; the document said otherwise until Story 6-5b
+amended it (Cuatro: *amend the published spec, do not move the code*). Two refusal rows hold it
+there.
 
 #### The ladder cases that carry the weight
 
@@ -350,12 +380,66 @@ from a legitimate rung-5 bottom-out, which is the outcome this ceremony produces
 | `rung-1-a-zero-denominator-secondary-ties-everyone-S3-verbatim` / `rung-2-…-PLUS-INFINITY` | that 6-4a's **S3** semantics are inherited verbatim rather than "fixed": `0/0` ties everyone (so a rung can narrow and resolve nothing) and `n/0` with `n > 0` beats every finite value. Filtering den-0 out is the silent argmax S3 forbids. |
 | `…-MALFORMED IN TWO WAYS AT ONCE` (refusal) | ⭐ **validation order is contract.** A width-1 `tied` whose award *also* names a bogus `secondary_stat`. The published order puts the **award** group before the **tied** group, so it must refuse as `award`; every other row is malformed in exactly one way and cannot see the difference. This is 6-4b's headline defect closed from the first commit rather than after a review. |
 
+#### The rows Story 6-5b added, and the hole each one closes
+
+Every row below exercises a path all three implementations **already had** and **no row reached**.
+None of them adds behaviour; the one document that moved is the `spec` string, and it moved because
+the code was right and the text was wrong.
+
+| Case | What only it can catch |
+|---|---|
+| `rung-2-RATE-efficiency-keys-give-the-product-FOUR-non-trivial-terms` | ⭐⭐ rung 2's **headline property**, previously untested. Every other rung-2 row names volume keys, and a volume `v` arrives as `{v, 1}` — so two of the four factors were the literal `1` and an implementation that **dropped both the `.den` and `.num` factors** was byte-identical on all 24 committed cases, the 2^53 row included. Both slots here are rate keys: `adr` 200/20 over `entry_success` 100/40 beats 300/30 over 100/30, while the both-dropped mutant compares 200/100 against 300/100 and picks the other player. |
+| `rung-2-under-direction-min-picks-the-SMALLEST-ratio` | rung 2 had **no `min` row** — rungs 1, 3 and 4 each had one — so a mutation hardcoding `max` at rung 2 alone survived. The loser under `min` also holds the earlier timestamp, so a skipped rung 2 crowns them too. |
+| `rung-2-NARROWS-without-resolving-and-the-NEXT-rung-runs-over-the-SURVIVORS` | **L3 at rung 2.** All four committed rung-2 rows exited *at* step 2, so `survivors = narrowed` was never read again and deleting the line reddened nothing. Here two players tie at 10 and a third is eliminated — and the eliminated one holds the strictly earliest timestamp, so dropping the narrowing crowns a player rung 2 already removed. |
+| `rung-2-a-ZERO-OVER-ZERO-ratio-is-UNELIMINABLE-and-rides-to-the-next-rung` | the **`0/0` half of S3 at rung 2**, promised by the rung-2 efficiency-pair decision and missing (only the `n/0` half existed, and the `0/0` row that did exist was at rung 1 — a different arithmetic path). It is the shipped `kills/deaths` pair's second degenerate case: a player with zero of both can never be eliminated. |
+| `rung-4-NARROWS-and-the-SENTINEL-holder-is-EXCLUDED-from-the-shared-set` | ⭐⭐ rung 4's narrowing, never load-bearing before: every committed rung-4 case had `narrowed == present == survivors`. Width 3, one `-1` holder and two real ties, so the shared set must **exclude** the sentinel holder. An implementation that *skipped* rung 4 whenever it could not resolve hands a co-winner's trophy to a player with **no approved rows at all**. |
+| `rung-1-RESOLVES-and-RETURNS-even-though-rung-2-and-h2h-are-CONFIGURED` / `rung-2-RESOLVES-and-RETURNS-even-though-h2h-is-POPULATED` | the **early return** at rungs 1 and 2, unpinned. Falling through with a single survivor returns the *same* winner at a **fabricated** exit step, because rung 2's `best` of one is that one and rung 3's dominator loop is vacuously true. Rung 3→4 precedence was pinned; rungs 1 and 2 were not. The rung-2 row goes further: rung 3 would crown the **other** player, so it changes the winner as well as the step. |
+| `rung-3-runs-over-rung-1s-SURVIVORS-so-a-DOMINATOR-emerges-the-full-tie-had-not` | **L3 at rung 3.** No row both narrowed *and* populated `h2h`, so an implementation computing dominators over the original `tied` was byte-identical everywhere. Over the survivors A dominates and wins at step 3; over the full tie nobody does, rung 3 skips, and rung 4 crowns a third player at step 4. |
+| `a-RATE-class-award-cross-multiplies-its-h2h-PAIRS-at-rung-3` | there was **not one `class: rate` award** in the file, so rung 3's rate arm — where `h2h[p][q][stat]` is a `{num,den}` pair and the dominator test cross-multiplies — was never entered, although four of the twelve shipped awards are `rate`. 6/30 beats 7/40, so a naive numerator compare picks the other player. |
+| `an-achievement_ts-of-ZERO-is-a-REAL-timestamp-and-WINS-rung-4` | `achievement_ts` never took `0` — the value adjacent to the sentinel — so an absent-filter written `ts <= 0` rather than `ts != -1` passed every row. |
+| `an-achievement_ts-past-2-pow-53-is-compared-EXACTLY` | the provenance rule's own proof. 2^53+1 against 2^53: a `Number`-parsing verifier reads **both as 2^53**, sees them equal and bottoms out **shared at step 5** — a different outcome *kind*, not merely a different winner. |
+| `a-player-who-is-NOT-in-the-tied-set-is-INVISIBLE-to-every-rung` | no case carried a non-tied player, so an implementation iterating the **roster** instead of the **survivors** was indistinguishable — and the roster *is* the production shape, since 0024 freezes every rostered player and 6.6 drives a reduced tie against that same full roster. |
+| `ABSENT-secondary-efficiency-and-h2h-BLOCKS-are-the-EMPTY-blocks` | the absent-container rule had **no ladder-side row**: every player emitted all three blocks, so TypeScript's `container(undefined)` and Go's nil-map read were entered by nothing. |
+| duplicate-`players` (refusal, single-defect) and the `player`-before-`tied` pair (refusal, doubly malformed) | ⭐ the guard that **corrected the published spec**. The duplicate scan is live in all three implementations and had no row anywhere, so it was deletable in every one with every gate green — and an input malformed across the boundary refuses `player`, where the old four-group text predicted `tied`. |
+| `stage2`-before-`award` and `tied`-before-`player` (refusals, doubly malformed) | the two remaining **adjacent order boundaries**. ⚠ The third — the id-shape / duplicate / order checks *inside* the `tied` group — is pinned only as "all three refuse it as `tied`": a closed set of five labels has nothing finer to say, and that limit is recorded rather than papered over. |
+| efficiency **absent key** and **not-a-pair** (refusals) | `efficiencyPair`'s two guards, live in all three implementations and reachable from no row. The not-a-pair row is why `efficiency` is now rendered by the same class-shaped renderer `secondary` and `h2h` use — the old renderer could not *write* the shape the guard is about. |
+| award **class**, **negative floor** and **empty `deciding_stat`** (refusals) | all four clauses of the Stage-2 award surface, of which only `direction` had a row. TypeScript **transcribes** `validateAward` rather than importing it, so three of the four could have drifted from `stage2.ts` with every gate green. |
+| `a-SHARED-co-winner-shelf-is-CLAMPED-to-table_max-after-the-minimum` (`stage1-pick.json`) | W8's clamp on the **shared** arm: the one shared row's co-winners sat at shelves 0 and 1, both inside the table, so the clamp was an identity there and the arm could have shipped without one — an out-of-range **panic** in Go against a silent `undefined as number` in TypeScript. |
+
+#### The rows Story 6-5b's own CODE REVIEW added
+
+Six boundaries no acceptance criterion had named, found by an independent edge-case pass over the
+finished story and patched into it on Cuatro's call (2026-08-06) rather than split with 6.11 — 6.6
+drives this ladder next and should inherit it whole. As above: **none of them changes behaviour.**
+Every one is an input all three implementations already handled correctly and no row observed.
+
+| Case | What only it can catch |
+|---|---|
+| `rung-2-under-direction-min-a-ZERO-DENOMINATOR-ratio-LOSES-to-every-finite-one` | ⭐⭐ **`n/0` under `min` existed in NO row of EITHER file.** Every zero-denominator row here *and* all four in `stage2-resolve.json` are `direction: max`, so a mutant that short-circuits "a zero denominator wins the rung" — ignoring `direction` entirely — was byte-identical on all 37 ladder and all 28 Stage-2 cases. Both runtimes *document* the behaviour and nothing exercised it. The `n/0` holder also carries the earlier timestamp, so the mutant, a hardcoded `max` and a skipped rung 2 all crown the same wrong player. On the shipped `El Inofensivo` this is the difference between the least harmful player and the most. |
+| `rung-2-an-INFINITE-and-a-ZERO-OVER-ZERO-ratio-are-EQUAL-and-BOTH-ride-through` | the two degenerate ratios had **never met in one race**. Cross-multiplication makes `n/0` and `0/0` **equal**, so neither eliminates the other and both ride to rung 5. An implementation reading them as IEEE doubles narrows to one and returns **winner at step 2** — a different outcome *kind*, winner and exit step from one comparison the file could not see. |
+| `rung-3-a-dominator-must-beat-EVERY-other-survivor-not-merely-ONE` | rung 3's **conjunction**, never load-bearing for a *positive* result: every rung-3 win in the file was decided over exactly two survivors, where "dominates every other" collapses to "beats the one opponent". Over three, A beats both while B beats one — a "beats at least one" implementation finds **two** dominators and raises the plural-dominator `internal` refusal instead of crowning anybody. |
+| `a-RATE-class-award-with-a-VOLUME-secondary-crosses-CLASS-the-OTHER-way` | **L5's mirror.** The file pinned a volume award with a rate secondary; the reverse pairing appeared nowhere, because the only `class: rate` award carried no secondary at all. A rule that holds in one direction only is not a rule. |
+| `a-NON-TIED-player-with-a-CORRUPT-ts-and-a-DOMINANT-h2h-is-INVISIBLE-to-BOTH` | ⭐⭐ the only row with a roster wider than the tie **exited at rung 1**, so rungs 2–5 had never run against one. Three counterfactuals on one row: validating `achievement_ts` over `players` rather than `tied` **refuses** an input the other two resolve; a roster-wide rung 3 crowns the outsider at step 3; a roster-wide rung 4 crowns them outright, because `-5` is not the sentinel and survives the absent-filter. This is the shape 6.6 produces. |
+| groups **5↔6** (refusal, doubly malformed) | ⛔ the last unpinned adjacent pair, and **the only one whose wrong order is not a mislabelled refusal but a crash.** A tied member with no snapshot row *and* a present row whose `achievement_ts` is below the sentinel: membership is checked first, so it refuses `tied`. An implementation checking timestamps first dereferences an index entry that does not exist — a nil-pointer **panic** in Go and a raw `TypeError` rather than a typed `LadderError` in TypeScript. Every other boundary row distinguishes two *labels*; this one distinguishes a refusal from a crash. |
+| negative **`floor_kills`** (refusal) | the other half of the Stage-2 surface's fourth clause, whose `floor_rounds` half already had a row. ⚠ The clause is a conjunction and only the **sign** half is row-representable: a non-integer floor (`1.5`) is not expressible, because both loaders type the field as an integer and it would fail to parse before any ladder code ran — the row would pin the JSON decoder, not the guard. Recorded, like the intra-`tied` ordering limit, rather than faked. |
+
 **DECISION H** (Cuatro, 2026-08-04) is the product call here, and it answers a **named blocker**
 (`deferred-work.md:281`): rung 5 — the shared co-winner — **is** the deterministic terminal rung,
 satisfied by *recognising* the rung FR-29 already ends with rather than by adding a seeded one. A
-seeded rung would make the ladder a stream **consumer**. The consequence is reported rather than
-engineered away: on a 1v1 corpus where rung 4 provably cannot separate duel opponents, **shared
-trophies are common**. `EXPERIENCE.md:123` calls that "a designed outcome, never an error state".
+seeded rung would make the ladder a stream **consumer**.
+
+⚠ **The expectation it shipped with was MEASURED FALSE by the same story, and the correction is
+recorded rather than quietly dropped** *(Story 6-5b, T9a — this paragraph used to end "shared
+trophies are common")*. The **mechanism** is exactly as the blocker described: **14 of 14** duel pairs
+carry a byte-identical `achievement_ts`, because `approve_match` stamps one transaction timestamp on
+every row of a match (0024:898-907), so rung 4 provably cannot separate two players of one duel. The
+**outcome** is unreachable on this corpus: **0 of the 5** real ties contains a duel pair — every tie
+is assembled *across* matches, whose approvals are separate transactions — so rung 4 separates all
+five and **0 of 12** awards end shared. The cause is structural to 1v1 wingman: a player plays one
+match, so two opponents are never tied against each other on a tournament-wide total. The shared rung
+stays correct, necessary and **untriggered**, which is precisely why it is gated by the rows in this
+file rather than by production traffic. `EXPERIENCE.md:123` calls it "a designed outcome, never an
+error state"; re-measure both numbers before quoting either for a 5v5 format.
 
 **DECISION I** covers the three rules no spec document states — each rung **narrows** the survivors,
 a NULL rung key is a deterministic **skip**, and `direction` inverts rungs 1–3 but **never** rung 4

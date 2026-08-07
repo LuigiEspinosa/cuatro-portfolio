@@ -464,16 +464,26 @@ describe('the FR-29 ladder is an injected port whose 6-4a implementation refuses
     ]);
   const award = volumeAward('knife_kills', 'max', 0, 0);
 
-  it('hands the WHOLE tie to the ladder and returns whatever it concludes', () => {
+  it('hands the WHOLE tie AND the WHOLE roster to the ladder, and returns what it concludes', () => {
     const seen: TieOutcome[] = [];
+    // ⭐⭐ THE SPY RECORDS `players` TOO (Story 6-5b AC6, landed at the code review). Go's
+    // `spyLadder` has captured and asserted the third argument since it was written — "the SAME
+    // roster, in the SAME order, not a copy filtered or sorted on the way through" — and this side
+    // took only two parameters, so a `resolveAward` that handed the ladder a re-filtered or
+    // re-ordered roster reddened NOTHING here. AC6 named this item explicitly and it was the one
+    // entry on its list with no artefact anywhere in the diff; the Completion Notes enumerated six
+    // TS gains and silently dropped the seventh.
+    const rosters: SnapshotPlayer[][] = [];
     const spy: Ladder = {
-      resolve(_a: Award, tie: TieOutcome): Outcome {
+      resolve(_a: Award, tie: TieOutcome, players: SnapshotPlayer[]): Outcome {
         seen.push(tie);
+        rosters.push(players);
         return { kind: 'winner', steamid64: '76561198000000022', decidingValue: { class: 'volume', value: 7n } };
       },
     };
 
-    const got = resolveAward(award, tiedPlayers(), spy);
+    const roster = tiedPlayers();
+    const got = resolveAward(award, roster, spy);
     expect(seen).toHaveLength(1);
     // The ladder receives the tie WHOLE — the full set and the reason, not a pre-picked player.
     expect(seen[0]).toEqual({
@@ -481,6 +491,16 @@ describe('the FR-29 ladder is an injected port whose 6-4a implementation refuses
       tied: ['76561198000000011', '76561198000000022'],
       reason: 'equal_value',
     });
+    // …and the roster WHOLE: the same rows, in the same order, not a copy filtered or sorted on the
+    // way through. ⚠ Note the roster here is in the OPPOSITE order to the (byte-lex sorted) tied
+    // set, which is what makes "not sorted on the way through" a real assertion rather than a
+    // coincidence of the fixture.
+    expect(rosters).toHaveLength(1);
+    expect(rosters[0]).toEqual(roster);
+    expect(rosters[0]?.map((p) => p.steamid64)).toEqual([
+      '76561198000000022',
+      '76561198000000011',
+    ]);
     expect(got).toEqual({
       kind: 'winner',
       steamid64: '76561198000000022',

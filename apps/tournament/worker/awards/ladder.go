@@ -63,9 +63,19 @@ import (
 // shared co-winner — IS the deterministic terminal rung the blocker asked for. It is satisfied by
 // RECOGNISING the rung FR-29 already ends with rather than by adding a seeded one: a seeded rung
 // would make this a stream CONSUMER, moving every byte position after it and invalidating both the
-// measured ceremony and everything the browser verifier reproduces. The consequence is reported
-// rather than engineered away — on a 1v1 corpus where rung 4 provably cannot separate duel
-// opponents (0024:898-907), SHARED TROPHIES WILL BE COMMON. That is the design working.
+// measured ceremony and everything the browser verifier reproduces.
+//
+// ⚠ THE EXPECTATION THIS DECISION SHIPPED WITH WAS MEASURED FALSE BY THE SAME STORY, AND THE
+// CORRECTION IS RECORDED HERE RATHER THAN QUIETLY DROPPED (Story 6-5b, T9a — the comment used to
+// read "SHARED TROPHIES WILL BE COMMON"). The MECHANISM is exactly as the blocker described: 14 of
+// 14 duel pairs carry a BYTE-IDENTICAL achievement_ts, because approve_match stamps one transaction
+// timestamp on every row of a match (0024:898-907), so rung 4 provably cannot separate two players
+// of one duel. But the OUTCOME is unreachable on this corpus: 0 of the 5 real ties contains a duel
+// pair — every tie is assembled ACROSS matches, whose approvals are separate transactions — so rung
+// 4 separates all five and 0 of 12 awards end SHARED. The reason is structural to 1v1 wingman: a
+// player plays one match, so two opponents are never tied against each other on a tournament-wide
+// total. The shared rung remains correct, necessary and UNTRIGGERED, and it is gated by vector rows
+// rather than by production traffic. Re-measure before quoting either number for a 5v5 format.
 //
 // ⛔ DECISION K — DECISION E's carve-out is UPSTREAM and stays upstream. A `max` volume award whose
 // best value is 0 returns KindNoAwardableValue and never becomes a tie, so the 27-way zero tie
@@ -562,8 +572,12 @@ func beatsStat(direction AwardDirection, a, b StatValue) (bool, error) {
 // ⚠ AN ABSENT KEY IS A REFUSAL, NEVER A ZERO — the same doctrine 0024:918-923 states for an absent
 // h2h OPPONENT, applied one level in. The two absences mean different things and must stay
 // distinguishable: an absent OPPONENT is "they never met" (a skip, handled by the caller); an
-// absent STAT KEY inside a present opponent block is a CORRUPT ROW, because 0024 writes all 21 keys
-// into every block it writes at all.
+// absent STAT KEY inside a present opponent block is a CORRUPT ROW, because the DATABASE writes all
+// 21 keys into every block it writes at all (0024:667-683's `parts` CTE).
+//
+// ⚠ THE VECTOR'S FIXTURES DO NOT, AND THAT IS DELIBERATE (Story 6-5b, T9e): every `h2h` block in
+// `ladder-resolve.json` carries exactly ONE key, precisely so that "the key this award reads is
+// missing" stays an expressible INPUT with a row of its own.
 //
 // ⚠ AN ABSENT BLOCK IS THE EMPTY BLOCK (Cuatro's rule at the 6-4b review): a nil map here reads as
 // empty rather than refusing, because Go cannot idiomatically tell nil from empty and the verifier
@@ -648,7 +662,8 @@ func efficiencyPair(block map[string]RatePair, key, where string) (RatePair, err
 
 // validateLadder validates in the PUBLISHED order and returns the SteamID64 -> player index.
 //
-// ⭐ THE ORDER IS PUBLISHED IN THE VECTOR'S `spec` STRING AND PINNED BY A ROW MALFORMED TWICE:
+// ⭐ THE ORDER IS PUBLISHED IN THE VECTOR'S `spec` STRING AND PINNED BY ROWS MALFORMED TWICE. It is
+// SIX groups, not four, and the details ALTERNATE:
 //
 //  1. LadderDetailStage2 — the award's Stage-2 surface, re-run because ResolveLadder is a PUBLIC
 //     entry point Story 6.6 drives directly over a REDUCED set, with no preceding Stage-2 call to
@@ -657,9 +672,20 @@ func efficiencyPair(block map[string]RatePair, key, where string) (RatePair, err
 //     must be one of the 21 vocabulary keys (rung 3 reads H2H[opp][DecidingStat] through the KEY's
 //     class, so membership is what makes the read decidable at all), and the efficiency pair is
 //     BOTH-OR-NEITHER (L2 — half a ratio is a half-configured rung, not a skip).
-//  3. LadderDetailTied   — width >= 2 (L11), no duplicate, strictly ascending byte-lex, every
-//     member has a snapshot row.
-//  4. LadderDetailPlayer — every TIED player's AchievementTS.
+//  3. LadderDetailTied   — the tied set's OWN SHAPE ONLY: width >= 2 (L11), every id a decimal
+//     string, no duplicate, strictly ascending byte-lex. Nothing here reads `players`.
+//  4. LadderDetailPlayer — BUILDING THE INDEX over `players`: no duplicate SteamID64.
+//  5. LadderDetailTied   — MEMBERSHIP: every tied member has a row in the index just built.
+//  6. LadderDetailPlayer — every TIED player's AchievementTS.
+//
+// ⭐⭐ GROUPS 4 AND 5 ARE WHY THIS SAYS SIX AND NOT FOUR. The duplicate-`players` scan is part of
+// BUILDING the index, so it necessarily runs before the membership check that READS the index — and
+// it refuses as `player`. An input carrying BOTH a duplicate `players` row AND a tied member with no
+// row therefore refuses `player`, not `tied`. The published four-group text said the opposite and
+// all three implementations disagreed with it; Cuatro's call at the Groups-2/3 code review
+// (2026-08-04) was AMEND THE PUBLISHED SPEC, DO NOT MOVE THE CODE, and Story 6-5b did. Two vector
+// refusal rows hold this text to the code — the single-defect duplicate-`players` row, and the row
+// malformed across the `player`/`tied` boundary.
 //
 // ⚠ WHY AchievementTS IS VALIDATED UP FRONT RATHER THAN AT RUNG 4. It is NEVER NULL in the snapshot
 // (0024:706), so a value below the sentinel is a CORRUPT SNAPSHOT rather than a rung-specific

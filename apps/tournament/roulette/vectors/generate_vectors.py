@@ -1500,9 +1500,19 @@ REFUSAL_DETAILS = (
 # TypeScript and this file declared seven, TypeScript threw 'stream'/'internal' anyway while its
 # own JSDoc promised one of the seven, and the unreachable unknown-outcome arm refused as
 # `internal` in Go and `stage2` in TypeScript — one input, two values, in the field this file
-# calls shared contract. All three now declare the same nine; `refusal_details` carries all nine
-# so the suites can pin the set; and a ROW may still only carry these seven.
+# calls shared contract. All three now declare the same TEN — the nine 6-4b settled on plus Story
+# 6.5's appended `ladder` — `refusal_details` carries all ten so the suites can pin the set, and a
+# ROW may still only carry EIGHT of them (the first seven, plus `ladder`).
+#
+# ⚠ THE NUMBERS ABOVE WERE "NINE" AND "SEVEN" UNTIL STORY 6-5b RE-COUNTED THEM. They were correct
+# when written and were falsified by the very commit that cites 6-4b's stale-cardinality defect as
+# the reason the comment exists. Counted, not asserted: `len(REFUSAL_DETAILS)` is 10 and
+# `len(ROW_REPRESENTABLE_DETAILS)` is 8, and the assertion below makes the prose fail with the code
+# rather than beside it.
 ROW_REPRESENTABLE_DETAILS = REFUSAL_DETAILS[:7] + ("ladder",)
+
+assert len(REFUSAL_DETAILS) == 10, "the comment above says TEN; count them"
+assert len(ROW_REPRESENTABLE_DETAILS) == 8, "the comment above says EIGHT; count them"
 
 
 class Stage1TieRefusal(Stage1Refusal):
@@ -1666,6 +1676,13 @@ def stage1_weight(award: dict, players: list, shelf: dict, table: list, ladder: 
     ⛔ THE LADDER DRAWS NOTHING (L1), so wiring it in here cannot move the stream — which is what
     lets W7's "validate before any draw" and the whole byte accounting survive the change.
     """
+    # ⚠ AN ABSENT SHELF IS THE EMPTY SHELF, NORMALISED HERE AS WELL AS AT THE TWO CALLERS (Story
+    # 6-5b, AC8). `stage1_weights` and `stage1_pick` both normalise before calling in, so this was
+    # unreachable through them — but this function is PUBLIC and the `shared` branch added by 6.5
+    # dereferences `shelf` one line before the single-winner branch does, so a direct caller passing
+    # `None` got a bare `AttributeError` out of the anchor instead of the typed refusal both runtimes
+    # produce. One fixture away, and the anchor is the implementation that arbitrates disagreements.
+    shelf = {} if shelf is None else shelf
     try:
         out = resolve_stage2(award, players)
     except Stage2Refusal as err:
@@ -1697,6 +1714,19 @@ def stage1_weight(award: dict, players: list, shelf: dict, table: list, ladder: 
         # drawn, and this only aggregates the shelves of players who genuinely share the award.
         #
         # W8 — the clamp comes AFTER the minimum.
+        #
+        # ⚠ THE TWO `internal` GUARDS BOTH RUNTIMES CARRY ON THIS ARM ARE STRUCTURALLY UNREACHABLE
+        # HERE, AND THAT IS DECLARED RATHER THAN LEFT SILENT (DECISION D). Go and TypeScript refuse
+        # `internal` on an empty `winners` slice and — since the Story 6-5b code review — on any
+        # co-winner with an EMPTY steamid64, because their `Ladder` is an INJECTED PORT that can
+        # hand them an outcome no code in the package built. This anchor's `ladder` parameter is a
+        # BOOL, not a port: `out` here can only have come from `resolve_ladder` a few lines above,
+        # which returns `winners` straight out of a `tied` set `_validate_ladder` has already
+        # proved non-empty and free of empty ids. There is no injection seam, so there is no state
+        # to guard — adding the checks would be dead code asserting something the type of the
+        # parameter already gives. ⛔ If `ladder` ever becomes a callable here, BOTH guards must
+        # arrive with it, or the anchor will resolve an input both runtimes refuse — which is
+        # exactly the divergence DECISION C exists to prevent.
         idx = min(shelf.get(sid, 0) for sid in out["winners"])
         return table[min(idx, len(table) - 1)]
 
@@ -2341,13 +2371,66 @@ STAGE1_CASES: list[dict] = [
         # checks re-derive that the outcome really is SHARED, that the co-winners hold DIFFERENT
         # shelves, and that `min` and `max` would therefore give DIFFERENT weights — without which
         # the row cannot distinguish the two rules at all.
+        # ⭐ IT READS `c["shelf"]` AND `c["table"]`, NOT THE MODULE GLOBALS (Story 6-5b, T4). Reading
+        # `SHELF`/`TABLE` meant the guard described the module rather than the row: a row given its
+        # own shelf map would have been checked against somebody else's.
         "pins_inputs": lambda e, c: (
             (lambda shared: (
                 shared["kind"] == "shared"
                 and len(shared["winners"]) >= 2
-                and len({SHELF.get(w, 0) for w in shared["winners"]}) > 1
-                and TABLE[min(SHELF.get(w, 0) for w in shared["winners"])]
-                != TABLE[max(SHELF.get(w, 0) for w in shared["winners"])]
+                and len({c["shelf"].get(w, 0) for w in shared["winners"]}) > 1
+                and c["table"][min(
+                    min(c["shelf"].get(w, 0) for w in shared["winners"]), len(c["table"]) - 1
+                )]
+                != c["table"][min(
+                    max(c["shelf"].get(w, 0) for w in shared["winners"]), len(c["table"]) - 1
+                )]
+                and e["weights"][0] == c["table"][min(
+                    min(c["shelf"].get(w, 0) for w in shared["winners"]), len(c["table"]) - 1
+                )]
+            ))(
+                resolve_ladder(
+                    c["candidates"][0]["award"],
+                    resolve_stage2(c["candidates"][0]["award"], c["players"])["tied"],
+                    c["players"],
+                )
+            )
+        ),
+    },
+    {
+        "name": "a-SHARED-co-winner-shelf-is-CLAMPED-to-table_max-after-the-minimum",
+        "note": (
+            "⭐ W8's CLAMP ON THE SHARED ARM, which no row exercised: the one shared row's co-winners "
+            "sit at shelves 0 and 1, both comfortably inside the table, so `min(idx, len(table)-1)` "
+            "was an identity there and the shared arm could have shipped WITHOUT a clamp at all — an "
+            "index-out-of-range PANIC in Go and a silent `undefined as number` in TypeScript, which "
+            "is the same one-input-two-failure-kinds split 6-4b's review recorded for the single- "
+            "winner arm. The same tie, over a shelf where BOTH co-winners are past table_max: A at 7 "
+            "and B at 9. The minimum is 7, the clamp brings it to 5, and the candidate weighs "
+            "table[5] = 1 — the LIGHTEST weight, which is the right answer: two players carrying "
+            "SEVEN and NINE trophies are exactly who FR-26 exists to damp, and the pair weighs as "
+            "the EMPTIER of them (7) before the clamp, never as the fuller. ⚠ THE CLAMP COMES "
+            "AFTER THE MINIMUM, and this row cannot tell the two orders apart (the clamp is "
+            "monotone, so clamp(min(S)) == min(clamp(S))) — that distinction is recorded as having "
+            "no observable difference rather than pinned by a row that cannot pin it."
+        ),
+        "src": {"kind": "stage1", "spin": 4},
+        "table": TABLE,
+        "shelf": {S_A: 7, S_B: 9},
+        "live_count": 1,
+        "ladder": True,
+        "players": STAGE1_ROSTER_TIED,
+        "candidates": [AW_KNIFE, AW_HS],
+        "pins": lambda e: e["weights"] == [1, 100] and e["total_weight"] == 101,
+        # ⭐ RE-DERIVE THE CLAMP FROM THE ROW'S OWN DATA: the outcome really is SHARED, EVERY
+        # co-winner's shelf is strictly past the table's last index (so the clamp is not an identity
+        # for any of them), and the emitted weight is the table's LAST entry.
+        "pins_inputs": lambda e, c: (
+            (lambda shared: (
+                shared["kind"] == "shared"
+                and len(shared["winners"]) >= 2
+                and all(c["shelf"].get(w, 0) > len(c["table"]) - 1 for w in shared["winners"])
+                and e["weights"][0] == c["table"][-1]
             ))(
                 resolve_ladder(
                     c["candidates"][0]["award"],
@@ -2865,8 +2948,15 @@ def build_stage1_file() -> dict:
 # rung deferred-work.md:281 asked for; it is satisfied by RECOGNISING the rung already in FR-29
 # rather than by adding a seeded one. A seeded rung would make the ladder a stream CONSUMER, moving
 # every byte position after it and invalidating 6-4b's measured 22-byte ceremony and everything
-# 6.9's browser reproduces. The consequence, seen coming rather than discovered: on a 1v1 corpus
-# where rung 4 provably cannot separate duel opponents, SHARED TROPHIES WILL BE COMMON.
+# 6.9's browser reproduces.
+#
+# ⚠ THE EXPECTATION THIS DECISION SHIPPED WITH WAS MEASURED FALSE BY THE SAME STORY (6-5b, T9a —
+# this used to read "SHARED TROPHIES WILL BE COMMON"). The MECHANISM holds: 14 of 14 duel pairs
+# carry a BYTE-IDENTICAL achievement_ts, so rung 4 provably cannot separate two players of one duel.
+# The OUTCOME does not: 0 of the 5 real ties contains a duel pair — every tie is assembled ACROSS
+# matches, whose approvals are separate transactions — so rung 4 separates all five and 0 of 12
+# awards end SHARED. The shared rung is correct, necessary and UNTRIGGERED on this corpus, which is
+# exactly why it is gated by rows here rather than by production traffic.
 #
 # ⛔ DECISION K: DECISION E's `no_awardable_value` carve-out is UPSTREAM and stays upstream. A `max`
 # volume award whose best value is 0 never becomes a tie and therefore never reaches this function
@@ -3022,8 +3112,15 @@ def _stat_value(key: str, block: dict, where: str):
     An ABSENT key is a REFUSAL, never a zero — the same doctrine 0024:918-923 states for an absent
     h2h OPPONENT, applied one level in. ⚠ The two absences mean different things and must stay
     distinguishable: an absent OPPONENT is "they never met" (a skip); an absent STAT KEY inside a
-    present opponent block is a corrupt row, because 0024 writes all 21 keys into every block it
-    writes at all.
+    present opponent block is a CORRUPT ROW, because the DATABASE writes all 21 keys into every
+    block it writes at all (0024:667-683's `parts` CTE materialises the whole vocabulary).
+
+    ⚠ THE FIXTURES IN THIS FILE DO NOT, AND THAT IS DELIBERATE RATHER THAN A CONTRADICTION (Story
+    6-5b, T9e — the sentence above used to cite the fixtures as though they demonstrated the rule).
+    Every `h2h` block written below carries exactly ONE key: the case says what it needs and nothing
+    else is invented, precisely so that "the key this award reads is missing" stays an expressible
+    INPUT. A fixture that mirrored the database would make this refusal unreachable from any row,
+    which is the state the row for it exists to prevent.
     """
     klass = _class_of(key)
     if klass is None:
@@ -3067,9 +3164,12 @@ def _stat_value(key: str, block: dict, where: str):
 def _validate_ladder(award: dict, tied, players: list) -> dict:
     """Validate in the PUBLISHED order and return the steamid64 -> player index.
 
-    ⭐ THE ORDER IS PUBLISHED IN THE VECTOR'S `spec` STRING AND PINNED BY A ROW MALFORMED TWICE.
+    ⭐ THE ORDER IS PUBLISHED IN THE VECTOR'S `spec` STRING AND PINNED BY ROWS MALFORMED TWICE.
     Story 6-4b's headline was three implementations disagreeing on validation order with no row
-    malformed twice to expose it, so the gate was structurally blind. The order is:
+    malformed twice to expose it, so the gate was structurally blind. There are SIX groups, not
+    four, and the `detail` labels ALTERNATE — which is the correction Story 6-5b makes after the
+    Groups-2/3 review measured the published four-group order to be contradicted by all three
+    implementations (Cuatro's call: AMEND THE PUBLISHED SPEC, DO NOT MOVE THE CODE):
 
         1. `stage2`  — the award's Stage-2 surface, re-run because `resolve_ladder` is a PUBLIC
                        entry point Story 6.6 drives directly over a REDUCED set, without a
@@ -3077,8 +3177,18 @@ def _validate_ladder(award: dict, tied, players: list) -> dict:
         2. `award`   — the ladder's own award surface: `deciding_stat` and each non-absent rung key
                        must be in the 21-key vocabulary (rung 3 needs the deciding key's CLASS), and
                        the efficiency pair is BOTH-OR-NEITHER.
-        3. `tied`    — width >= 2, no duplicate, strictly ascending byte-lex, every member has a row.
-        4. `player`  — `achievement_ts` for every TIED player.
+        3. `tied`    — the tied set's OWN SHAPE ONLY: width >= 2, every id a decimal string, no
+                       duplicate, strictly ascending byte-lex. Nothing here reads `players`.
+        4. `player`  — BUILDING THE INDEX over `players`: no duplicate steamid64, one row per player.
+        5. `tied`    — MEMBERSHIP: every tied member has a matching row in the index just built.
+        6. `player`  — `achievement_ts` for every TIED player.
+
+    ⭐⭐ GROUPS 4 AND 5 ARE THE CORRECTION, AND THEY ARE WHY THIS IS SIX GROUPS RATHER THAN FOUR.
+    The duplicate-`players` scan is part of BUILDING the index, so it necessarily runs before the
+    membership check that reads the index — and it refuses as `player`. An input carrying BOTH a
+    duplicate `players` row AND a tied member with no row therefore refuses `player`, not `tied`,
+    in all three implementations. The old four-group text said the opposite. The code is right and
+    the document was wrong; both are now the same document.
 
     ⚠ WHY `achievement_ts` IS VALIDATED UP FRONT RATHER THAN AT RUNG 4. It is NEVER NULL in the
     snapshot (0024:706), so a value below the sentinel is a CORRUPT SNAPSHOT rather than a
@@ -3345,6 +3455,82 @@ def _naive_single_pair_pick(case: dict):
     return best
 
 
+def _by_id(case: dict) -> dict:
+    """The case's own steamid64 -> player index. Added by Story 6-5b so every guard below reads THE
+    ROW'S OWN DATA rather than a hardcoded id, a hardcoded key or a module global."""
+    return {p["steamid64"]: p for p in case["players"]}
+
+
+def _rung2_ratio(case: dict, sid: str):
+    """The FOUR-TERM rung-2 ratio for one player, derived from the CASE's own award keys.
+
+    ⭐ IT TAKES THE KEYS FROM `case["award"]`, NEVER FROM A LITERAL. The Groups-2/3 review's T4
+    finding was that guards read module globals and hardcoded names, so a fixture could drift to
+    different keys while the guard kept checking the old ones and stayed green.
+    """
+    eff = _by_id(case)[sid]["stats_int"]["efficiency"]
+    num_key = _rung_key(case["award"].get("eff_num_key"))
+    den_key = _rung_key(case["award"].get("eff_den_key"))
+    n = eff[num_key]
+    d = eff[den_key]
+    return (n[0] * d[1], n[1] * d[0])
+
+
+def _rung2_best(case: dict, direction: str | None = None) -> list:
+    """`best` at rung 2 over the case's FULL tied set, under the row's own direction unless one is
+    named — the counterfactual a `direction`-hardcoding mutation would produce."""
+    return _best_survivors(
+        case["tied"],
+        case["award"]["direction"] if direction is None else direction,
+        lambda sid: ("rate", _rung2_ratio(case, sid)),
+    )
+
+
+def _rung1_best(case: dict) -> list:
+    """`best` at rung 1 over the case's FULL tied set, on the row's own `secondary_stat`."""
+    key = _rung_key(case["award"].get("secondary_stat"))
+    return _best_survivors(
+        case["tied"],
+        case["award"]["direction"],
+        lambda sid: _stat_value(key, _by_id(case)[sid]["stats_int"]["secondary"], "guard"),
+    )
+
+
+def _dominators_over(case: dict, survivors: list) -> list:
+    """Rung 3's strict dominators over an ARBITRARY survivor set — so a guard can state what rung 3
+    would have said over the ORIGINAL tie as well as over the narrowed one."""
+    by_id = _by_id(case)
+    out = []
+    for p in survivors:
+        p_h2h = by_id[p].get("h2h") or {}
+        dominates = True
+        for q in survivors:
+            if q == p:
+                continue
+            q_h2h = by_id[q].get("h2h") or {}
+            if q not in p_h2h or p not in q_h2h:
+                dominates = False
+                break
+            if not _beats_stat(
+                case["award"]["direction"],
+                _stat_value(case["award"]["deciding_stat"], p_h2h[q], "guard"),
+                _stat_value(case["award"]["deciding_stat"], q_h2h[p], "guard"),
+            ):
+                dominates = False
+                break
+        if dominates:
+            out.append(p)
+    return out
+
+
+def _earliest_holder(case: dict, among: list | None = None) -> str:
+    """Who holds the strictly earliest `achievement_ts` — the NAIVE rung 4, sentinel included, which
+    is the counterfactual half of every rung-4 guard."""
+    by_id = _by_id(case)
+    pool = case["tied"] if among is None else among
+    return min(pool, key=lambda sid: by_id[sid]["achievement_ts"])
+
+
 def _no_player_beats_all(case: dict) -> bool:
     """Re-derive rung 3's `|D| == 0` from the row's OWN data.
 
@@ -3412,6 +3598,15 @@ LADDER_CASES: list[dict] = [
         ],
         # B holds the EARLIER timestamp, so a ladder that skipped rung 1 lands on the other player.
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 1},
+        # ⭐ RE-DERIVE THE ORDINARY SHAPE AND ITS COUNTERFACTUAL (Story 6-5b — this row carried no
+        # input guard at all): the secondary is a VOLUME key (this is the volume arm; the row below
+        # it is the rate arm), rung 1 resolves outright, and the LOSER holds the strictly earliest
+        # timestamp — so a ladder that skipped rung 1 provably lands on the other player.
+        "pins_inputs": lambda e, c: (
+            _class_of(_rung_key(c["award"]["secondary_stat"])) == "volume"
+            and _rung1_best(c) == [e["steamid64"]]
+            and _earliest_holder(c) != e["steamid64"]
+        ),
     },
     {
         "name": "rung-1-a-RATE-secondary-cross-multiplies-and-crosses-CLASS",
@@ -3454,6 +3649,19 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=30, kills=20, vol={"deaths": 10, "opening_deaths": 7}, ts=1000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 1},
+        # ⭐ RE-DERIVE THE DIRECTION AND ITS COUNTERFACTUAL (Story 6-5b): the award really is `min`,
+        # and the SAME rung under `max` crowns the other player — without which "somebody won at
+        # rung 1" is all this row says, which is true of four rows.
+        "pins_inputs": lambda e, c: (
+            c["award"]["direction"] == "min"
+            and _best_survivors(
+                c["tied"], "max",
+                lambda sid: _stat_value(
+                    _rung_key(c["award"]["secondary_stat"]),
+                    _by_id(c)[sid]["stats_int"]["secondary"], "guard",
+                ),
+            ) == [sid for sid in c["tied"] if sid != e["steamid64"]]
+        ),
     },
     {
         "name": "rung-1-a-zero-denominator-secondary-ties-everyone-S3-verbatim",
@@ -3476,14 +3684,24 @@ LADDER_CASES: list[dict] = [
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
         # Re-derive BOTH input properties: somebody genuinely carries a 0 denominator, and the
-        # eliminated player (C) is a real loser rather than an accident of ordering.
+        # eliminated player is a real loser rather than an accident of ordering.
+        # ⭐ EVERY NAME COMES FROM THE ROW (Story 6-5b). It used to hardcode `"hs_pct"`, the literal
+        # direction `"max"` and the literal survivor list `[S_A, S_B]` — three module-level facts a
+        # fixture edit can move out from under a guard that keeps checking the old ones.
         "pins_inputs": lambda e, c: (
-            any(p["stats_int"]["secondary"]["hs_pct"][1] == 0 for p in c["players"])
-            and _best_survivors(
-                c["tied"], "max",
-                lambda sid: ("rate", {p["steamid64"]: p for p in c["players"]}[sid]
-                             ["stats_int"]["secondary"]["hs_pct"]),
-            ) == [S_A, S_B]
+            any(
+                isinstance(
+                    _by_id(c)[sid]["stats_int"]["secondary"][
+                        _rung_key(c["award"]["secondary_stat"])
+                    ], tuple
+                )
+                and _by_id(c)[sid]["stats_int"]["secondary"][
+                    _rung_key(c["award"]["secondary_stat"])
+                ][1] == 0
+                for sid in c["tied"]
+            )
+            and 1 < len(_rung1_best(c)) < len(c["tied"])
+            and e["steamid64"] in _rung1_best(c)
         ),
     },
     {
@@ -3510,7 +3728,16 @@ LADDER_CASES: list[dict] = [
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 2},
         # ⭐ RE-DERIVE THE DIVERGENCE. If a future edit made the naive compare agree, this row would
         # still produce winner/2 and would silently stop being the row it is named for.
-        "pins_inputs": lambda e, c: _naive_single_pair_pick(c) == [S_B],
+        # ⚠ THE COMPARISON IS AGAINST THE ROW'S OWN OUTCOME, NEVER AGAINST A MODULE GLOBAL. It read
+        # `== [S_B]` until the Story 6-5b code review: the property is "the naive compare picks
+        # somebody ELSE", so a fixture whose tied set moved off `S_B` kept a green guard describing
+        # an id the row no longer contained. This was the last surviving instance of T4's
+        # hardcoded-literal defect class in the ladder block.
+        "pins_inputs": lambda e, c: (
+            _naive_single_pair_pick(c) != [e["steamid64"]]
+            and len(_naive_single_pair_pick(c)) == 1
+            and _naive_single_pair_pick(c)[0] in c["tied"]
+        ),
     },
     {
         "name": "rung-2-four-term-products-past-2-pow-53",
@@ -3534,9 +3761,25 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=TWO53 + 1, kills=20, vol={"utility_damage": TWO53}, ts=1000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 2},
-        # Re-derive that the operands really are past 2^53 — the row's whole reason to exist.
-        "pins_inputs": lambda e, c: all(
-            p["stats_int"]["efficiency"]["utility_damage"][0] >= TWO53 for p in c["players"]
+        # ⭐⭐ THE FLAGSHIP GUARD, AND IT WAS THE WEAKEST ONE IN THE FILE. It re-derived only that the
+        # operands exceed 2^53 — true of any pair of large numbers, and satisfiable by a row where
+        # the two ratios differ by a mile. What makes THIS row the arithmetic-width row is that the
+        # CROSS PRODUCTS STRADDLE A DIFFERENCE OF EXACTLY ONE (so nothing narrower than exact integer
+        # arithmetic can separate them) and that a DOUBLE-ROUNDED compare FLIPS THE WINNER (so the
+        # row genuinely punishes float64 rather than merely being large). Its sibling rung-2 row had
+        # exactly that re-derivation and the higher-value row got the weaker guard.
+        # (Strengthened by Story 6-5b, T4.)
+        "pins_inputs": lambda e, c: (
+            all(_rung2_ratio(c, sid)[0] >= TWO53 for sid in c["tied"])
+            and (lambda a, b: abs(a[0] * b[1] - b[0] * a[1]) == 1)(
+                _rung2_ratio(c, c["tied"][0]), _rung2_ratio(c, c["tied"][1])
+            )
+            and (lambda winner, loser: (
+                float(winner[0]) / float(winner[1]) <= float(loser[0]) / float(loser[1])
+            ))(
+                _rung2_ratio(c, e["steamid64"]),
+                _rung2_ratio(c, next(s for s in c["tied"] if s != e["steamid64"])),
+            )
         ),
     },
     {
@@ -3559,9 +3802,14 @@ LADDER_CASES: list[dict] = [
             _p(S_C, rounds=30, kills=20, vol={"knife_kills": 4, "utility_damage": 10}, ts=2000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 2},
+        # ⭐ RE-DERIVED FROM THE ROW'S OWN AWARD RATHER THAN FROM HARDCODED NAMES (Story 6-5b): the
+        # WINNER's computed four-term ratio is genuinely `n/0` with n > 0 — not merely "somebody has
+        # a zero somewhere", which is equally true of the `0/0` row and would have let two rows claim
+        # one property. `n/0` beats every finite value while `0/0` ties everything: opposite halves
+        # of S3, each needing its own row.
         "pins_inputs": lambda e, c: (
-            {p["steamid64"]: p for p in c["players"]}[S_A]["stats_int"]["efficiency"]
-            ["utility_damage"][0] == 0
+            _rung2_ratio(c, e["steamid64"])[0] > 0
+            and _rung2_ratio(c, e["steamid64"])[1] == 0
         ),
     },
     {
@@ -3581,6 +3829,18 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=30, kills=20, vol={"hs_kills": 5}, ts=2000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THE SKIP (Story 6-5b): BOTH efficiency keys are absent, rung 1 IS configured
+        # and narrows NOTHING (so the row cannot be confused with a rung-1 decision), and the
+        # efficiency block is nevertheless FULLY MATERIALISED — which is the whole point: an
+        # implementation that treated a NULL key as the empty-string key, or as 0, would find real
+        # data waiting for it and run a rung this award declines.
+        "pins_inputs": lambda e, c: (
+            _rung_key(c["award"]["eff_num_key"]) is None
+            and _rung_key(c["award"]["eff_den_key"]) is None
+            and _rung_key(c["award"]["secondary_stat"]) is not None
+            and _rung1_best(c) == list(c["tied"])
+            and all(_by_id(c)[sid]["stats_int"]["efficiency"] for sid in c["tied"])
+        ),
     },
     {
         "name": "rung-1-is-SKIPPED-when-secondary_stat-is-NULL",
@@ -3598,6 +3858,28 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=30, kills=20, vol={"hs_kills": 4}, ts=1000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_B, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THE SKIP AND ITS COUNTERFACTUAL (Story 6-5b): `secondary_stat` is absent, and
+        # SOME vocabulary key present in the players' `secondary` blocks would, if rung 1 had run on
+        # it, crown the OTHER player. ⚠ The key is SEARCHED FOR rather than named, because with no
+        # `secondary_stat` on the award there is nothing to derive it from — naming a literal here is
+        # exactly the defect this pass is closing, so the guard asks the weaker, honest question:
+        # "is there any key at all on which the skipped rung would have disagreed?" A row where every
+        # key agreed with rung 4 proves nothing about the skip.
+        "pins_inputs": lambda e, c: (
+            _rung_key(c["award"]["secondary_stat"]) is None
+            and any(
+                _best_survivors(
+                    c["tied"], c["award"]["direction"],
+                    lambda sid, k=key: _stat_value(
+                        k, _by_id(c)[sid]["stats_int"]["secondary"], "guard"
+                    ),
+                ) == [sid for sid in c["tied"] if sid != e["steamid64"]]
+                for key in sorted(_by_id(c)[c["tied"][0]]["stats_int"]["secondary"])
+                if all(
+                    key in _by_id(c)[sid]["stats_int"]["secondary"] for sid in c["tied"]
+                )
+            )
+        ),
     },
     {
         "name": "rung-3-a-strict-dominator-wins",
@@ -3614,6 +3896,15 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=30, kills=20, h2h={S_A: {"kills": 3}}, ts=1000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 3},
+        # ⭐ RE-DERIVE THE ORDINARY RUNG-3 SHAPE AND ITS COUNTERFACTUAL (Story 6-5b): the record is
+        # COMPLETE in both directions (so this is not the one-sided row), there is EXACTLY ONE strict
+        # dominator and it is the winner, and the LOSER holds the earlier timestamp — so a ladder
+        # that skipped rung 3 lands on the other player.
+        "pins_inputs": lambda e, c: (
+            not _has_one_sided_h2h(c)
+            and _dominators_over(c, list(c["tied"])) == [e["steamid64"]]
+            and _earliest_holder(c) != e["steamid64"]
+        ),
     },
     {
         "name": "rung-3-direction-min-inverts-the-head-to-head",
@@ -3630,6 +3921,16 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=30, kills=20, vol={"deaths": 10}, h2h={S_A: {"deaths": 8}}, ts=1000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 3},
+        # ⭐ RE-DERIVE THE DIRECTION AND ITS COUNTERFACTUAL (Story 6-5b): the award really is `min`,
+        # and the SAME head-to-head under `max` makes the OTHER player the dominator — which is the
+        # only thing that distinguishes this row from the ordinary rung-3 one above it.
+        "pins_inputs": lambda e, c: (
+            c["award"]["direction"] == "min"
+            and _dominators_over(c, list(c["tied"])) == [e["steamid64"]]
+            and _dominators_over(
+                {**c, "award": {**c["award"], "direction": "max"}}, list(c["tied"])
+            ) == [sid for sid in c["tied"] if sid != e["steamid64"]]
+        ),
     },
     {
         "name": "rung-3-a-ONE-SIDED-h2h-record-is-not-comparable",
@@ -3672,17 +3973,19 @@ LADDER_CASES: list[dict] = [
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_C, "ladder_exit_step": 4},
         # Re-derive |D| == 0 from the row's own h2h maps, and that a 'beats ANY' reading really
         # would find more than one claimant — otherwise the row is not the row its name claims.
+        # ⭐ THE DIRECTION AND THE DECIDING KEY NOW COME FROM THE ROW'S AWARD (Story 6-5b); both were
+        # hardcoded to `"max"` / `"kills"`, so this guard could not have noticed a `min` fixture.
         "pins_inputs": lambda e, c: (
             _no_player_beats_all(c)
             and len([
                 p for p in c["tied"]
                 if any(
-                    q in ({x["steamid64"]: x for x in c["players"]}[p].get("h2h") or {})
-                    and p in ({x["steamid64"]: x for x in c["players"]}[q].get("h2h") or {})
+                    q in (_by_id(c)[p].get("h2h") or {})
+                    and p in (_by_id(c)[q].get("h2h") or {})
                     and _beats_stat(
-                        "max",
-                        _stat_value("kills", ({x["steamid64"]: x for x in c["players"]}[p]["h2h"])[q], "g"),
-                        _stat_value("kills", ({x["steamid64"]: x for x in c["players"]}[q]["h2h"])[p], "g"),
+                        c["award"]["direction"],
+                        _stat_value(c["award"]["deciding_stat"], _by_id(c)[p]["h2h"][q], "guard"),
+                        _stat_value(c["award"]["deciding_stat"], _by_id(c)[q]["h2h"][p], "guard"),
                     )
                     for q in c["tied"] if q != p
                 )
@@ -3705,6 +4008,16 @@ LADDER_CASES: list[dict] = [
             _p(S_C, rounds=30, kills=20, ts=2000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_B, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THE ORDINARY RUNG-4 SHAPE (Story 6-5b), and make it EXCLUSIVE of the three
+        # special rung-4 rows: every timestamp is DISTINCT and STRICTLY POSITIVE (so no sentinel, no
+        # zero, no byte-identical pair), and the winner is the minimum. This is the row that says
+        # "the plain earliest wins" and nothing else in the file should be able to claim it.
+        "pins_inputs": lambda e, c: (
+            len({_by_id(c)[sid]["achievement_ts"] for sid in c["tied"]}) == len(c["tied"])
+            and all(_by_id(c)[sid]["achievement_ts"] > 0 for sid in c["tied"])
+            and all(_by_id(c)[sid]["achievement_ts"] < TWO53 for sid in c["tied"])
+            and _earliest_holder(c) == e["steamid64"]
+        ),
     },
     {
         "name": "rung-4-the-MINUS-ONE-sentinel-must-NEVER-win",
@@ -3798,9 +4111,16 @@ LADDER_CASES: list[dict] = [
         # ⭐ RE-DERIVE THE COUNTERFACTUAL: the ELIMINATED player must hold the strictly earliest
         # timestamp, or a rung-4-restarts-from-`tied` regression would produce the same answer and
         # this row would silently stop being the L3 row.
+        # ⭐ AND THAT TIMESTAMP MUST BE REAL, NOT THE SENTINEL (Story 6-5b). Without this clause the
+        # rung-4 narrowing row — whose excluded player holds `-1`, numerically the smallest value in
+        # the column — ALSO satisfies the property, and two rows claiming one property is exactly the
+        # migration the uniqueness check exists to stop.
         "pins_inputs": lambda e, c: (
-            min(c["players"], key=lambda p: p["achievement_ts"])["steamid64"] == S_C
-            and S_C not in e["winners"]
+            (lambda eliminated: (
+                len(eliminated) == 1
+                and _earliest_holder(c) == eliminated[0]
+                and _by_id(c)[eliminated[0]]["achievement_ts"] != ABSENT_TS
+            ))([sid for sid in c["tied"] if sid not in e["winners"]])
         ),
     },
     {
@@ -3828,19 +4148,17 @@ LADDER_CASES: list[dict] = [
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 2},
         # ⭐ RE-DERIVE THE COUNTERFACTUALS: the player rung 1 ELIMINATES must be the one rung 2 would
-        # have crowned, or the row cannot see the order at all — and C's timestamp must also be the
-        # earliest, so a rung-4 fallthrough would land on them too.
+        # have crowned over the FULL tie, or the row cannot see the order at all — and that same
+        # player must hold the earliest timestamp, so a rung-4 fallthrough would land on them too.
+        # ⭐ THE ELIMINATED PLAYER IS NOW DERIVED, NOT NAMED (Story 6-5b): it used to compare against
+        # the literal `[S_C]` with the keys and the direction hardcoded, so a fixture that renamed or
+        # re-keyed the row would have kept a green guard over data it no longer described.
         "pins_inputs": lambda e, c: (
-            _best_survivors(
-                c["tied"], "max",
-                lambda sid: ("rate", (
-                    {p["steamid64"]: p for p in c["players"]}[sid]["stats_int"]["efficiency"]["utility_damage"][0]
-                    * {p["steamid64"]: p for p in c["players"]}[sid]["stats_int"]["efficiency"]["rounds_played"][1],
-                    {p["steamid64"]: p for p in c["players"]}[sid]["stats_int"]["efficiency"]["utility_damage"][1]
-                    * {p["steamid64"]: p for p in c["players"]}[sid]["stats_int"]["efficiency"]["rounds_played"][0],
-                )),
-            ) == [S_C]
-            and min(c["players"], key=lambda p: p["achievement_ts"])["steamid64"] == S_C
+            (lambda eliminated: (
+                len(eliminated) == 1
+                and _rung2_best(c) == eliminated
+                and _earliest_holder(c) == eliminated[0]
+            ))([sid for sid in c["tied"] if sid not in _rung1_best(c)])
         ),
     },
     {
@@ -3908,6 +4226,16 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=30, kills=20, vol={"hs_kills": 4}, ts=2000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THIS ROW'S SPELLING (Story 6-5b). The identity check in `build_ladder_file`
+        # compares the three rows' outcomes; only these three guards say WHICH spelling each row
+        # carries, so an edit that collapsed all three onto `null` reddens here first.
+        "pins_inputs": lambda e, c: (
+            not c.get("omit_rung_keys", False)
+            and all(
+                c["award"][f] is None
+                for f in ("secondary_stat", "eff_num_key", "eff_den_key")
+            )
+        ),
     },
     {
         "name": "rung-keys-OMITTED-from-the-award-object-entirely",
@@ -3928,6 +4256,10 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=30, kills=20, vol={"hs_kills": 4}, ts=2000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THIS ROW'S SPELLING (Story 6-5b): the keys are OMITTED from the emitted award
+        # object, which is the only one of the three spellings that is a RENDERING decision rather
+        # than a value.
+        "pins_inputs": lambda e, c: c.get("omit_rung_keys", False) is True,
     },
     {
         "name": "rung-keys-spelled-as-EMPTY-STRINGS",
@@ -3947,6 +4279,708 @@ LADDER_CASES: list[dict] = [
             _p(S_B, rounds=30, kills=20, vol={"hs_kills": 4}, ts=2000),
         ],
         "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THIS ROW'S SPELLING (Story 6-5b): all three keys are the EMPTY STRING, the
+        # spelling Go's `string` zero value forces on the seam.
+        "pins_inputs": lambda e, c: (
+            not c.get("omit_rung_keys", False)
+            and all(
+                c["award"][f] == ""
+                for f in ("secondary_stat", "eff_num_key", "eff_den_key")
+            )
+        ),
+    },
+    # ── APPENDED BY STORY 6-5b. Everything above is byte-identical apart from the amended `spec`. ──
+    #
+    # ⛔ THESE ROWS ADD NO BEHAVIOUR. Every one of them exercises a path all three implementations
+    # ALREADY have and no row reached. Where a row disagreed with shipped source the review's verdict
+    # stands — the implementations are right and the documents were wrong — so the document moved.
+    {
+        "name": "rung-2-RATE-efficiency-keys-give-the-product-FOUR-non-trivial-terms",
+        "note": (
+            "⭐⭐ THE ROW RUNG 2's HEADLINE PROPERTY WAS MISSING. Every other rung-2 row in this file "
+            "names VOLUME keys in both efficiency slots, and `snapshot_efficiency_form` gives a "
+            "volume `v` the pair {v, 1} — so two of the four factors are the literal integer 1 and "
+            "the ratio collapses to {num.num, den.num}. An implementation that DROPPED both the "
+            "`.den` and `.num` factors entirely — the single most plausible L6 mistake, and one the "
+            "README invites by saying 'a volume v arrives as {v, 1}' — was BYTE-IDENTICAL on all 24 "
+            "committed cases including the 2^53 row. Here both slots are RATE keys, so all four "
+            "factors are genuinely non-trivial: A is adr 200/20 over entry_success 100/40, giving "
+            "(200*40)/(20*100) = 4; B is 300/30 over 100/30, giving (300*30)/(30*100) = 3. A wins "
+            "at EXIT STEP 2. ⭐ The both-dropped mutant compares eff[num].num alone against "
+            "eff[den].num — 200/100 = 2 against 300/100 = 3 — and picks B. A different winner, from "
+            "the one arithmetic rule rung 2 exists for."
+        ),
+        "award": _ladder_award(
+            "kills", "volume", "max", eff_num="adr", eff_den="entry_success"
+        ),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=20, kills=20,
+               rate={"adr": (200, 20), "entry_success": (100, 40)}, ts=9000),
+            _p(S_B, rounds=30, kills=20,
+               rate={"adr": (300, 30), "entry_success": (100, 30)}, ts=1000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 2},
+        # ⭐ RE-DERIVE ALL THREE INPUT PROPERTIES: both eff keys really are RATE keys, NO factor of
+        # the four-term product is the trivial 1 on any player, and the both-dropped mutant really
+        # does pick the other player. Without the middle clause a future edit to a volume key would
+        # leave the row producing winner/2 while silently ceasing to be this row.
+        "pins_inputs": lambda e, c: (
+            _class_of(c["award"]["eff_num_key"]) == "rate"
+            and _class_of(c["award"]["eff_den_key"]) == "rate"
+            and all(
+                _by_id(c)[sid]["stats_int"]["efficiency"][k][i] > 1
+                for sid in c["tied"]
+                for k in (c["award"]["eff_num_key"], c["award"]["eff_den_key"])
+                for i in (0, 1)
+            )
+            and _best_survivors(
+                c["tied"], c["award"]["direction"],
+                lambda sid: ("rate", (
+                    _by_id(c)[sid]["stats_int"]["efficiency"][c["award"]["eff_num_key"]][0],
+                    _by_id(c)[sid]["stats_int"]["efficiency"][c["award"]["eff_den_key"]][0],
+                )),
+            ) != [e["steamid64"]]
+        ),
+    },
+    {
+        "name": "rung-2-under-direction-min-picks-the-SMALLEST-ratio",
+        "note": (
+            "L4 at rung 2 — the rung this file had no `min` row for. Rungs 1, 3 and 4 each have one; "
+            "rung 2 did not, so a mutation that hardcoded `max` at rung 2 alone survived every gate. "
+            "A `min` award (fewest deaths, `El Inofensivo`'s shape) tied at 10 deaths each: A is 300 "
+            "utility damage over 30 rounds = 10, B is 400 over 50 = 8. Under `min` the SMALLER ratio "
+            "wins, so B takes it at EXIT STEP 2. ⭐ A holds the EARLIER timestamp AND the larger "
+            "ratio, so both a hardcoded `max` and a skipped rung 2 crown A instead — a different "
+            "winner either way."
+        ),
+        "award": _ladder_award(
+            "deaths", "volume", "min", eff_num="utility_damage", eff_den="rounds_played"
+        ),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"deaths": 10, "utility_damage": 300}, ts=1000),
+            _p(S_B, rounds=50, kills=20, vol={"deaths": 10, "utility_damage": 400}, ts=5000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_B, "ladder_exit_step": 2},
+        # ⭐ RE-DERIVE THE DIRECTION AND ITS COUNTERFACTUAL from the row's own data: the award really
+        # is `min`, and running the SAME rung under `max` really does crown somebody else.
+        "pins_inputs": lambda e, c: (
+            c["award"]["direction"] == "min"
+            and _rung2_best(c, "max") == [sid for sid in c["tied"] if sid != e["steamid64"]]
+        ),
+    },
+    {
+        "name": "rung-2-NARROWS-without-resolving-and-the-NEXT-rung-runs-over-the-SURVIVORS",
+        "note": (
+            "⭐ L3 AT RUNG 2, and it had no row. All four committed rung-2 rows exit AT step 2 with a "
+            "single winner, so `survivors = narrowed` was never read again — deleting the line, or "
+            "letting rung 4 restart from the original tie, reddened nothing. Here rung 2 narrows and "
+            "resolves NOTHING: A is 300/30 = 10 and B is 200/20 = 10, exactly equal, while C is "
+            "150/30 = 5 and is ELIMINATED. Rung 3 skips (no h2h) and rung 4 decides between the two "
+            "SURVIVORS, where A's 5000 beats B's 8000. ⭐ C holds 1000 — the strictly earliest "
+            "timestamp in the whole tie — so a ladder that dropped the narrowing crowns C, a player "
+            "rung 2 had already eliminated."
+        ),
+        "award": _ladder_award(
+            "kills", "volume", "max", eff_num="utility_damage", eff_den="rounds_played"
+        ),
+        "tied": [S_A, S_B, S_C],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"utility_damage": 300}, ts=5000),
+            _p(S_B, rounds=20, kills=20, vol={"utility_damage": 200}, ts=8000),
+            _p(S_C, rounds=30, kills=20, vol={"utility_damage": 150}, ts=1000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THAT RUNG 2 GENUINELY NARROWS AND GENUINELY FAILS TO RESOLVE, and that the
+        # player it eliminates holds the strictly earliest timestamp — without which a
+        # narrowing-deleted regression produces the same answer and the row proves nothing.
+        "pins_inputs": lambda e, c: (
+            1 < len(_rung2_best(c)) < len(c["tied"])
+            and _earliest_holder(c) not in _rung2_best(c)
+        ),
+    },
+    {
+        "name": "rung-2-a-ZERO-OVER-ZERO-ratio-is-UNELIMINABLE-and-rides-to-the-next-rung",
+        "note": (
+            "⭐ THE `0/0` HALF OF S3 AT RUNG 2, promised by the rung-2 efficiency-pair decision "
+            "(Cuatro, Group-1 code review) and missing: only the `n/0` half had a row, and the `0/0` "
+            "row that existed was at rung 1, a different arithmetic path. A holds ZERO blind kills "
+            "over ZERO wallbangs, so their four-term ratio is (0*1)/(1*0) = 0/0 — which "
+            "cross-multiplies to 0 against EVERY pair and is therefore EQUAL to everything. A cannot "
+            "be eliminated at rung 2 no matter how good the others are: B (5/10) beats C (3/10) "
+            "outright, so C IS eliminated, but A rides through on a ratio nobody can beat. Rung 4 "
+            "then gives it to A at 1000. ⭐ This is exactly the shipped `kills/deaths` pair's second "
+            "degenerate case — a player with 0 kills and 0 deaths — and it is accepted and "
+            "documented rather than engineered away. An implementation that filtered zero "
+            "denominators out of the race (the silent argmax S3 forbids) crowns B instead."
+        ),
+        "award": _ladder_award(
+            "kills", "volume", "max", eff_num="blind_kills", eff_den="wallbang_kills"
+        ),
+        "tied": [S_A, S_B, S_C],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"blind_kills": 0, "wallbang_kills": 0}, ts=1000),
+            _p(S_B, rounds=30, kills=20, vol={"blind_kills": 5, "wallbang_kills": 10}, ts=2000),
+            _p(S_C, rounds=30, kills=20, vol={"blind_kills": 3, "wallbang_kills": 10}, ts=9000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE ALL THREE: somebody's COMPUTED four-term ratio really is 0/0 (not merely a zero
+        # denominator on one half), that player really does survive the rung, and the rung really
+        # does eliminate somebody else — so the row is neither vacuous nor a duplicate of the `n/0`
+        # row above it.
+        "pins_inputs": lambda e, c: (
+            any(_rung2_ratio(c, sid) == (0, 0) for sid in c["tied"])
+            and all(
+                sid in _rung2_best(c)
+                for sid in c["tied"] if _rung2_ratio(c, sid) == (0, 0)
+            )
+            and len(_rung2_best(c)) < len(c["tied"])
+        ),
+    },
+    {
+        "name": "rung-4-NARROWS-and-the-SENTINEL-holder-is-EXCLUDED-from-the-shared-set",
+        "note": (
+            "⭐⭐ RUNG 4's NARROWING WAS NEVER LOAD-BEARING. Every committed rung-4 case is all-absent, "
+            "or two byte-identical timestamps, or already width-2 — in all of them `narrowed` equals "
+            "`present` equals `survivors`, so an implementation that SKIPPED rung 4 whenever it "
+            "failed to resolve was byte-identical everywhere. Here the tie is width 3: A carries the "
+            "`-1` sentinel while B and C tie at a real 1000. Rung 4 filters A out, minimises over "
+            "{B, C}, narrows to {B, C} — and rung 5 shares between THOSE TWO. ⛔ The skip-instead-of- "
+            "narrow implementation shares between ALL THREE, handing a co-winner's trophy to a "
+            "player with NO APPROVED ROWS AT ALL. That is the exact L9 failure the sentinel row "
+            "pins one rung earlier, arriving through the rung-5 door instead."
+        ),
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B, S_C],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=ABSENT_TS),
+            _p(S_B, rounds=30, kills=20, ts=1000),
+            _p(S_C, rounds=30, kills=20, ts=1000),
+        ],
+        "pins": lambda e: e == {"kind": "shared", "winners": [S_B, S_C], "ladder_exit_step": 5},
+        # ⭐ RE-DERIVE THE NARROWING AND ITS COUNTERFACTUAL: exactly one tied member holds the
+        # sentinel, that member is NOT a co-winner, and the co-winners are a PROPER subset of the tie
+        # that is still plural — the shape a rung that skipped instead of narrowing cannot produce.
+        "pins_inputs": lambda e, c: (
+            len(c["tied"]) >= 3
+            and len([p for p in c["players"] if p["achievement_ts"] == ABSENT_TS]) == 1
+            and all(
+                p["steamid64"] not in e["winners"]
+                for p in c["players"] if p["achievement_ts"] == ABSENT_TS
+            )
+            and 2 <= len(e["winners"]) < len(c["tied"])
+        ),
+    },
+    {
+        "name": "rung-1-RESOLVES-and-RETURNS-even-though-rung-2-and-h2h-are-CONFIGURED",
+        "note": (
+            "⭐ THE EARLY RETURN AT RUNG 1 WAS UNPINNED. No committed row had rung 1 resolve while a "
+            "later rung was configured, so falling THROUGH a resolved rung 1 was invisible: with a "
+            "single survivor rung 2's `best` is that survivor and rung 3's dominator loop is "
+            "VACUOUSLY TRUE, so the ladder returns the SAME winner at a FABRICATED exit step. Story "
+            "6.8 persists that step as `award_result.tie_ladder_exit_step`, so the audience is told "
+            "the wrong reason. Here rung 1 (`hs_kills` 9 against 4) resolves to A at EXIT STEP 1 "
+            "while BOTH efficiency keys are configured AND both players carry h2h records. Falling "
+            "through gives A at step 2, or at step 3 — right player, wrong story. ⚠ B's rung-2 ratio "
+            "(900/30) is nine times A's and B wins the head-to-head 7 to 1, so nothing here is "
+            "coincidental agreement."
+        ),
+        "award": _ladder_award(
+            "kills", "volume", "max",
+            secondary="hs_kills", eff_num="utility_damage", eff_den="rounds_played",
+        ),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"hs_kills": 9, "utility_damage": 100},
+               h2h={S_B: {"kills": 1}}, ts=9000),
+            _p(S_B, rounds=30, kills=20, vol={"hs_kills": 4, "utility_damage": 900},
+               h2h={S_A: {"kills": 7}}, ts=1000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 1},
+        # ⭐ RE-DERIVE THAT THE LATER RUNGS ARE GENUINELY CONFIGURED AND GENUINELY DISAGREE: rung 2
+        # would have crowned the other player, and so would rung 3. A row where they agreed could
+        # not see the early return at all.
+        "pins_inputs": lambda e, c: (
+            e["ladder_exit_step"] == 1
+            and _rung_key(c["award"].get("eff_num_key")) is not None
+            and _rung_key(c["award"].get("eff_den_key")) is not None
+            and _rung2_best(c) == [sid for sid in c["tied"] if sid != e["steamid64"]]
+            and _dominators_over(c, list(c["tied"]))
+            == [sid for sid in c["tied"] if sid != e["steamid64"]]
+        ),
+    },
+    {
+        "name": "rung-2-RESOLVES-and-RETURNS-even-though-h2h-is-POPULATED",
+        "note": (
+            "⭐ THE SAME UNPINNED EARLY RETURN, ONE RUNG DOWN, and this one changes the WINNER as "
+            "well as the step. Rung 2 resolves (A is 300/30 = 10 against B's 400/50 = 8) and returns "
+            "at EXIT STEP 2 — but both players carry a full two-way h2h record in which B beats A 7 "
+            "to 1. An implementation that ran rung 3 before rung 2, or that fell through a resolved "
+            "rung 2, finds B the strict dominator and returns B at step 3. Rung 3->4 precedence was "
+            "already pinned; rungs 1 and 2 were not, and this is the row that makes rung 2's return "
+            "observable at all."
+        ),
+        "award": _ladder_award(
+            "kills", "volume", "max", eff_num="utility_damage", eff_den="rounds_played"
+        ),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"utility_damage": 300},
+               h2h={S_B: {"kills": 1}}, ts=9000),
+            _p(S_B, rounds=50, kills=20, vol={"utility_damage": 400},
+               h2h={S_A: {"kills": 7}}, ts=1000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 2},
+        # ⭐ RE-DERIVE THAT RUNG 3 WOULD HAVE CROWNED THE OTHER PLAYER: both directions of the h2h
+        # record exist and the OTHER player is the strict dominator over the full tie.
+        "pins_inputs": lambda e, c: (
+            e["ladder_exit_step"] == 2
+            and not _has_one_sided_h2h(c)
+            and _dominators_over(c, list(c["tied"]))
+            == [sid for sid in c["tied"] if sid != e["steamid64"]]
+        ),
+    },
+    {
+        "name": "rung-3-runs-over-rung-1s-SURVIVORS-so-a-DOMINATOR-emerges-the-full-tie-had-not",
+        "note": (
+            "⭐⭐ L3 AT RUNG 3, and NO committed row both narrowed AND populated h2h — so an "
+            "implementation computing dominators over the ORIGINAL `tied` was byte-identical on "
+            "every case in the file. Rung 1 (`hs_kills`) eliminates C, who holds 4 to A and B's 9. "
+            "Over the SURVIVORS {A, B} the record is complete and A takes 9 to B's 3, so A is the "
+            "strict dominator and wins at EXIT STEP 3. Over the FULL tie A is NOT a dominator — A "
+            "and C never met, and L8 makes 'never met' disqualifying rather than a zero — so |D| is "
+            "0, rung 3 skips, and rung 4 crowns C at 500. ⭐ A DIFFERENT WINNER AND A DIFFERENT EXIT "
+            "STEP, from the one rule (`each rung narrows the survivors`) that no other row can see "
+            "at this rung."
+        ),
+        "award": _ladder_award("kills", "volume", "max", secondary="hs_kills"),
+        "tied": [S_A, S_B, S_C],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"hs_kills": 9},
+               h2h={S_B: {"kills": 9}}, ts=9000),
+            _p(S_B, rounds=30, kills=20, vol={"hs_kills": 9},
+               h2h={S_A: {"kills": 3}, S_C: {"kills": 2}}, ts=1000),
+            _p(S_C, rounds=30, kills=20, vol={"hs_kills": 4},
+               h2h={S_B: {"kills": 8}}, ts=500),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 3},
+        # ⭐ RE-DERIVE BOTH HALVES: rung 1 narrows to a plural PROPER subset, and over the FULL tie
+        # nobody dominates — so the dominator this row produces exists only because rung 3 ran over
+        # the survivors. `_no_player_beats_all` is computed over `tied`, which is exactly the
+        # counterfactual.
+        "pins_inputs": lambda e, c: (
+            1 < len(_rung1_best(c)) < len(c["tied"])
+            and _dominators_over(c, _rung1_best(c)) == [e["steamid64"]]
+            and _dominators_over(c, list(c["tied"])) == []
+        ),
+    },
+    {
+        "name": "a-RATE-class-award-cross-multiplies-its-h2h-PAIRS-at-rung-3",
+        "note": (
+            "⭐ NOT ONE `class: rate` AWARD EXISTED IN THIS FILE — zero occurrences — so rung 3's "
+            "rate arm, where `h2h[p][q][deciding_stat]` is a {num, den} PAIR and the dominator test "
+            "CROSS-MULTIPLIES, was never entered by any row. Four of the twelve shipped awards are "
+            "`rate`. Here both players tie at hs_pct 6/20 and their head-to-head records are pairs: "
+            "A took 6 headshots of 30 kills against B, B took 7 of 40 against A. 6*40 = 240 beats "
+            "7*30 = 210, so A strictly dominates and wins at EXIT STEP 3 — even though B has the "
+            "LARGER NUMERATOR, so a naive numerator compare picks B. ⚠ B also holds the earlier "
+            "timestamp, so an implementation that skipped rung 3 for a rate award lands on B too."
+        ),
+        "award": _ladder_award("hs_pct", "rate", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"hs_kills": 6},
+               h2h={S_B: {"hs_pct": (6, 30)}}, ts=9000),
+            _p(S_B, rounds=30, kills=20, vol={"hs_kills": 6},
+               h2h={S_A: {"hs_pct": (7, 40)}}, ts=1000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 3},
+        # ⭐ RE-DERIVE THAT THE ROW IS GENUINELY THE RATE ARM: the award's class is `rate`, the
+        # deciding key's OWN class is `rate` (L5 — they are allowed to differ, so both are checked),
+        # every h2h value really is a PAIR, and the naive numerator compare picks the other player.
+        "pins_inputs": lambda e, c: (
+            c["award"]["class"] == "rate"
+            and _class_of(c["award"]["deciding_stat"]) == "rate"
+            and all(
+                isinstance(block[c["award"]["deciding_stat"]], tuple)
+                for sid in c["tied"] for block in (_by_id(c)[sid].get("h2h") or {}).values()
+            )
+            and max(
+                c["tied"],
+                key=lambda sid: _by_id(c)[sid]["h2h"][
+                    next(q for q in c["tied"] if q != sid)
+                ][c["award"]["deciding_stat"]][0],
+            ) != e["steamid64"]
+        ),
+    },
+    {
+        "name": "an-achievement_ts-of-ZERO-is-a-REAL-timestamp-and-WINS-rung-4",
+        "note": (
+            "⭐ THE VALUE ADJACENT TO THE SENTINEL, and it had no row. `achievement_ts` never took `0` "
+            "anywhere in this file, so an implementation whose absent-filter was `ts <= 0` rather "
+            "than `ts != -1` passed EVERY case — the sentinel is -1 and every other row's timestamps "
+            "are comfortably positive. Here A carries a real `0` (the Unix epoch, which 0024 permits: "
+            "the column is NEVER NULL and -1 is the ONLY absent value) and B carries 5000. A is the "
+            "earliest, so A wins at EXIT STEP 4. A `ts <= 0` filter drops A and crowns B."
+        ),
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=0),
+            _p(S_B, rounds=30, kills=20, ts=5000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THE INPUT: somebody genuinely holds exactly 0, nobody holds the sentinel (so
+        # the row is about 0 and not about -1), and the 0-holder is the winner.
+        "pins_inputs": lambda e, c: (
+            any(p["achievement_ts"] == 0 for p in c["players"])
+            and all(p["achievement_ts"] != ABSENT_TS for p in c["players"])
+            and {p["steamid64"]: p for p in c["players"]}[e["steamid64"]]["achievement_ts"] == 0
+        ),
+    },
+    {
+        "name": "an-achievement_ts-past-2-pow-53-is-compared-EXACTLY",
+        "note": (
+            "⭐ THE PROVENANCE RULE'S OWN PROOF, and the reason `achievement_ts` travels as a decimal "
+            "STRING even though today's values sit comfortably inside 2^53. A holds 2^53+1 and B "
+            "holds 2^53 — a difference of ONE. B is the earlier, so B wins at EXIT STEP 4. ⛔ A "
+            "verifier that read the column with `Number` gets 2^53 for BOTH (2^53+1 is not "
+            "representable as a double and rounds down), sees them EQUAL, narrows to both and "
+            "bottoms out SHARED at step 5 — a different outcome KIND, not merely a different winner. "
+            "In JavaScript the corruption happens at `JSON.parse`, before any comparison runs, which "
+            "is precisely why the split is by provenance and not by magnitude."
+        ),
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=TWO53 + 1),
+            _p(S_B, rounds=30, kills=20, ts=TWO53),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_B, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THE COUNTERFACTUAL, NOT MERELY THE MAGNITUDE: every timestamp is past 2^53 AND
+        # the two are INDISTINGUISHABLE as float64, so a `Number`-parsing verifier provably cannot
+        # reproduce this row. "Both are large" would be satisfied by any oversized pair.
+        "pins_inputs": lambda e, c: (
+            all(p["achievement_ts"] >= TWO53 for p in c["players"])
+            and len({p["achievement_ts"] for p in c["players"]}) == len(c["players"])
+            and len({float(p["achievement_ts"]) for p in c["players"]}) == 1
+        ),
+    },
+    {
+        "name": "a-player-who-is-NOT-in-the-tied-set-is-INVISIBLE-to-every-rung",
+        "note": (
+            "⭐ NO CASE CARRIED A NON-TIED PLAYER, so an implementation that iterated the ROSTER "
+            "instead of the SURVIVORS was indistinguishable from a correct one on every row in the "
+            "file. The snapshot is the whole roster — 0024 freezes every rostered player, and 6.6 "
+            "will drive this ladder over a REDUCED tie against that same full roster — so this is "
+            "the ordinary production shape, not an exotic one. C is in `players` and NOT in `tied`, "
+            "and C is built to win on every axis: 99 hs_kills against A's 9, and timestamp 1, the "
+            "strictly earliest. Rung 1 runs over {A, B} alone and gives it to A at EXIT STEP 1. A "
+            "roster-iterating ladder crowns C — a player who never tied with anybody."
+        ),
+        "award": _ladder_award("kills", "volume", "max", secondary="hs_kills"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"hs_kills": 9}, ts=5000),
+            _p(S_B, rounds=30, kills=20, vol={"hs_kills": 4}, ts=9000),
+            _p(S_C, rounds=30, kills=20, vol={"hs_kills": 99}, ts=1),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 1},
+        # ⭐ RE-DERIVE THAT THE INTRUDER IS BOTH PRESENT AND DOMINANT: some player row is outside
+        # `tied`, and that player would have won BOTH the rung it is excluded from and the last rung.
+        # A non-tied player who lost anyway would make this row indistinguishable from an ordinary one.
+        "pins_inputs": lambda e, c: (
+            (lambda outsiders, key: (
+                len(outsiders) >= 1
+                and all(
+                    p["stats_int"]["secondary"][key]
+                    > max(_by_id(c)[sid]["stats_int"]["secondary"][key] for sid in c["tied"])
+                    and p["achievement_ts"]
+                    < min(_by_id(c)[sid]["achievement_ts"] for sid in c["tied"])
+                    for p in outsiders
+                )
+            ))(
+                [p for p in c["players"] if p["steamid64"] not in c["tied"]],
+                _rung_key(c["award"].get("secondary_stat")),
+            )
+        ),
+    },
+    {
+        "name": "ABSENT-secondary-efficiency-and-h2h-BLOCKS-are-the-EMPTY-blocks",
+        "note": (
+            "⭐ THE ABSENT-CONTAINER RULE HAD NO LADDER-SIDE ROW. `stage1-pick.json` treats an absent "
+            "container as load-bearing and this file emitted all three blocks on every player, so "
+            "TypeScript's `container(undefined)` and Go's nil-map read were entered by NOTHING. An "
+            "ABSENT CONTAINER IS THE EMPTY CONTAINER (Cuatro, 2026-08-04): Go's "
+            "`map[string]StatValue` cannot tell a nil map from an empty one, so `undefined` must "
+            "mean here what nil means there or the producer and the verifier disagree about an input "
+            "NEITHER would report. A's `secondary`, `efficiency` and `h2h` keys are all OMITTED from "
+            "the JSON. No rung key is configured, so rungs 1 and 2 skip; rung 3 reads A's absent h2h "
+            "as empty and skips; rung 4 gives it to A at 1000. ⚠ A refusal here would be WRONG — the "
+            "row exists to prove the absence RESOLVES rather than that it refuses."
+        ),
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B],
+        "omit_blocks": {S_A: ("secondary", "efficiency", "h2h")},
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE THAT THE OMISSION IS REAL AND COMPLETE, from the row's own declaration: a TIED
+        # member has ALL THREE blocks omitted. Two of three would leave one container untested while
+        # the row still produced winner/4.
+        "pins_inputs": lambda e, c: (
+            any(
+                sid in c["tied"] and set(blocks) == {"secondary", "efficiency", "h2h"}
+                for sid, blocks in c.get("omit_blocks", {}).items()
+            )
+        ),
+    },
+    # ── Added at the Story 6-5b CODE REVIEW (2026-08-06). ─────────────────────────────────────────
+    #
+    # ⭐ SIX BOUNDARIES THE STORY'S OWN ACs DID NOT NAME, found by an independent edge-case pass and
+    # patched here on Cuatro's call (option 1: all six land in this story rather than being split
+    # with 6.11, because 6.6 drives this ladder next and should inherit it whole). Three of them
+    # change a WINNER or CRASH; three close gates that could not fail. None of them changes
+    # behaviour — every one is an input the shipped code already handles correctly and nothing
+    # observed.
+    {
+        "name": "rung-2-under-direction-min-a-ZERO-DENOMINATOR-ratio-LOSES-to-every-finite-one",
+        "note": (
+            "⭐⭐ `n/0` UNDER `min` EXISTED IN NO ROW OF EITHER VECTOR FILE. Every zero-denominator "
+            "row in `ladder-resolve.json` AND all four in `stage2-resolve.json` are `direction: "
+            "max`, so a mutant that short-circuits 'a zero denominator wins the rung' — ignoring "
+            "`direction` entirely — was BYTE-IDENTICAL on all 37 ladder cases and all 28 Stage-2 "
+            "cases. Both runtimes DOCUMENT the behaviour ('a survivor with 0 deaths loses to "
+            "everyone on `El Inofensivo`') and nothing exercised it. S3 makes `n/0` with `n > 0` "
+            "beat every finite value, so under `min` it LOSES to every finite value. A is 5 blind "
+            "kills over ZERO wallbangs — the +infinity shape — and B is 8 over 10. Under `min` B "
+            "wins at EXIT STEP 2. ⛔ A holds BOTH the +infinity ratio AND the earlier timestamp, so "
+            "the zero-denominator-wins mutant, a hardcoded `max`, and a skipped rung 2 ALL crown A "
+            "instead. On the shipped `El Inofensivo` this is the difference between the least "
+            "harmful player and the most."
+        ),
+        "award": _ladder_award(
+            "deaths", "volume", "min", eff_num="blind_kills", eff_den="wallbang_kills"
+        ),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20,
+               vol={"deaths": 10, "blind_kills": 5, "wallbang_kills": 0}, ts=1000),
+            _p(S_B, rounds=30, kills=20,
+               vol={"deaths": 10, "blind_kills": 8, "wallbang_kills": 10}, ts=9000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_B, "ladder_exit_step": 2},
+        # ⭐ RE-DERIVE THE SHAPE AND ITS COUNTERFACTUAL: the award really is `min`, exactly one tied
+        # member's COMPUTED four-term ratio really is `n/0` with a positive numerator, that member
+        # wins the SAME rung outright under `max`, and the actual winner is somebody else. Checking
+        # only "a denominator is zero" would be satisfied by any row with a zero half anywhere.
+        "pins_inputs": lambda e, c: (
+            (lambda inf: (
+                len(inf) == 1
+                and c["award"]["direction"] == "min"
+                and _rung2_best(c, "max") == inf
+                and e["steamid64"] not in inf
+            ))([
+                sid for sid in c["tied"]
+                if _rung2_ratio(c, sid)[1] == 0 and _rung2_ratio(c, sid)[0] > 0
+            ])
+        ),
+    },
+    {
+        "name": "rung-2-an-INFINITE-and-a-ZERO-OVER-ZERO-ratio-are-EQUAL-and-BOTH-ride-through",
+        "note": (
+            "⭐⭐ THE TWO DEGENERATE RATIOS NEVER MET IN ONE RACE. The `n/0` row and the `0/0` row "
+            "are disjoint — neither carries the other's shape — so nothing pinned what S3 says "
+            "happens when they are compared: cross-multiplication gives `5*0 - 0*0 = 0`, so they "
+            "are EQUAL and NEITHER eliminates the other. A is 5 blind kills over ZERO wallbangs "
+            "(+infinity), B is ZERO over ZERO (equal to everything), C is 3 over 10 (finite). Rung "
+            "2 eliminates C alone and narrows to {A, B}; rung 3 skips; rung 4 finds A and B "
+            "byte-identical at 1000 and narrows to both; rung 5 SHARES between them at EXIT STEP "
+            "5. ⛔ An implementation reading these as IEEE doubles — where `+inf > NaN` is false but "
+            "`NaN` loses every comparison — narrows to {A} and returns WINNER A AT STEP 2. That is "
+            "a different outcome KIND, a different winner and a different exit step, from one "
+            "comparison the file could not see."
+        ),
+        "award": _ladder_award(
+            "kills", "volume", "max", eff_num="blind_kills", eff_den="wallbang_kills"
+        ),
+        "tied": [S_A, S_B, S_C],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"blind_kills": 5, "wallbang_kills": 0}, ts=1000),
+            _p(S_B, rounds=30, kills=20, vol={"blind_kills": 0, "wallbang_kills": 0}, ts=1000),
+            _p(S_C, rounds=30, kills=20, vol={"blind_kills": 3, "wallbang_kills": 10}, ts=9000),
+        ],
+        "pins": lambda e: e == {"kind": "shared", "winners": [S_A, S_B], "ladder_exit_step": 5},
+        # ⭐ RE-DERIVE THAT BOTH DEGENERATE SHAPES ARE PRESENT, DISTINCT, AND MUTUALLY UNBEATABLE
+        # under the row's OWN comparator and direction — and that the rung still eliminates
+        # somebody, so the row is not the vacuous "nobody was eliminated" case.
+        "pins_inputs": lambda e, c: (
+            (lambda inf, zoz: (
+                len(inf) == 1 and len(zoz) == 1
+                and not _beats_stat(c["award"]["direction"],
+                                    ("rate", _rung2_ratio(c, inf[0])),
+                                    ("rate", _rung2_ratio(c, zoz[0])))
+                and not _beats_stat(c["award"]["direction"],
+                                    ("rate", _rung2_ratio(c, zoz[0])),
+                                    ("rate", _rung2_ratio(c, inf[0])))
+                and set(_rung2_best(c)) == {inf[0], zoz[0]}
+                and len(_rung2_best(c)) < len(c["tied"])
+            ))(
+                [s for s in c["tied"]
+                 if _rung2_ratio(c, s)[1] == 0 and _rung2_ratio(c, s)[0] > 0],
+                [s for s in c["tied"] if _rung2_ratio(c, s) == (0, 0)],
+            )
+        ),
+    },
+    {
+        "name": "rung-3-a-dominator-must-beat-EVERY-other-survivor-not-merely-ONE",
+        "note": (
+            "⭐ RUNG 3's CONJUNCTION WAS NEVER LOAD-BEARING FOR A POSITIVE RESULT. Every rung-3 WIN "
+            "in this file is decided over exactly TWO survivors, where 'dominates every other' "
+            "collapses to 'beats the one opponent' — so the loop across opponents could have "
+            "returned on its first success and nothing would have reddened. The only width-3 "
+            "rung-3 row is the `|D| == 0` case. Here the record is COMPLETE among all three: A "
+            "beats B (9 to 3) AND C (8 to 2), while B beats C (7 to 4) but loses to A. A is the "
+            "only strict dominator and wins at EXIT STEP 3. ⛔ A 'beats at least one opponent' "
+            "implementation finds TWO dominators — A and B — and raises the plural-dominator "
+            "`internal` refusal instead of crowning anybody. ⚠ C holds the earliest timestamp, so "
+            "an implementation that skipped rung 3 crowns C at rung 4: a different winner too."
+        ),
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B, S_C],
+        "players": [
+            _p(S_A, rounds=30, kills=20,
+               h2h={S_B: {"kills": 9}, S_C: {"kills": 8}}, ts=9000),
+            _p(S_B, rounds=30, kills=20,
+               h2h={S_A: {"kills": 3}, S_C: {"kills": 7}}, ts=5000),
+            _p(S_C, rounds=30, kills=20,
+               h2h={S_A: {"kills": 2}, S_B: {"kills": 4}}, ts=1000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 3},
+        # ⭐ RE-DERIVE THAT THE CONJUNCTION IS WHAT DECIDES: the tie is at least width 3, the h2h
+        # record is COMPLETE in both directions for every ordered pair (so no result rests on L8's
+        # never-met skip), the winner strictly beats AT LEAST TWO opponents, and some OTHER member
+        # beats at least one without dominating — which is precisely what makes "beats one" and
+        # "beats all" different predicates on this row.
+        "pins_inputs": lambda e, c: (
+            (lambda beats: (
+                len(c["tied"]) >= 3
+                and all(
+                    q in (_by_id(c)[p].get("h2h") or {})
+                    for p in c["tied"] for q in c["tied"] if p != q
+                )
+                and _dominators_over(c, list(c["tied"])) == [e["steamid64"]]
+                and len(beats(e["steamid64"])) >= 2
+                and any(
+                    0 < len(beats(p)) < len(c["tied"]) - 1
+                    for p in c["tied"] if p != e["steamid64"]
+                )
+            ))(
+                lambda p: [
+                    q for q in c["tied"]
+                    if q != p and _beats_stat(
+                        c["award"]["direction"],
+                        _stat_value(c["award"]["deciding_stat"],
+                                    _by_id(c)[p]["h2h"][q], "guard"),
+                        _stat_value(c["award"]["deciding_stat"],
+                                    _by_id(c)[q]["h2h"][p], "guard"),
+                    )
+                ]
+            )
+        ),
+    },
+    {
+        "name": "a-RATE-class-award-with-a-VOLUME-secondary-crosses-CLASS-the-OTHER-way",
+        "note": (
+            "⭐ THE MIRROR OF L5, AND ONLY ONE DIRECTION HAD A ROW. The file pins a VOLUME award "
+            "with a RATE secondary; the reverse pairing — a `class: rate` award whose "
+            "`secondary_stat` is a VOLUME key — appeared nowhere, because the file's only "
+            "`class: rate` award carries no secondary at all. L5's rule is that the SHAPE is "
+            "decided by the KEY's class, never by the AWARD's, and it has to hold in both "
+            "directions or it is not a rule. The award is `hs_pct` (rate) and the secondary is "
+            "`hs_kills` (volume, a bare integer): A holds 9 to B's 4 and wins at EXIT STEP 1. ⛔ An "
+            "implementation branching on `award.class` reads a bare integer as a {num, den} pair — "
+            "a nil `.Num` in Go and two `undefined` halves in TypeScript, neither of which is the "
+            "class-mismatch refusal it should be. ⚠ B holds the earlier timestamp, so falling "
+            "through crowns B."
+        ),
+        "award": _ladder_award("hs_pct", "rate", "max", secondary="hs_kills"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"hs_kills": 9}, ts=9000),
+            _p(S_B, rounds=30, kills=20, vol={"hs_kills": 4}, ts=1000),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 1},
+        # ⭐ RE-DERIVE THAT THE CLASSES GENUINELY DISAGREE AND THAT THE KEY's CLASS IS THE ONE THAT
+        # DECIDES: the award's class is `rate`, the secondary KEY's class is `volume`, the two
+        # differ, every value actually read at rung 1 really is a bare integer rather than a pair,
+        # and the winner is not the earliest-timestamp holder (so falling through is observable).
+        "pins_inputs": lambda e, c: (
+            (lambda key: (
+                c["award"]["class"] == "rate"
+                and _class_of(key) == "volume"
+                and _class_of(key) != c["award"]["class"]
+                and all(
+                    isinstance(_by_id(c)[sid]["stats_int"]["secondary"][key], int)
+                    and not isinstance(_by_id(c)[sid]["stats_int"]["secondary"][key], bool)
+                    for sid in c["tied"]
+                )
+                and _earliest_holder(c) != e["steamid64"]
+            ))(_rung_key(c["award"].get("secondary_stat")))
+        ),
+    },
+    {
+        "name": "a-NON-TIED-player-with-a-CORRUPT-ts-and-a-DOMINANT-h2h-is-INVISIBLE-to-BOTH",
+        "note": (
+            "⭐⭐ THE ONLY ROW WITH A ROSTER WIDER THAN THE TIE EXITS AT RUNG 1, so rungs 2, 3, 4 and "
+            "5 had never once run against a roster that contained somebody outside `tied`. That is "
+            "the ORDINARY production shape — 0024 freezes the whole roster and 6.6 drives this "
+            "ladder over a REDUCED tie against it — and it is the shape three separate mistakes "
+            "hide in. C is in `players`, not in `tied`, and is built to win by every route "
+            "simultaneously: an `achievement_ts` of -5 (BELOW the published sentinel), and an h2h "
+            "record that strictly dominates both tied players. Correct behaviour reads NONE of it: "
+            "rungs 1 and 2 are unconfigured, rung 3 finds A and B level at 5 apiece over the "
+            "SURVIVORS and skips, and rung 4 gives it to A at 5000 — EXIT STEP 4. ⛔ THREE "
+            "COUNTERFACTUALS ON ONE ROW: an implementation validating `achievement_ts` over "
+            "`players` rather than over `tied` REFUSES `player` on an input the other two resolve; "
+            "one computing rung-3 dominators over the roster crowns C at step 3; one folding rung "
+            "4's minimum over the roster crowns C outright, because -5 is not the sentinel and so "
+            "survives the absent-filter."
+        ),
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20,
+               h2h={S_B: {"kills": 5}, S_C: {"kills": 1}}, ts=5000),
+            _p(S_B, rounds=30, kills=20,
+               h2h={S_A: {"kills": 5}, S_C: {"kills": 1}}, ts=9000),
+            _p(S_C, rounds=30, kills=20,
+               h2h={S_A: {"kills": 9}, S_B: {"kills": 9}}, ts=-5),
+        ],
+        "pins": lambda e: e == {"kind": "winner", "steamid64": S_A, "ladder_exit_step": 4},
+        # ⭐ RE-DERIVE ALL THREE COUNTERFACTUALS, not merely that an outsider exists. The outsider's
+        # timestamp is BELOW the sentinel (so a roster-wide validation must refuse), the outsider is
+        # the sole dominator over the ROSTER while nobody dominates over the TIE (so a roster-wide
+        # rung 3 must crown them), the outsider is strictly earlier than every tied member (so a
+        # roster-wide rung 4 must crown them), and the actual winner is a tied member.
+        "pins_inputs": lambda e, c: (
+            (lambda out: (
+                len(out) == 1
+                and all(p["achievement_ts"] < ABSENT_TS for p in out)
+                and _dominators_over(c, [p["steamid64"] for p in c["players"]])
+                == [p["steamid64"] for p in out]
+                and _dominators_over(c, list(c["tied"])) == []
+                and all(
+                    p["achievement_ts"]
+                    < min(_by_id(c)[sid]["achievement_ts"] for sid in c["tied"])
+                    for p in out
+                )
+                and e["steamid64"] in c["tied"]
+            ))([p for p in c["players"] if p["steamid64"] not in c["tied"]])
+        ),
     },
 ]
 
@@ -4207,6 +5241,227 @@ LADDER_REFUSALS: list[dict] = [
             _p(S_B, rounds=30, kills=20, ts=2000),
         ],
     },
+    # ── APPENDED BY STORY 6-5b ─────────────────────────────────────────────────────────────────
+    #
+    # ⛔ NOT ONE OF THESE ADDS A GUARD. Every one of them is a row for a guard that is ALREADY LIVE
+    # in all three implementations and was reachable by NO row — which is the same hole 6-4a measured
+    # ("the gate can only assert *some* error") arriving one level down, at "the gate cannot assert
+    # this guard exists at all".
+    {
+        "why": (
+            "⭐ A DUPLICATE steamid64 in `players` — a snapshot holds ONE ROW PER PLAYER. This guard "
+            "is live in all three implementations and had NO ROW ANYWHERE, so it was deletable in "
+            "every one of them with `--check` OK and both suites green. It matters because the index "
+            "it protects is what every rung reads through: a second row for the same player silently "
+            "SHADOWS the first, so which of two contradictory stat blocks decides the award would "
+            "depend on iteration order"
+        ),
+        "detail": "player",
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+            _p(S_A, rounds=30, kills=99, ts=3000),
+        ],
+    },
+    {
+        "why": (
+            "⭐⭐ MALFORMED ACROSS THE `player`/`tied` BOUNDARY, AND IT IS THE ROW THAT CORRECTED THE "
+            "PUBLISHED SPEC. `players` carries a DUPLICATE row for A *and* the tied member B has no "
+            "row at all. The old four-group spec put the whole `tied` group before the whole "
+            "`player` group, so it predicted `tied`; all three implementations refuse `player`, "
+            "because the duplicate scan is part of BUILDING the index that the membership check then "
+            "READS — it cannot run after it. Cuatro's call at the Groups-2/3 review was AMEND THE "
+            "PUBLISHED SPEC, DO NOT MOVE THE CODE, so the spec string now publishes six alternating "
+            "groups and this row is what holds it to them"
+        ),
+        "detail": "player",
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_A, rounds=30, kills=99, ts=3000),
+        ],
+    },
+    {
+        "why": (
+            "⭐ MALFORMED ACROSS THE `stage2`/`award` BOUNDARY — an award direction outside {max, min} "
+            "(the Stage-2 surface) whose `secondary_stat` is ALSO outside the 21-key vocabulary (the "
+            "ladder's own surface). The published order runs the Stage-2 surface FIRST, so this must "
+            "refuse `stage2`; an implementation that checked its own award group first refuses "
+            "`award` and reddens here and nowhere else. Before this row the two groups were adjacent "
+            "and unpinned"
+        ),
+        "detail": "stage2",
+        "award": _ladder_award("kills", "volume", "highest", secondary="not_a_stat"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "⭐ MALFORMED ACROSS THE `tied`/`player` BOUNDARY — the tied set is out of byte-lex order "
+            "(the tied group) AND a tied player's achievement_ts is below the published sentinel "
+            "(the last player group). The tied set's own SHAPE is validated before any player row is "
+            "read, so this must refuse `tied`; an implementation that walked the players first "
+            "refuses `player`. The two groups were adjacent and unpinned"
+        ),
+        "detail": "tied",
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_B, S_A],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=-2),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "⭐ MALFORMED THREE TIMES INSIDE THE `tied` GROUP — `2x` is not a decimal string, it "
+            "appears TWICE, and it sorts BEFORE the entry preceding it. All three implementations "
+            "check id-shape, then duplicate, then order, and refuse the first. ⚠ STATED PLAINLY: the "
+            "`detail` alone CANNOT discriminate these three, because all three are `tied` by "
+            "construction — a closed set of five labels has nothing finer to say. What this row DOES "
+            "pin is that all three implementations REFUSE this input as `tied` rather than one of "
+            "them resolving it, sorting it, or landing in a neighbouring group. The intra-group "
+            "ORDER remains unobservable from a vector row, and that is a property of the contract "
+            "rather than a gap in it"
+        ),
+        "detail": "tied",
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_B, "2x", "2x"],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "⭐ AN EFFICIENCY KEY ABSENT FROM THE PLAYER'S BLOCK — `efficiency_pair`'s absent-key "
+            "refusal, which is live in all three implementations and had no row in any of them. "
+            "`mvps` is a perfectly legal vocabulary key (so the AWARD group passes) that this "
+            "fixture never materialises, and an absent key is a REFUSAL, never a zero: read as zero "
+            "it would make the rung-2 numerator 0 for everyone and silently tie the whole field"
+        ),
+        "detail": "player",
+        "award": _ladder_award(
+            "kills", "volume", "max", eff_num="mvps", eff_den="rounds_played"
+        ),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "⭐ AN EFFICIENCY ENTRY THAT IS NOT A {num, den} PAIR — `efficiency_pair`'s "
+            "incomplete-pair refusal, live in all three implementations and unreachable from every "
+            "committed row because the renderer could not WRITE the shape. `snapshot_efficiency_form` "
+            "gives EVERY key that shape (a volume `v` as {v, 1}), so a bare magnitude here means the "
+            "producer skipped the one definition site — and rung 2 multiplies four halves, so a "
+            "missing half is not a smaller number, it is no comparison at all"
+        ),
+        "detail": "player",
+        "award": _ladder_award(
+            "kills", "volume", "max", eff_num="utility_damage", eff_den="rounds_played"
+        ),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, vol={"utility_damage": 300},
+               efficiency_force={"utility_damage": 300}, ts=1000),
+            _p(S_B, rounds=30, kills=20, vol={"utility_damage": 400}, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "an award CLASS outside {volume, rate} — the Stage-2 surface's second clause, propagated "
+            "as `stage2`. ⭐ Added because TypeScript TRANSCRIBES `validateAward` instead of calling "
+            "it (`ladder.ts`'s stated trade), and only ONE of the four transcribed clauses had a row "
+            "— so three of them could drift from `stage2.ts` with every gate green. All four now "
+            "have one"
+        ),
+        "detail": "stage2",
+        "award": _ladder_award("kills", "speed", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "a NEGATIVE floor_rounds — the Stage-2 surface's fourth clause (0023's "
+            "`award_floors_non_negative`), propagated as `stage2`. ⚠ The ladder never APPLIES a "
+            "floor (L12), and that is exactly why the clause needs a row: a validation the resolver "
+            "does not otherwise use is the easiest kind to delete by accident"
+        ),
+        "detail": "stage2",
+        "award": _ladder_award("kills", "volume", "max", floor_rounds=-1),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "an EMPTY deciding_stat — the Stage-2 surface's first clause, propagated as `stage2`. It "
+            "must refuse HERE rather than at the ladder's own vocabulary check one group later, "
+            "because `\"\"` is also how Go spells an ABSENT rung key: an implementation that reached "
+            "the vocabulary check first would report the same input as `award`"
+        ),
+        "detail": "stage2",
+        "award": _ladder_award("", "volume", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    # ── Added at the Story 6-5b CODE REVIEW (2026-08-06). ─────────────────────────────────────────
+    {
+        "why": (
+            "⭐⭐ MALFORMED ACROSS THE MEMBERSHIP BOUNDARY — GROUPS 5 AND 6, the last adjacent pair "
+            "left unpinned after this story pinned 1↔2, 2↔3, 3↔6 and 4↔5. The tied member B has NO "
+            "snapshot row (group 5, `tied`) and the row that IS present carries an achievement_ts "
+            "of -2, below the published sentinel (group 6, `player`). Membership is checked before "
+            "any timestamp is read, so this must refuse `tied`. ⛔ THIS IS THE ONE BOUNDARY WHOSE "
+            "WRONG ORDER IS NOT A MISLABELLED REFUSAL BUT AN UNHANDLED FAULT. Every other "
+            "doubly-malformed row here distinguishes two LABELS; this one distinguishes a refusal "
+            "from a CRASH. An implementation that validated timestamps before membership walks "
+            "`tied` and dereferences the index entry for B, which does not exist — a nil-pointer "
+            "panic in Go and a raw `TypeError` rather than a typed `LadderError` in TypeScript. "
+            "Neither is a refusal any caller can handle, and 6.6 drives this entry point directly"
+        ),
+        "detail": "tied",
+        "award": _ladder_award("kills", "volume", "max"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=-2),
+        ],
+    },
+    {
+        "why": (
+            "a NEGATIVE floor_kills — the OTHER half of the Stage-2 surface's fourth clause, whose "
+            "`floor_rounds` half already had a row. ⚠ STATED PLAINLY, because the clause is a "
+            "conjunction and only PART of it is row-representable: the clause also rejects "
+            "NON-INTEGER floors, and a JSON `1.5` is NOT expressible here — both loaders type the "
+            "field as an integer, so a fractional value fails to parse before any ladder code runs "
+            "and the row would pin the JSON decoder rather than the guard. The sign half is "
+            "representable and is now pinned on both fields; the integrality half is unreachable "
+            "from a vector row, exactly like the intra-`tied` ordering above"
+        ),
+        "detail": "stage2",
+        "award": _ladder_award("kills", "volume", "max", floor_kills=-1),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
 ]
 
 
@@ -4222,7 +5477,7 @@ def _render_class_shaped(block: dict) -> dict:
     return out
 
 
-def _render_ladder_player(p: dict, *, omit_ts: bool = False) -> dict:
+def _render_ladder_player(p: dict, *, omit_ts: bool = False, omit_blocks: tuple = ()) -> dict:
     """One snapshot row with all four FR-29 blocks.
 
     ⚠ EVERY SNAPSHOT MAGNITUDE IS A DECIMAL STRING, `achievement_ts` INCLUDED. The split is by
@@ -4230,16 +5485,33 @@ def _render_ladder_player(p: dict, *, omit_ts: bool = False) -> dict:
     sits comfortably inside 2^53 today, but it comes from the snapshot, so it travels as a string
     like every other snapshot value. `ladder_exit_step` and the floors come from the algorithm and
     the catalog's bounded `int` columns and stay JSON integers.
+
+    ⭐ `efficiency` IS RENDERED BY THE SAME CLASS-SHAPED RENDERER `secondary` AND `h2h` USE, added by
+    Story 6-5b. Every real efficiency entry is a `{num, den}` pair (`snapshot_efficiency_form` gives
+    a volume `v` the pair `{v, 1}`), so on every honest row this emits exactly what the hand-written
+    dict comprehension emitted — the regeneration proves it. What it BUYS is that an
+    `efficiency_force`d NON-PAIR can be written at all: `efficiency_pair`'s "incomplete {num,den}
+    pair" refusal exists in all three implementations and had NO ROW anywhere, because the old
+    renderer would have raised on `v[0]` before it could emit one. A bare decimal string is the
+    shape both loaders read as "not a pair", which is the state the guard is about.
+
+    ⭐ `omit_blocks` OMITS A WHOLE BLOCK FROM THE JSON, which is the ABSENT-CONTAINER rule's only
+    ladder-side row. `stage1-pick.json` treats an absent container as load-bearing and this file did
+    not: every row emitted all three blocks, so `container(undefined)` in TypeScript and Go's nil-map
+    read were entered by NOTHING. An absent container is the EMPTY container (Cuatro, 2026-08-04) —
+    Go cannot tell a nil map from an empty one, so the other two runtimes must agree.
     """
     row = _render_player(p)
     row["stats_int"]["secondary"] = _render_class_shaped(p["stats_int"]["secondary"])
-    row["stats_int"]["efficiency"] = {
-        k: {"num": str(v[0]), "den": str(v[1])}
-        for k, v in sorted(p["stats_int"]["efficiency"].items())
-    }
+    row["stats_int"]["efficiency"] = _render_class_shaped(p["stats_int"]["efficiency"])
     row["h2h"] = {
         opp: _render_class_shaped(block) for opp, block in sorted(p["h2h"].items())
     }
+    for block in omit_blocks:
+        if block == "h2h":
+            row.pop("h2h", None)
+        else:
+            row["stats_int"].pop(block, None)
     if not omit_ts:
         row["achievement_ts"] = str(p["achievement_ts"])
     return row
@@ -4253,10 +5525,66 @@ def _render_ladder_award(award: dict, *, omit_rung_keys: bool = False) -> dict:
     return out
 
 
+LADDER_OMITTABLE_BLOCKS = ("secondary", "efficiency", "h2h")
+
+
+def _ladder_players(c: dict) -> list:
+    """The case's players AS THE CONSUMERS WILL RECEIVE THEM — `omit_blocks` already applied.
+
+    ⭐⭐ THE ANCHOR MUST RESOLVE THE INPUT IT PUBLISHES, NOT THE ONE IT HELD IN MEMORY. Added at the
+    Story 6-5b code review, which found `expected` being computed from the FULL in-memory fixture
+    while `omit_blocks` stripped the blocks on the way into the JSON — so the implementation this
+    directory calls "the one that arbitrates disagreements" was resolving a DIFFERENT input than Go
+    and TypeScript consume, on the one row whose entire subject is the absent-container rule.
+
+    It happened to be harmless: that row's award configures no rung key, so rungs 1 and 2 skip and
+    the omitted blocks are never read — which is exactly why nothing caught it. Set a
+    `secondary_stat` on it and Python would have resolved rung 1 from the in-memory block and
+    emitted `winner/1` while both runtimes read an absent block and refused `player`, committing an
+    `expected` no consumer could reproduce with `--check` clean. That is DECISION C's failure mode
+    (a three-way divergence reachable in one careless edit) arriving through the renderer instead of
+    through a patch.
+    """
+    omit = c.get("omit_blocks", {})
+    if not omit:
+        return c["players"]
+    known = {p["steamid64"] for p in c["players"]}
+    for sid, blocks in omit.items():
+        # ⛔ A TYPO'D BLOCK NAME OMITS NOTHING AND THE OLD GUARD READ THE DECLARATION, so
+        # `omit_blocks={S_A: ("secondry",)}` would have left the row fully populated and every gate
+        # green. Both the id and each block name are checked against the closed set here.
+        if sid not in known:
+            raise SystemExit(f"omit_blocks names {sid!r}, which is not a player in this case")
+        for block in blocks:
+            if block not in LADDER_OMITTABLE_BLOCKS:
+                raise SystemExit(
+                    f"omit_blocks names {block!r}; the omittable blocks are "
+                    f"{LADDER_OMITTABLE_BLOCKS}"
+                )
+    out = []
+    for p in c["players"]:
+        blocks = omit.get(p["steamid64"], ())
+        if not blocks:
+            out.append(p)
+            continue
+        # Mirrors `_render_ladder_player`'s omission EXACTLY — `h2h` is a top-level key and the
+        # other two live under `stats_int`. Copied rather than mutated: `LADDER_CASES` is module
+        # state and a later case reading a stripped fixture would be a silent cross-row dependency.
+        q = dict(p)
+        q["stats_int"] = dict(p["stats_int"])
+        for block in blocks:
+            if block == "h2h":
+                q.pop("h2h", None)
+            else:
+                q["stats_int"].pop(block, None)
+        out.append(q)
+    return out
+
+
 def build_ladder_file() -> dict:
     cases = []
     for c in LADDER_CASES:
-        expected = resolve_ladder(c["award"], c["tied"], c["players"])
+        expected = resolve_ladder(c["award"], c["tied"], _ladder_players(c))
         # ⭐ THE ANCHOR GUARDS ITS OWN CASES, exactly as `build_stage1_file` does. Every row declares
         # as EXECUTABLE CODE the property it was chosen for, so an edit that turned the file's most
         # valuable row into an ordinary one fails here rather than passing every gate.
@@ -4274,6 +5602,30 @@ def build_ladder_file() -> dict:
                 f"ladder case {c['name']!r} no longer exhibits the INPUT property it was chosen "
                 "for — its fixture has drifted and the row no longer tests what its name claims"
             )
+        rendered = [
+            _render_ladder_player(
+                p, omit_blocks=c.get("omit_blocks", {}).get(p["steamid64"], ())
+            )
+            for p in c["players"]
+        ]
+        # ⭐ GUARD THE GUARD, ON THE EMITTED BYTES RATHER THAN ON THE DIRECTIVE. The row's own
+        # `pins_inputs` can only see `omit_blocks`, which is a construction instruction — if
+        # `_render_ladder_player` ever stopped honouring it, the guard would stay green over a row
+        # that now emits all three blocks and the absent-container rule would be unexercised again.
+        # This asserts the property on the OUTPUT: every declared omission is genuinely absent from
+        # the JSON, and every block NOT declared is genuinely present.
+        by_sid = {r["steamid64"]: r for r in rendered}
+        for sid, blocks in c.get("omit_blocks", {}).items():
+            row = by_sid[sid]
+            for block in LADDER_OMITTABLE_BLOCKS:
+                present = block in row if block == "h2h" else block in row["stats_int"]
+                if present == (block in blocks):
+                    raise SystemExit(
+                        f"ladder case {c['name']!r}: block {block!r} on {sid} is "
+                        f"{'present' if present else 'absent'} in the rendered row but "
+                        f"{'omitted' if block in blocks else 'kept'} by `omit_blocks` — the "
+                        "renderer and the declaration disagree"
+                    )
         cases.append(
             {
                 "name": c["name"],
@@ -4282,7 +5634,7 @@ def build_ladder_file() -> dict:
                     c["award"], omit_rung_keys=c.get("omit_rung_keys", False)
                 ),
                 "tied": c["tied"],
-                "players": [_render_ladder_player(p) for p in c["players"]],
+                "players": rendered,
                 "expected": expected,
             }
         )
@@ -4291,18 +5643,39 @@ def build_ladder_file() -> dict:
     # identity IS the assertion. Checked here rather than only in the two suites, because it is the
     # property that lets `stage2-resolve.json` — whose award objects carry none of the three keys —
     # regenerate unchanged.
-    spellings = [
-        c["expected"] for c in cases
-        if c["name"] in (
-            "rung-keys-spelled-as-explicit-JSON-null",
-            "rung-keys-OMITTED-from-the-award-object-entirely",
-            "rung-keys-spelled-as-EMPTY-STRINGS",
-        )
-    ]
-    if len(spellings) != 3 or any(s != spellings[0] for s in spellings):
+    spelling_names = (
+        "rung-keys-spelled-as-explicit-JSON-null",
+        "rung-keys-OMITTED-from-the-award-object-entirely",
+        "rung-keys-spelled-as-EMPTY-STRINGS",
+    )
+    spellings = [c for c in cases if c["name"] in spelling_names]
+    if len(spellings) != 3 or any(c["expected"] != spellings[0]["expected"] for c in spellings):
         raise SystemExit(
             "the three spellings of an absent rung key no longer agree — `null`, an omitted key and "
-            f"an empty string must be indistinguishable: {spellings!r}"
+            f"an empty string must be indistinguishable: {[c['expected'] for c in spellings]!r}"
+        )
+    # ⭐ GUARD THE GUARD, AND MAKE IT INDEPENDENTLY FALSIFIABLE. The identity check above CANNOT FAIL
+    # while the three rows' own `pins` hold — each already asserts the exact expected block, so the
+    # comparison is a restatement of three assertions that ran a moment earlier. What it does NOT
+    # check, and what the whole row set is for, is that the three rows still spell absence THREE
+    # DIFFERENT WAYS: an edit that made all three carry `null` leaves every `pins` green, leaves the
+    # identity green, and silently deletes the loader rule from the file. (Story 6-5b; the same
+    # clause both suites already carry separately, brought into the anchor so the arbitrating
+    # implementation enforces it too.)
+    written = {c["name"]: c["award"] for c in spellings}
+    explicit_null = written[spelling_names[0]]
+    omitted = written[spelling_names[1]]
+    empty = written[spelling_names[2]]
+    rung_fields = ("secondary_stat", "eff_num_key", "eff_den_key")
+    if (
+        any(explicit_null.get(f, "sentinel") is not None for f in rung_fields)
+        or any(f in omitted for f in rung_fields)
+        or any(empty.get(f, "sentinel") != "" for f in rung_fields)
+    ):
+        raise SystemExit(
+            "the three absence rows no longer spell absence three DIFFERENT ways — the identity "
+            "check above is satisfied by three identical rows and would prove nothing: "
+            f"{written!r}"
         )
 
     refusals = []
@@ -4347,11 +5720,16 @@ def build_ladder_file() -> dict:
         "algo_version": ALGO_VERSION,
         "spec": (
             "the FR-29 tie ladder draws ZERO stream bytes and takes no stream in any runtime. "
-            "VALIDATION ORDER, which is contract: (1) the award's Stage-2 surface, propagated as "
-            "detail `stage2`; (2) the ladder's own award surface as detail `award` — deciding_stat "
-            "and every non-absent rung key must be one of the 21 vocabulary keys, and eff_num_key "
-            "and eff_den_key are BOTH-OR-NEITHER; (3) the tied set as detail `tied` — width >= 2, "
-            "no duplicate, strictly ascending byte-lex, every member has a snapshot row; (4) every "
+            "VALIDATION ORDER, which is contract, and it is SIX groups whose details ALTERNATE: "
+            "(1) the award's Stage-2 surface, propagated as detail `stage2`; (2) the ladder's own "
+            "award surface as detail `award` — deciding_stat and every non-absent rung key must be "
+            "one of the 21 vocabulary keys, and eff_num_key and eff_den_key are BOTH-OR-NEITHER; "
+            "(3) the tied set's OWN SHAPE as detail `tied` — width >= 2, every id a decimal "
+            "string, no duplicate, strictly ascending byte-lex, reading nothing from players; "
+            "(4) BUILDING THE PLAYER INDEX as detail `player` — a duplicate steamid64 in players "
+            "is refused here, and this group runs BEFORE the membership check below because the "
+            "membership check reads the index this one builds; (5) MEMBERSHIP as detail `tied` — "
+            "every tied member has a matching snapshot row; (6) every "
             "TIED player's achievement_ts as detail `player` — an integer >= -1, never absent. A "
             "rung key is ABSENT when it is null, omitted or the empty string, and an absent key is "
             "a deterministic SKIP, never a refusal and never a zero. Then, over survivors that each "

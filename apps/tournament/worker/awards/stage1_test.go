@@ -196,6 +196,7 @@ func ladderFor(inject bool) Ladder {
 var stage1CaseNames = []string{
 	// ⭐ Story 6.5 appended two rows, and adding them here is the deliberate update this pin asks
 	// for. They are the only rows in the file that INJECT a ladder.
+	"a-SHARED-co-winner-shelf-is-CLAMPED-to-table_max-after-the-minimum",
 	"a-SHARED-co-winner-weights-at-the-MINIMUM-shelf",
 	"an-absent-shelf-map-is-shelf-zero-for-everyone",
 	"an-injected-ladder-RESOLVES-a-tie-that-would-otherwise-refuse",
@@ -526,6 +527,146 @@ func TestVectorStage1RefusalKindsAreBothExercised(t *testing.T) {
 			t.Errorf("a refusal row carries detail %q, which no set of INPUTS can produce — the row "+
 				"is not testing what it claims", d)
 		}
+	}
+}
+
+// ⭐⭐ STAGE 1's TWO `internal` PORT GUARDS, DRIVEN AT LAST — BY A STUB `Ladder` (Story 6-5b, T10).
+//
+// Both suites injected either the REAL `FR29Ladder` or nothing at all, so the two guards on the
+// LADDER'S OWN OUTPUT were unreachable from any test in either language: `validateLadder` refuses an
+// empty tied member and `bestSurvivors` refuses an empty best set, so the shipped ladder cannot
+// produce either shape. But `Ladder` is an INJECTED PORT — 6.6 drives it, 6.9's verifier reimplements
+// it, and a third-party or mock implementation reaches exactly these two arms. That is the whole
+// reason the guards were written; nothing exercised them.
+//
+// What each one prevents, and why "unreachable" is not a reason to leave it undriven:
+//
+//   - `{shared, winners: []}` — a trophy awarded to NOBODY. Without the guard `out.Winners[0]` panics
+//     in Go and reads `undefined` in TypeScript: one input, two failure kinds across the seam.
+//   - `{winner, steamid64: ""}` — the empty id misses the shelf map, reads Go's zero value, and
+//     silently draws INDEX 0, the HEAVIEST luck weight. A plausible number, nothing red.
+//
+// ⚠ These are LOCAL rows, not vector rows, and deliberately so: a stub port is not a set of INPUTS,
+// so no row in `stage1-pick.json` can carry one — the same reason `internal` is declared and not
+// row-representable in the first place.
+type stubLadder struct{ out Outcome }
+
+func (s stubLadder) Resolve(Award, Outcome, []SnapshotPlayer) (Outcome, error) { return s.out, nil }
+
+func TestStage1RefusesAMalformedOutcomeFromAnInjectedLadderPort(t *testing.T) {
+	// A roster with a genuine two-way tie, so the ladder port is actually consulted.
+	tie := []SnapshotPlayer{
+		{SteamID64: "76561198000000011", RoundsPlayed: big.NewInt(30), Kills: big.NewInt(20),
+			Volume: map[string]*big.Int{"knife_kills": big.NewInt(7)}},
+		{SteamID64: "76561198000000022", RoundsPlayed: big.NewInt(30), Kills: big.NewInt(20),
+			Volume: map[string]*big.Int{"knife_kills": big.NewInt(7)}},
+	}
+	candidate := Stage1Candidate{
+		AwardID:  "aw-knife",
+		Priority: 1,
+		Award: Award{
+			DecidingStat: "knife_kills", Class: ClassVolume, Direction: DirectionMax,
+		},
+	}
+
+	cases := []struct {
+		name string
+		out  Outcome
+		why  string
+	}{
+		{
+			name: "a SHARED outcome with ZERO winners",
+			out:  Outcome{Kind: KindShared, Winners: []string{}, LadderExitStep: LadderExitShared},
+			why:  "a trophy awarded to nobody — `Winners[0]` panics without the guard",
+		},
+		{
+			name: "a WINNER outcome with an EMPTY steamid64",
+			out:  Outcome{Kind: KindWinner, SteamID64: "", LadderExitStep: LadderExitAchieved},
+			why:  "the empty id misses the shelf and silently draws the HEAVIEST weight",
+		},
+		{
+			// ⛔⛔ THE THIRD MALFORMED SHAPE, AND THE ONE THIS TABLE STOPPED ONE ELEMENT SHORT OF.
+			// The `winner` arm's comment has claimed to be "symmetric with the shared arm's
+			// empty-winners guard" since 6-4b; it was not — the shared arm checked only that the
+			// SLICE was non-empty, so an empty id among genuine co-winners read `shelf[""]`, got
+			// Go's zero value by the documented absent-is-shelf-0 rule, and `min` made 0 the index
+			// for the WHOLE co-win: table[0] = 100, the HEAVIEST luck weight. `min` is why this is
+			// worse than the single-winner case — one malformed id poisons the aggregate no matter
+			// what the other co-winners' real shelves hold.
+			// (Story 6-5b code review, 2026-08-06; Cuatro authorised the source edit at review.)
+			name: "a SHARED outcome with an EMPTY steamid64 among real co-winners",
+			out: Outcome{
+				Kind:           KindShared,
+				Winners:        []string{"", "76561198000000022"},
+				LadderExitStep: LadderExitShared,
+			},
+			why: "the empty id reads shelf 0 and `min` drags the WHOLE co-win to the heaviest weight",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := Stage1Weights(Stage1Input{
+				Candidates: []Stage1Candidate{candidate},
+				Players:    tie,
+				Shelf:      map[string]int{},
+				Table:      []int{100, 40, 16, 6, 2, 1},
+				LiveCount:  1,
+				Ladder:     stubLadder{out: tc.out},
+			})
+			if err == nil {
+				t.Fatalf("Stage 1 accepted %s — %s", tc.name, tc.why)
+			}
+			var invalid *Stage1InvalidError
+			if !errors.As(err, &invalid) {
+				t.Fatalf("refusal is not a *Stage1InvalidError: %v", err)
+			}
+			if invalid.Detail != DetailInternal {
+				t.Errorf("detail = %q, want %q: %v", invalid.Detail, DetailInternal, err)
+			}
+		})
+	}
+
+	// ⭐ THE CONTROL. A stub returning a WELL-FORMED outcome must be ACCEPTED, or the two assertions
+	// above would pass for a stub that is simply never consulted — the vacuity this whole pass exists
+	// to close.
+	weights, err := Stage1Weights(Stage1Input{
+		Candidates: []Stage1Candidate{candidate},
+		Players:    tie,
+		Shelf:      map[string]int{"76561198000000022": 1},
+		Table:      []int{100, 40, 16, 6, 2, 1},
+		LiveCount:  1,
+		Ladder: stubLadder{out: Outcome{
+			Kind: KindWinner, SteamID64: "76561198000000022", LadderExitStep: LadderExitAchieved,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("the control stub was refused: %v", err)
+	}
+	if len(weights) != 1 || weights[0] != 40 {
+		t.Errorf("the control stub's winner weighed %v, want [40] — shelf 1 indexes table[1]", weights)
+	}
+
+	// ⭐ THE SHARED-ARM CONTROL, for the same reason: without it the new empty-id row above could be
+	// satisfied by a `shared` arm that refused EVERY co-win. A well-formed pair must still weigh at
+	// the MINIMUM shelf across the co-winners — shelf 0 for the unlisted player, so table[0] = 100.
+	sharedWeights, err := Stage1Weights(Stage1Input{
+		Candidates: []Stage1Candidate{candidate},
+		Players:    tie,
+		Shelf:      map[string]int{"76561198000000022": 1},
+		Table:      []int{100, 40, 16, 6, 2, 1},
+		LiveCount:  1,
+		Ladder: stubLadder{out: Outcome{
+			Kind:           KindShared,
+			Winners:        []string{"76561198000000011", "76561198000000022"},
+			LadderExitStep: LadderExitShared,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("the well-formed SHARED control stub was refused: %v", err)
+	}
+	if len(sharedWeights) != 1 || sharedWeights[0] != 100 {
+		t.Errorf("the shared control weighed %v, want [100] — the MINIMUM co-winner shelf is 0", sharedWeights)
 	}
 }
 

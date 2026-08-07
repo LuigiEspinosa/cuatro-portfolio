@@ -170,6 +170,22 @@ export const MEASURED_EMPTY: ReadonlySet<StatKey> = new Set<StatKey>([
  * both halves of any pair would crown the same player twice by construction and hand Story 6.6's anti-sweep a
  * rigged catalog to damp. ⚠ These stay in the VOCABULARY (a 5v5 format separates them immediately) — they are
  * only barred from the SEED. Cuatro's call, 2026-08-03, on the Task-0 measurement.
+ *
+ * ⭐ RE-MEASURED 2026-08-05 (Story 6-5b, AC7) because `catalog.test.ts`'s clone table contradicted the third line
+ * above, listing `kast_pct` as a clone of `kills`. The re-run over the same 14 demos settles it with numbers:
+ * `kast_rounds == kills` on 28/28, `kast_pct == entry_success` EXACTLY (as rationals) on 28/28, `kast_pct == kills`
+ * exactly on 0/28, and `kast_pct` does NOT rank identically to `kills`. Operatively: of the SIX `kills` ties the
+ * corpus produces, `kast_pct` BREAKS ONE and `entry_frags` breaks NONE — because `kast_pct` is
+ * `kast_rounds / rounds_played` and `rounds_played` differs across matches. The line above was right; the test was
+ * wrong, and the test moved.
+ *
+ * ⚠ SIX IS NOT THE SAME COUNT AS THE FIVE ABOVE, and the two were adjacent with nothing saying so until the 6-5b
+ * code review asked. They measure different populations: the **five real ties** (`:91`, `:129`, `:429`) are the
+ * ties the TWELVE SEEDED AWARDS actually produce across all their deciding stats — the number rung 1 has to
+ * resolve in production. The **six `kills` ties** here are ties in the `kills` COLUMN alone, counted over all 28
+ * players irrespective of which awards decide on it. A `kills` tie is only one of the five when an award decides
+ * on `kills` and both tied players clear that award's floors. Neither number is wrong and neither supersedes the
+ * other; they answer different questions and are now labelled with the question each answers.
  */
 export const MEASURED_DEGENERATE: ReadonlySet<StatKey> = new Set<StatKey>([
   'entry_frags',

@@ -472,6 +472,25 @@ function weightOf(
           `award "${candidate.awardId}" resolved to a SHARED outcome with no winners`,
         );
       }
+      // ⛔⛔ AND THE PER-WINNER GUARD, WHICH IS WHAT MAKES THE SYMMETRY BELOW TRUE. The `winner`
+      // arm's comment has claimed to be "symmetric with the shared arm's empty-winners guard"
+      // since 6-4b; it was not, because this arm checked only that the ARRAY was non-empty. An
+      // injected `Ladder` returning `winners: ['', '…022']` sent `''` to `shelfOf`, which returns
+      // 0 by the documented absent-is-shelf-0 rule — and `min` then makes 0 the index for the
+      // WHOLE co-win, weighing it `table[0]`, the HEAVIEST luck weight.
+      //
+      // ⚠ `min` IS WHY THIS IS WORSE HERE THAN ON THE SINGLE-WINNER ARM: one malformed id poisons
+      // the aggregate no matter what the other co-winners' real shelves hold, so the failure is
+      // not confined to the corrupt entry. Unreachable through the shipped ladder
+      // (`validateLadder` refuses an empty tied member), reachable through any other
+      // implementation of the port — which is the entire reason the sibling guard exists.
+      // (Story 6-5b code review, 2026-08-06; Cuatro authorised the source edit at review.)
+      if (outcome.winners.some((sid) => sid === '')) {
+        throw new Stage1Error(
+          'internal',
+          `award "${candidate.awardId}" resolved to a SHARED outcome with an empty steamid64`,
+        );
+      }
       const tableMax = table.length - 1;
       // ⛔ `Object.hasOwn`, not a bare lookup, for the same prototype hazard `winner` guards below.
       const shelfOf = (sid: string): number =>

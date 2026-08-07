@@ -12,7 +12,7 @@ import type { Stage1Candidate, Stage1Input } from './stage1';
 // produce. See the guard-the-guards notes on the frozen-shelf and DECISION-F rows.
 import { fr29Ladder } from './ladder';
 import { resolveStage2 } from './stage2';
-import type { Award, SnapshotPlayer, StatValue } from './stage2';
+import type { Award, Ladder, Outcome, SnapshotPlayer, StatValue } from './stage2';
 
 // NOTE: `node:fs` is imported HERE, in the test. The banned-`node:` rule applies to the shipped
 // modules (scanned in prng.test.ts), not to the suite that reads the vector files off disk.
@@ -266,6 +266,7 @@ async function openStream(row: { seed_hex: string; label: string; label_source: 
 const CASE_NAMES = [
   // ⭐ Story 6.5 appended two rows, and adding them here is the deliberate update this pin asks
   // for. They are the only rows in the file that INJECT a ladder.
+  'a-SHARED-co-winner-shelf-is-CLAMPED-to-table_max-after-the-minimum',
   'a-SHARED-co-winner-weights-at-the-MINIMUM-shelf',
   'an-absent-shelf-map-is-shelf-zero-for-everyone',
   'an-injected-ladder-RESOLVES-a-tie-that-would-otherwise-refuse',
@@ -376,6 +377,124 @@ describe('stage1-pick.json conformance — §9.6 GATE 3', () => {
 });
 
 // ── the shared refusal list ────────────────────────────────────────────────────
+
+// ⭐⭐ STAGE 1's TWO `internal` PORT GUARDS, DRIVEN AT LAST — BY A STUB `Ladder` (Story 6-5b, T10).
+//
+// Both suites injected either the REAL `fr29Ladder` or nothing at all, so the two guards on the
+// LADDER'S OWN OUTPUT were unreachable from any test in either language: `validateLadder` refuses an
+// empty tied member and `bestSurvivors` refuses an empty best set, so the shipped ladder cannot
+// produce either shape. But `Ladder` is an INJECTED PORT — 6.6 drives it, 6.9's verifier
+// reimplements it, and a third-party or mock implementation reaches exactly these two arms. That is
+// the whole reason the guards were written; nothing exercised them.
+//
+//   - `{shared, winners: []}` — a trophy awarded to NOBODY. Without the guard `winners[0]` reads
+//     `undefined` here and PANICS in Go: one input, two failure kinds across the seam.
+//   - `{winner, steamid64: ''}` — the empty id misses the shelf map and silently draws INDEX 0, the
+//     HEAVIEST luck weight. A plausible number, nothing red.
+//
+// ⚠ LOCAL rows, not vector rows, and deliberately so: a stub port is not a set of INPUTS, so no row
+// in `stage1-pick.json` can carry one — the same reason `internal` is declared and not
+// row-representable in the first place.
+describe('an INJECTED ladder port that returns a malformed outcome is refused as `internal`', () => {
+  const tie: SnapshotPlayer[] = [
+    {
+      steamid64: '76561198000000011',
+      roundsPlayed: 30n,
+      kills: 20n,
+      idleDq: false,
+      volume: { knife_kills: 7n },
+      rate: {},
+    },
+    {
+      steamid64: '76561198000000022',
+      roundsPlayed: 30n,
+      kills: 20n,
+      idleDq: false,
+      volume: { knife_kills: 7n },
+      rate: {},
+    },
+  ];
+  const candidate: Stage1Candidate = {
+    awardId: 'aw-knife',
+    priority: 1,
+    award: {
+      decidingStat: 'knife_kills',
+      class: 'volume',
+      direction: 'max',
+      floorRounds: 0,
+      floorKills: 0,
+    },
+  };
+  const stub = (out: Outcome): Ladder => ({ resolve: () => out });
+  const run = (ladder: Ladder): number[] =>
+    stage1Weights({
+      candidates: [candidate],
+      players: tie,
+      shelf: { '76561198000000022': 1 },
+      table: [100, 40, 16, 6, 2, 1],
+      liveCount: 1,
+      ladder,
+    });
+
+  it.each([
+    ['a SHARED outcome with ZERO winners', { kind: 'shared', winners: [], ladderExitStep: 5 }],
+    ['a WINNER outcome with an EMPTY steamid64', { kind: 'winner', steamid64: '', ladderExitStep: 4 }],
+    // ⛔⛔ THE THIRD MALFORMED SHAPE, AND THE ONE THIS LIST STOPPED ONE ELEMENT SHORT OF. The
+    // `winner` arm's comment has claimed to be "symmetric with the shared arm's empty-winners
+    // guard" since 6-4b; it was not — the shared arm checked only that the ARRAY was non-empty, so
+    // an empty id among genuine co-winners went to `shelfOf('')`, returned 0 by the documented
+    // absent-is-shelf-0 rule, and `min` made 0 the index for the WHOLE co-win: `table[0] = 100`,
+    // the HEAVIEST luck weight. `min` is why this is worse than the single-winner case — one
+    // malformed id poisons the aggregate regardless of the other co-winners' real shelves.
+    // ⚠ The OTHER co-winner here holds shelf 1, so without the guard this returns a plausible
+    // `[100]` rather than the `[40]` the real shelf implies, and nothing is red.
+    // (Story 6-5b code review, 2026-08-06; Cuatro authorised the source edit at review.)
+    [
+      'a SHARED outcome with an EMPTY steamid64 among real co-winners',
+      { kind: 'shared', winners: ['', '76561198000000022'], ladderExitStep: 5 },
+    ],
+  ] as const)('refuses %s', (_name, out) => {
+    let thrown: unknown;
+    try {
+      run(stub(out as unknown as Outcome));
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown, 'Stage 1 accepted a malformed ladder outcome').toBeInstanceOf(Stage1Error);
+    expect((thrown as Stage1Error).detail).toBe('internal');
+  });
+
+  // ⭐ THE CONTROL. A stub returning a WELL-FORMED outcome must be ACCEPTED, or the two assertions
+  // above would pass for a stub that is simply never consulted — the vacuity this pass exists to
+  // close. Shelf 1 indexes table[1] = 40, so the number also proves the RESOLVED winner's shelf is
+  // what was looked up.
+  it('ACCEPTS a well-formed outcome from the same stub (the non-vacuity control)', () => {
+    expect(
+      run(
+        stub({
+          kind: 'winner',
+          steamid64: '76561198000000022',
+          ladderExitStep: 4,
+        } as unknown as Outcome),
+      ),
+    ).toEqual([40]);
+  });
+
+  // ⭐ THE SHARED-ARM CONTROL, for the same reason: without it the new empty-id row above could be
+  // satisfied by a `shared` arm that refused EVERY co-win. A well-formed pair must still weigh at
+  // the MINIMUM shelf across the co-winners — shelf 0 for the unlisted player, so table[0] = 100.
+  it('ACCEPTS a well-formed SHARED outcome, weighed at the MINIMUM co-winner shelf', () => {
+    expect(
+      run(
+        stub({
+          kind: 'shared',
+          winners: ['76561198000000011', '76561198000000022'],
+          ladderExitStep: 5,
+        } as unknown as Outcome),
+      ),
+    ).toEqual([100]);
+  });
+});
 
 describe('stage1-pick.json refusals', () => {
   it('declares exactly the refusal kinds this module implements, and exercises both', () => {

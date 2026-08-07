@@ -7336,6 +7336,379 @@
           "aw-knife"
         ]
       }
+    },
+    {
+      "name": "a-SHARED-co-winner-shelf-is-CLAMPED-to-table_max-after-the-minimum",
+      "note": "⭐ W8's CLAMP ON THE SHARED ARM, which no row exercised: the one shared row's co-winners sit at shelves 0 and 1, both comfortably inside the table, so `min(idx, len(table)-1)` was an identity there and the shared arm could have shipped WITHOUT a clamp at all — an index-out-of-range PANIC in Go and a silent `undefined as number` in TypeScript, which is the same one-input-two-failure-kinds split 6-4b's review recorded for the single- winner arm. The same tie, over a shelf where BOTH co-winners are past table_max: A at 7 and B at 9. The minimum is 7, the clamp brings it to 5, and the candidate weighs table[5] = 1 — the LIGHTEST weight, which is the right answer: two players carrying SEVEN and NINE trophies are exactly who FR-26 exists to damp, and the pair weighs as the EMPTIER of them (7) before the clamp, never as the fuller. ⚠ THE CLAMP COMES AFTER THE MINIMUM, and this row cannot tell the two orders apart (the clamp is monotone, so clamp(min(S)) == min(clamp(S))) — that distinction is recorded as having no observable difference rather than pinned by a row that cannot pin it.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/4",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 4
+      },
+      "weight_table": [
+        100,
+        40,
+        16,
+        6,
+        2,
+        1
+      ],
+      "shelf": {
+        "76561198000000011": 7,
+        "76561198000000022": 9
+      },
+      "ladder": true,
+      "live_count": 1,
+      "candidates": [
+        {
+          "award_id": "aw-knife",
+          "priority": 1,
+          "award": {
+            "deciding_stat": "knife_kills",
+            "class": "volume",
+            "direction": "max",
+            "floor_rounds": 0,
+            "floor_kills": 0
+          }
+        },
+        {
+          "award_id": "aw-hs",
+          "priority": 2,
+          "award": {
+            "deciding_stat": "hs_kills",
+            "class": "volume",
+            "direction": "max",
+            "floor_rounds": 0,
+            "floor_kills": 0
+          }
+        }
+      ],
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "7",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "7",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "7",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "-1"
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "7",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "7",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "7",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "-1"
+        },
+        {
+          "steamid64": "76561198000000033",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "3",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "3",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "3",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "-1"
+        }
+      ],
+      "expected": {
+        "weights": [
+          1,
+          100
+        ],
+        "total_weight": 101,
+        "draws": [
+          {
+            "n": 101,
+            "r": 71,
+            "bytes_consumed_after": 2
+          }
+        ],
+        "live": [
+          "aw-hs"
+        ]
+      }
     }
   ]
 }

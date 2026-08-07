@@ -58,9 +58,19 @@
  * shared co-winner — IS the deterministic terminal rung the blocker asked for. It is satisfied by
  * RECOGNISING the rung FR-29 already ends with rather than by adding a seeded one: a seeded rung
  * would make this a stream CONSUMER, moving every byte position after it and invalidating both the
- * measured ceremony and everything this verifier reproduces. The consequence is reported rather than
- * engineered away — on a 1v1 corpus where rung 4 provably cannot separate duel opponents
- * (0024:898-907), SHARED TROPHIES WILL BE COMMON. That is the design working.
+ * measured ceremony and everything this verifier reproduces.
+ *
+ * ⚠ THE EXPECTATION THIS DECISION SHIPPED WITH WAS MEASURED FALSE BY THE SAME STORY, AND THE
+ * CORRECTION IS RECORDED HERE RATHER THAN QUIETLY DROPPED (Story 6-5b, T9a — this used to read
+ * "SHARED TROPHIES WILL BE COMMON"). The MECHANISM is exactly as the blocker described: 14 of 14
+ * duel pairs carry a BYTE-IDENTICAL `achievement_ts`, because `approve_match` stamps one transaction
+ * timestamp on every row of a match (0024:898-907), so rung 4 provably cannot separate two players
+ * of one duel. But the OUTCOME is unreachable on this corpus: 0 of the 5 real ties contains a duel
+ * pair — every tie is assembled ACROSS matches, whose approvals are separate transactions — so rung
+ * 4 separates all five and 0 of 12 awards end SHARED. The reason is structural to 1v1 wingman: a
+ * player plays one match, so two opponents are never tied against each other on a tournament-wide
+ * total. The shared rung remains correct, necessary and UNTRIGGERED, and it is gated by vector rows
+ * rather than by production traffic. Re-measure before quoting either number for a 5v5 format.
  *
  * ⛔ DECISION K — DECISION E's carve-out is UPSTREAM and stays upstream. A `max` volume award whose
  * best value is 0 returns `no_awardable_value` and never becomes a tie, so the 27-way zero tie
@@ -93,7 +103,7 @@
  * the one-card-two-prize-chips reveal (6.10).
  */
 
-import { beatsBy, rungKey } from './stage2';
+import { Stage2Error, beatsBy, rungKey } from './stage2';
 import type {
   Award,
   AwardClass,
@@ -113,6 +123,34 @@ import type {
  * ⭐ IT IS NUMERICALLY THE SMALLEST VALUE IN THE COLUMN, which is the entire reason L9 exists.
  */
 export const ABSENT_ACHIEVEMENT_TS = -1n;
+
+/**
+ * The five exit steps, NAMED — the mirror of Go's `LadderExitSecondary … LadderExitShared`.
+ *
+ * ⭐ THEY EXIST SO THE VECTOR HAS SOMETHING TO BE PINNED AGAINST (Story 6-5b, T6). Go's suite asserts
+ * `exit_steps` against package constants by exact equality; this side transcribed `[1, 2, 3, 4, 5]`
+ * and `toBe(5)` as literals INTO THE TEST, so the vector was being compared with a copy of itself and
+ * a module that renumbered a rung reddened only where the literal happened to be written down. A
+ * transcribed value cannot pin the thing it was transcribed from — that is this directory's founding
+ * rule, applied to the one place it had not been.
+ *
+ * ⛔ NO BEHAVIOUR CHANGE: every one of these replaces a literal that was already there, at the same
+ * sites, with the same values.
+ */
+export const LADDER_EXIT_SECONDARY = 1;
+export const LADDER_EXIT_EFFICIENCY = 2;
+export const LADDER_EXIT_H2H = 3;
+export const LADDER_EXIT_ACHIEVED = 4;
+export const LADDER_EXIT_SHARED = 5;
+
+/** The five, in rung order — pinned against the vector's `exit_steps` by exact equality. */
+export const LADDER_EXIT_STEPS: readonly number[] = Object.freeze([
+  LADDER_EXIT_SECONDARY,
+  LADDER_EXIT_EFFICIENCY,
+  LADDER_EXIT_H2H,
+  LADDER_EXIT_ACHIEVED,
+  LADDER_EXIT_SHARED,
+]);
 
 /**
  * The 17/4 vocabulary split, transcribed from 0023's `award_deciding_stat_valid` CHECK (0023:89-96)
@@ -286,7 +324,7 @@ export function resolveLadder(
     const narrowed = bestSurvivors(survivors, direction, (sid) =>
       statValue(secondaryStat, container(byId.get(sid)?.secondary), `${sid}.secondary`),
     );
-    if (narrowed.length === 1) return ladderWinner(narrowed[0] as string, 1);
+    if (narrowed.length === 1) return ladderWinner(narrowed[0] as string, LADDER_EXIT_SECONDARY);
     // L3 — NARROW. The next rung runs over THESE, never over the original `tied`. A ladder that
     // re-read the full tied set at every rung is a VOTE, not a ladder, and it can crown a player
     // this rung already eliminated.
@@ -325,13 +363,13 @@ export function resolveLadder(
       const den = efficiencyPair(eff, denKey, `${sid}.efficiency`);
       return { class: 'rate', num: num.num * den.den, den: num.den * den.num } as const;
     });
-    if (narrowed.length === 1) return ladderWinner(narrowed[0] as string, 2);
+    if (narrowed.length === 1) return ladderWinner(narrowed[0] as string, LADDER_EXIT_EFFICIENCY);
     survivors = narrowed;
   }
 
   // ── RUNG 3 — the head-to-head STRICT dominator over the REMAINING set ────────────────────────
   const dominators = h2hDominators(award, survivors, byId);
-  if (dominators.length === 1) return ladderWinner(dominators[0] as string, 3);
+  if (dominators.length === 1) return ladderWinner(dominators[0] as string, LADDER_EXIT_H2H);
   if (dominators.length > 1) {
     // L7 — unreachable over an antisymmetric comparator; see the note above.
     throw new LadderError(
@@ -367,7 +405,7 @@ export function resolveLadder(
     const narrowed = present.filter(
       (sid) => (byId.get(sid) as SnapshotPlayer).achievementTs === earliest,
     );
-    if (narrowed.length === 1) return ladderWinner(narrowed[0] as string, 4);
+    if (narrowed.length === 1) return ladderWinner(narrowed[0] as string, LADDER_EXIT_ACHIEVED);
     survivors = narrowed;
   }
   // Every survivor absent -> SKIP with `survivors` unchanged. Not a refusal, and not a crash on an
@@ -378,7 +416,7 @@ export function resolveLadder(
   // The FULL surviving set, in the byte-lex order it has carried since `tied` — never the first,
   // never the lowest SteamID64. Returning one of them is the silent argmax AD-14 forbids, wearing
   // its last available hat. EXPERIENCE.md:123: "a designed outcome, never an error state".
-  return { kind: 'shared', winners: [...survivors], ladderExitStep: 5 };
+  return { kind: 'shared', winners: [...survivors], ladderExitStep: LADDER_EXIT_SHARED };
 }
 
 /**
@@ -574,8 +612,12 @@ function container<T>(value: Readonly<Record<string, T>> | undefined): Record<st
  * ⚠ AN ABSENT KEY IS A REFUSAL, NEVER A ZERO — the same doctrine 0024:918-923 states for an absent
  * h2h OPPONENT, applied one level in. The two absences mean different things and must stay
  * distinguishable: an absent OPPONENT is "they never met" (a skip, handled by the caller); an absent
- * STAT KEY inside a present opponent block is a CORRUPT ROW, because 0024 writes all 21 keys into
- * every block it writes at all.
+ * STAT KEY inside a present opponent block is a CORRUPT ROW, because the DATABASE writes all 21 keys
+ * into every block it writes at all (0024:667-683's `parts` CTE).
+ *
+ * ⚠ THE VECTOR'S FIXTURES DO NOT, AND THAT IS DELIBERATE (Story 6-5b, T9e): every `h2h` block in
+ * `ladder-resolve.json` carries exactly ONE key, precisely so that "the key this award reads is
+ * missing" stays an expressible INPUT with a row of its own.
  */
 function statValue(key: string, block: Record<string, StatValue>, where: string): StatValue {
   const klass = classOfStatKey(key);
@@ -686,7 +728,8 @@ const STEAMID64_RE = /^[0-9]+$/;
 /**
  * Validate in the PUBLISHED order and return the steamid64 -> player index.
  *
- * ⭐ THE ORDER IS PUBLISHED IN THE VECTOR'S `spec` STRING AND PINNED BY A ROW MALFORMED TWICE:
+ * ⭐ THE ORDER IS PUBLISHED IN THE VECTOR'S `spec` STRING AND PINNED BY ROWS MALFORMED TWICE. It is
+ * SIX groups, not four, and the details ALTERNATE:
  *
  *   1. `stage2` — the award's Stage-2 surface, re-run because {@link resolveLadder} is a PUBLIC
  *      entry point Story 6.6 drives directly over a REDUCED set, with no preceding Stage-2 call to
@@ -695,9 +738,21 @@ const STEAMID64_RE = /^[0-9]+$/;
  *      one of the 21 vocabulary keys (rung 3 reads `h2h[opp][decidingStat]` through the KEY's class,
  *      so membership is what makes the read decidable at all), and the efficiency pair is
  *      BOTH-OR-NEITHER (L2 — half a ratio is a half-configured rung, not a skip).
- *   3. `tied`   — width >= 2 (L11), no duplicate, strictly ascending byte-lex, every member has a
- *      snapshot row.
- *   4. `player` — every TIED player's `achievementTs`.
+ *   3. `tied`   — the tied set's OWN SHAPE ONLY: width >= 2 (L11), every id a decimal string, no
+ *      duplicate, strictly ascending byte-lex. Nothing here reads `players`.
+ *   4. `player` — BUILDING THE INDEX over `players`: an array, every row an object, no duplicate
+ *      steamid64.
+ *   5. `tied`   — MEMBERSHIP: every tied member has a row in the index just built.
+ *   6. `player` — every TIED player's `achievementTs`.
+ *
+ * ⭐⭐ GROUPS 4 AND 5 ARE WHY THIS SAYS SIX AND NOT FOUR. The duplicate-`players` scan is part of
+ * BUILDING the index, so it necessarily runs before the membership check that READS the index — and
+ * it refuses as `player`. An input carrying BOTH a duplicate `players` row AND a tied member with no
+ * row therefore refuses `player`, not `tied`. The published four-group text said the opposite and all
+ * three implementations disagreed with it; Cuatro's call at the Groups-2/3 code review (2026-08-04)
+ * was AMEND THE PUBLISHED SPEC, DO NOT MOVE THE CODE, and Story 6-5b did. Two vector refusal rows
+ * hold this text to the code — the single-defect duplicate-`players` row, and the row malformed
+ * across the `player`/`tied` boundary.
  *
  * ⚠ WHY `achievementTs` IS VALIDATED UP FRONT RATHER THAN AT RUNG 4. It is NEVER NULL in the
  * snapshot (0024:706), so a value below the sentinel is a CORRUPT SNAPSHOT rather than a
@@ -853,7 +908,17 @@ function validateLadder(
  */
 function validateStage2AwardSurface(award: Award): void {
   const refuse = (message: string): never => {
-    throw new LadderError('stage2', message);
+    // ⛔ THE PROPAGATION CARRIES A `Stage2Error` AS ITS `cause`, AND THAT IS THE MINIMUM CHANGE THAT
+    // MAKES THE GATE NON-VACUOUS (Story 6-5b, DECISION B(1), AC6). Go's `validateLadder` wraps the
+    // real Stage-2 error (`Cause: err`) so `errors.Is(err, ErrStage2)` still answers "where did this
+    // come from", and the Go suite asserts exactly that on every `stage2` refusal row. This side
+    // attached NO cause at all, so a TypeScript implementation that SWALLOWED the propagation and
+    // threw a fresh `LadderError('stage2', …)` passed every refusal row in the file — the assertion
+    // had nothing to look at. ⚠ The cause is CONSTRUCTED here rather than caught, because these four
+    // clauses are transcribed rather than imported (see the note above); constructing the same typed
+    // error `stage2.ts` would have thrown is what keeps the two halves of the seam symmetric.
+    const cause = new Stage2Error(message);
+    throw new LadderError('stage2', message, { cause });
   };
   if (typeof award.decidingStat !== 'string' || award.decidingStat === '') {
     refuse('award.decidingStat must be a non-empty string');
@@ -874,6 +939,13 @@ function validateStage2AwardSurface(award: Award): void {
     award.floorRounds < 0 ||
     award.floorKills < 0
   ) {
-    refuse("floors must be non-negative integers — 0023's award_floors_non_negative");
+    // ⚠ THE APOSTROPHE IS U+2019, MATCHING `stage2.ts:750` BYTE FOR BYTE. It was an ASCII `'` until
+    // the Story 6-5b code review measured the drift: this clause is TRANSCRIBED rather than
+    // imported, `refuse` constructs "the same typed error `stage2.ts` would have thrown" as its
+    // `cause`, and it was observably NOT the same error — one character apart. The transcription
+    // note claimed the four clauses were verbatim identical; three were. The test below now
+    // compares both halves against the REAL `stage2.ts` output for the same award rather than
+    // against a transcribed literal, so the next drift reddens instead of being narrated.
+    refuse('floors must be non-negative integers — 0023’s award_floors_non_negative');
   }
 }
