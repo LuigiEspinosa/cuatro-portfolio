@@ -812,8 +812,15 @@ The four corrections this section owed are settled here, with the numbers rather
   correct sentence is **"four genuine gaps, three harness defects, one recorded limitation, and three
   survivors that the four new rows killed together"**. Counted from the tree, not from memory.
 - **⚠ T7 IS A NUMBERING SLIP, AND THAT IS THE WHOLE ANSWER.** The findings above run T1, T2, T3, T4,
-  T5, T6, **T8**, T9, T10 — nine themes with no T7 among them. Grepping this file for `T7` returns
-  exactly ONE line: the closing paragraph that says T7 is still owed. No finding numbered T7 was ever
+  T5, T6, **T8**, T9, T10 — nine themes with no T7 among them, and that is the durable, re-derivable
+  form of the claim: scan this file for `**T<n> —**` and you get exactly those nine.
+  ⚠ **THE ORIGINAL SENTENCE HERE WAS A GREP COUNT, AND IT FALSIFIED ITSELF** — it read *"grepping this
+  file for `T7` returns exactly ONE line"*, which was true when written and stopped being true the
+  moment this paragraph was added, because the resolution names `T7` four more times. Corrected at
+  the 6-5b code review (2026-08-06), and worth recording rather than silently editing: it is T8's own
+  defect class — narration wearing a measurement's clothes — appearing inside the paragraph that
+  settles the numbering. A measurement whose result changes when you write it down was the wrong
+  measurement. No finding numbered T7 was ever
   written, folded or lost; the numbering simply skipped it. Recorded once, per Cuatro's answer to the
   story's Question 2, rather than manufacturing a tenth finding to fill the hole — a review whose
   numbering has a gap should say so and move on.
