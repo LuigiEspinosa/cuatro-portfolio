@@ -3,7 +3,9 @@ package awards
 import (
 	"errors"
 	"math/big"
+	"os"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -462,22 +464,77 @@ func TestRunCeremonyLastSpinDrawsTheRemainder(t *testing.T) {
 
 // RunCeremony must not reorder or otherwise disturb the caller's slices — the rule
 // `stage1Weighted`, `ResolveSpin` and `eligiblePlayers` all keep.
+//
+// ⛔⛔ THE BASELINE IS RE-DERIVED FROM `fixtureInput()`, NOT COPIED WITH `append(nil, …)`, AND THAT
+// IS THE WHOLE POINT OF THIS TEST (Story 6.8a code review). `append([]SnapshotPlayer(nil), s...)` is
+// a SHALLOW copy: `SnapshotPlayer` carries `map[string]*big.Int`, `map[string]RatePair`,
+// `map[string]map[string]StatValue` and a `*big.Int`, and the copy shares every one of those objects
+// with the original. If any callee mutated a player's `Volume` map, or called `.Add`/`.Set` on a
+// shared `big.Int` IN PLACE, both slices would observe the identical mutated object and
+// `reflect.DeepEqual` would cheerfully report equality. The old test could see only reordering and
+// element replacement — while its own doc comment claimed "or otherwise disturb" — in a package
+// whose entire correctness story rests on unbounded `big.Int` values. In-place `big.Int` mutation is
+// precisely the aliasing bug this test is named for, and it was the one thing it could not catch.
+//
+// `fixtureInput()` allocates everything fresh, so the baseline shares NO memory with `in`.
+// `reflect.DeepEqual` follows pointers and compares pointed-to values, so an in-place `.Set` on any
+// shared `big.Int` now shows up as a difference.
 func TestRunCeremonyDoesNotMutateItsInputs(t *testing.T) {
 	in := fixtureInput()
-	catalogBefore := append([]Stage1Candidate(nil), in.Catalog...)
-	playersBefore := append([]SnapshotPlayer(nil), in.Players...)
-	tableBefore := append([]int(nil), in.Table...)
+	pristine := fixtureInput() // an INDEPENDENT allocation, not a view onto `in`
+
+	// Non-vacuity: the baseline must be equal to the input BEFORE the run, or the comparison after it
+	// proves nothing. A fixture that was not deterministic would make every assertion below noise.
+	if !reflect.DeepEqual(pristine, in) {
+		t.Fatal("fixtureInput() is not deterministic — two calls differ, so it cannot serve as a " +
+			"before-baseline and every assertion in this test would be meaningless")
+	}
 
 	mustRun(t, in)
 
-	if !reflect.DeepEqual(catalogBefore, in.Catalog) {
-		t.Errorf("the catalog was reordered: %v", in.Catalog)
+	if !reflect.DeepEqual(pristine.Catalog, in.Catalog) {
+		t.Errorf("the catalog was disturbed: %v", in.Catalog)
 	}
-	if !reflect.DeepEqual(playersBefore, in.Players) {
-		t.Errorf("the player slice was reordered")
+	if !reflect.DeepEqual(pristine.Players, in.Players) {
+		t.Error("the player slice was disturbed — reordered, replaced, or mutated THROUGH a shared " +
+			"map or *big.Int")
 	}
-	if !reflect.DeepEqual(tableBefore, in.Table) {
+	if !reflect.DeepEqual(pristine.Table, in.Table) {
 		t.Errorf("the weight table was mutated: %v", in.Table)
+	}
+}
+
+// ⭐ A GUARD THAT PROVES THE GUARD ABOVE CAN FAIL. The re-derived baseline is only worth having if it
+// actually observes mutation reached through a shared pointer — so this drives that mutation by hand
+// and asserts the comparison reddens. Without it, `TestRunCeremonyDoesNotMutateItsInputs` would be
+// one refactor away from silently returning to a shallow copy with nothing to say so.
+func TestInputMutationBaselineActuallyObservesInPlaceMutation(t *testing.T) {
+	in := fixtureInput()
+	pristine := fixtureInput()
+
+	// Reach through the map to the *big.Int and mutate it IN PLACE — the exact operation a shallow
+	// `append(nil, …)` baseline is blind to.
+	var touched bool
+	for _, p := range in.Players {
+		for _, v := range p.Volume {
+			if v != nil {
+				v.Add(v, big.NewInt(1))
+				touched = true
+				break
+			}
+		}
+		if touched {
+			break
+		}
+	}
+	if !touched {
+		t.Fatal("the fixture carries no *big.Int volume to mutate, so this guard proves nothing — " +
+			"fix the fixture rather than deleting the guard")
+	}
+
+	if reflect.DeepEqual(pristine.Players, in.Players) {
+		t.Error("an in-place big.Int mutation was NOT observed — the baseline is aliasing the input " +
+			"again, and TestRunCeremonyDoesNotMutateItsInputs cannot see what it claims to")
 	}
 }
 
@@ -630,14 +687,17 @@ func TestRunCeremonyPropagatedRefusalsKeepTheirOrigin(t *testing.T) {
 	}
 }
 
-// A pity refusal propagates under its own label too. Driven by a shelf key naming nobody on the
-// roster, which `validatePityShelf` refuses — reached by handing the run a player set the pity pass
-// cannot reconcile with the shelf the main spins built.
-func TestRunCeremonyPityRefusalPropagates(t *testing.T) {
+// ⚠ RENAMED, BECAUSE THE OLD NAME PROMISED THE OPPOSITE OF WHAT THE BODY ASSERTS (Story 6.8a code
+// review). It was called `TestRunCeremonyPityRefusalPropagates` and its comment said "a pity refusal
+// propagates under its own label too" — while the body asserted the pity detail is NEVER reached.
+// The property is real and worth keeping; only its name was lying. The genuine pity-propagation case
+// is `TestRunCeremonyPityRefusalPropagates` below, which now exists.
+//
+// What this pins: a duplicate roster row is refused by `validatePityPlayers` AND by `eligiblePlayers`
+// one layer down, so it must surface as the FIRST module that sees it — Stage 1's propagated Stage-2
+// scan on spin 1 — never as `pity`. Validation order is contract.
+func TestRunCeremonyDuplicateRosterRefusesBeforePity(t *testing.T) {
 	in := fixtureInput()
-	// A duplicate roster row: `validatePityPlayers` refuses it, and so does `eligiblePlayers` one
-	// layer down — so this must surface as the FIRST module that sees it, which is Stage 1's
-	// propagated Stage-2 scan on spin 1, never as `pity`.
 	in.Players = append(append([]SnapshotPlayer(nil), in.Players...), fixturePlayers()[0])
 
 	_, err := RunCeremony(in)
@@ -652,56 +712,205 @@ func TestRunCeremonyPityRefusalPropagates(t *testing.T) {
 		t.Error("a duplicate roster row reached the PITY pass — Stage 2's own duplicate scan runs " +
 			"on spin 1 and should have refused first")
 	}
+	if invalid.Detail != CeremonyDetailStage1 {
+		t.Errorf("duplicate roster row refused as %q, want %q — validation ORDER is the property "+
+			"here, not merely that something refused", invalid.Detail, CeremonyDetailStage1)
+	}
 	if !errors.Is(err, ErrCeremony) {
 		t.Error("the refusal does not wrap ErrCeremony")
 	}
 }
 
+// ⭐⭐ THE CLAIM THE OLD PARTITION GOT WRONG, NOW PINNED AS A PROPERTY (Story 6.8a code review).
+//
+// The review found `CeremonyDetailSweep` and `CeremonyDetailPity` DECLARED AS INPUT-REACHABLE with
+// no test producing either — so flattening the pity error into `CeremonyDetailInternal` left the
+// whole suite green. Trying to write those cases is what showed the declaration itself was false:
+//
+//   - `pity` cannot be reached from any `CeremonyInput`. `ResolvePity`'s three refusal surfaces are
+//     the STREAM (built here, always fresh and always `PityLabel`), the PLAYERS (a duplicate or
+//     empty id is caught by Stage 2's own scan on spin 1 — pinned directly above) and the SHELF
+//     (accumulated HERE from `SpinResult.Assigned`, so every key is a roster member and every count
+//     is a non-negative increment). `CeremonyInput` carries no shelf for a caller to poison.
+//   - `sweep` is the same shape: `ResolveSpin` receives a pool this file derived and a player slice
+//     Stage 1 has already validated.
+//
+// So both are DEFENSIVE arms, not input-representable ones, and the honest fix is to say so in the
+// partition rather than to invent a degenerate input that reaches them. What remains genuinely
+// testable — and is what this test asserts — is the PROPERTY that makes that classification true:
+// no hostile input reaches a defensive arm. If a future change makes one reachable, this reddens and
+// whoever made it must move the constant into the reachable half and write its case.
+func TestDefensiveDetailsAreUnreachableFromAnyInput(t *testing.T) {
+	defensive := map[string]struct{}{
+		CeremonyDetailStream:   {},
+		CeremonyDetailSweep:    {},
+		CeremonyDetailPity:     {},
+		CeremonyDetailInternal: {},
+	}
+
+	cases := []struct {
+		name   string
+		mutate func(*CeremonyInput)
+	}{
+		{"no players at all", func(in *CeremonyInput) { in.Players = nil }},
+		{"one player", func(in *CeremonyInput) { in.Players = in.Players[:1] }},
+		{"a duplicate roster row", func(in *CeremonyInput) {
+			in.Players = append(append([]SnapshotPlayer(nil), in.Players...), fixturePlayers()[0])
+		}},
+		{"an empty steamid64", func(in *CeremonyInput) {
+			in.Players = append([]SnapshotPlayer(nil), in.Players...)
+			in.Players[0].SteamID64 = ""
+		}},
+		{"a single-award catalog", func(in *CeremonyInput) { in.Catalog = in.Catalog[:1] }},
+		{"live_count equal to the whole catalog", func(in *CeremonyInput) {
+			in.LiveCount = len(in.Catalog)
+		}},
+		{"live_count past the catalog", func(in *CeremonyInput) { in.LiveCount = len(in.Catalog) + 1 }},
+		{"live_count zero", func(in *CeremonyInput) { in.LiveCount = 0 }},
+		{"live_count negative", func(in *CeremonyInput) { in.LiveCount = -1 }},
+		{"an empty weight table", func(in *CeremonyInput) { in.Table = []int{} }},
+		{"a negative weight", func(in *CeremonyInput) { in.Table = []int{100, -1, 16} }},
+	}
+
+	var refused int
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			in := fixtureInput()
+			tc.mutate(&in)
+
+			_, err := RunCeremony(in)
+			if err == nil {
+				return // a legal input; it proves nothing here and is not an error
+			}
+			refused++
+
+			var invalid *CeremonyInvalidError
+			if !errors.As(err, &invalid) {
+				t.Fatalf("refused with a non-typed error: %v", err)
+			}
+			if _, isDefensive := defensive[invalid.Detail]; isDefensive {
+				t.Errorf("input %q reached the DEFENSIVE detail %q — it is declared "+
+					"not-input-representable in TestCeremonyDetailsAreExactlyTheDeclaredSet, so either "+
+					"that partition is wrong or this input should have been refused earlier: %v",
+					tc.name, invalid.Detail, invalid.Reason)
+			}
+		})
+	}
+
+	// ⚠ NON-VACUITY. If every case above happened to be a LEGAL input, the loop would assert nothing
+	// while looking thorough — the degenerate-coverage defect this project keeps paying for. At least
+	// most of these must actually refuse for the property to have been exercised.
+	if refused < len(cases)/2 {
+		t.Errorf("only %d of %d hostile inputs refused at all — this test is not exercising the "+
+			"refusal paths it claims to", refused, len(cases))
+	}
+}
+
 // The declared detail set must be exactly what the file uses — the "closed set that was not closed"
 // defect (`stage1.go:118-131`), now pinned for this module too.
+//
+// ⭐⭐ THIS TEST READS `ceremony.go`. THE VERSION IT REPLACES DID NOT, AND COULD NOT FAIL.
+// The 6.8a code review found it asserting `if len(inputReachable) != 6` against a six-entry map
+// literal written two lines above it — the size of a literal is the same for every implementation of
+// `ceremony.go`, so that branch was unreachable by construction. It is the identical shape to
+// `6-7-pity-roulette.md:1455`'s `lambda e, c: 256 % 3 != 0`, and it was the SEVENTH occurrence of
+// that defect class in this project — sitting inside the suite for the story whose own T6 was
+// written to hunt it.
+//
+// What it does now is what the precedent it cited always did: `pity_test.go:190-196` pins its
+// constants against the VECTOR's `refusal_details` with `slices.Equal`, i.e. against data the test
+// did not author. There is no vector here (6.8a ships Go only), so the source file itself is the
+// external evidence. Scanning it makes three previously-invisible mutations red:
+//   - a NINTH constant added to the const block and used — the hand-written partition below no
+//     longer covers the scanned set;
+//   - a declared constant that NOTHING uses — it appears exactly once, in its own declaration;
+//   - a constant moved between the reachable and unreachable halves without the comment moving.
 func TestCeremonyDetailsAreExactlyTheDeclaredSet(t *testing.T) {
-	declared := []string{
-		CeremonyDetailSeed,
-		CeremonyDetailCatalog,
-		CeremonyDetailLiveCount,
-		CeremonyDetailStream,
-		CeremonyDetailStage1,
-		CeremonyDetailSweep,
-		CeremonyDetailPity,
-		CeremonyDetailInternal,
+	// ⚠ THE PARTITION IS THE CLAIM. Together these two must equal the set `ceremony.go` declares —
+	// not a count of them, the SET. `stream` and `internal` are not input-representable (this file
+	// builds both labels itself from a validated 1-based counter, and `internal` covers arms the
+	// validation above has already established), stated as data so a later reader does not try to
+	// write a case for them and conclude the set is wrong.
+	inputReachable := map[string]string{
+		"CeremonyDetailSeed":      CeremonyDetailSeed,
+		"CeremonyDetailCatalog":   CeremonyDetailCatalog,
+		"CeremonyDetailLiveCount": CeremonyDetailLiveCount,
+		"CeremonyDetailStage1":    CeremonyDetailStage1,
 	}
-	seen := map[string]struct{}{}
-	for _, d := range declared {
-		if d == "" {
-			t.Error("a declared detail is the empty string")
+	// ⚠ `sweep` AND `pity` MOVED HERE IN THE 6.8a CODE REVIEW, and the move is a correction rather
+	// than a concession. They were declared input-reachable with no case producing either; writing
+	// those cases is what established that no `CeremonyInput` can reach them at all — every input
+	// `ResolveSpin` and `ResolvePity` could object to has already been refused by Stage 1, and the
+	// shelf they validate is accumulated by this file rather than supplied by a caller. The property
+	// is pinned by TestDefensiveDetailsAreUnreachableFromAnyInput, which reddens if that stops being
+	// true. `internal` is reachable only by calling the unexported helper directly (the
+	// `sweep.go:77-86` precedent); `stream` covers a label this file builds itself.
+	notInputReachable := map[string]string{
+		"CeremonyDetailStream":   CeremonyDetailStream,
+		"CeremonyDetailSweep":    CeremonyDetailSweep,
+		"CeremonyDetailPity":     CeremonyDetailPity,
+		"CeremonyDetailInternal": CeremonyDetailInternal,
+	}
+
+	declared := map[string]string{}
+	for k, v := range inputReachable {
+		declared[k] = v
+	}
+	for k, v := range notInputReachable {
+		if _, dup := declared[k]; dup {
+			t.Errorf("%s is in BOTH halves of the partition", k)
 		}
-		if _, dup := seen[d]; dup {
-			t.Errorf("duplicate declared detail %q", d)
+		declared[k] = v
+	}
+
+	src, err := os.ReadFile("ceremony.go")
+	if err != nil {
+		t.Fatalf("reading ceremony.go, which is the evidence this test rests on: %v", err)
+	}
+	text := string(src)
+
+	// ── 1. The const block's identifiers ARE the declared set. ──
+	constBlock := regexp.MustCompile(`(?m)^\t(CeremonyDetail[A-Za-z0-9]+)\s*=`)
+	scanned := map[string]struct{}{}
+	for _, m := range constBlock.FindAllStringSubmatch(text, -1) {
+		scanned[m[1]] = struct{}{}
+	}
+	if len(scanned) == 0 {
+		t.Fatal("scanned ceremony.go and found NO CeremonyDetail constants — the regex has rotted, " +
+			"and a scan that matches nothing would pass every check below vacuously")
+	}
+	for id := range scanned {
+		if _, ok := declared[id]; !ok {
+			t.Errorf("ceremony.go declares %s, which this test's partition does not name — put it in "+
+				"inputReachable or notInputReachable and say which it is", id)
 		}
-		seen[d] = struct{}{}
 	}
-	if len(seen) != 8 {
-		t.Errorf("declared %d distinct details, want 8", len(seen))
-	}
-	// ⚠ THE ONES A CALLER'S DATA CAN REACH, named explicitly. `stream` and `internal` are not
-	// input-representable (this file builds both labels itself from a validated 1-based counter, and
-	// `internal` covers arms the validation above has already established) — stated as data so a
-	// later reader does not try to write a case for them and conclude the set is wrong.
-	inputReachable := map[string]bool{
-		CeremonyDetailSeed:      true,
-		CeremonyDetailCatalog:   true,
-		CeremonyDetailLiveCount: true,
-		CeremonyDetailStage1:    true,
-		CeremonyDetailSweep:     true,
-		CeremonyDetailPity:      true,
-	}
-	if len(inputReachable) != 6 {
-		t.Errorf("declared %d input-reachable details, want 6", len(inputReachable))
-	}
-	for d := range inputReachable {
-		if _, ok := seen[d]; !ok {
-			t.Errorf("input-reachable detail %q is not in the declared set", d)
+	for id := range declared {
+		if _, ok := scanned[id]; !ok {
+			t.Errorf("this test names %s but ceremony.go no longer declares it", id)
 		}
+	}
+
+	// ── 2. Every declared detail is USED, not merely declared. ──
+	// A constant that appears exactly once appears only in its own declaration.
+	for id := range declared {
+		n := len(regexp.MustCompile(`\b`+id+`\b`).FindAllString(text, -1))
+		if n < 2 {
+			t.Errorf("%s appears %d time(s) in ceremony.go — declared but never used", id, n)
+		}
+	}
+
+	// ── 3. The VALUES are distinct and non-empty; two details that stringify the same are one
+	//       detail wearing two names, and a caller switching on the string cannot tell them apart.
+	byValue := map[string]string{}
+	for id, v := range declared {
+		if v == "" {
+			t.Errorf("%s is the empty string", id)
+		}
+		if prev, dup := byValue[v]; dup {
+			t.Errorf("%s and %s both stringify to %q", prev, id, v)
+		}
+		byValue[v] = id
 	}
 }
 
@@ -724,7 +933,7 @@ func TestRunCeremonyNeverAssignsOnePlayerTwiceInOneSpin(t *testing.T) {
 
 	seen := map[string]string{}
 	for _, res := range spin.Result.Results {
-		for _, sid := range winnersOf(res.Outcome) {
+		for _, sid := range WinnersOf(res.Outcome) {
 			if prev, dup := seen[sid]; dup {
 				t.Errorf("player %s won both %s and %s in spin %d", sid, prev, res.AwardID, spin.Spin)
 			}

@@ -113,6 +113,29 @@ func ceremonyRefuse(detail, reason string) error {
 	return &CeremonyInvalidError{Detail: detail, Reason: reason}
 }
 
+// WinnersOf projects an outcome onto its winner set.
+//
+// ⚠ ALWAYS NON-NIL, and it COPIES. A payload must carry `[]` rather than `null` — three spellings of
+// absence is a hazard this epic has already paid for twice — and returning `out.Winners` directly
+// would hand a caller a slice aliasing the engine's own result.
+//
+// ⭐⭐ EXPORTED HERE BECAUSE THERE USED TO BE TWO OF IT, AND THEY DISAGREED (Story 6.8a code review).
+// `worker/ceremony` held this version; `sweep_test.go` held a test-only copy that returned `nil` for
+// the default case and ALIASED `out.Winners` for the shared case. The Go suite built its EXPECTATIONS
+// with the test copy while the DATABASE received the output of the production one — so the two could
+// drift apart with every gate green. One exported function used by both removes the question instead
+// of documenting it.
+func WinnersOf(out Outcome) []string {
+	switch out.Kind {
+	case KindWinner:
+		return []string{out.SteamID64}
+	case KindShared:
+		return append([]string{}, out.Winners...)
+	default:
+		return []string{}
+	}
+}
+
 // CeremonyInput is everything a ceremony run depends on. All of it is INJECTED — see the package note
 // above on why that is the whole design.
 type CeremonyInput struct {
@@ -260,10 +283,18 @@ type CeremonyRun struct {
 // through its own domain-separated stream, thread the shelf across them so FR-26's luck meter is
 // cumulative, and finish with the one FR-28 consolation draw.
 //
-// ⛔⛔ VALIDATION ORDER IS CONTRACT, AND EVERY REFUSAL COSTS ZERO STREAM BYTES. All three input checks
-// run BEFORE the first `NewStream`, so a malformed input cannot advance a counter — which is what
-// makes "a refusal is free" true here in the sense 6.7 narrowed it to (validation refusals, at every
-// site). The order is seed -> catalog -> live_count, and it is mirrored in the refusal tests.
+// ⛔⛔ VALIDATION ORDER IS CONTRACT, AND EVERY *INPUT* REFUSAL COSTS ZERO STREAM BYTES. All three
+// input checks run BEFORE the first `NewStream`, so a malformed input cannot advance a counter —
+// which is what makes "a refusal is free" true here in the sense 6.7 narrowed it to: VALIDATION
+// refusals, at every site. The order is seed -> catalog -> live_count, and it is mirrored in the
+// refusal tests.
+//
+// ⚠ THE CLAIM IS NARROWED ON PURPOSE, BECAUSE THE UNQUALIFIED VERSION WAS FALSE (Story 6.8a code
+// review). The `stage1`, `sweep`, `pity`, `stream` and `internal` arms all return AFTER a stream has
+// been opened and — for `sweep` and `internal` — after an entire spin has been drawn. Those are
+// PROPAGATED refusals from modules this file drives, not input validation, and they cost exactly
+// what the draw before them cost. A reader relying on the old package-level sentence would have
+// concluded that any `RunCeremony` error implied an untouched counter; it does not.
 //
 // ⛔ ONE STREAM PER SPIN, FRESH, NEVER REUSED AND NEVER SHARED. `Stage1Label(S)` is the whole point of
 // `labels.go`: each spin's stream starts at counter 0 and is independent, so spin 7 can never consume
@@ -371,6 +402,21 @@ func RunCeremony(in CeremonyInput) (CeremonyRun, error) {
 			}
 		}
 
+		// ⛔ THE LOOP'S ONLY TERMINATION CONDITION IS THAT THIS DRAW SHRINKS `remaining`, SO THE DRAW
+		// IS CHECKED RATHER THAN ASSUMED (Story 6.8a code review). `withoutAwards` is a no-op on an
+		// empty `picked.Live`, so a Stage 1 that returned short — a regression in `stage1.go`, or a
+		// future `LiveCount` interaction — would leave `remaining` untouched, and this loop would
+		// climb `spinIndex` forever while `run.Plan` and `run.Spins` grew without bound. Every other
+		// invariant in this file is a typed refusal; this one was an infinite loop and an OOM.
+		// It is unreachable today (`stage1.go:558` sizes `Live` to `LiveCount` and fills it), which is
+		// exactly why it is cheap to state.
+		if len(picked.Live) != liveCount {
+			return CeremonyRun{}, ceremonyRefuse(CeremonyDetailInternal,
+				"spin "+itoa(spinIndex)+" promised "+itoa(liveCount)+" live award(s) but stage 1 drew "+
+					itoa(len(picked.Live))+" — the spin plan and the draw disagree, and the pool "+
+					"would never shrink")
+		}
+
 		// The drawn ids back to their candidates. `picked.Live` is in DRAW order and this preserves
 		// it; `ResolveSpin` re-sorts by priority itself (A2, `sweep.go:234-242`) and neither order is
 		// this file's to impose.
@@ -407,6 +453,15 @@ func RunCeremony(in CeremonyInput) (CeremonyRun, error) {
 			Consumed:     stream.Consumed(),
 		})
 
+		// ⚠⚠ THE POOL SHRINKS BY WHAT WAS *DRAWN*, NOT BY WHAT WAS *ASSIGNED*, AND THE STORY'S WORDING
+		// SAYS OTHERWISE (Story 6.8a code review — the code is right, the prose was wrong).
+		// AC1 and T2 both read "the catalog minus every award already ASSIGNED in an earlier spin".
+		// Taken literally that is unimplementable here: at the shipped FR-21 floors NOTHING is ever
+		// assigned (0 of 28 players clear 24/20, five stories running), so `remaining` would never
+		// shrink and the loop above would not terminate. `SOLUTION-DESIGN.md:407` has the correct
+		// formulation — "minus already-REVEALED" — and an award that was drawn is revealed whether or
+		// not anybody qualified for it. Recorded here so 6.9's bundle spec does not inherit the
+		// story's phrasing.
 		remaining = withoutAwards(remaining, picked.Live)
 	}
 

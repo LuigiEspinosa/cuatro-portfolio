@@ -3,7 +3,9 @@ package ceremony
 import (
 	"encoding/json"
 	"math/big"
+	"os"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"cs-tournament/worker/awards"
@@ -144,6 +146,66 @@ func TestBuildPayloadRendersPityAsOneSpinPerWinner(t *testing.T) {
 	}
 }
 
+// ⭐⭐ THE PITY BYTE COUNT IS ATTRIBUTED ONCE, NOT STAMPED ON EVERY CONSOLATION SPIN (Story 6.8a code
+// review). FR-28 draws the WHOLE consolation order from ONE stream keyed by `PityLabel`, so there is
+// no per-pity-spin byte count to report. `BuildPayload` used to copy `run.Pity.BytesConsumed` onto
+// every one of the N pity spins, which made `sum(bytes_consumed)` over the payload report N x the
+// real figure — 28 x 27 = 756 bytes for a 27-byte stream in the shipped corpus — and any consumer
+// totalling the column would have believed it.
+//
+// The property asserted is the one that matters to a verifier: the SUM over the whole payload is the
+// whole ceremony's true byte cost.
+func TestBuildPayloadAttributesThePityStreamExactlyOnce(t *testing.T) {
+	run := sampleRun()
+	got := BuildPayload(run)
+
+	// Non-vacuity: this proves nothing unless the fixture has MORE THAN ONE pity spin and the pity
+	// stream actually consumed something. With one pity spin, "once" and "on every one" coincide.
+	if len(run.Pity.RevealOrder) < 2 {
+		t.Fatalf("the fixture has %d pity spin(s) — with fewer than 2, stamping the total on every "+
+			"spin and attributing it once are indistinguishable", len(run.Pity.RevealOrder))
+	}
+	if run.Pity.BytesConsumed == 0 {
+		t.Fatal("the fixture's pity stream consumed 0 bytes, so every sum below is 0 and the " +
+			"assertions cannot fail")
+	}
+
+	pity := got.Spins[len(run.Spins):]
+	var pitySum uint64
+	nonZero := 0
+	for _, s := range pity {
+		pitySum += s.BytesConsumed
+		if s.BytesConsumed != 0 {
+			nonZero++
+		}
+	}
+	if pitySum != run.Pity.BytesConsumed {
+		t.Errorf("the pity spins report %d bytes in total; the pity stream consumed %d",
+			pitySum, run.Pity.BytesConsumed)
+	}
+	if nonZero != 1 {
+		t.Errorf("%d pity spins carry a non-zero byte count, want exactly 1 — the stream is opened "+
+			"once and belongs to the spin that opened it", nonZero)
+	}
+	if pity[0].BytesConsumed != run.Pity.BytesConsumed {
+		t.Errorf("the FIRST pity spin reports %d bytes, want the whole stream's %d",
+			pity[0].BytesConsumed, run.Pity.BytesConsumed)
+	}
+
+	// And the whole-payload total is main + pity, re-derived from the run rather than restated.
+	var wantTotal, gotTotal uint64
+	for _, s := range run.Spins {
+		wantTotal += s.Consumed
+	}
+	wantTotal += run.Pity.BytesConsumed
+	for _, s := range got.Spins {
+		gotTotal += s.BytesConsumed
+	}
+	if gotTotal != wantTotal {
+		t.Errorf("payload totals %d bytes; the run consumed %d", gotTotal, wantTotal)
+	}
+}
+
 // ⛔ THE ENGINE'S 0 SENTINEL IS SENT RAW. The `nullif(v, 0)` mapping belongs at ONE seam — the RPC —
 // and doing it here as well would make two places responsible for one rule (`0025:162-174`).
 func TestBuildPayloadSendsTheLadderExitStepRaw(t *testing.T) {
@@ -256,24 +318,61 @@ func TestBuildPayloadJSONKeysAreTheOnesTheRPCReads(t *testing.T) {
 // PersistReasons must be exactly the set migration 0027 can RETURN — the closed-set discipline
 // `stage1.go:118-131` established, applied to the caller. ⛔ `write_failed` is NOT a member: it is
 // what an UNRECOGNISED reason becomes, so including it would make the fail-closed branch unreachable.
-func TestPersistReasonsIsTheDeclaredSetAndExcludesWriteFailed(t *testing.T) {
-	want := []string{
-		"no_ceremony", "ceremony_not_locked", "already_persisted", "snapshot_missing",
-		"seed_missing", "seed_mismatch", "no_spins", "no_spin_plan", "spin_index_missing",
-		"spin_index_not_dense", "invalid_spin_kind", "unknown_award", "unknown_player",
-		"invalid_outcome_kind", "outcome_kind_tie", "winner_cardinality", "pity_award_shape",
-		"invalid_ladder_exit_step",
+//
+// ⭐⭐ THIS TEST READS THE MIGRATION. THE VERSION IT REPLACES COMPARED THE MAP TO A HAND-COPIED
+// DUPLICATE OF ITSELF (Story 6.8a code review). A `want` slice transcribed from `PersistReasons` in
+// the same commit can catch a later edit to ONE of the two copies, but it can never catch the thing
+// that actually matters and the thing this set exists for: migration 0027 returning a reason the Go
+// side does not carry. When that happens `Persist` fails closed and reports `write_failed` for a
+// perfectly ordinary refusal, and the admin loses the reason entirely — which is exactly the failure
+// THE BAR hit in this story with `seed_mismatch`.
+//
+// The evidence is now the migration's own `'reason', '<snake_case>'` literals. The two artifacts are
+// written in different languages by different tools, so neither can be quietly edited into agreement
+// with the other.
+func TestPersistReasonsIsExactlyWhatMigration0027Returns(t *testing.T) {
+	const migration = "../../supabase/migrations/0027_ceremony_run.sql"
+
+	src, err := os.ReadFile(migration)
+	if err != nil {
+		t.Fatalf("reading %s, which is the evidence this test rests on: %v", migration, err)
 	}
-	if len(PersistReasons) != len(want) {
-		t.Errorf("PersistReasons holds %d reasons, want %d", len(PersistReasons), len(want))
+
+	// `jsonb_build_object('ok', false, 'reason', '<snake_case>', …)` — the one shape 0027 uses for
+	// every RETURNED refusal. A RAISE is not a reason and is deliberately not matched.
+	re := regexp.MustCompile(`'reason',\s*'([a-z0-9_]+)'`)
+	found := map[string]struct{}{}
+	for _, m := range re.FindAllStringSubmatch(string(src), -1) {
+		found[m[1]] = struct{}{}
 	}
-	for _, r := range want {
+
+	// ⚠ NON-VACUITY, FIRST. A regex that matched nothing would make every comparison below pass
+	// trivially — a scan that finds no evidence must fail loudly, not report agreement.
+	if len(found) == 0 {
+		t.Fatalf("scanned %s and found NO returned reasons — the regex has rotted, and an empty "+
+			"scan would make this whole test vacuous", migration)
+	}
+
+	for r := range found {
 		if _, ok := PersistReasons[r]; !ok {
-			t.Errorf("PersistReasons is missing %q", r)
+			t.Errorf("migration 0027 can return %q and PersistReasons does not carry it — Persist "+
+				"would fail closed on a legitimate refusal and report %q instead", r, ReasonWriteFailed)
 		}
 	}
+	for r := range PersistReasons {
+		if _, ok := found[r]; !ok {
+			t.Errorf("PersistReasons declares %q but migration 0027 never returns it — a reason the "+
+				"writer cannot produce is a reason the caller will never see", r)
+		}
+	}
+
 	if _, bad := PersistReasons[ReasonWriteFailed]; bad {
 		t.Error("write_failed is IN PersistReasons — it is the value an unrecognised reason becomes, " +
 			"so treating it as declared makes the fail-closed branch unreachable")
+	}
+	// And it must not be something the migration returns either, for the same reason.
+	if _, bad := found[ReasonWriteFailed]; bad {
+		t.Errorf("migration 0027 returns %q, which is the caller's fail-closed sentinel and must "+
+			"never be a real refusal reason", ReasonWriteFailed)
 	}
 }

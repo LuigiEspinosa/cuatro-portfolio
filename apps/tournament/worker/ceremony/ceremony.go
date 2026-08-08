@@ -165,13 +165,18 @@ type ratePair struct {
 // rounds past 2^53 — the exact class of defect `.Float64()` and `.Int64()` are banned in the producer
 // for. `json.Number` keeps the text and `SetString` reads it exactly.
 func loadSnapshot(ctx context.Context, pool *pgxpool.Pool, snapshotID int64) ([]awards.SnapshotPlayer, error) {
+	// ⚠ THE ABSENT SENTINEL IS BOUND FROM THE CONSTANT, NOT SPELLED `-1` IN THE SQL. It used to be a
+	// bare literal in this string, where no compiler and no test could relate it to
+	// `awards.AbsentAchievementTS` — so if the constant ever moved, this loader would keep emitting
+	// the old value, FR-29 rung 4 would start separating players on something that is no longer the
+	// sentinel, and the ceremony's tie-breaks would change with nothing red.
 	rows, err := pool.Query(ctx, `
 		select r.steamid64, r.stats_int, coalesce(r.h2h, '{}'::jsonb),
-		       coalesce(r.achievement_ts, -1), coalesce(r.rounds_played, 0),
+		       coalesce(r.achievement_ts, $2), coalesce(r.rounds_played, 0),
 		       coalesce(r.kills, 0), coalesce(r.idle_dq, false)
 		  from public.stat_snapshot_row r
 		 where r.snapshot_id = $1
-		 order by r.steamid64`, snapshotID)
+		 order by r.steamid64`, snapshotID, int64(awards.AbsentAchievementTS))
 	if err != nil {
 		return nil, fmt.Errorf("reading snapshot %d: %w", snapshotID, err)
 	}
@@ -369,7 +374,7 @@ func BuildPayload(run awards.CeremonyRun) Payload {
 				AwardID:           &awardID,
 				OutcomeKind:       string(res.Outcome.Kind),
 				TieLadderExitStep: res.Outcome.LadderExitStep,
-				Winners:           winnersOf(res.Outcome),
+				Winners:           awards.WinnersOf(res.Outcome),
 			}
 			applyDecidingValue(&pr, res.Outcome.DecidingValue)
 			ps.Results = append(ps.Results, pr)
@@ -378,14 +383,26 @@ func BuildPayload(run awards.CeremonyRun) Payload {
 	}
 
 	// The consolation spins continue the main sequence, in RevealOrder.
+	//
+	// ⚠ THE PITY BYTE COUNT LANDS ON THE FIRST CONSOLATION SPIN AND ZERO ON THE REST, AND THE
+	// ALTERNATIVE WAS WRONG (Story 6.8a code review). FR-28 draws the WHOLE consolation order from
+	// ONE stream keyed by `PityLabel`, so there is no such thing as a per-pity-spin byte count.
+	// Stamping every one of them with `run.Pity.BytesConsumed` — as this did — made
+	// `sum(bytes_consumed)` report 28 x 27 = 756 bytes for a 27-byte stream, and any consumer
+	// totalling the column would have believed it. Attributing the whole stream to the spin that
+	// opened it keeps the sum honest: 22 main + 27 pity = 49, which is the whole-ceremony figure.
 	next := len(run.Spins)
-	for _, sid := range run.Pity.RevealOrder {
+	for i, sid := range run.Pity.RevealOrder {
 		next++
+		pityBytes := uint64(0)
+		if i == 0 {
+			pityBytes = run.Pity.BytesConsumed
+		}
 		p.Spins = append(p.Spins, PayloadSpin{
 			SpinIndex:     next,
 			Kind:          "pity",
 			Label:         run.PityLabel,
-			BytesConsumed: run.Pity.BytesConsumed,
+			BytesConsumed: pityBytes,
 			LiveAwardIDs:  []string{},
 			Results: []PayloadResult{{
 				// ⛔ NIL, NOT THE EMPTY STRING. FR-28's consolation prize is not a category: it has no
@@ -412,19 +429,6 @@ func applyDecidingValue(pr *PayloadResult, dv awards.DecidingValue) {
 			n, d := dv.Num.String(), dv.Den.String()
 			pr.DecidingNum, pr.DecidingDen = &n, &d
 		}
-	}
-}
-
-// winnersOf projects an outcome onto its winner set. ⚠ ALWAYS NON-NIL, so the Payload carries `[]`
-// rather than `null` — three spellings of absence is a hazard this epic has already paid for twice.
-func winnersOf(out awards.Outcome) []string {
-	switch out.Kind {
-	case awards.KindWinner:
-		return []string{out.SteamID64}
-	case awards.KindShared:
-		return append([]string{}, out.Winners...)
-	default:
-		return []string{}
 	}
 }
 
@@ -463,15 +467,21 @@ var PersistReasons = map[string]struct{}{
 	"no_spins":                 {},
 	"no_spin_plan":             {},
 	"spin_index_missing":       {},
+	"invalid_spin_index":       {},
 	"spin_index_not_dense":     {},
 	"invalid_spin_kind":        {},
+	"invalid_payload_shape":    {},
+	"spin_without_results":     {},
 	"unknown_award":            {},
+	"unknown_plan_award":       {},
 	"unknown_player":           {},
 	"invalid_outcome_kind":     {},
 	"outcome_kind_tie":         {},
 	"winner_cardinality":       {},
 	"pity_award_shape":         {},
 	"invalid_ladder_exit_step": {},
+	"invalid_deciding_pair":    {},
+	"unknown_actor":            {},
 }
 
 // Persist posts one run to `persist_ceremony`. It writes nothing itself.

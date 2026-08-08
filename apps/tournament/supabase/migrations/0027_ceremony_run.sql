@@ -55,7 +55,7 @@
 -- letter below can be read against the wrong document.
 --
 -- ════════════════════════════════════════════════════════════════════════════
--- ⚠⚠ FIVE DECISIONS. Read these before changing anything below.
+-- ⚠⚠ SIX DECISIONS. Read these before changing anything below.
 -- ════════════════════════════════════════════════════════════════════════════
 --
 -- DECISION 1 — THE `is_pity` ⇄ `spin.kind` BIND IS DECLARATIVE, NOT A TRIGGER, AND IT REPAIRS A
@@ -124,6 +124,26 @@
 -- function now runs on every winner row of every ceremony. Dropping the constraint would drop the
 -- index with it and leave the hot path on a sequential scan. Recorded as a comment on the constraint
 -- below so the next reader finds the real reason attached to the object rather than in a story file.
+--
+-- DECISION 6 — THE CODE-REVIEW DECISIONS (Cuatro, 2026-08-08, adversarial review of 6.8a).
+-- Three ambiguities the review surfaced, resolved by Cuatro rather than by the reviewer:
+--   * ⭐ THE CARDINALITY TRIGGER FAILS CLOSED ON AN UNKNOWN OUTCOME KIND. `assert_award_result_is_
+--     shared`'s `if` chain gains an `elsif … not in (…) then raise` arm. This file previously argued
+--     BOTH sides of this — the AC7 block defended omitting the arm while `assert_ceremony_transition`
+--     added exactly that arm eighty lines later — and the fail-closed convention wins in both. The
+--     vocabulary test is re-cut to assert the constraint definition names EXACTLY five values, since
+--     counting how many of five EXPECTED literals appear can never see a sixth.
+--   * ⭐ `spin_plan[].pool` AWARD IDS ARE RESOLVED against the frozen catalog like every other award
+--     id, closing the gap between this function's "VALIDATED, NOT TRUSTED" thesis and the one field
+--     it published verbatim. Ceremony-WIDE award uniqueness (the UNIQUE is per spin, so the same
+--     trophy twice in one ceremony is representable) is NOT added here — homed to 6.9, which hashes
+--     these bytes and would catch it in the bundle. Recorded in `deferred-work.md`.
+--   * ⭐ `label` / `bytes_consumed` STAY ON THE WIRE AND STAY UNPERSISTED, documented at the write
+--     loop below rather than left as an unexplained omission. Columns homed to 6.9's
+--     `verification_bundle`. The per-pity-spin duplication of the run total is fixed producer-side.
+-- The review also closed a family of SQL three-valued-logic fail-opens (`string_agg` skipping NULLs,
+-- `jsonb ? NULL`, `NULL not in (…)`, `coalesce` not neutralising a jsonb null) and moved four casts
+-- back in front of the write boundary. Each is commented at its own site with what it used to do.
 --
 -- OUT OF SCOPE — do NOT add here (each named with its owning story):
 --   * NO grant to anon/authenticated and NO reveal-gated RLS policy on `award` / `spin` /
@@ -300,6 +320,16 @@ comment on column public.award_result.deciding_den is
 -- makes it see the true state of the two tables it asserts over — a FAIL-CLOSED fix, not an exposure.
 -- `set search_path = ''` (was `= public`) and every reference schema-qualified, per the definer rule.
 --
+-- ⚠⚠ AND THE FIX DEPENDS ON THE OWNER'S `BYPASSRLS`, WHICH IS WORTH STATING BECAUSE IT IS NOT
+-- OBVIOUS (Story 6.8a code review). `award_result` and `award_result_winner` are FORCE ROW LEVEL
+-- SECURITY, and FORCE — unlike plain ENABLE — applies RLS to the table OWNER as well. So
+-- `security definer` ALONE does not make this function see every row; what does is that the owner
+-- role carries the `BYPASSRLS` attribute. On this platform migrations are applied as `postgres`,
+-- which has it, and Section G of the pgTAP suite proves the mechanism end to end by driving the
+-- trigger as a NON-BYPASSRLS role. ⛔ If this function is ever reassigned to an owner without
+-- BYPASSRLS it reverts to the deferred-work.md:333 fail-open with the suite still green, so the
+-- suite now asserts the owner attribute directly rather than relying on it silently.
+--
 -- ⭐ WIDENED WITH THE OUTCOME-KIND CARDINALITY RULE (AC7). A CHECK cannot count child rows, so
 -- "winner/shared ⇒ at least one winner row" has to live here, next to the count it already takes.
 -- ⚠⚠ THE `is_shared` CHECK RUNS FIRST, DELIBERATELY. `0025`'s pgTAP pins IC909's MESSAGE by pattern
@@ -361,8 +391,19 @@ begin
     end if;
 
     -- ── AC7 (Story 6.8a): the OUTCOME KIND and the winner count are the same fact twice. ──
-    -- ⚠ `tie` is absent from this CASE because award_result_outcome_kind_not_tie makes it
-    -- unrepresentable (DECISION 2); an `else` arm would be dead code pretending to be a guard.
+    -- ⚠ `tie` is absent from the arms below because award_result_outcome_kind_not_tie makes it
+    -- unrepresentable (DECISION 2).
+    -- ⭐⭐ THE `else` ARM IS A GUARD, NOT DEAD CODE, AND THIS FILE PREVIOUSLY ARGUED BOTH SIDES
+    -- (Story 6.8a code review, DECISION 6). The earlier comment defended omitting it on the grounds
+    -- that `tie` is already unrepresentable — but `tie` was never the fail-open case. An UNKNOWN
+    -- SIXTH VALUE was: an `if` chain with no fallthrough silently SATISFIES the assertion for any
+    -- outcome_kind it does not name, at ANY winner count. The moment a sixth member joins
+    -- `award_result_outcome_kind_valid` — which `0027`'s own header anticipates, since that closed
+    -- set is the engine/DB contract 6.9 canonicalizes against — the new value would pass with zero,
+    -- one or fifty winner rows. `assert_ceremony_transition` sixty lines below reasons the opposite
+    -- way about the identical situation ("Unreachable while ceremony_state_valid holds; present
+    -- because this function must fail closed if it ever does not"), and that is the convention this
+    -- file now follows in BOTH triggers.
     if (okind in ('winner')          and n <> 1)
        or (okind in ('shared')       and n < 2)
        or (okind in ('no_eligible_players', 'no_awardable_value') and n <> 0) then
@@ -373,6 +414,14 @@ begin
                         'cardinality are the same fact and may not disagree',
               hint    = 'winner = exactly 1; shared = 2 or more (FR-29 rung 5); '
                         'no_eligible_players / no_awardable_value = 0';
+    elsif okind not in ('winner', 'shared', 'no_eligible_players', 'no_awardable_value') then
+      raise exception
+        using errcode = 'IC909',
+              message = 'award_result ' || target_id || ' records outcome_kind=' || okind ||
+                        ', which this assertion does not know how to check against its ' || n ||
+                        ' winner row(s) — refusing rather than passing an unchecked outcome',
+              hint    = 'an outcome kind added to award_result_outcome_kind_valid must also be '
+                        'given a cardinality rule in assert_award_result_is_shared';
     end if;
   end loop;
   return null;
@@ -506,6 +555,13 @@ comment on function public.assert_ceremony_transition() is
   'snapshot_id and started_at in one statement, and 0025 backfills luck_weight_table, so an '
   'allowlist of state+spin_plan would break the only shipped ceremony writer.';
 
+-- LEAST PRIVILEGE, applied to BOTH new trigger functions rather than one (Story 6.8a code review).
+-- The rationale stated on `assert_award_result_is_shared` above — "a trigger function does not need
+-- an EXECUTE grant to FIRE, so revoking costs nothing and closes the direct-call path entirely" — is
+-- entirely independent of `security definer` and applies verbatim here. Revoking on one and not the
+-- other would read as a deliberate distinction to the next author, and there is none.
+revoke execute on function public.assert_ceremony_transition() from public;
+
 create trigger ceremony_transition_valid
   before update on public.ceremony
   for each row execute function public.assert_ceremony_transition();
@@ -595,6 +651,18 @@ begin
   -- ══ 2. GUARDS — every one of them before ANY write, each RETURNED with its context keys.
 
   -- ── 2a. The ceremony itself is ready. ───────────────────────────────────────────────────────
+  -- ⛔⛔ THE NULL CHECK IS A REAL RACE, NOT A FORMALITY, AND WITHOUT IT THE FUNCTION LIED.
+  -- The peek at 1 is deliberately UNLOCKED (taking a lock there would be out of canonical order), so
+  -- the ceremony can be deleted — via its tournament, which cascades — between the peek and the lock
+  -- at 1b. Neither `perform … for update` raises when it matches zero rows, so the re-read at 1c
+  -- leaves all three variables NULL. `NULL not in ('locked','spinning')` evaluates to NULL, the
+  -- branch is NOT taken, and control fell through to the snapshot check — handing the operator
+  -- `snapshot_missing` for a ceremony that no longer exists, a reason they would act on by re-running
+  -- `lock_ceremony`. Three-valued logic turned a vanished row into a wrong diagnosis.
+  if v_state is null then
+    return jsonb_build_object('ok', false, 'reason', 'no_ceremony', 'ceremony_id', p_ceremony_id);
+  end if;
+
   if v_state not in ('locked', 'spinning') then
     return jsonb_build_object('ok', false, 'reason', 'ceremony_not_locked', 'ceremony_state', v_state);
   end if;
@@ -633,11 +701,24 @@ begin
   v_spins := p_run -> 'spins';
   v_plan  := p_run -> 'spin_plan';
 
-  if jsonb_typeof(v_spins) is distinct from 'array' or jsonb_array_length(v_spins) = 0 then
-    return jsonb_build_object('ok', false, 'reason', 'no_spins');
+  -- ⛔⛔ NESTED, NOT `or`, AND THAT IS NOT STYLE. PostgreSQL DOES NOT PROMISE left-to-right
+  -- evaluation of `or`, so `jsonb_typeof(x) is distinct from 'array' or jsonb_array_length(x) = 0`
+  -- may evaluate the SECOND operand first and raise 22023 "cannot get array length of a scalar" on
+  -- a non-array — from inside the guard whose whole job is to RETURN a typed reason. Every
+  -- type-then-length pair in this function is nested for that reason.
+  if jsonb_typeof(v_spins) is distinct from 'array' then
+    return jsonb_build_object('ok', false, 'reason', 'no_spins',
+                              'spins_type', coalesce(jsonb_typeof(v_spins), 'absent'));
   end if;
-  if jsonb_typeof(v_plan) is distinct from 'array' or jsonb_array_length(v_plan) = 0 then
-    return jsonb_build_object('ok', false, 'reason', 'no_spin_plan');
+  if jsonb_array_length(v_spins) = 0 then
+    return jsonb_build_object('ok', false, 'reason', 'no_spins', 'spins_type', 'empty_array');
+  end if;
+  if jsonb_typeof(v_plan) is distinct from 'array' then
+    return jsonb_build_object('ok', false, 'reason', 'no_spin_plan',
+                              'spin_plan_type', coalesce(jsonb_typeof(v_plan), 'absent'));
+  end if;
+  if jsonb_array_length(v_plan) = 0 then
+    return jsonb_build_object('ok', false, 'reason', 'no_spin_plan', 'spin_plan_type', 'empty_array');
   end if;
 
   -- ⭐ DENSE AND 1-BASED, asserted as a SET EQUALITY rather than as a max/count pair. `count = max`
@@ -645,7 +726,19 @@ begin
   select count(*) into v_n from jsonb_array_elements(v_spins) e
    where (e ->> 'spin_index') is null;
   if v_n > 0 then
-    return jsonb_build_object('ok', false, 'reason', 'spin_index_missing');
+    return jsonb_build_object('ok', false, 'reason', 'spin_index_missing', 'spins', v_n);
+  end if;
+
+  -- ⚠ THE TEXT IS PROVEN INTEGRAL BEFORE ANY `::int` RUNS. The density check below casts twice, and
+  -- a cast is not a guard: `"one"` raises 22P02 and `99999999999` raises 22003, both from inside the
+  -- guard that was supposed to return `spin_index_not_dense`. The pattern also pins 1-BASED
+  -- (leading digit 1-9, so `0` and `-1` are refused here rather than silently failing the set
+  -- equality) and bounds the width to 9 digits, which cannot overflow int4.
+  select string_agg(distinct e ->> 'spin_index', ',') into v_bad
+    from jsonb_array_elements(v_spins) e
+   where (e ->> 'spin_index') !~ '^[1-9][0-9]{0,8}$';
+  if v_bad is not null then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_spin_index', 'spin_indexes', v_bad);
   end if;
 
   if exists (
@@ -663,11 +756,65 @@ begin
     );
   end if;
 
-  select string_agg(distinct e ->> 'kind', ',') into v_bad
+  -- ⛔⛔ `coalesce(…, '<null>')` INSIDE THE AGGREGATE IS LOAD-BEARING, NOT DECORATION, AND ITS
+  -- ABSENCE WAS A REAL FAIL-OPEN. `string_agg` SKIPS NULL INPUTS. Aggregating a bare `e ->> 'kind'`
+  -- over rows selected BECAUSE that expression is NULL yields NULL whenever every offender is null,
+  -- so `v_bad is not null` is false and the guard whose own WHERE clause names `is null` as the
+  -- offence lets it straight through — to a bare 23502 on `spin.kind` in the middle of the write
+  -- phase, which the Go caller then reports as an untyped `write_failed`. Every `string_agg` guard
+  -- in this function now carries the wrapper, for exactly this reason.
+  select string_agg(distinct coalesce(e ->> 'kind', '<null>'), ',') into v_bad
     from jsonb_array_elements(v_spins) e
    where (e ->> 'kind') is null or (e ->> 'kind') not in ('main', 'pity');
   if v_bad is not null then
     return jsonb_build_object('ok', false, 'reason', 'invalid_spin_kind', 'kinds', v_bad);
+  end if;
+
+  -- ── 2b'. THE ARRAY-SHAPED CHILDREN, PROVEN BEFORE ANYTHING ITERATES THEM. ──────────────────
+  -- ⛔⛔ `coalesce(x -> 'k', '[]'::jsonb)` DOES NOT DEFEND AGAINST A JSON NULL, WHICH IS THE WHOLE
+  -- REASON THIS SECTION EXISTS. `'{"k":null}'::jsonb -> 'k'` is the jsonb SCALAR null, NOT SQL NULL,
+  -- so `coalesce` passes it through unchanged and `jsonb_array_elements` raises 22023 "cannot
+  -- extract elements from a scalar". A MISSING key is SQL NULL and coalesce does handle that — so
+  -- the old code tolerated an absent key while RAISING on a null one, which is exactly backwards
+  -- from what a validating writer should do. Proving the shape here is what makes every
+  -- `coalesce(…, '[]')` below honest.
+  -- ⚠ ONE REASON WITH A `field` CONTEXT KEY rather than four near-identical reasons: the admin needs
+  -- to know WHICH field, and `PersistReasons` stays a set a reader can hold in their head.
+  select string_agg(distinct x.field, ',') into v_bad
+    from (
+      select 'results' as field
+        from jsonb_array_elements(v_spins) e
+       where jsonb_typeof(e -> 'results') is distinct from 'array'
+      union all
+      select 'live_award_ids'
+        from jsonb_array_elements(v_spins) e
+       where e ? 'live_award_ids' and jsonb_typeof(e -> 'live_award_ids') is distinct from 'array'
+      union all
+      select 'spin_plan.pool'
+        from jsonb_array_elements(v_plan) pe
+       where pe ? 'pool' and jsonb_typeof(pe -> 'pool') is distinct from 'array'
+    ) x;
+  if v_bad is not null then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_payload_shape', 'fields', v_bad);
+  end if;
+
+  -- `winners` is checked separately because reaching it requires `results` to already be an array.
+  select count(*) into v_n
+    from jsonb_array_elements(v_spins) sp, jsonb_array_elements(sp -> 'results') res
+   where res ? 'winners' and jsonb_typeof(res -> 'winners') is distinct from 'array';
+  if v_n > 0 then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_payload_shape', 'fields', 'winners');
+  end if;
+
+  -- ⭐ A SPIN THAT CONCLUDED NOTHING IS NOT A SPIN. Without this, a spin element carrying an empty
+  -- `results` array persists a `spin` row with zero `award_result` children, advances
+  -- `ceremony.state`, and returns `{ok:true}` — a spin that revealed nothing and can never say why.
+  -- `no_spins` guards an empty RUN; this guards an empty SPIN, which nothing guarded before.
+  select count(*) into v_n
+    from jsonb_array_elements(v_spins) e
+   where jsonb_array_length(e -> 'results') = 0;
+  if v_n > 0 then
+    return jsonb_build_object('ok', false, 'reason', 'spin_without_results', 'spins', v_n);
   end if;
 
   -- ── 2c. Resolve the two id spaces the producer only knows as STRINGS. ──────────────────────
@@ -683,7 +830,14 @@ begin
     from public.roster_entry r
    where r.tournament_id = v_tournament and r.status = 'active';
 
-  select string_agg(distinct x.aid, ',') into v_bad
+  -- ⛔⛔ `x.aid IS NULL` IS AN OFFENCE IN ITS OWN RIGHT, AND OMITTING IT WAS A SILENT-CORRUPTION
+  -- FAIL-OPEN. `jsonb ? NULL` is NULL, so `not (v_awards ? NULL)` is NULL and the row is filtered
+  -- OUT of the guard's own result set. A JSON `null` element inside `live_award_ids` therefore
+  -- passed validation, and the write then evaluated `(v_awards -> NULL)::text::bigint` to NULL,
+  -- which `jsonb_agg` — which is NOT strict — happily aggregated into the stored array. The row
+  -- committed as `live_award_ids: [null]` with `{ok:true}` and no constraint anywhere to catch it.
+  -- The `coalesce(…, '<null>')` in the aggregate is the same `string_agg`-skips-NULL fix as above.
+  select string_agg(distinct coalesce(x.aid, '<null>'), ',') into v_bad
     from (
       select res ->> 'award_id' as aid
         from jsonb_array_elements(v_spins) sp,
@@ -694,16 +848,36 @@ begin
         from jsonb_array_elements(v_spins) sp,
              jsonb_array_elements(coalesce(sp -> 'live_award_ids', '[]'::jsonb)) lid
     ) x
-   where not (v_awards ? x.aid);
+   where x.aid is null or not (v_awards ? x.aid);
   if v_bad is not null then
     return jsonb_build_object('ok', false, 'reason', 'unknown_award', 'award_ids', v_bad);
   end if;
 
-  select string_agg(distinct w #>> '{}', ',') into v_bad
+  -- ⭐ THE SPIN PLAN'S POOLS ARE RESOLVED TOO (Story 6.8a code review, DECISION 6). `spin_plan` is
+  -- the ONE field this function publishes VERBATIM (`update … set spin_plan = v_plan` below), and
+  -- until now its only validation was "is a non-empty array" — so a payload naming another
+  -- tournament's awards in its pools was written into the ceremony row unchallenged, in a function
+  -- whose stated thesis is "THE PAYLOAD IS VALIDATED, NOT TRUSTED". Same id space, same catalog,
+  -- same treatment as every other award id in the run.
+  select string_agg(distinct coalesce(x.aid, '<null>'), ',') into v_bad
+    from (
+      select pid #>> '{}' as aid
+        from jsonb_array_elements(v_plan) pe,
+             jsonb_array_elements(coalesce(pe -> 'pool', '[]'::jsonb)) pid
+    ) x
+   where x.aid is null or not (v_awards ? x.aid);
+  if v_bad is not null then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_plan_award', 'award_ids', v_bad);
+  end if;
+
+  -- Same NULL-element fail-open as `unknown_award`, with a louder failure mode: a null winner
+  -- reached `(v_roster -> NULL)::text::bigint` as a NULL `winner_entry_id` and raised a bare 23502
+  -- AFTER the spin and result rows for this ceremony had already been inserted.
+  select string_agg(distinct coalesce(w #>> '{}', '<null>'), ',') into v_bad
     from jsonb_array_elements(v_spins) sp,
          jsonb_array_elements(sp -> 'results') res,
          jsonb_array_elements(coalesce(res -> 'winners', '[]'::jsonb)) w
-   where not (v_roster ? (w #>> '{}'));
+   where (w #>> '{}') is null or not (v_roster ? (w #>> '{}'));
   if v_bad is not null then
     return jsonb_build_object('ok', false, 'reason', 'unknown_player', 'steamid64s', v_bad);
   end if;
@@ -778,7 +952,58 @@ begin
     );
   end if;
 
+  -- ⛔ THE DECIDING VALUES WERE THE LAST PAYLOAD FIELDS WHOSE CASTS RAN PAST THE WRITE BOUNDARY.
+  -- `(res ->> 'deciding_num')::bigint` sat inside the INSERT, so a half pair raised a bare 23514 on
+  -- `award_result_deciding_pair_complete` — the constraint THIS migration adds — a non-numeric
+  -- raised 22P02 and an over-bigint value 22003, every one of them mid-write. Every other
+  -- constraint 0027 adds carries a matching pre-write typed refusal; now these do too.
+  -- ⚠ THE NULL BEHAVIOUR IS DELIBERATE. `!~` on a NULL yields NULL, and `false or NULL` is NULL, so
+  -- an all-NULL row (a `no_eligible_players` result, the common case at the shipped FR-21 floors) is
+  -- correctly NOT selected. What the first operand catches is the HALF pair, where both sides of the
+  -- `<>` are `is null` tests and can never themselves be NULL. Widths are bounded to what bigint and
+  -- numeric accept, so the casts below cannot overflow.
+  if exists (
+    select 1 from jsonb_array_elements(v_spins) sp, jsonb_array_elements(sp -> 'results') res
+     where ((res ->> 'deciding_num') is null) <> ((res ->> 'deciding_den') is null)
+        or (res ->> 'deciding_num')   !~ '^-?[0-9]{1,18}$'
+        or (res ->> 'deciding_den')   !~ '^-?[0-9]{1,18}$'
+        or (res ->> 'deciding_value') !~ '^-?[0-9]{1,38}(\.[0-9]{1,18})?$'
+  ) then
+    return jsonb_build_object(
+      'ok', false, 'reason', 'invalid_deciding_pair',
+      'hint', 'DECISION 3: a rate award carries BOTH deciding_num and deciding_den as integers and '
+              'neither alone; a volume award carries deciding_value and neither of the pair'
+    );
+  end if;
+
+  -- ⭐ THE ACTOR IS RESOLVED BEFORE THE WRITE, NOT DISCOVERED AT THE AUDIT INSERT.
+  -- `audit_log.actor_steamid64` is `not null references player(steamid64)` (`0003:24`), so a NULL
+  -- raised 23502 and an unknown id 23503 — at step 6, after every spin, result and winner row had
+  -- been inserted and after `ceremony.state` had advanced. AD-6 still held (the transaction rolls
+  -- back), but it was the one refusal class in this function that was not pre-write, directly
+  -- against the section header two hundred lines above: "every one of them before ANY write".
+  if p_actor is null or not exists (
+    select 1 from public.player p where p.steamid64 = p_actor
+  ) then
+    return jsonb_build_object(
+      'ok', false, 'reason', 'unknown_actor', 'actor', coalesce(p_actor, '<null>')
+    );
+  end if;
+
   -- ── Past this line everything writes, and it all commits or none of it does (AD-6). ──
+
+  -- ⚠⚠ THE ASSERTION MODE IS NORMALISED ON ENTRY, BECAUSE `set constraints` IS TRANSACTION-SCOPED.
+  -- The write phase below inserts an `award_result` and only THEN its `award_result_winner` rows, so
+  -- the is_shared/cardinality assertion MUST be deferred while it runs — a row is legitimately
+  -- "winner with 0 winners" for the microsecond between those two inserts. The triggers are declared
+  -- `deferrable initially deferred` (`0025:335-343`), so that is the default — but this function ends
+  -- by forcing them IMMEDIATE (see 5b), and `set constraints` persists for the REST OF THE
+  -- TRANSACTION. A second call in the same transaction — which is exactly what `p_replace` is for,
+  -- and exactly what the pgTAP suite does — would therefore run with the mode the FIRST call left
+  -- behind and raise IC909 on its own perfectly good rows. Restoring the declared default here makes
+  -- the function idempotent with respect to the ambient mode instead of depending on it.
+  set constraints public.award_result_is_shared_consistent,
+                  public.award_result_winner_is_shared_consistent deferred;
 
   -- ══ 3. AC8 — the prior run, deleted in the SAME transaction. The FK cascades take
   --    `award_result` and `award_result_winner` with it (`0025:141, 210, 219`), and DELETE is granted
@@ -797,6 +1022,14 @@ begin
   -- a pity spin's results carry a NULL `award_id` so `(spin_id, award_id)` is not a usable natural key
   -- to join back on. The volume is one ceremony — twelve main spins plus one pity spin per winless
   -- player — so clarity wins over cleverness here.
+  -- ⚠ THE PAYLOAD CARRIES `label` AND `bytes_consumed` PER SPIN AND THIS FUNCTION DELIBERATELY DOES
+  -- NOT PERSIST THEM (Story 6.8a code review, DECISION 6). They are PROVENANCE: `label` is the
+  -- domain-separation key 6.9's verifier re-opens each stream by, and `bytes_consumed` is measured
+  -- from the stream rather than re-derived. Both belong in 6.9's `verification_bundle`, which owns
+  -- the shape a verifier reads — adding two columns to `spin` now would pre-empt that decision for
+  -- the sake of data nothing yet reads. They are carried on the wire so 6.9 does not have to
+  -- re-plumb the producer, and they are validated by nothing here precisely because nothing here
+  -- depends on them. ⛔ Do NOT read them into a write without moving that decision to 6.9 first.
   for v_spin in select e from jsonb_array_elements(v_spins) e loop
     v_kind := v_spin ->> 'kind';
 
@@ -869,6 +1102,27 @@ begin
      set spin_plan = v_plan,
          state     = 'spinning'
    where id = p_ceremony_id;
+
+  -- ══ 5b. ⚠⚠ THE DEFERRED ASSERTION IS FORCED TO RUN *HERE* — BEFORE THE AUDIT ROW AND BEFORE THE
+  --    RETURN. This discharges T4's own warning, which was still outstanding.
+  -- `award_result_is_shared_consistent` and `award_result_winner_is_shared_consistent` are
+  -- `deferrable initially deferred` (`0025:335-343`), so they fire at COMMIT. Without this line the
+  -- ordering was: write every row -> write an audit row claiming N spins / M results / K winners ->
+  -- return `{ok:true}` -> and only THEN let IC909 judge what was written. A caller inside an explicit
+  -- transaction (`begin; select persist_ceremony(…); commit;` from psql, or a future admin route on
+  -- a pgx.Tx) therefore read a SUCCESS payload and then had COMMIT fail underneath it. Forcing the
+  -- constraints immediate here puts the assertion in front of both the audit row and the return, so
+  -- the value this function reports is a value the database has already agreed to.
+  -- ⛔ An IC909 raised here is CORRUPTION, exactly as it is at COMMIT: the `winner_cardinality` and
+  -- `outcome_kind` guards above already refused every payload-shaped cause with a typed reason, so
+  -- reaching this line means a writer bypassed them.
+  set constraints public.award_result_is_shared_consistent,
+                  public.award_result_winner_is_shared_consistent immediate;
+
+  -- …and the declared default is restored, so a caller that keeps writing in this transaction after
+  -- us meets the mode `0025` declared rather than the one we needed for one statement.
+  set constraints public.award_result_is_shared_consistent,
+                  public.award_result_winner_is_shared_consistent deferred;
 
   -- ══ 6. EXACTLY ONE audit_log row (AD-17), with before/after in `detail`.
   -- ⚠ EVERY key below is asserted in pgTAP: the 4.2 review found a suite asserting ONE key while a

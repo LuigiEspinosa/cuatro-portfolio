@@ -4,7 +4,7 @@ baseline_commit: f9a2358c9add3205ba91aa44b4b265a8617fdf79
 
 # Story 6.8a: Ceremony run and persistence
 
-Status: review
+Status: done
 
 > **Carve-out note.** Epic 6 Story 6.8 ("Reveal-gating and commitment", `epics.md:1132-1152`) accumulated far
 > more than its three ACs. Every migration from `0023` to `0026` homes work to 6.8 **by name**, and
@@ -862,3 +862,138 @@ SELECT what it wrote) and H (AC9 with rows present) are the ones worth reading f
 | Date | Change |
 |---|---|
 | 2026-08-08 | Story 6.8a implemented. Go orchestrator + thin caller, migration `0027` (IC910) with the `persist_ceremony` writer, 68 new pgTAP tests, 34 new Go tests. Mutation-tested per effect on both sides with a green control pass: 29/29 SQL and 18/18 Go mutants killed, 0 survivors (6 first-round survivors closed with new tests). THE BAR rebuilt the 14-demo corpus and ran the ceremony twice from one seed — identical. FR-21 zero re-derived: 0 of 28. Status → review. |
+| 2026-08-08 | Adversarial code review (3 layers: Blind Hunter, Edge Case Hunter, Acceptance Auditor). 3 decision-needed, 27 patch, 1 deferred, 1 dismissed. Status → in-progress. |
+
+---
+
+### Review Findings
+
+Adversarial code review, 2026-08-08, baseline `f9a2358..a8aa4bc`. Three parallel layers: Blind Hunter
+(diff only), Edge Case Hunter (diff + project), Acceptance Auditor (diff + spec). All three completed.
+
+⭐ **Verified by the reviewer before triage, and it changed three calls:** `winnersOf` DOES compile
+(two implementations exist — `sweep_test.go:1259` and `worker/ceremony/ceremony.go:420`); the JSON-`null`
+family is NOT reachable from the shipped Go caller (`stage1.go:558` is `make([]string, 0, …)`, never
+nil), so it is defense-in-depth rather than a live bug; and `AbsentAchievementTS` cannot move silently
+(`ladder_test.go:451` pins it).
+
+⛔ **What the AC/task matrix actually came back as.** AC1, AC2, AC4, AC5, AC6, AC9 MET. AC3, AC7, AC8, T6
+PARTIAL. AC10/T1/T7 UNVERIFIABLE by design (harness deleted). The `plan(68)` accounting was
+independently recounted and is CORRECT. The `assert_award_result_is_shared` "exactly four things"
+delta claim was independently diffed against `0025:275-328` and HOLDS. The retargeted `0026` test was
+independently verified: the claim is preserved, only the route moved. Every excluded path is
+byte-untouched.
+
+#### Decisions needed
+
+- [x] [Review][Decision] The `outcome_kind` cardinality trigger fails open on an unknown sixth value, and the file contradicts itself about whether that is acceptable — `assert_award_result_is_shared`'s `if` chain (`0027:366-376`) has no `else`, so any `outcome_kind` outside the four named arms satisfies the assertion at ANY winner count. The in-file comment defends the omission ("an `else` arm would be dead code pretending to be a guard") on `tie` grounds — but `tie` is not the fail-open case, an unknown sixth value is. Sixty lines later `assert_ceremony_transition` (`0027:444-452`) adds exactly that arm with the opposite rationale ("present because this function must fail closed if it ever does not"). Two guards in one migration reasoning oppositely about the identical situation. Related: the "no more and no fewer" test (`0027_test:1526-1534`) counts how many of the five EXPECTED literals appear in the constraint def, so adding a sixth value leaves it green — "no more" is claimed and not tested. Options: (a) add the fail-closed `else` and fix the test to assert the constraint def names exactly five, matching `assert_ceremony_transition`'s convention; (b) keep the omission and delete the contradictory comment; (c) home to 6.9, which owns the `OutcomeKind` vocabulary as the bundle contract.
+- [x] [Review][Decision] Ceremony-wide award uniqueness and plan⇄rows cross-consistency are enforced by nothing, which contradicts the RPC's own stated thesis — `award_result_spin_award_key` is `unique (spin_id, award_id)`, i.e. PER SPIN. Nothing enforces "each catalog award is awarded at most once per CEREMONY"; nothing checks a result's `award_id` is in its own spin's `live_award_ids`; and `ceremony.spin_plan` is published verbatim (`0027:868-871`) with its only validation being "is a non-empty array" (`0027:639-641`) — `spin_plan[].pool` award ids are never resolved against `v_awards`, though result and `live_award_ids` ids are. A payload naming another tournament's awards in its pools commits with `{ok:true}`. `RunCeremony`'s `withoutAwards` prevents this producer-side, but `0027:535-538` says "THE PAYLOAD IS VALIDATED, NOT TRUSTED … a writer that trusted the payload would be a writer that lets a producer bug become a persisted ceremony". Options: (a) full cross-validation now (pool ids + ceremony-wide award uniqueness + result ⊆ live_award_ids); (b) pool-id resolution only, the cheapest closure of the stated-thesis gap; (c) home the cross-consistency to 6.9, which hashes these bytes and would catch a mismatch in the bundle.
+- [x] [Review][Decision] The payload carries per-spin `label` and `bytes_consumed` that the RPC validates against nothing and persists nowhere — `PayloadSpin` declares both (`worker/ceremony/ceremony.go:314-315`); the only spin insert is `(ceremony_id, spin_index, kind, live_award_ids, revealed_at)` (`0027:803`). `worker/awards/ceremony.go` calls the label "the single most load-bearing fact in a provably-fair ceremony" and says "6.9's verifier re-opens it by name", and `Consumed` is documented "MEASURED FROM THE STREAM, never re-derived" — both are then dropped on the floor. `TestBuildPayloadJSONKeysAreTheOnesTheRPCReads` pointedly omits them, which is the honest signal. Compounding: every pity spin is stamped with the same `run.Pity.BytesConsumed` TOTAL (`worker/ceremony/ceremony.go:388`), so the field is not per-spin-meaningful even in principle. Options: (a) persist both (needs two columns — a schema addition to 6.8a); (b) drop them from the payload until 6.9 needs them; (c) keep as inert provenance and home the columns to 6.9's `verification_bundle`. Whichever wins, the per-pity-spin duplication should be fixed or documented.
+
+#### Patches
+
+- [x] [Review][Patch] The `audit_log` row is asserted by ZERO tests while the migration claims "EVERY key below is asserted in pgTAP" — AC3/AC8/T6 [supabase/tests/0027_ceremony_run_test.sql — `audit_log` appears nowhere in the file; claim at supabase/migrations/0027_ceremony_run.sql:873-875]
+- [x] [Review][Patch] The successful `p_replace => true` path is exercised by no committed test — every other `p_replace` call in the suite is a probe that REFUSES, so the delete branch, `v_deleted`, and the `before.spins`/`after.deleted_spins` keys are dead to the tests; AC8's "records both the deleted and the written counts" rests only on the deleted harness [supabase/tests/0027_ceremony_run_test.sql:493-528]
+- [x] [Review][Patch] Three payload guards fail open on SQL NULL because `string_agg` skips NULLs and `jsonb ? NULL` is NULL — `invalid_spin_kind` (its own WHERE names `is null` as the offence, then aggregates it away → bare 23502 mid-write), `unknown_award` (a JSON-null in `live_award_ids` commits `[null]` SILENTLY, `{ok:true}`), `unknown_player` (a null winner → 23502 after spins and results are already inserted). The sibling `invalid_outcome_kind` guard 40 lines later gets this right with `coalesce(…, '<null>')`, which is what makes it an oversight [supabase/migrations/0027_ceremony_run.sql:666-671, 686-700, 702-709]
+- [x] [Review][Patch] `v_state IS NULL` falls through the `ceremony_not_locked` guard and misreports as `snapshot_missing` — neither `perform … for update` checks it locked anything, so if the ceremony is deleted between the deliberately-unlocked peek and the lock, `not in ('locked','spinning')` evaluates NULL, the branch is skipped, and the operator is told to re-run `lock_ceremony` for a ceremony that no longer exists [supabase/migrations/0027_ceremony_run.sql:587-588, 598-600]
+- [x] [Review][Patch] IC909 is `deferrable initially deferred`, so `{ok:true}` and the audit row are produced BEFORE the assertion runs — T4's own ⚠ subtask ("make sure a refusal path cannot leave the transaction relying on a constraint that fires after your `audit_log` insert") is undischarged. Under an explicit transaction the caller reads success, then COMMIT fails. `set constraints … immediate` at the end of the write phase is the fix, and the test suite already uses that technique [supabase/migrations/0027_ceremony_run.sql:400-403 vs :876-913]
+- [x] [Review][Patch] Two of eighteen typed refusals have no test and were not mutated — `spin_index_missing` and `pity_award_shape`; the suite header claims "ALL FIFTEEN" and the mutation matrix claims 16, against a shipped 18. `pity_award_shape` is the ONLY enforcer of its rule (`0026` deliberately leaves a pity result naming an award representable), so deleting it admits a shape the schema cannot refuse [supabase/migrations/0027_ceremony_run.sql:648, 760; supabase/tests/0027_ceremony_run_test.sql:55]
+- [x] [Review][Patch] `deciding_value`/`deciding_num`/`deciding_den` are the only payload fields with zero validation, and their casts run PAST the write boundary — a half pair raises a bare 23514 on `award_result_deciding_pair_complete` (the constraint this same migration adds), a non-numeric raises 22P02, an over-bigint value raises 22003. Every other constraint 0027 adds has a matching pre-write typed refusal; this one does not. `pg_temp.run_payload()` carries neither key, so the casts are never exercised [supabase/migrations/0027_ceremony_run.sql:840-842]
+- [x] [Review][Patch] `p_actor` is never validated, so a bad actor fails at the audit insert AFTER every row has been written — `audit_log.actor_steamid64` is `not null references player(steamid64)`, so null raises 23502 and an unknown id 23503, at step 6. Directly contradicts the section header "GUARDS — every one of them before ANY write" [supabase/migrations/0027_ceremony_run.sql:876-898]
+- [x] [Review][Patch] AC7's `nullif(v,0)` mapping is proven in one direction only, by an assertion a degenerate implementation satisfies — every result in `pg_temp.run_payload()` carries `tie_ladder_exit_step = 0`, so no row in the whole suite is ever written with a real rung; an implementation writing `null` unconditionally passes. The plan comment explicitly claims "and a real rung lands as itself", which is asserted nowhere [supabase/tests/0027_ceremony_run_test.sql:480-486, :53-54]
+- [x] [Review][Patch] A spin element with no `results` key silently persists a spin with zero results and returns `{ok:true}` — `jsonb_array_elements` is strict, so all four result-shape guards yield zero rows and pass vacuously, the write loop iterates zero times, and `ceremony.state` still advances. There is a `no_spins` guard for an empty run but no equivalent for a spin that concluded nothing [supabase/migrations/0027_ceremony_run.sql:712-779, :826]
+- [x] [Review][Patch] A non-integer or out-of-range `spin_index` raises 22P02/22003 from the cast INSIDE the guard that was supposed to return `spin_index_not_dense` — the preceding `spin_index_missing` guard only catches SQL NULL. Same unguarded-cast pattern recurs for `tie_ladder_exit_step` [supabase/migrations/0027_ceremony_run.sql:651-664, :770-773]
+- [x] [Review][Patch] `coalesce(x -> 'key', '[]'::jsonb)` does not neutralise a key present with JSON `null` — `-> ` returns a jsonb scalar null, not SQL NULL, so coalesce passes it through and `jsonb_array_length`/`jsonb_array_elements` raise 22023. Note the asymmetry: a MISSING key is silently tolerated while a NULL key raises. Not reachable from the shipped Go caller (verified: `stage1.go:558` never yields a nil slice), but the RPC's contract is to validate an untrusted payload [supabase/migrations/0027_ceremony_run.sql:705, 739, 810-815, 847, 854]
+- [x] [Review][Patch] The "all four pre-0027 indexes are genuinely UNIQUE" assertion is blind to a missing index, names a different four than the debt records, and has no schema filter — `bool_and` over a filtered set returns true when a name is ABSENT, so dropping `award_result_winner_result_key` (DECISION 5's own subject, kept purely for its index) leaves it green; it substitutes `award_result_winner_spin_key` for `spin_ceremony_index_key`, which is the one `deferred-work.md:334` actually names and which remains unasserted; and `pg_class` is queried without `relnamespace`, so a same-named index in any schema participates [supabase/tests/0027_ceremony_run_test.sql:1551-1557]
+- [x] [Review][Patch] AC6's permissive `NULL → value` freeze direction is unasserted, so a mutant dropping the `old.<col> is not null and` prefix survives Section C entirely — and that mutant would break `lock_ceremony`'s update arm in production. AC6 requires proof "in both directions" [supabase/migrations/0027_ceremony_run.sql:469, 479; supabase/tests/0027_ceremony_run_test.sql:357-416]
+- [x] [Review][Patch] ⭐ SEVENTH OCCURRENCE OF THE PROJECT'S SIGNATURE DEFECT — `TestCeremonyDetailsAreExactlyTheDeclaredSet` cannot fail on any implementation: `if len(inputReachable) != 6` measures the size of a map literal written two lines above it, and nothing in the test reads `ceremony.go`. Same shape as `6-7-pity-roulette.md:1455`'s `lambda e, c: 256 % 3 != 0`. The cited precedent does it properly — `pity_test.go:190-196` pins the constants against the VECTOR's `refusal_details` with `slices.Equal`. `TestPersistReasonsIsTheDeclaredSet` has the same flaw: it compares a Go map against a hand-copied duplicate of itself in the same commit, so it can never catch migration 0027 returning a reason the Go set lacks [worker/awards/ceremony_test.go:660-706; worker/ceremony/ceremony_test.go]
+- [x] [Review][Patch] Three of the eight declared refusal details have no test that reaches them — `pity`, `sweep` and `stream`; and `TestRunCeremonyPityRefusalPropagates` asserts the OPPOSITE of its name (its body asserts the pity detail is never reached). Flattening the pity error into `CeremonyDetailInternal` leaves the suite green, while `TestCeremonyDetailsAreExactlyTheDeclaredSet` lists `sweep` and `pity` as "input-reachable" — a claim no test discharges [worker/awards/ceremony_test.go:3255-3277 in-patch]
+- [x] [Review][Patch] `TestRunCeremonyDoesNotMutateItsInputs` cannot see the mutation class it is named for — `append([]T(nil), s...)` is a SHALLOW copy, and `SnapshotPlayer` carries `map[string]*big.Int`, `map[string]RatePair` and `*big.Int` fields that the copy shares with the original. An in-place `.Add`/`.Set` on a shared `big.Int` is invisible to `reflect.DeepEqual`. In a package whose correctness story rests on unbounded `big.Int`, that is exactly the aliasing bug to catch [worker/awards/ceremony_test.go — `catalogBefore`/`playersBefore`]
+- [x] [Review][Patch] Two divergent `winnersOf` implementations exist and the Go suite tests the wrong one — `worker/awards/sweep_test.go:1259` (test-only) and `worker/ceremony/ceremony.go:420` (production, the one whose output reaches the database). `worker/awards/ceremony_test.go:727` builds its expectations with the TEST helper, so the two can diverge with everything green. A shared exported helper in `awards` used by both removes the question [worker/ceremony/ceremony.go:420]
+- [x] [Review][Patch] `spin.live_award_ids`' string→bigint mapping is asserted by nothing — no test reads the column after a persist, so a mutant emitting `'[]'::jsonb` unconditionally, or dropping the `order by ord` that preserves draw-order-IS-reveal-order (`0025:127-129`), survives the whole suite [supabase/migrations/0027_ceremony_run.sql:810-815]
+- [x] [Review][Patch] `no_spins`/`no_spin_plan` rely on OR short-circuit evaluation, which PostgreSQL does not guarantee — a non-array `spins` may reach `jsonb_array_length` and raise 22023 where the contract promises a typed refusal. The tests only ever feed `'[]'::jsonb`, so the `jsonb_typeof` half is never exercised. A nested `if` or `case` is the correct form [supabase/migrations/0027_ceremony_run.sql:636-641]
+- [x] [Review][Patch] `assert_ceremony_transition` is missing the `revoke execute … from public` its sibling gets, on the file's own stated rationale — "a trigger function does not need an EXECUTE grant to FIRE, so revoking costs nothing" is independent of `security definer` and applies verbatim to the second new trigger function. The asymmetry will read as intentional to the next author [supabase/migrations/0027_ceremony_run.sql:394 vs :427-511]
+- [x] [Review][Patch] The `security definer` fail-closed fix silently depends on the function owner's BYPASSRLS, which the migration neither sets nor asserts — under FORCE ROW LEVEL SECURITY, RLS applies to the table OWNER too, so `security definer` alone does not make the function see every row. It works today because the owner is `postgres`; on ownership reassignment the fix reverts to the fail-open behaviour it replaced, with Section G still green. Worth an explicit assertion on `pg_proc.proowner`'s `rolbypassrls`, or at minimum a comment stating the dependency [supabase/migrations/0027_ceremony_run.sql:296-301]
+- [x] [Review][Patch] `lock_ceremony` on a ceremony that has reached `spinning` now raises IC910, and no test exercises the new interaction — `persist_ceremony` leaves every successful run in `spinning`, and `spinning -> locked` is backward. Refusing is almost certainly the correct AD-15 posture, but 0027 changes a shipped RPC's failure mode and the suite deliberately inserts its ceremony rows rather than calling `lock_ceremony`. Needs a regression test pinning it [supabase/migrations/0027_ceremony_run.sql:509-511]
+- [x] [Review][Patch] `ceremony.go`'s headline "EVERY REFUSAL COSTS ZERO STREAM BYTES" is false as written — only the three input checks run before the first `NewStream`; the `stage1`, `sweep`, `pity`, `stream` and `internal` arms all return after bytes have been drawn. The test file's own admission that the property is unobservable through the signature is why the comment should be narrowed rather than left as a package-level invariant the next reader will rely on [worker/awards/ceremony.go — package comment]
+- [x] [Review][Patch] Two section-header counts contradict the `plan(68)` breakdown in the same file — Section E's banner says (12) with 15 assertions, Section G's says (2) with 4. The plan block is the correct one. These per-section counts are the only mechanism for spotting an assertion added or lost without the plan being updated [supabase/tests/0027_ceremony_run_test.sql:531, :616]
+- [x] [Review][Patch] AC1 and T2 say `pool` = catalog minus every award ASSIGNED; the code subtracts every award DRAWN, and the substitution is recorded nowhere — the code is RIGHT (`SOLUTION-DESIGN.md:407` says "minus already-revealed", and at the shipped FR-21 floors nothing is ever assigned, so a literal "minus assigned" would never shrink `remaining` and the spin loop would not terminate). The story's wording is what is wrong. Worth one line so 6.9's bundle spec does not inherit it [worker/awards/ceremony.go:410]
+- [x] [Review][Patch] `AbsentAchievementTS` is spelled as a bare `-1` in the loader's SQL where nothing relates the two — the constant is pinned to `-1` by `ladder_test.go:451` so it cannot move silently, which is why this is low rather than latent; `coalesce(r.achievement_ts, $2)` bound from the constant costs one parameter [worker/ceremony/ceremony.go:170]
+- [x] [Review][Patch] `RunCeremony`'s spin loop is unbounded — its only termination condition is that `Stage1Pick` shrinks `remaining`, and nothing checks `len(picked.Live) == liveCount`. Not reachable today (`stage1.go` always draws `LiveCount` picks), but every other invariant in the file is a typed refusal and this one is an infinite loop plus unbounded slice growth [worker/awards/ceremony.go — the `for spinIndex := 1; len(remaining) > 0` loop]
+
+#### Deferred
+
+- [x] [Review][Defer] `ceremony.luck_weight_table` stays freely mutable after the ceremony is frozen [supabase/migrations/0025_ceremony_results.sql] — deferred, pre-existing. It is an input every drawn byte is a pure function of (via `stage1.go`'s weight lookup), yet nothing in `0025`, `0026` or `0027` freezes it. A post-run edit silently makes the persisted run unreproducible from the ceremony row while `snapshot_id` and `seed_demo_sha256` both still look intact. This is the one thing the strict-column-allowlist reading of Task 3 would have caught that DECISION 4's transition trigger does not. Not caused by this change; AC6 is met as written. Homed to 6.9, which hashes these bytes.
+
+#### ⭐ Review fixes applied — 2026-08-08, all 28 patches + 3 decisions
+
+**Gates re-measured after the fixes. Every figure below was run, not quoted.**
+
+| Gate | Before review | After fixes |
+|---|---|---|
+| `npm run lint` | 0 | 0 |
+| `npm test` | 1374 / 43 files | 1374 / 43 files (unchanged — the fixes ship no TypeScript) |
+| `npm run build` | 0, no `roulette` route | 0, `/ceremonia` still `ƒ`, **no `roulette` route** |
+| Go `worker/awards` `--- PASS` | 674 | **687** |
+| Go `worker/ceremony` `--- PASS` | 7 | **8** |
+| Go whole `worker` module | 815 | **829** |
+| `gofmt -l ./worker` · `go vet` | empty | empty |
+| `generate_vectors.py --check` | OK ×7 | OK ×7, `git status roulette/vectors/` **empty** |
+| `supabase test db` (after `db reset`) | 1309 / 28 files | **1344 / 28 files** |
+| `0027_ceremony_run_test.sql` | `plan(68)` | **`plan(103)`** = A 16 + B 6 + C 17 + D 10 + E 29 + F 17 + G 7 + H 1 |
+
+`0 CRLF` across every file touched. `git diff --name-only HEAD -- supabase/migrations/` names **only
+`0027`**. Every excluded path still byte-untouched.
+
+⚠ **One file outside the story's original File List was touched:** `worker/awards/sweep_test.go`, to
+delete its private `winnersOf` copy and point it at the new exported `awards.WinnersOf`. That is the
+whole of the change to it.
+
+#### ⛔⛔ THE ONE FIX THAT WAS ITSELF WRONG THE FIRST TIME, AND HOW IT WAS CAUGHT
+
+Discharging T4's deferred-assertion warning by adding `set constraints … immediate` before the audit
+insert **broke the `p_replace` path immediately** — the suite went from 68/68 to 6 failures. Cause:
+`set constraints` is **TRANSACTION-scoped, not statement-scoped**, so the first call left the triggers
+IMMEDIATE and the second call's `award_result` insert was judged before its winner row existed
+(`award_result 53 records outcome_kind=winner with 0 winner row(s)`). The fix is that
+`persist_ceremony` now **normalises the mode on entry** as well as forcing it on exit, and restores
+the declared default afterwards. ⭐ It was caught only because the review added the
+successful-`p_replace` test that had never existed — the finding and the bug it exposed were the same
+gap.
+
+#### ⭐⭐ Mutation pass on the review fixes — control-first, 12 mutants, 11 killed
+
+Control pass GREEN before every run. Mutants target the NEW effects only; the story's original
+29 SQL / 18 Go matrix is unchanged and was re-verified green by the control pass.
+
+| Mutant | Verdict |
+|---|---|
+| `coalesce(e->>'kind','<null>')` reverted to bare `string_agg` | killed |
+| `unknown_award`'s `x.aid is null or` removed | killed |
+| `unknown_player`'s null-element check removed | killed |
+| the fail-closed `elsif` arm disabled | killed |
+| `unknown_actor` lookup made always-hit | killed |
+| `invalid_deciding_pair` neutered | killed |
+| `spin_without_results` neutered | killed |
+| `invalid_spin_index` regex neutered | killed |
+| entry `set constraints … deferred` removed | killed (by the new ambient-IMMEDIATE test) |
+| exit `set constraints … immediate` removed | killed (by the forced-raise test) |
+| a ninth `CeremonyDetail*` constant declared and used (Go) | killed |
+| `if v_state is null then` neutered | ⚠ **SURVIVED — see below** |
+
+⚠ **THE ONE SURVIVOR IS RECORDED RATHER THAN PAPERED OVER.** `v_state is null` is reachable only by
+deleting the ceremony **between** the deliberately-unlocked peek and the lock — a race pgTAP's
+single-transaction model structurally cannot produce. The guard is correct and closes a real
+misdiagnosis (the operator was told `snapshot_missing` for a ceremony that no longer existed), but it
+has **no test**, and inventing one that cannot fail would be the exact defect this review spent 28
+patches removing. It is left uncovered, deliberately and in writing.
+
+⚠ **AND ONE MUTANT WAS MY OWN BAD MUTANT, recorded for the same reason 6.7's dev recorded theirs.**
+The first `unknown_actor` mutant prefixed the guard with `if false and (…` and left an unbalanced
+paren, so the migration failed to parse and *every* test reddened — a "kill" that proves nothing. It
+was re-rolled as a semantic mutant (the actor lookup always finds a row) and killed the right test.
+A mutation matrix is only worth its weakest mutant.
+
+#### Dismissed (1)
+
+- `winnersOf` is called from `package awards` but defined in `package ceremony`, so `worker/awards` does not compile — FALSE. Verified: two separate implementations exist (`worker/awards/sweep_test.go:1259` and `worker/ceremony/ceremony.go:420`) and the build is clean. The finding's OTHER horn — two divergent implementations of the same projection, with the suite testing the wrong one — is real and survives as a patch item above.

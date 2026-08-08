@@ -30,7 +30,13 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
--- plan(68) = A 14 + B 6 + C 12 + D 10 + E 15 + F 6 + G 4 + H 1, accounted for section by section:
+-- ⚠⚠ THE PER-SECTION COUNTS BELOW AND THE BANNER ON EACH SECTION ARE THE ONLY MECHANISM FOR SPOTTING
+-- AN ASSERTION ADDED OR LOST WITHOUT THE PLAN BEING UPDATED, AND TWO OF THEM WERE WRONG BEFORE THE
+-- 6.8a CODE REVIEW (Section E's banner said 12 against 15 assertions; Section G's said 2 against 4).
+-- The file still passed, because `plan()` counts the total — which is exactly how a stale banner
+-- survives. Both are now derived by counting the assertion calls in the file rather than by hand.
+--
+-- plan(103) = A 16 + B 6 + C 17 + D 10 + E 29 + F 17 + G 7 + H 1, accounted for section by section:
 --   A 14 — shape: spin_id_kind_key exists AND is unique · award_result.kind exists · is NOT NULL ·
 --          award_result_spin_kind_fk targets spin · award_result_is_pity_matches_kind exists by name
 --          and carries the IS TRUE wrapper · outcome_kind exists and is NOT NULL ·
@@ -73,7 +79,7 @@ set local search_path = extensions, public;
 --   H  1 — ⭐ AC9: with rows in all four tables, neither anon nor authenticated holds ANY of the four
 --          data verbs on ANY of them, the policy set is still exactly 0023's dormant
 --          award.award_admin_read, and all four are still ENABLE+FORCE.
-select plan(68);
+select plan(103);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into season (name) values ('Season 1');
@@ -141,6 +147,15 @@ insert into ceremony (tournament_id, state, seed_demo_sha256, snapshot_id)
   values ((select id from tournament where name = 'T12'), 'locked', null,
           (select id from stat_snapshot limit 1));
 
+-- ⭐ A VIRGIN CEREMONY FOR THE FREEZE'S PERMISSIVE DIRECTION (Story 6.8a code review). Section C
+-- proved value->NULL, value->different and value->same, but nothing ever wrote a snapshot or a seed
+-- into a ceremony that had NEITHER — so a mutant dropping the `old.<col> is not null and` prefix from
+-- both write-once guards survived the whole section, and that mutant BREAKS `lock_ceremony`, whose
+-- entire job is exactly this NULL -> value transition (`0024:815-819`).
+insert into tournament (season_id, name)
+  values ((select id from season where name = 'Season 1'), 'T13');
+insert into ceremony (tournament_id) values ((select id from tournament where name = 'T13'));
+
 -- Re-derived rather than hardcoded, and SCOPED BY NAME rather than `limit 1` — the correction 0025's
 -- and 0026's reviews both made to their own views.
 create temporary view f as
@@ -150,6 +165,8 @@ select
   (select c.id from ceremony c join tournament t on t.id = c.tournament_id where t.name = 'T10') as shape_ceremony,
   (select c.id from ceremony c join tournament t on t.id = c.tournament_id where t.name = 'T11') as no_snapshot_ceremony,
   (select c.id from ceremony c join tournament t on t.id = c.tournament_id where t.name = 'T12') as no_seed_ceremony,
+  (select c.id from ceremony c join tournament t on t.id = c.tournament_id where t.name = 'T13') as virgin_ceremony,
+  (select id from tournament where name = 'T13')                       as other_tournament,
   (select id from tournament where name = 'T8')                        as tournament_id,
   (select id from spin where spin_index = 90)                          as main_spin,
   (select id from spin where spin_index = 91)                          as pity_spin,
@@ -220,7 +237,7 @@ create function pg_temp.run_payload() returns jsonb language sql stable as $$
 $$;
 
 -- ============================================================================
--- Section A — the shape 0027 lands, and the UNIQUE assertions 0025's suite owed  (14)
+-- Section A — the shape 0027 lands, and the UNIQUE assertions 0025's suite owed  (16)
 -- ============================================================================
 select has_index('public', 'spin', 'spin_id_kind_key',
   'spin: the redundant unique (id, kind) exists — the composite-FK target that makes the bind expressible');
@@ -256,15 +273,21 @@ select col_not_null('public', 'award_result', 'outcome_kind',
 -- ⭐ THE CLOSED SET IS ASSERTED AS THE ENGINE'S FIVE, re-derived from the constraint definition rather
 -- than transcribed. `OutcomeKind` (worker/awards/stage2.go:226-243) is the contract 6.9's bundle
 -- canonicalizes against; a sixth added on one side alone must redden here.
+-- ⛔⛔ A SET EQUALITY, NOT A HIT COUNT, AND THE DIFFERENCE IS THE WHOLE ASSERTION (Story 6.8a code
+-- review). This previously counted how many of five EXPECTED literals appeared in the constraint
+-- definition and asserted the answer was 5 — which is satisfied by a constraint naming six, or ten.
+-- The "no more" half of its own description was untested, and adding 'bonus' to the CHECK left it
+-- green while `assert_award_result_is_shared`'s cardinality arms fell open on the new value. Reading
+-- the literals OUT of the definition and comparing the SET is what makes a sixth value red.
 select is(
-  (select count(*)::int from unnest(array['winner', 'tie', 'no_eligible_players',
-                                          'no_awardable_value', 'shared']) v
-    where pg_get_constraintdef(
-            (select oid from pg_constraint
+  (select array_agg(m[1] order by m[1])
+     from regexp_matches(
+            (select pg_get_constraintdef(oid) from pg_constraint
               where conrelid = 'public.award_result'::regclass
-                and conname = 'award_result_outcome_kind_valid')) like '%''' || v || '''%'),
-  5,
-  'award_result_outcome_kind_valid names all five OutcomeKind values — no more and no fewer');
+                and conname = 'award_result_outcome_kind_valid'),
+            '''([a-z_]+)''', 'g') as m),
+  array['no_awardable_value', 'no_eligible_players', 'shared', 'tie', 'winner']::text[],
+  'award_result_outcome_kind_valid names EXACTLY the five OutcomeKind values — no more and no fewer, asserted as a set');
 select isnt(
   (select conname::text from pg_constraint
     where conrelid = 'public.award_result'::regclass
@@ -281,13 +304,53 @@ select col_is_null('public', 'award_result', 'deciding_den',
 -- `has_index`, which proves an index EXISTS and says nothing about whether it is UNIQUE — so a
 -- migration that replaced any of them with a plain index would have left that suite green while
 -- silently removing the constraint it was testing. This asserts the property that matters.
+-- ⛔⛔ COUNTED, NOT `bool_and`-ED, AND SCOPED TO `public` (Story 6.8a code review). `bool_and` over a
+-- filtered set returns TRUE when a name is ABSENT — so dropping `award_result_winner_result_key`,
+-- which DECISION 5 keeps PURELY for this index, left the assertion green. It also named the wrong
+-- four: `deferred-work.md:334` records `award_result_winner_result_key` plus "the other three
+-- has_index calls", which are `spin_ceremony_index_key` (`0025:131`), `award_result_spin_award_key`
+-- (`:206`) and `award_result_id_spin_key` (`:210`) — and `spin_ceremony_index_key` was the one
+-- silently swapped out. And without a `relnamespace` filter, a same-named index in ANY schema
+-- participated. Counting rows that are BOTH present AND unique catches all three failures at once.
 select is(
-  (select bool_and(i.indisunique)
-     from pg_class c join pg_index i on i.indexrelid = c.oid
-    where c.relname in ('award_result_spin_award_key', 'award_result_id_spin_key',
-                        'award_result_winner_result_key', 'award_result_winner_spin_key')),
-  true,
-  '⭐ all four pre-0027 indexes are genuinely UNIQUE — has_index alone never asserted that (deferred-work.md:334)');
+  (select count(*)::int
+     from pg_class c
+     join pg_namespace n on n.oid = c.relnamespace
+     join pg_index i on i.indexrelid = c.oid
+    where n.nspname = 'public'
+      and i.indisunique
+      and c.relname in ('spin_ceremony_index_key', 'award_result_spin_award_key',
+                        'award_result_id_spin_key', 'award_result_winner_result_key',
+                        'award_result_winner_spin_key')),
+  5,
+  '⭐ all five pre-0027 indexes are PRESENT and genuinely UNIQUE — has_index asserted neither (deferred-work.md:334)');
+
+-- ⭐ LEAST PRIVILEGE ON BOTH NEW TRIGGER FUNCTIONS. 0027 revoked PUBLIC execute on
+-- `assert_award_result_is_shared` and — until the 6.8a code review — not on
+-- `assert_ceremony_transition`, though the stated rationale ("a trigger function does not need an
+-- EXECUTE grant to FIRE") is independent of `security definer` and applies to both.
+select is(
+  (select count(*)::int from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname in ('assert_award_result_is_shared', 'assert_ceremony_transition')
+      and has_function_privilege('public', p.oid, 'execute')),
+  0,
+  '⭐ NEITHER new trigger function is executable by PUBLIC — create function grants it and anon/authenticated inherit');
+
+-- ⭐⭐ THE `security definer` FIX DEPENDS ON THE OWNER'S BYPASSRLS, AND THAT IS NOW ASSERTED RATHER
+-- THAN ASSUMED (Story 6.8a code review). `award_result` and `award_result_winner` are FORCE ROW LEVEL
+-- SECURITY, and FORCE — unlike plain ENABLE — applies RLS to the table OWNER too. So `security
+-- definer` ALONE does not let this function see every row; what does is the owner role's BYPASSRLS
+-- attribute. If ownership is ever reassigned to a role without it, the function silently reverts to
+-- the deferred-work.md:333 FAIL-OPEN with Section G still green, because Section G runs as postgres.
+select ok(
+  (select r.rolbypassrls
+     from pg_proc p
+     join pg_roles r on r.oid = p.proowner
+     join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'assert_award_result_is_shared'),
+  '⭐ assert_award_result_is_shared is owned by a BYPASSRLS role — under FORCE RLS, security definer alone would still be fail-open');
 
 select is(
   (select prosecdef from pg_proc where proname = 'persist_ceremony'),
@@ -350,7 +413,7 @@ select throws_ok($$
 delete from public.award_result;
 
 -- ============================================================================
--- Section C — AC6: ceremony.state advances by MECHANISM (IC910)  (12)
+-- Section C — AC6: ceremony.state advances by MECHANISM (IC910)  (17)
 -- ============================================================================
 -- ⚠ EVERY TRANSITION IS EXERCISED ON THE `T9` CEREMONY, which starts at not_started and is touched by
 -- nothing else in this file.
@@ -414,6 +477,50 @@ select lives_ok($$
          snapshot_id      = (select id from stat_snapshot limit 1)
    where id = (select ceremony_id from f)$$,
   'writing the SAME frozen values back is a NO-OP, not an IC910 — an idempotent re-write is not a re-roll');
+
+-- ── C2. THE THREE THINGS SECTION C DID NOT COVER (Story 6.8a code review). ───
+
+-- ⭐⭐ THE PERMISSIVE DIRECTION. AC6 asks for proof "in both directions" and only the refusing one was
+-- taken. Both write-once guards are `if old.<col> is not null and …`, so NULL -> value must LIVE —
+-- and a mutant dropping that prefix survived all twelve of Section C's assertions while breaking
+-- `lock_ceremony`, the only shipped ceremony writer, whose whole job is this transition.
+select lives_ok($$
+  update public.ceremony
+     set state            = 'locked',
+         seed_demo_sha256 = repeat('e', 64),
+         snapshot_id      = (select id from stat_snapshot limit 1),
+         started_at       = now()
+   where id = (select virgin_ceremony from f)$$,
+  '⭐⭐ AC6, the OTHER direction: NULL -> value is the FREEZE, not a violation of it — and this is lock_ceremony''s exact four-column statement (0024:815-819)');
+
+-- ⭐ THE THIRD GUARDED FACT, WHICH HAD NO TEST AT ALL. DECISION 4 names three: the state machine, the
+-- two write-once columns, and `tournament_id`. Only the first two were asserted.
+select throws_ok($$
+  update public.ceremony set tournament_id = (select other_tournament from f)
+   where id = (select ceremony_id from f)$$,
+  'IC910', null,
+  '⭐ tournament_id is IMMUTABLE (AD-18 scope) — re-pointing a ceremony would silently re-scope every spin, result and winner under it');
+
+-- ⛔⛔ THE FIVE IC910 RAISE SITES ARE DISTINGUISHED BY MESSAGE, NOT ONLY BY SQLSTATE. This file's own
+-- header states the rule — "a shared error code makes tests pass for the wrong reason" — and then
+-- applied it to the CHECKs and abandoned it for the trigger: six of Section C's assertions pinned
+-- `IC910` and nothing else, so a mutant collapsing all five raises into one, or firing the
+-- state-machine branch for a write-once update, satisfied every one of them.
+select throws_like($$
+  update public.ceremony set snapshot_id = null where id = (select ceremony_id from f)$$,
+  '%snapshot_id is WRITE-ONCE%',
+  '⭐ the snapshot refusal is the SNAPSHOT raise — a mutant that reported the state-machine message here would have passed the old SQLSTATE-only assertion');
+select throws_like($$
+  update public.ceremony set seed_demo_sha256 = repeat('f', 64)
+   where id = (select ceremony_id from f)$$,
+  '%seed_demo_sha256 is WRITE-ONCE%',
+  '⭐ the seed refusal is the SEED raise, told apart from the snapshot one by message');
+select throws_like($$
+  update public.ceremony set tournament_id = (select other_tournament from f)
+   where id = (select ceremony_id from f)$$,
+  '%cannot move between tournaments%',
+  '⭐ the scope refusal is the TOURNAMENT raise — four of the five sites now have their own named proof');
+
 
 -- ============================================================================
 -- Section D — AC7: outcome_kind, the never-persisted tie, and the rate pair  (10)
@@ -486,7 +593,7 @@ select is(
   '⭐ nullif(exit_step, 0): the engine''s 0 landed as SQL NULL on every row — Go''s LadderExitNone and TS''s omitted key are now the SAME spelling');
 
 -- ============================================================================
--- Section F — AC1/AC4/AC8: what the run actually wrote, and the replace path  (6)
+-- Section F — AC1/AC4/AC8: what the run actually wrote, and the replace path  (17)
 -- ============================================================================
 -- ⚠ SECTION D's LAST TEST ALREADY PERSISTED THE CANONICAL RUN, deliberately — asserting over it here
 -- rather than persisting a second time keeps the row counts unambiguous.
@@ -521,14 +628,127 @@ select is(
   'spinning',
   'AC1: ceremony.state advanced locked -> spinning in the same transaction');
 
+-- ⭐ T4's "MAP, DO NOT ASSUME" FOR `live_award_ids`, WHICH NOTHING READ BEFORE (Story 6.8a code
+-- review). The producer's award ids are STRINGS; the column holds `award.id` BIGINTs. No test read
+-- the column back after a persist, so a mutant writing `'[]'::jsonb` unconditionally — or dropping
+-- the `order by ord` that makes DRAW order the stored order (`0025:127-129`) — survived the suite.
+select is(
+  (select live_award_ids from public.spin
+    where ceremony_id = (select ceremony_id from f) and spin_index = 1),
+  jsonb_build_array((select aw1 from f)),
+  '⭐ live_award_ids holds the MAPPED bigint, not the producer''s string — and is not empty');
+
+-- ⭐⭐ THE AUDIT ROW, ASSERTED AS A WHOLE OBJECT. 0027's own comment says "EVERY key below is asserted
+-- in pgTAP: the 4.2 review found a suite asserting ONE key while a typo in any other would have
+-- NULLed the whole payload with the tests still green" — and until the 6.8a code review the string
+-- `audit_log` did not appear ANYWHERE in this file. Not one key. Comparing the whole `detail` object
+-- is what makes that comment true: rename any key, drop any key, or change any value and this reddens.
+select is(
+  (select count(*)::int from public.audit_log
+    where action = 'run_ceremony' and tournament_id = (select tournament_id from f)),
+  1,
+  '⭐ AD-17: EXACTLY ONE audit row per successful run — not zero, not one per spin');
+select is(
+  (select detail from public.audit_log
+    where action = 'run_ceremony' and tournament_id = (select tournament_id from f)),
+  jsonb_build_object(
+    'before', jsonb_build_object(
+      'ceremony_state', 'locked', 'spins', 0, 'replaced', false),
+    'after', jsonb_build_object(
+      'ceremony_state', 'spinning',
+      'ceremony_id',    (select ceremony_id from f),
+      'seed_hex',       '1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c',
+      'snapshot_id',    (select id from stat_snapshot limit 1),
+      'spins',          3, 'results', 3, 'winners', 2, 'deleted_spins', 0)),
+  '⭐⭐ the audit detail carries EVERY before/after key with the right value — a typo in any one of them would have shipped green');
+select is(
+  (select actor_steamid64 from public.audit_log
+    where action = 'run_ceremony' and tournament_id = (select tournament_id from f)),
+  '76561198000000011',
+  'the audit row records the ACTOR the RPC was called with');
+
 -- ⭐ AC8 — a second run refuses, and then replaces atomically when told to.
 select is(pg_temp.probe_persist((select ceremony_id from f), pg_temp.run_payload(),
                                 '76561198000000011', false),
   'already_persisted',
   '⭐ AC8: a second run WITHOUT p_replace refuses with a typed reason rather than appending or 23505-ing');
 
+-- ⭐⭐ THE SUCCESSFUL `p_replace` PATH, WHICH NO COMMITTED TEST EXERCISED (Story 6.8a code review).
+-- Every other `p_replace => true` call in this file is a probe that REFUSES, so the `delete from
+-- public.spin` branch, `v_deleted`, and the `before.spins` / `after.deleted_spins` keys were dead to
+-- the suite — AC8's "records both the deleted and the written counts" rested entirely on THE BAR
+-- harness, which the story deleted. It is also the one branch in the RPC that can destroy committed
+-- rows, which is the last branch that should be untested.
+--
+-- ⚠ THE REPLACEMENT PAYLOAD REVERSES SPIN 1's `live_award_ids` ON PURPOSE, so this one call also
+-- proves DRAW ORDER IS PRESERVED rather than sorted: [aw2, aw1] is descending by id, so a mutant that
+-- dropped `order by ord` (or sorted) would write [aw1, aw2] and redden the next assertion.
+-- ⚠ AND IT CARRIES A REAL FR-29 RUNG, which closes the other half of the `nullif(v, 0)` claim. Every
+-- result in `run_payload()` carries `tie_ladder_exit_step: 0`, so the Section D assertion above —
+-- "the engine's 0 landed as SQL NULL on every row" — is satisfied by an implementation that writes
+-- `null` UNCONDITIONALLY. The plan comment claims both directions ("and a real rung lands as itself")
+-- and only one was ever asserted. Rung 3 here is what makes the mapping, rather than a constant,
+-- the thing under test.
+select is(pg_temp.probe_persist(
+    (select ceremony_id from f),
+    jsonb_set(
+      jsonb_set(pg_temp.run_payload(), '{spins,0,live_award_ids}',
+                jsonb_build_array((select aw2 from f)::text, (select aw1 from f)::text)),
+      '{spins,0,results,0,tie_ladder_exit_step}', '3'::jsonb),
+    '76561198000000011', true),
+  'ok',
+  '⭐ AC8: a second run WITH p_replace succeeds — deleting the prior run and writing the new one in ONE transaction');
+select is(
+  (select ar.tie_ladder_exit_step from public.award_result ar
+     join public.spin s on s.id = ar.spin_id
+    where s.ceremony_id = (select ceremony_id from f) and s.spin_index = 1),
+  3,
+  '⭐⭐ nullif(exit_step, 0), THE OTHER DIRECTION: a real FR-29 rung lands as ITSELF — the half a payload of all-zeroes can never prove');
+select is(
+  (select count(*)::int from public.spin where ceremony_id = (select ceremony_id from f)),
+  3,
+  '⭐ AC8: the replace REPLACED — three spins after, not six, so the delete and the insert were the same transaction');
+select is(
+  (select live_award_ids from public.spin
+    where ceremony_id = (select ceremony_id from f) and spin_index = 1),
+  jsonb_build_array((select aw2 from f), (select aw1 from f)),
+  '⭐ DRAW order is the STORED order (0025:127-129) — the descending pair came back descending, so nothing sorted it');
+select is(
+  (select count(*)::int from public.audit_log
+    where action = 'run_ceremony' and tournament_id = (select tournament_id from f)),
+  2,
+  'the replace wrote its OWN single audit row — one per call, still not one per spin');
+select is(
+  (select detail from public.audit_log
+    where action = 'run_ceremony' and tournament_id = (select tournament_id from f)
+    order by id desc limit 1),
+  jsonb_build_object(
+    'before', jsonb_build_object(
+      'ceremony_state', 'spinning', 'spins', 3, 'replaced', true),
+    'after', jsonb_build_object(
+      'ceremony_state', 'spinning',
+      'ceremony_id',    (select ceremony_id from f),
+      'seed_hex',       '1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c',
+      'snapshot_id',    (select id from stat_snapshot limit 1),
+      'spins',          3, 'results', 3, 'winners', 2, 'deleted_spins', 3)),
+  '⭐⭐ AC8: the audit row records BOTH counts — 3 deleted and 3 written — which is the AC''s literal requirement');
+
+-- ⭐⭐ THE CROSS-RPC REGRESSION 0027 INTRODUCES, PINNED HERE BECAUSE THIS IS THE FIRST POINT THE
+-- CEREMONY IS ACTUALLY `spinning` (Story 6.8a code review). `persist_ceremony` leaves every
+-- successful run at `spinning`, and `lock_ceremony`'s `on conflict do update` sets `state = 'locked'`
+-- — so re-locking a ceremony that has already spun is now `spinning -> locked`, BACKWARD, and raises
+-- IC910 where before 0027 it silently succeeded. Refusing is the CORRECT AD-15 posture and is the
+-- substance of `deferred-work.md:277`, but 0027 changes a SHIPPED RPC's failure mode and nothing
+-- exercised it. The suite cannot call `lock_ceremony` (it needs a whole approved bracket), so this
+-- drives the statement its conflict arm performs.
+select throws_like($$
+  update public.ceremony set state = 'locked', started_at = now()
+   where id = (select ceremony_id from f)$$,
+  '%advances forward one step at a time%',
+  '⭐⭐ re-locking a ceremony that has already SPUN is refused — the new lock_ceremony failure mode 0027 creates, and it is the intended one');
+
 -- ============================================================================
--- Section E — AC3: every typed refusal, and every one of them BEFORE any write  (12)
+-- Section E — AC3: every typed refusal, and every one of them BEFORE any write  (29)
 -- ============================================================================
 -- ⚠ RUN AFTER F ON PURPOSE: the ceremony is now `spinning` with rows in it, which is the state a
 -- re-run actually meets. Each probe below passes p_replace => true so that `already_persisted` is not
@@ -612,8 +832,112 @@ select is(pg_temp.probe_persist((select ceremony_id from f),
   'winner_cardinality',
   '⭐ winner_cardinality: outcome_kind and the winner count are the same fact twice, and a ''winner'' with nobody is the shape IC909 would otherwise catch only at COMMIT');
 
+-- ── E2. THE REFUSALS THE 6.8a CODE REVIEW FOUND UNTESTED. ────────────────────
+-- Two of them (`spin_index_missing`, `pity_award_shape`) were SHIPPED guards with no probe at all,
+-- while this section's own header claimed "ALL FIFTEEN" against a set of eighteen — so the mutation
+-- pass structurally could not have covered them. `pity_award_shape` is the worse of the two: it is
+-- the ONLY enforcer of its rule, because `0026` deliberately leaves "a pity result that DOES name an
+-- award" representable in the schema.
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    pg_temp.run_payload() #- '{spins,0,spin_index}', '76561198000000011', true),
+  'spin_index_missing',
+  '⭐ spin_index_missing: a spin with no index at all refuses HERE, not as a 23502 in the write loop');
+
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,2,results,0,award_id}',
+              to_jsonb((select aw1 from f)::text)), '76561198000000011', true),
+  'pity_award_shape',
+  '⭐ pity_award_shape: a consolation result names NO award (0026) — and this RPC is the ONLY thing that enforces it, because the schema deliberately does not');
+
+-- ── E3. THE SQL THREE-VALUED-LOGIC FAIL-OPENS, EACH PINNED AT ITS OWN SITE. ──
+-- ⛔⛔ ALL THREE OF THESE USED TO PASS VALIDATION. `string_agg` SKIPS NULL inputs and `jsonb ? NULL`
+-- is NULL, so a guard whose WHERE clause selected the offending row still aggregated to NULL and
+-- reported nothing. The consequences differed and the middle one is the worst:
+--   * a null `kind` reached a bare 23502 on spin.kind mid-write;
+--   * a null element in `live_award_ids` COMMITTED, as `[null]`, with {ok:true} — silent corruption;
+--   * a null element in `winners` reached a bare 23502 AFTER spins and results were inserted.
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,0,kind}', 'null'::jsonb), '76561198000000011', true),
+  'invalid_spin_kind',
+  '⭐⭐ a NULL spin kind is caught by the guard whose WHERE clause names it — string_agg used to swallow it and let the write proceed');
+
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,0,live_award_ids}', '[null]'::jsonb),
+    '76561198000000011', true),
+  'unknown_award',
+  '⭐⭐ a NULL element in live_award_ids REFUSES — it used to COMMIT as [null] with ok:true, the only silent-corruption path in the writer');
+
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,0,results,0,winners}', '[null]'::jsonb),
+    '76561198000000011', true),
+  'unknown_player',
+  '⭐⭐ a NULL element in winners REFUSES before the write, rather than 23502-ing after the spin and result rows are already in');
+
+-- ── E4. SHAPE AND CAST GUARDS THAT USED TO RAISE INSTEAD OF REFUSING. ────────
+-- `coalesce(x -> 'k', '[]')` does NOT neutralise a jsonb null (it is a scalar, not SQL NULL), and a
+-- `::int` cast is not a guard. Both used to escape as 22023 / 22P02 where the contract promises a
+-- typed reason — and the Go caller normalises any raise to an untyped `write_failed`.
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,0,spin_index}', '"one"'::jsonb),
+    '76561198000000011', true),
+  'invalid_spin_index',
+  '⭐ invalid_spin_index: a non-integral index refuses — the density check''s ::int cast used to raise 22P02 from inside the guard');
+
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,0,results}', '{}'::jsonb), '76561198000000011', true),
+  'invalid_payload_shape',
+  '⭐ invalid_payload_shape: `results` as an OBJECT refuses — jsonb_array_elements used to raise 22023 on it');
+
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,0,results,0,winners}', 'null'::jsonb),
+    '76561198000000011', true),
+  'invalid_payload_shape',
+  '⭐⭐ a key present with JSON null is NOT a missing key — coalesce passes the scalar null straight through, which is what used to raise');
+
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,0,results}', '[]'::jsonb), '76561198000000011', true),
+  'spin_without_results',
+  '⭐ spin_without_results: a spin that concluded nothing used to persist as a childless spin row with ok:true — no_spins guards an empty RUN, this guards an empty SPIN');
+
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spin_plan,0,pool}', '["999999"]'::jsonb),
+    '76561198000000011', true),
+  'unknown_plan_award',
+  '⭐ unknown_plan_award: spin_plan is the ONE field published verbatim, and its pools are now resolved against the frozen catalog like every other award id');
+
+select is(pg_temp.probe_persist((select ceremony_id from f),
+    jsonb_set(pg_temp.run_payload(), '{spins,0,results,0,deciding_num}', '"5"'::jsonb),
+    '76561198000000011', true),
+  'invalid_deciding_pair',
+  '⭐ invalid_deciding_pair: half a rate pair used to arrive as a bare 23514 on the constraint THIS migration adds, from inside the INSERT');
+
+select is(pg_temp.probe_persist((select ceremony_id from f), pg_temp.run_payload(),
+                                '76561198000009999', true),
+  'unknown_actor',
+  '⭐ unknown_actor: the actor is resolved BEFORE the write — an unknown one used to 23503 at the audit insert, after every row had been written');
+
+-- ── E5. ⭐⭐ THE SECTION'S HEADLINE PROPERTY, WHICH NOTHING ASSERTED. ──────────
+-- "every one of them BEFORE any write" is this section's title and was, until the 6.8a code review,
+-- carried by NO assertion whatsoever. Every probe above returns a reason string; move any guard below
+-- the `-- Past this line everything writes` separator and every one of them returns the IDENTICAL
+-- string and stays green.
+--
+-- ⛔ AND THE OMISSION WAS ACTIVELY DANGEROUS HERE, because every probe in this section passes
+-- `p_replace => true` — so the FIRST write a mis-ordered guard would reach is
+-- `delete from public.spin where ceremony_id = …`, silently destroying the three rows Section F
+-- persisted, with nothing downstream to notice. These two assertions are that missing test.
+select is(
+  (select count(*)::int from public.spin where ceremony_id = (select ceremony_id from f)),
+  3,
+  '⭐⭐ AC3: after 24 refusals each passing p_replace => true, Section F''s three spins are STILL THERE — every guard really does run before the delete');
+select is(
+  (select count(*)::int from public.audit_log
+    where action = 'run_ceremony' and tournament_id = (select tournament_id from f)),
+  2,
+  '⭐⭐ AC3: and not one refusal wrote an audit row — a refused run leaves no trace at all');
+
 -- ============================================================================
--- Section G — ⭐ the is_shared trigger under a role WITHOUT BYPASSRLS  (2)
+-- Section G — ⭐ the is_shared trigger under a role WITHOUT BYPASSRLS  (7)
 -- ============================================================================
 -- ⛔⛔ THE BUG THIS PROVES FIXED (deferred-work.md:333). Before 0027 the trigger function was
 -- `security invoker` and ran against FORCE-RLS tables with ZERO policies, so for a role without
@@ -723,6 +1047,79 @@ select throws_like($q$
 $q$,
   '%the outcome kind and the winner cardinality are the same fact%',
   '…and its MESSAGE names the cardinality rule, not the is_shared one — the two branches are distinguishable, so neither can pass for the other');
+
+-- ⭐⭐ THE FAIL-CLOSED `else` ARM (Story 6.8a code review, DECISION 6). The cardinality `if` chain used
+-- to have no fallthrough, so ANY outcome_kind it did not name satisfied the assertion at ANY winner
+-- count. The migration defended that omission on the grounds that `tie` is already unrepresentable —
+-- but `tie` was never the fail-open case; an unknown SIXTH value was, and the same file's
+-- `assert_ceremony_transition` reasons the opposite way about the identical situation.
+--
+-- ⚠ THE VOCABULARY CHECK IS DROPPED FIRST, INSIDE THIS ROLLED-BACK TRANSACTION, AND THAT IS THE ONLY
+-- WAY TO REACH THE ARM. A sixth value cannot otherwise be represented — which is exactly why the
+-- branch was untestable and stayed uncovered. Dropping the CHECK simulates the future migration that
+-- widens the set, and the assertion is that the trigger REFUSES rather than waving it through.
+-- ⛔ It is dropped AFTER Section A has already asserted the constraint's exact five-value definition,
+-- and the whole file rolls back, so nothing outside this transaction sees it.
+alter table public.award_result drop constraint award_result_outcome_kind_valid;
+
+select throws_like($q$
+  do $x$
+  begin
+    set constraints all deferred;
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select main_spin from f), 'main', (select aw2 from f), 'bonus', false, false);
+    set constraints public.award_result_is_shared_consistent immediate;
+  end
+  $x$
+$q$,
+  '%does not know how to check%',
+  '⭐⭐ an UNKNOWN outcome_kind is REFUSED by the trigger rather than silently satisfying it — the fail-open the if-chain had with no else, closed the way assert_ceremony_transition already did it');
+
+alter table public.award_result
+  add constraint award_result_outcome_kind_valid
+  check ((outcome_kind in (
+    'winner', 'tie', 'no_eligible_players', 'no_awardable_value', 'shared'
+  )) is true);
+
+-- ── G2. THE DEFERRED-ASSERTION SEAM, BOTH HALVES (Story 6.8a code review, T4's ⚠ subtask). ──
+--
+-- `persist_ceremony` writes an `award_result` and only THEN its winner rows, so the is_shared /
+-- cardinality assertion must be DEFERRED across that gap — and it ends by forcing it IMMEDIATE so the
+-- `{ok:true}` it returns is a value the database has already agreed to. `set constraints` is
+-- TRANSACTION-scoped, which is what makes both halves need a test of their own.
+
+-- ⭐ HALF ONE: the function normalises the mode ON ENTRY, so an ambient IMMEDIATE set by the CALLER
+-- cannot make it raise on its own perfectly good rows. The mutation pass found this uncovered.
+set constraints public.award_result_is_shared_consistent,
+                public.award_result_winner_is_shared_consistent immediate;
+select is(pg_temp.probe_persist((select ceremony_id from f), pg_temp.run_payload(),
+                                '76561198000000011', true),
+  'ok',
+  '⭐ persist_ceremony survives an ambient IMMEDIATE constraint mode — it defers on entry rather than depending on what the caller left behind');
+set constraints public.award_result_is_shared_consistent,
+                public.award_result_winner_is_shared_consistent deferred;
+
+-- ⭐⭐ HALF TWO: the assertion really does run BEFORE the function returns. This cannot be shown with
+-- a drifting row, because the RPC derives `is_shared` from the winner count and validates the
+-- cardinality itself — by construction it never writes a row IC909 would reject. So the trigger
+-- function is swapped for one that ALWAYS raises, which makes the ORDERING the only variable:
+--   * with the `set constraints … immediate` in place, the raise happens INSIDE persist_ceremony and
+--     the probe reports `raised:IC909`;
+--   * without it, the deferred check waits for COMMIT — which never comes in pgTAP — so the function
+--     returns `ok` and the caller is told a run committed that had not been judged yet.
+-- ⛔ DELIBERATELY THE LAST THING IN THIS SECTION, and the function is NOT restored: Section H reads
+-- only privileges and policies, and the whole file rolls back.
+create or replace function public.assert_award_result_is_shared() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  raise exception using errcode = 'IC909', message = 'pgtap: forced deferred failure';
+end;
+$$;
+
+select is(pg_temp.probe_persist((select ceremony_id from f), pg_temp.run_payload(),
+                                '76561198000000011', true),
+  'raised:IC909',
+  '⭐⭐ a deferred IC909 surfaces FROM persist_ceremony, not after it has already returned ok and written its audit row — T4''s warning, discharged');
 
 -- ============================================================================
 -- Section H — ⭐ AC9: the posture has NOT moved, asserted WITH ROWS PRESENT  (1)

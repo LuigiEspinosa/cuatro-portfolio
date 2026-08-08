@@ -1235,7 +1235,7 @@ func TestResolveSpinNeverAwardsOnePlayerTwiceInOneSpin(t *testing.T) {
 			}
 			seen := map[string]string{}
 			for _, r := range got.Results {
-				for _, sid := range winnersOf(r.Outcome) {
+				for _, sid := range WinnersOf(r.Outcome) {
 					if prev, dup := seen[sid]; dup {
 						t.Errorf("%s won %s AND %s in one spin — the anti-sweep cap did not hold",
 							sid, prev, r.AwardID)
@@ -1254,14 +1254,4 @@ func TestResolveSpinNeverAwardsOnePlayerTwiceInOneSpin(t *testing.T) {
 			}
 		})
 	}
-}
-
-func winnersOf(out Outcome) []string {
-	switch out.Kind {
-	case KindWinner:
-		return []string{out.SteamID64}
-	case KindShared:
-		return out.Winners
-	}
-	return nil
 }
