@@ -552,6 +552,14 @@ def _eligible(award: dict, players: list) -> list:
     ]
 
 
+# The closed set of things an award can be concluded to be, across the WHOLE engine — Stage 2's
+# four plus the FR-29 ladder's terminal `shared`. It is declared once here and carried by BOTH
+# `stage2-resolve.json` and `antisweep-resolve.json`, so both runtimes pin one vocabulary rather
+# than two. ⚠ `shared` is APPENDED rather than inserted (Story 6.5), which is what kept
+# `stage2-resolve.json`'s diff to those bytes; keep appending.
+OUTCOME_KINDS = ("winner", "tie", "no_eligible_players", "no_awardable_value", "shared")
+
+
 def resolve_stage2(award: dict, players: list) -> dict:
     """The Stage-2 outcome. Pure, integer-only, no randomness, no stream."""
     _validate_award(award)
@@ -1391,7 +1399,11 @@ def build_stage2_file() -> dict:
         # closed set both runtimes pin themselves against — but the PURE stage can never produce it
         # (it resolves no tie), which is asserted separately over every case below. Appending rather
         # than inserting is what keeps the diff to these bytes.
-        "outcome_kinds": ["winner", "tie", "no_eligible_players", "no_awardable_value", "shared"],
+        # ⭐ ONE DEFINITION SITE, since Story 6.6 (`antisweep-resolve.json` declares the same set).
+        # It used to be a literal here, so a second file declaring the vocabulary would have been a
+        # second place to keep in step — the exact drift `refusal_details` exists to prevent one
+        # level up. The list is unchanged, so this file regenerates byte-identically.
+        "outcome_kinds": list(OUTCOME_KINDS),
         "tie_reasons": ["equal_value", "equal_cross_product"],
         "refusals": refusals,
         "cases": cases,
@@ -1559,6 +1571,55 @@ def _validate_weight_table(table) -> None:
         prev = w
 
 
+def _weight_at(table: list, index: int) -> int:
+    """W8's ONE indexing site: `table[min(max(index, 0), len(table) - 1)]`, guarded on BOTH sides.
+
+    ⭐ STORY 6.6 — THIS FUNCTION EXISTS TO CLOSE `deferred-work.md:308`, and the defect it closes
+    is a DIVERGENCE rather than a crash. 6-4b's clamp was one-sided (`min(index, table_max)`), so a
+    NEGATIVE index — or an empty `table` making `table_max = -1` — did three different things in the
+    three implementations of one contract: Python indexes from the END of the list and hands the
+    LIGHTEST weight to the emptiest shelf (FR-26 exactly backwards), Go PANICS, and TypeScript
+    yields `undefined as number`, which poisons a byte-accounted draw with `NaN` and is refused
+    three functions later under a different label. One input, three behaviours, in a pair of
+    runtimes whose whole contract is identical behaviour.
+
+    ⛔ IT REFUSES RATHER THAN CLAMPING TO ZERO, and the reason is that reaching here with a
+    negative index means an upstream guard has been removed: `_validate_shelf` already refuses a
+    negative shelf size and `_validate_weight_table` already refuses an empty table, so both arms
+    below are UNREACHABLE through `stage1_weights` / `stage1_pick`. A silent clamp would hand back
+    `table[0]` — the HEAVIEST luck weight — for an input that means the validation layer is broken,
+    which is the plausible-but-wrong answer this package refuses everywhere else.
+
+    ⚠ NEITHER ARM IS ROW-REPRESENTABLE, and that is DECLARED rather than left silent (README's
+    representability rule). A vector row is a set of INPUTS, and every input that could reach these
+    two arms is refused by a guard that runs first — so the rows would have to carry an input the
+    public entry points cannot accept. Both suites drive them by calling the weighting path with a
+    deliberately corrupted table/shelf, exactly as `stream` and `internal` are driven locally.
+
+    ⭐ AND THE CLAMP-ORDER QUESTION IS SETTLED BY THERE BEING ONE CLAMP (`deferred-work.md:317`).
+    The `shared` arm's old comment claimed "clamp AFTER the minimum" as if it were a pinned
+    invariant; it is not one, because `min(x, table_max)` is monotone non-decreasing and therefore
+    `clamp(min(S)) == min(clamp(S))` for every input — no fixture can distinguish them and no
+    implementation can get it wrong. Stating it as an invariant devalued the genuinely load-bearing
+    `min`-vs-`max` rule three lines above it. With the clamp living HERE, at the single indexing
+    site, the ordering is not a rule anybody can violate.
+    """
+    if not table:
+        raise Stage1Refusal(
+            "weight_table",
+            "luck_weight_table is empty at the indexing site — there is no index 0 to give the "
+            "empty shelf, and `len(table) - 1` is -1"
+        )
+    if index < 0:
+        raise Stage1Refusal(
+            "shelf",
+            f"shelf index {index} is negative at the indexing site — a shelf size is a count, and "
+            "a negative index reads the table from the END in Python, panics in Go and yields "
+            "`undefined` in TypeScript"
+        )
+    return table[min(index, len(table) - 1)]
+
+
 def _validate_shelf(shelf) -> None:
     """W8 — a shelf size is a NON-NEGATIVE integer; absent means 0, which is the normal case.
 
@@ -1713,7 +1774,12 @@ def stage1_weight(award: dict, players: list, shelf: dict, table: list, ladder: 
         # inventing a winner; here the ladder already decided, deterministically and with zero bytes
         # drawn, and this only aggregates the shelves of players who genuinely share the award.
         #
-        # W8 — the clamp comes AFTER the minimum.
+        # W8 — the index is `min` over the co-winners' shelves and the CLAMP lives at the single
+        # indexing site, `_weight_at`. ⚠ The old comment here read "the clamp comes AFTER the
+        # minimum" as though the ORDER were a pinned invariant; `deferred-work.md:317` measured that
+        # it is not one (`min(x, table_max)` is monotone, so clamping before or after the minimum is
+        # provably the same answer for every input), and asserting it devalued the genuinely
+        # load-bearing `min`-vs-`max` rule above. Story 6.6 rewrote it.
         #
         # ⚠ THE TWO `internal` GUARDS BOTH RUNTIMES CARRY ON THIS ARM ARE STRUCTURALLY UNREACHABLE
         # HERE, AND THAT IS DECLARED RATHER THAN LEFT SILENT (DECISION D). Go and TypeScript refuse
@@ -1728,7 +1794,7 @@ def stage1_weight(award: dict, players: list, shelf: dict, table: list, ladder: 
         # arrive with it, or the anchor will resolve an input both runtimes refuse — which is
         # exactly the divergence DECISION C exists to prevent.
         idx = min(shelf.get(sid, 0) for sid in out["winners"])
-        return table[min(idx, len(table) - 1)]
+        return _weight_at(table, idx)
 
     if out["kind"] == "tie":
         raise Stage1TieRefusal(
@@ -1742,10 +1808,11 @@ def stage1_weight(award: dict, players: list, shelf: dict, table: list, ladder: 
         # DECISION F — no player at all, so no shelf, so the maximal EMPTY shelf: index 0.
         idx = 0
     else:
-        # W8 — `table_max` is len(table) - 1, NOT a length, and an absent player is shelf 0
-        # (the normal case at the first spin, never an error).
-        idx = min(shelf.get(out["steamid64"], 0), len(table) - 1)
-    return table[idx]
+        # W8 — an absent player is shelf 0 (the normal case at the first spin, never an error).
+        # The clamp itself lives in `_weight_at`, which is the ONLY place this file indexes the
+        # table — see its docstring for why the bound is two-sided (Story 6.6).
+        idx = shelf.get(out["steamid64"], 0)
+    return _weight_at(table, idx)
 
 
 def stage1_weights(candidates: list, players: list, shelf: dict, table: list, ladder: bool = False):
@@ -1853,7 +1920,58 @@ def _c(award_id: str, priority: int, award: dict) -> dict:
 
 
 # SOLUTION-DESIGN §9.2's own example table. table_max = 5.
+#
+# ⭐ STORY 6.6 ADOPTED THESE AS THE SHIPPED VALUES (Cuatro, 2026-08-07), so this fixture and
+# `ceremony.luck_weight_table`'s column default (migration 0025) are now the SAME six integers. They
+# are still organizer config — the column exists so they can be re-tuned without a code change — and
+# neither runtime seeds one, which is why the property below is asserted over the SHAPE rather than
+# over these particular numbers.
 TABLE = [100, 40, 16, 6, 2, 1]
+
+# ⭐⭐ FR-26's HEADLINE PROPERTY, ASSERTED IN THE ANCHOR TOO (Story 6.6, Task 5). Both runtimes carry
+# a named test for "shelf 0 => table[0] => the heaviest weight, monotone non-increasing in shelf
+# size, clamped past table_max"; this is the third implementation's half of it, so the property is
+# stated in all three places the vector seam has rather than in two. It re-derives the maximum from
+# the table rather than trusting the strictly-decreasing validator, because the two facts are
+# different: one is a shape rule, the other is FR-26's bias.
+def _assert_weight_bias(table: list) -> None:
+    _validate_weight_table(table)
+    weights = [_weight_at(table, shelf) for shelf in range(len(table) + 2)]
+    assert weights[0] == table[0] == max(table), (
+        f"shelf 0 must draw the HEAVIEST weight; got {weights[0]} over {table}"
+    )
+    assert all(b <= a for a, b in zip(weights, weights[1:])), (
+        f"weight must be monotone non-increasing in shelf size; got {weights}"
+    )
+    assert weights[0] != weights[len(table) - 1], "the bias is not a bias"
+    assert all(w == table[-1] for w in weights[len(table) - 1:]), (
+        "every shelf at or past table_max must weigh the LAST entry"
+    )
+
+
+_assert_weight_bias(TABLE)
+_assert_weight_bias([9, 4, 1])
+_assert_weight_bias([2, 1])
+
+# ⚠ A ONE-ENTRY TABLE IS A LEGAL SHAPE AND NOT A BIAS, AND THE SPLIT IS DELIBERATE RATHER THAN A GAP.
+# `_validate_weight_table` requires non-empty, all > 0, strictly decreasing — and "strictly
+# decreasing" is VACUOUSLY true of a single entry, so `[100]` is accepted by the shape validator in
+# all three runtimes. It is not a usable luck meter: `_weight_at` clamps every shelf to index 0,
+# every candidate draws the same weight, and FR-26's underdog bias is silently OFF with nothing red
+# anywhere. The engine's accepted domain is 6-4b's shipped Stage-1 contract and this story does not
+# narrow it; the refusal belongs where the VALUES live, which is `0025`'s `luck_weight_table_valid`
+# (>= 2 entries). Both halves are asserted here so the boundary is a STATED rule rather than
+# something a later reader rediscovers by shipping an inert ceremony.
+_validate_weight_table([100])
+try:
+    _assert_weight_bias([100])
+except AssertionError:
+    pass
+else:
+    raise SystemExit(
+        "a one-entry weight table passed the BIAS assertion — it clamps every shelf to index 0, so "
+        "it cannot bias anything and the assertion has stopped being able to fail"
+    )
 
 # The Stage-1 roster: four players, each the OUTRIGHT leader on a different deciding stat, so
 # a candidate's provisional winner is a function of its `deciding_stat` and nothing else. A
@@ -5783,6 +5901,1336 @@ def build_ladder_file() -> dict:
     }
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# STORY 6.6 — THE ANTI-SWEEP PASS (FR-26 / AD-14 / SOLUTION-DESIGN §9.4)
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# The entire normative spec is THREE SENTENCES (SOLUTION-DESIGN:425-427) plus one line of
+# ARCHITECTURE-SPINE:220. Transcribed rather than paraphrased:
+#
+#   "Process live awards in ascending priority; remove `assigned_this_spin` players from later
+#    candidate sets (overflow re-resolves via the ladder). Co-winners all count."
+#   "Live awards processed in ascending `priority`; a player already awarded this spin is removed
+#    from later candidate sets, so overflow re-resolves to the next-eligible player."
+#
+# Everything below that those four lines do not decide is a DECISION recorded in the story
+# (6-6-anti-sweep-and-luck-meter.md) and pinned by its own row here.
+#
+# ⛔ ZERO STREAM BYTES, AND THE SIGNATURE IS THE PROOF (A1). `resolve_spin` takes no `Stream`,
+# exactly as `resolve_ladder` does not: re-resolution is Stage 2 plus the FR-29 ladder, and both are
+# pure. This file therefore carries NO `seed_hex`, no `label` and no byte accounting at all — it is
+# not on the cryptographic axis, and a runtime "it drew nothing" assertion around a function that
+# cannot reach a stream is VACUOUS (the 6-4b code review deleted exactly that assertion).
+
+
+class SweepRefusal(Exception):
+    """A programmer/data error every runtime must refuse loudly — never a business outcome.
+
+    ⭐ IT NAMES WHICH INPUT WAS REJECTED (`detail`), mirroring `Stage1Refusal` and
+    `LadderRefusal`, and the closed set is genuinely closed: FOUR labels, declared once here,
+    carried in the vector's `refusal_details`, and pinned against both runtimes' constants by exact
+    equality. Story 6-4b shipped a "closed set" that was 9 / 7 / 7 across three implementations and
+    6.5 shipped one whose fifth value no suite inspected; declaring the vocabulary in ONE place and
+    having all three read it is the only thing that has ever prevented that.
+    """
+
+    def __init__(self, detail: str, message: str) -> None:
+        super().__init__(f"[{detail}] {message}")
+        self.detail = detail
+
+
+# The closed set of things an anti-sweep refusal can be ABOUT. A12 — three distinct FACTS get three
+# distinct labels, because they mean genuinely different things to a caller:
+SWEEP_REFUSAL_DETAILS = (
+    "live",      # the live set's OWN shape is wrong (A2) — a caller/spin-plan bug
+    "stage2",    # the award surface or the snapshot is malformed; PROPAGATED, never swallowed
+    "ladder",    # the FR-29 ladder RAN and REFUSED, or none was injected at all
+    "internal",  # an invariant this pass believes unreachable
+)
+
+# ⚠ `internal` IS DECLARED AND IS NOT ROW-REPRESENTABLE, exactly as `stage1-pick.json`'s
+# `stream`/`internal` pair and `ladder-resolve.json`'s `internal` are. A row is a set of INPUTS, and
+# every producer of `internal` here is a state no input can reach: a `Ladder` port returning
+# something that is neither `winner` nor `shared`, and a sixth `OutcomeKind` arriving from a later
+# story. Both runtimes drive those arms with a STUB port in their own suites (the machinery Story
+# 6-5b built for `stage1`'s two port guards); the generator refuses to write a row carrying it.
+ROW_REPRESENTABLE_SWEEP_DETAILS = SWEEP_REFUSAL_DETAILS[:3]
+
+assert len(SWEEP_REFUSAL_DETAILS) == 4, "the comment above says FOUR; count them"
+assert len(ROW_REPRESENTABLE_SWEEP_DETAILS) == 3, "the comment above says THREE; count them"
+
+# The outcome kinds an assignment row can carry. ⭐ `tie` is DECLARED UNREACHABLE rather than
+# omitted: `OUTCOME_KINDS` is one closed set across the whole engine (pinned by exact equality in
+# both suites and in ONE other vector file — `stage2-resolve.json`; `ladder-resolve.json` carries
+# `exit_steps` and `stage1-pick.json` carries `refusal_kinds`, neither of which is this set), so
+# narrowing it here would be a second vocabulary.
+# What is true of THIS pass is that a `tie` never survives it — every tie goes through the ladder,
+# which returns `winner` or `shared` — and stating that as data is what lets both suites assert
+# ZERO rows carry it. An implementation that skipped the ladder would emit one.
+UNREACHABLE_SWEEP_OUTCOME_KINDS = ("tie",)
+
+
+def _validate_live(live) -> None:
+    """A2 / A13 — the live set's OWN shape, checked BEFORE any award is resolved.
+
+    ⭐ THE ORDER IS CONTRACT AND IT IS PUBLISHED IN THE `spec` STRING. This group runs FIRST, in
+    full, over the WHOLE set — not interleaved with resolution. Two vector rows are malformed in TWO
+    WAYS AT ONCE precisely so a regression that resolved award-by-award (and therefore refused
+    `stage2` on a set whose own shape was already broken) is observable; 6-4b's headline defect was
+    invisible for exactly the lack of such a row, and 6.5 shipped the same class again.
+
+    ⚠ THE DUPLICATE-PRIORITY CLAUSE IS A REFUSAL, NOT A STABLE SORT. `UNIQUE(tournament_id,
+    priority)` (0023:150 — confirmed in the migration, not assumed) is the ONLY thing that makes
+    "ascending priority" a TOTAL order, and `review-data-integrity.md:388-389` says so by name: with
+    a duplicate, two honest implementations break the tie differently and the whole spin's
+    assignment shifts. This mirrors `_validate_pool` clause for clause, deliberately — the two are
+    the same rule about the same column.
+    """
+    if not isinstance(live, list) or not live:
+        raise SweepRefusal(
+            "live",
+            "the live award set is empty — a spin with nothing to resolve is a refusal, never a "
+            "short return"
+        )
+    seen_id: set = set()
+    seen_priority: set = set()
+    for c in live:
+        # ⚠ THE ELEMENT'S OWN TYPE, FIRST — this is `_validate_pool`'s arm at :1676 and the docstring
+        # above claims to mirror that function CLAUSE FOR CLAUSE. It did not, and the gap was not
+        # cosmetic: a `null` or non-mapping element made this function raise a bare `AttributeError`
+        # from `c.get(...)` rather than a `SweepRefusal`, so the ANCHOR crashed with a traceback on an
+        # input both runtimes refuse deliberately — and the anchor's refusal surface has to be the
+        # SHARED one, because it is what arbitrates when the two runtimes disagree.
+        if not isinstance(c, dict) or "award_id" not in c or "priority" not in c:
+            raise SweepRefusal(
+                "live",
+                f"each live entry must be a mapping with award_id and priority, got {c!r}"
+            )
+        award_id = c.get("award_id")
+        if not isinstance(award_id, str) or award_id == "":
+            raise SweepRefusal("live", f"award_id must be a non-empty string, got {award_id!r}")
+        if award_id in seen_id:
+            raise SweepRefusal(
+                "live",
+                f"duplicate award_id {award_id!r} — one award is live at most once in a spin"
+            )
+        seen_id.add(award_id)
+        priority = c.get("priority")
+        if isinstance(priority, bool) or not isinstance(priority, int) or priority < 1:
+            raise SweepRefusal(
+                "live",
+                f"award {award_id!r} has priority {priority!r} — 0023's award_priority_positive "
+                "requires an integer > 0"
+            )
+        if priority in seen_priority:
+            raise SweepRefusal(
+                "live",
+                f"duplicate priority {priority} — UNIQUE(tournament_id, priority) is what makes "
+                "ascending priority a TOTAL order, so a duplicate is a refusal rather than a "
+                "coin flip"
+            )
+        seen_priority.add(priority)
+
+
+def resolve_spin(live: list, players: list) -> dict:
+    """FR-26's anti-sweep pass over ONE spin's live award set. Pure, and it draws NOTHING.
+
+    Transcribed from the four spec lines at the top of this section, with each DECISION named:
+
+        validate(live)                                  # A2, A13 — the whole set, first
+        ordered  = sort(live, ascending award.priority) # A2 — a COPY; `Stage1Result.live` is DRAW
+        assigned = {}                                   #      order and must NOT be relied on
+        for a in ordered:
+            reduced   = [p for p in players if p.steamid64 not in assigned]   # A3 / DECISION E'
+            swept_out = [p.steamid64 for p in players if p.steamid64 in assigned]
+            out = resolve_stage2(a.award, reduced)      # A4 / DECISION D — a FULL re-run
+            if out.kind == 'tie':
+                out = resolve_ladder(a.award, out.tied, reduced)   # A8 — width >= 2 by construction
+            winners = out.winners if shared else [out.steamid64] if winner else []   # A5, A6
+            assigned |= winners
+
+    ⭐ A3 / DECISION E' — REMOVAL IS APPLIED TO THE CANDIDATE SET, BEFORE STAGE 2 RUNS, never to an
+    `Outcome` afterwards. That is what makes `review-data-integrity.md:175-179` STRUCTURALLY
+    impossible rather than defensively handled: "if a tie bottoms out to a shared trophy including
+    player P, and P already won a higher-priority award this spin, the anti-sweep rule must remove P
+    from the *shared* set too." If P was never a candidate, no shared set can contain P. Trimming the
+    winners afterwards would additionally leave `ladder_exit_step: 5` on what is now a sole winner —
+    a lie Story 6.8 renders on stage.
+
+    ⭐ A4 / DECISION D — RE-RESOLUTION IS A FULL STAGE-2 RE-RUN, NEVER A "POP THE WINNER", and the
+    three reasons are each independently sufficient: (i) the ladder's rung 3 is defined as a strict
+    dominator over the REMAINING set, and the remaining set changed; (ii) `best` is a SET, so
+    removing one member changes which players are tied and therefore which rung resolves them;
+    (iii) DECISION E's zero carve-out is evaluated against the reduced set's best value, which may
+    NEWLY be 0. Neither SOLUTION-DESIGN nor the spine says which, so it is decided here and pinned by
+    its own rows.
+
+    ⭐ A9 — THE FR-21 FLOORS ARE NEVER RE-APPLIED. `resolve_stage2` applies them itself via
+    `_eligible`; this pass reduces the PLAYER LIST and lets Stage 2 filter it. Note what is absent
+    below: no `floor_rounds` comparison, no `idle_dq` read, no deciding-magnitude lookup.
+
+    ⭐ A10 — THE SHELF IS NEITHER READ NOR WRITTEN HERE, and there is no `shelf` parameter to read.
+    Stage 1's luck weighting is computed from the shelf FROZEN at spin start (W1) over
+    PRE-anti-sweep provisional winners, so a category's weight can be justified by a player who then
+    does not win it (DECISION G). That is intended — it is what keeps Stage 1 a pure function of the
+    frozen shelf and therefore reproducible from the published bundle alone — and it is stated
+    nowhere in any architecture document, which is why it is stated here.
+
+    ⚠ THE LADDER IS CALLED DIRECTLY RATHER THAN THROUGH AN INJECTED PORT, and that asymmetry with
+    the two runtimes is declared rather than hidden (the same declaration `stage1_weight` carries
+    about its `ladder` bool). Go and TypeScript accept a `Ladder` port, so they must guard against a
+    port returning an outcome no code in the package built — an `internal` refusal on anything that
+    is neither `winner` nor `shared`. There is no injection seam here, so there is no state to
+    guard, and adding the check would be dead code asserting something the call site already gives.
+    ⛔ If this ever becomes a callable, that guard must arrive with it, or the anchor will resolve an
+    input both runtimes refuse.
+    """
+    # An ABSENT container is the EMPTY container (Cuatro, 2026-08-04): Go cannot idiomatically tell
+    # a nil slice from an empty one, so `None` must mean here what nil means there.
+    players = [] if players is None else players
+
+    _validate_live(live)
+
+    # A2 — ASCENDING `priority`, over a COPY. `sorted` returns a new list, so the caller's slice is
+    # never reordered: a pass that reordered its input would make two consecutive resolutions of the
+    # same spin observably different operations.
+    ordered = sorted(live, key=lambda c: c["priority"])
+
+    assigned: set = set()
+    results: list = []
+
+    for c in ordered:
+        # ── REMOVAL, HERE, ON THE CANDIDATE SET, BEFORE RESOLUTION ────────────────────────────
+        reduced = [p for p in players if p["steamid64"] not in assigned]
+        # ⚠ `swept_out` IS A FACT ABOUT THE INPUT, NOT ABOUT THE OUTCOME. It is every rostered
+        # player removed from THIS award's candidate set, in byte-lex order — whether or not any of
+        # them would have won. The clean-spin row is the one that shows the difference: awards 2 and
+        # 3 there run over reduced sets and crown exactly the players they would have crowned
+        # anyway. A vector pinning only the winner would let a pass that reached the right player
+        # WITHOUT EVER REMOVING ANYONE pass every row, and the removal is the whole story.
+        swept_out = sorted(p["steamid64"] for p in players if p["steamid64"] in assigned)
+
+        try:
+            out = resolve_stage2(c["award"], reduced)
+        except Stage2Refusal as err:
+            # A12 — PROPAGATED under its own label. "The award or the snapshot is malformed" is a
+            # different fact from "the live set's shape is wrong" and from "the ladder refused".
+            raise SweepRefusal(
+                "stage2", f"resolving award {c['award_id']!r}: {err}"
+            ) from err
+
+        if out["kind"] == "tie":
+            # A8 — A REDUCED TIE OF WIDTH 1 IS NEVER CONSTRUCTED. `resolve_stage2` cannot emit a
+            # width-1 tie (a lone best is a `winner`), and `_validate_ladder` REFUSES `len(tied) < 2`
+            # (L11), so the only way to hand the ladder a width-1 set is to build one — by popping
+            # the winner out of the ORIGINAL tie and passing the remainder. The width-1 row exists to
+            # prove that never happens: it resolves to a Stage-2 `winner` carrying a
+            # `deciding_value`, where the pop-the-winner shortcut would refuse `ladder`.
+            try:
+                out = resolve_ladder(c["award"], out["tied"], reduced)
+            except LadderRefusal as err:
+                raise SweepRefusal(
+                    "ladder",
+                    f"the FR-29 ladder refused the tie on award {c['award_id']!r}: {err}"
+                ) from err
+
+        if out["kind"] == "shared":
+            # A5 — EVERY WINNER COUNTS, CO-WINNERS INCLUDED. "Co-winners all count"
+            # (SOLUTION-DESIGN:427), which is also what makes the database's
+            # `UNIQUE(spin_id, winner_entry_id)` the correct backstop SHAPE rather than a
+            # per-award-result constraint.
+            winners = list(out["winners"])
+        elif out["kind"] == "winner":
+            winners = [out["steamid64"]]
+        elif out["kind"] in ("no_eligible_players", "no_awardable_value"):
+            # A6 / DECISION K — NEITHER ASSIGNS ANYBODY AND NEITHER IS A REFUSAL. They pass through
+            # with an empty winner set and `assigned` unchanged. ⛔ `no_awardable_value` CARRIES the
+            # suppressed byte-lex set so the width of the tie that did not form stays READABLE
+            # (AD-14 names this pass); a version that "helpfully" resolved it would re-crown the
+            # 27-way zero tie DECISION E exists to suppress.
+            winners = []
+        else:  # pragma: no cover — see the docstring's note on the absent injection seam
+            raise SweepRefusal(
+                "internal",
+                f"award {c['award_id']!r} resolved to an outcome kind this pass cannot assign: "
+                f"{out['kind']!r}"
+            )
+
+        assigned.update(winners)
+        results.append(
+            {
+                "award_id": c["award_id"],
+                "priority": c["priority"],
+                **_render_sweep_outcome(out),
+                "swept_out": swept_out,
+                # ⚠ `reresolved` IS ALSO ABOUT THE INPUT: it is "this award's Stage 2 ran over a
+                # REDUCED candidate set", not "the winner changed". The two differ on every clean
+                # spin, and conflating them would make the field un-derivable without resolving
+                # each award twice.
+                "reresolved": len(swept_out) > 0,
+            }
+        )
+
+    # A byte-lex ordered set, the same order Stage 2 iterates and the ladder's rung 5 returns.
+    return {"results": results, "assigned": sorted(assigned)}
+
+
+def _render_sweep_outcome(out: dict) -> dict:
+    """One `Outcome` flattened onto an assignment row, with `ladder_exit_step` ALWAYS present.
+
+    ⭐ `ladder_exit_step` RIDES ON EVERY ROW, `0` MEANING "NO LADDER RAN". Go carries
+    `LadderExitStep int` with `LadderExitNone = 0` on every outcome while TypeScript omits the key
+    entirely, and `deferred-work.md:307` records that asymmetry as a live item for 6.8/6.9 — so a
+    file that also omitted it would be a third spelling of NULL. An explicit integer is the one
+    encoding all three can produce, and it makes "reached the right player by the WRONG rung"
+    visible on the rows where it matters most: an overflow whose re-resolution exits at a DIFFERENT
+    rung from the one the original resolution took.
+
+    ⭐ `deciding_value` XOR `ladder_exit_step` — the invariant `ladder-resolve.json` established,
+    carried through this pass. A Stage-2 winner has a value and no rung; a ladder-resolved winner
+    has a rung and no value, because the tie it resolves carries none and L12 forbids re-deriving
+    one. Both suites assert it over every `winner` row here.
+    """
+    kind = out["kind"]
+    if kind == "winner":
+        row: dict = {"kind": "winner", "steamid64": out["steamid64"]}
+        if "deciding_value" in out:
+            row["deciding_value"] = out["deciding_value"]
+        row["ladder_exit_step"] = out.get("ladder_exit_step", 0)
+        return row
+    if kind == "shared":
+        return {
+            "kind": "shared",
+            "winners": list(out["winners"]),
+            "ladder_exit_step": out["ladder_exit_step"],
+        }
+    if kind == "no_awardable_value":
+        # DECISION K — the WIDTH of the tie that did not form travels; it is never resolved.
+        return {"kind": "no_awardable_value", "tied": list(out["tied"]), "ladder_exit_step": 0}
+    return {"kind": kind, "ladder_exit_step": 0}
+
+
+# ── the anti-sweep fixtures ───────────────────────────────────────────────────
+#
+# Two more real-length ids, so a roster can be wide enough to exhaust. ⚠ Byte-lex and numeric order
+# agree on all six (every SteamID64 is 17 digits), which is the property `stage2-resolve.json`'s
+# short synthetic ids exist to separate — it is not this file's subject.
+S_E = "76561198000000055"
+S_F = "76561198000000066"
+
+
+def _sw(sid, *, knife=0, wallbang=0, smoke=0, hs=0, blind=0, ts=None, rounds=30, kills=20):
+    """One anti-sweep roster row, carrying ALL FIVE deciding keys every case in this file uses.
+
+    ⭐ THE DECOYS ARE THE POINT, and they are materialised on every player rather than per case: a
+    pass that resolved the WRONG award — the second when it should have resolved the first, or the
+    supplied order instead of the priority order — must land on a different player rather than
+    coincidentally the right one. With a single-key fixture, "processed in ascending priority" and
+    "processed in whatever order they arrived" are indistinguishable.
+
+    `ts` defaults to the published ABSENT sentinel (`_p`'s own default), which is what makes a tie
+    that no rung can separate bottom out SHARED at rung 5.
+    """
+    return _p(
+        sid,
+        rounds=rounds,
+        kills=kills,
+        vol={
+            "knife_kills": knife,
+            "wallbang_kills": wallbang,
+            "through_smoke_kills": smoke,
+            "hs_kills": hs,
+            "blind_kills": blind,
+        },
+        ts=ts,
+    )
+
+
+AW_KNIFE = _ladder_award("knife_kills", "volume", "max")
+AW_WALLBANG = _ladder_award("wallbang_kills", "volume", "max")
+AW_SMOKE = _ladder_award("through_smoke_kills", "volume", "max")
+AW_BLIND = _ladder_award("blind_kills", "volume", "max")
+# The one award in this file that CONFIGURES a rung, so an overflow can exit the ladder at a
+# different rung from the one the original resolution took.
+AW_WALLBANG_HS = _ladder_award("wallbang_kills", "volume", "max", secondary="hs_kills")
+
+# ⭐ THE CLEAN-SPIN FIXTURE IS SHARED BY TWO CASES BY DESIGN. The out-of-priority-order row supplies
+# the SAME three candidates in a different order over the SAME roster, so its expected block must be
+# BYTE-IDENTICAL — and that identity IS the assertion, the shape `ladder-resolve.json`'s three
+# spellings of an absent rung key established. A vector row whose expected block merely "looks
+# right" proves nothing; two rows that must agree exactly prove the sort.
+CLEAN_ROSTER: list[dict] = [
+    _sw(S_A, knife=4, wallbang=1, smoke=1, hs=3),
+    _sw(S_B, knife=2, wallbang=7, smoke=2, hs=5),
+    _sw(S_C, knife=1, wallbang=3, smoke=8, hs=1),
+]
+CLEAN_LIVE = [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG), _c("aw-03", 3, AW_SMOKE)]
+
+
+def _unreduced(case: dict, award_id: str, exclude: tuple = ()) -> dict:
+    """Resolve ONE of the case's awards over its own roster, optionally minus some players.
+
+    ⭐ EVERY GUARD BELOW RE-DERIVES ITS PROPERTY THROUGH THIS, from the ROW'S OWN DATA, rather than
+    asserting a transcribed literal. The recurring defect this closes is at its FOURTH occurrence
+    across 6-4a, 6-4b, 6.5 and 6-5b: a coverage flag that names a property and is satisfied by a row
+    unrelated to it. "This award's winner CHANGED because the removal happened" is only meaningful
+    if the counterfactual is computed, and the counterfactual is what this returns.
+    """
+    award = next(c["award"] for c in case["live"] if c["award_id"] == award_id)
+    roster = [p for p in case["players"] if p["steamid64"] not in exclude]
+    out = resolve_stage2(award, roster)
+    if out["kind"] == "tie":
+        out = resolve_ladder(award, out["tied"], roster)
+    return out
+
+
+def _row(expected: dict, award_id: str) -> dict:
+    """One assignment row out of an expected block, by award_id."""
+    return next(r for r in expected["results"] if r["award_id"] == award_id)
+
+
+def _winner_of(out: dict):
+    """The single player an outcome assigns, or None when it assigns none or several."""
+    return out["steamid64"] if out["kind"] == "winner" else None
+
+
+SWEEP_CASES: list[dict] = [
+    {
+        "name": "the-SHIPPED-live-count-1-spin-can-never-sweep-ANYBODY",
+        "note": (
+            "⭐⭐ THE CONFIGURATION THAT ACTUALLY SHIPS, and the row that records what it costs. UX "
+            "fixes the pacing at ONE award per spin (EXPERIENCE.md:164, ':132'), so `live_count` is "
+            "1 — and with a single live award the `assigned` set is still empty when the only "
+            "award resolves, so FR-26's cap CANNOT FIRE. `swept_out` is empty, `reresolved` is "
+            "false, and no removal is possible in principle rather than merely absent by luck. "
+            "6-4b flagged this by name and parameterised the seam for N >= 1 instead of resolving "
+            "it; Cuatro's call (2026-08-07) was to ship the cap anyway and record the consequence "
+            "as a measured number, because the rule is published, `spin_plan` is organizer config "
+            "that can widen without a code change, and SOLUTION-DESIGN §9.6's gate 4 REQUIRES an "
+            "anti-sweep overflow to be exercised. This row is that consequence, as data."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE)],
+        "players": CLEAN_ROSTER,
+        "pins": lambda e: (
+            len(e["results"]) == 1
+            and e["results"][0]["swept_out"] == []
+            and e["results"][0]["reresolved"] is False
+            and e["assigned"] == [S_A]
+        ),
+        "pins_inputs": lambda e, c: (
+            # The property is STRUCTURAL, not incidental: with one live award there is no earlier
+            # award that could have assigned anybody. Re-derived rather than asserted.
+            len(c["live"]) == 1
+            and _unreduced(c, "aw-01")["kind"] == "winner"
+        ),
+    },
+    {
+        "name": "a-CLEAN-spin-REMOVES-players-from-later-races-and-CHANGES-NOTHING",
+        "note": (
+            "⭐ THE ROW THAT SEPARATES `reresolved` FROM 'the winner changed'. Three awards, three "
+            "different winners, no player wins twice — so the CAP is inert. But awards 2 and 3 "
+            "still resolve over REDUCED candidate sets, so `swept_out` is non-empty on both and "
+            "`reresolved` is true on both, while every winner is exactly the winner the unreduced "
+            "set would have crowned. Both fields are facts about the INPUT. Without this row a "
+            "reader (and an implementation) could reasonably conclude `reresolved` means the "
+            "outcome moved, and the two readings diverge on every clean spin a real ceremony runs."
+        ),
+        "live": CLEAN_LIVE,
+        "players": CLEAN_ROSTER,
+        "pins": lambda e: (
+            [r["steamid64"] for r in e["results"]] == [S_A, S_B, S_C]
+            and [r["swept_out"] for r in e["results"]] == [[], [S_A], [S_A, S_B]]
+            and [r["reresolved"] for r in e["results"]] == [False, True, True]
+            and e["assigned"] == [S_A, S_B, S_C]
+        ),
+        "pins_inputs": lambda e, c: (
+            # ⭐ THE COUNTERFACTUAL: every award's UNREDUCED winner is the same player the reduced
+            # resolution crowned, so the removal provably changed nothing — which is the only way
+            # this row can be the "cap is inert" row rather than an ordinary overflow row.
+            all(
+                _winner_of(_unreduced(c, r["award_id"])) == r["steamid64"]
+                for r in e["results"]
+            )
+            # …and removal genuinely HAPPENED, or "changed nothing" would be vacuous.
+            and any(r["swept_out"] for r in e["results"])
+        ),
+    },
+    {
+        "name": "the-live-set-supplied-OUT-OF-PRIORITY-ORDER-resolves-IDENTICALLY",
+        "note": (
+            "⭐ W2's mirror, one layer up, and the row that makes the sort LOAD-BEARING rather than "
+            "decorative. Byte-identical inputs to the clean-spin row above EXCEPT the order the "
+            "candidates arrive in — 3, 1, 2 — so the expected block must come out byte-identical "
+            "too, and that identity IS the assertion. ⚠ `Stage1Result.live` is in DRAW order, "
+            "which is the REVEAL order and is deliberately unsorted (stage1.go:269-274 names this "
+            "story by number); a pass that iterated it as supplied would crown aw-03's winner "
+            "first and hand aw-01 a reduced set. The supplied order here is neither ascending nor "
+            "descending, so it separates 'no sort at all' from 'sorted the wrong way' — which the "
+            "descending row below cannot do on its own. 6-4b's generate_vectors.py:2249-2250 warns "
+            "that a row whose supplied order COINCIDES with priority order discriminates nothing."
+        ),
+        "live": [CLEAN_LIVE[2], CLEAN_LIVE[0], CLEAN_LIVE[1]],
+        "players": CLEAN_ROSTER,
+        "pins": lambda e: (
+            [r["award_id"] for r in e["results"]] == ["aw-01", "aw-02", "aw-03"]
+            and [r["steamid64"] for r in e["results"]] == [S_A, S_B, S_C]
+        ),
+        "pins_inputs": lambda e, c: (
+            # The supplied order must genuinely differ from BOTH the ascending and the descending
+            # priority orders, or the row proves nothing about either.
+            [x["priority"] for x in c["live"]] != sorted(x["priority"] for x in c["live"])
+            and [x["priority"] for x in c["live"]]
+            != sorted((x["priority"] for x in c["live"]), reverse=True)
+        ),
+    },
+    {
+        "name": "the-award-with-the-LOWER-PRIORITY-NUMBER-KEEPS-the-trophy",
+        "note": (
+            "⭐⭐ THE DIRECTION OF THE SORT, and the only row that can pin it. EXPERIENCE.md:169 in "
+            "the UX spine's own words: 'If a Player would win two live categories in one Spin, they "
+            "take the HIGHER-PRIORITY one; the other passes to the next eligible Player.' Higher "
+            "priority is the LOWER priority NUMBER (0023's column is an ascending rank), so A must "
+            "keep aw-02 and lose aw-07. Both awards' unreduced winner is the same player, and the "
+            "candidates are supplied in strictly DESCENDING priority — so processing them "
+            "descending, or in the order supplied, gives A the priority-7 trophy and hands the "
+            "priority-2 one to B. Same two players, same two awards, the assignment swapped."
+        ),
+        "live": [_c("aw-07", 7, AW_WALLBANG), _c("aw-02", 2, AW_KNIFE)],
+        "players": [
+            _sw(S_A, knife=5, wallbang=9, smoke=1, hs=2),
+            _sw(S_B, knife=2, wallbang=7, smoke=2, hs=4),
+            _sw(S_C, knife=1, wallbang=3, smoke=3, hs=6),
+        ],
+        "pins": lambda e: (
+            [r["award_id"] for r in e["results"]] == ["aw-02", "aw-07"]
+            and _row(e, "aw-02")["steamid64"] == S_A
+            and _row(e, "aw-07")["steamid64"] == S_B
+            and _row(e, "aw-07")["swept_out"] == [S_A]
+        ),
+        "pins_inputs": lambda e, c: (
+            # ⭐ BOTH awards' UNREDUCED winner is the SAME player — the property without which the
+            # two sort directions produce the same answer and the row discriminates nothing.
+            _winner_of(_unreduced(c, "aw-02")) == _winner_of(_unreduced(c, "aw-07")) is not None
+            # …and they really are supplied largest-priority-first.
+            and [x["priority"] for x in c["live"]]
+            == sorted((x["priority"] for x in c["live"]), reverse=True)
+        ),
+    },
+    {
+        "name": "a-SINGLE-OVERFLOW-re-resolves-award-2-to-the-NEXT-ELIGIBLE-player",
+        "note": (
+            "FR-26's headline shape, at its smallest. A wins aw-01 on knife_kills and ALSO leads "
+            "aw-02 on wallbang_kills; removed from aw-02's candidate set, the trophy passes to B — "
+            "'the next-eligible player' in ARCHITECTURE-SPINE:220's own words. The guard re-derives "
+            "the counterfactual through the real Stage 2: aw-02 over the FULL roster crowns A, so "
+            "the removal is what moved the winner."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+        "players": [
+            _sw(S_A, knife=4, wallbang=9, smoke=1, hs=2),
+            _sw(S_B, knife=2, wallbang=7, smoke=2, hs=4),
+            _sw(S_C, knife=1, wallbang=3, smoke=3, hs=6),
+        ],
+        "pins": lambda e: (
+            _row(e, "aw-02")["steamid64"] == S_B
+            and _row(e, "aw-02")["swept_out"] == [S_A]
+            and _row(e, "aw-02")["reresolved"] is True
+            and e["assigned"] == [S_A, S_B]
+        ),
+        "pins_inputs": lambda e, c: (
+            _winner_of(_unreduced(c, "aw-02")) == S_A
+            and _winner_of(_unreduced(c, "aw-02")) != _row(e, "aw-02")["steamid64"]
+        ),
+    },
+    {
+        "name": "a-CASCADE-award-3s-re-resolved-winner-was-ALREADY-swept-into-award-2",
+        "note": (
+            "⭐ THE ASSIGNED SET IS CARRIED FORWARD ACROSS THE WHOLE SPIN, not reset between "
+            "awards. A sweeps all three deciding stats, so aw-01 crowns A; aw-02 over the roster "
+            "minus A crowns B; and aw-03's winner over the roster minus A would ALSO be B — but B "
+            "is by then assigned too, so aw-03 falls through to C. An implementation that reset "
+            "`assigned` after each award crowns B twice and violates the cap it exists to enforce. "
+            "The guard re-derives all three links of the chain from the row's own roster."
+        ),
+        "live": CLEAN_LIVE,
+        "players": [
+            _sw(S_A, knife=4, wallbang=9, smoke=9, hs=2),
+            _sw(S_B, knife=2, wallbang=7, smoke=8, hs=4),
+            _sw(S_C, knife=1, wallbang=3, smoke=5, hs=6),
+        ],
+        "pins": lambda e: (
+            [r["steamid64"] for r in e["results"]] == [S_A, S_B, S_C]
+            and _row(e, "aw-03")["swept_out"] == [S_A, S_B]
+            and e["assigned"] == [S_A, S_B, S_C]
+        ),
+        "pins_inputs": lambda e, c: (
+            # (i) aw-03 over the FULL roster would crown A — the first sweeper;
+            _winner_of(_unreduced(c, "aw-03")) == S_A
+            # (ii) aw-03 over the roster minus A would crown B — who is exactly aw-02's
+            #      RE-RESOLVED winner, which is what makes this a cascade rather than two
+            #      independent overflows;
+            and _winner_of(_unreduced(c, "aw-03", exclude=(S_A,)))
+            == _row(e, "aw-02")["steamid64"]
+            # (iii) …and the actual winner is neither of them.
+            and _row(e, "aw-03")["steamid64"] == S_C
+        ),
+    },
+    {
+        "name": "TWO-DIFFERENT-players-are-swept-out-of-TWO-DIFFERENT-awards",
+        "note": (
+            "The cascade's sibling, and a genuinely different shape: here A is not a contender for "
+            "aw-03 at all, so each award's DECISIVE removal is a different player. aw-02 would have "
+            "gone to A and goes to B; aw-03 would have gone to B — over the FULL roster, not merely "
+            "over the roster minus A — and goes to C. An implementation that tracked only the most "
+            "recent winner rather than the accumulated set passes the cascade row (where the chain "
+            "is sequential) and fails here."
+        ),
+        "live": CLEAN_LIVE,
+        "players": [
+            _sw(S_A, knife=5, wallbang=9, smoke=2, hs=2),
+            _sw(S_B, knife=2, wallbang=7, smoke=9, hs=4),
+            _sw(S_C, knife=1, wallbang=3, smoke=6, hs=6),
+        ],
+        "pins": lambda e: (
+            [r["steamid64"] for r in e["results"]] == [S_A, S_B, S_C]
+            and _row(e, "aw-02")["swept_out"] == [S_A]
+            and _row(e, "aw-03")["swept_out"] == [S_A, S_B]
+        ),
+        "pins_inputs": lambda e, c: (
+            # Two DIFFERENT decisive removals: aw-02's unreduced winner is A, aw-03's unreduced
+            # winner is B, and B is not the player aw-02 removed.
+            _winner_of(_unreduced(c, "aw-02")) == S_A
+            and _winner_of(_unreduced(c, "aw-03")) == S_B
+            and _winner_of(_unreduced(c, "aw-03")) not in _row(e, "aw-02")["swept_out"]
+            and _winner_of(_unreduced(c, "aw-03")) in _row(e, "aw-03")["swept_out"]
+        ),
+    },
+    {
+        "name": "an-overflow-re-resolves-through-the-LADDER-and-EXITS-AT-A-DIFFERENT-RUNG",
+        "note": (
+            "⭐⭐ THE ROW THAT PROVES RE-RESOLUTION IS A FULL STAGE-2 RE-RUN (A4 / DECISION D), and "
+            "the one that would be impossible to fake. aw-02 over the FULL roster is a THREE-way "
+            "tie on wallbang_kills that the ladder resolves at RUNG 1 — A's secondary hs_kills is "
+            "the largest. A has already won aw-01, so aw-02 re-resolves over {B, C}: still a tie, "
+            "but now rung 1 CANNOT separate them (equal hs_kills), rung 2 is unconfigured, rung 3 "
+            "has no h2h, and rung 4 crowns B on the earlier achievement_ts — exit step 4. A "
+            "different winner AND a different rung from the original resolution, which is why "
+            "`ladder_exit_step` rides on every row: Story 6.8 persists it as "
+            "`award_result.tie_ladder_exit_step`, so a pass that reached B by the wrong rung would "
+            "ship a false explanation to the audience. ⚠ A 'pop the winner and keep the rest of the "
+            "old tie' shortcut also reaches B here — and reaches it at the WRONG rung, because it "
+            "never re-runs rung 1 over the reduced set."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG_HS)],
+        "players": [
+            _sw(S_A, knife=5, wallbang=7, smoke=1, hs=9, ts=5000),
+            _sw(S_B, knife=2, wallbang=7, smoke=2, hs=3, ts=1000),
+            _sw(S_C, knife=1, wallbang=7, smoke=3, hs=3, ts=4000),
+        ],
+        "pins": lambda e: (
+            _row(e, "aw-02")["kind"] == "winner"
+            and _row(e, "aw-02")["steamid64"] == S_B
+            and _row(e, "aw-02")["ladder_exit_step"] == 4
+            # A ladder-resolved winner carries NO deciding_value — the XOR invariant.
+            and "deciding_value" not in _row(e, "aw-02")
+        ),
+        "pins_inputs": lambda e, c: (
+            # ⭐ THE ORIGINAL RESOLUTION EXITED AT A DIFFERENT RUNG. Re-derived through the real
+            # Stage 2 + the real ladder over the full roster: winner A at step 1.
+            _unreduced(c, "aw-02")["ladder_exit_step"] == 1
+            and _unreduced(c, "aw-02")["ladder_exit_step"]
+            != _row(e, "aw-02")["ladder_exit_step"]
+            and _winner_of(_unreduced(c, "aw-02")) != _row(e, "aw-02")["steamid64"]
+            # …and the original really was a TIE, so the ladder ran on both sides of the removal.
+            and resolve_stage2(c["live"][1]["award"], c["players"])["kind"] == "tie"
+        ),
+    },
+    {
+        "name": "an-overflow-re-resolves-to-a-SHARED-outcome-and-assigns-TWO-players-at-once",
+        "note": (
+            "⭐ A5 IN ITS STRONGEST FORM — 'Co-winners all count' (SOLUTION-DESIGN:427). aw-02 over "
+            "the full roster is A's outright: 9 wallbang kills against 7. With A removed, B and C "
+            "tie at 7, no rung can separate them (no secondary, no efficiency pair, no h2h, both "
+            "achievement_ts at the absent sentinel) and rung 5 shares the trophy. One award, TWO "
+            "players added to `assigned` in one step. ⭐ Measured context, from Story 6.5's own BAR "
+            "over the real corpus: 0 of 12 awards end shared, because in 1v1 wingman a player plays "
+            "one match and two opponents are never tied against each other on a tournament-wide "
+            "total. This path is therefore VECTOR-ONLY in production, exactly like the ladder's "
+            "rung 5 — which is a reason to state the number, not a reason to gate it weakly."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+        "players": [
+            _sw(S_A, knife=5, wallbang=9, smoke=1, hs=1),
+            _sw(S_B, knife=2, wallbang=7, smoke=2, hs=3),
+            _sw(S_C, knife=1, wallbang=7, smoke=3, hs=3),
+        ],
+        "pins": lambda e: (
+            _row(e, "aw-02")["kind"] == "shared"
+            and _row(e, "aw-02")["winners"] == [S_B, S_C]
+            and _row(e, "aw-02")["ladder_exit_step"] == 5
+            and e["assigned"] == [S_A, S_B, S_C]
+        ),
+        "pins_inputs": lambda e, c: (
+            # The unreduced outcome is a LONE winner, so `shared` is genuinely a product of the
+            # removal rather than a property of the award.
+            _unreduced(c, "aw-02")["kind"] == "winner"
+            and _winner_of(_unreduced(c, "aw-02")) in _row(e, "aw-02")["swept_out"]
+        ),
+    },
+    {
+        "name": "a-CO-WINNER-of-an-EARLIER-shared-award-is-the-one-SWEPT-OUT",
+        "note": (
+            "⭐⭐ THE OTHER HALF OF A5, and the one the database constraint is shaped around. aw-01 "
+            "bottoms out SHARED between A and B at rung 5, so BOTH are assigned. aw-02's unreduced "
+            "winner is B — the SECOND co-winner, not the first — so a pass that credited only "
+            "`winners[0]` would leave B in aw-02's candidate set and hand B a second trophy in one "
+            "spin, which is precisely the silent violation `review-data-integrity.md:169-174` "
+            "measured and `UNIQUE(spin_id, winner_entry_id)` exists to catch. Here B is removed and "
+            "the trophy passes to C."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+        "players": [
+            _sw(S_A, knife=5, wallbang=3, smoke=1, hs=2),
+            _sw(S_B, knife=5, wallbang=9, smoke=2, hs=2),
+            _sw(S_C, knife=1, wallbang=7, smoke=3, hs=6),
+        ],
+        "pins": lambda e: (
+            _row(e, "aw-01")["kind"] == "shared"
+            and _row(e, "aw-01")["winners"] == [S_A, S_B]
+            and _row(e, "aw-02")["steamid64"] == S_C
+            and _row(e, "aw-02")["swept_out"] == [S_A, S_B]
+            and e["assigned"] == [S_A, S_B, S_C]
+        ),
+        "pins_inputs": lambda e, c: (
+            # ⭐ THE REMOVED CO-WINNER IS NOT THE FIRST ONE. Without this the row is satisfied by a
+            # pass that credits only `winners[0]`, and it is the ONLY row that can distinguish them.
+            _winner_of(_unreduced(c, "aw-02")) == _row(e, "aw-01")["winners"][1]
+            and _winner_of(_unreduced(c, "aw-02")) != _row(e, "aw-01")["winners"][0]
+        ),
+    },
+    {
+        "name": "EXHAUSTION-every-eligible-player-for-a-LATER-award-is-ALREADY-assigned",
+        "note": (
+            "⭐ DECISION F, AND THE DISTINCTION IT PRESERVES. A two-player roster whose aw-01 ends "
+            "SHARED assigns everybody, so aw-02's candidate set is EMPTY and `resolve_stage2` "
+            "returns `no_eligible_players` — the same kind it returns when nobody cleared the FR-21 "
+            "floors, which is a completely different fact for Story 6.7's pity draw and Story 6.8's "
+            "reveal copy. The distinction is carried on the RESULT ROW (`swept_out` is non-empty "
+            "here and empty there), NOT as a sixth `OutcomeKind`: `OUTCOME_KINDS` is pinned by "
+            "exact equality in both suites and in one other vector file (`stage2-resolve.json`), "
+            "and widening it is a cross-cutting change this story has no mandate for. ⚠ Exhaustion "
+            "is a first-class "
+            "OUTCOME, never a refusal — a pass that refused here would halt a ceremony over a "
+            "perfectly legal spin plan."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+        "players": [
+            _sw(S_A, knife=5, wallbang=4, smoke=1, hs=2),
+            _sw(S_B, knife=5, wallbang=6, smoke=2, hs=2),
+        ],
+        "pins": lambda e: (
+            _row(e, "aw-01")["kind"] == "shared"
+            and _row(e, "aw-02")["kind"] == "no_eligible_players"
+            and _row(e, "aw-02")["swept_out"] == [S_A, S_B]
+            and _row(e, "aw-02")["reresolved"] is True
+            and e["assigned"] == [S_A, S_B]
+        ),
+        "pins_inputs": lambda e, c: (
+            # ⭐ THE ELIGIBLE SET WAS NON-EMPTY BEFORE REMOVAL — the exact guard Task 2 demands, and
+            # without it this row is indistinguishable from an award nobody was eligible for.
+            _unreduced(c, "aw-02")["kind"] != "no_eligible_players"
+            # …and removal is what emptied it: every rostered player is assigned.
+            and set(_row(e, "aw-02")["swept_out"]) == {p["steamid64"] for p in c["players"]}
+        ),
+    },
+    {
+        "name": "an-award-arrives-as-no_eligible_players-BEFORE-any-removal-and-assigns-NOBODY",
+        "note": (
+            "⭐ EXHAUSTION'S TWIN, and the row that makes `swept_out` the discriminator. aw-01 "
+            "carries `floor_rounds = 99`, which nobody on this roster clears, so it resolves to "
+            "`no_eligible_players` with `swept_out` EMPTY — the shape 6-4a measured on the real "
+            "corpus, where 0 of 28 players clear the shipped 24/20 floors. A6: it assigns NOBODY, "
+            "so aw-02 still sees the whole roster and its own `swept_out` is empty too. Read as a "
+            "pair with the exhaustion row, the two pin that the kind alone does not carry the fact "
+            "and the row does."
+        ),
+        "live": [
+            _c("aw-01", 1, _ladder_award("knife_kills", "volume", "max", floor_rounds=99)),
+            _c("aw-02", 2, AW_WALLBANG),
+        ],
+        "players": CLEAN_ROSTER,
+        "pins": lambda e: (
+            _row(e, "aw-01")["kind"] == "no_eligible_players"
+            and _row(e, "aw-01")["swept_out"] == []
+            and _row(e, "aw-01")["reresolved"] is False
+            and _row(e, "aw-02")["swept_out"] == []
+            and e["assigned"] == [S_B]
+        ),
+        "pins_inputs": lambda e, c: (
+            # The floor is what excludes everyone — re-derived, not assumed — and the SECOND award
+            # (whose floors are 0) genuinely does have eligible players, so the roster is not simply
+            # empty.
+            c["live"][0]["award"]["floor_rounds"]
+            > max(p["rounds_played"] for p in c["players"])
+            and _unreduced(c, "aw-02")["kind"] == "winner"
+        ),
+    },
+    {
+        "name": "a-REDUCED-set-drops-a-max-VOLUME-awards-best-value-to-ZERO-re-triggering-DECISION-E",
+        "note": (
+            "⭐⭐ A4(iii), AND THE ONLY ROW THAT CAN PIN IT. aw-02 is a `max` VOLUME award on "
+            "blind_kills whose only scorer is A — and A has already won aw-01. Over the reduced set "
+            "the best value is 0, so DECISION E's carve-out fires on the REDUCED set and returns "
+            "`no_awardable_value` CARRYING the suppressed byte-lex set, rather than crowning a "
+            "whole-roster co-win over a stat nobody scored on. This is the measured shape, not a "
+            "hypothetical: 6.1's review found knife_kills non-zero for 1 of 28 players. ⛔ DECISION "
+            "K — the width travels so Story 6.7's pity can READ it; it is NEVER resolved, and this "
+            "row's `assigned` proves it (A alone, not A plus the suppressed pair). A pop-the-winner "
+            "shortcut cannot reach this outcome at all: it would hand out a trophy for a value of "
+            "zero."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_BLIND)],
+        "players": [
+            _sw(S_A, knife=5, wallbang=1, smoke=1, hs=2, blind=3),
+            _sw(S_B, knife=2, wallbang=7, smoke=2, hs=4, blind=0),
+            _sw(S_C, knife=1, wallbang=3, smoke=3, hs=6, blind=0),
+        ],
+        "pins": lambda e: (
+            _row(e, "aw-02")["kind"] == "no_awardable_value"
+            and _row(e, "aw-02")["tied"] == [S_B, S_C]
+            and _row(e, "aw-02")["swept_out"] == [S_A]
+            # ⛔ THE SUPPRESSED SET IS READ, NEVER RESOLVED: nobody but aw-01's winner is assigned.
+            and e["assigned"] == [S_A]
+        ),
+        "pins_inputs": lambda e, c: (
+            # ⭐ THE BEST VALUE WAS NON-ZERO BEFORE REMOVAL — the guard Task 2 demands. Re-derived
+            # through the real Stage 2: unreduced, aw-02 has an ordinary winner.
+            _unreduced(c, "aw-02")["kind"] == "winner"
+            and _unreduced(c, "aw-02")["deciding_value"]["value"] != "0"
+            and _winner_of(_unreduced(c, "aw-02")) in _row(e, "aw-02")["swept_out"]
+        ),
+    },
+    {
+        "name": "a-ZERO-KILL-player-WINS-and-the-pass-FILTERS-NOBODY",
+        "note": (
+            "⭐⭐ A9, AND THE MUTATION PASS IS WHY IT EXISTS. The pass must reduce the PLAYER LIST and "
+            "let `resolve_stage2` do every filter — it never re-applies the FR-21 floors, never "
+            "reads idle_dq, never looks at a magnitude. Nothing could see a violation: every other "
+            "roster in this file gives all three players 20 kills and 30 rounds, so a pass that "
+            "quietly filtered its candidate set on ANY plausible eligibility predicate produced "
+            "byte-identical output on all thirteen cases. Here A has **zero kills** and still wins "
+            "aw-01 outright on knife_kills (floors are 0/0, so zero kills is perfectly eligible — "
+            "and Story 6.1 measured that the weird-stat awards are exactly where a low-kill player "
+            "can win). A pass that dropped zero-kill players crowns B instead, and it changes "
+            "aw-02's swept_out as well."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+        "players": [
+            _sw(S_A, kills=0, knife=9, wallbang=1, smoke=1, hs=0),
+            _sw(S_B, knife=2, wallbang=7, smoke=2, hs=4),
+            _sw(S_C, knife=1, wallbang=3, smoke=3, hs=6),
+        ],
+        "pins": lambda e: (
+            _row(e, "aw-01")["steamid64"] == S_A
+            and _row(e, "aw-02")["steamid64"] == S_B
+            and _row(e, "aw-02")["swept_out"] == [S_A]
+        ),
+        "pins_inputs": lambda e, c: (
+            # ⭐ THE WINNER REALLY HAS ZERO KILLS, re-derived from the row's own roster — without
+            # that this is an ordinary two-award spin and the guard it exists for is unexercised.
+            next(p["kills"] for p in c["players"]
+                 if p["steamid64"] == _row(e, "aw-01")["steamid64"]) == 0
+            # …and the award's floors genuinely admit them.
+            and c["live"][0]["award"]["floor_kills"] == 0
+            and c["live"][0]["award"]["floor_rounds"] == 0
+        ),
+    },
+    {
+        "name": "the-ROSTER-supplied-OUT-OF-BYTE-LEX-order-changes-NOTHING",
+        "note": (
+            "⭐ THE MIRROR OF `players-supplied-out-of-byte-lex-order` IN `stage2-resolve.json`, one "
+            "layer up, and the second row the mutation pass demanded. Every other case in this file "
+            "declares its roster ALREADY in byte-lex order, so `swept_out` came out sorted whether "
+            "the pass sorted it or not — deleting the sort was byte-identical on all thirteen. This "
+            "is the cascade row's spin over the SAME roster supplied in REVERSE, so its expected "
+            "block must be byte-identical, and a pass that inherited the fixture's order emits "
+            "`swept_out` reversed. It also pins that the pass does not depend on the caller's roster "
+            "order for anything else: `resolve_stage2` sorts internally, and this row is what says "
+            "so from the outside."
+        ),
+        "live": CLEAN_LIVE,
+        "players": [
+            _sw(S_C, knife=1, wallbang=3, smoke=5, hs=6),
+            _sw(S_B, knife=2, wallbang=7, smoke=8, hs=4),
+            _sw(S_A, knife=4, wallbang=9, smoke=9, hs=2),
+        ],
+        "pins": lambda e: (
+            [r["steamid64"] for r in e["results"]] == [S_A, S_B, S_C]
+            # ⭐ BYTE-LEX, NOT SUPPLIED ORDER. Reversed input, ascending output.
+            and _row(e, "aw-03")["swept_out"] == [S_A, S_B]
+            and e["assigned"] == [S_A, S_B, S_C]
+        ),
+        "pins_inputs": lambda e, c: (
+            # The roster must genuinely be supplied out of byte-lex order, or the row is the cascade
+            # row again and discriminates nothing.
+            [p["steamid64"] for p in c["players"]]
+            != sorted(p["steamid64"] for p in c["players"])
+        ),
+    },
+    {
+        "name": "a-reduced-tie-of-WIDTH-1-is-NEVER-handed-to-the-ladder",
+        "note": (
+            "⭐ A8. aw-02 over the FULL roster is a two-way tie between A and C; C has already won "
+            "aw-01, so the reduced set leaves exactly ONE of the tied players. `_validate_ladder` "
+            "REFUSES `len(tied) < 2` (L11, ladder.go:726) because Stage 2 never produces a narrower "
+            "tie — so the only way to hand the ladder a width-1 set is to BUILD one, by popping the "
+            "removed player out of the original tie and passing the remainder. This pass does not: "
+            "it re-runs Stage 2 over the reduced players, which returns an ordinary `winner` "
+            "carrying a `deciding_value` and `ladder_exit_step` 0. The pop-the-winner shortcut "
+            "REFUSES this row (detail `ladder`) instead of resolving it, which is a different "
+            "outcome KIND rather than a different winner."
+        ),
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG_HS)],
+        "players": [
+            _sw(S_A, knife=1, wallbang=7, smoke=1, hs=4, ts=3000),
+            _sw(S_B, knife=0, wallbang=3, smoke=2, hs=5, ts=2000),
+            _sw(S_C, knife=5, wallbang=7, smoke=3, hs=4, ts=1000),
+        ],
+        "pins": lambda e: (
+            _row(e, "aw-01")["steamid64"] == S_C
+            and _row(e, "aw-02")["kind"] == "winner"
+            and _row(e, "aw-02")["steamid64"] == S_A
+            # ⭐ NO LADDER RAN, and the deciding_value/exit_step XOR proves which stage answered.
+            and _row(e, "aw-02")["ladder_exit_step"] == 0
+            and "deciding_value" in _row(e, "aw-02")
+        ),
+        "pins_inputs": lambda e, c: (
+            # ⭐ THE UNREDUCED OUTCOME REALLY IS A TIE, OF WIDTH EXACTLY 2, CONTAINING THE REMOVED
+            # PLAYER — without all three the reduced set would not have width 1 and the row would
+            # be an ordinary overflow.
+            (lambda raw: raw["kind"] == "tie"
+                and len(raw["tied"]) == 2
+                and set(raw["tied"]) & set(_row(e, "aw-02")["swept_out"]) != set())(
+                resolve_stage2(c["live"][1]["award"], c["players"])
+            )
+        ),
+    },
+]
+
+
+SWEEP_REFUSALS: list[dict] = [
+    {
+        "why": "the live award set is EMPTY — a spin with nothing to resolve",
+        "detail": "live",
+        "live": [],
+        "players": CLEAN_ROSTER,
+    },
+    {
+        "why": "an award_id is the EMPTY STRING",
+        "detail": "live",
+        "live": [_c("", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+        "players": CLEAN_ROSTER,
+    },
+    {
+        "why": "the same award_id appears TWICE in one spin's live set",
+        "detail": "live",
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-01", 2, AW_WALLBANG)],
+        "players": CLEAN_ROSTER,
+    },
+    {
+        "why": "a priority below 1 — 0023's award_priority_positive requires > 0",
+        "detail": "live",
+        "live": [_c("aw-01", 0, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+        "players": CLEAN_ROSTER,
+    },
+    {
+        "why": (
+            "two live awards share a PRIORITY — UNIQUE(tournament_id, priority) is the only thing "
+            "making ascending priority a TOTAL order, so this is a refusal and never a coin flip"
+        ),
+        "detail": "live",
+        "live": [_c("aw-01", 2, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+        "players": CLEAN_ROSTER,
+    },
+    {
+        "why": "a live award's STAGE-2 SURFACE is malformed (direction outside {max, min})",
+        "detail": "stage2",
+        "live": [
+            _c("aw-01", 1, AW_KNIFE),
+            _c("aw-02", 2, _ladder_award("wallbang_kills", "volume", "sideways")),
+        ],
+        "players": CLEAN_ROSTER,
+    },
+    {
+        "why": "two snapshot rows share a steamid64 — a snapshot holds one row per player",
+        "detail": "stage2",
+        "live": [_c("aw-01", 1, AW_KNIFE)],
+        "players": CLEAN_ROSTER + [_sw(S_A, knife=9, wallbang=9, smoke=9, hs=9)],
+    },
+    {
+        "why": (
+            "a reduced tie reaches the FR-29 ladder and the LADDER refuses it — the award's "
+            "secondary_stat is outside the 21-key vocabulary. Its own label: 'the ladder ran and "
+            "refused' is a different fact from 'the award or the snapshot is malformed'"
+        ),
+        "detail": "ladder",
+        "live": [
+            _c("aw-01", 1, _ladder_award("wallbang_kills", "volume", "max", secondary="not_a_key"))
+        ],
+        "players": [
+            _sw(S_A, knife=1, wallbang=7, smoke=1, hs=2),
+            _sw(S_B, knife=2, wallbang=7, smoke=2, hs=4),
+        ],
+    },
+    {
+        "why": (
+            "⭐ MALFORMED IN TWO WAYS AT ONCE — a DUPLICATE PRIORITY over a live set that ALSO "
+            "carries an award whose Stage-2 surface is broken. The published order validates the "
+            "live set's own shape FIRST, in full, so this refuses `live`; a pass that resolved "
+            "award-by-award would reach the malformed award and refuse `stage2`. Every other row "
+            "is malformed in exactly one way and cannot see the difference"
+        ),
+        "detail": "live",
+        "live": [
+            _c("aw-01", 2, AW_KNIFE),
+            _c("aw-02", 2, _ladder_award("wallbang_kills", "volume", "sideways")),
+        ],
+        "players": CLEAN_ROSTER,
+        "second": {
+            "detail": "stage2",
+            "live": [
+                _c("aw-01", 1, AW_KNIFE),
+                _c("aw-02", 2, _ladder_award("wallbang_kills", "volume", "sideways")),
+            ],
+            "players": CLEAN_ROSTER,
+        },
+    },
+    {
+        "why": (
+            "⭐ MALFORMED IN TWO WAYS AT ONCE — a DUPLICATE award_id over a players list that ALSO "
+            "carries a duplicate steamid64. The live group runs before ANY player is read, so this "
+            "refuses `live`; an implementation that validated the roster up front — a plausible "
+            "design, since the roster is the same for every award — would refuse `stage2`"
+        ),
+        "detail": "live",
+        "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-01", 2, AW_WALLBANG)],
+        "players": CLEAN_ROSTER + [_sw(S_B, knife=9, wallbang=9, smoke=9, hs=9)],
+        "second": {
+            "detail": "stage2",
+            "live": [_c("aw-01", 1, AW_KNIFE), _c("aw-02", 2, AW_WALLBANG)],
+            "players": CLEAN_ROSTER + [_sw(S_B, knife=9, wallbang=9, smoke=9, hs=9)],
+        },
+    },
+    {
+        "why": (
+            "⭐ MALFORMED IN TWO WAYS AT ONCE, ON THE OTHER ADJACENT BOUNDARY — aw-01's Stage-2 "
+            "surface is broken (direction outside {max, min}) while aw-02 would reach the FR-29 "
+            "ladder and be REFUSED by it (secondary_stat outside the 21-key vocabulary). Stage 2 "
+            "runs before the ladder within each award and the awards run in ascending priority, so "
+            "this refuses `stage2` at aw-01 and never reaches aw-02's ladder. ⚠ THIS ROW EXISTS "
+            "BECAUSE THE OTHER TWO DOUBLY-MALFORMED ROWS BOTH PIN `live`→`stage2`: without it the "
+            "`stage2`→`ladder` half of the published order is UNOBSERVABLE, which is 6-4b's headline "
+            "defect one boundary over — the exact class the doubly-malformed rows exist to prevent"
+        ),
+        "detail": "stage2",
+        "live": [
+            _c("aw-01", 1, _ladder_award("wallbang_kills", "volume", "sideways")),
+            _c(
+                "aw-02",
+                2,
+                _ladder_award("wallbang_kills", "volume", "max", secondary="not_a_key"),
+            ),
+        ],
+        "players": [
+            _sw(S_A, knife=1, wallbang=7, smoke=1, hs=2),
+            _sw(S_B, knife=2, wallbang=7, smoke=2, hs=4),
+        ],
+        "second": {
+            "detail": "ladder",
+            "live": [
+                _c(
+                    "aw-01",
+                    1,
+                    _ladder_award("wallbang_kills", "volume", "max", secondary="not_a_key"),
+                )
+            ],
+            "players": [
+                _sw(S_A, knife=1, wallbang=7, smoke=1, hs=2),
+                _sw(S_B, knife=2, wallbang=7, smoke=2, hs=4),
+            ],
+        },
+    },
+]
+
+
+def _render_sweep_candidate(c: dict) -> dict:
+    return {
+        "award_id": c["award_id"],
+        "priority": c["priority"],
+        "award": _render_ladder_award(c["award"]),
+    }
+
+
+def build_antisweep_file() -> dict:
+    cases = []
+    seen_names: set = set()
+    for c in SWEEP_CASES:
+        if c["name"] in seen_names:
+            raise SystemExit(f"duplicate anti-sweep case name {c['name']!r}")
+        seen_names.add(c["name"])
+        expected = resolve_spin(c["live"], c["players"])
+
+        # ⭐ THE ANCHOR GUARDS ITS OWN CASES, exactly as `build_stage1_file` and `build_ladder_file`
+        # do. Every row declares, as EXECUTABLE CODE, the property it was chosen for.
+        if not c["pins"](expected):
+            raise SystemExit(
+                f"anti-sweep case {c['name']!r} no longer exhibits the property it was chosen "
+                f"for: {expected!r}"
+            )
+        # ⭐⭐ AND THE SECOND HALF, WHICH IS THE ONE THIS PROJECT KEEPS GETTING WRONG — now at its
+        # FOURTH occurrence (6-4a's `sawFloatDivergence`, 6-4b's three output-only guards, 6.5's
+        # `pins_inputs` covering none of the four rows the mutation pass added, 6-5b's consumer
+        # suites). `pins` sees only the OUTPUT, and an output is reachable by routes that have
+        # nothing to do with the row's name. `pins_inputs` re-derives the INPUT property — the
+        # counterfactual winner, the rung the original resolution exited at, the tie width before
+        # removal — through the REAL `resolve_stage2` / `resolve_ladder`.
+        #
+        # ⛔ IT IS MANDATORY HERE, not optional as it is in the ladder file. Every row in this file
+        # is about a REMOVAL, and a removal is only observable against the counterfactual.
+        if "pins_inputs" not in c:
+            raise SystemExit(
+                f"anti-sweep case {c['name']!r} has no `pins_inputs` — every row here is about a "
+                "removal, and a removal is only observable against what would have happened "
+                "without it"
+            )
+        if not c["pins_inputs"](expected, c):
+            raise SystemExit(
+                f"anti-sweep case {c['name']!r} no longer exhibits the INPUT property it was "
+                "chosen for — its fixture has drifted and the row no longer tests what its name "
+                "claims"
+            )
+        # ⛔ A `tie` CAN NEVER SURVIVE THIS PASS. Checked on the emitted bytes rather than trusted:
+        # an implementation that skipped the ladder would leak one, and a file that carried one
+        # would teach both suites to accept it.
+        for r in expected["results"]:
+            if r["kind"] in UNREACHABLE_SWEEP_OUTCOME_KINDS:
+                raise SystemExit(
+                    f"anti-sweep case {c['name']!r} emitted outcome kind {r['kind']!r}, which no "
+                    "assignment row may carry — every tie goes through the FR-29 ladder"
+                )
+            if r["kind"] not in OUTCOME_KINDS:
+                raise SystemExit(
+                    f"anti-sweep case {c['name']!r} emitted outcome kind {r['kind']!r}, which is "
+                    f"outside the closed set {OUTCOME_KINDS}"
+                )
+        cases.append(
+            {
+                "name": c["name"],
+                "note": c["note"],
+                "live": [_render_sweep_candidate(x) for x in c["live"]],
+                "players": [_render_ladder_player(p) for p in c["players"]],
+                "expected": expected,
+            }
+        )
+
+    # ⭐ THE OUT-OF-ORDER ROW'S EXPECTED BLOCK MUST BE BYTE-IDENTICAL TO THE IN-ORDER ROW'S, and
+    # that identity IS the assertion — the shape `ladder-resolve.json`'s three spellings of absence
+    # established. Checked here rather than only in the two suites, because it is the property that
+    # makes the sort load-bearing at the ANCHOR too.
+    in_order = next(c for c in cases if c["name"] == "a-CLEAN-spin-REMOVES-players-from-later-races-and-CHANGES-NOTHING")
+    out_of_order = next(
+        c for c in cases if c["name"] == "the-live-set-supplied-OUT-OF-PRIORITY-ORDER-resolves-IDENTICALLY"
+    )
+    if in_order["expected"] != out_of_order["expected"]:
+        raise SystemExit(
+            "the in-order and out-of-order rows no longer agree — the supplied order must not "
+            f"change one byte of the result: {in_order['expected']!r} vs {out_of_order['expected']!r}"
+        )
+    # ⭐ GUARD THE GUARD, AND MAKE IT INDEPENDENTLY FALSIFIABLE. The identity above CANNOT FAIL while
+    # the two rows carry the same `live` list — it would be comparing a row with itself. What it is
+    # for is the case where the two rows carry the SAME candidates in DIFFERENT orders, so that is
+    # what is asserted: same set of (award_id, priority, award), different sequence, same roster.
+    if (
+        in_order["live"] == out_of_order["live"]
+        or sorted(map(json.dumps, in_order["live"])) != sorted(map(json.dumps, out_of_order["live"]))
+        or in_order["players"] != out_of_order["players"]
+    ):
+        raise SystemExit(
+            "the out-of-order row is no longer the same spin in a different order — the identity "
+            "check above would be satisfied by two unrelated rows and would prove nothing"
+        )
+
+    # ⭐ THE SAME IDENTITY, ONE AXIS OVER: the reversed-roster row must produce byte-identical output
+    # to the cascade row it mirrors, and the two must genuinely differ in the ORDER they supply the
+    # roster. Without the second half the identity is a row compared with itself.
+    cascade = next(
+        c for c in cases if c["name"] == "a-CASCADE-award-3s-re-resolved-winner-was-ALREADY-swept-into-award-2"
+    )
+    reversed_roster = next(
+        c for c in cases if c["name"] == "the-ROSTER-supplied-OUT-OF-BYTE-LEX-order-changes-NOTHING"
+    )
+    if cascade["expected"] != reversed_roster["expected"]:
+        raise SystemExit(
+            "the cascade row and its reversed-roster mirror no longer agree — the order the ROSTER "
+            "is supplied in must not change one byte of the result"
+        )
+    if [p["steamid64"] for p in cascade["players"]] == [
+        p["steamid64"] for p in reversed_roster["players"]
+    ] or sorted(map(json.dumps, cascade["players"])) != sorted(
+        map(json.dumps, reversed_roster["players"])
+    ):
+        raise SystemExit(
+            "the reversed-roster row is no longer the same roster in a different order — the "
+            "identity check above would prove nothing"
+        )
+
+    refusals = []
+    seen_detail: dict = {}
+    # ⭐ THE BOUNDARIES THE DOUBLY-MALFORMED ROWS ACTUALLY PIN, NOT HOW MANY THERE ARE. A count is
+    # the wrong proxy and the review measured the cost: two rows that both pin `live`→`stage2`
+    # satisfy `>= 2` while leaving `stage2`→`ladder` completely unobservable — 6-4b's headline
+    # defect reproduced inside the guard written to prevent it.
+    boundary_pairs: set = set()
+    for r in SWEEP_REFUSALS:
+        try:
+            got = resolve_spin(r["live"], r["players"])
+        except SweepRefusal as err:
+            detail = err.detail
+        else:
+            raise SystemExit(
+                f"anti-sweep refusal row {r['why']!r} did NOT refuse — it returned {got!r}"
+            )
+        if detail != r["detail"]:
+            raise SystemExit(
+                f"anti-sweep refusal row {r['why']!r} refused on {detail!r}, declared {r['detail']!r}"
+            )
+        # ⛔ THE NARROWER SET: a row is a set of INPUTS, so it can never legitimately land on
+        # `internal` — every producer of that label is a state no input can reach.
+        if detail not in ROW_REPRESENTABLE_SWEEP_DETAILS:
+            raise SystemExit(
+                f"anti-sweep refusal row {r['why']!r} used a detail no row can represent: {detail!r}"
+            )
+        defects = [detail]
+        if "second" in r:
+            # ⭐⭐ A ROW MALFORMED IN TWO WAYS IS ONLY WORTH ANYTHING IF BOTH DEFECTS INDEPENDENTLY
+            # REFUSE, AND UNDER DIFFERENT LABELS. 6-4b's headline was three implementations
+            # disagreeing about validation ORDER with no row able to observe it; a doubly-malformed
+            # row whose second defect turned out to be harmless would recreate exactly that blindness
+            # while looking like the fix. So the second defect is re-derived here, on its own.
+            second = r["second"]
+            try:
+                also = resolve_spin(second["live"], second["players"])
+            except SweepRefusal as err:
+                second_detail = err.detail
+            else:
+                raise SystemExit(
+                    f"anti-sweep refusal row {r['why']!r}: its SECOND defect alone did not refuse "
+                    f"— it returned {also!r}, so the row is malformed in ONE way and pins no order"
+                )
+            if second_detail != second["detail"]:
+                raise SystemExit(
+                    f"anti-sweep refusal row {r['why']!r}: its second defect refused on "
+                    f"{second_detail!r}, declared {second['detail']!r}"
+                )
+            if second_detail == detail:
+                raise SystemExit(
+                    f"anti-sweep refusal row {r['why']!r}: both defects refuse as {detail!r}, so "
+                    "the row cannot observe which guard ran first"
+                )
+            defects.append(second_detail)
+            boundary_pairs.add(frozenset((detail, second_detail)))
+        seen_detail[detail] = seen_detail.get(detail, 0) + 1
+        refusals.append(
+            {
+                "why": r["why"],
+                "detail": r["detail"],
+                # ⭐ THE DEFECTS THIS ROW CARRIES, IN THE ORDER THE PUBLISHED VALIDATION ORDER VISITS
+                # THEM, so `detail == defects[0]` is checkable IN THE FILE rather than only in prose.
+                # `ladder-resolve.json`'s doubly-malformed rows carry the fact only in their `why`
+                # string; both suites here assert the array instead.
+                "defects": defects,
+                "live": [_render_sweep_candidate(x) for x in r["live"]],
+                "players": [_render_ladder_player(p) for p in r["players"]],
+            }
+        )
+
+    for d in ROW_REPRESENTABLE_SWEEP_DETAILS:
+        if not seen_detail.get(d):
+            raise SystemExit(
+                f"no anti-sweep refusal row of detail {d!r} — the label is declared and never "
+                "exercised, which is a compartment rather than a contract"
+            )
+    # The published order is live → stage2 → ladder, so its ADJACENT boundaries are exactly these
+    # two. Each needs a row malformed on both of its sides or that half of the order is unpinned.
+    required_boundaries = [frozenset(("live", "stage2")), frozenset(("stage2", "ladder"))]
+    for pair in required_boundaries:
+        if pair not in boundary_pairs:
+            raise SystemExit(
+                f"no doubly-malformed refusal row pins the {'/'.join(sorted(pair))} boundary — "
+                "validation ORDER is contract and every ADJACENT boundary needs a row malformed on "
+                "both of its sides, otherwise that half of the order is unobservable"
+            )
+
+    return {
+        "vector": "antisweep-resolve",
+        "algo_version": ALGO_VERSION,
+        "spec": (
+            "FR-26's anti-sweep pass over ONE spin's live award set. It draws ZERO stream bytes and "
+            "takes no stream in any runtime, so it carries no seed, no label and no byte "
+            "accounting: re-resolution is Stage 2 plus the FR-29 ladder and both are pure. "
+            "VALIDATION ORDER, which is contract: (1) the LIVE SET's own shape, in full, over the "
+            "WHOLE set and BEFORE any award is resolved, as detail `live` — non-empty; every "
+            "award_id a non-empty string; no duplicate award_id; every priority an integer >= 1; no "
+            "duplicate priority, because UNIQUE(tournament_id, priority) is the only thing making "
+            "ascending priority a TOTAL order; then, per award and in ASCENDING award.priority over "
+            "a COPY of the live set: (2) Stage 2 over the reduced candidate set, its refusals "
+            "propagated as detail `stage2`; (3) on a tie, the FR-29 ladder over the same reduced "
+            "set, its refusals propagated as detail `ladder`. The pass: assigned = {}; for each "
+            "award in ascending priority, reduced = the players NOT in assigned and swept_out = the "
+            "players IN assigned, both in byte-lex order; out = resolve_stage2(award, reduced) — a "
+            "FULL re-run over the reduced set, never a pop-the-winner, because rung 3 is defined "
+            "over the REMAINING set, because `best` is a SET whose membership the removal changes, "
+            "and because DECISION E's zero carve-out is evaluated against the reduced set's best "
+            "value; if out is a tie, out = resolve_ladder(award, out.tied, reduced), whose width is "
+            ">= 2 by construction because Stage 2 never produces a narrower tie; the winners are "
+            "ALL of a shared outcome's winners, the one steamid64 of a winner outcome, and NOBODY "
+            "for no_eligible_players or no_awardable_value — neither of which is a refusal, and "
+            "no_awardable_value's suppressed set is READ for its width and never resolved; assigned "
+            "gains every winner. REMOVAL IS APPLIED TO THE CANDIDATE SET BEFORE STAGE 2 RUNS, never "
+            "to an Outcome afterwards, which is what makes a shared outcome containing an "
+            "already-assigned player impossible by construction. The pass NEVER re-applies the "
+            "FR-21 floors (Stage 2 applies them itself), NEVER re-derives a deciding value, and "
+            "NEVER reads or writes the trophy shelf — Stage 1's luck weighting is computed from the "
+            "shelf frozen at spin start over PRE-anti-sweep provisional winners, so a category's "
+            "weight can be justified by a player who then does not win it. Each result row carries "
+            "the award_id, the priority, the flattened outcome, swept_out (a fact about the INPUT: "
+            "who was removed from THIS award's candidate set, whether or not they would have won) "
+            "and reresolved (also about the INPUT: whether this award's Stage 2 ran over a REDUCED "
+            "set, never whether the winner changed). ladder_exit_step rides on every row with 0 "
+            "meaning no ladder ran, and deciding_value is present on a winner row if and only if "
+            "ladder_exit_step is 0."
+        ),
+        "value_encoding": (
+            "Every SNAPSHOT magnitude is a DECIMAL STRING — steamid64, rounds_played, kills, every "
+            "stats_int entry across all four blocks, every h2h value and achievement_ts — because "
+            "AD-19 makes them unbounded integers and JSON.parse silently rounds past 2^53. Every "
+            "AWARD field, `priority` and `ladder_exit_step` are JSON integers, from the catalog's "
+            "bounded int columns and from the algorithm. The split is by PROVENANCE, not magnitude."
+        ),
+        "generated_by": GENERATED_BY,
+        "outcome_kinds": list(OUTCOME_KINDS),
+        # ⭐ THE KIND NO ASSIGNMENT ROW MAY CARRY, declared as data. `OUTCOME_KINDS` is one closed
+        # set across the engine and narrowing it here would be a second vocabulary; what is true of
+        # THIS pass is that a tie never survives it, and stating that lets both suites assert zero
+        # rows carry it rather than inferring the absence.
+        "unreachable_outcome_kinds": list(UNREACHABLE_SWEEP_OUTCOME_KINDS),
+        "exit_steps": [0, 1, 2, 3, 4, 5],
+        "refusal_details": list(SWEEP_REFUSAL_DETAILS),
+        "refusals": refusals,
+        "cases": cases,
+    }
+
+
 # ── rendering ─────────────────────────────────────────────────────────────────
 
 
@@ -5861,6 +7309,9 @@ def main() -> int:
         HERE / "stage2-resolve.json": render(build_stage2_file()),
         HERE / "stage1-pick.json": render(build_stage1_file()),
         HERE / "ladder-resolve.json": render(build_ladder_file()),
+        # Story 6.6 — the anti-sweep pass. Like Stage 2 and the ladder it consumes NO stream, so it
+        # is not one of SOLUTION-DESIGN §9.6's numbered *stream* gates; AD-14 gates it all the same.
+        HERE / "antisweep-resolve.json": render(build_antisweep_file()),
     }
 
     if args.check:

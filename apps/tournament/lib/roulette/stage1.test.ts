@@ -5,7 +5,14 @@ import { describe, expect, it } from 'vitest';
 import { PITY_LABEL, stage1Label } from './labels';
 import { createStream, decodeSeedHex } from './prng';
 import type { Stream } from './prng';
-import { REFUSAL_DETAILS, Stage1Error, Stage1TieError, stage1Pick, stage1Weights } from './stage1';
+import {
+  REFUSAL_DETAILS,
+  Stage1Error,
+  Stage1TieError,
+  stage1Pick,
+  stage1Weights,
+  weightAt,
+} from './stage1';
 import type { Stage1Candidate, Stage1Input } from './stage1';
 // `resolveStage2` is imported as a VALUE so the coverage guards below can RE-DERIVE the outcome
 // kind each row is named for, rather than inferring it from the weights the row happens to
@@ -1201,5 +1208,132 @@ describe('the inputs are validated before any byte is drawn', () => {
       liveCount: 1,
     });
     expect(weights, 'an inherited entry is not a shelf — the winner holds nothing').toEqual([100]);
+  });
+});
+
+// ── Story 6.6, Task 5 — the luck weight table's INDEXING, in both directions ───
+
+// ⭐⭐ FR-26's HEADLINE PROPERTY, ASSERTED AS A PROPERTY: an EMPTY shelf draws the HEAVIEST weight,
+// and the weight is MONOTONE NON-INCREASING in shelf size.
+//
+// ⚠ IT RE-DERIVES BOTH FROM THE TABLE IT IS HANDED rather than from a transcribed literal, and the
+// distinction is the whole point: the VALUES are organizer config that lives in
+// `ceremony.luck_weight_table` (migration 0025 sets the column default and the pgTAP suite asserts
+// its shape) precisely because this module is a browser-reachable leaf that must never seed one. A
+// test that hardcoded [100, 40, 16, 6, 2, 1] would silently stop testing the day an organizer
+// re-tunes the table, which is the one thing the column exists to allow.
+describe('the luck weight table: shelf 0 is the heaviest, and weight is monotone in shelf size', () => {
+  const WINNER = '76561198000000011';
+  const RUNNER_UP = '76561198000000022';
+
+  const spin = (table: readonly number[], shelf: number): number => {
+    const weights = stage1Weights({
+      candidates: [
+        {
+          awardId: 'aw-01',
+          priority: 1,
+          award: {
+            decidingStat: 'knife_kills',
+            class: 'volume',
+            direction: 'max',
+            floorRounds: 0,
+            floorKills: 0,
+          },
+        },
+      ],
+      players: [
+        {
+          steamid64: WINNER,
+          roundsPlayed: 30n,
+          kills: 20n,
+          idleDq: false,
+          volume: { knife_kills: 9n },
+          rate: {},
+        },
+        {
+          steamid64: RUNNER_UP,
+          roundsPlayed: 30n,
+          kills: 20n,
+          idleDq: false,
+          volume: { knife_kills: 1n },
+          rate: {},
+        },
+      ],
+      shelf: { [WINNER]: shelf },
+      table,
+      liveCount: 1,
+    });
+    return weights[0] as number;
+  };
+
+  // Three legal tables of different lengths: the property must hold for EVERY table the validator
+  // accepts, not for the one that happens to ship.
+  for (const table of [[100, 40, 16, 6, 2, 1], [9, 4, 1], [2, 1]]) {
+    it(`holds for [${table.join(', ')}]`, () => {
+      // Two past the end, so the CLAMP is exercised rather than assumed.
+      const weights = Array.from({ length: table.length + 2 }, (_, shelf) => spin(table, shelf));
+
+      // ⭐ SHELF 0 => table[0] => the HEAVIEST entry. Both halves re-derived: the identity with
+      // table[0], and that table[0] really is the maximum of the table it was handed.
+      expect(weights[0]).toBe(table[0]);
+      expect(weights[0]).toBe(Math.max(...table));
+
+      // MONOTONE NON-INCREASING in shelf size, past the clamp included.
+      for (let i = 1; i < weights.length; i += 1) {
+        expect(
+          weights[i] as number,
+          `a fuller shelf drew MORE luck at shelf ${String(i)}`,
+        ).toBeLessThanOrEqual(weights[i - 1] as number);
+      }
+      // …and it genuinely DECREASES somewhere, or "non-increasing" is satisfied by a constant table
+      // the validator would have refused anyway.
+      expect(weights[0]).not.toBe(weights[table.length - 1]);
+
+      // The clamp: everything at or past table_max weighs the LAST entry.
+      const last = table[table.length - 1];
+      for (let shelf = table.length - 1; shelf < weights.length; shelf += 1) {
+        expect(weights[shelf]).toBe(last);
+      }
+    });
+  }
+});
+
+// ⭐ THE TWO ARMS `deferred-work.md:308` IS ABOUT, DRIVEN DIRECTLY — and they are LOCAL rows rather
+// than vector rows for a stated reason: both are refused by a guard that runs FIRST (`validateShelf`
+// refuses a negative size, `validateWeightTable` refuses an empty table), so no set of INPUTS to the
+// public entry points can reach them. That is the representability rule the vector's README states,
+// and faking a row would pin the validator rather than the guard.
+//
+// What they prevent is a DIVERGENCE, not a crash: before Story 6.6 the clamp was one-sided, so this
+// input yielded `undefined as number` here — poisoning a byte-accounted draw with `NaN` and being
+// refused three functions later under a DIFFERENT label — while Go PANICKED and Python read the
+// table from the END. Three behaviours, no error, one contract.
+describe('weightAt guards both ends of the table', () => {
+  it.each([
+    ['a NEGATIVE shelf index', [100, 40, 16], -1, 'shelf'],
+    ['an EMPTY table has no index 0 to give the empty shelf', [], 0, 'weight_table'],
+    ['an empty table with a positive index refuses the TABLE, not the shelf', [], 3, 'weight_table'],
+    // ⭐ THE TWO SHAPES THE NEGATIVE-ONLY CHECK LET THROUGH, which the code review measured. `NaN < 0`
+    // is FALSE and `NaN > tableMax` is FALSE, so `NaN` fell straight past both ends into `table[NaN]`
+    // → `undefined as number` — the EXACT failure this function was written to close, surviving
+    // inside it. A fractional index does the same via `table[1.5]`. Both are TypeScript-only: Go's
+    // parameter is an `int`, so no shared row can express either and they belong here.
+    ['a NaN shelf index is not a count', [100, 40, 16], Number.NaN, 'shelf'],
+    ['a FRACTIONAL shelf index is not a count', [100, 40, 16], 1.5, 'shelf'],
+  ] as const)('%s', (_name, table, index, detail) => {
+    expect(() => weightAt(table, index)).toThrow(Stage1Error);
+    try {
+      weightAt(table, index);
+    } catch (err) {
+      expect((err as Stage1Error).detail).toBe(detail);
+    }
+  });
+
+  // ⭐ THE POSITIVE CONTROL: the same function on a legal index must NOT throw, or the three cases
+  // above are satisfied by a `weightAt` that refuses everything — the untyped-refusal defect 6-4a
+  // measured, one level down.
+  it('does not refuse a legal index, and still clamps rather than refusing past the end', () => {
+    expect(weightAt([100, 40, 16], 1)).toBe(40);
+    expect(weightAt([100, 40, 16], 99)).toBe(16);
   });
 });

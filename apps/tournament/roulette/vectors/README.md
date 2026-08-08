@@ -35,6 +35,7 @@ stories:
 | — Stage-2 deterministic winner + tie detection | `stage2-resolve.json` | **Story 6-4a** | ✅ shipped |
 | — FR-29 tie ladder | `ladder-resolve.json` | **Story 6.5** (+ 6-5b's coverage pass) | ✅ shipped |
 | 3 — Stage-1 weighted pick | `stage1-pick.json` | **Story 6-4b** (+ 6.5's ladder rows, + 6-5b's shared-arm clamp row) | ✅ shipped |
+| — FR-26 anti-sweep (≤1 trophy/player/spin) | `antisweep-resolve.json` | **Story 6.6** | ✅ shipped |
 | 4 — canonical JSON + `bundle_sha256` (RFC-8785) | *(not yet)* | **Story 6.9** | ⏳ |
 | 5 — end-to-end ceremony vector + suite completeness | *(not yet)* | **Story 6.11** | ⏳ |
 
@@ -51,10 +52,19 @@ is the proof, and it is what keeps Story 6-4b's measured **22-byte** twelve-spin
 seeded rung would move every byte position after every resolved tie. It sits next to `stage2-resolve`
 because §9.6 prescribes `Stage 2 + ladder` as one build step.
 
+**Anti-sweep is not a numbered gate for the same reason, and the reason is the same sentence.** The
+pass takes no stream parameter in any of the three implementations, because re-resolving an overflow
+is Stage 2 plus the FR-29 ladder and both are pure — so it draws **zero bytes** and the signature is
+the proof. It sits after `stage1-pick` because that is the build order `§9.6` prescribes
+(`Stage 1 + anti-sweep` as one step, before pity). AD-14 requires it to be vector-gated all the same
+(*"anti-sweep ≤1 trophy/player/spin"*), and `§9.6`'s gate 4 additionally requires the **end-to-end**
+vector to exercise an anti-sweep overflow — that one is Story 6.11's; this is the **unit** vector for
+the pass.
+
 **This directory is not finished.** Gate 4 (canonicalization + `bundle_sha256`, Story 6.9) and
 gate 5 (the end-to-end ceremony vector with forced ties across *every* ladder rung, Story 6.11) are
 still to come. Everything the draw itself needs — the block function, `uniform_int`, Stage 2, the
-FR-29 ladder and Stage 1 — is here.
+FR-29 ladder, Stage 1 and anti-sweep — is here.
 
 ## File format
 
@@ -588,6 +598,109 @@ single-candidate short-circuit** — the draw is always `uniform_int(stream, tot
 two rules produce identical *picks* and different *stream positions*, which is invisible until
 the browser verifier declares a correct ceremony unfair.
 
+### `antisweep-resolve.json`
+
+```jsonc
+{
+  "vector": "antisweep-resolve",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "…",                              // the VALIDATION ORDER and the pass, in full
+  "value_encoding": "…",
+  "outcome_kinds": ["winner", "tie", "no_eligible_players", "no_awardable_value", "shared"],
+  "unreachable_outcome_kinds": ["tie"],     // ⭐ the kind no assignment row may carry
+  "exit_steps": [0, 1, 2, 3, 4, 5],         // 0 = no ladder ran
+  "refusal_details": ["live", "stage2", "ladder", "internal"],   // ⚠ the last is NOT row-representable
+  "refusals": [
+    { "why": "…", "detail": "live", "defects": ["live", "stage2"], "live": […], "players": […] }
+  ],
+  "cases": [
+    {
+      "name": "a-SINGLE-OVERFLOW-re-resolves-award-2-to-the-NEXT-ELIGIBLE-player",
+      "note": "prose describing what this case pins",
+      "live": [ { "award_id": "aw-01", "priority": 1, "award": {…} } ],   // supplied in ANY order
+      "players": [ … the same AD-19 rows `ladder-resolve.json` uses, all four blocks … ],
+      "expected": {
+        "results": [                        // in ASCENDING PRIORITY — the PROCESSING order
+          { "award_id": "aw-02", "priority": 2, "kind": "winner",
+            "steamid64": "…", "ladder_exit_step": 0,
+            "swept_out": ["…"], "reresolved": true }
+        ],
+        "assigned": ["…", "…"]              // byte-lex; every player who won anything this spin
+      }
+    }
+  ]
+}
+```
+
+⭐ **`swept_out` and `reresolved` are as load-bearing as the winner, and both are facts about the
+INPUT.** `swept_out` is every rostered player removed from *this* award's candidate set because they
+were already assigned this spin — whether or not any of them would have won — and `reresolved` is
+exactly `swept_out.length > 0`, i.e. *"this award's Stage 2 ran over a reduced set"*, **not** *"the
+winner changed"*. The two readings diverge on every clean spin, and the `a-CLEAN-spin-…` row is the
+one that shows it: awards 2 and 3 there resolve over reduced sets and crown exactly the players the
+full sets would have crowned. A vector pinning only the winner would let a pass that reached the
+right player **without ever removing anyone** pass every row — and the removal is the whole story.
+
+⭐ **`ladder_exit_step` rides on EVERY row, with `0` meaning "no ladder ran".** Go carries
+`LadderExitStep int` on every outcome while TypeScript omits the key (`deferred-work.md:307` tracks
+that asymmetry for 6.8/6.9), so a file that also omitted it would be a **third** spelling of NULL. It
+also makes the file's sharpest row expressible: an overflow whose re-resolution exits the ladder at a
+**different rung** from the one the original resolution took. The `deciding_value` **XOR**
+`ladder_exit_step` invariant `ladder-resolve.json` established is carried through and asserted on
+every `winner` row.
+
+⚠ **`swept_out` is what carries DECISION F.** When removal empties a later award's candidate set,
+Stage 2 returns `no_eligible_players` — the *same* kind it returns when nobody cleared the FR-21
+floors, and those are different facts for Story 6.7's pity draw and Story 6.8's reveal copy. A
+non-empty `swept_out` on such a row is **exhaustion**; an empty one is "nobody qualified". The
+distinction lives on the row rather than in a sixth `OutcomeKind`, because `outcome_kinds` is one
+closed set across the engine, pinned by exact equality in both suites and in two other files here.
+`unreachable_outcome_kinds` states the narrower truth as data: a **tie** never survives this pass,
+because every tie goes through the ladder — and an implementation that skipped the ladder would emit
+one.
+
+⭐ **`defects` makes validation ORDER checkable in the file rather than only in prose.** Every
+refusal row carries the list of defects it holds, in the order the published validation order visits
+them, and `detail` must equal `defects[0]`. Two rows carry **two** entries — the doubly-malformed
+rows — and the generator re-derives the second defect on its own, asserting that it independently
+refuses and under a **different** label. `ladder-resolve.json`'s doubly-malformed rows carry that
+fact only in their `why` string; a reader had to take it on trust. ⚠ The limit is the same one
+recorded there: two defects **inside one group** (say a duplicate `award_id` and a duplicate
+`priority`) both refuse as `live`, and a closed set of four labels has nothing finer to say. That is
+recorded rather than faked.
+
+#### The anti-sweep cases that carry the weight
+
+| Case | What only it can catch |
+|---|---|
+| `the-SHIPPED-live-count-1-spin-can-never-sweep-ANYBODY` | ⭐⭐ the configuration that actually ships. UX fixes the pacing at one award per spin, so with a single live award the `assigned` set is still empty when the only award resolves and **FR-26's cap cannot fire** — not merely "does not", but *cannot*. The row records the consequence as data; the story records it as a measured zero. |
+| `a-CLEAN-spin-REMOVES-players-from-later-races-and-CHANGES-NOTHING` | ⭐ that `reresolved` is about the INPUT. Three awards, three winners, nobody wins twice — yet awards 2 and 3 still run over reduced sets. Its guard re-derives every award's winner over the **full** roster and requires it to match. |
+| `the-live-set-supplied-OUT-OF-PRIORITY-ORDER-resolves-IDENTICALLY` | the sort itself. Byte-identical inputs to the row above except the supplied order (3, 1, 2), so the expected block must be byte-identical — and that identity *is* the assertion. The supplied order is neither ascending nor descending, so it separates *no sort at all* from *sorted the wrong way*. |
+| `the-award-with-the-LOWER-PRIORITY-NUMBER-KEEPS-the-trophy` | ⭐⭐ the DIRECTION of the sort, in `EXPERIENCE.md:169`'s own words: *"they take the higher-priority one; the other passes to the next eligible Player."* Both awards' unreduced winner is the **same** player and they are supplied largest-priority-first, so descending processing (or none at all) swaps which trophy that player keeps. |
+| `a-SINGLE-OVERFLOW-…` / `a-CASCADE-…` / `TWO-DIFFERENT-players-…` | the removal, the *accumulated* assigned set, and two independent decisive removals. The cascade's guard re-derives that award 3's winner over the roster-minus-the-first-sweeper **is** award 2's re-resolved winner; without that it is two unrelated overflows. |
+| `an-overflow-re-resolves-through-the-LADDER-and-EXITS-AT-A-DIFFERENT-RUNG` | ⭐⭐ that re-resolution is a **full Stage-2 re-run** and not a pop-the-winner. Over the full roster the award is a 3-way tie the ladder resolves at rung **1**; over the reduced set rung 1 cannot separate the survivors and rung **4** decides. A shortcut that popped the winner out of the old tie reaches the same player at the **wrong** rung — and 6.8 persists the rung. |
+| `an-overflow-re-resolves-to-a-SHARED-outcome-…` | one award assigning **two** players at once. ⭐ Measured context: 6.5's BAR found **0 of 12** awards ending shared on the real corpus, because in 1v1 wingman two opponents are never tied against each other on a tournament-wide total — so this path is vector-only in production, exactly like the ladder's rung 5. |
+| `a-CO-WINNER-of-an-EARLIER-shared-award-is-the-one-SWEPT-OUT` | ⭐⭐ *"Co-winners all count"*. The later award's unreduced winner is the **second** co-winner, so a pass that credited only `winners[0]` hands them a second trophy in one spin — the silent violation `review-data-integrity.md:175-179` names and `unique (spin_id, winner_entry_id)` backstops. |
+| `EXHAUSTION-…` / `an-award-arrives-as-no_eligible_players-BEFORE-any-removal-…` | read as a **pair**: the same outcome kind with a non-empty and an empty `swept_out`. The exhaustion row's guard re-derives that the eligible set was **non-empty before** removal, without which it is indistinguishable from an award nobody qualified for. |
+| `a-REDUCED-set-drops-a-max-VOLUME-awards-best-value-to-ZERO-…` | ⭐⭐ DECISION E firing on the **reduced** set, which is one of the three reasons re-resolution must be a re-run. Its guard re-derives that the best value was **non-zero before** removal. DECISION K is asserted too: the suppressed set travels and **none of it is assigned**. |
+| `a-reduced-tie-of-WIDTH-1-is-NEVER-handed-to-the-ladder` | ⭐ the ladder REFUSES `tied.length < 2` (L11) and Stage 2 cannot emit such a tie — so the only way to produce one is to build it. Its guard re-derives that the unreduced outcome is a tie of width exactly **2** containing the removed player. The pop-the-winner shortcut **refuses** this row where the re-run resolves it: a different outcome *kind*, not a different winner. |
+| `…MALFORMED IN TWO WAYS AT ONCE` ×2 (refusals) | ⭐ validation order is contract. One carries a duplicate **priority** over a live set that *also* holds a Stage-2-malformed award; the other a duplicate **award_id** over a players list that *also* holds a duplicate `steamid64` — the second being a genuinely plausible alternative design (validate the roster up front, since it is the same for every award). Both must refuse `live`. |
+
+**DECISION D** (Cuatro, 2026-08-07) is the product call here: an overflow re-resolves by a **full
+Stage-2 re-run over the reduced set**, never by popping the removed winner out of the previous
+outcome. Neither `SOLUTION-DESIGN:426-427` nor `SPINE:220` says which, and the three reasons are each
+independently sufficient — rung 3 is defined over the *remaining* set, `best` is a **set** whose
+membership the removal changes, and DECISION E's zero carve-out is evaluated against the reduced
+set's best value. **DECISION E'** is its companion: removal is applied to the **candidate set before
+Stage 2 runs**, never to an `Outcome` afterwards, which is what makes a shared trophy containing an
+already-assigned player impossible by construction rather than defensively handled.
+
+**DECISION G** is the rule no document states and two honest implementers split on: Stage 1's luck
+weighting is computed over **pre-anti-sweep** provisional winners, from the shelf frozen at spin
+start — so a category's weight can be justified by a player who then does not win it. Recomputing
+after each assignment would make the ceremony depend on resolution order and unverifiable from the
+bundle. **Do not recompute**, and the pass therefore has no `shelf` parameter at all.
+
 ## The spec these files encode
 
 ```
@@ -620,7 +733,7 @@ Each label is an independent stream and each starts at counter `i = 0`.
 
 ## Anchoring
 
-All five files are generated by a **third** implementation —
+All six files are generated by a **third** implementation —
 [`generate_vectors.py`](generate_vectors.py), Python 3 stdlib `hmac` + `hashlib` plus Python's
 own unbounded integers, written from the spec above — so they are neither Go's output nor the
 browser's. The block cases are additionally reproducible from a **fourth**, unrelated HMAC
@@ -645,7 +758,7 @@ implementations with every gate still green. Committed, it is auditable and re-r
 
 ```bash
 python roulette/vectors/generate_vectors.py --check   # verify committed files, write nothing
-python roulette/vectors/generate_vectors.py           # regenerate all five files
+python roulette/vectors/generate_vectors.py           # regenerate all six files
 ```
 
 For `ladder-resolve.json` the anchor is arithmetic, as it is for `stage2-resolve.json`: Python's
@@ -653,6 +766,19 @@ For `ladder-resolve.json` the anchor is arithmetic, as it is for `stage2-resolve
 TypeScript from `BigInt`, and it is what the four-term rung-2 products need. It carries **no**
 `seed_hex` and **no** byte accounting at all — the ladder is not on the cryptographic axis, because
 it draws nothing.
+
+`antisweep-resolve.json` is the same: no seed, no label, no byte accounting, because the pass takes
+no stream. Its anchor is **compositional** rather than arithmetic — `resolve_spin` performs no
+comparison of its own and delegates every decision to the same `resolve_stage2` and `resolve_ladder`
+that produce the two files above, which is precisely the property the Go and TypeScript modules must
+mirror (⛔ neither may import `math/big` / reach for `BigInt` in this pass; `prng_test.go`'s
+exception list was deliberately **not** widened for `sweep.go`). ⚠ Its independence carries the same
+qualification `deferred-work.md:300` and `:318` record for the two files before it, and one more:
+the *algorithm* is transcribed from `SOLUTION-DESIGN §9.4` and `SPINE:220`, which together are four
+sentences, while the DECISIONS below them (D, E', F, G, K) were authored in the same slice as both
+runtimes and are agreed rather than independently derived. That is a weakening, not a falsification —
+each decision is stated in the `spec` string and pinned by rows a wrong choice reddens — and its
+home is 6.11, alongside its two predecessors.
 
 ⚠ Nothing runs `--check` automatically — this repo has no CI (`deferred-work.md:299`, deferred to
 6.11). It is a manual gate, run at every story's sign-off.

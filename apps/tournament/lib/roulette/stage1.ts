@@ -491,7 +491,6 @@ function weightOf(
           `award "${candidate.awardId}" resolved to a SHARED outcome with an empty steamid64`,
         );
       }
-      const tableMax = table.length - 1;
       // ⛔ `Object.hasOwn`, not a bare lookup, for the same prototype hazard `winner` guards below.
       const shelfOf = (sid: string): number =>
         Object.hasOwn(shelf, sid) ? (shelf[sid] as number) : 0;
@@ -500,16 +499,23 @@ function weightOf(
         const held = shelfOf(sid);
         if (held < index) index = held;
       }
-      // W8 — clamp AFTER the minimum. Clamping each shelf first would be the same answer today and
-      // a different one the moment `tableMax` sits below a co-winner's real shelf.
-      if (index > tableMax) index = tableMax;
-      return table[index] as number;
+      // W8 — the index is the MINIMUM over the co-winners' shelves, and the clamp lives at the
+      // single indexing site, {@link weightAt}.
+      //
+      // ⚠ THIS COMMENT USED TO READ "clamp AFTER the minimum" AS THOUGH THE ORDER WERE A PINNED
+      // INVARIANT. It is not one, and `deferred-work.md:317` measured why: `min(x, tableMax)` is
+      // monotone non-decreasing, so `clamp(min(S))` and `min(clamp(S))` are equal for EVERY input —
+      // no fixture can distinguish them and no implementation can get it wrong. Asserting it
+      // devalued the genuinely load-bearing `min`-vs-`max` rule above, which a reader has no way to
+      // tell apart from it. Story 6.6 rewrote it and moved the clamp somewhere it cannot be ordered
+      // wrongly at all.
+      return weightAt(table, index);
     }
 
     case 'no_eligible_players':
     case 'no_awardable_value':
       // DECISION F — no player, no shelf, the maximal empty shelf: index 0.
-      return table[0] as number;
+      return weightAt(table, 0);
 
     case 'winner': {
       // ⛔ SYMMETRIC WITH THE SHARED ARM'S EMPTY-WINNERS GUARD. `Ladder` is an INJECTED port, so
@@ -524,9 +530,9 @@ function weightOf(
           `award "${candidate.awardId}" resolved to a WINNER with no steamid64`,
         );
       }
-      // W8 — `tableMax` is `table.length - 1`, NOT a length. Using the length indexes one past
-      // the end for any shelf at or beyond it, which is `undefined` here and a panic in Go.
-      const tableMax = table.length - 1;
+      // W8 — the clamp is {@link weightAt}'s, whose bound is `table.length - 1` and NOT a length:
+      // using the length would index one past the end for any shelf at or beyond it, which is
+      // `undefined` here and a panic in Go.
       // ⛔ `Object.hasOwn`, not a bare `shelf[id]`. A plain object inherits `constructor`,
       // `toString` and friends from its prototype, so a bare lookup can return a FUNCTION for an
       // id that is not in the map at all — and `min(function, tableMax)` is `NaN`, which indexes
@@ -535,9 +541,10 @@ function weightOf(
       // input neither would report.
       const held = Object.hasOwn(shelf, outcome.steamid64) ? (shelf[outcome.steamid64] as number) : 0;
       // An ABSENT player is shelf 0 — the right answer for the right reason, and the NORMAL case
-      // at the first spin. validateShelf has already refused any negative size.
-      const index = held > tableMax ? tableMax : held;
-      return table[index] as number;
+      // at the first spin. validateShelf has already refused any negative size, which is why
+      // {@link weightAt}'s low-side arm is unreachable from here and is a loud refusal rather than
+      // a silent clamp.
+      return weightAt(table, held);
     }
   }
 
@@ -713,6 +720,70 @@ function validateWeightTable(table: readonly number[]): void {
       );
     }
   }
+}
+
+/**
+ * W8's ONE indexing site: `table[min(max(index, 0), table.length - 1)]`, guarded on BOTH sides.
+ *
+ * ⭐ STORY 6.6 — THIS CLOSES `deferred-work.md:308`, AND WHAT IT CLOSES IS A DIVERGENCE RATHER THAN
+ * A CRASH. 6-4b's clamp was one-sided (`index > tableMax`), so a NEGATIVE index — or an empty
+ * `table` making `tableMax = -1` — did three different things in the three implementations of one
+ * contract: here it yields `undefined as number`, which becomes `NaN` in the weight sum and is
+ * refused three functions later under a DIFFERENT label; Go PANICS on `table[-1]`; and Python
+ * indexes from the END of the list, handing the LIGHTEST weight to the emptiest shelf — FR-26
+ * running exactly backwards, with nothing red anywhere. One input, three behaviours, in a pair of
+ * runtimes whose whole contract is identical behaviour. That divergence is precisely why
+ * {@link Stage1Error.detail} exists: 6-4b's mutation pass measured that deleting the negative-shelf
+ * guard left every gate GREEN on this side while Go crashed.
+ *
+ * ⛔ IT REFUSES RATHER THAN CLAMPING TO ZERO. Reaching here with a negative index means an upstream
+ * guard has been removed — {@link validateShelf} already refuses a negative shelf size and
+ * {@link validateWeightTable} already refuses an empty table, so both arms are unreachable through
+ * {@link stage1Weights} / {@link stage1Pick}. A silent clamp would hand back `table[0]`, the
+ * HEAVIEST luck weight, for an input that means the validation layer is broken.
+ *
+ * ⚠ NEITHER ARM IS ROW-REPRESENTABLE, and that is declared rather than left silent: a vector row is
+ * a set of INPUTS, and every input that could reach these two is refused by a guard that runs first.
+ * Both are driven by this module's own suite, the way `'stream'` and `'internal'` are.
+ *
+ * ⭐ AND IT MAKES THE CLAMP-ORDER QUESTION UNASKABLE (`deferred-work.md:317`). With exactly one
+ * clamp at exactly one site, "clamp before or after the minimum" is not a rule anybody can violate —
+ * which is what that comment should have said, because the two orders are provably equal.
+ *
+ * ⚠ EXPORTED ONLY SO THE SUITE CAN DRIVE THE TWO ARMS DIRECTLY, and that is stated rather than left
+ * for a reader to infer. It is not part of the ceremony's contract — no caller outside this module
+ * indexes the table — and Go's mirror is unexported, reachable from its suite only because Go tests
+ * live in the package. The alternative was to leave the guards undriven on this side, which is
+ * precisely the asymmetry `deferred-work.md:308` is about: one runtime's version of a rule tested
+ * and the other's asserted.
+ */
+export function weightAt(table: readonly number[], index: number): number {
+  if (table.length === 0) {
+    throw new Stage1Error(
+      'weight_table',
+      'luck_weight_table is empty at the indexing site — there is no index 0 to give the empty ' +
+        'shelf, and table.length - 1 is -1',
+    );
+  }
+  // ⚠ `Number.isInteger` CARRIES BOTH HALVES, and the negative-only check did not. `NaN < 0` is
+  // false and `NaN > tableMax` is false, so a `NaN` index fell straight through to `table[NaN]` →
+  // `undefined as number` — which is the EXACT failure this function was written to close, surviving
+  // inside it. A fractional index does the same via `table[1.5]`. Go's mirror takes an `int` so
+  // neither shape exists there, and Python's `table[min(1.5, tableMax)]` raises `TypeError`: three
+  // behaviours for one input, in the pair whose whole contract is identical behaviour. `validateShelf`
+  // does reject non-integers, so nothing reaches this through `stage1Weights` / `stage1Pick` — but
+  // this function is EXPORTED, and the negative arm was guarded for exactly the same "silently
+  // plausible, differently wrong per language" reason. The code review measured the asymmetry.
+  if (!Number.isInteger(index) || index < 0) {
+    throw new Stage1Error(
+      'shelf',
+      `shelf index ${String(index)} is not a non-negative integer at the indexing site — a shelf ` +
+        'size is a count, and a bad index yields `undefined` here, panics in Go and reads the ' +
+        'table from the END in Python',
+    );
+  }
+  const tableMax = table.length - 1;
+  return table[index > tableMax ? tableMax : index] as number;
 }
 
 /**

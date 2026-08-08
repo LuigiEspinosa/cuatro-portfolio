@@ -663,14 +663,15 @@ describe('lib/roulette source pinning', () => {
     // Every non-test module under lib/roulette is production code that can reach a client bundle,
     // so the list is asserted exactly rather than as a lower bound: a new module added here
     // without thinking about the bans below should fail loudly, not slip in unscanned.
-    // `stage2.ts` was added by Story 6-4a, `stage1.ts` by 6-4b and `ladder.ts` by 6.5; each had to
-    // be registered here to be scanned at all.
+    // `stage2.ts` was added by Story 6-4a, `stage1.ts` by 6-4b, `ladder.ts` by 6.5 and `sweep.ts`
+    // by 6.6; each had to be registered here to be scanned at all.
     expect(shipped.map(([f]) => f)).toEqual([
       'labels.ts',
       'ladder.ts',
       'prng.ts',
       'stage1.ts',
       'stage2.ts',
+      'sweep.ts',
     ]);
   });
 
@@ -785,6 +786,21 @@ describe('lib/roulette source pinning', () => {
         // IS the provisional winner whose shelf the weight is indexed by.
         'stage1.ts': ['./prng', './stage2'],
         'stage2.ts': [],
+        // ⭐⭐ STORY 6.6, AND THE ABSENCE OF `'./prng'` IS THE LOAD-BEARING HALF. The anti-sweep
+        // pass draws ZERO stream bytes (A1) — re-resolution is Stage 2 plus the FR-29 ladder, and
+        // both are pure — so a `./prng` import appearing here would be the first visible sign that
+        // somebody had threaded a stream through the overflow, which would move every byte position
+        // after it and invalidate 6-4b's measured 22-byte twelve-spin ceremony that 6.9's browser
+        // must reproduce exactly. A runtime "it consumed nothing" assertion around a function that
+        // cannot reach a stream is VACUOUS (the 6-4b review deleted exactly that), so the property
+        // lives here, in a pin no implementation can opt out of.
+        //
+        // It imports `./stage2` for `resolveStage2` and the shared shapes, and `./stage1` for the
+        // `Stage1Candidate` TYPE — reused rather than restated, because two near-identical shapes
+        // is how the two runtimes drift (6.5 said the same about `StatValue`). ⚠ Note it does NOT
+        // import `./ladder`: the FR-29 ladder arrives as an injected PORT, which is what lets the
+        // suite drive the module's `internal` guards with a stub.
+        'sweep.ts': ['./stage1', './stage2'],
       });
     });
 
@@ -793,7 +809,7 @@ describe('lib/roulette source pinning', () => {
     // the bans would silently stop asserting and the pin above would still pass.
     it('at least one shipped module has a non-empty specifier list, so the bans are not vacuous', () => {
       const withImports = shipped.filter(([, src]) => importSpecifiers(src).length > 0);
-      expect(withImports.map(([f]) => f)).toEqual(['ladder.ts', 'stage1.ts']);
+      expect(withImports.map(([f]) => f)).toEqual(['ladder.ts', 'stage1.ts', 'sweep.ts']);
     });
   });
 

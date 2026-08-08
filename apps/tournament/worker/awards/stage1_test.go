@@ -1374,3 +1374,153 @@ func sameOrderAsPriority(c stage1VectorCase) bool {
 	}
 	return true
 }
+
+// ── Story 6.6, Task 5 — the luck weight table's INDEXING, in both directions ───
+
+// ⭐⭐ FR-26's HEADLINE PROPERTY, ASSERTED AS A PROPERTY: an EMPTY shelf draws the HEAVIEST weight,
+// and the weight is MONOTONE NON-INCREASING in shelf size.
+//
+// ⚠ IT RE-DERIVES BOTH FROM THE TABLE IT IS HANDED rather than from a transcribed literal, and the
+// distinction is the whole point: the VALUES are organizer config that lives in
+// `ceremony.luck_weight_table` (migration 0025 sets the column default and the pgTAP suite asserts
+// its shape) precisely because `worker/awards` is a LEAF that must never seed one — `stage1.go:224`
+// says so. A test that hardcoded [100 40 16 6 2 1] would silently stop testing the day an organizer
+// re-tunes the table, which is the one thing the column exists to allow.
+//
+// It drives the PUBLIC entry point, not `stage1Weight`, so what is proven is the path a ceremony
+// actually takes: pool -> ascending priority -> provisional winner -> shelf -> table.
+func TestWeightIsHeaviestAtTheEmptyShelfAndMonotoneInShelfSize(t *testing.T) {
+	// Three tables of different lengths, all satisfying validateWeightTable. The property must hold
+	// for EVERY legal table, not for the one that happens to ship.
+	for _, table := range [][]int{
+		{100, 40, 16, 6, 2, 1},
+		{9, 4, 1},
+		{2, 1},
+	} {
+		// ⚠ `itoa`, not `fmt.Sprint` — `fmt.Sprintf`/`fmt.Sprint` are banned in this package's
+		// decision path and the ban is scanned over source, so keeping the suite to the same
+		// vocabulary avoids teaching a reader that the rule is negotiable.
+		name := ""
+		for _, w := range table {
+			name += itoa(w) + "-"
+		}
+		t.Run(name, func(t *testing.T) {
+			winner := "76561198000000011"
+			candidates := []Stage1Candidate{{
+				AwardID:  "aw-01",
+				Priority: 1,
+				Award:    Award{DecidingStat: "knife_kills", Class: ClassVolume, Direction: DirectionMax},
+			}}
+			players := []SnapshotPlayer{
+				{
+					SteamID64: winner, RoundsPlayed: big.NewInt(30), Kills: big.NewInt(20),
+					Volume: map[string]*big.Int{"knife_kills": big.NewInt(9)},
+					Rate:   map[string]RatePair{},
+				},
+				{
+					SteamID64: "76561198000000022", RoundsPlayed: big.NewInt(30), Kills: big.NewInt(20),
+					Volume: map[string]*big.Int{"knife_kills": big.NewInt(1)},
+					Rate:   map[string]RatePair{},
+				},
+			}
+
+			// Two past the end, so the CLAMP is exercised rather than assumed.
+			weights := make([]int, 0, len(table)+3)
+			for shelf := 0; shelf <= len(table)+1; shelf++ {
+				got, err := Stage1Weights(Stage1Input{
+					Candidates: candidates,
+					Players:    players,
+					Shelf:      map[string]int{winner: shelf},
+					Table:      table,
+					LiveCount:  1,
+				})
+				if err != nil {
+					t.Fatalf("shelf %d: %v", shelf, err)
+				}
+				weights = append(weights, got[0])
+			}
+
+			// ⭐ SHELF 0 => table[0] => the HEAVIEST entry. Both halves are re-derived: the identity
+			// with table[0], and that table[0] really is the maximum of the table it was handed.
+			if weights[0] != table[0] {
+				t.Errorf("shelf 0 weighs %d, want table[0] = %d", weights[0], table[0])
+			}
+			heaviest := table[0]
+			for _, w := range table {
+				if w > heaviest {
+					heaviest = w
+				}
+			}
+			if weights[0] != heaviest {
+				t.Errorf("shelf 0 weighs %d, but the heaviest entry in %v is %d — FR-26's bias is "+
+					"inverted", weights[0], table, heaviest)
+			}
+			// MONOTONE NON-INCREASING in shelf size, past the clamp included.
+			for i := 1; i < len(weights); i++ {
+				if weights[i] > weights[i-1] {
+					t.Errorf("weight rose from %d at shelf %d to %d at shelf %d — a fuller shelf may "+
+						"never draw MORE luck", weights[i-1], i-1, weights[i], i)
+				}
+			}
+			// …and it genuinely DECREASES somewhere, or "non-increasing" is satisfied by a constant
+			// table the validator would have refused anyway.
+			if weights[0] == weights[len(table)-1] {
+				t.Errorf("every shelf weighs the same (%d) — the bias is not a bias", weights[0])
+			}
+			// The clamp: everything at or past table_max weighs the LAST entry.
+			last := table[len(table)-1]
+			for shelf := len(table) - 1; shelf <= len(table)+1; shelf++ {
+				if weights[shelf] != last {
+					t.Errorf("shelf %d weighs %d, want the clamped last entry %d", shelf, weights[shelf], last)
+				}
+			}
+		})
+	}
+}
+
+// ⭐ THE TWO ARMS `deferred-work.md:308` IS ABOUT, DRIVEN DIRECTLY — and they are LOCAL rows rather
+// than vector rows for a stated reason: both are refused by a guard that runs FIRST
+// (`validateShelf` refuses a negative size, `validateWeightTable` refuses an empty table), so no set
+// of INPUTS to the public entry points can reach them. That is exactly the representability rule the
+// vector's README states, and faking a row would pin the validator rather than the guard.
+//
+// What they prevent is a DIVERGENCE, not a crash: before Story 6.6 the clamp was one-sided, so this
+// input PANICKED here, yielded `undefined as number` in TypeScript and read the table from the END
+// in Python — three behaviours, no error, one contract.
+func TestWeightAtGuardsBothEndsOfTheTable(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		table  []int
+		index  int
+		detail string
+	}{
+		{"a NEGATIVE shelf index", []int{100, 40, 16}, -1, DetailShelf},
+		{"an EMPTY table has no index 0 to give the empty shelf", []int{}, 0, DetailWeightTable},
+		{"an empty table with a positive index refuses the TABLE, not the shelf", []int{}, 3, DetailWeightTable},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := weightAt(tc.table, tc.index)
+			var invalid *Stage1InvalidError
+			if !errors.As(err, &invalid) {
+				t.Fatalf("err = %v, want a *Stage1InvalidError", err)
+			}
+			if invalid.Detail != tc.detail {
+				t.Errorf("detail = %q, want %q", invalid.Detail, tc.detail)
+			}
+			if !errors.Is(err, ErrStage1) {
+				t.Errorf("the refusal is not an ErrStage1: %v", err)
+			}
+		})
+	}
+
+	// ⭐ THE POSITIVE CONTROL: the same function on a legal index must NOT refuse, or the two arms
+	// above are satisfied by a `weightAt` that refuses everything — the untyped-refusal defect 6-4a
+	// measured, one level down.
+	if w, err := weightAt([]int{100, 40, 16}, 1); err != nil || w != 40 {
+		t.Errorf("weightAt([100 40 16], 1) = %d, %v; want 40, nil", w, err)
+	}
+	// …and the clamp still clamps rather than refusing.
+	if w, err := weightAt([]int{100, 40, 16}, 99); err != nil || w != 16 {
+		t.Errorf("weightAt([100 40 16], 99) = %d, %v; want the clamped 16, nil", w, err)
+	}
+}

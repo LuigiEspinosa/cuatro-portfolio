@@ -467,27 +467,32 @@ func stage1Weight(
 					"award "+c.AwardID+" resolved to a SHARED outcome with an empty steamid64")
 			}
 		}
-		tableMax := len(table) - 1
 		idx := shelf[out.Winners[0]]
 		for _, sid := range out.Winners[1:] {
 			if s := shelf[sid]; s < idx {
 				idx = s
 			}
 		}
-		// W8 — clamp AFTER the minimum. Clamping each shelf first would be the same answer today
-		// and a different one the moment `table_max` sits below a co-winner's real shelf.
-		if idx > tableMax {
-			idx = tableMax
-		}
-		return table[idx], nil
+		// W8 — the index is the MINIMUM over the co-winners' shelves, and the clamp lives at the
+		// single indexing site (`weightAt`).
+		//
+		// ⚠ THIS COMMENT USED TO READ "clamp AFTER the minimum" AS THOUGH THE ORDER WERE A PINNED
+		// INVARIANT. It is not one, and `deferred-work.md:317` measured why: `min(x, tableMax)` is
+		// monotone non-decreasing, so `clamp(min(S))` and `min(clamp(S))` are equal for EVERY input
+		// — no fixture can distinguish them and no implementation can get it wrong. Asserting it
+		// devalued the genuinely load-bearing `min`-vs-`max` rule above, which a reader has no way
+		// to tell apart from it. Story 6.6 rewrote it and moved the clamp somewhere it cannot be
+		// ordered wrongly at all.
+		return weightAt(table, idx)
 
 	case KindNoEligiblePlayers, KindNoAwardableValue:
 		// DECISION F — no player, no shelf, the maximal empty shelf: index 0.
-		return table[0], nil
+		return weightAt(table, 0)
 
 	case KindWinner:
-		// W8 — `tableMax` is len(table) - 1, NOT a length. Using the length here indexes one past
-		// the end for any shelf at or beyond it: a panic in Go, `undefined` in the browser.
+		// W8 — the clamp is `weightAt`'s, whose bound is `len(table) - 1` and NOT a length: using
+		// the length would index one past the end for any shelf at or beyond it — a panic in Go,
+		// `undefined` in the browser.
 		// ⛔ SYMMETRIC WITH THE SHARED ARM'S EMPTY-WINNERS GUARD. `Ladder` is an INJECTED port, so
 		// this arm can carry an outcome no code in this package built: a `winner` with an empty
 		// SteamID64 would miss the shelf, read Go's zero value, and silently draw index 0 — the
@@ -498,15 +503,11 @@ func stage1Weight(
 			return 0, refuse(DetailInternal,
 				"award "+c.AwardID+" resolved to a WINNER with no steamid64")
 		}
-		tableMax := len(table) - 1
 		// An ABSENT player is shelf 0 — a missing key yields Go's zero value, which is the right
 		// answer for the right reason and is the NORMAL case at the first spin. validateShelf has
-		// already refused any negative size, so the index cannot go below 0.
-		idx := shelf[out.SteamID64]
-		if idx > tableMax {
-			idx = tableMax
-		}
-		return table[idx], nil
+		// already refused any negative size, which is why `weightAt`'s low-side arm is unreachable
+		// from here and is a loud refusal rather than a silent clamp.
+		return weightAt(table, shelf[out.SteamID64])
 	}
 
 	// Unreachable: OutcomeKind is a closed set of four and every one is handled above. Loud rather
@@ -685,6 +686,52 @@ func validateWeightTable(table []int) error {
 		}
 	}
 	return nil
+}
+
+// weightAt is W8's ONE indexing site: table[min(max(index, 0), len(table)-1)], guarded on BOTH
+// sides.
+//
+// ⭐ STORY 6.6 — THIS FUNCTION CLOSES `deferred-work.md:308`, AND WHAT IT CLOSES IS A DIVERGENCE
+// RATHER THAN A CRASH. 6-4b's clamp was one-sided (`if index > tableMax`), so a NEGATIVE index — or
+// an empty `table` making `tableMax = -1` — did three different things in the three implementations
+// of one contract: Go PANICS on `table[-1]`, TypeScript yields `undefined as number` which poisons a
+// byte-accounted draw with `NaN` and is refused three functions later under a DIFFERENT label, and
+// Python indexes from the END of the list and hands the LIGHTEST weight to the emptiest shelf —
+// FR-26 running exactly backwards, with nothing red anywhere. One input, three behaviours, in a pair
+// of runtimes whose whole contract is identical behaviour.
+//
+// ⛔ IT REFUSES RATHER THAN CLAMPING TO ZERO. Reaching here with a negative index means an upstream
+// guard has been removed: `validateShelf` already refuses a negative shelf size and
+// `validateWeightTable` already refuses an empty table, so BOTH arms below are unreachable through
+// `Stage1Weights` / `Stage1Pick`. A silent clamp would hand back `table[0]` — the HEAVIEST luck
+// weight — for an input that means the validation layer is broken, which is exactly the
+// plausible-but-wrong answer this package refuses everywhere else.
+//
+// ⚠ NEITHER ARM IS ROW-REPRESENTABLE, and that is DECLARED rather than left silent. A vector row is
+// a set of INPUTS and every input that could reach these two is refused by a guard that runs first,
+// so a row would have to carry something the public entry points cannot accept — the same reason
+// `DetailStream` and `DetailInternal` carry no rows. Both are driven by this package's own tests.
+//
+// ⭐ AND IT SETTLES THE CLAMP-ORDER QUESTION BY MAKING IT UNASKABLE (`deferred-work.md:317`). With
+// exactly one clamp, at exactly one site, "clamp before or after the minimum" is not a rule anybody
+// can violate — which is what that comment should have said all along, because the two orders are
+// provably equal for every input.
+func weightAt(table []int, index int) (int, error) {
+	if len(table) == 0 {
+		return 0, refuse(DetailWeightTable,
+			"luck_weight_table is empty at the indexing site — there is no index 0 to give the "+
+				"empty shelf, and len(table)-1 is -1")
+	}
+	if index < 0 {
+		return 0, refuse(DetailShelf,
+			"shelf index "+itoa(index)+" is negative at the indexing site — a shelf size is a "+
+				"count, and a negative index panics in Go, yields `undefined` in TypeScript and "+
+				"reads the table from the END in Python")
+	}
+	if tableMax := len(table) - 1; index > tableMax {
+		index = tableMax
+	}
+	return table[index], nil
 }
 
 // validateShelf is W8's other half.

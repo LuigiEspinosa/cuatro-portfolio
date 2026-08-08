@@ -825,7 +825,13 @@ func TestScannedSourceFilesAreExactlyTheShippedModules(t *testing.T) {
 	// compares a ratio of two ratios, which is four multiplications of unbounded snapshot
 	// magnitudes per side (L6); there is no `n <= 2^32` bounding them the way Stage 1's weights are
 	// bounded. That is the same argument `stage2.go` made, made again.
-	want := []string{"labels.go", "ladder.go", "prng.go", "stage1.go", "stage2.go"}
+	//
+	// ⭐ Story 6.6 added `sweep.go` and did NOT widen it, which is 6-4b's call rather than 6.5's and
+	// is right for the same reason theirs was: the anti-sweep pass performs NO arithmetic of its
+	// own. It delegates every comparison to `ResolveStage2` and to the injected `Ladder`, both of
+	// which hold the exemption because THEIR operands are unbounded. A `math/big` import appearing
+	// in `sweep.go` would mean the pass had started re-deriving a deciding value, which A9 forbids.
+	want := []string{"labels.go", "ladder.go", "prng.go", "stage1.go", "stage2.go", "sweep.go"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("scanned %v, want %v", got, want)
 	}
