@@ -36,8 +36,17 @@ stories:
 | — FR-29 tie ladder | `ladder-resolve.json` | **Story 6.5** (+ 6-5b's coverage pass) | ✅ shipped |
 | 3 — Stage-1 weighted pick | `stage1-pick.json` | **Story 6-4b** (+ 6.5's ladder rows, + 6-5b's shared-arm clamp row) | ✅ shipped |
 | — FR-26 anti-sweep (≤1 trophy/player/spin) | `antisweep-resolve.json` | **Story 6.6** | ✅ shipped |
+| — FR-28 pity draw (the guaranteed consolation) | `pity-draw.json` | **Story 6.7** | ✅ shipped |
 | 4 — canonical JSON + `bundle_sha256` (RFC-8785) | *(not yet)* | **Story 6.9** | ⏳ |
 | 5 — end-to-end ceremony vector + suite completeness | *(not yet)* | **Story 6.11** | ⏳ |
+
+⚠ **The gate numbers in the two right-hand rows above are the REVERSE of `SOLUTION-DESIGN:441-445`,
+and this is recorded rather than silently renumbered.** That document numbers gate **4** as the
+end-to-end ceremony vector and gate **5** as canonicalization + `bundle_sha256`; this table has them
+the other way round and has since 6.3. Both readings agree on *what* is owed and on *who* owes it —
+6.9 owns canonicalization, 6.11 owns the end-to-end vector — so nothing about the build is ambiguous,
+only the label. Renumbering a shipped table is 6.9's or 6.11's call to make together with the
+document; Story 6.7 noted it while adding its own row and deliberately changed neither.
 
 Stage 2 is not one of §9.6's five numbered gates because §9.6 numbers the *stream* gates and Stage 2
 consumes no stream — it is pure integer arithmetic over the frozen snapshot. AD-14 requires it to be
@@ -61,10 +70,23 @@ the proof. It sits after `stage1-pick` because that is the build order `§9.6` p
 vector to exercise an anti-sweep overflow — that one is Story 6.11's; this is the **unit** vector for
 the pass.
 
+**Pity is the exception to the three paragraphs above, and the exception is the point.** It is the
+one resolver in this directory that **CONSUMES STREAM BYTES**, on its own domain-separated
+`inclusivcup/v1/pity` stream — so where the ladder and anti-sweep prove a property by the *absence*
+of a stream parameter, `pity-draw.json` proves the mirror: every case carries a `seed_hex`, a
+per-draw `n`/`k`/`rejections`/`value` sequence and a `bytes_consumed` total, and a runtime
+"it consumed exactly this much" assertion around the pass is the **gate** rather than the vacuous
+assertion the 6-4b review deleted. It belongs beside `stage1-pick.json` on the cryptographic side of
+the split, and it sits last because that is the build order `§9.6` prescribes — the sequence ends
+*"→ pity"*.
+
 **This directory is not finished.** Gate 4 (canonicalization + `bundle_sha256`, Story 6.9) and
-gate 5 (the end-to-end ceremony vector with forced ties across *every* ladder rung, Story 6.11) are
-still to come. Everything the draw itself needs — the block function, `uniform_int`, Stage 2, the
-FR-29 ladder, Stage 1 and anti-sweep — is here.
+gate 5 (the end-to-end ceremony vector with forced ties across *every* ladder rung, an anti-sweep
+overflow and a pity draw, Story 6.11) are still to come. Everything the draw itself needs — the
+block function, `uniform_int`, Stage 2, the FR-29 ladder, Stage 1, anti-sweep **and pity** — is here.
+(⚠ That last sentence was **false** between Stories 6.6 and 6.7: it claimed the directory held
+everything the draw needs while pity — a resolver that draws bytes and is a published bundle key —
+was missing entirely. Corrected by 6.7, which is what filled the hole.)
 
 ## File format
 
@@ -701,6 +723,100 @@ start — so a category's weight can be justified by a player who then does not 
 after each assignment would make the ceremony depend on resolution order and unverifiable from the
 bundle. **Do not recompute**, and the pass therefore has no `shelf` parameter at all.
 
+### `pity-draw.json`
+
+```jsonc
+{
+  "vector": "pity-draw",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "…",                              // the VALIDATION ORDER and the whole pass
+  "value_encoding": "…",
+  "label": "inclusivcup/v1/pity",           // ⭐ ONE label for the whole file — the domain separator
+  "refusal_details": ["stream", "players", "shelf"],
+  "row_representable_refusal_details": ["stream", "players", "shelf"],   // ⭐ equal, deliberately
+  "refusals": [
+    { "why": "…", "detail": "stream", "defects": ["stream", "players"],
+      "seed_hex": "1b3c…279c",
+      "label": "inclusivcup/v1/stage1/spin/1",   // OPTIONAL — the wrong-label row
+      "pre_consumed": 3,                          // OPTIONAL — the already-drawn row
+      "players": [ … ], "shelf": { … } }
+  ],
+  "cases": [
+    {
+      "name": "a-THREE-member-winless-set-DEMONSTRABLY-REORDERS",
+      "note": "prose describing what this case pins",
+      "seed_hex": "1b3c…279c",              // ⭐ PER CASE — one row runs on ff…ff to force a rejection
+      "players": [ … AD-19 rows, the same shape `stage2-resolve.json` uses … ],
+      "shelf": { "<steamid64>": 1 },        // ⚠ MAY BE OMITTED — an absent container is the empty one
+      "expected": {
+        "winless":      ["…"],              // shelf == 0 AND idle_dq == false, BYTE-LEX
+        "reveal_order": ["…"],              // the seeded permutation OF THAT SET
+        "draws": [ { "n": 3, "k": 1, "rejections": 0, "value": 2 } ],
+        "bytes_consumed": 2
+      }
+    }
+  ]
+}
+```
+
+⭐ **`bytes_consumed` and the per-draw `n` sequence are as load-bearing as the order.** A file that
+pinned only `reveal_order` would let an implementation that reaches the right permutation by a
+*different* draw sequence pass every row — and 6.9's browser has to consume the same **bytes**, not
+merely reach the same answer. Every case pins both, and the generator re-derives the total from the
+steps (`k × (1 + rejections)` summed) so the summary cannot drift away from what it summarises.
+
+⭐ **`winless` and `reveal_order` are two fields, never one.** The outcome is invariant and only the
+order is drawn, so `reveal_order` is always a **permutation** of `winless` — same length, same
+members, no additions, no drops — and the generator asserts that multiset identity on every case
+before writing it. Publishing one as the other is the single most destructive thing a caller can do
+with this result, and with one field it would be a typo rather than a type error.
+
+⭐ **`n = 1` is never drawn, and that is why the loop bound is pinned by `draws` rather than by the
+byte count.** `uniform_int(s, 1)` is legal and reads **zero** bytes (`minimal_k(1)` gives `k = 0`),
+so an implementation that *does* call it for a one-member set is byte-identical to one that does
+not. The `draws` array separates them: on the one-member row it is **empty**.
+
+#### The pity cases that carry the weight
+
+| Case | What only it can catch |
+|---|---|
+| `an-EMPTY-roster-…` / `an-ABSENT-players-and-shelf-CONTAINER-…` | AC3's zero case, in both spellings. The second row **omits both keys**, so Go's nil slice / nil map, TypeScript's `undefined` and Python's `None` all have to normalise to the empty container (P11, Cuatro's call at the 6-4b review) — and its expected block must be byte-identical to the explicit row's. |
+| `a-roster-where-EVERY-player-HOLDS-a-trophy-…` | the empty winless set for a **non-empty** roster — the only one of the two empty rows that can tell a filter which works from a filter which never runs. |
+| `a-ONE-member-winless-set-…` | ⭐ that a one-member set **resolves** rather than refusing, and that the loop body never runs. Zero bytes *and* an empty `draws` array; the byte count alone cannot distinguish it from an implementation that drew `n = 1`. |
+| `a-TWO-member-winless-set-COSTS-ONE-BYTE-and-the-SELF-SWAP-…` | ⭐⭐ that `bytes_consumed` is load-bearing **independently of the order**. Two members is the smallest reorderable set; on this seed the single draw returns `j = i`, a legal **self-swap**, so the reveal order comes out equal to byte-lex while the draw still cost a byte. A vector pinning only `reveal_order` would accept an implementation that never drew at all. |
+| `a-THREE-member-winless-set-DEMONSTRABLY-REORDERS` | the no-op shuffle. Returning `winless` as `reveal_order` is the cheapest way to satisfy the permutation invariant vacuously, and this is the smallest row that kills it. |
+| `the-ROSTER-supplied-OUT-OF-BYTE-LEX-ORDER-resolves-IDENTICALLY` | ⭐⭐ the canonical sort. Byte-identical inputs to the row above except the **supplied order**, so the expected block must be byte-identical — and that identity *is* the assertion. Written in the same edit as the sort, because Story 6.6's mutation pass found precisely this survivor: every fixture roster there was pre-sorted, so deleting the sort reddened nothing. |
+| `a-REJECTION-inside-uniform_int-is-BYTE-ACCOUNTED-…` | the rejection path, byte-accounted the way `prng-uniform-int.json` does it. Runs on the `ff…ff` seed, whose first pity byte is **255** — rejected at `n = 3`, where `limit = 255`. ⭐ The generator re-derives the counterfactual: a modulo-**biased** implementation would compute `255 mod 3 = 0` and reach a **different reveal order**, so the row discriminates on both axes rather than on the byte count alone. |
+| `an-idle_dq-player-is-EXCLUDED-while-a-player-with-ZERO-approved-rows-is-INCLUDED` | ⭐⭐ AC1's inversion in one row. `idle_dq` at the snapshot layer means **fully DQ'd** — at least one approved `stat_row` and *every* one of them idle (`0024:584-589`) — so a player carrying it sits at shelf 0 and is still excluded, while beside them a player with **zero approved rows** is `false` with zero stats: winless, not disqualified, and one that 0024 says in as many words *"pity must still be able to reach"*. That same player is below both FR-21 floors, so the row is P7's too. |
+| `the-winless-set-is-a-STRICT-SUBSET-in-the-MIDDLE-of-byte-lex-order` | an off-by-one in the filter, which is invisible when the winless set is a prefix or a suffix. Both ends of the byte-lex roster are held by trophy-holders. |
+| `an-ABSENT-shelf-key-is-shelf-ZERO` / `an-EXPLICIT-shelf-0-…` | read as a **pair**: W8's *"an ABSENT player is shelf 0 … never an error"*, mirrored verbatim, with the two spellings producing byte-identical expected blocks. |
+| `the-SHIPPED-floors-shape-…-BELOW-both-FR-21-floors` | ⛔⛔ **the configuration that actually ships.** On the real corpus **0 of 28** players clear `floor_rounds = 24` / `floor_kills = 20`, so every award resolves `no_eligible_players`, no shelf leaves 0, and the winless set is the **entire roster**. This row is that shape at reduced scale, and it is the file's strongest **P7** row: under an implementation that re-applied the floors inside pity the winless set here would be **empty** rather than everyone — the difference between FR-28 working and SM-2 being unachievable by construction. |
+| `…MALFORMED IN TWO WAYS AT ONCE` ×2 (refusals) | ⭐ validation order is contract. The published order is **stream → players → shelf**, so its two *adjacent* boundaries each get a row malformed on both of its sides: a wrong-label stream over a roster that also holds a duplicate `steamid64` (must refuse `stream`), and a duplicate `steamid64` over a shelf that also holds a negative count (must refuse `players`). The generator re-derives each second defect **on its own** and requires it to refuse under a *different* label — a doubly-malformed row whose second defect turned out to be harmless would recreate 6-4b's headline blindness while looking like the fix. |
+
+**DECISION D** (Cuatro, 2026-08-07) is the product call here, and it is the clause two honest
+implementers realise differently: neither `SPINE:221` nor `§9.4:427-429` says **which** shuffle, and
+*"seeded reveal order"* is satisfied by any of them while every implementation still calls itself
+Fisher–Yates. The variant is **Durstenfeld descending** over the byte-lex-sorted set —
+`for i = len-1 down to 1: j = uniform_int(s, i+1); swap(a[i], a[j])`, where `i == j` is a legal
+self-swap. Three properties earned it: the per-step `n` is unambiguous (`i+1`, strictly decreasing),
+it terminates at `i = 1` so **`n = 1` is never drawn**, and it is the form `uniform_int`'s
+`[1, MaxN]` contract fits with no special case. ⛔ **The rejected alternative is recorded so the next
+reader does not re-open it:** the ascending sweep `for i = 0 to len-2: j = i + uniform_int(s, len-i)`,
+whose last step draws `n = 1` for zero bytes unless the bound is trimmed — an ambiguity the vector
+would then have to arbitrate instead of the spec. The generator asserts the emitted `n` sequence is
+exactly `len … 2`, so an ascending implementation reddens at the **anchor**, not only in the suites.
+
+**There is deliberately no `internal` refusal detail**, and the absence is argued rather than
+overlooked. `antisweep-resolve.json` declares one because `Ladder` is an **injected port** that can
+hand the pass an outcome no code in the module built. Pity has no such port: every value it decides
+from is either a plain input it has just validated or the return of `uniform_int`, whose `[0, n)`
+contract is pinned by gate 2 in the same three implementations. A fourth label would be a
+compartment rather than a contract — a value no suite could ever drive. `refusal_details` and
+`row_representable_refusal_details` are therefore **equal**, and both keys are emitted so that
+equality is data both suites assert rather than prose a reader must trust. The one arm no *row* can
+express is `stream` with **no stream at all**; that half is driven by each runtime's own suite,
+exactly as `TestStage1PickRefusesANilStream` drives Stage 1's.
+
 ## The spec these files encode
 
 ```
@@ -733,7 +849,7 @@ Each label is an independent stream and each starts at counter `i = 0`.
 
 ## Anchoring
 
-All six files are generated by a **third** implementation —
+All seven files are generated by a **third** implementation —
 [`generate_vectors.py`](generate_vectors.py), Python 3 stdlib `hmac` + `hashlib` plus Python's
 own unbounded integers, written from the spec above — so they are neither Go's output nor the
 browser's. The block cases are additionally reproducible from a **fourth**, unrelated HMAC
@@ -758,7 +874,7 @@ implementations with every gate still green. Committed, it is auditable and re-r
 
 ```bash
 python roulette/vectors/generate_vectors.py --check   # verify committed files, write nothing
-python roulette/vectors/generate_vectors.py           # regenerate all six files
+python roulette/vectors/generate_vectors.py           # regenerate all seven files
 ```
 
 For `ladder-resolve.json` the anchor is arithmetic, as it is for `stage2-resolve.json`: Python's
@@ -779,6 +895,18 @@ sentences, while the DECISIONS below them (D, E', F, G, K) were authored in the 
 runtimes and are agreed rather than independently derived. That is a weakening, not a falsification —
 each decision is stated in the `spec` string and pinned by rows a wrong choice reddens — and its
 home is 6.11, alongside its two predecessors.
+
+`pity-draw.json` is back on the **cryptographic** axis, where `stage1-pick.json` is and where the
+three pure passes are not: every `value`, every `rejections` count and every `bytes_consumed` comes
+from the same `Stream` and `uniform_int` that produce `prng-uniform-int.json`, so a pity row is only
+as trustworthy as the stream underneath it — and that stream is already independently pinned by
+gates 1 and 2. Its **algorithm**, by contrast, is transcribed from two sentences (`SPINE:221` +
+`§9.4:427-429`) which do not name a shuffle at all; **DECISION D** picks one, and it was authored in
+the same slice as both runtimes rather than derived independently. ⚠ That is the same weakening
+`deferred-work.md:300` and `:318` record for the three files before it — a weakening, not a
+falsification, since the decision is stated in the `spec` string and pinned by rows a wrong choice
+reddens (the anchor itself asserts the emitted `n` sequence is `len … 2`). Its home is 6.11,
+alongside its predecessors.
 
 ⚠ Nothing runs `--check` automatically — this repo has no CI (`deferred-work.md:299`, deferred to
 6.11). It is a manual gate, run at every story's sign-off.

@@ -38,7 +38,18 @@ const (
 	labelPrefix = "inclusivcup/v1"
 
 	// PityLabel is the single pity stream. Story 6.3 defines the LABEL only; the pity
-	// ALGORITHM (FR-26's pity roulette) is Story 6.7's.
+	// ALGORITHM (FR-28's pity roulette) is Story 6.7's, in pity.go.
+	//
+	// ⚠ THE TRACE READ "FR-26" UNTIL STORY 6.7 CORRECTED IT, AND THE TWO ARE DIFFERENT
+	// REQUIREMENTS: FR-26 is anti-sweep plus the luck meter (Story 6.6, sweep.go), FR-28 is the
+	// guaranteed consolation draw. Measured at 6.7's contexting: this was the ONE site carrying
+	// the mislabel, and the string "FR-28" appeared ZERO times across worker/awards/*.go,
+	// lib/roulette/*.ts, generate_vectors.py and roulette/vectors/README.md — this comment and
+	// its TypeScript mirror are what introduced it.
+	//
+	// ⛔ THE VALUE BELOW IS FROZEN. It is the HMAC message prefix for every consolation draw ever
+	// published; moving one byte of it keys a different stream and invalidates every ceremony.
+	// Only the trace above changed.
 	PityLabel = labelPrefix + "/pity"
 )
 

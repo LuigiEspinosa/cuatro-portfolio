@@ -19,7 +19,17 @@
 const LABEL_PREFIX = 'inclusivcup/v1';
 
 /**
- * The single pity stream. Story 6.3 defines the LABEL only — the pity ALGORITHM is Story 6.7's.
+ * The single pity stream. Story 6.3 defines the LABEL only — the pity ALGORITHM (**FR-28**'s pity
+ * roulette) is Story 6.7's, in {@link ./pity}.
+ *
+ * ⚠ THIS SIDE NAMED NO FR AT ALL UNTIL STORY 6.7, while Go's mirror named the WRONG one (`FR-26`,
+ * which is anti-sweep plus the luck meter). Both now say FR-28, so the two halves of the seam make
+ * the same claim about the same constant — the asymmetry was measured at 6.7's contexting, along
+ * with the fact that `FR-28` appeared ZERO times anywhere in the seam before this comment.
+ *
+ * ⛔ THE VALUE IS FROZEN. It is the HMAC message prefix for every consolation draw ever published;
+ * moving one byte of it keys a different stream and invalidates every ceremony. Only the trace
+ * above changed.
  */
 export const PITY_LABEL = `${LABEL_PREFIX}/pity`;
 

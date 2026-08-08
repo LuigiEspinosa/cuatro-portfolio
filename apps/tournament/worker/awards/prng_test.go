@@ -831,7 +831,16 @@ func TestScannedSourceFilesAreExactlyTheShippedModules(t *testing.T) {
 	// own. It delegates every comparison to `ResolveStage2` and to the injected `Ladder`, both of
 	// which hold the exemption because THEIR operands are unbounded. A `math/big` import appearing
 	// in `sweep.go` would mean the pass had started re-deriving a deciding value, which A9 forbids.
-	want := []string{"labels.go", "ladder.go", "prng.go", "stage1.go", "stage2.go", "sweep.go"}
+	//
+	// ⭐ Story 6.7 added `pity.go` and did NOT widen it either, and the argument is narrower still
+	// than `sweep.go`'s: the pity draw performs no comparison at all and delegates none, because it
+	// INDEXES AND SWAPS. Its only numbers are a slice length, a loop counter and `UniformInt`'s own
+	// result, every one of them bounded by `MaxN` by construction — there is no unbounded snapshot
+	// magnitude anywhere in the pass. ⚠ Note what `pity.go` DOES import that no previous resolver
+	// did: nothing new, because `UniformInt` and `Stream` live in this same package. The
+	// TypeScript mirror is where the stream dependency becomes a visible import edge, and
+	// `prng.test.ts`'s per-module graph is where its PRESENCE is pinned.
+	want := []string{"labels.go", "ladder.go", "pity.go", "prng.go", "stage1.go", "stage2.go", "sweep.go"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("scanned %v, want %v", got, want)
 	}

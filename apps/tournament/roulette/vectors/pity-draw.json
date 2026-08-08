@@ -1,0 +1,2534 @@
+{
+  "vector": "pity-draw",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "FR-28's guaranteed consolation draw, run ONCE after all main spins. ⭐ UNLIKE every other resolver in this directory it CONSUMES STREAM BYTES, on its own domain-separated `inclusivcup/v1/pity` stream, so every case carries a seed_hex, a per-draw n/k/rejections/value sequence and a bytes_consumed total. VALIDATION ORDER, which is contract: (1) the injected STREAM, as detail `stream` — it must be present, keyed by the pity label and ONLY the pity label, and positioned at counter 0, because each stream is independent (SPINE:216) and a partly-drawn one silently yields a different reveal order from the same seed; (2) the ROSTER's own shape, in full over the WHOLE list, as detail `players` — every steamid64 a non-empty string, no duplicates, idle_dq a boolean; (3) the SHELF, as detail `shelf`, iterated in SORTED KEY ORDER in all three runtimes — every count an integer >= 0 (a negative is a refusal, never a clamp) and every key present on the roster (an ABSENT key is shelf 0, the normal shape; an UNKNOWN key means the shelf was accumulated over a different roster). An ABSENT players or shelf CONTAINER is the EMPTY one. THE PASS: winless = every player with shelf == 0 AND idle_dq == false, sorted BYTE-LEX and sorted BEFORE the first draw, because the seeded permutation is a function of the input sequence; reveal_order = a copy of winless shuffled by DURSTENFELD DESCENDING — for i = len-1 down to 1, j = uniform_int(stream, i+1), swap(order[i], order[j]) — where i == j is a LEGAL self-swap, the per-step n is strictly decreasing, and n = 1 is therefore NEVER drawn. The OUTCOME IS INVARIANT and only the ORDER is seeded: the set of winners IS the winless set, so reveal_order is always a permutation of winless — same length, same members, no additions, no drops. A winless set of length 0 or 1 RESOLVES normally, is not a refusal and not a skip, and consumes ZERO bytes because the loop body never runs. ⛔ Pity NEVER consults the FR-21 floors — its eligibility is 'not fully AFK/idle-DQ'd' and nothing else, and re-applying them would exclude the very players FR-28 exists for. ⛔ Pity NEVER reads a Stage-2 outcome, including the suppressed `tied` set a no_awardable_value outcome carries: a suppressed player did not win, so the shelf already places them in the winless set. ⛔ Pity NEVER writes the shelf, never reads a clock and performs no I/O. `idle_dq` is the SNAPSHOT sense (0024:584-589): true iff the player has AT LEAST ONE approved stat_row and EVERY one of them is idle. A rostered player with ZERO approved rows is false with zero stats — winless, NOT disqualified, and pity must reach them.",
+  "value_encoding": "Every SNAPSHOT magnitude is a DECIMAL STRING — steamid64, rounds_played, kills and every stats_int entry — because AD-19 makes them unbounded integers and JSON.parse silently rounds past 2^53. Every SHELF count and every n, k, rejections, value and bytes_consumed is a JSON INTEGER: they come from the algorithm and from uniform_int's own [1, 2^32] bound, not from the snapshot. The split is by PROVENANCE, not magnitude.",
+  "generated_by": "roulette/vectors/generate_vectors.py — python stdlib hmac+hashlib, a THIRD implementation written from the spec text, neither Go's crypto/hmac nor the browser's SubtleCrypto",
+  "label": "inclusivcup/v1/pity",
+  "refusal_details": [
+    "stream",
+    "players",
+    "shelf"
+  ],
+  "row_representable_refusal_details": [
+    "stream",
+    "players",
+    "shelf"
+  ],
+  "refusals": [
+    {
+      "why": "a duplicate steamid64 — one extra consolation prize, and a UNIQUE violation at 6.8",
+      "detail": "players",
+      "defects": [
+        "players"
+      ],
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "10",
+          "rounds_played": "12",
+          "kills": "8",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "8",
+              "knife_kills": "0",
+              "rounds_played": "12",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "12"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "12"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "8"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "12"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {}
+    },
+    {
+      "why": "an EMPTY steamid64 — an entry in the winless set matching no roster row",
+      "detail": "players",
+      "defects": [
+        "players"
+      ],
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {}
+    },
+    {
+      "why": "a NEGATIVE shelf count — a caller that has been subtracting, never a clamp to 0",
+      "detail": "shelf",
+      "defects": [
+        "shelf"
+      ],
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "10": -1
+      }
+    },
+    {
+      "why": "a shelf key naming a player who is on NO roster row — the shelf came from a different roster, and the two populations cannot be reconciled",
+      "detail": "shelf",
+      "defects": [
+        "shelf"
+      ],
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "10": 1,
+        "999": 1
+      }
+    },
+    {
+      "why": "the stream is keyed by a STAGE-1 label, not the pity label — AC4's 'PityLabel and only PityLabel', checked rather than asserted",
+      "detail": "stream",
+      "defects": [
+        "stream"
+      ],
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {}
+    },
+    {
+      "why": "the stream has already been drawn from — SPINE:216 makes every stream independent and counter-0, and a partly-drawn one silently yields a different reveal order",
+      "detail": "stream",
+      "defects": [
+        "stream"
+      ],
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "pre_consumed": 3,
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {}
+    },
+    {
+      "why": "MALFORMED IN TWO WAYS AT ONCE — a wrong-label stream over a roster that ALSO carries a duplicate steamid64. The published order is stream -> players -> shelf, so it must refuse `stream`",
+      "detail": "stream",
+      "defects": [
+        "stream",
+        "players"
+      ],
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "10",
+          "rounds_played": "12",
+          "kills": "8",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "8",
+              "knife_kills": "0",
+              "rounds_played": "12",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "12"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "12"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "8"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "12"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {}
+    },
+    {
+      "why": "MALFORMED IN TWO WAYS AT ONCE — a duplicate steamid64 over a shelf that ALSO carries a negative count. It must refuse `players`, pinning the players -> shelf half of the order",
+      "detail": "players",
+      "defects": [
+        "players",
+        "shelf"
+      ],
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "10",
+          "rounds_played": "12",
+          "kills": "8",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "8",
+              "knife_kills": "0",
+              "rounds_played": "12",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "12"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "12"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "8"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "12"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "100": -2
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "an-EMPTY-roster-resolves-to-an-EMPTY-draw-and-consumes-ZERO-bytes",
+      "note": "AC3's first half. An empty winless set RESOLVES — it is not a refusal, not an error and not a skip the caller has to special-case — and it consumes ZERO stream bytes, which is pinned as data rather than inferred from an empty draw list.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [],
+      "shelf": {},
+      "expected": {
+        "winless": [],
+        "reveal_order": [],
+        "draws": [],
+        "bytes_consumed": 0
+      }
+    },
+    {
+      "name": "an-ABSENT-players-and-shelf-CONTAINER-is-the-EMPTY-one",
+      "note": "P11 — an ABSENT container is the EMPTY container (Cuatro, resolving the 6-4b review). Go cannot idiomatically tell a nil slice from an empty one, so an omitted roster is the EMPTY roster there and must be in the other two runtimes. Both keys are OMITTED from the JSON and the expected block is byte-identical to the row above.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "expected": {
+        "winless": [],
+        "reveal_order": [],
+        "draws": [],
+        "bytes_consumed": 0
+      }
+    },
+    {
+      "name": "a-roster-where-EVERY-player-HOLDS-a-trophy-leaves-the-winless-set-EMPTY",
+      "note": "The empty winless set for a NON-empty roster — distinct from the empty-roster row above, and the only one of the two that can tell a filter that works from a filter that never runs. Every player holds at least one trophy, so nobody enters pity and the stream is untouched.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "10": 1,
+        "100": 2,
+        "9": 1
+      },
+      "expected": {
+        "winless": [],
+        "reveal_order": [],
+        "draws": [],
+        "bytes_consumed": 0
+      }
+    },
+    {
+      "name": "a-ONE-member-winless-set-RESOLVES-and-consumes-ZERO-bytes",
+      "note": "AC3's second half, and the row the loop bound has to be pinned by rather than by the byte count. `uniform_int(s, 1)` is LEGAL and reads ZERO bytes (minimal_k(1) gives k = 0), so an implementation that DOES call it for a one-member set is byte-identical to one that does not — the `draws` array is what separates them, and here it is EMPTY.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "20",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "10": 1,
+        "100": 1,
+        "20": 0,
+        "9": 1
+      },
+      "expected": {
+        "winless": [
+          "20"
+        ],
+        "reveal_order": [
+          "20"
+        ],
+        "draws": [],
+        "bytes_consumed": 0
+      }
+    },
+    {
+      "name": "a-TWO-member-winless-set-COSTS-ONE-BYTE-and-the-SELF-SWAP-leaves-the-order-UNCHANGED",
+      "note": "⭐ THE ROW THAT MAKES `bytes_consumed` LOAD-BEARING INDEPENDENTLY OF THE ORDER. Two members is the smallest set a shuffle can reorder; on this seed the single draw returns j = i, which is a LEGAL SELF-SWAP, so the reveal order comes out EQUAL to the byte-lex order while the draw still cost one byte. A vector pinning only `reveal_order` would accept an implementation that never drew at all — and 6.9's browser has to consume the same bytes, not merely reach the same answer.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "9": 1
+      },
+      "expected": {
+        "winless": [
+          "10",
+          "100"
+        ],
+        "reveal_order": [
+          "10",
+          "100"
+        ],
+        "draws": [
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 1
+          }
+        ],
+        "bytes_consumed": 1
+      }
+    },
+    {
+      "name": "a-THREE-member-winless-set-DEMONSTRABLY-REORDERS",
+      "note": "⭐ THE ROW A NO-OP SHUFFLE DIES ON. The reveal order is a genuine permutation of the byte-lex order rather than a copy of it, so an implementation that returned `winless` as `reveal_order` — the cheapest way to satisfy the invariant vacuously — reddens here and nowhere else among the small sets.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {},
+      "expected": {
+        "winless": [
+          "10",
+          "100",
+          "9"
+        ],
+        "reveal_order": [
+          "100",
+          "10",
+          "9"
+        ],
+        "draws": [
+          {
+            "n": 3,
+            "k": 1,
+            "rejections": 0,
+            "value": 2
+          },
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 0
+          }
+        ],
+        "bytes_consumed": 2
+      }
+    },
+    {
+      "name": "the-ROSTER-supplied-OUT-OF-BYTE-LEX-ORDER-resolves-IDENTICALLY",
+      "note": "⭐ P4 — THE SORT ITSELF, and the row written in the SAME EDIT as the sort because Story 6.6's mutation pass found exactly this survivor: every fixture roster there was pre-sorted, so removing the canonical sort reddened nothing. Byte-identical inputs to the row above except the SUPPLIED ORDER, so the expected block must be byte-identical — and that identity IS the assertion. The supplied order is neither ascending nor descending byte-lex, so it separates `no sort at all` from `sorted the wrong way`.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {},
+      "expected": {
+        "winless": [
+          "10",
+          "100",
+          "9"
+        ],
+        "reveal_order": [
+          "100",
+          "10",
+          "9"
+        ],
+        "draws": [
+          {
+            "n": 3,
+            "k": 1,
+            "rejections": 0,
+            "value": 2
+          },
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 0
+          }
+        ],
+        "bytes_consumed": 2
+      }
+    },
+    {
+      "name": "a-REJECTION-inside-uniform_int-is-BYTE-ACCOUNTED-and-CHANGES-the-reveal-order",
+      "note": "⭐ THE REJECTION PATH, BYTE-ACCOUNTED HERE THE WAY `prng-uniform-int.json` DOES IT. A three-member set draws n = 3 first, and 256 mod 3 = 1, so the single value 255 is rejected — this seed's first pity byte IS 255. The rejected byte is CONSUMED and never put back, so the set costs THREE bytes where a non-rejecting implementation would spend two AND would compute 255 mod 3 = 0, reaching a different reveal order. The row therefore discriminates on both axes at once.",
+      "seed_hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {},
+      "expected": {
+        "winless": [
+          "10",
+          "100",
+          "9"
+        ],
+        "reveal_order": [
+          "10",
+          "100",
+          "9"
+        ],
+        "draws": [
+          {
+            "n": 3,
+            "k": 1,
+            "rejections": 1,
+            "value": 2
+          },
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 1
+          }
+        ],
+        "bytes_consumed": 3
+      }
+    },
+    {
+      "name": "an-idle_dq-player-is-EXCLUDED-while-a-player-with-ZERO-approved-rows-is-INCLUDED",
+      "note": "⭐⭐ AC1's INVERSION, IN ONE ROW. `idle_dq` at the snapshot layer means FULLY DQ'd — at least one approved stat_row and EVERY one of them idle (0024:584-589) — so the player carrying it sits at shelf 0 and is still excluded. Beside them sits a player with ZERO approved rows: `idle_dq = false` with zero stats, who is winless, NOT disqualified, and whom 0024 says in as many words 'pity must still be able to reach'. ⭐ That same player is also BELOW BOTH FR-21 FLOORS, so this row is P7's too: an implementation that re-applied the floors inside pity would drop them.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": true,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "0",
+          "kills": "0",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "0",
+              "knife_kills": "0",
+              "rounds_played": "0",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "0"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "0"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "0"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "0"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "20",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "20": 2
+      },
+      "expected": {
+        "winless": [
+          "100",
+          "9"
+        ],
+        "reveal_order": [
+          "100",
+          "9"
+        ],
+        "draws": [
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 1
+          }
+        ],
+        "bytes_consumed": 1
+      }
+    },
+    {
+      "name": "the-winless-set-is-a-STRICT-SUBSET-in-the-MIDDLE-of-byte-lex-order",
+      "note": "An off-by-one in the filter — a `<` for a `<=`, a loop that skips the first or last roster row — is invisible when the winless set is a prefix or a suffix. Here the two winless players sit at byte-lex positions 1 and 2 of a five-player roster, so both ends are held by trophy-holders.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "20",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "3",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "10": 1,
+        "3": 1,
+        "9": 1
+      },
+      "expected": {
+        "winless": [
+          "100",
+          "20"
+        ],
+        "reveal_order": [
+          "100",
+          "20"
+        ],
+        "draws": [
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 1
+          }
+        ],
+        "bytes_consumed": 1
+      }
+    },
+    {
+      "name": "an-ABSENT-shelf-key-is-shelf-ZERO",
+      "note": "W8's rule, mirrored verbatim: an ABSENT player is shelf 0 — the normal shape at the first spin and after a ceremony where nobody won, never an error. Read as a PAIR with the row below, whose only difference is that the two zeroes are written out.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "20",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "10": 1,
+        "100": 1
+      },
+      "expected": {
+        "winless": [
+          "20",
+          "9"
+        ],
+        "reveal_order": [
+          "20",
+          "9"
+        ],
+        "draws": [
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 1
+          }
+        ],
+        "bytes_consumed": 1
+      }
+    },
+    {
+      "name": "an-EXPLICIT-shelf-0-is-BYTE-IDENTICAL-to-an-absent-key",
+      "note": "The second half of the pair. Same roster, same result, the two zeroes written out — and the expected blocks must be byte-identical, which is the assertion. `stage2-resolve.json`'s three-spellings-of-absence trio is the model.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "20",
+          "rounds_played": "30",
+          "kills": "25",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "25",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "25"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {
+        "10": 1,
+        "100": 1,
+        "20": 0,
+        "9": 0
+      },
+      "expected": {
+        "winless": [
+          "20",
+          "9"
+        ],
+        "reveal_order": [
+          "20",
+          "9"
+        ],
+        "draws": [
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 1
+          }
+        ],
+        "bytes_consumed": 1
+      }
+    },
+    {
+      "name": "the-SHIPPED-floors-shape-NOBODY-holds-a-trophy-and-EVERY-player-is-BELOW-both-FR-21-floors",
+      "note": "⛔⛔ THE CONFIGURATION THAT ACTUALLY SHIPS, at reduced scale. On the real corpus 0 of 28 players clear `floor_rounds = 24` / `floor_kills = 20`, so all twelve awards resolve `no_eligible_players`, no shelf ever leaves 0, and the winless set is the ENTIRE ROSTER — 28 of 28 — making a consolation award the ONLY award anybody holds. This row is that shape: an empty shelf map and five players all below both floors. ⭐ It is ALSO the strongest P7 row in the file: under an implementation that re-applied the floors the winless set here would be EMPTY rather than everyone, which is the difference between FR-28 working and SM-2 being unachievable by construction.",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "players": [
+        {
+          "steamid64": "10",
+          "rounds_played": "4",
+          "kills": "2",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "2",
+              "knife_kills": "0",
+              "rounds_played": "4",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "4"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "4"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "2"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "4"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "100",
+          "rounds_played": "6",
+          "kills": "3",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "3",
+              "knife_kills": "0",
+              "rounds_played": "6",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "6"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "6"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "3"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "6"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "20",
+          "rounds_played": "2",
+          "kills": "1",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "1",
+              "knife_kills": "0",
+              "rounds_played": "2",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "2"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "2"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "1"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "2"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "3",
+          "rounds_played": "8",
+          "kills": "5",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "5",
+              "knife_kills": "0",
+              "rounds_played": "8",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "8"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "8"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "5"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "8"
+              }
+            }
+          }
+        },
+        {
+          "steamid64": "9",
+          "rounds_played": "5",
+          "kills": "4",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "4",
+              "knife_kills": "0",
+              "rounds_played": "5",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "5"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "5"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "4"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "5"
+              }
+            }
+          }
+        }
+      ],
+      "shelf": {},
+      "expected": {
+        "winless": [
+          "10",
+          "100",
+          "20",
+          "3",
+          "9"
+        ],
+        "reveal_order": [
+          "100",
+          "3",
+          "9",
+          "10",
+          "20"
+        ],
+        "draws": [
+          {
+            "n": 5,
+            "k": 1,
+            "rejections": 0,
+            "value": 2
+          },
+          {
+            "n": 4,
+            "k": 1,
+            "rejections": 0,
+            "value": 0
+          },
+          {
+            "n": 3,
+            "k": 1,
+            "rejections": 0,
+            "value": 2
+          },
+          {
+            "n": 2,
+            "k": 1,
+            "rejections": 0,
+            "value": 0
+          }
+        ],
+        "bytes_consumed": 4
+      }
+    }
+  ]
+}

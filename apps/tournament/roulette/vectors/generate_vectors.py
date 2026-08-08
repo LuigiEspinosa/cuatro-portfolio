@@ -7231,6 +7231,1121 @@ def build_antisweep_file() -> dict:
     }
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Pity — the guaranteed consolation draw (Story 6.7, FR-28 / AD-14 / SM-2)
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# ⭐ THE WHOLE NORMATIVE SPEC IS TWO SENTENCES, and everything below that is not in them is a
+# DECISION recorded in the story and published in this file's `spec` string:
+#
+#   SPINE:221      "After all spins, every non-fully-DQ'd player with an empty shelf gets a
+#                   guaranteed consolation award (seeded reveal order via the pity stream; the
+#                   *outcome* — everyone winless gets one — is invariant)."
+#   §9.4:427-429   "Pity: after all spins, every non-fully-DQ'd player with `shelf==0` gets a
+#                   consolation award (seeded reveal order via the pity stream; outcome —
+#                   everyone winless gets one — is invariant)."
+#
+# ⛔ THE DISCIPLINE INVERTS FROM ANTI-SWEEP. `resolve_spin` above draws ZERO bytes and takes no
+# stream, and its SIGNATURE is the proof. This pass DRAWS, on its own domain-separated
+# `inclusivcup/v1/pity` stream, so it carries a `seed_hex` per case, a top-level `label`, a per-draw
+# `n`/`k`/`rejections`/`value` sequence and a `bytes_consumed` total — and a `Consumed()` assertion
+# around it is the GATE rather than the vacuous assertion the 6-4b review deleted.
+#
+# ⛔ THE DRAW IS A PERMUTATION, NOT A LOTTERY (P2). "Pity roulette" reads like a selection and
+# FR-28's own name invites the wrong implementation: there is no elimination, no weighting, no luck
+# meter and no candidate pool here. The set of winners IS the winless set; only the ORDER is drawn.
+#
+# ⛔ THE FR-21 FLOORS ARE NEVER CONSULTED (P7). Pity's eligibility is "not fully DQ'd" and nothing
+# else. A player who missed the floors won nothing PRECISELY BECAUSE OF THEM, so re-applying them
+# here would exclude the very people FR-28 exists for and make SM-2 unachievable by construction.
+# Note what is ABSENT from `resolve_pity` below: no `rounds_played` read, no `kills` read, no
+# `_eligible` call, no `award` parameter at all.
+#
+# ⛔ THE SUPPRESSED `tied` SET OF A `no_awardable_value` OUTCOME IS NOT READ (DECISION K').
+# `SPINE:148` names pity as a reader of it, and the answer is that READABLE IS NOT THE SAME AS READ:
+# a suppressed player did not win, so their shelf is unchanged, so the shelf ALREADY places them in
+# the winless set. Reading `tied` would be redundant at best and double-counting at worst, and it
+# would couple this pass to a Stage-2 arm it has no other reason to know about. This pass takes no
+# outcome at all — its input is the shelf, the snapshot and its own stream.
+
+
+class PityRefusal(Exception):
+    """A programmer/data error every runtime must refuse loudly — never a business outcome.
+
+    ⭐ IT NAMES WHICH INPUT WAS REJECTED (`detail`), mirroring `SweepRefusal`, `Stage1Refusal` and
+    `LadderRefusal`. The closed set is declared once here, carried in the vector's
+    `refusal_details`, and pinned against both runtimes' constants by exact equality — the only
+    thing that has ever prevented this project's recurring "closed set that was not closed" defect
+    (6-4b shipped 9 / 7 / 7 across three implementations; 6.5 shipped one whose fifth value no suite
+    inspected).
+    """
+
+    def __init__(self, detail: str, message: str) -> None:
+        super().__init__(f"[{detail}] {message}")
+        self.detail = detail
+
+
+# The closed set of things a pity refusal can be ABOUT. THREE distinct FACTS, three distinct labels:
+PITY_REFUSAL_DETAILS = (
+    "stream",   # the injected stream is absent, keyed by the wrong label, or already consumed
+    "players",  # the roster's OWN shape is wrong — a duplicate or an empty steamid64
+    "shelf",    # a shelf count is negative, or a shelf key names nobody on the roster
+)
+
+# ⭐⭐ THERE IS DELIBERATELY NO `internal` LABEL, AND THE ABSENCE IS ARGUED RATHER THAN OVERLOOKED.
+# `sweep.go` / `sweep.ts` / `resolve_spin` declare one because `Ladder` is an INJECTED PORT that can
+# hand them an outcome no code in the module built — 6.9's browser reimplements it, and any
+# third-party implementation reaches exactly those arms. PITY HAS NO SUCH PORT. Every value it
+# decides from is either a plain input it has just validated or the return of `uniform_int`, whose
+# `[0, n)` contract is pinned by gate 2's own vector in the same three implementations. Declaring
+# `internal` here would be a compartment rather than a contract — a label no suite could ever drive,
+# which is the exact defect `stage1.go:118-131` records under a different name. The multiset
+# identity (`sorted(reveal_order) == winless`) is therefore asserted as a TEST over every case in
+# all three implementations rather than as a runtime refusal nothing can reach.
+#
+# ⚠ CONSEQUENTLY `row_representable_refusal_details` EQUALS `refusal_details`, and both keys are
+# emitted anyway because the equality is a FACT worth stating rather than a key worth omitting. The
+# one arm no row can express is `stream` with NO stream at all — "no stream was supplied" is not a
+# JSON input — so that half is driven by each runtime's own suite, exactly as
+# `TestStage1PickRefusesANilStream` drives Stage 1's. The label itself IS row-representable, through
+# the wrong-label and already-consumed rows below.
+ROW_REPRESENTABLE_PITY_DETAILS = PITY_REFUSAL_DETAILS
+
+assert len(PITY_REFUSAL_DETAILS) == 3, "the comment above says THREE; count them"
+
+
+def _validate_pity_stream(stream) -> None:
+    """(1) THE INJECTED STREAM, FIRST — mirroring `resolve_spin`'s ladder-presence check.
+
+    ⭐ THE ORDER IS CONTRACT AND IT IS PUBLISHED IN THE `spec` STRING: stream -> players -> shelf.
+    The stream is this pass's one injected dependency, so it is checked the way `ResolveSpin` checks
+    its `Ladder`: before any input is read. Two refusal rows below are malformed in TWO WAYS AT ONCE,
+    one on each ADJACENT boundary, so a reordering is observable in the file rather than only in
+    prose.
+
+    ⭐⭐ "THE STREAM IS FRESH AND KEYED BY PityLabel" IS A CLAIM ABOUT A CALLER, NOT A CONSTRUCTION,
+    SO IT IS CHECKED RATHER THAN ASSERTED. Story 6.6's AC1 claimed a property held "by construction"
+    when it held only for the shipped composition, and the code review measured it. This pass does
+    not construct its stream — the caller does, exactly as `stage1_pick`'s does — so both halves of
+    AC4 are guards here: the LABEL must be the pity label and only the pity label, and the position
+    must be 0 (SPINE:216, "each spin's stream is independent (starts at counter 0)").
+    """
+    if stream is None:
+        # ⚠ NOT ROW-REPRESENTABLE — "no stream was supplied" is not a JSON input. Each runtime's own
+        # suite drives this arm; the generator refuses to write a row that reaches it.
+        raise PityRefusal(
+            "stream",
+            "a Stream must be injected — pity DRAWS its reveal order and will not open a stream of "
+            "its own, because the label and the seed are the caller's to publish"
+        )
+    # ⭐ THE CAPABILITY, NOT ONLY THE SHAPE (6.7 code review). Checking `label` and `pos` and not
+    # `read` validated the two fields this pass merely REPORTS and skipped the one it actually USES.
+    # A structurally-shaped stand-in then split the behaviour by winless cardinality: at 0 or 1
+    # members the loop never runs, so it RESOLVED and published a `bytes_consumed` copied straight
+    # off the stand-in; at 2+ it reached `read` and died with a foreign error carrying no `detail`.
+    # Both halves are now one typed refusal.
+    if not callable(getattr(stream, "read", None)):
+        raise PityRefusal(
+            "stream",
+            f"the injected stream cannot READ — {stream!r} carries a label and a position but no "
+            "callable `read`, and a stand-in that is never drawn from would resolve a zero- or "
+            "one-member set while reporting a byte count it invented"
+        )
+    if stream.label != PITY_LABEL:
+        raise PityRefusal(
+            "stream",
+            f"the stream is keyed by {stream.label!r}, not {PITY_LABEL!r} — pity draws from its OWN "
+            "domain-separated stream, and a Stage-1 label here would consume bytes a spin expects "
+            "and move every byte position after it"
+        )
+    if stream.pos != 0:
+        raise PityRefusal(
+            "stream",
+            f"the stream has already consumed {stream.pos} byte(s) — each stream is independent and "
+            "starts at counter 0 (SPINE:216), so a partly-drawn one silently produces a different "
+            "reveal order from the same seed"
+        )
+
+
+def _validate_pity_players(players) -> set:
+    """(2) THE ROSTER'S OWN SHAPE, in full, over the WHOLE list, before the shelf is read.
+
+    ⚠ THE DUPLICATE CLAUSE MIRRORS `_eligible`'s (`:520`) CLAUSE FOR CLAUSE and for the same reason:
+    a duplicated steamid64 would be counted twice in the winless set, which is one extra consolation
+    prize and — at 6.8 — a second `award_result_winner` row that trips
+    `unique (spin_id, winner_entry_id)` on a write the producer believed was legal.
+    """
+    if not isinstance(players, list):
+        raise PityRefusal("players", f"players must be a list of snapshot rows, got {players!r}")
+    seen: set = set()
+    for p in players:
+        if not isinstance(p, dict) or "steamid64" not in p:
+            raise PityRefusal(
+                "players", f"each player must be a mapping carrying steamid64, got {p!r}"
+            )
+        sid = p.get("steamid64")
+        if not isinstance(sid, str) or sid == "":
+            raise PityRefusal("players", f"steamid64 must be a non-empty string, got {sid!r}")
+        if sid in seen:
+            raise PityRefusal(
+                "players",
+                f"duplicate steamid64 {sid!r} — a roster holds one row per player, and a duplicate "
+                "here is one extra consolation prize"
+            )
+        seen.add(sid)
+        if not isinstance(p.get("idle_dq"), bool):
+            raise PityRefusal(
+                "players", f"player {sid!r} has a non-boolean idle_dq {p.get('idle_dq')!r}"
+            )
+    return seen
+
+
+def _validate_pity_shelf(shelf, roster_ids: set) -> None:
+    """(3) THE SHELF, LAST — read, never written, and an ABSENT key is 0 (P6, mirroring W8).
+
+    ⚠ ITERATED IN SORTED KEY ORDER IN ALL THREE IMPLEMENTATIONS. Go's map iteration is randomised,
+    so a shelf carrying two different defects would report a different MESSAGE on two runs of the
+    same input — the `detail` would be stable and the transcript would not, which is precisely the
+    class of difference Task 6's mechanical diff exists to catch.
+
+    ⚠ A NEGATIVE COUNT IS A REFUSAL, NOT A CLAMP. `weight_at`'s two-sided guard (Story 6.6) is the
+    precedent: a negative shelf is a caller that has been subtracting, and treating it as 0 would
+    quietly hand a consolation prize to a player who is holding trophies.
+
+    ⚠ A SHELF KEY NAMING NOBODY ON THE ROSTER IS ALSO A REFUSAL, and it is the exact INVERSE of the
+    absent-key rule rather than a contradiction of it. Roster -> shelf, an absent key is the normal
+    shape (0). Shelf -> roster, an unknown key means the shelf was accumulated over a DIFFERENT
+    roster than the one being drawn for, and every winless computation over it is then arithmetic on
+    two different populations.
+    """
+    if not isinstance(shelf, dict):
+        raise PityRefusal("shelf", f"shelf must be a mapping of steamid64 -> int, got {shelf!r}")
+    for sid in sorted(shelf):
+        count = shelf[sid]
+        if not isinstance(sid, str) or sid == "":
+            raise PityRefusal("shelf", f"shelf key must be a non-empty string, got {sid!r}")
+        if isinstance(count, bool) or not isinstance(count, int):
+            raise PityRefusal(
+                "shelf", f"shelf[{sid!r}] must be an integer trophy count, got {count!r}"
+            )
+        if count < 0:
+            raise PityRefusal(
+                "shelf",
+                f"shelf[{sid!r}] is {count} — a trophy count is never negative, and clamping it to "
+                "0 would hand a consolation prize to a player who is holding trophies"
+            )
+        if sid not in roster_ids:
+            raise PityRefusal(
+                "shelf",
+                f"shelf key {sid!r} is on no roster row — an ABSENT key is shelf 0 (the normal "
+                "shape), but an UNKNOWN key means the shelf was accumulated over a different roster"
+            )
+
+
+def resolve_pity(players, shelf, stream) -> dict:
+    """FR-28's guaranteed consolation draw. Transcribed from the two spec sentences above.
+
+        validate(stream); validate(players); validate(shelf)         # the published ORDER
+        winless = sorted(p.steamid64 for p in players
+                         if shelf.get(p.steamid64, 0) == 0 and not p.idle_dq)   # AC1, P4, P6
+        order = copy(winless)
+        for i = len(order) - 1 down to 1:          # DECISION D — Durstenfeld, DESCENDING
+            j = uniform_int(stream, i + 1)         #   n = i+1, strictly decreasing; n is never 1
+            swap(order[i], order[j])               #   i == j is a LEGAL self-swap
+        return {winless, reveal_order: order, draws, bytes_consumed: stream.pos}
+
+    ⭐ DECISION D — THE SHUFFLE VARIANT IS PINNED, AND THE ALTERNATIVE IS RECORDED AS REJECTED.
+    Neither `SPINE:221` nor `§9.4:427-429` says which shuffle, and "seeded reveal order" is satisfied
+    by any of them — so two honest implementers reading the same sentence produce two different
+    ceremonies while both correctly calling their work Fisher-Yates. The chosen variant is
+    **Durstenfeld descending** (Cuatro, 2026-08-07): `for i = len-1 down to 1: j = uniform_int(s,
+    i+1); swap(a[i], a[j])`. Three properties earned it — its per-step `n` is unambiguous (`i+1`,
+    strictly decreasing), it terminates at `i = 1` so `n = 1` is never drawn (which keeps the byte
+    accounting a clean function of the set size), and it is the form `uniform_int`'s `[1, MaxN]`
+    contract fits with no special case. ⛔ THE REJECTED ALTERNATIVE, recorded so the next reader does
+    not re-open it: the ascending sweep `for i = 0 to len-2: j = i + uniform_int(s, len-i)`, whose
+    last step draws `n = 1` for zero bytes unless the bound is trimmed — an ambiguity the vector
+    would then have to arbitrate instead of the spec.
+
+    ⭐ `winless` AND `reveal_order` ARE TWO FIELDS, NEVER ONE. The outcome is invariant and the order
+    is drawn, so publishing one as the other is the single most destructive thing a caller can do
+    with this result — and with one field it would be a typo rather than a type error. The multiset
+    identity between them (same length, same members, no additions, no drops) is asserted over every
+    case by `build_pity_file` and by both suites.
+
+    ⭐ `rejections` IS DERIVED FROM THE BYTE POSITION, NOT COUNTED INSIDE A SECOND COPY OF
+    `uniform_int`. The primitive is called verbatim — it is already pinned by gate 2 — and the number
+    of rejections is read back out as `(consumed / k) - 1`. Re-implementing the rejection loop here
+    to count it would put a second copy of the engine's most subtle arithmetic in the anchor, which
+    is exactly what `roulette/vectors/README.md`'s third rule exists to prevent.
+    """
+    players = [] if players is None else players
+    shelf = {} if shelf is None else shelf
+
+    _validate_pity_stream(stream)
+    roster_ids = _validate_pity_players(players)
+    _validate_pity_shelf(shelf, roster_ids)
+
+    # ── the WINLESS SET: shelf == 0 AND not fully DQ'd. An ABSENT key is 0. Byte-lex. ──────────
+    #
+    # ⭐ `idle_dq` IS THE SNAPSHOT SENSE, WHICH IS NOT `stat_row.idle_dq` (0024:584-589, restated on
+    # `SnapshotPlayer.IdleDQ` in both runtimes): it is true iff the player has AT LEAST ONE approved
+    # stat_row and EVERY one of them is idle — "fully DQ'd". A rostered player with ZERO approved
+    # rows is `false` with zero stats: winless, NOT disqualified, "and 6.7's pity draw must still be
+    # able to reach them". The `an-idle_dq-player-is-EXCLUDED-while-a-player-with-ZERO-approved-rows`
+    # row inverts both halves in one case.
+    #
+    # ⭐ SORTED BEFORE THE FIRST DRAW, NOT AFTER (P4). The seeded permutation is a function of the
+    # input SEQUENCE, so without the sort the ceremony's reveal order would depend on the order the
+    # caller happened to iterate a database cursor in — and would stop being reproducible from the
+    # published bundle. Story 6.6's mutation pass measured the twin of this defect surviving because
+    # every fixture roster was already sorted, which is why the out-of-order row below was written in
+    # the same edit as this line.
+    #
+    # ⚠⚠ "BYTE-LEX" IS TRUE OF THIS RUNTIME AND OF GO, AND IS *NOT* TRUE OF TYPESCRIPT (6.7 code
+    # review). Python's `sorted` orders by CODE POINT and Go's `sort.Strings` orders by UTF-8 BYTE,
+    # and those two agree — code-point order and UTF-8 byte order are the same order, which is a
+    # designed property of UTF-8. JavaScript's default `.sort()` comparator orders by UTF-16 CODE
+    # UNIT, which DISAGREES with both for supplementary-plane characters: a surrogate pair encodes as
+    # `U+D800–DFFF`, which sorts BELOW `U+E000–FFFF` in UTF-16 and ABOVE it in UTF-8. All three
+    # validators require only a NON-EMPTY STRING, so such an id is representable here even though
+    # `stage2.*` guards the same field with `^[0-9]+$`.
+    # ⛔ NOT FIXED IN THIS SLICE, AND THE REASON IS RECORDED: `sweep.ts` carries the identical defect,
+    # Story 6.6's review already deferred it to 6.9, and Story 6.7 is scope-barred from touching
+    # `sweep.*` — so fixing only pity would leave two sibling modules guaranteeing different things
+    # about one field. Home: 6.9, both modules, by carrying `stage2.*`'s id-format guard into them.
+    # ⚠ Unreachable through the shipped DB (`player.steamid64 check (~ '^[0-9]{17}$')`, 0001:39).
+    winless = sorted(
+        p["steamid64"] for p in players
+        if shelf.get(p["steamid64"], 0) == 0 and not p["idle_dq"]
+    )
+
+    order = list(winless)
+    draws: list = []
+    for i in range(len(order) - 1, 0, -1):
+        n = i + 1
+        k, _space = minimal_k(n)
+        before = stream.pos
+        # ⭐ A FAILING PRIMITIVE IS A TYPED REFUSAL IN ALL THREE RUNTIMES (6.7 code review). Go
+        # already wrapped this arm; the anchor and the verifier let a foreign exception escape, so
+        # the SAME primitive failure produced three different observable surfaces and only one of
+        # them carried a `detail` from the closed set the whole module is built around.
+        # ⚠ UNREACHABLE THROUGH THE SHIPPED PRIMITIVE — `n` is in `[2, len(order)]` and `len(order)`
+        # is bounded by the roster, so it can never leave `uniform_int`'s `[1, MaxN]`. Loud rather
+        # than silent, and the cause is chained so a caller can tell a broken primitive from a
+        # broken input.
+        # ⛔ THIS IS THE ONE REFUSAL THAT COSTS BYTES. Every other pity refusal is raised by a
+        # validator BEFORE the first draw, which is what makes "a refusal leaves the stream
+        # untouched" true of them; this arm fires mid-shuffle with the stream already advanced. Said
+        # here because the suites' invariant is scoped to VALIDATION refusals and a reader must not
+        # generalise it to this one.
+        try:
+            j = uniform_int(stream, n)
+        except PityRefusal:
+            raise
+        except Exception as err:  # noqa: BLE001 — deliberately total; see above
+            raise PityRefusal(
+                "stream",
+                f"uniform_int(stream, {n}) failed mid-shuffle — the stream has already advanced to "
+                f"{stream.pos} and this refusal, unlike every other one here, is NOT free"
+            ) from err
+        consumed = stream.pos - before
+        # k is never 0 here: n = i+1 >= 2 for every step Durstenfeld takes.
+        rejections = (consumed // k) - 1
+        draws.append({"n": n, "k": k, "rejections": rejections, "value": j})
+        order[i], order[j] = order[j], order[i]
+
+    return {
+        "winless": winless,
+        "reveal_order": order,
+        "draws": draws,
+        "bytes_consumed": stream.pos,
+    }
+
+
+# ── the pity fixtures ─────────────────────────────────────────────────────────
+#
+# ⭐ THE IDS ARE SHORT AND DELIBERATELY SEPARATE BYTE-LEX FROM NUMERIC ORDER, the same trio
+# `stage2-resolve.json` uses: byte-lex "10" < "100" < "20" < "3" < "9", numerically 3 < 9 < 10 < 20 <
+# 100. AD-19 scopes real SteamID64s to the END-TO-END vector (6.11) precisely because no real corpus
+# produces ids short enough to make this distinction visible. An implementation that sorted
+# numerically would agree with byte-lex on every real roster and disagree on every row here.
+#
+# ⭐ EVERY PLAYER CARRIES HONEST `rounds_played` / `kills`, and on several rows they are BELOW the
+# shipped FR-21 floors (24 / 20). That is what makes P7 observable: an implementation that
+# re-applied the floors inside pity would drop those players from the winless set, and the row would
+# redden. With every fixture above the floors the mutation would be invisible — which is exactly the
+# hole Story 6.6's mutation pass found in its own file.
+
+
+def _pp(sid: str, *, rounds: int, kills: int, idle: bool = False) -> dict:
+    """One pity fixture row. `_p` is reused rather than restated — pity consumes the SAME
+    `SnapshotPlayer` both other stages do, and a second near-identical player shape is how the two
+    runtimes drift (6.5 said it about `StatValue`, 6.6 about `Stage1Candidate`)."""
+    return _p(sid, rounds=rounds, kills=kills, idle=idle)
+
+
+# Above both floors, no trophy trouble.
+_PA = _pp("10", rounds=30, kills=25)
+_PB = _pp("100", rounds=30, kills=25)
+_PC = _pp("9", rounds=30, kills=25)
+_PD = _pp("20", rounds=30, kills=25)
+_PE = _pp("3", rounds=30, kills=25)
+
+PITY_CASES: list[dict] = [
+    {
+        "name": "an-EMPTY-roster-resolves-to-an-EMPTY-draw-and-consumes-ZERO-bytes",
+        "note": (
+            "AC3's first half. An empty winless set RESOLVES — it is not a refusal, not an error "
+            "and not a skip the caller has to special-case — and it consumes ZERO stream bytes, "
+            "which is pinned as data rather than inferred from an empty draw list."
+        ),
+        "seed": REAL_SEED,
+        "players": [],
+        "shelf": {},
+        "pins": lambda e: e["winless"] == [] and e["reveal_order"] == []
+        and e["draws"] == [] and e["bytes_consumed"] == 0,
+        "pins_inputs": lambda e, c: c["players"] == [],
+    },
+    {
+        "name": "an-ABSENT-players-and-shelf-CONTAINER-is-the-EMPTY-one",
+        "note": (
+            "P11 — an ABSENT container is the EMPTY container (Cuatro, resolving the 6-4b review). "
+            "Go cannot idiomatically tell a nil slice from an empty one, so an omitted roster is "
+            "the EMPTY roster there and must be in the other two runtimes. Both keys are OMITTED "
+            "from the JSON and the expected block is byte-identical to the row above."
+        ),
+        "seed": REAL_SEED,
+        "players": None,
+        "shelf": None,
+        "omit_players": True,
+        "omit_shelf": True,
+        "pins": lambda e: e["winless"] == [] and e["bytes_consumed"] == 0,
+        "pins_inputs": lambda e, c: c["players"] is None and c["shelf"] is None,
+    },
+    {
+        "name": "a-roster-where-EVERY-player-HOLDS-a-trophy-leaves-the-winless-set-EMPTY",
+        "note": (
+            "The empty winless set for a NON-empty roster — distinct from the empty-roster row "
+            "above, and the only one of the two that can tell a filter that works from a filter "
+            "that never runs. Every player holds at least one trophy, so nobody enters pity and "
+            "the stream is untouched."
+        ),
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _PC],
+        "shelf": {"10": 1, "100": 2, "9": 1},
+        "pins": lambda e: e["winless"] == [] and e["bytes_consumed"] == 0,
+        "pins_inputs": lambda e, c: len(c["players"]) == 3
+        and all(c["shelf"].get(p["steamid64"], 0) > 0 for p in c["players"]),
+    },
+    {
+        "name": "a-ONE-member-winless-set-RESOLVES-and-consumes-ZERO-bytes",
+        "note": (
+            "AC3's second half, and the row the loop bound has to be pinned by rather than by the "
+            "byte count. `uniform_int(s, 1)` is LEGAL and reads ZERO bytes (minimal_k(1) gives "
+            "k = 0), so an implementation that DOES call it for a one-member set is "
+            "byte-identical to one that does not — the `draws` array is what separates them, and "
+            "here it is EMPTY."
+        ),
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _PC, _PD],
+        "shelf": {"10": 1, "100": 1, "9": 1, "20": 0},
+        "pins": lambda e: len(e["winless"]) == 1 and e["reveal_order"] == e["winless"]
+        and e["draws"] == [] and e["bytes_consumed"] == 0,
+        "pins_inputs": lambda e, c: sum(
+            1 for p in c["players"] if c["shelf"].get(p["steamid64"], 0) == 0
+        ) == 1,
+    },
+    {
+        "name": "a-TWO-member-winless-set-COSTS-ONE-BYTE-and-the-SELF-SWAP-leaves-the-order-UNCHANGED",
+        "note": (
+            "⭐ THE ROW THAT MAKES `bytes_consumed` LOAD-BEARING INDEPENDENTLY OF THE ORDER. Two "
+            "members is the smallest set a shuffle can reorder; on this seed the single draw "
+            "returns j = i, which is a LEGAL SELF-SWAP, so the reveal order comes out EQUAL to the "
+            "byte-lex order while the draw still cost one byte. A vector pinning only "
+            "`reveal_order` would accept an implementation that never drew at all — and 6.9's "
+            "browser has to consume the same bytes, not merely reach the same answer."
+        ),
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _PC],
+        "shelf": {"9": 1},
+        "pins": lambda e: len(e["winless"]) == 2 and e["reveal_order"] == e["winless"]
+        and e["bytes_consumed"] == 1 and len(e["draws"]) == 1
+        and e["draws"][0]["n"] == 2 and e["draws"][0]["value"] == 1,
+        "pins_inputs": lambda e, c: len(c["players"]) == 3,
+    },
+    {
+        "name": "a-THREE-member-winless-set-DEMONSTRABLY-REORDERS",
+        "note": (
+            "⭐ THE ROW A NO-OP SHUFFLE DIES ON. The reveal order is a genuine permutation of the "
+            "byte-lex order rather than a copy of it, so an implementation that returned `winless` "
+            "as `reveal_order` — the cheapest way to satisfy the invariant vacuously — reddens "
+            "here and nowhere else among the small sets."
+        ),
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _PC],
+        "shelf": {},
+        "pins": lambda e: len(e["winless"]) == 3
+        and e["reveal_order"] != e["winless"]
+        and sorted(e["reveal_order"]) == e["winless"]
+        and [d["n"] for d in e["draws"]] == [3, 2],
+        "pins_inputs": lambda e, c: c["shelf"] == {},
+    },
+    {
+        "name": "the-ROSTER-supplied-OUT-OF-BYTE-LEX-ORDER-resolves-IDENTICALLY",
+        "note": (
+            "⭐ P4 — THE SORT ITSELF, and the row written in the SAME EDIT as the sort because "
+            "Story 6.6's mutation pass found exactly this survivor: every fixture roster there was "
+            "pre-sorted, so removing the canonical sort reddened nothing. Byte-identical inputs to "
+            "the row above except the SUPPLIED ORDER, so the expected block must be byte-identical "
+            "— and that identity IS the assertion. The supplied order is neither ascending nor "
+            "descending byte-lex, so it separates `no sort at all` from `sorted the wrong way`."
+        ),
+        "seed": REAL_SEED,
+        "players": [_PC, _PA, _PB],
+        "shelf": {},
+        "pins": lambda e: len(e["winless"]) == 3 and e["reveal_order"] != e["winless"],
+        "pins_inputs": lambda e, c: [p["steamid64"] for p in c["players"]]
+        != sorted(p["steamid64"] for p in c["players"]),
+    },
+    {
+        "name": "a-REJECTION-inside-uniform_int-is-BYTE-ACCOUNTED-and-CHANGES-the-reveal-order",
+        "note": (
+            "⭐ THE REJECTION PATH, BYTE-ACCOUNTED HERE THE WAY `prng-uniform-int.json` DOES IT. "
+            "A three-member set draws n = 3 first, and 256 mod 3 = 1, so the single value 255 is "
+            "rejected — this seed's first pity byte IS 255. The rejected byte is CONSUMED and "
+            "never put back, so the set costs THREE bytes where a non-rejecting implementation "
+            "would spend two AND would compute 255 mod 3 = 0, reaching a different reveal order. "
+            "The row therefore discriminates on both axes at once."
+        ),
+        "seed": FF_SEED,
+        "players": [_PA, _PB, _PC],
+        "shelf": {},
+        "pins": lambda e: e["draws"][0]["rejections"] == 1
+        and e["bytes_consumed"] == 3 and len(e["draws"]) == 2,
+        # ⭐ RE-DERIVED FROM THE ROW'S OWN DATA, NOT ASSERTED AS A CONSTANT (6.7 code review). This
+        # guard used to read `lambda e, c: 256 % 3 != 0` — an expression that ignores BOTH arguments
+        # and hard-codes the `3`, so it could not have returned False for any fixture, any seed or
+        # any expected block. A roster that shrank to two winless players (`n = 2`, `256 % 2 == 0`,
+        # no value rejectable) would have kept it green. That is this project's recurring
+        # coverage-guard defect, in the one row whose entire purpose is the rejection path.
+        # It now reads the FIRST STEP'S ACTUAL `n` out of the emitted draws and re-derives both
+        # halves: that a rejection is arithmetically POSSIBLE at that `n`, and that one actually
+        # HAPPENED.
+        "pins_inputs": lambda e, c: (
+            len(e["draws"]) >= 1
+            and 256 % e["draws"][0]["n"] != 0
+            and e["draws"][0]["rejections"] > 0
+            and len(e["winless"]) == len(c["players"])
+        ),
+    },
+    {
+        "name": "an-idle_dq-player-is-EXCLUDED-while-a-player-with-ZERO-approved-rows-is-INCLUDED",
+        "note": (
+            "⭐⭐ AC1's INVERSION, IN ONE ROW. `idle_dq` at the snapshot layer means FULLY DQ'd — "
+            "at least one approved stat_row and EVERY one of them idle (0024:584-589) — so the "
+            "player carrying it sits at shelf 0 and is still excluded. Beside them sits a player "
+            "with ZERO approved rows: `idle_dq = false` with zero stats, who is winless, NOT "
+            "disqualified, and whom 0024 says in as many words 'pity must still be able to reach'. "
+            "⭐ That same player is also BELOW BOTH FR-21 FLOORS, so this row is P7's too: an "
+            "implementation that re-applied the floors inside pity would drop them."
+        ),
+        "seed": REAL_SEED,
+        "players": [
+            _pp("10", rounds=30, kills=25, idle=True),
+            _pp("100", rounds=0, kills=0),
+            _PC,
+            _pp("20", rounds=30, kills=25),
+        ],
+        "shelf": {"20": 2},
+        "pins": lambda e: e["winless"] == ["100", "9"],
+        "pins_inputs": lambda e, c: (
+            [p["steamid64"] for p in c["players"] if p["idle_dq"]] == ["10"]
+            and c["shelf"].get("10", 0) == 0
+            and "10" not in e["winless"]
+            and [p["steamid64"] for p in c["players"]
+                 if p["rounds_played"] == 0 and p["kills"] == 0] == ["100"]
+            and "100" in e["winless"]
+        ),
+    },
+    {
+        "name": "the-winless-set-is-a-STRICT-SUBSET-in-the-MIDDLE-of-byte-lex-order",
+        "note": (
+            "An off-by-one in the filter — a `<` for a `<=`, a loop that skips the first or last "
+            "roster row — is invisible when the winless set is a prefix or a suffix. Here the two "
+            "winless players sit at byte-lex positions 1 and 2 of a five-player roster, so both "
+            "ends are held by trophy-holders."
+        ),
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _PD, _PE, _PC],
+        "shelf": {"10": 1, "3": 1, "9": 1},
+        "pins": lambda e: e["winless"] == ["100", "20"],
+        "pins_inputs": lambda e, c: (
+            lambda roster: (
+                roster.index(e["winless"][0]) > 0
+                and roster.index(e["winless"][-1]) < len(roster) - 1
+            )
+        )(sorted(p["steamid64"] for p in c["players"])),
+    },
+    {
+        "name": "an-ABSENT-shelf-key-is-shelf-ZERO",
+        "note": (
+            "W8's rule, mirrored verbatim: an ABSENT player is shelf 0 — the normal shape at the "
+            "first spin and after a ceremony where nobody won, never an error. Read as a PAIR with "
+            "the row below, whose only difference is that the two zeroes are written out."
+        ),
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _PC, _PD],
+        "shelf": {"10": 1, "100": 1},
+        "pins": lambda e: e["winless"] == ["20", "9"],
+        "pins_inputs": lambda e, c: all(sid not in c["shelf"] for sid in e["winless"]),
+    },
+    {
+        "name": "an-EXPLICIT-shelf-0-is-BYTE-IDENTICAL-to-an-absent-key",
+        "note": (
+            "The second half of the pair. Same roster, same result, the two zeroes written out — "
+            "and the expected blocks must be byte-identical, which is the assertion. "
+            "`stage2-resolve.json`'s three-spellings-of-absence trio is the model."
+        ),
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _PC, _PD],
+        "shelf": {"10": 1, "100": 1, "20": 0, "9": 0},
+        "pins": lambda e: e["winless"] == ["20", "9"],
+        "pins_inputs": lambda e, c: all(c["shelf"][sid] == 0 for sid in e["winless"]),
+    },
+    {
+        "name": "the-SHIPPED-floors-shape-NOBODY-holds-a-trophy-and-EVERY-player-is-BELOW-both-FR-21-floors",
+        "note": (
+            "⛔⛔ THE CONFIGURATION THAT ACTUALLY SHIPS, at reduced scale. On the real corpus 0 of "
+            "28 players clear `floor_rounds = 24` / `floor_kills = 20`, so all twelve awards "
+            "resolve `no_eligible_players`, no shelf ever leaves 0, and the winless set is the "
+            "ENTIRE ROSTER — 28 of 28 — making a consolation award the ONLY award anybody holds. "
+            "This row is that shape: an empty shelf map and five players all below both floors. "
+            "⭐ It is ALSO the strongest P7 row in the file: under an implementation that "
+            "re-applied the floors the winless set here would be EMPTY rather than everyone, which "
+            "is the difference between FR-28 working and SM-2 being unachievable by construction."
+        ),
+        "seed": REAL_SEED,
+        "players": [
+            _pp("10", rounds=4, kills=2),
+            _pp("100", rounds=6, kills=3),
+            _pp("20", rounds=2, kills=1),
+            _pp("3", rounds=8, kills=5),
+            _pp("9", rounds=5, kills=4),
+        ],
+        "shelf": {},
+        "pins": lambda e: len(e["winless"]) == 5 and sorted(e["reveal_order"]) == e["winless"]
+        and [d["n"] for d in e["draws"]] == [5, 4, 3, 2],
+        "pins_inputs": lambda e, c: (
+            c["shelf"] == {}
+            and all(p["rounds_played"] < 24 and p["kills"] < 20 for p in c["players"])
+            and len(e["winless"]) == len(c["players"])
+        ),
+    },
+]
+
+# The refusal manifest. Every row is a set of INPUTS; `detail` is re-derived by running the anchor.
+PITY_REFUSALS: list[dict] = [
+    {
+        "why": "a duplicate steamid64 — one extra consolation prize, and a UNIQUE violation at 6.8",
+        "detail": "players",
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _pp("10", rounds=12, kills=8)],
+        "shelf": {},
+    },
+    {
+        "why": "an EMPTY steamid64 — an entry in the winless set matching no roster row",
+        "detail": "players",
+        "seed": REAL_SEED,
+        "players": [_PA, _pp("", rounds=30, kills=25)],
+        "shelf": {},
+    },
+    {
+        "why": "a NEGATIVE shelf count — a caller that has been subtracting, never a clamp to 0",
+        "detail": "shelf",
+        "seed": REAL_SEED,
+        "players": [_PA, _PB],
+        "shelf": {"10": -1},
+    },
+    {
+        "why": "a shelf key naming a player who is on NO roster row — the shelf came from a "
+               "different roster, and the two populations cannot be reconciled",
+        "detail": "shelf",
+        "seed": REAL_SEED,
+        "players": [_PA, _PB],
+        "shelf": {"10": 1, "999": 1},
+    },
+    {
+        "why": "the stream is keyed by a STAGE-1 label, not the pity label — AC4's "
+               "'PityLabel and only PityLabel', checked rather than asserted",
+        "detail": "stream",
+        "seed": REAL_SEED,
+        "label": "inclusivcup/v1/stage1/spin/1",
+        "players": [_PA, _PB],
+        "shelf": {},
+    },
+    {
+        "why": "the stream has already been drawn from — SPINE:216 makes every stream independent "
+               "and counter-0, and a partly-drawn one silently yields a different reveal order",
+        "detail": "stream",
+        "seed": REAL_SEED,
+        "pre_consumed": 3,
+        "players": [_PA, _PB],
+        "shelf": {},
+    },
+    {
+        "why": "MALFORMED IN TWO WAYS AT ONCE — a wrong-label stream over a roster that ALSO "
+               "carries a duplicate steamid64. The published order is stream -> players -> shelf, "
+               "so it must refuse `stream`",
+        "detail": "stream",
+        "seed": REAL_SEED,
+        "label": "inclusivcup/v1/stage1/spin/1",
+        "players": [_PA, _PB, _pp("10", rounds=12, kills=8)],
+        "shelf": {},
+        "second": {
+            "detail": "players",
+            "seed": REAL_SEED,
+            "players": [_PA, _PB, _pp("10", rounds=12, kills=8)],
+            "shelf": {},
+        },
+    },
+    {
+        "why": "MALFORMED IN TWO WAYS AT ONCE — a duplicate steamid64 over a shelf that ALSO "
+               "carries a negative count. It must refuse `players`, pinning the players -> shelf "
+               "half of the order",
+        "detail": "players",
+        "seed": REAL_SEED,
+        "players": [_PA, _PB, _pp("10", rounds=12, kills=8)],
+        "shelf": {"100": -2},
+        "second": {
+            "detail": "shelf",
+            "seed": REAL_SEED,
+            "players": [_PA, _PB],
+            "shelf": {"100": -2},
+        },
+    },
+]
+
+
+def _pity_stream(row: dict) -> Stream:
+    """The stream one row runs on. Fresh, counter 0, and keyed by the PITY label unless the row
+    deliberately supplies a wrong one."""
+    stream = Stream(decode_seed(row["seed"]), row.get("label", PITY_LABEL))
+    if row.get("pre_consumed"):
+        stream.read(row["pre_consumed"])
+    return stream
+
+
+def build_pity_file() -> dict:
+    cases = []
+    seen_names: set = set()
+    for c in PITY_CASES:
+        if c["name"] in seen_names:
+            raise SystemExit(f"duplicate pity case name {c['name']!r}")
+        seen_names.add(c["name"])
+        expected = resolve_pity(c["players"], c["shelf"], _pity_stream(c))
+
+        # ⭐⭐ THE MULTISET IDENTITY, ASSERTED ON EVERY CASE RATHER THAN SPOT-CHECKED (AC2). The
+        # OUTCOME is invariant and only the ORDER is drawn, so the reveal order must be a
+        # permutation of the winless set — same length, same members, no additions, no drops. This
+        # is where "everyone winless gets one" becomes a checkable property of the file rather than
+        # a sentence in a spec.
+        if sorted(expected["reveal_order"]) != expected["winless"]:
+            raise SystemExit(
+                f"pity case {c['name']!r} broke the invariant: reveal_order is not a permutation "
+                f"of winless ({expected['reveal_order']!r} vs {expected['winless']!r})"
+            )
+        if len(set(expected["reveal_order"])) != len(expected["reveal_order"]):
+            raise SystemExit(f"pity case {c['name']!r} reveals a player twice")
+
+        # ⭐ THE BYTE ACCOUNTING IS RE-DERIVED FROM THE DRAWS, so `bytes_consumed` cannot drift away
+        # from the per-step record it is supposed to summarise. A file whose total disagreed with
+        # its own steps would teach both suites to accept an implementation that under-reported.
+        derived = sum(d["k"] * (1 + d["rejections"]) for d in expected["draws"])
+        if derived != expected["bytes_consumed"]:
+            raise SystemExit(
+                f"pity case {c['name']!r}: draws account for {derived} bytes but "
+                f"bytes_consumed is {expected['bytes_consumed']}"
+            )
+        # ⛔ DECISION D, CHECKED ON THE EMITTED DATA: the n sequence is exactly len..2, strictly
+        # decreasing, and `n = 1` is NEVER drawn. An ascending-sweep implementation produces a
+        # different sequence and reddens here at the anchor, not only in the two suites.
+        want_ns = list(range(len(expected["winless"]), 1, -1))
+        if [d["n"] for d in expected["draws"]] != want_ns:
+            raise SystemExit(
+                f"pity case {c['name']!r}: the draw sequence is "
+                f"{[d['n'] for d in expected['draws']]}, and Durstenfeld descending over "
+                f"{len(expected['winless'])} members is {want_ns}"
+            )
+
+        if not c["pins"](expected):
+            raise SystemExit(
+                f"pity case {c['name']!r} no longer exhibits the property it was chosen for: "
+                f"{expected!r}"
+            )
+        # ⛔ `pins_inputs` IS MANDATORY, as it is in the anti-sweep file and for the same reason at
+        # its FIFTH occurrence across this epic: `pins` sees only the OUTPUT, and an output is
+        # reachable by routes that have nothing to do with the row's name. Every row here re-derives
+        # the INPUT property its name claims — that the roster really was supplied out of order,
+        # that the excluded player really is the idle-DQ'd one, that 256 mod n really is non-zero.
+        if "pins_inputs" not in c:
+            raise SystemExit(f"pity case {c['name']!r} has no `pins_inputs`")
+        if not c["pins_inputs"](expected, c):
+            raise SystemExit(
+                f"pity case {c['name']!r} no longer exhibits the INPUT property it was chosen for "
+                "— its fixture has drifted and the row no longer tests what its name claims"
+            )
+
+        row: dict = {"name": c["name"], "note": c["note"], "seed_hex": c["seed"]}
+        if not c.get("omit_players"):
+            row["players"] = [_render_player(p) for p in (c["players"] or [])]
+        if not c.get("omit_shelf"):
+            row["shelf"] = {k: c["shelf"][k] for k in sorted(c["shelf"] or {})}
+        row["expected"] = expected
+        cases.append(row)
+
+    # ── the identities, checked HERE and not only in the two suites ────────────────────────────
+    #
+    # ⭐ AND EACH ONE IS GUARDED AGAINST BEING A ROW COMPARED WITH ITSELF, which is the failure mode
+    # `build_antisweep_file` records: an identity between two rows that carry the same inputs cannot
+    # fail, so the second half of every check below asserts that the two rows genuinely DIFFER on
+    # the axis the identity is about.
+    def _named(name: str) -> dict:
+        return next(c for c in cases if c["name"] == name)
+
+    in_order = _named("a-THREE-member-winless-set-DEMONSTRABLY-REORDERS")
+    out_of_order = _named("the-ROSTER-supplied-OUT-OF-BYTE-LEX-ORDER-resolves-IDENTICALLY")
+    if in_order["expected"] != out_of_order["expected"]:
+        raise SystemExit(
+            "the in-order and out-of-byte-lex-order rows no longer agree — the order the ROSTER is "
+            "supplied in must not change one byte of the result"
+        )
+    if [p["steamid64"] for p in in_order["players"]] == [
+        p["steamid64"] for p in out_of_order["players"]
+    ] or sorted(map(json.dumps, in_order["players"])) != sorted(
+        map(json.dumps, out_of_order["players"])
+    ):
+        raise SystemExit(
+            "the out-of-order row is no longer the same roster in a different order — the identity "
+            "above would be comparing a row with itself and would prove nothing"
+        )
+    if out_of_order["expected"]["reveal_order"] == out_of_order["expected"]["winless"]:
+        raise SystemExit(
+            "the reorder pair no longer reorders — a shuffle that returned its input would satisfy "
+            "both rows"
+        )
+
+    absent = _named("an-ABSENT-shelf-key-is-shelf-ZERO")
+    explicit = _named("an-EXPLICIT-shelf-0-is-BYTE-IDENTICAL-to-an-absent-key")
+    if absent["expected"] != explicit["expected"]:
+        raise SystemExit(
+            "the absent-key and explicit-0 rows no longer agree — W8's 'an ABSENT player is shelf "
+            "0' is what makes them one rule"
+        )
+    if absent["shelf"] == explicit["shelf"] or absent["players"] != explicit["players"]:
+        raise SystemExit(
+            "the absent/explicit pair is no longer the same roster with two spellings of the same "
+            "shelf — the identity above would prove nothing"
+        )
+
+    empty_roster = _named("an-EMPTY-roster-resolves-to-an-EMPTY-draw-and-consumes-ZERO-bytes")
+    absent_container = _named("an-ABSENT-players-and-shelf-CONTAINER-is-the-EMPTY-one")
+    if empty_roster["expected"] != absent_container["expected"]:
+        raise SystemExit("an ABSENT container must be the EMPTY container (P11)")
+    if "players" in absent_container or "shelf" in absent_container:
+        raise SystemExit(
+            "the absent-container row still carries its keys — it is testing the explicit spelling "
+            "twice"
+        )
+
+    # ⭐ GUARD THE GUARDS, BY RE-DERIVING EACH CLAIMED PROPERTY FROM THE EMITTED DATA AND PINNING
+    # THAT EXACTLY ONE ROW CARRIES IT. This project's recurring defect — now at its FIFTH occurrence
+    # — is a coverage flag satisfied by a degenerate row, so each claim below excludes the
+    # degenerate inputs and names the row it belongs to.
+    zero_byte = [c["name"] for c in cases if c["expected"]["bytes_consumed"] == 0]
+    if len(zero_byte) != 4:
+        raise SystemExit(
+            f"expected exactly four ZERO-byte rows (empty roster, absent container, everyone holds "
+            f"a trophy, one member), got {zero_byte}"
+        )
+    one_member = [c["name"] for c in cases if len(c["expected"]["winless"]) == 1]
+    if len(one_member) != 1:
+        raise SystemExit(f"expected exactly one ONE-member row, got {one_member}")
+    reordering = [
+        c["name"] for c in cases
+        if len(c["expected"]["winless"]) >= 2
+        and c["expected"]["reveal_order"] != c["expected"]["winless"]
+    ]
+    if len(reordering) != 3:
+        raise SystemExit(
+            f"expected exactly three rows whose reveal order DIFFERS from byte-lex (the reorder "
+            f"pair and the all-winless row), got {reordering}"
+        )
+    rejecting = [
+        c["name"] for c in cases
+        if any(d["rejections"] > 0 for d in c["expected"]["draws"])
+    ]
+    if len(rejecting) != 1:
+        raise SystemExit(f"expected exactly one row exercising a REJECTION, got {rejecting}")
+    # …and that row's rejection is genuinely forced by the arithmetic rather than by luck of the
+    # fixture: `256 mod n` must be non-zero for the step that rejected, or no byte value could ever
+    # have been rejected there at all.
+    rej_row = _named(rejecting[0])
+    if not any(d["rejections"] > 0 and 256 % d["n"] != 0 for d in rej_row["expected"]["draws"]):
+        raise SystemExit(
+            "the rejection row's rejection is not attributable to a non-zero `256 mod n` — the row "
+            "cannot be pinning the rejection path"
+        )
+    # ⭐⭐ …AND THE ROW'S NAME CLAIMS THE ORDER CHANGES, SO THE COUNTERFACTUAL IS RE-DERIVED RATHER
+    # THAN TRUSTED. A vector row whose name asserts something its data cannot show is the weaker
+    # half of this project's recurring coverage-guard defect. Here the alternative implementation is
+    # spelled out — one that ACCEPTS the out-of-range value instead of drawing k fresh bytes — and
+    # the two reveal orders must genuinely differ, so the row discriminates on the ORDER axis and
+    # not only on the byte count.
+    rej_src = next(c for c in PITY_CASES if c["name"] == rejecting[0])
+    unbiased_order = rej_row["expected"]["reveal_order"]
+    biased = sorted(rej_row["expected"]["winless"])
+    biased_stream = _pity_stream(rej_src)
+    for i in range(len(biased) - 1, 0, -1):
+        n = i + 1
+        k, _space = minimal_k(n)
+        j = int.from_bytes(biased_stream.read(k), "big") % n  # ⛔ no rejection loop — the mutant
+        biased[i], biased[j] = biased[j], biased[i]
+    if biased == unbiased_order:
+        raise SystemExit(
+            "the rejection row no longer separates a rejecting implementation from a "
+            f"modulo-biased one — both reach {unbiased_order!r}, so the row pins only the byte "
+            "count and its name overclaims"
+        )
+    # ⭐ THE DEGENERATE INPUT IS EXCLUDED (6.7 code review). This guard used to ask only "is there a
+    # DQ'd player who is not in `winless`?", which a DQ'd player who ALSO HOLDS A TROPHY satisfies
+    # exactly — the shelf filter alone would keep them out, so the DQ branch could be deleted and the
+    # guard would stay green. Every sibling guard in this block re-derives its non-degenerate
+    # condition; this one did not. The player must now be at shelf 0, so their exclusion is
+    # attributable to the DQ filter AND TO NOTHING ELSE.
+    dq_excluded = [
+        c["name"] for c in cases
+        if any(
+            p["idle_dq"]
+            and c.get("shelf", {}).get(p["steamid64"], 0) == 0
+            and p["steamid64"] not in c["expected"]["winless"]
+            for p in c.get("players", [])
+        )
+    ]
+    if len(dq_excluded) != 1:
+        raise SystemExit(
+            f"expected exactly one row where the DQ filter is the SOLE reason a player is excluded "
+            f"(idle_dq AND shelf 0 AND absent from winless), got {dq_excluded}"
+        )
+    # ⭐ P7's OWN COVERAGE FLAG: at least one row must carry a winless player who is BELOW both
+    # shipped FR-21 floors, or an implementation that re-applied them inside pity would pass every
+    # row in the file. This is the twin of the defect 6.6's mutation pass found in its own vector.
+    # ⭐ PINNED BY NAME AND BY EXACT COUNT, not by a lower bound (6.7 code review). This guard used to
+    # read `if len(sub_floor) < 2`, which is the only claim in this block that was a LOWER BOUND with
+    # no row named — on what the story calls the single most dangerous semantic it carries, and the
+    # one whose twin 6.6's mutation pass found surviving. `>= 2` is satisfied by any two rows that
+    # happen to carry a sub-floor player, including two near-duplicates, so it could not notice a
+    # fixture drifting off the property while a third row drifted onto it.
+    sub_floor = sorted(
+        c["name"] for c in cases
+        if any(
+            p["steamid64"] in c["expected"]["winless"]
+            and int(p["rounds_played"]) < 24 and int(p["kills"]) < 20
+            for p in c.get("players", [])
+        )
+    )
+    want_sub_floor = sorted([
+        "an-idle_dq-player-is-EXCLUDED-while-a-player-with-ZERO-approved-rows-is-INCLUDED",
+        "the-SHIPPED-floors-shape-NOBODY-holds-a-trophy-and-EVERY-player-is-BELOW-both-FR-21-floors",
+    ])
+    if sub_floor != want_sub_floor:
+        raise SystemExit(
+            f"the rows carrying a winless player below BOTH FR-21 floors have moved — P7 (the floors "
+            f"are NEVER consulted inside pity) is what these rows make observable, and an "
+            f"implementation that re-applied them would drop those players. want {want_sub_floor}, "
+            f"got {sub_floor}"
+        )
+
+    # ── the arms no VECTOR ROW can express, driven HERE (6.7 code review) ─────────────────────
+    #
+    # ⛔⛔ THESE BRANCHES WERE EXERCISED BY NOTHING. Each is a structurally-wrong Python type that no
+    # shared row can carry — Go's `[]SnapshotPlayer` / `map[string]int` refuse them at the LOADER
+    # rather than inside the pass, so a vector row would force a runtime to refuse an input it cannot
+    # represent (P11, Cuatro's call at the 6-4b review). But "not row-representable" is not "not
+    # testable": this file uses exactly that standard to REJECT an `internal` refusal label — "a
+    # label no suite could ever drive is a COMPARTMENT rather than a contract" — and then left six
+    # arms of its own undriven. The verifier's twins are driven by `pity.test.ts`; these are the
+    # anchor's, and they are checked at BUILD time so `--check` is what enforces them.
+    _stream_for_arms = _pity_stream({"seed": REAL_SEED})
+    for _why, _players, _shelf, _want_detail in [
+        ("players is not a list", "nope", {}, "players"),
+        ("a roster element is not a mapping", [42], {}, "players"),
+        ("a roster element carries no steamid64", [{"idle_dq": False}], {}, "players"),
+        ("idle_dq is not a boolean", [{"steamid64": "10", "idle_dq": "no"}], {}, "players"),
+        ("shelf is not a mapping", [], "nope", "shelf"),
+        ("a shelf count is not an integer", [], {"10": 1.5}, "shelf"),
+        ("a shelf count is a bool masquerading as an int", [], {"10": True}, "shelf"),
+        ("a shelf key is the empty string", [], {"": 0}, "shelf"),
+    ]:
+        try:
+            resolve_pity(_players, _shelf, _stream_for_arms)
+        except PityRefusal as _err:
+            if _err.detail != _want_detail:
+                raise SystemExit(
+                    f"the non-vectorable arm {_why!r} refused on {_err.detail!r}, want "
+                    f"{_want_detail!r} — the closed set must be the same one the rows use"
+                )
+        else:
+            raise SystemExit(
+                f"the non-vectorable arm {_why!r} did NOT refuse — it is dead code by the same "
+                "standard this file uses to reject an `internal` label"
+            )
+        # ⭐ AND IT COSTS NOTHING. Every one of these is a VALIDATION refusal, so it fires before the
+        # first draw — the invariant that is true of all of them and deliberately NOT true of the
+        # mid-shuffle `uniform_int` arm, which is the one refusal in this module that spends bytes.
+        if _stream_for_arms.pos != 0:
+            raise SystemExit(
+                f"the non-vectorable arm {_why!r} advanced the stream to {_stream_for_arms.pos} — a "
+                "validation refusal must be free"
+            )
+
+    # ── the refusals ──────────────────────────────────────────────────────────────────────────
+    refusals = []
+    seen_detail: dict = {}
+    boundary_pairs: set = set()
+    for r in PITY_REFUSALS:
+        try:
+            got = resolve_pity(r["players"], r["shelf"], _pity_stream(r))
+        except PityRefusal as err:
+            detail = err.detail
+        else:
+            raise SystemExit(f"pity refusal row {r['why']!r} did NOT refuse — it returned {got!r}")
+        if detail != r["detail"]:
+            raise SystemExit(
+                f"pity refusal row {r['why']!r} refused on {detail!r}, declared {r['detail']!r}"
+            )
+        if detail not in ROW_REPRESENTABLE_PITY_DETAILS:
+            raise SystemExit(
+                f"pity refusal row {r['why']!r} used a detail no row can represent: {detail!r}"
+            )
+        defects = [detail]
+        if "second" in r:
+            # ⭐⭐ A ROW MALFORMED IN TWO WAYS IS ONLY WORTH ANYTHING IF BOTH DEFECTS INDEPENDENTLY
+            # REFUSE, AND UNDER DIFFERENT LABELS. A doubly-malformed row whose second defect turned
+            # out to be harmless would recreate 6-4b's headline blindness while looking like the fix.
+            second = r["second"]
+            try:
+                also = resolve_pity(second["players"], second["shelf"], _pity_stream(second))
+            except PityRefusal as err:
+                second_detail = err.detail
+            else:
+                raise SystemExit(
+                    f"pity refusal row {r['why']!r}: its SECOND defect alone did not refuse — it "
+                    f"returned {also!r}, so the row is malformed in ONE way and pins no order"
+                )
+            if second_detail != second["detail"]:
+                raise SystemExit(
+                    f"pity refusal row {r['why']!r}: its second defect refused on "
+                    f"{second_detail!r}, declared {second['detail']!r}"
+                )
+            if second_detail == detail:
+                raise SystemExit(
+                    f"pity refusal row {r['why']!r}: both defects refuse as {detail!r}, so the row "
+                    "cannot observe which guard ran first"
+                )
+            defects.append(second_detail)
+            boundary_pairs.add(frozenset((detail, second_detail)))
+        seen_detail[detail] = seen_detail.get(detail, 0) + 1
+        out: dict = {
+            "why": r["why"],
+            "detail": r["detail"],
+            "defects": defects,
+            "seed_hex": r["seed"],
+        }
+        if "label" in r:
+            out["label"] = r["label"]
+        if "pre_consumed" in r:
+            out["pre_consumed"] = r["pre_consumed"]
+        out["players"] = [_render_player(p) for p in r["players"]]
+        out["shelf"] = {k: r["shelf"][k] for k in sorted(r["shelf"])}
+        refusals.append(out)
+
+    for d in ROW_REPRESENTABLE_PITY_DETAILS:
+        if not seen_detail.get(d):
+            raise SystemExit(
+                f"no pity refusal row of detail {d!r} — the label is declared and never exercised, "
+                "which is a compartment rather than a contract"
+            )
+    # The published order is stream -> players -> shelf, so its ADJACENT boundaries are exactly
+    # these two. Each needs a row malformed on BOTH of its sides or that half of the order is
+    # unobservable — a count of doubly-malformed rows is the wrong proxy and 6.6's review measured
+    # the cost of using one.
+    for pair in (frozenset(("stream", "players")), frozenset(("players", "shelf"))):
+        if pair not in boundary_pairs:
+            raise SystemExit(
+                f"no doubly-malformed refusal row pins the {'/'.join(sorted(pair))} boundary — "
+                "validation ORDER is contract and every ADJACENT boundary needs a row malformed on "
+                "both of its sides"
+            )
+
+    return {
+        "vector": "pity-draw",
+        "algo_version": ALGO_VERSION,
+        "spec": (
+            "FR-28's guaranteed consolation draw, run ONCE after all main spins. ⭐ UNLIKE every "
+            "other resolver in this directory it CONSUMES STREAM BYTES, on its own "
+            "domain-separated `inclusivcup/v1/pity` stream, so every case carries a seed_hex, a "
+            "per-draw n/k/rejections/value sequence and a bytes_consumed total. VALIDATION ORDER, "
+            "which is contract: (1) the injected STREAM, as detail `stream` — it must be present, "
+            "keyed by the pity label and ONLY the pity label, and positioned at counter 0, because "
+            "each stream is independent (SPINE:216) and a partly-drawn one silently yields a "
+            "different reveal order from the same seed; (2) the ROSTER's own shape, in full over "
+            "the WHOLE list, as detail `players` — every steamid64 a non-empty string, no "
+            "duplicates, idle_dq a boolean; (3) the SHELF, as detail `shelf`, iterated in SORTED "
+            "KEY ORDER in all three runtimes — every count an integer >= 0 (a negative is a "
+            "refusal, never a clamp) and every key present on the roster (an ABSENT key is shelf 0, "
+            "the normal shape; an UNKNOWN key means the shelf was accumulated over a different "
+            "roster). An ABSENT players or shelf CONTAINER is the EMPTY one. THE PASS: winless = "
+            "every player with shelf == 0 AND idle_dq == false, sorted BYTE-LEX and sorted BEFORE "
+            "the first draw, because the seeded permutation is a function of the input sequence; "
+            "reveal_order = a copy of winless shuffled by DURSTENFELD DESCENDING — for i = len-1 "
+            "down to 1, j = uniform_int(stream, i+1), swap(order[i], order[j]) — where i == j is a "
+            "LEGAL self-swap, the per-step n is strictly decreasing, and n = 1 is therefore NEVER "
+            "drawn. The OUTCOME IS INVARIANT and only the ORDER is seeded: the set of winners IS "
+            "the winless set, so reveal_order is always a permutation of winless — same length, "
+            "same members, no additions, no drops. A winless set of length 0 or 1 RESOLVES "
+            "normally, is not a refusal and not a skip, and consumes ZERO bytes because the loop "
+            "body never runs. ⛔ Pity NEVER consults the FR-21 floors — its eligibility is 'not "
+            "fully AFK/idle-DQ'd' and nothing else, and re-applying them would exclude the very "
+            "players FR-28 exists for. ⛔ Pity NEVER reads a Stage-2 outcome, including the "
+            "suppressed `tied` set a no_awardable_value outcome carries: a suppressed player did "
+            "not win, so the shelf already places them in the winless set. ⛔ Pity NEVER writes the "
+            "shelf, never reads a clock and performs no I/O. `idle_dq` is the SNAPSHOT sense "
+            "(0024:584-589): true iff the player has AT LEAST ONE approved stat_row and EVERY one "
+            "of them is idle. A rostered player with ZERO approved rows is false with zero stats — "
+            "winless, NOT disqualified, and pity must reach them."
+        ),
+        "value_encoding": (
+            "Every SNAPSHOT magnitude is a DECIMAL STRING — steamid64, rounds_played, kills and "
+            "every stats_int entry — because AD-19 makes them unbounded integers and JSON.parse "
+            "silently rounds past 2^53. Every SHELF count and every n, k, rejections, value and "
+            "bytes_consumed is a JSON INTEGER: they come from the algorithm and from uniform_int's "
+            "own [1, 2^32] bound, not from the snapshot. The split is by PROVENANCE, not magnitude."
+        ),
+        "generated_by": GENERATED_BY,
+        "label": PITY_LABEL,
+        "refusal_details": list(PITY_REFUSAL_DETAILS),
+        # ⭐ EQUAL TO `refusal_details` ABOVE, AND THAT EQUALITY IS THE POINT RATHER THAN AN
+        # OVERSIGHT: pity declares no `internal` label because it has no injected port that could
+        # hand it a state no input can reach (see the note beside PITY_REFUSAL_DETAILS). Both keys
+        # are emitted so the fact is data both suites can assert instead of prose a reader must
+        # trust.
+        "row_representable_refusal_details": list(ROW_REPRESENTABLE_PITY_DETAILS),
+        "refusals": refusals,
+        "cases": cases,
+    }
+
+
 # ── rendering ─────────────────────────────────────────────────────────────────
 
 
@@ -7312,6 +8427,17 @@ def main() -> int:
         # Story 6.6 — the anti-sweep pass. Like Stage 2 and the ladder it consumes NO stream, so it
         # is not one of SOLUTION-DESIGN §9.6's numbered *stream* gates; AD-14 gates it all the same.
         HERE / "antisweep-resolve.json": render(build_antisweep_file()),
+        # ⭐ Story 6.7 — the pity draw, and the FIRST resolver since Stage 1 that is on the
+        # CRYPTOGRAPHIC axis: it consumes bytes from its own `inclusivcup/v1/pity` stream, so it
+        # belongs beside `stage1-pick.json` on the stream side of the split rather than beside the
+        # three pure passes above. §9.6's build order ends "… → pity".
+        # ⛔ DELIBERATELY UNNUMBERED (6.7 code review). This comment used to end "→ pity (gate 4)",
+        # which made it a THIRD reading of "gate 4" in a repo that already has two: README.md:39-40
+        # numbers 4 = canonicalization (6.9), and SOLUTION-DESIGN:441-445 numbers 4 = the end-to-end
+        # ceremony vector (6.11) — the two are REVERSED, which the README records beside the pity
+        # ownership row rather than silently renumbering, because renumbering a shipped table is
+        # 6.9/6.11's call. Naming a number here would have picked a side by accident.
+        HERE / "pity-draw.json": render(build_pity_file()),
     }
 
     if args.check:

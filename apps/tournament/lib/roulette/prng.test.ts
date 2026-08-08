@@ -663,11 +663,12 @@ describe('lib/roulette source pinning', () => {
     // Every non-test module under lib/roulette is production code that can reach a client bundle,
     // so the list is asserted exactly rather than as a lower bound: a new module added here
     // without thinking about the bans below should fail loudly, not slip in unscanned.
-    // `stage2.ts` was added by Story 6-4a, `stage1.ts` by 6-4b, `ladder.ts` by 6.5 and `sweep.ts`
-    // by 6.6; each had to be registered here to be scanned at all.
+    // `stage2.ts` was added by Story 6-4a, `stage1.ts` by 6-4b, `ladder.ts` by 6.5, `sweep.ts`
+    // by 6.6 and `pity.ts` by 6.7; each had to be registered here to be scanned at all.
     expect(shipped.map(([f]) => f)).toEqual([
       'labels.ts',
       'ladder.ts',
+      'pity.ts',
       'prng.ts',
       'stage1.ts',
       'stage2.ts',
@@ -801,6 +802,23 @@ describe('lib/roulette source pinning', () => {
         // import `./ladder`: the FR-29 ladder arrives as an injected PORT, which is what lets the
         // suite drive the module's `internal` guards with a stub.
         'sweep.ts': ['./stage1', './stage2'],
+        // ⭐⭐ STORY 6.7, AND THE PRESENCE OF `'./prng'` IS THE LOAD-BEARING HALF — THE EXACT
+        // INVERSE OF THE SIX LINES ABOVE. The pity draw is the one resolver that CONSUMES STREAM
+        // BYTES: it takes a `Stream`, calls `uniformInt` for every shuffle step and reports the
+        // cumulative cost, so `'./prng'` DISAPPEARING from this list would be the first visible
+        // sign that somebody had made the reveal order deterministic — turning a seeded ceremony
+        // into a fixed one while every permutation still looked plausible and every "it drew
+        // nothing" assertion elsewhere stayed green. `sweep.ts` proves a property by an absence;
+        // this proves the mirror by a presence, and the two are the same discipline.
+        //
+        // It imports `./labels` for `PITY_LABEL`, which no previous resolver needed, because AC4
+        // requires the injected stream to be keyed by the pity label AND ONLY the pity label — and
+        // that is a claim about a CALLER, so it is checked rather than asserted. `./stage2` supplies
+        // the `SnapshotPlayer` TYPE, reused rather than restated. ⚠ Note what is ABSENT: no
+        // `./stage1`, no `./ladder` — pity takes no candidate, no award and no outcome, which is
+        // P7 (the FR-21 floors are never consulted) and DECISION K' (the suppressed tied set is
+        // never read) made visible in the import graph.
+        'pity.ts': ['./labels', './prng', './stage2'],
       });
     });
 
@@ -809,7 +827,23 @@ describe('lib/roulette source pinning', () => {
     // the bans would silently stop asserting and the pin above would still pass.
     it('at least one shipped module has a non-empty specifier list, so the bans are not vacuous', () => {
       const withImports = shipped.filter(([, src]) => importSpecifiers(src).length > 0);
-      expect(withImports.map(([f]) => f)).toEqual(['ladder.ts', 'stage1.ts', 'sweep.ts']);
+      expect(withImports.map(([f]) => f)).toEqual(['ladder.ts', 'pity.ts', 'stage1.ts', 'sweep.ts']);
+    });
+
+    // ⭐⭐ AND THE STREAM-CONSUMER SPLIT ITSELF, PINNED AS DATA. The graph above states each
+    // module's imports; this states the PROPERTY the graph exists to protect, so neither half can
+    // drift without the other reddening. Exactly two shipped modules may reach the PRNG —
+    // `stage1.ts` (the weighted category pick) and `pity.ts` (the seeded reveal order) — and every
+    // other resolver draws ZERO bytes BY DESIGN: the FR-29 ladder's rung 5 is a deterministic
+    // terminal rung, and anti-sweep's re-resolution is Stage 2 plus that ladder. A `./prng` import
+    // appearing in `ladder.ts` or `sweep.ts` would move every byte position after every resolved
+    // tie and invalidate 6-4b's measured 22-byte twelve-spin ceremony; one DISAPPEARING from
+    // `pity.ts` would silently unseed the consolation round.
+    it('exactly the two stream consumers import ./prng', () => {
+      const consumers = shipped
+        .filter(([, src]) => importSpecifiers(src).includes('./prng'))
+        .map(([f]) => f);
+      expect(consumers).toEqual(['pity.ts', 'stage1.ts']);
     });
   });
 
