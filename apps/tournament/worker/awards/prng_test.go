@@ -840,7 +840,17 @@ func TestScannedSourceFilesAreExactlyTheShippedModules(t *testing.T) {
 	// did: nothing new, because `UniformInt` and `Stream` live in this same package. The
 	// TypeScript mirror is where the stream dependency becomes a visible import edge, and
 	// `prng.test.ts`'s per-module graph is where its PRESENCE is pinned.
-	want := []string{"labels.go", "ladder.go", "pity.go", "prng.go", "stage1.go", "stage2.go", "sweep.go"}
+	//
+	// ⭐ Story 6.8a added `ceremony.go` and did NOT widen the `math/big` exemption, which is the
+	// narrowest argument any of the six has made. The orchestrator compares NOTHING and derives NO
+	// deciding value: its only numbers are a 1-based spin counter, a slice length and a shelf count,
+	// every one of them bounded by the twelve-award catalog and the roster. A `math/big` import
+	// appearing here would mean the file had started re-deriving an outcome, which is precisely the
+	// dependency AD-14 forbids it — the orchestrator SEQUENCES the resolvers and decides no winner.
+	want := []string{
+		"ceremony.go", "labels.go", "ladder.go", "pity.go", "prng.go", "stage1.go", "stage2.go",
+		"sweep.go",
+	}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("scanned %v, want %v", got, want)
 	}

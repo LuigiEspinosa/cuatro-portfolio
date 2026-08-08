@@ -132,21 +132,27 @@ select isnt(
 -- ============================================================================
 -- Section B — ⭐ the pairing itself  (5)
 -- ============================================================================
+-- ⚠ `kind` AND `outcome_kind` ARE SUPPLIED EXPLICITLY FROM HERE DOWN (migration 0027, Story 6.8a).
+-- Both are NOT NULL with NO DEFAULT. `kind` must equal the parent spin's or 0027's composite FK
+-- `award_result_spin_kind_fk` refuses; `outcome_kind` is one of the engine's five OutcomeKinds, and
+-- every fixture below carries the kind that MATCHES ITS OWN WINNER COUNT — `winner` where exactly one
+-- `award_result_winner` row follows, `no_eligible_players` where none does — so that the widened
+-- IC909 cardinality rule is satisfied for the right reason rather than by never being fired.
 select lives_ok($$
-  insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-  values ((select pity_spin from f), null, true, false)$$,
+  insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+  values ((select pity_spin from f), 'pity', null, 'no_eligible_players', true, false)$$,
   '⭐ a PITY result with NO award INSERTS — this is the whole point of 0026, and the row it makes possible is Story 6.8''s to write for real');
 
 select throws_ok($$
-  insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-  values ((select main_spin from f), null, false, false)$$,
+  insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+  values ((select main_spin from f), 'main', null, 'no_eligible_players', false, false)$$,
   '23514',
   'new row for relation "award_result" violates check constraint "award_result_award_or_pity"',
   '⭐ a MAIN-spin result with NO award is REFUSED — the case that is always wrong, and the CONSTRAINT NAME says which check caught it');
 
 select lives_ok($$
-  insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-  values ((select main_spin from f), (select aw1 from f), false, false)$$,
+  insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+  values ((select main_spin from f), 'main', (select aw1 from f), 'no_eligible_players', false, false)$$,
   'a main-spin result WITH its award inserts — the positive control, without which the refusal above could pass for the wrong reason');
 
 -- ⚠ THE CONVERSE IS DELIBERATELY NOT CONSTRAINED, and this row is what records that as behaviour
@@ -154,18 +160,29 @@ select lives_ok($$
 -- pre-empt a product decision Story 6.10 may yet take — naming the consolation prize. What 0026
 -- forbids is only the case that is always wrong.
 select lives_ok($$
-  insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-  values ((select pity_spin2 from f), (select aw1 from f), true, false)$$,
+  insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+  values ((select pity_spin2 from f), 'pity', (select aw1 from f), 'no_eligible_players', true, false)$$,
   'a PITY result that DOES name an award stays representable — the pairing is one-directional on purpose (see the column comment)');
 
 -- ⭐ NOT INSERT-ONLY. A CHECK constraint is re-evaluated on UPDATE, and a guard that only held at
--- insert time would let a writer create a legal pity row and then flip the flag underneath it.
+-- insert time would let a writer create a legal row and then break it underneath itself.
+--
+-- ⚠⚠ RETARGETED BY MIGRATION 0027, AND THE ORIGINAL CASE IS NOW UNREACHABLE RATHER THAN UNTESTED.
+-- This assertion used to flip a legal PITY row to `is_pity = false` and expect
+-- `award_result_award_or_pity`. Under 0027 that same statement ALSO violates
+-- `award_result_is_pity_matches_kind` (a pity spin's result may not be non-pity), and Postgres does
+-- not guarantee WHICH of two violated CHECKs it names — so the test would have been asserting a
+-- constraint name by luck of constraint OID order, which is precisely the "passes for the wrong
+-- reason" trap this file's header is about. The UPDATE below breaks EXACTLY ONE constraint: a
+-- main-spin row keeps `kind='main'` and `is_pity=false` (so the 0027 bind is satisfied) while losing
+-- its award, which only `award_result_award_or_pity` can refuse. The original CLAIM — that the guard
+-- bites on UPDATE and not only on INSERT — is preserved unchanged; only the route to it moved.
 select throws_ok($$
-  update public.award_result set is_pity = false
-   where spin_id = (select pity_spin from f) and award_id is null$$,
+  update public.award_result set award_id = null
+   where spin_id = (select main_spin from f) and award_id is not null$$,
   '23514',
   'new row for relation "award_result" violates check constraint "award_result_award_or_pity"',
-  'flipping a legal pity row to is_pity = false is REFUSED — the guard bites on UPDATE, not only on INSERT');
+  'clearing a legal main-spin result''s award is REFUSED — the guard bites on UPDATE, not only on INSERT');
 
 -- ============================================================================
 -- Section C — the CHECK is TOTAL: no NULL expression, therefore none silently SATISFIED  (3)
@@ -185,8 +202,8 @@ select matches(
   '⭐ the constraint really carries the IS TRUE wrapper — it is what makes a future NULLable is_pity fail LOUDLY instead of admitting every row');
 
 select throws_ok($$
-  insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-  values ((select main_spin from f), null, default, false)$$,
+  insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+  values ((select main_spin from f), 'main', null, 'no_eligible_players', default, false)$$,
   '23514',
   'new row for relation "award_result" violates check constraint "award_result_award_or_pity"',
   'the column DEFAULT (is_pity = false) plus a NULL award is REFUSED — a writer that simply omits is_pity gets the strict behaviour, not the lenient one');
@@ -207,10 +224,10 @@ select throws_ok($$
 select lives_ok($q$
   do $x$
   begin
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select pity_spin from f), null, true, false);
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select pity_spin from f), null, true, false);
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select pity_spin from f), 'pity', null, 'no_eligible_players', true, false);
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select pity_spin from f), 'pity', null, 'no_eligible_players', true, false);
   end
   $x$
 $q$,
@@ -225,10 +242,10 @@ $q$,
 select throws_ok($q$
   do $x$
   begin
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select main_spin from f), (select aw2 from f), false, false);
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select main_spin from f), (select aw2 from f), false, false);
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select main_spin from f), 'main', (select aw2 from f), 'no_eligible_players', false, false);
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select main_spin from f), 'main', (select aw2 from f), 'no_eligible_players', false, false);
   end
   $x$
 $q$,
@@ -242,8 +259,8 @@ select throws_ok($q$
   do $x$
   declare r bigint;
   begin
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select pity_spin2 from f), null, true, true)
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select pity_spin2 from f), 'pity', null, 'winner', true, true)
       returning id into r;
     insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
       values (r, (select pity_spin2 from f), (select ana from f));
@@ -271,8 +288,8 @@ select throws_like($q$
   do $x$
   declare r bigint;
   begin
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select pity_spin2 from f), null, true, true)
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select pity_spin2 from f), 'pity', null, 'winner', true, true)
       returning id into r;
     insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
       values (r, (select pity_spin2 from f), (select beto from f));
@@ -287,10 +304,10 @@ select throws_ok($q$
   do $x$
   declare r1 bigint; r2 bigint;
   begin
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select pity_spin2 from f), null, true, false) returning id into r1;
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select pity_spin2 from f), null, true, false) returning id into r2;
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select pity_spin2 from f), 'pity', null, 'winner', true, false) returning id into r1;
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select pity_spin2 from f), 'pity', null, 'winner', true, false) returning id into r2;
     insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
       values (r1, (select pity_spin2 from f), (select beto from f));
     insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
@@ -306,8 +323,8 @@ select lives_ok($q$
   do $x$
   declare r bigint;
   begin
-    insert into public.award_result (spin_id, award_id, is_pity, is_shared)
-      values ((select pity_spin2 from f), null, true, false) returning id into r;
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_pity, is_shared)
+      values ((select pity_spin2 from f), 'pity', null, 'winner', true, false) returning id into r;
     insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
       values (r, (select pity_spin2 from f), (select ana from f));
     set constraints public.award_result_is_shared_consistent immediate;

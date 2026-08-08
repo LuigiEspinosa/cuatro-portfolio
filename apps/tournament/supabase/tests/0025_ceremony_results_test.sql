@@ -185,9 +185,20 @@ select is(
 -- Section B — `award_result` + `award_result_winner`: shape and closed sets  (11)
 -- ============================================================================
 select has_table('public', 'award_result', 'award_result: the table exists');
+-- ⚠ WIDENED BY MIGRATION 0027 (Story 6.8a), and the pin is what caught it. The seven columns below
+-- are SOLUTION-DESIGN.md:215-224's; the four after them are 0027's, each with its own reason:
+--   `kind`         — denormalized spin.kind, the target of the composite FK that binds `is_pity` to
+--                    its spin (0027 DECISION 1, closing deferred-work.md:357);
+--   `outcome_kind` — which of the engine's five OutcomeKinds this row records, so a ZERO-WINNER row
+--                    can say WHY (0027 AC7, closing the no_eligible_players / no_awardable_value
+--                    ambiguity);
+--   `deciding_num` / `deciding_den` — AD-19's integer-form rate pair, never divided (0027 DECISION 3).
+-- This assertion is EXACT on purpose: a column added without thinking about the constraints above
+-- should redden here rather than slip in.
 select columns_are('public', 'award_result',
-  array['id', 'spin_id', 'award_id', 'deciding_value', 'is_pity', 'is_shared', 'tie_ladder_exit_step'],
-  'award_result: EXACTLY SOLUTION-DESIGN.md:215-224''s seven columns');
+  array['id', 'spin_id', 'award_id', 'deciding_value', 'is_pity', 'is_shared', 'tie_ladder_exit_step',
+        'kind', 'outcome_kind', 'deciding_num', 'deciding_den'],
+  'award_result: SOLUTION-DESIGN.md:215-224''s seven columns PLUS migration 0027''s four');
 select fk_ok('public', 'award_result', 'spin_id', 'public', 'spin', 'id',
   'award_result: spin_id references spin(id)');
 select fk_ok('public', 'award_result', 'award_id', 'public', 'award', 'id',
@@ -199,15 +210,19 @@ select has_index('public', 'award_result', 'award_result_spin_award_key',
 select has_index('public', 'award_result', 'award_result_id_spin_key',
   'award_result: the redundant unique (id, spin_id) exists — DECISION D''s composite-FK target');
 
+-- ⚠ `kind` AND `outcome_kind` ARE SUPPLIED EXPLICITLY FROM HERE DOWN (migration 0027). Both are NOT
+-- NULL with NO DEFAULT, deliberately — 0027's own header argues that a default on `outcome_kind`
+-- would be a fabricated answer that commits silently. `kind` must equal the parent spin's or
+-- `award_result_spin_kind_fk` refuses; every spin in this file's fixtures is `main`.
 select throws_ok($$
-  insert into public.award_result (spin_id, award_id, tie_ladder_exit_step)
-  values ((select spin1 from f), (select aw1 from f), 6)$$,
+  insert into public.award_result (spin_id, kind, award_id, outcome_kind, tie_ladder_exit_step)
+  values ((select spin1 from f), 'main', (select aw1 from f), 'no_eligible_players', 6)$$,
   '23514',
   'new row for relation "award_result" violates check constraint "award_result_ladder_exit_step_valid"',
   'award_result_ladder_exit_step_valid: a rung outside 1..5 is REFUSED — FR-29 has exactly five');
 select lives_ok($$
-  insert into public.award_result (spin_id, award_id, tie_ladder_exit_step)
-  values ((select spin2 from f), (select aw2 from f), null)$$,
+  insert into public.award_result (spin_id, kind, award_id, outcome_kind, tie_ladder_exit_step)
+  values ((select spin2 from f), 'main', (select aw2 from f), 'no_eligible_players', null)$$,
   'award_result_ladder_exit_step_valid: NULL is legal — it means no ladder was involved');
 
 select has_table('public', 'award_result_winner', 'award_result_winner: the table exists');
@@ -226,11 +241,11 @@ delete from public.spin where spin_index in (98, 99);
 
 -- Spin 1: two awards, two DIFFERENT players. The positive control — without it, every assertion
 -- below is satisfiable by a schema that refuses all inserts.
-insert into public.award_result (id, spin_id, award_id, is_shared)
+insert into public.award_result (id, spin_id, kind, award_id, outcome_kind, is_shared)
   overriding system value
-  values (default, (select spin1 from f), (select aw1 from f), false);
-insert into public.award_result (spin_id, award_id, is_shared)
-  values ((select spin1 from f), (select aw2 from f), false);
+  values (default, (select spin1 from f), 'main', (select aw1 from f), 'winner', false);
+insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+  values ((select spin1 from f), 'main', (select aw2 from f), 'winner', false);
 
 select lives_ok($$
   insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
@@ -261,8 +276,8 @@ select is((select count(*)::int from public.award_result_winner
   'the refusal wrote nothing — Ana still holds exactly one trophy in spin 1');
 
 -- ⭐ THE OTHER HALF, and it is what makes the constraint PER SPIN rather than global.
-insert into public.award_result (spin_id, award_id, is_shared)
-  values ((select spin2 from f), (select aw1 from f), false);
+insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+  values ((select spin2 from f), 'main', (select aw1 from f), 'winner', false);
 select lives_ok($$
   insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
   select ar.id, ar.spin_id, (select ana from f)
@@ -272,8 +287,8 @@ select lives_ok($$
 
 -- A genuine FR-29 rung-5 co-win: ONE award_result, TWO winner rows, two different players. It is the
 -- shape that makes a per-award_result UNIQUE unable to express the rule at all.
-insert into public.award_result (spin_id, award_id, is_shared)
-  values ((select spin2 from f), (select aw2 from f), true);
+insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+  values ((select spin2 from f), 'main', (select aw2 from f), 'shared', true);
 select lives_ok($$
   insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
   select ar.id, ar.spin_id, v.e
@@ -320,8 +335,8 @@ select throws_ok($q$
   declare r bigint;
   begin
     set constraints all deferred;
-    insert into public.award_result (spin_id, award_id, is_shared)
-      values ((select spin1 from f), (select aw1 from f) , true)
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+      values ((select spin1 from f), 'main', (select aw1 from f), 'winner', true)
       on conflict (spin_id, award_id) do update set is_shared = true
       returning id into r;
     set constraints public.award_result_is_shared_consistent immediate;
@@ -348,8 +363,8 @@ select throws_ok($q$
   do $x$
   begin
     set constraints all deferred;
-    insert into public.award_result (spin_id, award_id, is_shared)
-      values ((select spin1 from f), (select aw1 from f), true)
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+      values ((select spin1 from f), 'main', (select aw1 from f), 'winner', true)
       on conflict (spin_id, award_id) do update set is_shared = true;
     delete from public.award_result_winner
      where award_result_id = (select id from public.award_result
@@ -390,8 +405,9 @@ select throws_ok($q$
     set constraints all deferred;
     insert into public.spin (ceremony_id, spin_index, kind)
       values ((select ceremony_id from f), 9, 'main');
-    insert into public.award_result (spin_id, award_id, is_shared)
-      values ((select id from public.spin where spin_index = 9), (select aw1 from f), false)
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+      values ((select id from public.spin where spin_index = 9), 'main', (select aw1 from f),
+              'winner', false)
       returning id into dst;
     update public.award_result_winner
        set award_result_id = dst,
@@ -437,8 +453,9 @@ select lives_ok($q$
     set constraints all deferred;
     insert into public.spin (ceremony_id, spin_index, kind)
       values ((select ceremony_id from f), 7, 'main');
-    insert into public.award_result (spin_id, award_id, is_shared)
-      values ((select id from public.spin where spin_index = 7), (select aw1 from f), false)
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+      values ((select id from public.spin where spin_index = 7), 'main', (select aw1 from f),
+              'no_eligible_players', false)
       returning id into r;
     set constraints all immediate;
   end
@@ -451,8 +468,9 @@ select lives_ok($q$
   declare r bigint;
   begin
     set constraints all deferred;
-    insert into public.award_result (spin_id, award_id, is_shared)
-      values ((select id from public.spin where spin_index = 7), (select aw2 from f), true)
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+      values ((select id from public.spin where spin_index = 7), 'main', (select aw2 from f),
+              'shared', true)
       returning id into r;
     insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
       values (r, (select id from public.spin where spin_index = 7), (select ana from f)),
@@ -504,8 +522,8 @@ select lives_ok($q$
   begin
     set constraints all deferred;
     delete from public.award_result where spin_id = (select spin1 from f);
-    insert into public.award_result (spin_id, award_id, is_shared)
-      values ((select spin1 from f), (select aw1 from f), false) returning id into r;
+    insert into public.award_result (spin_id, kind, award_id, outcome_kind, is_shared)
+      values ((select spin1 from f), 'main', (select aw1 from f), 'winner', false) returning id into r;
     insert into public.award_result_winner (award_result_id, spin_id, winner_entry_id)
       values (r, (select spin1 from f), (select ana from f));
     set constraints all immediate;
