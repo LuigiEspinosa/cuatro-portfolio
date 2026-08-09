@@ -251,13 +251,19 @@ export async function resolvePity(input: PityInput): Promise<PityResult> {
   // this whole story rests on structurally cannot see it. `validatePityPlayers` requires only a
   // NON-EMPTY STRING, where `stage2.ts` guards the same field with `STEAMID64_RE = /^[0-9]+$/` and
   // makes the weaker, correct claim ("identical to byte order FOR ASCII DIGITS", `stage2.ts:707`).
-  // ⛔ NOT FIXED IN THIS SLICE, AND THE REASON IS RECORDED: `sweep.ts` carries the identical defect,
-  // Story 6.6's review already deferred it to 6.9, and this story is scope-barred from touching
-  // `sweep.*` — fixing only pity would leave two sibling modules in this directory guaranteeing
-  // different things about one field. Home: 6.9, BOTH modules, by carrying `stage2.ts`'s
-  // `STEAMID64_RE` into them, which makes the byte-lex claim true by construction.
+  // ✅ FIXED BY STORY 6.9a, IN BOTH MODULES AND ALL THREE RUNTIMES, exactly as prescribed:
+  // `validatePityPlayers` now guards `steamid64` with `STEAMID64_RE = /^[0-9]+$/`, and `sweep.ts`
+  // got the identical guard in the same edit — the two sibling modules could not be left
+  // guaranteeing different things about one field, which is why 6.7 deferred rather than half-fix.
+  // ⭐ THE CLAIM IS NOW TRUE BY CONSTRUCTION, WHICH IS THE POINT: on `[0-9]+` the three orderings
+  // COINCIDE (UTF-16 code units, UTF-8 bytes and code points agree exactly on ASCII digits), so
+  // this `.sort()` is byte-lex because the input can no longer be anything else. The comparator
+  // was not changed and must not be — see the mirror note in `canonical.ts`, where RFC-8785 §3.2.3
+  // requires the OPPOSITE ordering (UTF-16 code units, for OBJECT KEYS) forty lines away in the
+  // same package. ⛔ Both are correct. Whoever "unifies" them breaks exactly one.
   // ⚠ Unreachable through the shipped DB (`player.steamid64 check (~ '^[0-9]{17}$')`, 0001:39) —
-  // but this module is what 6.9 ships to the BROWSER to re-verify externally-supplied bundle JSON.
+  // but this module is what 6.9b ships to the BROWSER to re-verify externally-supplied bundle JSON,
+  // where the id arrives from the network and no CHECK constraint stands behind it.
   const winless = roster
     .filter((p) => shelfAt(shelf, p.steamid64) === 0 && !p.idleDq)
     .map((p) => p.steamid64)
@@ -336,8 +342,26 @@ export async function resolvePity(input: PityInput): Promise<PityResult> {
     // ⭐ `rejections` IS DERIVED FROM THE BYTE POSITION. A rejection consumes its k bytes and draws
     // k fresh ones, so the step's total is `k * (1 + rejections)` and the count reads straight back
     // out. `k` is never 0 here because `n >= 2` on every step.
+    // ⭐ STORY 6.9a CLOSED `deferred-work.md:348` HERE. `consumed / k - 1` was FLOAT division in
+    // TypeScript where Go and Python both used integer division, and `rejections` is a PUBLISHED
+    // `draws[]` field — so it is outcome-affecting for `bundle_sha256`, and a non-integral value
+    // would reach the canonicalizer and be refused as `non_integer_number` at publish time rather
+    // than diagnosed here. Pulled forward out of 6.9b by DECISION K for exactly that reason.
+    //
+    // ⚠ The exactness is ASSERTED, not assumed. `Math.floor` alone would silently absorb a
+    // byte-accounting bug into a plausible-looking count; this way a `consumed` that is not a
+    // whole multiple of `k` is a loud, typed refusal at the one place that can still name the
+    // step it happened on. (`k` is never 0 here because `n >= 2` on every step.)
     const consumed = input.stream.consumed - before;
-    draws.push({ n, k, rejections: consumed / k - 1, value: j });
+    const steps = Math.floor(consumed / k);
+    if (steps * k !== consumed) {
+      throw new PityError(
+        'stream',
+        `step n=${String(n)} consumed ${String(consumed)} bytes, which is not a whole multiple of ` +
+          `k=${String(k)} — the stream and the primitive disagree about what a draw costs`,
+      );
+    }
+    draws.push({ n, k, rejections: steps - 1, value: j });
 
     const swap = order[i];
     order[i] = order[j];
@@ -448,6 +472,17 @@ function validatePityStream(stream: Stream): void {
  * parameter is typed, so `players: null` decodes to a nil slice there and RESOLVES; adding a vector
  * row for it would force the other two runtimes to refuse an input their type systems accept.
  */
+/**
+ * `^[0-9]+$` — the same shape `stage2.ts:657` and `ladder.ts:726` guard, carried here by Story
+ * 6.9a to close `deferred-work.md:356`.
+ *
+ * ⚠ DELIBERATELY `+` AND NOT `{17}`, matching its two siblings rather than `0001:39`'s database
+ * CHECK. The engine's contract is "decimal digits", which is what makes the three runtimes' sort
+ * orders coincide; the 17-digit length is a Steam fact the producer has no business asserting, and
+ * a length rule here would refuse the short synthetic ids every vector in this directory uses.
+ */
+const STEAMID64_RE = /^[0-9]+$/;
+
 function validatePityPlayers(
   players: readonly SnapshotPlayer[] | undefined,
 ): readonly SnapshotPlayer[] {
@@ -468,11 +503,21 @@ function validatePityPlayers(
     // FALSE, so a `=== ''` check would let a row with no id through and put `undefined` into the
     // winless set. The two stub tables LOOKED like mirrors and tested different inputs when the 6.6
     // review measured exactly this on `sweep.ts`.
-    if (typeof p.steamid64 !== 'string' || p.steamid64 === '') {
+    // ⭐⭐ STORY 6.9a CLOSED `deferred-work.md:356` HERE, and the fix is the one that entry
+    // prescribed: carry `stage2.ts`'s `STEAMID64_RE` into this module so the BYTE-LEX CLAIM AT THE
+    // `.sort()` ABOVE BECOMES TRUE BY CONSTRUCTION rather than by hope. An all-ASCII-digit string
+    // sorts identically under UTF-16 code units (JS), UTF-8 bytes (Go) and code points (Python) —
+    // the three orders coincide exactly on `[0-9]+`, and diverge only where this guard now refuses.
+    // ⚠ It was pulled forward out of 6.9b (6.9a's DECISION K) because a divergent `winless` yields
+    // a divergent `revealOrder` while `draws` and `bytesConsumed` stay IDENTICAL — so it changes
+    // the bytes the commitment is taken over while the byte-accounting gate stays green. A defect
+    // that cannot be seen must not be left on the far side of a published commitment.
+    if (typeof p.steamid64 !== 'string' || !STEAMID64_RE.test(p.steamid64)) {
       throw new PityError(
         'players',
-        'steamid64 must be a non-empty string — an empty id in the winless set would match no ' +
-          'roster row and would be written at 6.8 as a foreign key to nothing',
+        'steamid64 must be a non-empty string of DECIMAL DIGITS — an empty id in the winless set ' +
+          'would match no roster row and would be written at 6.8 as a foreign key to nothing, and ' +
+          'a non-digit id would sort differently in the three runtimes while every byte count agreed',
       );
     }
     if (seen.has(p.steamid64)) {

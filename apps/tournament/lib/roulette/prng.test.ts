@@ -664,8 +664,18 @@ describe('lib/roulette source pinning', () => {
     // so the list is asserted exactly rather than as a lower bound: a new module added here
     // without thinking about the bans below should fail loudly, not slip in unscanned.
     // `stage2.ts` was added by Story 6-4a, `stage1.ts` by 6-4b, `ladder.ts` by 6.5, `sweep.ts`
-    // by 6.6 and `pity.ts` by 6.7; each had to be registered here to be scanned at all.
+    // by 6.6, `pity.ts` by 6.7 and `canonical.ts` by 6.9a; each had to be registered here to be
+    // scanned at all.
+    //
+    // ⭐⭐ STORY 6.9a IS THE ONE THIS LIST WAS WRITTEN FOR. Every module above it ships to a
+    // browser only in principle; `canonical.ts` is the first that ships there in FACT, because
+    // 6.9b's "Verificar la ceremonia" button pulls this package into the client bundle for the
+    // first time. Registering it reddened this assertion and the import-graph pin below — by
+    // design — and that redness is what proved the bans were not passing vacuously over it: the
+    // `server-only`, `node:`, third-party and 16-item banned-construct scans were already GREEN
+    // for the new module when these two went red, so they had really run against it.
     expect(shipped.map(([f]) => f)).toEqual([
+      'canonical.ts',
       'labels.ts',
       'ladder.ts',
       'pity.ts',
@@ -774,6 +784,14 @@ describe('lib/roulette source pinning', () => {
         shipped.map(([file, src]) => [file, [...new Set(importSpecifiers(src))].sort()]),
       );
       expect(graph).toEqual({
+        // ⭐⭐ STORY 6.9a, AND ITS EMPTINESS IS AS LOAD-BEARING AS `prng.ts`'s. RFC-8785 is
+        // hand-written here because `lib/roulette` is banned from third-party imports outright:
+        // there is no `json-canonicalize` in this tree and there will not be. An import appearing
+        // in this row would mean the bytes `bundle_sha256` is taken over are produced by code
+        // nobody in this repo reviewed — and the commitment is only worth the code that computes
+        // it. Note it does NOT import `./prng` either: canonicalization draws ZERO stream bytes,
+        // and it reaches WebCrypto directly for `digest` rather than borrowing the PRNG's stream.
+        'canonical.ts': [],
         'labels.ts': [],
         // ⭐ Story 6.5. The FR-29 ladder imports `./stage2` and NOTHING ELSE, and that emptiness
         // elsewhere is load-bearing: no `./prng`, because the ladder draws ZERO bytes (L1) and a

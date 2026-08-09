@@ -250,6 +250,15 @@ func ResolveSpin(live []Stage1Candidate, players []SnapshotPlayer, ladder Ladder
 		sweptOut := make([]string, 0, len(players))
 		reducedIDs := make(map[string]struct{}, len(players))
 		for _, p := range players {
+			// ⭐⭐ STORY 6.9a — the Go half of the `deferred-work.md:335` fix, landed in the same
+			// edit as `pity.go`'s and `lib/roulette/{pity,sweep}.ts`'s. Two sibling modules
+			// guaranteeing DIFFERENT things about one field is worse than both guaranteeing
+			// nothing, which is why 6.7 deferred rather than half-fix.
+			if err := validSteamID64(p.SteamID64); err != nil {
+				return SpinResult{}, sweepRefuse(SweepDetailInternal,
+					"the roster carries a steamid64 that is not decimal digits — it would sort "+
+						"differently in the three runtimes while every byte count agreed")
+			}
 			if _, done := assigned[p.SteamID64]; done {
 				sweptOut = append(sweptOut, p.SteamID64)
 				continue
@@ -257,6 +266,12 @@ func ResolveSpin(live []Stage1Candidate, players []SnapshotPlayer, ladder Ladder
 			reduced = append(reduced, p)
 			reducedIDs[p.SteamID64] = struct{}{}
 		}
+		// Byte-lex, the same order Stage 2 iterates and rung 5 returns.
+		// ⭐ TRUE BY CONSTRUCTION SINCE 6.9a, because of the guard directly above: `sort.Strings`
+		// orders by UTF-8 byte, and on `[0-9]+` that is the identical order JavaScript's UTF-16
+		// `.sort()` and Python's code-point `sorted` produce. ⛔ Do NOT unify this with
+		// `worker/ceremony/bundle.go`'s key sort, which RFC-8785 §3.2.3 requires to be UTF-16 code
+		// units — the OPPOSITE rule, also correct. Breaking either is invisible to the byte gate.
 		sort.Strings(sweptOut)
 
 		out, err := ResolveStage2(c.Award, reduced)
@@ -403,7 +418,11 @@ func spinWinners(awardID string, out Outcome) ([]string, error) {
 		// KindWinner arm this file cannot vet, and an empty id assigned here would be an entry in
 		// `assigned` that matches no roster row: it would remove nobody, and it would then be
 		// written to `award_result_winner` at 6.8 as a foreign key to nothing.
-		if out.SteamID64 == "" {
+		// ⭐ STORY 6.9a tightened this to the decimal-string guard (`deferred-work.md:335`). The id
+		// lands in `assigned`, which `sort.Strings(all)` publishes, so it is on the same byte-lex
+		// axis as the roster guard and a non-digit id would reorder a published array. Reused from
+		// `stage2.go:773` rather than restated.
+		if err := validSteamID64(out.SteamID64); err != nil {
 			return nil, sweepRefuse(SweepDetailInternal,
 				"award "+awardID+" resolved to a WINNER with no steamid64")
 		}
@@ -424,7 +443,9 @@ func spinWinners(awardID string, out Outcome) ([]string, error) {
 		// would count 2 rows and AGREE with the flag while the ceremony was already wrong.
 		seenWinner := make(map[string]struct{}, len(out.Winners))
 		for _, sid := range out.Winners {
-			if sid == "" {
+			// ⭐ 6.9a: same tightening as the KindWinner arm — a co-winner id also lands in
+			// `assigned`, which is published as a sorted array.
+			if err := validSteamID64(sid); err != nil {
 				return nil, sweepRefuse(SweepDetailInternal,
 					"award "+awardID+" resolved to a SHARED outcome with an empty steamid64")
 			}

@@ -7384,8 +7384,22 @@ def _validate_pity_players(players) -> set:
                 "players", f"each player must be a mapping carrying steamid64, got {p!r}"
             )
         sid = p.get("steamid64")
-        if not isinstance(sid, str) or sid == "":
-            raise PityRefusal("players", f"steamid64 must be a non-empty string, got {sid!r}")
+        # ⭐⭐ STORY 6.9a CLOSED `deferred-work.md:356` HERE — the Python third of a fix landed in
+        # all three runtimes in one edit. Carrying `_eligible`'s decimal-string guard (`:532`) into
+        # pity makes the BYTE-LEX CLAIM at the `sorted(...)` below TRUE BY CONSTRUCTION: on
+        # `[0-9]+` the three orderings COINCIDE — Python's code points, Go's UTF-8 bytes and
+        # JavaScript's UTF-16 code units agree exactly on ASCII digits, and diverge only on input
+        # this guard now refuses.
+        # ⚠ Pulled forward out of 6.9b (6.9a's DECISION K): a divergent `winless` yields a
+        # divergent `reveal_order` while `draws` and `bytes_consumed` stay IDENTICAL, so it moves
+        # the bytes the commitment is taken over while this epic's byte-accounting gate stays
+        # green — a defect the gate structurally cannot see, and therefore one that must not be
+        # left on the far side of a published commitment.
+        if not isinstance(sid, str) or not STEAMID64_RE.fullmatch(sid):
+            raise PityRefusal(
+                "players",
+                f"steamid64 must be a non-empty string of DECIMAL DIGITS, got {sid!r}",
+            )
         if sid in seen:
             raise PityRefusal(
                 "players",
@@ -8346,6 +8360,169 @@ def build_pity_file() -> dict:
     }
 
 
+# ── RFC-8785 (JCS) canonicalization — Story 6.9a, gate 4 ──────────────────────
+#
+# TRANSCRIBED FROM RFC 8785 ONLY. Do not "fix" this by reading `lib/roulette/canonical.ts` or
+# `worker/ceremony/bundle.go` — that is rule 2 of README.md:13-24 and it is the whole reason this
+# file is committed. The three implementations agree because they each implement the RFC, and the
+# vector below is what proves it.
+#
+#   §3.2.2.2  strings: escape " and \ ; the short forms \b \t \n \f \r ; every OTHER code point
+#             below U+0020 as \u00xx with LOWERCASE hex; everything else emitted LITERALLY as
+#             UTF-8 (⛔ NOT \u-escaped — the opposite of `ensure_ascii=True`, which is why
+#             `render()` below is NOT this serializer and must never be confused with it).
+#   §3.2.2.3  numbers: the ECMAScript Number::toString subset.
+#   §3.2.3    objects: sort properties by key, ascending, comparing UTF-16 CODE UNITS.
+#   §3.2.1    arrays keep their order; no insignificant whitespace anywhere.
+#
+# ⭐ THE ORDERING TRAP THIS FILE HAS TO WORK FOR, AND JAVASCRIPT GETS FREE. Python's `sorted()`
+# compares str by CODE POINT, which is NOT UTF-16 code-unit order: a supplementary-plane character
+# (U+10000 and above) encodes to a surrogate pair starting at 0xD800, so it must sort BEFORE
+# U+E000..U+FFFF, while its code point sorts AFTER. RFC 8785's own §3.2.3 example turns on exactly
+# this — U+1F600 (emoji) precedes U+FB33 (Hebrew dalet with dagesh). Encoding each key to
+# utf-16-be and comparing the BYTES reproduces code-unit order exactly. `surrogatepass` is needed
+# because a lone surrogate can be present in a parsed str; it is refused a moment later, in
+# `_jcs_string`, rather than blowing up in the sort key.
+#
+# ⛔ DECISION L — NUMBERS ARE RESTRICTED TO SAFE INTEGERS, AND THE RESTRICTION IS A REFUSAL.
+# SPEC Constraint 7 makes the engine integer-only and the bundle carries every magnitude as a
+# DECIMAL STRING by provenance (README:239-244), so a float reaching a canonicalizer is a producer
+# bug. `1e+30` and `5e-324` — RFC 8785's own number torture cases — are therefore REFUSALS in this
+# build rather than serialized forms, and they are pinned as refusals in the vector so the three
+# runtimes cannot drift into disagreeing about which it is. Within the safe-integer subset the
+# three agree BY CONSTRUCTION: all three parse JSON numbers into IEEE-754 binary64, so `1`, `1.0`
+# and `1e0` are one value in every one of them, and its shortest decimal is its plain digits.
+
+JCS_REFUSAL_REASONS = (
+    "non_finite_number",
+    "non_integer_number",
+    "unsafe_integer",
+    "unsupported_type",
+    "lone_surrogate",
+    "non_ascii",
+    "cycle",
+)
+
+# 2**53 - 1. Written as a literal because it is a CONTRACT BOUND shared with two runtimes that
+# cannot write it as an expression (`**` is a banned construct in `lib/roulette`), and a bound
+# spelled two ways in three files is a bound that drifts.
+JCS_MAX_SAFE_INT = 9007199254740991
+
+_JCS_SHORT_ESCAPE = {
+    0x08: "\\b",
+    0x09: "\\t",
+    0x0A: "\\n",
+    0x0C: "\\f",
+    0x0D: "\\r",
+    0x22: '\\"',
+    0x5C: "\\\\",
+}
+
+
+class JcsRefusal(Exception):
+    """A typed canonicalization refusal. `reason` is drawn from JCS_REFUSAL_REASONS."""
+
+    def __init__(self, reason: str, detail: str):
+        if reason not in JCS_REFUSAL_REASONS:
+            raise AssertionError(f"undeclared JCS refusal reason {reason!r}")
+        super().__init__(f"{reason} — {detail}")
+        self.reason = reason
+
+
+def _jcs_string(s: str, ascii_only: bool) -> str:
+    out = ['"']
+    for ch in s:
+        code = ord(ch)
+        if ascii_only and code > 0x7F:
+            raise JcsRefusal("non_ascii", f"U+{code:04X} violates the bundle's ASCII restriction")
+        # A lone surrogate has no UTF-8 encoding: every runtime would substitute U+FFFD and the
+        # three would hash three DIFFERENT documents while each one looked like it had succeeded.
+        if 0xD800 <= code <= 0xDFFF:
+            raise JcsRefusal("lone_surrogate", f"unpaired surrogate U+{code:04X}")
+        short = _JCS_SHORT_ESCAPE.get(code)
+        if short is not None:
+            out.append(short)
+        elif code < 0x20:
+            out.append(f"\\u{code:04x}")
+        else:
+            out.append(ch)
+    out.append('"')
+    return "".join(out)
+
+
+def _jcs_number(n) -> str:
+    # bool is a subclass of int in Python and MUST be tested first, or True canonicalizes to "1"
+    # and the document silently stops matching the other two runtimes.
+    if isinstance(n, bool):
+        raise AssertionError("bool must be handled by the caller, before the number path")
+    if isinstance(n, float):
+        if n != n or n in (float("inf"), float("-inf")):
+            raise JcsRefusal("non_finite_number", f"{n!r} has no JSON representation")
+        if not n.is_integer():
+            raise JcsRefusal(
+                "non_integer_number",
+                f"{n!r} is fractional; every magnitude in the bundle is a decimal STRING",
+            )
+        if abs(n) > JCS_MAX_SAFE_INT:
+            raise JcsRefusal("unsafe_integer", f"{n!r} exceeds 2^53-1; carry it as a decimal string")
+        # RFC 8785 requires -0 to serialize as 0; int() normalizes it. This is the one number rule
+        # the RFC states unambiguously enough that inventing a refusal would be OUR rule, not its.
+        return str(int(n))
+    if isinstance(n, int):
+        if abs(n) > JCS_MAX_SAFE_INT:
+            raise JcsRefusal("unsafe_integer", f"{n} exceeds 2^53-1; carry it as a decimal string")
+        return str(n)
+    raise JcsRefusal("unsupported_type", f"{type(n).__name__} is not a JSON number")
+
+
+def jcs_canonicalize(value, ascii_only: bool = False) -> str:
+    """RFC-8785 canonical form of an already-parsed JSON value, as text."""
+
+    def emit(v, open_ids: set) -> str:
+        if v is None:
+            return "null"
+        if isinstance(v, bool):
+            return "true" if v else "false"
+        if isinstance(v, str):
+            return _jcs_string(v, ascii_only)
+        if isinstance(v, (int, float)):
+            return _jcs_number(v)
+        if isinstance(v, (list, tuple)):
+            if id(v) in open_ids:
+                raise JcsRefusal("cycle", "the value contains a reference cycle")
+            open_ids.add(id(v))
+            try:
+                return "[" + ",".join(emit(item, open_ids) for item in v) + "]"
+            finally:
+                # Discarded on the way OUT so a SIBLING repeat of the same object stays legal —
+                # only a true ancestor cycle is a refusal.
+                open_ids.discard(id(v))
+        if isinstance(v, dict):
+            if id(v) in open_ids:
+                raise JcsRefusal("cycle", "the value contains a reference cycle")
+            open_ids.add(id(v))
+            try:
+                for k in v:
+                    if not isinstance(k, str):
+                        raise JcsRefusal("unsupported_type", f"object key {k!r} is not a string")
+                # ⭐ §3.2.3, and the line Python has to WORK for — see the block comment above.
+                keys = sorted(v, key=lambda k: k.encode("utf-16-be", "surrogatepass"))
+                parts = [
+                    _jcs_string(k, ascii_only) + ":" + emit(v[k], open_ids) for k in keys
+                ]
+                return "{" + ",".join(parts) + "}"
+            finally:
+                open_ids.discard(id(v))
+        raise JcsRefusal("unsupported_type", f"{type(v).__name__} is not a JSON value")
+
+    return emit(value, set())
+
+
+def jcs_sha256_hex(canonical: str) -> str:
+    """SHA-256 of the canonical UTF-8 bytes, lowercase hex — `bundle_sha256` / `bundle_hash`."""
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 # ── rendering ─────────────────────────────────────────────────────────────────
 
 
@@ -8408,8 +8585,325 @@ def build_uniform_file() -> dict:
     }
 
 
+# ── gate 4 — canonical JSON + bundle_sha256 (Story 6.9a) ──────────────────────
+#
+# ⚠ EVERY INPUT IS CARRIED AS RAW JSON *TEXT*, not as a nested JSON value, and that is deliberate
+# on three counts. (1) README:96-102 forbids writing a big integer as a JSON number in a vector —
+# but "a big integer must be REFUSED" is precisely one of the cases this gate exists to pin, and
+# text carries it losslessly. (2) It makes the input BYTE-EXACT, so all three runtimes parse the
+# identical characters instead of each re-serializing a value first. (3) It tests the real path:
+# a verifier receives a document over the wire and parses it before canonicalizing.
+
+JCS_CASES = [
+    {
+        "name": "rfc8785-3.2.3-sorting-example",
+        "why": (
+            "RFC 8785 §3.2.3's own example. THE load-bearing row: U+1F600 (emoji, a surrogate "
+            "pair starting 0xD83D) must sort BEFORE U+FB33 (Hebrew dalet with dagesh), which is "
+            "UTF-16 code-unit order and the REVERSE of code-point order. A runtime that sorts by "
+            "code point, by UTF-8 bytes, or by locale gets this row wrong and every other row right"
+        ),
+        "ascii_only": False,
+        "input_json": (
+            '{"\\u20ac":"Euro Sign","\\r":"Carriage Return","\\ufb33":"Hebrew Letter Dalet With '
+            'Dagesh","1":"One","\\ud83d\\ude00":"Emoji: Grinning Face","\\u0080":"Control",'
+            '"\\u00f6":"Latin Small Letter O With Diaeresis"}'
+        ),
+    },
+    {
+        "name": "empty-object",
+        "why": "the degenerate document; also the one whose SHA-256 a reader can verify by hand",
+        "ascii_only": True,
+        "input_json": "{}",
+    },
+    {
+        "name": "empty-array-and-nesting",
+        "why": "arrays keep INPUT order (never sorted); objects sort at every depth",
+        "ascii_only": True,
+        "input_json": '{"b":[3,1,2],"a":{"z":[],"y":{"x":1}},"c":[]}',
+    },
+    {
+        "name": "whitespace-is-insignificant",
+        "why": (
+            "the same document pretty-printed must canonicalize to the SAME bytes as its compact "
+            "form — otherwise `bundle_sha256` would depend on how the producer formatted its JSON"
+        ),
+        "ascii_only": True,
+        "input_json": '{\n  "b" : 1,\n  "a" : [ 1, 2 ]\n}',
+    },
+    {
+        "name": "string-escaping",
+        "why": (
+            "§3.2.2.2: the seven short escapes, plus every OTHER control character as \\u00xx with "
+            "LOWERCASE hex. ⚠ U+007F (DEL) is >= U+0020 and is therefore emitted LITERALLY, which "
+            "is the boundary a hand-written escaper gets wrong"
+        ),
+        "ascii_only": True,
+        "input_json": '{"s":"q\\"b\\\\s\\b\\t\\n\\f\\r\\u0000\\u001f\\u007f"}',
+    },
+    {
+        "name": "non-ascii-emitted-literally",
+        "why": (
+            "§3.2.2.2 emits non-ASCII LITERALLY as UTF-8 — it does NOT \\u-escape it. This is the "
+            "opposite of `ensure_ascii=True`, which is what `render()` in this generator uses, and "
+            "confusing the two is the single easiest way to hash the wrong bytes"
+        ),
+        "ascii_only": False,
+        "input_json": '{"k":"\\u00e9\\u20ac\\ud83d\\ude00"}',
+    },
+    {
+        "name": "integer-like-keys",
+        "why": (
+            "JavaScript's `Object.keys` returns integer-like keys first in ascending NUMERIC order "
+            "regardless of insertion order — a JS-only quirk with nothing to do with JCS. Sorting "
+            "unconditionally erases it: \"10\" sorts BEFORE \"2\" because JCS compares strings"
+        ),
+        "ascii_only": True,
+        "input_json": '{"10":1,"2":2,"b":3,"a":4,"1":5}',
+    },
+    {
+        "name": "numbers-in-the-safe-integer-subset",
+        "why": (
+            "DECISION L's accepted set. `1.0` and `1e0` are the SAME IEEE-754 value as `1` in all "
+            "three runtimes and canonicalize to `1`; `-0` becomes `0` (the RFC says so explicitly); "
+            "2^53-1 is the largest accepted magnitude"
+        ),
+        "ascii_only": True,
+        "input_json": (
+            '{"zero":0,"negzero":-0,"one":1,"onepointoh":1.0,"oneexp":1e0,'
+            '"neg":-42,"maxsafe":9007199254740991,"minsafe":-9007199254740991}'
+        ),
+    },
+    {
+        "name": "booleans-and-null",
+        "why": "the three literals, and proof that `true` never takes the number path (Python's bool is an int)",
+        "ascii_only": True,
+        "input_json": '{"t":true,"f":false,"n":null,"arr":[true,false,null]}',
+    },
+    {
+        "name": "bundle-shaped-document",
+        "why": (
+            "the SEVEN top-level bundle keys in the SHAPE §9.5 specifies, so the gate covers the "
+            "real document's structure and not only JCS trivia. ⭐ Note the provenance split "
+            "(README:239-244) made visible: `floor_rounds`/`priority`/`weights` are JSON INTEGERS "
+            "because they come from the catalog and the algorithm, while every snapshot magnitude "
+            "and every steamid64 is a decimal STRING — the split is by provenance, not by size. "
+            "⚠ Note also that `tie_ladder_exit_step` is ABSENT, never 0, per the 6.9a story's "
+            "DECISION J: JCS hashes `0` and absent differently, so the sentinel dies here"
+        ),
+        "ascii_only": True,
+        "input_json": (
+            '{"algo_version":"inclusivcup-roulette-1.0.0",'
+            '"seed_hex":"1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",'
+            '"luck":{"weight_table":[100,40,16,6,2,1]},'
+            '"spin_plan":[{"spin":1,"kind":"main","label":"inclusivcup/v1/stage1/spin/1",'
+            '"live_count":1,"pool":["1","2"],"live":["2"],"weights":[100,40],"total_weight":140,'
+            '"draws":[{"n":140,"r":117,"consumed_after":2}],"bytes_consumed":2}],'
+            '"awards":[{"award_id":"1","name":"Knife Fight","bucket":"skill","class":"volume",'
+            '"deciding_stat":"knife_kills","direction":"max","secondary_stat":null,'
+            '"eff_num_key":null,"eff_den_key":null,"floor_rounds":24,"floor_kills":20,"priority":1,'
+            '"result":{"outcome_kind":"no_eligible_players","winners":[],"is_shared":false,'
+            '"is_pity":false}}],'
+            '"pity":{"label":"inclusivcup/v1/pity","winless":["76561198000000001"],'
+            '"reveal_order":["76561198000000001"],'
+            '"draws":[{"n":1,"k":0,"rejections":0,"value":0}],"bytes_consumed":0},'
+            '"players":[{"steamid64":"76561198000000001","rounds_played":"21","kills":"12",'
+            '"idle_dq":false,"volume":{"knife_kills":"0"},'
+            '"rate":{"adr":{"num":"1234","den":"21"}},"secondary":{},"efficiency":{},"h2h":{},'
+            '"achievement_ts":"-1"}]}'
+        ),
+    },
+]
+
+JCS_REFUSAL_CASES = [
+    {
+        "name": "exponent-above-safe-range",
+        "why": "RFC 8785's own `1e+30` torture case. DECISION L REFUSES it rather than serializing it",
+        "ascii_only": False,
+        "input_json": '{"n":1e+30}',
+        "reason": "unsafe_integer",
+    },
+    {
+        "name": "smallest-denormal",
+        "why": (
+            "RFC 8785's own `5e-324` torture case. It is FRACTIONAL, so it refuses on a different "
+            "reason than 1e+30 — and a runtime that collapses both to one reason is drifting"
+        ),
+        "ascii_only": False,
+        "input_json": '{"n":5e-324}',
+        "reason": "non_integer_number",
+    },
+    {
+        "name": "plain-fraction",
+        "why": "SPEC Constraint 7: no fraction may reach a hashed document",
+        "ascii_only": False,
+        "input_json": '{"n":1.5}',
+        "reason": "non_integer_number",
+    },
+    {
+        "name": "two-to-the-53",
+        "why": (
+            "the first integer OUTSIDE the safe range. 2^53-1 is accepted above and 2^53 is refused "
+            "here, so the boundary is pinned from BOTH sides rather than asserted from one"
+        ),
+        "ascii_only": False,
+        "input_json": '{"n":9007199254740992}',
+        "reason": "unsafe_integer",
+    },
+    {
+        "name": "big-integer-as-a-json-number",
+        "why": (
+            "a steamid64-sized value written as a JSON number instead of a decimal string. This is "
+            "THE defect the provenance split exists to prevent, and `Number`-parsing it would read "
+            "both sides as 2^53 and tie (6-5b:587)"
+        ),
+        "ascii_only": False,
+        "input_json": '{"steamid64":76561198000000001}',
+        "reason": "unsafe_integer",
+    },
+    {
+        "name": "non-ascii-under-the-bundle-restriction",
+        "why": (
+            "§9.5's ASCII restriction, and the FIRST thing in this project to give teeth to "
+            "deferred-work.md:265-266 — an award `name` accepts zero-width U+200B/U+200E/U+FEFF, "
+            "has no length bound, and became viewer-visible at 6.8b. Under this rule such a name "
+            "cannot be published at all: it is a typed refusal, not an invisible character inside "
+            "a hashed document"
+        ),
+        "ascii_only": True,
+        "input_json": '{"name":"Knife\\u200bFight"}',
+        "reason": "non_ascii",
+    },
+    {
+        "name": "non-ascii-key-under-the-bundle-restriction",
+        "why": "the restriction binds KEYS as well as values — a check on values alone is half a check",
+        "ascii_only": True,
+        "input_json": '{"caf\\u00e9":1}',
+        "reason": "non_ascii",
+    },
+    {
+        "name": "lone-high-surrogate",
+        "why": (
+            "an unpaired surrogate has no UTF-8 encoding. Left alone, every runtime substitutes "
+            "U+FFFD and the three hash three DIFFERENT documents while each looks like it succeeded"
+        ),
+        "ascii_only": False,
+        "input_json": '{"s":"\\ud800"}',
+        "reason": "lone_surrogate",
+    },
+    {
+        "name": "lone-low-surrogate",
+        "why": "the mirror of the row above; a check on high surrogates alone is half a check",
+        "ascii_only": False,
+        "input_json": '{"s":"\\udc00"}',
+        "reason": "lone_surrogate",
+    },
+]
+
+# ⭐ The `unreachable_*` marker form `antisweep-resolve.json` established, applied here because
+# three declared reasons CANNOT be produced from a JSON input document at all — JSON has no NaN,
+# no Infinity, no `undefined`, no functions and no reference cycles. Declaring them as data (with
+# the runtime that CAN reach them named) is the alternative to a reader assuming the closed set
+# has three untested members, or to quietly deleting them and losing the guard they provide
+# against a native value being handed straight to `canonicalize()` in a browser.
+JCS_UNREACHABLE_FROM_JSON = [
+    {
+        "reason": "non_finite_number",
+        "why": "JSON has no NaN and no Infinity; reachable only from a native value in TS/Go/Python",
+    },
+    {
+        "reason": "unsupported_type",
+        "why": "JSON has no undefined, function, symbol or bigint; reachable only from a native value",
+    },
+    {
+        "reason": "cycle",
+        "why": "a parsed JSON document is always a tree; reachable only from a native value",
+    },
+]
+
+
+def build_canonical_file() -> dict:
+    cases = []
+    for c in JCS_CASES:
+        value = json.loads(c["input_json"])
+        canonical = jcs_canonicalize(value, c["ascii_only"])
+        cases.append(
+            {
+                "name": c["name"],
+                "why": c["why"],
+                "ascii_only": c["ascii_only"],
+                "input_json": c["input_json"],
+                "canonical": canonical,
+                "canonical_utf8_bytes": len(canonical.encode("utf-8")),
+                "sha256": jcs_sha256_hex(canonical),
+            }
+        )
+
+    refusals = []
+    for c in JCS_REFUSAL_CASES:
+        value = json.loads(c["input_json"])
+        try:
+            jcs_canonicalize(value, c["ascii_only"])
+        except JcsRefusal as exc:
+            got = exc.reason
+        else:
+            raise AssertionError(f"refusal case {c['name']} did not refuse")
+        if got != c["reason"]:
+            raise AssertionError(f"{c['name']}: expected {c['reason']}, generator refused {got}")
+        refusals.append(
+            {
+                "name": c["name"],
+                "why": c["why"],
+                "ascii_only": c["ascii_only"],
+                "input_json": c["input_json"],
+                "reason": got,
+            }
+        )
+
+    return {
+        "vector": "canonical-bundle",
+        "algo_version": ALGO_VERSION,
+        "spec": (
+            "RFC 8785 (JCS): objects sorted by key comparing UTF-16 CODE UNITS (§3.2.3); arrays keep "
+            "order; no insignificant whitespace; strings escape \" \\ and the short forms \\b \\t \\n "
+            "\\f \\r, every other code point below U+0020 as \\u00xx LOWERCASE, everything else "
+            "literal UTF-8 (§3.2.2.2); numbers RESTRICTED to safe integers with -0 serialized as 0, "
+            "everything else a typed refusal (§3.2.2.3 + DECISION L); bundle_sha256 = SHA-256 of the "
+            "canonical UTF-8 bytes, lowercase hex"
+        ),
+        "generated_by": GENERATED_BY,
+        "ascii_restriction": (
+            "The BUNDLE is ASCII-restricted (SOLUTION-DESIGN §9.5), so its builder always passes "
+            "ascii_only=true. It is a per-call option and not a property of JCS, which is why the "
+            "ordering rows below run with ascii_only=false: they need supplementary-plane keys."
+        ),
+        "refusal_reasons": list(JCS_REFUSAL_REASONS),
+        "unreachable_refusal_reasons": JCS_UNREACHABLE_FROM_JSON,
+        "max_safe_integer": str(JCS_MAX_SAFE_INT),
+        "cases": cases,
+        "refusals": refusals,
+        "end_to_end": END_TO_END_BUNDLE_CASES,
+    }
+
+
+# ⏳ Filled by Story 6.9a's Task 9 (THE BAR), which is the only place the REAL ceremony's bundle
+# exists: it is derived FROM THE DATABASE after the 14-demo corpus is rebuilt, the ceremony is run
+# and persisted, and `publish_bundle` has committed. AC2 requires "an end-to-end bundle_sha256 over
+# the REAL ceremony's bundle carried as data", and the document is carried here verbatim so that
+# `--check` reproduces the hash from committed data rather than from a live database.
+# ⛔ AC2 IS NOT MET WHILE THIS LIST IS EMPTY. Both suites assert its length against the count below,
+# so shipping with it empty is a visible, deliberate state and never a silent omission.
+END_TO_END_BUNDLE_CASES: list = []
+
+
 def render(obj: dict) -> str:
-    """2-space indent, LF newlines, trailing newline — data, not code."""
+    """2-space indent, LF newlines, trailing newline — data, not code.
+
+    ⛔ THIS IS NOT THE BUNDLE SERIALIZER. `ensure_ascii=False` and `indent=2` are the opposite of
+    RFC-8785 on both counts (JCS emits no insignificant whitespace, and its ASCII behaviour is a
+    per-call restriction that REFUSES rather than escapes). `jcs_canonicalize` is the serializer
+    whose bytes are hashed; this one only writes the vector files a human reads.
+    """
     return json.dumps(obj, indent=2, ensure_ascii=False) + "\n"
 
 
@@ -8438,6 +8932,17 @@ def main() -> int:
         # ownership row rather than silently renumbering, because renumbering a shipped table is
         # 6.9/6.11's call. Naming a number here would have picked a side by accident.
         HERE / "pity-draw.json": render(build_pity_file()),
+        # ⭐ Story 6.9a — GATE 4, canonical JSON + `bundle_sha256` (RFC-8785). Unlike every file
+        # above it, this one gates no *draw*: it gates the SERIALIZATION the commitment is taken
+        # over, so it is the first vector whose failure mode is "the hash binds a different
+        # document" rather than "a byte came out wrong".
+        # ⛔ ON THE GATE NUMBER, RESOLVED RATHER THAN NOTED A THIRD TIME (6.9a, Cuatro 2026-08-08).
+        # README.md:40 numbers canonicalization gate 4 and SOLUTION-DESIGN:441-445 numbers it 5;
+        # the two have been reversed since 6.3, and 6.7 and 6.8a each recorded the clash without
+        # resolving it. The decision: **6.9a adds its row under the README's existing numbering as
+        # gate 4, and 6.11 renumbers BOTH documents together when it lands the last row.** That is
+        # written into 6.11's obligations, not left as a discovery.
+        HERE / "canonical-bundle.json": render(build_canonical_file()),
     }
 
     if args.check:

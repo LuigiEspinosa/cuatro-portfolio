@@ -1,0 +1,189 @@
+{
+  "vector": "canonical-bundle",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "RFC 8785 (JCS): objects sorted by key comparing UTF-16 CODE UNITS (§3.2.3); arrays keep order; no insignificant whitespace; strings escape \" \\ and the short forms \\b \\t \\n \\f \\r, every other code point below U+0020 as \\u00xx LOWERCASE, everything else literal UTF-8 (§3.2.2.2); numbers RESTRICTED to safe integers with -0 serialized as 0, everything else a typed refusal (§3.2.2.3 + DECISION L); bundle_sha256 = SHA-256 of the canonical UTF-8 bytes, lowercase hex",
+  "generated_by": "roulette/vectors/generate_vectors.py — python stdlib hmac+hashlib, a THIRD implementation written from the spec text, neither Go's crypto/hmac nor the browser's SubtleCrypto",
+  "ascii_restriction": "The BUNDLE is ASCII-restricted (SOLUTION-DESIGN §9.5), so its builder always passes ascii_only=true. It is a per-call option and not a property of JCS, which is why the ordering rows below run with ascii_only=false: they need supplementary-plane keys.",
+  "refusal_reasons": [
+    "non_finite_number",
+    "non_integer_number",
+    "unsafe_integer",
+    "unsupported_type",
+    "lone_surrogate",
+    "non_ascii",
+    "cycle"
+  ],
+  "unreachable_refusal_reasons": [
+    {
+      "reason": "non_finite_number",
+      "why": "JSON has no NaN and no Infinity; reachable only from a native value in TS/Go/Python"
+    },
+    {
+      "reason": "unsupported_type",
+      "why": "JSON has no undefined, function, symbol or bigint; reachable only from a native value"
+    },
+    {
+      "reason": "cycle",
+      "why": "a parsed JSON document is always a tree; reachable only from a native value"
+    }
+  ],
+  "max_safe_integer": "9007199254740991",
+  "cases": [
+    {
+      "name": "rfc8785-3.2.3-sorting-example",
+      "why": "RFC 8785 §3.2.3's own example. THE load-bearing row: U+1F600 (emoji, a surrogate pair starting 0xD83D) must sort BEFORE U+FB33 (Hebrew dalet with dagesh), which is UTF-16 code-unit order and the REVERSE of code-point order. A runtime that sorts by code point, by UTF-8 bytes, or by locale gets this row wrong and every other row right",
+      "ascii_only": false,
+      "input_json": "{\"\\u20ac\":\"Euro Sign\",\"\\r\":\"Carriage Return\",\"\\ufb33\":\"Hebrew Letter Dalet With Dagesh\",\"1\":\"One\",\"\\ud83d\\ude00\":\"Emoji: Grinning Face\",\"\\u0080\":\"Control\",\"\\u00f6\":\"Latin Small Letter O With Diaeresis\"}",
+      "canonical": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}",
+      "canonical_utf8_bytes": 180,
+      "sha256": "5e321556d22018a9656991a9e94f77ec175fa193e52a2429d312f8419ec8b08c"
+    },
+    {
+      "name": "empty-object",
+      "why": "the degenerate document; also the one whose SHA-256 a reader can verify by hand",
+      "ascii_only": true,
+      "input_json": "{}",
+      "canonical": "{}",
+      "canonical_utf8_bytes": 2,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "empty-array-and-nesting",
+      "why": "arrays keep INPUT order (never sorted); objects sort at every depth",
+      "ascii_only": true,
+      "input_json": "{\"b\":[3,1,2],\"a\":{\"z\":[],\"y\":{\"x\":1}},\"c\":[]}",
+      "canonical": "{\"a\":{\"y\":{\"x\":1},\"z\":[]},\"b\":[3,1,2],\"c\":[]}",
+      "canonical_utf8_bytes": 45,
+      "sha256": "6fc98454b8e7598c1853b6c400e09ca730efff8f1c1238c8390e266036a40a6d"
+    },
+    {
+      "name": "whitespace-is-insignificant",
+      "why": "the same document pretty-printed must canonicalize to the SAME bytes as its compact form — otherwise `bundle_sha256` would depend on how the producer formatted its JSON",
+      "ascii_only": true,
+      "input_json": "{\n  \"b\" : 1,\n  \"a\" : [ 1, 2 ]\n}",
+      "canonical": "{\"a\":[1,2],\"b\":1}",
+      "canonical_utf8_bytes": 17,
+      "sha256": "94a786c3662bc7beeb598efa7d8cb58d7bea25d6c275ea9785a0230ff1f8c2ba"
+    },
+    {
+      "name": "string-escaping",
+      "why": "§3.2.2.2: the seven short escapes, plus every OTHER control character as \\u00xx with LOWERCASE hex. ⚠ U+007F (DEL) is >= U+0020 and is therefore emitted LITERALLY, which is the boundary a hand-written escaper gets wrong",
+      "ascii_only": true,
+      "input_json": "{\"s\":\"q\\\"b\\\\s\\b\\t\\n\\f\\r\\u0000\\u001f\\u007f\"}",
+      "canonical": "{\"s\":\"q\\\"b\\\\s\\b\\t\\n\\f\\r\\u0000\\u001f\"}",
+      "canonical_utf8_bytes": 38,
+      "sha256": "b1b3c8b4440a668b3bce0011caf2724456d228a8a6f610afb56b9d3cd26047f2"
+    },
+    {
+      "name": "non-ascii-emitted-literally",
+      "why": "§3.2.2.2 emits non-ASCII LITERALLY as UTF-8 — it does NOT \\u-escape it. This is the opposite of `ensure_ascii=True`, which is what `render()` in this generator uses, and confusing the two is the single easiest way to hash the wrong bytes",
+      "ascii_only": false,
+      "input_json": "{\"k\":\"\\u00e9\\u20ac\\ud83d\\ude00\"}",
+      "canonical": "{\"k\":\"é€😀\"}",
+      "canonical_utf8_bytes": 17,
+      "sha256": "610e62042e2146d29843a4f04a12215aa812c7e96d821b51d37d5d1190bf056b"
+    },
+    {
+      "name": "integer-like-keys",
+      "why": "JavaScript's `Object.keys` returns integer-like keys first in ascending NUMERIC order regardless of insertion order — a JS-only quirk with nothing to do with JCS. Sorting unconditionally erases it: \"10\" sorts BEFORE \"2\" because JCS compares strings",
+      "ascii_only": true,
+      "input_json": "{\"10\":1,\"2\":2,\"b\":3,\"a\":4,\"1\":5}",
+      "canonical": "{\"1\":5,\"10\":1,\"2\":2,\"a\":4,\"b\":3}",
+      "canonical_utf8_bytes": 32,
+      "sha256": "8ae1d8b63f2a33418a8f6bdb4bb1d8d21b908449f3635a88dad7cca80283341b"
+    },
+    {
+      "name": "numbers-in-the-safe-integer-subset",
+      "why": "DECISION L's accepted set. `1.0` and `1e0` are the SAME IEEE-754 value as `1` in all three runtimes and canonicalize to `1`; `-0` becomes `0` (the RFC says so explicitly); 2^53-1 is the largest accepted magnitude",
+      "ascii_only": true,
+      "input_json": "{\"zero\":0,\"negzero\":-0,\"one\":1,\"onepointoh\":1.0,\"oneexp\":1e0,\"neg\":-42,\"maxsafe\":9007199254740991,\"minsafe\":-9007199254740991}",
+      "canonical": "{\"maxsafe\":9007199254740991,\"minsafe\":-9007199254740991,\"neg\":-42,\"negzero\":0,\"one\":1,\"oneexp\":1,\"onepointoh\":1,\"zero\":0}",
+      "canonical_utf8_bytes": 121,
+      "sha256": "6d93ffc75e1c4be651e8e08670e2854a319ae562ad25ae17f6eb9ebe8f031b78"
+    },
+    {
+      "name": "booleans-and-null",
+      "why": "the three literals, and proof that `true` never takes the number path (Python's bool is an int)",
+      "ascii_only": true,
+      "input_json": "{\"t\":true,\"f\":false,\"n\":null,\"arr\":[true,false,null]}",
+      "canonical": "{\"arr\":[true,false,null],\"f\":false,\"n\":null,\"t\":true}",
+      "canonical_utf8_bytes": 53,
+      "sha256": "e663733a1258b354b27c33555c7e393f51caa498f77f2aa6918623e2487d806f"
+    },
+    {
+      "name": "bundle-shaped-document",
+      "why": "the SEVEN top-level bundle keys in the SHAPE §9.5 specifies, so the gate covers the real document's structure and not only JCS trivia. ⭐ Note the provenance split (README:239-244) made visible: `floor_rounds`/`priority`/`weights` are JSON INTEGERS because they come from the catalog and the algorithm, while every snapshot magnitude and every steamid64 is a decimal STRING — the split is by provenance, not by size. ⚠ Note also that `tie_ladder_exit_step` is ABSENT, never 0, per the 6.9a story's DECISION J: JCS hashes `0` and absent differently, so the sentinel dies here",
+      "ascii_only": true,
+      "input_json": "{\"algo_version\":\"inclusivcup-roulette-1.0.0\",\"seed_hex\":\"1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c\",\"luck\":{\"weight_table\":[100,40,16,6,2,1]},\"spin_plan\":[{\"spin\":1,\"kind\":\"main\",\"label\":\"inclusivcup/v1/stage1/spin/1\",\"live_count\":1,\"pool\":[\"1\",\"2\"],\"live\":[\"2\"],\"weights\":[100,40],\"total_weight\":140,\"draws\":[{\"n\":140,\"r\":117,\"consumed_after\":2}],\"bytes_consumed\":2}],\"awards\":[{\"award_id\":\"1\",\"name\":\"Knife Fight\",\"bucket\":\"skill\",\"class\":\"volume\",\"deciding_stat\":\"knife_kills\",\"direction\":\"max\",\"secondary_stat\":null,\"eff_num_key\":null,\"eff_den_key\":null,\"floor_rounds\":24,\"floor_kills\":20,\"priority\":1,\"result\":{\"outcome_kind\":\"no_eligible_players\",\"winners\":[],\"is_shared\":false,\"is_pity\":false}}],\"pity\":{\"label\":\"inclusivcup/v1/pity\",\"winless\":[\"76561198000000001\"],\"reveal_order\":[\"76561198000000001\"],\"draws\":[{\"n\":1,\"k\":0,\"rejections\":0,\"value\":0}],\"bytes_consumed\":0},\"players\":[{\"steamid64\":\"76561198000000001\",\"rounds_played\":\"21\",\"kills\":\"12\",\"idle_dq\":false,\"volume\":{\"knife_kills\":\"0\"},\"rate\":{\"adr\":{\"num\":\"1234\",\"den\":\"21\"}},\"secondary\":{},\"efficiency\":{},\"h2h\":{},\"achievement_ts\":\"-1\"}]}",
+      "canonical": "{\"algo_version\":\"inclusivcup-roulette-1.0.0\",\"awards\":[{\"award_id\":\"1\",\"bucket\":\"skill\",\"class\":\"volume\",\"deciding_stat\":\"knife_kills\",\"direction\":\"max\",\"eff_den_key\":null,\"eff_num_key\":null,\"floor_kills\":20,\"floor_rounds\":24,\"name\":\"Knife Fight\",\"priority\":1,\"result\":{\"is_pity\":false,\"is_shared\":false,\"outcome_kind\":\"no_eligible_players\",\"winners\":[]},\"secondary_stat\":null}],\"luck\":{\"weight_table\":[100,40,16,6,2,1]},\"pity\":{\"bytes_consumed\":0,\"draws\":[{\"k\":0,\"n\":1,\"rejections\":0,\"value\":0}],\"label\":\"inclusivcup/v1/pity\",\"reveal_order\":[\"76561198000000001\"],\"winless\":[\"76561198000000001\"]},\"players\":[{\"achievement_ts\":\"-1\",\"efficiency\":{},\"h2h\":{},\"idle_dq\":false,\"kills\":\"12\",\"rate\":{\"adr\":{\"den\":\"21\",\"num\":\"1234\"}},\"rounds_played\":\"21\",\"secondary\":{},\"steamid64\":\"76561198000000001\",\"volume\":{\"knife_kills\":\"0\"}}],\"seed_hex\":\"1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c\",\"spin_plan\":[{\"bytes_consumed\":2,\"draws\":[{\"consumed_after\":2,\"n\":140,\"r\":117}],\"kind\":\"main\",\"label\":\"inclusivcup/v1/stage1/spin/1\",\"live\":[\"2\"],\"live_count\":1,\"pool\":[\"1\",\"2\"],\"spin\":1,\"total_weight\":140,\"weights\":[100,40]}]}",
+      "canonical_utf8_bytes": 1130,
+      "sha256": "cf4d96f7d9bc78223153c33e8ebf822ee20f428b4042f43ff63a111556b9f76a"
+    }
+  ],
+  "refusals": [
+    {
+      "name": "exponent-above-safe-range",
+      "why": "RFC 8785's own `1e+30` torture case. DECISION L REFUSES it rather than serializing it",
+      "ascii_only": false,
+      "input_json": "{\"n\":1e+30}",
+      "reason": "unsafe_integer"
+    },
+    {
+      "name": "smallest-denormal",
+      "why": "RFC 8785's own `5e-324` torture case. It is FRACTIONAL, so it refuses on a different reason than 1e+30 — and a runtime that collapses both to one reason is drifting",
+      "ascii_only": false,
+      "input_json": "{\"n\":5e-324}",
+      "reason": "non_integer_number"
+    },
+    {
+      "name": "plain-fraction",
+      "why": "SPEC Constraint 7: no fraction may reach a hashed document",
+      "ascii_only": false,
+      "input_json": "{\"n\":1.5}",
+      "reason": "non_integer_number"
+    },
+    {
+      "name": "two-to-the-53",
+      "why": "the first integer OUTSIDE the safe range. 2^53-1 is accepted above and 2^53 is refused here, so the boundary is pinned from BOTH sides rather than asserted from one",
+      "ascii_only": false,
+      "input_json": "{\"n\":9007199254740992}",
+      "reason": "unsafe_integer"
+    },
+    {
+      "name": "big-integer-as-a-json-number",
+      "why": "a steamid64-sized value written as a JSON number instead of a decimal string. This is THE defect the provenance split exists to prevent, and `Number`-parsing it would read both sides as 2^53 and tie (6-5b:587)",
+      "ascii_only": false,
+      "input_json": "{\"steamid64\":76561198000000001}",
+      "reason": "unsafe_integer"
+    },
+    {
+      "name": "non-ascii-under-the-bundle-restriction",
+      "why": "§9.5's ASCII restriction, and the FIRST thing in this project to give teeth to deferred-work.md:265-266 — an award `name` accepts zero-width U+200B/U+200E/U+FEFF, has no length bound, and became viewer-visible at 6.8b. Under this rule such a name cannot be published at all: it is a typed refusal, not an invisible character inside a hashed document",
+      "ascii_only": true,
+      "input_json": "{\"name\":\"Knife\\u200bFight\"}",
+      "reason": "non_ascii"
+    },
+    {
+      "name": "non-ascii-key-under-the-bundle-restriction",
+      "why": "the restriction binds KEYS as well as values — a check on values alone is half a check",
+      "ascii_only": true,
+      "input_json": "{\"caf\\u00e9\":1}",
+      "reason": "non_ascii"
+    },
+    {
+      "name": "lone-high-surrogate",
+      "why": "an unpaired surrogate has no UTF-8 encoding. Left alone, every runtime substitutes U+FFFD and the three hash three DIFFERENT documents while each looks like it succeeded",
+      "ascii_only": false,
+      "input_json": "{\"s\":\"\\ud800\"}",
+      "reason": "lone_surrogate"
+    },
+    {
+      "name": "lone-low-surrogate",
+      "why": "the mirror of the row above; a check on high surrogates alone is half a check",
+      "ascii_only": false,
+      "input_json": "{\"s\":\"\\udc00\"}",
+      "reason": "lone_surrogate"
+    }
+  ],
+  "end_to_end": []
+}

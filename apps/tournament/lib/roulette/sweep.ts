@@ -98,6 +98,24 @@ export const SWEEP_REFUSAL_DETAILS: readonly string[] = Object.freeze([
  * carrying this label.
  */
 
+/**
+ * `^[0-9]+$` — the same shape `stage2.ts:657`, `ladder.ts:726` and (since Story 6.9a) `pity.ts`
+ * guard. Carried here to close `deferred-work.md:335`.
+ *
+ * ⭐ WHY IT EXISTS IN A MODULE THAT DRAWS NO BYTES. Anti-sweep publishes two ORDERED id arrays —
+ * `sweptOut` and `assigned` — both produced by a bare `.sort()`. That comparator orders by UTF-16
+ * code unit, which is NOT the byte-lex order Go and Python produce, and the divergence is
+ * structurally invisible to this epic's byte-accounting gate: the ids reorder while `draws` and
+ * `bytesConsumed` come out identical. Restricting the input to decimal digits makes the three
+ * orderings coincide, so the claim at the `.sort()` becomes true by construction instead of by
+ * assertion.
+ *
+ * ⚠ DELIBERATELY `+` AND NOT `{17}`, matching its three siblings rather than `0001:39`'s database
+ * CHECK: the engine's contract is "decimal digits", and a length rule would refuse the short
+ * synthetic ids every vector in this directory uses.
+ */
+const STEAMID64_RE = /^[0-9]+$/;
+
 /** What one live award concluded, plus what anti-sweep did to its candidate set. */
 export interface AwardAssignment {
   readonly awardId: string;
@@ -269,6 +287,17 @@ export function resolveSpin(
     const sweptOut: string[] = [];
     const reducedIds = new Set<string>();
     for (const p of roster) {
+      // ⭐⭐ STORY 6.9a CLOSED `deferred-work.md:335` HERE — the twin of the fix landing in
+      // `pity.ts` in the same edit, and it had to be the same edit: 6.7 deliberately deferred
+      // rather than fix one, because two sibling modules in this directory guaranteeing DIFFERENT
+      // things about one field is worse than both guaranteeing nothing.
+      if (typeof p.steamid64 !== 'string' || !STEAMID64_RE.test(p.steamid64)) {
+        throw new SweepError(
+          'internal',
+          `the roster carries a steamid64 that is not decimal digits — it would sort differently ` +
+            `in the three runtimes while every byte count agreed`,
+        );
+      }
       if (assigned.has(p.steamid64)) {
         sweptOut.push(p.steamid64);
         continue;
@@ -276,8 +305,22 @@ export function resolveSpin(
       reduced.push(p);
       reducedIds.add(p.steamid64);
     }
-    // Byte-lex, the same order Stage 2 iterates and rung 5 returns. ⛔ A bare `.sort()` is byte-lex
-    // on strings by definition — never `localeCompare`, which is locale-dependent and banned.
+    // Byte-lex, the same order Stage 2 iterates and rung 5 returns. Never `localeCompare`, which is
+    // locale-dependent and banned.
+    //
+    // ⚠⚠ THE COMMENT THIS REPLACES WAS FALSE, AND IT SAID SO "BY DEFINITION". A bare `.sort()` is
+    // NOT byte-lex: JavaScript's default comparator orders by UTF-16 CODE UNIT, while Go's
+    // `sort.Strings` orders by UTF-8 byte and Python's `sorted` by code point (those two agree,
+    // by design of UTF-8). All three DIVERGE on supplementary-plane characters, where a surrogate
+    // pair sorts BELOW U+E000-FFFF in UTF-16 and ABOVE it in UTF-8. `pity.ts` recorded the same
+    // correction at its own `.sort()` after the 6.7 review and deferred the fix to 6.9.
+    // ⭐ IT IS TRUE NOW, BY CONSTRUCTION, because of the guard added directly above: on `[0-9]+`
+    // the three orderings COINCIDE exactly, so the input can no longer be anything they disagree
+    // about. The comparator was not changed and must not be.
+    // ⛔ AND DO NOT UNIFY IT WITH `canonical.ts`'s SORT, which RFC-8785 §3.2.3 requires to be
+    // UTF-16 code units — the OPPOSITE rule, also correct, in the same package. Breaking either
+    // one is invisible: a divergent id order changes `revealOrder` while `draws` and
+    // `bytesConsumed` stay identical, and a divergent key order changes `bundle_sha256` alone.
     sweptOut.sort();
 
     let outcome: Outcome;
@@ -407,7 +450,10 @@ function spinWinners(awardId: string, outcome: Outcome): readonly string[] {
       // `[undefined]` then entered `assigned`, producing exactly the "entry matching no roster row"
       // this comment warns about. The two stub tables LOOKED like mirrors (Go omitted the field, TS
       // set it empty) and tested different inputs; the code review measured it.
-      if (typeof outcome.steamid64 !== 'string' || outcome.steamid64 === '') {
+      // ⭐ 6.9a tightened `=== ''` to `STEAMID64_RE` here too: this id lands in `assigned`, which
+      // `assigned: [...assigned].sort()` publishes, so it is on the same byte-lex axis as the
+      // roster guard above and a non-digit id would reorder the published array.
+      if (typeof outcome.steamid64 !== 'string' || !STEAMID64_RE.test(outcome.steamid64)) {
         throw new SweepError(
           'internal',
           `award "${awardId}" resolved to a WINNER with no steamid64`,
@@ -426,7 +472,7 @@ function spinWinners(awardId: string, outcome: Outcome): readonly string[] {
           `award "${awardId}" resolved to a SHARED outcome with no winners`,
         );
       }
-      if (outcome.winners.some((sid) => typeof sid !== 'string' || sid === '')) {
+      if (outcome.winners.some((sid) => typeof sid !== 'string' || !STEAMID64_RE.test(sid))) {
         throw new SweepError(
           'internal',
           `award "${awardId}" resolved to a SHARED outcome with an empty steamid64`,

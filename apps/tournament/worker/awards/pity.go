@@ -454,10 +454,26 @@ func validatePityStream(s *Stream) error {
 func validatePityPlayers(players []SnapshotPlayer) (map[string]struct{}, error) {
 	seen := make(map[string]struct{}, len(players))
 	for _, p := range players {
-		if p.SteamID64 == "" {
+		// ⭐⭐ STORY 6.9a CLOSED `deferred-work.md:356` HERE, in all three runtimes in one edit.
+		// The prescribed fix was to carry Stage 2's decimal-string guard into this module so the
+		// BYTE-LEX CLAIM at the `sort.Strings(winless)` below becomes TRUE BY CONSTRUCTION: on
+		// `[0-9]+` the three orderings COINCIDE — Go's UTF-8 bytes, Python's code points and
+		// JavaScript's UTF-16 code units agree exactly on ASCII digits, and diverge only on input
+		// this guard now refuses.
+		// ⚠ Pulled forward out of 6.9b (6.9a's DECISION K) because a divergent `winless` yields a
+		// divergent reveal order while `draws` and `bytesConsumed` stay IDENTICAL — so it changes
+		// the bytes the commitment is taken over while this epic's byte-accounting gate stays
+		// green. A defect the gate structurally cannot see must not be left on the far side of a
+		// published commitment.
+		// ⭐ `validSteamID64` is REUSED from `stage2.go:773` rather than restated: two near-identical
+		// validators is how the runtimes drift, which is the same argument 6.5 made about
+		// `StatValue` and 6.6 about `Stage1Candidate`.
+		if err := validSteamID64(p.SteamID64); err != nil {
 			return nil, pityRefuse(PityDetailPlayers,
-				"steamid64 must be a non-empty string — an empty id in the winless set would match "+
-					"no roster row and would be written at 6.8 as a foreign key to nothing")
+				"steamid64 must be a non-empty string of DECIMAL DIGITS — an empty id in the winless "+
+					"set would match no roster row and would be written at 6.8 as a foreign key to "+
+					"nothing, and a non-digit id would sort differently in the three runtimes while "+
+					"every byte count agreed")
 		}
 		if _, dup := seen[p.SteamID64]; dup {
 			return nil, pityRefuse(PityDetailPlayers,

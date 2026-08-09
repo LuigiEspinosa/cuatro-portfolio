@@ -37,16 +37,24 @@ stories:
 | 3 — Stage-1 weighted pick | `stage1-pick.json` | **Story 6-4b** (+ 6.5's ladder rows, + 6-5b's shared-arm clamp row) | ✅ shipped |
 | — FR-26 anti-sweep (≤1 trophy/player/spin) | `antisweep-resolve.json` | **Story 6.6** | ✅ shipped |
 | — FR-28 pity draw (the guaranteed consolation) | `pity-draw.json` | **Story 6.7** | ✅ shipped |
-| 4 — canonical JSON + `bundle_sha256` (RFC-8785) | *(not yet)* | **Story 6.9** | ⏳ |
+| 4 — canonical JSON + `bundle_sha256` (RFC-8785) | `canonical-bundle.json` | **Story 6.9a** | ✅ shipped (⏳ its `end_to_end` row is owed by 6.9a's Task 9) |
 | 5 — end-to-end ceremony vector + suite completeness | *(not yet)* | **Story 6.11** | ⏳ |
 
-⚠ **The gate numbers in the two right-hand rows above are the REVERSE of `SOLUTION-DESIGN:441-445`,
-and this is recorded rather than silently renumbered.** That document numbers gate **4** as the
-end-to-end ceremony vector and gate **5** as canonicalization + `bundle_sha256`; this table has them
-the other way round and has since 6.3. Both readings agree on *what* is owed and on *who* owes it —
-6.9 owns canonicalization, 6.11 owns the end-to-end vector — so nothing about the build is ambiguous,
-only the label. Renumbering a shipped table is 6.9's or 6.11's call to make together with the
-document; Story 6.7 noted it while adding its own row and deliberately changed neither.
+⚠ **The gate numbers in the two right-hand rows above are the REVERSE of `SOLUTION-DESIGN:441-445`.**
+That document numbers gate **4** as the end-to-end ceremony vector and gate **5** as canonicalization
++ `bundle_sha256`; this table has them the other way round and has since 6.3. Both readings agree on
+*what* is owed and on *who* owes it — 6.9 owns canonicalization, 6.11 owns the end-to-end vector — so
+nothing about the build is ambiguous, only the label.
+
+✅ **RESOLVED — Cuatro, 2026-08-08, at the start of Story 6.9a.** Story 6.7 noted the clash and
+changed neither document; 6.8a noted it again. Noting it a third time is not a resolution, so the
+decision is recorded here instead: **6.9a adds its row under THIS table's existing numbering (gate
+4), and Story 6.11 renumbers BOTH documents together when it lands the last row.** The reason for
+that order is that renumbering is only safe once the final row exists — 6.11 is the story that knows
+what the complete table looks like, and it is the story `SOLUTION-DESIGN:441-445` and this table
+must be made to agree *in one commit*. ⛔ **6.11 therefore inherits this as an OBLIGATION, not as a
+discovery**: it is carried in 6.11's story file and in `generate_vectors.py`'s `outputs` map beside
+the row this decision added.
 
 Stage 2 is not one of §9.6's five numbered gates because §9.6 numbers the *stream* gates and Stage 2
 consumes no stream — it is pure integer arithmetic over the frozen snapshot. AD-14 requires it to be
@@ -80,13 +88,28 @@ assertion the 6-4b review deleted. It belongs beside `stage1-pick.json` on the c
 the split, and it sits last because that is the build order `§9.6` prescribes — the sequence ends
 *"→ pity"*.
 
-**This directory is not finished.** Gate 4 (canonicalization + `bundle_sha256`, Story 6.9) and
-gate 5 (the end-to-end ceremony vector with forced ties across *every* ladder rung, an anti-sweep
-overflow and a pity draw, Story 6.11) are still to come. Everything the draw itself needs — the
-block function, `uniform_int`, Stage 2, the FR-29 ladder, Stage 1, anti-sweep **and pity** — is here.
-(⚠ That last sentence was **false** between Stories 6.6 and 6.7: it claimed the directory held
-everything the draw needs while pity — a resolver that draws bytes and is a published bundle key —
-was missing entirely. Corrected by 6.7, which is what filled the hole.)
+**Canonicalization is the odd one out, and the difference is the point.** Every file above
+`canonical-bundle.json` gates a **draw**: its failure mode is *"a byte came out wrong"*. Gate 4
+gates the **serialization the commitment is taken over**, so its failure mode is *"the hash binds a
+different document"* — a ceremony can be perfectly produced, perfectly persisted and still fail to
+verify in a browser. It is also the only vector whose inputs are carried as **raw JSON text** rather
+than as nested JSON values, for three reasons stated at the head of its generator: the format rules
+below forbid writing a big integer as a JSON number, yet *"a big integer must be REFUSED"* is one of
+the cases the gate exists to pin; text makes the input byte-exact; and it tests the real path, where
+a verifier parses a document off the wire before canonicalizing it.
+
+**This directory is not finished.** Gate 5 (the end-to-end ceremony vector with forced ties across
+*every* ladder rung, an anti-sweep overflow and a pity draw, Story 6.11) is still to come, and
+**gate 4's own `end_to_end` row is owed by Story 6.9a's Task 9** — the REAL ceremony's bundle only
+exists once the 14-demo corpus has been rebuilt and published, so the row is carried as an
+explicitly empty list that both suites assert against rather than as a silent omission. Everything
+the draw itself needs — the block function, `uniform_int`, Stage 2, the FR-29 ladder, Stage 1,
+anti-sweep **and pity** — is here, and so is the serialization the bundle is hashed through.
+(⚠ The "everything the draw needs" sentence was **false** between Stories 6.6 and 6.7: it claimed
+the directory held everything while pity — a resolver that draws bytes and is a published bundle
+key — was missing entirely. Corrected by 6.7, which is what filled the hole. It is spelled out
+again here because 6.9a is the second story to have to widen this paragraph, and a claim of
+completeness is worth exactly as much as the last story that checked it.)
 
 ## File format
 
