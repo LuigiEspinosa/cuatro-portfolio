@@ -1127,22 +1127,48 @@ select is(pg_temp.probe_persist((select ceremony_id from f), pg_temp.run_payload
 -- ⭐⭐ THE FIRST TIME THIS ASSERTION HAS EVER BEEN MADE AGAINST NON-EMPTY TABLES. 0025 asserted the
 -- same shape over tables that had never held a row, so it could not distinguish "a viewer sees
 -- nothing because the posture is closed" from "a viewer sees nothing because there is nothing".
--- Sections D-G have now written spins, results and winners; the answer must be identical.
--- ⚠ THE EXPECTED POLICY SET IS `award.award_admin_read` AND NOTHING ELSE, and that is not a leak.
--- `0023:179-215` created it as DORMANT defence-in-depth: `authenticated` holds NO grant on `award`,
--- so an admin 42501s before RLS is ever consulted. Asserting the exact SET rather than "zero policies"
--- is what lets this test say "unchanged" honestly — a bare zero-count assertion would have been FALSE
--- against the shipped schema, and rewriting it to exclude `award` would have quietly stopped covering
--- the one of the four tables that already carries a policy.
+-- Sections D-G have now written spins, results and winners.
+--
+-- ⭐⭐ RETARGETED BY STORY 6.8b (AC9), AND THIS IS THE ONE THAT MATTERED MOST — the only closed-posture
+-- assertion in the whole epic made WITH ROWS IN THE TABLES. WHAT IT USED TO CLAIM, verbatim:
+--     'false | award.award_admin_read | true'
+-- i.e. no client role held ANY data verb on any of the four tables; the policy set was exactly
+-- 0023's DORMANT `award_admin_read`; all four were ENABLE+FORCE. 6.8a's whole other half was that
+-- "THE ACCESS POSTURE DOES NOT MOVE" (`0027:14-19`), and this line was its proof.
+--
+-- Migration 0028 moves it, deliberately and for the first time. ⛔ THE TRIPLE WAS NOT DELETED AND WAS
+-- NOT WEAKENED — it became a QUADRUPLE, because the old first component conflated two facts that
+-- must now be stated separately:
+--   1. SELECT is granted to BOTH client roles on ALL FOUR tables  -> `true`  (new: the grant half)
+--   2. no client role holds INSERT/UPDATE/DELETE on ANY of them   -> `false` (the old claim, intact)
+--   3. the policy set is now all EIGHT names, exact-set not zero-count (the old claim, widened)
+--   4. all four are still ENABLE+FORCE                            -> `true`  (the old claim, intact)
+-- ⚠ AND IT IS STILL ASSERTED WITH ROWS PRESENT, which is what makes it worth anything: the reveal
+-- gate is now the ONLY thing keeping those rows from a viewer, so a mutant that drops
+-- `spin_viewer_read`'s predicate has real rows to leak. `0027 Section F` still asserts `revealed_at`
+-- is NULL on every spin this writer wrote, so at THIS point in the file nothing is revealed — the
+-- BEHAVIOURAL proof that a viewer therefore sees zero rows is `0028_reveal_gating_test.sql`
+-- Section B, which walks it.
 select is(
   (select
+     (select bool_and(has_table_privilege(r, t, 'SELECT'))
+        from unnest(array['anon', 'authenticated']) r,
+             unnest(array['public.spin', 'public.award_result', 'public.award_result_winner',
+                          'public.award']) t)::text
+     || ' | ' ||
      (select bool_or(has_table_privilege(r, t, p))
         from unnest(array['anon', 'authenticated']) r,
              unnest(array['public.spin', 'public.award_result', 'public.award_result_winner',
                           'public.award']) t,
-             unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE']) p)::text
+             unnest(array['INSERT', 'UPDATE', 'DELETE']) p)::text
      || ' | ' ||
-     coalesce((select string_agg(polrelid::regclass::text || '.' || polname, ',' order by 1)
+     -- ⚠ `order by polrelid…||polname`, NOT `order by 1`. Inside an aggregate, `order by 1` orders by
+     -- the CONSTANT 1 — it is not a positional reference and sorts nothing. The original spelling was
+     -- `order by 1` and it went unnoticed because the expected set had exactly ONE element; 6.8b's
+     -- retarget grew it to eight and the assertion promptly failed on catalog order. Fixed here rather
+     -- than worked around, because an "exact set" test whose ordering is undefined is not one.
+     coalesce((select string_agg(polrelid::regclass::text || '.' || polname, ','
+                                 order by polrelid::regclass::text || '.' || polname)
                  from pg_policy
                 where polrelid in ('public.spin'::regclass, 'public.award_result'::regclass,
                                    'public.award_result_winner'::regclass, 'public.award'::regclass)),
@@ -1151,8 +1177,12 @@ select is(
      (select bool_and(relrowsecurity and relforcerowsecurity) from pg_class
        where oid in ('public.spin'::regclass, 'public.award_result'::regclass,
                      'public.award_result_winner'::regclass, 'public.award'::regclass))::text),
-  'false | award.award_admin_read | true',
-  '⭐⭐ AC9 WITH ROWS PRESENT: no client role holds any data verb on any of the four tables, the policy set is still exactly 0023''s dormant award_admin_read, and all four are ENABLE+FORCE — 6.8a moved no posture');
+  'true | false | award.award_admin_read,award.award_viewer_read,'
+  'award_result.award_result_admin_read,award_result.award_result_viewer_read,'
+  'award_result_winner.award_result_winner_admin_read,'
+  'award_result_winner.award_result_winner_viewer_read,spin.spin_admin_read,spin.spin_viewer_read'
+  ' | true',
+  '⭐⭐ AC9 WITH ROWS PRESENT, RETARGETED BY 6.8b: SELECT is granted to both client roles on all four tables, NO writing verb is, the policy set is EXACTLY 0028''s eight, and all four are still ENABLE+FORCE — the opening is precisely this wide and no wider');
 
 select * from finish();
 rollback;

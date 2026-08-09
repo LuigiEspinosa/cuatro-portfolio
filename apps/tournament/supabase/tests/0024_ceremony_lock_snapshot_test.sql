@@ -38,11 +38,22 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
--- plan(94) = A 16 + B 9 + C 15 + D 10 + E 11 + F 4 + G 10 + H 19, accounted for section by section:
---   A 16 — `ceremony`: shape 6 (table · PK · columns_are · state default · the tournament FK · the deferred
+-- ⛔ THIS LINE WAS STALE AND THIS DIFF ALMOST SHIPPED IT STALER — FIXED AT CODE REVIEW 2026-08-08.
+-- It read `plan(94) = A 16 + …` while the file's actual call was `select plan(116)`, and Story 6.8b's
+-- AC9 retarget updated it to `plan(97) = A 19 + …` against `select plan(119)` — propagating the
+-- contradiction rather than fixing it. Section I's 22 assertions appeared in the itemisation below
+-- and in the trailing sum, but never in this header line, so the file carried TWO mutually
+-- contradictory plan statements. 0023's standing rule: "an accounting that does not reconcile to the
+-- file is not one."
+-- plan(119) = A 19 + B 9 + C 15 + D 10 + E 11 + F 4 + G 10 + H 19 + I 22, accounted for section by section:
+-- ⭐ A moved 16 -> 19 with Story 6.8b's AC9 retarget of the grant block; see the ⭐⭐ note at the site.
+--   A 19 — `ceremony`: shape 6 (table · PK · columns_are · state default · the tournament FK · the deferred
 --          ceremony_snapshot_fk) · constraints 3 (state CHECK by name · all four states live ·
 --          one-per-tournament UNIQUE by name) · RLS/policy 3 (enabled · forced · policies_are) ·
---          grants 4 (anon none · neither client role any verb · service_role S/I/U · NO delete).
+--          grants 7 (⭐ RETARGETED BY 6.8b/AC9: no TABLE-wide anon SELECT — still, and deliberately,
+--          because 0028's grant is COLUMN-scoped · any-column SELECT for both roles · the six
+--          commitment columns readable · the four secret columns NOT · no writing verb ·
+--          service_role S/I/U · NO delete).
 --   B  9 — fair_seed: hex CHECK 3 (uppercase · wrong length · non-hex char) · the trigger exists 1 ·
 --          NULL->value 1 · value->same value 1 · value->different = IC908 1 · the value is unchanged after
 --          the refusal 1 · an unrelated tournament UPDATE does not trip it 1.
@@ -73,8 +84,9 @@ set local search_path = extensions, public;
 --          lock_ceremony's seed refusals 3 (seed_stale · it wrote nothing · seed_unavailable's `why`) ·
 --          the manual-resolution freeze 2 (it froze · the value is that demo's hash) · mark_walkover 2
 --          (ceremony_locked · wrote nothing).
--- 16+9+15+10+11+4+10+19+22 = 116.
-select plan(116);
+-- 19+9+15+10+11+4+10+19+22 = 119.  (was 16+…=116 until Story 6.8b's AC9 retarget added three
+-- assertions to A's grant block — the column-level gate the old table-level check could not see.)
+select plan(119);
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- Fixture.
@@ -453,17 +465,51 @@ select is((select relrowsecurity from pg_class where oid = 'public.ceremony'::re
   'ceremony: row level security is ENABLED');
 select is((select relforcerowsecurity from pg_class where oid = 'public.ceremony'::regclass), true,
   'ceremony: row level security is FORCED (the 0003 catalog guard asserts no public base table lacks it)');
-select policies_are('public', 'ceremony', array['ceremony_admin_read'],
-  'ceremony: exactly ONE policy — the admin read. No viewer policy (6.8 opens the reveal axis; 6.2 ships the closed end state)');
+-- ⭐⭐ RETARGETED BY STORY 6.8b (AC9). WHAT THIS BLOCK USED TO CLAIM: "exactly ONE policy — the admin
+-- read. No viewer policy" and "NEITHER client role holds ANY privilege on ceremony (all four verbs)".
+-- 6.2 shipped that closed end state deliberately (`0024:245-248` — "6.8 WIDENS it"), and this is the
+-- widening. ⛔ NOTHING WAS DELETED, and the new claim is sharper in a way that MATTERS HERE MORE THAN
+-- ANYWHERE ELSE IN THE EPIC, because 0028's grant on `ceremony` is COLUMN-scoped:
+--   * `has_table_privilege(…, 'SELECT')` STILL RETURNS FALSE — a column grant is not a table grant.
+--     ⚠ MEASURED, not assumed. Which means the ORIGINAL assertion would have stayed GREEN across the
+--     entire opening, and a reviewer reading only that line would conclude `ceremony` is still shut
+--     while the seed was in fact being published. That is exactly the vacuity AC9 exists to prevent,
+--     so the line stays (it pins DECISION B: no table-wide grant) and FOUR more join it to say what
+--     actually changed.
+--   * the load-bearing half is the UN-granted set: `snapshot_id`, `algorithm_version`, `spin_plan`
+--     and `luck_weight_table` must remain unreadable, and `spin_plan` above all — it names each
+--     spin's candidate award pool, so publishing it would hand a viewer every unrevealed spin.
+select policies_are('public', 'ceremony', array['ceremony_admin_read', 'ceremony_viewer_read'],
+  'ceremony: exactly TWO policies — 0024''s admin read PLUS 0028''s commitment policy (gated on ceremony.state, not spin.revealed_at)');
 
--- ⭐ THE AD-22 MECHANISM, asserted as an ABSENCE: a viewer 42501s at the table-grant gate before RLS runs.
 select is(has_table_privilege('anon', 'public.ceremony', 'SELECT'), false,
-  'AD-22: anon has NO SELECT on ceremony — the seed and the snapshot pointer never reach a viewer');
+  '⭐ DECISION B: anon STILL has no TABLE-wide SELECT on ceremony after 0028 — the commitment is published by a COLUMN grant, and this line is what stops it becoming a table-wide one');
 select is(
-  (select bool_or(has_table_privilege(r, 'public.ceremony', p))
+  (select bool_and(has_any_column_privilege(r, 'public.ceremony', 'SELECT'))
+     from unnest(array['anon', 'authenticated']) r),
+  true,
+  '⭐ …and yet BOTH client roles now hold SELECT on SOME column — the commitment IS published (AC1). This is the assertion the old table-level check could never make');
+select is(
+  (select bool_and(has_column_privilege(r, 'public.ceremony', c, 'SELECT'))
      from unnest(array['anon', 'authenticated']) r,
-          unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE']) p),
-  false, 'AD-22: NEITHER client role holds ANY privilege on ceremony (all four verbs, both roles)');
+          unnest(array['id', 'tournament_id', 'state', 'seed_demo_sha256',
+                       'started_at', 'completed_at']) c),
+  true,
+  'AC1: exactly the six commitment columns are readable — incl. seed_demo_sha256, published as `seed_hex` (0028 DECISION C: never tournament.fair_seed, which a rollback can NULL)');
+select is(
+  (select bool_or(has_column_privilege(r, 'public.ceremony', c, 'SELECT'))
+     from unnest(array['anon', 'authenticated']) r,
+          unnest(array['snapshot_id', 'algorithm_version', 'spin_plan', 'luck_weight_table']) c),
+  false,
+  '⛔ AC1: snapshot_id / algorithm_version / spin_plan / luck_weight_table stay UNGRANTED — spin_plan names every unrevealed spin''s candidate pool (AD-22''s "per-spin live-category sets")');
+select is(
+  (select bool_or(has_any_column_privilege(r, 'public.ceremony', p))
+     from unnest(array['anon', 'authenticated']) r,
+          unnest(array['INSERT', 'UPDATE']) p)
+  or (select bool_or(has_table_privilege(r, 'public.ceremony', 'DELETE'))
+        from unnest(array['anon', 'authenticated']) r),
+  false,
+  'AD-22: NEITHER client role holds a WRITING verb on ceremony — at column level for INSERT/UPDATE, at table level for DELETE (Postgres has no column-level DELETE)');
 select is(
   (select bool_and(has_table_privilege('service_role', 'public.ceremony', p))
      from unnest(array['SELECT', 'INSERT', 'UPDATE']) p),

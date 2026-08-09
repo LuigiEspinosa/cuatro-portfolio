@@ -37,11 +37,15 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
--- plan(68) = A 14 + B 11 + C 6 + D 3 + E 9 + F 5 + G 20, accounted for section by section:
---   A 14 — `spin`: shape 5 (table · PK · columns_are · the ceremony FK · the (ceremony,index) UNIQUE
+-- plan(69) = A 15 + B 11 + C 6 + D 3 + E 9 + F 5 + G 20, accounted for section by section:
+--   A 15 — `spin`: shape 5 (table · PK · columns_are · the ceremony FK · the (ceremony,index) UNIQUE
 --          by name) · the kind CHECK by name 2 (both legal values live · an illegal one refused) ·
---          RLS 3 (enabled · forced · ZERO policies) · grants 4 (anon none · authenticated none ·
---          service_role has all four verbs · no other role holds any).
+--          RLS 3 (enabled · forced · ⭐ RETARGETED BY 6.8b/AC9: the EXACT six-policy set 0028 added,
+--          where this used to assert a zero COUNT) · grants 5 (⭐ RETARGETED: anon now HAS SELECT on
+--          spin · no client role holds a WRITING verb on any of the three · both roles hold SELECT on
+--          all three · service_role has all four verbs · no other role holds any).
+-- ⭐ 68 -> 69 with Story 6.8b's AC9 retarget: the four-verb `bool_or` had to split, because 0028
+-- grants SELECT and one combined assertion can no longer state both halves. See the ⭐⭐ notes below.
 --   B 11 — `award_result` 7 (table · columns_are · the spin FK cascade · the award FK restrict ·
 --          the (spin,award) UNIQUE by name · the redundant (id,spin_id) UNIQUE by name · the
 --          ladder-exit CHECK refuses 6 and admits NULL/1/5) and `award_result_winner` 4 (table ·
@@ -73,7 +77,7 @@ set local search_path = extensions, public;
 --          test) · the helper function is IMMUTABLE 1 · the helper accepts the shipped table (the
 --          positive control) 1 · shelf 0 indexes the heaviest entry 1 · the stored table is
 --          strictly decreasing, re-derived from the column rather than transcribed 1.
-select plan(68);
+select plan(69);
 
 -- ── fixtures ─────────────────────────────────────────────────────────────────
 insert into season (name) values ('Season 1');
@@ -145,29 +149,52 @@ select is((select relrowsecurity     from pg_class where oid = 'public.spin'::re
   'spin: ROW LEVEL SECURITY is ENABLED');
 select is((select relforcerowsecurity from pg_class where oid = 'public.spin'::regclass), true,
   'spin: ROW LEVEL SECURITY is FORCED (the 0003 Section-A2 catalog guard also covers this)');
--- ⭐ DECISION B — ZERO policies on ALL THREE, deliberately. The viewer axis is reveal-gated on
--- `revealed_at` and its shape is Story 6.8's design; pre-building half of it would be guessing.
+-- ⭐⭐ RETARGETED BY STORY 6.8b (AC9). WHAT THIS USED TO CLAIM: "all three tables: NO RLS policy at
+-- all — 6.8 adds the reveal-gated read AND its grant together (DECISION B)". 0025 shipped that
+-- absence ON PURPOSE and said so ("the absence is the point", `0025:44-52`), because the viewer
+-- axis's exact shape was 6.8's design and pre-building half of it would have been guessing. 0028 is
+-- that design, so the absence is now a bounded PRESENCE.
+-- ⛔ THE NEW FORM IS STRICTLY STRONGER, AND NOT ONLY BECAUSE IT IS SPECIFIC: a zero-COUNT could only
+-- ever say "nothing here". An exact-SET assertion names all six policies, so a seventh added
+-- anywhere — a stray permissive policy on any of the three, which is precisely how an RLS leak gets
+-- introduced — reddens this line. A count could be kept green by deleting one and adding one.
 select is(
-  (select count(*)::int from pg_policy
+  (select string_agg(polrelid::regclass::text || '.' || polname, ',' order by
+                     polrelid::regclass::text || '.' || polname)
+     from pg_policy
     where polrelid in ('public.spin'::regclass, 'public.award_result'::regclass,
                        'public.award_result_winner'::regclass)),
-  0,
-  'all three tables: NO RLS policy at all — 6.8 adds the reveal-gated read AND its grant together (DECISION B)');
+  'award_result.award_result_admin_read,award_result.award_result_viewer_read,'
+  'award_result_winner.award_result_winner_admin_read,'
+  'award_result_winner.award_result_winner_viewer_read,spin.spin_admin_read,spin.spin_viewer_read',
+  'all three tables: EXACTLY the six policies 0028 added — a reveal-gated viewer read and a separate admin read each, never OR''d (DECISION B, discharged)');
 
 -- ⚠ `has_table_privilege`, NOT a row count over `information_schema.role_table_grants`, and 0024
 -- uses the same primitive for the same reason: Supabase's project-wide default privileges hand
 -- anon/authenticated REFERENCES/TRIGGER/TRUNCATE on EVERY new public table, so a bare grant count is
 -- 3 for a table nobody granted anything on. What AD-22 is about is the four DATA verbs, and those
 -- are what these assert.
-select is(has_table_privilege('anon', 'public.spin', 'SELECT'), false,
-  'AD-22: anon has NO SELECT on spin — a viewer sees no unrevealed spin, and there is no policy to consult either');
+-- ⭐⭐ RETARGETED BY STORY 6.8b (AC9). These two used to assert "anon has NO SELECT on spin" and
+-- "neither client role holds ANY of the four data verbs on ANY of the three tables". 0028 grants
+-- SELECT — that is the half `0025:51-52` required to ship WITH the policy — so the pair splits: the
+-- writing verbs stay refused (unchanged in force, narrowed in scope), and the SELECT that replaced
+-- them is asserted POSITIVELY rather than dropped. ⛔ Dropping the SELECT half would have left a
+-- suite that could not tell a correct opening from a forgotten one.
+select is(has_table_privilege('anon', 'public.spin', 'SELECT'), true,
+  'AD-22 after 0028: anon HAS SELECT on spin — the gate moved to spin_viewer_read''s `revealed_at is not null`, proven as a WALK in 0028_reveal_gating_test.sql Section B');
 select is(
   (select bool_or(has_table_privilege(r, t, p))
      from unnest(array['anon', 'authenticated']) r,
           unnest(array['public.spin', 'public.award_result', 'public.award_result_winner']) t,
-          unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE']) p),
+          unnest(array['INSERT', 'UPDATE', 'DELETE']) p),
   false,
-  'neither client role holds ANY of the four data verbs on ANY of the three tables — fail-closed at the grant gate');
+  'neither client role holds any WRITING verb on ANY of the three tables — the opening is SELECT-only, and that has not moved');
+select is(
+  (select bool_and(has_table_privilege(r, t, 'SELECT'))
+     from unnest(array['anon', 'authenticated']) r,
+          unnest(array['public.spin', 'public.award_result', 'public.award_result_winner']) t),
+  true,
+  'BOTH client roles hold SELECT on ALL THREE — the grant half of DECISION B, shipped together with the policies above');
 select is(
   (select bool_and(has_table_privilege('service_role', t, p))
      from unnest(array['public.spin', 'public.award_result', 'public.award_result_winner']) t,

@@ -32,7 +32,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
--- plan(111) = A 37 (shape 8 · CHECKs 18 · UNIQUEs 6 · vocabulary parity 5) + B 8 (RLS/grants) + C 11 (the AD-22
+-- plan(113) = A 37 (shape 8 · CHECKs 18 · UNIQUEs 6 · vocabulary parity 5) + B 10 (RLS/grants) + C 11 (the AD-22
 -- pair + both functions' posture + award_stat_vocabulary's grants) + D 37 (happy path 6 · idempotency 3 · swap 3 ·
 -- delete-missing 4 · 20 typed refusals · the one "nothing was written" count) + E 10 (the audit row, every detail
 -- key) + F 5 (catalog_frozen) + G 3 (integral JSON decimals are accepted, not 22P02'd).
@@ -40,7 +40,13 @@ set local search_path = extensions, public;
 -- ⚠ The A breakdown was mis-stated as `CHECKs 19 · parity 4` before the 6.1 code review; the errors cancelled, so
 -- the section total and the plan number were both right and nothing reddened. Corrected here because the standing
 -- rule is that the plan be ACCOUNTED FOR, and an accounting that does not reconcile to the file is not one.
-select plan(111);
+--
+-- ⭐ 111 -> 113 BY STORY 6.8b (AC9). Section B gains TWO: the four-verb `bool_or` split into a
+-- writing-verbs-only refusal plus an explicit "both roles hold SELECT" (0028 grants SELECT, so the
+-- old combined check could no longer say both things), and a new pin that `award_catalog_count` was
+-- NOT widened — the one prohibition (`0023:196-198`) that 6.8b was most tempted to break. Section C's
+-- 42501 became a zero-row count: same claim, stronger form. See the ⭐⭐ blocks at each site.
+select plan(113);
 
 -- ============================================================================
 -- Seed (as postgres / BYPASSRLS, before any role switch).
@@ -326,21 +332,47 @@ select is((select relrowsecurity from pg_class where oid = 'public.award'::regcl
 select is((select relforcerowsecurity from pg_class where oid = 'public.award'::regclass), true,
   'award: row level security is FORCED (the 0003 catalog guard asserts no public base table lacks it)');
 
-select policies_are('public', 'award', array['award_admin_read'],
-  'award: exactly ONE policy — the admin read. No viewer policy, no write policy (6.8 opens the reveal axis)');
+-- ⭐⭐ RETARGETED BY STORY 6.8b (AC9). WHAT THIS BLOCK USED TO CLAIM, AND WHY THE NEW CLAIM IS
+-- STRONGER. Until migration 0028 it asserted an ABSENCE — "policies_are = {award_admin_read}" and
+-- "NEITHER client role holds ANY privilege on award (all four verbs)". 6.1 shipped that strictly
+-- closed end state ON PURPOSE so that 6.8 would be "an OPENING, never a tightening" (`6-1:71`), and
+-- these lines are the assertion that opening had to move. ⛔ NOTHING WAS DELETED: each claim below
+-- is the same claim, narrowed. "No viewer policy" becomes "exactly ONE viewer policy, and it is the
+-- reveal-gated one"; "no privilege at all" becomes "SELECT and ONLY SELECT" — which is a strictly
+-- harder thing to satisfy, because a table-wide `grant all` would now fail where before it could
+-- only fail the coarse four-verb check. The reveal-gating BEHAVIOUR (a name reaches a viewer only
+-- at its spin) is proven in `0028_reveal_gating_test.sql` Section B, against a real walk.
+select policies_are('public', 'award', array['award_admin_read', 'award_viewer_read'],
+  'award: exactly TWO policies — 0023''s admin read PLUS 0028''s reveal-gated viewer read. No write policy, ever');
 select policy_cmd_is('public', 'award', 'award_admin_read', 'SELECT',
   'award_admin_read: is a SELECT policy (a catalog is never client-writable)');
 
--- ⭐ THE AC4 MECHANISM, asserted as an ABSENCE. A viewer 42501s at the table-grant gate before RLS runs.
-select is(has_table_privilege('anon', 'public.award', 'SELECT'), false,
-  'AD-22: anon has NO SELECT on award — the secrecy is the MISSING GRANT, not a CSS blur');
-select is(has_table_privilege('authenticated', 'public.award', 'SELECT'), false,
-  'AD-22: authenticated has NO SELECT on award either (even a signed-in non-admin learns nothing)');
+-- ⭐ THE AC4 MECHANISM, NOW ASSERTED AS A BOUNDED PRESENCE. The grant exists — that is 0028's whole
+-- job — so the secrecy has moved from the MISSING GRANT to the reveal-gated POLICY, exactly as
+-- `0023:196-198` said it must ("Widening the CATALOG's viewer surface is Story 6.8's job and it does
+-- it with a reveal-gated POLICY on the table, not by growing award_catalog_count").
+select is(has_table_privilege('anon', 'public.award', 'SELECT'), true,
+  'AD-22 after 0028: anon HAS SELECT on award — the secrecy is now award_viewer_read''s revealed-spin predicate');
+select is(has_table_privilege('authenticated', 'public.award', 'SELECT'), true,
+  'AD-22 after 0028: authenticated has SELECT too — the same reveal gate applies to a signed-in non-admin');
 select is(
   (select bool_or(has_table_privilege(r, 'public.award', p))
      from unnest(array['anon', 'authenticated']) r,
-          unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE']) p),
-  false, 'AD-22: NEITHER client role holds ANY privilege on award (all four verbs, both roles)');
+          unnest(array['INSERT', 'UPDATE', 'DELETE']) p),
+  false, 'AD-22: NEITHER client role holds any WRITING verb on award — the opening is SELECT-only (0028 R2)');
+select is(
+  (select bool_and(has_table_privilege(r, 'public.award', 'SELECT'))
+     from unnest(array['anon', 'authenticated']) r),
+  true, 'AD-22: …and BOTH client roles hold SELECT — the grant half of 0025:51-52, which ships WITH the policy');
+
+-- ⛔ AND THE COUNT RPC WAS NOT WIDENED BY A SINGLE COLUMN (Story 6.8b AC4). `0023:196-198` is a
+-- standing prohibition, and 6.8b is the story most tempted to break it. Read from the catalog rather
+-- than from this file's memory of what the body says.
+select is(
+  (select pg_get_function_result(oid) from pg_proc
+    where proname = 'award_catalog_count' and pronamespace = 'public'::regnamespace),
+  'integer',
+  '⛔ award_catalog_count still returns a bare integer — 6.8b opened the TABLE, it did not grow the count (0023:196-198)');
 
 -- service_role is the sole writer, and unlike the append-only 0003 tables it holds UPDATE+DELETE: a catalog is
 -- CURATED (upsert + delete-missing), which is what makes the replace-the-whole-catalog idempotency possible.
@@ -383,11 +415,51 @@ select ok(
              and c like 'search_path=%'),
   'award_catalog_count: pins search_path (a loose search_path on an anon-reachable security-definer function is the escalation shape)');
 
+-- ⚠ A PROBE, NOT A BARE READ — CODE-REVIEW FIX 2026-08-08. The retarget below replaced a
+-- `throws_ok(…)`, which CANNOT abort the file, with a bare `count(*)` under `set local role anon`.
+-- If the grant on `award` is ever missing — which is exactly the R1 half this retarget exists to
+-- prove, and exactly what a mutation pass deletes — that bare read raises 42501, aborts the
+-- transaction, and takes the `award_catalog_count` pair below with it: a cascade of unexplained
+-- failures instead of one named red line. The new form is stronger about BEHAVIOUR and was weaker
+-- about FAILURE ISOLATION; this helper restores the second without giving up the first, the same way
+-- 0028's `pg_temp.as_role` does.
+create function pg_temp.as_anon(p_sql text) returns text language plpgsql as $$
+declare v text;
+begin
+  set local role anon;
+  begin
+    execute p_sql into v;
+  exception when others then
+    v := 'raised:' || sqlstate;
+  end;
+  set local role postgres;
+  return v;
+end;
+$$;
+
 set local role anon;
 -- ⭐⭐ THE AC4 PAIR. These two assertions together ARE AD-22 at the DB layer.
-select throws_ok($$select * from public.award$$, '42501',
-  'permission denied for table award',
-  'AD-22: as ANON, `select * from award` is REFUSED 42501 — award identity never reaches a viewer');
+--
+-- ⭐⭐ RETARGETED BY STORY 6.8b (AC9), AND THIS IS THE SHARPEST OF THE FOUR RETARGETS. It used to be
+-- `throws_ok(… , '42501', 'permission denied for table award')`: with NO grant, a viewer was refused
+-- at the table gate before RLS was ever consulted, and that refusal WAS the secrecy (`6-1:37-40` —
+-- "the secrecy is the ABSENT GRANT, not the blur"). Migration 0028 adds the grant, so that door is
+-- now open — and the claim it protected is preserved in a STRONGER form: the query succeeds and
+-- returns ZERO ROWS. Nothing in this suite has ever revealed a spin, so `award_viewer_read`'s
+-- `exists (… s.revealed_at is not null)` is false for all twelve curated awards.
+-- ⛔⛔ AND HERE IS EXACTLY HOW MUCH THAT ZERO PROVES — NARROWED AT CODE REVIEW 2026-08-08, BECAUSE
+-- THE CLAIM WRITTEN HERE WAS TOO BROAD. It used to say the zero proves "the door is open AND THE GATE
+-- BEHIND IT HOLDS". It does not, in THIS suite: there is no `ceremony`, no `spin` and no
+-- `award_result` row anywhere in these fixtures, so `award_viewer_read`'s `exists (… join spin …)`
+-- is false because its FROM clause is EMPTY, not because the `revealed_at` predicate discriminated
+-- anything. Delete `and s.revealed_at is not null` from the policy and this assertion still returns
+-- 0 and stays green. What it DOES catch, and what the retarget is genuinely for, is a widening to
+-- `using (true)` — 12 rows against 0 — and the fact that the grant now exists at all.
+-- ⭐ THE DISCRIMINATING PROOF LIVES WHERE THE FIXTURES CAN CARRY IT: 0028_reveal_gating_test.sql's
+-- Section B walks a real ceremony one reveal at a time and asserts the visible set equals the
+-- revealed prefix exactly, and its Section J reads the `revealed_at` predicate back out of pg_policy.
+select is(pg_temp.as_anon('select count(*)::text from public.award'), '0',
+  'AD-22 after 0028: as ANON, `select * from award` now passes the GRANT gate and returns ZERO rows — the grant is present and no award is exposed without a revealed spin (0023:196-198''s named mechanism)');
 select is(public.award_catalog_count((select id from tournament where name = 'TCUR')), 12,
   'AD-22: as ANON, award_catalog_count() returns 12 — the count is the ONLY catalog fact a viewer may learn');
 select is(public.award_catalog_count((select id from tournament where name = 'TOTHER')), 0,
