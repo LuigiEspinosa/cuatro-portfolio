@@ -11,6 +11,9 @@
     "no_awardable_value",
     "shared"
   ],
+  "unreachable_outcome_kinds": [
+    "shared"
+  ],
   "tie_reasons": [
     "equal_value",
     "equal_cross_product"

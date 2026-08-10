@@ -2,10 +2,14 @@ package ceremony
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
+	"sort"
+	"strings"
 	"testing"
 
 	"cs-tournament/worker/awards"
@@ -331,18 +335,28 @@ func TestBuildPayloadJSONKeysAreTheOnesTheRPCReads(t *testing.T) {
 // written in different languages by different tools, so neither can be quietly edited into agreement
 // with the other.
 func TestPersistReasonsIsExactlyWhatMigration0027Returns(t *testing.T) {
-	const migration = "../../supabase/migrations/0027_ceremony_run.sql"
-
-	src, err := os.ReadFile(migration)
+	// ⭐⭐ THE **LATEST** DEFINITION WINS, AND FINDING IT IS PART OF THE TEST (Story 6.9a).
+	//
+	// This used to name `0027_ceremony_run.sql`. Migration 0029 `create or replace`s
+	// `persist_ceremony` to write `spin.label` and `spin.bytes_consumed` (DECISION F), so a hard-coded
+	// 0027 now reads a body PostgreSQL has already superseded. It happens to agree today — 0029
+	// deliberately folded its new validation into the existing `invalid_payload_shape` rather than
+	// adding a reason — and that is precisely the danger: the test would keep passing while measuring
+	// the wrong artifact, and would only be noticed by the migration AFTER the one that broke it.
+	// ⛔ So the file is DISCOVERED rather than named: every migration is scanned and the
+	// highest-numbered definition is authoritative, exactly as `create or replace` semantics say.
+	migration, src, err := latestPersistCeremonySource()
 	if err != nil {
-		t.Fatalf("reading %s, which is the evidence this test rests on: %v", migration, err)
+		t.Fatalf("locating the live persist_ceremony definition, which is the evidence this test "+
+			"rests on: %v", err)
 	}
+	t.Logf("reading persist_ceremony from %s (the latest definition)", migration)
 
 	// `jsonb_build_object('ok', false, 'reason', '<snake_case>', …)` — the one shape 0027 uses for
 	// every RETURNED refusal. A RAISE is not a reason and is deliberately not matched.
 	re := regexp.MustCompile(`'reason',\s*'([a-z0-9_]+)'`)
 	found := map[string]struct{}{}
-	for _, m := range re.FindAllStringSubmatch(string(src), -1) {
+	for _, m := range re.FindAllStringSubmatch(src, -1) {
 		found[m[1]] = struct{}{}
 	}
 
@@ -355,14 +369,15 @@ func TestPersistReasonsIsExactlyWhatMigration0027Returns(t *testing.T) {
 
 	for r := range found {
 		if _, ok := PersistReasons[r]; !ok {
-			t.Errorf("migration 0027 can return %q and PersistReasons does not carry it — Persist "+
-				"would fail closed on a legitimate refusal and report %q instead", r, ReasonWriteFailed)
+			t.Errorf("%s can return %q and PersistReasons does not carry it — Persist "+
+				"would fail closed on a legitimate refusal and report %q instead",
+				migration, r, ReasonWriteFailed)
 		}
 	}
 	for r := range PersistReasons {
 		if _, ok := found[r]; !ok {
-			t.Errorf("PersistReasons declares %q but migration 0027 never returns it — a reason the "+
-				"writer cannot produce is a reason the caller will never see", r)
+			t.Errorf("PersistReasons declares %q but %s never returns it — a reason the "+
+				"writer cannot produce is a reason the caller will never see", r, migration)
 		}
 	}
 
@@ -372,7 +387,68 @@ func TestPersistReasonsIsExactlyWhatMigration0027Returns(t *testing.T) {
 	}
 	// And it must not be something the migration returns either, for the same reason.
 	if _, bad := found[ReasonWriteFailed]; bad {
-		t.Errorf("migration 0027 returns %q, which is the caller's fail-closed sentinel and must "+
-			"never be a real refusal reason", ReasonWriteFailed)
+		t.Errorf("%s returns %q, which is the caller's fail-closed sentinel and must "+
+			"never be a real refusal reason", migration, ReasonWriteFailed)
 	}
+}
+
+// latestPersistCeremonySource returns the migration that holds the LIVE `persist_ceremony` body —
+// the highest-numbered file that defines or replaces it — together with that body.
+//
+// ⚠ THE BODY IS SLICED, NOT THE WHOLE FILE, and that is the half this test used to get for free.
+// 0027 defined `persist_ceremony` and nothing else that returns reasons; 0029 replaces it AND
+// `reveal_spin` AND defines `publish_bundle`, whose fourteen refusal reasons are NOT
+// `PersistReasons`. Scanning the whole file would fold three unrelated closed sets into one and
+// report a dozen phantom mismatches.
+func latestPersistCeremonySource() (file, body string, err error) {
+	const dir = "../../supabase/migrations"
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", "", fmt.Errorf("listing %s: %w", dir, err)
+	}
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".sql") {
+			names = append(names, e.Name())
+		}
+	}
+	// Zero-padded numeric prefixes, so lexicographic IS numeric order.
+	sort.Strings(names)
+
+	for _, name := range names {
+		raw, readErr := os.ReadFile(filepath.Join(dir, name))
+		if readErr != nil {
+			return "", "", fmt.Errorf("reading %s: %w", name, readErr)
+		}
+		src := string(raw)
+		// ⛔ 6.9a CODE REVIEW — `LastIndex`, AND THE MARKER LOOP KEEPS THE LATEST POSITION.
+		// This had BOTH halves of the trap the helper exists to close. `strings.Index` returns the
+		// FIRST definition, so a migration replacing the function twice (a first attempt, then a
+		// corrected one further down the same file) would have measured the body PostgreSQL has
+		// already superseded — green, and wrong. And `start = i` was unconditional inside the
+		// marker loop, so a file containing BOTH the `create` and `create or replace` forms kept
+		// whichever marker was checked last rather than whichever appeared last in the file.
+		start := -1
+		for _, marker := range []string{
+			"create function public.persist_ceremony(",
+			"create or replace function public.persist_ceremony(",
+		} {
+			if i := strings.LastIndex(src, marker); i > start {
+				start = i
+			}
+		}
+		if start < 0 {
+			continue
+		}
+		end := strings.Index(src[start:], "comment on function public.persist_ceremony(")
+		if end < 0 {
+			return "", "", fmt.Errorf("%s defines persist_ceremony with no closing comment to bound "+
+				"its body — the slice this test rests on cannot be taken", name)
+		}
+		file, body = name, src[start:start+end]
+	}
+	if file == "" {
+		return "", "", fmt.Errorf("no migration in %s defines public.persist_ceremony", dir)
+	}
+	return file, body, nil
 }

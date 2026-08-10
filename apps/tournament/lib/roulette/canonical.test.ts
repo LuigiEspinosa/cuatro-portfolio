@@ -2,7 +2,13 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { CanonicalError, canonicalSha256Hex, canonicalize } from './canonical';
+import {
+  CANONICAL_MAX_DEPTH,
+  CANONICAL_REFUSALS,
+  CanonicalError,
+  canonicalSha256Hex,
+  canonicalize,
+} from './canonical';
 
 // NOTE: `node:fs` is imported HERE, in the test. The banned-`node:` rule applies to the shipped
 // modules (scanned in prng.test.ts), not to the suite that reads the vector files off disk.
@@ -153,12 +159,68 @@ describe('canonical-bundle vector: refusals', () => {
     expect([...exercised, ...unreachable].sort()).toEqual(declared);
   });
 
+  it('a non-plain object REFUSES instead of silently canonicalizing to {}', () => {
+    // ⛔ THE 6.9a CODE REVIEW'S FIX, PINNED. `typeof` reports 'object' for Date, Map, Set, RegExp,
+    // boxed primitives and every class instance, and `Object.keys()` returns [] for all of them —
+    // so `canonicalize({ ts: new Date() })` used to return `{"ts":{}}` and HASH IT, and a Map lost
+    // every entry. Go's type switch and Python's emit both bottom out in `unsupported_type`; only
+    // TypeScript invented an empty object, and it is reachable from the native-value entry point
+    // 6.9b's browser verifier uses.
+    for (const [label, value] of [
+      ['Date', new Date(0)],
+      ['Map', new Map([['a', 1]])],
+      ['Set', new Set([1])],
+      ['RegExp', /x/],
+      ['class instance', new (class Foo { readonly a = 1 })()],
+    ] as const) {
+      expect(
+        () => canonicalize({ v: value }),
+        `${label} must refuse, not canonicalize to {}`,
+      ).toThrowError(expect.objectContaining({ reason: 'unsupported_type' }));
+    }
+
+    // ⚠ THE FALSE SIDE: plain objects and null-prototype objects must still canonicalize, or the
+    // guard is an unconditional refusal wearing a check's clothes.
+    expect(canonicalize({ b: 1, a: 2 })).toBe('{"a":2,"b":1}');
+    const bare = Object.create(null) as Record<string, unknown>;
+    bare.k = 'v';
+    expect(canonicalize(bare)).toBe('{"k":"v"}');
+  });
+
+  it('nesting past the shared depth bound is a TYPED refusal, not a RangeError', () => {
+    let deep: unknown = 'leaf';
+    for (let i = 0; i < CANONICAL_MAX_DEPTH + 10; i += 1) deep = [deep];
+    expect(() => canonicalize(deep)).toThrowError(
+      expect.objectContaining({ reason: 'max_depth_exceeded' }),
+    );
+
+    let shallow: unknown = 'leaf';
+    for (let i = 0; i < 50; i += 1) shallow = [shallow];
+    expect(() => canonicalize(shallow)).not.toThrow();
+  });
+
   it('every reason the vector declares is a reason this module can actually name', () => {
-    // The mirror of the test above, on the TS side: the union type is compile-time only and
-    // erases at runtime, so the binding between the vector's strings and this module's reasons is
-    // proven by CONSTRUCTING one error per declared reason and reading its `.reason` back.
-    for (const reason of vector.refusal_reasons) {
-      const err = new CanonicalError(reason as CanonicalError['reason'], 'probe');
+    // ⛔⛔ REWRITTEN BY THE 6.9a CODE REVIEW. THE PREVIOUS FORM WAS VACUOUS, and it is worth
+    // spelling out because it read as rigorous:
+    //
+    //     const err = new CanonicalError(reason as CanonicalError['reason'], 'probe');
+    //     expect(err.reason).toBe(reason);
+    //
+    // The constructor merely ASSIGNS the field, and `CanonicalRefusal` is a compile-time union
+    // that erases at runtime, so the cast let any string through. It passed for a reason deleted
+    // from the union, for a typo, for `"banana"` — it proved that assignment works, not that this
+    // module names these reasons. The test's own comment identified the erasure and then drew the
+    // wrong conclusion from it, which is this project's signature defect at its eighth occurrence:
+    // a closed-set assertion measuring a literal instead of reading its evidence.
+    //
+    // The fix is the one the Go mirror already had — compare against a REAL RUNTIME VALUE.
+    // `CANONICAL_REFUSALS` is exported from the module under test, so deleting a member, renaming
+    // one or letting the vector drift now reddens here.
+    expect([...CANONICAL_REFUSALS]).toEqual(vector.refusal_reasons);
+
+    // And the values are still genuinely constructible, which is the half the old test did prove.
+    for (const reason of CANONICAL_REFUSALS) {
+      const err = new CanonicalError(reason, 'probe');
       expect(err.reason).toBe(reason);
       expect(err.name).toBe('CanonicalError');
       expect(err).toBeInstanceOf(Error);
@@ -231,8 +293,18 @@ describe('canonical-bundle vector: the end-to-end row', () => {
   // deliberate-update pattern `prng.test.ts` uses for the shipped-module list: when it goes red,
   // the fix is to change the expected count HERE, on purpose, having read the new row — never to
   // delete the assertion.
-  it('is still owed by Task 9 (this reddens deliberately when the row lands)', () => {
-    expect(vector.end_to_end.length).toBe(0);
+  // ⭐⭐ THE ROW LANDED. Task 9 (THE BAR) rebuilt the 14-demo corpus, ran and persisted the ceremony,
+  // published the bundle, and carried the committed canonical bytes into the vector. This assertion
+  // reddened exactly as designed and is updated HERE, on purpose, having read the new row — never
+  // deleted. It stays as a COUNT so a second row cannot arrive unnoticed either.
+  it('carries exactly the ONE end-to-end row Task 9 filled', () => {
+    expect(vector.end_to_end.length).toBe(1);
+    // The real ceremony's shape, pinned so a re-run against a different corpus cannot pass quietly:
+    // 75,013 canonical bytes over 28 players, 12 awards and 40 spins.
+    const row = vector.end_to_end[0];
+    expect(row.name).toBe('real-ceremony-bundle');
+    expect(row.ascii_only).toBe(true);
+    expect(row.canonical_utf8_bytes).toBe(75013);
   });
 
   it.each(vector.end_to_end.map((c) => [c.name, c] as const))(

@@ -81,6 +81,7 @@ interface RpcResult {
 const REVEAL_REASONS = new Set([
   'no_ceremony',
   'ceremony_not_spinning',
+  'bundle_not_published',
   'no_such_spin',
   'already_revealed',
   'out_of_order',
@@ -91,6 +92,11 @@ const REVEAL_REASONS = new Set([
  * The refusals the SQL returns (derived, never hand-copied), plus the lib's own fail-closed reason.
  * - no_ceremony — no such ceremony, or it was deleted between the peek and the lock
  * - ceremony_not_spinning — the run is not persisted yet, or the ceremony is already complete
+ * - bundle_not_published — ⛔ ADDED BY STORY 6.9a (migration 0029, AC4). No reveal may happen until
+ *   `publish_bundle` has committed the ceremony's canonical bytes, because a commitment chosen after
+ *   an outcome is known commits to nothing. It is the mirror of `publish_bundle`'s own
+ *   `reveal_in_progress`: one closes publish-after-reveal, this closes reveal-before-publish, and
+ *   either alone leaves the other order legal.
  * - no_such_spin — this ceremony has no spin at that index
  * - already_revealed — ⛔ a double-tap REFUSES rather than being idempotent (R9, Cuatro 2026-08-08)
  * - out_of_order — ⛔ the published spin order IS the reveal order (UX-DR32/42)

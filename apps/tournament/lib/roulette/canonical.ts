@@ -57,7 +57,50 @@ export type CanonicalRefusal =
   | 'unsupported_type'
   | 'lone_surrogate'
   | 'non_ascii'
-  | 'cycle';
+  | 'cycle'
+  | 'max_depth_exceeded';
+
+/**
+ * The closed set as a RUNTIME value.
+ *
+ * ⛔⛔ ADDED BY THE 6.9a CODE REVIEW, AND THE REASON IS THE DEFECT IT REPLACES. The suite's
+ * "every reason the vector declares is a reason this module can name" test used to do this:
+ *
+ *     const err = new CanonicalError(reason as CanonicalError['reason'], 'probe');
+ *     expect(err.reason).toBe(reason);
+ *
+ * — which passes for ANY string, because `CanonicalRefusal` is a compile-time union that erases
+ * at runtime and the constructor merely assigns the field. It would have stayed green with a
+ * reason deleted from the union, or invented from thin air. The test named the erasure in its own
+ * comment and then drew the wrong conclusion from it. The Go mirror compares a real runtime slice
+ * (`CanonRefusalReasons`); this is the TypeScript half of that evidence, so the vector's array
+ * can be compared against something the module actually holds.
+ *
+ * ⚠ Keep the ORDER identical to Go's `CanonRefusalReasons` and to the vector's `refusal_reasons`.
+ */
+export const CANONICAL_REFUSALS: readonly CanonicalRefusal[] = [
+  'non_finite_number',
+  'non_integer_number',
+  'unsafe_integer',
+  'unsupported_type',
+  'lone_surrogate',
+  'non_ascii',
+  'cycle',
+  'max_depth_exceeded',
+];
+
+/**
+ * The nesting bound, shared verbatim with the other two runtimes.
+ *
+ * ⭐ ADDED BY THE 6.9a CODE REVIEW. Without it a deeply nested document fails as an UNTYPED
+ * language-level failure at a different depth in each runtime — `RangeError` here,
+ * `RecursionError` in Python, an unrecoverable stack overflow in Go — from a module whose entire
+ * contract is that every refusal is typed and drawn from a closed set. In 6.9b that untyped throw
+ * reaches the `write_failed` -> 500 escape hatch the route header says must never receive a
+ * business-shaped failure. 256 is ~60x the real bundle's depth and far below every runtime's
+ * native limit, so the typed refusal always wins the race.
+ */
+export const CANONICAL_MAX_DEPTH = 256;
 
 /**
  * A typed refusal. `reason` is the machine-readable half; the message is for a human reading a
@@ -96,12 +139,18 @@ export interface CanonicalOptions {
   /**
    * Refuse any code unit above U+007F (§9.5's ASCII restriction on the bundle).
    *
-   * ⭐ This is the first constraint in this project to give teeth to `deferred-work.md:265-266`:
-   * an award `name` accepts zero-width U+200B / U+200E / U+FEFF, has no length bound, and became
-   * viewer-visible at 6.8b. With the bundle ASCII-restricted, such a name cannot be published at
-   * all — it is a typed refusal at build time instead of an invisible character inside a hashed
-   * document. ⚠ It is OFF by default because the ordering torture cases in the gate-4 vector
-   * need supplementary-plane keys, which are not ASCII; the BUNDLE builder always turns it ON.
+   * ⛔⛔ CORRECTED BY THE 6.9a CODE REVIEW — READ THIS BEFORE CITING THE RULE AS A FIX. This
+   * comment used to claim the restriction "gives teeth to `deferred-work.md:265-266`" (award
+   * `name` accepts zero-width U+200B / U+200E / U+FEFF and has no length bound). **It does not,
+   * and it cannot.** DECISION N drops `name` from the bundle, and every remaining published field
+   * is digits, snake_case identifiers, decimal strings or `inclusivcup/v1/…` labels — so no
+   * producer-controlled value can ever be non-ASCII and this refusal is UNREACHABLE in
+   * production. It is worth keeping as defence-in-depth against a field added later; it is not
+   * the zero-width fix, and `deferred-work.md:265-266` stays OPEN. That guard belongs where award
+   * names reach a viewer, as an explicit reject-list plus a length bound.
+   *
+   * ⚠ It is OFF by default because the ordering torture cases in the gate-4 vector need
+   * supplementary-plane keys, which are not ASCII; the BUNDLE builder always turns it ON.
    */
   readonly asciiOnly?: boolean;
 }
@@ -120,10 +169,33 @@ export function canonicalize(value: unknown, opts?: CanonicalOptions): string {
   // object appearing twice as a sibling, which is legal JSON and which the bundle actually does
   // (two spins can carry an identical `weights` array reference after a map/filter chain).
   const open = new Set<object>();
-  return emit(value, asciiOnly, open);
+  return emit(value, asciiOnly, open, 0);
 }
 
-function emit(value: unknown, asciiOnly: boolean, open: Set<object>): string {
+/**
+ * Is this a PLAIN object — one `Object.keys` can faithfully enumerate?
+ *
+ * ⛔⛔ ADDED BY THE 6.9a CODE REVIEW, WHICH FOUND SILENT DATA LOSS HERE. `typeof` reports
+ * `'object'` for `Date`, `Map`, `Set`, `RegExp`, boxed primitives and every class instance, and
+ * `Object.keys()` returns `[]` for all of them — so `canonicalize({ ts: new Date() })` returned
+ * `{"ts":{}}` and HASHED IT, and `canonicalize({ m: new Map([['a',1]]) })` silently dropped every
+ * entry. Go's type switch bottoms out in `unsupported_type` and Python's `emit` raises it; only
+ * TypeScript invented an empty object. That divergence is reachable from the native-value entry
+ * point 6.9b's browser verifier uses, which is the one that matters.
+ */
+function isPlainObject(v: object): boolean {
+  const proto: unknown = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === null;
+}
+
+function emit(value: unknown, asciiOnly: boolean, open: Set<object>, depth: number): string {
+  if (depth > CANONICAL_MAX_DEPTH) {
+    throw new CanonicalError(
+      'max_depth_exceeded',
+      `nesting exceeds ${String(CANONICAL_MAX_DEPTH)} levels`,
+    );
+  }
+
   if (value === null) return 'null';
 
   const t = typeof value;
@@ -137,10 +209,17 @@ function emit(value: unknown, asciiOnly: boolean, open: Set<object>): string {
     if (open.has(obj)) {
       throw new CanonicalError('cycle', 'the value contains a reference cycle');
     }
+    const isArray = Array.isArray(obj);
+    if (!isArray && !isPlainObject(obj)) {
+      throw new CanonicalError(
+        'unsupported_type',
+        `${obj.constructor.name} is not a JSON value — only plain objects and arrays canonicalize`,
+      );
+    }
     open.add(obj);
     try {
-      if (Array.isArray(obj)) return emitArray(obj, asciiOnly, open);
-      return emitObject(obj as Record<string, unknown>, asciiOnly, open);
+      if (isArray) return emitArray(obj, asciiOnly, open, depth);
+      return emitObject(obj as Record<string, unknown>, asciiOnly, open, depth);
     } finally {
       // Removed on the way OUT, so a sibling repeat of the same object is legal while a true
       // ancestor cycle is not. `finally` so a refusal deep in the tree does not poison the set.
@@ -156,13 +235,23 @@ function emit(value: unknown, asciiOnly: boolean, open: Set<object>): string {
   throw new CanonicalError('unsupported_type', `${t} is not a JSON value`);
 }
 
-function emitArray(arr: readonly unknown[], asciiOnly: boolean, open: Set<object>): string {
+function emitArray(
+  arr: readonly unknown[],
+  asciiOnly: boolean,
+  open: Set<object>,
+  depth: number,
+): string {
   const parts: string[] = [];
-  for (const item of arr) parts.push(emit(item, asciiOnly, open));
+  for (const item of arr) parts.push(emit(item, asciiOnly, open, depth + 1));
   return `[${parts.join(',')}]`;
 }
 
-function emitObject(obj: Record<string, unknown>, asciiOnly: boolean, open: Set<object>): string {
+function emitObject(
+  obj: Record<string, unknown>,
+  asciiOnly: boolean,
+  open: Set<object>,
+  depth: number,
+): string {
   // ⭐ B6 — RFC-8785 §3.2.3: "sort the properties by their key, in ascending order, using the
   // UTF-16 code units". A bare `.sort()` on an array of strings is EXACTLY that comparison, so
   // this line is the RFC and not an approximation of it. ⛔ It must NOT be "fixed" to a byte-lex
@@ -186,7 +275,7 @@ function emitObject(obj: Record<string, unknown>, asciiOnly: boolean, open: Set<
       // an explicit `undefined`: absent means the key is not in `Object.keys` at all.
       throw new CanonicalError('unsupported_type', `undefined at key ${JSON.stringify(key)}`);
     }
-    parts.push(`${emitString(key, asciiOnly)}:${emit(v, asciiOnly, open)}`);
+    parts.push(`${emitString(key, asciiOnly)}:${emit(v, asciiOnly, open, depth + 1)}`);
   }
   return `{${parts.join(',')}}`;
 }

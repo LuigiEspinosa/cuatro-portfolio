@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { revealSpin } from '@/lib/ceremony/reveal';
 
@@ -125,6 +125,10 @@ describe('revealSpin — typed refusals surfaced verbatim, nothing written (AC5)
   it.each([
     'no_ceremony',
     'ceremony_not_spinning',
+    // ⭐ Story 6.9a / migration 0029: no reveal before the commitment exists. The mirror of
+    // publish_bundle's `reveal_in_progress` — one closes publish-after-reveal, this closes
+    // reveal-before-publish, and either alone leaves the other order legal.
+    'bundle_not_published',
     'no_such_spin',
     // ⭐ R9 / Cuatro 2026-08-08: a double-tap REFUSES rather than returning ok. A reason missing from the
     // trusted Set fails closed to an opaque 500 — the exact defect THE BAR caught for approve/rollback.
@@ -246,14 +250,56 @@ describe('revealSpin — the ok payload is VALIDATED before it is trusted', () =
  * they are the same set in BOTH directions. Neither side is a copy of anything in this file.
  */
 describe('the trusted reason set is the migration’s reason set — read from source, both directions', () => {
-  const MIGRATION = new URL('../../supabase/migrations/0028_reveal_gating.sql', import.meta.url);
+  const MIGRATIONS_DIR = new URL('../../supabase/migrations/', import.meta.url);
   const LIB = new URL('./reveal.ts', import.meta.url);
 
-  /** The `reveal_spin` body ONLY — 0028 also replaces three unrelated RPCs whose reasons are not ours. */
+  /**
+   * ⭐⭐ THE **LATEST** DEFINITION WINS, AND FINDING IT IS PART OF THE TEST (Story 6.9a).
+   *
+   * This used to read `0028_reveal_gating.sql` by name. Migration 0029 `create or replace`s
+   * `reveal_spin` to add `bundle_not_published`, so a hard-coded 0028 would have compared the LIVE
+   * lib against a SUPERSEDED body — the cross-check would have gone red for the right reason and
+   * been "fixed" by re-pointing it at 0029, which is the same trap one migration later.
+   *
+   * ⛔ So the file is DISCOVERED rather than named: every migration is scanned for a definition of
+   * this function and the highest-numbered one is authoritative, exactly as PostgreSQL's own
+   * `create or replace` semantics say. A future 0030 that replaces `reveal_spin` again is picked up
+   * with no edit here, and if it adds a reason the lib does not trust, THIS test is what reddens.
+   */
+  function latestRevealSpinSource(): { file: string; sql: string; start: number } {
+    const files = readdirSync(MIGRATIONS_DIR)
+      .filter((f) => f.endsWith('.sql'))
+      .sort(); // zero-padded numeric prefixes, so lexicographic IS numeric order
+    expect(files.length).toBeGreaterThan(0);
+
+    // ⛔ 6.9a CODE REVIEW — `lastIndexOf`, NOT `indexOf`, AND THE MARKER LOOP TAKES THE LATEST
+    // POSITION RATHER THAN THE LAST MARKER CHECKED. Both were the same trap this helper exists to
+    // close, reproduced one level in: `indexOf` returns the FIRST definition, so a migration that
+    // replaces the function twice (a first attempt, then a corrected one later in the same file)
+    // would have measured the body PostgreSQL has already superseded — while staying green. And
+    // iterating markers with an unconditional assignment kept whichever marker was checked LAST,
+    // not whichever appeared last in the file, so a file containing both forms picked by loop
+    // order instead of by position.
+    let latest: { file: string; sql: string; start: number } | null = null;
+    for (const file of files) {
+      const sql = readFileSync(new URL(file, MIGRATIONS_DIR), 'utf8');
+      let best = -1;
+      for (const marker of ['create function public.reveal_spin(', 'create or replace function public.reveal_spin(']) {
+        const start = sql.lastIndexOf(marker);
+        if (start > best) best = start;
+      }
+      if (best > -1) latest = { file, sql, start: best };
+    }
+    // ⚠ A non-null assertion here would let a rename silently produce an EMPTY reason set, which the
+    // count guard below would then catch — but one layer later and with a confusing message.
+    expect(latest, 'no migration defines public.reveal_spin').not.toBeNull();
+    return latest!;
+  }
+
+  /** The `reveal_spin` body ONLY — its migration also replaces other RPCs whose reasons are not ours. */
   function revealSpinBody(): string {
-    const sql = readFileSync(MIGRATION, 'utf8');
-    const start = sql.indexOf('create function public.reveal_spin(');
-    const end = sql.indexOf('comment on function public.reveal_spin(');
+    const { sql, start } = latestRevealSpinSource();
+    const end = sql.indexOf('comment on function public.reveal_spin(', start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
     return (

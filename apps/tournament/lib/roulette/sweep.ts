@@ -456,7 +456,13 @@ function spinWinners(awardId: string, outcome: Outcome): readonly string[] {
       if (typeof outcome.steamid64 !== 'string' || !STEAMID64_RE.test(outcome.steamid64)) {
         throw new SweepError(
           'internal',
-          `award "${awardId}" resolved to a WINNER with no steamid64`,
+          // ⭐ 6.9a CODE REVIEW: the message says "not decimal digits", not "no steamid64". The
+        // guard was tightened from a bare emptiness check to STEAMID64_RE and the wording was
+        // left behind, so `"7656119800000001x"` — present, non-empty, non-numeric — reported
+        // "with no steamid64" and sent the reader looking for a missing field that is populated.
+        // These guards exist so a defect NAMES ITSELF (the 6.6 review's lesson); a message that
+        // describes the wrong failure defeats the whole point of having them.
+        `award "${awardId}" resolved to a WINNER whose steamid64 is missing or not decimal digits`,
         );
       }
       return [outcome.steamid64];
@@ -475,7 +481,9 @@ function spinWinners(awardId: string, outcome: Outcome): readonly string[] {
       if (outcome.winners.some((sid) => typeof sid !== 'string' || !STEAMID64_RE.test(sid))) {
         throw new SweepError(
           'internal',
-          `award "${awardId}" resolved to a SHARED outcome with an empty steamid64`,
+          // ⭐ 6.9a CODE REVIEW — see the sibling guard above; "empty" describes a check this line
+        // stopped making when it moved to STEAMID64_RE.
+        `award "${awardId}" resolved to a SHARED outcome whose steamid64 is missing or not decimal digits`,
         );
       }
       // ⛔ DUPLICATES TOO, mirroring Go. `assigned` is a Set and would dedupe silently, so the

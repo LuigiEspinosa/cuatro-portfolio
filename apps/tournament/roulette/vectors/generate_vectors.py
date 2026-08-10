@@ -1404,6 +1404,18 @@ def build_stage2_file() -> dict:
         # second place to keep in step — the exact drift `refusal_details` exists to prevent one
         # level up. The list is unchanged, so this file regenerates byte-identically.
         "outcome_kinds": list(OUTCOME_KINDS),
+        # ⭐⭐ AC9's MARKER, ADDED BY STORY 6.9a (and re-added by its code review, which found the
+        # subtask ticked, the first-session Completion Note saying "NOT done", and 6.9b's hand-off
+        # table claiming "shipped" -- three artifacts, three answers, and no code).
+        #
+        # `deferred-work.md:316` homed it here: this file declares `shared` in `outcome_kinds`, a
+        # kind THIS STAGE CANNOT PRODUCE -- the pure Stage-2 pass resolves no tie, so `shared` is
+        # reachable only through FR-29's ladder. The comment above has said so in prose since 6.5;
+        # what was missing is the machine-readable half, so both suites can assert ZERO cases carry
+        # it instead of a reader inferring the absence. Declared as DATA in the `unreachable_*`
+        # form `antisweep-resolve.json` established, because the OutcomeKind closed set is a bundle
+        # contract and 6.9a is the story that canonicalizes that vocabulary.
+        "unreachable_outcome_kinds": list(UNREACHABLE_STAGE2_OUTCOME_KINDS),
         "tie_reasons": ["equal_value", "equal_cross_product"],
         "refusals": refusals,
         "cases": cases,
@@ -5969,6 +5981,13 @@ assert len(ROW_REPRESENTABLE_SWEEP_DETAILS) == 3, "the comment above says THREE;
 # ZERO rows carry it. An implementation that skipped the ladder would emit one.
 UNREACHABLE_SWEEP_OUTCOME_KINDS = ("tie",)
 
+# ⭐ AC9 / `deferred-work.md:316`, added by Story 6.9a's code review. The PURE Stage-2 pass declares
+# `shared` in `outcome_kinds` but cannot produce it: resolving a tie into a shared outcome is
+# FR-29's ladder, a later stage. Declared as data so `stage2-resolve.json` carries the same
+# machine-readable unreachability marker `antisweep-resolve.json` already does, rather than leaving
+# the fact in prose where only a human notices it.
+UNREACHABLE_STAGE2_OUTCOME_KINDS = ("shared",)
+
 
 def _validate_live(live) -> None:
     """A2 / A13 — the live set's OWN shape, checked BEFORE any award is resolved.
@@ -7565,7 +7584,18 @@ def resolve_pity(players, shelf, stream) -> dict:
             ) from err
         consumed = stream.pos - before
         # k is never 0 here: n = i+1 >= 2 for every step Durstenfeld takes.
-        rejections = (consumed // k) - 1
+        # ⭐⭐ THE EXACTNESS IS ASSERTED, NOT ASSUMED -- added by the 6.9a code review, which found
+        # the guard in TypeScript only while Go and Python silently truncated. `rejections` is a
+        # PUBLISHED draws[] field and therefore outcome-affecting for bundle_sha256, so floor
+        # division absorbing a byte-accounting bug into a plausible-looking count is exactly the
+        # failure the three runtimes must agree to refuse rather than paper over.
+        steps = consumed // k
+        if steps * k != consumed:
+            raise SystemExit(
+                f"pity step n={n} consumed {consumed} bytes, which is not a whole multiple of "
+                f"k={k} -- the stream and the primitive disagree about what a draw costs"
+            )
+        rejections = steps - 1
         draws.append({"n": n, "k": k, "rejections": rejections, "value": j})
         order[i], order[j] = order[j], order[i]
 
@@ -8401,7 +8431,17 @@ JCS_REFUSAL_REASONS = (
     "lone_surrogate",
     "non_ascii",
     "cycle",
+    "max_depth_exceeded",
 )
+
+# The nesting bound, shared verbatim with the other two runtimes.
+#
+# ADDED BY THE 6.9a CODE REVIEW. Without it a deeply nested document fails as an UNTYPED
+# language-level failure at a different depth in each runtime -- RecursionError here, RangeError in
+# TypeScript, an unrecoverable stack overflow in Go -- from modules whose entire contract is that
+# every refusal is typed and drawn from a closed set. 256 is ~60x the real bundle's depth and far
+# below every runtime's native limit, so the typed refusal always wins the race.
+JCS_MAX_DEPTH = 256
 
 # 2**53 - 1. Written as a literal because it is a CONTRACT BOUND shared with two runtimes that
 # cannot write it as an expression (`**` is a banned construct in `lib/roulette`), and a bound
@@ -8478,7 +8518,9 @@ def _jcs_number(n) -> str:
 def jcs_canonicalize(value, ascii_only: bool = False) -> str:
     """RFC-8785 canonical form of an already-parsed JSON value, as text."""
 
-    def emit(v, open_ids: set) -> str:
+    def emit(v, open_ids: set, depth: int) -> str:
+        if depth > JCS_MAX_DEPTH:
+            raise JcsRefusal("max_depth_exceeded", f"nesting exceeds {JCS_MAX_DEPTH} levels")
         if v is None:
             return "null"
         if isinstance(v, bool):
@@ -8492,7 +8534,7 @@ def jcs_canonicalize(value, ascii_only: bool = False) -> str:
                 raise JcsRefusal("cycle", "the value contains a reference cycle")
             open_ids.add(id(v))
             try:
-                return "[" + ",".join(emit(item, open_ids) for item in v) + "]"
+                return "[" + ",".join(emit(item, open_ids, depth + 1) for item in v) + "]"
             finally:
                 # Discarded on the way OUT so a SIBLING repeat of the same object stays legal —
                 # only a true ancestor cycle is a refusal.
@@ -8508,14 +8550,15 @@ def jcs_canonicalize(value, ascii_only: bool = False) -> str:
                 # ⭐ §3.2.3, and the line Python has to WORK for — see the block comment above.
                 keys = sorted(v, key=lambda k: k.encode("utf-16-be", "surrogatepass"))
                 parts = [
-                    _jcs_string(k, ascii_only) + ":" + emit(v[k], open_ids) for k in keys
+                    _jcs_string(k, ascii_only) + ":" + emit(v[k], open_ids, depth + 1)
+                    for k in keys
                 ]
                 return "{" + ",".join(parts) + "}"
             finally:
                 open_ids.discard(id(v))
         raise JcsRefusal("unsupported_type", f"{type(v).__name__} is not a JSON value")
 
-    return emit(value, set())
+    return emit(value, set(), 0)
 
 
 def jcs_sha256_hex(canonical: str) -> str:
@@ -8689,7 +8732,19 @@ JCS_CASES = [
             "because they come from the catalog and the algorithm, while every snapshot magnitude "
             "and every steamid64 is a decimal STRING — the split is by provenance, not by size. "
             "⚠ Note also that `tie_ladder_exit_step` is ABSENT, never 0, per the 6.9a story's "
-            "DECISION J: JCS hashes `0` and absent differently, so the sentinel dies here"
+            "DECISION J: JCS hashes `0` and absent differently, so the sentinel dies here. "
+            "⛔⛔ THIS ROW WAS CORRECTED BY THE 6.9a CODE REVIEW, WHICH FOUND IT PINNING A SHAPE "
+            "THE BUILDER CANNOT PRODUCE -- the one row whose stated job is the real document's "
+            "structure was pinning nothing. Three divergences, all now fixed against "
+            "worker/ceremony/bundle.go: (1) it carried an award `name`, which DECISION N drops; "
+            "(2) it nested the outcome under a `result` wrapper, while buildAwards writes "
+            "outcome_kind/winners/is_shared/is_pity FLAT on the entry; (3) it spelled the three "
+            "nullable rung keys as JSON `null`, while the builder's NULL-is-ABSENT rule omits the "
+            "key entirely -- and JCS hashes `null` and absent differently, which is the whole "
+            "reason DECISION J exists two sentences up. The pity block was also impossible: it "
+            "showed a `{n:1,k:0}` draw for a single winless player, but a one-element "
+            "Fisher-Yates emits NO draws at all and pity.ts asserts k is never 0 because n>=2 on "
+            "every step. It now carries two winless players and the one real draw that produces"
         ),
         "ascii_only": True,
         "input_json": (
@@ -8699,14 +8754,15 @@ JCS_CASES = [
             '"spin_plan":[{"spin":1,"kind":"main","label":"inclusivcup/v1/stage1/spin/1",'
             '"live_count":1,"pool":["1","2"],"live":["2"],"weights":[100,40],"total_weight":140,'
             '"draws":[{"n":140,"r":117,"consumed_after":2}],"bytes_consumed":2}],'
-            '"awards":[{"award_id":"1","name":"Knife Fight","bucket":"skill","class":"volume",'
-            '"deciding_stat":"knife_kills","direction":"max","secondary_stat":null,'
-            '"eff_num_key":null,"eff_den_key":null,"floor_rounds":24,"floor_kills":20,"priority":1,'
-            '"result":{"outcome_kind":"no_eligible_players","winners":[],"is_shared":false,'
-            '"is_pity":false}}],'
-            '"pity":{"label":"inclusivcup/v1/pity","winless":["76561198000000001"],'
-            '"reveal_order":["76561198000000001"],'
-            '"draws":[{"n":1,"k":0,"rejections":0,"value":0}],"bytes_consumed":0},'
+            '"awards":[{"award_id":"1","bucket":"skill","class":"volume",'
+            '"deciding_stat":"knife_kills","direction":"max",'
+            '"floor_rounds":24,"floor_kills":20,"priority":1,'
+            '"outcome_kind":"no_eligible_players","winners":[],"is_shared":false,'
+            '"is_pity":false}],'
+            '"pity":{"label":"inclusivcup/v1/pity",'
+            '"winless":["76561198000000001","76561198000000002"],'
+            '"reveal_order":["76561198000000002","76561198000000001"],'
+            '"draws":[{"n":2,"k":1,"rejections":0,"value":1}],"bytes_consumed":1},'
             '"players":[{"steamid64":"76561198000000001","rounds_played":"21","kills":"12",'
             '"idle_dq":false,"volume":{"knife_kills":"0"},'
             '"rate":{"adr":{"num":"1234","den":"21"}},"secondary":{},"efficiency":{},"h2h":{},'
@@ -8764,11 +8820,15 @@ JCS_REFUSAL_CASES = [
     {
         "name": "non-ascii-under-the-bundle-restriction",
         "why": (
-            "§9.5's ASCII restriction, and the FIRST thing in this project to give teeth to "
-            "deferred-work.md:265-266 — an award `name` accepts zero-width U+200B/U+200E/U+FEFF, "
-            "has no length bound, and became viewer-visible at 6.8b. Under this rule such a name "
-            "cannot be published at all: it is a typed refusal, not an invisible character inside "
-            "a hashed document"
+            "§9.5's ASCII restriction, binding on values. ⛔ CORRECTED BY THE 6.9a CODE REVIEW: "
+            "this row used to claim it was 'the FIRST thing in this project to give teeth to "
+            "deferred-work.md:265-266' (award `name` accepts zero-width U+200B/U+200E/U+FEFF). It "
+            "is not. DECISION N drops `name` from the bundle, and every field that remains is "
+            "digits, snake_case identifiers, decimal strings or inclusivcup/v1 labels -- so no "
+            "producer-controlled value can be non-ASCII and this refusal is UNREACHABLE in "
+            "production. It is defence-in-depth against a field added later, which is worth "
+            "pinning; deferred-work.md:265-266 stays OPEN and its guard belongs where award names "
+            "reach a viewer"
         ),
         "ascii_only": True,
         "input_json": '{"name":"Knife\\u200bFight"}',
@@ -8798,6 +8858,32 @@ JCS_REFUSAL_CASES = [
         "input_json": '{"s":"\\udc00"}',
         "reason": "lone_surrogate",
     },
+    {
+        "name": "exponent-overflows-to-infinity",
+        "why": (
+            "ADDED BY THE 6.9a CODE REVIEW, and it pins a divergence the gate could not see. "
+            "1e999 has no finite IEEE-754 value: JS JSON.parse yields Infinity and Python "
+            "json.loads yields inf, so both said non_finite_number -- while Go's ParseFloat "
+            "returned an ErrRange error that the old code tested FIRST and reported as "
+            "unsupported_type. Same refusal, two names, one closed set. The row exists so the "
+            "three cannot drift apart on it again"
+        ),
+        "ascii_only": False,
+        "input_json": '{"n":1e999}',
+        "reason": "non_finite_number",
+    },
+    {
+        "name": "nesting-past-the-depth-bound",
+        "why": (
+            "ADDED BY THE 6.9a CODE REVIEW. Past this depth every runtime used to die an UNTYPED "
+            "death at a DIFFERENT depth -- RangeError, RecursionError, goroutine stack overflow -- "
+            "from modules whose whole contract is that refusals are typed and closed. The bound is "
+            "shared (256) so the typed refusal is the same in all three"
+        ),
+        "ascii_only": False,
+        "input_json": "[" * 300 + "]" * 300,
+        "reason": "max_depth_exceeded",
+    },
 ]
 
 # ⭐ The `unreachable_*` marker form `antisweep-resolve.json` established, applied here because
@@ -8806,11 +8892,16 @@ JCS_REFUSAL_CASES = [
 # the runtime that CAN reach them named) is the alternative to a reader assuming the closed set
 # has three untested members, or to quietly deleting them and losing the guard they provide
 # against a native value being handed straight to `canonicalize()` in a browser.
+#
+# ⛔⛔ `non_finite_number` WAS REMOVED FROM THIS LIST BY THE 6.9a CODE REVIEW, and the removal is
+# the point rather than a tidy-up. The claim "JSON has no NaN and no Infinity" is true of the
+# GRAMMAR and false of the VALUES: `1e999` is perfectly well-formed JSON that every runtime parses
+# to Infinity. Declaring the reason unreachable-from-JSON meant the partition test ASSERTED that
+# no refusal row could carry it -- so the one row that would have caught Go reporting
+# `unsupported_type` where TS and Python reported `non_finite_number` was structurally blocked
+# from ever being added. A false unreachability marker is worse than none: it does not merely
+# fail to test something, it forbids testing it.
 JCS_UNREACHABLE_FROM_JSON = [
-    {
-        "reason": "non_finite_number",
-        "why": "JSON has no NaN and no Infinity; reachable only from a native value in TS/Go/Python",
-    },
     {
         "reason": "unsupported_type",
         "why": "JSON has no undefined, function, symbol or bigint; reachable only from a native value",
@@ -8886,14 +8977,51 @@ def build_canonical_file() -> dict:
     }
 
 
-# ⏳ Filled by Story 6.9a's Task 9 (THE BAR), which is the only place the REAL ceremony's bundle
-# exists: it is derived FROM THE DATABASE after the 14-demo corpus is rebuilt, the ceremony is run
-# and persisted, and `publish_bundle` has committed. AC2 requires "an end-to-end bundle_sha256 over
-# the REAL ceremony's bundle carried as data", and the document is carried here verbatim so that
-# `--check` reproduces the hash from committed data rather than from a live database.
-# ⛔ AC2 IS NOT MET WHILE THIS LIST IS EMPTY. Both suites assert its length against the count below,
-# so shipping with it empty is a visible, deliberate state and never a silent omission.
-END_TO_END_BUNDLE_CASES: list = []
+# ⭐ FILLED BY STORY 6.9a's TASK 9 (THE BAR) — the row this file carried as an explicitly empty list
+# through T2. It is the only place the REAL ceremony's bundle exists: derived FROM THE DATABASE after
+# the 14-demo corpus was rebuilt, the ceremony run and persisted, and `publish_bundle` committed.
+#
+# ⚠ THE DOCUMENT LIVES IN ITS OWN COMMITTED FILE, `canonical-bundle-input.json`, AND THAT IS A
+# DELIBERATE DEPARTURE FROM EVERY OTHER CASE IN THIS GENERATOR. The others carry their input as a
+# short literal; this one is 75,013 bytes, and pasting it into this module would bury the generator
+# under its own data. Reading it from a sibling file keeps `--check` doing exactly what it does for
+# every other row — reproducing the derived canonical form and hash FROM COMMITTED DATA, never from a
+# live database — while leaving this file readable. ⛔ It is NOT a transcription of a vector value into
+# source (README:83): nothing here restates a canonical form or a hash; both are DERIVED below.
+#
+# ⚠ The input is ALREADY canonical (it is the byte sequence `publish_bundle` committed), so this row
+# additionally proves IDEMPOTENCE over a 75 KB real document rather than over a toy one — which is the
+# property a verifier depends on when it re-canonicalizes what the projection served.
+def _end_to_end_bundle_cases() -> list:
+    path = HERE / "canonical-bundle-input.json"
+    if not path.exists():
+        # ⛔ NOT A SILENT SKIP. The suites assert this list's length, so a missing input file must be
+        # a visible, deliberate state — exactly as the empty list was before Task 9 filled it.
+        return []
+    raw = path.read_text(encoding="utf-8")
+    value = json.loads(raw)
+    canonical = jcs_canonicalize(value, ascii_only=True)
+    return [
+        {
+            "name": "real-ceremony-bundle",
+            "why": (
+                "AC2's end-to-end row: the canonical bytes of the REAL 14-demo ceremony's "
+                "verification bundle, and the bundle_sha256 publish_bundle committed for it. "
+                "Twelve main spins (22 bytes), a 27-draw pity stream (27 bytes), 49 bytes total, "
+                "28 players, 12 awards, 40 spins. ⚠ Every one of the twelve main spins resolves "
+                "no_eligible_players: 0 of 28 players clear the FR-21 24/20 floors, accepted as "
+                "measured (Cuatro, 2026-08-08), and this hash commits exactly those bytes."
+            ),
+            "ascii_only": True,
+            "input_json": raw,
+            "canonical": canonical,
+            "canonical_utf8_bytes": len(canonical.encode("utf-8")),
+            "sha256": jcs_sha256_hex(canonical),
+        }
+    ]
+
+
+END_TO_END_BUNDLE_CASES: list = _end_to_end_bundle_cases()
 
 
 def render(obj: dict) -> str:

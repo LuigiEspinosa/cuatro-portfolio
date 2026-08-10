@@ -127,9 +127,19 @@ select
 -- ============================================================================
 select has_table('public', 'spin', 'spin: the table exists');
 select has_pk('public', 'spin', 'spin: has a primary key');
+-- ⭐ WIDENED DELIBERATELY BY STORY 6.9a, AND THIS ASSERTION REDDENING IS IT DOING ITS JOB.
+-- The original text read "EXACTLY SOLUTION-DESIGN.md:205-213's six columns — no more (6.8 widens
+-- BEHAVIOUR, not shape)", and that held for 6.8a and 6.8b, both of which widened only behaviour.
+-- Migration 0029 widens the SHAPE, on purpose: `label` and `bytes_consumed` are the provenance
+-- `0027:1025-1032` carried on the wire and refused to persist, homing the decision to "6.9's
+-- verification_bundle, which owns the shape a verifier reads" — and the bundle is derived FROM THE
+-- DATABASE, so a field the database does not hold is one no later re-derivation can produce.
+-- ⛔ The list is EXTENDED here, deliberately, having read the new columns — never relaxed into a
+-- subset check, which would stop catching the speculative column this assertion exists for.
 select columns_are('public', 'spin',
-  array['id', 'ceremony_id', 'spin_index', 'kind', 'live_award_ids', 'revealed_at'],
-  'spin: EXACTLY SOLUTION-DESIGN.md:205-213''s six columns — no more (6.8 widens BEHAVIOUR, not shape)');
+  array['id', 'ceremony_id', 'spin_index', 'kind', 'live_award_ids', 'revealed_at',
+        'label', 'bytes_consumed'],
+  'spin: SOLUTION-DESIGN.md:205-213''s six columns PLUS 6.9a''s two provenance columns — no more');
 select fk_ok('public', 'spin', 'ceremony_id', 'public', 'ceremony', 'id',
   'spin: ceremony_id references ceremony(id)');
 select has_index('public', 'spin', 'spin_ceremony_index_key',

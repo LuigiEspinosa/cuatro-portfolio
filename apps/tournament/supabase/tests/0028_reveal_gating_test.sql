@@ -246,6 +246,38 @@ select (select id from tournament where name = 'TF'), s
 
 -- Re-derived rather than hardcoded, and SCOPED BY NAME rather than `limit 1` — the correction 0025's
 -- and 0026's reviews both made to their own views (`0027:159-177`).
+-- ⭐⭐ ADDED BY STORY 6.9a (migration 0029, AC4), AND THE ADDITION IS THE POINT RATHER THAN A CHORE.
+-- `reveal_spin` now refuses `bundle_not_published` before it reads the reveal ledger, because a
+-- commitment chosen after an outcome is known commits to nothing. Every ceremony in this file that is
+-- meant to reach ANY guard past that one therefore needs a published `verification_bundle` row — and
+-- without them 34 of this suite's 84 assertions went red at once, which is exactly the blast radius a
+-- new pre-write guard should have. ⛔ They are inserted DIRECTLY rather than through
+-- `publish_bundle`, deliberately: this file tests `reveal_spin`, and routing its fixtures through a
+-- second RPC would make every failure here ambiguous between the two functions.
+-- ⚠ `locked_ceremony` (TL) and `unstarted_ceremony` (TN) are deliberately EXCLUDED — they must keep
+-- refusing at the STATE guard, which runs first, and giving them bundles would silently move which
+-- guard Section C is measuring.
+insert into verification_bundle (tournament_id, ceremony_id, snapshot_id, seed_demo_sha256,
+                                 algorithm_version, bundle_sha256, payload_canonical, payload,
+                                 published_at)
+-- ⛔ THE SNAPSHOT IS THE CEREMONY'S OWN — CORRECTED BY THE 6.9a CODE REVIEW. This insert shipped as
+-- `(select id from stat_snapshot limit 1)`, directly beneath the comment above forbidding exactly
+-- that: no `order by`, no scoping to `c.tournament_id`, so all four bundle rows pointed at an
+-- arbitrary snapshot that in general belongs to a DIFFERENT tournament than the ceremony they hang
+-- off. These four rows are what unblock 34 previously-red assertions, so their provenance is
+-- load-bearing rather than cosmetic — a fixture that silently stops representing the state it
+-- claims to is how a suite goes green while measuring nothing. `c.snapshot_id` is the ceremony's
+-- own frozen snapshot and needs no selection at all.
+-- ⚠ `coalesce` on the seed only, because a ceremony reaching this fixture always HAS a snapshot;
+-- if that ever stops being true the `not null` column raises here, loudly, rather than binding a
+-- stranger's rows.
+select c.tournament_id, c.id, c.snapshot_id,
+       coalesce(c.seed_demo_sha256, repeat('0', 64)), 'inclusivcup-roulette-1.0.0',
+       repeat('f', 64), '{}', '{}'::jsonb, now()
+  from ceremony c
+  join tournament t on t.id = c.tournament_id
+ where t.name in ('TW', 'TC', 'TD', 'TO');
+
 create temporary view f as
 select
   (select c.id from ceremony c join tournament t on t.id = c.tournament_id where t.name = 'TW') as walk_ceremony,
@@ -1066,9 +1098,15 @@ select is(
               where l !~ '^\s*--'),
             '''reason'',\s*''([a-z_]+)''', 'g') m
     where p.proname = 'reveal_spin' and p.pronamespace = 'public'::regnamespace),
-  array['already_revealed', 'ceremony_not_spinning', 'no_ceremony', 'no_such_spin',
-        'out_of_order', 'unknown_actor'],
-  '⭐ the closed refusal set, read from reveal_spin''s OWN prosrc with comment lines stripped — a seventh reason added to the SQL reddens here and in lib/ceremony/reveal.test.ts');
+  -- ⭐⭐ THE SEVENTH REASON LANDED, AND THIS ASSERTION IS HOW IT WAS NOTICED. `bundle_not_published`
+  -- was added by migration 0029 (Story 6.9a, AC4): no reveal may happen until `publish_bundle` has
+  -- committed the ceremony's canonical bytes. The sentence below predicted exactly this — "a seventh
+  -- reason added to the SQL reddens here and in lib/ceremony/reveal.test.ts" — and both did.
+  -- ⛔ Updated DELIBERATELY, having read the new guard, and the lib's `REVEAL_REASONS` plus the
+  -- route's `STATUS_FOR` were widened in the same change. Never relax this into a subset check.
+  array['already_revealed', 'bundle_not_published', 'ceremony_not_spinning', 'no_ceremony',
+        'no_such_spin', 'out_of_order', 'unknown_actor'],
+  '⭐ the closed refusal set, read from reveal_spin''s OWN prosrc with comment lines stripped — an eighth reason added to the SQL reddens here and in lib/ceremony/reveal.test.ts');
 
 -- ⚠ BOTH CLIENT ROLES, AND THAT IS A CODE-REVIEW FIX (2026-08-08). This filtered `grantee = 'anon'`
 -- only. R7's whole claim is that a column added to `ceremony` LATER is un-granted BY DEFAULT and that

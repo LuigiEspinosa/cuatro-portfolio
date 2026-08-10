@@ -43,6 +43,7 @@ export const dynamic = 'force-dynamic';
 const STATUS_FOR: Record<Extract<RevealSpinResult, { ok: false }>['reason'], number> = {
   no_ceremony: 404,
   ceremony_not_spinning: 409, // the run is not persisted yet, or the ceremony is already complete
+  bundle_not_published: 409, // ⛔ Story 6.9a: publish the commitment BEFORE the first reveal (AD-22)
   no_such_spin: 404,
   already_revealed: 409, // ⛔ a double-tap is a no-op to the DATA and a refusal to the caller — never a second audit row
   out_of_order: 409, // ⛔ the published spin order IS the reveal order (UX-DR32/42)

@@ -458,9 +458,27 @@ const ReasonWriteFailed = "write_failed"
 // set is not trusted: the caller fails closed, exactly as `lib/ceremony/lock.ts` does, because an
 // unrecognised refusal is precisely the case where guessing is worst.
 var PersistReasons = map[string]struct{}{
-	"no_ceremony":              {},
-	"ceremony_not_locked":      {},
-	"already_persisted":        {},
+	"no_ceremony":         {},
+	"ceremony_not_locked": {},
+	"already_persisted":   {},
+	// ⛔⛔ ADDED BY STORY 6.9a, AND IT WAS A REAL PRE-EXISTING GAP, NOT A NEW REASON.
+	// Migration 0028's code review added `reveal_in_progress` to `persist_ceremony` on 2026-08-08 and
+	// this map was never widened, so `Persist` FAILED CLOSED on a perfectly ordinary refusal and
+	// reported `write_failed` — the admin lost the reason entirely, which is the exact failure
+	// `TestPersistReasonsIsExactlyWhatMigration0027Returns` exists to prevent and the exact failure
+	// THE BAR hit in 6.8a with `seed_mismatch`.
+	// ⚠ IT WAS INVISIBLE BECAUSE THE TEST READ THE WRONG FILE: it named `0027_ceremony_run.sql`, and
+	// 0027 does not contain this reason. Re-pointing that test at the LATEST definition of the
+	// function — which 6.9a had to do anyway, because 0029 replaces it again — is what surfaced this.
+	"reveal_in_progress": {},
+	// ⛔ ADDED BY STORY 6.9a'S CODE REVIEW alongside the guard itself. `persist_ceremony` now
+	// refuses once the ceremony's commitment is published, because `p_replace => true` would delete
+	// and rewrite every spin the immutable `bundle_sha256` describes — and `reveal_in_progress`
+	// structurally cannot catch it, since publishing requires zero reveals. Registered here in the
+	// same change as the SQL: a reason the migration can return and this map does not carry makes
+	// `Persist` fail closed and report `write_failed`, losing the reason entirely — the exact gap
+	// `reveal_in_progress` sat in above for a whole story.
+	"bundle_published":         {},
 	"snapshot_missing":         {},
 	"seed_missing":             {},
 	"seed_mismatch":            {},

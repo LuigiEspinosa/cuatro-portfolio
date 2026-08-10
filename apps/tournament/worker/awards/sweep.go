@@ -424,7 +424,11 @@ func spinWinners(awardID string, out Outcome) ([]string, error) {
 		// `stage2.go:773` rather than restated.
 		if err := validSteamID64(out.SteamID64); err != nil {
 			return nil, sweepRefuse(SweepDetailInternal,
-				"award "+awardID+" resolved to a WINNER with no steamid64")
+				// ⭐ 6.9a CODE REVIEW: the wording follows the guard. It was tightened from an
+				// emptiness check to steamID64Re and the message was left describing the old one, so a
+				// present-but-non-numeric id reported "with no steamid64". These guards exist so a
+				// defect names itself; a message naming the wrong failure defeats them.
+				"award "+awardID+" resolved to a WINNER whose steamid64 is missing or not decimal digits")
 		}
 		return []string{out.SteamID64}, nil
 
@@ -447,7 +451,8 @@ func spinWinners(awardID string, out Outcome) ([]string, error) {
 			// `assigned`, which is published as a sorted array.
 			if err := validSteamID64(sid); err != nil {
 				return nil, sweepRefuse(SweepDetailInternal,
-					"award "+awardID+" resolved to a SHARED outcome with an empty steamid64")
+					// ⭐ 6.9a CODE REVIEW — see the sibling guard above.
+					"award "+awardID+" resolved to a SHARED outcome whose steamid64 is missing or not decimal digits")
 			}
 			if _, dup := seenWinner[sid]; dup {
 				return nil, sweepRefuse(SweepDetailInternal,

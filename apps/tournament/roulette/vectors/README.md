@@ -37,7 +37,7 @@ stories:
 | 3 — Stage-1 weighted pick | `stage1-pick.json` | **Story 6-4b** (+ 6.5's ladder rows, + 6-5b's shared-arm clamp row) | ✅ shipped |
 | — FR-26 anti-sweep (≤1 trophy/player/spin) | `antisweep-resolve.json` | **Story 6.6** | ✅ shipped |
 | — FR-28 pity draw (the guaranteed consolation) | `pity-draw.json` | **Story 6.7** | ✅ shipped |
-| 4 — canonical JSON + `bundle_sha256` (RFC-8785) | `canonical-bundle.json` | **Story 6.9a** | ✅ shipped (⏳ its `end_to_end` row is owed by 6.9a's Task 9) |
+| 4 — canonical JSON + `bundle_sha256` (RFC-8785) | `canonical-bundle.json` (+ `canonical-bundle-input.json`) | **Story 6.9a** | ✅ shipped, `end_to_end` row included |
 | 5 — end-to-end ceremony vector + suite completeness | *(not yet)* | **Story 6.11** | ⏳ |
 
 ⚠ **The gate numbers in the two right-hand rows above are the REVERSE of `SOLUTION-DESIGN:441-445`.**
@@ -99,10 +99,42 @@ the cases the gate exists to pin; text makes the input byte-exact; and it tests 
 a verifier parses a document off the wire before canonicalizing it.
 
 **This directory is not finished.** Gate 5 (the end-to-end ceremony vector with forced ties across
-*every* ladder rung, an anti-sweep overflow and a pity draw, Story 6.11) is still to come, and
-**gate 4's own `end_to_end` row is owed by Story 6.9a's Task 9** — the REAL ceremony's bundle only
-exists once the 14-demo corpus has been rebuilt and published, so the row is carried as an
-explicitly empty list that both suites assert against rather than as a silent omission. Everything
+*every* ladder rung, an anti-sweep overflow and a pity draw, Story 6.11) is still to come.
+⭐ **Gate 4's `end_to_end` row LANDED with Story 6.9a's Task 9**: the REAL ceremony's bundle only
+exists once the 14-demo corpus has been rebuilt and published, and it now is — 75,013 canonical
+bytes over 28 players, 12 awards and 40 spins, hashing to the `bundle_sha256` `publish_bundle`
+committed. ⚠ Its input document lives in **`canonical-bundle-input.json`**, the only vector input
+carried in its own file: at 75 KB it would bury the generator, and reading it from a sibling keeps
+`--check` doing what it does for every other row — reproducing the derived form and hash from
+COMMITTED data, never from a live database.
+
+> ### ⛔ `canonical-bundle-input.json` is an INPUT, and it is EXEMPT from the file-format rules below
+>
+> **Recorded by Cuatro at the 6.9a code review (2026-08-09)**, because the paragraph above places
+> the file inside the vector contract while the file obeys none of it, and a reader is entitled to
+> know which of those is intended.
+>
+> It is a **captured corpus document**, not a generated vector. It is one 75,014-character line with
+> no trailing newline and no 2-space indent, and it is **not** in `generate_vectors.py`'s `outputs`
+> map, so `--check` never round-trips it. All of that is deliberate: the generator cannot
+> *regenerate* a document that came out of a real ceremony run, so an `outputs` entry would be a
+> byte-identity check wearing a derivation's clothes, and pretty-printing 75 KB of captured bytes
+> would only make the diff worse. The **eight** files `--check` covers are the derived ones; this is
+> the ninth file in the directory and the first that is neither.
+>
+> **Its integrity is carried by the derived rows in `canonical-bundle.json`** — the canonical form,
+> the byte count and the SHA-256 are all recomputed from it on every `--check`, in all three
+> runtimes, and any edit to it changes those three values.
+>
+> ⚠ **The residual hole, stated rather than left to be discovered:** because the derived rows are
+> regenerated *from* this file, a wholesale rewrite of it produces a **self-consistent** vector with
+> a different hash — `--check` would report OK on all eight and nothing would go red. What that
+> costs is the tripwire in `bundle_test.go` / `canonical.test.ts` asserting **75,013 canonical
+> bytes** by name; those two assertions are the only thing standing between a silent corpus swap and
+> a green suite. ⛔ Do not delete them as brittle literals — being brittle in exactly this way is
+> their job.
+
+Everything
 the draw itself needs — the block function, `uniform_int`, Stage 2, the FR-29 ladder, Stage 1,
 anti-sweep **and pity** — is here, and so is the serialization the bundle is hashed through.
 (⚠ The "everything the draw needs" sentence was **false** between Stories 6.6 and 6.7: it claimed

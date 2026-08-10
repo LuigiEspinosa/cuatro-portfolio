@@ -391,11 +391,30 @@ func ResolvePity(in PityInput) (PityResult, error) {
 		// ⭐ `Rejections` IS DERIVED FROM THE BYTE POSITION. A rejection consumes its k bytes and
 		// draws k fresh ones (`prng.go:196-230`), so the step's total is k * (1 + rejections) and
 		// the count reads straight back out. k is never 0 here because n >= 2 on every step.
+		//
+		// ⭐⭐ THE EXACTNESS IS ASSERTED, NOT ASSUMED — ADDED BY THE 6.9a CODE REVIEW, WHICH FOUND
+		// THIS GUARD IN TYPESCRIPT ONLY. `pity.ts` refuses when `consumed` is not a whole multiple
+		// of k; Go and Python kept silently truncating. That asymmetry pointed the wrong way: Go is
+		// the PRODUCER, so a `uniform_int` change that consumed a partial extra byte on a rejection
+		// would have written a truncated `rejections` into the published `draws[]` here,
+		// `publish_bundle` would have accepted it, and the refusal would have fired only in the
+		// browser verifier — after the commitment was immutable. The byte-accounting gate this epic
+		// rests on cannot see it either, because `bytes_consumed` stays correct while `rejections`
+		// is wrong.
 		consumed := in.Stream.Consumed() - before
+		steps := consumed / uint64(k)
+		if steps*uint64(k) != consumed {
+			return PityResult{}, &PityInvalidError{
+				Detail: PityDetailStream,
+				Reason: "step n=" + itoa(int(n)) + " consumed " + itoa(int(consumed)) +
+					" bytes, which is not a whole multiple of k=" + itoa(k) +
+					" — the stream and the primitive disagree about what a draw costs",
+			}
+		}
 		draws = append(draws, PityDraw{
 			N:          n,
 			K:          k,
-			Rejections: int(consumed/uint64(k)) - 1,
+			Rejections: int(steps) - 1,
 			Value:      j,
 		})
 
