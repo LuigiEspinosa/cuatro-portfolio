@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { es, categoriasSelladas, premioBloqueado, premioDe } from './es';
+import {
+  es,
+  categoriasSelladas,
+  ganadoresAnunciados,
+  premioAnunciado,
+  premioBloqueado,
+  premioDe,
+  valorDecidido,
+} from './es';
 
 /**
  * The Spanish copy helpers that carry a CONTRACT rather than just a string (Story 6.1 code review).
@@ -112,5 +120,109 @@ describe('es.verify — a TOP-LEVEL SIBLING, deliberately not under es.awards (S
     for (const forbidden of ['Más info', 'equidad', '¡', '💪', '✓']) {
       expect(block).not.toContain(forbidden);
     }
+  });
+});
+
+/**
+ * ⭐⭐ STORY 6.10, AC7 — THE REVEAL GROUP'S PLACEMENT, CHECKED DELIBERATELY RATHER THAN ASSUMED.
+ *
+ * The story asks in so many words to *"check deliberately whether the new ceremony copy trips the
+ * key-name sweep"*, because unlike 6.9b's verify copy — which names no award and structurally cannot
+ * — this copy DOES name awards: a revealed award's identity is exactly what it renders. That is
+ * legitimate (`award_viewer_read` opens the identity at its spin, `0028:436-445`), and it is
+ * precisely why the group must sit OUTSIDE a scan whose job is to prove the LOCKED block leaks
+ * nothing. The answer is that it does not trip the sweep — because the sweep is scoped to
+ * `es.awards`, and this is a sibling. Asserted in both directions.
+ */
+describe('es.reveal — a TOP-LEVEL SIBLING, and the AD-22 sweep is untouched (Story 6.10, AC7)', () => {
+  it('lives at the top level, not nested inside es.awards', () => {
+    expect(Object.hasOwn(es, 'reveal')).toBe(true);
+    expect(Object.hasOwn(es, 'bucket')).toBe(true);
+    expect(Object.hasOwn(es, 'decidingStat')).toBe(true);
+    expect(Object.hasOwn(es.awards, 'bucket')).toBe(false);
+    expect(Object.hasOwn(es.awards, 'decidingStat')).toBe(false);
+  });
+
+  it('⚠ `es.awards.reveal` is the 6.1 LOCKED PILL and is a different thing entirely', () => {
+    // ⛔ A NAME COLLISION WORTH ASSERTING RATHER THAN DISCOVERING. `es.awards.reveal` has existed
+    // since 6.1 as the string `SE DESBLOQUEA EN LA CEREMONIA` on the locked leaderboards block — so
+    // `Object.hasOwn(es.awards, 'reveal')` is TRUE and always was, and a placement test written
+    // against it would have failed for a reason that had nothing to do with this story's group.
+    expect(typeof es.awards.reveal).toBe('string');
+    expect(typeof es.reveal).toBe('object');
+    expect(es.awards.reveal).toBe('SE DESBLOQUEA EN LA CEREMONIA');
+  });
+
+  it('⛔ es.awards is BYTE-UNCHANGED by this story — same seven keys, same AD-22 scan', () => {
+    // ⛔ `AWARD_IDENTITY_STRINGS` IS NOT TOUCHED BY 6.10 either. Re-asserted so a future reader can
+    // see the list was left alone deliberately rather than forgotten.
+    expect(AWARD_IDENTITY_STRINGS).toHaveLength(6);
+    expect(Object.keys(es.awards).sort()).toEqual([
+      'coverTitle',
+      'lockedUntilSpin',
+      'reveal',
+      'sealedSuffix',
+      'sealedSuffixOne',
+      'sechead',
+      'subhead',
+    ]);
+    const block = JSON.stringify(es.awards);
+    for (const identity of AWARD_IDENTITY_STRINGS) {
+      expect(block).not.toContain(identity);
+    }
+  });
+
+  it('⚠ and the sweep WOULD have caught the new copy had it been nested — so the placement matters', () => {
+    // ⛔ NON-VACUITY FOR THE PLACEMENT CLAIM. If the new groups happened to contain none of the
+    // identity strings, "it is outside the scan" would be a fact about the copy rather than about the
+    // structure, and someone could later move it in harmlessly-looking. They cannot: the bucket map's
+    // KEY `skill` and the stat map's keys `kills` / `deaths` are all in the list, so nesting these
+    // groups under `es.awards` reddens the AD-22 scan immediately.
+    const wouldBeScanned = JSON.stringify({ ...es.awards, bucket: es.bucket, decidingStat: es.decidingStat });
+    const tripped = AWARD_IDENTITY_STRINGS.filter((s) => wouldBeScanned.includes(s));
+    expect(tripped).toEqual(expect.arrayContaining(['skill', 'kills', 'deaths']));
+  });
+
+  it('every es.reveal value is a non-empty string — no nested groups', () => {
+    const entries = Object.entries(es.reveal);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [key, value] of entries) {
+      expect(typeof value, `es.reveal.${key}`).toBe('string');
+      expect((value as string).trim().length, `es.reveal.${key}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('obeys the EXPERIENCE.md:58-73 voice table', () => {
+    const block = JSON.stringify({ reveal: es.reveal, bucket: es.bucket, decidingStat: es.decidingStat });
+    for (const forbidden of ['Más info', 'equidad', '¡', '💪', '✓']) {
+      expect(block).not.toContain(forbidden);
+    }
+  });
+});
+
+describe('the reveal helpers (Story 6.10, AC10)', () => {
+  it('premioAnunciado joins with EM DASHES and DROPS empty segments', () => {
+    expect(premioAnunciado('Máquina de Frags', 'Habilidad', '21 bajas')).toBe(
+      'Máquina de Frags — Habilidad — 21 bajas',
+    );
+    // ⚠ A pity result has no bucket and no deciding stat; two bare dashes are what a screen reader
+    // would actually read out.
+    expect(premioAnunciado('Ronda de consolación', '', '', 'Mara')).toBe('Ronda de consolación — Mara');
+    expect(premioAnunciado('solo')).toBe('solo');
+    expect(premioAnunciado()).toBe('');
+  });
+
+  it('ganadoresAnunciados speaks every winner — ⚠ `, ` rather than the visual middle dot', () => {
+    expect(ganadoresAnunciados(['Dex', 'Theo', 'Mara'])).toBe('Dex, Theo, Mara');
+    expect(ganadoresAnunciados(['Dex'])).toBe('Dex');
+    expect(ganadoresAnunciados([])).toBe('');
+    expect(ganadoresAnunciados(['Dex', 'Theo'])).not.toContain('·');
+  });
+
+  it('valorDecidido renders the stored digits verbatim — ⛔ no rounding, no locale separators', () => {
+    expect(valorDecidido('21', 'bajas')).toBe('21 bajas');
+    expect(valorDecidido('1234567', 'bajas')).toBe('1234567 bajas');
+    expect(valorDecidido('1234567', 'bajas')).not.toContain(',');
+    expect(valorDecidido('73/100', 'ADR')).toBe('73/100 ADR');
   });
 });

@@ -4,10 +4,14 @@ import {
   type ChannelStatus,
   type Clock,
   type TimerHandle,
+  CEREMONY_EVENTS,
+  ceremonyTopic,
   COALESCE_MS,
   createCoalescer,
   indicatorToken,
   isReconnect,
+  NUDGE_EVENTS,
+  tournamentTopic,
 } from '@/lib/realtime/status';
 
 /** A controllable fake clock: queues timeouts, fires them when `advance` crosses their deadline. */
@@ -156,5 +160,53 @@ describe('createCoalescer (AC2 — a burst collapses to one action)', () => {
     expect(pending()).toBe(0);
     advance(COALESCE_MS * 2);
     expect(action).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ⭐⭐ STORY 6.10, AC6 / DECISION F — THE TWO EVENT VOCABULARIES ARE SEPARATE, AND THE SEPARATION IS
+ * ASSERTED IN BOTH DIRECTIONS RATHER THAN TRUSTED TO A COMMENT.
+ *
+ * `0028:869-871` states the rule inside the migration that emits the event: *"DO NOT add
+ * `spin.reveal` to `lib/realtime/status.ts`'s NUDGE_EVENTS — that list is the `tournament:<id>`
+ * vocabulary 5.8's surfaces consume, and the consumer for this one is 6.10's, with the UI that needs
+ * it."* They ride DIFFERENT CHANNELS: merging them would subscribe every viewer surface to a ceremony
+ * topic it has no reason to hear, and would make the shell `router.refresh()` on all 40 reveals.
+ */
+describe('the tournament and ceremony vocabularies are disjoint (Story 6.10, AC6)', () => {
+  it('NUDGE_EVENTS is still exactly the four SHIPPED tournament events', () => {
+    expect([...NUDGE_EVENTS]).toEqual([
+      'match.approved',
+      'bracket.advanced',
+      'match.rolled_back',
+      'match.manual_resolved',
+    ]);
+  });
+
+  it('⛔ `spin.reveal` is NOT in NUDGE_EVENTS', () => {
+    expect(NUDGE_EVENTS as readonly string[]).not.toContain('spin.reveal');
+  });
+
+  it('CEREMONY_EVENTS is exactly the one event `reveal_spin` emits', () => {
+    expect([...CEREMONY_EVENTS]).toEqual(['spin.reveal']);
+  });
+
+  it('⛔ no event appears in BOTH lists', () => {
+    const shared = (NUDGE_EVENTS as readonly string[]).filter((e) =>
+      (CEREMONY_EVENTS as readonly string[]).includes(e),
+    );
+    expect(shared).toEqual([]);
+    // Non-vacuity: both lists are non-empty, so an empty intersection means something.
+    expect(NUDGE_EVENTS.length).toBeGreaterThan(0);
+    expect(CEREMONY_EVENTS.length).toBeGreaterThan(0);
+  });
+
+  it('the topics are spelled once, and ⚠ `<id>` is the CEREMONY id, not the tournament id', () => {
+    // `0028:857-859` — `tournament:<id>` already carries the tournament axis, and a viewer learns the
+    // ceremony id from the published `ceremony` row, so the channel is reachable from a published
+    // read alone (AD-11).
+    expect(ceremonyTopic(77)).toBe('ceremony:77');
+    expect(tournamentTopic(9)).toBe('tournament:9');
+    expect(ceremonyTopic(9)).not.toBe(tournamentTopic(9));
   });
 });

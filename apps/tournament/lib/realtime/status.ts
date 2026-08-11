@@ -32,6 +32,33 @@ export const NUDGE_EVENTS = [
   'match.manual_resolved',
 ] as const;
 
+/**
+ * The `ceremony:<id>` vocabulary — ONE event, emitted by `reveal_spin` (`0028:872-886`).
+ *
+ * ⛔⛔ `spin.reveal` IS DELIBERATELY NOT A MEMBER OF `NUDGE_EVENTS` ABOVE, AND THAT IS 6.8b's
+ * DECISION F stated in the migration itself (`0028:869-871`): *"DO NOT add `spin.reveal` to
+ * `lib/realtime/status.ts`'s NUDGE_EVENTS — that list is the `tournament:<id>` vocabulary 5.8's
+ * surfaces consume, and the consumer for this one is 6.10's, with the UI that needs it."* The two
+ * lists ride DIFFERENT CHANNELS; merging them would subscribe every viewer surface to a ceremony
+ * topic it has no reason to hear, and would make the shell refresh on every one of the 40 reveals.
+ * ⚠ `status.test.ts` asserts the separation in both directions rather than trusting this comment.
+ *
+ * ⚠ `<id>` IS THE CEREMONY ID, NOT THE TOURNAMENT ID (`0028:857-859`), and the ceremony id is
+ * discoverable from the published `ceremony` row — so the channel is reachable from a published read
+ * alone, which is what keeps AD-11 true of this surface.
+ */
+export const CEREMONY_EVENTS = ['spin.reveal'] as const;
+
+/** `ceremony:<id>`, spelled once. ⛔ The topic is server-authored; never invent a second spelling. */
+export function ceremonyTopic(ceremonyId: number): string {
+  return `ceremony:${ceremonyId}`;
+}
+
+/** `tournament:<id>`, spelled once — the 5.8 topic, lifted here beside its ceremony sibling. */
+export function tournamentTopic(tournamentId: number): string {
+  return `tournament:${tournamentId}`;
+}
+
 /** Coalesce window (ms): a burst of nudges collapses to ONE `router.refresh()`, well inside the ~2 s budget. */
 export const COALESCE_MS = 300;
 

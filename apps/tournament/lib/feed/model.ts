@@ -126,9 +126,17 @@ interface BracketAdvanceDetail {
   advancing_entry?: number; // roster_entry.id (speculative — the uniform writer is deferred)
   round?: string;
 }
+/**
+ * `reveal_spin`'s `detail` (`0028:777-788`). ⭐ Story 6.10 reads THREE more of the keys it already
+ * writes: `kind` tells a consolation round from a category, and the two counts make a zero-winner
+ * reveal legible. ⛔ Every one of them was already being written — nothing new is asked of the SQL.
+ */
 interface AwardRevealDetail {
   title?: string;
   subtitle?: string;
+  kind?: string;
+  award_count?: number;
+  winner_count?: number;
 }
 
 /**
@@ -196,12 +204,41 @@ export function toCardModel(row: FeedRow, names: Map<number, string>): CardModel
   const d = (row.detail ?? {}) as AwardRevealDetail;
   // ⭐ 6.9b CODE REVIEW — `safeViewerJoined`, NOT `safeViewerText`. Both fields are `string_agg(…,
   // ' · ')` aggregates (`0028:757-768`), so judging the whole join against a bound calibrated for one
-  // award name refused legitimate multi-award / multi-winner cards and fell back to
-  // `revealAtCeremony` — an already-revealed award telling the viewer it has not been revealed. The
+  // award name refused legitimate multi-award / multi-winner cards and fell back to teaser copy. The
   // guard now judges each element; character refusals still refuse the whole string, because
   // dropping an element would misreport who won.
-  const title = safeViewerJoined(d.title, es.award.teaserTitle);
-  const subtitle = safeViewerJoined(d.subtitle, es.award.revealAtCeremony);
+  //
+  // ⭐⭐ STORY 6.10, AC8 — THIS IS THE FIRST OF THE TWO SITES THAT MADE THE CARD LIE, AND FIXING ONE
+  // WITHOUT THE OTHER LEAVES IT WRONG (`deferred-work.md:369`). A `no_eligible_players` main spin
+  // leaves `v_subtitles` NULL, so `reveal_spin` OMITS the `subtitle` key by design — and the old
+  // fallback was `es.award.revealAtCeremony`, so a just-revealed award announced *"Se revela en la
+  // ceremonia"*, which `AwardRevealBody` then rendered a SECOND time as a lockpill. Over the standing
+  // corpus that is 12 of 12 main spins: the ceremony's dominant card, not an edge.
+  //
+  // ⚠ ABSENT AND REFUSED ARE DIFFERENT FACTS AND GET DIFFERENT WORDS. The key is absent exactly when
+  // the aggregate had no rows (`string_agg` over zero rows is NULL, and `award.name` /
+  // `player.display_name` are both NOT NULL so nothing else can produce it) ⇒ there was no winner.
+  // A key that is PRESENT and refused means the names exist and cannot be shown ⇒ say that instead.
+  // ⛔ Neither may borrow teaser copy: the entry type is written by `reveal_spin` and by nothing
+  // else, so every `award_reveal` row is BY CONSTRUCTION an already-revealed award.
+  const title =
+    typeof d.title === 'string'
+      ? safeViewerJoined(d.title, es.reveal.awardUnnamed)
+      : d.kind === 'pity'
+        ? es.reveal.pityRound
+        : es.reveal.awardUnnamed;
+  // ⭐⭐ CODE REVIEW 2026-08-11 — `ABSENT` MEANS ABSENT, NOT "ANY NON-STRING". The discriminator was
+  // `typeof d.subtitle === 'string'`, which classified PRESENT-BUT-WRONG-TYPE as absent, so a row
+  // carrying `subtitle: false` made the card positively assert *"Sin ganador en esta categoría"*
+  // about an award that may well have had winners — a false statement about who won, which is the
+  // same class of defect AC8 exists to remove. ⛔ Only a genuinely missing key is "no winner"; a
+  // present key of the wrong shape is a refusal, and refusals say so.
+  const subtitleAbsent = d.subtitle === undefined || d.subtitle === null;
+  const subtitle = subtitleAbsent
+    ? es.reveal.feedNoWinner
+    : typeof d.subtitle === 'string'
+      ? safeViewerJoined(d.subtitle, es.reveal.namesUnavailable)
+      : es.reveal.namesUnavailable;
   return {
     kind: 'award_reveal',
     id: row.id,

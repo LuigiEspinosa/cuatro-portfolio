@@ -1,9 +1,14 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { fetchVerificationBundle, fetchViewerCeremony } from '@/lib/ceremony/verification';
+import { fetchRevealedCeremony } from '@/lib/ceremony/reveal-read';
+import { buildRevealView } from '@/lib/ceremony/reveal-model';
+import { fetchAwardCatalogCount } from '@/lib/awards/read';
 import { currentTournament } from '../current-tournament';
 import { es } from '@/lib/i18n/es';
 import { Placeholder } from '../components/Placeholder';
 import { VerifyStrip } from './VerifyStrip';
+import { CeremonyReveal } from './CeremonyReveal';
+import { SpinRevealNudge } from '../components/SpinRevealNudge';
 import styles from './ceremonia.module.css';
 
 /*
@@ -25,10 +30,28 @@ import styles from './ceremonia.module.css';
  * published, there is genuinely nothing to verify and the 5.7 surface is still the right answer. So
  * neither becomes an orphan, and the strip appears exactly when there is a commitment to show.
  *
- * ⛔ NOT HERE, all of it 6.10's: the wheel, the phase copy, the trophy shelf, the reveal
- * choreography, the shared-screen mirror, the `prefers-reduced-motion` path, and the fix for the
- * zero-winner feed card that renders "Se revela en la ceremonia" twice (`deferred-work.md:369` —
- * it will be visibly wrong on the feed beside this strip, and that is expected).
+ * ⭐⭐ STORY 6.10 — THE REST OF THE SURFACE ARRIVES, AND THE PAGE GROWS BY AN ORDER OF MAGNITUDE.
+ * Everything 6.9b listed as "not here" is here now: the wheel, the phase copy, the trophy shelf, the
+ * reveal choreography, the shared-screen mirror, the `prefers-reduced-motion` path (the repo's
+ * first), and the `spin.reveal` consumer DECISION F withheld until its UI existed. The zero-winner
+ * feed card's doubled "Se revela en la ceremonia" is fixed at BOTH its sites in the same commit
+ * (`lib/feed/model.ts` + `TimelineFeed.tsx`), closing `deferred-work.md:369`.
+ *
+ * ⭐ DECISION T — THE REVEAL IS A SERVER READ. `fetchRevealedCeremony` runs on the ANON client, so
+ * every gate is `0028`'s and an unrevealed spin is ABSENT rather than blanked; the browser computes
+ * nothing about who won. ⛔ DECISION O still holds beside it: the only browser compute on this page
+ * is `Verificar la ceremonia`, which re-derives from the BUNDLE — a different thing entirely.
+ *
+ * ⭐ DECISION U — the reveal is rendered RESOLVED, and motion is a CSS layer over it. There is no
+ * `matchMedia` and NO MOTION BRANCH anywhere in this route; `reveal.module.css`'s one `@media`
+ * block is the whole reduced-motion implementation, which is what makes AC3 provable by diffing two
+ * captures rather than by assertion.
+ *
+ * ⚠ CODE REVIEW 2026-08-11 — THE CLAIM IS "NO MOTION BRANCH", NOT "NO JAVASCRIPT" AND NOT "NO TIMER".
+ * The route does run timers: `SpinRevealNudge` retains the realtime store, which schedules the 300 ms
+ * coalescer and the deferred-teardown tick. None of them reads a motion preference, so AC3 is
+ * untouched — but the wider "no timer anywhere on the route" wording was false, and the source scan
+ * that appeared to prove it only ever read this one directory.
  */
 export const dynamic = 'force-dynamic';
 
@@ -73,16 +96,72 @@ export default async function CeremoniaPage() {
   // "measure zeros, never narrate them" rule.
   // ⚠ Gated HERE rather than inside `verify.ts` so AC7's five approved strings are untouched:
   // `revealedSpins` was already carried by the reader and simply discarded by this page.
-  if (read.envelope.revealedSpins === 0) return <Placeholder body={es.verify.unavailable} />;
+  // ⭐⭐ CODE REVIEW 2026-08-11 — THE SUBSCRIBER MOUNTS HERE TOO, AND WITHOUT IT THE CEREMONY NEVER
+  // STARTS BY ITSELF. This is the state the audience sits in: they open `/ceremonia` BEFORE spin 1,
+  // which is exactly when people gather. With no `ceremony:<id>` retainer on this branch, the k=0 →
+  // k=1 transition required every viewer to reload manually — the "does not see it until they
+  // reload" consequence AC6 exists to remove, left in place at the one moment it matters most.
+  // ⛔ AC2 IS UNTOUCHED: `SpinRevealNudge` renders `null`, so this adds no strip, no button, no hash,
+  // no wheel, no shelf, no locked grid and no `próxima entrega` line — the rendered document is
+  // still `Todavía no hay nada publicado que verificar.` and nothing else.
+  if (read.envelope.revealedSpins === 0) {
+    return (
+      <>
+        <SpinRevealNudge ceremonyId={ceremony.id} />
+        <Placeholder body={es.verify.unavailable} />
+      </>
+    );
+  }
+
+  // ⭐ AC1/AC2 — "PERSISTENT" MEANS PERSISTENT THROUGH THE CHOREOGRAPHY, NOT MOUNTED BEFORE THERE IS
+  // ANYTHING TO VERIFY. The strip is built ONCE here, past the k=0 gate, and handed to the reveal as
+  // a child so that no component below can construct one on a surface with nothing to check.
+  const strip = (
+    <VerifyStrip
+      complete={read.envelope.complete}
+      bundleSha256={read.envelope.bundleSha256}
+      bundle={read.envelope.bundle}
+      {...(ceremony.seedDemoSha256 === null ? {} : { seedDemoSha256: ceremony.seedDemoSha256 })}
+    />
+  );
+
+  // ⚠ TWO READS, IN PARALLEL, AND NEITHER IS A SECOND COPY OF SOMETHING ALREADY HELD.
+  // `fetchRevealedCeremony` is this story's own reader; `award_catalog_count` is the ONE pre-reveal
+  // catalog fact (`lib/awards/read.ts`) and supplies the `n` of `Premio i de n`. ⛔ Nothing here
+  // re-reads what the envelope already carries, and widening `lib/ceremony/verification.ts`'s
+  // projection is forbidden by its own header.
+  // ⚠ CODE REVIEW 2026-08-11 — `revealedSpins`/`totalSpins` no longer reach the view model at all:
+  // they were threaded in and rendered by nothing. The k=0 gate above still uses `revealedSpins`,
+  // which is what the envelope carries them for.
+  const [revealed, catalog] = await Promise.all([
+    fetchRevealedCeremony(client, ceremony.id),
+    fetchAwardCatalogCount(client, tournament.id),
+  ]);
+
+  // ⚠ FAIL CLOSED, AND THE STRIP SURVIVES. If the reveal read refuses, there is still a published
+  // commitment to verify — that is what got us past the gate above — so the honest page is the strip
+  // alone rather than a half-built ceremony. ⛔ It is NOT the coming-soon placeholder: this is a LIVE
+  // ceremony, and rendering `es.placeholder.ceremony` here would be 6.9b review finding D3 again.
+  if (!revealed.ok || !catalog.ok) {
+    return (
+      <div className={styles.page}>
+        <SpinRevealNudge ceremonyId={ceremony.id} />
+        {strip}
+      </div>
+    );
+  }
+
+  const view = buildRevealView({
+    ceremony: revealed.ceremony,
+    awardCount: catalog.count,
+    complete: read.envelope.complete,
+  });
 
   return (
     <div className={styles.page}>
-      <VerifyStrip
-        complete={read.envelope.complete}
-        bundleSha256={read.envelope.bundleSha256}
-        bundle={read.envelope.bundle}
-        {...(ceremony.seedDemoSha256 === null ? {} : { seedDemoSha256: ceremony.seedDemoSha256 })}
-      />
+      {/* AC6 — the `spin.reveal` consumer, shipping in the same commit as the UI it drives. */}
+      <SpinRevealNudge ceremonyId={ceremony.id} />
+      <CeremonyReveal view={view} verifyStrip={strip} />
     </div>
   );
 }

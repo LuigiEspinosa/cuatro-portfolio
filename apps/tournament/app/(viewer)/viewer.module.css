@@ -95,6 +95,40 @@
   }
 }
 
+/*
+ * ⭐⭐ STORY 6.10, AC3 — THE PULSE COMES UNDER THE RULE, AND THE CHOICE IS RECORDED RATHER THAN
+ * ASSUMED (Task 3 asks for exactly that). `@keyframes pulse` above has been unguarded since 5.6 and
+ * is the ONLY animation that predates this story. It runs `infinite`, which is the single strongest
+ * case `prefers-reduced-motion` exists for — a vestibular trigger that never stops — and it sits in
+ * the app bar of every viewer surface including the ceremony, so leaving it running while the wheel
+ * beside it was stilled would have been an incoherent answer to one user setting.
+ * ⚠ ONLY THE MOTION IS REMOVED, NEVER THE MEANING: the dot keeps its `background` and the pill keeps
+ * its copy, so "En vivo" still reads as live. That is UX-DR32's rule — *"it changes the delivery, not
+ * the result"* — applied to a component 6.10 does not otherwise own.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .pillLive .pulse {
+    animation: none;
+  }
+}
+
+/*
+ * ⭐ AC4 / DECISION V — THE ONE PLACE THE 430 px CAP IS RELAXED, AND IT IS SCOPED TO A PAGE THAT
+ * ACTUALLY CASTS. The ceremony's shared-screen banner is the SAME component tree at a wide
+ * breakpoint (never a second route), so it has to escape the shell cap that makes every other viewer
+ * surface a phone column. ⛔ The cap is NOT lifted globally: `:has()` keys on the
+ * `data-ceremony-wide` marker the reveal renders, so `/`, `/bracket`, `/leaderboards` and
+ * `/jugador/[id]` are byte-identical at every width.
+ * ⚠ AN ATTRIBUTE RATHER THAN A CLASS, DELIBERATELY: CSS Modules hash class names per file, so this
+ * stylesheet cannot name a class defined in `ceremonia/reveal.module.css`. Attribute selectors are
+ * not rewritten, which makes them the one selector that can cross the module boundary honestly.
+ */
+@media (min-width: 1024px) {
+  .shell:has([data-ceremony-wide]) {
+    max-width: 1180px;
+  }
+}
+
 .main {
   min-width: 0;
 }

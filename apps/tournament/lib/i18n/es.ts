@@ -48,7 +48,20 @@ export const es = {
     avanzaA: 'avanza a',
   },
 
-  /** award_reveal teaser copy (locked; no writer yet — provided so the branch renders if a row appears). */
+  /**
+   * award_reveal TEASER copy, from the era before `reveal_spin` existed.
+   *
+   * ⛔⛔ SUPERSEDED ON THE LIVE PATH BY `es.reveal.feed*` (Story 6.10, AC8) AND RETAINED DELIBERATELY.
+   * These two strings were the feed card's fallbacks, and that was the defect `deferred-work.md:369`
+   * records: a `no_eligible_players` reveal fell back to `revealAtCeremony` — *"an already-revealed
+   * award telling the viewer it has not been revealed"* — on 12 of 12 main spins over the measured
+   * corpus, rendered TWICE because the lockpill printed the same string. `award_reveal` rows are
+   * written by `reveal_spin` and by nothing else, so such a row is BY CONSTRUCTION already revealed
+   * and teaser copy can never be true of one.
+   * ⚠ NOT DELETED, for one concrete reason: `0028:189` names both keys in a shipped migration's
+   * comment, and `supabase/migrations/**` is byte-untouchable in this story — removing them would
+   * leave a live migration pointing at identifiers that no longer exist.
+   */
   award: {
     teaserTitle: 'Las carreras de premios se aprietan',
     revealAtCeremony: 'Se revela en la ceremonia',
@@ -255,6 +268,174 @@ export const es = {
     /** Shown instead of the strip when there is no published bundle to verify yet. */
     unavailable: 'Todavía no hay nada publicado que verificar.',
   },
+
+  /**
+   * The `/ceremonia` REVEAL — the wheel, the phases, the cards, the shelf and the pity round
+   * (Story 6.10, AC7 — FR-30 / AD-24 / UX-DR42).
+   *
+   * ⛔ A TOP-LEVEL SIBLING, DELIBERATELY NOT UNDER `es.awards`, for the reason `es.verify` states
+   * two blocks up and one this group makes SHARPER: `es.test.ts:52-57` substring-scans
+   * `JSON.stringify(es.awards)` for `AWARD_IDENTITY_STRINGS` including KEY NAMES, and this copy
+   * genuinely does name awards — a revealed award's identity is exactly what it renders. That is
+   * legitimate (`award_viewer_read` opens the identity at its spin, `0028:436-445`) and it is
+   * precisely why it must stay outside a scan that exists to prove the LOCKED block leaks nothing.
+   * `es.test.ts` asserts the placement rather than trusting it.
+   *
+   * ⭐ THE DOMINANT CARD IS "NOBODY QUALIFIED", AND THE COPY IS WRITTEN FOR THAT, NOT AROUND IT.
+   * 0 of 28 players clear the FR-21 floors over the standing corpus, so 12 of 12 main spins resolve
+   * `no_eligible_players` and 28 of 28 players take a consolation — bytes now cryptographically
+   * committed by 6.9a's bundle. `noEligiblePlayers` is one quiet honest line (Cuatro, 2026-08-11),
+   * and the emotional weight sits on the pity round, which is a promise of spotlight and ⛔ NEVER a
+   * participation-trophy pat (EXPERIENCE.md:180).
+   *
+   * ⚠ THE PROVENANCE LINE IS `es.ceremony.seededByDemo` AND IS NEVER RETYPED HERE.
+   *
+   * VOICE (EXPERIENCE.md:58-73): sentence case, no `¡`, no emoji, no `✓`, never
+   * `Premio de consolación para los que no ganaron.`
+   */
+  reveal: {
+    /** The `<section>` landmark for the whole reveal. */
+    landmark: 'Ceremonia de premios',
+    /**
+     * The record of already-revealed spins, and the still-locked grid.
+     *
+     * ⭐ CODE REVIEW 2026-08-11 — THESE TWO EXIST BECAUSE THREE SECTIONS WERE SHARING ONE NAME. The
+     * record `<section>` reused `landmark` while NESTED INSIDE the section that already had it, so a
+     * screen-reader landmark rotor listed *"Ceremonia de premios"* twice with no way to tell the whole
+     * ceremony from the log of past spins; and the locked grid reached into `es.awards.sechead` — the
+     * AD-22-scanned leaderboards group the suite asserts is byte-unchanged by this story — so two
+     * unrelated surfaces shared one heading and would drift the moment either was reworded.
+     */
+    recordLandmark: 'Premios ya revelados',
+    lockedLandmark: 'Premios todavía bloqueados',
+
+    // ── the two phases (AC7). ⚠ EM DASH U+2014, not the mock's middot (`mock-ceremony.html:676`).
+    phase1: 'Fase 1 — la suerte elige la categoría',
+    phase2: 'Fase 2 — las estadísticas eligen al ganador',
+    /** The third rail step: EXPERIENCE.md:119's fourth spin state. */
+    phaseRevealed: 'Revelado',
+    /** FR-26's anti-sweep note, verbatim and lowercase as EXPERIENCE.md:169 sets it. */
+    oneTrophy: 'un trofeo por giro',
+
+    // ── the wheel (DESIGN.md:271 — the one true circle).
+    wheelLabel: 'Ruleta INCLUSIV360',
+    wheelEyebrow: 'Ruleta de premios',
+    hubGlyph: '3·6·0',
+    hubSub: 'Fuerza en lo que otros ignoran',
+
+    // ── outcomes. ⛔ One line each, stating what happened, once.
+    noEligiblePlayers: 'Nadie alcanzó el mínimo.',
+    noAwardableValue: 'Nadie registró un valor en esta categoría.',
+    /**
+     * ⛔ UNREACHABLE THROUGH THE DATABASE AND KEPT LOUD ANYWAY. `award_result_outcome_kind_not_tie`
+     * (`0027:268`) refuses a persisted `tie`, because the FR-29 ladder always resolves one before it
+     * reaches a row. If this ever renders, the producer skipped the ladder — so it says so rather
+     * than falling through to something that reads like a normal result (the `M19` precedent,
+     * `deferred-work.md:396`).
+     */
+    unresolvedTie: 'Esta categoría no quedó resuelta.',
+    winnerLabel: 'Ganador',
+    winnersLabel: 'Ganadores',
+    /** UX-DR59 / EXPERIENCE.md:123 — a designed outcome, never an error state. */
+    sharedTrophy: 'Trofeo compartido',
+
+    // ── the prize (DESIGN.md:270). Display only: prizes settle outside the app.
+    prizeTitle: 'Camiseta Inclusiv',
+    prizeSub: 'Se entrega fuera de la app',
+    prizeTag: 'Premio',
+
+    // ── the trophy shelf.
+    shelfHead: 'Trofeos',
+
+    // ── the pity round (AC7, FR-28).
+    pityRound: 'Ronda de consolación',
+    pityPromise: 'Nadie se va con las manos vacías',
+    /**
+     * Q4 (Cuatro, 2026-08-11) — THE CONSOLATION PRIZE TAKES NO PER-PRIZE NAME. `0026:111` left it as
+     * *"a product decision Story 6.10 may yet take"*; the decision is that the round is the frame and
+     * the token shirt is the prize, so there is no thirteenth category to name.
+     */
+    pitySub: 'Un giro aparte, con la misma semilla.',
+
+    // ── per-element name fallbacks (AC9). ⛔ A refused element is REFUSED, never dropped, so each
+    //    one still occupies its own slot and still counts toward the winner total.
+    nameUnavailable: 'Nombre no disponible',
+    awardUnnamed: 'Premio sin nombre',
+
+    // ── the feed card (AC8, closing `deferred-work.md:369`).
+    /**
+     * ⛔⛔ THE STRING THAT REPLACES THE DOUBLED LIE. A `no_eligible_players` main spin leaves
+     * `v_subtitles` NULL, so `reveal_spin` omits the `subtitle` key by design (`0028:770-774`) and
+     * `toCardModel` substituted `es.award.revealAtCeremony` while `AwardRevealBody` rendered the SAME
+     * string again as a lockpill — an award that had JUST been revealed reading *"Se revela en la
+     * ceremonia / [Se revela en la ceremonia]"*, on 12 of 12 main spins.
+     * ⚠ IT DOES NOT NAME A REASON, and that is deliberate: `timeline_feed.detail` carries
+     * `winner_count` but NOT `outcome_kind`, so the feed can honestly say there was no winner and
+     * cannot honestly say why. The reveal card, which reads `award_result.outcome_kind`, says which.
+     */
+    feedNoWinner: 'Sin ganador en esta categoría',
+    /** The pill that replaces the lockpill on an ALREADY-REVEALED card — EXPERIENCE.md:119's word. */
+    feedRevealed: 'Revelado',
+    /** The joined-aggregate fallback: the names exist and cannot be shown, which is not "not revealed". */
+    namesUnavailable: 'Nombres no disponibles',
+
+    // ── the shared screen (AC4 / FR-30). ⛔ The same tree at a wide breakpoint, never a second copy.
+    bannerEyebrow: 'Pantalla compartida',
+  },
+
+  /**
+   * `award.deciding_stat` → the Spanish noun, for the reveal's announced text (Story 6.10, AC10).
+   *
+   * ⚠⚠ `bajas` = KILLS AND `muertes` = DEATHS, AND THIS GROUP IS WRITTEN THAT WAY ON PURPOSE.
+   * `deferred-work.md:255` records the live ambiguity: EXPERIENCE.md:145's own screen-reader example
+   * says *"21 muertes"* for a KILLS award while the comedy award (most deaths) is also *"muertes"* —
+   * *"a screen-reader user cannot distinguish them"* — and 5.7 shipped `20 muertes` for a 20-KILLS
+   * floor (`5-7:240`). ⛔ This story is forbidden from adding a NEW instance of that ambiguity, so
+   * every kills-family stat here reads `bajas`.
+   * ⚠ NAMED CONSEQUENCE, so it is not discovered later: 5.7's `es.player.weird.*` still labels
+   * `blind_kills` *"Muertes a ciegas"*, so the two surfaces now spell one stat differently. That is
+   * the disambiguation arriving on one surface first, not a second ambiguity — and reconciling
+   * `es.player.weird.*` is `deferred-work.md:255`'s copy pass, which stays open.
+   *
+   * ⛔ `adr`, `kast_pct` and `hs_pct` REUSE `es.player`'s spellings rather than adding a third — the
+   * same rule that keeps `es.provenance.seedPublished` from acquiring a rival.
+   */
+  decidingStat: {
+    kills: 'bajas',
+    deaths: 'muertes',
+    assists: 'asistencias',
+    mvps: 'MVP',
+    flash_assists: 'asistencias de flash',
+    utility_damage: 'daño de utilidad',
+    knife_kills: 'bajas con cuchillo',
+    wallbang_kills: 'bajas atravesando muros',
+    through_smoke_kills: 'bajas a través del humo',
+    no_scope_kills: 'bajas sin mira',
+    blind_kills: 'bajas a ciegas',
+    entry_frags: 'bajas de entrada',
+    opening_deaths: 'muertes de apertura',
+    rounds_won: 'rondas ganadas',
+    rounds_played: 'rondas jugadas',
+    matches_played: 'partidas jugadas',
+    hs_kills: 'bajas a la cabeza',
+    adr: 'ADR',
+    hs_pct: '% de cabeza',
+    kast_pct: 'KAST',
+    entry_success: 'éxito de entrada',
+  },
+
+  /**
+   * `award.bucket` → the Spanish label (Story 6.10, AC7 — the four EXPERIENCE.md:90 names, verbatim).
+   *
+   * ⚠ THE KEYS ARE THE MACHINE VALUES `award_bucket_valid` (`0023`) admits, so this map is total by
+   * construction and a fifth bucket is a COMPILE error rather than a blank label at the ceremony.
+   */
+  bucket: {
+    skill: 'Habilidad',
+    clutch: 'Clutch',
+    weird: 'Rarezas del demo',
+    comedy: 'Comedia',
+  },
 } as const;
 
 /**
@@ -290,6 +471,50 @@ export function premioBloqueado(index: number, total: number): string {
  */
 export function categoriasSelladas(total: number): string {
   return `${total} ${total === 1 ? es.awards.sealedSuffixOne : es.awards.sealedSuffix}`;
+}
+
+/**
+ * The screen-reader announcement of ONE award reveal (Story 6.10, AC10) — EXPERIENCE.md:145's fixed
+ * pattern, verbatim including the EM DASHES: `Máquina de Frags — Habilidad — 21 bajas`.
+ *
+ * ⚠ THE THIRD SEGMENT IS NOT ALWAYS A STAT, and that is the honest shape rather than a shortcut.
+ * Over the standing corpus 12 of 12 main spins resolve `no_eligible_players`, which HAS no deciding
+ * value — so the tail carries the outcome sentence instead, and a screen-reader user hears what
+ * actually happened rather than a name, a bucket and silence.
+ * ⚠ The example in EXPERIENCE.md says *"21 muertes"* for a kills award; `es.decidingStat.kills` is
+ * `bajas` here, deliberately — see the note on that group and `deferred-work.md:255`.
+ */
+export function premioAnunciado(...segments: readonly string[]): string {
+  // ⚠ EMPTY SEGMENTS ARE DROPPED, NOT RENDERED AS ` —  — `. A pity result has no bucket and no
+  // deciding stat, and an announcement carrying two bare dashes is what a screen reader would
+  // actually read out.
+  return segments.filter((s) => s.length > 0).join(' — ');
+}
+
+/**
+ * The co-winner list as ONE spoken string (AC9 — *"the screen reader announces every winner"*).
+ *
+ * ⚠ THE JOIN IS A RENDER OF ALREADY-CHECKED ELEMENTS, NOT AN INPUT TO THE GUARD, and that
+ * distinction is the whole of 6.9b's finding. `safeViewerJoined` judging a `' · '` aggregate against
+ * a bound calibrated for ONE name is what sent a legitimate shared trophy to the fallback; here each
+ * name has ALREADY passed `checkViewerText` individually inside `lib/ceremony/reveal-read.ts`, and a
+ * refused one has already become its own fallback. Nothing below can widen or hide a refusal.
+ * ⚠ `, ` rather than the visual `' · '`: this string exists to be SPOKEN, and a middle dot is read
+ * aloud (or skipped) rather than heard as a separator.
+ */
+export function ganadoresAnunciados(names: readonly string[]): string {
+  return names.join(', ');
+}
+
+/**
+ * The deciding value as it is spoken and rendered: `21 bajas`, `73 ADR`.
+ *
+ * ⛔ NO LOCALE FORMATTING AND NO ROUNDING. `award_result.deciding_value` is DISPLAY ONLY
+ * (SOLUTION-DESIGN:219) but it sits beside a hash that promises reproducibility, so the digits shown
+ * are the digits stored. The caller wraps it in `.num` for tabular lining numerals (DESIGN.md:236).
+ */
+export function valorDecidido(value: string, statNoun: string): string {
+  return `${value} ${statNoun}`;
 }
 
 /** entry_type → human label (AD-24 machine-value → label). Node COLOR is a separate pure map (AC3). */

@@ -24,12 +24,22 @@
  * `composes:` across modules would couple two surfaces that have no other reason to touch.
  */
 
-/* The surface itself. 6.10 fills the rest of it; today the strip is all there is. */
+/*
+ * The surface itself. ⭐ Story 6.10 filled the rest of it: `reveal.module.css` — a SIBLING — owns the
+ * wheel, the flip, the shelf and every gold pixel, precisely so the zero-gold invariant above stays a
+ * property of THIS file that a plain grep can check.
+ */
 .page {
   background: var(--page);
   padding-bottom: var(--sp-4);
 }
 
+/*
+ * ⚠ Story 6.10 — THE MARGIN IS UNCHANGED ON PURPOSE. The strip is now the third cell of the reveal's
+ * stage grid AND is still rendered alone on the fail-closed branch (a published commitment the reveal
+ * read could not join). A margin trimmed for the grid would edge-bleed it on that branch, where it is
+ * the page's only child; 16 px inside a grid cell costs nothing.
+ */
 .strip {
   margin: var(--sp-4);
   padding: var(--sp-4);
@@ -74,7 +84,16 @@
 
 .button {
   /* DESIGN.md:275's form: solid accent-live fill, dark ink, {rounded.sm}. */
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /*
+   * ⭐ STORY 6.10, AC10 — THE ≥44 px TAP-TARGET FLOOR, MEASURED RATHER THAN ASSUMED. As shipped by
+   * 6.9b this button was 8 + 21 + 8 = 37 px tall (`var(--sp-2)` twice plus 14px × 1.5 leading), under
+   * EXPERIENCE.md:141's floor, which names *"the verify button"* explicitly. It is the ONLY
+   * interactive element on this surface, so the floor is met here or nowhere.
+   */
+  min-height: 44px;
   padding: var(--sp-2) var(--sp-4);
   background: var(--blue);
   color: var(--page);

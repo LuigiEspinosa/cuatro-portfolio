@@ -198,6 +198,16 @@ describe('collectRosterIds', () => {
  * rather than left to be discovered.
  */
 describe('toCardModel — the award_reveal shapes reveal_spin actually writes (Story 6.8b, AC8)', () => {
+  /**
+   * ⚠ WRITTEN AS ESCAPES, NEVER AS PASTED CHARACTERS (Story 6.10). Both of these are INVISIBLE, which
+   * is the entire hazard `lib/i18n/safe-text.ts` exists for — a literal one in a source file is
+   * unreviewable, survives exactly one careless reformat, and the case then silently stops testing
+   * anything while still passing. U+200D is the emoji ZWJ and is ubiquitous in Steam display names;
+   * U+200B is the zero-width space `0023`'s `[^[:space:]]` check accepts as a legal award name.
+   */
+  const ZWJ_SUBTITLE = 'Ana · Be\u200Dto';
+  const ZWSP_TITLE = '\u200B';
+
   const revealRow = (detail: unknown): FeedRow => ({
     id: 12,
     tournament_id: 7,
@@ -248,35 +258,93 @@ describe('toCardModel — the award_reveal shapes reveal_spin actually writes (S
       NAMES,
     );
     expect(card).toMatchObject({ kind: 'award_reveal', node: 'gold', title: 'Muralla' });
-    expect((card as Extract<typeof card, { kind: 'award_reveal' }>).subtitle).toBe(es.award.revealAtCeremony);
+    // ⭐⭐ STORY 6.10, AC8 — THIS ASSERTION IS THE CLOSURE OF `deferred-work.md:369`. It used to read
+    // `es.award.revealAtCeremony`, i.e. the test PINNED the defect: an award that had just been
+    // revealed announcing *"Se revela en la ceremonia"*, on the ceremony's dominant card.
+    expect((card as Extract<typeof card, { kind: 'award_reveal' }>).subtitle).toBe(es.reveal.feedNoWinner);
+    // ⛔ AND IT NO LONGER SAYS IT ANYWHERE ON THE CARD — the second site (the lockpill in
+    // `TimelineFeed.tsx`) is what made it a DOUBLING, and fixing one without the other left it wrong.
+    expect((card as Extract<typeof card, { kind: 'award_reveal' }>).aria).not.toContain(
+      es.award.revealAtCeremony,
+    );
   });
 
-  it('⭐ a PITY spin reveals a WINNER but NO catalog award — title falls back, subtitle does not (R6)', () => {
+  it('⭐ a PITY spin reveals a WINNER but NO catalog award — the title names the ROUND (R6, AC8)', () => {
     // A pity result carries `award_id is null` (0026:90-91), so it reveals no catalog award at all and the
-    // writer has no name to state. ⛔ KNOWN GAP, homed to 6.10: the shipped fallback copy was written for a
-    // PRE-ceremony teaser and reads oddly on an already-revealed consolation prize. This story may not add
-    // an i18n key (AD-24 keeps ceremony strings in 6.10's scope), so the gap is ASSERTED rather than hidden.
+    // writer has no name to state. ⭐ STORY 6.10 CLOSES THE GAP 6.8b ASSERTED RATHER THAN HID: the shipped
+    // fallback was PRE-ceremony teaser copy (*"Las carreras de premios se aprietan"*) on an
+    // already-revealed consolation prize. The writer states `kind` in `detail` (`0028:779`), so the card
+    // can name the round instead of guessing — and Q4 (Cuatro, 2026-08-11) settled that the round is the
+    // frame and the token shirt is the prize, so there is no thirteenth category to name.
     const card = toCardModel(
       revealRow({ spin_index: 3, kind: 'pity', award_count: 0, winner_count: 1, subtitle: 'Beto' }),
       NAMES,
     );
     expect(card).toMatchObject({ kind: 'award_reveal', node: 'gold', subtitle: 'Beto' });
-    expect((card as Extract<typeof card, { kind: 'award_reveal' }>).title).toBe(es.award.teaserTitle);
+    expect((card as Extract<typeof card, { kind: 'award_reveal' }>).title).toBe(es.reveal.pityRound);
   });
 
-  it('a MISSING detail still degrades to both teaser fallbacks rather than throwing', () => {
-    // `lib/feed/model.ts:186-188` — one malformed row must never blank the feed. Exercised for `{}`, for a
-    // null detail, and for keys of the wrong TYPE (a number is not a string).
-    for (const detail of [{}, null, { title: 7, subtitle: false }, { title: null, subtitle: null }]) {
+  it('a MISSING detail still degrades without throwing — and ⛔ never to teaser copy (AC8)', () => {
+    // `lib/feed/model.ts` — one malformed row must never blank the feed. Exercised for `{}`, for a null
+    // detail, and for keys of the wrong TYPE (a number is not a string).
+    // ⛔ THE FALLBACKS CHANGED AT 6.10 AND THE REASON IS STRUCTURAL, NOT AESTHETIC: `award_reveal` rows are
+    // written by `reveal_spin` and by NOTHING else, so such a row is BY CONSTRUCTION already revealed. A
+    // fallback that says otherwise is false on every row that can reach it.
+    // ⭐⭐ CODE REVIEW 2026-08-11 — THE CASE TABLE IS SPLIT BY FACT, BECAUSE IT USED TO PIN A FALSE
+    // STATEMENT AS CORRECT. `{ title: 7, subtitle: false }` sat in the same row as `{}` and `null`
+    // and was asserted to produce *"Sin ganador en esta categoría"* — a positive claim that nobody
+    // won, made about a row whose `subtitle` key was PRESENT and merely the wrong type, i.e. one that
+    // may well have had winners. Absent means the aggregate had no rows; a malformed value means the
+    // names exist and cannot be shown. Two facts, two sentences — the rule this file's own comment
+    // states three lines above `toCardModel`'s fallback.
+    for (const detail of [{}, null, { title: null, subtitle: null }]) {
       const card = toCardModel(revealRow(detail), NAMES) as Extract<
         ReturnType<typeof toCardModel>,
         { kind: 'award_reveal' }
       >;
       expect(card.kind).toBe('award_reveal');
-      expect(card.title).toBe(es.award.teaserTitle);
-      expect(card.subtitle).toBe(es.award.revealAtCeremony);
+      expect(card.title).toBe(es.reveal.awardUnnamed);
+      expect(card.subtitle).toBe(es.reveal.feedNoWinner);
       expect(card.node).toBe('gold');
     }
+
+    for (const detail of [{ title: 7, subtitle: false }, { title: [], subtitle: 42 }]) {
+      const card = toCardModel(revealRow(detail), NAMES) as Extract<
+        ReturnType<typeof toCardModel>,
+        { kind: 'award_reveal' }
+      >;
+      expect(card.kind).toBe('award_reveal');
+      expect(card.title).toBe(es.reveal.awardUnnamed);
+      // ⛔ NOT `feedNoWinner`: this row never says nobody won.
+      expect(card.subtitle).toBe(es.reveal.namesUnavailable);
+      expect(card.node).toBe('gold');
+    }
+  });
+
+  it('⭐ a PRESENT-but-REFUSED subtitle says the names cannot be shown, ⛔ not that nothing was revealed', () => {
+    // ⚠ ABSENT AND REFUSED ARE DIFFERENT FACTS. `string_agg` returns NULL only over ZERO ROWS
+    // (`award.name` and `player.display_name` are both NOT NULL, `0028:749-752`), so an absent key means
+    // "no winner". A key that IS present and fails the text guard means the names exist and cannot be
+    // safely rendered — U+200D is the emoji ZWJ and is ubiquitous in Steam display names (`6-9b:354`).
+    const card = toCardModel(
+      // ⚠ WRITTEN AS AN ESCAPE, NOT AS A PASTED CHARACTER. The whole hazard is that U+200D is
+      // INVISIBLE — a literal one in a test file is unreviewable and survives exactly one careless
+      // reformat before the case silently stops testing anything.
+      revealRow({ spin_index: 5, kind: 'main', award_count: 1, winner_count: 2, title: 'Muralla', subtitle: ZWJ_SUBTITLE }),
+      NAMES,
+    ) as Extract<ReturnType<typeof toCardModel>, { kind: 'award_reveal' }>;
+    expect(card.subtitle).toBe(es.reveal.namesUnavailable);
+    expect(card.subtitle).not.toBe(es.reveal.feedNoWinner);
+    expect(card.title).toBe('Muralla');
+  });
+
+  it('⭐ a REFUSED title falls back without borrowing the pity round’s name', () => {
+    const card = toCardModel(
+      revealRow({ spin_index: 6, kind: 'main', award_count: 1, winner_count: 0, title: ZWSP_TITLE }),
+      NAMES,
+    ) as Extract<ReturnType<typeof toCardModel>, { kind: 'award_reveal' }>;
+    expect(card.title).toBe(es.reveal.awardUnnamed);
+    expect(card.title).not.toBe(es.reveal.pityRound);
   });
 });
 

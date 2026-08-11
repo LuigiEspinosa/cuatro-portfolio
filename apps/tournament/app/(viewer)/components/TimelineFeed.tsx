@@ -104,7 +104,15 @@ function AwardRevealBody({ card }: { card: Extract<CardModel, { kind: 'award_rev
           <div className={styles.ttitle}>{card.title}</div>
           <div className={styles.tsub}>{card.subtitle}</div>
         </div>
-        <span className={styles.lockpill}>{es.award.revealAtCeremony}</span>
+        {/*
+          ⭐⭐ STORY 6.10, AC8 — THE SECOND OF THE TWO SITES (`deferred-work.md:369`). This pill used to
+          render `es.award.revealAtCeremony` UNCONDITIONALLY, so a zero-winner reveal showed *"Se
+          revela en la ceremonia"* beside a subtitle that said the same thing — an already-revealed
+          award telling the viewer, twice, that it had not been revealed. ⛔ `award_reveal` rows are
+          written by `reveal_spin` and by nothing else, so the card is a reveal BY CONSTRUCTION and
+          the pill now names the state EXPERIENCE.md:119 gives it: *Revelado*.
+        */}
+        <span className={styles.lockpill}>{es.reveal.feedRevealed}</span>
       </div>
     </div>
   );

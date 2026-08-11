@@ -28,14 +28,21 @@ import styles from './ceremonia.module.css';
  * `lib/roulette/verify.ts` returns typed MACHINE outcomes precisely so this file can be the only
  * place the two vocabularies meet.
  *
- * ⛔ NOT HERE, and it is 6.10's: the wheel, the phase copy, the trophy shelf, the reveal
- * choreography, the shared-screen mirror and the `prefers-reduced-motion` path.
+ * ⭐ STORY 6.10 — THE STRIP IS NOW THE THIRD CELL OF THE REVEAL'S STAGE GRID, and it is handed in as
+ * a CHILD by `page.tsx` rather than imported by `CeremonyReveal`. That is AC2 made structural: the
+ * k=0 gate lives in one place, so no component below can mount a verify affordance on a surface with
+ * nothing to verify. ⚠ Its own `aria-live` region is a LEAF beside the reveal's, never nested inside
+ * it (AC10) — two live regions on one screen must be siblings or neither announces predictably.
  *
  * ⭐ UX-DR32 (reduced motion — CRITICAL) IS DISPOSED OF EXPLICITLY RATHER THAN LEFT LOOKING
- * UNADDRESSED: this affordance has NO MOTION TO REDUCE. There is no wheel, no flip, no transition
- * and no animation in `ceremonia.module.css` — the button swaps its label and a live region gains
- * text. The rule binds 6.10's wheel and flip; here it is satisfied by construction, which is a
- * different thing from being ignored.
+ * UNADDRESSED: this affordance STILL has NO MOTION TO REDUCE. There is no transition and no
+ * animation in `ceremonia.module.css`, and 6.10's layout gave it none — the button swaps its label
+ * and a live region gains text. ⚠ THE SENTENCE THAT USED TO SAY *"the rule binds 6.10's wheel and
+ * flip"* IS NOW SPENT: it does, and the binding shipped — `reveal.module.css`'s single
+ * `@media (prefers-reduced-motion: reduce)` block is the whole implementation. Here the rule is
+ * satisfied by construction, which is a different thing from being ignored.
+ *
+ * ⚠ AC10 also raised the button to a ≥44 px tap target; as 6.9b shipped it, it was 37 px.
  *
  * ⛔ NO IN-APP DISPUTE AFFORDANCE (`SPEC.md:87`, EXPERIENCE.md:71). A disagreement is resolved with
  * this evidence, in Discord. That is a designed non-feature, not an omission.

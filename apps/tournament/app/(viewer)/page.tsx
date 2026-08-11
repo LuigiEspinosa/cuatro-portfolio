@@ -4,6 +4,8 @@ import { currentTournament } from './current-tournament';
 import { es } from '@/lib/i18n/es';
 import { TimelineFeed } from './components/TimelineFeed';
 import { EmptyState } from './components/EmptyState';
+import { SpinRevealNudge } from './components/SpinRevealNudge';
+import { fetchViewerCeremony } from '@/lib/ceremony/verification';
 import styles from './feed.module.css';
 
 /*
@@ -34,6 +36,19 @@ export default async function FeedHome({
         </p>
       ) : null}
 
+      {/*
+        ⭐⭐ CODE REVIEW 2026-08-11 — THE `spin.reveal` CONSUMER ON THE FEED, WHICH IS THE SURFACE
+        DECISION F's ACCEPTED CONSEQUENCE ACTUALLY NAMED: *"a viewer sitting on the feed during the
+        ceremony does not see the new card until they reload"* (`6-8b:827-834`). Story 6.10 shipped the
+        consumer on `/ceremonia` only, so the gap it was told to close stayed open.
+        ⛔ `spin.reveal` is NOT added to `NUDGE_EVENTS` — AC6 forbids it by name, and the shell's
+        `RealtimeNudge` rides `tournament:<id>`. This is a second retainer on `ceremony:<id>`, which is
+        precisely what the ref-counted topic store exists to serve.
+        ⚠ The extra read happens ONLY in `ceremony` state, so the feed's cost outside the ceremony is
+        unchanged. The island renders `null`.
+      */}
+      {await renderCeremonyNudge(client, resolved)}
+
       {await renderBody(client, resolved)}
 
       <footer className={styles.footer}>
@@ -43,6 +58,23 @@ export default async function FeedHome({
       </footer>
     </>
   );
+}
+
+/**
+ * Retain `ceremony:<id>` while the ceremony is running, so an `award_reveal` card arrives live.
+ *
+ * ⚠ FAILS SILENT BY DESIGN. `ceremony_viewer_read` hides a `not_started` ceremony, so a miss here is
+ * the gate working, not an error — and AD-11 makes the nudge a pure optimisation anyway: a reload
+ * always shows the correct feed, with or without this island.
+ */
+async function renderCeremonyNudge(
+  client: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  resolved: Awaited<ReturnType<typeof currentTournament>>,
+) {
+  if (!resolved.ok || resolved.state !== 'ceremony') return null;
+  const ceremony = await fetchViewerCeremony(client, resolved.id);
+  if (!ceremony.ok) return null;
+  return <SpinRevealNudge ceremonyId={ceremony.ceremony.id} />;
 }
 
 async function renderBody(
