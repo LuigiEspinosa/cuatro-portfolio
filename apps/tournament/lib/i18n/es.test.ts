@@ -56,3 +56,61 @@ describe('es.awards — the locked block carries no award identity', () => {
     }
   });
 });
+
+describe('es.verify — a TOP-LEVEL SIBLING, deliberately not under es.awards (Story 6.9b, AC7)', () => {
+  /**
+   * ⛔⛔ WHY THE PLACEMENT IS A TEST AND NOT A CONVENTION. The scan two blocks above runs
+   * `JSON.stringify(es.awards)` and substring-matches `AWARD_IDENTITY_STRINGS` — which sweeps KEY
+   * NAMES as well as values. `es.awards.verify.*` would therefore be inside an AD-22 scan that
+   * verify copy has no business being in, and the first key someone added containing `skill` or
+   * `kills` would fail a test about award secrecy for a reason that had nothing to do with it.
+   * ⚠ Verify copy is NOT AD-22-scoped: it names no award, and structurally it cannot — the strip
+   * renders a hash and an outcome.
+   */
+  it('lives at the top level, not nested inside es.awards', () => {
+    expect(Object.hasOwn(es, 'verify')).toBe(true);
+    expect(Object.hasOwn(es.awards, 'verify')).toBe(false);
+  });
+
+  it('the AD-22 scan over es.awards is unchanged by this story', () => {
+    // ⛔ `AWARD_IDENTITY_STRINGS` IS NOT TOUCHED BY 6.9b. Re-asserted here so a future reader can see
+    // the list was left alone deliberately rather than forgotten.
+    expect(AWARD_IDENTITY_STRINGS).toHaveLength(6);
+    expect(Object.keys(es.awards).sort()).toEqual([
+      'coverTitle',
+      'lockedUntilSpin',
+      'reveal',
+      'sealedSuffix',
+      'sealedSuffixOne',
+      'sechead',
+      'subhead',
+    ]);
+  });
+
+  it('carries no award identity of its own', () => {
+    // Not because AD-22 requires it here, but because it is cheap and it makes the claim above
+    // ("structurally it cannot") a measurement instead of an assertion.
+    const block = JSON.stringify(es.verify);
+    for (const identity of AWARD_IDENTITY_STRINGS) {
+      expect(block).not.toContain(identity);
+    }
+  });
+
+  it('every value is a non-empty string — no nested groups', () => {
+    const entries = Object.entries(es.verify);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [key, value] of entries) {
+      expect(typeof value, `es.verify.${key}`).toBe('string');
+      expect((value as string).trim().length, `es.verify.${key}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('the outcome strings are sentence-case Spanish, not the Don’t column', () => {
+    // EXPERIENCE.md:58-73 — "Verificar la ceremonia", never "Más info sobre la equidad", and never
+    // corporate cheer.
+    const block = JSON.stringify(es.verify);
+    for (const forbidden of ['Más info', 'equidad', '¡', '💪', '✓']) {
+      expect(block).not.toContain(forbidden);
+    }
+  });
+});

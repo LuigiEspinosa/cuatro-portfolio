@@ -1,5 +1,6 @@
 import type { EntryType, FeedRow, MatchResultDetail } from '@/lib/feed/types';
 import { es, resultadoAprobado } from '@/lib/i18n/es';
+import { safeViewerJoined } from '@/lib/i18n/safe-text';
 
 /**
  * Pure card-model + presentation helpers for the timeline feed (Story 5.6, Task 4).
@@ -182,10 +183,25 @@ export function toCardModel(row: FeedRow, names: Map<number, string>): CardModel
     };
   }
 
-  // award_reveal (no writer / no award table yet — Epic 6). Renders by construction.
+  // award_reveal — `reveal_spin` (Story 6.8b) is the writer, and `title` carries the AWARD NAME.
+  //
+  // ⭐ STORY 6.9b, AC9 — THIS IS WHERE `deferred-work.md:265-266` ACTUALLY BITES. `0023`'s
+  // `~ '[^[:space:]]'` accepts U+200B / U+200E / U+FEFF and bounds nothing, so an award named with a
+  // single zero-width space renders as an EMPTY CARD here and a multi-KB name renders as a wall.
+  // ⚠ 6.9a's claim that the bundle's ASCII restriction gave that debt teeth was measured FALSE —
+  // DECISION N drops `name` from the hashed document entirely, so the hash never covered this. The
+  // guard belongs at the surface, and this is the surface: `safeViewerText` REJECTS rather than
+  // strips (stripping U+200E could produce a different real name) and falls back to the copy this
+  // card already uses when the writer sends nothing at all.
   const d = (row.detail ?? {}) as AwardRevealDetail;
-  const title = typeof d.title === 'string' ? d.title : es.award.teaserTitle;
-  const subtitle = typeof d.subtitle === 'string' ? d.subtitle : es.award.revealAtCeremony;
+  // ⭐ 6.9b CODE REVIEW — `safeViewerJoined`, NOT `safeViewerText`. Both fields are `string_agg(…,
+  // ' · ')` aggregates (`0028:757-768`), so judging the whole join against a bound calibrated for one
+  // award name refused legitimate multi-award / multi-winner cards and fell back to
+  // `revealAtCeremony` — an already-revealed award telling the viewer it has not been revealed. The
+  // guard now judges each element; character refusals still refuse the whole string, because
+  // dropping an element would misreport who won.
+  const title = safeViewerJoined(d.title, es.award.teaserTitle);
+  const subtitle = safeViewerJoined(d.subtitle, es.award.revealAtCeremony);
   return {
     kind: 'award_reveal',
     id: row.id,

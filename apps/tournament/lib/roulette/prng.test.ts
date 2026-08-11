@@ -664,8 +664,8 @@ describe('lib/roulette source pinning', () => {
     // so the list is asserted exactly rather than as a lower bound: a new module added here
     // without thinking about the bans below should fail loudly, not slip in unscanned.
     // `stage2.ts` was added by Story 6-4a, `stage1.ts` by 6-4b, `ladder.ts` by 6.5, `sweep.ts`
-    // by 6.6, `pity.ts` by 6.7 and `canonical.ts` by 6.9a; each had to be registered here to be
-    // scanned at all.
+    // by 6.6, `pity.ts` by 6.7, `canonical.ts` by 6.9a and `verify.ts` by 6.9b; each had to be
+    // registered here to be scanned at all.
     //
     // ⭐⭐ STORY 6.9a IS THE ONE THIS LIST WAS WRITTEN FOR. Every module above it ships to a
     // browser only in principle; `canonical.ts` is the first that ships there in FACT, because
@@ -674,6 +674,13 @@ describe('lib/roulette source pinning', () => {
     // design — and that redness is what proved the bans were not passing vacuously over it: the
     // `server-only`, `node:`, third-party and 16-item banned-construct scans were already GREEN
     // for the new module when these two went red, so they had really run against it.
+    //
+    // ⭐⭐ AND STORY 6.9b IS THE STORY THAT MAKES THE SENTENCE ABOVE PAST TENSE. `verify.ts` IS the
+    // button's entry point: it composes every other module in this list, so registering it pulls
+    // the WHOLE package into the client bundle rather than one file of it. The `server-only` ban
+    // (DECISION D) stops being a forward-looking guard here and becomes the thing standing between
+    // this directory and a build error in production — which is why the list is asserted by exact
+    // equality rather than as a lower bound, and why the two pins below reddened again, by design.
     expect(shipped.map(([f]) => f)).toEqual([
       'canonical.ts',
       'labels.ts',
@@ -683,6 +690,7 @@ describe('lib/roulette source pinning', () => {
       'stage1.ts',
       'stage2.ts',
       'sweep.ts',
+      'verify.ts',
     ]);
   });
 
@@ -837,6 +845,35 @@ describe('lib/roulette source pinning', () => {
         // P7 (the FR-21 floors are never consulted) and DECISION K' (the suppressed tied set is
         // never read) made visible in the import graph.
         'pity.ts': ['./labels', './prng', './stage2'],
+        // ⭐⭐ STORY 6.9b, AND IT IS THE ONLY ROW WHOSE FULLNESS IS THE POINT. Every other entry in
+        // this pin protects a module by what it does NOT import; `verify.ts` is the browser's
+        // ceremony ORCHESTRATOR, so it composes the package and its row is the composition itself.
+        //
+        // WHAT ITS PRESENCE PROTECTS, module by module: `./prng` and `./labels` are the seed and the
+        // per-spin domain separators, `./stage1` the weighted pick, `./stage2` the resolution types,
+        // `./ladder` the FR-29 rungs, `./sweep` the anti-sweep pass, `./pity` the consolation draw
+        // and `./canonical` the RFC-8785 bytes the commitment is taken over. A specifier
+        // DISAPPEARING from this row means the verifier stopped re-deriving one whole stage and
+        // started taking the producer's word for it — which is FR-27 quietly inverted, and which
+        // nothing else in this suite could see, because a verifier that skips a stage still agrees
+        // with the document about every stage it did run.
+        //
+        // WHAT ITS ABSENCES PROTECT: no `server-only` (it would throw in the client bundle this file
+        // exists to fill — DECISION D), no `node:` builtin, and nothing third-party. ⛔ And note what
+        // is NOT here and must never be: `@/lib/i18n/es`. DECISION Q — `verify.ts` carries no
+        // Spanish, because an aliased specifier fails `startsWith('.')` and reddens the third-party
+        // ban above. The typed machine outcomes cross to Spanish in the `'use client'` island, which
+        // is the one place the two vocabularies are allowed to meet.
+        'verify.ts': [
+          './canonical',
+          './labels',
+          './ladder',
+          './pity',
+          './prng',
+          './stage1',
+          './stage2',
+          './sweep',
+        ],
       });
     });
 
@@ -845,23 +882,78 @@ describe('lib/roulette source pinning', () => {
     // the bans would silently stop asserting and the pin above would still pass.
     it('at least one shipped module has a non-empty specifier list, so the bans are not vacuous', () => {
       const withImports = shipped.filter(([, src]) => importSpecifiers(src).length > 0);
-      expect(withImports.map(([f]) => f)).toEqual(['ladder.ts', 'pity.ts', 'stage1.ts', 'sweep.ts']);
+      expect(withImports.map(([f]) => f)).toEqual([
+        'ladder.ts',
+        'pity.ts',
+        'stage1.ts',
+        'sweep.ts',
+        'verify.ts',
+      ]);
     });
 
-    // ⭐⭐ AND THE STREAM-CONSUMER SPLIT ITSELF, PINNED AS DATA. The graph above states each
+    // ⭐⭐ AND THE STREAM-REACHING SPLIT ITSELF, PINNED AS DATA. The graph above states each
     // module's imports; this states the PROPERTY the graph exists to protect, so neither half can
-    // drift without the other reddening. Exactly two shipped modules may reach the PRNG —
-    // `stage1.ts` (the weighted category pick) and `pity.ts` (the seeded reveal order) — and every
-    // other resolver draws ZERO bytes BY DESIGN: the FR-29 ladder's rung 5 is a deterministic
-    // terminal rung, and anti-sweep's re-resolution is Stage 2 plus that ladder. A `./prng` import
-    // appearing in `ladder.ts` or `sweep.ts` would move every byte position after every resolved
-    // tie and invalidate 6-4b's measured 22-byte twelve-spin ceremony; one DISAPPEARING from
-    // `pity.ts` would silently unseed the consolation round.
-    it('exactly the two stream consumers import ./prng', () => {
-      const consumers = shipped
+    // drift without the other reddening.
+    //
+    // ⚠⚠ REWRITTEN DELIBERATELY BY STORY 6.9b, NAME AND ALL, AND NOT JUST BY WIDENING THE ARRAY.
+    // `:765-768` records this as the house procedure: when a pin's list changes, the sentence the
+    // pin makes has to be re-read rather than the number bumped. Until 6.9b there were exactly TWO
+    // `./prng` importers and both were BYTE CONSUMERS, so "the two stream consumers" was an
+    // accurate name. `verify.ts` makes it three importers and the name false, because it is not a
+    // third consumer — the distinction is the whole content of this test now:
+    //
+    //   * CONSUMERS — `stage1.ts` (the weighted category pick) and `pity.ts` (the seeded reveal
+    //     order) — call `uniformInt` and MOVE the byte position. They are still exactly two, and
+    //     every other resolver draws ZERO bytes BY DESIGN: the FR-29 ladder's rung 5 is a
+    //     deterministic terminal rung, and anti-sweep's re-resolution is Stage 2 plus that ladder.
+    //     A `./prng` import appearing in `ladder.ts` or `sweep.ts` would move every byte position
+    //     after every resolved tie and invalidate 6-4b's measured 22-byte twelve-spin ceremony;
+    //     one DISAPPEARING from `pity.ts` would silently unseed the consolation round.
+    //   * THE OPENER — `verify.ts` — imports `decodeSeedHex` and `createStream` and NOTHING that
+    //     draws. It is the browser's orchestrator: it opens a fresh, correctly-labelled stream per
+    //     spin and hands it to the two consumers, which is the job the Go producer's `ceremony.Run`
+    //     does on the other side of the seam. ⭐ Its import is LOAD-BEARING IN BOTH DIRECTIONS —
+    //     without `createStream` there is no per-spin domain separation to re-derive, and if it ever
+    //     gained `uniformInt` that would mean the verifier had started drawing bytes of its own
+    //     instead of reproducing the producer's.
+    //
+    // ⛔ So the array below is a pin on THREE IMPORTERS, and the `uniformInt` assertion beneath it
+    // is the pin on TWO CONSUMERS. Merging them back into one list would lose exactly the property
+    // this rewrite exists to state.
+    it('exactly three shipped modules import ./prng — two consumers and one stream opener', () => {
+      const importers = shipped
         .filter(([, src]) => importSpecifiers(src).includes('./prng'))
         .map(([f]) => f);
-      expect(consumers).toEqual(['pity.ts', 'stage1.ts']);
+      expect(importers).toEqual(['pity.ts', 'stage1.ts', 'verify.ts']);
+    });
+
+    // ⭐ THE CONSUMER HALF, SEPARATED OUT BY 6.9b. Scanned over comment-and-string-blanked source so
+    // the prose above — which names `uniformInt` several times — cannot satisfy its own rule.
+    // ⚠ This is what keeps "exactly two modules draw bytes" TRUE after a third module was allowed to
+    // touch `./prng`, and it is the assertion that would redden if `verify.ts` ever started drawing
+    // its own bytes rather than reproducing the producer's.
+    //
+    // ⚠ THE DECLARING MODULE IS EXCLUDED BY MECHANISM, NOT BY NAME. `prng.ts` necessarily contains
+    // the identifier because it DEFINES the function, and naming a function is not calling it — so
+    // the filter asks "does this module reference `uniformInt` without declaring it". A hard-coded
+    // `!== 'prng.ts'` would have been the same answer today and a lie the day the primitive moved.
+    it('exactly two shipped modules DRAW from the stream (uniformInt)', () => {
+      const drawers = shipped
+        .filter(([, src]) => {
+          const code = blankOut(src, { strings: true });
+          return code.includes('uniformInt') && !/function\s+uniformInt\b/.test(code);
+        })
+        .map(([f]) => f);
+      expect(drawers).toEqual(['pity.ts', 'stage1.ts']);
+    });
+
+    // Guards the guard: the exclusion above must actually FIRE, or the test degrades into the
+    // substring scan it replaced without anything reddening.
+    it('the declaration exclusion really fires (prng.ts names uniformInt and is not a drawer)', () => {
+      const prngSrc = shipped.find(([f]) => f === 'prng.ts')?.[1] ?? '';
+      const code = blankOut(prngSrc, { strings: true });
+      expect(code).toContain('uniformInt');
+      expect(/function\s+uniformInt\b/.test(code)).toBe(true);
     });
   });
 

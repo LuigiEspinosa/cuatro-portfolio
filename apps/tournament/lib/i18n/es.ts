@@ -203,6 +203,58 @@ export const es = {
     verified: 'Verificado desde el demo', // FIXED — do not paraphrase
     seedPublished: 'semilla publicada', // `· semilla publicada {hash}`
   },
+
+  /**
+   * The `/ceremonia` verify strip and `Verificar la ceremonia` (Story 6.9b, AC7 — FR-27/FR-30/AD-24).
+   *
+   * ⛔ A TOP-LEVEL SIBLING, DELIBERATELY NOT UNDER `es.awards`. `es.test.ts:52-57` runs
+   * `JSON.stringify(es.awards)` and substring-scans it for `AWARD_IDENTITY_STRINGS`, and that scan
+   * sweeps KEY NAMES as well as values. Verify copy is not AD-22-scoped — it names no award, no
+   * bucket and no deciding stat, and it never could: the strip renders a hash and an outcome. A
+   * sibling is outside the scan, correctly.
+   *
+   * ⚠ NO GOLD (UX-DR6/7, DESIGN.md:273). The verify strip is BLUE — `accent-live`, which in code is
+   * `var(--blue)` — because provenance is SYSTEM TRUST, not reveal drama. Gold belongs to reveals,
+   * winners, the wheel and the champion. A gold verify affordance is a defect, not a taste call.
+   *
+   * ⚠ THE PROVENANCE LINE REUSES `es.ceremony.seededByDemo` — never retype that string.
+   *
+   * VOICE (EXPERIENCE.md:58-73): sentence case, playful and competitive, concrete about what was
+   * actually checked. ⛔ Never "Más info sobre la equidad" — that is the Don't column, verbatim.
+   */
+  verify: {
+    button: 'Verificar la ceremonia', // FIXED — do not paraphrase (EXPERIENCE.md:62, :75)
+    busy: 'Rehaciendo la ceremonia…',
+    hashLabel: 'SHA-256', // ⛔ a STRING here, never an inline literal in the TSX (see the rule at :6-8)
+
+    // The five verification outcomes — one per `VerifyOutcome` in lib/roulette/verify.ts.
+    matched: 'Coincide. Tu navegador rehizo la ceremonia entera y salió exactamente lo mismo que se publicó.',
+    mismatched: 'No coincide. Lo que se publicó no es lo que sale al rehacerlo aquí.',
+    unsupportedVersion: 'Esta ceremonia se corrió con una versión del algoritmo que esta página no sabe rehacer.',
+    notYetRevealed: 'Hasta aquí cuadra: cada premio ya revelado sale igual al rehacerlo. El resto se comprueba cuando termine la ceremonia.',
+    webCryptoUnavailable: 'Tu navegador no expone Web Crypto en esta dirección, así que no se puede rehacer nada aquí. Ábrela por https.',
+
+    /**
+     * AC6's honest limitation, stated in the UI rather than narrated around: one quiet line under
+     * the strip, visible and not buried. A mid-ceremony check confirms every revealed outcome but
+     * cannot bind the served prefix to `bundle_sha256`, because a prefix is a DIFFERENT document
+     * (6.9a's answer to Question 3 — a deliberately accepted gap).
+     *
+     * ⭐ 6.9b CODE REVIEW (Cuatro, 2026-08-11) — IT NAMES BOTH GAPS NOW, NOT ONE. The line used to
+     * name only the hash-binding gap, but DECISION R has TWO halves: mid-ceremony the entire Stage-1
+     * draw block is skipped (`weights`, `draws`, `total_weight`, `bytes_consumed` and WHICH award was
+     * drawn are re-derived only at `complete`), and separately a prefix cannot bind to
+     * `bundle_sha256`. A viewer reading the old line would have believed the draw itself had been
+     * checked. ⛔ `notYetRevealed` is untouched — AC7's five outcome strings are approved verbatim.
+     */
+    midCeremonyLimit:
+      'Mientras la ceremonia sigue en marcha se comprueba quién ganó cada premio ya revelado, pero no el sorteo que los sacó ni el hash publicado: las dos cosas necesitan la ceremonia entera.',
+
+    /** The strip's landmark name, for the `<section>` that holds all of it. */
+    landmark: 'Verificación de la ceremonia',
+    /** Shown instead of the strip when there is no published bundle to verify yet. */
+    unavailable: 'Todavía no hay nada publicado que verificar.',
+  },
 } as const;
 
 /**

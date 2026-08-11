@@ -1,0 +1,132 @@
+/*
+ * The `/ceremonia` verify strip (Story 6.9b, AC7 — `{components.verify-strip}`, DESIGN.md:147-154
+ * and :273).
+ *
+ * ⛔⛔ THE GOLD TOKEN APPEARS NOWHERE IN THIS FILE, AND THAT IS A RULE RATHER THAN A COINCIDENCE
+ * (UX-DR6/7, DESIGN.md:219/273). Provenance and verification chrome are BLUE — `accent-live`, which
+ * is the design-system name for `#2F81F7` and is `var(--blue)` in code (globals.css:23). The gold
+ * token declared at globals.css:24 is reserved for reveals, winners, the wheel and the champion; a
+ * gold verify affordance would say "this is a prize" about the one control on the page whose whole
+ * job is to say "this is a check". The wheel, the reveal flip and everything ceremonial on this
+ * surface are Story 6.10's.
+ *
+ * ⚠ THE RULE IS WRITTEN SO A PLAIN GREP CAN CHECK IT. The prose above deliberately does not spell
+ * the token out, so `grep` for it over this file returns ZERO — an earlier draft explained the rule
+ * by quoting it and produced two hits, which reads exactly like two violations.
+ *
+ * ⭐ THE BUTTON IS THE VIEWER'S FIRST SOLID-BLUE FILL. DESIGN.md:275 specifies the form on the
+ * admin Approve button — "the system's single solid `{colors.accent-live}` fill, dark ink,
+ * `{rounded.sm}`" — and DESIGN.md:273 gives the same fill to this one. Nothing under `app/(viewer)`
+ * had one before; every other blue in the viewer is text, a border or a rail node.
+ *
+ * ⚠ `.srOnly` IS PER-CSS-MODULE AND NOT GLOBAL. These ten declarations mirror
+ * `feed.module.css:302` verbatim — there is no shared stylesheet to import them from, and a
+ * `composes:` across modules would couple two surfaces that have no other reason to touch.
+ */
+
+/* The surface itself. 6.10 fills the rest of it; today the strip is all there is. */
+.page {
+  background: var(--page);
+  padding-bottom: var(--sp-4);
+}
+
+.strip {
+  margin: var(--sp-4);
+  padding: var(--sp-4);
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+/* The shield + provenance line. The shield is the strip's only chrome accent. */
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.shield {
+  color: var(--blue);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.provenance {
+  color: var(--ts);
+  font-size: 12px;
+}
+
+/*
+ * The published commitment. ⚠ Ink is `--tm` per `{components.verify-strip}.hashInk`
+ * (`{colors.ink-muted}`) — a hash is evidence, not a headline.
+ *
+ * ⚠ `overflow-wrap` because a truncated SHA-256 still must never push the single column into a
+ * horizontal scroll (AC10's standing rule).
+ */
+.hash {
+  display: block;
+  color: var(--tm);
+  font-size: 12px;
+  margin-bottom: var(--sp-3);
+  overflow-wrap: anywhere;
+}
+
+.button {
+  /* DESIGN.md:275's form: solid accent-live fill, dark ink, {rounded.sm}. */
+  display: inline-block;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--blue);
+  color: var(--page);
+  border: 0;
+  border-radius: var(--r-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/*
+ * ⭐ 6.9b CODE REVIEW — MATCHED ON `aria-disabled`, NOT `:disabled`. The button no longer goes
+ * natively disabled while verifying: browsers move focus to `<body>` when the focused element
+ * becomes disabled, which threw a keyboard user out of the control they had just activated.
+ * Re-entry is guarded in the handler instead, so the styling has to follow the ARIA state.
+ */
+.button[aria-disabled='true'] {
+  /* The busy state stays legible rather than vanishing — a 2 s compute is long enough to look broken. */
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* The rendered verification result. Neutral ink: the WORDS carry the verdict, not a colour. */
+.result {
+  margin: var(--sp-3) 0 0;
+  color: var(--ts);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/*
+ * AC6's honest limitation. ⚠ Visible and not buried — muted, one size down, but rendered in the
+ * normal flow rather than behind a disclosure. A limitation a viewer has to open is a limitation
+ * the page is hiding.
+ */
+.limit {
+  margin: var(--sp-2) 0 0;
+  color: var(--tm);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Mirrors feed.module.css:302 — `srOnly` is per-module, not global. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
