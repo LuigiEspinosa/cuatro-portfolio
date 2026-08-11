@@ -4,7 +4,7 @@ baseline_commit: e10bd5001149e94a308560de0899109b968cd48e
 
 # Story 6.10: Ceremony reveal UI with reduced-motion parity
 
-Status: in-progress
+Status: done
 
 > ⭐⭐ **THIS IS THE STORY WHERE THE CEREMONY BECOMES VISIBLE.** Every one of 6.1-6.9b built the
 > producer, the gating, the bundle and the verifier. `/ceremonia` today renders **one verify strip and
@@ -474,23 +474,169 @@ relayed from a layer.
 
 **Decisions taken at review (Cuatro, 2026-08-11) — all eight resolved**
 
-Six resolved into patches, listed in the Patch block below. Two are dev action items the reviewer
-cannot patch, and they are what hold this story out of `done`:
+Six resolved into patches, listed in the Patch block below. Two were dev action items; **both are now
+done** — see *Action item 1* and *Action item 2* below.
 
-- [ ] [Review][Action] **Publish AC12's full per-mutation table.** The AC and Task 9 both demand
-      *"the full per-mutation table including survivors and your own bad mutants."* The story carries
-      a prose summary only. Measured: `6-9b` 30 rows · `6-9a` 27 · `6-8b` 25 · `6-7` 25 · `5-3` 19 ·
-      `5-4` 12 · **`6-10` 0**. 33 of the 38 mutants are unpublished, so per-site `NOT-APPLIED` vs
-      `killed` is unauditable — the exact condition AC12 exists to remove. ⭐ **Cuatro's call: the
-      table ships before `done`,** matching every prior story in the epic. **[V]**
-- [ ] [Review][Action] **Reconcile the proxy shift, then `:386` may stay CLOSED.** ⭐ **Cuatro's
-      call:** the iPhone observation is honest and self-declared, so the closure stands — but the
-      CPU-throttled proxy moved ~6× against 6.9b on the same machine (6.9b `6× 137.7 ms` → now
-      `6× 16 ms`) with no explanation, and an unreconciled 6× swing weakens the corroboration the
-      closure leans on. Explain the shift (different build, different page, different measurement
-      point) or re-measure. ⚠ Related and already self-declared by the dev in `deferred-work.md`:
-      AC13's realtime bullet was exercised through `reveal_spin` directly, not
-      `POST /api/admin/ceremony/reveal` as the AC names. **[V]** (table counts)
+- [x] [Review][Action] **Publish AC12's full per-mutation table.** ✅ **DONE** — the dev's 38 mutants
+      were unrecoverable (only `M02`, `M18` and `M34`-`M36` are named anywhere, with no sites and no
+      table), and inventing rows for them would have been fabrication. A **new 49-mutant pass** was
+      run instead, over the story's modules as the patches leave them, and the full table is published
+      below. **[V]**
+- [x] [Review][Action] **Reconcile the proxy shift.** ✅ **DONE** — reconciled, and the conclusion is
+      that the two figures are **not comparable**. See *Action item 2* below. **[V]**
+
+---
+
+### Action item 1 — AC12's per-mutation table (code review, 2026-08-11)
+
+⛔ **THE DEV'S 38-MUTANT RUN COULD NOT BE RECOVERED AND WAS NOT RE-NARRATED.** Completion Note 9 names
+only `M02` and `M18` (the two survivors) and gestures at `M34`/`M35`/`M36`; the other 33 have no site,
+no mutation and no verdict recorded anywhere in the tree. Writing them out from the summary would have
+produced a table that *looked* auditable and was not — the precise failure AC12 exists to prevent. So
+the table below is a **new pass, measured, not reconstructed.**
+
+**Method, stated so it can be re-run.** 49 mutants, each a single semantic change at a real decision
+point across the seven `lib/` modules this story owns. ⭐ **The oracle is Vitest's EXIT CODE**, never a
+grep of its output — a harness that greps for *"failed"* reports KILLED for a suite that failed to
+compile. Every mutant proves its anchor is **present and unique** before it is applied (`0` sites →
+`NOT-APPLIED`; `>1` → `NOT-APPLIED, ambiguous`), every restoration is verified by **SHA-256** against
+the pre-mutation bytes, and ⛔ **no mutant is declared SURVIVED off a targeted run** — a targeted pass
+is re-run against the FULL suite before the verdict is recorded, because the kill may live in another
+file. Control pass green before, post-control pass green after.
+
+**Result: 49 mutants · 46 KILLED · 3 SURVIVED (all three equivalent, argued below) · 0 NOT-APPLIED.**
+⚠ **Ten survived the first pass.** Seven were real gaps and are now killed by new assertions; the
+sharpest was **M18**, where *the reviewer's own new test passed for the wrong reason* — the fixture
+overrode the `spin` table and orphaned an `award_result` row, so the read refused via a **different**
+check and cutting the duplicate guard left it green. That is the identical trap the story's own `M02`
+hit (`:1216`). The fixture is now a self-consistent pair with an explicit **control case that must
+succeed**, so any refusal is attributable to the one field that changed.
+
+| # | module | site | mutation | verdict |
+|---|---|---|---|---|
+| M01 | `reveal-model.ts` | `outcomeOf` | unknown outcome falls to `winner` instead of the loud `tie` arm | **KILLED** |
+| M02 | `reveal-model.ts` | `buildRevealView` | a pity spin counts as a MAIN spin | **KILLED** |
+| M03 | `reveal-model.ts` | `buildRevealView` | a pity spin is given a catalog position | **KILLED** |
+| M04 | `reveal-model.ts` | `buildRevealView` | the FIRST spin is treated as the newest | **KILLED** |
+| M05 | `reveal-model.ts` | `buildRevealView` | drop the `awardCount`/`mainSeen` reconciliation | **KILLED** |
+| M06 | `reveal-model.ts` | `shelf` | shelf loop drops its last position (off-by-one) | **KILLED** |
+| M07 | `reveal-model.ts` | `shelf` | a spun-but-unclaimed position reports `locked` not `empty` | **KILLED** |
+| M08 | `reveal-model.ts` | `shelf` | an UNSPUN position reports `empty` not `locked` | **KILLED** |
+| M09 | `reveal-model.ts` | `lockedPositions` | the locked grid starts one early, leaking a revealed position | **KILLED** |
+| M10 | `reveal-model.ts` | `pity` | the pity block is never null | **KILLED** |
+| M11 | `reveal-model.ts` | `revealParityKey` | the key forgets the spin ORDER | **KILLED** — survived twice; see note |
+| M12 | `reveal-model.ts` | `revealParityKey` | the key forgets the OUTCOME | **KILLED** — survived first pass |
+| M13 | `reveal-model.ts` | `revealParityKey` | the key forgets WHO won | **KILLED** |
+| M14 | `reveal-read.ts` | `numericText` | a float is accepted and stringified (pre-review behaviour) | **KILLED** |
+| M15 | `reveal-read.ts` | `numericText` | a numeric handed back as TEXT is refused | **KILLED** |
+| M16 | `reveal-read.ts` | `spin rows` | accept `spin_index` of 0 | **KILLED** |
+| M17 | `reveal-read.ts` | `spin rows` | zero revealed spins stops being a refusal | **KILLED** |
+| M18 | `reveal-read.ts` | `spin rows` | stop refusing a duplicate spin id / `spin_index` | **KILLED** — survived first pass; ⭐ fixture was passing for the wrong reason |
+| M19 | `reveal-read.ts` | `winner rows` | stop refusing a winner whose parent result is absent | **KILLED** |
+| M20 | `reveal-read.ts` | `result rows` | stop refusing a result whose parent spin is absent | **KILLED** — survived first pass |
+| M21 | `reveal-read.ts` | `draw order` | a repeated award id overwrites its earlier draw position | **KILLED** — survived first pass |
+| M22 | `reveal-read.ts` | ordering | spins come back DESCENDING by `spin_index` | **KILLED** |
+| M23 | `reveal-read.ts` | `spin rows` | stop requiring `spin_index` to be a safe integer | **KILLED** — survived first pass |
+| M24 | `reduced-motion.ts` | constants | the wheel travels a FRACTIONAL number of turns | **KILLED** |
+| M25 | `reduced-motion.ts` | constants | the wheel duration drifts from the stylesheet | **KILLED** |
+| M26 | `reduced-motion.ts` | constants | the flip duration drifts from the stylesheet | **KILLED** |
+| M27 | `reduced-motion.ts` | `revealPresentation` | the wheel spins even under `reduce` | **KILLED** |
+| M28 | `reduced-motion.ts` | `revealPresentation` | the motion budget is non-zero under `reduce` | **KILLED** |
+| M29 | `reduced-motion.ts` | `MOTION_PREFERENCES` | the closed set loses `reduce` | **KILLED** |
+| M30 | `reduced-motion.ts` | `REDUCED_MOTION_QUERY` | the media query names the wrong state | **KILLED** |
+| M31 | `ceremony-copy.ts` | `bucketLabel` | an unknown bucket renders its RAW machine key | **KILLED** |
+| M32 | `ceremony-copy.ts` | `statNoun` | an unknown deciding stat renders its RAW machine key | **KILLED** |
+| M33 | `ceremony-copy.ts` | `awardTitle` | the pity branch inverts — a CATEGORY takes the round name | **KILLED** |
+| M34 | `ceremony-copy.ts` | `decidingPhrase` | the null guard inverts | **KILLED** |
+| M35 | `ceremony-copy.ts` | `OUTCOME_SENTENCE_ARMS` | the eyebrow `Ganador` re-enters the statement slot | **KILLED** |
+| M36 | `ceremony-copy.ts` | `announceSpin` | a second full stop is appended unconditionally | **KILLED** |
+| M37 | `ceremony-copy.ts` | `announceSpin` | empty announcements are no longer dropped | 🟡 **SURVIVED — EQUIVALENT** |
+| M38 | `realtime/channels.ts` | `ensureChannel` | reopen a topic mid-unsubscribe (the 5.8 shape) | **KILLED** |
+| M39 | `realtime/channels.ts` | `ensureChannel` | a later retainer's `refresh` is discarded | **KILLED** |
+| M40 | `realtime/channels.ts` | `ensureChannel` | the coalescer closes over the FIRST retainer's callback | **KILLED** |
+| M41 | `realtime/channels.ts` | `ensureChannel` | a later retainer's new EVENT is never bound | **KILLED** |
+| M42 | `realtime/channels.ts` | `releaseChannel` | tear down while another island still holds the topic | 🟡 **SURVIVED — EQUIVALENT** |
+| M43 | `realtime/channels.ts` | `hardTeardown` | a buffered refresh is NOT cancelled on teardown | **KILLED** |
+| M44 | `realtime/channels.ts` | `subscribeChannelStatus` | the emptied listener Set is never pruned | 🟡 **SURVIVED — EQUIVALENT** |
+| M45 | `realtime/status.ts` | `isReconnect` | a repeated `SUBSCRIBED` counts as a reconnect | **KILLED** |
+| M46 | `realtime/status.ts` | `COALESCE_MS` | the coalesce window grows past the ~2 s budget | **KILLED** — survived first pass |
+| M47 | `realtime/status.ts` | `ceremonyTopic` | the server-authored topic is misspelled | **KILLED** |
+| M48 | `feed/model.ts` | `toCardModel` | present-but-malformed subtitle reads as ABSENT again | **KILLED** |
+| M49 | `feed/model.ts` | `toCardModel` | a refused subtitle claims nobody won | **KILLED** |
+
+⭐ **The three survivors are argued equivalent rather than waved through.**
+- **M37** — `announceSpin`'s `.filter((s) => s.length > 0)` is unreachable: `announceAward` always
+  emits at least a title, because `awardTitle` returns the name, `pityRound` or `awardUnnamed` and
+  never `''`. The filter is defensive depth, kept deliberately; no input can distinguish the mutant.
+- **M42** — `releaseChannel`'s `refCount > 0` early return is guarded a second time INSIDE the deferred
+  tick (`if (entry.refCount <= 0) hardTeardown(topic)`), so the mutant schedules a timer that then
+  declines to act. Behaviourally identical; the redundancy is intentional defence around the exact
+  mechanism that bounced 5.8.
+- **M44** — pruning an emptied listener `Set` from the topic map has **no observable behaviour**:
+  `emit` over an empty Set is a no-op either way. It is a memory-hygiene fix, and a leak with no
+  behavioural signature cannot be killed by a behavioural test. Recorded rather than papered over.
+
+⚠ **A harness error is recorded here because the safety nets caught it, not a human.** Three mutants
+first reported `ANCHOR NOT FOUND` against code that plainly contained them — PowerShell's `-like`
+treats `[` as a character-class opener, so anchors containing `[},]` silently never matched. The
+harness was lying, not the tree. Switched to `String.Contains` and re-cut. *A mutation harness that
+cannot apply its own mutant reports a false 100%.*
+
+---
+
+### Action item 2 — reconciling the CPU-throttle proxy (code review, 2026-08-11)
+
+⛔ **THE TWO FIGURES ARE NOT COMPARABLE, AND THAT IS THE FINDING.** The reconciliation was attempted
+on the evidence and the honest answer is that neither prior run recorded its method well enough to be
+compared with the other.
+
+| CPU throttle | 6.9b (`:1076-1082`) | 6.10 (`:1247-1248`) | ratio |
+|---|---|---|---|
+| 1× | 11.7 ms | 2 ms | 5.9× |
+| 4× | 77.6 ms | 7 ms | 11.1× |
+| 6× | **137.7 ms** | **16 ms** | **8.6×** |
+| 10× | 336.3 ms | 27 ms | 12.5× |
+| 20× | 1,725.8 ms | 77 ms | 22.4× |
+
+**1. Warm-up explains the 1× gap, and it is now measured rather than guessed.** 6.9b reports *"median
+of three runs"* with no warm-up language; 6.10 says *"warmed then measured"* and reports its cold first
+tap **separately** at 172 ms. A fresh, reproducible measurement of the **same** workload confirms the
+regimes are real: `verifyCeremony` over the **real published bundle** — 75,013 canonical bytes, 40
+spins, 12 awards, taken from the committed vector `roulette/vectors/canonical-bundle.json`
+(`end_to_end`, sha256 `4c0614fa…`), outcome `matched`, so a genuine full verification and not an early
+refusal — measured in Node across three runs:
+
+| | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| cold (1st call) | 21.1 ms | 23.5 ms | 18.2 ms |
+| warm median (n=20) | 5.3 ms | 6.4 ms | 5.4 ms |
+| cold ÷ warm | 4.0× | 3.7× | 3.4× |
+
+⭐ **This is the first figure in the project that is reproducible from a committed vector** rather than
+from a harness that was deleted. 6.9b's 11.7 ms sits between the two regimes — exactly where a
+*partially* warmed median-of-three lands.
+
+**2. ⛔ But warm-up cannot explain the SHAPE, and that is why the numbers must not be reconciled into
+one story.** The gap **grows** with throttle (5.9× → 22.4×). A warm-up cost is a fixed one-off: under a
+heavier throttle it amortises across a longer run, so the relative gap should **shrink**.
+
+**3. The two runs' throttle responses differ in kind.** Against its own 1×, 6.9b is strongly
+super-linear (20× throttle → **147×** the time) while 6.10 is sub-linear (20× → **38.5×**). A CPU
+throttle applied to a pure-compute workload should scale roughly **linearly**; these bracket linearity
+from opposite sides. At least one run was measuring something other than the compute — GC pressure, JIT
+re-tiering under throttle, or DevTools-protocol overhead counted inside the timer.
+
+**4. Consequence — the proxy is DEMOTED, not repaired.** ⛔ The CPU-throttled proxy is no longer
+corroboration for `deferred-work.md:386`; it is indicative only and **must not be compared across
+stories**. The closure of `:386` rests on what it always actually rested on: the physical-iPhone
+observation on the complete 40-spin ceremony, recorded honestly as an observation.
+
+**5. ⭐ FR-27's 2 s budget survives every reading of the data, which is why this does not reopen `:386`.**
+A mid-range phone is commonly modelled at 4–6× desktop. At 4–6× the two runs give **78–138 ms** and
+**7–16 ms** — one to two orders of magnitude inside 2 s. ⚠ The only measurement that ever approached
+the budget is 6.9b's **20×** (1,725.8 ms, with one run of three at 2,161 ms), and 20× is not a
+mid-range phone; it is roughly a decade-old low-end device. Recorded so nobody later reads *"the proxy
+was wrong"* as *"the budget is at risk"* — the budget is met on every figure anyone has taken.
 
 **Patch**
 
@@ -653,24 +799,19 @@ All 28 patch items above were applied in one pass on 2026-08-11. Measured on the
 
 | gate | before the review | after the patches |
 |---|---|---|
-| Vitest | 1889 / 54 files | **1936 / 55 files** |
+| Vitest | 1889 / 54 files | **1943 / 55 files** (1936 after the patches, +7 from the mutation-driven assertions) |
 | ESLint | 0 | **0** |
 | `next build` | 0, every viewer route `ƒ` | **0, every viewer route still `ƒ`** |
 | `var(--gold)` in `ceremonia.module.css` | 0 | **0** (6.9b's invariant intact) |
 | CRLF across touched files | 0 | **0** |
 | `supabase/**`, `worker/**`, `roulette/vectors/**` | untouched | **untouched** |
 
-⭐ **A MUTATION PASS RAN OVER THE PATCHES, and one survivor came out of it.** Nine mutants, cut at the
-guards the patches added: M1 the leave-race deferral · M2 `numericText`'s safe-integer refusal · M3 the
-`awardCount` reconciliation · M4 the eyebrow-in-the-statement-slot · M5 the retainer's `refresh`
-adoption · M6 the orphan-winner refusal · M7 the feed's absent-vs-refused discriminator · M8
-`ruleBody`'s selector scoping · M9 `announceSpin`'s conditional full stop. **8 killed on the first
-pass. M8 SURVIVED** — the `ruleBody` fix was real but nothing asserted it, so the helper could have
-regressed silently and taken every `toContain` built on it along. A four-case block pinning the
-helper's scoping was added and M8 re-cut to **KILLED: 9/9, 0 NOT-APPLIED.** ⚠ Three mutants initially
-reported ANCHOR-NOT-FOUND against live code — PowerShell's `-like` treats `[` as a character class, so
-the harness was lying, not the tree; switched to `String.Contains` and re-cut. *A mutation harness that
-cannot apply its own mutant reports a false 100%.*
+⭐ **TWO MUTATION PASSES RAN.** A first, 9-mutant pass cut at the guards the patches added (8 killed;
+`ruleBody`'s selector scoping survived because the fix was real but nothing asserted it — a four-case
+block was added and it re-cut to KILLED, 9/9). That pass was then **superseded by the full 49-mutant
+pass published under *Action item 1* above**, which covers all seven `lib/` modules the story owns and
+subsumes every mutant of the first: **49 · 46 KILLED · 3 SURVIVED-EQUIVALENT · 0 NOT-APPLIED**, ten of
+which survived the first cut and seven of which are now killed by new assertions.
 
 ⚠ **WHAT THE PATCHES ARE NOT COVERED BY, STATED PLAINLY.** The verify-strip fix — the review's headline
 finding — is a TSX change, and `vitest.config.ts` collects only `lib/**`, so no unit test can assert

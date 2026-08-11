@@ -233,6 +233,15 @@ describe('retainer bookkeeping — the arguments ensureChannel used to discard',
 });
 
 describe('the doorbell contract (AD-11)', () => {
+  it('⛔ the coalesce window is pinned to a LITERAL, not merely to itself', () => {
+    // ⭐ M46 SURVIVED the first mutation pass: every timing assertion in this file advances the clock
+    // by `COALESCE_MS`, so raising the constant to 3000 ms scaled the tests along with it and nothing
+    // reddened. AC6 and FR-31 both name a ~2 s budget for a reveal to reach a viewer; the window is
+    // one term of that budget and must be pinned against the number, not against itself.
+    expect(COALESCE_MS).toBe(300);
+    expect(COALESCE_MS).toBeLessThan(2000);
+  });
+
   it('collapses a burst into ONE refresh, at the trailing edge', () => {
     const h = harness();
     const refresh = vi.fn();

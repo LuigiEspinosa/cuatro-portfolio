@@ -543,15 +543,84 @@ describe('⛔ numericText refuses what it cannot render faithfully', () => {
 });
 
 describe('⛔ density and forward-onlyness are a SERVER fact — a broken read is refused, not rendered', () => {
-  it('refuses two spins sharing a spin_index', async () => {
-    const tables = happyTables({
-      spin: {
+  /**
+   * ⭐⭐ A SELF-CONSISTENT PAIR THAT DIFFERS IN EXACTLY ONE FIELD, AND THE MUTATION PASS IS WHY.
+   *
+   * The first version of these cases overrode ONLY the `spin` table and left the default four
+   * `award_result` rows behind — one of which pointed at spin 902, which the override had removed. So
+   * the read refused via the result→spin orphan check and the test passed for a reason that had
+   * nothing to do with the duplicate. Cutting the duplicate guard out left it green: **M18 SURVIVED**.
+   * ⚠ This is the same trap the story's own `M02` hit (`:1216`) — a fixture that replaces one table
+   * and orphans another tests a DIFFERENT check than the one it names. The `valid` builder below is
+   * the control: it must SUCCEED, so any refusal in the cases beneath it is attributable to the one
+   * field that changed.
+   */
+  const consistent = (spins: ReadonlyArray<Record<string, unknown>>) =>
+    happyTables({
+      spin: { data: spins, error: null },
+      award_result: {
         data: [
-          { id: 900, spin_index: 1, kind: 'main', live_award_ids: [401] },
-          { id: 901, spin_index: 1, kind: 'main', live_award_ids: [402] },
+          { ...RESULT_ROWS[1], id: 11, spin_id: 900, award_id: 401 },
+          { ...RESULT_ROWS[0], id: 12, spin_id: 901, award_id: 402 },
         ],
         error: null,
       },
+      award_result_winner: { data: [{ id: 1, award_result_id: 11, winner_entry_id: 111 }], error: null },
+    });
+
+  it('⛔ THE CONTROL — the same fixture with DISTINCT ids and indexes reads clean', async () => {
+    const { client } = makeClient(
+      consistent([
+        { id: 900, spin_index: 1, kind: 'main', live_award_ids: [401] },
+        { id: 901, spin_index: 2, kind: 'main', live_award_ids: [402] },
+      ]),
+    );
+    const r = await fetchRevealedCeremony(client, CEREMONY);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.ceremony.spins.map((s) => s.spinIndex)).toEqual([1, 2]);
+  });
+
+  it('refuses two spins sharing a spin_index', async () => {
+    // ⚠ IDENTICAL to the control above except `spin_index`. Nothing else can explain the refusal.
+    const { client } = makeClient(
+      consistent([
+        { id: 900, spin_index: 1, kind: 'main', live_award_ids: [401] },
+        { id: 901, spin_index: 1, kind: 'main', live_award_ids: [402] },
+      ]),
+    );
+    const r = await fetchRevealedCeremony(client, CEREMONY);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('read_failed');
+  });
+
+  it('refuses two spin rows sharing an id', async () => {
+    // ⚠ IDENTICAL to the control except the second row's `id`. See the note above.
+    const { client } = makeClient(
+      consistent([
+        { id: 900, spin_index: 1, kind: 'main', live_award_ids: [401] },
+        { id: 900, spin_index: 2, kind: 'main', live_award_ids: [402] },
+      ]),
+    );
+    expect((await fetchRevealedCeremony(client, CEREMONY)).ok).toBe(false);
+  });
+
+  it('⛔ refuses a spin_index that is not a safe integer', async () => {
+    const { client } = makeClient(
+      consistent([
+        { id: 900, spin_index: 1.5, kind: 'main', live_award_ids: [401] },
+        { id: 901, spin_index: 2, kind: 'main', live_award_ids: [402] },
+      ]),
+    );
+    expect((await fetchRevealedCeremony(client, CEREMONY)).ok).toBe(false);
+  });
+
+  it('⛔ refuses a RESULT whose parent spin is absent — the mirror of the winner check', async () => {
+    // M20 survived the first pass: nothing exercised this direction, even though the reader's own
+    // comment cites it as the precedent the winner→result guard was modelled on.
+    const tables = happyTables({
+      spin: { data: [{ id: 900, spin_index: 1, kind: 'main', live_award_ids: [401] }], error: null },
+      award_result: { data: [{ ...RESULT_ROWS[1], id: 11, spin_id: 555, award_id: 401 }], error: null },
+      award_result_winner: { data: [], error: null },
     });
     const { client } = makeClient(tables);
     const r = await fetchRevealedCeremony(client, CEREMONY);
@@ -559,18 +628,25 @@ describe('⛔ density and forward-onlyness are a SERVER fact — a broken read i
     if (!r.ok) expect(r.reason).toBe('read_failed');
   });
 
-  it('refuses two spin rows sharing an id', async () => {
+  it('⛔ a REPEATED award id in live_award_ids keeps its FIRST draw position, never its last', async () => {
+    // `live_award_ids` IS the draw order (`0025:127-129`). Taking the last occurrence would silently
+    // move an award later in the ceremony than the server drew it.
     const tables = happyTables({
-      spin: {
+      spin: { data: [{ id: 900, spin_index: 1, kind: 'main', live_award_ids: [401, 402, 401] }], error: null },
+      award_result: {
         data: [
-          { id: 900, spin_index: 1, kind: 'main', live_award_ids: [401] },
-          { id: 900, spin_index: 2, kind: 'main', live_award_ids: [402] },
+          { ...RESULT_ROWS[0], id: 12, spin_id: 900, award_id: 402 },
+          { ...RESULT_ROWS[1], id: 11, spin_id: 900, award_id: 401 },
         ],
         error: null,
       },
+      award_result_winner: { data: [{ id: 1, award_result_id: 11, winner_entry_id: 111 }], error: null },
     });
     const { client } = makeClient(tables);
-    expect((await fetchRevealedCeremony(client, CEREMONY)).ok).toBe(false);
+    const r = await fetchRevealedCeremony(client, CEREMONY);
+    if (!r.ok) throw new Error(r.reason);
+    // 401 was drawn FIRST (index 0). If the repeat at index 2 won, 402 would sort ahead of it.
+    expect(r.ceremony.spins[0]!.awards.map((a) => a.awardId)).toEqual([401, 402]);
   });
 
   it('⭐ refuses a winner whose parent award_result is absent — ⛔ silence would misreport who won', async () => {

@@ -12,7 +12,7 @@ import {
   WHEEL_TURNS,
   type MotionPreference,
 } from '@/lib/ceremony/reduced-motion';
-import { buildRevealView, type RevealView } from '@/lib/ceremony/reveal-model';
+import { buildRevealView, revealParityKey, type RevealView } from '@/lib/ceremony/reveal-model';
 import type { RevealedCeremony } from '@/lib/ceremony/reveal-read';
 
 /**
@@ -222,6 +222,81 @@ describe('⭐⭐ AC3 — the same view states the same thing under both preferen
     ],
   ])('reports a BREAK for %s', (_label, presenter) => {
     expect(motionParity(sampleView(), presenter)).toBe(false);
+  });
+
+  /**
+   * ⭐⭐ THE ORACLE ITSELF IS PINNED, AND THE MUTATION PASS IS WHY.
+   *
+   * `motionParity` is only as good as `revealParityKey`. Cutting the spin index and the outcome OUT
+   * of that key left every assertion above green — **M11 and M12 both SURVIVED** — because the
+   * presenter-mutation controls happen to disturb other fields too, so they reddened for the wrong
+   * reason. AC3's whole claim is that the two paths state the SAME THING; a key blind to order or to
+   * outcome cannot detect the one divergence that would matter. ⛔ Each field the key must carry is
+   * asserted here by changing exactly that field and nothing else.
+   */
+  it('⛔ the parity key is SENSITIVE to every fact AC3 is about, one field at a time', () => {
+    const base = sampleView();
+    const key = revealParityKey(base);
+
+    const swap = <T,>(fn: (v: RevealView) => RevealView) => revealParityKey(fn(base));
+
+    // the spin INDEX (the published order, restated)
+    expect(swap((v) => ({ ...v, spins: v.spins.map((s, i) => (i === 0 ? { ...s, spinIndex: 99 } : s)) }))).not.toBe(key);
+    // the OUTCOME
+    expect(
+      swap((v) => ({
+        ...v,
+        spins: v.spins.map((s, i) => (i === 0 ? { ...s, awards: s.awards.map((a) => ({ ...a, outcome: 'shared' as const })) } : s)),
+      })),
+    ).not.toBe(key);
+    // WHO won
+    expect(
+      swap((v) => ({
+        ...v,
+        spins: v.spins.map((s, i) =>
+          i === 1 ? { ...s, awards: s.awards.map((a) => ({ ...a, winners: [{ rosterEntryId: 77, displayName: 'Otro' }] })) } : s,
+        ),
+      })),
+    ).not.toBe(key);
+    // the DECIDING VALUE the card shows
+    expect(
+      swap((v) => ({
+        ...v,
+        spins: v.spins.map((s, i) => (i === 1 ? { ...s, awards: s.awards.map((a) => ({ ...a, decidingText: '999' })) } : s)),
+      })),
+    ).not.toBe(key);
+    // the award IDENTITY
+    expect(
+      swap((v) => ({
+        ...v,
+        spins: v.spins.map((s, i) => (i === 0 ? { ...s, awards: s.awards.map((a) => ({ ...a, name: 'Otra cosa' })) } : s)),
+      })),
+    ).not.toBe(key);
+
+    // ⛔ AND INSENSITIVE to pure decoration — folding `isNewest` in would make the key sensitive to
+    // things AC3 explicitly permits to differ.
+    expect(swap((v) => ({ ...v, spins: v.spins.map((s) => ({ ...s, isNewest: !s.isNewest })) }))).toBe(key);
+    expect(swap((v) => ({ ...v, complete: !v.complete }))).toBe(key);
+  });
+
+  it('⛔ the SPIN line carries the index in its own right — an award-less spin is still identified', () => {
+    // ⭐⭐ M11 SURVIVED TWICE, AND THE SECOND SURVIVAL WAS THE INTERESTING ONE. Cutting `spinIndex` out
+    // of the spin line is masked by REDUNDANCY: the award line repeats `spin.spinIndex`, so every
+    // fixture with awards still reddens. The gap it leaves is a spin with ZERO awards — the read
+    // racing the result insert, which is a state the renderer branches on by name — whose only
+    // contribution to the key IS the spin line. Two ceremonies differing only in that spin's index
+    // would then key identically, and AC3's oracle would call a re-ordered reveal "identical".
+    const bare: RevealView = {
+      spins: [{ spinIndex: 1, kind: 'main', position: 1, awards: [], isNewest: true }],
+      mainSpins: [],
+      pity: null,
+      shelf: [],
+      lockedPositions: [],
+      awardCount: 12,
+      complete: false,
+    };
+    const moved: RevealView = { ...bare, spins: [{ ...bare.spins[0]!, spinIndex: 7 }] };
+    expect(revealParityKey(bare)).not.toBe(revealParityKey(moved));
   });
 });
 
