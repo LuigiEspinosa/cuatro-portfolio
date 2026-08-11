@@ -308,9 +308,12 @@ award_result / 28 award_result_winner · canonical bytes 75,013**, and `supabase
   - [x] ⭐ The W10 `Promise.all` mutant — read *"What the W10 mutant actually is"* first; it needs a
         **synthetic shelf fixture**, and a corpus-only run will likely let it survive.
   - [x] ⛔ Do not use `git stash` to restore mutants (CRLF).
-- [ ] **Task 7 — ⛔ THE BAR: two-session real-browser run (AC: 13) — gates sign-off**
-  - [ ] Corpus rebuild to the standing anchors; local-`NEXT_PUBLIC_*` build; the four interaction
-        bullets; the 2 s measurement; the LAN-origin trick for the `crypto.subtle`-absent path.
+- [x] **Task 7 — ⛔ THE BAR: two-session real-browser run (AC: 13) — gates sign-off** — ⚠ **DONE 2026-08-11 EXCEPT the mid-range-phone number** (see Completion Note 11b)
+  - [x] Corpus rebuild to the standing anchors; local-`NEXT_PUBLIC_*` build; the four interaction
+        bullets; the LAN-origin trick for the `crypto.subtle`-absent path. ⭐ Three of the four
+        interaction bullets are MET in real Chrome, driven over CDP with zero npm packages (Node 24's
+        global `WebSocket`). 🟡 The 2 s budget is measured only as a **CPU-throttled proxy**
+        (6× → 137.7 ms); the real mid-range phone is still owed and stays open in `deferred-work.md`.
   - [x] Delete the throwaway harness; Go gates clean while present **and** after removal.
 - [x] **Task 8 — Gates** (⛔ measure the baseline first; do not quote 6.9a's table or `sprint-status.yaml`;
       6.7 quoted `1318/42` when the real figure was `1322/42`. *"Baselines are measured, never quoted."*)
@@ -984,6 +987,103 @@ yields `AB`, which may be a different real name.
    placeholder is now the honest *nothing-to-verify* state (no tournament, no ceremony, or no
    published bundle). Stated here rather than left to be rediscovered.
 5. **`deferred-work.md:378`** — verifier half only; the SQL half re-recorded against Epic 7.
+
+#### 11b. ⭐⭐ THE BAR (AC13) — THE BROWSER HALF, RUN 2026-08-11 AFTER THE CODE REVIEW
+
+⛔ **Run against the PATCHED build, not the pre-review one** — the review changed the strip, the
+`page.tsx` gate and the mid-ceremony copy, so the earlier run would not have covered them.
+
+**How the browser half became reachable at all.** The story recorded these four bullets as needing a
+device this repo cannot drive (*"no browser automation; devDependencies are `@types/*`, eslint,
+typescript, vitest"*). That is true of the repo and false of the machine: **Node 24 exposes a global
+`WebSocket`**, so real Chrome is drivable over the DevTools Protocol with **zero npm packages** — which
+matters, because *"⛔ No new npm package"* is a hard constraint here. The driver lived in the
+scratchpad, never in the tree.
+
+**The corpus was rebuilt from nothing** through the real parser and the real RPCs. Every standing
+anchor reproduced **exactly**:
+
+| anchor | measured | expected |
+|---|---|---|
+| rounds (sum per match) | **204** | 204 |
+| roster · distinct · snapshot rows | **28 · 28 · 28** | 28 |
+| `eligible_count` | **0** | 0 |
+| awards | **12** | 12 |
+| `fair_seed` | **`1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c`** | `1b3cd678…3279c` |
+| spins / `award_result` / `award_result_winner` | **40 / 40 / 28** | 40 / 40 / 28 |
+| **canonical bytes** | **75,013** | **75,013** |
+| determinism (built twice) | **byte-identical, same SHA** | — |
+
+⚠ `bundle_sha256` = `83d232e82cae9b11985cb0aca67b0e1daf6f66e74bd39d472d577854ac0d86e8`, which differs
+from every prior run — **correct, not a regression**: `achievement_ts` is wall-clock approval time, so
+the hash moves on every rebuild while the byte LENGTH and the drawn order do not. That asymmetry is
+exactly why the length is the tripwire.
+
+**⭐⭐ THE REVIEW'S HEADLINE FIX, CONFIRMED LIVE.** At `k=0` — bundle published, zero spins revealed,
+the real window between `publish_bundle` and spin 1 — `/ceremonia` served **11,801 B** carrying
+*"Todavía no hay nada publicado que verificar"* and **no strip, no button, no hash**, and ⛔ **no
+*"próxima entrega"*** either. Both the k=0 gate and the `es.verify.unavailable` rewiring are proven on
+a real production build. Before the patch this state rendered the full strip and a button that
+answered *"Hasta aquí cuadra…"* over zero re-derivations.
+
+**The four interaction bullets:**
+
+| bullet | verdict | measured |
+|---|---|---|
+| two sessions, tapped mid-ceremony AND at completion, with the rendered copy, the announced `aria-live` text and the elapsed time | ✅ **MET** | see below |
+| the full bundle re-canonicalized IN THE BROWSER matching `bundle_sha256` | ✅ **MET** | *"Coincide. Tu navegador rehizo la ceremonia entera…"*, 27.7 ms |
+| the three refusal paths exercised in the browser | ✅ **MET** | all three, real Spanish copy |
+| **2 s on a mid-range phone** | 🟡 **PROXY ONLY** | 6× CPU throttle → **137.7 ms** median; the real device is still owed |
+
+- **Mid-ceremony (k=6), real Chrome, real tap:** announced *"Hasta aquí cuadra: cada premio ya revelado
+  sale igual al rehacerlo. El resto se comprueba cuando termine la ceremonia."* in **10 ms**. The live
+  region is the **first child** with `role="status" aria-live="polite"`, empty before the tap. The
+  amended limitation line renders and names **both** gaps. Page **96,550 B**.
+- **At completion:** *"Coincide. Tu navegador rehizo la ceremonia entera y salió exactamente lo mismo
+  que se publicó."* in **27.7 ms**; the limitation line correctly **disappears**. Page **105,051 B**
+  (6.9a measured the 5.7 placeholder at 11,555 B).
+- **Two concurrent sessions** over the same ceremony agreed on both outcome and hash (`83d232e8…86e8`).
+  ⭐ **Epic-5 retro Action Item #4 (two-session real-browser live-QA) COMES DUE AND IS MET HERE.**
+- ⭐ **Focus is not dropped.** `focusStillOnButton: true` after every tap — the review's `aria-busy`
+  fix measured in a real browser, which is the only place the old `disabled` behaviour was visible.
+- **The three refusals, against the REAL served document:** unknown MAJOR → *"Esta ceremonia se corrió
+  con una versión del algoritmo que esta página no sabe rehacer."*; a tampered player magnitude →
+  *"No coincide. Lo que se publicó no es lo que sale al rehacerlo aquí."*; and **`crypto.subtle`
+  absent over the LAN origin `http://192.168.0.253:3000`** (`isSecureContext: false`,
+  `typeof crypto.subtle === 'undefined'`) → *"Tu navegador no expone Web Crypto en esta dirección…"*
+  — ⭐ **a TYPED refusal, not a `TypeError`**, which is precisely what `deferred-work.md:289` asked for
+  and the one path `localhost` can never exercise. The document was restored and the hash re-bound
+  after each tamper.
+
+⭐⭐ **AN UNPLANNED CONFIRMATION WORTH RECORDING: `assert_bundle_immutable` REFUSED EVERY TAMPER.** The
+first attempt to doctor the published payload was rejected by the trigger — *"is a PUBLISHED COMMITMENT
+and is immutable (AD-22)"*. The refusal paths could only be exercised by disabling that trigger to
+simulate a compromised store, which is the threat model the verifier exists for; it was re-armed
+afterwards and **re-verified as refusing**. AD-22 is load-bearing in fact, not only in principle.
+
+**⚠ The phone budget, stated honestly.** A CPU-throttled desktop is **not** a mid-range phone, and this
+is recorded as a proxy rather than banked as met (Cuatro's call). Median of three runs at completion —
+the full chain including the hash bind:
+
+| CPU throttle | median | vs the 2 s budget |
+|---|---|---|
+| 1× | 11.7 ms | pass |
+| 4× | 77.6 ms | pass |
+| **6×** | **137.7 ms** | **pass, ~14× headroom** |
+| 10× | 336.3 ms | pass |
+| 20× | 1,725.8 ms | pass (one run of three hit 2,161 ms) |
+
+A mid-range phone is commonly modelled at 4–6× desktop, where this lands at 78–138 ms. The budget
+looks comfortably met, but **the real-device number is still owed** and stays open.
+
+**Gate 7, finally closed.** `supabase db reset` then the whole pgTAP suite: **1543 / 30, `Result: PASS`
+— UNCHANGED**, exactly as reported. The review could not run it earlier without destroying local state.
+
+**Teardown:** `worker/cmd/qa69b/`, `lib/roulette/bar-qa69b.test.ts` and `_qa69b/` all DELETED; Go gates
+proven clean **while present and after removal**; the QA `qa69b_backup` table dropped; `supabase db
+reset` run again so the corpus is not left behind; `git status` clean. ⚠ **`.env.local` was NEVER
+EDITED** — the shell env beat it, and its SHA-256 is byte-identical before and after
+(`BDE1461F…21CC`).
 
 #### 12. `es.provenance.seedPublished` — the decision the Dev Notes required, recorded (added at code review)
 
