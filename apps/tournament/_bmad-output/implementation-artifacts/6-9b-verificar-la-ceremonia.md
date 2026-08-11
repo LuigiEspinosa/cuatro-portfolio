@@ -4,15 +4,23 @@ baseline_commit: d14adf037b2baaf2daccce692e143ca638d1abe6
 
 # Story 6.9b: "Verificar la ceremonia" — the browser verifier
 
-Status: in-progress
+Status: done
 
-> ⚠ **CODE-REVIEWED 2026-08-11 — every finding applied, and the story is deliberately NOT `done`.**
-> All 4 decision-needed and all 16 patch findings were resolved and applied; gates re-measured after
-> them (lint 0 · Vitest **1694/50** · build 0 · Go 8 packages · gofmt empty · `--check` OK ×8 · scope
-> byte-untouched · 0 CRLF). What holds sign-off is the story's own **Task 7 / AC13**: the four
-> real-browser interaction bullets are still open, and they must now be run against the **patched**
-> build, because the review changed the strip, the `page.tsx` gate and the mid-ceremony copy. See
-> *Review Findings* below and `deferred-work.md`.
+> ✅ **DONE 2026-08-11 — code review applied in full, and THE BAR's browser half run against the
+> patched build.**
+> All 4 decision-needed and all 16 patch findings were resolved and applied. Gates re-measured after
+> the patches: lint **0** · Vitest **1694/50** · build **0** · Go **8 packages** clean (while the
+> throwaway harness was present AND after removal) · gofmt **empty** · `--check` **OK ×8** · pgTAP
+> **1543/30 PASS** on a freshly reset DB · scope byte-untouched · **0 CRLF**.
+> AC13's four interaction bullets: **three MET** in real Chrome (Completion Note 11b).
+>
+> ⚠ **ONE ITEM WAS CLOSED ON A PROXY, NOT ON THE MEASUREMENT THE AC ASKS FOR — say so plainly.** The
+> **2 s budget on a mid-range phone** was never measured on a physical device. It was measured as a
+> **CPU-throttled proxy** (6× → **137.7 ms** median, ~14× headroom; 4× → 77.6 ms, 10× → 336 ms), and
+> **Cuatro accepted that proxy and closed the story on it (2026-08-11)**. ⛔ That is a deliberate,
+> recorded substitution — not a measurement that happened. The real-device number is **re-homed to
+> 6.10's live-QA**, which ships the wheel and the reduced-motion parity and needs a physical phone
+> anyway; it stays open in `deferred-work.md` rather than disappearing with this story's sign-off.
 
 > **✂ SPLIT CARVE-OUT — decided by Cuatro on 2026-08-08, at the start of 6.9's dev-story.**
 > Story 6.9 as contexted was two stories' worth, on the same evidence the epic has already split
@@ -1074,7 +1082,15 @@ the full chain including the hash bind:
 | 20× | 1,725.8 ms | pass (one run of three hit 2,161 ms) |
 
 A mid-range phone is commonly modelled at 4–6× desktop, where this lands at 78–138 ms. The budget
-looks comfortably met, but **the real-device number is still owed** and stays open.
+looks comfortably met, but **the real-device number is still owed**.
+
+⭐ **RESOLUTION (Cuatro, 2026-08-11): the proxy is ACCEPTED and the story closes on it.** ⛔ Recorded as
+a substitution rather than a measurement — no physical device was ever used, and this note exists so
+nobody later reads *"AC13 met"* as *"a phone was timed"*. The real-device measurement is **re-homed to
+6.10's live-QA** (which ships the wheel and the `prefers-reduced-motion` parity and therefore needs a
+physical phone regardless) and remains open in `deferred-work.md`. ⚠ If it ever comes back over 2 s on
+real hardware, the finding belongs to FR-27's budget, not to 6.10 — the compute being timed is
+`verify.ts`, which this story owns.
 
 **Gate 7, finally closed.** `supabase db reset` then the whole pgTAP suite: **1543 / 30, `Result: PASS`
 — UNCHANGED**, exactly as reported. The review could not run it earlier without destroying local state.
