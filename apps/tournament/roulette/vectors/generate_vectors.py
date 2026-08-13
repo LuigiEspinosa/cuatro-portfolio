@@ -68,8 +68,14 @@ below is contract rather than a side effect — see the section comment above
 `stage1_pick`, which carries the full transcription and the two product decisions
 (DECISION F, DECISION G) it turns on.
 
-Usage:  python roulette/vectors/generate_vectors.py          # writes all four JSON files
+Usage:  python roulette/vectors/generate_vectors.py          # writes all NINE derived JSON files
         python roulette/vectors/generate_vectors.py --check  # verify, write nothing
+
+⚠ NINE, not four and not seven. The count was stale in three places until Story 6.11 measured it
+(this line said "four", `README.md:907` and `:932` said "seven"); the truth is whatever `outputs`
+in `main()` holds, which is where all three now derive it from. The tenth file in the directory,
+`canonical-bundle-input.json`, is an INPUT and is deliberately outside that map — see the README's
+exemption block. It is also the projection source for gate 5.
 
 `--check` is the mode a CI job or a reviewer wants: it regenerates in memory and diffs
 against what is committed, exiting non-zero on any drift.
@@ -380,6 +386,107 @@ VOLUME_STAT_KEYS = (
 )
 
 STAT_VOCABULARY = VOLUME_STAT_KEYS + RATE_STAT_KEYS
+
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════
+# STORY 6.11, AC10 / `deferred-work.md:319` — THE VOCABULARY IS LINKED TO ITS SOURCE OF TRUTH
+# ══════════════════════════════════════════════════════════════════════════════════════════════
+#
+# `:319`: "The 21-key stat vocabulary is pinned across three artifacts but never linked to `0023`,
+# which is the actual source of truth. … A key added to the database and to Go alone still passes if
+# the anchor is updated to match." AC10 requires the link be MADE, or a single definition site be
+# chosen, or the gap be re-homed with a named owner and a mechanism — explicitly NOT carried a third
+# time.
+#
+# ⭐ THE LINK IS MADE HERE, AND HERE IS THE ONLY PLACE IT CAN BE. Cuatro's answer (Question 4) was a
+# pgTAP assertion in gate 7, and that turned out to be physically impossible: measured at
+# implementation time, the local `supabase_db` container mounts ONLY its own data volume, so
+# `pg_read_file` cannot see `roulette/vectors/` and no in-database test can compare the vector to
+# `award_stat_vocabulary()`. The generator, by contrast, can read BOTH — and it is neither
+# `worker/*` nor `lib/`, so reading a migration from here creates none of the dependency edges
+# `ARCHITECTURE-SPINE.md:73-76` forbids.
+#
+# ⭐ THE COMPLETE CHAIN, EVERY HOP NOW GATED — which is what makes this a closure rather than a
+# fourth restatement:
+#     0023's CHECK            <-> `award_stat_vocabulary()`   pgTAP, gate 7, BOTH directions
+#                                                              (0023_award_catalog_test.sql, §A3)
+#     0023's CHECK            <-> this vector's vocabulary     THIS FUNCTION, on every generate
+#                                                              AND on every `--check`
+#     this vector             <-> Go's + TypeScript's lists    both suites, by exact equality
+# A key added to the database alone now reddens `--check`; a key added to a runtime alone reddens
+# that runtime's suite; a key added HERE alone reddens this function. There is no longer a single
+# edit that moves the vocabulary without something going red.
+#
+# ⭐⭐ AND IT IS NOW ENFORCED WITHOUT ANYONE REMEMBERING. This check only bites when the generator
+# runs, which before this story meant "when a human typed the command". AC6's Vitest gate runs
+# `--check` on every `npm test`, so this link rides gate 2 as well as gate 6.
+
+MIGRATION_0023 = HERE.parent.parent / "supabase" / "migrations" / "0023_award_catalog.sql"
+
+
+def _vocabulary_from_0023() -> tuple:
+    """The 21-key vocabulary, READ OUT OF `award_deciding_stat_valid`'s CHECK in 0023.
+
+    ⛔ PARSED, NEVER RESTATED. The point is to read the database's own closed set; a hand-copied
+    list here would be the fourth restatement `:319` is complaining about, wearing a link's clothes.
+
+    ⚠ IT PARSES THE `deciding_stat` CHECK SPECIFICALLY, and that is deliberate rather than
+    incidental: 0023 declares FOUR closed sets over the same keys (`award_deciding_stat_valid` plus
+    the three nullable rung-key CHECKs), and the pgTAP suite already proves the function agrees with
+    them. One is enough to anchor to, and naming which one keeps this parser simple enough to be
+    obviously correct.
+    """
+    if not MIGRATION_0023.exists():
+        # ⛔ NOT A SILENT SKIP. A missing migration means the link is unverified, and an unverified
+        # link is exactly the state `:319` records. Loud, with the path, so the cause is readable.
+        raise SystemExit(
+            f"AC10: cannot verify the stat vocabulary — {MIGRATION_0023} is missing. The vector's "
+            "21-key list is only meaningful when it is checked against 0023's CHECK constraint."
+        )
+    sql = MIGRATION_0023.read_text(encoding="utf-8")
+    marker = "constraint award_deciding_stat_valid check (deciding_stat in ("
+    start = sql.find(marker)
+    if start < 0:
+        raise SystemExit(
+            "AC10: `award_deciding_stat_valid` was not found in 0023 — the constraint was renamed "
+            "or removed, and the vocabulary link is broken. Fix the link deliberately; do not "
+            "delete this check."
+        )
+    start += len(marker)
+    end = sql.find("))", start)
+    if end < 0:
+        raise SystemExit("AC10: `award_deciding_stat_valid`'s key list is unterminated in 0023")
+    body = sql[start:end]
+    # Strip SQL line comments before reading the quoted literals: 0023 annotates the two halves of
+    # the list ("-- volume keys (integer totals)"), and a comment could otherwise contribute a
+    # spurious key.
+    body = "\n".join(line.split("--", 1)[0] for line in body.split("\n"))
+    return tuple(re.findall(r"'([a-z0-9_]+)'", body))
+
+
+def _assert_vocabulary_matches_0023() -> None:
+    """Both directions, by exact SET equality, with the drift named rather than merely counted."""
+    from_db = _vocabulary_from_0023()
+    mine, theirs = set(STAT_VOCABULARY), set(from_db)
+    if mine != theirs:
+        raise SystemExit(
+            "AC10 / deferred-work.md:319 — THE STAT VOCABULARY HAS DRIFTED FROM 0023.\n"
+            f"  in 0023 but not in this vector : {sorted(theirs - mine)}\n"
+            f"  in this vector but not in 0023 : {sorted(mine - theirs)}\n"
+            "⛔ Fix whichever side is wrong DELIBERATELY. If the database gained a key, the two "
+            "runtimes need it too — the vector is what tells them."
+        )
+    # ⚠ The 17/4 split is NOT derivable from `award_deciding_stat_valid`, which is one flat list, so
+    # only the SET is anchored here. The split itself is anchored by `stat_vocabulary` in
+    # `ladder-resolve.json` against both runtimes' constants, and by 0024's `parts` CTE.
+    if len(from_db) != len(STAT_VOCABULARY):
+        raise SystemExit(
+            f"AC10: 0023 lists {len(from_db)} keys and this vector carries {len(STAT_VOCABULARY)} — "
+            "the sets match but one side has a DUPLICATE, which a set comparison cannot see."
+        )
+
+
+_assert_vocabulary_matches_0023()
 
 # The PUBLISHED ABSENT SENTINEL for `achievement_ts` (0024:704, 898-907). Story 6.5's L9 exists
 # because it is numerically the SMALLEST value in the column: a naive `min` over rung 4 crowns the
@@ -5254,6 +5361,50 @@ LADDER_REFUSALS: list[dict] = [
             _p(S_B, rounds=30, kills=20, ts=2000),
         ],
     },
+    # ── Story 6.11, `deferred-work.md:325` — AN ABSENT CONTAINER WHOSE AWARD *CONFIGURES* THE
+    # OMITTED RUNG ────────────────────────────────────────────────────────────────────────────────
+    #
+    # The absent-container CASE row (`an-absent-secondary-efficiency-and-h2h-block-…`) omits all
+    # three blocks from a tied player, but its award leaves `secondary_stat`, `eff_num_key` and
+    # `eff_den_key` ALL NULL — so rungs 1 and 2 SKIP and the omitted containers are never read. The
+    # path the rule is actually about was therefore entered by ZERO rows:
+    # `container(byId.get(sid)?.secondary)` in TypeScript and Go's nil-`Secondary` map read. These
+    # two rows enter it. ⚠ The failure they catch is asymmetric and loud in one language only: a TS
+    # implementation writing `byId.get(sid)!.secondary[key]` throws a BARE `TypeError` on this input
+    # — not a typed refusal — and before these rows nothing reddened.
+    {
+        "why": (
+            "⭐ an ABSENT `secondary` container on a tied player whose award CONFIGURES rung 1 — the "
+            "container is missing, not the key, and it must refuse `player` under the same rule an "
+            "absent KEY does ('an absent key is a refusal, never a zero', 0024:918-923). ⛔ The "
+            "existing absent-container row cannot reach this: its award configures no rung at all"
+        ),
+        "detail": "player",
+        "award": _ladder_award("kills", "volume", "max", secondary="deaths"),
+        "tied": [S_A, S_B],
+        "omit_blocks": {S_A: ("secondary",)},
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "⭐ an ABSENT `efficiency` container on a tied player whose award CONFIGURES rung 2 — the "
+            "rung-2 twin of the row above, and it needs its own row because rung 2 reads a DIFFERENT "
+            "container through a DIFFERENT helper (`_efficiency_pair`, uniformly {num,den}) than "
+            "rung 1's class-shaped read. ⚠ `secondary_stat` is left NULL so rung 1 SKIPS and rung 2 "
+            "is genuinely the rung that does the reading"
+        ),
+        "detail": "player",
+        "award": _ladder_award("kills", "volume", "max", eff_num="kills", eff_den="deaths"),
+        "tied": [S_A, S_B],
+        "omit_blocks": {S_A: ("efficiency",)},
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
     {
         "why": (
             "an h2h block that HAS the opponent but is MISSING the deciding stat key — distinct "
@@ -5425,6 +5576,61 @@ LADDER_REFUSALS: list[dict] = [
         ),
         "detail": "stage2",
         "award": _ladder_award("kills", "volume", "highest", secondary="not_a_stat"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    # ── Story 6.11, `deferred-work.md:309` — THE OTHER THREE CLAUSES OF THE STAGE-2 SURFACE, PINNED
+    # AT THE SAME BOUNDARY ────────────────────────────────────────────────────────────────────────
+    #
+    # `:309` asks for "a vector row per clause of `validateAward`, pinning all four clauses AND THEIR
+    # ORDER", because `ladder.ts` TRANSCRIBES `stage2.ts`'s private `validateAward` as
+    # `validateStage2AwardSurface` instead of calling it (Go's ladder calls the real one), so the TS
+    # copy can drift while Go cannot. All four clauses already had a single-defect row; what none of
+    # them had was an ORDER pin. The row above pins the `direction` clause against the ladder's own
+    # award surface; these three do the same for the remaining clauses, so the WHOLE transcribed
+    # group is proved to run before the ladder's own — which is the drift that would actually matter.
+    {
+        "why": (
+            "⭐ `deciding_stat` EMPTY (the Stage-2 surface's FIRST clause) while `secondary_stat` is "
+            "ALSO outside the 21-key vocabulary (the ladder's own surface). Must refuse `stage2`: an "
+            "implementation whose transcribed copy runs after its own award group refuses `award`"
+        ),
+        "detail": "stage2",
+        "award": _ladder_award("", "volume", "max", secondary="not_a_stat"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "⭐ an award CLASS outside {volume, rate} (the Stage-2 surface's SECOND clause) while "
+            "`eff_num_key` is ALSO set with `eff_den_key` NULL (the ladder's own half-configured-rung "
+            "clause). Must refuse `stage2`"
+        ),
+        "detail": "stage2",
+        "award": _ladder_award("kills", "speed", "max", eff_num="kills"),
+        "tied": [S_A, S_B],
+        "players": [
+            _p(S_A, rounds=30, kills=20, ts=1000),
+            _p(S_B, rounds=30, kills=20, ts=2000),
+        ],
+    },
+    {
+        "why": (
+            "⭐ a NEGATIVE `floor_kills` (the Stage-2 surface's FOURTH and LAST clause — the one an "
+            "implementation that reordered the group would surface last) while `deciding_stat` is "
+            "ALSO outside the vocabulary (the ladder's own surface). Must refuse `stage2`. ⚠ This is "
+            "the strongest of the four: the LAST clause of the earlier group still beats the FIRST "
+            "clause of the later one, which is what makes the boundary a group boundary rather than "
+            "an accident of which single check happens to run first"
+        ),
+        "detail": "stage2",
+        "award": {**_ladder_award("not_a_stat", "volume", "max"), "floor_kills": -1},
         "tied": [S_A, S_B],
         "players": [
             _p(S_A, rounds=30, kills=20, ts=1000),
@@ -5815,6 +6021,14 @@ def build_ladder_file() -> dict:
             {**p, "achievement_ts": None} if p["steamid64"] in omit_ts else p
             for p in r["players"]
         ]
+        # ⭐ Story 6.11, `deferred-work.md:325` — `omit_blocks` ON A REFUSAL ROW. The CASE path has
+        # honoured it since 6-5b; the refusal path did not, which is precisely why "an absent
+        # container WITH the rung CONFIGURED must refuse `player`" had no row: the only way to
+        # express that input is to omit a block from a row that is expected to refuse. ⛔ Applied
+        # through `_ladder_players`, the SAME helper the case path uses, so the anchor resolves the
+        # input it publishes rather than the one it held in memory — the 6-5b failure mode.
+        if r.get("omit_blocks"):
+            players = _ladder_players({"players": players, "omit_blocks": r["omit_blocks"]})
         try:
             got = resolve_ladder(r["award"], r["tied"], players)
         except LadderRefusal as err:
@@ -5839,7 +6053,11 @@ def build_ladder_file() -> dict:
                 "award": _render_ladder_award(r["award"]),
                 "tied": r["tied"],
                 "players": [
-                    _render_ladder_player(p, omit_ts=p["steamid64"] in omit_ts)
+                    _render_ladder_player(
+                        p,
+                        omit_ts=p["steamid64"] in omit_ts,
+                        omit_blocks=r.get("omit_blocks", {}).get(p["steamid64"], ()),
+                    )
                     for p in r["players"]
                 ],
             }
@@ -5908,6 +6126,38 @@ def build_ladder_file() -> dict:
         },
         "absent_achievement_ts": str(ABSENT_TS),
         "refusal_details": list(LADDER_REFUSAL_DETAILS),
+        # ⭐ Story 6.11, `deferred-work.md:326` — A DECLARED, DELIBERATE, NON-ROW-REPRESENTABLE
+        # DIVERGENCE. AC9 permits a debt to be closed either by a row or by an argument in data;
+        # this one CANNOT be a row, so it is an argument. Recorded in the vector rather than in two
+        # per-language comments because "a closed set nothing inspects is a compartment, not a
+        # contract" (6-5b:215) applies to known divergences just as much as to refusal labels.
+        "declared_divergences": [
+            {
+                "input": "players supplied as a NON-ARRAY (null) to the public resolve entry point",
+                "typescript": "player",
+                "go": "tied",
+                "python": "tied",
+                "row_representable": False,
+                "why_not": (
+                    "Go's parameter is TYPED ([]SnapshotPlayer), so the input cannot exist there: a "
+                    "nil slice is an EMPTY slice, which is the 'an absent container IS the empty "
+                    "container' rule (Cuatro, 2026-08-04) rather than a type error. A vector row is "
+                    "a set of INPUTS, and this input is unrepresentable in one of the three "
+                    "runtimes, so no row can carry it."
+                ),
+                "resolution": (
+                    "DELIBERATE, and the two labels are both correct for what each runtime can see. "
+                    "Go and Python normalise the absent container to empty and then refuse `tied` "
+                    "because the tied members have no matching snapshot row — a statement about the "
+                    "TIED SET. TypeScript can additionally observe that the container itself was "
+                    "the wrong TYPE and refuses `player`, which is strictly more information. ⛔ Do "
+                    "NOT 'fix' this by weakening the TS guard to `tied`: that would discard a real "
+                    "distinction to buy a symmetry no caller benefits from, and 6.6 drives this "
+                    "entry point directly. Both suites assert their own label, and this row is what "
+                    "makes the asymmetry a contract instead of two comments that can drift apart."
+                ),
+            }
+        ],
         "refusals": refusals,
         "cases": cases,
     }
@@ -6831,6 +7081,86 @@ SWEEP_CASES: list[dict] = [
                 and len(raw["tied"]) == 2
                 and set(raw["tied"]) & set(_row(e, "aw-02")["swept_out"]) != set())(
                 resolve_stage2(c["live"][1]["award"], c["players"])
+            )
+        ),
+    },
+    # ── Story 6.11, `deferred-work.md:339` — THE TWO ROSTER WIDTHS THIS FILE NEVER CARRIED ────────
+    #
+    # Measured at 6.6 and homed here: the sixteen cases above carry player counts of `3` (×14) and
+    # `2` (×1). Neither an EMPTY roster nor a SINGLE-player roster was ever resolved through the
+    # shared seam, even though "an absent container IS the empty container" is a named decision
+    # restated in all three implementations — and the empty roster is exactly where the
+    # `players: null` divergence lives.
+    {
+        "name": "an-EMPTY-roster-resolves-EVERY-award-to-no_eligible_players",
+        "note": (
+            "⭐ `deferred-work.md:339`, half one. The pass runs to completion over a roster of ZERO "
+            "players: every award resolves `no_eligible_players`, every `swept_out` is empty, "
+            "`assigned` is empty and `reresolved` is FALSE ON EVERY ROW — including the second and "
+            "third, where a pass that set `reresolved` from 'an earlier award ran' rather than from "
+            "'this candidate set was reduced' would set it true. ⛔ This is NOT a refusal row: an "
+            "empty roster is a legal snapshot (a ceremony over a tournament nobody played), and the "
+            "three runtimes must agree it resolves rather than refuses. It is also the shape "
+            "`players: null` normalises to — 'an absent container IS the empty container' (Cuatro, "
+            "2026-08-04) — so it is the one row that pins what that normalisation must produce."
+        ),
+        "live": CLEAN_LIVE,
+        "players": [],
+        "pins": lambda e: (
+            len(e["results"]) == 3
+            and all(r["kind"] == "no_eligible_players" for r in e["results"])
+            and all(r["swept_out"] == [] for r in e["results"])
+            # ⭐ THE DISCRIMINATING HALF. `reresolved` is `len(swept_out) > 0`, and with nobody on
+            # the roster nobody can ever be swept out — so it must be false on the LATER awards too.
+            and all(r["reresolved"] is False for r in e["results"])
+            and all(r["ladder_exit_step"] == 0 for r in e["results"])
+            and e["assigned"] == []
+        ),
+        "pins_inputs": lambda e, c: (
+            # Re-derived from the row's own INPUT, never from what it produced (6-5b:117): the
+            # roster is genuinely empty, and the live set is genuinely wide enough for a later
+            # award to have been reducible had anyone been there to remove.
+            c["players"] == []
+            and len(c["live"]) > 1
+        ),
+    },
+    {
+        "name": "a-SINGLE-player-roster-wins-the-first-award-and-is-SWEPT-from-the-rest",
+        "note": (
+            "⭐ `deferred-work.md:339`, half two, and the narrowest possible overflow. ONE player on "
+            "the roster and three live awards they would win outright: FR-26 caps them at one "
+            "trophy, so award 1 crowns them and awards 2 and 3 run over a roster reduced to NOBODY "
+            "and resolve `no_eligible_players`. ⭐ This is the cap firing at width 1 — the exhaustion "
+            "case the `2`-player row approximates but cannot reach, because with two players the "
+            "second award still has somebody left to crown. It is also the row where `swept_out` "
+            "and `reresolved` are non-empty and true while the candidate set is EMPTY, which a pass "
+            "computing `swept_out` from the WINNERS rather than from the roster would get right by "
+            "accident on every wider row and wrong here."
+        ),
+        "live": CLEAN_LIVE,
+        "players": [_sw(S_A, knife=1, wallbang=7, smoke=1, hs=4, ts=3000)],
+        "pins": lambda e: (
+            len(e["results"]) == 3
+            and e["results"][0]["kind"] == "winner"
+            and e["results"][0]["steamid64"] == S_A
+            and e["results"][0]["swept_out"] == []
+            and e["results"][0]["reresolved"] is False
+            # ⭐ THE CAP FIRING AT WIDTH 1: the only player is removed, so the remaining two awards
+            # have an EMPTY candidate set and resolve rather than refuse.
+            and [r["kind"] for r in e["results"][1:]] == ["no_eligible_players"] * 2
+            and all(r["swept_out"] == [S_A] for r in e["results"][1:])
+            and all(r["reresolved"] is True for r in e["results"][1:])
+            and e["assigned"] == [S_A]
+        ),
+        "pins_inputs": lambda e, c: (
+            # The roster really is width 1, and — the half that stops this being a trivially-true
+            # row — that player really WOULD have won every one of the three awards unreduced, so
+            # the cap is what stopped them rather than the stats.
+            len(c["players"]) == 1
+            and len(c["live"]) == 3
+            and all(
+                _winner_of(_unreduced(c, lc["award_id"])) == c["players"][0]["steamid64"]
+                for lc in c["live"]
             )
         ),
     },
@@ -8312,6 +8642,27 @@ def build_pity_file() -> dict:
             out["pre_consumed"] = r["pre_consumed"]
         out["players"] = [_render_player(p) for p in r["players"]]
         out["shelf"] = {k: r["shelf"][k] for k in sorted(r["shelf"])}
+        # ⭐⭐ Story 6.11, `deferred-work.md:350` — THE SECOND DEFECT IS NOW EMITTED AS AN INPUT THE
+        # SUITES RESOLVE, NOT AS DATA THEY READ BACK. The proof above has run since 6.7, but it ran
+        # ONLY HERE: `second` never reached the JSON, so `pity_test.go` and `pity.test.ts` could do
+        # no better than read `defects[0]`/`defects[1]` and check the pair was present — which means
+        # a row declaring `"defects": ["players","shelf"]` while carrying a perfectly valid shelf
+        # would have passed both suites while pinning no validation order at all. Emitting the
+        # REPAIRED INPUT lets each runtime re-derive the second defect through the shared seam: run
+        # `second`, and the refusal you get back must be `second.detail`. ⛔ `defects` stays for
+        # readability, but it is no longer the thing under test.
+        # ⚠ This is the same shape `antisweep-resolve.json` has emitted since 6.6; pity was the one
+        # file that proved the property and then kept it to itself.
+        if "second" in r:
+            second = r["second"]
+            row_second: dict = {"detail": second["detail"], "seed_hex": second["seed"]}
+            if "label" in second:
+                row_second["label"] = second["label"]
+            if "pre_consumed" in second:
+                row_second["pre_consumed"] = second["pre_consumed"]
+            row_second["players"] = [_render_player(p) for p in second["players"]]
+            row_second["shelf"] = {k: second["shelf"][k] for k in sorted(second["shelf"])}
+            out["second"] = row_second
         refusals.append(out)
 
     for d in ROW_REPRESENTABLE_PITY_DETAILS:
@@ -9024,6 +9375,552 @@ def _end_to_end_bundle_cases() -> list:
 END_TO_END_BUNDLE_CASES: list = _end_to_end_bundle_cases()
 
 
+# ══════════════════════════════════════════════════════════════════════════════════════════════
+# STORY 6.11 — GATE 5, THE END-TO-END CEREMONY VECTOR
+# ══════════════════════════════════════════════════════════════════════════════════════════════
+#
+# Every file above gates ONE stage. This one gates the COMPOSITION: seed -> 12 spins -> Stage-1
+# pick -> Stage-2 resolve -> FR-29 ladder -> FR-26 anti-sweep -> FR-28 pity, as one thing. It is
+# the only vector whose failure mode is "the stages are individually right and wired together
+# wrong", which is precisely what `worker/awards/ceremony.go:19-26` says it carries no proof of.
+#
+# THE ORCHESTRATION, transcribed from SOLUTION-DESIGN 9.2 + 9.4 (NOT from either runtime):
+#
+#     shelf = {}; revealed = {}
+#     for S = 1, 2, 3, ...  while some award is unrevealed:
+#         pool   = catalog awards not yet revealed          # 9.2 "minus already-revealed"
+#         stream = Stream(seed, "inclusivcup/v1/stage1/spin/<S>")     # 9.1, counter from 0
+#         live   = stage1_pick(stream, pool, players, shelf, table, min(live_count, |pool|))
+#                                                          # 9.2 shelf FROZEN at spin start (W1)
+#         revealed |= live
+#         out    = resolve_spin(live, players)              # 9.4 anti-sweep, ascending priority
+#         for each winner w in out.assigned: shelf[w] += 1  # co-winners all count
+#     pity = resolve_pity(players, shelf, Stream(seed, "inclusivcup/v1/pity"))   # 9.4, after ALL
+#
+# ⭐ DECISION AE (Story 6.11) — THE SNAPSHOT IS REFERENCED, NEVER DUPLICATED, AND THAT IS WHAT
+# MAKES THIS VECTOR TEST THE CAPTURE SHAPE. AD-19 requires the end-to-end vector be "projected from
+# a real captured snapshot ... so the capture shape itself is tested" (SPINE:170-173). The real
+# captured snapshot is ALREADY committed, as `canonical-bundle-input.json` — the 75,013 bytes
+# `publish_bundle` committed for the 14-demo ceremony. So both cases below name that file as their
+# projection source and carry NO player data of their own. Three things follow, each deliberate:
+#   (i)  a conformant implementation must PROJECT the published AD-19 integer form (decimal-string
+#        magnitudes, {num,den} rate pairs, the class-shaped `secondary`/`h2h` union, the uniform
+#        `efficiency` form, the integer `achievement_ts`) back into its own snapshot type. That
+#        projection IS the capture shape, and a vector carrying pre-projected players would not
+#        test it.
+#   (ii) the vector cannot drift from the corpus: there is one copy of the snapshot in this
+#        directory, and gate 4 already recomputes its canonical form and hash on every `--check`.
+#   (iii) the file stays readable. Inlining 28 players twice would add ~150 KB of duplicated data
+#        to a file whose subject is the ORCHESTRATION, not the roster.
+# ⛔ Do NOT "helpfully" inline the players. The reference is the contract.
+#
+# ⭐ DECISION AA (Story 6.11) — THE SNAPSHOT IS REAL; THE CATALOG IS THE COUNTERFACTUAL LEVER.
+# AC2 asks for a real snapshot AND for forced ties across every rung, an anti-sweep overflow and a
+# pity draw. Over the real corpus at the real FR-21 floors (24/20) **0 of 28 players are eligible**,
+# so all twelve main spins resolve `no_eligible_players`: no winner, therefore no tie, therefore no
+# rung. Those two halves cannot both hold of one ceremony. The resolution: a snapshot is
+# `stat_snapshot_row` — identities, magnitudes, h2h, `achievement_ts`, eligibility inputs — while a
+# catalog is `award` rows curated BEFORE the ceremony. A catalog is not a snapshot, so varying it
+# leaves AD-19's capture-shape rule fully honoured. The forced run below keeps every snapshot byte
+# real and varies only floors, deciding stats, rung keys and `live_count`.
+#
+# ⭐ DECISION AB (Story 6.11) — TWO CEREMONY CASES, BECAUSE ONE CANNOT DO BOTH JOBS. Anti-sweep
+# overflow needs one player to win two live categories in ONE spin, which needs `live_count >= 2`;
+# the standing anchor ceremony is `live_count = 1`. So: an ANCHOR run (real catalog, real floors,
+# `live_count = 1`) that reproduces the corpus invariants exactly, and a FORCED run
+# (`live_count = 6`, floors chosen per award) that exercises the coverage.
+#
+# ⭐ DECISION AF (Story 6.11) — FR-29 RUNG 3 IS UNREACHABLE END-TO-END OVER THIS CORPUS, AND THAT
+# IS DECLARED IN DATA RATHER THAN FAKED. Measured, not asserted: all 28 players have
+# `matches_played == 1` and exactly ONE h2h opponent, so each player's `h2h[opponent]` block is a
+# COPY of their own totals (0 mismatching entries over 28 players). Rung 3 compares the DECIDING
+# stat inside h2h, and the survivors reaching rung 3 tied on that same deciding stat by
+# construction — so their h2h values are equal too and rung 3's STRICT beat can never hold. An
+# exhaustive search over 400 reachable candidate subsets x 4,804,800 configurations produced
+# {rung 1: 644059, rung 2: 443458, rung 3: 0, rung 4: 1398293, rung 5: 80754}. ⛔ Rung 3 is NOT
+# unproven: `ladder-resolve.json` gates it as a UNIT with synthetic multi-opponent h2h blocks that
+# a 1v1 wingman bracket cannot produce. What is unreachable is the END-TO-END path, and
+# `deferred-work.md:278` requires exactly this kind of corpus limitation be stated on the vector's
+# face rather than in prose.
+
+E2E_SOURCE_FILE = "canonical-bundle-input.json"
+
+
+def _e2e_pair(v) -> tuple:
+    """One published `{num, den}` pair -> the internal integer tuple."""
+    return (int(v["num"]), int(v["den"]))
+
+
+def _e2e_class_shaped(block: dict) -> dict:
+    """A published class-shaped block (`secondary`, and the inner blocks of `h2h`).
+
+    A volume key is published as a bare decimal STRING and a rate key as a `{num, den}` object, so
+    the branch is on the published SHAPE rather than on a vocabulary list — the same rule
+    `_class_shaped` encodes when it builds the block from `volume || rate`.
+    """
+    return {k: (_e2e_pair(v) if isinstance(v, dict) else int(v)) for k, v in block.items()}
+
+
+def _e2e_project_player(p: dict) -> dict:
+    """AD-19's PUBLISHED integer form -> the internal `SnapshotPlayer` every stage above consumes.
+
+    ⭐ THIS FUNCTION IS THE CAPTURE SHAPE, and it is the reason DECISION AE references the snapshot
+    instead of inlining it. Every magnitude crosses the seam as a decimal STRING (README:294-299 —
+    the split is by PROVENANCE, not by size), so a runtime that parsed them as JSON numbers would
+    round exactly the values AD-14 forbids rounding.
+    """
+    return {
+        "steamid64": p["steamid64"],
+        "rounds_played": int(p["rounds_played"]),
+        "kills": int(p["kills"]),
+        "idle_dq": bool(p["idle_dq"]),
+        "stats_int": {
+            "volume": {k: int(v) for k, v in p["volume"].items()},
+            "rate": {k: {"num": int(v["num"]), "den": int(v["den"])} for k, v in p["rate"].items()},
+            "secondary": _e2e_class_shaped(p["secondary"]),
+            "efficiency": {k: _e2e_pair(v) for k, v in p["efficiency"].items()},
+        },
+        "h2h": {opp: _e2e_class_shaped(blk) for opp, blk in p["h2h"].items()},
+        "achievement_ts": int(p["achievement_ts"]),
+    }
+
+
+def _e2e_project_award(a: dict) -> dict:
+    """A published catalog row -> the internal award dict, INCLUDING the three FR-29 rung keys.
+
+    ⚠ `outcome_kind` and `winners` are published RESULTS and are deliberately NOT read: the vector
+    RE-DERIVES them. Projecting them in would make the anchor run a transcript of its own answer.
+    """
+    return {
+        "deciding_stat": a["deciding_stat"],
+        "class": a["class"],
+        "direction": a["direction"],
+        "floor_rounds": a["floor_rounds"],
+        "floor_kills": a["floor_kills"],
+        "secondary_stat": a.get("secondary_stat"),
+        "eff_num_key": a.get("eff_num_key"),
+        "eff_den_key": a.get("eff_den_key"),
+    }
+
+
+def run_ceremony(players: list, catalog: list, table: list, live_count: int, seed_hex: str) -> dict:
+    """The whole ceremony. Transcribed from SOLUTION-DESIGN 9.2 + 9.4 — see the section header.
+
+    ⛔ THE SHELF IS UPDATED BETWEEN SPINS, NEVER WITHIN ONE. W1 freezes it at spin start, so a
+    ceremony that re-weighted after each of a spin's `live_count` picks would draw different bytes
+    from the second pick of the first multi-live spin onward.
+
+    ⛔ `ladder=True` IS PASSED TO STAGE 1. SOLUTION-DESIGN 9.2 defines the weight through
+    `provisional_winner`, "the deterministic Stage-2 winner"; when that winner is a TIE it has no
+    single shelf, and 6.5's optional ladder is what resolves it. ⚠ The anchor run is INSENSITIVE to
+    this (all twelve of its spins resolve `no_eligible_players`, which weights at index 0 by
+    DECISION F) — it was verified byte-identical both ways — but the forced run is not, and a
+    ceremony that refused every tied provisional winner could not run at all.
+    """
+    seed = decode_seed(seed_hex)
+    shelf: dict = {}
+    revealed: set = set()
+    spins: list = []
+    spin_no = 0
+
+    ordered = sorted(catalog, key=lambda c: c["priority"])
+    while len(revealed) < len(ordered):
+        spin_no += 1
+        pool = [c for c in ordered if c["award_id"] not in revealed]
+        stream = Stream(seed, stage1_label(spin_no))
+        width = min(live_count, len(pool))
+        pick = stage1_pick(stream, pool, players, shelf, table, width, ladder=True)
+        live_ids = list(pick["live"])
+        revealed.update(live_ids)
+
+        sweep = resolve_spin([c for c in ordered if c["award_id"] in live_ids], players)
+        # Co-winners all count (9.4). `assigned` is already the byte-lex set of every player who
+        # took a trophy this spin, so the shelf moves by exactly one per player per spin — which is
+        # FR-26's "<=1 trophy/player/spin" read as an accounting identity rather than as a check.
+        for sid in sweep["assigned"]:
+            shelf[sid] = shelf.get(sid, 0) + 1
+
+        spins.append(
+            {
+                "spin": spin_no,
+                "kind": "main",
+                "label": stream.label,
+                "pool": [c["award_id"] for c in pool],
+                "live_count": width,
+                "weights": pick["weights"],
+                "total_weight": pick["total_weight"],
+                "draws": [
+                    {"n": d["n"], "r": d["r"], "consumed_after": d["bytes_consumed_after"]}
+                    for d in pick["draws"]
+                ],
+                "bytes_consumed": stream.pos,
+                "live": live_ids,
+                "results": sweep["results"],
+                "assigned": sweep["assigned"],
+            }
+        )
+
+    pity_stream = Stream(seed, PITY_LABEL)
+    pity = resolve_pity(players, shelf, pity_stream)
+    return {"spins": spins, "pity": pity, "shelf": shelf}
+
+
+# ── the forced run's counterfactual catalog ───────────────────────────────────
+#
+# ⚠ EVERY FIELD HERE IS A CATALOG FIELD, AND THAT IS THE WHOLE OF THE COUNTERFACTUAL (DECISION AA).
+# The snapshot these run against is the real one, byte for byte.
+#
+# The three levers, each chosen against MEASURED real magnitudes rather than guessed:
+#   - FLOORS select the roster. `floor_rounds = 21` admits exactly SIX players — three complete duel
+#     pairs — because `rounds_played` is identical within every 1v1 pair by construction. Floors `0`
+#     admit all 28. Floors `24/20` (the real FR-21 values) admit NOBODY, which is what keeps
+#     `no_eligible_players` reachable here.
+#   - CLONE STATS decide whether a rung can break a tie at all. Measured on 28/28:
+#     `kills == entry_frags == rounds_won`, `deaths == opening_deaths`, and
+#     `assists == flash_assists == mvps == no_scope_kills` are all identically 0, so a secondary
+#     naming one of those NARROWS nothing and the tie falls through to the next rung.
+#   - `achievement_ts` ties duel opponents byte-identically (14 pairs, 14 distinct values), so rung
+#     4 separates non-partners and never partners.
+FORCED_LIVE_COUNT = 6
+
+
+def _e2e_award(award_id: str, priority: int, deciding: str, klass: str, direction: str,
+               floor_rounds: int, floor_kills: int, secondary=None, num=None, den=None) -> dict:
+    return {
+        "award_id": award_id,
+        "priority": priority,
+        "award": {
+            "deciding_stat": deciding,
+            "class": klass,
+            "direction": direction,
+            "floor_rounds": floor_rounds,
+            "floor_kills": floor_kills,
+            "secondary_stat": secondary,
+            "eff_num_key": num,
+            "eff_den_key": den,
+        },
+    }
+
+
+FORCED_CATALOG: list = [
+    # f1-f3 — THE OVERFLOW ENGINE. `utility_damage` has a UNIQUE maximum (82, width 1), so all three
+    # share one provisional winner. Any spin drawing two of them must re-resolve the later one, which
+    # is FR-26's overflow: one player, two live categories, one spin.
+    _e2e_award("f1", 1, "utility_damage", "volume", "max", 0, 0, "kills", "kills", "deaths"),
+    _e2e_award("f2", 2, "utility_damage", "volume", "max", 0, 0, "deaths", "kills", "deaths"),
+    _e2e_award("f3", 3, "utility_damage", "volume", "max", 0, 0, None, None, None),
+    # f4 — RUNG 1. `deaths` max ties 3 of the 6-player band; `utility_damage` separates them.
+    _e2e_award("f4", 4, "deaths", "volume", "max", 21, 0, "utility_damage", None, None),
+    # f5 — RUNG 2. `assists` is identically 0, so the whole band ties; `utility_damage` NARROWS
+    # without resolving; the `kills/deaths` efficiency ratio finishes it.
+    _e2e_award("f5", 5, "assists", "volume", "min", 21, 0, "utility_damage", "kills", "deaths"),
+    # f6 — RUNG 5, the terminal shared co-win. Every rung key is either absent or a clone-zero key,
+    # so nothing narrows and rung 4's earliest `achievement_ts` is shared by a duel pair.
+    _e2e_award("f6", 6, "assists", "volume", "min", 21, 0, None, "assists", "matches_played"),
+    # f7 — RUNG 4. Same shape as f6, and it exits one rung earlier ONLY because anti-sweep has
+    # already removed a member of the earliest-`achievement_ts` pair. ⭐ That is the case worth
+    # reading twice: the ladder returned a SHARED pair over the unreduced roster and a SOLE winner
+    # over the reduced one, which is DECISION E' (removal is applied to the CANDIDATE SET, before
+    # Stage 2 runs) proven end-to-end rather than argued.
+    _e2e_award("f7", 7, "assists", "volume", "min", 21, 0, None, None, None),
+    # f8 — DECISION E. A `max` VOLUME award whose best value is 0 returns `no_awardable_value`
+    # CARRYING the suppressed byte-lex set, whose length is the width of the tie that did not form.
+    _e2e_award("f8", 8, "mvps", "volume", "max", 0, 0, None, None, None),
+    # f9 / f10 — the RATE arm, both directions, resolved by cross-multiplication.
+    _e2e_award("f9", 9, "adr", "rate", "max", 0, 0, "kills", None, None),
+    _e2e_award("f10", 10, "adr", "rate", "min", 0, 0, "kills", None, None),
+    # f11 — the REAL FR-21 floors over the real roster: 0 of 28 eligible, exactly as all twelve of
+    # the anchor run's spins resolve. Keeps the two cases comparable on the one outcome they share.
+    _e2e_award("f11", 11, "kills", "volume", "max", 24, 20, "adr", None, None),
+    # f12 — an ordinary single-winner volume award, so the roster keeps enough winless players for
+    # pity to have real work to do.
+    _e2e_award("f12", 12, "wallbang_kills", "volume", "max", 0, 0, "kills", None, None),
+]
+
+
+def _e2e_render_catalog(catalog: list) -> list:
+    return [
+        {"award_id": c["award_id"], "priority": c["priority"], **c["award"]}
+        for c in sorted(catalog, key=lambda x: x["priority"])
+    ]
+
+
+def _e2e_anchors(run: dict) -> dict:
+    """The invariants `deferred-work.md:401` records as NARRATED-BUT-UNVERIFIABLE, as DATA.
+
+    ⛔ EVERY ONE IS DERIVED FROM THE RUN, never restated. `6-5b:114` — do not hand-edit a count.
+    ⛔ `bundle_sha256` is deliberately ABSENT (DECISION AC): `achievement_ts` is wall-clock approval
+    time, so the hash moves on every rebuild while the byte LENGTH does not. The length is the
+    tripwire; the hash is not an invariant and must not be asserted as one.
+    """
+    main = [s for s in run["spins"] if s["kind"] == "main"]
+    return {
+        "main_spin_count": len(main),
+        "main_spin_bytes": sum(s["bytes_consumed"] for s in main),
+        "pity_bytes": run["pity"]["bytes_consumed"],
+        "total_bytes": sum(s["bytes_consumed"] for s in main) + run["pity"]["bytes_consumed"],
+        "drawn_order": [aid for s in main for aid in s["live"]],
+        "winless_count": len(run["pity"]["winless"]),
+        "shelf_holders": len(run["shelf"]),
+        "max_trophies_per_player": max(run["shelf"].values()) if run["shelf"] else 0,
+        "ladder_exit_steps": sorted(
+            {r["ladder_exit_step"] for s in main for r in s["results"] if r["ladder_exit_step"]}
+        ),
+        "outcome_kinds": sorted({r["kind"] for s in main for r in s["results"]}),
+    }
+
+
+E2E_CASES: list = [
+    {
+        "name": "anchor-run",
+        "why": (
+            "The REAL 14-demo ceremony, re-derived end to end from the committed snapshot: the real "
+            "catalog at the real FR-21 floors (24/20) with live_count = 1. It reproduces every "
+            "corpus invariant deferred-work.md:401 records as narrated-but-unverifiable — the 22 / "
+            "27 / 49 byte split, the twelve-award drawn order and the 40-spin shape — and it is the "
+            "case that makes them assertable FROM THE TREE, with no throwaway harness. ⚠ All twelve "
+            "main spins resolve no_eligible_players: 0 of 28 players clear the floors, measured "
+            "across six stories and accepted (Cuatro, 2026-08-08)."
+        ),
+        "catalog": "real",
+        "live_count": 1,
+    },
+    {
+        "name": "forced-run",
+        "why": (
+            "The SAME real snapshot under a counterfactual catalog (DECISION AA): floors chosen per "
+            "award, rung keys chosen against measured real magnitudes, live_count = 6. It exercises "
+            "every REACHABLE FR-29 rung (1, 2, 4 and the terminal shared 5 — rung 3 is unreachable "
+            "end-to-end over this corpus, see unreachable_ladder_rungs), three genuine anti-sweep "
+            "overflows, DECISION E's no_awardable_value, no_eligible_players at the real floors, and "
+            "a pity draw over a roster that is only PARTLY winless — which the anchor run, where "
+            "every player is winless, cannot test."
+        ),
+        "catalog": "counterfactual",
+        "live_count": FORCED_LIVE_COUNT,
+    },
+]
+
+
+def build_end_to_end_file() -> dict:
+    path = HERE / E2E_SOURCE_FILE
+    if not path.exists():
+        # ⛔ NOT A SILENT SKIP — the same rule `_end_to_end_bundle_cases` follows. Both suites assert
+        # this list's length, so a missing projection source must be a visible, deliberate state.
+        cases: list = []
+        source: dict = {"file": E2E_SOURCE_FILE, "present": False}
+    else:
+        raw = path.read_text(encoding="utf-8")
+        bundle = json.loads(raw)
+        players = [_e2e_project_player(p) for p in bundle["players"]]
+        real_catalog = [
+            {"award_id": a["award_id"], "priority": a["priority"], "award": _e2e_project_award(a)}
+            for a in bundle["awards"]
+        ]
+        table = bundle["luck"]["weight_table"]
+        seed_hex = bundle["seed_hex"]
+
+        source = {
+            "file": E2E_SOURCE_FILE,
+            "present": True,
+            # ⭐ THE 75,013-BYTE TRIPWIRE, carried here as well as in `canonical-bundle.json`. A
+            # wholesale corpus swap produces a self-consistent vector with a different hash and
+            # nothing else in this directory would redden; this length is what stands in the way.
+            "utf8_bytes": len(raw.encode("utf-8")),
+            "player_count": len(bundle["players"]),
+            "award_count": len(bundle["awards"]),
+            "seed_hex": seed_hex,
+            "weight_table": list(table),
+        }
+
+        cases = []
+        for spec in E2E_CASES:
+            catalog = real_catalog if spec["catalog"] == "real" else FORCED_CATALOG
+            run = run_ceremony(players, catalog, table, spec["live_count"], seed_hex)
+            cases.append(
+                {
+                    "name": spec["name"],
+                    "why": spec["why"],
+                    # ⭐ AC3's PROJECTION BLOCK — which inputs are real and which are counterfactual,
+                    # IN DATA, so no reader has to infer it from prose (deferred-work.md:278).
+                    "projection": {
+                        "snapshot": "real",
+                        "snapshot_source": E2E_SOURCE_FILE,
+                        "seed": "real",
+                        "weight_table": "real",
+                        "catalog": spec["catalog"],
+                        "counterfactual_fields": (
+                            []
+                            if spec["catalog"] == "real"
+                            else ["floor_rounds", "floor_kills", "deciding_stat", "class",
+                                  "direction", "secondary_stat", "eff_num_key", "eff_den_key",
+                                  "priority", "award_id", "live_count"]
+                        ),
+                    },
+                    "seed_hex": seed_hex,
+                    "live_count": spec["live_count"],
+                    "weight_table": list(table),
+                    "catalog": _e2e_render_catalog(catalog),
+                    "expected": {
+                        "spins": run["spins"],
+                        "pity": {
+                            "label": PITY_LABEL,
+                            "winless": run["pity"]["winless"],
+                            "reveal_order": run["pity"]["reveal_order"],
+                            "draws": run["pity"]["draws"],
+                            "bytes_consumed": run["pity"]["bytes_consumed"],
+                        },
+                        "shelf": dict(sorted(run["shelf"].items())),
+                        "anchors": _e2e_anchors(run),
+                    },
+                }
+            )
+
+        # ⭐ THE ANCHOR RUN IS PROVED AGAINST THE PUBLISHED spin_plan AND pity, HERE, AT GENERATION
+        # TIME. The bundle was produced by the GO producer; this file is the PYTHON third
+        # implementation. Their agreement is the cross-language EQUIVALENCE run
+        # `deferred-work.md:288` records as missing from the tree — and unlike 6.3's deleted 729-line
+        # transcript, it re-derives on every `--check`.
+        anchor = cases[0]
+        want_main = [s for s in bundle["spin_plan"] if s["kind"] == "main"]
+        got_main = [s for s in anchor["expected"]["spins"] if s["kind"] == "main"]
+        if len(got_main) != len(want_main):
+            raise AssertionError(
+                f"anchor run produced {len(got_main)} main spins, the published bundle has "
+                f"{len(want_main)}"
+            )
+        for got, want in zip(got_main, want_main):
+            for field in ("spin", "label", "pool", "live_count", "weights", "total_weight",
+                          "bytes_consumed", "live", "draws"):
+                if got[field] != want[field]:
+                    raise AssertionError(
+                        f"anchor run spin {got['spin']} field {field!r} disagrees with the "
+                        f"published bundle: {got[field]!r} vs {want[field]!r}"
+                    )
+        for field in ("winless", "reveal_order", "draws", "bytes_consumed"):
+            if anchor["expected"]["pity"][field] != bundle["pity"][field]:
+                raise AssertionError(
+                    f"anchor run pity field {field!r} disagrees with the published bundle"
+                )
+
+        # ⭐⭐ `deferred-work.md:347` — 6.7's AC6 ASKED FOR THE WINLESS SET AT ALL FOUR WIDTHS, AND
+        # IT IS COMMITTED HERE RATHER THAN NARRATED.
+        #
+        # The entry deferred on the grounds that re-printing it "costs a full 14-demo corpus
+        # rebuild". It does not: it is a pure function of the committed snapshot and a floors-0
+        # catalog, which is arithmetic, not a database. Story 6.11 said exactly that in its notes and
+        # then left the four numbers in prose anyway — its code review made the point that if it is
+        # cheap enough to assert, it is cheap enough to COMMIT, which is the whole of `:401`'s
+        # complaint one level up.
+        #
+        # ⛔ THE CATALOG IS THE REAL ONE WITH ITS FLOORS ZEROED, which is 6.7's own setup — NOT
+        # FORCED_CATALOG, whose floors deliberately vary per award (21 admits six players, 24/20
+        # admits nobody) so it would answer a different question.
+        #
+        # ⚠ WHAT THE ENTRY GOT WRONG, recorded because it matters: `:347` argued the sets were
+        # "near-certainly identical" BECAUSE the recorded shelf distributions were identical across
+        # widths. They are NOT — widths 3 and 4 distribute the trophies differently. The same players
+        # win nothing while the winners' shelves differ, so the AC was right to demand the SET rather
+        # than accept the inference. The distributions are committed alongside the sets so the
+        # correction is checkable and not merely asserted.
+        floors_zero_catalog = [
+            {
+                "award_id": row["award_id"],
+                "priority": row["priority"],
+                "award": {**row["award"], "floor_rounds": 0, "floor_kills": 0},
+            }
+            for row in real_catalog
+        ]
+        winless_by_width = []
+        for width in (1, 2, 3, 4):
+            r = run_ceremony(players, floors_zero_catalog, table, width, seed_hex)
+            hist: dict = {}
+            for p in players:
+                trophies = r["shelf"].get(p["steamid64"], 0)
+                hist[trophies] = hist.get(trophies, 0) + 1
+            winless_by_width.append(
+                {
+                    "live_count": width,
+                    "main_spins": len([s for s in r["spins"] if s["kind"] == "main"]),
+                    "winless": list(r["pity"]["winless"]),
+                    "shelf_distribution": [
+                        {"trophies": k, "players": hist[k]} for k in sorted(hist)
+                    ],
+                }
+            )
+
+        # The generator states the property it believes it is committing, so a future edit that
+        # breaks it fails HERE rather than shipping a vector that quietly says something else.
+        first = winless_by_width[0]["winless"]
+        for row in winless_by_width[1:]:
+            if row["winless"] != first:
+                raise AssertionError(
+                    f"the winless set at live_count={row['live_count']} differs from width 1 — "
+                    f"`deferred-work.md:347`'s claim is that it does not"
+                )
+        if not (0 < len(first) < len(players)):
+            raise AssertionError(
+                f"the winless set is {len(first)} of {len(players)} — a set that is everybody or "
+                f"nobody proves nothing about width"
+            )
+
+    return {
+        "vector": "end-to-end",
+        "algo_version": ALGO_VERSION,
+        "spec": (
+            "SOLUTION-DESIGN 9.2 + 9.4, composed: per spin S the candidate pool is the catalog "
+            "minus already-revealed awards; Stage 1 draws min(live_count, |pool|) awards from the "
+            "stream 'inclusivcup/v1/stage1/spin/<S>' weighted by "
+            "luck_weight_table[min(shelf[provisional_winner], table_max)] with the shelf FROZEN at "
+            "spin start; the anti-sweep pass resolves the live set in ascending priority, removing "
+            "already-assigned players from each later candidate set BEFORE Stage 2 runs, so a "
+            "re-resolution is a full Stage-2 + FR-29-ladder re-run and never a pop-the-winner; "
+            "co-winners all count; the shelf advances by at most one per player per spin; and after "
+            "ALL spins the pity draw shuffles the winless set on the separate "
+            "'inclusivcup/v1/pity' stream. Stage 1 and pity are the only stream consumers — Stage "
+            "2, the ladder and the anti-sweep pass draw ZERO bytes, which is what makes the "
+            "per-spin byte accounting below a contract rather than a side effect."
+        ),
+        "generated_by": GENERATED_BY,
+        "projection": (
+            "DECISION AE — the snapshot is REFERENCED, never duplicated. Both cases project their "
+            "players and (for the anchor run) their catalog from the committed "
+            "`canonical-bundle-input.json`, the 75,013 bytes `publish_bundle` committed for the real "
+            "14-demo ceremony. A conformant implementation must project the published AD-19 integer "
+            "form — decimal-STRING magnitudes, {num,den} rate pairs, the class-shaped secondary/h2h "
+            "union, the uniform efficiency form, the integer achievement_ts — back into its own "
+            "snapshot type. That projection IS the capture shape AD-19 requires this vector to test."
+        ),
+        "source": source,
+        # ⭐ `deferred-work.md:347` — the winless SET at all four widths, as data. See the build above.
+        "winless_by_width": winless_by_width if path.exists() else [],
+        # ⭐ DECISION AF — declared in data, with the measurement, not left to prose.
+        "unreachable_ladder_rungs": [
+            {
+                "rung": 3,
+                "why": (
+                    "Rung 3 needs a STRICT head-to-head dominator over the remaining survivors. All "
+                    "28 players in this corpus have matches_played == 1 and exactly ONE h2h "
+                    "opponent, so h2h[opponent] is a byte-copy of the player's own totals (0 "
+                    "mismatching entries measured over all 28). Survivors reaching rung 3 tied on "
+                    "the deciding stat by construction, so their h2h values on that same stat are "
+                    "equal and the strict beat can never hold. Measured exhaustively: 400 reachable "
+                    "candidate subsets x 4,804,800 configurations produced 644059 rung-1, 443458 "
+                    "rung-2, 0 rung-3, 1398293 rung-4 and 80754 rung-5 exits."
+                ),
+                "gated_instead_by": "ladder-resolve.json",
+                "note": (
+                    "NOT unproven — ladder-resolve.json gates rung 3 as a UNIT over synthetic "
+                    "multi-opponent h2h blocks. What is unreachable is the END-TO-END path over a "
+                    "1v1 wingman bracket, and deferred-work.md:278 requires that limitation be "
+                    "stated on the vector's face."
+                ),
+            }
+        ],
+        "cases": cases,
+    }
+
+
 def render(obj: dict) -> str:
     """2-space indent, LF newlines, trailing newline — data, not code.
 
@@ -9053,24 +9950,36 @@ def main() -> int:
         # CRYPTOGRAPHIC axis: it consumes bytes from its own `inclusivcup/v1/pity` stream, so it
         # belongs beside `stage1-pick.json` on the stream side of the split rather than beside the
         # three pure passes above. §9.6's build order ends "… → pity".
-        # ⛔ DELIBERATELY UNNUMBERED (6.7 code review). This comment used to end "→ pity (gate 4)",
-        # which made it a THIRD reading of "gate 4" in a repo that already has two: README.md:39-40
-        # numbers 4 = canonicalization (6.9), and SOLUTION-DESIGN:441-445 numbers 4 = the end-to-end
-        # ceremony vector (6.11) — the two are REVERSED, which the README records beside the pity
-        # ownership row rather than silently renumbering, because renumbering a shipped table is
-        # 6.9/6.11's call. Naming a number here would have picked a side by accident.
+        # ⛔ DELIBERATELY UNNUMBERED, AND IT STAYS UNNUMBERED (6.7 code review). This comment used to
+        # end "→ pity (gate 4)", which made it a THIRD reading of "gate 4" in a repo that then had
+        # two. ✅ THE CLASH IS NOW RESOLVED — see the gate-5 entry below — but pity is still not one
+        # of §9.6's numbered STREAM gates, so naming a number here would still pick a side by
+        # accident. It draws bytes; it is not a numbered gate. Both of those stay true.
         HERE / "pity-draw.json": render(build_pity_file()),
         # ⭐ Story 6.9a — GATE 4, canonical JSON + `bundle_sha256` (RFC-8785). Unlike every file
         # above it, this one gates no *draw*: it gates the SERIALIZATION the commitment is taken
         # over, so it is the first vector whose failure mode is "the hash binds a different
         # document" rather than "a byte came out wrong".
-        # ⛔ ON THE GATE NUMBER, RESOLVED RATHER THAN NOTED A THIRD TIME (6.9a, Cuatro 2026-08-08).
-        # README.md:40 numbers canonicalization gate 4 and SOLUTION-DESIGN:441-445 numbers it 5;
-        # the two have been reversed since 6.3, and 6.7 and 6.8a each recorded the clash without
-        # resolving it. The decision: **6.9a adds its row under the README's existing numbering as
-        # gate 4, and 6.11 renumbers BOTH documents together when it lands the last row.** That is
-        # written into 6.11's obligations, not left as a discovery.
+        # ✅ THE GATE NUMBER IS NOW SETTLED, IN ONE COMMIT, ACROSS ALL THREE SITES (Story 6.11,
+        # DECISION AG). 6.9a added this row under the README's numbering as gate 4 and recorded that
+        # "6.11 renumbers BOTH documents together when it lands the last row" — this is that commit.
+        # THE SURVIVING NUMBERING IS THE README'S: gate 4 = canonicalization, gate 5 = the end-to-end
+        # ceremony vector. `SOLUTION-DESIGN §9.6` carried them REVERSED and has been corrected to
+        # match, rather than the other way round, for two reasons: the README's numbering is the one
+        # already shipped in a table and in this map since 6.3, and it is the one that agrees with
+        # the real build order — the canonicalizer landed at 6.9a and the end-to-end vector lands
+        # last, here. The third site was these two comment blocks.
         HERE / "canonical-bundle.json": render(build_canonical_file()),
+        # ⭐⭐ Story 6.11 — GATE 5, THE END-TO-END CEREMONY VECTOR, AND THE LAST ROW THIS DIRECTORY
+        # OWES. Every file above gates ONE stage; this one gates the COMPOSITION — seed → spins →
+        # Stage-1 pick → Stage-2 resolve → FR-29 ladder → FR-26 anti-sweep → FR-28 pity as one
+        # thing — which is the axis on which `worker/awards/ceremony.go` has carried no
+        # cross-language proof at all (its own header, :19-26). Its two cases are projected from the
+        # committed real snapshot (DECISION AE): an ANCHOR run that re-derives the corpus invariants
+        # `deferred-work.md:401` records as unverifiable, and a FORCED run whose counterfactual
+        # CATALOG — never its snapshot (DECISION AA) — reaches the rungs, the overflow and the pity
+        # draw the real floors cannot.
+        HERE / "end-to-end.json": render(build_end_to_end_file()),
     }
 
     if args.check:

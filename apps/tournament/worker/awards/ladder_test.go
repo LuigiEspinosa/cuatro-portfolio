@@ -121,8 +121,28 @@ type ladderVector struct {
 		Volume []string `json:"volume"`
 		Rate   []string `json:"rate"`
 	} `json:"stat_vocabulary"`
-	Refusals []ladderRefusalRow `json:"refusals"`
-	Cases    []ladderCase       `json:"cases"`
+	DeclaredDivergences []ladderDeclaredDivergence `json:"declared_divergences"`
+	Refusals            []ladderRefusalRow         `json:"refusals"`
+	Cases               []ladderCase               `json:"cases"`
+}
+
+// ladderDeclaredDivergence — a cross-language divergence the vector DECLARES rather than resolves: an
+// input whose refusal label legitimately differs between the runtimes, with the argument for why.
+//
+// ⭐⭐ IT IS NOT ROW-REPRESENTABLE, WHICH IS EXACTLY WHY IT NEEDS AN INSPECTOR. A vector row is a set
+// of INPUTS, and this input — a non-array roster — cannot exist here at all: `ResolveLadder`'s
+// parameter is typed `[]SnapshotPlayer`, so a nil slice IS an empty slice ("an absent container is the
+// empty container"). `deferred-work.md:326` is therefore closed "in data" as AC9 permits — but data
+// nothing reads is, in this directory's own words, "a compartment, not a contract". Story 6.11 emitted
+// the block and its code review found NEITHER runtime inspected it.
+type ladderDeclaredDivergence struct {
+	Input            string `json:"input"`
+	TypeScript       string `json:"typescript"`
+	Go               string `json:"go"`
+	Python           string `json:"python"`
+	RowRepresentable bool   `json:"row_representable"`
+	WhyNot           string `json:"why_not"`
+	Resolution       string `json:"resolution"`
 }
 
 func loadLadder(t *testing.T) ladderVector {
@@ -1819,6 +1839,83 @@ func TestFR29LadderRefusesANonTieOutcome(t *testing.T) {
 		if !errors.As(err, &invalid) || invalid.Detail != LadderDetailTied {
 			t.Errorf("a %q outcome refused as %v, want detail %q", kind, err, LadderDetailTied)
 		}
+	}
+}
+
+// TestLadderDeclaredDivergenceIsInspected — the declared divergence is CHECKED, not merely emitted.
+//
+// ⭐⭐ `deferred-work.md:326`, and this is the half that was missing. Story 6.11 added
+// `declared_divergences` to `ladder-resolve.json` and annotated the debt CLOSED; its code review found
+// that a repo-wide grep for the key returned hits only in the generator, the JSON and story prose. The
+// block's own `resolution` field claims "Both suites assert their own label, and this row is what
+// makes the asymmetry a contract instead of two comments that can drift apart" — which was untrue
+// until this test and its TypeScript twin existed.
+//
+// ⛔ THIS ASSERTS THE **Go** LABEL AGAINST THE **RUNTIME**. The block says Go refuses `tied` where
+// TypeScript refuses `player`, because Go normalises the absent container to empty and then discovers
+// the tied members have no matching snapshot row. If someone "unified" the two — which the block
+// explicitly forbids — one side would stop matching the vector and redden here or in `ladder.test.ts`.
+func TestLadderDeclaredDivergenceIsInspected(t *testing.T) {
+	v := loadLadder(t)
+
+	// ⛔ NON-VACUITY. A `range` over an empty slice runs zero times and passes — the shape this
+	// project has now recorded six times. The block must exist before anything is asserted about it.
+	if len(v.DeclaredDivergences) == 0 {
+		t.Fatal("ladder-resolve.json declares no divergences — `deferred-work.md:326` is carried by " +
+			"this block, and an empty one makes every assertion below vacuous")
+	}
+
+	declared := make(map[string]struct{}, len(v.RefusalDetails))
+	for _, d := range v.RefusalDetails {
+		declared[d] = struct{}{}
+	}
+
+	found := false
+	for _, d := range v.DeclaredDivergences {
+		if !strings.Contains(strings.ToUpper(d.Input), "NON-ARRAY") {
+			continue
+		}
+		found = true
+
+		if d.RowRepresentable {
+			t.Errorf("the non-array-roster divergence claims to be row-representable; if it is, it " +
+				"belongs in `refusals` as a row, not in this block")
+		}
+		// The asymmetry IS the entry. If the three ever agreed, delete the entry rather than keep it.
+		if d.TypeScript == d.Go {
+			t.Errorf("typescript %q and go %q agree — this entry no longer describes a divergence",
+				d.TypeScript, d.Go)
+		}
+		if d.Go != d.Python {
+			t.Errorf("go %q and python %q disagree; the block declares both normalise to empty and "+
+				"refuse the same way", d.Go, d.Python)
+		}
+		for _, label := range []string{d.TypeScript, d.Go} {
+			if _, ok := declared[label]; !ok {
+				t.Errorf("declared divergence label %q is outside the refusal_details set %v",
+					label, v.RefusalDetails)
+			}
+		}
+
+		// …and the label the vector attributes to Go is RE-DERIVED from a real call. A nil slice is
+		// the closest this runtime can come to "players supplied as a non-array".
+		award := Award{DecidingStat: "kills", Class: ClassVolume, Direction: DirectionMax}
+		out, err := ResolveLadder(award, []string{"11", "22"}, nil)
+		if err == nil {
+			t.Fatalf("a nil roster resolved to %+v — it must refuse", out)
+		}
+		var invalid *LadderInvalidError
+		if !errors.As(err, &invalid) {
+			t.Fatalf("refusal is not a *LadderInvalidError: %v", err)
+		}
+		if invalid.Detail != d.Go {
+			t.Errorf("a nil roster refused as %q, the vector attributes %q to Go — the declared "+
+				"divergence has drifted from what this runtime does", invalid.Detail, d.Go)
+		}
+	}
+	if !found {
+		t.Error("no declared divergence describes the NON-ARRAY roster input, which is the one " +
+			"`deferred-work.md:326` is about")
 	}
 }
 

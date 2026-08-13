@@ -226,6 +226,15 @@ const CASE_NAMES = [
   'the-award-with-the-LOWER-PRIORITY-NUMBER-KEEPS-the-trophy',
   'the-live-set-supplied-OUT-OF-PRIORITY-ORDER-resolves-IDENTICALLY',
   'the-ROSTER-supplied-OUT-OF-BYTE-LEX-order-changes-NOTHING',
+  // ⭐ ADDED DELIBERATELY BY STORY 6.11, closing `deferred-work.md:339` — the TypeScript twin of the
+  // same update in `sweep_test.go`. The pin reddened exactly as designed when the two rows landed
+  // and is updated HERE, on purpose, having read them. Neither an EMPTY roster nor a SINGLE-player
+  // roster had ever been resolved through the shared seam (RE-MEASURED at 6.11's code review: the
+  // sixteen prior rows carried 3 players x15 and 2 x1 — ⚠ `deferred-work.md:339` recorded it as
+  // `{3: 14, 2: 1}`, which sums to fifteen, not sixteen; the entry was off by one).
+  // The empty roster is where `players: undefined` normalising to `[]` lives.
+  'an-EMPTY-roster-resolves-EVERY-award-to-no_eligible_players',
+  'a-SINGLE-player-roster-wins-the-first-award-and-is-SWEPT-from-the-rest',
 ] as const;
 
 const caseByName = new Map(vector.cases.map((c) => [c.name, c]));

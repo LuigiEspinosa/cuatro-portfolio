@@ -644,7 +644,116 @@
           }
         }
       ],
-      "shelf": {}
+      "shelf": {},
+      "second": {
+        "detail": "players",
+        "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+        "players": [
+          {
+            "steamid64": "10",
+            "rounds_played": "30",
+            "kills": "25",
+            "idle_dq": false,
+            "stats_int": {
+              "volume": {
+                "deaths": "0",
+                "hs_kills": "0",
+                "kills": "25",
+                "knife_kills": "0",
+                "rounds_played": "30",
+                "utility_damage": "0"
+              },
+              "rate": {
+                "adr": {
+                  "num": "0",
+                  "den": "30"
+                },
+                "entry_success": {
+                  "num": "0",
+                  "den": "30"
+                },
+                "hs_pct": {
+                  "num": "0",
+                  "den": "25"
+                },
+                "kast_pct": {
+                  "num": "0",
+                  "den": "30"
+                }
+              }
+            }
+          },
+          {
+            "steamid64": "100",
+            "rounds_played": "30",
+            "kills": "25",
+            "idle_dq": false,
+            "stats_int": {
+              "volume": {
+                "deaths": "0",
+                "hs_kills": "0",
+                "kills": "25",
+                "knife_kills": "0",
+                "rounds_played": "30",
+                "utility_damage": "0"
+              },
+              "rate": {
+                "adr": {
+                  "num": "0",
+                  "den": "30"
+                },
+                "entry_success": {
+                  "num": "0",
+                  "den": "30"
+                },
+                "hs_pct": {
+                  "num": "0",
+                  "den": "25"
+                },
+                "kast_pct": {
+                  "num": "0",
+                  "den": "30"
+                }
+              }
+            }
+          },
+          {
+            "steamid64": "10",
+            "rounds_played": "12",
+            "kills": "8",
+            "idle_dq": false,
+            "stats_int": {
+              "volume": {
+                "deaths": "0",
+                "hs_kills": "0",
+                "kills": "8",
+                "knife_kills": "0",
+                "rounds_played": "12",
+                "utility_damage": "0"
+              },
+              "rate": {
+                "adr": {
+                  "num": "0",
+                  "den": "12"
+                },
+                "entry_success": {
+                  "num": "0",
+                  "den": "12"
+                },
+                "hs_pct": {
+                  "num": "0",
+                  "den": "8"
+                },
+                "kast_pct": {
+                  "num": "0",
+                  "den": "12"
+                }
+              }
+            }
+          }
+        ],
+        "shelf": {}
+      }
     },
     {
       "why": "MALFORMED IN TWO WAYS AT ONCE — a duplicate steamid64 over a shelf that ALSO carries a negative count. It must refuse `players`, pinning the players -> shelf half of the order",
@@ -760,6 +869,83 @@
       ],
       "shelf": {
         "100": -2
+      },
+      "second": {
+        "detail": "shelf",
+        "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+        "players": [
+          {
+            "steamid64": "10",
+            "rounds_played": "30",
+            "kills": "25",
+            "idle_dq": false,
+            "stats_int": {
+              "volume": {
+                "deaths": "0",
+                "hs_kills": "0",
+                "kills": "25",
+                "knife_kills": "0",
+                "rounds_played": "30",
+                "utility_damage": "0"
+              },
+              "rate": {
+                "adr": {
+                  "num": "0",
+                  "den": "30"
+                },
+                "entry_success": {
+                  "num": "0",
+                  "den": "30"
+                },
+                "hs_pct": {
+                  "num": "0",
+                  "den": "25"
+                },
+                "kast_pct": {
+                  "num": "0",
+                  "den": "30"
+                }
+              }
+            }
+          },
+          {
+            "steamid64": "100",
+            "rounds_played": "30",
+            "kills": "25",
+            "idle_dq": false,
+            "stats_int": {
+              "volume": {
+                "deaths": "0",
+                "hs_kills": "0",
+                "kills": "25",
+                "knife_kills": "0",
+                "rounds_played": "30",
+                "utility_damage": "0"
+              },
+              "rate": {
+                "adr": {
+                  "num": "0",
+                  "den": "30"
+                },
+                "entry_success": {
+                  "num": "0",
+                  "den": "30"
+                },
+                "hs_pct": {
+                  "num": "0",
+                  "den": "25"
+                },
+                "kast_pct": {
+                  "num": "0",
+                  "den": "30"
+                }
+              }
+            }
+          }
+        ],
+        "shelf": {
+          "100": -2
+        }
       }
     }
   ],

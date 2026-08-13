@@ -1,0 +1,1929 @@
+{
+  "vector": "end-to-end",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "SOLUTION-DESIGN 9.2 + 9.4, composed: per spin S the candidate pool is the catalog minus already-revealed awards; Stage 1 draws min(live_count, |pool|) awards from the stream 'inclusivcup/v1/stage1/spin/<S>' weighted by luck_weight_table[min(shelf[provisional_winner], table_max)] with the shelf FROZEN at spin start; the anti-sweep pass resolves the live set in ascending priority, removing already-assigned players from each later candidate set BEFORE Stage 2 runs, so a re-resolution is a full Stage-2 + FR-29-ladder re-run and never a pop-the-winner; co-winners all count; the shelf advances by at most one per player per spin; and after ALL spins the pity draw shuffles the winless set on the separate 'inclusivcup/v1/pity' stream. Stage 1 and pity are the only stream consumers — Stage 2, the ladder and the anti-sweep pass draw ZERO bytes, which is what makes the per-spin byte accounting below a contract rather than a side effect.",
+  "generated_by": "roulette/vectors/generate_vectors.py — python stdlib hmac+hashlib, a THIRD implementation written from the spec text, neither Go's crypto/hmac nor the browser's SubtleCrypto",
+  "projection": "DECISION AE — the snapshot is REFERENCED, never duplicated. Both cases project their players and (for the anchor run) their catalog from the committed `canonical-bundle-input.json`, the 75,013 bytes `publish_bundle` committed for the real 14-demo ceremony. A conformant implementation must project the published AD-19 integer form — decimal-STRING magnitudes, {num,den} rate pairs, the class-shaped secondary/h2h union, the uniform efficiency form, the integer achievement_ts — back into its own snapshot type. That projection IS the capture shape AD-19 requires this vector to test.",
+  "source": {
+    "file": "canonical-bundle-input.json",
+    "present": true,
+    "utf8_bytes": 75013,
+    "player_count": 28,
+    "award_count": 12,
+    "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+    "weight_table": [
+      100,
+      40,
+      16,
+      6,
+      2,
+      1
+    ]
+  },
+  "winless_by_width": [
+    {
+      "live_count": 1,
+      "main_spins": 12,
+      "winless": [
+        "76561198337771350",
+        "76561198388441171",
+        "76561198442864348",
+        "76561198715329473",
+        "76561198847461130",
+        "76561199094120484",
+        "76561199119068785",
+        "76561199164002328",
+        "76561199176839714",
+        "76561199194030650",
+        "76561199224717580",
+        "76561199233012783",
+        "76561199248100368",
+        "76561199250683038",
+        "76561199404795959",
+        "76561199529848048",
+        "76561199834726553",
+        "76561199837193023",
+        "76561199843959571"
+      ],
+      "shelf_distribution": [
+        {
+          "trophies": 0,
+          "players": 19
+        },
+        {
+          "trophies": 1,
+          "players": 6
+        },
+        {
+          "trophies": 2,
+          "players": 3
+        }
+      ]
+    },
+    {
+      "live_count": 2,
+      "main_spins": 6,
+      "winless": [
+        "76561198337771350",
+        "76561198388441171",
+        "76561198442864348",
+        "76561198715329473",
+        "76561198847461130",
+        "76561199094120484",
+        "76561199119068785",
+        "76561199164002328",
+        "76561199176839714",
+        "76561199194030650",
+        "76561199224717580",
+        "76561199233012783",
+        "76561199248100368",
+        "76561199250683038",
+        "76561199404795959",
+        "76561199529848048",
+        "76561199834726553",
+        "76561199837193023",
+        "76561199843959571"
+      ],
+      "shelf_distribution": [
+        {
+          "trophies": 0,
+          "players": 19
+        },
+        {
+          "trophies": 1,
+          "players": 6
+        },
+        {
+          "trophies": 2,
+          "players": 3
+        }
+      ]
+    },
+    {
+      "live_count": 3,
+      "main_spins": 4,
+      "winless": [
+        "76561198337771350",
+        "76561198388441171",
+        "76561198442864348",
+        "76561198715329473",
+        "76561198847461130",
+        "76561199094120484",
+        "76561199119068785",
+        "76561199164002328",
+        "76561199176839714",
+        "76561199194030650",
+        "76561199224717580",
+        "76561199233012783",
+        "76561199248100368",
+        "76561199250683038",
+        "76561199404795959",
+        "76561199529848048",
+        "76561199834726553",
+        "76561199837193023",
+        "76561199843959571"
+      ],
+      "shelf_distribution": [
+        {
+          "trophies": 0,
+          "players": 19
+        },
+        {
+          "trophies": 1,
+          "players": 7
+        },
+        {
+          "trophies": 2,
+          "players": 1
+        },
+        {
+          "trophies": 3,
+          "players": 1
+        }
+      ]
+    },
+    {
+      "live_count": 4,
+      "main_spins": 3,
+      "winless": [
+        "76561198337771350",
+        "76561198388441171",
+        "76561198442864348",
+        "76561198715329473",
+        "76561198847461130",
+        "76561199094120484",
+        "76561199119068785",
+        "76561199164002328",
+        "76561199176839714",
+        "76561199194030650",
+        "76561199224717580",
+        "76561199233012783",
+        "76561199248100368",
+        "76561199250683038",
+        "76561199404795959",
+        "76561199529848048",
+        "76561199834726553",
+        "76561199837193023",
+        "76561199843959571"
+      ],
+      "shelf_distribution": [
+        {
+          "trophies": 0,
+          "players": 19
+        },
+        {
+          "trophies": 1,
+          "players": 7
+        },
+        {
+          "trophies": 2,
+          "players": 1
+        },
+        {
+          "trophies": 3,
+          "players": 1
+        }
+      ]
+    }
+  ],
+  "unreachable_ladder_rungs": [
+    {
+      "rung": 3,
+      "why": "Rung 3 needs a STRICT head-to-head dominator over the remaining survivors. All 28 players in this corpus have matches_played == 1 and exactly ONE h2h opponent, so h2h[opponent] is a byte-copy of the player's own totals (0 mismatching entries measured over all 28). Survivors reaching rung 3 tied on the deciding stat by construction, so their h2h values on that same stat are equal and the strict beat can never hold. Measured exhaustively: 400 reachable candidate subsets x 4,804,800 configurations produced 644059 rung-1, 443458 rung-2, 0 rung-3, 1398293 rung-4 and 80754 rung-5 exits.",
+      "gated_instead_by": "ladder-resolve.json",
+      "note": "NOT unproven — ladder-resolve.json gates rung 3 as a UNIT over synthetic multi-opponent h2h blocks. What is unreachable is the END-TO-END path over a 1v1 wingman bracket, and deferred-work.md:278 requires that limitation be stated on the vector's face."
+    }
+  ],
+  "cases": [
+    {
+      "name": "anchor-run",
+      "why": "The REAL 14-demo ceremony, re-derived end to end from the committed snapshot: the real catalog at the real FR-21 floors (24/20) with live_count = 1. It reproduces every corpus invariant deferred-work.md:401 records as narrated-but-unverifiable — the 22 / 27 / 49 byte split, the twelve-award drawn order and the 40-spin shape — and it is the case that makes them assertable FROM THE TREE, with no throwaway harness. ⚠ All twelve main spins resolve no_eligible_players: 0 of 28 players clear the floors, measured across six stories and accepted (Cuatro, 2026-08-08).",
+      "projection": {
+        "snapshot": "real",
+        "snapshot_source": "canonical-bundle-input.json",
+        "seed": "real",
+        "weight_table": "real",
+        "catalog": "real",
+        "counterfactual_fields": []
+      },
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "live_count": 1,
+      "weight_table": [
+        100,
+        40,
+        16,
+        6,
+        2,
+        1
+      ],
+      "catalog": [
+        {
+          "award_id": "1",
+          "priority": 1,
+          "deciding_stat": "kills",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 0,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "2",
+          "priority": 2,
+          "deciding_stat": "adr",
+          "class": "rate",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 20,
+          "secondary_stat": "kills",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "3",
+          "priority": 3,
+          "deciding_stat": "hs_pct",
+          "class": "rate",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 20,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "4",
+          "priority": 4,
+          "deciding_stat": "hs_kills",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 0,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "5",
+          "priority": 5,
+          "deciding_stat": "entry_success",
+          "class": "rate",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 20,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "6",
+          "priority": 6,
+          "deciding_stat": "knife_kills",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 0,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "7",
+          "priority": 7,
+          "deciding_stat": "wallbang_kills",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 0,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "8",
+          "priority": 8,
+          "deciding_stat": "through_smoke_kills",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 0,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "9",
+          "priority": 9,
+          "deciding_stat": "blind_kills",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 0,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "10",
+          "priority": 10,
+          "deciding_stat": "utility_damage",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 0,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "11",
+          "priority": 11,
+          "deciding_stat": "deaths",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 0,
+          "secondary_stat": "adr",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "12",
+          "priority": 12,
+          "deciding_stat": "adr",
+          "class": "rate",
+          "direction": "min",
+          "floor_rounds": 24,
+          "floor_kills": 20,
+          "secondary_stat": "kills",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        }
+      ],
+      "expected": {
+        "spins": [
+          {
+            "spin": 1,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/1",
+            "pool": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 1200,
+            "draws": [
+              {
+                "n": 1200,
+                "r": 315,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "4"
+            ],
+            "results": [
+              {
+                "award_id": "4",
+                "priority": 4,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 2,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/2",
+            "pool": [
+              "1",
+              "2",
+              "3",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 1100,
+            "draws": [
+              {
+                "n": 1100,
+                "r": 1034,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "12"
+            ],
+            "results": [
+              {
+                "award_id": "12",
+                "priority": 12,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 3,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/3",
+            "pool": [
+              "1",
+              "2",
+              "3",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 1000,
+            "draws": [
+              {
+                "n": 1000,
+                "r": 680,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "8"
+            ],
+            "results": [
+              {
+                "award_id": "8",
+                "priority": 8,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 4,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/4",
+            "pool": [
+              "1",
+              "2",
+              "3",
+              "5",
+              "6",
+              "7",
+              "9",
+              "10",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 900,
+            "draws": [
+              {
+                "n": 900,
+                "r": 668,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "9"
+            ],
+            "results": [
+              {
+                "award_id": "9",
+                "priority": 9,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 5,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/5",
+            "pool": [
+              "1",
+              "2",
+              "3",
+              "5",
+              "6",
+              "7",
+              "10",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 800,
+            "draws": [
+              {
+                "n": 800,
+                "r": 344,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "5"
+            ],
+            "results": [
+              {
+                "award_id": "5",
+                "priority": 5,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 6,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/6",
+            "pool": [
+              "1",
+              "2",
+              "3",
+              "6",
+              "7",
+              "10",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 700,
+            "draws": [
+              {
+                "n": 700,
+                "r": 549,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "10"
+            ],
+            "results": [
+              {
+                "award_id": "10",
+                "priority": 10,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 7,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/7",
+            "pool": [
+              "1",
+              "2",
+              "3",
+              "6",
+              "7",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 600,
+            "draws": [
+              {
+                "n": 600,
+                "r": 115,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "2"
+            ],
+            "results": [
+              {
+                "award_id": "2",
+                "priority": 2,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 8,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/8",
+            "pool": [
+              "1",
+              "3",
+              "6",
+              "7",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 500,
+            "draws": [
+              {
+                "n": 500,
+                "r": 124,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "3"
+            ],
+            "results": [
+              {
+                "award_id": "3",
+                "priority": 3,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 9,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/9",
+            "pool": [
+              "1",
+              "6",
+              "7",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 400,
+            "draws": [
+              {
+                "n": 400,
+                "r": 245,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "7"
+            ],
+            "results": [
+              {
+                "award_id": "7",
+                "priority": 7,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 10,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/10",
+            "pool": [
+              "1",
+              "6",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100,
+              100
+            ],
+            "total_weight": 300,
+            "draws": [
+              {
+                "n": 300,
+                "r": 105,
+                "consumed_after": 2
+              }
+            ],
+            "bytes_consumed": 2,
+            "live": [
+              "6"
+            ],
+            "results": [
+              {
+                "award_id": "6",
+                "priority": 6,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 11,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/11",
+            "pool": [
+              "1",
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100,
+              100
+            ],
+            "total_weight": 200,
+            "draws": [
+              {
+                "n": 200,
+                "r": 46,
+                "consumed_after": 1
+              }
+            ],
+            "bytes_consumed": 1,
+            "live": [
+              "1"
+            ],
+            "results": [
+              {
+                "award_id": "1",
+                "priority": 1,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          },
+          {
+            "spin": 12,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/12",
+            "pool": [
+              "11"
+            ],
+            "live_count": 1,
+            "weights": [
+              100
+            ],
+            "total_weight": 100,
+            "draws": [
+              {
+                "n": 100,
+                "r": 15,
+                "consumed_after": 1
+              }
+            ],
+            "bytes_consumed": 1,
+            "live": [
+              "11"
+            ],
+            "results": [
+              {
+                "award_id": "11",
+                "priority": 11,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              }
+            ],
+            "assigned": []
+          }
+        ],
+        "pity": {
+          "label": "inclusivcup/v1/pity",
+          "winless": [
+            "76561198158667313",
+            "76561198286758497",
+            "76561198305828891",
+            "76561198337771350",
+            "76561198388441171",
+            "76561198403397102",
+            "76561198442864348",
+            "76561198715329473",
+            "76561198841610702",
+            "76561198847461130",
+            "76561199094120484",
+            "76561199115487374",
+            "76561199119068785",
+            "76561199121907337",
+            "76561199164002328",
+            "76561199176839714",
+            "76561199194030650",
+            "76561199197635748",
+            "76561199224717580",
+            "76561199233012783",
+            "76561199248100368",
+            "76561199250683038",
+            "76561199404795959",
+            "76561199529848048",
+            "76561199761222301",
+            "76561199834726553",
+            "76561199837193023",
+            "76561199843959571"
+          ],
+          "reveal_order": [
+            "76561199250683038",
+            "76561199176839714",
+            "76561199121907337",
+            "76561199233012783",
+            "76561198442864348",
+            "76561199164002328",
+            "76561199404795959",
+            "76561199248100368",
+            "76561199194030650",
+            "76561198305828891",
+            "76561198847461130",
+            "76561199224717580",
+            "76561199115487374",
+            "76561199843959571",
+            "76561198158667313",
+            "76561198841610702",
+            "76561199529848048",
+            "76561198388441171",
+            "76561199119068785",
+            "76561199761222301",
+            "76561199094120484",
+            "76561198286758497",
+            "76561198337771350",
+            "76561198403397102",
+            "76561199834726553",
+            "76561199837193023",
+            "76561198715329473",
+            "76561199197635748"
+          ],
+          "draws": [
+            {
+              "n": 28,
+              "k": 1,
+              "rejections": 0,
+              "value": 17
+            },
+            {
+              "n": 27,
+              "k": 1,
+              "rejections": 0,
+              "value": 7
+            },
+            {
+              "n": 26,
+              "k": 1,
+              "rejections": 0,
+              "value": 7
+            },
+            {
+              "n": 25,
+              "k": 1,
+              "rejections": 0,
+              "value": 7
+            },
+            {
+              "n": 24,
+              "k": 1,
+              "rejections": 0,
+              "value": 5
+            },
+            {
+              "n": 23,
+              "k": 1,
+              "rejections": 0,
+              "value": 3
+            },
+            {
+              "n": 22,
+              "k": 1,
+              "rejections": 0,
+              "value": 1
+            },
+            {
+              "n": 21,
+              "k": 1,
+              "rejections": 0,
+              "value": 10
+            },
+            {
+              "n": 20,
+              "k": 1,
+              "rejections": 0,
+              "value": 7
+            },
+            {
+              "n": 19,
+              "k": 1,
+              "rejections": 0,
+              "value": 12
+            },
+            {
+              "n": 18,
+              "k": 1,
+              "rejections": 0,
+              "value": 4
+            },
+            {
+              "n": 17,
+              "k": 1,
+              "rejections": 0,
+              "value": 5
+            },
+            {
+              "n": 16,
+              "k": 1,
+              "rejections": 0,
+              "value": 8
+            },
+            {
+              "n": 15,
+              "k": 1,
+              "rejections": 0,
+              "value": 0
+            },
+            {
+              "n": 14,
+              "k": 1,
+              "rejections": 0,
+              "value": 4
+            },
+            {
+              "n": 13,
+              "k": 1,
+              "rejections": 0,
+              "value": 11
+            },
+            {
+              "n": 12,
+              "k": 1,
+              "rejections": 0,
+              "value": 11
+            },
+            {
+              "n": 11,
+              "k": 1,
+              "rejections": 0,
+              "value": 9
+            },
+            {
+              "n": 10,
+              "k": 1,
+              "rejections": 0,
+              "value": 2
+            },
+            {
+              "n": 9,
+              "k": 1,
+              "rejections": 0,
+              "value": 5
+            },
+            {
+              "n": 8,
+              "k": 1,
+              "rejections": 0,
+              "value": 2
+            },
+            {
+              "n": 7,
+              "k": 1,
+              "rejections": 0,
+              "value": 3
+            },
+            {
+              "n": 6,
+              "k": 1,
+              "rejections": 0,
+              "value": 0
+            },
+            {
+              "n": 5,
+              "k": 1,
+              "rejections": 0,
+              "value": 3
+            },
+            {
+              "n": 4,
+              "k": 1,
+              "rejections": 0,
+              "value": 2
+            },
+            {
+              "n": 3,
+              "k": 1,
+              "rejections": 0,
+              "value": 2
+            },
+            {
+              "n": 2,
+              "k": 1,
+              "rejections": 0,
+              "value": 0
+            }
+          ],
+          "bytes_consumed": 27
+        },
+        "shelf": {},
+        "anchors": {
+          "main_spin_count": 12,
+          "main_spin_bytes": 22,
+          "pity_bytes": 27,
+          "total_bytes": 49,
+          "drawn_order": [
+            "4",
+            "12",
+            "8",
+            "9",
+            "5",
+            "10",
+            "2",
+            "3",
+            "7",
+            "6",
+            "1",
+            "11"
+          ],
+          "winless_count": 28,
+          "shelf_holders": 0,
+          "max_trophies_per_player": 0,
+          "ladder_exit_steps": [],
+          "outcome_kinds": [
+            "no_eligible_players"
+          ]
+        }
+      }
+    },
+    {
+      "name": "forced-run",
+      "why": "The SAME real snapshot under a counterfactual catalog (DECISION AA): floors chosen per award, rung keys chosen against measured real magnitudes, live_count = 6. It exercises every REACHABLE FR-29 rung (1, 2, 4 and the terminal shared 5 — rung 3 is unreachable end-to-end over this corpus, see unreachable_ladder_rungs), three genuine anti-sweep overflows, DECISION E's no_awardable_value, no_eligible_players at the real floors, and a pity draw over a roster that is only PARTLY winless — which the anchor run, where every player is winless, cannot test.",
+      "projection": {
+        "snapshot": "real",
+        "snapshot_source": "canonical-bundle-input.json",
+        "seed": "real",
+        "weight_table": "real",
+        "catalog": "counterfactual",
+        "counterfactual_fields": [
+          "floor_rounds",
+          "floor_kills",
+          "deciding_stat",
+          "class",
+          "direction",
+          "secondary_stat",
+          "eff_num_key",
+          "eff_den_key",
+          "priority",
+          "award_id",
+          "live_count"
+        ]
+      },
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "live_count": 6,
+      "weight_table": [
+        100,
+        40,
+        16,
+        6,
+        2,
+        1
+      ],
+      "catalog": [
+        {
+          "award_id": "f1",
+          "priority": 1,
+          "deciding_stat": "utility_damage",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 0,
+          "floor_kills": 0,
+          "secondary_stat": "kills",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "f2",
+          "priority": 2,
+          "deciding_stat": "utility_damage",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 0,
+          "floor_kills": 0,
+          "secondary_stat": "deaths",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "f3",
+          "priority": 3,
+          "deciding_stat": "utility_damage",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 0,
+          "floor_kills": 0,
+          "secondary_stat": null,
+          "eff_num_key": null,
+          "eff_den_key": null
+        },
+        {
+          "award_id": "f4",
+          "priority": 4,
+          "deciding_stat": "deaths",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 21,
+          "floor_kills": 0,
+          "secondary_stat": "utility_damage",
+          "eff_num_key": null,
+          "eff_den_key": null
+        },
+        {
+          "award_id": "f5",
+          "priority": 5,
+          "deciding_stat": "assists",
+          "class": "volume",
+          "direction": "min",
+          "floor_rounds": 21,
+          "floor_kills": 0,
+          "secondary_stat": "utility_damage",
+          "eff_num_key": "kills",
+          "eff_den_key": "deaths"
+        },
+        {
+          "award_id": "f6",
+          "priority": 6,
+          "deciding_stat": "assists",
+          "class": "volume",
+          "direction": "min",
+          "floor_rounds": 21,
+          "floor_kills": 0,
+          "secondary_stat": null,
+          "eff_num_key": "assists",
+          "eff_den_key": "matches_played"
+        },
+        {
+          "award_id": "f7",
+          "priority": 7,
+          "deciding_stat": "assists",
+          "class": "volume",
+          "direction": "min",
+          "floor_rounds": 21,
+          "floor_kills": 0,
+          "secondary_stat": null,
+          "eff_num_key": null,
+          "eff_den_key": null
+        },
+        {
+          "award_id": "f8",
+          "priority": 8,
+          "deciding_stat": "mvps",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 0,
+          "floor_kills": 0,
+          "secondary_stat": null,
+          "eff_num_key": null,
+          "eff_den_key": null
+        },
+        {
+          "award_id": "f9",
+          "priority": 9,
+          "deciding_stat": "adr",
+          "class": "rate",
+          "direction": "max",
+          "floor_rounds": 0,
+          "floor_kills": 0,
+          "secondary_stat": "kills",
+          "eff_num_key": null,
+          "eff_den_key": null
+        },
+        {
+          "award_id": "f10",
+          "priority": 10,
+          "deciding_stat": "adr",
+          "class": "rate",
+          "direction": "min",
+          "floor_rounds": 0,
+          "floor_kills": 0,
+          "secondary_stat": "kills",
+          "eff_num_key": null,
+          "eff_den_key": null
+        },
+        {
+          "award_id": "f11",
+          "priority": 11,
+          "deciding_stat": "kills",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 24,
+          "floor_kills": 20,
+          "secondary_stat": "adr",
+          "eff_num_key": null,
+          "eff_den_key": null
+        },
+        {
+          "award_id": "f12",
+          "priority": 12,
+          "deciding_stat": "wallbang_kills",
+          "class": "volume",
+          "direction": "max",
+          "floor_rounds": 0,
+          "floor_kills": 0,
+          "secondary_stat": "kills",
+          "eff_num_key": null,
+          "eff_den_key": null
+        }
+      ],
+      "expected": {
+        "spins": [
+          {
+            "spin": 1,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/1",
+            "pool": [
+              "f1",
+              "f2",
+              "f3",
+              "f4",
+              "f5",
+              "f6",
+              "f7",
+              "f8",
+              "f9",
+              "f10",
+              "f11",
+              "f12"
+            ],
+            "live_count": 6,
+            "weights": [
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 1200,
+            "draws": [
+              {
+                "n": 1200,
+                "r": 315,
+                "consumed_after": 2
+              },
+              {
+                "n": 1100,
+                "r": 598,
+                "consumed_after": 4
+              },
+              {
+                "n": 1000,
+                "r": 237,
+                "consumed_after": 6
+              },
+              {
+                "n": 900,
+                "r": 619,
+                "consumed_after": 8
+              },
+              {
+                "n": 800,
+                "r": 263,
+                "consumed_after": 10
+              },
+              {
+                "n": 700,
+                "r": 331,
+                "consumed_after": 12
+              }
+            ],
+            "bytes_consumed": 12,
+            "live": [
+              "f4",
+              "f7",
+              "f3",
+              "f10",
+              "f5",
+              "f8"
+            ],
+            "results": [
+              {
+                "award_id": "f3",
+                "priority": 3,
+                "kind": "winner",
+                "steamid64": "76561198158667313",
+                "deciding_value": {
+                  "class": "volume",
+                  "value": "82"
+                },
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              },
+              {
+                "award_id": "f4",
+                "priority": 4,
+                "kind": "winner",
+                "steamid64": "76561198442864348",
+                "ladder_exit_step": 1,
+                "swept_out": [
+                  "76561198158667313"
+                ],
+                "reresolved": true
+              },
+              {
+                "award_id": "f5",
+                "priority": 5,
+                "kind": "winner",
+                "steamid64": "76561199194030650",
+                "ladder_exit_step": 2,
+                "swept_out": [
+                  "76561198158667313",
+                  "76561198442864348"
+                ],
+                "reresolved": true
+              },
+              {
+                "award_id": "f7",
+                "priority": 7,
+                "kind": "winner",
+                "steamid64": "76561199837193023",
+                "ladder_exit_step": 4,
+                "swept_out": [
+                  "76561198158667313",
+                  "76561198442864348",
+                  "76561199194030650"
+                ],
+                "reresolved": true
+              },
+              {
+                "award_id": "f8",
+                "priority": 8,
+                "kind": "no_awardable_value",
+                "tied": [
+                  "76561198286758497",
+                  "76561198305828891",
+                  "76561198337771350",
+                  "76561198388441171",
+                  "76561198403397102",
+                  "76561198715329473",
+                  "76561198841610702",
+                  "76561198847461130",
+                  "76561199094120484",
+                  "76561199115487374",
+                  "76561199119068785",
+                  "76561199121907337",
+                  "76561199164002328",
+                  "76561199176839714",
+                  "76561199197635748",
+                  "76561199224717580",
+                  "76561199233012783",
+                  "76561199248100368",
+                  "76561199250683038",
+                  "76561199404795959",
+                  "76561199529848048",
+                  "76561199761222301",
+                  "76561199834726553",
+                  "76561199843959571"
+                ],
+                "ladder_exit_step": 0,
+                "swept_out": [
+                  "76561198158667313",
+                  "76561198442864348",
+                  "76561199194030650",
+                  "76561199837193023"
+                ],
+                "reresolved": true
+              },
+              {
+                "award_id": "f10",
+                "priority": 10,
+                "kind": "winner",
+                "steamid64": "76561198286758497",
+                "deciding_value": {
+                  "class": "rate",
+                  "num": "329",
+                  "den": "10"
+                },
+                "ladder_exit_step": 0,
+                "swept_out": [
+                  "76561198158667313",
+                  "76561198442864348",
+                  "76561199194030650",
+                  "76561199837193023"
+                ],
+                "reresolved": true
+              }
+            ],
+            "assigned": [
+              "76561198158667313",
+              "76561198286758497",
+              "76561198442864348",
+              "76561199194030650",
+              "76561199837193023"
+            ]
+          },
+          {
+            "spin": 2,
+            "kind": "main",
+            "label": "inclusivcup/v1/stage1/spin/2",
+            "pool": [
+              "f1",
+              "f2",
+              "f6",
+              "f9",
+              "f11",
+              "f12"
+            ],
+            "live_count": 6,
+            "weights": [
+              40,
+              40,
+              40,
+              100,
+              100,
+              100
+            ],
+            "total_weight": 420,
+            "draws": [
+              {
+                "n": 420,
+                "r": 34,
+                "consumed_after": 2
+              },
+              {
+                "n": 380,
+                "r": 275,
+                "consumed_after": 4
+              },
+              {
+                "n": 280,
+                "r": 226,
+                "consumed_after": 6
+              },
+              {
+                "n": 180,
+                "r": 167,
+                "consumed_after": 7
+              },
+              {
+                "n": 80,
+                "r": 46,
+                "consumed_after": 8
+              },
+              {
+                "n": 40,
+                "r": 6,
+                "consumed_after": 9
+              }
+            ],
+            "bytes_consumed": 9,
+            "live": [
+              "f1",
+              "f11",
+              "f12",
+              "f9",
+              "f6",
+              "f2"
+            ],
+            "results": [
+              {
+                "award_id": "f1",
+                "priority": 1,
+                "kind": "winner",
+                "steamid64": "76561198158667313",
+                "deciding_value": {
+                  "class": "volume",
+                  "value": "82"
+                },
+                "ladder_exit_step": 0,
+                "swept_out": [],
+                "reresolved": false
+              },
+              {
+                "award_id": "f2",
+                "priority": 2,
+                "kind": "winner",
+                "steamid64": "76561198388441171",
+                "deciding_value": {
+                  "class": "volume",
+                  "value": "56"
+                },
+                "ladder_exit_step": 0,
+                "swept_out": [
+                  "76561198158667313"
+                ],
+                "reresolved": true
+              },
+              {
+                "award_id": "f6",
+                "priority": 6,
+                "kind": "shared",
+                "winners": [
+                  "76561199194030650",
+                  "76561199837193023"
+                ],
+                "ladder_exit_step": 5,
+                "swept_out": [
+                  "76561198158667313",
+                  "76561198388441171"
+                ],
+                "reresolved": true
+              },
+              {
+                "award_id": "f9",
+                "priority": 9,
+                "kind": "winner",
+                "steamid64": "76561198305828891",
+                "deciding_value": {
+                  "class": "rate",
+                  "num": "1039",
+                  "den": "11"
+                },
+                "ladder_exit_step": 0,
+                "swept_out": [
+                  "76561198158667313",
+                  "76561198388441171",
+                  "76561199194030650",
+                  "76561199837193023"
+                ],
+                "reresolved": true
+              },
+              {
+                "award_id": "f11",
+                "priority": 11,
+                "kind": "no_eligible_players",
+                "ladder_exit_step": 0,
+                "swept_out": [
+                  "76561198158667313",
+                  "76561198305828891",
+                  "76561198388441171",
+                  "76561199194030650",
+                  "76561199837193023"
+                ],
+                "reresolved": true
+              },
+              {
+                "award_id": "f12",
+                "priority": 12,
+                "kind": "winner",
+                "steamid64": "76561199250683038",
+                "ladder_exit_step": 1,
+                "swept_out": [
+                  "76561198158667313",
+                  "76561198305828891",
+                  "76561198388441171",
+                  "76561199194030650",
+                  "76561199837193023"
+                ],
+                "reresolved": true
+              }
+            ],
+            "assigned": [
+              "76561198158667313",
+              "76561198305828891",
+              "76561198388441171",
+              "76561199194030650",
+              "76561199250683038",
+              "76561199837193023"
+            ]
+          }
+        ],
+        "pity": {
+          "label": "inclusivcup/v1/pity",
+          "winless": [
+            "76561198337771350",
+            "76561198403397102",
+            "76561198715329473",
+            "76561198841610702",
+            "76561198847461130",
+            "76561199094120484",
+            "76561199115487374",
+            "76561199119068785",
+            "76561199121907337",
+            "76561199164002328",
+            "76561199176839714",
+            "76561199197635748",
+            "76561199224717580",
+            "76561199233012783",
+            "76561199248100368",
+            "76561199404795959",
+            "76561199529848048",
+            "76561199761222301",
+            "76561199834726553",
+            "76561199843959571"
+          ],
+          "reveal_order": [
+            "76561199404795959",
+            "76561198715329473",
+            "76561199176839714",
+            "76561199121907337",
+            "76561199164002328",
+            "76561198847461130",
+            "76561199197635748",
+            "76561198337771350",
+            "76561198841610702",
+            "76561199834726553",
+            "76561199248100368",
+            "76561199119068785",
+            "76561199843959571",
+            "76561198403397102",
+            "76561199224717580",
+            "76561199529848048",
+            "76561199233012783",
+            "76561199094120484",
+            "76561199115487374",
+            "76561199761222301"
+          ],
+          "draws": [
+            {
+              "n": 20,
+              "k": 1,
+              "rejections": 0,
+              "value": 17
+            },
+            {
+              "n": 19,
+              "k": 1,
+              "rejections": 0,
+              "value": 6
+            },
+            {
+              "n": 18,
+              "k": 1,
+              "rejections": 0,
+              "value": 5
+            },
+            {
+              "n": 17,
+              "k": 1,
+              "rejections": 0,
+              "value": 13
+            },
+            {
+              "n": 16,
+              "k": 1,
+              "rejections": 0,
+              "value": 13
+            },
+            {
+              "n": 15,
+              "k": 1,
+              "rejections": 0,
+              "value": 12
+            },
+            {
+              "n": 14,
+              "k": 1,
+              "rejections": 0,
+              "value": 1
+            },
+            {
+              "n": 13,
+              "k": 1,
+              "rejections": 0,
+              "value": 5
+            },
+            {
+              "n": 12,
+              "k": 1,
+              "rejections": 0,
+              "value": 7
+            },
+            {
+              "n": 11,
+              "k": 1,
+              "rejections": 0,
+              "value": 5
+            },
+            {
+              "n": 10,
+              "k": 1,
+              "rejections": 0,
+              "value": 6
+            },
+            {
+              "n": 9,
+              "k": 1,
+              "rejections": 0,
+              "value": 3
+            },
+            {
+              "n": 8,
+              "k": 1,
+              "rejections": 0,
+              "value": 0
+            },
+            {
+              "n": 7,
+              "k": 1,
+              "rejections": 0,
+              "value": 0
+            },
+            {
+              "n": 6,
+              "k": 1,
+              "rejections": 0,
+              "value": 4
+            },
+            {
+              "n": 5,
+              "k": 1,
+              "rejections": 0,
+              "value": 0
+            },
+            {
+              "n": 4,
+              "k": 1,
+              "rejections": 0,
+              "value": 3
+            },
+            {
+              "n": 3,
+              "k": 1,
+              "rejections": 0,
+              "value": 0
+            },
+            {
+              "n": 2,
+              "k": 1,
+              "rejections": 0,
+              "value": 0
+            }
+          ],
+          "bytes_consumed": 19
+        },
+        "shelf": {
+          "76561198158667313": 2,
+          "76561198286758497": 1,
+          "76561198305828891": 1,
+          "76561198388441171": 1,
+          "76561198442864348": 1,
+          "76561199194030650": 2,
+          "76561199250683038": 1,
+          "76561199837193023": 2
+        },
+        "anchors": {
+          "main_spin_count": 2,
+          "main_spin_bytes": 21,
+          "pity_bytes": 19,
+          "total_bytes": 40,
+          "drawn_order": [
+            "f4",
+            "f7",
+            "f3",
+            "f10",
+            "f5",
+            "f8",
+            "f1",
+            "f11",
+            "f12",
+            "f9",
+            "f6",
+            "f2"
+          ],
+          "winless_count": 20,
+          "shelf_holders": 8,
+          "max_trophies_per_player": 2,
+          "ladder_exit_steps": [
+            1,
+            2,
+            4,
+            5
+          ],
+          "outcome_kinds": [
+            "no_awardable_value",
+            "no_eligible_players",
+            "shared",
+            "winner"
+          ]
+        }
+      }
+    }
+  ]
+}

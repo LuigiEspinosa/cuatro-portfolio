@@ -134,6 +134,17 @@ var sweepCaseNames = []string{
 	"the-award-with-the-LOWER-PRIORITY-NUMBER-KEEPS-the-trophy",
 	"the-live-set-supplied-OUT-OF-PRIORITY-ORDER-resolves-IDENTICALLY",
 	"the-ROSTER-supplied-OUT-OF-BYTE-LEX-order-changes-NOTHING",
+	// ⭐ ADDED DELIBERATELY BY STORY 6.11, closing `deferred-work.md:339`. The pin above reddened
+	// exactly as designed when the two rows landed, and it is updated HERE, on purpose, having read
+	// them — never by deleting the assertion. RE-MEASURED at 6.11's code review: the sixteen rows
+	// this file carried had player counts of 3 (x15) and 2 (x1). ⚠ `deferred-work.md:339` recorded
+	// that histogram as `{3: 14, 2: 1}`, which sums to fifteen rather than sixteen; the entry's
+	// figure was off by one and the corrected count is the one above. Neither an EMPTY roster nor a
+	// SINGLE-player roster was ever resolved through the shared seam — and the empty roster is where
+	// the `players: null` normalisation ("an absent container IS the empty container") actually
+	// lives.
+	"an-EMPTY-roster-resolves-EVERY-award-to-no_eligible_players",
+	"a-SINGLE-player-roster-wins-the-first-award-and-is-SWEPT-from-the-rest",
 }
 
 func TestVectorSweepCarriesExactlyTheExpectedCases(t *testing.T) {

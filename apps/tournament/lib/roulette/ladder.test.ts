@@ -167,9 +167,30 @@ const vector = JSON.parse(readFileSync(VECTOR_PATH, 'utf8')) as {
   absent_achievement_ts: string;
   refusal_details: string[];
   stat_vocabulary: { volume: string[]; rate: string[] };
+  declared_divergences: VectorDeclaredDivergence[];
   refusals: VectorRefusal[];
   cases: VectorCase[];
 };
+
+/**
+ * A cross-language divergence the vector DECLARES rather than resolves — an input whose refusal label
+ * legitimately differs between the runtimes, with the argument for why it is deliberate.
+ *
+ * ⭐⭐ IT IS NOT ROW-REPRESENTABLE, WHICH IS EXACTLY WHY IT NEEDS AN INSPECTOR. A vector row is a set
+ * of INPUTS, and this input (a non-array roster) cannot exist in Go at all, whose parameter is typed
+ * `[]SnapshotPlayer`. So `deferred-work.md:326` is closed "in data" as AC9 permits — but data nothing
+ * reads is, in this file's own words, "a compartment, not a contract". Story 6.11 emitted the block
+ * and its code review found that NEITHER runtime inspected it; this is the TypeScript half.
+ */
+interface VectorDeclaredDivergence {
+  input: string;
+  typescript: string;
+  go: string;
+  python: string;
+  row_representable: boolean;
+  why_not: string;
+  resolution: string;
+}
 
 /**
  * Parse one vector magnitude.
@@ -1668,6 +1689,38 @@ describe('local refusals the vector cannot express', () => {
     expectDetail(
       () => resolveLadder(award, ['11', '22'], null as unknown as SnapshotPlayer[]),
       'player',
+    );
+  });
+
+  // ⭐⭐ THE DECLARED DIVERGENCE IS INSPECTED, NOT MERELY EMITTED — `deferred-work.md:326`.
+  //
+  // Story 6.11 added `declared_divergences` to `ladder-resolve.json` and annotated the debt CLOSED;
+  // its code review found that NOTHING in either runtime read the block. The block's own `resolution`
+  // says "Both suites assert their own label, and this row is what makes the asymmetry a contract
+  // instead of two comments that can drift apart" — which was not true until this test and its Go
+  // twin (`TestLadderDeclaredDivergenceIsInspected`) existed.
+  //
+  // ⛔ THIS ASSERTS THE **TypeScript** LABEL AGAINST THE **RUNTIME**, not against a constant here. If
+  // someone "unified" the TS guard down to `tied` for symmetry — which the block explicitly forbids —
+  // the vector would still say `player` and this test would redden. The reverse drift (someone edits
+  // the JSON to match a weakened guard) is caught by `--check`, which re-derives the file.
+  it('the declared non-array-roster divergence carries the label THIS runtime actually produces', () => {
+    const declared = vector.declared_divergences.find((d) => /NON-ARRAY/i.test(d.input));
+    expect(declared, 'the non-array-roster divergence is missing from the vector').toBeDefined();
+    const row = declared as VectorDeclaredDivergence;
+
+    // It is declared unrepresentable, so no case row may quietly carry it instead.
+    expect(row.row_representable).toBe(false);
+    // The asymmetry is the whole point: if the three ever agreed, the entry should be deleted, not left.
+    expect(row.typescript).not.toBe(row.go);
+    expect(row.go).toBe(row.python);
+    expect(vector.refusal_details).toContain(row.typescript);
+    expect(vector.refusal_details).toContain(row.go);
+
+    // …and the label the vector attributes to TypeScript is re-derived from a real call.
+    expectDetail(
+      () => resolveLadder(award, ['11', '22'], null as unknown as SnapshotPlayer[]),
+      row.typescript,
     );
   });
 

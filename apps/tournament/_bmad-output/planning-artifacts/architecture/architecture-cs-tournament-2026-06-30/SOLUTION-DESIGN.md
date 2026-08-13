@@ -439,14 +439,36 @@ spoils.
 
 ### 9.6 Conformance vectors (`roulette/vectors/`) — the build gate
 Language-neutral golden JSON both Go + JS must pass byte-for-byte: (1) HMAC block vector; (2)
-`uniform_int` incl. a rejection; (3) weighted pick; (4) **end-to-end golden ceremony** projected
-from a **real captured snapshot** (with forced ties exercising every ladder rung, an anti-sweep
-overflow, and a pity draw); (5) canonicalization + `bundle_sha256`. "Verificar la ceremonia" runs
-the vector-4 code path against the real published bundle.
+`uniform_int` incl. a rejection; (3) weighted pick; (4) canonicalization + `bundle_sha256`; (5)
+**end-to-end golden ceremony** projected from a **real captured snapshot** (with forced ties
+exercising every ladder rung, an anti-sweep overflow, and a pity draw). "Verificar la ceremonia"
+runs the gate-5 code path against the real published bundle.
 
-Build order: primitives (gate 1–2) → canonicalizer (gate 5) → Stage 2 + ladder → Stage 1 + anti-
-sweep → pity (gate 4) → wire the JS verifier. The JS verifier needs **nothing** outside the bundle;
-if it does, the bundle is incomplete (a spec bug).
+Build order: primitives (gate 1–2) → canonicalizer (gate 4) → Stage 2 + ladder → Stage 1 + anti-
+sweep → pity → end-to-end (gate 5) → wire the JS verifier. The JS verifier needs **nothing** outside
+the bundle; if it does, the bundle is incomplete (a spec bug).
+
+> ⚠ **RENUMBERED BY STORY 6.11 (2026-08-12), DECISION AG — gates 4 and 5 were previously the other
+> way round in this section.** For nine stories this document numbered **4** = the end-to-end
+> ceremony vector and **5** = canonicalization, while `roulette/vectors/README.md`'s ownership table
+> numbered them the opposite way, and the build-order sentence above named "gate 5" and "gate 4" in
+> that reversed sense. Both readings always agreed on *what* was owed and on *who* owed it, so
+> nothing about the build was ever ambiguous — only the label. 6.7 and 6.8a each recorded the clash
+> without resolving it; 6.9a decided it (Cuatro, 2026-08-08) and deferred the edit to the story that
+> would land the final row, because renumbering is only safe once the complete table exists. **The
+> README's numbering is the one that survived** — it is the one already shipped in a table, in
+> `generate_vectors.py`'s `outputs` map and in nine stories of prose since 6.3, and the one that
+> matches the real build order (the canonicalizer landed at 6.9a; the end-to-end vector landed last,
+> at 6.11). This section has been corrected to match it. Three sites were brought into agreement in
+> one commit: this section, the README's ownership table, and `generate_vectors.py`'s two
+> `outputs`-map comment blocks.
+>
+> ⚠ **A limitation the gate-5 vector declares on its own face:** FR-29 **rung 3** is unreachable
+> *end-to-end* over the shipped corpus, because all 28 players have `matches_played = 1` and exactly
+> one h2h opponent, so a Stage-2 tie on the deciding stat guarantees an h2h tie on it and rung 3's
+> strict dominator can never exist. Rung 3 remains gated as a **unit** by `ladder-resolve.json`. The
+> "every ladder rung" clause above is therefore satisfied across the suite, not within the single
+> end-to-end case — stated here so a future reader does not read it as an unmet requirement.
 
 ---
 

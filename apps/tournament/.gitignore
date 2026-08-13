@@ -64,3 +64,10 @@ supabase/.temp/
 worker/worker
 worker/worker.exe
 worker/*.exe
+
+# Python bytecode. `roulette/vectors/independence/diff_independence.py` IMPORTS the re-derived
+# implementation beside it, so re-running Story 6.11's AC8 measurement drops a __pycache__ into a
+# directory the vector file-set pin watches. The pin skips directories, but an untracked folder
+# appearing after every run would dirty the scope proof for no reason.
+__pycache__/
+*.pyc

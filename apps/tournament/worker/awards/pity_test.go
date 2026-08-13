@@ -97,6 +97,25 @@ type pityRefusalRow struct {
 	PreConsumed int            `json:"pre_consumed"`
 	Players     []stage2Player `json:"players"`
 	Shelf       map[string]int `json:"shelf"`
+	// Second is the REPAIRED input for a doubly-malformed row: the same case with `Detail`'s defect
+	// fixed, plus the detail it must then refuse under. Present only on rows whose `Defects` has two
+	// entries.
+	//
+	// ⭐⭐ THIS IS WHAT MAKES THE VALIDATION *ORDER* CHECKABLE RATHER THAN NARRATED, and it closes
+	// `deferred-work.md:350`. Without it both suites could only read `Defects[0]`/`Defects[1]` back out
+	// of the JSON and confirm the pair was present — so a row declaring `"defects": ["players","shelf"]`
+	// while actually carrying a VALID shelf would pass while pinning no order at all. Resolving
+	// `Second` proves the second defect is really there, because a repaired input that does not refuse
+	// under `Second.Detail` fails.
+	Second *pitySecondRow `json:"second"`
+}
+
+// pitySecondRow — the repaired half of a doubly-malformed refusal row. See pityRefusalRow.Second.
+type pitySecondRow struct {
+	Detail  string         `json:"detail"`
+	SeedHex string         `json:"seed_hex"`
+	Players []stage2Player `json:"players"`
+	Shelf   map[string]int `json:"shelf"`
 }
 
 type pityVector struct {
@@ -693,6 +712,80 @@ func TestVectorPityRefusalsPinBothAdjacentBoundaries(t *testing.T) {
 		if !exercised[d] {
 			t.Errorf("detail %q is declared row-representable and no row carries it", d)
 		}
+	}
+}
+
+// TestVectorPityDoublyMalformedRowsRefuseTheirSECONDDefectToo — the validation ORDER is RE-DERIVED,
+// never read back as self-declared data.
+//
+// ⭐⭐ THIS IS `deferred-work.md:350`, AND IT IS THE HALF THAT WAS MISSING. Story 6.11 emitted the
+// `second` block into `pity-draw.json` and annotated the debt CLOSED — but nothing in either runtime
+// read it, so the property moved from the generator into the JSON and stopped there. The debt's own
+// words: both suites "read `defects` as self-declared data", so "a row declaring
+// `"defects": ["players","shelf"]` while carrying a valid shelf would pass both suites while pinning
+// no validation order at all". `TestVectorPityRefusalsPinBothAdjacentBoundaries` above still only
+// inspects `Defects`; THIS test resolves the repaired input and requires the refusal the vector says
+// must come next.
+//
+// ⛔ THE REPAIRED STREAM IS THE FILE'S OWN LABEL WITH NOTHING PRE-CONSUMED. That is what "repaired"
+// means for the stream half — the doubly-malformed stream row carries a Stage-1 label override, and
+// `Second` drops it.
+func TestVectorPityDoublyMalformedRowsRefuseTheirSECONDDefectToo(t *testing.T) {
+	v := loadPity(t)
+	declared := make(map[string]struct{}, len(v.RefusalDetails))
+	for _, d := range v.RefusalDetails {
+		declared[d] = struct{}{}
+	}
+
+	withSecond := 0
+	for _, r := range v.Refusals {
+		if r.Second == nil {
+			// ⭐ NON-VACUITY, THE OTHER WAY ROUND: a row with two defects and no `second` block is a
+			// row whose order this file cannot check, and it must not pass unnoticed.
+			if len(r.Defects) >= 2 {
+				t.Errorf("row %q carries %d defects but no `second` block, so its ORDER is unverifiable",
+					r.Why, len(r.Defects))
+			}
+			continue
+		}
+		withSecond++
+		t.Run(r.Why, func(t *testing.T) {
+			// The vector must not contradict itself: `second.detail` is `defects[1]`.
+			if len(r.Defects) < 2 || r.Defects[1] != r.Second.Detail {
+				t.Fatalf("defects %v do not name %q as the SECOND defect", r.Defects, r.Second.Detail)
+			}
+			if r.Second.Detail == r.Detail {
+				t.Fatalf("the second defect %q is the same label as the first — that pins no order",
+					r.Second.Detail)
+			}
+			got, err := ResolvePity(PityInput{
+				Players: toPlayers(t, r.Second.Players),
+				Shelf:   r.Second.Shelf,
+				Stream:  pityStream(t, r.Second.SeedHex, v.Label, 0),
+			})
+			if err == nil {
+				t.Fatalf("the REPAIRED input still had to refuse under %q, got %+v", r.Second.Detail, got)
+			}
+			var invalid *PityInvalidError
+			if !errors.As(err, &invalid) {
+				t.Fatalf("refusal is not a *PityInvalidError: %v", err)
+			}
+			if invalid.Detail != r.Second.Detail {
+				t.Errorf("repairing %q left detail %q, vector declares the next defect is %q — the "+
+					"published validation order is not what the code implements",
+					r.Detail, invalid.Detail, r.Second.Detail)
+			}
+			if _, ok := declared[invalid.Detail]; !ok {
+				t.Errorf("detail %q is outside the declared set %v", invalid.Detail, v.RefusalDetails)
+			}
+		})
+	}
+
+	// ⛔ A GUARD OVER AN EMPTY LIST IS THE SHAPE THIS PROJECT HAS NOW RECORDED SIX TIMES. If the
+	// `second` blocks ever stop being emitted, this test must go red rather than silently pass.
+	if withSecond < 2 {
+		t.Fatalf("expected both doubly-malformed rows to carry a `second` block, found %d — the "+
+			"stream/players and players/shelf boundaries are what make the order observable", withSecond)
 	}
 }
 

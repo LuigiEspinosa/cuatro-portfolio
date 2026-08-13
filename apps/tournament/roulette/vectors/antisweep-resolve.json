@@ -11264,6 +11264,294 @@
           "76561198000000033"
         ]
       }
+    },
+    {
+      "name": "an-EMPTY-roster-resolves-EVERY-award-to-no_eligible_players",
+      "note": "⭐ `deferred-work.md:339`, half one. The pass runs to completion over a roster of ZERO players: every award resolves `no_eligible_players`, every `swept_out` is empty, `assigned` is empty and `reresolved` is FALSE ON EVERY ROW — including the second and third, where a pass that set `reresolved` from 'an earlier award ran' rather than from 'this candidate set was reduced' would set it true. ⛔ This is NOT a refusal row: an empty roster is a legal snapshot (a ceremony over a tournament nobody played), and the three runtimes must agree it resolves rather than refuses. It is also the shape `players: null` normalises to — 'an absent container IS the empty container' (Cuatro, 2026-08-04) — so it is the one row that pins what that normalisation must produce.",
+      "live": [
+        {
+          "award_id": "aw-01",
+          "priority": 1,
+          "award": {
+            "deciding_stat": "knife_kills",
+            "class": "volume",
+            "direction": "max",
+            "floor_rounds": 0,
+            "floor_kills": 0,
+            "secondary_stat": null,
+            "eff_num_key": null,
+            "eff_den_key": null
+          }
+        },
+        {
+          "award_id": "aw-02",
+          "priority": 2,
+          "award": {
+            "deciding_stat": "wallbang_kills",
+            "class": "volume",
+            "direction": "max",
+            "floor_rounds": 0,
+            "floor_kills": 0,
+            "secondary_stat": null,
+            "eff_num_key": null,
+            "eff_den_key": null
+          }
+        },
+        {
+          "award_id": "aw-03",
+          "priority": 3,
+          "award": {
+            "deciding_stat": "through_smoke_kills",
+            "class": "volume",
+            "direction": "max",
+            "floor_rounds": 0,
+            "floor_kills": 0,
+            "secondary_stat": null,
+            "eff_num_key": null,
+            "eff_den_key": null
+          }
+        }
+      ],
+      "players": [],
+      "expected": {
+        "results": [
+          {
+            "award_id": "aw-01",
+            "priority": 1,
+            "kind": "no_eligible_players",
+            "ladder_exit_step": 0,
+            "swept_out": [],
+            "reresolved": false
+          },
+          {
+            "award_id": "aw-02",
+            "priority": 2,
+            "kind": "no_eligible_players",
+            "ladder_exit_step": 0,
+            "swept_out": [],
+            "reresolved": false
+          },
+          {
+            "award_id": "aw-03",
+            "priority": 3,
+            "kind": "no_eligible_players",
+            "ladder_exit_step": 0,
+            "swept_out": [],
+            "reresolved": false
+          }
+        ],
+        "assigned": []
+      }
+    },
+    {
+      "name": "a-SINGLE-player-roster-wins-the-first-award-and-is-SWEPT-from-the-rest",
+      "note": "⭐ `deferred-work.md:339`, half two, and the narrowest possible overflow. ONE player on the roster and three live awards they would win outright: FR-26 caps them at one trophy, so award 1 crowns them and awards 2 and 3 run over a roster reduced to NOBODY and resolve `no_eligible_players`. ⭐ This is the cap firing at width 1 — the exhaustion case the `2`-player row approximates but cannot reach, because with two players the second award still has somebody left to crown. It is also the row where `swept_out` and `reresolved` are non-empty and true while the candidate set is EMPTY, which a pass computing `swept_out` from the WINNERS rather than from the roster would get right by accident on every wider row and wrong here.",
+      "live": [
+        {
+          "award_id": "aw-01",
+          "priority": 1,
+          "award": {
+            "deciding_stat": "knife_kills",
+            "class": "volume",
+            "direction": "max",
+            "floor_rounds": 0,
+            "floor_kills": 0,
+            "secondary_stat": null,
+            "eff_num_key": null,
+            "eff_den_key": null
+          }
+        },
+        {
+          "award_id": "aw-02",
+          "priority": 2,
+          "award": {
+            "deciding_stat": "wallbang_kills",
+            "class": "volume",
+            "direction": "max",
+            "floor_rounds": 0,
+            "floor_kills": 0,
+            "secondary_stat": null,
+            "eff_num_key": null,
+            "eff_den_key": null
+          }
+        },
+        {
+          "award_id": "aw-03",
+          "priority": 3,
+          "award": {
+            "deciding_stat": "through_smoke_kills",
+            "class": "volume",
+            "direction": "max",
+            "floor_rounds": 0,
+            "floor_kills": 0,
+            "secondary_stat": null,
+            "eff_num_key": null,
+            "eff_den_key": null
+          }
+        }
+      ],
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "blind_kills": "0",
+              "deaths": "0",
+              "hs_kills": "4",
+              "kills": "20",
+              "knife_kills": "1",
+              "rounds_played": "30",
+              "through_smoke_kills": "1",
+              "utility_damage": "0",
+              "wallbang_kills": "7"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "4",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "blind_kills": "0",
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "4",
+              "hs_pct": {
+                "num": "4",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "1",
+              "rounds_played": "30",
+              "through_smoke_kills": "1",
+              "utility_damage": "0",
+              "wallbang_kills": "7"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "blind_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "4",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "4",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "1",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "through_smoke_kills": {
+                "num": "1",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              },
+              "wallbang_kills": {
+                "num": "7",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "3000"
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "award_id": "aw-01",
+            "priority": 1,
+            "kind": "winner",
+            "steamid64": "76561198000000011",
+            "deciding_value": {
+              "class": "volume",
+              "value": "1"
+            },
+            "ladder_exit_step": 0,
+            "swept_out": [],
+            "reresolved": false
+          },
+          {
+            "award_id": "aw-02",
+            "priority": 2,
+            "kind": "no_eligible_players",
+            "ladder_exit_step": 0,
+            "swept_out": [
+              "76561198000000011"
+            ],
+            "reresolved": true
+          },
+          {
+            "award_id": "aw-03",
+            "priority": 3,
+            "kind": "no_eligible_players",
+            "ladder_exit_step": 0,
+            "swept_out": [
+              "76561198000000011"
+            ],
+            "reresolved": true
+          }
+        ],
+        "assigned": [
+          "76561198000000011"
+        ]
+      }
     }
   ]
 }

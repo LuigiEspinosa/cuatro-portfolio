@@ -38,23 +38,31 @@ stories:
 | — FR-26 anti-sweep (≤1 trophy/player/spin) | `antisweep-resolve.json` | **Story 6.6** | ✅ shipped |
 | — FR-28 pity draw (the guaranteed consolation) | `pity-draw.json` | **Story 6.7** | ✅ shipped |
 | 4 — canonical JSON + `bundle_sha256` (RFC-8785) | `canonical-bundle.json` (+ `canonical-bundle-input.json`) | **Story 6.9a** | ✅ shipped, `end_to_end` row included |
-| 5 — end-to-end ceremony vector + suite completeness | *(not yet)* | **Story 6.11** | ⏳ |
+| 5 — end-to-end ceremony vector + suite completeness | `end-to-end.json` | **Story 6.11** | ✅ shipped |
 
-⚠ **The gate numbers in the two right-hand rows above are the REVERSE of `SOLUTION-DESIGN:441-445`.**
-That document numbers gate **4** as the end-to-end ceremony vector and gate **5** as canonicalization
-+ `bundle_sha256`; this table has them the other way round and has since 6.3. Both readings agree on
-*what* is owed and on *who* owes it — 6.9 owns canonicalization, 6.11 owns the end-to-end vector — so
-nothing about the build is ambiguous, only the label.
+✅✅ **THE GATE NUMBERING IS SETTLED, AND THIS TABLE'S IS THE ONE THAT SURVIVED — Story 6.11,
+2026-08-12, DECISION AG.** For nine stories this table and `SOLUTION-DESIGN §9.6` numbered gates 4
+and 5 the *opposite* way round: that document had **4** = the end-to-end ceremony vector and **5** =
+canonicalization + `bundle_sha256`. Both readings always agreed on *what* was owed and on *who* owed
+it — 6.9 owns canonicalization, 6.11 owns the end-to-end vector — so nothing about the build was ever
+ambiguous, only the label.
 
-✅ **RESOLVED — Cuatro, 2026-08-08, at the start of Story 6.9a.** Story 6.7 noted the clash and
-changed neither document; 6.8a noted it again. Noting it a third time is not a resolution, so the
-decision is recorded here instead: **6.9a adds its row under THIS table's existing numbering (gate
-4), and Story 6.11 renumbers BOTH documents together when it lands the last row.** The reason for
-that order is that renumbering is only safe once the final row exists — 6.11 is the story that knows
-what the complete table looks like, and it is the story `SOLUTION-DESIGN:441-445` and this table
-must be made to agree *in one commit*. ⛔ **6.11 therefore inherits this as an OBLIGATION, not as a
-discovery**: it is carried in 6.11's story file and in `generate_vectors.py`'s `outputs` map beside
-the row this decision added.
+6.7 noted the clash and changed neither document; 6.8a noted it again; 6.9a stopped noting it and
+**decided** it (Cuatro, 2026-08-08): *"6.9a adds its row under THIS table's existing numbering (gate
+4), and Story 6.11 renumbers BOTH documents together when it lands the last row."* That order was
+chosen because renumbering is only safe once the final row exists. This is that commit, and the
+numbering above is now the only one in the repository.
+
+**Why this table's numbering won rather than `SOLUTION-DESIGN`'s.** Two reasons, both about what was
+already true rather than about preference: it is the numbering already shipped in a table, in
+`generate_vectors.py`'s `outputs` map and in nine stories' worth of prose since 6.3; and it is the
+one that matches the real build order — the canonicalizer landed at 6.9a and the end-to-end vector
+lands last, here. Adopting the other numbering would have meant relabelling a shipped row.
+
+**The three sites brought into agreement, in one change:** this table · `SOLUTION-DESIGN §9.6` (both
+the gate list *and* the build-order sentence, which named "gate 5" and "gate 4" in the reversed
+sense) · `generate_vectors.py`'s two `outputs`-map comment blocks. ⚠ The third site was found during
+6.11's contexting and was not part of the original obligation.
 
 Stage 2 is not one of §9.6's five numbered gates because §9.6 numbers the *stream* gates and Stage 2
 consumes no stream — it is pure integer arithmetic over the frozen snapshot. AD-14 requires it to be
@@ -98,8 +106,22 @@ below forbid writing a big integer as a JSON number, yet *"a big integer must be
 the cases the gate exists to pin; text makes the input byte-exact; and it tests the real path, where
 a verifier parses a document off the wire before canonicalizing it.
 
-**This directory is not finished.** Gate 5 (the end-to-end ceremony vector with forced ties across
-*every* ladder rung, an anti-sweep overflow and a pity draw, Story 6.11) is still to come.
+✅ **THIS DIRECTORY IS NOW COMPLETE — Story 6.11 landed gate 5, its last row.** The line that stood
+here for eight stories read *"This directory is not finished"*; it is retired rather than edited,
+because the sentence it was making is now false. All five of `SOLUTION-DESIGN §9.6`'s gates are
+shipped, and **`end-to-end.json` gates the one axis none of the others could**: not a stage, but the
+COMPOSITION of every stage — seed → spins → Stage-1 pick → Stage-2 resolve → FR-29 ladder → FR-26
+anti-sweep → FR-28 pity, as one thing. That is the axis `worker/awards/ceremony.go:19-26` says in as
+many words it carries *"no cross-language proof"* on.
+
+⚠ **What "complete" does and does not claim.** It means every gate `§9.6` names is shipped and both
+runtimes pass it. It does **not** mean every reachable behaviour is exercised: `end-to-end.json`
+declares FR-29 **rung 3 unreachable end-to-end over this corpus** and says why in data — all 28
+players have `matches_played = 1` and exactly one h2h opponent, so each h2h block is a copy of that
+player's own totals and rung 3's strict beat can never hold. Rung 3 stays gated as a *unit* by
+`ladder-resolve.json`. A claim of completeness is worth exactly as much as the last story that
+checked it, and this is what 6.11 checked.
+
 ⭐ **Gate 4's `end_to_end` row LANDED with Story 6.9a's Task 9**: the REAL ceremony's bundle only
 exists once the 14-demo corpus has been rebuilt and published, and it now is — 75,013 canonical
 bytes over 28 players, 12 awards and 40 spins, hashing to the `bundle_sha256` `publish_bundle`
@@ -543,7 +565,8 @@ a NULL rung key is a deterministic **skip**, and `direction` inverts rungs 1–3
   "refusal_kinds":   ["tie", "invalid"],
   "refusal_details": ["weight_table", "shelf", "pool", "live_count",
                       "total_weight", "stage2", "tie",
-                      "stream", "internal"],   // ⚠ the last two: declared, NOT row-representable
+                      "stream", "internal",    // ⚠ these two: declared, NOT row-representable
+                      "ladder"],               // ⚠ APPENDED by 6.5 — the order is not alphabetical
   "refusals": [                             // inputs BOTH runtimes must REFUSE
     { "why": "…", "refusal_kind": "tie", "detail": "tie",
       "seed_hex": "1b3c…279c", "label": "…",
@@ -606,14 +629,25 @@ about the guard it names — and the generator itself asserts that the row's dec
 matches the guard that actually raised. It is 6-4a's untyped-refusal lesson applied one level
 deeper.
 
-⚠ **`refusal_details` declares NINE; only the first SEVEN are row-representable.** A row is a set
-of *inputs*, and `stream` ("no stream was supplied") and `internal` ("an invariant broke") are not
-inputs — no row can produce them. But both are reachable in both runtimes, so omitting them made a
-"closed set" that was not closed: the 6-4b code review found Go declaring nine while TypeScript and
+⚠ **`refusal_details` declares TEN; EIGHT are row-representable.** ⭐ *(Corrected by Story 6.11,
+AC11: this paragraph said "NINE … the first SEVEN" and had said so since 6-4b. `"ladder"` was
+appended by Story 6.5 when Stage 1 gained its optional FR-29 ladder, and the prose never followed —
+live data/doc drift, of exactly the kind this file exists to prevent one level down. The counts here
+are now re-derived from the regenerated file rather than hand-edited.)* The ten, in the file's own
+order, are `weight_table`, `shelf`, `pool`, `live_count`, `total_weight`, `stage2`, `tie`, `stream`,
+`internal`, `ladder` — ⚠ note that the order is **not** alphabetical and `ladder` sits **last**
+rather than beside `stage2`, because it was appended rather than inserted.
+
+A row is a set of *inputs*, and `stream` ("no stream was supplied") and `internal` ("an invariant
+broke") are not inputs — no row can produce them. But both are reachable in both runtimes, so
+omitting them made a "closed set" that was not closed: the 6-4b code review found Go declaring nine
+while TypeScript and
 this file declared seven, TypeScript throwing `'stream'`/`'internal'` anyway while its own JSDoc
 promised one of the seven, and the unreachable unknown-outcome arm refusing as `internal` in Go and
 `stage2` in TypeScript — one input, two values, in the field this file calls shared contract. All
-three now declare the same nine, both suites pin the set, and the generator **refuses to write a
+three now declare the same **ten** — nine at 6-4b, plus `"ladder"` appended at 6.5 (⭐ corrected here
+by Story 6.11's code review; this sentence still said "nine" after `:632` above had been fixed) —
+both suites pin the set, and the generator **refuses to write a
 row** whose `detail` is one of the two no set of inputs can reach. The unrepresentable pair is
 covered by each runtime's own stream-guard test instead.
 
@@ -872,6 +906,153 @@ equality is data both suites assert rather than prose a reader must trust. The o
 express is `stream` with **no stream at all**; that half is driven by each runtime's own suite,
 exactly as `TestStage1PickRefusesANilStream` drives Stage 1's.
 
+### `end-to-end.json`
+
+**Gate 5, Story 6.11, and the last row this directory owed.** Every file above gates ONE stage. This
+one gates the **composition** — `seed → spins → Stage-1 pick → Stage-2 resolve → FR-29 ladder →
+FR-26 anti-sweep → FR-28 pity`, as one thing — which is the axis `worker/awards/ceremony.go:19-26`
+says it carries *"no cross-language proof"* on, and `ceremony_test.go:16-21` calls *"a SINGLE-RUNTIME
+property test"*.
+
+```jsonc
+{
+  "vector": "end-to-end",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "…",                       // SOLUTION-DESIGN §9.2 + §9.4, composed
+  "projection": "…",                 // DECISION AE, in prose, on the file's face
+  "source": {                        // ⭐ the snapshot is REFERENCED, never duplicated
+    "file": "canonical-bundle-input.json",
+    "present": true,
+    "utf8_bytes": 75013,             // ⭐ the tripwire — see below
+    "player_count": 28, "award_count": 12,
+    "seed_hex": "1b3c…279c", "weight_table": [100, 40, 16, 6, 2, 1]
+  },
+  "unreachable_ladder_rungs": [      // ⭐ DECISION AF, declared in DATA with its measurement
+    { "rung": 3, "why": "…", "gated_instead_by": "ladder-resolve.json", "note": "…" }
+  ],
+  "cases": [
+    {
+      "name": "anchor-run",
+      "projection": {                // ⭐ AC3 — which inputs are real, IN DATA, never inferred
+        "snapshot": "real", "snapshot_source": "canonical-bundle-input.json",
+        "seed": "real", "weight_table": "real",
+        "catalog": "real",           // "real" | "counterfactual"
+        "counterfactual_fields": []  // non-empty iff catalog is counterfactual
+      },
+      "seed_hex": "…", "live_count": 1, "weight_table": […],
+      "catalog": [ { "award_id": "1", "priority": 1, "deciding_stat": …, "class": …,
+                     "direction": …, "floor_rounds": …, "floor_kills": …,
+                     "secondary_stat": …, "eff_num_key": …, "eff_den_key": … } ],
+      "expected": {
+        "spins": [ { "spin": 1, "kind": "main", "label": "inclusivcup/v1/stage1/spin/1",
+                     "pool": […], "live_count": 1, "weights": […], "total_weight": 1200,
+                     "draws": [ { "n": 1200, "r": 315, "consumed_after": 2 } ],
+                     "bytes_consumed": 2, "live": ["4"],
+                     "results": [ { "award_id": …, "priority": …, "kind": …,
+                                    "ladder_exit_step": 0, "swept_out": [], "reresolved": false } ],
+                     "assigned": [] } ],
+        "pity":  { "label": "inclusivcup/v1/pity", "winless": […], "reveal_order": […],
+                   "draws": [ { "n": 28, "k": 1, "rejections": 0, "value": 17 } ],
+                   "bytes_consumed": 27 },
+        "shelf": {},                 // ⚠ a player who won NOTHING is ABSENT, never 0 (W8)
+        "anchors": { "main_spin_bytes": 22, "pity_bytes": 27, "total_bytes": 49,
+                     "drawn_order": […], "ladder_exit_steps": […], "outcome_kinds": […] }
+      }
+    }
+  ]
+}
+```
+
+⭐⭐ **DECISION AE — the snapshot is REFERENCED, and that is what makes this vector test the capture
+shape.** AD-19 requires the end-to-end vector be *"projected from a real captured snapshot … so the
+capture shape itself is tested"*. That snapshot is **already committed**, as
+`canonical-bundle-input.json` — the 75,013 bytes `publish_bundle` committed for the real 14-demo
+ceremony. So both cases name that file and carry **no player data of their own**, and a conformant
+implementation must project the published AD-19 integer form (decimal-**string** magnitudes,
+`{num,den}` rate pairs, the class-shaped `secondary`/`h2h` union, the uniform `efficiency` form, the
+integer `achievement_ts`) back into its own snapshot type. That projection *is* the capture shape; a
+vector carrying pre-projected players would test the orchestration and nothing about the capture. It
+also means there is exactly **one** copy of the snapshot in this directory, which gate 4 already
+recomputes a canonical form and hash from on every `--check`. ⛔ Do not "helpfully" inline the
+players.
+
+⛔⛔ **DECISION AA — the snapshot is real; the CATALOG is the counterfactual lever, and this is the
+finding that shapes the whole file.** `epics.md:1209-1212` wants the end-to-end vector projected from
+a real snapshot **and** exercising forced ties across all ladder rungs, an anti-sweep overflow and a
+pity draw. Those two halves cannot both hold of one ceremony: over the real corpus at the real FR-21
+floors (`24`/`20`) **0 of 28 players are eligible**, so all twelve main spins resolve
+`no_eligible_players` — no winner, therefore no tie, therefore no rung. A snapshot is
+`stat_snapshot_row` (identities, magnitudes, h2h, `achievement_ts`, eligibility inputs); a catalog is
+`award` rows curated *before* the ceremony. **A catalog is not a snapshot**, so varying it leaves
+AD-19's capture-shape rule fully honoured.
+
+**DECISION AB — two cases, because one cannot do both jobs.**
+
+#### The cases that carry the weight
+
+| case | what it is | what only it can prove |
+|---|---|---|
+| `anchor-run` | the **real** catalog at the **real** floors, `live_count = 1` | Re-derives every invariant `deferred-work.md:401` records as NARRATED-BUT-UNVERIFIABLE: the **22 / 27 / 49** byte split, the twelve-award drawn order `["4","12","8","9","5","10","2","3","7","6","1","11"]`, and the 12-main + 28-pity = 40-spin shape. ⚠ Every narration of this invariant since 6.6 spells it `aw-04,aw-12,aw-08,…`, because THE BAR's throwaway harness curated its catalog with `aw-NN` slugs; the committed bundle carries the DATABASE IDENTITY ids, so `aw-` appears nowhere in `end-to-end.json` or `canonical-bundle-input.json`. Same permutation, mapped by the numeric suffix (`aw-04` ↔ `"4"`) — stated here because a reader who greps for the `aw-` form finds nothing. Until 6.11 these lived only in a deleted harness's transcript. |
+| `forced-run` | the **same real snapshot**, counterfactual catalog, `live_count = 6` | Every **reachable** FR-29 rung (1, 2, 4 and the terminal shared 5), **three genuine anti-sweep overflows**, DECISION E's `no_awardable_value`, `no_eligible_players` at the real floors, and a pity draw over a roster that is only *partly* winless — which the anchor run, where every player is winless, structurally cannot test. |
+
+⭐ **The forced run's sharpest row is `f7`.** The ladder returned a **shared** pair over the unreduced
+roster and a **sole winner at rung 4** over the reduced one — because anti-sweep had already removed
+a member of the earliest-`achievement_ts` pair. That is DECISION E' (*removal is applied to the
+CANDIDATE SET, before Stage 2 runs*) proven end-to-end rather than argued, and it is precisely the
+scenario `review-data-integrity.md:175-179` describes.
+
+⛔⛔ **DECISION AF — FR-29 rung 3 is UNREACHABLE end-to-end over this corpus, and that is declared in
+data rather than faked.** Measured, not assumed: all 28 players have `matches_played = 1` and exactly
+**one** h2h opponent, so each player's `h2h[opponent]` block is a byte-copy of their own totals (0
+mismatching entries over all 28). Survivors reaching rung 3 tied on the deciding stat by
+construction, so their h2h values on that same stat are equal too and rung 3's **strict** beat can
+never hold. Exhaustively searched: 400 reachable candidate subsets × 4,804,800 configurations gave
+`{rung 1: 644059, rung 2: 443458, rung 3: 0, rung 4: 1398293, rung 5: 80754}`. ⛔ Rung 3 is **not
+unproven** — `ladder-resolve.json` gates it as a *unit* over synthetic multi-opponent h2h blocks that
+a 1v1 wingman bracket cannot produce. What is unreachable is the *end-to-end path*, and
+`deferred-work.md:278` requires exactly this kind of corpus limitation be stated on the vector's
+face.
+
+⭐ **DECISION AC — `bundle_sha256` is deliberately ABSENT from the anchors.** It moves on **every**
+rebuild, because `achievement_ts` is wall-clock approval time. Two values circulate in the record
+(`4c0614fa…b325` in `canonical-bundle.json`, `8b899112…9cfa` in `deferred-work.md:401`); both are
+correct for their own build and must **never** be "reconciled". The **byte length** is the tripwire
+and the hash is not — which is why `source.utf8_bytes` is asserted by both suites and by
+`worker/ceremony`'s join test, and the hash is only ever *derived*.
+
+## The two subdirectories, and why they are NOT throwaway harnesses
+
+⛔ **`independence/` and `mutation/` are deliberately exempt from this project's delete-the-harness
+convention. Do not "tidy" them away.** Every story in Epic 6 built a throwaway harness and deleted it
+before commit; these two directories exist because Story 6.11's own Task 10 imposed a stronger rule
+that its first pass did not meet — *"the end-to-end evidence must survive the harness's deletion"*.
+
+Its code review measured that two AC-mandated results did **not** survive: AC8's independence diff
+and AC12's mutation table both lived only as prose in the story file, with no runner, no transcript
+and nothing re-derivable from the tree. That is the same evidentiary state `deferred-work.md:288` was
+raised against — and which this story is annotated as *closing*. ⭐ Cuatro's call at the review
+(2026-08-12) was to **commit the artifacts**, on the principle that a result nobody can re-run is a
+claim, while a runner anybody can re-run is a measurement.
+
+| directory | what it is | AC | re-run it with |
+|---|---|---|---|
+| `independence/` | A **fourth** implementation of Stage 2 and the FR-29 ladder, written from the SPEC TEXT ALONE by a different model, explicitly barred from reading `generate_vectors.py`, `worker/**`, `lib/roulette/**` and every vector JSON. Plus the driver that diffs it against the committed expectations. | AC8 (`deferred-work.md:300`, `:318`) | `python roulette/vectors/independence/diff_independence.py` |
+| `mutation/` | The mutation runner, its table as data, and the generated transcript. | AC12 | `python roulette/vectors/mutation/run_mutations.py --run` |
+
+⭐ **Why AC8 needs a different author, not merely a second file.** `generate_vectors.py` shares verbatim
+prose with both runtimes, so "three implementations agree" can mean "three implementations inherited
+one misreading". The re-derivation is only worth anything if whoever wrote it never saw the answers —
+which is also why the reviewer who found this gap could not write it: by then they had read all three
+implementations and every vector.
+
+⚠ **Neither directory reddens the file-set pin.** `TestVectorDirectoryIsComplete` and its TypeScript
+twin count `*.json` **files** and skip directories, so these subdirectories are invisible to it — and
+`--check` iterates the generator's `outputs` map, not the directory. ⛔ `generate_vectors.py --check`
+must still report on exactly the derived vectors; `lib/roulette/generator-check.test.ts` re-derives
+that count from the directory and would redden if a `.json` appeared here by accident.
+
+---
+
 ## The spec these files encode
 
 ```
@@ -904,7 +1085,7 @@ Each label is an independent stream and each starts at counter `i = 0`.
 
 ## Anchoring
 
-All seven files are generated by a **third** implementation —
+All **nine** derived files are generated by a **third** implementation —
 [`generate_vectors.py`](generate_vectors.py), Python 3 stdlib `hmac` + `hashlib` plus Python's
 own unbounded integers, written from the spec above — so they are neither Go's output nor the
 browser's. The block cases are additionally reproducible from a **fourth**, unrelated HMAC
@@ -929,7 +1110,7 @@ implementations with every gate still green. Committed, it is auditable and re-r
 
 ```bash
 python roulette/vectors/generate_vectors.py --check   # verify committed files, write nothing
-python roulette/vectors/generate_vectors.py           # regenerate all seven files
+python roulette/vectors/generate_vectors.py           # regenerate all NINE derived files
 ```
 
 For `ladder-resolve.json` the anchor is arithmetic, as it is for `stage2-resolve.json`: Python's

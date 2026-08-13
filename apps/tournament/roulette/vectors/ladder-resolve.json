@@ -46,6 +46,17 @@
     "player",
     "internal"
   ],
+  "declared_divergences": [
+    {
+      "input": "players supplied as a NON-ARRAY (null) to the public resolve entry point",
+      "typescript": "player",
+      "go": "tied",
+      "python": "tied",
+      "row_representable": false,
+      "why_not": "Go's parameter is TYPED ([]SnapshotPlayer), so the input cannot exist there: a nil slice is an EMPTY slice, which is the 'an absent container IS the empty container' rule (Cuatro, 2026-08-04) rather than a type error. A vector row is a set of INPUTS, and this input is unrepresentable in one of the three runtimes, so no row can carry it.",
+      "resolution": "DELIBERATE, and the two labels are both correct for what each runtime can see. Go and Python normalise the absent container to empty and then refuse `tied` because the tied members have no matching snapshot row — a statement about the TIED SET. TypeScript can additionally observe that the container itself was the wrong TYPE and refuses `player`, which is strictly more information. ⛔ Do NOT 'fix' this by weakening the TS guard to `tied`: that would discard a real distinction to buy a symmetry no caller benefits from, and 6.6 drives this entry point directly. Both suites assert their own label, and this row is what makes the asymmetry a contract instead of two comments that can drift apart."
+    }
+  ],
   "refusals": [
     {
       "why": "⭐ MALFORMED IN TWO WAYS AT ONCE — a width-1 tied set whose award ALSO names a bogus secondary_stat — and therefore the ONLY row that pins VALIDATION ORDER. Story 6-4b's headline was three implementations disagreeing about order with no row malformed twice to expose it, so the gate was structurally blind. The published order puts the AWARD group before the TIED group, so this must refuse as `award`; an implementation that checked the tied set first refuses as `tied` and reddens here and nowhere else.",
@@ -2323,6 +2334,388 @@
       ]
     },
     {
+      "why": "⭐ an ABSENT `secondary` container on a tied player whose award CONFIGURES rung 1 — the container is missing, not the key, and it must refuse `player` under the same rule an absent KEY does ('an absent key is a refusal, never a zero', 0024:918-923). ⛔ The existing absent-container row cannot reach this: its award configures no rung at all",
+      "detail": "player",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0,
+        "secondary_stat": "deaths",
+        "eff_num_key": null,
+        "eff_den_key": null
+      },
+      "tied": [
+        "76561198000000011",
+        "76561198000000022"
+      ],
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "1000"
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "2000"
+        }
+      ]
+    },
+    {
+      "why": "⭐ an ABSENT `efficiency` container on a tied player whose award CONFIGURES rung 2 — the rung-2 twin of the row above, and it needs its own row because rung 2 reads a DIFFERENT container through a DIFFERENT helper (`_efficiency_pair`, uniformly {num,den}) than rung 1's class-shaped read. ⚠ `secondary_stat` is left NULL so rung 1 SKIPS and rung 2 is genuinely the rung that does the reading",
+      "detail": "player",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0,
+        "secondary_stat": null,
+        "eff_num_key": "kills",
+        "eff_den_key": "deaths"
+      },
+      "tied": [
+        "76561198000000011",
+        "76561198000000022"
+      ],
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "1000"
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "2000"
+        }
+      ]
+    },
+    {
       "why": "an h2h block that HAS the opponent but is MISSING the deciding stat key — distinct from a never-met SKIP: 0024 writes all 21 keys into every block it writes at all, so a present-but-partial block is a corrupt row",
       "detail": "player",
       "award": {
@@ -4458,6 +4851,678 @@
         "floor_rounds": 0,
         "floor_kills": 0,
         "secondary_stat": "not_a_stat",
+        "eff_num_key": null,
+        "eff_den_key": null
+      },
+      "tied": [
+        "76561198000000011",
+        "76561198000000022"
+      ],
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "1000"
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "2000"
+        }
+      ]
+    },
+    {
+      "why": "⭐ `deciding_stat` EMPTY (the Stage-2 surface's FIRST clause) while `secondary_stat` is ALSO outside the 21-key vocabulary (the ladder's own surface). Must refuse `stage2`: an implementation whose transcribed copy runs after its own award group refuses `award`",
+      "detail": "stage2",
+      "award": {
+        "deciding_stat": "",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0,
+        "secondary_stat": "not_a_stat",
+        "eff_num_key": null,
+        "eff_den_key": null
+      },
+      "tied": [
+        "76561198000000011",
+        "76561198000000022"
+      ],
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "1000"
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "2000"
+        }
+      ]
+    },
+    {
+      "why": "⭐ an award CLASS outside {volume, rate} (the Stage-2 surface's SECOND clause) while `eff_num_key` is ALSO set with `eff_den_key` NULL (the ladder's own half-configured-rung clause). Must refuse `stage2`",
+      "detail": "stage2",
+      "award": {
+        "deciding_stat": "kills",
+        "class": "speed",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": 0,
+        "secondary_stat": null,
+        "eff_num_key": "kills",
+        "eff_den_key": null
+      },
+      "tied": [
+        "76561198000000011",
+        "76561198000000022"
+      ],
+      "players": [
+        {
+          "steamid64": "76561198000000011",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "1000"
+        },
+        {
+          "steamid64": "76561198000000022",
+          "rounds_played": "30",
+          "kills": "20",
+          "idle_dq": false,
+          "stats_int": {
+            "volume": {
+              "deaths": "0",
+              "hs_kills": "0",
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "rate": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              }
+            },
+            "secondary": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": "0",
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": "0",
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": "20",
+              "knife_kills": "0",
+              "rounds_played": "30",
+              "utility_damage": "0"
+            },
+            "efficiency": {
+              "adr": {
+                "num": "0",
+                "den": "30"
+              },
+              "deaths": {
+                "num": "0",
+                "den": "1"
+              },
+              "entry_success": {
+                "num": "0",
+                "den": "30"
+              },
+              "hs_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "hs_pct": {
+                "num": "0",
+                "den": "20"
+              },
+              "kast_pct": {
+                "num": "0",
+                "den": "30"
+              },
+              "kills": {
+                "num": "20",
+                "den": "1"
+              },
+              "knife_kills": {
+                "num": "0",
+                "den": "1"
+              },
+              "rounds_played": {
+                "num": "30",
+                "den": "1"
+              },
+              "utility_damage": {
+                "num": "0",
+                "den": "1"
+              }
+            }
+          },
+          "h2h": {},
+          "achievement_ts": "2000"
+        }
+      ]
+    },
+    {
+      "why": "⭐ a NEGATIVE `floor_kills` (the Stage-2 surface's FOURTH and LAST clause — the one an implementation that reordered the group would surface last) while `deciding_stat` is ALSO outside the vocabulary (the ladder's own surface). Must refuse `stage2`. ⚠ This is the strongest of the four: the LAST clause of the earlier group still beats the FIRST clause of the later one, which is what makes the boundary a group boundary rather than an accident of which single check happens to run first",
+      "detail": "stage2",
+      "award": {
+        "deciding_stat": "not_a_stat",
+        "class": "volume",
+        "direction": "max",
+        "floor_rounds": 0,
+        "floor_kills": -1,
+        "secondary_stat": null,
         "eff_num_key": null,
         "eff_den_key": null
       },

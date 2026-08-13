@@ -43,10 +43,32 @@ import {
  * non-empty from spin 2 onward and shelf corruption changes the drawn bytes. See
  * `verify.ts`'s header for why that, and not the reentrancy throw, is what the mutant breaks.
  *
- * ⚠ AC5's REAL-CORPUS INVARIANTS (main-spin 22 bytes, pity 27 bytes / 27 draws, whole ceremony 49
- * bytes, the `aw-04,aw-12,…` drawn order) are NOT assertable here: the corpus lives in a database,
- * not in the repo. They are measured in THE BAR (AC13) against a rebuilt corpus, and the report shape
- * this suite pins — `drawOrder`, `mainBytes`, `pityBytes` — is what makes them assertable there.
+ * ✅ AC5's REAL-CORPUS INVARIANTS ARE NOW ASSERTABLE, AND THEY ARE ASSERTED — in
+ * `end-to-end.json`'s `anchor-run` case, gated by `lib/roulette/end-to-end.test.ts` here and by
+ * `worker/awards/end_to_end_test.go` on the producer side. The main-spin **22** bytes, the pity
+ * **27**, the whole-ceremony **49** and the twelve-award drawn order are re-derived from the run on
+ * every `npm test`.
+ *
+ * ⚠ THE DRAWN ORDER IS SPELLED DIFFERENTLY IN THE VECTOR THAN IN THE PROSE, AND THE PROSE IS THE ODD
+ * ONE OUT — corrected at 6.11's code review. Every narration of this invariant since 6.6 writes it
+ * `aw-04,aw-12,aw-08,aw-09,aw-05,aw-10,aw-02,aw-03,aw-07,aw-06,aw-01,aw-11`, because THE BAR's
+ * throwaway harness curated its catalog with `aw-NN` slugs. The committed bundle carries the DATABASE
+ * IDENTITY ids instead, so `end-to-end.json` reads
+ * `["4","12","8","9","5","10","2","3","7","6","1","11"]` and the substring `aw-` appears NOWHERE in
+ * either committed artifact. ⭐ The permutation is identical and the map is the numeric suffix
+ * (`aw-04` ↔ `"4"`), so it genuinely is the same invariant — but a reader who greps for the `aw-`
+ * form finds nothing, which is why this is stated rather than left to be rediscovered.
+ *
+ * ⚠ THIS COMMENT USED TO SAY THEY WERE "NOT assertable here", and it was right when it was written:
+ * the corpus lived in a database and the only record was a deleted harness's transcript, which is
+ * what `deferred-work.md:401` records as NARRATED-BUT-UNVERIFIABLE. Story 6.11 changed the fact
+ * rather than the wording — the real captured snapshot is committed as
+ * `roulette/vectors/canonical-bundle-input.json`, so the whole ceremony re-derives from the tree
+ * with no database and no throwaway harness. ⛔ What is still NOT assertable *in this file* is the
+ * same as before: this suite runs against a SYNTHETIC fixture on purpose (see the paragraph above on
+ * why an empty shelf would let the W10 mutant survive). The corpus invariants belong to the
+ * end-to-end vector; the report SHAPE — `drawOrder`, `mainBytes`, `pityBytes` — is what this suite
+ * pins, and it is what makes them expressible there.
  */
 
 // ── the synthetic ceremony ────────────────────────────────────────────────────

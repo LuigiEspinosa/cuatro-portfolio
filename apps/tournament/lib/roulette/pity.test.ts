@@ -72,6 +72,24 @@ interface VectorRefusal {
   pre_consumed?: number;
   players: VectorPlayer[];
   shelf: Record<string, number>;
+  /**
+   * The REPAIRED input for a doubly-malformed row: the same case with `detail`'s defect fixed, plus
+   * the detail it must then refuse under. Present only on rows whose `defects` has two entries.
+   *
+   * ⭐⭐ THIS IS WHAT MAKES THE VALIDATION *ORDER* CHECKABLE RATHER THAN NARRATED, and it closes
+   * `deferred-work.md:350`. Without it this suite could only read `defects[0]`/`defects[1]` back out
+   * of the JSON, so a row declaring `"defects": ["players","shelf"]` while actually carrying a VALID
+   * shelf would pass while pinning no order at all.
+   */
+  second?: VectorSecondDefect;
+}
+
+/** The repaired half of a doubly-malformed refusal row. See {@link VectorRefusal.second}. */
+interface VectorSecondDefect {
+  detail: string;
+  seed_hex: string;
+  players: VectorPlayer[];
+  shelf: Record<string, number>;
 }
 
 const vector = JSON.parse(readFileSync(VECTOR_PATH, 'utf8')) as {
@@ -262,6 +280,55 @@ describe('resolvePity — refusals', () => {
     );
     expect(pairs).toContain(['stream', 'players'].sort().join('/'));
     expect(pairs).toContain(['players', 'shelf'].sort().join('/'));
+  });
+
+  // ⭐⭐ THE ORDER IS RE-DERIVED, NEVER READ BACK AS SELF-DECLARED DATA — `deferred-work.md:350`, and
+  // this is the half that was missing. Story 6.11 emitted the `second` block into `pity-draw.json`
+  // and annotated the debt CLOSED, but nothing in either runtime read it, so the property moved from
+  // the generator into the JSON and stopped there. The test above still only inspects `defects`;
+  // THIS one resolves the repaired input and requires the refusal the vector says must come next.
+  //
+  // ⛔ THE REPAIRED STREAM IS THE FILE'S OWN LABEL WITH NOTHING PRE-CONSUMED. That is what "repaired"
+  // means for the stream half — the doubly-malformed stream row carries a Stage-1 label override and
+  // `second` drops it.
+  it.each(
+    vector.refusals.filter((r) => r.second).map((r) => [r.why, r] as const),
+  )('REPAIRED: %s — then refuses its SECOND defect', async (_why, row) => {
+    const second = row.second as VectorSecondDefect;
+
+    // The vector must not contradict itself.
+    expect(row.defects[1]).toBe(second.detail);
+    expect(second.detail).not.toBe(row.detail);
+
+    const stream = await streamFor(second.seed_hex, vector.label, 0);
+    let thrown: unknown;
+    try {
+      await resolvePity({ players: toPlayers(second.players), shelf: second.shelf, stream });
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown, `repairing ${row.detail} must still refuse under ${second.detail}`).toBeInstanceOf(
+      PityError,
+    );
+    expect(
+      (thrown as PityError).detail,
+      `repairing ${row.detail} left detail ${(thrown as PityError).detail}, the vector declares the ` +
+        `next defect is ${second.detail} — the published validation order is not what the code implements`,
+    ).toBe(second.detail);
+    expect(vector.refusal_details).toContain((thrown as PityError).detail);
+  });
+
+  // ⛔ NON-VACUITY, BOTH WAYS. `it.each` over an empty list passes silently — the shape this project
+  // has now recorded six times — and a two-defect row with no `second` block is a row whose order
+  // nothing can check.
+  it('both doubly-malformed rows carry a `second` block, so the order is observable', () => {
+    const doubly = vector.refusals.filter((r) => r.defects.length >= 2);
+    expect(doubly.length).toBeGreaterThanOrEqual(2);
+    for (const r of doubly) {
+      expect(r.second, `row "${r.why}" has ${r.defects.length} defects but no \`second\` block`).toBeDefined();
+    }
+    expect(vector.refusals.filter((r) => r.second).length).toBe(doubly.length);
   });
 
   it('every declared row-representable detail is genuinely exercised by a row', () => {
