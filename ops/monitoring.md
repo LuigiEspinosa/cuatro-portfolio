@@ -461,6 +461,13 @@ Two alternatives were considered and rejected, recorded so Story 1.3 does not re
 | Cloudflare edge, per proxied hostname | Cloudflare, automatically | Rule 1 asserts the expected issuer is Cloudflare. Rule 2's age threshold applies to whatever the probe observes |
 | Origin, `cuatro.dev` plus `*.cuatro.dev` | Nobody. It does not renew | Its expiry date is written into the Decisions table when it is issued, with a dated review well before it. A long horizon is not a reason to leave it unwritten |
 
+**The deprecation notice in the Cloudflare console is about something else.** Cloudflare
+deprecated the legacy **Origin CA Key**, an API credential for issuing origin certificates
+programmatically, and points you at account or user API tokens instead. **Origin CA
+certificates are current and supported.** Story 1.3 issues one by hand from SSL/TLS, Origin
+Server, so it uses neither the deprecated key nor a token. Noted here because the two names are
+one word apart and the banner appears next to the feature this record depends on.
+
 **The reversibility cost, stated plainly.** An Origin CA certificate is not publicly trusted, so
 a host cannot leave the Cloudflare proxy until a publicly trusted certificate has been issued
 for it first. Turning off the orange cloud on a host, even briefly to debug, breaks it
