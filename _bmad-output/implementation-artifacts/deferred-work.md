@@ -23,6 +23,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     nothing in the repository will notice it until Story 1.2's Operator actions are
     performed.
 
+    Cause supplied by the Operator on 2026-08-16: the Anchor has not yet been
+    migrated to the Hostinger VPS, and bringing `cuatro.dev` back is that migration
+    rather than a repair of the current host. The consequence for Story 1.2 is that
+    the `cuatro.dev` monitor alerts continuously from the moment it is created until
+    the migration lands, which is the condition `ops/monitoring.md` covers under what
+    closes the gate: an outage alert is not the induced test alert.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
   summary: >-
     The estate does not serve from one address, which the AGENTS.md "one Hetzner
@@ -30,12 +37,17 @@ found them. Append only. Each entry names the spec that surfaced it.
   evidence: |-
     Observed 2026-08-16. `cuatro.dev` and `analytics.cuatro.dev` resolve to
     `95.216.143.251`; `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and
-    `library.cuatro.dev` resolve to `177.7.52.248`. A Traefik is answering on the
-    first address, while Epic 4 is where Caddy is supposed to be replaced by Traefik,
-    so either something has moved ahead of the plan or a box was rebuilt. This does
-    not change the monitoring decision, since UptimeRobot sits outside both, but
-    Story 1-7 enumerates a routing table that is now known to span two addresses, and
-    Epic 4's rebuild topology assumes one.
+    `library.cuatro.dev` resolve to `177.7.52.248`. The Operator confirmed on
+    2026-08-16 that a migration to a Hostinger VPS is in flight: the three satellites
+    have moved and the Anchor has not, which is why the two addresses exist and why a
+    Traefik is answering ahead of Epic 4. This does not change the monitoring
+    decision, since UptimeRobot sits outside both, but three things downstream now
+    rest on a stale assumption. Story 1-7 enumerates a routing table that spans two
+    addresses and two proxies. Epic 4 plans a Traefik rebuild on a topology that has
+    partly happened already, so AD-22's refresh check should re-open it. And the
+    AGENTS.md orientation still says "deployed by Docker Compose to one Hetzner box",
+    which is no longer true of the estate and is a `/bmad-project-context` refresh
+    item rather than an edit to make by hand.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
   summary: >-
