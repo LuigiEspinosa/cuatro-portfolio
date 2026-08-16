@@ -209,7 +209,8 @@ graph TD
 
 - **Binds:** Epics 4, 5, 6, 7
 - **Prevents:** acting on a stale version pin or a stale price as though it had been verified
-- **Rule:** An epic whose first story opens after **2026-11-15** records a refresh check before that story opens. The scope of the check is fixed: Traefik, PostgreSQL, restic and `docker-rollout` versions; Clerk and Railway pricing; the Style Dictionary ≥5.5.1 security floor; and the Let's Encrypt lifetime schedule (90 → 64 days in Feb 2027 → 45 days in Feb 2028). Nothing outside that list re-opens, and a decision is never re-litigated because time passed.
+- **Rule:** An epic whose first story opens after **2026-11-15** records a refresh check before that story opens. The scope of the check is fixed: Traefik, PostgreSQL, restic and `docker-rollout` versions; Clerk and Railway pricing; the Style Dictionary ≥5.5.1 security floor; the Let's Encrypt lifetime schedule (90 → 64 days in Feb 2027 → 45 days in Feb 2028); and, **added 2026-08-16, the observed serving topology**, meaning which addresses the estate's hostnames resolve to, what terminates TLS on each, and whether each DNS record is proxied or DNS-only. Nothing outside that list re-opens, and a decision is never re-litigated because time passed.
+- **Why the topology item was added.** On 2026-08-16 the estate was found to span two serving addresses while every planning document stated one, and `cuatro.dev` was down behind a self-signed certificate. The existing scope covers versions and prices, so a refresh check would have passed without noticing. A settled input about *where the estate runs* can go stale exactly as a version pin can, and it is the one whose staleness breaks NFR-2.
 
 ### AD-23: Migrations are a discrete step and must survive the rollout overlap
 
@@ -303,6 +304,14 @@ cuatro-portfolio/                  # the Anchor: the Hub, and the publisher of c
 ```
 
 ### Deployment topology
+
+> **This diagram is the target state, not the observed state as of 2026-08-16.** On that date
+> the estate spanned two serving addresses: the three Satellite subdomains from the Hostinger
+> VPS, and `cuatro.dev` plus `analytics.cuatro.dev` from a different address where a Traefik
+> was answering with a self-signed default certificate. Story 1.21 consolidates the estate and
+> makes this diagram true. It is deliberately not redrawn to show two boxes, because a
+> transitional state is not architecture. The observed topology lives in
+> `ops/routing-inventory.md` (Story 1.7), and AD-22's refresh scope now re-checks it.
 
 ```mermaid
 graph LR

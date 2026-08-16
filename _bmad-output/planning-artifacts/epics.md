@@ -1053,6 +1053,59 @@ re-derive it.
 
 ---
 
+### Story 1.21: Restore `cuatro.dev` by completing the move onto the Hostinger VPS
+
+**Added 2026-08-16 by the topology correction. Execution position: FIRST in Epic 1, ahead of
+Story 1.3.** The number is 21 because story keys stay stable and numbers are never reshuffled,
+the same convention Epic 8 records. Epic number and story number are not execution position.
+Proposal: `sprint-change-proposal-2026-08-16.md`.
+
+As the Operator,
+I want `cuatro.dev` serving the Anchor from the same VPS as the rest of the estate,
+So that the flagship stops being down, and so that every later story that measures, enumerates
+or deploys has one box to talk about.
+
+**Governing ADs:** AD-8, AD-20 · **Restores:** NFR-2 · **Depends on:** Story 1.7 (the
+enumeration of the address the Anchor is leaving, so nothing on it is lost).
+
+**Acceptance Criteria:**
+
+**Given** `cuatro.dev` presented a self-signed `CN=TRAEFIK DEFAULT CERT` and returned 404 at
+`/api/health` on 2026-08-16
+**When** the move completes
+**Then** `cuatro.dev` serves the Anchor over a publicly trusted certificate
+**And** `/api/health` returns 200 with `"status":"ok"` to an ordinary client performing full
+certificate validation, not to one with validation disabled.
+
+**Given** `analytics.cuatro.dev` shares one compose stack with the Hub, so the two cannot move
+independently without running that stack twice
+**When** the move is planned
+**Then** both move in the same step, or the deferral of `analytics.cuatro.dev` is recorded with
+a date and a reason
+**And** AD-20's rule that a migration step carries nothing else is read here as one deploy unit
+moving once, with the reading recorded rather than assumed.
+
+**Given** SM-1 through SM-3 and Story 2.24's custom events depend on the Umami data
+**When** cutover happens
+**Then** the Umami database is verified by querying it after the move, not by the container
+starting.
+
+**Given** `.github/workflows/deploy.yml` targets the opaque secret `SERVER_HOST`
+**When** the story closes
+**Then** the box that secret points at is confirmed and recorded in `ops/routing-inventory.md`,
+so no later story has to guess which host a deploy reaches.
+
+**Given** Story 1.7 enumerated what the old address served
+**When** anything on it is not carried across
+**Then** it is recorded as deliberately dropped rather than silently lost.
+
+**Given** `ops/monitoring.md` carries an observed-state section dated 2026-08-16
+**When** the move completes
+**Then** that section is re-gathered and re-dated, so the record stops describing a topology
+that no longer exists.
+
+---
+
 ### Story 1.3: Bot mitigation on the four live subdomains
 
 As the Operator,
@@ -1138,12 +1191,14 @@ I want one week of real per-container footprint readings from the box,
 So that the Capacity Gate's threshold replaces the number the research could not obtain, rather
 than inheriting a figure captured during a bot crawl.
 
-**Governing ADs:** AD-9, AD-17c · **Depends on:** Story 1.3 (so the week measures a
+**Governing ADs:** AD-9, AD-17c · **Depends on:** Story 1.21 (so the week measures the box the
+estate is staying on, amended 2026-08-16), Story 1.3 (so the week measures a
 post-mitigation box), Story 1.4 (the file the readings land in)
 
 **Acceptance Criteria:**
 
-**Given** the box runs four applications plus Caddy, Umami and Postgres
+**Given** the estate is consolidated onto one box by Story 1.21, and that box runs the
+applications, the proxy, Umami and Postgres
 **When** measurement runs for a full seven days
 **Then** per-container CPU and memory readings are captured at a regular interval across the
 whole period
@@ -1221,20 +1276,25 @@ a task inside it.
 **Given** `docker/Caddyfile` routes only `cuatro.dev` and `analytics.cuatro.dev`, while
 `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and `library.cuatro.dev` all resolve
 **When** the box is inspected
-**Then** `ops/routing-inventory.md` records, for every hostname that resolves to the box: the
-hostname, what terminates TLS for it, what serves it, the container or process behind it, and the
-port
+**Then** `ops/routing-inventory.md` records, for every hostname in the zone and for every
+address it resolves to: the hostname, the serving address, what terminates TLS for it, what
+serves it, the container or process behind it, and the port
 **And** the record covers at minimum `cuatro.dev`, `analytics.cuatro.dev`,
 `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and `library.cuatro.dev`
-**And** any hostname found on the box that nobody expected is recorded rather than dropped.
+**And** it records whether each DNS record is proxied or DNS-only, since that determines what
+terminates TLS and what an external probe observes
+**And** `www.cuatro.dev` is accounted for, since on 2026-08-16 it was proxied and returned
+`DEPLOYMENT_NOT_FOUND` from a different provider
+**And** any hostname found that nobody expected is recorded rather than dropped.
 
-**Given** the committed compose file binds Caddy to `:80` and `:443` yet its Caddyfile does not
-mention three of the live hosts
+**Given** the estate spans two serving addresses as of 2026-08-16, and the committed compose
+file describes a Caddy stack while a Traefik was observed answering on the Anchor's address
 **When** the discrepancy is investigated
-**Then** the record states how those three actually reach the box: a second Caddy instance, a
-separate compose project, an uncommitted Caddyfile, a Cloudflare tunnel, or whatever is true
-**And** it states which of those configurations exist **only on the box** and not in any
-repository, because that is the set Epic 4 must recreate from this document.
+**Then** the record states, per address, what is actually running there and how each hostname
+reaches it: a second Caddy instance, a separate compose project, an uncommitted Caddyfile, a
+Cloudflare tunnel, a Traefik nobody committed, or whatever is true
+**And** it states which of those configurations exist **only on a box** and not in any
+repository, because that is the set Story 1.21 and Epic 4 must recreate from this document.
 
 **Given** AD-3 makes the public hostname a declared value rather than a derived one
 **When** the inventory is written
@@ -1311,9 +1371,16 @@ CI-to-GHCR path twice, once against today's single-app layout and once after the
 and names the mitigation, either avoid deploying during the week, or annotate the readings where
 a deploy occurred.
 
-**Given** the step name is factually wrong: the box is Hostinger, not Hetzner
+**Given** the step is named "Deploy to Hetzner" while `host:` is the opaque secret
+`SERVER_HOST`, and on 2026-08-16 the Anchor answered from an address in Hetzner's published
+range rather than from the Hostinger VPS the rest of the estate serves from (amended
+2026-08-16)
 **When** the record is written
-**Then** the misnaming is recorded alongside the stale `Hetzner VPS` value in
+**Then** it states which box `SERVER_HOST` actually resolves to, rather than asserting a
+provider the repository cannot verify
+**And** the step name is recorded as correctable only once Story 1.21 has moved the Anchor and
+the destination is known
+**And** the naming question is recorded alongside the stale `Hetzner VPS` value in
 `content/projects.ts:30`, so Epic 2's FR-9 correction and Epic 3's workflow rewrite each pick up
 their half.
 
@@ -4034,7 +4101,10 @@ lifetime schedule, and decide whether the rebuild runs on a temporary second box
 **Acceptance intent:** the refresh covers that list and nothing outside it; no decision is
 re-litigated merely because time passed; the topology choice is recorded with its cost against
 NFR-4 and its load implication against SM-C4; PostgreSQL 18 versus 19 is decided here, since 19
-was expected GA in September 2026.
+was expected GA in September 2026. **Amended 2026-08-16:** two serving addresses already
+existed on that date, so the temporary-second-box question has a partial answer in reality;
+this story records the observed topology from `ops/routing-inventory.md` as its starting point
+rather than assuming one box, and AD-22's re-check scope now includes that topology.
 
 ### Story 4.2: Traefik with Host-matched routers and DNS-01
 Stand up Traefik v3.7 as the estate's proxy, with certificate issuance over DNS-01.
@@ -4071,7 +4141,9 @@ loss window `pg_dump` frequency cannot cover.
 ### Story 4.6: Migrate `cuatro.dev`
 Move the flagship onto the new proxy.
 **Depends on:** 4.2, 4.4.
-**Acceptance intent:** `https://cuatro.dev/contracts/` still serves the published surface, since
+**Acceptance intent:** **amended 2026-08-16,** the Anchor's host move already happened in Story
+1.21, so this story moves `cuatro.dev` onto Traefik on the rebuilt topology and does not repeat
+the host migration. `https://cuatro.dev/contracts/` still serves the published surface, since
 Satellites fetch it at build time; Story 1.16's serving mechanism is revisited here if Traefik
 should serve `contracts/` directly rather than the interim mechanism.
 

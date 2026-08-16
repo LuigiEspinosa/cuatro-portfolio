@@ -628,7 +628,7 @@ It moves onto the VPS and onto a `cuatro.dev` subdomain. `[ASSUMPTION: the appli
 ## 6. Cross-Cutting NFRs
 
 - **NFR-1: Solo-maintainable indefinitely.** Every scoped item must be operable by one person with no coordination. Any requirement implying a second maintainer, a review queue or an on-call rotation is out of scope by construction.
-- **NFR-2: Nothing live may break.** `cuatro.dev`, `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and `library.cuatro.dev` are serving today, as is `list-wheel` on its current host. All must keep serving through every step, including `list-wheel`'s relocation (§5.3). No step may leave a broken application.
+- **NFR-2: Nothing live may break.** `cuatro.dev`, `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and `library.cuatro.dev` are serving today, as is `list-wheel` on its current host. All must keep serving through every step, including `list-wheel`'s relocation (§5.3). No step may leave a broken application. **In violation as of 2026-08-16 on `cuatro.dev`**, which presents a self-signed certificate and returns 404 at `/api/health`. Closed by Story 1.21. Recorded rather than left implicit, because NFR-9 puts honesty above completeness and a requirement silently in breach is exactly the case that rule exists for.
 - **NFR-3: Capacity-bound.** 2 vCPU is a hard ceiling and is unproven. No requirement may assume headroom. Where a requirement needs capacity that has not been measured, it is gated (FR-33), not assumed.
 - **NFR-4: Cost-bound.** All-in spend stays within $40–100/month. The VPS is prepaid to 2028, so only marginal spend counts against this.
 - **NFR-5: Mobile-first for the Hub.** Daniela arrives on a phone. Hub requirements are satisfied on a mobile viewport before a desktop one.
@@ -644,7 +644,7 @@ It moves onto the VPS and onto a `cuatro.dev` subdomain. `[ASSUMPTION: the appli
 
 **Cost.** $40–100/month all-in. The VPS is sunk through 2028, so the live question is marginal spend: managed identity, external monitoring, and any overflow hosting. Overflow hosting for two heavy applications is budgeted at $15–30/month and stays inside the ceiling.
 
-**Capacity.** Hostinger VPS, 2 vCPU / 8 GB / 100 GB, Ubuntu 24.04. The box is RAM-generous and CPU-poor, and **CPU is the binding constraint**. Only one footprint measurement exists in citable form, and it was captured during a bot crawl: an upper bound on a bad day, not steady-state demand. A week of measurement is running in parallel with this PRD. Until it lands, capacity is unknown in both directions and is treated as such.
+**Capacity.** The target platform is one Hostinger VPS, 2 vCPU / 8 GB / 100 GB, Ubuntu 24.04. **Amended 2026-08-16: as of that date the estate spans two serving addresses.** The three Satellite subdomains serve from the Hostinger VPS, while `cuatro.dev` and `analytics.cuatro.dev` serve from a different address. Story 1.21 consolidates them. Every capacity statement in this section describes the target box, and no measurement taken before consolidation describes it. The box is RAM-generous and CPU-poor, and **CPU is the binding constraint**. Only one footprint measurement exists in citable form, and it was captured during a bot crawl: an upper bound on a bad day, not steady-state demand. A week of measurement is running in parallel with this PRD. Until it lands, capacity is unknown in both directions and is treated as such.
 
 **Operator.** One person, indefinitely, part-time. This is the constraint that kills more scope than cost or capacity.
 
@@ -806,7 +806,7 @@ Surfaced deliberately, per the PRD prompt's request to find these now rather tha
 ## 13. Open Questions
 
 1. **Does the estate fit on 2 vCPU?** Unanswerable until the measurement week completes. Blocks the scale of FR-25 and the pace of §10 Steps 5–6. *Closes by: the running `docker stats` week and a written threshold.*
-2. ~~Is `digital-library` actually on Hostinger?~~ **Closed 2026-08-15.** The `Hetzner VPS` value is stale copy; the application was migrated to the Hostinger VPS. Correction required by FR-9.
+2. ~~Is `digital-library` actually on Hostinger?~~ **Closed 2026-08-15.** The `Hetzner VPS` value is stale copy; the application was migrated to the Hostinger VPS. Correction required by FR-9. **Reopened in scope 2026-08-16.** That finding was verified for `digital-library` only and was then generalised into a whole-estate statement in §7 and into the architecture spine's topology diagram. `cuatro.dev` was never checked, and on 2026-08-16 it was still serving from the other host and was down. The single-application answer stands; the generalisation did not. See `sprint-change-proposal-2026-08-16.md`.
 3. **What is the Demo Account reset mechanism per application?** FR-26 states the requirement; the mechanism differs per stack and is an architecture question. *Closes by: architecture.*
 4. **What is the published form of the App Registry?** FR-12 fixes the requirement (consumable by six frameworks without a JS dependency) and deliberately does not pick the format. *Closes by: architecture.*
 5. **Which second application adopts tokens at Step 2?** `cs-tracker` maximises the polyglot proof (Elixir); `digital-library` is likely the cheapest (Svelte). *Closes by: Operator choice at Epic 1.*
