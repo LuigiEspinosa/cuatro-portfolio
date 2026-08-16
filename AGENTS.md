@@ -85,12 +85,18 @@ one app. Planning artifacts live in `_bmad-output/planning-artifacts/`.
   `--font-bold` have zero call sites and are safe to delete.
 - `--accent-glow` is declared at `app/app.scss:11` with **zero call sites**. It arrived with
   the cybercore rebrand and is dead today. Do not assume it is load-bearing.
-- The cybercore rebrand hardcoded a violet palette that the token contract has not yet
-  absorbed: `#0a000f` (`HomeLayout.scss:2`, `error-page.scss:7`), `rgba(91, 33, 182, …)`
-  (`WorkItem.scss:35`/`:145`, `ProjectCard.scss:36`/`:67`), `rgba(140, 90, 210, 0.06)` grid
-  lines, and GlitchText's chromatic-aberration pair `rgba(255, 0, 80, …)` /
-  `rgba(0, 255, 255, …)`. Reconciling these against the token palette is an open design
-  decision — do not silently replace them.
+- The cybercore rebrand hardcoded a violet palette. **O-10 is decided: the contract palette
+  wins**, and the value-by-value mapping lives in
+  `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/rebaseline-2026-08-15.md`
+  § O-10. Follow that table; do not invent a mapping.
+- `--accent-dim` has **15 call sites and is doing two different jobs** — ornament in some, a
+  readable boundary in others. It resolves **per call site**, not with one global alias. A
+  blanket alias to `--token-accent-muted` silently drops its boundary uses below the 3:1 floor.
+- **Three surfaces are held open as O-12 and are not yours to decide:** GlitchText's
+  `rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` aberration pair (`glitch-text.scss:33`–`:68`),
+  ScanlineOverlay's `rgba(0, 0, 0, …)` (`:6`, `:16`, `:17`), and the decorative numeral at
+  `error-page.scss:28`. If a story reaches them before O-12 is settled, leave them untouched
+  and say so — do not guess a token role.
 - One open defect, with its own story. Do not fix it opportunistically and pad an
   unrelated diff: `Dev. 2025` should read `Dec.` (`content/work.ts:18`).
 - `Celeste.tsx` hides the header by mutating the DOM in an effect. Known; leave unless the

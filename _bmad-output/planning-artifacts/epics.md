@@ -422,8 +422,9 @@ the site working)
   rebrand retired every `--font-bold` call site. Only `--monument-bold` remains live, at
   `glitch-text.scss:5`, `error-page.scss:24`, `ProjectsHero.scss:19` and `WorkHero.scss:19` —
   set `font-weight` alongside `font-family` at those **four** call sites by hand in step 2.
-  **Blocked by O-10** (palette reconciliation): `--accent` and `--accent-dim` cannot be aliased
-  until it is decided whether the contract palette or the shipped cybercore palette wins.
+  **O-10 decided in favour of the contract palette:** `--accent` → `--token-accent`, and
+  `--accent-dim` resolves **per call site** across its fifteen — `--token-accent-muted` where it
+  is ornament, `--token-border-interactive` where it is a boundary a person reads state from.
 - **UX-DR10** — *Step 3:* the old white alpha hairlines are **gone** — the rebrand replaced them
   with a violet set. Replace `rgba(91, 33, 182, 0.06)` (`WorkItem.scss:35`,
   `ProjectCard.scss:36`), `rgba(91, 33, 182, 0.3)` (`WorkItem.scss:145`, `ProjectCard.scss:67`)
@@ -436,8 +437,9 @@ the site working)
   both, `rgba(139, 92, 246, 0.15)` at `error-page.scss:28`, the `rgba(0, 0, 0, …)` scanlines at
   `ScanlineOverlay.scss:6`/`:16`/`:17`, and the greys in `_print.scss`. The bare keyword
   `color: white` at the old `HomeLayout.scss:122` **no longer exists** — that file was rebuilt.
-  **`glitch-text.scss:33`–`:68` is deliberate, not a stray literal** — `rgba(255, 0, 80, …)` /
-  `rgba(0, 255, 255, …)` encode chromatic aberration; tokenize only if O-10 gives them roles.
+  **`glitch-text.scss:33`–`:68` and `ScanlineOverlay.scss:6`/`:16`/`:17` are held by O-12** —
+  the aberration pair needs opposing hues a single-hue palette cannot supply, and the scanlines
+  are pure blacks the "nothing is pure" rule forbids. Leave both until O-12 is settled.
   `_print.scss` keeps real `#fff`/`#000` and is outside the contract by nature.
 - **UX-DR12** — *Step 5:* swap the type — new `@font-face` in `fonts.css`, retire
   `app/scss/_fonts.scss`, delete the General Sans / Monument Extended / Confillia binaries from
@@ -756,13 +758,15 @@ C-9 routing enumeration *(prerequisite of Epic 4, done here because it is cheap 
 rebuild)* · C-8 standing AD-8 violation, tracked explicitly · O-3 daisyUI `var()` gate ·
 C-7 Playwright installation *(here rather than in Epic 2, because this epic's migration stories
 assert rendered output and AD-19 forbids claiming it)*
-**Blocking open item added at re-baseline:** **O-10 — the palette reconciliation.** The token
-contract was authored without knowledge of the cybercore rebrand now merged into `dev`. Two
-design systems must become one before Story 1.18 can alias `--accent`/`--accent-dim`. **This is
-a design decision and does not belong inside a dev story** — settle it in a UX pass before the
-loop reaches 1.18. See
-[`rebaseline-2026-08-15.md`](ux-designs/ux-cuatro-portfolio-2026-08-15/rebaseline-2026-08-15.md).
+**O-10 — DECIDED 2026-08-15: the contract palette wins.** Cybercore's hardcoded values map to
+token roles; the value-by-value mapping is in
+[`rebaseline-2026-08-15.md`](ux-designs/ux-cuatro-portfolio-2026-08-15/rebaseline-2026-08-15.md)
+§ O-10. **Story 1.18 is unblocked.** Both systems are violet, so the shipped identity largely
+survives — what changes is that every value gains a computed contrast.
 Also **O-11** — `--accent-glow` is declared with zero call sites; confirm before deleting.
+**O-12** — three expressive surfaces (GlitchText's aberration, ScanlineOverlay's blacks, the
+`error-page.scss:28` numeral) have no role in a single-hue palette. **Blocks Epic 2's Stories
+2.18–2.19, not Epic 1.** Each needs a named exception or a redesign, decided in a UX pass.
 **Governing ADs:** AD-1, AD-9, AD-10, AD-14, AD-15, AD-16, AD-17, AD-18, AD-19, AD-20
 **Standalone:** yes. Delivers SM-5 (external uptime), SM-6 (≥2 applications on shared tokens),
 SM-7 (Estate 11) and a written Capacity Gate threshold, none of which depend on a later epic.
@@ -1556,8 +1560,11 @@ stylesheets
 the five font aliases onto `--f-*` plus `--w-*`
 **And** `--hero-height` stays local, because a viewport height is a layout constant and the
 contract carries none
-**And** `--accent` and `--accent-dim` are **not** aliased in this story — they are blocked on
-O-10, the palette reconciliation, which is a design decision and not this story's to make
+**And** `--accent` → `--token-accent`, per **O-10, decided in favour of the contract palette**
+**And** `--accent-dim` is resolved **per call site across its fifteen** — `--token-accent-muted`
+where it is ornament, `--token-border-interactive` where it is a boundary a person reads state
+from. It is doing both jobs today, so a single global alias is wrong and would silently drop
+`--accent-dim`'s boundary uses below the 3:1 floor AD-19 asserts
 **And** `--accent-glow` is left alone pending O-11, despite having zero call sites
 **And** every one of the fifteen component stylesheets keeps working with no edit.
 
@@ -2461,9 +2468,14 @@ shipped, this story covers both files.
 **When** they are replaced
 **Then** each becomes `var(--token-border)` or `var(--token-border-interactive)` as the treatment
 requires
+**And** each resolves to a **flat token, never an `rgba()` with alpha** — § Colors bars opacity
+from expressing state, and all three of these are alpha values doing exactly that
 **And** no `rgba()` colour value remains in any component stylesheet still in the tree, **except
-`glitch-text.scss`**, whose `rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` pair encodes a
-deliberate chromatic-aberration effect and is out of scope unless O-10 assigns it token roles
+`glitch-text.scss` and `ScanlineOverlay.scss`**, both of which are held by **O-12** — the
+aberration pair needs opposing hues a single-hue palette cannot supply, and the scanlines are
+pure blacks against the "nothing is pure" rule. **This story does not decide either.** If O-12
+is unresolved when this story opens, it ships the four hairline replacements and leaves both
+files untouched rather than guessing
 **And** the rules render as `1px` and opaque.
 
 **Given** NFR-2 binds every migration step
@@ -2488,11 +2500,13 @@ Realizes UX-DR11 and completes FR-17's coverage.
 **When** the sweep runs
 **Then** `#444`/`#fff` at `celeste.scss:2`/`:16` and `#fff` at `navbar.scss:10` are replaced with
 token roles
-**And** `#0a000f` at `HomeLayout.scss:2` and `error-page.scss:7`, the `rgba(140, 90, 210, 0.06)`
-grid lines at `HomeLayout.scss:4`–`:5` and `error-page.scss:9`–`:10`, `rgba(139, 92, 246, 0.15)`
-at `error-page.scss:28`, and the `rgba(0, 0, 0, …)` scanline set at `ScanlineOverlay.scss:6`,
-`:16`, `:17` are all replaced with token roles — these arrived with the cybercore rebrand and
-their disposition follows O-10
+**And** `#0a000f` at `HomeLayout.scss:2` and `error-page.scss:7` becomes `--token-bg`, and the
+`rgba(140, 90, 210, 0.06)` grid lines at `HomeLayout.scss:4`–`:5` and `error-page.scss:9`–`:10`
+become `--token-border` — decorative, carrying no meaning, per O-10's mapping
+**And** `rgba(139, 92, 246, 0.15)` at `error-page.scss:28` and the `rgba(0, 0, 0, …)` scanline
+set at `ScanlineOverlay.scss:6`/`:16`/`:17` are **held by O-12** and left untouched if it is
+unresolved — the numeral's nearest role is marked *ornament only, never text*, and the
+scanlines are pure blacks the palette forbids. Neither is this story's decision to make
 **And** the bare keyword `color: white` the sweep used to target **no longer exists**, because
 `HomeLayout.scss` was rebuilt — but the grep still covers **named colours** as well as `#` and
 `rgba(`, because that class of miss is cheap to guard against

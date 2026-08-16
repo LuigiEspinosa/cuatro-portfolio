@@ -76,7 +76,62 @@ aberration effect. Tokenize only if the reconciliation below assigns those colou
 
 ---
 
-## The open decision this re-baseline does not make
+## O-10 — DECIDED 2026-08-15: the contract palette wins
+
+**Operator decision: shape 1.** `DESIGN.md`'s validated OKLCH palette (anchor hue 288) is the
+contract. Cybercore's hardcoded values are replaced by token roles. This overrides the
+recommendation below, which favoured re-deriving from the shipped values; it is recorded
+unchanged so the reasoning that was set aside stays visible.
+
+**The decision is cheaper than it first appeared.** Both systems are violet. `--c-paper`
+(`#060509`) and cybercore's `#0a000f` are near-neighbours, and `--c-accent` (`#8f7ef0`) sits in
+the same family as `rgba(139, 92, 246, …)`. The visual identity largely survives; what changes
+is that every value becomes a role with a computed contrast behind it.
+
+### The mapping
+
+| Cybercore value | Where | Becomes |
+|---|---|---|
+| `#0a000f` | `HomeLayout.scss:2`, `error-page.scss:7` | `--token-bg` (`--c-paper` `#060509`) |
+| `rgba(10, 0, 20, 0.6)` | `ProjectCard.scss:27` | `--token-bg-raised` (`--c-surface`) |
+| `rgba(91, 33, 182, 0.06)` | `WorkItem.scss:35`, `ProjectCard.scss:36` | `--token-bg-raised-2` (`--c-surface-high`) |
+| `rgba(91, 33, 182, 0.3)` | `WorkItem.scss:145`, `ProjectCard.scss:67` | `--token-border-interactive` (`--c-line-strong`, 3.52:1) |
+| `rgba(140, 90, 210, 0.06)` grid | `HomeLayout.scss:4`–`:5`, `error-page.scss:9`–`:10` | `--token-border` (`--c-line`, decorative, carries no meaning) |
+| `--accent` | `app.scss:9` | `--token-accent` (`--c-accent`, 6.20:1) |
+| `--accent-dim` (15 sites) | `app.scss:10` | `--token-accent-muted` (`--c-accent-quiet`) where ornamental; `--token-border-interactive` where it is a boundary. **Per call site — it is doing both jobs today** |
+| `--accent-glow` | `app.scss:11` | **dropped** — zero call sites (O-11) |
+| `--font-mono` (10 sites) | `app.scss:31` | `--f-mono` |
+
+**Opacity is barred from expressing state** (§ Colors), and five of the rows above are alpha
+values doing exactly that. They resolve to flat tokens, not to `rgba()` with an alpha.
+
+### Three things "contract wins" does not resolve
+
+Each is a place where cybercore's expressive surfaces have no role in a single-hue palette.
+**None should be decided inside a dev story.**
+
+1. **GlitchText's chromatic aberration** — `rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` at
+   `glitch-text.scss:33`–`:68`. The effect *requires* opposing hues; a hue-288 palette
+   structurally cannot supply them, and § Rules says "one accent." Either GlitchText keeps a
+   **documented, named exception** (recommended — the effect is deliberate and it is ornament,
+   never text), or the component loses the aberration and becomes a plain glitch.
+2. **ScanlineOverlay's blacks** — `rgba(0, 0, 0, 0.65 / 0.12)` at `ScanlineOverlay.scss:6`,
+   `:16`, `:17`. § Rules says **"nothing is pure: no `#000`, no `#fff` anywhere."** A scanline
+   is a multiply-style darkening, not a surface colour, so it needs either a named
+   `--token-scrim` role or the same documented exception.
+3. **`rgba(139, 92, 246, 0.15)` at `error-page.scss:28`** — a large decorative numeral. The
+   nearest role is `--token-accent-muted` (`--c-accent-quiet`, 2.74:1), which § Semantic roles
+   marks **"ornament only — never text."** It is literally text, but decorative text that
+   duplicates the visible 404 message. Confirm it is genuinely redundant to a screen reader and
+   `aria-hidden`, in which case the role is correct and the contrast floor does not apply.
+
+Recorded as **O-12**. Blocks migration steps 3–4 (Stories 2.18–2.19), not Story 1.18.
+
+---
+
+## The recommendation that was set aside
+
+*Retained for the record. The Operator chose shape 1 above.*
 
 **O-10 — palette reconciliation. Blocking Epic 1 Step 2.**
 

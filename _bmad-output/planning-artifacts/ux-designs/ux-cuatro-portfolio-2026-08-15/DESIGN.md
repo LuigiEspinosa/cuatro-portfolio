@@ -898,8 +898,9 @@ sweep is cheap and the file has changed once already.
 | `--monument-bold` | `--f-display` + `--w-black` | Same; the weight distinction must survive the alias |
 | `--confillia-normal` | `--f-display` at `wdth 75` | **Two live call sites** — `HomeLayout.scss:117` and `:148`. Needs a target, not a deletion |
 | `--confillia-bold` | **dropped** | Zero call sites. Safe to delete outright |
-| `--accent`, `--accent-dim` | **open decision** | Cybercore. `--accent-dim` has 15 call sites; see the reconciliation note below |
-| `--accent-glow` | **dropped** | Declared at `app.scss:11`, **zero call sites**. Dead on arrival |
+| `--accent` | `--token-accent` → `--c-accent` `#8f7ef0` | Cybercore. 6.20:1 |
+| `--accent-dim` | `--token-accent-muted` *or* `--token-border-interactive` | Cybercore, **15 call sites**. It is doing two jobs today — ornament in some places, a readable boundary in others. **Decide per call site**, not globally |
+| `--accent-glow` | **dropped** | Declared at `app.scss:11`, **zero call sites**. Dead on arrival — O-11 confirms before deleting |
 | `--font-mono` | `--f-mono` | Cybercore. 10 call sites; the contract needs a mono role it did not previously carry |
 
 **The alias trap is now half gone.** The old properties are *family* aliases, and two encoded
@@ -910,14 +911,20 @@ alone still silently drops bold at those four sites. Bricolage and Geist are var
 `font-weight` alongside `font-family` at each — but the regression still lands at **step 2**,
 before step 6 exists to fix it. Four call sites by hand in step 2 is what this file recommends.
 
-**Open: the palette reconciliation.** This mapping was designed without knowledge of the
-cybercore rebrand, and one row is now stale in its reasoning — `--light-gray-color` was
-described as "warm → violet-tinted, the most visible single change," but the rebrand already
-went violet. The contract's OKLCH palette and cybercore's hardcoded violet set
-(`#0a000f`, `rgba(91, 33, 182, …)`, `rgba(140, 90, 210, …)`, plus GlitchText's
-`rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` aberration pair) are two design systems that
-must become one. **That is a design decision, not a migration mechanic, and it is not
-resolved here** — see [`rebaseline-2026-08-15.md`](rebaseline-2026-08-15.md).
+**O-10 is decided: the contract palette wins.** *(Operator decision, 2026-08-15.)* Cybercore's
+hardcoded values are replaced by token roles; the full value-by-value mapping is in
+[`rebaseline-2026-08-15.md`](rebaseline-2026-08-15.md) § O-10. Both systems are violet — the
+contract's `--c-paper` `#060509` and cybercore's `#0a000f` are near-neighbours — so the shipped
+visual identity largely survives. What changes is that every value gains a computed contrast.
+
+One row of the table above is stale in its *reasoning* as a result: `--light-gray-color` is
+described as "warm → violet-tinted, the most visible single change." The rebrand already went
+violet, so that framing no longer holds; the mapping itself is unaffected.
+
+**Three expressive surfaces have no role in a single-hue palette** and are tracked as **O-12**,
+blocking migration steps 3–4 rather than step 2: GlitchText's red/cyan aberration pair,
+ScanlineOverlay's pure blacks against the "nothing is pure" rule, and the large decorative
+numeral at `error-page.scss:28` whose nearest role is marked *ornament only, never text*.
 
 ### Sequence
 
@@ -928,8 +935,9 @@ Each step leaves the site working. NFR-2 binds every one.
 2. **Alias the old names.** Redefine the existing properties as `var()` references to the new
    roles. Every one of the fifteen component stylesheets keeps working untouched, and the
    whole site changes appearance in one commit that touches one file — which is also the one
-   commit worth a careful visual check. **Blocked on the palette reconciliation above:** you
-   cannot alias `--accent`/`--accent-dim` until it is decided which system wins.
+   commit worth a careful visual check. **Unblocked — O-10 decided in favour of the contract
+   palette**, so `--accent` → `--token-accent` and `--accent-dim` → `--token-accent-muted` or
+   `--token-border-interactive` per call site.
 3. **Retire the violet hairlines.** The old white alpha hairlines are gone; the rebrand
    replaced them with `rgba(91, 33, 182, 0.06)` and `rgba(91, 33, 182, 0.3)` at
    `WorkItem.scss:35`/`:145` and `ProjectCard.scss:36`/`:67`, plus `rgba(10, 0, 20, 0.6)` at
