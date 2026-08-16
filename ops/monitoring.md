@@ -26,14 +26,29 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 
 | Decision | Value | Nature of the figure |
 |---|---|---|
-| Monitoring service | **UptimeRobot** | **Decided, not observed.** No account exists. See Pending Operator actions |
-| Alert channel | **Telegram** | **Decided, not observed.** Not configured, and no test alert has arrived |
+| Monitoring service | **UptimeRobot** | **Observed 2026-08-16.** Account `luigi@cuatro.dev`, user id 3714284, registered 2026-08-16T09:23:21Z |
+| Alert channel | **Telegram** | **Decided, not observed.** Not configured. Email is carrying alerts in the meantime, see below |
+| Interim alert channel | Email to `luigi@cuatro.dev` | **Observed 2026-08-16.** Alert contact id 8726805, type Email, status Active, attached to all five monitors |
 | Where the probe runs | External to the VPS, on UptimeRobot's own infrastructure | Decided, and required by AD-17a. See below |
-| Recurring cost | **$0 per month** intended, on the free tier | **Decided intent, not an observed charge.** The Operator writes the actual figure here |
-| Probe interval | **5 minutes**, every host, uniform | Decided. See Alerting policy for why this number and not "whatever the tier gives" |
-| Certificate validity rule | Chain validates and issuer is the expected one, asserted per host | Decided. Rule 1, and independent of age. See The certificate rule |
-| Certificate age rule | Age greater than two thirds of nominal lifetime, plus a 48 hour grace | Decided. Rule 2. See The certificate rule |
-| Down threshold | 2 consecutive failed probes, so roughly 10 minutes to first alert | Decided. See Alerting policy |
+| Recurring cost | **$0 per month** | **Observed 2026-08-16.** Free tier: no active subscription, no payment processor, 50 monitor limit, 5 minute minimum interval |
+| Probe interval | **5 minutes**, every host, uniform | **Observed.** 300 seconds on all five monitors. This is also the free tier's floor, so the decided number and the available number coincide |
+| Certificate validity rule | Chain validates and issuer is the expected one, asserted per host | **Rule 1. Configured 2026-08-16** as `checkSSLErrors` on all five monitors. Free tier |
+| Certificate age rule | Age greater than two thirds of nominal lifetime, plus a 48 hour grace | **Rule 2. NOT configured. Blocked by the free plan**, see The certificate rule |
+| Down threshold | 2 consecutive failed probes, so roughly 10 minutes to first alert | **Decided, not configured.** The free tier exposes no confirmation-count setting |
+
+### The monitors as they actually exist, 2026-08-16
+
+| id | Monitor | Type | Assertion | Status when created |
+|---|---|---|---|---|
+| 803750027 | `cuatro.dev /api/health` | Keyword | body contains `"status":"ok"`, case sensitive | **DOWN** |
+| 803749849 | `cuatro.dev root (front door)` | HTTP | status code | **DOWN** |
+| 803750016 | `cs-tracker.cuatro.dev` | HTTP | status code | UP |
+| 803750023 | `tracker.cuatro.dev` | HTTP | status code | UP |
+| 803750025 | `library.cuatro.dev` | HTTP | status code | UP |
+
+**The two `cuatro.dev` monitors came up DOWN immediately**, which is correct and is the first
+machine-generated error signal this estate has ever had. That downtime counts against SM-5 from
+today, honestly, because it is real.
 
 **Why the service must run off the box.** AD-17a and AD-18 both require it, and the reason is
 mechanical rather than stylistic. A monitoring agent, exporter, healthcheck or cron job
@@ -160,6 +175,15 @@ what can be honestly asserted today. When Story 1-10 lands, whether to add a con
 assertion here is worth revisiting.
 
 ### Redirects and which responses count as up
+
+**Observed 2026-08-16 from the created monitors:** `followRedirections` is `true` and
+`successHttpResponseCodes` is `["2xx", "3xx"]`. That is why `library.cuatro.dev` reads UP while
+returning a 302 to its sign-in page. The behaviour is acceptable and is recorded rather than
+changed, but note what it costs: a host that starts redirecting somewhere wrong still reads UP.
+The Anchor is protected from that by its keyword monitor, which asserts body content. The three
+Satellites are not, and gain that protection only when their repositories grow a health
+endpoint.
+
 
 | Rule | Value |
 |---|---|
@@ -474,6 +498,28 @@ for it first. Turning off the orange cloud on a host, even briefly to debug, bre
 immediately. That failure is self-catching: Rule 1 asserts the expected issuer, so a host that
 drops out of the proxy alarms rather than degrading quietly.
 
+#### Rule 1 is on the free tier. Rule 2 is not.
+
+**Observed 2026-08-16 by configuring the account.** The two certificate settings are priced
+differently, and the split falls in the estate's favour:
+
+| Setting | What it gives | Free tier |
+|---|---|---|
+| `checkSSLErrors` | Alerts when the chain fails to validate. **This is Rule 1** | **Available.** Enabled on all five monitors |
+| `sslExpirationReminder` | Alerts ahead of expiry. **This is Rule 2's instrument** | **Blocked.** `009-005`, "You are not allowed to use some settings with your current plan" |
+
+**Rule 1, the rule that catches the failure happening right now, is free.** Rule 2, the age
+threshold, needs a paid plan, and the escalation branch under The cost against NFR-4 therefore
+applies: it is not configured, and nobody should record it as if it were.
+
+**AD-26 largely dissolves the problem rather than paying for it.** Rule 2 exists to catch a
+renewal that stopped happening. Under AD-26 the origin presents a Cloudflare Origin CA
+certificate valid for up to fifteen years with no ACME client renewing anything, so there is no
+renewal cycle left to watch on the origin. What remains is Cloudflare's edge certificate, which
+Cloudflare renews itself. **Buying the paid tier to watch Rule 2 would be buying a watch for a
+mechanism this estate is removing.** Revisit only if a host ever leaves the proxy and starts
+renewing its own certificate again, which AD-26 already gates.
+
 ### Rule 2: certificate age
 
 The age alert fires on certificate **age**, never on days to expiry.
@@ -742,17 +788,18 @@ cannot find itself in the table has not thereby been exempted.
 
 ## Pending Operator actions
 
-Buying and configuring a monitor is web console work outside this repository. **No account
-was created, no plan was bought and no monitor was configured by the session that wrote this
-file.** The six actions below are outstanding.
+Buying and configuring a monitor was web console work outside this repository. **Four of the six
+are now done.** Actions 1, 2 and 5 were completed on 2026-08-16 through the UptimeRobot v3 API.
+Action 3 is blocked by the free plan and is deliberately not bought. **The gate stays shut on
+actions 4 and 6**, which are the two that prove the Operator would actually hear an alert.
 
 | # | Action | Constraint | Completed (ISO 8601 UTC) |
 |---|---|---|---|
-| 1 | Create the UptimeRobot account and add an HTTPS monitor for each row of the probe table, plus the one additional `cuatro.dev` root monitor recorded beneath it | Use the probe targets and the redirect rules above, including the `"status":"ok"` keyword assertion on `/api/health`. Configure both `cuatro.dev` monitors even though the host is currently failing | _not done_ |
-| 2 | Enable certificate chain validation and the expected-issuer assertion per host | Rule 1. This is separate from the age threshold and must not be skipped because the age alert is configured | _not done_ |
-| 3 | Configure the TLS certificate age alert | Use the nearest value UptimeRobot supports for the recorded rule, and write the actually configured value into the conversion table beside its row | _not done_ |
+| 1 | Create the UptimeRobot account and add an HTTPS monitor for each row of the probe table, plus the one additional `cuatro.dev` root monitor recorded beneath it | Use the probe targets and the redirect rules above, including the `"status":"ok"` keyword assertion on `/api/health`. Configure both `cuatro.dev` monitors even though the host is currently failing | **2026-08-16.** Five monitors, ids in the Decisions section, created by agent through the v3 API |
+| 2 | Enable certificate chain validation and the expected-issuer assertion per host | Rule 1. This is separate from the age threshold and must not be skipped because the age alert is configured | **2026-08-16.** `checkSSLErrors` enabled on all five. The expected-issuer half is not separately configurable and is asserted by chain validation only |
+| 3 | Configure the TLS certificate age alert | Use the nearest value UptimeRobot supports for the recorded rule, and write the actually configured value into the conversion table beside its row | **BLOCKED, not outstanding.** `sslExpirationReminder` is a paid setting (`009-005`). Deliberately not bought, because AD-26 removes the renewal cycle it would watch |
 | 4 | Add Telegram as an alert contact and send a **deliberately induced** test alert | Record here whether it went through a native integration or a webhook to a bot, since the two fail differently. Fill the ownership table. A real outage alert is not a test alert | _not done_ |
-| 5 | Record the actual recurring cost | Write it against the $100 per month ceiling as a named decision, including if it is zero. If the required tier would breach the ceiling, stop and raise it rather than configuring | _not done_ |
+| 5 | Record the actual recurring cost | Write it against the $100 per month ceiling as a named decision, including if it is zero. If the required tier would breach the ceiling, stop and raise it rather than configuring | **2026-08-16.** $0 per month, free tier, read from the account: no payment processor, no active subscription |
 | 6 | Flip the status line above to the positive form with the ISO 8601 UTC date, and set `Alert path last verified` | Only once actions 1 to 5 are done **and** a deliberately induced test alert has arrived. Anything less reads `not-satisfied` | _not done_ |
 
 **Maintaining this file.** When an Operator action is performed, **strike its row by replacing
