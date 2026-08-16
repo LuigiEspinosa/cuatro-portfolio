@@ -1090,10 +1090,15 @@ moving once, with the reading recorded rather than assumed.
 **Then** the Umami database is verified by querying it after the move, not by the container
 starting.
 
-**Given** `.github/workflows/deploy.yml` targets the opaque secret `SERVER_HOST`
-**When** the story closes
-**Then** the box that secret points at is confirmed and recorded in `ops/routing-inventory.md`,
-so no later story has to guess which host a deploy reaches.
+**Given** the Operator confirmed on 2026-08-16 that `SERVER_HOST` points at the old box, so a
+push to `main` today deploys into the box that is down and is about to be decommissioned
+**When** the Anchor has moved
+**Then** `SERVER_HOST` is repointed at the Hostinger VPS and the workflow's step name is
+corrected in the same change
+**And** the repointing is recorded in `ops/routing-inventory.md`, so no later story has to guess
+which host a deploy reaches
+**And** until both are done, `main` is not merged into, or the deploy workflow is gated, because
+NFR-2 is already in breach and a deploy into the failing box can only widen it.
 
 **Given** Story 1.7 enumerated what the old address served
 **When** anything on it is not carried across
@@ -1165,6 +1170,12 @@ issuer matches what a probe will actually see
 **Given** AD-26 settles the origin certificate: Cloudflare Origin CA covering `cuatro.dev` and
 `*.cuatro.dev`, behind Full (strict), so no ACME client runs on the origin for a proxied host
 **When** the origin is configured
+**Then** the steps run in this order, per host: install the Origin CA certificate, disable the
+ACME client, verify the host still serves, and only then switch the DNS record to proxied
+**And** the order is not negotiable, because every live hostname was observed on 2026-08-16
+presenting a **single-name** certificate, which is the signature of HTTP-01 issued per host on
+demand, and HTTP-01 depends on how port 80 is reached; flipping the proxy first changes that
+path while ACME is still relied upon, and the breakage would not surface until the next renewal
 **Then** one Origin CA certificate is installed covering the apex and the wildcard, issued for
 the longest term offered
 **And** any ACME client previously issuing certificates for a proxied host on that box is
@@ -1424,10 +1435,14 @@ a deploy occurred.
 range rather than from the Hostinger VPS the rest of the estate serves from (amended
 2026-08-16)
 **When** the record is written
-**Then** it states which box `SERVER_HOST` actually resolves to, rather than asserting a
-provider the repository cannot verify
-**And** the step name is recorded as correctable only once Story 1.21 has moved the Anchor and
-the destination is known
+**Then** it states that the Operator confirmed on 2026-08-16 that `SERVER_HOST` points at the
+**old** box, so the step name "Deploy to Hetzner" was accurate when written and becomes wrong
+only after Story 1.21 moves the Anchor
+**And** it records the live hazard this creates: `deploy.yml` fires on every push to `main`, so
+until `SERVER_HOST` is repointed a merge to `main` deploys into the box that is down, and does
+it with `--build` on a box that is being decommissioned
+**And** the step name and the secret are corrected together in Story 1.21, not separately, since
+correcting one without the other leaves the workflow lying in the opposite direction
 **And** the naming question is recorded alongside the stale `Hetzner VPS` value in
 `content/projects.ts:30`, so Epic 2's FR-9 correction and Epic 3's workflow rewrite each pick up
 their half.

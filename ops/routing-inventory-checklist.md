@@ -48,9 +48,53 @@ Cross-check from outside, so a dashboard misreading does not go unnoticed:
 Cloudflare anycast ranges look like `104.16-31.x`, `172.64-71.x`, `162.159.x`, `188.114.x`.
 Anything else is an origin address, which means that record is DNS-only.
 
-| Record | Type | Content | Proxied? | Notes |
+### Part 1 findings, gathered 2026-08-16
+
+**Done.** The zone holds 26 records, 25 of them read from the Cloudflare dashboard. Every A and
+CNAME record below was independently re-probed from outside.
+
+| Record | Type | Content | Proxied | Observed |
 |---|---|---|---|---|
-| | | | | |
+| `cuatro.dev` | A | `95.216.143.251` | DNS only | TLS fails, Traefik default cert, 404 |
+| `analytics.cuatro.dev` | A | `95.216.143.251` | DNS only | same box, same default cert |
+| `n8n.cuatro.dev` | A | `95.216.143.251` | DNS only | **Unexpected.** Same box, 404, Traefik default cert |
+| `cs-tracker.cuatro.dev` | A + AAAA | `177.7.52.248`, `2a02:4780:75:9155::1` | DNS only | 200, Let's Encrypt `YE1`, single-name SAN |
+| `tracker.cuatro.dev` | A + AAAA | `177.7.52.248`, `2a02:4780:75:9155::1` | DNS only | 200, Let's Encrypt `YE1`, single-name SAN |
+| `library.cuatro.dev` | A + AAAA | `177.7.52.248`, `2a02:4780:75:9155::1` | DNS only | 302, Let's Encrypt `YE2`, single-name SAN |
+| `www.cuatro.dev` | A | `76.76.21.21` | **Proxied** | Vercel address, `DEPLOYMENT_NOT_FOUND` |
+| `covidmap.cuatro.dev` | CNAME | `*.vercel-dns-017.com` | DNS only | **Unexpected.** 200, live, Let's Encrypt `YR1` |
+| `future-vizion.cuatro.dev` | CNAME | `*.vercel-dns-017.com` | DNS only | **Unexpected.** 200, live, Let's Encrypt `YR1` |
+| `_domainconnect.cuatro.dev` | CNAME | `_domainconnect.domains.squarespace.com` | **Proxied** | Squarespace leftover |
+| `cuatro.dev` | MX x5 | `aspmx.l.google.com` and alternates | n/a | Google Workspace |
+| `cuatro.dev` | NS x4 | `ns-cloud-c{1..4}.googledomains.com` | n/a | Vestigial. Real delegation is `beau`/`demi.ns.cloudflare.com` |
+| `cuatro.dev` | TXT | `protonmail-verification=...` | n/a | Conflicts with the Google MX above. Leftover |
+| `cuatro.dev` | TXT | `v=spf1 include:_spf.google.com ~all` | n/a | Google SPF |
+| `google._domainkey` | TXT | `v=DKIM1; k=rsa; ...` | n/a | Google DKIM |
+
+**`2a02:4780::/29` is Hostinger's IPv6 range**, which independently confirms `177.7.52.248` is
+the Hostinger KVM 2. Note that the three Satellite hostnames carry AAAA records and the two on
+the old box do not, so Story 1.21 should decide whether `cuatro.dev` gains one on the move.
+
+**Only two records in the whole zone are proxied**, and neither is an application of ours:
+`www` points at a dead Vercel deployment and `_domainconnect` is Squarespace scaffolding. That
+is the definitive form of the earlier finding: bot rules currently apply to nothing.
+
+**One record was not read** (the dashboard showed 25 of 26). Read the last one before treating
+this table as complete.
+
+#### Certificate issuance, from Certificate Transparency
+
+Read from `crt.sh` rather than from either box, so it needed no access:
+
+- **A wildcard `*.cuatro.dev` certificate exists**, logged 2026-07-14. A wildcard can only be
+  issued through DNS-01, which means something held Cloudflare API credentials for this zone.
+- **No live host presents that wildcard.** Every serving hostname presents a single-name
+  certificate, which is the signature of HTTP-01 issued per host on demand.
+- So there are at least **two issuance mechanisms**, and the wildcard's consumer is unidentified.
+- `pokemon.cuatro.dev` and `api.pokemon.cuatro.dev` appear in the logs (2025-11-07) and in no
+  current DNS record. Retired, and probably `poketracker-go`.
+- `tracker.cuatro.dev` shows three issuances inside a week (2026-07-30 twice, 2026-08-05), which
+  may be ordinary precert plus cert logging or may be a client retrying. Worth a glance on the box.
 
 ## Part 2: on each box
 
@@ -144,9 +188,16 @@ systemctl status cloudflared 2>/dev/null
 
 These are the things this pass exists to answer. Each one blocks something.
 
-- [ ] **What is actually serving on OLD?** A Traefik answers 443 with a self-signed default
-      certificate and `/api/health` returns 404. Is the committed Caddy stack running at all? Is
-      the Hub container up, down, or absent? Blocks Story 1.21.
+- [ ] **What is actually serving on OLD, and did n8n take the ports?** A Traefik answers 443
+      with a self-signed default certificate and `/api/health` returns 404. **Working hypothesis,
+      not a finding:** `n8n.cuatro.dev` points at that same box, n8n is commonly deployed behind
+      Traefik, the committed stack uses Caddy, and the Traefik default certificate was issued
+      2026-08-15, the day before the outage was found. If an n8n stack bound 80 and 443, Caddy
+      could no longer bind them and `cuatro.dev` would fail exactly the way it does. Confirm or
+      kill this first: it is one `docker ps` away and it determines whether Story 1.21 is a
+      migration or a port conflict.
+- [ ] **Does n8n hold state worth keeping?** Workflows and credentials live in its database. The
+      old box is decommissioned by Story 1.21, so this needs a decision before then, not after.
 - [ ] **What issues the Let's Encrypt certificates on NEW?** Blocks Story 1.3's Origin CA step
       under AD-26.
 - [ ] **Where does `SERVER_HOST` point?** It is an opaque GitHub Actions secret and

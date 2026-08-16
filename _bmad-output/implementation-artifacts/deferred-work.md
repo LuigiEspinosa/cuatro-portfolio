@@ -79,6 +79,59 @@ found them. Append only. Each entry names the spec that surfaced it.
     and a test asserting the serialized form would close it. Left out of this story
     because its task list is confined to `ops/monitoring.md`.
 
+- source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  summary: >-
+    Two live applications serve from `cuatro.dev` subdomains and appear nowhere in
+    `ops/estate.md`, so the Estate record's fifteen applications is wrong and AD-6's
+    "no application is ever dropped by omission" is already breached.
+  evidence: |-
+    `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` both returned HTTP 200 on
+    2026-08-16 with valid single-name Let's Encrypt certificates, served from Vercel
+    (`216.198.79.65` and `64.29.17.65`) via `vercel-dns-017.com` CNAMEs. Neither
+    appears in `ops/estate.md`'s fifteen-row disposition table, in PRD section 5.1,
+    or anywhere in `epics.md`. AD-6 makes Registry membership a property of the
+    application, and SM-4 requires every Registry link to resolve, so Epic 2 cannot
+    author a complete Registry from an Estate record that omits two live
+    applications. Also relevant to SM-7: the repository count of 11 was reconciled
+    against a set that did not include these. Either they are Ecosystem applications
+    and the record and count are wrong, or they are deliberately outside the Estate
+    and that exclusion needs writing down. Story 2-4 confirms assumed statuses and is
+    the natural place to land it, but the Estate record is wrong today.
+
+- source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  summary: >-
+    `n8n.cuatro.dev` resolves to the box being decommissioned, is not in any planning
+    artifact, and is the leading suspect for the `cuatro.dev` outage.
+  evidence: |-
+    The record points at `95.216.143.251`, the old box, and returns 404 behind the
+    same `CN=TRAEFIK DEFAULT CERT` that `cuatro.dev` and `analytics.cuatro.dev`
+    present. The committed `docker-compose.yml` uses Caddy, not Traefik, and the
+    Traefik default certificate was issued 2026-08-15T19:21:43Z, one day before the
+    outage was found. n8n is commonly deployed behind Traefik. If an n8n stack bound
+    ports 80 and 443 on that box, Caddy could not bind them and the Anchor would fail
+    exactly as observed. This is a hypothesis, not a diagnosis: it needs one
+    `docker ps` on the box to confirm or kill. Two consequences either way. n8n holds
+    workflows and credentials in its own database, and Story 1.21 decommissions that
+    box, so its fate is a decision owed before then. And an n8n instance is
+    automation running in an estate whose AD-17a gate reads `not-satisfied`, which is
+    either a governance gap or evidence that n8n is personal rather than Ecosystem.
+
+- source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  summary: >-
+    The `cuatro.dev` zone carries several leftovers from previous providers that
+    nothing in the plan accounts for.
+  evidence: |-
+    Four apex NS records point at `ns-cloud-c{1..4}.googledomains.com` while the real
+    delegation is `beau`/`demi.ns.cloudflare.com`, so they are vestigial. A proxied
+    `_domainconnect` CNAME points at `_domainconnect.domains.squarespace.com`. A TXT
+    record carries a ProtonMail verification token while the MX records are Google
+    Workspace, so two mail providers are half-configured in one zone. That last one
+    is not cosmetic: `luigi@cuatro.dev` is now the UptimeRobot account identity, so
+    account recovery and any email fallback depend on that mailbox actually
+    receiving. Confirm it receives before relying on it. Certificate Transparency
+    also shows retired `pokemon.cuatro.dev` and `api.pokemon.cuatro.dev` names with
+    no current DNS record, probably `poketracker-go`.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
   summary: >-
     RESOLVED 2026-08-16 by AD-26. The spec's deferred item, that Story 4.2 must
