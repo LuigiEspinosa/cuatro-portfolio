@@ -63,7 +63,7 @@ development_status:
   # and starts the token migration, so three lines in the AGENTS.md block go stale here.
 
   epic-2: backlog
-  2-1-the-three-pre-existing-repository-defects: backlog
+  2-1-the-pre-existing-repository-defects: backlog
   2-2-measure-the-narrative-bundle-against-the-asset-budget: backlog
   2-3-the-registry-schema-and-its-blocking-ci-gate: backlog
   2-4-confirm-the-assumed-statuses-hostnames-and-tech-values: backlog
@@ -80,7 +80,7 @@ development_status:
   2-15-nav-reshape-to-two-destinations: backlog
   2-16-cv-built-around-the-existing-worktimeline: backlog
   2-17-secondary-surface-states: backlog
-  2-18-migration-step-3-retire-the-alpha-hairlines: backlog
+  2-18-migration-step-3-retire-the-violet-hairlines: backlog
   2-19-migration-step-4-sweep-the-colour-literals: backlog
   2-20-migration-step-5-swap-the-type: backlog
   2-21-migration-step-6-rename-the-call-sites: backlog

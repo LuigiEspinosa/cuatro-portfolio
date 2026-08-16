@@ -411,24 +411,41 @@ the site working)
 
 - **UX-DR8** — *Step 1:* add `tokens.css` + `fonts.css` to `app/scss/`, `@use` from `_index.scss`.
   Nothing consumes them; the site is byte-identical. Ship it.
-- **UX-DR9** — *Step 2:* alias the ten existing `:root` properties in `app/app.scss` as `var()`
-  references to the new roles, per the twelve-row mapping table. **The alias trap:** `--font-bold`
-  and `--monument-bold` encode *weight* in a *family* name, so aliasing to a family alone
-  silently drops bold at `ErrorPage.scss:14` and `HomeLayout.scss:284` — set `font-weight`
-  alongside `font-family` at those two call sites by hand in step 2 (three lines).
-- **UX-DR10** — *Step 3:* replace `rgba(255,255,255,0.15)` and `rgba(255,255,255,0.3)` in
-  `ProjectCard.scss` and `WorkItem.scss` with `var(--token-border)` and
-  `var(--token-border-interactive)`. Fix the `boder:` typo at `WorkItem.scss:84` in the same pass
-  — that border has never rendered.
-- **UX-DR11** — *Step 4:* sweep the eleven colour literals — `#444` and `#fff` in `celeste.scss`,
-  `#fff` in `navbar.scss`, the greys in `_print.scss`, and the bare keyword `color: white` at
-  `HomeLayout.scss:122`. Grep for **named colours**, not only `#` and `rgba(`. `_print.scss`
-  keeps real `#fff`/`#000` and is outside the contract by nature.
+> ⚠️ **Re-baselined 2026-08-15** against the merged `dev` tree (the cybercore rebrand, PRs
+> #46–#70). UX-DR9 through UX-DR13 were authored against `main` and every count and line
+> reference in them was stale. See
+> [`rebaseline-2026-08-15.md`](ux-designs/ux-cuatro-portfolio-2026-08-15/rebaseline-2026-08-15.md).
+
+- **UX-DR9** — *Step 2:* alias the sixteen existing `:root` properties in `app/app.scss` as
+  `var()` references to the new roles, per the mapping table. **The alias trap is now half
+  gone:** `--font-bold` and `--monument-bold` encode *weight* in a *family* name, but the
+  rebrand retired every `--font-bold` call site. Only `--monument-bold` remains live, at
+  `glitch-text.scss:5`, `error-page.scss:24`, `ProjectsHero.scss:19` and `WorkHero.scss:19` —
+  set `font-weight` alongside `font-family` at those **four** call sites by hand in step 2.
+  **Blocked by O-10** (palette reconciliation): `--accent` and `--accent-dim` cannot be aliased
+  until it is decided whether the contract palette or the shipped cybercore palette wins.
+- **UX-DR10** — *Step 3:* the old white alpha hairlines are **gone** — the rebrand replaced them
+  with a violet set. Replace `rgba(91, 33, 182, 0.06)` (`WorkItem.scss:35`,
+  `ProjectCard.scss:36`), `rgba(91, 33, 182, 0.3)` (`WorkItem.scss:145`, `ProjectCard.scss:67`)
+  and `rgba(10, 0, 20, 0.6)` (`ProjectCard.scss:27`) with `var(--token-border)` and
+  `var(--token-border-interactive)` as the treatment warrants. *(The `boder:` typo this step
+  used to also fix no longer exists — that file was rewritten by PR #61.)*
+- **UX-DR11** — *Step 4:* sweep the remaining colour literals — **28 lines across 9 files**, up
+  from eleven. `#444`/`#fff` in `celeste.scss:2`/`:16`, `#fff` in `navbar.scss:10`, `#0a000f` in
+  `HomeLayout.scss:2` and `error-page.scss:7`, the `rgba(140, 90, 210, 0.06)` grid lines in
+  both, `rgba(139, 92, 246, 0.15)` at `error-page.scss:28`, the `rgba(0, 0, 0, …)` scanlines at
+  `ScanlineOverlay.scss:6`/`:16`/`:17`, and the greys in `_print.scss`. The bare keyword
+  `color: white` at the old `HomeLayout.scss:122` **no longer exists** — that file was rebuilt.
+  **`glitch-text.scss:33`–`:68` is deliberate, not a stray literal** — `rgba(255, 0, 80, …)` /
+  `rgba(0, 255, 255, …)` encode chromatic aberration; tokenize only if O-10 gives them roles.
+  `_print.scss` keeps real `#fff`/`#000` and is outside the contract by nature.
 - **UX-DR12** — *Step 5:* swap the type — new `@font-face` in `fonts.css`, retire
   `app/scss/_fonts.scss`, delete the General Sans / Monument Extended / Confillia binaries from
   `public/fonts/`, apply `size-adjust` overrides. `--confillia-bold` has zero call sites and is
-  deleted; `--confillia-normal` has two (`HomeLayout.scss:8`, `:246`) and is retargeted to
+  deleted; `--confillia-normal` has two (`HomeLayout.scss:117`, `:148`) and is retargeted to
   `--f-display` at `wdth 75` — **O-6: confirm that reads acceptably before this step**.
+  `--accent-glow` (`app.scss:11`) has zero call sites and is deleted — **O-11: confirm it is
+  genuinely unused, not reserved.**
 - **UX-DR13** — *Step 6:* move component stylesheets from `var(--white-color)` to
   `var(--token-text)` and equivalents, per component, never in one commit.
 - **UX-DR14** — *Step 7:* delete the step-2 aliases. The contract is then the only source.
@@ -739,6 +756,13 @@ C-9 routing enumeration *(prerequisite of Epic 4, done here because it is cheap 
 rebuild)* · C-8 standing AD-8 violation, tracked explicitly · O-3 daisyUI `var()` gate ·
 C-7 Playwright installation *(here rather than in Epic 2, because this epic's migration stories
 assert rendered output and AD-19 forbids claiming it)*
+**Blocking open item added at re-baseline:** **O-10 — the palette reconciliation.** The token
+contract was authored without knowledge of the cybercore rebrand now merged into `dev`. Two
+design systems must become one before Story 1.18 can alias `--accent`/`--accent-dim`. **This is
+a design decision and does not belong inside a dev story** — settle it in a UX pass before the
+loop reaches 1.18. See
+[`rebaseline-2026-08-15.md`](ux-designs/ux-cuatro-portfolio-2026-08-15/rebaseline-2026-08-15.md).
+Also **O-11** — `--accent-glow` is declared with zero call sites; confirm before deleting.
 **Governing ADs:** AD-1, AD-9, AD-10, AD-14, AD-15, AD-16, AD-17, AD-18, AD-19, AD-20
 **Standalone:** yes. Delivers SM-5 (external uptime), SM-6 (≥2 applications on shared tokens),
 SM-7 (Estate 11) and a written Capacity Gate threshold, none of which depend on a later epic.
@@ -1231,7 +1255,7 @@ rather than an opinion.
 **Given** Story 1.18's alias trap turns on a computed value, not on a screenshot
 **When** the harness is built
 **Then** it can read the computed value of a named CSS property on a named selector — the check
-`ErrorPage.scss:14` and `HomeLayout.scss:284` need to prove `font-weight` survived the alias
+the four `--monument-bold` call sites need to prove `font-weight` survived the alias
 **And** it can read the computed value of a custom property on `:root`, which is how Story 1.17
 proves the contract is present and consumed by nothing.
 
@@ -1490,7 +1514,7 @@ publisher, not a Satellite.
 **Given** the Anchor is SCSS and custom properties pass through Sass untouched
 **When** `contracts/tokens.css` and `contracts/fonts.css` are wired into `app/scss/_index.scss`
 **Then** both are reachable from the compiled stylesheet
-**And** no existing selector, property or value in any of the twelve component stylesheets
+**And** no existing selector, property or value in any of the fifteen component stylesheets
 changes.
 
 **Given** NFR-2 and AD-20 require every step to leave a working system
@@ -1523,22 +1547,27 @@ it touches one file and changes the whole site's appearance.
 
 **Acceptance Criteria:**
 
-**Given** `app/app.scss` defines ten custom properties consumed by twelve component stylesheets
+**Given** `app/app.scss` defines sixteen custom properties consumed by fifteen component
+stylesheets
 **When** each is redefined as a `var()` reference to a token role
 **Then** the mapping follows `DESIGN.md` § The mapping exactly: `--white-color` → `--token-text`,
 `--black-color` → `--token-bg`, `--light-gray-color` → `--token-text-secondary`, `--gray-color`
-→ `--token-border-interactive`, `--page-padding` → `--page-pad`, and the five font aliases onto
-`--f-*` plus `--w-*`
+→ `--token-border-interactive`, `--page-padding` → `--page-pad`, `--font-mono` → `--f-mono`, and
+the five font aliases onto `--f-*` plus `--w-*`
 **And** `--hero-height` stays local, because a viewport height is a layout constant and the
 contract carries none
-**And** every one of the twelve component stylesheets keeps working with no edit.
+**And** `--accent` and `--accent-dim` are **not** aliased in this story — they are blocked on
+O-10, the palette reconciliation, which is a design decision and not this story's to make
+**And** `--accent-glow` is left alone pending O-11, despite having zero call sites
+**And** every one of the fifteen component stylesheets keeps working with no edit.
 
-**Given** the alias trap — `--font-bold` and `--monument-bold` encode *weight* in a *family* name,
-so aliasing to a family alone silently drops bold
+**Given** the alias trap — `--monument-bold` encodes *weight* in a *family* name, so aliasing to
+a family alone silently drops bold *(re-baselined: `--font-bold` also did, but the rebrand
+retired every one of its call sites, so it is no longer live)*
 **When** the aliases are written
-**Then** `ErrorPage.scss:14` and `HomeLayout.scss:284` have `font-weight` set alongside
-`font-family` by hand in this same commit
-**And** both call sites are asserted bold after the change by reading computed `font-weight`
+**Then** `glitch-text.scss:5`, `error-page.scss:24`, `ProjectsHero.scss:19` and `WorkHero.scss:19`
+have `font-weight` set alongside `font-family` by hand in this same commit
+**And** all four call sites are asserted bold after the change by reading computed `font-weight`
 through Story 1.10's harness — the alias trap is invisible to a screenshot and to a reading of the
 CSS, which is why it needs a computed-value check.
 
@@ -1687,26 +1716,22 @@ preference. Stories 2.1–2.8 ship no new crawler-facing surface and may open be
 carries the dependency explicitly, and every story that renders the Directory depends on 2.9
 transitively, so the gate binds mechanically rather than by this paragraph.
 
-### Story 2.1: The three pre-existing repository defects
+### Story 2.1: The pre-existing repository defects
 
-As a Visitor using assistive technology, and as the Operator,
-I want the three shipping defects the UX run found corrected,
-So that the work page has a reachable heading, the dates read correctly, and the header cannot be
-left hidden by a cleanup that never ran.
+> ⚠️ **Re-baselined 2026-08-15.** This story originally covered four defects found against
+> `main`. **Three were already fixed by the cybercore rebrand** now merged into `dev`:
+> `aria-hidden` on `/work`'s only `<h1>` (resolved by PR #65), the `boder:` typo at
+> `WorkItem.scss:84` (file rewritten by PR #61), and the `vaR(` case wart (same). Their
+> acceptance criteria are removed rather than left to fail against code that no longer exists.
+> **Two survive.**
+
+As the Operator,
+I want the two shipping defects that survived the rebrand corrected,
+So that the dates read correctly and the header cannot be left hidden by a cleanup that never ran.
 
 **Governing ADs:** AD-19, AD-20 · **Depends on:** none.
-The fourth defect — `boder:` at `WorkItem.scss:84` — rides along with migration step 3 in Story
-2.18, because it sits on an alpha hairline that step is replacing anyway.
 
 **Acceptance Criteria:**
-
-**Given** `WorkHero.tsx:39` puts `aria-hidden='true'` on the `<section>` containing the page's
-only `<h1>`, making the work page's heading invisible to assistive technology
-**When** the fix is applied
-**Then** `aria-hidden` sits on the decorative `TorusCanvas` only, not on the section
-**And** the `<h1>` is exposed to the accessibility tree, verified in an accessibility tree
-inspection rather than by reading the JSX
-**And** A-7 holds — one `<h1>` per document, heading levels never skip.
 
 **Given** `content/work.ts:18` reads `'Oct. 2023 - Dev. 2025'`
 **When** the typo is fixed
@@ -2412,7 +2437,7 @@ suppressed by the mechanism Story 2.1 installed
 
 ---
 
-### Story 2.18: Migration step 3 — retire the alpha hairlines
+### Story 2.18: Migration step 3 — retire the violet hairlines
 
 As the Operator,
 I want the alpha hairlines replaced with named opaque tokens,
@@ -2420,25 +2445,26 @@ So that a hairline stops changing value with whatever sits behind it, which is p
 cannot federate.
 
 **Governing ADs:** AD-14, AD-20 · **Depends on:** Stories 1.18, 2.14.
-Realizes UX-DR10. **Carries the fourth pre-existing defect.** Scoped after Story 2.14 on purpose:
-`ProjectCard.scss` is retired with `/projects`, so by the time this story runs only
-`WorkItem.scss` remains — if 2.14 has not shipped, this story covers both files.
+Realizes UX-DR10. Scoped after Story 2.14 on purpose: `ProjectCard.scss` is retired with
+`/projects`, so by the time this story runs only `WorkItem.scss` remains — if 2.14 has not
+shipped, this story covers both files.
+
+> ⚠️ **Re-baselined 2026-08-15.** The white alpha hairlines this story targeted are gone; the
+> cybercore rebrand replaced them with a violet set. The `boder:` defect it carried no longer
+> exists — that file was rewritten by PR #61.
 
 **Acceptance Criteria:**
 
-**Given** `rgba(255,255,255,0.15)` and `rgba(255,255,255,0.3)` are used as hairlines
+**Given** `rgba(91, 33, 182, 0.06)` (`WorkItem.scss:35`, `ProjectCard.scss:36`),
+`rgba(91, 33, 182, 0.3)` (`WorkItem.scss:145`, `ProjectCard.scss:67`) and
+`rgba(10, 0, 20, 0.6)` (`ProjectCard.scss:27`) are used as hairlines and card surfaces
 **When** they are replaced
 **Then** each becomes `var(--token-border)` or `var(--token-border-interactive)` as the treatment
 requires
-**And** no `rgba()` colour value remains in any component stylesheet still in the tree
+**And** no `rgba()` colour value remains in any component stylesheet still in the tree, **except
+`glitch-text.scss`**, whose `rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` pair encodes a
+deliberate chromatic-aberration effect and is out of scope unless O-10 assigns it token roles
 **And** the rules render as `1px` and opaque.
-
-**Given** `WorkItem.scss:84` reads `boder: 1px solid rgba(255, 255, 255, 0.3);` and that border
-has never rendered
-**When** the typo is fixed
-**Then** the property reads `border` and resolves to `var(--token-border-interactive)`
-**And** the tech chip's border is confirmed **visible** in a rendered page — this is a border
-appearing for the first time, so it is a deliberate visual change and not a regression.
 
 **Given** NFR-2 binds every migration step
 **When** the change ships
@@ -2457,14 +2483,22 @@ Realizes UX-DR11 and completes FR-17's coverage.
 
 **Acceptance Criteria:**
 
-**Given** colour values sit in eleven places outside `app/app.scss`
+**Given** colour literals sit on **28 lines across 9 files** outside `app/app.scss`
+*(re-baselined 2026-08-15; was "eleven places" against `main`)*
 **When** the sweep runs
-**Then** `#444` and `#fff` in `celeste.scss` and `#fff` in `navbar.scss` are replaced with token
-roles
-**And** the bare keyword `color: white` at `HomeLayout.scss:122` is replaced — the grep covers
-**named colours** as well as `#` and `rgba(`, because a hex-and-rgba sweep misses it entirely
+**Then** `#444`/`#fff` at `celeste.scss:2`/`:16` and `#fff` at `navbar.scss:10` are replaced with
+token roles
+**And** `#0a000f` at `HomeLayout.scss:2` and `error-page.scss:7`, the `rgba(140, 90, 210, 0.06)`
+grid lines at `HomeLayout.scss:4`–`:5` and `error-page.scss:9`–`:10`, `rgba(139, 92, 246, 0.15)`
+at `error-page.scss:28`, and the `rgba(0, 0, 0, …)` scanline set at `ScanlineOverlay.scss:6`,
+`:16`, `:17` are all replaced with token roles — these arrived with the cybercore rebrand and
+their disposition follows O-10
+**And** the bare keyword `color: white` the sweep used to target **no longer exists**, because
+`HomeLayout.scss` was rebuilt — but the grep still covers **named colours** as well as `#` and
+`rgba(`, because that class of miss is cheap to guard against
 **And** a repository-wide search for `#`, `rgba(`, `white`, `black` and other named colours
-returns no meaning-bearing hit outside the contract and the print stylesheet.
+returns no meaning-bearing hit outside the contract, the print stylesheet, and
+`glitch-text.scss`'s deliberate aberration pair.
 
 **Given** paper is genuinely white and toner is genuinely black
 **When** `_print.scss` is assessed
@@ -2488,7 +2522,7 @@ Realizes UX-DR12 and closes open item **O-6**.
 
 **Acceptance Criteria:**
 
-**Given** `--confillia-normal` has two live call sites at `HomeLayout.scss:8` and `:246` and is
+**Given** `--confillia-normal` has two live call sites at `HomeLayout.scss:117` and `:148` and is
 retargeted to `--f-display` at `wdth 75` (O-6)
 **When** the retarget is applied
 **Then** both call sites are rendered and confirmed to read acceptably before the story closes
@@ -2524,7 +2558,7 @@ Realizes UX-DR13. Purely mechanical.
 
 **Acceptance Criteria:**
 
-**Given** twelve component stylesheets consume the old alias names
+**Given** fifteen component stylesheets consume the old alias names
 **When** they are migrated
 **Then** each moves from `var(--white-color)` to `var(--token-text)` and equivalents, per the
 Story 1.18 mapping
@@ -2558,7 +2592,7 @@ Realizes UX-DR14 and completes the seven-step migration.
 
 **Acceptance Criteria:**
 
-**Given** the aliases introduced in Story 1.18 exist only to keep the twelve component stylesheets
+**Given** the aliases introduced in Story 1.18 exist only to keep the fifteen component stylesheets
 working during migration
 **When** they are deleted from `app/app.scss`
 **Then** `--white-color`, `--black-color`, `--light-gray-color`, `--gray-color`, `--page-padding`
