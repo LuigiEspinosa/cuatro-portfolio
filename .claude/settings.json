@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py SessionStart"
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.bmad-loop/bmad_loop_hook.py\" SessionStart"
           }
         ]
       }
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py Stop"
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.bmad-loop/bmad_loop_hook.py\" Stop"
           }
         ]
       }
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py SessionEnd"
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.bmad-loop/bmad_loop_hook.py\" SessionEnd"
           }
         ]
       }
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py PreCompact"
+            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR/.bmad-loop/bmad_loop_hook.py\" PreCompact"
           }
         ]
       }
