@@ -9,7 +9,10 @@
 #   - backlog: Story only exists in epic file
 #   - ready-for-dev: Story file created, ready for development
 #   - in-progress: Developer actively working on implementation
-#   - review: Implementation complete, ready for review
+#   - review: Build complete and self-reviewed; waiting on a human to read it
+#   - awaiting-operator: Agent work is committed, but remaining acceptance criteria
+#       need human actions outside the repo. Written by bmad-loop; clear it with
+#       `bmad-loop confirm <story-key>`
 #   - done: Story completed
 
 # Retrospective Status:
@@ -25,8 +28,15 @@
 # ===============
 # - Epic transitions to 'in-progress' automatically when its first story starts (via build's sprint sync)
 # - Stories can be worked in parallel if team capacity allows
-# - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
-# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - bmad-build creates the story spec, implements it, and runs its own adversarial
+#     review layers in a single pass. bmad-create-story and bmad-dev-story are deprecated
+# - bmad-build ends by setting the spec frontmatter to 'done' and this board to 'review'.
+#     The spec means the build finished; the board means no human has read it yet
+# - At 'review', read the spec's Suggested Review Order (or run bmad-checkpoint-preview),
+#     then move the story to 'done' yourself
+# - bmad-code-review is not a required step on every story. Run it when the spec sets
+#     followup_review_recommended, when you want a cold second opinion (fresh context,
+#     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
 last_updated: 08-16-2026
