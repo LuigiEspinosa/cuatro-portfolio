@@ -1,4 +1,4 @@
-# Validation Report — cuatro-portfolio
+# Validation Report: cuatro-portfolio
 
 - **DESIGN.md:** `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md`
 - **EXPERIENCE.md:** `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/EXPERIENCE.md`
@@ -8,7 +8,7 @@
 ## Overall verdict
 
 Three lenses returned **6 critical, 22 high, 29 medium, 25 low** across 82 findings. The
-palette survived unchallenged — both independent lenses recomputed the OKLCH→sRGB→luminance
+palette survived unchallenged, both independent lenses recomputed the OKLCH→sRGB→luminance
 chain and confirmed all fifteen stated contrast pairings and all ten hex values to within
 rounding. What failed was everything *around* the palette: the distribution layer, the
 taxonomy's structural claim, and the hit-target floor.
@@ -28,22 +28,22 @@ it did not actually implement.** The contrast matrix was right because it was co
 | Category | Verdict at review | After fixes |
 |---|---|---|
 | Flow coverage | strong | strong |
-| Token completeness | thin | resolved — frontmatter expanded 5 → 14 groups |
-| Component coverage | thin | resolved — Tracker Family + hit targets specified, naming unified |
-| State coverage | adequate | improved — secondary surfaces + 404 added |
-| Visual reference coverage | thin | resolved — per-file table, spines-win stated once |
+| Token completeness | thin | resolved: frontmatter expanded 5 → 14 groups |
+| Component coverage | thin | resolved: Tracker Family + hit targets specified, naming unified |
+| State coverage | adequate | improved: secondary surfaces + 404 added |
+| Visual reference coverage | thin | resolved: per-file table, spines-win stated once |
 | Bloat & overspecification | adequate | unchanged |
-| Inheritance discipline | adequate | improved — token refs normalised, `/projects` given a disposition |
+| Inheritance discipline | adequate | improved: token refs normalised, `/projects` given a disposition |
 | Shape fit | strong | strong |
 | **Token contract** | **do not hand-copy** | **3 criticals fixed; 1 blocking verification remains (O-7)** |
 | **Accessibility** | conditional | **2 criticals fixed; 2 verifications remain (O-8, O-9)** |
 
 ## Findings by severity
 
-### Critical (6) — all resolved
+### Critical (6): all resolved
 
 **[Token contract] `@theme inline` namespace collision**
-`--color-bg: var(--color-bg)` — same name both sides, on 2 of 7 colour keys. Survives only
+`--color-bg: var(--color-bg)`: same name both sides, on 2 of 7 colour keys. Survives only
 while `tokens.css` is imported unlayered and out-cascades Tailwind's `theme` layer. Under a
 bundler flatten or a layer wrap it is a cycle → invalid at computed-value time →
 `background-color: transparent`.
@@ -61,7 +61,7 @@ check raised as **O-7, blocking Epic 1 Step 2**.
 
 **[Token contract] `tailwind.css` never imports `fonts.css`**
 The cluster's documented single entry point would have yielded three named families and no
-`@font-face` for any — silent fall to `system-ui`. Precisely the failure the three-file split
+`@font-face` for any: silent fall to `system-ui`. Precisely the failure the three-file split
 was invented to prevent, reproduced inside the contract's own example.
 *Fixed:* adapter imports both; import order restated.
 
@@ -81,14 +81,14 @@ to meet it. Browser measurement raised as **O-8**.
 
 **[Rubric] 19 of 20 `{token}` references unresolvable**
 The full token set lived in DESIGN.md's prose but only a subset in its frontmatter, so
-EXPERIENCE.md's cross-references pointed at nothing — the exact join a downstream consumer
+EXPERIENCE.md's cross-references pointed at nothing: the exact join a downstream consumer
 extracts through.
 *Fixed:* frontmatter expanded from 5 groups to 14; every reference normalised to a frontmatter
 group name.
 
-### High (22) — resolved in these spines
+### High (22): resolved in these spines
 
-Status taxonomy refuted (`Live` vs `Complete` 1.13:1 in greyscale — the 4px dot was carrying
+Status taxonomy refuted (`Live` vs `Complete` 1.13:1 in greyscale, the 4px dot was carrying
 the distinction uncredited; taxonomy restated on three structural axes) · `role="menu"` on the
 switcher contradicting the spec's own "Tab leaves the panel normally" · `--color-focus`
 declared focus-exclusive then spent on hover (new `--token-accent-hover` at 9.00:1, giving
@@ -99,11 +99,11 @@ mockups linked as an undifferentiated pair.
 
 ### Medium (29) / Low (25)
 
-Migration counts corrected against disk — twelve custom properties not ten, twelve component
+Migration counts corrected against disk: twelve custom properties not ten, twelve component
 stylesheets not sixteen, eleven colour values not six, and `color: white` at
 `HomeLayout.scss:122` invisible to a hex-and-`rgba` sweep. Alias trap documented:
 `--font-bold` and `--monument-bold` encode *weight* in the family name, so a family-only alias
-silently drops bold at `ErrorPage.scss:14` and `HomeLayout.scss:284` — and the regression lands
+silently drops bold at `ErrorPage.scss:14` and `HomeLayout.scss:284`: and the regression lands
 at step 2, before step 6 exists to fix it. `--confillia-normal` has two live call sites and
 needed a target, not a deletion.
 
@@ -111,9 +111,9 @@ needed a target, not a deletion.
 
 - **FR-9 defect:** `digital-library` runs on **SQLite**, not Postgres. Earlier drafts in this
   run said Postgres. Real stack: SvelteKit · Fastify · SQLite · Redis · BullMQ · Docker.
-- `aria-hidden="true"` wraps the only `<h1>` on `/work` — [`WorkHero.tsx:39`](../../../../components/organisms/WorkHero/WorkHero.tsx#L39)
-- `boder:` — [`WorkItem.scss:84`](../../../../components/atoms/WorkItem/WorkItem.scss#L84)
-- `Dev. 2025` should read `Dec.` — [`work.ts:18`](../../../../content/work.ts#L18)
+- `aria-hidden="true"` wraps the only `<h1>` on `/work`: [`WorkHero.tsx:39`](../../../../components/organisms/WorkHero/WorkHero.tsx#L39)
+- `boder:`: [`WorkItem.scss:84`](../../../../components/atoms/WorkItem/WorkItem.scss#L84)
+- `Dev. 2025` should read `Dec.`: [`work.ts:18`](../../../../content/work.ts#L18)
 - `Celeste.tsx` hides the header by mutating the DOM in an effect
 
 ## What the reviewers got wrong
@@ -122,14 +122,14 @@ Recorded because a review is evidence, not an oracle.
 
 - The rubric brief assumed DESIGN.md's two invented sections sat *after* Do's and Don'ts,
   breaking the canonical order lock. The reviewer checked and **inverted the premise on the
-  facts** — they sit between Components and Do's and Don'ts, all eight canonical sections
+  facts**: they sit between Components and Do's and Don'ts, all eight canonical sections
   present in canonical relative order. No fix was needed.
 - `vaR(--monument-bold)` at `WorkHero.scss:15` and `ProjectsHero.scss:15` looks like a defect
-  but is not — CSS function names are ASCII case-insensitive, so it resolves. A consistency
+  but is not: CSS function names are ASCII case-insensitive, so it resolves. A consistency
   wart, not a bug, and not worth a commit of its own.
 
 ## Reviewer files
 
-- [`review-rubric.md`](review-rubric.md) — 1 critical · 8 high · 12 medium · 9 low
-- [`review-token-contract.md`](review-token-contract.md) — 3 critical · 6 high · 8 medium · 9 low
-- [`review-accessibility.md`](review-accessibility.md) — 2 critical · 8 high · 9 medium · 7 low
+- [`review-rubric.md`](review-rubric.md): 1 critical · 8 high · 12 medium · 9 low
+- [`review-token-contract.md`](review-token-contract.md): 3 critical · 6 high · 8 medium · 9 low
+- [`review-accessibility.md`](review-accessibility.md): 2 critical · 8 high · 9 medium · 7 low

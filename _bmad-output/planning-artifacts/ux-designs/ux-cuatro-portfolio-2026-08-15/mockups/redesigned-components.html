@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuatro Ecosystem, the redesigned Hub components</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@10..48,75..100,200..800&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   THE TOKEN SET, identical to key-screens.html and
+   secondary-screens.html, plus ONE addition: --c-scrim.
+   Everything below renders from it. Nothing hardcodes a value.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  /* colour, anchor hue 288, dark only */
+  --c-paper:        oklch(12% 0.011 288);  /* #060509  page ground              */
+  --c-surface:      oklch(16% 0.013 288);  /* #0d0c13  raised one level         */
+  --c-surface-high: oklch(20% 0.014 288);  /* #16151c  raised two levels        */
+  --c-line:         oklch(28% 0.015 288);  /* #282830  decorative hairline      */
+  --c-line-strong:  oklch(51% 0.020 288);  /* #656471  UI boundary, 3.52:1     */
+  --c-muted:        oklch(68% 0.012 288);  /* #98979f  secondary text, 7.03:1  */
+  --c-ink:          oklch(95% 0.005 288);  /* #eeeef2  primary text, 17.54:1   */
+  --c-accent:        oklch(66% 0.165 288); /* #8f7ef0  the only accent, 6.20:1 */
+  --c-accent-bright: oklch(76% 0.145 288); /* #ada1ff  hover only, 9.00:1      */
+  --c-accent-quiet:  oklch(46% 0.110 288); /* #564c91  accent at rest, decor    */
+  --c-focus:         oklch(84% 0.130 288); /* #c6bdff  focus ring, 11.70:1     */
+  /* NEW at v1.0.0. The ONE translucent value in the contract. Imagery to text
+     only. Composited over PURE WHITE (the worst backdrop that can exist) the
+     effective ground is L = 0.01718, because CSS composites alpha in
+     GAMMA-ENCODED sRGB, not linear light: 255(1-a) + c*a on the encoded bytes.
+     Worst-case ratios: ink 13.51, focus 9.02, accent-hover 6.94, muted 5.41,
+     accent 4.77. Every role clears its floor. 0.88 is the smallest two-decimal
+     alpha at which that is true; accent is the binding role at ~0.864.        */
+  --c-scrim: oklch(12% 0.011 288 / 0.88);
+
+  --tap: 44px;
+
+  /* type */
+  --f-display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;
+  --f-body:    "Geist", ui-sans-serif, system-ui, sans-serif;
+  --f-mono:    "Geist Mono", ui-monospace, monospace;
+
+  --t-3xs:  0.6875rem;  --t-2xs: 0.75rem;   --t-xs: 0.8125rem;
+  --t-sm:   0.875rem;   --t-base: 1rem;     --t-md: 1.25rem;
+  --t-lg:   1.5625rem;  --t-xl: 1.9531rem;  --t-2xl: 2.4414rem;
+  --t-display: clamp(2.25rem, 9vw, 4.5rem);
+
+  /* spacing, 4pt base */
+  --s-2xs:.25rem; --s-xs:.5rem; --s-sm:.75rem; --s-md:1rem;
+  --s-lg:1.5rem; --s-xl:2.5rem; --s-2xl:4rem; --s-3xl:6rem;
+  --page-pad: clamp(1.25rem, 5vw, 4rem);
+  --measure: 46ch;
+
+  /* shape */
+  --r-none:0; --r-hair:2px; --r-pill:999px;
+
+  /* stroke */
+  --stroke-hair:1px; --stroke-boundary:1px; --stroke-emphasis:2px;
+  --stroke-focus:2px; --focus-offset:3px;
+
+  /* type detail */
+  --tr-label:0.14em; --tr-meta:0.09em;
+
+  /* motion */
+  --dur-micro:120ms; --dur-minor:220ms; --dur-major:420ms; --dur-exit:165ms;
+  --ease-entrance:cubic-bezier(0.16,1,0.3,1);
+  --ease-exit:cubic-bezier(0.7,0,0.84,0);
+  --ease-toggle:cubic-bezier(0.65,0,0.35,1);
+
+  /* z */
+  --z-base:1; --z-raised:10; --z-dropdown:100; --z-sticky:200;
+  --z-modal:400; --z-toast:500; --z-tooltip:600;
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--dur-micro:1ms;--dur-minor:1ms;--dur-major:1ms;--dur-exit:1ms}
+}
+
+/* ══════════════════════ page chrome (not the product) ═══════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:clip}
+body{background:oklch(8% 0.008 288);color:var(--c-muted);font-family:var(--f-body);font-size:15px;line-height:1.6;padding:var(--page-pad)}
+.doc-head{max-width:72ch;margin-bottom:var(--s-2xl)}
+.doc-head h1{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:700;text-transform:uppercase;letter-spacing:-.03em;font-size:var(--t-lg);color:var(--c-ink);margin-bottom:var(--s-sm)}
+.doc-head p{font-size:var(--t-sm);margin-bottom:var(--s-xs)}
+.doc-head code{font-family:var(--f-mono);font-size:.85em;color:var(--c-accent)}
+.doc-head b{color:var(--c-ink);font-weight:500}
+.screen{margin-bottom:var(--s-3xl);border-top:1px solid var(--c-line);padding-top:var(--s-lg)}
+.screen > h2{font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.16em;text-transform:uppercase;color:var(--c-accent);margin-bottom:var(--s-xs)}
+.screen > h2 b{color:var(--c-ink);font-weight:400}
+.screen > .why{font-size:var(--t-sm);max-width:76ch;margin-bottom:var(--s-lg)}
+.screen > .why b{color:var(--c-ink);font-weight:500}
+.screen > .why code{font-family:var(--f-mono);font-size:.85em;color:var(--c-accent)}
+.row{display:flex;flex-wrap:wrap;gap:var(--s-lg);align-items:flex-start}
+.dev{border:1px solid var(--c-line);position:relative;background:var(--c-paper)}
+.dev::after{content:attr(data-w);position:absolute;top:0;right:0;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;padding:3px 6px;color:var(--c-muted);background:oklch(8% 0.008 288);border-left:1px solid var(--c-line);border-bottom:1px solid var(--c-line);z-index:var(--z-tooltip)}
+.m{width:390px;max-width:100%}
+.d{width:100%;max-width:940px}
+.ann{font-size:var(--t-2xs);font-family:var(--f-mono);letter-spacing:.04em;max-width:36ch;border-left:2px solid var(--c-accent-quiet);padding-left:var(--s-sm);line-height:1.65}
+.ann b{color:var(--c-ink);font-weight:400}
+.ann + .ann{margin-top:var(--s-sm)}
+.ann.no{border-left-color:var(--c-line-strong)}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--s-lg);width:100%;max-width:940px}
+.tag{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--c-muted);margin-bottom:var(--s-xs);display:block}
+.tag.gone{color:var(--c-line-strong);text-decoration:line-through}
+.tag.keep{color:var(--c-accent)}
+
+/* ══════════════════════ THE PRODUCT ═════════════════════════════ */
+.hub{font-family:var(--f-body);color:var(--c-ink);font-size:var(--t-xs);line-height:1.6}
+.hub .pad{padding:var(--s-lg) var(--s-md)}
+
+/* ── 1. LABEL (Plate mark, absorbing HudLabel) ─────────────────── */
+.lbl{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--c-muted);font-variant-numeric:tabular-nums}
+.lbl--section{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--c-line);padding-bottom:var(--s-xs)}
+.lbl--annotated{display:flex;flex-direction:column;gap:var(--s-2xs);border-bottom:1px solid var(--c-line);padding-bottom:var(--s-xs)}
+.lbl--side{border-inline-start:1px solid var(--c-line);padding-inline-start:var(--s-sm)}
+.lbl--side.end{border-inline-start:0;border-inline-end:1px solid var(--c-line);padding-inline-start:0;padding-inline-end:var(--s-sm);text-align:end}
+/* the subordinate line: ornament only, 2.74:1, aria-hidden ALWAYS */
+.lbl__sub{color:var(--c-accent-quiet);letter-spacing:var(--tr-meta)}
+
+/* ── 2. DISPLAY ENTRANCE (replaces GlitchText) ─────────────────── */
+.disp{font-family:var(--f-display);font-variation-settings:"wdth" 100,"opsz" 48;font-weight:800;font-size:var(--t-display);line-height:.95;letter-spacing:-.05em;text-transform:uppercase;color:var(--c-ink)}
+.disp span{display:inline-block;opacity:0;animation:rise var(--dur-minor) var(--ease-entrance) forwards;animation-delay:calc(var(--i) * 40ms)}
+@keyframes rise{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  /* present immediately. NOT a faster entrance. */
+  .disp span{opacity:1;animation:none}
+}
+
+/* ── 3. SCRIM ──────────────────────────────────────────────────── */
+.imagery{position:relative;height:220px;overflow:hidden;
+  /* stand-in for the Three.js scene. Deliberately bright and moving,
+     because the scrim's guarantee is a WORST CASE, not an average. */
+  background:conic-gradient(from 0deg,#fff,#7a5cff,#fff,#2ad4ff,#fff);
+  animation:spin 14s linear infinite}
+@keyframes spin{to{transform:rotate(360deg) scale(1.6)}}
+@media (prefers-reduced-motion:reduce){.imagery{animation:none}}
+.imagery__frame{position:absolute;inset:0;overflow:hidden}
+.scrim{position:absolute;inset:0;background:var(--c-scrim);z-index:var(--z-raised);pointer-events:none}
+/* Above the scrim, so it gets the guarantee. Anything painted at a HIGHER
+   z-level than the scrim is over the IMAGERY, not over the scrim. */
+.over{position:absolute;inset:0;z-index:calc(var(--z-raised) + 1);display:flex;flex-direction:column;justify-content:flex-end;gap:var(--s-xs);padding:var(--s-md)}
+.over .disp{font-size:var(--t-xl)}
+
+/* ── 4. CONTROL ────────────────────────────────────────────────── */
+.ctl{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap);padding-inline:var(--s-md);border:var(--stroke-boundary) solid var(--c-line-strong);border-radius:var(--r-none);background:transparent;color:var(--c-ink);font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:var(--tr-label);text-transform:uppercase;text-decoration:none;cursor:pointer;transition:border-color var(--dur-micro) var(--ease-toggle)}
+.ctl:hover{border-color:var(--c-accent-bright)}  /* border ONLY. no fill, no lift. */
+.ctl:focus-visible{outline:var(--stroke-focus) solid var(--c-focus);outline-offset:var(--focus-offset);border-radius:var(--r-hair)}
+.ctl-set{display:flex;gap:var(--s-lg);flex-wrap:wrap}
+
+/* ── 5. CHROME ─────────────────────────────────────────────────── */
+.hd{display:flex;align-items:center;justify-content:space-between;padding:var(--s-md);border-bottom:1px solid var(--c-line);background:var(--c-paper)}
+.hd .mark{font-family:var(--f-display);font-variation-settings:"wdth" 75;font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:var(--t-sm);color:var(--c-ink)}
+.hd nav{display:flex;gap:var(--s-lg);font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:var(--tr-label);text-transform:uppercase}
+.hd nav a{color:var(--c-muted);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap);min-width:var(--tap);padding-inline:var(--s-xs);transition:color var(--dur-micro) var(--ease-toggle)}
+.hd nav a > span{border-bottom:var(--stroke-emphasis) solid transparent;padding-bottom:2px;transition:border-color var(--dur-micro) var(--ease-toggle)}
+.hd nav a[aria-current]{color:var(--c-ink)}
+.hd nav a[aria-current] > span{border-bottom-color:var(--c-accent)}
+.hd nav a:hover{color:var(--c-ink)}
+.hd nav a:hover > span{border-bottom-color:var(--c-accent-bright)}
+.hd nav a:focus-visible{outline:var(--stroke-focus) solid var(--c-focus);outline-offset:var(--focus-offset);border-radius:var(--r-hair)}
+
+/* ── 6. WORK ITEM ──────────────────────────────────────────────── */
+.wi{border-bottom:1px solid var(--c-line);position:relative}
+.wi:last-child{border-bottom:0}
+/* structural, not chromatic: width AND colour change together, and the
+   element reserves its widest state so nothing reflows. */
+.wi::before{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:var(--stroke-emphasis);background:var(--c-line);transition:background-color var(--dur-minor) var(--ease-toggle)}
+.wi[data-open="true"]::before{background:var(--c-accent)}
+.wi__hd{width:100%;display:flex;justify-content:space-between;align-items:center;gap:var(--s-md);min-height:var(--tap);padding:var(--s-md) var(--s-md) var(--s-md) var(--s-lg);background:transparent;border:0;border-inline-start:1px solid transparent;color:inherit;text-align:start;cursor:pointer;font:inherit;transition:border-color var(--dur-micro) var(--ease-toggle)}
+.wi__hd:hover{border-inline-start-color:var(--c-accent-bright)}  /* border, never a ground */
+.wi__hd:focus-visible{outline:var(--stroke-focus) solid var(--c-focus);outline-offset:calc(var(--focus-offset) * -1);border-radius:var(--r-hair)}
+.wi__co{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:700;text-transform:uppercase;letter-spacing:-.015em;font-size:var(--t-base);color:var(--c-ink)}
+.wi__when{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:var(--tr-meta);text-transform:uppercase;color:var(--c-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wi__body{padding:0 var(--s-md) var(--s-md) var(--s-lg);display:flex;flex-direction:column;gap:var(--s-sm)}
+.wi__desc{font-size:var(--t-sm);color:var(--c-muted);max-width:var(--measure)}
+.wi__hl{list-style:none;display:flex;flex-direction:column;gap:var(--s-xs);font-size:var(--t-sm);color:var(--c-muted);max-width:var(--measure)}
+.wi__hl li{padding-inline-start:var(--s-md);position:relative}
+/* generated content, stays out of the accessible name */
+.wi__hl li::before{content:"//";position:absolute;inset-inline-start:0;font-family:var(--f-mono);font-size:var(--t-3xs);color:var(--c-muted)}
+.wi__tech{list-style:none;display:flex;flex-wrap:wrap;gap:var(--s-xs)}
+/* OUTLINED, never filled. metadata, so no target floor and no hover. */
+.wi__tech li{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:var(--tr-meta);text-transform:uppercase;color:var(--c-muted);border:1px solid var(--c-line-strong);border-radius:var(--r-none);padding:var(--s-2xs) var(--s-xs)}
+
+/* ── 7. ERROR SURFACE ──────────────────────────────────────────── */
+.err{min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-lg);padding:var(--s-2xl) var(--s-md);text-align:center;background:var(--c-paper)}
+.err__inner{display:flex;flex-direction:column;gap:var(--s-md);align-items:center;width:100%;max-width:44ch}
+.err__num{font-family:var(--f-display);font-variation-settings:"wdth" 100;font-weight:800;font-size:clamp(3.5rem,14vw,7rem);line-height:.95;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.err__num--a{color:var(--c-accent-quiet)}   /* branch A: aria-hidden ornament, 2.74:1 OK */
+.err__num--b{color:var(--c-muted)}          /* branch B: it is TEXT, 7.03:1 required     */
+.err__title{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:700;text-transform:uppercase;letter-spacing:-.03em;font-size:var(--t-md);color:var(--c-ink)}
+.err__sub{font-size:var(--t-sm);color:var(--c-muted)}
+
+/* ── retired-effect demonstrations (marked, never a target) ────── */
+.gone{position:relative;height:150px;display:grid;place-items:center;overflow:hidden;filter:saturate(.55)}
+.gone--scan{background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.65) 100%)}
+.gone--scan::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0 2px,rgba(0,0,0,.12) 2px 3px)}
+.gone--grid{background-color:#0a000f;background-image:linear-gradient(rgba(140,90,210,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(140,90,210,.06) 1px,transparent 1px);background-size:56px 56px}
+.gone__t{font-family:var(--f-display);font-variation-settings:"wdth" 100;font-weight:800;font-size:var(--t-xl);text-transform:uppercase;letter-spacing:-.05em;color:#b4b4cc;text-shadow:-3px 0 rgba(255,0,80,.75),3px 0 rgba(0,255,255,.75);position:relative;z-index:1}
+.strike{position:absolute;inset:0;z-index:5;display:grid;place-items:center;pointer-events:none}
+.strike span{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:var(--tr-label);text-transform:uppercase;color:var(--c-ink);background:var(--c-scrim);border:1px solid var(--c-line-strong);padding:var(--s-2xs) var(--s-xs)}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>The redesigned Hub components</h1>
+  <p>Reference render for <b>Epic 2 Stories 2.27&ndash;2.34</b>, and the Hub's reference implementation
+     for <b>Epic 8</b>. Every component below renders from the token block at the top of this file,
+     which is identical to <code>key-screens.html</code> and <code>secondary-screens.html</code>
+     plus exactly one addition: <code>--c-scrim</code>.</p>
+  <p><b>The spines win on conflict with this file.</b> Values are in
+     <code>DESIGN.md</code>; behaviour is in <code>EXPERIENCE.md</code>; the framework-agnostic
+     vocabulary is in <code>RESTYLE-SPEC.md</code>.</p>
+  <p><b>Governing decision, 2026-08-15:</b> the effects retire, the signage survives. The glitch
+     loop, the red and cyan aberration, the scanline raster, the radial vignette and the film grain
+     are gone. The mono signage, the notched panel silhouette and the readout register stay.</p>
+</div>
+
+<!-- ═════════════════ 1. LABEL ═════════════════ -->
+<section class="screen">
+  <h2>C1 &middot; <b>Label</b>, the Plate mark, absorbing HudLabel</h2>
+  <p class="why">Two atoms became one. <b>HudLabel and the Plate mark were the same component under
+    two names</b>, mono, uppercase, tracked, on a hairline, carrying section identity. Three
+    variants, and no fourth. The subordinate line sets in <code>--c-accent-quiet</code> at
+    <b>2.74:1</b>, which is ornament only, so it is <code>aria-hidden</code> in every implementation
+    without exception.</p>
+  <div class="row">
+    <div class="dev d" data-w="LABEL &middot; 3 VARIANTS">
+      <div class="hub pad" style="display:flex;flex-direction:column;gap:var(--s-xl)">
+        <div>
+          <span class="tag">Section, identity above a section head</span>
+          <div class="lbl lbl--section"><span>The Suite</span><span>06 Running</span></div>
+        </div>
+        <div>
+          <span class="tag">Annotated, carries a subordinate line</span>
+          <div class="lbl lbl--annotated">
+            <span>Not Found</span>
+            <span class="lbl__sub" aria-hidden="true">Signal Lost</span>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:var(--s-lg)">
+          <div>
+            <span class="tag">Side-ruled, leading edge</span>
+            <div class="lbl lbl--side">Work &middot; 2019&ndash;2026</div>
+          </div>
+          <div style="text-align:end">
+            <span class="tag">Side-ruled, mirrored when end-aligned</span>
+            <div class="lbl lbl--side end">Bogot&aacute; &middot; UTC&minus;5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Not interactive.</b> No hover, no focus, no tooltip, no disclosure. It is
+        signage.</p>
+      <p class="ann"><b>The label is read, so it is words.</b> The shipped
+        <code>// ERR_NOT_FOUND</code> speaks as <i>slash slash E R R underscore&hellip;</i> before a
+        reader reaches the message. Either the marker is CSS, or the label is plain words.</p>
+      <p class="ann"><b>Numerals are tabular</b>, so a readout does not jitter when a digit
+        changes.</p>
+      <p class="ann no">A subordinate line carrying information is a <b>defect</b>. Move it into the
+        label.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════ 2. DISPLAY ENTRANCE ═════════════════ -->
+<section class="screen">
+  <h2>C2 &middot; <b>Display entrance</b>, replaces GlitchText &middot; Story 2.27</h2>
+  <p class="why">A heading that <b>arrives</b>, not a heading that malfunctions. Per-character
+    reveal on <code>opacity</code> only, staggered by DOM index, capped at ~500ms.
+    <b>No text-shadow at any keyframe, no clip-path, no transform offset, no second hue, and no
+    loop.</b> The retired <code>glitch-loop</code> ran every six seconds forever; infinite loops are
+    banned everywhere else in this system and this was the one instance. Reload to replay.</p>
+  <div class="row">
+    <div class="dev d" data-w="AFTER">
+      <div class="hub pad">
+        <p class="disp" style="font-size:var(--t-2xl)"><span style="--i:0">C</span><span style="--i:1">U</span><span style="--i:2">A</span><span style="--i:3">T</span><span style="--i:4">R</span><span style="--i:5">O</span><span style="--i:6">&nbsp;</span><span style="--i:7">E</span><span style="--i:8">C</span><span style="--i:9">O</span><span style="--i:10">S</span><span style="--i:11">Y</span><span style="--i:12">S</span><span style="--i:13">T</span><span style="--i:14">E</span><span style="--i:15">M</span></p>
+      </div>
+    </div>
+  </div>
+  <div class="pair" style="margin-top:var(--s-lg)">
+    <div class="dev" data-w="RETIRED">
+      <div class="gone">
+        <span class="gone__t">Cuatro</span>
+        <span class="strike"><span>Aberration, dropped, O-12 item 1</span></span>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>The accessible name is the heading's own text.</b> No
+        <code>aria-label</code> on a wrapper <code>&lt;div&gt;</code>, no <code>aria-hidden</code>
+        on the element carrying the words. This fixes O-13.</p>
+      <p class="ann"><b>The scrambling glyph pool is retired.</b> Substituting random characters
+        emits nonsense to anything watching the DOM and makes the accessible name unstable during
+        the entrance.</p>
+      <p class="ann"><b>If the split fails, the heading still reads.</b> The shipped version waits on
+        <code>document.fonts.ready</code>, so a font that never loads means an entrance that never
+        runs, and the heading must not be stuck at <code>opacity:0</code>.</p>
+      <p class="ann no">Reduced motion: <b>present immediately</b>. Not a faster entrance, not a
+        crossfade.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════ 3. SCRIM ═════════════════ -->
+<section class="screen">
+  <h2>C3 &middot; <b>Scrim</b>, replaces ScanlineOverlay &middot; Story 2.28 &middot; closes O-12 item 2</h2>
+  <p class="why">The effect goes; the <b>legibility job it was incidentally doing</b> survives as a
+    named role. The imagery below is deliberately bright and moving, because
+    <code>--c-scrim</code>'s guarantee is a <b>worst case, not an average</b>: composited over pure
+    white it holds <code>--c-ink</code> at <b>13.51:1</b>, and every other role clears its own floor
+    too. It is the one translucent value in the system, and it is an exception precisely because its
+    ground is unknown <i>by design</i>, the exact inverse of the alpha-hairline case the rule
+    was written about. <b>The alpha lives on <code>--c-scrim</code></b>, not on the role.</p>
+  <div class="pair">
+    <div class="dev" data-w="WITH SCRIM, ink 13.51:1">
+      <div class="imagery">
+        <div class="scrim"></div>
+        <div class="over">
+          <span class="lbl" style="color:var(--c-ink)">Narrative &middot; 01</span>
+          <p class="disp">Running</p>
+        </div>
+      </div>
+    </div>
+    <div class="dev" data-w="NO SCRIM, unreadable">
+      <div class="imagery">
+        <div class="over">
+          <span class="lbl" style="color:var(--c-ink)">Narrative &middot; 01</span>
+          <p class="disp">Running</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:var(--s-lg)">
+    <div>
+      <p class="ann"><b>Every role clears its floor here.</b> Worst case, over pure white: ink
+        13.51, focus 9.02, accent-hover 6.94, muted 5.41, accent 4.77. <b>Accent is the binding
+        role</b>, and it is what sets the alpha at 0.88.</p>
+      <p class="ann"><b>The guarantee belongs to the stack, not to the token.</b> Anything painted
+        at a z-level <i>above</i> the scrim is over the <b>imagery</b>, not over the scrim. A sticky
+        header at <code>--z-sticky</code> above a scrim at <code>--z-raised</code> is the case that
+        catches people, and it is the real constraint on HomeLayout.</p>
+      <p class="ann"><b>One state.</b> The shipped <code>light</code>/<code>full</code> prop retires:
+        a scrim that varies is a scrim whose guarantee varies.</p>
+      <p class="ann no"><b>Never a surface.</b> Not a card ground, not a section ground, not a
+        vignette, not a hover state. Depth is lightness, then a hairline, then a rule.</p>
+    </div>
+    <div class="dev" data-w="RETIRED" style="width:300px">
+      <div class="gone gone--scan">
+        <span class="strike"><span>Vignette + raster + grain</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════ 4. CONTROL ═════════════════ -->
+<section class="screen">
+  <h2>C4 &middot; <b>Control</b>, the rule most likely to be lost in translation</h2>
+  <p class="why"><b>There is no filled control anywhere in this system</b>, and every component
+    library in the estate ships a filled button as its default and its most-documented example.
+    Hover moves the border and <b>nothing else</b>. Tab to these: the ring appears in one frame, not
+    over a duration.</p>
+  <div class="row">
+    <div class="dev d" data-w="CONTROL &middot; REST / HOVER / FOCUS">
+      <div class="hub pad">
+        <div class="ctl-set">
+          <a class="ctl" href="#c4">The Suite</a>
+          <a class="ctl" href="#c4">CV</a>
+          <button class="ctl" type="button">Source</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>44px in both axes</b>, as <code>min-height</code> +
+        <code>inline-flex</code> + <code>padding-inline</code>. Vertical padding on a plain inline
+        element paints outward without growing the hit area.</p>
+      <p class="ann"><b>Screenshot rest and hover and diff them.</b> The only pixels that differ are
+        the border. That is the check.</p>
+      <p class="ann no">No ground, no radius, no shadow, no transform, no
+        <code>transition:all</code>, no border-width change, width is a layout property and
+        changing it reflows the row.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════ 5. CHROME ═════════════════ -->
+<section class="screen">
+  <h2>C5 &middot; <b>Chrome</b>, Navbar, Header, Logo, Container &middot; Story 2.32</h2>
+  <p class="why">Restyled <b>after</b> Story 2.15's nav reshape, never inside it. Two destinations.
+    The shipped nav links measure roughly <b>16&times;27px</b>, which is the estate's worst instance
+    of the target floor being missed while appearing to be met.</p>
+  <div class="row">
+    <div class="dev m" data-w="390px">
+      <div class="hub">
+        <header class="hd">
+          <span class="mark">Cuatro</span>
+          <nav>
+            <a href="#c5" aria-current="page"><span>Suite</span></a>
+            <a href="#c5"><span>CV</span></a>
+          </nav>
+        </header>
+        <div class="pad"><p class="lbl lbl--section"><span>The Suite</span><span>06 Running</span></p></div>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Hover recolours the existing underline; it does not add one.</b> An
+        underline that appears on hover is a width change and it reflows the row. Both nav items
+        carry a transparent 2px rule at rest.</p>
+      <p class="ann"><b><code>Container</code> is width-capped, not width-percentaged.</b>
+        <code>min(100%,1920px)</code> with <code>--page-pad</code>. The shipped
+        <code>min(80%,1920px)</code> spends 20% of a 360px viewport on margin before any padding
+        applies.</p>
+      <p class="ann"><b><code>Logo</code> is a wordmark, and it is text.</b> The raster image
+        retires. Its accessible name is the site name.</p>
+      <p class="ann"><b><code>Header</code> height is content-driven</b>, <code>padding-block:
+        --s-lg</code>, not a fixed 140px.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════ 6. WORK ITEM ═════════════════ -->
+<section class="screen">
+  <h2>C6 &middot; <b>Work item</b>, a row, not a card &middot; Story 2.31</h2>
+  <p class="why">The open indicator is <b>structural, not chromatic</b>: the leading rule changes
+    width and colour together, so the state survives greyscale, and the element reserves its widest
+    state so nothing reflows. The shipped <code>rgba(91,33,182,.06)</code> hover ground is retired:
+    it is an alpha fill and it is a second signal.</p>
+  <div class="row">
+    <div class="dev d" data-w="OPEN + CLOSED">
+      <div class="hub">
+        <div class="wi" data-open="true">
+          <button class="wi__hd" type="button" aria-expanded="true">
+            <span class="wi__co">Pharos&nbsp;Graph</span>
+            <span class="wi__when">2024, Now</span>
+          </button>
+          <div class="wi__body">
+            <p class="wi__desc">Front-end across seven applications and the shared design contract
+              that keeps them looking like one product.</p>
+            <ul class="wi__hl">
+              <li>Rebuilt the suite's component vocabulary in five frameworks.</li>
+              <li>Held the accessibility floor by hand on every restyled application.</li>
+            </ul>
+            <ul class="wi__tech"><li>Next.js</li><li>Svelte</li><li>Angular</li><li>Phoenix</li></ul>
+          </div>
+        </div>
+        <div class="wi" data-open="false">
+          <button class="wi__hd" type="button" aria-expanded="false">
+            <span class="wi__co">Previous&nbsp;Role</span>
+            <span class="wi__when">2019, 2024</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Tech chips are outlined, never filled</b>, and are metadata, so no
+        hover, no focus, and the target floor does not apply.</p>
+      <p class="ann"><b>The <code>//</code> marker is generated content</b> and stays out of the
+        accessible name. The list is a list.</p>
+      <p class="ann"><b>Height is the one animated layout property in this system</b>, and it is a
+        named exception: a disclosure that jumps is worse than one that eases. Reduced motion drops
+        it to zero duration.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════ 7. ERROR SURFACE ═════════════════ -->
+<section class="screen">
+  <h2>C7 &middot; <b>Error surface</b>, Story 2.30 &middot; O-12 item 3, <b>both branches</b></h2>
+  <p class="why">The numeral is currently a <code>&lt;p&gt;</code> reading <code>404</code> carrying
+    <code>aria-label="Error 404"</code>, and it is <b>not</b> <code>aria-hidden</code>. Because
+    <code>aria-label</code> on a <code>&lt;p&gt;</code> sits on a generic role, what a screen reader
+    announces today is not reliably <i>Error 404</i>. <b>So the redundancy test is a real test with
+    a real chance of going either way</b>, and Story 2.30 runs it rather than assuming. Both
+    branches are rendered below so the story cannot stall on whichever way it lands.</p>
+  <div class="pair">
+    <div class="dev" data-w="BRANCH A, REDUNDANT">
+      <div class="hub err">
+        <div class="err__inner">
+          <div class="lbl lbl--annotated" style="align-self:stretch">
+            <span>Not Found</span>
+            <span class="lbl__sub" aria-hidden="true">Signal Lost</span>
+          </div>
+          <p class="err__num err__num--a" aria-hidden="true">404</p>
+          <p class="err__title">Page not found.</p>
+          <p class="err__sub">The page you&rsquo;re looking for does not exist.</p>
+          <div class="ctl-set" style="justify-content:center">
+            <a class="ctl" href="#c7">The Suite</a><a class="ctl" href="#c7">CV</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dev" data-w="BRANCH B, NOT REDUNDANT">
+      <div class="hub err">
+        <div class="err__inner">
+          <div class="lbl lbl--annotated" style="align-self:stretch">
+            <span>Not Found</span>
+            <span class="lbl__sub" aria-hidden="true">Signal Lost</span>
+          </div>
+          <p class="err__num err__num--b">404</p>
+          <p class="err__title">Page not found.</p>
+          <p class="err__sub">The page you&rsquo;re looking for does not exist.</p>
+          <div class="ctl-set" style="justify-content:center">
+            <a class="ctl" href="#c7">The Suite</a><a class="ctl" href="#c7">CV</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:var(--s-lg)">
+    <div>
+      <p class="ann"><b>Branch A, redundant.</b> The numeral is <code>aria-hidden</code> and
+        purely decorative, so <code>--c-accent-quiet</code> at <b>2.74:1</b> is correct: the
+        contrast floor does not apply to something that is not content. The
+        <code>aria-label</code> is <b>removed</b>: a hidden element does not need a name.</p>
+      <p class="ann"><b>Branch B, not redundant.</b> The numeral <b>is text</b>.
+        <code>--c-accent-quiet</code> is <b>forbidden</b>. It takes <code>--c-muted</code> at
+        <b>7.03:1</b>, not <code>--c-ink</code>, because it is supporting information and the
+        display line is the page's primary voice.</p>
+      <p class="ann"><b>Branch A is the likely outcome and the cheaper fix is to make it true.</b>
+        The message already reads <i>Page not found.</i>, so if the page title also distinguishes
+        the route, A holds.</p>
+      <p class="ann no"><b>No scrim here.</b> Nothing moves behind this text. The grid-line
+        background retires with it, it is a <code>linear-gradient</code> pair and gradients
+        in backgrounds are banned.</p>
+    </div>
+    <div class="dev" data-w="RETIRED" style="width:300px">
+      <div class="gone gone--grid">
+        <span class="strike"><span>Grid-line background</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

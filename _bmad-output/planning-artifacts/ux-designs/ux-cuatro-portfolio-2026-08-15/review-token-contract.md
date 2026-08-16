@@ -1,4 +1,4 @@
-# Token Contract — adversarial conformance review
+# Token Contract: adversarial conformance review
 
 **Lens:** token-contract conformance, adversarial.
 **Target:** `DESIGN.md` § The Token Contract, § Migrating the Anchor from SCSS to tokens;
@@ -18,29 +18,29 @@ cluster or into every vendored copy is **critical** even where the fix is one ch
 
 **The contract does not hold. Do not hand-copy it in its current form.**
 
-The palette is sound and independently verifiable — I recomputed five of the fifteen contrast
+The palette is sound and independently verifiable: I recomputed five of the fifteen contrast
 pairings from the sRGB hexes and every one matched the table to two decimal places, and the
 OKLCH lightness values are consistent with the stated hexes. The versioning semantics, the
 Style Dictionary / DTCG version claims, and the Angular consumption claim are all faithful to
 research §D2. The `boder:` typo is real and is exactly where the spine says it is.
 
-What fails is the **distribution layer** — the three files as published, and the per-framework
+What fails is the **distribution layer**: the three files as published, and the per-framework
 table that tells eight repositories how to consume them. Three defects there are silent,
 cross-repository, and land in Epic 1 Step 2:
 
 1. The `@theme inline` adapter maps two of its seven colour keys to **themselves**, which is
    not what research §D2 prescribes and is not what `inline` is for.
-2. `cs-tracker` — the named Step 2 adopter, the application FR-18 is measured on — is placed
+2. `cs-tracker` (the named Step 2 adopter, the application FR-18 is measured on) is placed
    in the plain-`tokens.css` row, when research §D2 states that Phoenix 1.8.0 ships **Tailwind
    v4 plus daisyUI** and that a plain `:root` file generates **zero** utilities there.
 3. `tailwind.css` imports `tokens.css` and never `fonts.css`, so the Tailwind cluster's
    documented one-line adoption produces a system that names three typefaces and loads none of
-   them — the exact "404s silently and falls back to a system stack that looks almost right"
+   them: the exact "404s silently and falls back to a system stack that looks almost right"
    failure the three-file split was invented to prevent, reproduced inside the contract's own
    example file.
 
-The SCSS migration path is closer to working, but its step 2 — the single commit DESIGN.md
-identifies as "the one commit worth a careful visual check" — has three concrete breaks against
+The SCSS migration path is closer to working, but its step 2: the single commit DESIGN.md
+identifies as "the one commit worth a careful visual check": has three concrete breaks against
 the files on disk, and the file counts it cites are wrong in three places.
 
 **Findings: 3 critical · 6 high · 8 medium · 9 low.**
@@ -57,7 +57,7 @@ the files on disk, and the file counts it cites are wrong in three places.
 | 4 | `oklch()` with no fallback | **Holds** on Baseline status; degradation is not graceful and the doc misdescribes it (L-5). |
 | 5 | Dark-only, no `[data-theme]` | Mandate is moot today; keeping `inline` is reasonable **but self-defeating as named** (C-1). |
 | 6 | The SCSS migration path | **Fails** at steps 2, 4 and 6 (H-4, H-5, H-6, M-1, M-2, M-3). Step 3's typo claim verified. |
-| 7 | Versioning | **Holds** — matches §D2 verbatim. Two latent renames present (M-5, M-6). |
+| 7 | Versioning | **Holds**: matches §D2 verbatim. Two latent renames present (M-5, M-6). |
 | 8 | SD 5.5.1 / DTCG 2025.10 | **Holds.** Minor evidence-grade drift only (L-6). |
 | 9 | Producible by Style Dictionary | **Fails.** Reduced-motion block and both `clamp()` tokens are not emittable from a DTCG source by stock SD (H-3). |
 
@@ -65,16 +65,16 @@ the files on disk, and the file counts it cites are wrong in three places.
 
 ## Critical
 
-**[critical] The `@theme inline` adapter maps two colour keys to themselves — `--color-bg: var(--color-bg)` and `--color-accent: var(--color-accent)` — which is a direct self-reference, not the bridge research §D2 specifies** (`DESIGN.md` § `tailwind.css` — generated adapter, lines 608–622; specifically line 609 `--color-bg:         var(--color-bg);` and line 615 `--color-accent:     var(--color-accent);`).
+**[critical] The `@theme inline` adapter maps two colour keys to themselves: `--color-bg: var(--color-bg)` and `--color-accent: var(--color-accent)`: which is a direct self-reference, not the bridge research §D2 specifies** (`DESIGN.md` § `tailwind.css`: generated adapter, lines 608–622; specifically line 609 `--color-bg:         var(--color-bg);` and line 615 `--color-accent:     var(--color-accent);`).
 
-Research §D2 line 650 gives the shape: `@theme inline { --color-brand: var(--token-brand) }` —
+Research §D2 line 650 gives the shape: `@theme inline { --color-brand: var(--token-brand) }`,
 **two distinct namespaces**, a theme key on the left and a contract token on the right. The
 adapter as written collapses the namespaces on two of its seven colour lines while renaming the
 other five (`--color-surface: var(--color-bg-raised)`, `--color-ink: var(--color-text)`,
 `--color-muted: var(--color-text-secondary)`, `--color-line: var(--color-border)`,
 `--color-line-strong: var(--color-border-interactive)`). That inconsistency is the signature of
 a hand-authored slip, and it falsifies the file's own header claim that it is "**Mechanical
-output from Style Dictionary**" (line 602) — no mechanical name transform produces five renames
+output from Style Dictionary**" (line 602): no mechanical name transform produces five renames
 and two identities from the same input set.
 
 The failure mechanics, stated precisely:
@@ -85,9 +85,9 @@ The failure mechanics, stated precisely:
   self-referencing declaration is discarded before computed-value time. **The contract survives
   today by a cascade-layer accident that DESIGN.md never states and cannot rely on.**
 - The moment those two declarations land in the same origin and layer with the adapter later in
-  source order — a Satellite that writes `@import "./tokens.css" layer(theme);`, a bundler that
+  source order: a Satellite that writes `@import "./tokens.css" layer(theme);`, a bundler that
   flattens imports into a single unlayered sheet, or any consumer that reorders the two imports
-  — the declaration becomes a **cycle**, is invalid at computed-value time, and per CSS
+  the declaration becomes a **cycle**, is invalid at computed-value time, and per CSS
   substitution rules `background-color` resets to its **initial** value (`transparent`), not to
   the previous cascade value. On a near-black dark-only system, `--color-bg` resolving to
   transparent is total.
@@ -102,7 +102,7 @@ The failure mechanics, stated precisely:
   example it justifies still has two names in it.
 
 This also breaks attack 5's future-proofing argument. DESIGN.md keeps `inline` for the day a
-`[data-theme]` block arrives — but if one arrives and redefines `--color-bg`, the self-reference
+`[data-theme]` block arrives, but if one arrives and redefines `--color-bg`, the self-reference
 is precisely what makes the resolution ambiguous. The mandate is kept while the naming that
 makes it work is discarded.
 
@@ -115,12 +115,12 @@ header, and pin the import as unlayered.
 
 ---
 
-**[critical] `cs-tracker` — the named Step 2 adopter that FR-18 is measured on — is assigned the plain-`tokens.css` consumption row, but research §D2 states Phoenix 1.8.0 ships Tailwind v4, where a `:root` file generates zero utilities** (`DESIGN.md` § Per-framework consumption, line 660 "**Phoenix LiveView** | **Vendor** the folder into `assets/css/` and `@import` it"; § `tailwind.css` line 601 "For `cuatro-finance`, `cuatro-tracker` and `cs-tournament`"; line 666 "**`cs-tracker` being the Step 2 adopter**").
+**[critical] `cs-tracker` (the named Step 2 adopter that FR-18 is measured on) is assigned the plain-`tokens.css` consumption row, but research §D2 states Phoenix 1.8.0 ships Tailwind v4, where a `:root` file generates zero utilities** (`DESIGN.md` § Per-framework consumption, line 660 "**Phoenix LiveView** | **Vendor** the folder into `assets/css/` and `@import` it"; § `tailwind.css` line 601 "For `cuatro-finance`, `cuatro-tracker` and `cs-tournament`"; line 666 "**`cs-tracker` being the Step 2 adopter**").
 
 Research §D2 line 600: "**Phoenix 1.8.0 (2025-08-05) ships Tailwind v4 plus daisyUI**" and line
 603: "Phoenix consumes design as **Tailwind classes and CSS custom properties**." Research §D2
 lines 635–640 then state the problem in terms that apply directly: "A plain external CSS file
-defining custom properties under `:root` **generates zero utility classes** — `bg-brand` will
+defining custom properties under `:root` **generates zero utility classes**: `bg-brand` will
 not exist… There is **no mechanism for `@theme` to auto-adopt `:root` variables**."
 
 So the contract's own Tailwind-cluster list omits the one Tailwind application in the estate
@@ -133,8 +133,8 @@ sitting one document away.
 The downstream consequence is not cosmetic. PRD §9.3 waypoint 2 is "Hand-copy tokens into the
 Anchor and one other live app" bound to FR-16/17/18, and SM-6 targets "≥ 2" applications
 rendering from shared tokens. If the second application is `cs-tracker` and it receives only
-`tokens.css`, FR-18's acceptance condition — "A Visitor moving between them encounters the same
-palette, type scale and spacing rhythm" — is not reachable without work the contract does not
+`tokens.css`, FR-18's acceptance condition: "A Visitor moving between them encounters the same
+palette, type scale and spacing rhythm": is not reachable without work the contract does not
 budget for.
 
 *Fix:* move Phoenix into the Tailwind row of both tables. Publish `tailwind.css` as the Phoenix
@@ -145,19 +145,19 @@ rather than trailing it.
 
 ---
 
-**[critical] `tailwind.css` imports `tokens.css` but never `fonts.css`, so the Tailwind cluster's documented adoption path — "Import `tailwind.css`", "Trivial, generated" — produces a system that names three typefaces and loads none of them** (`DESIGN.md` § `tailwind.css` lines 605–606 `@import "tailwindcss"; @import "./tokens.css";`; § Per-framework consumption line 656).
+**[critical] `tailwind.css` imports `tokens.css` but never `fonts.css`, so the Tailwind cluster's documented adoption path ("Import `tailwind.css`", "Trivial, generated") produces a system that names three typefaces and loads none of them** (`DESIGN.md` § `tailwind.css` lines 605–606 `@import "tailwindcss"; @import "./tokens.css";`; § Per-framework consumption line 656).
 
 This is the three-file split's new failure mode, instantiated in the contract's own example
 file. `tokens.css` line 495 declares
 `--f-display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;`. With no `@font-face`
-reachable, every Tailwind-cluster Satellite silently resolves to `system-ui` — and the design's
+reachable, every Tailwind-cluster Satellite silently resolves to `system-ui`: and the design's
 entire continuity argument rests on Bricolage's width axis ("**Bricolage's width axis is the
 identity**", line 252; "That single axis is carrying most of the visual continuity"). The
 result is not a broken page; it is a page that looks *almost* right, in three or four
 repositories, with nothing to catch it.
 
-DESIGN.md diagnoses exactly this class of failure at lines 455–457 — "every font 404s silently
-and the app falls back to a system stack that looks almost right" — and then reproduces it in
+DESIGN.md diagnoses exactly this class of failure at lines 455–457: "every font 404s silently
+and the app falls back to a system stack that looks almost right", and then reproduces it in
 the file it publishes to the cluster that it says needs zero effort to adopt.
 
 The two-artefact version in research §D2 could not enter this state: whatever mechanism carried
@@ -181,12 +181,12 @@ Research §D2 lines 663–673 establish the Phoenix pipeline precisely: no `pack
 Those binaries compile CSS; they do not resolve, hash or emit referenced font binaries the way
 webpack, Vite or Next's CSS loader do. A vendored `fonts.css` sitting in `assets/css/` with
 `url()` paths relative to itself will emit those paths verbatim into the compiled sheet, and the
-browser will request them beneath the served static root — where nothing has placed the woff2
+browser will request them beneath the served static root, where nothing has placed the woff2
 files, because Phoenix serves from `priv/static/` and only `Plug.Static`'s configured `:only`
 list is exposed.
 
-So Phoenix — the one framework the three-file split was invented for, and the only one whose
-vendoring is called out as "**Trivial, and it is Phoenix's own sanctioned pattern**" — is the
+So Phoenix: the one framework the three-file split was invented for, and the only one whose
+vendoring is called out as "**Trivial, and it is Phoenix's own sanctioned pattern**": is the
 framework where the split does not solve the problem. The cost is understated on three counts
 at once: folder copy, plus a `priv/static` font placement and `Plug.Static` `:only` entry, plus
 the daisyUI role mapping from S-9, plus the unresolved O-3 question.
@@ -199,30 +199,30 @@ column from "Trivial" to a named checklist.
 
 ---
 
-**[high] The stated rationale for splitting two artefacts into three is factually wrong — relative `url()` in `@font-face` resolves against the stylesheet's own URL and is therefore depth-independent** (`DESIGN.md` § Why three files, not two, lines 442–459).
+**[high] The stated rationale for splitting two artefacts into three is factually wrong: relative `url()` in `@font-face` resolves against the stylesheet's own URL and is therefore depth-independent** (`DESIGN.md` § Why three files, not two, lines 442–459).
 
 The argument at lines 454–459: "Its `url()` paths resolve relative to the stylesheet, so the
-moment `tokens.css` is vendored to a different depth in a Satellite — `assets/css/` in Phoenix,
-`src/styles/` in Svelte, `src/` in Angular — every font 404s silently."
+moment `tokens.css` is vendored to a different depth in a Satellite: `assets/css/` in Phoenix,
+`src/styles/` in Svelte, `src/` in Angular: every font 404s silently."
 
 The premise defeats the conclusion. Because `url()` resolves relative to *the stylesheet*,
 depth is exactly what does **not** matter: `url("./fonts/x.woff2")` inside `tokens.css` is
 valid at `assets/css/`, at `src/styles/` and at `src/` alike, provided the folder travels
-together — which is what DESIGN.md itself prescribes two sentences later ("a Satellite copies
+together, which is what DESIGN.md itself prescribes two sentences later ("a Satellite copies
 the **folder**"). The identical sentence justifies keeping `@font-face` in `tokens.css`.
 
 There are two *real* arguments for the split that DESIGN.md does not make: Style Dictionary
 cannot emit `@font-face` from a DTCG source at all, so `fonts.css` is necessarily hand-authored
 and should not sit inside a generated file; and a Satellite may legitimately want values
 without faces. Both are good. Neither is what is written, and the written one will not survive
-a reviewer who knows CSS — which matters when the audience is Marcus.
+a reviewer who knows CSS, which matters when the audience is Marcus.
 
 *Fix:* replace the rationale with the two sound arguments. Keep the split. Then close the new
 failure mode it creates (C-3) and the Phoenix case it does not close (H-1).
 
 ---
 
-**[high] Neither the `@media (prefers-reduced-motion: reduce)` block nor the two `clamp()` tokens can be produced by stock Style Dictionary from a DTCG source, so `tokens.css` must be hand-authored or hand-patched — which undermines the generated-artefact story and makes silent loss on regeneration the likely outcome** (`DESIGN.md` § `tokens.css` lines 583–590; lines 509 `--t-display: clamp(2.25rem, 9vw, 4.5rem);` and 545 `--page-pad: clamp(1.25rem, 5vw, 4rem);`; § Build lines 635–638).
+**[high] Neither the `@media (prefers-reduced-motion: reduce)` block nor the two `clamp()` tokens can be produced by stock Style Dictionary from a DTCG source, so `tokens.css` must be hand-authored or hand-patched, which undermines the generated-artefact story and makes silent loss on regeneration the likely outcome** (`DESIGN.md` § `tokens.css` lines 583–590; lines 509 `--t-display: clamp(2.25rem, 9vw, 4.5rem);` and 545 `--page-pad: clamp(1.25rem, 5vw, 4rem);`; § Build lines 635–638).
 
 Three separate problems:
 
@@ -234,7 +234,7 @@ Three separate problems:
   highest-value thing in this file after the palette**" and "the one piece of *behaviour* the
   token layer can genuinely federate" (lines 592–597). If it is hand-patched onto generated
   output, the first regeneration drops it, in every repository at once, with no visible symptom
-  other than motion returning for reduced-motion users — a population that by definition is not
+  other than motion returning for reduced-motion users: a population that by definition is not
   filing the bug.
 - **`clamp()` in a DTCG `dimension`.** The DTCG 2025.10 `dimension` type is a structured
   `{value, unit}` pair. A `clamp()` expression is not expressible as one. It can be smuggled
@@ -267,9 +267,9 @@ families**). After aliasing, `font-family: var(--monument-bold)` yields Bricolag
 
 Two call sites on disk have no adjacent `font-weight` and therefore lose bold outright:
 
-- `components/organisms/ErrorPage/error-page.scss:14` — `font-family: var(--monument-bold);` at
+- `components/organisms/ErrorPage/error-page.scss:14`: `font-family: var(--monument-bold);` at
   `font-size: 25vw`, the largest type on the error page.
-- `components/organisms/HomeLayout/HomeLayout.scss:284` — `font-family: var(--monument-bold);`
+- `components/organisms/HomeLayout/HomeLayout.scss:284`: `font-family: var(--monument-bold);`
   at `font-size: 3rem`, uppercase.
 
 (`WorkHero.scss:15–17` and `HomeLayout.scss:67–68` do set `font-weight: 700` alongside and
@@ -277,10 +277,10 @@ survive.)
 
 This directly falsifies step 2's claim: "**Every one of the sixteen component stylesheets keeps
 working untouched**." Two of them do not. And it lands in the commit DESIGN.md nominates as
-"the one commit worth a careful visual check" — where a 25vw heading dropping from 700 to 400
+"the one commit worth a careful visual check", where a 25vw heading dropping from 700 to 400
 is visible, but a reviewer told the step is a no-op is primed not to look.
 
-*Fix:* make step 2 a two-part alias — the family property plus a companion weight — or add
+*Fix:* make step 2 a two-part alias (the family property plus a companion weight) or add
 `font-weight: 700` to the two bare call sites as part of step 2 rather than step 6. Add a row to
 the mapping table stating explicitly that weight moves from the family name to `font-weight`,
 since that is the structural change the migration actually performs.
@@ -292,17 +292,17 @@ since that is the structural change the migration actually performs.
 On disk: `components/organisms/HomeLayout/HomeLayout.scss:8`
 (`font-family: var(--confillia-normal);` on the homepage's `p, a` at `font-size: 1.5rem`) and
 `HomeLayout.scss:246`. Step 2 says "Redefine **the ten existing properties** as `var()`
-references to the new roles" — but there is no role to point `--confillia-normal` at. If the
+references to the new roles", but there is no role to point `--confillia-normal` at. If the
 alias is omitted, `var(--confillia-normal)` is invalid at computed-value time,
 `font-family` becomes unset and inherits, and the homepage's primary paragraph type silently
 changes face inside a commit described as touching one file with a predictable visual result.
 
 `EXPERIENCE.md` O-6 defers this to migration step 5 ("Confirm nothing on `/celeste` depends on
-it"), which is both the wrong step — the break occurs at step 2, three steps earlier — and the
+it"), which is both the wrong step (the break occurs at step 2, three steps earlier) and the
 wrong file: the dependency is in `HomeLayout.scss`, not `celeste.scss`. `celeste.scss:13` uses
 `font-family: system-ui` and does not touch Confillia at all.
 
-*Fix:* add an explicit row — `--confillia-*` → `--f-display` or `--f-body`, chosen deliberately —
+*Fix:* add an explicit row (`--confillia-*` → `--f-display` or `--f-body`, chosen deliberately)
 so step 2 has a target. Retarget O-6 from `/celeste` to `HomeLayout.scss:8` and `:246`, and
 move it from step 5 to step 2.
 
@@ -310,18 +310,18 @@ move it from step 5 to step 2.
 
 **[high] The mapping assigns `--gray-color` to `--color-border-interactive`, a role the contract itself bars from carrying text, at a call site that is body text** (`DESIGN.md` § The mapping line 705; § Semantic roles line 191; § Conformance line 230).
 
-`--color-border-interactive` resolves to `--c-line-strong` at **3.52:1** on paper — a value the
+`--color-border-interactive` resolves to `--c-line-strong` at **3.52:1** on paper, a value the
 contract documents as clearing "WCAG 1.4.11's 3:1 floor", i.e. the **non-text** threshold. The
 § Conformance note is explicit that decorative-grade values are "barred from carrying text" and
 that "Using either as a meaning-bearing boundary is a defect."
 
 On disk, `components/organisms/HomeLayout/HomeLayout.scss:9` uses
-`color: var(--gray-color);` on the homepage's `p, a` selector — body copy at `font-size: 1.5rem`.
+`color: var(--gray-color);` on the homepage's `p, a` selector: body copy at `font-size: 1.5rem`.
 After step 2 that copy renders at 3.52:1, below the 4.5:1 AA floor that `EXPERIENCE.md`
 § Accessibility Floor commits to ("**Target: WCAG 2.1 AA**, exceeded on text contrast").
 
 The pre-migration value (`#545454` on `#000`) is already about 2.77:1, so this is not a
-regression the migration introduces — it is a pre-existing failure the migration table *locks
+regression the migration introduces: it is a pre-existing failure the migration table *locks
 in* by assigning it a token whose documentation says it must never carry text. That is worse
 than leaving it, because it converts an unnoticed bug into a documented-conformant state.
 
@@ -334,14 +334,14 @@ roles on disk, so it cannot be aliased 1:1 in step 2.
 
 ## Medium
 
-**[medium] Step 6 is not "purely mechanical" — `HomeLayout.scss` contains an inverted light-on-dark panel for which the contract defines no token** (`DESIGN.md` § Sequence step 6, lines 733–734).
+**[medium] Step 6 is not "purely mechanical": `HomeLayout.scss` contains an inverted light-on-dark panel for which the contract defines no token** (`DESIGN.md` § Sequence step 6, lines 733–734).
 
 On disk, `--light-gray-color` (`#b3b0aa`) is used as a **background fill** at
 `HomeLayout.scss:54`, `:134` and `:149`, and `--black-color` is used as **foreground and border**
 at `:31`, `:35`, `:39`, `:167`, `:168`, `:173`, `:174`, `:185`, `:186`, `:191`, `:192` and `:285`.
 The mapping sends the first to `--color-text-secondary` and the second to `--color-bg`, so a
-mechanical rename produces `background: var(--color-text-secondary)` — a text role used as a
-large surface fill, and `color: var(--color-bg)` — a ground role used as type. Both invert the
+mechanical rename produces `background: var(--color-text-secondary)`: a text role used as a
+large surface fill, and `color: var(--color-bg)`: a ground role used as type. Both invert the
 "Applied to" column of § Semantic roles and violate the § Do's rule "Consume the **semantic
 role** tokens".
 
@@ -365,7 +365,7 @@ or record `HomeLayout`'s panel as a declared exception the way S-1 handles Three
   shows all twelve, so the prose contradicts the code it quotes.
 - **"sixteen component stylesheets under `components/atoms|molecules|organisms/`"** (line 694),
   repeated at line 720. There are **twelve**. Sixteen is the total `.scss` count in the repo
-  including `app/app.scss`, `app/scss/_index.scss`, `_fonts.scss` and `_print.scss` — the four
+  including `app/app.scss`, `app/scss/_index.scss`, `_fonts.scss` and `_print.scss`: the four
   files the sentence explicitly lists as being *in addition to* the sixteen.
 - **"Colour literals outside `app.scss` are confined to six places"** (line 696). There are
   **eleven**: `_print.scss:9`, `:10`, `:23`; `navbar.scss:10`; `celeste.scss:2`, `:16`;
@@ -385,8 +385,8 @@ files under `app/`".
 Step 3 covers the four `rgba(255,255,255,…)` in `ProjectCard.scss` and `WorkItem.scss`. Step 4
 covers `#444`/`#fff` in `celeste.scss`, `#fff` in `navbar.scss` and the print greys. Neither
 covers `components/organisms/HomeLayout/HomeLayout.scss:122`, which uses the **CSS named
-colour** `white` on an `<img>` (the alt-text colour). FR-17's consequence is absolute — "No
-colour, spacing or type value in the Hub's own styling bypasses the token contract" — and
+colour** `white` on an `<img>` (the alt-text colour). FR-17's consequence is absolute: "No
+colour, spacing or type value in the Hub's own styling bypasses the token contract", and
 § Don'ts says "Don't use `#000` or `#fff`. **Not once**, outside the print stylesheet."
 
 Related non-colour bypasses in the same class, also untouched by any step and also in scope for
@@ -405,7 +405,7 @@ colour and say so.
 
 On disk: `body { … width: 100vw; height: 100vh; overflow-x: hidden; }`.
 
-The contract says: "**`html, body { overflow-x: clip }` globally.** `clip`, not `hidden` —
+The contract says: "**`html, body { overflow-x: clip }` globally.** `clip`, not `hidden`,
 `hidden` breaks sticky positioning. Widths are `100%` with container padding, **never `100vw`**."
 `EXPERIENCE.md` § Component Patterns then specifies the nav as "Sticky at `{z.sticky}`", which is
 the exact interaction `overflow-x: hidden` on an ancestor breaks. The mockup gets it right
@@ -422,11 +422,11 @@ prerequisite for the sticky nav the experience spec assumes.
 **[medium] `--radius-DEFAULT` is a Tailwind v3 convention that does not exist in v4** (`DESIGN.md` § `tailwind.css` line 620 `--radius-DEFAULT:   var(--r-none);`; front-matter line 79 `DEFAULT: '0'`).
 
 In Tailwind v4 theme keys are literal CSS custom property names, and the JS-config `DEFAULT`
-sentinel is gone. `--radius-DEFAULT` mints a utility named `rounded-DEFAULT` — case-sensitive,
-since custom property names are — and does **not** set the bare `rounded`. The design's single
+sentinel is gone. `--radius-DEFAULT` mints a utility named `rounded-DEFAULT`: case-sensitive,
+since custom property names are, and does **not** set the bare `rounded`. The design's single
 most emphasised shape rule ("**Square. `--r-DEFAULT: 0`.**", line 376) is therefore not enforced
 in any of the Tailwind repositories by this line. Note also that § Shapes names the token
-`--r-DEFAULT` while `tokens.css` does not define it at all — the file has `--r-none`, `--r-hair`,
+`--r-DEFAULT` while `tokens.css` does not define it at all: the file has `--r-none`, `--r-hair`,
 `--r-pill` only.
 
 *Fix:* use `--radius: var(--r-none);` for the bare utility, or drop the line and rely on the
@@ -437,8 +437,8 @@ a token that exists.
 
 **[medium] `--elev-0/1/2` duplicate `--color-bg` / `--color-bg-raised` / `--color-bg-raised-2` exactly, creating two published names for one value across eight repositories and a latent major bump** (`DESIGN.md` § `tokens.css` lines 559–562 against lines 483–485).
 
-Both sets alias the identical `--c-*` values. Under the stated versioning model — "A **rename**
-is **major**, including fixing a typo in a token name" — the redundant set is the one most
+Both sets alias the identical `--c-*` values. Under the stated versioning model: "A **rename**
+is **major**, including fixing a typo in a token name": the redundant set is the one most
 likely to be deprecated once someone notices, and deprecating it is a major bump plus a
 deprecate→migrate→remove cycle across every adopter. The contract ships the latent break rather
 than resolving it before publication, when it is free.
@@ -457,7 +457,7 @@ name `--color-bg-raised` as `--color-bg-raised-1` now, while nothing consumes it
 "**Elevation is lightness, never glow.** Higher surfaces are lighter by a **+4 lightness step**"
 and the ladder's first entry is "**Lightness.** `paper` → `surface` → `surface-high`". A 1.05:1
 step is at or below the perceptual threshold on an uncalibrated laptop panel, and effectively
-invisible on a phone at reduced brightness in daylight — which is Daniela's scenario verbatim
+invisible on a phone at reduced brightness in daylight, which is Daniela's scenario verbatim
 (NFR-5, "arrives on a phone", "between meetings"). With shadows removed there is no fallback
 depth cue except the `1px` boundary, which is specified for the Suite Switcher panel and the
 raised containers but not for `--color-bg-raised-2`, whose only job is hover ground.
@@ -474,8 +474,8 @@ making lightness the secondary cue rather than the first item on the ladder.
 **[medium] `@theme` extends Tailwind's default palette rather than replacing it, so `bg-red-500`, `rounded-lg` and `shadow-md` all remain available in the Tailwind repositories and the design's hardest rules are unenforceable there** (`DESIGN.md` § `tailwind.css` lines 604–622).
 
 Research §D2 line 648 names the tool: "`--*: initial` wipes the default palette; use it only for
-a deliberately closed palette." The Cuatro palette is *exactly* a deliberately closed palette —
-"**One accent**", "there are **no shadows in this system**", "**Square. `--r-DEFAULT: 0`**" — and
+a deliberately closed palette." The Cuatro palette is *exactly* a deliberately closed palette,
+"**One accent**", "there are **no shadows in this system**", "**Square. `--r-DEFAULT: 0`**", and
 DESIGN.md declines to use it, without saying so or saying why. A Satellite developer reaching
 for `shadow-lg` in `cuatro-tracker` gets it, and the § Don'ts list is enforced only by memory
 across three repositories.
@@ -488,7 +488,7 @@ that this is why. If the escape hatch is wanted, state that decision explicitly 
 
 ## Low
 
-**[low] The mockup's `:root` block is not the contract rendered — it omits the entire semantic-role layer, and every rule in the file consumes the raw `--c-*` palette that § Do's forbids** (`mockups/key-screens.html` lines 15–61; `DESIGN.md` § Do's line 753 "Consume the **semantic role** tokens. `--color-text`, never `--c-ink`").
+**[low] The mockup's `:root` block is not the contract rendered: it omits the entire semantic-role layer, and every rule in the file consumes the raw `--c-*` palette that § Do's forbids** (`mockups/key-screens.html` lines 15–61; `DESIGN.md` § Do's line 753 "Consume the **semantic role** tokens. `--color-text`, never `--c-ink`").
 
 The mockup defines none of the ten `--color-*` roles, and none of `--w-*`, `--lh-*`, `--tr-*`,
 `--measure`, `--stroke-*`, `--focus-offset`, `--elev-*` or `--dur-exit`. Every consumer in the
@@ -501,7 +501,7 @@ cheapest possible demonstration that the indirection is real.
 
 ---
 
-**[low] The mockup hardcodes a colour that is not in the contract, immediately below a comment claiming it does not** (`mockups/key-screens.html` line 13 "Nothing hardcodes a value", line 204 "Nothing hardcodes a colour, size, duration or radius — the file is a working proof that the contract is sufficient", against lines 69 and 81 `background:oklch(8% 0.008 288)`).
+**[low] The mockup hardcodes a colour that is not in the contract, immediately below a comment claiming it does not** (`mockups/key-screens.html` line 13 "Nothing hardcodes a value", line 204 "Nothing hardcodes a colour, size, duration or radius: the file is a working proof that the contract is sufficient", against lines 69 and 81 `background:oklch(8% 0.008 288)`).
 
 `oklch(8% 0.008 288)` is a fourth ground, four lightness steps below `--c-paper`, appearing
 nowhere in the contract. Three smaller drifts in the same block: the reduced-motion rule at line
@@ -518,7 +518,7 @@ DESIGN.md documents as the *UI copy* floor, with `--t-sm` as the body floor.
 **[low] The mockup loads all three typefaces from the Google Fonts CDN, contradicting the self-hosting premise the typeface choice rests on** (`mockups/key-screens.html` lines 7–9).
 
 § Typography's entire licence argument is "All three are open-licence and **self-hostable**,
-which is the whole reason they were chosen — the type system has to be **vendored into seven
+which is the whole reason they were chosen: the type system has to be **vendored into seven
 repositories**". A reader who opens the mock and copies its head gets a third-party CDN
 dependency in a Phoenix app with no `node_modules`.
 
@@ -534,7 +534,7 @@ The comment states the invariant; the value does not express it. Under "A **valu
 release and leaves `--dur-exit` at a ratio the file's own comment says is wrong, in every
 adopter.
 
-*Fix:* `--dur-exit: calc(var(--dur-minor) * 0.75);` — which also keeps working when the
+*Fix:* `--dur-exit: calc(var(--dur-minor) * 0.75);`: which also keeps working when the
 reduced-motion block collapses `--dur-minor` to `1ms`, removing one of the four overrides.
 
 ---
@@ -546,11 +546,11 @@ available around November 2025, so "Baseline widely available" is accurate as of
 "no fallback ladder" is a reasonable call for a portfolio estate.
 
 What is wrong is the implied graceful degradation. On a non-supporting engine the custom
-property declaration itself parses fine — custom properties accept arbitrary token sequences —
+property declaration itself parses fine (custom properties accept arbitrary token sequences)
 and the failure surfaces at every **use** site as invalid-at-computed-value-time. IACVT does not
 fall back to a previous declaration; the property resets to its initial or inherited value. So
 `background-color` becomes `transparent`, `border-color` becomes `currentColor`, and
-`outline-color` on the focus ring becomes `currentColor` — a system that loses its focus
+`outline-color` on the focus ring becomes `currentColor`: a system that loses its focus
 indicator's colour rather than its background. `color-scheme: dark` (S-11) happens to keep the
 canvas dark, which is luck rather than design.
 
@@ -573,13 +573,13 @@ would close it entirely and is emittable by the same custom SD format H-3 alread
   §5 *end state*; the estate is twelve at MVP per PRD §9.3 SM-7, which is when the hand-copying
   happens. The version claims themselves (SD 5.5.1, `convertTokenData` prototype pollution, DTCG
   2025.10, Terrazzo CLI 0.7.2) match §D2 exactly.
-- Research §D2 line 631 carries "*(Exact release dates are unverified — a source returned
-  impossible 2024 stamps — but version numbers are solid.)*" DESIGN.md drops the caveat.
+- Research §D2 line 631 carries "*(Exact release dates are unverified: a source returned
+  impossible 2024 stamps, but version numbers are solid.)*" DESIGN.md drops the caveat.
 - Research §D2 line 685 explicitly hedges the Angular claim: "*(That custom properties
-  specifically inherit through is CSS-cascade reasoning on top of that quote — **labelled as
+  specifically inherit through is CSS-cascade reasoning on top of that quote: **labelled as
   inference**.)*" DESIGN.md line 659 restates it as settled fact. The claim is almost certainly
-  correct — the `styles`-array mechanism and the `ViewEncapsulation.Emulated` reasoning both
-  check out — but a hedge stripped in transit is how an inference becomes a fact nobody re-tests.
+  correct: the `styles`-array mechanism and the `ViewEncapsulation.Emulated` reasoning both
+  check out, but a hedge stripped in transit is how an inference becomes a fact nobody re-tests.
 
 *Fix:* restore "twelve repositories today, eight at end state" and carry the two hedges forward
 with one clause each.
@@ -603,7 +603,7 @@ metric-adjacent fallback and is never shipped.
 
 - § Asset Budget's non-3D payload is "HTML + **one CSS file** + three woff2 subsets". The
   contract publishes three CSS files. The ≤140 KB figure is unaffected, but the sentence
-  describes the two-artefact contract, not the three-artefact one — a leftover from before the
+  describes the two-artefact contract, not the three-artefact one: a leftover from before the
   split, which is worth correcting because it is the only place the budget names the artefacts.
 - § The hand-fix list is introduced as "**Nine lines of CSS per Satellite.** This is the whole
   per-app adoption cost" and then lists **five** numbered items. Since this list is the
@@ -621,20 +621,20 @@ Stated once each, as instructed.
 
 - **Palette and contrast.** I recomputed the sRGB relative luminance for `--c-ink`, `--c-muted`,
   `--c-accent`, `--c-line-strong`, `--c-line` and `--c-surface-high` against `--c-paper` and got
-  17.56 / 7.03 / 6.20 / 3.54 / 1.39 / 1.12 — matching the § Colors table. The OKLCH lightness
+  17.56 / 7.03 / 6.20 / 3.54 / 1.39 / 1.12: matching the § Colors table. The OKLCH lightness
   values are consistent with the stated hexes (L³ ≈ relative luminance) at every step. The
   fifteen-pairing claim is arithmetically sound.
 - **The `boder:` typo.** Verified exactly:
   `components/atoms/WorkItem/WorkItem.scss:84` reads
   `boder: 1px solid rgba(255, 255, 255, 0.3);`. That border has never rendered.
 - **Versioning.** Value = minor, rename = major including typo fixes, deprecate→migrate→remove
-  as the atomic-commit substitute, adoption explicit and reviewed — matches research §D2 lines
+  as the atomic-commit substitute, adoption explicit and reviewed: matches research §D2 lines
   691–694 and PRD FR-19 with no drift.
 - **Style Dictionary 5.5.1 and DTCG 2025.10.** Version numbers, the `convertTokenData`
   vulnerability rationale, the do-not-pin-below instruction and the Terrazzo 0.7.2 rejection all
   match §D2 exactly. Only the repo count and one caveat drifted (L-6).
 - **Angular.** `styles` array in `angular.json` and `ViewEncapsulation.Emulated` as a non-issue
-  are both correct per research §D2 lines 681–686 — the encapsulation shim rewrites component
+  are both correct per research §D2 lines 681–686: the encapsulation shim rewrites component
   selectors, it does not block inbound global cascade, and custom properties inherit through
   regardless.
 - **Next.js, React/Vite, Svelte, Vue.** All four consume `tokens.css` + `fonts.css` with no
@@ -643,7 +643,7 @@ Stated once each, as instructed.
   holds. The Anchor's existing `_fonts.scss` (relative `url('../../public/fonts/…')` resolved
   from the partial) is on-disk evidence that the Sass→Next path handles this correctly today.
 - **Attack 5, in principle.** With no `[data-theme]` block the `inline` mandate is genuinely
-  moot, and keeping it anyway against a future theme is sound reasoning — the argument fails
+  moot, and keeping it anyway against a future theme is sound reasoning: the argument fails
   only because of how the keys are named (C-1), not because the reasoning is wrong.
 - **The three-file split against §D2.** Adding a third artefact does not contradict research
   §D2; §D2 specifies a minimum shape, not a maximum. Only the stated rationale is wrong (H-2).
@@ -657,11 +657,11 @@ Stated once each, as instructed.
 
 Five items, in order, all cheap:
 
-1. Fix C-1 — disjoint namespaces in the `@theme` block, plus a generator assertion.
-2. Fix C-3 — one `@import` line in `tailwind.css`.
-3. Fix C-2 — move Phoenix into the Tailwind row and resolve O-3 first.
-4. Fix H-1 — write the Phoenix font-serving path down concretely.
-5. Decide H-3 — which parts of `tokens.css` are generated, and commit the SD format that emits
+1. Fix C-1: disjoint namespaces in the `@theme` block, plus a generator assertion.
+2. Fix C-3, one `@import` line in `tailwind.css`.
+3. Fix C-2: move Phoenix into the Tailwind row and resolve O-3 first.
+4. Fix H-1: write the Phoenix font-serving path down concretely.
+5. Decide H-3, which parts of `tokens.css` are generated, and commit the SD format that emits
    the reduced-motion block.
 
 Items 1–4 are the ones that ship silently into more than one repository. Everything under

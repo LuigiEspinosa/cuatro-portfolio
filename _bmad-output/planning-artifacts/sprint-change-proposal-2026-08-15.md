@@ -252,7 +252,7 @@ plan.
 
 **§3 Glossary, amend Per-App Layer.** Current text:
 
-> **Per-App Layer** — feature work inside any individual application. Explicitly out of scope (§9).
+> **Per-App Layer**: feature work inside any individual application. Explicitly out of scope (§9).
 
 Proposed:
 
