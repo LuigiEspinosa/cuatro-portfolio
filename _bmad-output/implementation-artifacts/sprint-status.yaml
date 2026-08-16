@@ -1,0 +1,147 @@
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when its first story starts (via build's sprint sync)
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; the status view surfaces open ones
+generated: 08-15-2026 19:47
+last_updated: 08-15-2026 19:59
+project: cuatro-portfolio
+project_key: NOKEY
+tracking_system: file-system
+story_location: 
+  c:/Development/cuatro-portfolio/_bmad-output/implementation-artifacts
+development_status:
+  epic-1: backlog
+  1-1-archive-the-four-retired-repositories: backlog
+  1-2-external-uptime-and-certificate-age-monitoring: backlog
+  1-3-bot-mitigation-on-the-four-live-subdomains: backlog
+  1-4-the-capacity-gate-exists-and-fails-closed: backlog
+  1-5-capacity-measurement-week: backlog
+  1-6-write-the-capacity-gate-threshold-and-open-the-gate: backlog
+  1-7-enumerate-the-deployed-routing-table-on-the-box: backlog
+  1-8-an-offsite-backup-path-for-digital-library: backlog
+  1-9-record-the-build-on-the-box-violation-as-a-tracked-item: backlog
+  1-10-install-playwright-and-establish-the-rendered-output-harness: backlog
+  1-11-publish-contracts-tokens-css-from-packages-tokens: backlog
+  1-12-publish-contracts-fonts-css-with-latin-subset-faces: backlog
+  1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: backlog
+  1-14-ci-enforces-the-contract-boundary: backlog
+  1-15-determine-cs-tracker-s-daisyui-adoption-route: backlog
+  1-16-serve-contracts-at-https-cuatro-dev-contracts: backlog
+  1-17-anchor-migration-step-1-add-the-contract-change-nothing: backlog
+  1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: backlog
+  1-19-cs-tracker-adopts-the-token-contract: backlog
+  1-20-record-the-adopted-contract-version-and-the-automation-polic: backlog
+  epic-1-retrospective: optional
+  # REMINDER: run /bmad-project-context (refresh) before starting epic-2.
+  # Epic 1 installs Playwright (1-10), enumerates the real Caddy routing table (1-7),
+  # and starts the token migration, so three lines in the AGENTS.md block go stale here.
+
+  epic-2: backlog
+  2-1-the-three-pre-existing-repository-defects: backlog
+  2-2-measure-the-narrative-bundle-against-the-asset-budget: backlog
+  2-3-the-registry-schema-and-its-blocking-ci-gate: backlog
+  2-4-confirm-the-assumed-statuses-hostnames-and-tech-values: backlog
+  2-5-author-contracts-registry-json: backlog
+  2-6-the-editorial-voice-pass: backlog
+  2-7-retire-content-projects-ts-the-hub-imports-the-published-reg: backlog
+  2-8-assert-the-44-44-hit-target-floor: backlog
+  2-9-the-suite-directory: backlog
+  2-10-assert-the-status-mark-s-three-structural-axes: backlog
+  2-11-the-premise-block-and-the-framework-band: backlog
+  2-12-the-narrative-resolves-into-the-suite-directory: backlog
+  2-13-the-non-3d-front-door-and-the-skip-control: backlog
+  2-14-projects-redirects-permanently-to-suite: backlog
+  2-15-nav-reshape-to-two-destinations: backlog
+  2-16-cv-built-around-the-existing-worktimeline: backlog
+  2-17-secondary-surface-states: backlog
+  2-18-migration-step-3-retire-the-alpha-hairlines: backlog
+  2-19-migration-step-4-sweep-the-colour-literals: backlog
+  2-20-migration-step-5-swap-the-type: backlog
+  2-21-migration-step-6-rename-the-call-sites: backlog
+  2-22-migration-step-7-delete-the-aliases: backlog
+  2-23-scheduled-registry-verification-external-to-the-box: backlog
+  2-24-hub-visitor-instrumentation: backlog
+  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
+  2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-introduce-turborepo-and-pin-the-toolchain: backlog
+  3-2-move-the-hub-to-apps-hub: backlog
+  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: backlog
+  3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
+  3-5-merge-cuatro-finance-into-apps-finance: backlog
+  3-6-merge-cuatro-tracker-into-apps-tracker: backlog
+  3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: backlog
+  3-8-record-the-estate-end-state: backlog
+  epic-3-retrospective: optional
+  # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
+  # Epic 3 introduces Turborepo, moves the app to apps/hub, and retires the
+  # build-on-the-box deploy, so the orientation, paths, and the AD-8 pitfall line
+  # in the AGENTS.md block all change.
+
+  epic-4: backlog
+  4-1-refresh-the-settled-inputs-and-choose-the-rebuild-topology: backlog
+  4-2-traefik-with-host-matched-routers-and-dns-01: backlog
+  4-3-migrate-list-wheel-the-static-first-candidate: backlog
+  4-4-one-postgres-one-database-and-one-role-per-consumer: backlog
+  4-5-pg_dump-on-cron-plus-restic-offsite: backlog
+  4-6-migrate-cuatro-dev: backlog
+  4-7-migrate-analytics-cuatro-dev-and-pin-umami: backlog
+  4-8-migrate-tracker-cuatro-dev: backlog
+  4-9-migrate-library-cuatro-dev: backlog
+  4-10-migrate-cs-tracker-cuatro-dev: backlog
+  4-11-retire-caddy-and-decommission-the-old-topology: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-refresh-clerk-s-pricing-and-terms: backlog
+  5-2-one-clerk-issuer-and-one-oidc-client-per-application: backlog
+  5-3-the-hub-authenticates-over-oidc-authorization-code-pkce: backlog
+  5-4-cs-tracker-authenticates-the-javascript-elixir-boundary: backlog
+  5-5-sign-out-reaches-every-session-including-open-liveview-socke: backlog
+  5-6-forwardauth-gates-the-surfaces-with-no-authentication-of-the: backlog
+  5-7-provider-replaceability-is-evidenced-not-asserted: backlog
+  5-8-the-demo-principal-contract: backlog
+  5-9-demo-reset-and-a-baseline-fixture-per-application: backlog
+  5-10-one-host-level-reset-scheduler-for-the-estate: backlog
+  5-11-demo-and-identity-declarations-verified-against-reality: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-confirm-the-trigger-has-fired: backlog
+  6-2-publish-the-token-contract-as-an-npm-package: backlog
+  6-3-a-renovate-shareable-preset: backlog
+  6-4-publish-the-reusable-ci-workflows-to-contracts-workflows: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-copy-the-repositories-into-the-wsl2-ext4-filesystem: backlog
+  7-2-repair-worktrees-and-git-configuration: backlog
+  epic-7-retrospective: optional
