@@ -1099,10 +1099,28 @@ so no later story has to guess which host a deploy reaches.
 **When** anything on it is not carried across
 **Then** it is recorded as deliberately dropped rather than silently lost.
 
+**Given** the Operator decided on 2026-08-16 that the old address is retired once the Anchor
+has moved
+**When** every hostname it served is confirmed serving from the Hostinger VPS
+**Then** the old box is decommissioned, and the decommissioning date is recorded in
+`ops/routing-inventory.md`
+**And** nothing is decommissioned before Story 1.7's enumeration of that box is committed.
+
+**Given** the Operator decided on 2026-08-16 to keep both `www.cuatro.dev` and `cuatro.dev`,
+and `www.cuatro.dev` was proxied to a different provider returning `DEPLOYMENT_NOT_FOUND`
+**When** the move completes
+**Then** both hostnames serve the Anchor
+**And** `cuatro.dev` is the canonical hostname, because every Registry `live` value, every
+acceptance criterion and `ops/monitoring.md` name the apex, so `www.cuatro.dev` redirects to it
+with a 301 rather than serving a duplicate
+**And** the stale record pointing at the other provider is removed in the same change.
+
 **Given** `ops/monitoring.md` carries an observed-state section dated 2026-08-16
 **When** the move completes
 **Then** that section is re-gathered and re-dated, so the record stops describing a topology
-that no longer exists.
+that no longer exists
+**And** `www.cuatro.dev` is added to the probe table, since the monitored set is every live
+`cuatro.dev` subdomain and it is now one.
 
 ---
 
@@ -1119,12 +1137,32 @@ prerequisite rather than a sequencing preference.
 
 **Acceptance Criteria:**
 
-**Given** all four live subdomains sit behind Cloudflare
-**When** bot mitigation is configured
+**Given** the zone is on Cloudflare nameservers but on 2026-08-16 all four live subdomains
+resolved to origin addresses rather than Cloudflare anycast addresses, so they were DNS-only
+records with no proxy in front of them (amended 2026-08-16)
+**When** the records are switched to proxied, which the Operator approved on 2026-08-16
 **Then** rules are active on `cuatro.dev`, `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and
 `library.cuatro.dev`: every live subdomain, not only the Hub
 **And** each of the four still serves a normal request from a normal browser after the rules are
 live, verified by hand.
+
+**Given** bot rules apply only to proxied traffic, so the proxy switch is a prerequisite of this
+story rather than an implementation detail of it
+**When** the switch is made
+**Then** Cloudflare's TLS mode is recorded, and Full (strict) is used rather than Flexible,
+because Flexible leaves the origin leg unencrypted
+**And** the switch is made one hostname at a time with the previous one verified serving, since
+NFR-2 admits no step that leaves an application broken.
+
+**Given** proxying moves TLS termination to Cloudflare, so an external probe observes
+Cloudflare's edge certificate and can no longer see the origin certificate that Story 1.2's
+Rule 1 was written against
+**When** the records are switched
+**Then** `ops/monitoring.md` is amended in the same change, never afterwards, so the expected
+issuer matches what a probe will actually see
+**And** the record states how the **origin** certificate is watched once it is invisible from
+outside, since that is the certificate that can silently fail to renew
+**And** an alarm fired by this change is a defect in this story, not a real outage.
 
 **Given** the one citable capacity measurement in the record (639,880 KB RSS / 103.3% CPU) was
 captured **during a bot crawl**
@@ -4176,7 +4214,10 @@ Remove the incumbent proxy and whatever undocumented configuration Story 1.7 fou
 **Acceptance intent:** every hostname in `ops/routing-inventory.md` is accounted for on the new
 topology before anything is removed; nothing found on the old box is deleted without being either
 recreated or explicitly recorded as intentionally dropped; the inventory is updated to describe
-the new reality rather than left describing the old one.
+the new reality rather than left describing the old one. **Amended 2026-08-16:** the second
+serving address was already decommissioned by Story 1.21, so this story retires Caddy on the
+Hostinger VPS only and confirms that the earlier decommissioning was recorded rather than
+repeating it.
 
 ---
 

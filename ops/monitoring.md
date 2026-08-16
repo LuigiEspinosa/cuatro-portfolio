@@ -213,6 +213,13 @@ rather than from a `cuatro.dev` subdomain, so it is neither our host nor our cer
 there is nothing here for a certificate-age rule to watch. Story 2-25 relocates it to the VPS,
 at which point the add rule above applies.
 
+**`www.cuatro.dev` joins the monitored set when Story 1.21 lands.** On 2026-08-16 it was the
+only proxied record in the zone and it returned `DEPLOYMENT_NOT_FOUND` from a different
+provider, so there was nothing of ours to probe. The Operator decided on that date to keep both
+`www.cuatro.dev` and `cuatro.dev`, with the apex canonical and `www` redirecting to it with a
+301. That makes `www` a live `cuatro.dev` subdomain under the rule above, so it gets a probe row
+asserting the redirect rather than a 200, and Story 1.21 adds it.
+
 **`analytics.cuatro.dev` is on the box but is not in the probe table.** It is the self-hosted
 Umami instance: infrastructure that supports the estate rather than an application the
 Registry describes or a Visitor is sent to. It is recorded here with that reasoning rather
@@ -414,6 +421,35 @@ that fires today.
 An unexpected but valid issuer is also an alert rather than a silent pass. A certificate that
 switched to a different public CA without anybody deciding to is either a configuration change
 nobody recorded or something worse, and in both cases the Operator should hear about it.
+
+#### Rule 1 changes when Story 1.3 turns on the Cloudflare proxy
+
+**Decided 2026-08-16, not yet applied.** The Operator approved switching the four live
+subdomains from DNS-only to proxied. On 2026-08-16 they were DNS-only, which is why the issuer
+observed below is Let's Encrypt and why this record was written expecting it.
+
+Once the proxy is on, **Cloudflare terminates TLS**, so an external probe sees Cloudflare's
+edge certificate. Two consequences, both load-bearing:
+
+1. **The expected issuer becomes Cloudflare for every proxied host.** Left unchanged, Rule 1
+   alarms on all four the moment Story 1.3 lands. Story 1.3's acceptance now requires this
+   file to be amended in the same change, never afterwards, and states that an alarm caused by
+   that change is a defect in the story rather than a real outage.
+2. **The origin certificate stops being visible from outside**, and it is the one that can
+   silently fail to renew. Cloudflare's edge certificate is Cloudflare-managed and renews
+   itself, so watching it proves very little. Story 1.3 must say how the origin is watched.
+
+**The choice is not made here**, because it belongs to Story 1.3 and one option changes what
+the origin certificate even is. The three candidates, recorded so the story does not
+re-derive them:
+
+| Option | How the origin is watched | Cost |
+|---|---|---|
+| Probe the origin directly | A second monitor against the origin address with SNI, bypassing the proxy | Exposes the origin address in the monitor config, and the origin must stay reachable |
+| Cloudflare Origin CA | A certificate valid up to 15 years replaces the Let's Encrypt origin certificate, so renewal stops being a recurring risk | The certificate is not publicly trusted, which is fine behind Full (strict) and wrong anywhere else. It sends no expiry notification, so the age rule still applies, just far in the future |
+| Rely on the 526 signal | Behind Full (strict), an expired origin certificate makes Cloudflare return `526 Invalid SSL Certificate`, which the uptime probe already catches | Detects the failure only once it is already user-visible, which is the thing this record exists to avoid |
+
+The first two are real monitoring. The third is an outage with a good error code.
 
 ### Rule 2: certificate age
 
