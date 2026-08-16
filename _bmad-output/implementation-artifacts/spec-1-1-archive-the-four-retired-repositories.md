@@ -2,7 +2,8 @@
 title: 'Archive the four retired repositories'
 type: 'chore'
 created: '2026-08-16'
-status: 'awaiting-operator'
+status: 'done'
+operator_actions_completed_on: '2026-08-16'
 baseline_revision: 'bf0fd061168b6169b456257855a8860a7499af47'
 review_loop_iteration: 0
 followup_review_recommended: true
@@ -12,23 +13,40 @@ context:
 warnings: []
 deferred:
   - summary: >-
-      Four repositories under Ecosystem governance are private, so their Registry
-      `source` links will not resolve for an anonymous Visitor.
+      StreamVault stays private by decision, so its Registry `source` link will
+      never resolve for an anonymous Visitor and Epic 2 needs a deliberate
+      treatment for it.
     evidence: |-
       `gh repo view` against owner `LuigiEspinosa` on 2026-08-16 returned
       visibility PRIVATE for `cs-tracker`, `cs-tournament`, `StreamVault` and
-      `Mutuo`. AD-6 keeps every application in the Registry and SM-4 requires
-      every Registry link to resolve, so an entry pointing at a private
-      repository is a broken link for the reader it is written for. This
-      predates Story 1.1 and was surfaced incidentally while reading GitHub
-      state for the four retired repositories. Epic 2 authors the Registry and
-      is where it lands.
+      `Mutuo`. The user resolved this on 2026-08-16: `cs-tracker`,
+      `cs-tournament` and `Mutuo` will be made public, which fixes them.
+      StreamVault is a personal-use tool that belongs to the Ecosystem but is
+      deliberately hidden and stays private permanently. AD-6 keeps every
+      application in the Registry and SM-4 requires every Registry link to
+      resolve, so Epic 2 must choose between omitting StreamVault from the
+      Registry or authoring an entry with no resolving `source`. That is a spec
+      decision for the user, not a defect to fix by publishing the repository.
+    location: >-
+      ops/estate.md:209
+    severity: medium
+  - summary: >-
+      `apple-music-workspace` has no GitHub repository at all, so the
+      fifteen-application count and its future Registry entry are both wrong.
+    evidence: |-
+      Story 1.1 could not locate the repository under owner `LuigiEspinosa` on
+      2026-08-16, and a full listing of the account showed nothing similar. The
+      user confirmed on 2026-08-16 that it is an occasional-use local scraping
+      script which has never had a repository. AD-6 and SM-4 assume every one of
+      the fifteen applications has a resolving `source`, so this is not a
+      harmless omission: either the count of fifteen is wrong or
+      `apple-music-workspace` does not belong in the Estate as an application.
+      Epic 2 authors the Registry and is where the correction lands.
     location: >-
       ops/estate.md:209
     severity: medium
 operator_actions:
   - 'Archive `LuigiEspinosa/Lumen` on GitHub, keeping it public so its `source` link keeps resolving (AD-6).'
-  - 'Archive `apple-music-workspace` on GitHub, keeping it public. Blocked first: the repository could not be located under owner `LuigiEspinosa` on 2026-08-16, so confirm its real owner or its real name before archiving.'
   - 'Archive `LuigiEspinosa/tcg-tracker` on GitHub, keeping it public so its `source` link keeps resolving (AD-6).'
   - 'Archive `LuigiEspinosa/connect-four-react` on GitHub, keeping it public so Epic 2 can author its `source` against the archived repository while FR-29 stays deferred.'
 ---
