@@ -819,8 +819,10 @@ from `cuatro-portfolio` v2.5.3 — deliberately, because this is a reshape of a 
 | O-3 | Whether `@plugin "daisyui/theme"` accepts a `var()` reference — undocumented. Cheap to test in a scratch `mix phx.new` | Epic 1 Step 2, seam S-9 |
 | O-4 | `cuatro-finance` and `cs-tournament` real Status — assumed, not confirmed (PRD §13 Q9). Changes the composition of the first six | Epic 2 |
 | O-5 | Whether `list-wheel`'s new subdomain is `wheel.cuatro.dev` — used as a placeholder in the mocks | Epic 2 |
-| O-6 | `--confillia-bold` has zero call sites and is safe to delete. `--confillia-normal` has **two** — `HomeLayout.scss:8` and `:246` — and is retargeted to `--f-display` at `wdth 75`. Confirm that reads acceptably before step 5 | Migration step 5 |
-| O-7 | **Which Phoenix version is `cs-tracker` on?** ≥1.8.0 means Tailwind v4 + daisyUI and the adapter route; below that, the plain-CSS route. Determines the whole Step 2 adoption path. One-line check | **Epic 1 Step 2 — blocking** |
+| O-6 | `--confillia-bold` has zero call sites and is safe to delete. `--confillia-normal` has **two** — `HomeLayout.scss:117` and `:148` *(re-baselined 2026-08-15; was `:8`/`:246` on `main`)* — and is retargeted to `--f-display` at `wdth 75`. Confirm that reads acceptably before step 5 | Migration step 5 |
+| ~~O-7~~ | ~~Which Phoenix version is `cs-tracker` on?~~ **Closed 2026-08-15.** `{:phoenix, "~> 1.8.7"}` with Tailwind v4 (`@import "tailwindcss" source(none)`) and daisyUI via `@plugin "../vendor/daisyui"`. **`cs-tracker` takes the adapter route** (AD-15) | — |
+| **O-10** | **The palette reconciliation.** The token contract was designed without knowledge of the cybercore rebrand now merged into `dev`. Two design systems — the contract's OKLCH palette and cybercore's hardcoded violet set — must become one. A design decision, not a migration mechanic | **Epic 1 Step 2 — blocking**, migration step 2 |
+| **O-11** | **`--accent-glow` is declared at `app.scss:11` with zero call sites.** Dead on arrival from the rebrand. Confirm it is genuinely unused before deleting rather than assuming it is reserved | Migration step 2 |
 | O-8 | The 44×44px floor must be **measured in a browser**, not read off the CSS, on the Hub and on `cs-tracker` after adoption | Epic 2 |
 | O-9 | Greyscale check of the Status taxonomy — render the Directory desaturated and confirm all four values remain distinguishable | Epic 2 |
 

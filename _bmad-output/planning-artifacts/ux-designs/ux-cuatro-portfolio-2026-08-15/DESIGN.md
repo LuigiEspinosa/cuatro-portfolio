@@ -842,9 +842,15 @@ is still cheap to discover.**
 
 ## Migrating the Anchor from SCSS to tokens
 
-`cuatro-portfolio` ships at v2.5.3. This is a reshape of a working site, and the migration
-surface is genuinely small — the entire token surface today is **twelve custom properties in
-one file**, consumed by **twelve component stylesheets**.
+> ⚠️ **Re-baselined 2026-08-15 against the merged `dev` tree.** This section was originally
+> authored against `main`, before the 28-commit "cybercore" rebrand (PRs #46–#70) was merged.
+> Every count and line reference below is now measured, not inherited. See
+> [`rebaseline-2026-08-15.md`](rebaseline-2026-08-15.md) for the full before/after and for the
+> **open palette-reconciliation decision** this section does not resolve.
+
+`cuatro-portfolio` ships at v2.5.3. This is a reshape of a working site. The token surface
+today is **sixteen custom properties in one file**, consumed by **fifteen component
+stylesheets**.
 
 ### What exists
 
@@ -852,24 +858,29 @@ one file**, consumed by **twelve component stylesheets**.
 
 ```scss
 :root {
-  --white-color: #fff;              --black-color: #000;
-  --light-gray-color: #b3b0aa;      --gray-color: #545454;
-  --page-padding: clamp(1.5rem, 4vw, 3rem);
-  --hero-height: 40vh;
-  --font-regular: 'GeneralSans-Regular';   --font-bold: 'GeneralSans-Bold';
-  --confillia-normal: 'Confillia Normal';  --confillia-bold: 'Confillia';
-  --monument-regular: 'MonumentExtended-Regular';
-  --monument-bold: 'MonumentExtended-Bold';
+  --white-color: #fff;              --black-color: #000;        /* :5  :6  */
+  --light-gray-color: #b3b0aa;      --gray-color: #545454;      /* :7  :8  */
+  --accent: …;  --accent-dim: …;    --accent-glow: …;           /* :9 :10 :11  (cybercore) */
+  --page-padding: clamp(1.5rem, 4vw, 3rem);                     /* :14 */
+  --hero-height: 40vh;                                          /* :17 */
+  --font-regular: 'GeneralSans-Regular';   --font-bold: 'GeneralSans-Bold';   /* :20 :21 */
+  --confillia-normal: 'Confillia Normal';  --confillia-bold: 'Confillia';     /* :24 :25 */
+  --monument-regular: 'MonumentExtended-Regular';                             /* :28 */
+  --monument-bold: 'MonumentExtended-Bold';                                   /* :29 */
+  --font-mono: …;                                               /* :31 (cybercore) */
 }
 ```
 
 Plus `app/scss/_fonts.scss` (self-hosted `@font-face`), `app/scss/_print.scss`,
-`app/scss/_index.scss`, and **twelve** component stylesheets under
-`components/atoms|molecules|organisms/`.
+`app/scss/_index.scss`, and **fifteen** component stylesheets under
+`components/atoms|molecules|organisms/` — the rebrand added `hud-label.scss`,
+`ScanlineOverlay.scss` and `glitch-text.scss`.
 
-Colour values outside `app.scss` sit in **eleven places**, and they are not all hex —
-`HomeLayout.scss:122` uses the bare keyword `color: white`, which a hex-and-`rgba` sweep
-misses entirely. Grep for `white`, `black` and named colours as well as `#` and `rgba(`.
+Colour literals outside `app.scss` now sit on **28 lines across 9 files**, up from eleven.
+The rebrand replaced the old white alpha hairlines with a violet set and introduced its own
+hardcoded palette. The bare keyword `color: white` at the old `HomeLayout.scss:122` **no
+longer exists** — that file was rebuilt. Grep for `#`, `rgba(` and named colours anyway; the
+sweep is cheap and the file has changed once already.
 
 ### The mapping
 
@@ -885,18 +896,28 @@ misses entirely. Grep for `white`, `black` and named colours as well as `#` and 
 | `--font-bold` | `--f-body` + `--w-bold` | **Weight, not family.** A family-only alias silently drops bold — see below |
 | `--monument-regular` | `--f-display` + `--w-bold` | Monument Extended → Bricolage Grotesque |
 | `--monument-bold` | `--f-display` + `--w-black` | Same; the weight distinction must survive the alias |
-| `--confillia-normal` | `--f-display` at `wdth 75` | **Two live call sites** — `HomeLayout.scss:8` and `:246`. Needs a target, not a deletion |
+| `--confillia-normal` | `--f-display` at `wdth 75` | **Two live call sites** — `HomeLayout.scss:117` and `:148`. Needs a target, not a deletion |
 | `--confillia-bold` | **dropped** | Zero call sites. Safe to delete outright |
+| `--accent`, `--accent-dim` | **open decision** | Cybercore. `--accent-dim` has 15 call sites; see the reconciliation note below |
+| `--accent-glow` | **dropped** | Declared at `app.scss:11`, **zero call sites**. Dead on arrival |
+| `--font-mono` | `--f-mono` | Cybercore. 10 call sites; the contract needs a mono role it did not previously carry |
 
-**The alias trick has one trap.** The old properties are *family* aliases, and two of them
-encode weight in the family name — `--font-bold`, `--monument-bold`. Aliasing them to a family
-alone drops the weight, so `ErrorPage.scss:14` and `HomeLayout.scss:284` would silently render
-regular where they render bold today. Bricolage and Geist are variable, so the fix is to set
-`font-weight` alongside `font-family` at each of those call sites during step 6 — but the
-regression lands at **step 2**, before step 6 exists to fix it.
+**The alias trap is now half gone.** The old properties are *family* aliases, and two encoded
+weight in the family name — `--font-bold` and `--monument-bold`. The rebrand retired every
+`--font-bold` call site, so **only `--monument-bold` remains live**, at `glitch-text.scss:5`,
+`error-page.scss:24`, `ProjectsHero.scss:19` and `WorkHero.scss:19`. Aliasing it to a family
+alone still silently drops bold at those four sites. Bricolage and Geist are variable, so set
+`font-weight` alongside `font-family` at each — but the regression still lands at **step 2**,
+before step 6 exists to fix it. Four call sites by hand in step 2 is what this file recommends.
 
-Either accept two call sites rendering light for one commit, or handle those two by hand in
-step 2. The second is three lines and is what this file recommends.
+**Open: the palette reconciliation.** This mapping was designed without knowledge of the
+cybercore rebrand, and one row is now stale in its reasoning — `--light-gray-color` was
+described as "warm → violet-tinted, the most visible single change," but the rebrand already
+went violet. The contract's OKLCH palette and cybercore's hardcoded violet set
+(`#0a000f`, `rgba(91, 33, 182, …)`, `rgba(140, 90, 210, …)`, plus GlitchText's
+`rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` aberration pair) are two design systems that
+must become one. **That is a design decision, not a migration mechanic, and it is not
+resolved here** — see [`rebaseline-2026-08-15.md`](rebaseline-2026-08-15.md).
 
 ### Sequence
 
@@ -904,20 +925,26 @@ Each step leaves the site working. NFR-2 binds every one.
 
 1. **Add, do not replace.** Drop `tokens.css` + `fonts.css` into `app/scss/`, `@use` them
    from `_index.scss`. Nothing consumes them yet. The site is byte-identical. *Ship this.*
-2. **Alias the old names.** Redefine the ten existing properties as `var()` references to the
-   new roles. Every one of the sixteen component stylesheets keeps working untouched, and the
+2. **Alias the old names.** Redefine the existing properties as `var()` references to the new
+   roles. Every one of the fifteen component stylesheets keeps working untouched, and the
    whole site changes appearance in one commit that touches one file — which is also the one
-   commit worth a careful visual check.
-3. **Retire the alpha hairlines.** Replace `rgba(255,255,255,0.15)` and
-   `rgba(255,255,255,0.3)` in `ProjectCard.scss` and `WorkItem.scss` with
-   `var(--token-border)` and `var(--token-border-interactive)`. **Fix the `boder:` typo at
-   [`WorkItem.scss:84`](../../../../components/atoms/WorkItem/WorkItem.scss#L84) while you are
-   in there** — that border has never rendered.
-4. **Sweep the eleven literals.** `#444` and `#fff` in `celeste.scss`, `#fff` in `navbar.scss`,
-   the greys in `_print.scss`, and — **easy to miss** — the bare keyword `color: white` at
-   `HomeLayout.scss:122`. Grep for named colours, not only `#` and `rgba(`. Print keeps
-   `#fff`/`#000`: paper is genuinely white and toner is genuinely black, and the print
-   stylesheet is outside the contract by nature.
+   commit worth a careful visual check. **Blocked on the palette reconciliation above:** you
+   cannot alias `--accent`/`--accent-dim` until it is decided which system wins.
+3. **Retire the violet hairlines.** The old white alpha hairlines are gone; the rebrand
+   replaced them with `rgba(91, 33, 182, 0.06)` and `rgba(91, 33, 182, 0.3)` at
+   `WorkItem.scss:35`/`:145` and `ProjectCard.scss:36`/`:67`, plus `rgba(10, 0, 20, 0.6)` at
+   `ProjectCard.scss:27`. Map these to `var(--token-border)` and
+   `var(--token-border-interactive)`. *(The `boder:` typo this step used to also fix no longer
+   exists — the rebrand rewrote that file.)*
+4. **Sweep the remaining literals — 28 lines across 9 files.** `#444` and `#fff` in
+   `celeste.scss:2`/`:16`, `#fff` in `navbar.scss:10`, `#0a000f` in `HomeLayout.scss:2` and
+   `error-page.scss:7`, the `rgba(140, 90, 210, 0.06)` grid lines in both, the
+   `rgba(0, 0, 0, …)` scanline set in `ScanlineOverlay.scss:6`/`:16`/`:17`, and the greys in
+   `_print.scss`. **GlitchText's aberration pair is deliberate, not a literal to sweep** —
+   `rgba(255, 0, 80, …)` and `rgba(0, 255, 255, …)` at `glitch-text.scss:33`–`:68` encode a
+   chromatic-aberration effect; tokenize them only if the reconciliation gives them roles.
+   Print keeps `#fff`/`#000`: paper is genuinely white and toner is genuinely black, and the
+   print stylesheet is outside the contract by nature.
 5. **Swap the type.** New `@font-face` in `fonts.css`, retire `_fonts.scss`, delete the
    General Sans / Monument Extended / Confillia binaries from `public/fonts/`. Apply
    `size-adjust` overrides so the swap does not shift layout.

@@ -77,20 +77,23 @@ one app. Planning artifacts live in `_bmad-output/planning-artifacts/`.
   `library.cuatro.dev` all resolve. Story 1-7 enumerates the real table. Do not infer
   routing from the file.
 - Font tokens bake weight into the family name (`--monument-bold: 'MonumentExtended-Bold'`
-  at `app/app.scss:27`). Aliasing one to a family-only token silently drops bold. Live
-  `--monument-bold` call sites: `error-page.scss:14`, `HomeLayout.scss:67`,
-  `HomeLayout.scss:284`, `ProjectsHero.scss:15`, `WorkHero.scss:15`.
-- `--confillia-normal` has two live call sites (`HomeLayout.scss:8`, `HomeLayout.scss:246`).
-  Retarget it, do not delete it. `--confillia-bold` and `--font-bold` have zero call sites
-  and are safe to delete.
-- `vaR(--monument-bold)` at `WorkHero.scss:15` and `ProjectsHero.scss:15` is not a bug,
-  because CSS function names are ASCII case-insensitive. Leave it unless the story is
-  about it.
-- These open defects each belong to their own story. Do not fix them opportunistically
-  and pad an unrelated diff: `aria-hidden="true"` on the only `<h1>` of `/work`
-  (`components/organisms/WorkHero/WorkHero.tsx:39`), `boder:`
-  (`components/atoms/WorkItem/WorkItem.scss:84`), `Dev. 2025` should read `Dec.`
-  (`content/work.ts:18`), and `Celeste.tsx` hiding the header by mutating the DOM in an
-  effect.
+  at `app/app.scss:29`). Aliasing one to a family-only token silently drops bold. Live
+  `--monument-bold` call sites: `glitch-text.scss:5`, `error-page.scss:24`,
+  `ProjectsHero.scss:19`, `WorkHero.scss:19`.
+- `--confillia-normal` has two live call sites (`HomeLayout.scss:117`,
+  `HomeLayout.scss:148`). Retarget it, do not delete it. `--confillia-bold` and
+  `--font-bold` have zero call sites and are safe to delete.
+- `--accent-glow` is declared at `app/app.scss:11` with **zero call sites**. It arrived with
+  the cybercore rebrand and is dead today. Do not assume it is load-bearing.
+- The cybercore rebrand hardcoded a violet palette that the token contract has not yet
+  absorbed: `#0a000f` (`HomeLayout.scss:2`, `error-page.scss:7`), `rgba(91, 33, 182, …)`
+  (`WorkItem.scss:35`/`:145`, `ProjectCard.scss:36`/`:67`), `rgba(140, 90, 210, 0.06)` grid
+  lines, and GlitchText's chromatic-aberration pair `rgba(255, 0, 80, …)` /
+  `rgba(0, 255, 255, …)`. Reconciling these against the token palette is an open design
+  decision — do not silently replace them.
+- One open defect, with its own story. Do not fix it opportunistically and pad an
+  unrelated diff: `Dev. 2025` should read `Dec.` (`content/work.ts:18`).
+- `Celeste.tsx` hides the header by mutating the DOM in an effect. Known; leave unless the
+  story is about it.
 
 <!-- /bmad:context -->

@@ -176,3 +176,7 @@ $RECYCLE.BIN/
 .bmad-loop/cache/
 .bmad-loop/policy.toml
 _bmad/render/
+
+# BMad skills are installed by \mad-loop init\ / \
+px bmad-method install\, not versioned
+.claude/skills/
