@@ -2,6 +2,8 @@
 
 My Personal portfolio, deployed at [cuatro.dev](https://cuatro.dev). High-quality visuals, 3D interactive scenes, and scroll-driven storytelling. Fully self-hostable via Docker Compose.
 
+- **Design:** [Figma](https://www.figma.com/design/g5PkF4kBfTuhY6ASeE5oMT/Cuatro-Portfolio?m=auto&t=9mx0OLX8cx7YJoKy-1)
+
 ## Tech Stack
 
 | Layer         | Technology                                                |

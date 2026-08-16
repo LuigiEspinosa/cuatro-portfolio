@@ -25,6 +25,12 @@ vi.mock('@react-three/postprocessing', () => ({
   Bloom: () => null,
 }));
 
+// jsdom has no WebGl. Return a truhty context so the component renders the
+// Schene path instead of the static fallback image.
+beforeEach(() => {
+  HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({} as WebGLRenderingContext);
+});
+
 describe('GemComponent', () => {
   it('renders the gem canvas container', () => {
     render(<GemComponent />);

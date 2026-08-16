@@ -1,5 +1,8 @@
 .work-timeline {
   list-style: none;
-  padding: 0 0 14rem;
+  padding: 2rem var(--page-padding) 8rem;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }

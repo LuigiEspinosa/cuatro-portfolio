@@ -36,12 +36,27 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang='en'>
+      {/* Preload display fonts so SplitText measures correct widths on first paint */}
+      <link
+        rel='preload'
+        href='/fonts/MonumentExtended-Bold.woff2'
+        as='font'
+        type='font/woff2'
+        crossOrigin='anonymous'
+      />
+      <link
+        rel='preload'
+        href='/fonts/ConfilliaNormal-Regular.woff2'
+        as='font'
+        type='font/woff2'
+        crossOrigin='anonymous'
+      />
       <Body>
         <Providers>
           <Header />
           {children}
 
-          {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+          {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && process.env.NEXT_PUBLIC_UMAMI_URL && (
             <Script
               src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
               data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}

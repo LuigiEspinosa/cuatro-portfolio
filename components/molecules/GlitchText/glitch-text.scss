@@ -1,0 +1,70 @@
+.glitch-text {
+  display: inline-block;
+
+  &__inner {
+    font-family: var(--monument-bold);
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 700;
+    line-height: 0.9;
+    text-transform: uppercase;
+    color: var(--light-gray-color);
+  }
+}
+
+.glitch-text.glitch .glitch-text__inner {
+  animation: glitch-loop 6s infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes glitch-loop {
+  0%,
+  87%,
+  100% {
+    text-shadow: none;
+    clip-path: none;
+    transform: none;
+  }
+
+  88% {
+    text-shadow:
+      -3px 0 rgba(255, 0, 80, 0.75),
+      3px 0 rgba(0, 255, 255, 0.75);
+    clip-path: inset(20% 0 65% 0);
+    transform: translateX(-2px);
+  }
+
+  89% {
+    text-shadow:
+      3px 0 rgba(255, 0, 80, 0.75),
+      -3px 0 rgba(0, 255, 255, 0.75);
+    clip-path: inset(65% 0 15% 0);
+    transform: translateX(2px);
+  }
+
+  90% {
+    text-shadow: none;
+    clip-path: none;
+    transform: none;
+  }
+
+  92% {
+    text-shadow: -2px 0 rgba(255, 0, 80, 0.5);
+    clip-path: inset(42% 0 42% 0);
+  }
+
+  93%,
+  94% {
+    text-shadow: none;
+    clip-path: none;
+    transform: none;
+  }
+
+  95% {
+    text-shadow:
+      -1px 0 rgba(255, 0, 80, 0.4),
+      1px 0 rgba(0, 255, 255, 0.4);
+  }
+}

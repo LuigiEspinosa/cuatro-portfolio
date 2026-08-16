@@ -16,7 +16,7 @@ interface TorusKnotCanvasProps {
 
 export function TorusKnotCanvas({ scrollRef, className }: TorusKnotCanvasProps) {
   return (
-    <Scene className={className}>
+    <Scene className={className} cameraZ={5}>
       <ambientLight intensity={0.5} />
       <TorusKnot scrollRef={scrollRef} />
       <CanvasOrbitControls />

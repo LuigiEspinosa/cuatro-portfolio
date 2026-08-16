@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuatro Ecosystem — secondary surfaces (Direction C)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@10..48,75..100,200..800&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   Identical :root block to mockups/key-screens.html.
+   These four surfaces introduce NO new tokens — which is the point.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --c-paper:oklch(12% 0.011 288); --c-surface:oklch(16% 0.013 288);
+  --c-surface-high:oklch(20% 0.014 288); --c-line:oklch(28% 0.015 288);
+  --c-line-strong:oklch(51% 0.020 288); --c-muted:oklch(68% 0.012 288);
+  --c-ink:oklch(95% 0.005 288); --c-accent:oklch(66% 0.165 288);
+  --c-accent-bright:oklch(76% 0.145 288); --c-accent-quiet:oklch(46% 0.110 288); --c-focus:oklch(84% 0.130 288);
+
+  --color-bg:var(--c-paper); --color-bg-raised:var(--c-surface);
+  --color-bg-raised-2:var(--c-surface-high); --color-text:var(--c-ink);
+  --color-text-secondary:var(--c-muted); --color-border:var(--c-line);
+  --color-border-interactive:var(--c-line-strong); --color-accent:var(--c-accent);
+  --color-accent-hover:var(--c-accent-bright); --color-accent-muted:var(--c-accent-quiet); --color-focus:var(--c-focus);
+
+  --f-display:"Bricolage Grotesque",Archivo,system-ui,sans-serif;
+  --f-body:"Geist",ui-sans-serif,system-ui,sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,monospace;
+
+  --t-3xs:.6875rem; --t-2xs:.75rem; --t-xs:.8125rem; --t-sm:.875rem;
+  --t-base:1rem; --t-md:1.25rem; --t-xl:1.9531rem;
+  --t-display:clamp(2.25rem,9vw,4.5rem);
+
+  --s-2xs:.25rem; --s-xs:.5rem; --s-sm:.75rem; --s-md:1rem;
+  --s-lg:1.5rem; --s-xl:2.5rem; --s-2xl:4rem; --s-3xl:6rem;
+  --page-pad:clamp(1.25rem,5vw,4rem); --measure:46ch;
+
+  --r-none:0; --r-hair:2px; --r-pill:999px;
+  --stroke-focus:2px; --focus-offset:3px; --stroke-emphasis:2px; --stroke-hair:1px; --tap:44px;
+
+  --dur-micro:120ms; --dur-minor:220ms; --dur-major:420ms; --dur-exit:165ms;
+  --ease-entrance:cubic-bezier(0.16,1,0.3,1);
+  --ease-exit:cubic-bezier(0.7,0,0.84,0);
+  --ease-toggle:cubic-bezier(0.65,0,0.35,1);
+
+  --z-base:1; --z-raised:10; --z-dropdown:100; --z-sticky:200;
+  --z-modal:400; --z-toast:500; --z-tooltip:600;
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--dur-micro:1ms;--dur-minor:1ms;--dur-major:1ms;--dur-exit:1ms}
+}
+
+/* page chrome */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:clip}
+body{background:oklch(8% 0.008 288);color:var(--color-text-secondary);font-family:var(--f-body);font-size:15px;line-height:1.6;padding:var(--page-pad)}
+.doc-head{max-width:68ch;margin-bottom:var(--s-2xl)}
+.doc-head h1{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:700;text-transform:uppercase;letter-spacing:-.03em;font-size:var(--t-md);color:var(--color-text);margin-bottom:var(--s-sm)}
+.doc-head p{font-size:var(--t-sm);margin-bottom:var(--s-xs)}
+.doc-head code{font-family:var(--f-mono);font-size:.85em;color:var(--color-accent)}
+.screen{margin-bottom:var(--s-3xl);border-top:1px solid var(--color-border);padding-top:var(--s-lg)}
+.screen > h2{font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent);margin-bottom:var(--s-xs)}
+.screen > h2 b{color:var(--color-text);font-weight:400}
+.screen > .why{font-size:var(--t-sm);max-width:74ch;margin-bottom:var(--s-lg)}
+.screen > .why b{color:var(--color-text);font-weight:500}
+.row{display:flex;flex-wrap:wrap;gap:var(--s-lg);align-items:flex-start}
+.dev{border:1px solid var(--color-border);position:relative;background:var(--color-bg)}
+.dev::after{content:attr(data-w);position:absolute;top:0;right:0;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;padding:3px 6px;color:var(--color-text-secondary);background:oklch(8% 0.008 288);border-left:1px solid var(--color-border);border-bottom:1px solid var(--color-border);z-index:var(--z-tooltip)}
+.m{width:390px;max-width:100%}
+.ann{font-size:var(--t-2xs);font-family:var(--f-mono);letter-spacing:.04em;max-width:36ch;border-left:2px solid var(--c-accent-quiet);padding-left:var(--s-sm);line-height:1.65}
+.ann b{color:var(--color-text);font-weight:400}
+.ann + .ann{margin-top:var(--s-sm)}
+.slot{outline:1px dashed var(--color-border-interactive);outline-offset:2px;color:var(--color-text-secondary);font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.1em;text-transform:uppercase;padding:var(--s-xs);display:block;text-align:center}
+
+/* ══════════════════════ THE PRODUCT ═════════════════════════ */
+.pg{font-family:var(--f-body);color:var(--color-text);font-size:var(--t-xs);line-height:1.6}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:var(--s-md);border-bottom:1px solid var(--color-border);position:sticky;top:0;background:var(--color-bg);z-index:var(--z-sticky)}
+.hd .mark{font-family:var(--f-display);font-variation-settings:"wdth" 75;font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:var(--t-sm);color:var(--color-text)}
+.hd nav{display:flex;gap:var(--s-lg);font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.14em;text-transform:uppercase}
+.hd nav a{color:var(--color-text-secondary);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap);min-width:var(--tap);padding-inline:var(--s-xs);transition:color var(--dur-micro) var(--ease-toggle)}
+.hd nav a > span{border-bottom:var(--stroke-emphasis) solid transparent;padding-bottom:2px}
+.hd nav a[aria-current]{color:var(--color-text)}
+.hd nav a[aria-current] > span{border-bottom-color:var(--color-accent)}
+.hd nav a:focus-visible{outline:var(--stroke-focus) solid var(--color-focus);outline-offset:var(--focus-offset);border-radius:var(--r-hair)}
+
+.pad{padding:var(--s-xl) var(--s-md) var(--s-2xl)}
+.plate{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.16em;text-transform:uppercase;color:var(--color-text-secondary);border-bottom:1px solid var(--color-border);padding-bottom:var(--s-xs)}
+.disp{font-family:var(--f-display);font-variation-settings:"wdth" 100,"opsz" 48;font-weight:800;text-transform:uppercase;font-size:var(--t-display);line-height:.95;letter-spacing:-.05em;margin:var(--s-lg) 0 var(--s-md);max-width:11ch}
+.lede{font-size:var(--t-base);font-weight:300;line-height:1.55;color:var(--color-text-secondary);max-width:var(--measure)}
+.lede b{color:var(--color-text);font-weight:500}
+
+h2.sec{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:800;text-transform:uppercase;font-size:var(--t-md);letter-spacing:-.03em;border-bottom:1px solid var(--color-border-interactive);padding-bottom:var(--s-xs);margin:var(--s-2xl) 0 var(--s-md);display:flex;justify-content:space-between;align-items:baseline}
+h2.sec .n{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.14em;color:var(--color-text-secondary);font-weight:400;font-variant-numeric:tabular-nums}
+
+/* work item — accordion */
+.wi{border-bottom:1px solid var(--color-border)}
+.wi__hd{width:100%;background:none;border:none;color:inherit;font:inherit;text-align:left;display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s-md);padding:var(--s-md) 0;cursor:pointer}
+.wi__hd:focus-visible{outline:var(--stroke-focus) solid var(--color-focus);outline-offset:var(--focus-offset)}
+.wi__co{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:700;text-transform:uppercase;font-size:var(--t-base);letter-spacing:-.015em;line-height:1.15}
+.wi__sub{display:flex;flex-direction:column;gap:2px;margin-top:var(--s-2xs);font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary);font-variant-numeric:tabular-nums}
+.wi__ic{font-family:var(--f-mono);font-size:var(--t-3xs);color:var(--color-accent);flex:none;padding-top:var(--s-2xs)}
+.wi__body{padding:0 0 var(--s-md)}
+.wi__init{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);border:1px solid var(--color-accent);display:inline-block;padding:var(--s-2xs) var(--s-xs);margin-bottom:var(--s-sm)}
+.wi__desc{font-size:var(--t-sm);color:var(--color-text-secondary);max-width:var(--measure);margin-bottom:var(--s-sm)}
+.wi__hl{list-style:none;margin-bottom:var(--s-md)}
+.wi__hl li{font-size:var(--t-sm);color:var(--color-text-secondary);max-width:var(--measure);padding-left:var(--s-md);position:relative;margin-bottom:var(--s-xs)}
+.wi__hl li::before{content:"";position:absolute;left:0;top:.62em;width:var(--s-xs);height:1px;background:var(--color-accent)}
+.wi__tech{list-style:none;display:flex;flex-wrap:wrap;gap:var(--s-2xs) var(--s-xs)}
+.wi__tech li{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary);border:1px solid var(--color-border);padding:2px var(--s-xs)}
+
+/* inline link */
+a.il{color:var(--color-text);text-decoration:none;display:inline-flex;align-items:center;min-height:var(--tap)}
+a.il > span{border-bottom:var(--stroke-emphasis) solid var(--color-accent);padding-bottom:2px;transition:border-color var(--dur-micro) var(--ease-toggle)}
+a.il:hover > span{border-bottom-color:var(--color-accent-hover)}
+a.il.q{color:var(--color-text-secondary)}
+a.il.q > span{border-bottom:var(--stroke-hair) solid var(--color-border-interactive)}
+a.il:focus-visible{outline:var(--stroke-focus) solid var(--color-focus);outline-offset:var(--focus-offset)}
+.links{display:flex;flex-wrap:wrap;gap:var(--s-lg);font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.09em;text-transform:uppercase;margin-top:var(--s-md)}
+
+/* pull quote — recommendation */
+.quote{border-left:2px solid var(--color-accent);padding-left:var(--s-md);margin:var(--s-lg) 0}
+.quote p{font-size:var(--t-base);line-height:1.6;color:var(--color-text);max-width:var(--measure)}
+.quote p + p{margin-top:var(--s-md)}
+.quote footer{margin-top:var(--s-md);font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-secondary)}
+
+/* celeste */
+.cel{min-height:420px;display:grid;place-items:center;padding:var(--s-2xl) var(--s-md);text-align:center}
+.cel h1{font-family:var(--f-display);font-variation-settings:"wdth" 85,"opsz" 48;font-weight:800;text-transform:uppercase;font-size:clamp(1.75rem,7vw,2.75rem);line-height:1.05;letter-spacing:-.04em;color:var(--color-text);max-width:14ch}
+.cel .bf{color:var(--color-accent);display:block;margin-top:var(--s-md);font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.2em;font-weight:400;text-transform:none}
+
+.ft{border-top:1px solid var(--color-border);padding:var(--s-xl) var(--s-md);display:grid;gap:var(--s-lg)}
+.ft .fl{font-family:var(--f-display);font-variation-settings:"wdth" 75;font-weight:800;text-transform:uppercase;font-size:var(--t-sm);color:var(--color-text);letter-spacing:-.02em}
+.ft nav{display:flex;flex-wrap:wrap;gap:var(--s-sm) var(--s-lg);font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.11em;text-transform:uppercase}
+.ft nav a{color:var(--color-text-secondary);text-decoration:none;border-bottom:1px solid transparent;padding-bottom:2px}
+.ft nav a[aria-current]{color:var(--color-text);border-bottom-color:var(--color-accent)}
+.ft .fine{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.06em;color:var(--color-text-secondary)}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>Secondary surfaces — /cv, /work, /recommendation, /celeste</h1>
+  <p>The four routes that survive FR-1 but leave the header under Q8. Same <code>:root</code> block as <code>key-screens.html</code>, byte for byte — <b>these four surfaces introduce no new tokens</b>, which is the proof that the contract covers the whole site, not just the homepage.</p>
+  <p>Dashed outlines mark <b>content slots</b> — real content that does not exist yet in the repository and that I will not invent. Everything not in a slot is real data lifted from <code>content/work.ts</code>.</p>
+</div>
+
+<!-- ══════════ S7 ══════════ -->
+<section class="screen">
+  <h2>S7 · <b>/cv — the header destination, absorbing /work</b></h2>
+  <p class="why"><b>This page does not exist yet.</b> <code>app/cv/page.tsx</code> is a one-line stub returning a bare <code>&lt;h1&gt;</code>, while <code>/work</code> is fully built with a real timeline, a GSAP accordion and a reduced-motion hook. So Q8's "fold /work into /cv" is not a merge of two pages — it is <b>building /cv around the WorkTimeline component that already works</b>. The component is reused, not rewritten, and <code>/work</code> keeps rendering it standalone.</p>
+  <div class="row">
+    <div class="dev m pg" data-w="390">
+      <div class="hd"><span class="mark">Cuatro</span><nav><a href="#"><span>Suite</span></a><a href="#" aria-current="page"><span>CV</span></a></nav></div>
+      <div class="pad">
+        <div class="plate"><span>Curriculum Vitae</span><span>cuatro.dev/cv</span></div>
+        <h1 class="disp">Luigi Espinosa</h1>
+        <p class="lede"><b>Senior Frontend Engineer.</b> Nine years building interfaces for regulated pharma, global agencies and a therapy platform — and, on the side, <a href="#" class="il"><span>a suite of six applications</span></a> in six frameworks.</p>
+        <p class="links"><a href="#" class="il"><span>Download PDF</span></a><a href="#" class="il q"><span>Recommendations</span></a></p>
+
+        <h2 class="sec">Experience <span class="n">4 roles · 2017—2025</span></h2>
+
+        <div class="wi">
+          <button class="wi__hd" aria-expanded="true">
+            <span><span class="wi__co">Publicis Global Delivery</span>
+              <span class="wi__sub"><span>Senior Frontend Engineer</span><span>Oct. 2023 – Dec. 2025 · Remote</span></span>
+            </span><span class="wi__ic" aria-hidden="true">▼</span>
+          </button>
+          <div class="wi__body">
+            <span class="wi__init">Automation Initiatives Lead</span>
+            <p class="wi__desc">Engineered Digital Sales Presentations for Pfizer using React, Astro, and Veeva CRM, ensuring compliance with regulatory and business requirements.</p>
+            <ul class="wi__hl">
+              <li>Designed scalable, modular solutions supporting multiple Pfizer product portfolios and international markets.</li>
+              <li>Built reusable UI components and automated content workflows to reduce cycle time.</li>
+              <li>Developed an Upload App for Veeva CRM assets: automated packaging and validation of CLM ZIPs.</li>
+            </ul>
+            <ul class="wi__tech"><li>React</li><li>Astro</li><li>TypeScript</li><li>Next.js</li><li>Node.js</li><li>Veeva CRM</li><li>Azure</li></ul>
+          </div>
+        </div>
+
+        <div class="wi">
+          <button class="wi__hd" aria-expanded="false">
+            <span><span class="wi__co">Crossbridge Global Partners</span>
+              <span class="wi__sub"><span>Frontend Developer</span><span>Aug. 2021 – Nov. 2023 · Remote</span></span>
+            </span><span class="wi__ic" aria-hidden="true">▶</span>
+          </button>
+        </div>
+        <div class="wi">
+          <button class="wi__hd" aria-expanded="false">
+            <span><span class="wi__co">Webcat APP</span>
+              <span class="wi__sub"><span>Fullstack Developer</span><span>Aug. 2020 – Jun. 2021 · Remote</span></span>
+            </span><span class="wi__ic" aria-hidden="true">▶</span>
+          </button>
+        </div>
+        <div class="wi">
+          <button class="wi__hd" aria-expanded="false">
+            <span><span class="wi__co">Namecol S.A.S.</span>
+              <span class="wi__sub"><span>Web Developer</span><span>Feb. 2017 – Jul. 2020 · Bogotá, Colombia</span></span>
+            </span><span class="wi__ic" aria-hidden="true">▶</span>
+          </button>
+        </div>
+
+        <h2 class="sec">Education <span class="n">—</span></h2>
+        <span class="slot">content slot — not in the repository</span>
+
+        <h2 class="sec">Contact <span class="n">—</span></h2>
+        <span class="slot">content slot — not in the repository</span>
+      </div>
+      <div class="ft">
+        <span class="fl">Cuatro</span>
+        <nav><a href="#" aria-current="page"><span>CV</span></a><a href="#"><span>Work</span></a><a href="#"><span>Recommendations</span></a><a href="#"><span>Celeste</span></a><a href="#"><span>GitHub</span></a></nav>
+        <span class="fine">Six applications · five languages · one operator</span>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Q8</b> — the only header page besides the Suite. Nav marks it <code>aria-current="page"</code>; the Suite link stays one tap away.</p>
+      <p class="ann"><b>Reuses <code>WorkItem</code></b> unchanged — same accordion, same <code>useReduceMotion</code> hook, same <code>aria-expanded</code> / <code>aria-controls</code> wiring already in the repo.</p>
+      <p class="ann"><b>The lede links back to the Suite.</b> Daniela who lands here from a CV PDF still finds the payload in one tap.</p>
+      <p class="ann"><b>Tech chips</b> are trimmed to seven. The raw arrays run to twenty-three entries — a wall of chips reads as keyword stuffing to Marcus, which is the opposite of the intended signal.</p>
+      <p class="ann"><b>No invented content.</b> Education and Contact are slots. The lede's "nine years" is derived from the real 2017 start date in <code>content/work.ts</code>, not made up.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S8 ══════════ -->
+<section class="screen">
+  <h2>S8 · <b>/work — survives standalone</b></h2>
+  <p class="why">Same timeline, own route, no header link (Q8). Anyone with the URL, an old bookmark or a search result still lands on a real page. <b>Two fixes travel with the reskin</b> — both are pre-existing defects in the shipping site, not new work.</p>
+  <div class="row">
+    <div class="dev m pg" data-w="390">
+      <div class="hd"><span class="mark">Cuatro</span><nav><a href="#"><span>Suite</span></a><a href="#"><span>CV</span></a></nav></div>
+      <div class="pad">
+        <div class="plate"><span>Professional Experience</span><span>cuatro.dev/work</span></div>
+        <h1 class="disp">Nine years of it</h1>
+        <p class="lede">The same timeline that sits inside <a href="#" class="il"><span>the CV</span></a>, on its own page.</p>
+        <h2 class="sec">Timeline <span class="n">4 roles</span></h2>
+        <div class="wi">
+          <button class="wi__hd" aria-expanded="true">
+            <span><span class="wi__co">Publicis Global Delivery</span>
+              <span class="wi__sub"><span>Senior Frontend Engineer</span><span>Oct. 2023 – Dec. 2025 · Remote</span></span>
+            </span><span class="wi__ic" aria-hidden="true">▼</span>
+          </button>
+          <div class="wi__body">
+            <span class="wi__init">Automation Initiatives Lead</span>
+            <p class="wi__desc">Engineered Digital Sales Presentations for Pfizer using React, Astro, and Veeva CRM, ensuring compliance with regulatory and business requirements.</p>
+            <ul class="wi__tech"><li>React</li><li>Astro</li><li>TypeScript</li><li>Veeva CRM</li></ul>
+          </div>
+        </div>
+        <div class="wi">
+          <button class="wi__hd" aria-expanded="false">
+            <span><span class="wi__co">Crossbridge Global Partners</span>
+              <span class="wi__sub"><span>Frontend Developer</span><span>Aug. 2021 – Nov. 2023 · Remote</span></span>
+            </span><span class="wi__ic" aria-hidden="true">▶</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Defect carried in the reskin #1</b> — <code>WorkHero.tsx:39</code> sets <code>aria-hidden="true"</code> on the <code>&lt;section&gt;</code> that contains the page's only <code>&lt;h1&gt;</code>. The heading is invisible to assistive tech today. Move <code>aria-hidden</code> onto the decorative canvas only.</p>
+      <p class="ann"><b>Defect carried in the reskin #2</b> — <code>WorkItem.scss:84</code> reads <code>boder:</code>. That tech-chip border has never rendered.</p>
+      <p class="ann"><b>Period typo</b> — <code>content/work.ts:18</code> reads <code>"Oct. 2023 - Dev. 2025"</code>. Should be <code>Dec.</code></p>
+      <p class="ann"><b>Chip borders now render</b>, so the tech list gains visible structure the moment the typo is fixed — worth a look before you assume the reskin changed it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S9 ══════════ -->
+<section class="screen">
+  <h2>S9 · <b>/recommendation — footer route, linked from /cv</b></h2>
+  <p class="why">Also a stub today (<code>app/recommendation/page.tsx</code> returns one <code>&lt;h1&gt;</code>). Social proof lands next to the CV rather than competing with the Suite. Set as a <b>pull quote with an accent rule</b> — the one place in the system where a person's words carry the page, so the accent earns a structural role it gets nowhere else.</p>
+  <div class="row">
+    <div class="dev m pg" data-w="390">
+      <div class="hd"><span class="mark">Cuatro</span><nav><a href="#"><span>Suite</span></a><a href="#"><span>CV</span></a></nav></div>
+      <div class="pad">
+        <div class="plate"><span>Recommendations</span><span>cuatro.dev/recommendation</span></div>
+        <h1 class="disp">In someone else's words</h1>
+        <blockquote class="quote">
+          <p><span class="slot">content slot — recommendation letter text, not in the repository</span></p>
+          <footer>Name · Role · Company</footer>
+        </blockquote>
+        <p class="links"><a href="#" class="il"><span>Read the CV</span></a><a href="#" class="il q"><span>The Suite</span></a></p>
+      </div>
+      <div class="ft">
+        <span class="fl">Cuatro</span>
+        <nav><a href="#"><span>CV</span></a><a href="#"><span>Work</span></a><a href="#" aria-current="page"><span>Recommendations</span></a><a href="#"><span>Celeste</span></a><a href="#"><span>GitHub</span></a></nav>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Plural in the UI</b> — "Recommendations". The route stays singular per FR-1; only the label changes, so one letter today does not box you in.</p>
+      <p class="ann"><b>Attribution is required.</b> An unattributed quote is worth less than no quote to a hiring reader.</p>
+      <p class="ann"><b>Both exits are offered.</b> Daniela goes to the CV; Marcus goes to the Suite.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S10 ══════════ -->
+<section class="screen">
+  <h2>S10 · <b>/celeste — footer only, header suppressed</b></h2>
+  <p class="why">A personal page. It renders <code>Te amo muchísimo hermosa 💙🦋</code> and <b>hides the site header via a DOM side-effect</b> in <code>Celeste.tsx</code>. The reskin keeps the suppression — the page should not carry suite navigation — but replaces the imperative <code>document.querySelector('header').style.display</code> mutation, which fights React and leaves the header hidden if the effect's cleanup never runs.</p>
+  <div class="row">
+    <div class="dev m pg" data-w="390">
+      <div class="cel">
+        <h1>Te amo muchísimo hermosa<span class="bf">💙 🦋</span></h1>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Keeps the emoji.</b> The no-emoji-as-icon rule bans decorative emoji standing in for an icon set. Here they are the message. Different thing.</p>
+      <p class="ann"><b>Fix the header suppression</b> — a route-group layout or a CSS class on <code>&lt;body&gt;</code>, not a <code>querySelector</code> mutation in an effect.</p>
+      <p class="ann"><b>The one surface with no exit</b>, deliberately. Reachable only from the footer, and not indexed.</p>
+      <p class="ann"><b>Only surface where <code>display</code> type centres.</b> Everything else in the system is left-biased. The exception is legible because it is the only one.</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

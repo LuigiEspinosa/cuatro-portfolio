@@ -33,9 +33,9 @@ describe('Navbar', () => {
     expect(link).toHaveAttribute('href', '/projects');
   });
 
-  it('does not render a /blog link', () => {
+  it('renders a /blog link', () => {
     const link = screen.queryByRole('link', { name: /blog/i });
-    expect(link).not.toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/blog');
   });
 
   it('external links have target _blank', () => {
@@ -45,4 +45,3 @@ describe('Navbar', () => {
     expect(externalLinks.length).toBeGreaterThan(0);
   });
 });
-

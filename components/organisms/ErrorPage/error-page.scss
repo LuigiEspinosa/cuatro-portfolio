@@ -1,60 +1,75 @@
-.error-container {
-  .header-container {
-    position: absolute;
-    width: 100%;
+.error-page {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background-color: #0a000f;
+  background-image:
+    linear-gradient(rgba(140, 90, 210, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 90, 210, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  text-align: center;
+
+  &__content {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    top: -100vh;
-
-    .header {
-      color: var(--white-color);
-
-      & > span {
-        font-family: var(--monument-bold);
-        font-size: 25vw;
-        position: relative;
-      }
-    }
+    gap: 1.5rem;
+    z-index: 2;
+    padding: 2rem var(--page-padding);
   }
 
-  .footer {
-    position: fixed;
-    bottom: 5em;
-    width: 100%;
+  &__code {
+    font-family: var(--monument-bold);
+    font-size: clamp(6rem, 18vw, 14rem);
+    line-height: 1;
+    margin: 0;
+    color: rgba(139, 92, 246, 0.15);
+    letter-spacing: -0.02em;
+  }
+
+  &__message {
     display: flex;
-    justify-content: center;
-    color: var(--white-color);
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 
-    span {
-      position: relative;
-      top: 30px;
-      font-family: var(--font-regular);
-      font-weight: 400;
-      font-size: 1.4em;
-      transition: 1s;
+  &__title {
+    font-family: var(--monument-regular);
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+    color: var(--light-gray-color);
+    margin: 0;
+  }
 
-      a {
-        color: var(--white-color);
+  &__sub {
+    font-size: 0.9rem;
+    color: var(--gray-color);
+    margin: 0;
+  }
 
-        &:hover {
-          opacity: 0.8;
-        }
-      }
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--light-gray-color);
+    text-decoration: none;
+    border-left: 1px solid var(--accent-dim);
+    padding: 0.6rem 1rem;
+    transition:
+      border-left-color 0.2 ease,
+      color 0.2s ease;
+    letter-spacing: 0.04em;
+
+    &:hover {
+      border-left-color: var(--accent);
+      color: var(--accent);
     }
 
-    .footer-wrapper {
-      &:after {
-        content: '';
-        position: absolute;
-        top: 30px;
-        left: 0;
-        width: 110%;
-        height: 100%;
-        margin: 0 auto;
-        transition: 1s;
-        background: var(--black-color);
-      }
+    &:focus-visible {
+      outline: 1px solid var(--accent);
+      outline-offset: 4px;
     }
   }
 }

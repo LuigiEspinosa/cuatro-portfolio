@@ -43,12 +43,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <div className='project-card__links'>
         {project.github && (
           <a href={project.github} target='_blank' rel='noopener noreferrer'>
-            Github
+            // Github
           </a>
         )}
         {project.live && (
           <a href={project.live} target='_blank' rel='noopener noreferrer'>
-            Live
+            Live →
           </a>
         )}
       </div>

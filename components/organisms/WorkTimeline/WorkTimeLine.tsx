@@ -11,7 +11,7 @@ import './WorkTimeline.scss';
 gsap.registerPlugin(ScrollTrigger);
 
 export function WorkTimeline() {
-  const [openId, setOpenId] = useState<string | null>(work[0].id);
+  const [openId, setOpenId] = useState<string | null>(work[0]?.id ?? null);
 
   // If the list grows beyond 20 entries, the initial batch on page
   // load many animate too many times simultaneously. Add a `batchMax` option then.

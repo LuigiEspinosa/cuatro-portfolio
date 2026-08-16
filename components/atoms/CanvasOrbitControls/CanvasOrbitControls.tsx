@@ -23,7 +23,7 @@ export function CanvasOrbitControls({ autoRotate = false }: { autoRotate?: boole
     <OrbitControls
       ref={controlsRef}
       autoRotate={autoRotate}
-      autoRotateSpeed={0.8}
+      autoRotateSpeed={0.35}
       enableZoom={false}
       enablePan={false}
       onStart={handleStart}

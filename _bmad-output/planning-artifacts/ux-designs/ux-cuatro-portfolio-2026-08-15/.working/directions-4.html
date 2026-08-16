@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuatro Ecosystem — four design directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Bricolage+Grotesque:opsz,wdth,wght@10..48,75..100,200..800&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   PAGE CHROME — not part of any direction. Deliberately neutral.
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:clip}
+body{
+  background:oklch(9% 0.008 295);
+  color:oklch(88% 0.006 295);
+  font-family:Geist,ui-sans-serif,system-ui,sans-serif;
+  font-size:16px;
+  line-height:1.6;
+  overflow-x:clip;
+  padding:clamp(1.25rem,4vw,3.5rem);
+}
+.page-head{max-width:62ch;margin-bottom:4rem}
+.page-head h1{font-size:1.5rem;font-weight:500;letter-spacing:-.02em;margin-bottom:.75rem}
+.page-head p{color:oklch(64% 0.012 295);font-size:.95rem}
+.page-head p + p{margin-top:.75rem}
+.page-head code{font-family:"Geist Mono",ui-monospace,monospace;font-size:.85em;color:oklch(74% 0.10 295)}
+
+.dir{margin-bottom:6rem;border-top:1px solid oklch(26% 0.014 295);padding-top:2rem}
+.dir-head{display:flex;flex-wrap:wrap;gap:.75rem 1.5rem;align-items:baseline;margin-bottom:.75rem}
+.dir-head .letter{font-family:"Geist Mono",monospace;font-size:.8rem;letter-spacing:.12em;color:oklch(70% 0.14 295)}
+.dir-head .name{font-size:1.25rem;font-weight:600;letter-spacing:-.015em;color:oklch(94% 0.004 295)}
+.dir-head .register{font-size:.85rem;color:oklch(60% 0.012 295);font-style:italic}
+.dir-why{max-width:70ch;font-size:.9rem;color:oklch(66% 0.010 295);margin-bottom:1.75rem}
+.dir-why b{color:oklch(84% 0.008 295);font-weight:500}
+
+/* token chip strip */
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.75rem}
+.chip{display:flex;flex-direction:column;gap:.3rem;font-family:"Geist Mono",monospace;font-size:.62rem;letter-spacing:.04em;color:oklch(56% 0.010 295)}
+.chip .sw{width:5.5rem;height:2.25rem;border-radius:2px;border:1px solid oklch(30% 0.014 295)}
+.chip .lbl{white-space:nowrap}
+
+/* the frame each direction is rendered inside */
+.frames{display:grid;gap:1.25rem;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start}
+.frame{border:1px solid oklch(28% 0.014 295);border-radius:3px;overflow:hidden;position:relative}
+.frame > .cap{position:absolute;top:0;right:0;font-family:"Geist Mono",monospace;font-size:.58rem;letter-spacing:.1em;padding:.3rem .5rem;color:oklch(52% 0.010 295);background:oklch(9% 0.008 295);border-left:1px solid oklch(28% 0.014 295);border-bottom:1px solid oklch(28% 0.014 295);z-index:5}
+.phone{max-width:390px;margin-inline:auto}
+.notes{font-size:.8rem;color:oklch(58% 0.010 295);margin-top:1rem;max-width:70ch}
+.notes b{color:oklch(78% 0.008 295);font-weight:500}
+
+/* ============================================================
+   DIRECTION A — TERMINAL LEDGER
+   anchor hue 295 (violet)
+   paper   oklch(13% 0.012 295)   ≈ #131016
+   surface oklch(16.5% 0.014 295) ≈ #1a1620
+   ink     oklch(93% 0.006 295)   ≈ #e9e6ec
+   muted   oklch(62% 0.012 295)   ≈ #918d97
+   accent  oklch(70% 0.155 295)   ≈ #a37dea
+   line    oklch(28% 0.016 295)   ≈ #322b3b
+   ============================================================ */
+.A{--paper:oklch(13% 0.012 295);--surface:oklch(16.5% 0.014 295);--ink:oklch(93% 0.006 295);--muted:oklch(62% 0.012 295);--accent:oklch(70% 0.155 295);--line:oklch(28% 0.016 295);
+   background:var(--paper);color:var(--ink);font-family:"Geist Mono",ui-monospace,monospace;font-size:13px;line-height:1.55}
+.A .pad{padding:1.5rem 1.25rem}
+.A .kicker{font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.A h2{font-family:Geist,sans-serif;font-weight:800;font-size:clamp(1.7rem,6vw,2.5rem);line-height:1.06;letter-spacing:-.035em;margin:.85rem 0 .7rem;max-width:16ch}
+.A .lede{font-family:Geist,sans-serif;font-weight:300;font-size:.95rem;line-height:1.55;color:var(--muted);max-width:44ch}
+.A .lede em{font-style:normal;color:var(--ink)}
+.A .rule{height:1px;background:var(--line);margin:1.5rem 0}
+.A table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.A th{text-align:left;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:400;padding:0 0 .55rem;border-bottom:1px solid var(--line)}
+.A td{padding:.7rem 0;border-bottom:1px solid var(--line);vertical-align:top}
+.A .nm{font-family:Geist,sans-serif;font-weight:600;font-size:.92rem;letter-spacing:-.01em}
+.A .ds{color:var(--muted);font-family:Geist,sans-serif;font-size:.8rem;display:block;margin-top:.2rem;max-width:40ch}
+.A .st{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.A .st.live{color:var(--accent)}
+.A .st.live::before{content:"";display:inline-block;width:5px;height:5px;background:var(--accent);margin-right:.45rem;vertical-align:.12em}
+.A .st.done{color:var(--muted)}
+.A .st.done::before{content:"";display:inline-block;width:5px;height:5px;border:1px solid var(--muted);margin-right:.45rem;vertical-align:.12em}
+.A .tech{color:var(--muted);font-size:.66rem;letter-spacing:.03em;display:block;margin-top:.35rem}
+.A .lk{display:inline-flex;gap:1rem;margin-top:.5rem;font-size:.68rem;letter-spacing:.06em}
+.A .lk a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--accent);padding-bottom:1px}
+.A .lk a.src{color:var(--muted);border-bottom-color:var(--line)}
+
+/* ============================================================
+   DIRECTION B — EDITORIAL SPECIMEN
+   anchor hue 312 (plum)
+   paper   oklch(14% 0.015 312)   ≈ #171018
+   surface oklch(17.5% 0.017 312) ≈ #1e161f
+   ink     oklch(94% 0.008 312)   ≈ #ede7ec
+   muted   oklch(63% 0.014 312)   ≈ #958a95
+   accent  oklch(69% 0.150 312)   ≈ #c079d4
+   line    oklch(29% 0.018 312)   ≈ #372c38
+   ============================================================ */
+.B{--paper:oklch(14% 0.015 312);--surface:oklch(17.5% 0.017 312);--ink:oklch(94% 0.008 312);--muted:oklch(63% 0.014 312);--accent:oklch(69% 0.150 312);--line:oklch(29% 0.018 312);
+   background:var(--paper);color:var(--ink);font-family:Geist,sans-serif;font-size:14px;line-height:1.62}
+.B .pad{padding:2rem 1.4rem}
+.B .folio{font-family:"Geist Mono",monospace;font-size:.62rem;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+.B h2{font-family:Fraunces,Georgia,serif;font-variation-settings:"opsz" 144,"SOFT" 0,"WONK" 1;font-weight:300;font-size:clamp(2.2rem,9vw,3.6rem);line-height:1.04;letter-spacing:-.028em;margin:1.1rem 0 .9rem;max-width:13ch}
+.B h2 i{font-style:italic;font-weight:600;color:var(--accent)}
+.B .lede{font-size:.98rem;line-height:1.6;color:var(--muted);max-width:46ch}
+.B .lede strong{font-weight:600;color:var(--ink)}
+.B .rule{height:1px;background:var(--line);margin:1.75rem 0 1.25rem}
+.B .grid{display:grid;grid-template-columns:4.5rem 1fr;gap:1.1rem 1rem;align-items:start}
+.B .num{font-family:"Geist Mono",monospace;font-size:.62rem;letter-spacing:.12em;color:var(--muted);padding-top:.4rem;font-variant-numeric:tabular-nums}
+.B .ent{border-top:1px solid var(--line);padding-top:.75rem}
+.B .ent h3{font-family:Fraunces,Georgia,serif;font-variation-settings:"opsz" 20;font-weight:600;font-size:1.22rem;letter-spacing:-.012em;line-height:1.2}
+.B .ent p{font-size:.86rem;color:var(--muted);margin-top:.35rem;max-width:42ch}
+.B .meta{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;margin-top:.65rem}
+.B .st{font-family:"Geist Mono",monospace;font-size:.6rem;letter-spacing:.13em;text-transform:uppercase}
+.B .st.live{color:var(--accent)}
+.B .st.done{color:var(--muted)}
+.B .tech{font-family:"Geist Mono",monospace;font-size:.6rem;letter-spacing:.06em;color:var(--muted)}
+.B .lk{display:flex;gap:1.1rem;margin-top:.6rem;font-size:.78rem}
+.B .lk a{color:var(--ink);text-decoration:none;background-image:linear-gradient(var(--accent),var(--accent));background-size:100% 1px;background-repeat:no-repeat;background-position:0 100%;padding-bottom:2px}
+.B .lk a.src{color:var(--muted);background-image:linear-gradient(var(--line),var(--line))}
+
+/* ============================================================
+   DIRECTION C — INDUSTRIAL PLATE
+   anchor hue 288 (blue-violet)
+   paper   oklch(12% 0.011 288)   ≈ #100f16
+   surface oklch(15.5% 0.013 288) ≈ #17151e
+   ink     oklch(95% 0.005 288)   ≈ #ececf1
+   muted   oklch(60% 0.011 288)   ≈ #8a8895
+   accent  oklch(66% 0.165 288)   ≈ #8b7bf0
+   line    oklch(27% 0.015 288)   ≈ #2d2b39
+   ============================================================ */
+.C{--paper:oklch(12% 0.011 288);--surface:oklch(15.5% 0.013 288);--ink:oklch(95% 0.005 288);--muted:oklch(60% 0.011 288);--accent:oklch(66% 0.165 288);--line:oklch(27% 0.015 288);
+   background:var(--paper);color:var(--ink);font-family:Geist,sans-serif;font-size:14px;line-height:1.6}
+.C .pad{padding:1.6rem 1.25rem}
+.C .plate{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:.6rem;font-family:"Geist Mono",monospace;font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.C h2{font-family:"Bricolage Grotesque",Archivo,sans-serif;font-variation-settings:"wdth" 100,"opsz" 48;font-weight:800;font-size:clamp(1.9rem,7.5vw,3rem);line-height:1.0;letter-spacing:-.045em;text-transform:uppercase;margin:1.2rem 0 .8rem;max-width:11ch}
+.C .lede{font-size:.94rem;color:var(--muted);max-width:44ch;line-height:1.58}
+.C .lede b{color:var(--ink);font-weight:500}
+.C .band{margin-top:1.5rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:.5rem 0;font-family:"Bricolage Grotesque",sans-serif;font-variation-settings:"wdth" 75;font-weight:700;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);display:flex;gap:1.1rem;flex-wrap:wrap}
+.C .band span:nth-child(2n){color:var(--accent)}
+.C .ent{border-bottom:1px solid var(--line);padding:1rem 0;display:grid;grid-template-columns:1fr auto;gap:.4rem 1rem;align-items:start}
+.C .ent h3{font-family:"Bricolage Grotesque",sans-serif;font-variation-settings:"wdth" 85;font-weight:700;font-size:1rem;letter-spacing:-.01em;text-transform:uppercase}
+.C .ent p{grid-column:1/-1;font-size:.84rem;color:var(--muted);max-width:44ch}
+.C .st{font-family:"Geist Mono",monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line);padding:.2rem .45rem;white-space:nowrap}
+.C .st.live{color:var(--accent);border-color:var(--accent)}
+.C .st.done{color:var(--muted)}
+.C .tech{grid-column:1/-1;font-family:"Geist Mono",monospace;font-size:.6rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.C .lk{grid-column:1/-1;display:flex;gap:1.2rem;font-family:"Geist Mono",monospace;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;margin-top:.2rem}
+.C .lk a{color:var(--ink);text-decoration:none;border-bottom:2px solid var(--accent);padding-bottom:1px}
+.C .lk a.src{color:var(--muted);border-bottom:1px solid var(--line)}
+
+/* ============================================================
+   DIRECTION D — QUIET INSTRUMENT
+   anchor hue 302 (soft violet)
+   paper   oklch(15% 0.009 302)   ≈ #17141a
+   surface oklch(18.5% 0.011 302) ≈ #1e1a22
+   ink     oklch(92% 0.006 302)   ≈ #e5e1e7
+   muted   oklch(64% 0.010 302)   ≈ #979299
+   accent  oklch(72% 0.120 302)   ≈ #b490d8
+   line    oklch(26% 0.012 302)   ≈ #2c2731
+   ============================================================ */
+.D{--paper:oklch(15% 0.009 302);--surface:oklch(18.5% 0.011 302);--ink:oklch(92% 0.006 302);--muted:oklch(64% 0.010 302);--accent:oklch(72% 0.120 302);--line:oklch(26% 0.012 302);
+   background:var(--paper);color:var(--ink);font-family:Newsreader,Georgia,serif;font-size:15px;line-height:1.65}
+.D .pad{padding:2.25rem 1.5rem 1.75rem}
+.D .kicker{font-family:Geist,sans-serif;font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.D h2{font-family:Newsreader,Georgia,serif;font-variation-settings:"opsz" 48;font-weight:200;font-size:clamp(2rem,7.5vw,2.9rem);line-height:1.14;letter-spacing:-.02em;margin:1rem 0 .85rem;max-width:17ch}
+.D h2 b{font-weight:600}
+.D .lede{font-size:1rem;color:var(--muted);max-width:48ch;line-height:1.66}
+.D .rule{height:1px;background:var(--line);margin:1.9rem 0 1.1rem}
+.D .ent{padding:.95rem 0;border-bottom:1px solid var(--line)}
+.D .ent .top{display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
+.D .ent h3{font-family:Geist,sans-serif;font-weight:600;font-size:.98rem;letter-spacing:-.01em}
+.D .ent p{font-size:.9rem;color:var(--muted);margin-top:.3rem;max-width:46ch}
+.D .st{font-family:Geist,sans-serif;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;color:var(--muted)}
+.D .st.live{color:var(--accent)}
+.D .tech{font-family:Geist,sans-serif;font-size:.66rem;letter-spacing:.05em;color:var(--muted);margin-top:.45rem;display:block}
+.D .lk{display:flex;gap:1.2rem;margin-top:.55rem;font-family:Geist,sans-serif;font-size:.8rem}
+.D .lk a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+.D .lk a.src{color:var(--muted)}
+
+/* shared: reduced-motion / no-3D fallback strip demo */
+.fallback{font-family:"Geist Mono",monospace;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:.6rem .8rem;border:1px dashed currentColor;opacity:.62;margin:1.1rem 0 0}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Cuatro Ecosystem — four design directions</h1>
+  <p>Same content, four complete visual personalities. All dark-only, all anchored on a single purple hue, all built to hallmark's rules: <b>no</b> pure <code>#000</code>, <b>no</b> gradients, <b>no</b> glow, accent held under 3% of viewport. They differ on <b>density, type voice, and how much the page performs</b> — not on hue.</p>
+  <p>Each panel shows the homepage climax (the narrative's last beat resolving into the Suite Directory) and two real Registry Entries with a <code>Live</code> and a <code>Complete</code> state. Descriptions are drafts written to the FR-8 contract.</p>
+  <p>Swatch values are documented as OKLCH with hex approximations in the <code>&lt;style&gt;</code> comments — lift them straight if you pick one.</p>
+</div>
+
+<!-- ============ A ============ -->
+<section class="dir">
+  <div class="dir-head"><span class="letter">A</span><span class="name">Terminal Ledger</span><span class="register">an ops console that happens to be beautiful</span></div>
+  <p class="dir-why">Mono-forward and dense. The Suite Directory is a <b>table</b>, not a card grid — which kills hallmark's three-column-card tell outright and reads as a status board rather than a portfolio. Purple appears only as a live-state indicator and a link underline. <b>Strongest for Marcus</b>; the risk is that Daniela reads it as documentation rather than as a person.</p>
+  <div class="chips">
+    <div class="chip"><div class="sw" style="background:oklch(13% 0.012 295)"></div><div class="lbl">paper 13%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(16.5% 0.014 295)"></div><div class="lbl">surface 16.5%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(28% 0.016 295)"></div><div class="lbl">line 28%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(62% 0.012 295)"></div><div class="lbl">muted 62%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(93% 0.006 295)"></div><div class="lbl">ink 93%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(70% 0.155 295)"></div><div class="lbl">accent 295</div></div>
+  </div>
+  <div class="frames"><div class="frame phone A"><span class="cap">390px</span>
+    <div class="pad">
+      <div class="kicker">04 — everything, running</div>
+      <h2>Six frameworks. One suite.</h2>
+      <p class="lede">Fifteen repositories became eight. <em>These six are live right now.</em> Open one — it is the real application, not a screenshot.</p>
+      <div class="rule"></div>
+      <table>
+        <thead><tr><th>Application</th><th style="text-align:right">Status</th></tr></thead>
+        <tbody>
+        <tr><td>
+          <span class="nm">Digital Library</span>
+          <span class="ds">A self-hosted ebook library that stores a personal collection and reads it in the browser.</span>
+          <span class="tech">SVELTE · FASTIFY · POSTGRES</span>
+          <span class="lk"><a href="#">library.cuatro.dev</a><a href="#" class="src">source</a></span>
+        </td><td style="text-align:right"><span class="st live">Live</span></td></tr>
+        <tr><td>
+          <span class="nm">CS Tournament</span>
+          <span class="ds">Runs a Counter-Strike tournament from sign-up through the bracket to a final result.</span>
+          <span class="tech">NEXT.JS · POSTGRES</span>
+          <span class="lk"><a href="#" class="src">source</a></span>
+        </td><td style="text-align:right"><span class="st done">Complete</span></td></tr>
+        </tbody>
+      </table>
+      <p class="fallback">Reduced motion — narrative replaced by a still frame</p>
+    </div>
+  </div></div>
+  <p class="notes"><b>Type:</b> Geist Mono for structure and metadata, Geist 800 for the display line, Geist 300 for the lede — a 500-unit weight gap. <b>Two families.</b></p>
+</section>
+
+<!-- ============ B ============ -->
+<section class="dir">
+  <div class="dir-head"><span class="letter">B</span><span class="name">Editorial Specimen</span><span class="register">a design annual — considered, human, expensive</span></div>
+  <p class="dir-why">High-contrast serif display against a clean grotesque body, with a numbered margin column carrying the ordinal. The Suite Directory reads as a <b>catalogue</b>. It is the direction that most obviously came from a person rather than a generator, and the one that flatters the 3D narrative rather than competing with it. <b>Strongest for Daniela</b>; the risk is that it reads as a design portfolio when you are selling engineering.</p>
+  <div class="chips">
+    <div class="chip"><div class="sw" style="background:oklch(14% 0.015 312)"></div><div class="lbl">paper 14%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(17.5% 0.017 312)"></div><div class="lbl">surface 17.5%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(29% 0.018 312)"></div><div class="lbl">line 29%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(63% 0.014 312)"></div><div class="lbl">muted 63%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(94% 0.008 312)"></div><div class="lbl">ink 94%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(69% 0.150 312)"></div><div class="lbl">accent 312</div></div>
+  </div>
+  <div class="frames"><div class="frame phone B"><span class="cap">390px</span>
+    <div class="pad">
+      <div class="folio">IV · The Suite</div>
+      <h2>One person, <i>eight</i> repositories.</h2>
+      <p class="lede">Six frontend frameworks and five backend languages, held together by contracts rather than by shared code. <strong>Every one of these is running.</strong></p>
+      <div class="rule"></div>
+      <div class="grid">
+        <div class="num">01</div>
+        <div class="ent">
+          <h3>Digital Library</h3>
+          <p>A self-hosted ebook library that stores a personal collection and reads it in the browser.</p>
+          <div class="meta"><span class="st live">Live</span><span class="tech">Svelte · Fastify · Postgres</span></div>
+          <div class="lk"><a href="#">library.cuatro.dev</a><a href="#" class="src">Source</a></div>
+        </div>
+        <div class="num">02</div>
+        <div class="ent">
+          <h3>CS Tournament</h3>
+          <p>Runs a Counter-Strike tournament from sign-up through the bracket to a final result.</p>
+          <div class="meta"><span class="st done">Complete</span><span class="tech">Next.js · Postgres</span></div>
+          <div class="lk"><a href="#" class="src">Source</a></div>
+        </div>
+      </div>
+      <p class="fallback">Reduced motion — narrative replaced by a still frame</p>
+    </div>
+  </div></div>
+  <p class="notes"><b>Type:</b> Fraunces (variable, optical size + WONK) as display, Geist as body, Geist Mono for metadata. <b>Three families — at the cap.</b> Italic accent weight carries the emphasis, not colour.</p>
+</section>
+
+<!-- ============ C ============ -->
+<section class="dir">
+  <div class="dir-head"><span class="letter">C</span><span class="name">Industrial Plate</span><span class="register">engineering signage — the closest heir to Monument Extended</span></div>
+  <p class="dir-why">Wide, uppercase, tightly-tracked grotesque display over hairline rules. This is the direction that <b>keeps the visual memory of the site you already ship</b> while replacing the licensed faces with a variable open-source one. Status pills are outlined, never filled. <b>Reads as range</b> — the framework band across the top is the thesis stated as ornament.</p>
+  <div class="chips">
+    <div class="chip"><div class="sw" style="background:oklch(12% 0.011 288)"></div><div class="lbl">paper 12%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(15.5% 0.013 288)"></div><div class="lbl">surface 15.5%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(27% 0.015 288)"></div><div class="lbl">line 27%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(60% 0.011 288)"></div><div class="lbl">muted 60%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(95% 0.005 288)"></div><div class="lbl">ink 95%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(66% 0.165 288)"></div><div class="lbl">accent 288</div></div>
+  </div>
+  <div class="frames"><div class="frame phone C"><span class="cap">390px</span>
+    <div class="pad">
+      <div class="plate"><span>Cuatro Ecosystem</span><span>04 / 04</span></div>
+      <h2>Here it all is</h2>
+      <p class="lede">Fifteen repositories became eight. <b>Six of them are running right now</b> — open one and it is the real application.</p>
+      <div class="band"><span>Next.js</span><span>Svelte</span><span>Vue</span><span>Angular</span><span>LiveView</span><span>React</span></div>
+      <div style="margin-top:1.25rem">
+        <div class="ent">
+          <h3>Digital Library</h3><span class="st live">Live</span>
+          <p>A self-hosted ebook library that stores a personal collection and reads it in the browser.</p>
+          <span class="tech">Svelte · Fastify · Postgres</span>
+          <span class="lk"><a href="#">Open</a><a href="#" class="src">Source</a></span>
+        </div>
+        <div class="ent">
+          <h3>CS Tournament</h3><span class="st done">Complete</span>
+          <p>Runs a Counter-Strike tournament from sign-up through the bracket to a final result.</p>
+          <span class="tech">Next.js · Postgres</span>
+          <span class="lk"><a href="#" class="src">Source</a></span>
+        </div>
+      </div>
+      <p class="fallback">Reduced motion — narrative replaced by a still frame</p>
+    </div>
+  </div></div>
+  <p class="notes"><b>Type:</b> Bricolage Grotesque (variable width + optical size) as display, Geist as body, Geist Mono for metadata. <b>Three families.</b> Width axis does the work Monument Extended used to do, for free.</p>
+</section>
+
+<!-- ============ D ============ -->
+<section class="dir">
+  <div class="dir-head"><span class="letter">D</span><span class="name">Quiet Instrument</span><span class="register">a well-made tool that does not raise its voice</span></div>
+  <p class="dir-why">Low contrast, generous leading, a light serif that reads rather than announces. Purple is almost invisible — it lives in links, focus rings and the live dot, nowhere else. <b>The most restrained and the least likely to date.</b> The risk is real: on a four-minute mobile visit, restraint can read as thin, and this is the direction that most depends on the 3D narrative to supply energy.</p>
+  <div class="chips">
+    <div class="chip"><div class="sw" style="background:oklch(15% 0.009 302)"></div><div class="lbl">paper 15%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(18.5% 0.011 302)"></div><div class="lbl">surface 18.5%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(26% 0.012 302)"></div><div class="lbl">line 26%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(64% 0.010 302)"></div><div class="lbl">muted 64%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(92% 0.006 302)"></div><div class="lbl">ink 92%</div></div>
+    <div class="chip"><div class="sw" style="background:oklch(72% 0.120 302)"></div><div class="lbl">accent 302</div></div>
+  </div>
+  <div class="frames"><div class="frame phone D"><span class="cap">390px</span>
+    <div class="pad">
+      <div class="kicker">The suite</div>
+      <h2>Fifteen projects became <b>one suite</b>.</h2>
+      <p class="lede">Six frontend frameworks and five backend languages, held together by contracts rather than shared code. Every application below is running.</p>
+      <div class="rule"></div>
+      <div class="ent">
+        <div class="top"><h3>Digital Library</h3><span class="st live">Live</span></div>
+        <p>A self-hosted ebook library that stores a personal collection and reads it in the browser.</p>
+        <span class="tech">Svelte · Fastify · Postgres</span>
+        <div class="lk"><a href="#">library.cuatro.dev</a><a href="#" class="src">Source</a></div>
+      </div>
+      <div class="ent">
+        <div class="top"><h3>CS Tournament</h3><span class="st">Complete</span></div>
+        <p>Runs a Counter-Strike tournament from sign-up through the bracket to a final result.</p>
+        <span class="tech">Next.js · Postgres</span>
+        <div class="lk"><a href="#" class="src">Source</a></div>
+      </div>
+      <p class="fallback">Reduced motion — narrative replaced by a still frame</p>
+    </div>
+  </div></div>
+  <p class="notes"><b>Type:</b> Newsreader 200 as display against Geist 600 for entry names — a 400-unit gap across two families, plus nothing else. <b>Two families.</b></p>
+</section>
+
+</body>
+</html>

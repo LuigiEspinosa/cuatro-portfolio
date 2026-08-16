@@ -1,28 +1,45 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Sparkles } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Gem } from '@/components/atoms/Gem/Gem';
-import { CanvasOrbitControls } from '@/components/atoms/CanvasOrbitControls/CanvasOrbitControls';
+import { ParticleWave } from '@/components/atoms/ParticleWave/ParticleWave';
 
 const Scene = dynamic(() => import('@/components/atoms/Scene/Scene').then((m) => m.Scene), {
   ssr: false,
 });
 
-const GemComponent = () => (
-  <div id='gem-canvas'>
-    <Scene>
-      <ambientLight intensity={0.2} />
-      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-      <Gem />
-      <Sparkles count={80} scale={4} size={1.5} speed={0.3} opacity={0.6} />
-      <CanvasOrbitControls autoRotate />
-      <EffectComposer>
-        <Bloom luminanceThreshold={0.85} intensity={0.4} radius={0.3} mipmapBlur />
-      </EffectComposer>
-    </Scene>
-  </div>
-);
+const GemComponent = () => {
+  // null = not yet checked (avoids fallback flash on capable devices)
+  const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const canvas = document.createElement('canvas');
+    const ctx =
+      canvas.getContext('webgl') ??
+      (canvas.getContext('experimental-webgl') as WebGLRenderingContext | null);
+    setWebglAvailable(!!ctx);
+  }, []);
+
+  if (webglAvailable === false) {
+    return (
+      <div id='gem-canvas'>
+        {/* Static screenshort shown on devices without WebGL support */}
+        <img src='/assets/home/gem-fallback.png' alt='' aria-hidden='true' />
+      </div>
+    );
+  }
+
+  return (
+    <div id='gem-canvas'>
+      <Scene>
+        <ParticleWave />
+        <EffectComposer>
+          <Bloom luminanceThreshold={0.2} intensity={0.55} radius={0.4} mipmapBlur />
+        </EffectComposer>
+      </Scene>
+    </div>
+  );
+};
 
 export default GemComponent;

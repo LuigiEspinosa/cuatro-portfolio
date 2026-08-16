@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuatro Ecosystem — key screens (Direction C, Industrial Plate)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@10..48,75..100,200..800&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   THE TOKEN SET — this block is the deliverable in miniature.
+   Everything below renders from it. Nothing hardcodes a value.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  /* colour — anchor hue 288, dark only */
+  --c-paper:        oklch(12% 0.011 288);  /* #060509  page ground              */
+  --c-surface:      oklch(16% 0.013 288);  /* #0d0c13  raised one level         */
+  --c-surface-high: oklch(20% 0.014 288);  /* #16151c  raised two levels        */
+  --c-line:         oklch(28% 0.015 288);  /* #282830  decorative hairline      */
+  --c-line-strong:  oklch(51% 0.020 288);  /* #656471  UI boundary — 3.52:1     */
+  --c-muted:        oklch(68% 0.012 288);  /* #98979f  secondary text — 7.03:1  */
+  --c-ink:          oklch(95% 0.005 288);  /* #eeeef2  primary text — 17.54:1   */
+  --c-accent:        oklch(66% 0.165 288); /* #8f7ef0  the only accent — 6.20:1 */
+  --c-accent-bright: oklch(76% 0.145 288); /* #ada1ff  hover only — 9.00:1      */
+  --c-accent-quiet:  oklch(46% 0.110 288); /* #564c91  accent at rest, decor    */
+  --c-focus:         oklch(84% 0.130 288); /* #c6bdff  focus ring — 11.70:1     */
+
+  /* hit target floor — vertical padding on a plain inline element does NOT
+     grow the hit area. inline-flex + min-height is what actually works.      */
+  --tap: 44px;
+
+  /* type */
+  --f-display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;
+  --f-body:    "Geist", ui-sans-serif, system-ui, sans-serif;
+  --f-mono:    "Geist Mono", ui-monospace, monospace;
+
+  --t-3xs:  0.6875rem;  /* 11px  status, plate marks */
+  --t-2xs:  0.75rem;    /* 12px  metadata            */
+  --t-xs:   0.8125rem;  /* 14px floor for body copy  */
+  --t-sm:   0.875rem;
+  --t-base: 1rem;
+  --t-md:   1.25rem;
+  --t-lg:   1.5625rem;
+  --t-xl:   1.9531rem;
+  --t-2xl:  2.4414rem;
+  --t-display: clamp(2.25rem, 9vw, 4.5rem);
+
+  /* spacing — 4pt base */
+  --s-2xs:.25rem; --s-xs:.5rem; --s-sm:.75rem; --s-md:1rem;
+  --s-lg:1.5rem; --s-xl:2.5rem; --s-2xl:4rem; --s-3xl:6rem;
+  --page-pad: clamp(1.25rem, 5vw, 4rem);
+
+  /* shape — the plate is square. radius is near-zero by identity. */
+  --r-none:0; --r-hair:2px; --r-pill:999px;
+
+  /* stroke */
+  --stroke-hair:1px; --stroke-boundary:1px; --stroke-emphasis:2px;
+  --stroke-focus:2px; --focus-offset:3px;
+
+  /* motion */
+  --dur-micro:120ms; --dur-minor:220ms; --dur-major:420ms; --dur-exit:165ms;
+  --ease-entrance:cubic-bezier(0.16,1,0.3,1);
+  --ease-exit:cubic-bezier(0.7,0,0.84,0);
+  --ease-toggle:cubic-bezier(0.65,0,0.35,1);
+
+  /* z */
+  --z-base:1; --z-raised:10; --z-dropdown:100; --z-sticky:200;
+  --z-modal:400; --z-toast:500; --z-tooltip:600;
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--dur-micro:1ms;--dur-minor:1ms;--dur-major:1ms;--dur-exit:1ms}
+}
+
+/* ══════════════════════ page chrome (not the product) ═══════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:clip}
+body{background:oklch(8% 0.008 288);color:var(--c-muted);font-family:var(--f-body);font-size:15px;line-height:1.6;padding:var(--page-pad)}
+.doc-head{max-width:66ch;margin-bottom:var(--s-2xl)}
+.doc-head h1{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:700;text-transform:uppercase;letter-spacing:-.03em;font-size:var(--t-lg);color:var(--c-ink);margin-bottom:var(--s-sm)}
+.doc-head p{font-size:var(--t-sm);margin-bottom:var(--s-xs)}
+.doc-head code{font-family:var(--f-mono);font-size:.85em;color:var(--c-accent)}
+.screen{margin-bottom:var(--s-3xl);border-top:1px solid var(--c-line);padding-top:var(--s-lg)}
+.screen > h2{font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.16em;text-transform:uppercase;color:var(--c-accent);margin-bottom:var(--s-xs)}
+.screen > h2 b{color:var(--c-ink);font-weight:400}
+.screen > .why{font-size:var(--t-sm);max-width:72ch;margin-bottom:var(--s-lg)}
+.screen > .why b{color:var(--c-ink);font-weight:500}
+.row{display:flex;flex-wrap:wrap;gap:var(--s-lg);align-items:flex-start}
+.dev{border:1px solid var(--c-line);position:relative;background:var(--c-paper)}
+.dev::after{content:attr(data-w);position:absolute;top:0;right:0;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;padding:3px 6px;color:var(--c-muted);background:oklch(8% 0.008 288);border-left:1px solid var(--c-line);border-bottom:1px solid var(--c-line);z-index:var(--z-tooltip)}
+.m{width:390px;max-width:100%}
+.d{width:100%;max-width:940px}
+.ann{font-size:var(--t-2xs);font-family:var(--f-mono);letter-spacing:.04em;max-width:34ch;border-left:2px solid var(--c-accent-quiet);padding-left:var(--s-sm);line-height:1.65}
+.ann b{color:var(--c-ink);font-weight:400}
+.ann + .ann{margin-top:var(--s-sm)}
+
+/* ══════════════════════ THE PRODUCT ═════════════════════════════ */
+.hub{font-family:var(--f-body);color:var(--c-ink);font-size:var(--t-xs);line-height:1.6}
+.hub .pad{padding:var(--s-lg) var(--s-md)}
+
+/* header — Suite + CV only (Q8) */
+.hd{display:flex;align-items:center;justify-content:space-between;padding:var(--s-md);border-bottom:1px solid var(--c-line);position:sticky;top:0;background:var(--c-paper);z-index:var(--z-sticky)}
+.hd .mark{font-family:var(--f-display);font-variation-settings:"wdth" 75;font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:var(--t-sm);color:var(--c-ink)}
+.hd nav{display:flex;gap:var(--s-lg);font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.14em;text-transform:uppercase}
+/* 44px in BOTH axes: inline-flex + min-height, and padding-inline for the
+   two-letter label. Underline is drawn on an inner span so the 44px box does
+   not push the rule away from the text. */
+.hd nav a{color:var(--c-muted);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap);min-width:var(--tap);padding-inline:var(--s-xs);transition:color var(--dur-micro) var(--ease-toggle)}
+.hd nav a > span{border-bottom:2px solid transparent;padding-bottom:2px;transition:border-color var(--dur-micro) var(--ease-toggle)}
+.hd nav a[aria-current]{color:var(--c-ink)}
+.hd nav a[aria-current] > span{border-bottom-color:var(--c-accent)}
+.hd nav a:hover{color:var(--c-ink)}
+.hd nav a:hover > span{border-bottom-color:var(--c-accent-bright)}
+.hd nav a:focus-visible{outline:2px solid var(--c-focus);outline-offset:3px;border-radius:var(--r-hair)}
+
+/* plate marks */
+.plate{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.16em;text-transform:uppercase;color:var(--c-muted);border-bottom:1px solid var(--c-line);padding-bottom:var(--s-xs)}
+
+/* 3D narrative stand-in */
+.scene{height:210px;display:flex;align-items:flex-end;padding:var(--s-md);border-bottom:1px solid var(--c-line);background:
+  repeating-linear-gradient(90deg,transparent 0 23px,var(--c-line) 23px 24px),
+  repeating-linear-gradient(0deg,transparent 0 23px,var(--c-line) 23px 24px),var(--c-surface);
+  position:relative}
+.scene span{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.12em;text-transform:uppercase;color:var(--c-muted)}
+.scene .beat{position:absolute;inset:auto var(--s-md) var(--s-xl) var(--s-md);font-family:var(--f-display);font-variation-settings:"wdth" 100;font-weight:800;text-transform:uppercase;font-size:1.6rem;line-height:.98;letter-spacing:-.045em;color:var(--c-ink)}
+
+/* the climax handoff */
+.handoff{padding:var(--s-xl) var(--s-md) var(--s-lg)}
+.h-disp{font-family:var(--f-display);font-variation-settings:"wdth" 100,"opsz" 48;font-weight:800;text-transform:uppercase;font-size:var(--t-display);line-height:.95;letter-spacing:-.05em;color:var(--c-ink);max-width:11ch}
+.premise{margin-top:var(--s-md);font-size:var(--t-base);line-height:1.55;color:var(--c-muted);max-width:46ch}
+.premise b{color:var(--c-ink);font-weight:500}
+.band{margin-top:var(--s-lg);border-top:1px solid var(--c-line);border-bottom:1px solid var(--c-line);padding:var(--s-xs) 0;display:flex;flex-wrap:wrap;gap:var(--s-sm) var(--s-md);font-family:var(--f-display);font-variation-settings:"wdth" 75;font-weight:700;font-size:var(--t-3xs);letter-spacing:.06em;text-transform:uppercase;color:var(--c-muted)}
+.band em{font-style:normal;color:var(--c-accent)}
+
+/* skip-to-suite — FR-2, one interaction from cold arrival */
+.skip{display:inline-flex;align-items:center;gap:var(--s-xs);margin-top:var(--s-md);font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.1em;text-transform:uppercase;color:var(--c-ink);text-decoration:none;border:1px solid var(--c-line-strong);padding:var(--s-xs) var(--s-sm);transition:border-color var(--dur-micro) var(--ease-toggle)}
+.skip:hover{border-color:var(--c-accent)}
+.skip:focus-visible{outline:2px solid var(--c-focus);outline-offset:3px}
+.skip .arw{color:var(--c-accent)}
+
+/* ── Suite Directory ── */
+.sd{padding:var(--s-xl) var(--s-md) var(--s-2xl)}
+.sd-h{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--c-line-strong);padding-bottom:var(--s-xs);margin-bottom:var(--s-md)}
+.sd-h h2{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:800;text-transform:uppercase;font-size:var(--t-md);letter-spacing:-.03em}
+.sd-h .ct{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.14em;text-transform:uppercase;color:var(--c-muted);font-variant-numeric:tabular-nums}
+
+.fam{border:1px solid var(--c-line);padding:var(--s-sm) var(--s-md) 0;margin:var(--s-md) 0}
+.fam > .fh{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.14em;text-transform:uppercase;color:var(--c-accent);padding-bottom:var(--s-2xs)}
+.fam > .fn{font-size:var(--t-2xs);color:var(--c-muted);padding-bottom:var(--s-sm);border-bottom:1px solid var(--c-line);max-width:44ch}
+
+/* ── Registry Entry ── */
+.ent{display:grid;grid-template-columns:1fr auto;gap:var(--s-2xs) var(--s-md);padding:var(--s-md) 0;border-bottom:1px solid var(--c-line);align-items:start;position:relative}
+.fam .ent:last-child{border-bottom:none}
+.ent h3{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:700;text-transform:uppercase;font-size:var(--t-base);letter-spacing:-.015em;line-height:1.1}
+.ent .desc{grid-column:1/-1;font-size:var(--t-sm);color:var(--c-muted);max-width:46ch;margin-top:var(--s-2xs)}
+.ent .tech{grid-column:1/-1;font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.09em;text-transform:uppercase;color:var(--c-muted);margin-top:var(--s-xs)}
+.ent .links{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:0 var(--s-lg);margin-top:var(--s-2xs);font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.09em;text-transform:uppercase}
+/* 44px tall hit box; the underline rides an inner span so it stays on the text */
+.ent .links a{color:var(--c-ink);text-decoration:none;display:inline-flex;align-items:center;min-height:var(--tap)}
+.ent .links a > span{border-bottom:2px solid var(--c-accent);padding-bottom:2px;transition:border-color var(--dur-micro) var(--ease-toggle)}
+.ent .links a.src{color:var(--c-muted)}
+.ent .links a.src > span{border-bottom:1px solid var(--c-line-strong)}
+.ent .links a:hover > span{border-bottom-color:var(--c-accent-bright)}
+.ent .links a:focus-visible{outline:2px solid var(--c-focus);outline-offset:3px}
+.ent .here{grid-column:1/-1;font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.09em;text-transform:uppercase;color:var(--c-muted);margin-top:var(--s-sm);padding:var(--s-2xs) 0}
+
+/* status — outlined, never filled */
+.st{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--c-line-strong);color:var(--c-muted);padding:var(--s-2xs) var(--s-xs);white-space:nowrap;line-height:1}
+.st.live{color:var(--c-accent);border-color:var(--c-accent)}
+.st.live::before{content:"";display:inline-block;width:4px;height:4px;background:var(--c-accent);margin-right:var(--s-2xs);vertical-align:.1em}
+.st.prog{color:var(--c-muted);border-style:dashed}
+/* Archived drops the border entirely. NEVER opacity — a 70% fade computes to
+   2.25:1 on the border and 3.87:1 on the text, both below the floor. */
+.st.arch{color:var(--c-muted);border-color:transparent;padding-inline:0}
+
+/* state demo helpers */
+.is-hover .links a:first-child > span{border-bottom-color:var(--c-accent-bright)}
+.is-focus .links a:first-child{outline:var(--stroke-focus) solid var(--c-focus);outline-offset:var(--focus-offset)}
+
+/* ── Suite Switcher (v2 pattern) ── */
+.sw-wrap{padding:var(--s-md);border-bottom:1px solid var(--c-line);display:flex;justify-content:space-between;align-items:center}
+.sw-btn{display:inline-flex;align-items:center;gap:var(--s-xs);font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.13em;text-transform:uppercase;color:var(--c-ink);background:none;border:1px solid var(--c-line-strong);padding:var(--s-xs) var(--s-sm);cursor:pointer}
+.sw-btn .dot{width:4px;height:4px;background:var(--c-accent)}
+.sw-panel{border:1px solid var(--c-line-strong);background:var(--c-surface);margin:var(--s-xs) var(--s-md) var(--s-md);z-index:var(--z-dropdown)}
+.sw-panel .ph{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.14em;text-transform:uppercase;color:var(--c-muted);padding:var(--s-sm) var(--s-md);border-bottom:1px solid var(--c-line)}
+.sw-panel a{display:flex;justify-content:space-between;align-items:center;gap:var(--s-md);padding:var(--s-sm) var(--s-md);border-bottom:1px solid var(--c-line);text-decoration:none;color:var(--c-ink)}
+.sw-panel a:last-of-type{border-bottom:none}
+.sw-panel a:hover{background:var(--c-surface-high)}
+.sw-panel a:focus-visible{outline:2px solid var(--c-focus);outline-offset:-2px}
+.sw-panel .nm{font-family:var(--f-display);font-variation-settings:"wdth" 85;font-weight:700;text-transform:uppercase;font-size:var(--t-sm);letter-spacing:-.01em}
+.sw-panel .sub{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.08em;color:var(--c-muted);text-transform:uppercase;display:block;margin-top:2px}
+.sw-panel .ext{font-family:var(--f-mono);font-size:var(--t-3xs);color:var(--c-accent);letter-spacing:.1em}
+.sw-panel a[aria-current]{background:var(--c-surface-high)}
+.sw-panel a[aria-current] .ext{color:var(--c-muted)}
+
+/* ── footer ── */
+.ft{border-top:1px solid var(--c-line);padding:var(--s-xl) var(--s-md);display:grid;gap:var(--s-lg)}
+.ft .fl{font-family:var(--f-display);font-variation-settings:"wdth" 75;font-weight:800;text-transform:uppercase;font-size:var(--t-sm);color:var(--c-ink);letter-spacing:-.02em}
+.ft nav{display:flex;flex-wrap:wrap;gap:var(--s-sm) var(--s-lg);font-family:var(--f-mono);font-size:var(--t-2xs);letter-spacing:.11em;text-transform:uppercase}
+.ft nav a{color:var(--c-muted);text-decoration:none;border-bottom:1px solid transparent;padding-bottom:2px}
+.ft nav a:hover{color:var(--c-ink);border-bottom-color:var(--c-line-strong)}
+.ft nav a:focus-visible{outline:2px solid var(--c-focus);outline-offset:3px}
+.ft .fine{font-family:var(--f-mono);font-size:var(--t-3xs);letter-spacing:.06em;color:var(--c-muted)}
+
+/* desktop directory */
+@media (min-width:760px){
+  .d .sd{padding:var(--s-2xl) var(--s-xl)}
+  .d .ent{grid-template-columns:minmax(0,15rem) minmax(0,1fr) auto;gap:var(--s-xs) var(--s-xl);align-items:start}
+  .d .ent h3{grid-column:1;grid-row:1}
+  .d .ent .desc{grid-column:2;grid-row:1;margin-top:0}
+  .d .ent .st{grid-column:3;grid-row:1}
+  .d .ent .tech{grid-column:1;grid-row:2;margin-top:var(--s-sm)}
+  .d .ent .links{grid-column:2/4;grid-row:2;margin-top:var(--s-sm)}
+  .d .ent .here{grid-column:2/4;grid-row:2}
+  .d .h-disp{font-size:4.5rem;max-width:14ch}
+  .d .handoff{padding:var(--s-2xl) var(--s-xl)}
+}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>Key screens — Direction C, Industrial Plate</h1>
+  <p>Every screen below renders from the <code>:root</code> token block at the top of this file. Nothing hardcodes a colour, size, duration or radius — the file is a working proof that the contract is sufficient.</p>
+  <p>Grey grid panels stand in for the 3D narrative. Everything else is real.</p>
+</div>
+
+<!-- ══════════ S1 ══════════ -->
+<section class="screen">
+  <h2>S1 · <b>Hub homepage — narrative path (default)</b></h2>
+  <p class="why">The scroll's terminal beat. The narrative does not end and then introduce a directory — its <b>last frame is the directory's first frame</b>, which is what FR-1 means by "resolves into." The framework band is the polyglot thesis stated as ornament rather than as a claim. <b>Skip to the suite sits above the fold</b> so FR-2's one-interaction requirement is met from a cold arrival, not only from the bottom of the scroll.</p>
+  <div class="row">
+    <div class="dev m hub" data-w="390">
+      <div class="hd"><span class="mark">Cuatro</span><nav><a href="#" aria-current="page"><span>Suite</span></a><a href="#"><span>CV</span></a></nav></div>
+      <div class="scene"><span>◻ narrative — scroll-driven 3D</span><div class="beat">…and every<br>one of them<br>still runs.</div></div>
+      <div class="handoff">
+        <div class="plate"><span>The Suite</span><span>04 / 04</span></div>
+        <h1 class="h-disp">Here it all is</h1>
+        <p class="premise">Fifteen personal projects became one suite. <b>Everything below is running right now</b> — open it and you are using the real thing, not looking at a picture of it.</p>
+        <div class="band"><span>Next.js</span><em>Svelte</em><span>Vue</span><em>Angular</em><span>LiveView</span><em>React</em></div>
+        <a class="skip" href="#suite">Skip to the suite <span class="arw">↓</span></a>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>FR-4</b> — premise is two sentences and names no framework. A reader who cannot identify a single logo still parses the claim.</p>
+      <p class="ann"><b>SM-1</b> — the skip control is the leak-stopper. Every session that bounces off the narrative before the climax is a session SM-1 counts as a failure.</p>
+      <p class="ann"><b>Anti-slop</b> — hero height follows content, not <code>100vh</code>. Display is left-biased, not centred. No gradient, no glow, no orb.</p>
+      <p class="ann"><b>Band</b> — alternating accent is decorative rhythm at <b>&lt;3% of viewport</b>. It is not a legend and carries no state.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S2 ══════════ -->
+<section class="screen">
+  <h2>S2 · <b>Hub homepage — the one non-3D front door (Q7)</b></h2>
+  <p class="why">Served to <b>both</b> <code>prefers-reduced-motion: reduce</code> and the slow-connection path. One artefact, two triggers. No 3D asset is requested, decoded or parsed — the display type <i>is</i> the hero. This path reaches the Suite Directory in <b>zero interactions</b>.</p>
+  <div class="row">
+    <div class="dev m hub" data-w="390">
+      <div class="hd"><span class="mark">Cuatro</span><nav><a href="#" aria-current="page"><span>Suite</span></a><a href="#"><span>CV</span></a></nav></div>
+      <div class="handoff" style="padding-top:var(--s-2xl)">
+        <div class="plate"><span>Cuatro Ecosystem</span><span>cuatro.dev</span></div>
+        <h1 class="h-disp" style="margin-top:var(--s-lg)">One person.<br>Eight repos.</h1>
+        <p class="premise">Fifteen personal projects became one suite. <b>Everything below is running right now</b> — open it and you are using the real thing, not looking at a picture of it.</p>
+        <div class="band"><span>Next.js</span><em>Svelte</em><span>Vue</span><em>Angular</em><span>LiveView</span><em>React</em></div>
+      </div>
+      <div class="sd" style="padding-top:var(--s-lg)">
+        <div class="sd-h"><h2>The Suite</h2><span class="ct">6 running</span></div>
+        <div class="ent">
+          <h3>Digital Library</h3><span class="st live">Live</span>
+          <p class="desc">A self-hosted ebook library that stores a personal collection and reads it in the browser.</p>
+          <p class="tech">Svelte · Fastify · Postgres</p>
+          <p class="links"><a href="#"><span>library.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Q7 closed</b> — no static poster frame is produced. A still of a 3D scene reads as a broken 3D scene; a typographic hero reads as a decision.</p>
+      <p class="ann"><b>SM-C5</b> — this path's marginal asset weight over an empty page is <b>two woff2 subsets</b>. Budget in EXPERIENCE.md.</p>
+      <p class="ann"><b>NFR-6</b> — reduced motion never costs access. Same content, same order, less spectacle.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S3 ══════════ -->
+<section class="screen">
+  <h2>S3 · <b>Suite Directory — mobile, full (FR-3, FR-11, FR-35)</b></h2>
+  <p class="why">Six entries at 360–390px with <b>no horizontal scroll and no truncated Status</b>. The Tracker Family is a bordered group carrying its framing line, which holds regardless of how many members currently render and <b>names no count</b>. The Hub renders as itself but is marked "You are here" rather than linking to the page you are on.</p>
+  <div class="row">
+    <div class="dev m hub" data-w="390">
+      <div class="hd"><span class="mark">Cuatro</span><nav><a href="#" aria-current="page"><span>Suite</span></a><a href="#"><span>CV</span></a></nav></div>
+      <div class="sd" id="suite">
+        <div class="sd-h"><h2>The Suite</h2><span class="ct">6 running</span></div>
+
+        <div class="ent">
+          <h3>Digital Library</h3><span class="st live">Live</span>
+          <p class="desc">A self-hosted ebook library that stores a personal collection and reads it in the browser.</p>
+          <p class="tech">Svelte · Fastify · Postgres</p>
+          <p class="links"><a href="#"><span>library.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+
+        <div class="fam">
+          <p class="fh">Tracker Family</p>
+          <p class="fn">One product family, distinct implementations, deliberately not merged.</p>
+          <div class="ent">
+            <h3>Cuatro Tracker</h3><span class="st live">Live</span>
+            <p class="desc">Keeps a running record of collections and what is still missing from them.</p>
+            <p class="tech">Next.js · Postgres</p>
+            <p class="links"><a href="#"><span>tracker.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+          </div>
+          <div class="ent">
+            <h3>CS Tracker</h3><span class="st live">Live</span>
+            <p class="desc">Tracks Counter-Strike matches and player statistics, updating in place as results come in.</p>
+            <p class="tech">Phoenix LiveView · Elixir · Postgres</p>
+            <p class="links"><a href="#"><span>cs-tracker.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+          </div>
+        </div>
+
+        <div class="ent">
+          <h3>List Wheel</h3><span class="st live">Live</span>
+          <p class="desc">Turns any list into a wheel and picks one entry at random.</p>
+          <p class="tech">Angular · Static</p>
+          <p class="links"><a href="#"><span>wheel.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+
+        <div class="ent">
+          <h3>CS Tournament</h3><span class="st">Complete</span>
+          <p class="desc">Runs a Counter-Strike tournament from sign-up through the bracket to a final result.</p>
+          <p class="tech">Next.js · Postgres</p>
+          <p class="links"><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+
+        <div class="ent">
+          <h3>Cuatro Ecosystem</h3><span class="st live">Live</span>
+          <p class="desc">The front door to the suite. Lists every application that is running, what it does, and where its source lives.</p>
+          <p class="tech">Next.js · React · Three.js · Sass</p>
+          <p class="here">You are here — <a href="#" class="src" style="border-bottom:1px solid var(--c-line-strong);color:var(--c-muted);text-decoration:none">Source</a></p>
+        </div>
+      </div>
+      <div class="ft">
+        <span class="fl">Cuatro</span>
+        <nav><a href="#"><span>CV</span></a><a href="#"><span>Work</span></a><a href="#"><span>Recommendations</span></a><a href="#"><span>Celeste</span></a><a href="#"><span>GitHub</span></a></nav>
+        <span class="fine">Six applications · five languages · one operator</span>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>FR-3</b> — Status never truncates because it is a sibling of the name in the grid, not a trailing token in a wrapping line.</p>
+      <p class="ann"><b>FR-10</b> — Source is on <b>every</b> entry, including the Hub's own and including <code>Complete</code>, which has no live link at all.</p>
+      <p class="ann"><b>FR-35</b> — no <code>In progress</code> entry appears. The four scaffolded apps sit in the Registry, unrendered, by rule.</p>
+      <p class="ann"><b>FR-11</b> — the family line does not say "three." <code>poketracker-go</code> arriving later changes nothing here.</p>
+      <p class="ann"><b>Q8</b> — /work, /recommendation and /celeste live in the footer. They survive as routes; they stop competing with the payload.</p>
+      <p class="ann"><b>Anti-slop</b> — this is a <b>list with rules</b>, not a three-column card grid. Card-in-card appears nowhere; the family group is the only containment layer.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S4 ══════════ -->
+<section class="screen">
+  <h2>S4 · <b>Suite Directory — desktop</b></h2>
+  <p class="why">Same markup, one grid change. Name and metadata occupy a fixed left column; description and links take the measure; Status hangs right. <b>The row is the unit at every width</b> — nothing reflows into cards, so there is no second layout to maintain.</p>
+  <div class="dev d hub" data-w="≥760">
+    <div class="hd"><span class="mark">Cuatro</span><nav><a href="#" aria-current="page"><span>Suite</span></a><a href="#"><span>CV</span></a></nav></div>
+    <div class="sd">
+      <div class="sd-h"><h2>The Suite</h2><span class="ct">6 running · 5 languages</span></div>
+      <div class="ent">
+        <h3>Digital Library</h3>
+        <p class="desc">A self-hosted ebook library that stores a personal collection and reads it in the browser.</p>
+        <span class="st live">Live</span>
+        <p class="tech">Svelte · Fastify · Postgres</p>
+        <p class="links"><a href="#"><span>library.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+      </div>
+      <div class="fam">
+        <p class="fh">Tracker Family</p>
+        <p class="fn">One product family, distinct implementations, deliberately not merged.</p>
+        <div class="ent">
+          <h3>Cuatro Tracker</h3>
+          <p class="desc">Keeps a running record of collections and what is still missing from them.</p>
+          <span class="st live">Live</span>
+          <p class="tech">Next.js · Postgres</p>
+          <p class="links"><a href="#"><span>tracker.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+        <div class="ent">
+          <h3>CS Tracker</h3>
+          <p class="desc">Tracks Counter-Strike matches and player statistics, updating in place as results come in.</p>
+          <span class="st live">Live</span>
+          <p class="tech">Phoenix LiveView · Elixir · Postgres</p>
+          <p class="links"><a href="#"><span>cs-tracker.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+      </div>
+      <div class="ent">
+        <h3>CS Tournament</h3>
+        <p class="desc">Runs a Counter-Strike tournament from sign-up through the bracket to a final result.</p>
+        <span class="st">Complete</span>
+        <p class="tech">Next.js · Postgres</p>
+        <p class="links"><a href="#" class="src"><span>Source</span></a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S5 ══════════ -->
+<section class="screen">
+  <h2>S5 · <b>Registry Entry — anatomy and every state</b></h2>
+  <p class="why">One component, four Status values, three interaction states. <b>Status is outlined and never filled</b> — a filled pill would spend accent as a colour block, which is the tell. <code>Live</code> is the only value that earns accent; the taxonomy is carried by <b>border style</b> (solid / dashed / faded) so it survives greyscale and colour-blindness without a legend.</p>
+  <div class="row">
+    <div class="dev m hub" data-w="states">
+      <div class="sd" style="padding-top:var(--s-md)">
+        <div class="ent">
+          <h3>Digital Library</h3><span class="st live">Live</span>
+          <p class="desc">A self-hosted ebook library that stores a personal collection and reads it in the browser.</p>
+          <p class="tech">Svelte · Fastify · Postgres</p>
+          <p class="links"><a href="#"><span>library.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+        <div class="ent">
+          <h3>CS Tournament</h3><span class="st">Complete</span>
+          <p class="desc">Runs a Counter-Strike tournament from sign-up through the bracket to a final result.</p>
+          <p class="tech">Next.js · Postgres</p>
+          <p class="links"><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+        <div class="ent">
+          <h3>StreamVault</h3><span class="st prog">In progress</span>
+          <p class="desc">Not rendered at MVP — shown here only to fix the Status visual. Dashed border reads as "not settled" without any colour cue.</p>
+          <p class="tech">Python · Vue</p>
+          <p class="links"><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+        <div class="ent">
+          <h3>TCG Tracker</h3><span class="st arch">Archived</span>
+          <p class="desc">Absorbed into Cuatro Tracker as a domain. Kept in the Registry for the record.</p>
+          <p class="tech">Next.js</p>
+          <p class="links"><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+        <div class="ent is-hover">
+          <h3>Cuatro Tracker</h3><span class="st live">Live</span>
+          <p class="desc">Hover state — the live link's underline brightens. One signal, no lift, no scale, no shadow.</p>
+          <p class="tech">Next.js · Postgres</p>
+          <p class="links"><a href="#"><span>tracker.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+        <div class="ent is-focus">
+          <h3>CS Tracker</h3><span class="st live">Live</span>
+          <p class="desc">Focus-visible state — a 2px ring at 3px offset, applied instantly with no transition. This is the reference the satellites copy by hand.</p>
+          <p class="tech">Phoenix LiveView · Elixir</p>
+          <p class="links"><a href="#"><span>cs-tracker.cuatro.dev</span></a><a href="#" class="src"><span>Source</span></a></p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>Two tap targets</b>, independently addressable (FR-3), each <b>44px in both axes</b> via <code>inline-flex</code> + <code>min-height</code> on the link. Vertical padding on a plain inline element paints outward <b>without growing the hit area</b> — the underline rides an inner <code>&lt;span&gt;</code> so it stays on the text.</p>
+      <p class="ann"><b>The dot carries the taxonomy.</b> Without it <code>Live</code> and <code>Complete</code> are both <code>1px solid</code> and differ only in hue — <b>1.13:1 apart in greyscale</b>. <code>Archived</code> drops the border rather than fading: a 70% fade computes to <b>2.25:1</b>.</p>
+      <p class="ann"><b>Focus never animates</b>, and uses a <b>different token from hover</b> — focus 11.70:1, hover 9.00:1, rest 6.20:1. Three legible steps, so a keyboard user can always tell where focus is.</p>
+      <p class="ann"><b>Hover is one signal.</b> No <code>transition-all</code>, no <code>scale-105</code>. Only <code>border-color</code> moves, at 120ms — never width, which is a layout property.</p>
+      <p class="ann"><b>Both readers, one card.</b> Daniela reads name → description → Status. Marcus reads Status → tech → Source. Reading order serves the first; tab order reaches the second in two stops.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S6 ══════════ -->
+<section class="screen">
+  <h2>S6 · <b>Suite Switcher — pattern, not component (v2, FR-13–15)</b></h2>
+  <p class="why">Shown inside a satellite (<code>library.cuatro.dev</code>). Specified so a Svelte app and a Phoenix LiveView app can each build it from tokens plus the Registry contract with <b>no shared code</b>. It reads as <b>siblings, not tabs</b>: every row is a full navigation to another origin, marked with an external glyph, and the current app is marked rather than hidden.</p>
+  <div class="row">
+    <div class="dev m hub" data-w="satellite">
+      <div class="sw-wrap">
+        <span class="mark" style="font-family:var(--f-display);font-variation-settings:'wdth' 75;font-weight:800;text-transform:uppercase;font-size:var(--t-sm)">Digital Library</span>
+        <button class="sw-btn" aria-expanded="true" aria-controls="suite-panel"><span class="dot"></span> Suite</button>
+      </div>
+      <div class="sw-panel" id="suite-panel" aria-label="Cuatro Ecosystem applications">
+        <p class="ph">Part of the Cuatro Ecosystem</p>
+        <a href="#" aria-current="true"><span><span class="nm">Digital Library</span><span class="sub">Svelte · Fastify</span></span><span class="ext">You are here</span></a>
+        <a href="#"><span><span class="nm">Cuatro Tracker</span><span class="sub">Next.js</span></span><span class="ext">↗</span></a>
+        <a href="#"><span><span class="nm">CS Tracker</span><span class="sub">Phoenix LiveView</span></span><span class="ext">↗</span></a>
+        <a href="#"><span><span class="nm">List Wheel</span><span class="sub">Angular</span></span><span class="ext">↗</span></a>
+        <a href="#"><span><span class="nm">CS Tournament</span><span class="sub">Next.js</span></span><span class="ext">↗</span></a>
+        <a href="#"><span><span class="nm">The Hub</span><span class="sub">cuatro.dev</span></span><span class="ext">↗</span></a>
+      </div>
+    </div>
+    <div>
+      <p class="ann"><b>FR-14</b> — the external glyph on every row is what stops this reading as tabs. Ana must understand these are siblings.</p>
+      <p class="ann"><b>FR-13</b> — the list is drawn from the published Registry and applies the <b>same</b> Status filter as the Directory. Nothing is surfaced sideways that the Hub hides.</p>
+      <p class="ann"><b>FR-15</b> — every visual value here is a token. The only per-app work is the disclosure widget, which each framework already has natively.</p>
+      <p class="ann"><b>Not <code>role="menu"</code>.</b> That role implies <code>menuitem</code> children and arrow-key-only traversal, which contradicts the spec's "Tab leaves the panel normally." It is a labelled disclosure with <code>aria-controls</code>, and Tab works.</p>
+      <p class="ann"><b>Hub is distinguishable</b> — labelled "The Hub" with the bare domain as its subtitle, never presented as a peer application.</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
