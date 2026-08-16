@@ -27,8 +27,8 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | Decision | Value | Nature of the figure |
 |---|---|---|
 | Monitoring service | **UptimeRobot** | **Observed 2026-08-16.** Account `luigi@cuatro.dev`, user id 3714284, registered 2026-08-16T09:23:21Z |
-| Alert channel | **Telegram** | **Decided, not observed.** Not configured. Email is carrying alerts in the meantime, see below |
-| Interim alert channel | Email to `luigi@cuatro.dev` | **Observed 2026-08-16.** Alert contact id 8726805, type Email, status Active, attached to all five monitors |
+| Alert channel | **Email to `luigi@cuatro.dev`** | **Observed and proven 2026-08-16.** Alert contact id 8726805, type Email, status Active, attached to all five monitors. The Operator confirmed alerts arriving |
+| Telegram | **Dropped 2026-08-16** | Decided against, not deferred. Email is a channel the Operator demonstrably reads, which is all the acceptance asks for |
 | Where the probe runs | External to the VPS, on UptimeRobot's own infrastructure | Decided, and required by AD-17a. See below |
 | Recurring cost | **$0 per month** | **Observed 2026-08-16.** Free tier: no active subscription, no payment processor, 50 monitor limit, 5 minute minimum interval |
 | Probe interval | **5 minutes**, every host, uniform | **Observed.** 300 seconds on all five monitors. This is also the free tier's floor, so the decided number and the available number coincide |
@@ -58,10 +58,20 @@ the thing it was watching, and the Operator's evidence is silence. UptimeRobot p
 its own infrastructure, so a whole-box failure still produces a notification. Nothing in this
 story installs anything on the box.
 
-**Why the alert channel is Telegram.** A probe failure that lands somewhere the Operator does
-not read is the same as no probe at all. Telegram is the channel he actually reads. That is
-the whole argument, and it is why the gate below stays open until a test alert has
-demonstrably arrived rather than until the channel has been configured.
+**Why the alert channel is email, and why Telegram was dropped.** A probe failure that lands
+somewhere the Operator does not read is the same as no probe at all. That is the whole
+requirement: Story 1.2 asks for "a channel he actually reads", and names no particular product.
+Telegram was chosen on 2026-08-16 as the channel most likely to be read, then dropped the same
+day once email was confirmed to be working. **This is not a deferral.** Email is configured,
+active, attached to all five monitors, and the Operator has confirmed alerts arriving from it,
+which is stronger evidence than a decided intent to use something else.
+
+**The alert path is proven, and proven the hard way.** Both `cuatro.dev` monitors came up DOWN
+on creation because the host genuinely is down, UptimeRobot alerted, and the Operator received
+it. That is the full chain exercised end to end on real conditions rather than on a synthetic
+test: probe detects, service sends, mailbox receives, human reads. The earlier requirement for a
+*deliberately induced* test existed to stop someone inferring a working channel from a channel
+merely configured. Confirmed receipt settles the same question more directly.
 
 ### Account ownership and the alert path credentials
 
@@ -70,18 +80,16 @@ than living only in one person's browser session.
 
 | Field | Value | Nature |
 |---|---|---|
-| UptimeRobot account owner | `luigi@cuatro.dev` | **Observed 2026-08-16.** The account exists and is registered under this address |
-| Telegram integration mode | _unset, Operator fills_ | Native integration, or a webhook to a bot. The two fail differently and are debugged differently |
-| Telegram destination | _unset, Operator fills_ | Which chat, channel or direct message the alert lands in |
+| UptimeRobot account owner | `luigi@cuatro.dev`, user id 3714284 | **Observed 2026-08-16.** Registered 2026-08-16T09:23:21Z |
+| Alert contact | id 8726805, type Email, status Active, `luigi@cuatro.dev` | **Observed 2026-08-16.** Attached to all five monitors |
+| Alert path last verified | **2026-08-16**, by real `cuatro.dev` down alerts the Operator confirmed receiving | Re-verify per the cadence under Re-testing the alert path |
+| Integration credentials | **None.** The alert contact is an email address, not a bot or a webhook | No token exists, so none can leak. If a webhook channel is ever added, its token lives in the UptimeRobot console and never in this repository |
 
-**An account existing is not a monitor running.** The four probes, the Telegram contact, the
-certificate threshold and the induced test alert are all still outstanding, so the gate below
-stays shut. This row records ownership only.
-
-If the integration is a webhook to a bot, the bot token is a credential. It lives in the
-UptimeRobot console and **never in this repository**, in line with the spine's rule that
-secrets live in GitHub Actions secrets and the on-box env file and never in the repository.
-Recording that a token exists is not recording the token.
+**The alert channel and the account identity are the same mailbox.** `luigi@cuatro.dev` receives
+the alerts and also owns the account, so losing that mailbox loses both the signal and the
+ability to recover the account. Worth splitting if a second address ever exists. Note also that
+the `cuatro.dev` zone carries a ProtonMail verification record alongside Google Workspace MX
+records, so that mailbox's configuration is worth keeping tidy for reasons beyond mail.
 
 ### The cost against NFR-4
 
@@ -93,14 +101,20 @@ ceiling" it means against **$100 per month all-in**. The spine adds that any new
 charge for identity, monitoring or overflow hosting is a named decision recorded against that
 ceiling and never an incidental subscription.
 
-**The intended figure is $0 per month**, on UptimeRobot's free tier, which is why the service
-was chosen at all. **Zero is recorded here as a named decision, not left out as an
-omission.** A charge of nothing is still a charge the record has to account for, because the
-alternative is a later reader who cannot tell whether the line was zero or whether nobody
-looked.
+**The figure is $0 per month**, on UptimeRobot's free tier. **Zero is recorded here as a named
+decision, not left out as an omission.** A charge of nothing is still a charge the record has to
+account for, because the alternative is a later reader who cannot tell whether the line was zero
+or whether nobody looked.
 
-**This figure is intent, not an observation.** No account exists, so no plan has been chosen
-and no invoice has been seen.
+**This is now an observation, not an intent.** Read from the account on 2026-08-16: no payment
+processor, no active subscription, no subscription expiry date, a 50 monitor limit and a 5
+minute minimum interval. Five monitors are in use against that limit.
+
+**One capability was priced out and deliberately not bought.** The certificate **age** alert
+(`sslExpirationReminder`) is a paid setting and was rejected by the API with `009-005`. The
+escalation branch below applies, and the answer is not to buy: see Rule 1 is on the free tier
+for why AD-26 removes the mechanism that alert would have watched. Certificate chain validation,
+which is the rule that catches the failure happening today, is free and is enabled.
 
 **Three of this record's requirements are commonly paid features, not one.** The hedge is not
 only about the certificate threshold:
@@ -397,8 +411,10 @@ beside the status line. A test that was not recorded did not happen.
 This file argues at length that monitoring must not share the failure modes of the thing it
 monitors. Applied honestly, the same argument lands on the monitoring:
 
-- **One recipient.** There is one Operator and one Telegram destination. If he loses access to
-  that account or that device, there is no second recipient and no fallback channel.
+- **One recipient, and it is also the account identity.** There is one Operator and one email
+  address, `luigi@cuatro.dev`, which both receives every alert and owns the UptimeRobot account.
+  Losing that mailbox loses the signal and the ability to recover the account in one stroke.
+  There is no second recipient and no fallback channel.
 - **One service.** UptimeRobot is a single external dependency. If it has an outage, changes
   its free tier, pauses the account for inactivity, or deactivates it, monitoring stops. Free
   tiers in particular are commonly paused or deactivated without a paid relationship to
@@ -668,11 +684,17 @@ AD-17a status: not-satisfied as of 2026-08-16
 Alert path last verified: never
 ```
 
-**Nothing this session did satisfies the gate.** Creating the account, adding the monitors,
-connecting Telegram, setting the certificate rules and confirming the cost are all web
-console actions, and none of them has happened. Writing them down is not doing them, and a
-record that claimed otherwise would be worse than no record, because it would read as
-evidence.
+**Most of the gate is now met, and this section records precisely which part is not.** As of
+2026-08-16 the account exists, five monitors are running off the box at five minute intervals,
+certificate chain validation is on, the cost is observed at $0, and the alert path has been
+proven by real alerts the Operator confirmed receiving. **What is missing is the certificate
+*age* half of AD-17a**, which names uptime and certificate-age monitoring together. The age
+alert is a paid setting and was deliberately not bought, because AD-26 removes the renewal cycle
+it would watch. But AD-26 is a decision, not a deployed state: until Story 1.3 installs the
+Origin CA certificate and disables ACME on the origin, the renewal cycle is still live and
+still unwatched. Chain validation catches a failed renewal at the moment of expiry, which is
+detection without a warning window, and a warning window is the whole reason AD-17a says age
+rather than expiry.
 
 ### The parse contract
 
@@ -735,10 +757,11 @@ arrived, reads `not-satisfied`.** There is no partial value and no intermediate 
 
 Two examples, because the temptation runs the other way:
 
-- Account created, all monitors added, Telegram connected, but no test alert sent: the line
-  reads `not-satisfied`. A configured channel that silently drops messages is indistinguishable
-  from a working one until the first real failure, which is the moment it must not be
-  discovered.
+- Account created, all monitors added, a channel configured, but no alert ever observed
+  arriving: the line reads `not-satisfied`. A configured channel that silently drops messages is
+  indistinguishable from a working one until the first real failure, which is the moment it must
+  not be discovered. **This condition was met on 2026-08-16**, by real alerts rather than by an
+  induced test, which exercises the same chain more directly.
 - Everything done and a test alert received, but the certificate rules not yet configured:
   the line reads `not-satisfied`. AD-17a names uptime **and** certificate-age monitoring, and
   half the gate is not the gate.
@@ -798,7 +821,7 @@ actions 4 and 6**, which are the two that prove the Operator would actually hear
 | 1 | Create the UptimeRobot account and add an HTTPS monitor for each row of the probe table, plus the one additional `cuatro.dev` root monitor recorded beneath it | Use the probe targets and the redirect rules above, including the `"status":"ok"` keyword assertion on `/api/health`. Configure both `cuatro.dev` monitors even though the host is currently failing | **2026-08-16.** Five monitors, ids in the Decisions section, created by agent through the v3 API |
 | 2 | Enable certificate chain validation and the expected-issuer assertion per host | Rule 1. This is separate from the age threshold and must not be skipped because the age alert is configured | **2026-08-16.** `checkSSLErrors` enabled on all five. The expected-issuer half is not separately configurable and is asserted by chain validation only |
 | 3 | Configure the TLS certificate age alert | Use the nearest value UptimeRobot supports for the recorded rule, and write the actually configured value into the conversion table beside its row | **BLOCKED, not outstanding.** `sslExpirationReminder` is a paid setting (`009-005`). Deliberately not bought, because AD-26 removes the renewal cycle it would watch |
-| 4 | Add Telegram as an alert contact and send a **deliberately induced** test alert | Record here whether it went through a native integration or a webhook to a bot, since the two fail differently. Fill the ownership table. A real outage alert is not a test alert | _not done_ |
+| 4 | Confirm the alert path reaches a channel the Operator actually reads | **Superseded 2026-08-16.** Telegram dropped; email confirmed receiving real `cuatro.dev` down alerts, which exercises the same chain end to end | **2026-08-16.** Confirmed by the Operator |
 | 5 | Record the actual recurring cost | Write it against the $100 per month ceiling as a named decision, including if it is zero. If the required tier would breach the ceiling, stop and raise it rather than configuring | **2026-08-16.** $0 per month, free tier, read from the account: no payment processor, no active subscription |
 | 6 | Flip the status line above to the positive form with the ISO 8601 UTC date, and set `Alert path last verified` | Only once actions 1 to 5 are done **and** a deliberately induced test alert has arrived. Anything less reads `not-satisfied` | _not done_ |
 
