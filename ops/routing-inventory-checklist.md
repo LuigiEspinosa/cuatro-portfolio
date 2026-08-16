@@ -115,9 +115,40 @@ mechanisms are still unresolved, but the reasoning that separated them was wrong
       at the next renewal, weeks later.
 - [ ] Read the Cloudflare audit log to confirm which records each token touched. A token doing
       something other than ACME must not be revoked by assumption.
-- [ ] **`tracker-mac` is named for a laptop.** Find out where the client actually runs. If
-      issuance depends on a developer machine being switched on, that is a silent-failure vector
-      in its own right and would explain irregular reissuance.
+- [ ] **`tracker-mac` is named for a laptop, and the Operator confirmed on 2026-08-16 that it
+      came from an experiment running an old Mac as a home server.**
+
+**Revised reading, 2026-08-16: both tokens are very likely orphaned.** Neither token's last-used
+date matches the issuance of any certificate currently being served:
+
+| | Date |
+|---|---|
+| `cs-tracker.cuatro.dev` served cert, notBefore | 2026-07-29T03:20:20Z |
+| `tracker.cuatro.dev` served cert, notBefore | 2026-07-29T23:27:08Z |
+| `library.cuatro.dev` served cert, notBefore | 2026-07-30T05:15:02Z |
+| `tracker-mac` last used | 2026-08-05 |
+| `cuatro-tracker` last used | 2026-04-02 |
+
+Whatever issues the three live certificates did not use either token. The 2026-08-05 activity
+produced a `tracker.cuatro.dev` certificate that is **not** the one being served, which is what
+an orphaned client renewing into the void looks like. Working conclusion: the Hostinger box
+uses HTTP-01 and needs no Cloudflare credential at all.
+
+**This is inference from dates, not observation.** It is confirmed by either of these, each
+about a minute:
+
+- [ ] Cloudflare audit log: if the only token activity is `_acme-challenge` TXT churn for
+      `tracker.cuatro.dev`, and none of it lines up with the 2026-07-29 and 2026-07-30
+      issuances, the tokens are not serving the live hosts.
+- [ ] On the Hostinger box: find the ACME client's challenge configuration. `http` or
+      `tlsAlpn` means no token is involved; a `dnsChallenge` provider block means one is.
+
+**When to revoke.** The cost of being wrong is three live subdomains quietly losing their
+certificates around late October, and there is no monitor running to notice. That risk goes to
+near zero the moment Story 1.2's UptimeRobot probes exist, which is the same thirty minutes of
+console work already at the top of the queue. Revoking after the monitor is up is cheap;
+revoking before it is a bet with no downside protection. Story 1.3 schedules the revocation
+after Origin CA lands, which is the safe default either way.
 
 ## Part 2: on each box
 
