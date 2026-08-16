@@ -29,8 +29,15 @@ one app. Planning artifacts live in `_bmad-output/planning-artifacts/`.
 - Architecture invariants AD-1 through AD-23:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- Token contract and the SCSS-to-token migration order:
-  `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md`
+- Token contract, and the restyle specification the Hub's components are rebuilt against:
+  `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md` and
+  `RESTYLE-SPEC.md` in the same folder.
+- **The seven-step SCSS migration no longer holds in full.** The restyle scope change rebuilds
+  the Hub's components token-native instead of migrating the existing stylesheets, so stories
+  `2-18`, `2-19` and `2-21` were deleted. Steps 1 and 2 survive as Epic 1 stories `1-18` and
+  `1-19`, and FR-18 is measured on them. Before acting on any migration-step wording in
+  `DESIGN.md`, check `_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md`
+  § 7.3 for what actually remains.
 
 ## Running and verifying
 
@@ -89,14 +96,16 @@ one app. Planning artifacts live in `_bmad-output/planning-artifacts/`.
   wins**, and the value-by-value mapping lives in
   `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/rebaseline-2026-08-15.md`
   § O-10. Follow that table; do not invent a mapping.
-- `--accent-dim` has **15 call sites and is doing two different jobs** — ornament in some, a
+- `--accent-dim` has **15 call sites and is doing two different jobs**: ornament in some, a
   readable boundary in others. It resolves **per call site**, not with one global alias. A
   blanket alias to `--token-accent-muted` silently drops its boundary uses below the 3:1 floor.
-- **Three surfaces are held open as O-12 and are not yours to decide:** GlitchText's
-  `rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` aberration pair (`glitch-text.scss:33`–`:68`),
-  ScanlineOverlay's `rgba(0, 0, 0, …)` (`:6`, `:16`, `:17`), and the decorative numeral at
-  `error-page.scss:28`. If a story reaches them before O-12 is settled, leave them untouched
-  and say so — do not guess a token role.
+- **O-12 is closed.** All three surfaces were decided by the restyle UX pass, so do not treat
+  them as held. GlitchText's `rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` aberration pair is
+  **dropped, not excepted**. ScanlineOverlay's `rgba(0, 0, 0, …)` resolves to the new
+  **`--token-scrim`** role, which exists precisely so a darkening layer never reaches for pure
+  black. The decorative numeral at `error-page.scss:28` is specified in **both** branches, so
+  the story cannot stall on it. Dispositions are in `RESTYLE-SPEC.md` and `DESIGN.md`; follow
+  them rather than inventing a role.
 - One open defect, with its own story. Do not fix it opportunistically and pad an
   unrelated diff: `Dev. 2025` should read `Dec.` (`content/work.ts:18`).
 - `Celeste.tsx` hides the header by mutating the DOM in an effect. Known; leave unless the
