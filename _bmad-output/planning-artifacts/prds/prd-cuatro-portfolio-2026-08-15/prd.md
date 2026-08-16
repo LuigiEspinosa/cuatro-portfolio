@@ -3,6 +3,10 @@ title: Cuatro Ecosystem
 status: final
 created: 2026-08-15
 updated: 2026-08-15
+amendments:
+  - date: 2026-08-15
+    change: 'Restyle scope change. Amends §3, §4.4, §8, §9.1, §9.2, §10, §11, §13 Q10, §14. Adds FR-36, FR-37, FR-38, SM-12, SM-C6.'
+    source: '../../sprint-change-proposal-2026-08-15.md'
 ---
 
 # PRD: Cuatro Ecosystem
@@ -15,7 +19,7 @@ This PRD defines the **ecosystem layer** of the Cuatro Ecosystem: the hub experi
 
 It deliberately does **not** re-decide how the ecosystem is built. Source layout, deployment topology, design-system strategy, identity provider and dev environment were settled by [`technical-cuatro-ecosystem-architecture-2026-08-15/research.md`](../../research/technical-cuatro-ecosystem-architecture-2026-08-15/research.md) with cited evidence. That report answers *how*. This document answers *what it is*. Where product framing collides with a technical decision, the collision is named explicitly in §12 rather than smoothed over.
 
-Structure: Glossary-anchored vocabulary (§3), features grouped with Functional Requirements nested and globally numbered FR-1…FR-35, cross-cutting NFRs in their own section, assumptions tagged inline as `[ASSUMPTION]` and indexed in §15. FR IDs are global and stable rather than positional — FR-35 sits beside FR-5, which it modifies. Technical mechanism, rejected alternatives and options-considered detail live in [`addendum.md`](addendum.md) — this PRD states capabilities, not implementations.
+Structure: Glossary-anchored vocabulary (§3), features grouped with Functional Requirements nested and globally numbered FR-1…FR-38, cross-cutting NFRs in their own section, assumptions tagged inline as `[ASSUMPTION]` and indexed in §15. FR IDs are global and stable rather than positional — FR-35 sits beside FR-5, which it modifies. Technical mechanism, rejected alternatives and options-considered detail live in [`addendum.md`](addendum.md) — this PRD states capabilities, not implementations.
 
 
 ---
@@ -106,7 +110,9 @@ Downstream artifacts and readers must use these terms exactly. FRs, UJs and SMs 
 - **Design Tokens** — the shared visual contract: named values for colour, type, spacing, radii, elevation and motion, published by the Anchor as a plain CSS custom-property file consumable by every framework in the Estate.
 - **Token Contract** — the published shape and naming of the Design Tokens; the promise Satellites depend on.
 - **Ecosystem Layer** — everything this PRD scopes: Hub, App Registry, Suite Switcher, Design Tokens, cross-app identity, Demo Access, ecosystem observability.
-- **Per-App Layer** — feature work inside any individual application. Explicitly out of scope (§9).
+- **Per-App Layer:** feature work inside any individual application: behaviour, routes, data model, feature set. Explicitly out of scope (§8). Visual Restyle is *not* Per-App Layer work, because visual coherence is a property of the Ecosystem that only per-application work can deliver.
+- **Token Adoption:** the mechanical act of consuming the Token Contract: vendoring the contract folder, importing the right file for the consumer's stack, and applying the per-Satellite hand-fix list. Delivers "reads as one author". Measured by FR-18.
+- **Visual Restyle:** rebuilding an application's presentation layer (colour, type, spacing, borders, focus, motion, component form) against the Token Contract, in that application's own framework, so it carries the Ecosystem's component vocabulary rather than its framework's defaults. Delivers "reads as one product". Never changes behaviour, routes, data or feature set. Measured by FR-36 and SM-12.
 - **Visitor** — a person browsing the Ecosystem with no account of their own. Daniela, Marcus and Ana are all Visitors.
 - **Operator** — the solo maintainer. One person, named Cuatro. The only party with real product needs.
 - **Demo Account** — a seeded, shared, credential-published account that lets a Visitor use a real application without registering. Not a personal account.
@@ -315,7 +321,9 @@ Embedding the Suite Switcher in a Satellite costs no framework-specific componen
 
 **Description:** One visual identity across six frameworks, delivered as Design Tokens — named values, not shared components. This is where the Ecosystem stops being a claim and starts being visible. Two applications adopting the same tokens is the smallest change that makes the suite real to a Visitor. Realizes UJ-1, UJ-2.
 
-The ceiling is known and accepted: tokens federate everything that is a *value* — colour, type, spacing, radii, elevation, motion. Nothing federates *behaviour*. Form controls, focus rings, overlays and dense data tables will differ between a Phoenix LiveView app and an Angular app permanently. The product accepts "reads as one author" and does not pretend to deliver "feels like one product" at the widget level.
+The ceiling is known and accepted: tokens federate everything that is a *value* — colour, type, spacing, radii, elevation, motion. Nothing federates *behaviour*. Form controls, focus rings, overlays and dense data tables will differ between a Phoenix LiveView app and an Angular app permanently.
+
+**Amended 2026-08-15.** Token Adoption alone delivers "reads as one author", and that remains FR-18's bar and Epic 1's acceptance condition. The Operator's decision of 2026-08-15 adds a second, higher bar: every application the Suite Directory renders is also **visually restyled** in its own framework (FR-36 – FR-38), so the suite reads as one product at the component level rather than only at the token level. This raises the ceiling; it does not dissolve it. The vocabulary is carried by a written specification implemented natively in each framework, never by shared code (§8, AD-24), and seams S-4, S-5 and S-6 (form validation states, overlays, dense data UI) stay accepted permanently.
 
 **Functional Requirements:**
 
@@ -353,6 +361,36 @@ A change to the Token Contract cannot silently break a Satellite's layout.
 - Token adoption by a Satellite is an explicit, reviewed action, never an unattended automatic merge.
 - The Operator can determine which Satellites are on which version of the Token Contract.
 - No automated dependency merge is enabled for any repository lacking a real test suite.
+
+#### FR-36: Visual restyle is what adoption means for a rendered application
+
+An application the Suite Directory renders carries the Ecosystem's component vocabulary in its own framework, not only the Ecosystem's token values. Realizes UJ-1, UJ-2, UJ-4.
+
+**Consequences (testable):**
+- The application's own components (its controls, its rows, its separators, its focus treatment, its status affordances) follow the Ecosystem's component specification rather than its framework's or its component library's defaults.
+- The restyle is implemented natively. No application imports a component, a class-name library, or any file from the Anchor other than the vendored contract folder.
+- A restyle changes presentation only. Behaviour, routes, data and feature set are untouched, and a restyle that changes any of them is out of scope by §8.
+- Verified by SM-12's per-application check, never by asserting that the token file is imported.
+
+#### FR-37: The Anchor's components are token-native by construction
+
+The Hub's own components are built against the Token Contract rather than migrated onto it.
+
+**Consequences (testable):**
+- No component stylesheet in the Anchor consumes a transitional alias once its component has been redesigned.
+- No colour, spacing or type literal exists outside the published contract and the print stylesheet, enforced by a blocking CI check rather than by a one-time sweep.
+- The transitional alias layer introduced at migration step 2 has a named removal condition (the last redesigned component) and is deleted when it is met.
+- The Three.js narrative remains a declared exception (seam S-1); its colours are JS values a custom property cannot reach.
+
+#### FR-38: Restyle follows visibility
+
+An application earns a restyle when the Suite Directory renders it, and never before.
+
+**Consequences (testable):**
+- The trigger is FR-35's existing declarative Status filter. No second list is maintained.
+- No restyle work item exists for an application with Status `In progress` or `Archived`. SM-C6 targets zero, always.
+- An application becoming `Live` or `Complete` creates a restyle obligation at that moment; archiving it instead closes that obligation permanently.
+- The Operator can determine, from the App Registry alone, which applications owe a restyle.
 
 **Notes:**
 - `[NOTE FOR PM]` Distribution machinery — package publishing, automated propagation, reusable workflows — is deliberately deferred. The research is explicit that a solo developer does not change tokens weekly, and that building the mechanism before any token has ever changed is speculative infrastructure. Hand-copying is the correct v1 mechanism.
@@ -621,10 +659,10 @@ It moves onto the VPS and onto a `cuatro.dev` subdomain. `[ASSUMPTION: the appli
 - **Not re-deciding the technical foundation.** Source layout, reverse proxy, database, identity provider and dev environment are settled inputs. The portfolio-value re-ranking question was the sole exception; it was interrogated, and the record is in [`addendum.md`](addendum.md) §A.
 - **Not Kubernetes, microservices, service mesh, or multi-region.**
 - **Not rewriting applications to a single framework.** The polyglot estate is the product. Framework consolidation would destroy the thesis in §1.
-- **Not feature work inside individual applications.** This PRD covers the Ecosystem Layer only. What `digital-library` does with EPUB metadata is Per-App Layer and out of scope.
+- **Not feature work inside individual applications.** This PRD covers the Ecosystem Layer only. What `digital-library` does with EPUB metadata is Per-App Layer and out of scope. **Presentation is the single bounded exception, added 2026-08-15.** An application the Suite Directory renders is visually restyled against the Token Contract, natively in its own framework (FR-36, FR-38), because visual coherence is an Ecosystem property that no ecosystem-layer artifact can deliver on its own. A restyle changes how an application looks and never what it does. Any change that alters behaviour, adds a screen or touches the domain model remains Per-App Layer and remains out of scope.
 - **Not a public API.** The App Registry is published for the Ecosystem's own consumers. No third-party compatibility promise is made.
 - **Not a user product.** No sign-up, no onboarding funnel, no retention mechanics, no growth work, no roles or permissions.
-- **Not a shared component library.** Contracts federate; implementations do not. No cross-framework component package will be built, and this is a decision rather than a deferral.
+- **Not a shared component library.** Contracts federate; implementations do not. No cross-framework component package will be built, and this is a decision rather than a deferral. **The restyle programme does not reopen this.** Seven applications implementing the same component vocabulary is expected duplication, not an argument for extraction; the vocabulary federates as a written specification (AD-24), never as code.
 - **Not anything requiring a second person.**
 - **Not devcontainers.**
 
@@ -642,14 +680,16 @@ It moves onto the VPS and onto a `cuatro.dev` subdomain. `[ASSUMPTION: the appli
 - The Suite Directory rendering only `Live` and `Complete` entries — a six-entry first public suite (FR-35).
 - The Hub front door reshaped to story-then-suite, with the Suite Directory reachable independently of the narrative (FR-1 – FR-4).
 - `list-wheel` relocated onto a `cuatro.dev` subdomain so no suite member sits on a foreign domain (§5.3).
-- Design Tokens adopted by the Anchor and at least one other Live application on a different framework (FR-16 – FR-18).
+- Design Tokens adopted by the Anchor and at least one other Live application on a different framework (FR-16 – FR-18). This remains the FR-18 acceptance condition and is satisfied by Token Adoption alone.
+- **The Anchor's own components rebuilt token-native** (FR-37), replacing migration steps 3, 4, 6 and 7 rather than adding to them.
 - Registry link verification (FR-32) and Hub visitor instrumentation (FR-34).
 
 ### 9.2 Out of Scope for MVP
 
 - **Cross-app identity (FR-20 – FR-24)** — deferred to v2. Research sequences it behind a greenfield host rebuild, and it delivers nothing to Daniela. `[NOTE FOR PM: this is emotionally load-bearing — it is the sharpest evidence for the polyglot claim and you chose to state its purpose plainly rather than cut it. It is deferred by sequence, not demoted in importance. Revisit as soon as the host rebuild lands.]`
 - **Demo Accounts across all applications (FR-25 – FR-27)** — deferred with identity, since most demo access depends on it. Applications that are already usable without authentication satisfy their part of FR-27 immediately.
-- **Building the four `In progress` applications** — `StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` are early scaffolding with real feature work remaining. That work is Per-App Layer and out of scope by §8. They hold entries in the App Registry and stay unrendered until genuinely ready (FR-35). `[NOTE FOR PM: nothing in this PRD causes these four to get finished. If the intent is that they should be, that is a separate decision — and archiving one or more of them instead is a legitimate outcome. See §13 Q10.]`
+- **Restyling any application the Suite Directory does not render.** FR-38 gates restyle on the same declarative Status filter FR-35 already applies. An unrendered application is not restyled, and no restyle work item exists for it. Restyling an invisible surface returns nothing to any Visitor and spends the Operator, who is the estate's scarcest resource. Satellite restyle itself is not deferred; it is scoped to Epic 8 and sequenced immediately after MVP (§10).
+- **Building the four `In progress` applications** — `StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` are early scaffolding with real feature work remaining. That work is Per-App Layer and out of scope by §8. They hold entries in the App Registry and stay unrendered until genuinely ready (FR-35), **and being unrendered they are also not restyled (FR-38)**. `[NOTE FOR PM: nothing in this PRD causes these four to get finished. If the intent is that they should be, that is a separate decision — and archiving one or more of them instead is a legitimate outcome, which now also closes its restyle obligation permanently. See §13 Q10.]`
 - **Bringing already-built applications online** — gated behind FR-33. The Registry tells the truth about them meanwhile (FR-28).
 - **The Anchor merge** (`cuatro-finance`, `cuatro-tracker`, `cs-tournament`) — real work, no Visitor-visible payoff, correctly sequenced after the Ecosystem is visible.
 - **Token distribution machinery** — package publishing, automated propagation, reusable workflows. Earned by three hand-copied token changes, not scheduled.
@@ -675,8 +715,11 @@ The research defines Steps 0–8. This section maps the PRD onto them so epics c
 | **6** | Identity — Hub first, then `cs-tracker` | Epic 5 | FR-20 – FR-24, FR-25 – FR-28 |
 | **7** | Token distribution machinery — *earned, not scheduled* | Epic 6 | FR-19 |
 | **8** | Repo relocation to WSL2 — independent | Epic 7 | Operator ergonomics |
+| **—** | *(no research step — added 2026-08-15 by the restyle decision)* | **Epic 8** | FR-36, FR-38 |
 
 **Epic 1 = research Steps 0–2**, exactly as the research's downstream bindings specify. It is the foundation epic and it delivers the first visible ecosystem moment (FR-18) at its end.
+
+**Epic 8 has no research step behind it and its number is not its position.** Epic numbers in this plan were never execution order, Epic 7 being independent of everything, and renumbering to insert an epic would churn every story key in tracking for no benefit. The execution order is: Epic 1, Epic 2, **Epic 8 wave 1** (`cs-tracker`, `digital-library`, `list-wheel`), Epic 3, **Epic 8 wave 2** (`cuatro-tracker`, `cs-tournament`), Epic 4, Epic 5, Epic 6, with Epic 7 independent throughout. Wave 2 sits after Epic 3 because AD-20 forbids a merge step from carrying anything else, so a merge target is restyled after its merge ships, never during it.
 
 **Two product-driven changes to the research's sequencing**, both argued in §12 and stated here only as they affect the order of work:
 
@@ -699,7 +742,8 @@ The hard constraint: no product users, therefore no user-reported signal. **Ever
 
 **Secondary**
 
-- **SM-6 — Visible family resemblance.** Count of Live applications on different frameworks rendering from the shared Design Tokens. Target ≥ 2 for MVP. Validates FR-16, FR-18.
+- **SM-6, Token adoption breadth.** Share of applications rendered in the Suite Directory that consume the shared Token Contract. Target **100% of rendered entries**, continuously. Validates FR-16, FR-18, FR-38. *Amended 2026-08-15: this was a count with a target of ≥2, which under a restyle programme measures the floor rather than the goal, and which could be satisfied by growing the estate. A share cannot be. Adding a rendered application that has not adopted lowers this metric.*
+- **SM-12, Component-level coherence.** Per rendered application, binary: does it render the Ecosystem's component vocabulary (Status mark border discipline, hairline separators, unfilled controls, the focus ring, no shadows, no gradients, accent under 3% of viewport) rather than its framework's defaults? Target: yes for every rendered application. Verified by the four manual UX checks plus a greyscale render, recorded per application. Validates FR-36, FR-37.
 - **SM-7 — Estate size.** Repository count under Ecosystem governance. Target 12 at MVP, 8 at end state. Validates §5.
 - **SM-8 — Editorial conformance.** Share of Registry Entries satisfying the description contract (≤3 sentences, reader-facing, no marketing adjectives) and carrying an accurate `tech` array. Target 100%. Validates FR-8, FR-9.
 - **SM-9 — Polyglot identity proof.** Binary: does one identity demonstrably cross the JavaScript/Elixir boundary? Target: yes, by end of Epic 5. Validates FR-21.
@@ -711,7 +755,8 @@ The hard constraint: no product users, therefore no user-reported signal. **Ever
 - **SM-C1 — Time on site.** Counterbalances SM-1 and SM-2. Daniela forming a correct positive opinion in ninety seconds is a **success**, not a bounce. Time-on-site must never be optimized, and a fall in it alongside a rise in SM-2 is a good outcome.
 - **SM-C2 — Registry Entry count.** Counterbalances SM-7 and the temptation to look busy. The Estate is *shrinking* on purpose. Adding entries to fill the grid defeats the decision in §5. More entries is not better; accurate entries are better.
 - **SM-C3 — Applications wired to cross-app identity.** Counterbalances SM-9. Two applications across the JavaScript/Elixir boundary prove the thesis. Wiring all eight adds maintenance to a solo Operator for zero additional proof.
-- **SM-C4 — VPS load average.** Counterbalances SM-2, SM-5 and SM-6. Every attractive product move in this document — more applications Live, more Demo Accounts, richer Hub — spends CPU on a box with an unproven ceiling. When this metric and any other conflict, **this one wins** (FR-33, NFR-3).
+- **SM-C4 — VPS load average.** Counterbalances SM-2, SM-5 and SM-6. Every attractive product move in this document — more applications Live, more Demo Accounts, richer Hub — spends CPU on a box with an unproven ceiling. When this metric and any other conflict, **this one wins** (FR-33, NFR-3). *Restyling is the one move in this document that does not spend against it: it changes bytes served, not CPU consumed.*
+- **SM-C6, Applications restyled but not rendered.** Counterbalances SM-12 and the pull toward polishing surfaces nobody reaches. **Target zero, always.** A restyle that precedes rendering spends the Operator on an invisible surface. This is FR-38 expressed as a number.
 - **SM-C5 — Hub asset weight.** Counterbalances the narrative's ambition. The 3D story exists to frame the suite, not to compete with it; growth in page weight that delays SM-1 is a regression regardless of how good it looks.
 
 ---
@@ -769,7 +814,7 @@ Surfaced deliberately, per the PRD prompt's request to find these now rather tha
 7. **Does the Hub's narrative survive the reduced-motion path intact?** FR-2 requires the Suite Directory to be reachable regardless; whether the narrative gets a static fallback or is simply skipped is undecided.
 8. **What happens to `/cv`, `/work`, `/recommendation` and `/celeste` in the reshaped front door?** They survive as routes (FR-1) but their prominence in navigation is unspecified.
 9. **What are the real Status values for `cuatro-finance` and `cs-tournament`?** Assumed built-but-not-deployed and Live-on-Vercel respectively (§5.1). Both are rendered-or-not decisions under FR-35 and both are assumptions, not confirmations. *Closes by: Operator confirmation.* Blocks the exact composition of the first public Suite Directory.
-10. **Do the four `In progress` applications get finished, and on what trigger?** Building them is Per-App Layer and out of scope here (§8), so nothing in this PRD causes them to happen. They stay unrendered indefinitely by default. *Closes by: an Operator decision outside this document — including, legitimately, deciding that some should be archived instead of built.*
+10. **Do the four `In progress` applications get finished, and on what trigger?** Building them is Per-App Layer and out of scope here (§8), so nothing in this PRD causes them to happen. They stay unrendered indefinitely by default. *Closes by: an Operator decision outside this document — including, legitimately, deciding that some should be archived instead of built.* **New input, 2026-08-15:** under FR-38 each of these four now imports a *visual restyle* as well as feature work at the moment it becomes rendered. Archiving one closes both obligations permanently. This does not decide the question, but it raises the price of finishing and lowers the price of archiving, which is new information for a decision this document deliberately left open.
 11. **Do the settled inputs still hold when the later steps run?** The research sets `refresh_after: 2026-11-15` and states that a selection report older than two quarters should be refreshed before being acted on. §10 Steps 5–8 will plausibly execute after that date against decisions this PRD treats as settled. *Closes by: re-checking the research before starting Step 5.*
 
 ---
@@ -786,6 +831,8 @@ Surfaced deliberately, per the PRD prompt's request to find these now rather tha
 | Crawler load from the Suite Directory consumes scarce CPU | **Medium** | Bot mitigation as hard prerequisite (NFR-7) |
 | Token changes break Satellite layouts with nobody to notice | **Medium** | No unattended automation (NFR-10, FR-19); adoption is explicit |
 | Six frameworks read as incoherence rather than as range | **Medium** | The claim is stated, not left to inference (FR-4, FR-11); tokens deliver visible family resemblance (FR-18) |
+| The restyle programme drifts into the shared component library §8 rules out | **Medium** | Five native implementations of one vocabulary is the first configuration where that argument has a real premise. AD-24 forbids it and names the evidence; the vocabulary federates as a written specification, which is a required UX deliverable rather than optional documentation. If that specification is not written, this is the decision that breaks first |
+| Five hand-written implementations of one vocabulary drift apart over time | **Medium** | SM-12 checks each rendered application against the same specification, recorded per application; AD-19's manual accessibility pass extends to every restyled application rather than to `cs-tracker` alone |
 | Unfinished projects on display read as "starts things, doesn't finish them" | **Medium** | Suite Directory renders only `Live` and `Complete` (FR-35); the four scaffolded applications stay in the Registry, unrendered |
 | The four `In progress` applications never get finished and the suite stays at six | **Low** | Accepted. Six strong entries satisfy §1; growth is not a goal (SM-C2). Archiving them is a legitimate outcome (§13 Q10) |
 | Speculative infrastructure built before it is earned | **Low** | Distribution machinery gated on three real hand-copied changes (§9.2) |

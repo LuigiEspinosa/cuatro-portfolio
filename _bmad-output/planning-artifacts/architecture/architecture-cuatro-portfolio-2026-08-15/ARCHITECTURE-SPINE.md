@@ -16,7 +16,8 @@ binds:
   - EPIC-5
   - EPIC-6
   - EPIC-7
-  - FR-1..FR-35
+  - EPIC-8
+  - FR-1..FR-38
   - NFR-1..NFR-10
 sources:
   - '../../research/technical-cuatro-ecosystem-architecture-2026-08-15/research.md'
@@ -26,6 +27,10 @@ sources:
   - '../../ux-designs/ux-cuatro-portfolio-2026-08-15/EXPERIENCE.md'
   - 'cuatro-portfolio@2.5.3 (working tree, read 2026-08-15)'
 companions: []
+amendments:
+  - date: 2026-08-15
+    change: 'Restyle scope change. Forces AD-14 and AD-19; amends AD-21; adds AD-24 and AD-25 and EPIC-8.'
+    source: '../../sprint-change-proposal-2026-08-15.md'
 ---
 
 # Architecture Spine — Cuatro Ecosystem
@@ -156,7 +161,7 @@ graph TD
 
 - **Binds:** FR-16, FR-17, FR-18, Epic 1 Step 2, Epics 2 and 6
 - **Prevents:** a Phoenix application being handed a plain `:root` file that mints zero utility classes; and half-adopted Satellites, which look worse than unadopted ones
-- **Rule:** `contracts/tokens.css` (values only, no `@font-face`), `contracts/fonts.css` (`@font-face` with `url()` relative to itself) and `contracts/tailwind.css` (generated `@theme inline` adapter that imports both) are versioned together and copied as a **folder named `cuatro-contracts/`**, never as individual files and never under another name — the fixed folder name is what makes AD-16's verification implementable across seven repositories with seven different stylesheet layouts. Tailwind consumers — `cuatro-finance`, `cuatro-tracker`, `cs-tournament` and **`cs-tracker`** — import `tailwind.css`. Non-Tailwind consumers import `tokens.css` and `fonts.css`. The Anchor is SCSS and consumes the plain pair. `--token-*` and Tailwind's `--color-*` are separate namespaces and never share a name on both sides of a `var()`. `inline` is mandatory on the `@theme` block. A Satellite adopts the whole contract or none of it.
+- **Rule:** `contracts/tokens.css` (values only, no `@font-face`), `contracts/fonts.css` (`@font-face` with `url()` relative to itself) and `contracts/tailwind.css` (generated `@theme inline` adapter that imports both) are versioned together and copied as a **folder named `cuatro-contracts/`**, never as individual files and never under another name — the fixed folder name is what makes AD-16's verification implementable across seven repositories with seven different stylesheet layouts. Tailwind consumers — `cuatro-finance`, `cuatro-tracker`, `cs-tournament` and **`cs-tracker`** — import `tailwind.css`. Non-Tailwind consumers import `tokens.css` and `fonts.css`. The Anchor is SCSS and consumes the plain pair. `--token-*` and Tailwind's `--color-*` are separate namespaces and never share a name on both sides of a `var()`. `inline` is mandatory on the `@theme` block. A Satellite adopts the whole contract or none of it. **Clarified 2026-08-15:** all-or-nothing binds the **contract import**, never the restyle. Read as "restyle wholly or not at all" this rule would contradict AD-20 outright, because a restyle is inherently incremental and AD-20 requires every step to leave a working system. A restyle proceeds component by component and reaches the Visitor as one merge; intermediate commits live on a branch and every blocking gate in AD-21 applies to them unchanged. In the Anchor, the step-2 alias layer is what keeps un-redesigned components coherent meanwhile, which is why that layer survives until the last redesign lands.
 
 ### AD-15 — The Phoenix route carries both daisyUI paths
 
@@ -186,7 +191,7 @@ graph TD
 
 - **Binds:** NFR-5, NFR-6, open items O-8 and O-9
 - **Prevents:** the exact failure the UX validation named — a document asserting a property it does not implement
-- **Rule:** Playwright runs in CI against the Hub at a 360px viewport, asserting two things. (a) Every interactive element's `boundingBox()` measures at least 44×44. (b) The Status mark's **three structural axes** hold, per `EXPERIENCE.md` § Status mark, which is the single source for the mapping: `Live` carries a 4px dot that `Complete` lacks; `Complete` is solid where `In progress` is dashed; `In progress` has a border that `Archived` drops. Asserting `border-style` alone is forbidden — `Live` and `Complete` are both `1px solid` and are 1.13:1 apart in greyscale without the dot, so a border-only assertion passes a broken implementation and fails a correct one. Lighthouse CI's existing accessibility assertion (≥0.95, severity error) stays and is not weakened. After token adoption, `cs-tracker` is measured once by hand against the same floor and the result recorded. Opacity is never used to express state, anywhere.
+- **Rule:** Playwright runs in CI against the Hub at a 360px viewport, asserting two things. (a) Every interactive element's `boundingBox()` measures at least 44×44. (b) The Status mark's **three structural axes** hold, per `EXPERIENCE.md` § Status mark, which is the single source for the mapping: `Live` carries a 4px dot that `Complete` lacks; `Complete` is solid where `In progress` is dashed; `In progress` has a border that `Archived` drops. Asserting `border-style` alone is forbidden — `Live` and `Complete` are both `1px solid` and are 1.13:1 apart in greyscale without the dot, so a border-only assertion passes a broken implementation and fails a correct one. Lighthouse CI's existing accessibility assertion (≥0.95, severity error) stays and is not weakened. **Amended 2026-08-15:** after restyle, **every restyled application** is measured once by hand against the same floor and the result recorded, not `cs-tracker` alone. That is three manual passes in Epic 8 wave 1 and two more in wave 2. The cost is real and is not avoidable: a restyle can lower contrast, break a focus ring or shrink a hit target in ways no CI job running against the Anchor can see. Opacity is never used to express state, anywhere.
 
 ### AD-20 — Every step leaves a working system, and the Epic 3 order is fixed
 
@@ -198,7 +203,7 @@ graph TD
 
 - **Binds:** all
 - **Prevents:** CI checks being treated as advisory because something downstream will catch it
-- **Rule:** There is production and there is a developer's machine. No staging environment exists and none is introduced — NFR-1 and NFR-3 both refuse it. Consequently every CI gate is blocking and none may be made a warning: typecheck, unit tests, Registry schema validation, `contracts/` purity (AD-1), the Playwright floor (AD-19), and Lighthouse accessibility.
+- **Rule:** There is production and there is a developer's machine. No staging environment exists and none is introduced — NFR-1 and NFR-3 both refuse it. Consequently every CI gate is blocking and none may be made a warning: typecheck, unit tests, Registry schema validation, `contracts/` purity (AD-1), the Playwright floor (AD-19), Lighthouse accessibility, and the FR-17 colour-literal conformance check (added 2026-08-15, replacing the one-time sweep the restyle programme made obsolete).
 
 ### AD-22 — Settled inputs have a shelf life, and the re-check is bounded
 
@@ -211,6 +216,18 @@ graph TD
 - **Binds:** every application owning a schema, Epics 3, 4, 5
 - **Prevents:** a destructive migration breaking live requests while the previous version is still serving — `docker-rollout` is scale-then-drain, so old and new containers overlap by construction
 - **Rule:** Schema migrations never run on container boot. They run as a discrete step against the application's own database, before the rollout starts, and each migration must be backward-compatible with the version still serving — expand first, contract in a later release, never both in one. An application whose framework defaults to migrate-on-boot disables that default explicitly.
+
+### AD-24: Restyle is native; the component vocabulary federates as a specification, never as code
+
+- **Binds:** FR-36, FR-37, FR-38, Epic 8, all Satellites and all `apps/*`
+- **Prevents:** the restyle programme producing exactly the shared component library AD-2 and PRD §8 rule out. This is the first configuration of the estate in which that argument has a real premise rather than a hypothetical one: the same nine components get implemented in HEEx, Svelte, Angular, React and Vue. The evidence has not changed (Google defunded Material Web in 2024-06, GitHub retired Primer ViewComponents in 2026-02, Adobe maintains parallel implementations with no consolidation plan) and no library spans these five frameworks. But the decision now needs a defence rather than a restatement, and this is it.
+- **Rule:** Each application implements the component vocabulary in its own framework, from the written **Restyle Specification**. No Satellite imports a component, a class-name library, a stylesheet other than its vendored `cuatro-contracts/` folder, or any `packages/*` artifact from the Anchor. The same component recurring across three or more applications is evidence that the *specification* should be better, never that a *package* should exist. AD-1's CI purity check is unchanged and still holds the boundary. If a plan implies shared component code crossing the Turborepo boundary, the plan is mis-scoped, not the rule. **The Restyle Specification is a required deliverable, not documentation polish:** without it, five hand-written implementations drift and the pressure to extract a package becomes the path of least resistance.
+
+### AD-25: A restyle exists only for an application the Suite Directory renders
+
+- **Binds:** FR-38, Epic 8, SM-C6, PRD §9.2
+- **Prevents:** the Operator, who is the estate's scarcest resource, being spent on surfaces no Visitor reaches
+- **Rule:** An application earns a restyle when its Registry `status` becomes `Live` or `Complete` and it therefore passes FR-35's filter. The gate is that same declarative rule; no second list is maintained and no judgement call is made at the moment judgement is least reliable, which is the pattern AD-9 already establishes for capacity. A restyle work item for an unrendered application is a defect. Archiving an unbuilt application is a legitimate and permanent way to close its restyle obligation.
 
 ## Consistency Conventions
 
@@ -228,7 +245,7 @@ graph TD
 | Auth | Per-application `__Host-` session, never a domain-scoped cookie. Issuer configuration and client credentials are the only provider-specific values an application may contain. |
 | Config & secrets | Environment variables only; `.env.example` documents every required variable; secrets live in GitHub Actions secrets and the on-box env file and never in the repository. |
 | Errors & failure | A failing gate fails the build or the deploy — never logs and continues. A capacity gate with no measurement is `blocked`, not `open`. |
-| Styling | Consume the semantic `--token-*` roles, never the raw `--c-*` palette. `color-scheme: dark` on `:root` in every consumer. Nine hand-fix lines per Satellite, in the order given in the UX seams inventory. |
+| Styling | Consume the semantic `--token-*` roles, never the raw `--c-*` palette. `color-scheme: dark` on `:root` in every consumer. Nine hand-fix lines per Satellite, in the order given in the UX seams inventory. That is Token Adoption, and it is the floor. A rendered application goes further and is restyled natively against the Restyle Specification (AD-24, AD-25). No colour, spacing or type literal outside `contracts/` and the print stylesheet, enforced by a blocking CI check. |
 
 ## Stack
 
@@ -365,6 +382,10 @@ graph LR
 | Epic 2 · Suite Directory + front door (FR-1–FR-4) | `apps/hub` | AD-19, AD-21 |
 | Epic 2 · link verification (FR-32) + Hub analytics (FR-34) | scheduled job; Umami | AD-18 |
 | Epic 2 · `list-wheel` relocation (§5.3) | Satellite; static site behind Traefik | AD-3, AD-7, AD-9 |
+| Epic 2 · Hub components rebuilt token-native (FR-37) | `components/*` SCSS, replacing migration steps 3, 4, 6, 7 | AD-14, AD-19, AD-21, AD-24 |
+| Epic 2 · FR-17 colour-literal conformance gate | `.github/workflows/ci.yml` | AD-21 |
+| Epic 8 · wave 1 restyle (`cs-tracker`, `digital-library`, `list-wheel`) | Satellite repositories, natively | AD-14, AD-19, AD-20, AD-24, AD-25 |
+| Epic 8 · wave 2 restyle (`cuatro-tracker`, `cs-tournament`) | `apps/*` after the Epic 3 merges | AD-14, AD-19, AD-20, AD-24, AD-25 |
 | Epic 3 · Hub move, then three merges | `apps/*` | AD-2, AD-20 |
 | Epic 3 · build in CI, push to GHCR | `.github/workflows` → `contracts/workflows` | AD-7, AD-8 |
 | Epic 4 · greenfield VPS rebuild | Traefik, one Postgres, `docker-rollout` | AD-7, AD-8, AD-10, AD-20, AD-22, AD-23 |
@@ -397,6 +418,12 @@ Surfaced rather than smoothed over, as the architecture prompt asked.
 
 **C-10 — The `In progress` four are in the Registry but not in the identity or demo scope.** `StreamVault`, `MaiCoin`, `poketracker-go` and `Mutuo` hold entries (FR-5) and are unrendered (FR-35), but AD-12 and AD-13 require `identity` and `demo` values on every entry. Their values are `none` / `not-deployed` until they are built — declared, not blank. This is a consequence of AD-5, not a conflict.
 
+**C-11. AD-14's "all-or-nothing" cannot carry two meanings.** Added by the restyle scope change of 2026-08-15. The phrase was written about the *contract files*: import all three or none, because a half-imported contract mints half a system. Read as "restyle wholly or not at all" it contradicts AD-20 outright, since a restyle is inherently incremental while AD-20 requires every step to leave a working system. **Resolved in AD-14 itself:** all-or-nothing binds the import, the restyle ships as one merge off a branch, and the Anchor's step-2 alias layer is what holds the intermediate state together. **This is why Story 1.18's alias layer survives the collapse of the seven-step migration.**
+
+**C-12. AD-2 survives the restyle programme, but it stops being self-evident.** Under token-only adoption there was never a reason to share components, because nothing was being built twice. Under a restyle programme the same nine components are implemented five times in five languages. That is genuine duplication and it is the first configuration of this estate in which the shared-library argument has a real premise. **Not a contradiction, and not resolved by restating AD-2.** AD-24 carries the defence, and it makes the Restyle Specification a required deliverable: the vocabulary has to federate as *something*, and a written specification is the only form that crosses HEEx, Svelte, Angular, React and Vue. Recorded here rather than smoothed over because if any decision in this spine breaks later, this is the one.
+
+**C-13. FR-18 must not be raised to mean "restyled".** The temptation is obvious now that "reads as one product" is the goal. Doing it would make Epic 1 depend on Epic 8, which depends on Epic 2, and the foundation epic would stop delivering visible value on its own, putting PRD §14's highest-severity risk (the Operator abandoning mid-migration) back on the table for no gain. FR-18 stays as written and stays satisfied by Token Adoption alone; the stronger claim is measured by FR-36 and SM-12. This separation is load-bearing.
+
 ## Deferred
 
 - **Token distribution machinery** — npm package, Renovate shareable preset, published reusable workflows. The published *shape* is fixed by AD-14 and AD-16 so nothing blocks later; the machinery is earned by three hand-copied token changes actually performed, not scheduled.
@@ -407,7 +434,9 @@ Surfaced rather than smoothed over, as the architecture prompt asked.
 - **The Suite Switcher's implementation** — v2. The pattern plus the data contract is all that federates (AD-4); each Satellite renders it natively.
 - **Authorization** — roles, permissions and organisations. Authentication only.
 - **The greenfield PostgreSQL major** — 18 today, 19 GA in Sept 2026, decided at Epic 4 under AD-22.
-- **Whether the four `In progress` applications are ever built** — an Operator decision outside every document here, and archiving them is a legitimate outcome.
+- **Whether the four `In progress` applications are ever built** — an Operator decision outside every document here, and archiving them is a legitimate outcome. Under AD-25 they are also never restyled while unrendered, so this deferral now costs nothing in either direction.
+- **The `--token-scrim` role and the disposition of the three O-12 surfaces:** GlitchText's aberration, ScanlineOverlay's darkening layer, the decorative numeral. Decided in the UX restyle pass, not here. The spine records only that a darkening layer surviving redesign needs a named role, because "nothing is pure" bars `#000` regardless of how the component is rebuilt, and that a role addition is a minor bump under AD-16 forcing no consumer to migrate.
+- **The Restyle Specification's contents.** AD-24 requires the artifact and fixes its job; what the component vocabulary *is* belongs to UX.
 - **Hostnames for `cs-tournament` and `list-wheel`** — `wheel.cuatro.dev` is a placeholder in the UX mocks (O-5); the Registry is the only mapping (AD-3) and it is written when the hostname is chosen.
 - **WSL2 relocation mechanics** — Epic 7, developer machine only, no ecosystem invariant depends on it.
 - **Per-App Layer feature work** — out of scope by PRD §8, in every application.

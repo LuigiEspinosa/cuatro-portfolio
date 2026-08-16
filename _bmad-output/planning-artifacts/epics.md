@@ -9,6 +9,10 @@ inputDocuments:
   - _bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/EXPERIENCE.md
   - _bmad-output/planning-artifacts/research/technical-cuatro-ecosystem-architecture-2026-08-15/research.md
   - _bmad-output/planning-artifacts/ecosystem-epics-prompt.md
+amendments:
+  - date: 2026-08-15
+    change: 'Restyle scope change. Deletes Stories 2.18 and 2.21, replaces 2.19 with 2.34, retargets 2.20 and 2.22, adds Stories 2.27 to 2.34 and Epic 8.'
+    source: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 ---
 
 # Cuatro Ecosystem - Epic Breakdown
@@ -144,6 +148,23 @@ modifies it.
   explicit reviewed action, never an unattended automatic merge; the Operator can determine which
   Satellites are on which version; no automated dependency merge in any repository lacking a real
   test suite.
+- **FR-36** — *(added 2026-08-15)* Visual restyle is what adoption means for a rendered
+  application: its own components follow the Ecosystem's component vocabulary rather than its
+  framework's or component library's defaults; the restyle is implemented natively with no
+  component, class-name library or Anchor file imported beyond the vendored contract folder; a
+  restyle changes presentation only, and one that changes behaviour, routes, data or feature set is
+  out of scope by PRD §8; verified by SM-12's per-application check, never by asserting the token
+  file is imported.
+- **FR-37** — *(added 2026-08-15)* The Anchor's components are token-native by construction: no
+  component stylesheet consumes a transitional alias once its component has been redesigned; no
+  colour, spacing or type literal exists outside `contracts/` and `_print.scss`, enforced by a
+  **blocking CI check** rather than a one-time sweep; the step-2 alias layer has a named removal
+  condition (the last redesigned component) and is deleted when it is met; seam S-1 stands.
+- **FR-38** — *(added 2026-08-15)* Restyle follows visibility: an application earns a restyle when
+  the Suite Directory renders it and never before; the trigger is FR-35's existing declarative
+  Status filter with no second list; no restyle work item exists for a `In progress` or `Archived`
+  application and SM-C6 targets zero always; becoming `Live` or `Complete` creates the obligation
+  at that moment, and archiving closes it permanently.
 
 **§4.5 Cross-App Identity** *(v2 — deferred by sequence, PRD §9.2)*
 
@@ -351,6 +372,28 @@ structure in the Structural Seed (`apps/`, `packages/`, `contracts/`) does not e
   container boot. They run against the application's own database before the rollout starts, and
   each must be backward-compatible with the version still serving — expand first, contract later,
   never both in one release.
+- **AD-24** — *(added 2026-08-15)* Restyle is native; the component vocabulary federates as a
+  specification, never as code. Each application implements the vocabulary in its own framework
+  from the written **Restyle Specification**. No Satellite imports a component, a class-name
+  library, a stylesheet other than its vendored `cuatro-contracts/` folder, or any `packages/*`
+  artifact. The same component recurring across three or more applications is evidence the
+  *specification* should be better, never that a *package* should exist. **The Restyle
+  Specification is a required deliverable, not documentation polish.**
+- **AD-25** — *(added 2026-08-15)* A restyle exists only for an application the Suite Directory
+  renders. The gate is FR-35's declarative Status filter; no second list, no judgement call. A
+  restyle work item for an unrendered application is a defect. Archiving an unbuilt application
+  permanently closes its restyle obligation.
+
+**Three amendments to existing ADs, applied 2026-08-15:**
+
+- **AD-14** — all-or-nothing binds the **contract import**, never the restyle. A restyle proceeds
+  component by component and reaches the Visitor as one merge, with intermediate commits on a
+  branch under the same blocking gates. In the Anchor the step-2 alias layer holds the intermediate
+  state together, which is why Story 1.18 survives the collapse of the seven-step migration.
+- **AD-19** — the manual accessibility pass extends from `cs-tracker` alone to **every restyled
+  application**. Three passes in Epic 8 wave 1, two more in wave 2. Not avoidable: a restyle can
+  lower contrast, break a focus ring or shrink a hit target in ways no CI job on the Anchor sees.
+- **AD-21** — the FR-17 colour-literal conformance check joins the blocking gate list.
 
 **Consistency conventions that bind stories** (spine § Consistency Conventions): ISO 8601 UTC
 dates; `ghcr.io/luigiespinosa/<id>:<git-sha>` with no floating tags on estate applications and
@@ -714,6 +757,9 @@ which the spine already names), and none is unaccounted for.
 | FR-33 | 1 | AD-9 / AD-17c — the gate defaults to blocked |
 | FR-34 | 2 | Umami custom events for SM-1 … SM-3 |
 | FR-35 | 2 | Declarative Status filter |
+| FR-36 | 8 | Visual restyle per rendered application, natively (AD-24) |
+| FR-37 | 2 | The Anchor's components rebuilt token-native (Stories 2.27–2.34) |
+| FR-38 | 8 | Restyle follows visibility; the gate is FR-35's filter (AD-25) |
 
 ### Deferred and Uncovered
 
@@ -779,11 +825,18 @@ one hop. The Registry cannot lie about either of them, and the Operator can see 
 through the Hub.
 
 **FRs covered:** FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12,
-FR-35, FR-24 *(declaration)*, FR-27 *(declaration)*, FR-28, FR-30 *(record)*, FR-32, FR-34
+FR-35, FR-37, FR-24 *(declaration)*, FR-27 *(declaration)*, FR-28, FR-30 *(record)*, FR-32, FR-34
 **Also carries:** the AD-19 hit-target and Status-mark assertions, on the harness Epic 1 installed
 (C-7) · `list-wheel` relocation onto a `cuatro.dev` subdomain (§5.3) · open items O-1, O-2, O-4,
 O-5, O-8, O-9 · three of the four pre-existing repository defects
-**Governing ADs:** AD-1, AD-3, AD-4, AD-5, AD-6, AD-7, AD-9, AD-18, AD-19, AD-21
+**Amended 2026-08-15 by the restyle scope change.** The Hub's inherited cybercore components are
+**rebuilt token-native** (Stories 2.27–2.34) rather than migrated. Stories 2.18 and 2.21 are
+deleted, 2.19 is replaced by 2.34's blocking CI gate, 2.20 moves to the front of the redesign
+sequence and 2.22 is retargeted. **O-12 items 1 and 2 close inside the redesign pass** rather than
+blocking two stories that no longer exist; item 3 survives as a binding acceptance criterion on
+Story 2.30, because whether a decorative numeral is redundant to a screen reader is an
+accessibility question no redesign answers. The epic goes from 26 stories to 31.
+**Governing ADs:** AD-1, AD-3, AD-4, AD-5, AD-6, AD-7, AD-9, AD-18, AD-19, AD-21, AD-24
 **Blocked by:** AD-17a (monitoring) from Epic 1, which gates the automation Story 2.8 adds; and
 AD-17b (bot mitigation), which binds at Story 2.9 — the Suite Directory is a crawler amplifier by
 construction and ships only after the bot filter. `list-wheel` placement is additionally blocked
@@ -842,6 +895,30 @@ other epic.
 
 **FRs covered:** none. Operator ergonomics.
 **Governing ADs:** none — the spine records no invariant here.
+
+### Epic 8: Every rendered application reads as one product
+
+*Added 2026-08-15 by the restyle scope change.*
+
+After Epic 8 a Visitor moving between the Hub and any application in the Suite Directory finds not
+just the same palette and type scale but the same component vocabulary: the same separators, the
+same unfilled controls, the same focus ring, the same status discipline. The polyglot claim stops
+resting on a shared file and starts resting on a shared specification implemented five times, which
+is the harder and more interesting version of it.
+
+**FRs covered:** FR-36, FR-38. *(FR-37 is Epic 2's; the Anchor is not a Satellite.)*
+**Governing ADs:** AD-14, AD-16, AD-19, AD-20, AD-24, AD-25
+**Blocked by:** Epic 2, which must first produce the Hub's component vocabulary and the **Restyle
+Specification**. Restyling a Satellite toward a target that does not exist yet is guesswork.
+**Epic number is not execution position.** Wave 1 runs after Epic 2; wave 2 runs after Epic 3,
+because AD-20 forbids a merge step from carrying anything else, so a merge target is restyled after
+its merge ships rather than during it. Epic numbers were never execution order here — Epic 7 is
+independent of everything — and renumbering to insert an epic would churn every story key in
+tracking for no benefit.
+**Standalone:** yes. Each story ships one application and leaves every other application untouched.
+**Not in this epic, by rule:** `StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and
+`cuatro-finance` have **no restyle story**. AD-25 creates one at the moment any of them begins
+rendering in the Suite Directory, and not before. SM-C6 targets zero restyles ahead of that moment.
 
 ---
 
@@ -2444,84 +2521,38 @@ suppressed by the mechanism Story 2.1 installed
 
 ---
 
-### Story 2.18: Migration step 3 — retire the violet hairlines
+### Story 2.18: DELETED 2026-08-15 (migration step 3, retire the violet hairlines)
 
-As the Operator,
-I want the alpha hairlines replaced with named opaque tokens,
-So that a hairline stops changing value with whatever sits behind it, which is precisely why alpha
-cannot federate.
+**Deleted by the restyle scope change.** This story replaced four hairline values across two files.
+`ProjectCard.scss` is retired by Story 2.14 with `/projects`, and `WorkItem.scss` is redesigned by
+Story 2.31, which absorbs the replacements. There is nothing left for the story to do: tokenizing a
+value in a file that is about to be rewritten is the wasted motion the scope change removes.
 
-**Governing ADs:** AD-14, AD-20 · **Depends on:** Stories 1.18, 2.14.
-Realizes UX-DR10. Scoped after Story 2.14 on purpose: `ProjectCard.scss` is retired with
-`/projects`, so by the time this story runs only `WorkItem.scss` remains — if 2.14 has not
-shipped, this story covers both files.
+**Number retained as a tombstone.** Epic 2's numbering is not reshuffled, so no existing story key
+in `sprint-status.yaml` changes meaning.
 
-> ⚠️ **Re-baselined 2026-08-15.** The white alpha hairlines this story targeted are gone; the
-> cybercore rebrand replaced them with a violet set. The `boder:` defect it carried no longer
-> exists — that file was rewritten by PR #61.
-
-**Acceptance Criteria:**
-
-**Given** `rgba(91, 33, 182, 0.06)` (`WorkItem.scss:35`, `ProjectCard.scss:36`),
-`rgba(91, 33, 182, 0.3)` (`WorkItem.scss:145`, `ProjectCard.scss:67`) and
-`rgba(10, 0, 20, 0.6)` (`ProjectCard.scss:27`) are used as hairlines and card surfaces
-**When** they are replaced
-**Then** each becomes `var(--token-border)` or `var(--token-border-interactive)` as the treatment
-requires
-**And** each resolves to a **flat token, never an `rgba()` with alpha** — § Colors bars opacity
-from expressing state, and all three of these are alpha values doing exactly that
-**And** no `rgba()` colour value remains in any component stylesheet still in the tree, **except
-`glitch-text.scss` and `ScanlineOverlay.scss`**, both of which are held by **O-12** — the
-aberration pair needs opposing hues a single-hue palette cannot supply, and the scanlines are
-pure blacks against the "nothing is pure" rule. **This story does not decide either.** If O-12
-is unresolved when this story opens, it ships the four hairline replacements and leaves both
-files untouched rather than guessing
-**And** the rules render as `1px` and opaque.
-
-**Given** NFR-2 binds every migration step
-**When** the change ships
-**Then** `/work` and `/cv` still render and `cuatro.dev` serves throughout.
+**Where the work went:** `WorkItem.scss`'s two hairline values are acceptance criteria on Story
+2.31. `ProjectCard.scss` needs nothing, being retired.
 
 ---
 
-### Story 2.19: Migration step 4 — sweep the colour literals
+### Story 2.19: REPLACED 2026-08-15 by Story 2.34 (migration step 4, sweep the colour literals)
 
-As the Operator,
-I want every hard-coded colour outside the contract removed,
-So that FR-17 holds for values the contract covers.
+**Replaced by the restyle scope change.** This story hand-swept 28 colour literals across 9 files.
+Most of those files are now redesigned (Stories 2.27–2.33) and absorb their own literals as part of
+being rewritten. The residue is `celeste.scss` plus whatever a future commit reintroduces, and a
+one-time hand sweep cannot hold that.
 
-**Governing ADs:** AD-14 · **Depends on:** Story 1.18.
-Realizes UX-DR11 and completes FR-17's coverage.
+**Story 2.34 replaces it with a blocking CI grep**, which is cheaper for a solo maintainer,
+permanent rather than one-shot, and converts a task into an invariant that the eight redesign
+stories cannot regress past. AD-21 gains the gate.
 
-**Acceptance Criteria:**
+**Number retained as a tombstone**, so no existing story key changes meaning.
 
-**Given** colour literals sit on **28 lines across 9 files** outside `app/app.scss`
-*(re-baselined 2026-08-15; was "eleven places" against `main`)*
-**When** the sweep runs
-**Then** `#444`/`#fff` at `celeste.scss:2`/`:16` and `#fff` at `navbar.scss:10` are replaced with
-token roles
-**And** `#0a000f` at `HomeLayout.scss:2` and `error-page.scss:7` becomes `--token-bg`, and the
-`rgba(140, 90, 210, 0.06)` grid lines at `HomeLayout.scss:4`–`:5` and `error-page.scss:9`–`:10`
-become `--token-border` — decorative, carrying no meaning, per O-10's mapping
-**And** `rgba(139, 92, 246, 0.15)` at `error-page.scss:28` and the `rgba(0, 0, 0, …)` scanline
-set at `ScanlineOverlay.scss:6`/`:16`/`:17` are **held by O-12** and left untouched if it is
-unresolved — the numeral's nearest role is marked *ornament only, never text*, and the
-scanlines are pure blacks the palette forbids. Neither is this story's decision to make
-**And** the bare keyword `color: white` the sweep used to target **no longer exists**, because
-`HomeLayout.scss` was rebuilt — but the grep still covers **named colours** as well as `#` and
-`rgba(`, because that class of miss is cheap to guard against
-**And** a repository-wide search for `#`, `rgba(`, `white`, `black` and other named colours
-returns no meaning-bearing hit outside the contract, the print stylesheet, and
-`glitch-text.scss`'s deliberate aberration pair.
-
-**Given** paper is genuinely white and toner is genuinely black
-**When** `_print.scss` is assessed
-**Then** it keeps real `#fff` and `#000` and is explicitly outside the contract by nature.
-
-**Given** the Three.js narrative's colours are JS values a custom property cannot reach without a
-runtime `getComputedStyle` read
-**When** FR-17 coverage is assessed
-**Then** the 3D scene is out of scope as declared seam S-1, and the sweep does not attempt it.
+**Where the work went:** the conformance rule and `celeste.scss`'s two literals are Story 2.34.
+`HomeLayout.scss` and `error-page.scss` literals are Stories 2.29 and 2.30. The `ScanlineOverlay`
+blacks are Story 2.28. `navbar.scss` is Story 2.32. `_print.scss` stays outside the contract by
+nature and is explicitly excluded from the gate.
 
 ---
 
@@ -2533,6 +2564,13 @@ So that the identity is complete rather than half-applied.
 
 **Governing ADs:** AD-14 · **Depends on:** Stories 1.12, 1.18.
 Realizes UX-DR12 and closes open item **O-6**.
+
+> **Resequenced 2026-08-15.** This story survives the restyle scope change unchanged in content and
+> **moves to the front of the redesign sequence**: it is now the first story of the restyle work and
+> a blocking predecessor of Stories 2.27 through 2.33. The font layer is global and must land before
+> any component is redesigned, or each redesign is authored against faces that are about to be
+> deleted. It is also the change with the clearest SM-C5 benefit, since it removes three font
+> binaries from `public/fonts/`.
 
 **Acceptance Criteria:**
 
@@ -2561,37 +2599,22 @@ stable across the swap, verified by observing a real swap rather than by reading
 
 ---
 
-### Story 2.21: Migration step 6 — rename the call sites
+### Story 2.21: DELETED 2026-08-15 (migration step 6, rename the call sites)
 
-As the Operator,
-I want component stylesheets consuming the token roles directly,
-So that the aliases become removable.
+**Deleted by the restyle scope change, and this is the clearest waste the change removes.** The
+story existed to walk fifteen component stylesheets from `var(--white-color)` to
+`var(--token-text)`, undoing Story 1.18's aliasing one component at a time. A stylesheet rewritten
+against `--token-*` from the first line has no call sites to rename. Every file this story touched
+is either redesigned by Stories 2.27–2.33 or retired by Story 2.14.
 
-**Governing ADs:** AD-14, AD-20 · **Depends on:** Stories 2.18, 2.19, 2.20.
-Realizes UX-DR13. Purely mechanical.
+Two of its constraints survive, relocated rather than lost:
 
-**Acceptance Criteria:**
+- **Every call site consumes a `--token-*` semantic role and never a raw `--c-*` palette value.**
+  Now an acceptance criterion on each redesign story, and enforced permanently by Story 2.34's gate.
+- **`--hero-height` stays local**, being a layout constant rather than a design token; the contract
+  carries no viewport heights. Now a criterion on Story 2.29, which owns `HomeLayout`.
 
-**Given** fifteen component stylesheets consume the old alias names
-**When** they are migrated
-**Then** each moves from `var(--white-color)` to `var(--token-text)` and equivalents, per the
-Story 1.18 mapping
-**And** the work is done **per component, not in one commit**, so a visual regression is
-attributable to one component.
-
-**Given** the raw palette is not for consumption
-**When** the renames land
-**Then** every call site consumes a `--token-*` semantic role and none reaches for a `--c-*`
-palette value directly.
-
-**Given** `--hero-height` is a layout constant rather than a design token
-**When** the sweep runs
-**Then** it stays local and is not moved into the contract, because the contract carries no
-viewport heights.
-
-**Given** NFR-2 binds every step
-**When** each component ships
-**Then** the site renders unchanged apart from the deliberate token values already adopted.
+**Number retained as a tombstone**, so no existing story key changes meaning.
 
 ---
 
@@ -2601,23 +2624,33 @@ As the Operator,
 I want the transitional layer gone,
 So that the contract is the only source and there is nothing left to drift from.
 
-**Governing ADs:** AD-14 · **Depends on:** Story 2.21.
-Realizes UX-DR14 and completes the seven-step migration.
+**Governing ADs:** AD-14 · **Depends on:** Story 2.33.
+Realizes UX-DR14 and closes the migration.
+
+> **Retargeted 2026-08-15.** Its trigger moves from "step 6 complete" to **"the last Hub component
+> redesigned"**, and its second acceptance criterion changes, because under the restyle scope change
+> the site is *not* expected to be visually identical: it has been deliberately redesigned. The
+> alias layer's removal condition is now named in FR-37, and this story is where it is met.
 
 **Acceptance Criteria:**
 
-**Given** the aliases introduced in Story 1.18 exist only to keep the fifteen component stylesheets
-working during migration
-**When** they are deleted from `app/app.scss`
+**Given** the aliases introduced in Story 1.18 exist only to keep un-redesigned component
+stylesheets working while the redesign proceeds (AD-14, as clarified 2026-08-15)
+**When** the last redesign story has shipped and the aliases are deleted from `app/app.scss`
 **Then** `--white-color`, `--black-color`, `--light-gray-color`, `--gray-color`, `--page-padding`
 and the five font aliases no longer exist
-**And** a repository-wide search returns zero remaining references to any of them.
+**And** a repository-wide search returns zero remaining references to any of them
+**And** no component stylesheet in the tree still consumes an alias name, which is FR-37's first
+consequence.
 
 **Given** the contract is now the only source
 **When** the site renders
-**Then** it is visually identical to the pre-deletion build
+**Then** Story 2.34's conformance gate passes
 **And** `:root` in the compiled stylesheet carries only the contract's properties plus
-`--hero-height`.
+`--hero-height`
+**And** the rendered result is asserted against the redesigned baseline captured by Story 1.10's
+harness, **not** against the pre-redesign build — the site is deliberately different by this point,
+so a byte-identical comparison would be asserting the wrong thing.
 
 **Given** FR-17 requires no colour, spacing or type value to bypass the contract for values it
 covers
@@ -2719,6 +2752,11 @@ I want every application to stay on the suite's domain,
 So that the framing does not break at the exact moment it should hold.
 
 **Governing ADs:** AD-3, AD-7, AD-9, AD-17c · **Depends on:** Stories 1.6, 1.7, 2.4, 2.5.
+
+> **Note added 2026-08-15.** `list-wheel`'s **visual restyle is Epic 8 Story 8.3**, not this story.
+> AD-20 requires them to be separate shipped steps: relocate, verify the subdomain serves, then
+> restyle. Do not combine them, however tempting it is to touch the repository once — a relocation
+> and a restyle failing together leaves no way to tell which one broke it.
 Realizes PRD §5.3. **This is the first genuinely new placement on the box**, so it is the first
 consumer of the Capacity Gate.
 
@@ -2816,6 +2854,288 @@ ad-hoc value is a defect, not a style choice.
 **Given** A-16 governs autoplay
 **When** the homepage loads
 **Then** nothing autoplays with sound and nothing auto-advances.
+
+---
+
+## Epic 2, continued: the Hub's components rebuilt token-native
+
+*Added 2026-08-15 by the restyle scope change. Realizes FR-37.*
+
+Eight stories replacing migration steps 3, 4, 6 and 7. Each rebuilds an inherited cybercore surface
+against the token contract rather than tokenizing values in a file that is about to be rewritten.
+
+**Specification depth, and why.** These stories carry titles, goals, governing ADs, dependencies
+and the acceptance criteria the approved change proposal already fixes. **They do not yet carry
+their visual acceptance criteria**, because the design contract for these components does not exist:
+`EXPERIENCE.md` § Component Patterns specifies the *new* Suite components and says nothing about
+`GlitchText`, `ScanlineOverlay`, `HudLabel`, `HomeLayout` or `Error404`. That was correct while
+these components were being *migrated*, which needs a mapping table rather than a design. It is not
+correct now that they are being *redesigned*. Writing visual AC here would be a dev story making
+design decisions, which is exactly what O-12 exists to prevent, generalised to eight components.
+**The UX restyle pass is a blocking predecessor of every story below**, and this follows the same
+convention this document already applies to Epics 4 through 7.
+
+**Two criteria bind every story in this group** and are not repeated in each:
+
+- **NFR-2 / AD-20.** `cuatro.dev` serves throughout and every existing route still renders.
+- **AD-24 and FR-37.** The component consumes `--token-*` semantic roles only, never a raw `--c-*`
+  palette value and never a literal. No colour, spacing or type literal survives in the redesigned
+  file. Rendered output is asserted through Story 1.10's harness, not by reading the CSS.
+
+---
+
+### Story 2.27: Redesign `GlitchText` token-native
+
+As a Visitor,
+I want the Hub's most expressive component to belong to the Ecosystem's palette,
+So that the identity holds at the exact surface a reviewer looks at first.
+
+**Governing ADs:** AD-14, AD-19, AD-24 · **Depends on:** Stories 1.18, 2.20, UX restyle pass.
+**Closes O-12 item 1.** The red and cyan aberration pair at `glitch-text.scss:33`–`:68` needs
+opposing hues a single-hue palette structurally cannot supply.
+
+**Acceptance Criteria (fixed portion):**
+
+**Given** O-10 decided in favour of the contract palette and § Rules permits one accent
+**When** the component is rebuilt
+**Then** the disposition of the aberration follows the UX restyle pass's decision, recorded there
+rather than made here
+**And** if the aberration is dropped, no `rgba(255, 0, 80, …)` or `rgba(0, 255, 255, …)` value
+remains anywhere in the tree and Story 2.34's gate covers the file with no exception
+**And** if it is kept, it is kept as a **named, documented exception** in the contract's exception
+list, with the exception's reasoning recorded, and Story 2.34's gate carries that exception
+explicitly rather than by omission.
+
+*(Recommendation carried from the approved change proposal, for the UX pass to accept or overturn:
+the aberration goes. A documented exception on one of the Hub's most visible components undermines
+the contract at the point a reviewer looks, and a token-native glitch built from offsets in
+`--token-accent`, `--token-accent-muted` and `--token-text` carries the same effect within one hue.)*
+
+**Given** SM-C5 counterbalances Hub asset weight
+**When** the redesign ships
+**Then** the component's contribution to CSS weight is measured against Story 2.2's baseline, and
+dropping the aberration keyframes is recorded as a reduction rather than assumed.
+
+---
+
+### Story 2.28: Redesign `ScanlineOverlay` token-native and add `--token-scrim`
+
+As a Visitor,
+I want the scanline treatment to sit inside the palette's rules,
+So that "nothing is pure" is a rule the system keeps rather than one it documents.
+
+**Governing ADs:** AD-14, AD-16, AD-19, AD-24 · **Depends on:** Stories 1.18, 2.20, UX restyle pass.
+**Closes O-12 item 2, but only conditionally.** The item dissolves if the redesign drops the
+darkening layer. **If any darkening layer survives, it does not dissolve.** `#000` stays barred
+regardless of how the component is rebuilt, so a named role is required.
+
+**Acceptance Criteria (fixed portion):**
+
+**Given** `ScanlineOverlay.scss:6`, `:16` and `:17` carry `rgba(0, 0, 0, 0.65 / 0.12)` and § Rules
+bars `#000` anywhere outside the print stylesheet
+**When** the component is rebuilt
+**Then** either no darkening layer survives and the blacks are gone outright
+**Or** a `--token-scrim` role is added to `contracts/tokens.css` and the component consumes it
+**And** in neither case does a pure black remain in the file.
+
+**Given** a role addition is a **value change and therefore a minor bump** under AD-16
+**When** `--token-scrim` lands
+**Then** the contract header moves to `Contract v1.1.0`
+**And** no consumer is forced to migrate, because nothing is renamed
+**And** `cs-tracker` remains correctly declared at `1.0.0` in its Registry `token_contract` field;
+AD-18's drift check compares a Satellite's declaration against its own vendored file, so a Satellite
+trailing the contract by a minor version is not a failure and must not be reported as one.
+
+**Given** AD-16's change process has never been exercised
+**When** this change ships
+**Then** it is recorded as the first of the three hand-copied token changes that earn Epic 6, and
+the process is rehearsed here on the cheapest possible change rather than discovered later on an
+expensive one.
+
+---
+
+### Story 2.29: Redesign `HomeLayout` token-native
+
+As a Visitor,
+I want the homepage's ground and structure to come from the contract,
+So that the largest surface on the site is not the one exception to it.
+
+**Governing ADs:** AD-14, AD-19, AD-24 · **Depends on:** Stories 1.18, 2.12, 2.20, UX restyle pass.
+The Hub's largest single surface. Absorbs `#0a000f` at `HomeLayout.scss:2` and the
+`rgba(140, 90, 210, 0.06)` grid lines at `:4`–`:5`.
+
+**Acceptance Criteria (fixed portion):**
+
+**Given** `--hero-height` is a layout constant rather than a design token *(criterion relocated
+from deleted Story 2.21)*
+**When** the redesign lands
+**Then** it stays local and is not moved into the contract, because the contract carries no
+viewport heights.
+
+**Given** the Three.js narrative's colours are JS values a custom property cannot reach
+**When** FR-37 coverage is assessed
+**Then** the 3D scene is out of scope as declared seam S-1, and this story does not attempt it.
+
+**Given** `app/app.scss` currently sets `width: 100vw` and `overflow-x: hidden` on `body`, both of
+which UX-DR43 changes
+**When** the redesign lands
+**Then** widths are `100%` with container padding and `overflow-x: clip` is used rather than
+`hidden`, because `hidden` breaks the sticky positioning UX-DR22 requires of the nav.
+
+---
+
+### Story 2.30: Redesign `Error404` token-native
+
+As a Visitor who has landed somewhere that does not exist,
+I want the 404 to look like the rest of the suite and to say one thing once,
+So that the error page is evidence of care rather than the one unfinished surface.
+
+**Governing ADs:** AD-14, AD-19, AD-24 · **Depends on:** Stories 1.18, 2.17, 2.20, UX restyle pass.
+**Carries O-12 item 3, which does NOT dissolve under redesign.** Whether the large decorative
+numeral at `error-page.scss:28` is redundant to the visible 404 message is an accessibility
+question that survives any redesign, so it is a binding criterion here rather than an open item.
+
+**Acceptance Criteria (fixed portion):**
+
+**Given** the decorative numeral duplicates the visible 404 message, and `--token-accent-muted`
+(`--c-accent-quiet`, 2.74:1) is marked in § Semantic roles as **ornament only, never text**
+**When** the numeral's role is assigned
+**Then** its redundancy to a screen reader is **confirmed by testing, not assumed**
+**And** if it is redundant it carries `aria-hidden="true"`, at which point `--token-accent-muted`
+is the correct role and the 4.5:1 text floor does not apply
+**And** if it is **not** redundant it is text, `--token-accent-muted` is forbidden, and it takes a
+role clearing 4.5:1
+**And** the finding is recorded either way, because this is the one part of O-12 no redesign
+answers.
+
+**Given** UX-DR33 requires exactly two exits matching the header
+**When** the page is rebuilt
+**Then** it offers Suite and CV and nothing else.
+
+**Given** `#0a000f` at `error-page.scss:7` and the grid lines at `:9`–`:10` are inherited literals
+**When** the redesign lands
+**Then** both are gone, the ground coming from `--token-bg` and the grid from `--token-border`.
+
+---
+
+### Story 2.31: Redesign `WorkItem` and `HudLabel` token-native
+
+As the Operator,
+I want the two surviving rebrand atoms rebuilt rather than patched,
+So that the hairline treatment is a decision the contract owns.
+
+**Governing ADs:** AD-14, AD-19, AD-24 · **Depends on:** Stories 1.18, 2.20, UX restyle pass.
+**Absorbs the whole of deleted Story 2.18.**
+
+**Acceptance Criteria (fixed portion):**
+
+**Given** `rgba(91, 33, 182, 0.06)` at `WorkItem.scss:35` and `rgba(91, 33, 182, 0.3)` at
+`WorkItem.scss:145` are alpha values used as hairlines *(criteria relocated from deleted Story
+2.18; `ProjectCard.scss`'s three values need nothing, the file being retired by Story 2.14)*
+**When** the component is rebuilt
+**Then** each becomes a **flat token, never an `rgba()` with alpha**, because § Colors bars opacity
+from expressing state and both of these are alpha values doing exactly that
+**And** the rules render as `1px` and opaque
+**And** a hairline no longer changes value with whatever sits behind it, which is why alpha cannot
+federate in the first place.
+
+**Given** `/work` and `/cv` both render `WorkItem`
+**When** the change ships
+**Then** both routes still render.
+
+---
+
+### Story 2.32: Redesign the chrome: `Navbar`, `Header`, `Logo`, `ContactContainer`, `Container`
+
+As a Visitor on any route,
+I want the persistent chrome to carry the identity,
+So that the suite framing holds on the secondary routes and not only on the homepage.
+
+**Governing ADs:** AD-14, AD-19, AD-24 · **Depends on:** Stories 2.15, 2.20, UX restyle pass.
+**Sequenced after Story 2.15, never inside it.** 2.15 reshapes the nav to two destinations, which is
+a structural change; this restyles the result. Absorbs `#fff` at `navbar.scss:10`.
+
+**Acceptance Criteria (fixed portion):**
+
+**Given** UX-DR22 fixes the nav's structure and UX-DR24 fixes the focus ring
+**When** the chrome is rebuilt
+**Then** the current route carries a `2px` accent underline plus `aria-current="page"`, the nav is
+sticky at `--z-sticky` and does not hide on scroll
+**And** the focus ring is `outline: 2px solid var(--token-focus)` at `3px` offset, applied
+instantly and never transitioned, on `:focus-visible` only.
+
+**Given** Story 2.26 sets the Hub's focus standard as the reference every Satellite copies by hand
+**When** this story ships
+**Then** its focus implementation **is** that reference, and Story 2.26 asserts against it rather
+than against a separate one.
+
+---
+
+### Story 2.33: Redesign `WorkHero` and `WorkTimeline` token-native
+
+As a Visitor reading the CV,
+I want the timeline to look like the suite,
+So that the route Daniela is most likely to open second is not the one that breaks the impression.
+
+**Governing ADs:** AD-14, AD-19, AD-24 · **Depends on:** Stories 2.16, 2.20, UX restyle pass.
+**This is the last Hub redesign story, and it is what unblocks Story 2.22.** UX-DR28 reuses
+`WorkTimeline` unchanged in *structure*; this story restyles it.
+
+**Acceptance Criteria (fixed portion):**
+
+**Given** Story 2.16 builds `/cv` around the existing `WorkTimeline` component reused unchanged
+**When** this story runs
+**Then** it changes presentation only and does not alter the component's structure, props or
+behaviour, so 2.16's work is not redone
+**And** `/work` keeps rendering standalone for anyone holding the URL.
+
+**Given** UX-DR34's accordion behaviour is set by Story 2.16
+**When** the restyle lands
+**Then** the first entry still opens on load without a collapsed-height flash and the
+`useReduceMotion` hook still drops the GSAP height tween to zero duration.
+
+**Given** this is the last redesign in the group
+**When** it closes
+**Then** FR-37's alias removal condition is met and Story 2.22 is unblocked.
+
+---
+
+### Story 2.34: FR-17 conformance, no colour literal outside the contract
+
+As the Operator,
+I want the contract's coverage enforced by a machine on every push,
+So that eight redesign stories cannot be undone by the ninth commit.
+
+**Governing ADs:** AD-14, AD-21, AD-24 · **Depends on:** Stories 2.27 through 2.33.
+**Replaces deleted Story 2.19.** A one-time hand sweep cannot hold a property; a blocking gate can,
+and it is strictly cheaper for a solo maintainer.
+
+**Acceptance Criteria:**
+
+**Given** AD-21 makes every CI gate blocking and forbids downgrading one to a warning
+**When** the check is added to `ci.yml`
+**Then** it fails the build on any colour literal (`#` hex, `rgb(`, `rgba(`, `hsl(`, or a named
+CSS colour) in any stylesheet outside the permitted set
+**And** it is **blocking, never `continue-on-error`**
+**And** the permitted set is exactly: `contracts/` (the contract defines the values), `_print.scss`
+(paper is genuinely white and toner genuinely black, so it is outside the contract by nature), and
+any exception Story 2.27 recorded by name.
+
+**Given** the residue not covered by a redesign story
+**When** the gate is first run
+**Then** `#444` at `celeste.scss:2` and `#fff` at `celeste.scss:16` are replaced with token roles
+**And** the gate passes on a clean tree, so it lands green rather than red.
+
+**Given** the Three.js narrative's colours are JS values a custom property cannot reach
+**When** the check's scope is set
+**Then** it covers stylesheets only, seam S-1 stands as a declared exception, and the check does
+not attempt the 3D scene.
+
+**Given** a gate that is easy to silence is not a gate
+**When** the check is written
+**Then** any suppression mechanism it offers requires a named exception in the permitted set rather
+than an inline comment, so silencing it is a reviewed edit to a list rather than a one-character
+change in a stylesheet.
 
 ---
 
@@ -3454,3 +3774,124 @@ location before anything is removed from `C:\`.
 **Acceptance intent:** `git worktree repair` is run where worktrees exist; `safe.directory` and
 `core.longpaths` are expected to need setting and are handled rather than discovered; no
 repository is left in a state where a routine git operation fails.
+
+---
+
+## Epic 8: Every rendered application reads as one product
+
+*Added 2026-08-15 by the restyle scope change. Realizes FR-36 and FR-38.*
+
+After Epic 8 a Visitor moving between the Hub and any application in the Suite Directory finds not
+just the same palette and type scale but the same component vocabulary: the same separators, the
+same unfilled controls, the same focus ring, the same status discipline. The polyglot claim stops
+resting on a shared file and starts resting on a shared specification implemented five times, which
+is the harder and more interesting version of it.
+
+**FRs covered:** FR-36, FR-38. *(FR-37 is Epic 2's; the Anchor is not a Satellite.)*
+**Governing ADs:** AD-14, AD-16, AD-19, AD-20, AD-24, AD-25
+**Blocked by:** Epic 2, which must first produce the Hub's component vocabulary and the **Restyle
+Specification**. Restyling a Satellite toward a target that does not exist yet is guesswork.
+**Epic number is not execution position.** Wave 1 runs after Epic 2; wave 2 after Epic 3.
+**Specification depth:** titles, goals, governing ADs, dependencies and the fixed acceptance
+criteria only. Visual AC waits on the Restyle Specification, following the same convention this
+document applies to Epics 4 through 7.
+
+**Four criteria bind every story in this epic** and are not repeated in each:
+
+- **AD-24.** The restyle is implemented natively, from the Restyle Specification. The application
+  imports no component, no class-name library, no `packages/*` artifact and no stylesheet from the
+  Anchor beyond its vendored `cuatro-contracts/` folder. Recurrence of a component across three or
+  more applications is evidence the *specification* should be better, never that a package should
+  exist.
+- **AD-25 / FR-38.** The application is rendered in the Suite Directory. A restyle story for an
+  unrendered application is a defect, and SM-C6 targets zero always.
+- **AD-19.** After restyle the application is measured **once by hand** against the accessibility
+  floor: the 44×44 target floor by measurement in a browser rather than by reading CSS, the focus
+  ring visible against all three grounds and confirmed not transitioned, and the greyscale check.
+  The result is recorded, and a failure is recorded as a finding rather than silently corrected out
+  of scope.
+- **AD-20 / NFR-2.** The application's live hostname serves throughout, and the restyle reaches the
+  Visitor as one merge with intermediate commits on a branch (AD-14, as clarified 2026-08-15).
+
+**Presentation only.** A restyle that changes behaviour, routes, data or feature set has left this
+epic's scope and PRD §8's carve-out, and is a defect rather than a bonus.
+
+---
+
+### Story 8.1: `cs-tracker` visual restyle (Elixir, Phoenix LiveView, Tailwind v4, daisyUI)
+**Wave:** 1. **Depends on:** Story 1.19, Epic 2, the Restyle Specification.
+**First on purpose, for two reasons.** It is the only Satellite already on the contract from Story
+1.19, so its restyle is the smallest delta in the estate rather than a standing start. And it is the
+hardest framework in the estate, so failing here is cheapest first.
+**Acceptance intent:** daisyUI's component defaults are displaced by the Ecosystem's vocabulary
+rather than merely re-coloured by it. A daisyUI button carrying token colours is still a daisyUI
+button, and § Components has no filled button anywhere in the system. Seam S-8 applies:
+`phx-update="ignore"` on animated containers if LiveView DOM patching visibly interrupts a
+transition. Seam S-7 stands, the light theme having been dropped at adoption. The vendored contract
+version and its `token_contract` declaration are re-checked after the restyle, since Epic 2 may have
+moved the contract to v1.1.0.
+
+### Story 8.2: `digital-library` adopts the contract and is restyled (Svelte, SvelteKit)
+**Wave:** 1. **Depends on:** Epic 2, the Restyle Specification.
+**Two shipped steps, not one.** Adopt (vendor `cuatro-contracts/`, import the plain
+`tokens.css` + `fonts.css` pair as a non-Tailwind consumer, apply the nine hand-fix lines), verify,
+then restyle. AD-20 binds both halves and the first half alone already satisfies FR-18 for this
+application.
+**Acceptance intent:** this is the entry a Visitor is most likely to open from the Suite Directory,
+so it is the application where the gap between "one author" and "one product" is most visible. Its
+Registry entry gains a `token_contract` value it does not have today, and AD-18's scheduled drift
+check picks it up from that point. FR-9's `Hetzner VPS` correction is Story 2.4's, not this one.
+
+### Story 8.3: `list-wheel` visual restyle (Angular, static build)
+**Wave:** 1. **Depends on:** Story 2.25, Epic 2, the Restyle Specification.
+**A separate shipped step after relocation is verified, never the same commit** (AD-20). A
+relocation and a restyle failing together leaves no way to tell which one broke it.
+**Acceptance intent:** the smallest surface in the estate and the only application with no
+server-side component at all, which makes it the cheapest of the three and a useful check that the
+Restyle Specification is implementable by someone reading it rather than inferring it. Adoption and
+restyle may ship together here only if adoption has not already happened at relocation time; the
+restyle still lands as its own commit.
+
+### Story 8.4: Record the restyle floor and the per-application coherence check
+**Wave:** 1. **Depends on:** Stories 8.1, 8.2, 8.3.
+**The Story 1.20 equivalent for restyle**, and the story that makes SM-12 real rather than asserted.
+**Acceptance intent:** SM-12 is recorded per application, not in aggregate: for each of the three,
+the four manual UX checks (keyboard-only traversal, 360px with no horizontal scroll, greyscale
+render with the Status taxonomy still readable, `prefers-reduced-motion` forced) plus AD-19's
+measured 44×44 floor, with results written down and failures recorded as findings. The record also
+names, for each application, its vendored contract version, so the Operator can see who is behind at
+a glance. That is a gap AD-18's per-Satellite drift check does not cover by design, since it
+compares a declaration against its own vendored file rather than against the current contract.
+
+### Story 8.5: `cuatro-tracker` visual restyle
+**Wave:** 2. **Depends on:** Story 3.6, Story 8.4.
+Rendered in the first public Suite Directory, so FR-38 applies. A Tailwind consumer inside the
+Turborepo after the Epic 3 merge, so it imports `tailwind.css`.
+**Acceptance intent:** restyled **after** its merge ships and is verified, never during it, because
+AD-20 requires each merge step to change nothing else. Being inside `apps/*` it may depend on `packages/*`
+under AD-2, but AD-24 still applies: a shared React package is created only after real duplication
+has accumulated across two or more apps, never in advance and never because two applications are
+being restyled at once.
+
+### Story 8.6: `cs-tournament` visual restyle
+**Wave:** 2. **Depends on:** Story 3.7, Story 8.4.
+Rendered in the first public Suite Directory, so FR-38 applies.
+**Acceptance intent:** restyled after the Vercel exit and the merge have shipped and been verified,
+not during either. Same AD-2 and AD-24 note as Story 8.5.
+
+---
+
+### Not in this epic, by rule
+
+`StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and `cuatro-finance` have **no restyle story**,
+and their absence is the decision rather than an omission. AD-25 creates one at the moment any of
+them begins rendering in the Suite Directory, and not before. Restyling an unrendered, unbuilt
+application is work with no Visitor-visible return, and it spends the Operator, who is the estate's
+scarcest resource.
+
+Two consequences worth stating:
+
+- **SM-C6 targets zero** restyles ahead of rendering, and is the counter-metric that enforces this.
+- **PRD §13 Q10 gets cheaper to answer.** Each of the four unbuilt applications now imports a
+  restyle as well as feature work at the moment it becomes rendered, and archiving one closes both
+  obligations permanently.

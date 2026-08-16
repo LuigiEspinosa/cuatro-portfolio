@@ -29,7 +29,11 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 08-15-2026 19:59
+last_updated: 08-15-2026 21:34
+# Amended 08-15-2026 by the restyle scope change.
+# Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
+# Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
+# Actionable stories: 82 -> 93.
 project: cuatro-portfolio
 project_key: NOKEY
 tracking_system: file-system
@@ -80,15 +84,27 @@ development_status:
   2-15-nav-reshape-to-two-destinations: backlog
   2-16-cv-built-around-the-existing-worktimeline: backlog
   2-17-secondary-surface-states: backlog
-  2-18-migration-step-3-retire-the-violet-hairlines: backlog
-  2-19-migration-step-4-sweep-the-colour-literals: backlog
+  # 2-18 DELETED 2026-08-15 (restyle scope change). Absorbed by 2-31.
+  # 2-19 REPLACED 2026-08-15 by 2-34, a blocking CI gate.
+  # 2-21 DELETED 2026-08-15. A rewritten stylesheet has no call sites to rename.
+  # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
   2-20-migration-step-5-swap-the-type: backlog
-  2-21-migration-step-6-rename-the-call-sites: backlog
   2-22-migration-step-7-delete-the-aliases: backlog
   2-23-scheduled-registry-verification-external-to-the-box: backlog
   2-24-hub-visitor-instrumentation: backlog
   2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
+  # Hub components rebuilt token-native (FR-37), added 2026-08-15.
+  # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
+  # 2-20 is a blocking predecessor of all of them (the type layer precedes any redesign).
+  2-27-redesign-glitchtext-token-native: backlog
+  2-28-redesign-scanlineoverlay-token-native-and-add-token-scrim: backlog
+  2-29-redesign-homelayout-token-native: backlog
+  2-30-redesign-error404-token-native: backlog
+  2-31-redesign-workitem-and-hudlabel-token-native: backlog
+  2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog
+  2-33-redesign-workhero-and-worktimeline-token-native: backlog
+  2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
   epic-2-retrospective: optional
 
   epic-3: backlog
@@ -145,3 +161,19 @@ development_status:
   7-1-copy-the-repositories-into-the-wsl2-ext4-filesystem: backlog
   7-2-repair-worktrees-and-git-configuration: backlog
   epic-7-retrospective: optional
+
+  # Epic 8 added 2026-08-15 by the restyle scope change.
+  # EPIC NUMBER IS NOT EXECUTION POSITION. Wave 1 (8-1..8-4) runs after epic-2.
+  # Wave 2 (8-5, 8-6) runs after epic-3, because AD-20 forbids a merge step from
+  # carrying anything else, so a merge target is restyled after its merge ships.
+  # BLOCKED by epic-2 and by the UX Restyle Specification, which does not exist yet.
+  # No restyle story exists for StreamVault, MaiCoin, poketracker-go, Mutuo or
+  # cuatro-finance. AD-25 creates one when the Suite Directory renders them, not before.
+  epic-8: backlog
+  8-1-cs-tracker-visual-restyle: backlog
+  8-2-digital-library-adopts-the-contract-and-is-restyled: backlog
+  8-3-list-wheel-visual-restyle: backlog
+  8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: backlog
+  8-5-cuatro-tracker-visual-restyle: backlog
+  8-6-cs-tournament-visual-restyle: backlog
+  epic-8-retrospective: optional
