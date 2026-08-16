@@ -5,16 +5,18 @@ created: '2026-08-16'
 status: 'done'
 baseline_commit: 'f51bdd7af3b14e7a9c8a30cacfc993c6e689bc8b'
 review_loop_iteration: 0
+operator_actions_completed_on: '2026-08-16'
+ad_17a_gate_owner: 'story-1-3'
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
   - '{project-root}/ops/estate.md'
 operator_actions:
-  - 'Create the UptimeRobot account and add an HTTPS monitor for each of `cuatro.dev`, `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and `library.cuatro.dev`, using the probe targets in `ops/monitoring.md`.'
-  - 'Add Telegram as an alert contact, send a test alert, and record in `ops/monitoring.md` whether it went through a native integration or a webhook to a bot.'
-  - 'Configure the TLS certificate alert to the nearest value UptimeRobot supports for the recorded rule, and write the actually configured value into `ops/monitoring.md` beside the rule.'
-  - 'Record the actual recurring cost in `ops/monitoring.md`, including if it is zero, as a named decision against the NFR-4 ceiling.'
-  - 'Once a test alert has arrived on Telegram, flip the `AD-17a status:` line in `ops/monitoring.md` to `satisfied` with the ISO 8601 UTC date. Stories 1-10, 1-11 and 1-14 read that line.'
+  - 'DONE 2026-08-16. Five monitors created through the UptimeRobot v3 API, ids 803749849, 803750016, 803750023, 803750025, 803750027.'
+  - 'DONE 2026-08-16. Telegram dropped; email to luigi@cuatro.dev confirmed receiving real cuatro.dev down alerts, which proves the same chain end to end.'
+  - 'PARTLY DONE 2026-08-16. Rule 1 (checkSSLErrors) enabled on all five. Rule 2 (sslExpirationReminder) is a paid setting, rejected 009-005, deliberately not bought because AD-26 removes the renewal cycle it would watch.'
+  - 'DONE 2026-08-16. Zero dollars per month, free tier, observed from the account: no payment processor, no active subscription.'
+  - 'REASSIGNED 2026-08-16 to Story 1.3. The gate flips when AD-26 lands (Origin CA installed, ACME disabled), which is when the certificate-age half becomes moot rather than unmet.'
 deferred:
   - summary: >-
       Story 4.2 must confirm that Traefik's ACME renewal trigger is relative to

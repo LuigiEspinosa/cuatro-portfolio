@@ -681,8 +681,21 @@ certificate rolls over.
 
 ```
 AD-17a status: not-satisfied as of 2026-08-16
-Alert path last verified: never
+Alert path last verified: 2026-08-16
+Opens at: Story 1.3, when AD-26 lands
 ```
+
+**The opening condition is fixed, decided by the Operator on 2026-08-16.** This line flips to
+`satisfied` in **Story 1.3**, in the same change that installs the Cloudflare Origin CA
+certificate and disables ACME on the origin. At that moment the certificate-age requirement
+stops being unmet and starts being **moot**, because there is no renewal cycle left to watch.
+The gate is not waived, and the paid tier is not bought: the requirement is dissolved by AD-26
+rather than either ignored or purchased.
+
+**Until then, four stories stay blocked**: 1-10, 1-11, 1-14 and 2.23. That is the intended
+behaviour of a blocking predecessor, and the sequence in front of it is short: Story 1.7
+enumerates both boxes, Story 1.21 restores the Anchor, Story 1.3 lands the proxy and Origin CA
+and flips this line.
 
 **Most of the gate is now met, and this section records precisely which part is not.** As of
 2026-08-16 the account exists, five monitors are running off the box at five minute intervals,
@@ -823,7 +836,7 @@ actions 4 and 6**, which are the two that prove the Operator would actually hear
 | 3 | Configure the TLS certificate age alert | Use the nearest value UptimeRobot supports for the recorded rule, and write the actually configured value into the conversion table beside its row | **BLOCKED, not outstanding.** `sslExpirationReminder` is a paid setting (`009-005`). Deliberately not bought, because AD-26 removes the renewal cycle it would watch |
 | 4 | Confirm the alert path reaches a channel the Operator actually reads | **Superseded 2026-08-16.** Telegram dropped; email confirmed receiving real `cuatro.dev` down alerts, which exercises the same chain end to end | **2026-08-16.** Confirmed by the Operator |
 | 5 | Record the actual recurring cost | Write it against the $100 per month ceiling as a named decision, including if it is zero. If the required tier would breach the ceiling, stop and raise it rather than configuring | **2026-08-16.** $0 per month, free tier, read from the account: no payment processor, no active subscription |
-| 6 | Flip the status line above to the positive form with the ISO 8601 UTC date, and set `Alert path last verified` | Only once actions 1 to 5 are done **and** a deliberately induced test alert has arrived. Anything less reads `not-satisfied` | _not done_ |
+| 6 | Flip the status line above to the positive form with the ISO 8601 UTC date | **Reassigned to Story 1.3 on 2026-08-16.** It flips in the same change that installs Origin CA and disables ACME, which is when the certificate-age requirement becomes moot rather than unmet | **Owned by Story 1.3**, not by this story |
 
 **Maintaining this file.** When an Operator action is performed, **strike its row by replacing
 the `_not done_` cell with the ISO 8601 UTC completion date, and leave the row in place.**

@@ -59,7 +59,11 @@ development_status:
   # no referent, and 1-6 plus AD-17c sit behind it.
   # Numbers are NOT reshuffled: story keys stay stable.
   1-1-archive-the-four-retired-repositories: done
-  1-2-external-uptime-and-certificate-age-monitoring: awaiting-operator
+  # 1-2 closed 2026-08-16. Monitors live, alert path proven by real alerts on email.
+  # The AD-17a gate is still SHUT and is now owned by 1-3: the certificate-age half is a
+  # paid UptimeRobot setting, deliberately not bought, and AD-26 makes it moot when
+  # Origin CA lands. 1-10, 1-11, 1-14 and 2-23 stay blocked until 1-3 flips it.
+  1-2-external-uptime-and-certificate-age-monitoring: done
   1-21-restore-cuatro-dev-onto-the-hostinger-vps: backlog
   1-3-bot-mitigation-on-the-four-live-subdomains: backlog
   1-4-the-capacity-gate-exists-and-fails-closed: backlog

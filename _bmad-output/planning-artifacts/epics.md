@@ -1196,6 +1196,19 @@ loudly, it fails at the next renewal weeks later, which is the exact failure mod
 to catch
 **And** the Cloudflare audit log is read first to confirm which records each token actually
 touched, so a token doing something other than ACME is not revoked by assumption.
+
+**Given** AD-17a names uptime **and certificate-age** monitoring together, and Story 1.2 closed
+with the uptime half live but the age half unconfigured, because `sslExpirationReminder` is a
+paid UptimeRobot setting that was deliberately not bought (Operator decision, 2026-08-16)
+**When** the Origin CA certificate is installed and ACME is disabled on the origin
+**Then** the certificate-age requirement is **moot rather than unmet**, because no renewal cycle
+remains on the origin to watch
+**And** `ops/monitoring.md`'s `AD-17a status:` line is flipped to the positive form with the ISO
+8601 UTC date **in this same change**, since this is the moment the gate genuinely closes
+**And** the record states that the requirement was dissolved by AD-26 rather than waived or
+purchased, so a later reader does not read an open gate as an oversight
+**And** the four stories waiting on it, 1-10, 1-11, 1-14 and 2.23, are unblocked only from this
+point, never earlier.
 **And** the record states that a host may not leave the proxy until a publicly trusted
 certificate has been issued for it first, which is AD-26's accepted reversibility cost.
 
