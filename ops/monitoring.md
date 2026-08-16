@@ -51,14 +51,17 @@ demonstrably arrived rather than until the channel has been configured.
 ### Account ownership and the alert path credentials
 
 These fields exist so the alert path has a named owner and a known authentication mode rather
-than living only in one person's browser session. **All three are unset**, because no account
-exists.
+than living only in one person's browser session.
 
 | Field | Value | Nature |
 |---|---|---|
-| UptimeRobot account owner | _unset, Operator fills_ | Which identity and which email address the account is registered under |
+| UptimeRobot account owner | `luigi@cuatro.dev` | **Observed 2026-08-16.** The account exists and is registered under this address |
 | Telegram integration mode | _unset, Operator fills_ | Native integration, or a webhook to a bot. The two fail differently and are debugged differently |
 | Telegram destination | _unset, Operator fills_ | Which chat, channel or direct message the alert lands in |
+
+**An account existing is not a monitor running.** The four probes, the Telegram contact, the
+certificate threshold and the induced test alert are all still outstanding, so the gate below
+stays shut. This row records ownership only.
 
 If the integration is a webhook to a bot, the bot token is a credential. It lives in the
 UptimeRobot console and **never in this repository**, in line with the spine's rule that
