@@ -96,6 +96,29 @@ Read from `crt.sh` rather than from either box, so it needed no access:
 - `tracker.cuatro.dev` shows three issuances inside a week (2026-07-30 twice, 2026-08-05), which
   may be ordinary precert plus cert logging or may be a client retrying. Worth a glance on the box.
 
+#### The DNS-01 credentials, found 2026-08-16
+
+Two Cloudflare API tokens hold zone DNS edit rights on `cuatro.dev`:
+
+| Token | Permissions | Last used | Read |
+|---|---|---|---|
+| `tracker-mac` | `Zone.Zone`, `Zone.DNS` | 2026-08-05 | **Live.** The date matches a `tracker.cuatro.dev` reissuance in Certificate Transparency on the same day. Treat as the working ACME credential |
+| `cuatro-tracker` | `Zone.DNS` | 2026-04-02 | **Probably fossil.** Idle over four months, which is longer than any renewal cycle. Superseded, most likely |
+
+**Correction to an earlier inference in this file.** Single-name certificates were read as the
+signature of HTTP-01. They are not: DNS-01 issues single-name certificates perfectly well, and
+these tokens are evidence that at least `tracker.cuatro.dev` goes through DNS-01. The two
+mechanisms are still unresolved, but the reasoning that separated them was wrong.
+
+- [ ] **Neither token is revoked before Story 1.3 has installed Origin CA, disabled the ACME
+      clients and verified every host serving.** Revoking a live issuance token fails silently
+      at the next renewal, weeks later.
+- [ ] Read the Cloudflare audit log to confirm which records each token touched. A token doing
+      something other than ACME must not be revoked by assumption.
+- [ ] **`tracker-mac` is named for a laptop.** Find out where the client actually runs. If
+      issuance depends on a developer machine being switched on, that is a silent-failure vector
+      in its own right and would explain irregular reissuance.
+
 ## Part 2: on each box
 
 Run everything in this section on **both** OLD and NEW, and keep the two sets of output

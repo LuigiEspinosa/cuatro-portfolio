@@ -1172,16 +1172,30 @@ issuer matches what a probe will actually see
 **When** the origin is configured
 **Then** the steps run in this order, per host: install the Origin CA certificate, disable the
 ACME client, verify the host still serves, and only then switch the DNS record to proxied
-**And** the order is not negotiable, because every live hostname was observed on 2026-08-16
-presenting a **single-name** certificate, which is the signature of HTTP-01 issued per host on
-demand, and HTTP-01 depends on how port 80 is reached; flipping the proxy first changes that
-path while ACME is still relied upon, and the breakage would not surface until the next renewal
+**And** the order holds regardless of which ACME challenge type is in use, because the risk it
+guards against is two issuers contending for one hostname and a public path changing while
+issuance is still relied upon; a renewal that breaks does not surface until the next renewal
+attempt, which is weeks later
 **Then** one Origin CA certificate is installed covering the apex and the wildcard, issued for
 the longest term offered
 **And** any ACME client previously issuing certificates for a proxied host on that box is
 disabled, so two issuers are not fighting over the same hostname
 **And** the certificate's expiry date is written into `ops/monitoring.md`'s Decisions table with
 a dated review, because nothing renews it
+
+**Given** two Cloudflare API tokens with zone DNS edit rights on `cuatro.dev` were found on
+2026-08-16, `tracker-mac` (Zone.Zone plus Zone.DNS, last used 2026-08-05, matching a
+`tracker.cuatro.dev` reissuance in Certificate Transparency that same day) and `cuatro-tracker`
+(Zone.DNS, last used 2026-04-02, idle for over four months)
+**When** Origin CA is installed and the ACME clients are disabled and every host is verified
+serving
+**Then** both tokens are revoked, because they are the credential for a mechanism this story
+retires, and a standing zone-edit credential with no consumer is an unnecessary key
+**And** neither is revoked before that point: revoking a live issuance token does not fail
+loudly, it fails at the next renewal weeks later, which is the exact failure mode AD-17a exists
+to catch
+**And** the Cloudflare audit log is read first to confirm which records each token actually
+touched, so a token doing something other than ACME is not revoked by assumption.
 **And** the record states that a host may not leave the proxy until a publicly trusted
 certificate has been issued for it first, which is AD-26's accepted reversibility cost.
 
