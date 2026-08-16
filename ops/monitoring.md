@@ -439,17 +439,30 @@ edge certificate. Two consequences, both load-bearing:
    silently fail to renew. Cloudflare's edge certificate is Cloudflare-managed and renews
    itself, so watching it proves very little. Story 1.3 must say how the origin is watched.
 
-**The choice is not made here**, because it belongs to Story 1.3 and one option changes what
-the origin certificate even is. The three candidates, recorded so the story does not
-re-derive them:
+**Decided 2026-08-16: Cloudflare Origin CA, wildcard, behind Full (strict).** This is AD-26.
+The origin presents one Cloudflare Origin CA certificate covering `cuatro.dev` and
+`*.cuatro.dev`, issued for the longest term offered, and **no ACME client runs on the origin
+for a proxied host**. The renewal cycle is removed rather than watched.
 
-| Option | How the origin is watched | Cost |
+Two alternatives were considered and rejected, recorded so Story 1.3 does not re-derive them:
+
+| Rejected | Why |
+|---|---|
+| Probe the origin directly, off-proxy | A DNS-only hostname pointing at the box serves the same applications outside the proxy, so crawlers reach them with no bot rules in front. That is a hole through AD-17b, which gates Epic 2, and closing it needs a hand-maintained IP allowlist against NFR-1 |
+| Rely on the `526 Invalid SSL Certificate` response | It gives no warning window at all. A warning window is the entire reason this record alerts on age rather than expiry |
+
+**What each rule watches after the switch.**
+
+| Certificate | Who renews it | What watches it |
 |---|---|---|
-| Probe the origin directly | A second monitor against the origin address with SNI, bypassing the proxy | Exposes the origin address in the monitor config, and the origin must stay reachable |
-| Cloudflare Origin CA | A certificate valid up to 15 years replaces the Let's Encrypt origin certificate, so renewal stops being a recurring risk | The certificate is not publicly trusted, which is fine behind Full (strict) and wrong anywhere else. It sends no expiry notification, so the age rule still applies, just far in the future |
-| Rely on the 526 signal | Behind Full (strict), an expired origin certificate makes Cloudflare return `526 Invalid SSL Certificate`, which the uptime probe already catches | Detects the failure only once it is already user-visible, which is the thing this record exists to avoid |
+| Cloudflare edge, per proxied hostname | Cloudflare, automatically | Rule 1 asserts the expected issuer is Cloudflare. Rule 2's age threshold applies to whatever the probe observes |
+| Origin, `cuatro.dev` plus `*.cuatro.dev` | Nobody. It does not renew | Its expiry date is written into the Decisions table when it is issued, with a dated review well before it. A long horizon is not a reason to leave it unwritten |
 
-The first two are real monitoring. The third is an outage with a good error code.
+**The reversibility cost, stated plainly.** An Origin CA certificate is not publicly trusted, so
+a host cannot leave the Cloudflare proxy until a publicly trusted certificate has been issued
+for it first. Turning off the orange cloud on a host, even briefly to debug, breaks it
+immediately. That failure is self-catching: Rule 1 asserts the expected issuer, so a host that
+drops out of the proxy alarms rather than degrading quietly.
 
 ### Rule 2: certificate age
 

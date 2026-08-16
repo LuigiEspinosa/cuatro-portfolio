@@ -78,3 +78,19 @@ found them. Append only. Each entry names the spec that surfaced it.
     monitor would report the Anchor down while it is healthy. A comment on the route
     and a test asserting the serialized form would close it. Left out of this story
     because its task list is confined to `ops/monitoring.md`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  summary: >-
+    RESOLVED 2026-08-16 by AD-26. The spec's deferred item, that Story 4.2 must
+    confirm Traefik's ACME renewal trigger is relative rather than a fixed day
+    count, is narrowed to hostnames outside the Cloudflare proxy.
+  evidence: |-
+    That item assumed the origin keeps renewing its own certificates, which made the
+    48 hour grace depend on the issuer attempting renewal at two thirds of lifetime.
+    AD-26 removes ACME from the origin for every proxied host, so no live hostname
+    depends on Traefik's renewal trigger any more. The check survives only for
+    hostnames not behind the proxy, of which there are none today. Story 4.2 still
+    proves DNS-01 against a scratch hostname so the capability exists the day a host
+    has to leave the proxy, which AD-26 requires before that can happen. Recorded
+    here rather than by editing the closed spec, since a done spec is a record of
+    what was known then.

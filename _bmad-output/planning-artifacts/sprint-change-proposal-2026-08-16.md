@@ -339,6 +339,37 @@ rule change together, in one step, or the monitor alarms falsely.
 
 ---
 
+## Resolution, 2026-08-16
+
+**Approved and applied.** All four open questions below were answered by the Operator on
+2026-08-16 and are now pinned in the artifacts.
+
+1. **The Hostinger VPS is the prepaid box**, at $0 marginal per month, paid a year at a time.
+   Recorded in NFR-4 and PRD section 7. **One thing did not reconcile:** the PRD said "prepaid
+   to 2028" while the Operator describes an annual prepayment, so the expiry date is flagged
+   unconfirmed rather than assumed. An annually prepaid VPS with no recorded renewal date is a
+   cost cliff nothing in the plan watches.
+2. **The second address is retired** once the Anchor moves. In Story 1.21's acceptance, and
+   Story 4.11's scope is reduced accordingly.
+3. **Both `www.cuatro.dev` and `cuatro.dev` are kept**, apex canonical, `www` redirecting with
+   a 301. In Story 1.21, and `www` joins the monitored set in `ops/monitoring.md`.
+4. **The four subdomains are switched to proxied.** In Story 1.3, together with the
+   `ops/monitoring.md` amendment that has to land in the same change.
+
+**A fifth question opened by answer 4, and settled the same day: AD-26.** Proxying moves TLS
+termination to Cloudflare, so an external probe stops being able to see the origin certificate,
+which is the one that can silently fail to renew. Three options were weighed. Probing the origin
+off-proxy was rejected because a DNS-only hostname pointing at the box serves the same
+applications with no bot rules in front, which is a hole through AD-17b. Relying on the `526`
+response was rejected because it gives no warning window, and a warning window is the reason
+this estate alerts on age rather than expiry. **Adopted: one Cloudflare Origin CA certificate
+covering `cuatro.dev` and `*.cuatro.dev`, behind Full (strict), with no ACME on the origin for
+a proxied host.** The renewal cycle is removed rather than monitored. The accepted cost is that
+a host cannot leave the proxy until a publicly trusted certificate has been issued for it
+first. Recorded as AD-26 in the spine, with consequences applied to Stories 1.3 and 4.2.
+
+---
+
 ## Open questions for the Operator
 
 1. Which box is prepaid to 2028, and what does the other cost per month? NFR-4's arithmetic

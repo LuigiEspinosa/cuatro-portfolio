@@ -230,6 +230,16 @@ graph TD
 - **Prevents:** the Operator, who is the estate's scarcest resource, being spent on surfaces no Visitor reaches
 - **Rule:** An application earns a restyle when its Registry `status` becomes `Live` or `Complete` and it therefore passes FR-35's filter. The gate is that same declarative rule; no second list is maintained and no judgement call is made at the moment judgement is least reliable, which is the pattern AD-9 already establishes for capacity. A restyle work item for an unrendered application is a defect. Archiving an unbuilt application is a legitimate and permanent way to close its restyle obligation.
 
+### AD-26: TLS terminates at Cloudflare, and the origin stops renewing certificates
+
+**Added 2026-08-16.** Proposal: `sprint-change-proposal-2026-08-16.md`.
+
+- **Binds:** FR-31, NFR-1, NFR-7, SM-10, AD-17a, AD-17b, Epics 1, 3 and 4
+- **Prevents:** a silently broken ACME renewal taking the estate down, in a world where certificate lifetimes halve twice before 2028 and there is no user to report the outage
+- **Rule:** Every live `cuatro.dev` hostname is proxied by Cloudflare with TLS mode **Full (strict)**, never Flexible, which leaves the origin leg unencrypted. The origin presents a **Cloudflare Origin CA certificate covering `cuatro.dev` and `*.cuatro.dev`**, issued for the longest term offered, so one certificate serves every present and future subdomain and **no ACME client runs on the origin for a proxied host**. The certificate is not publicly trusted, which is correct behind Full (strict) and wrong anywhere else, so **a host may not leave the proxy until a publicly trusted certificate has been issued for it first**. That ordering is the reversibility cost and it is accepted deliberately: it is a documented pre-step to a migration, not a code-level dependency, which is the same distinction AD-11 draws for identity. Certificate-**age** monitoring under AD-17a continues to apply to whatever a probe actually observes, which after this decision is Cloudflare's edge certificate; the origin certificate's own expiry is recorded in `ops/monitoring.md` with a dated review, because a fifteen-year horizon is not an excuse to leave it unwritten.
+- **Why not monitor the origin instead.** A DNS-only hostname pointing at the box would serve the same applications outside the proxy, so crawlers would reach them with no bot rules in front. That is a hole through AD-17b, which gates Epic 2. Closing it needs a hand-maintained IP allowlist, against NFR-1.
+- **Self-catching failure mode.** A host that drops out of the proxy immediately presents an untrusted certificate. `ops/monitoring.md` asserts the expected issuer per host, so that condition alarms rather than degrading quietly.
+
 ## Consistency Conventions
 
 | Concern | Convention |

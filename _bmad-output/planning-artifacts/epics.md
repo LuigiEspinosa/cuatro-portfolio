@@ -1160,9 +1160,19 @@ Rule 1 was written against
 **When** the records are switched
 **Then** `ops/monitoring.md` is amended in the same change, never afterwards, so the expected
 issuer matches what a probe will actually see
-**And** the record states how the **origin** certificate is watched once it is invisible from
-outside, since that is the certificate that can silently fail to renew
 **And** an alarm fired by this change is a defect in this story, not a real outage.
+
+**Given** AD-26 settles the origin certificate: Cloudflare Origin CA covering `cuatro.dev` and
+`*.cuatro.dev`, behind Full (strict), so no ACME client runs on the origin for a proxied host
+**When** the origin is configured
+**Then** one Origin CA certificate is installed covering the apex and the wildcard, issued for
+the longest term offered
+**And** any ACME client previously issuing certificates for a proxied host on that box is
+disabled, so two issuers are not fighting over the same hostname
+**And** the certificate's expiry date is written into `ops/monitoring.md`'s Decisions table with
+a dated review, because nothing renews it
+**And** the record states that a host may not leave the proxy until a publicly trusted
+certificate has been issued for it first, which is AD-26's accepted reversibility cost.
 
 **Given** the one citable capacity measurement in the record (639,880 KB RSS / 103.3% CPU) was
 captured **during a bot crawl**
@@ -4150,7 +4160,13 @@ Stand up Traefik v3.7 as the estate's proxy, with certificate issuance over DNS-
 **Acceptance intent:** every router matches on `Host` and `PathPrefix` routing between
 applications does not exist; the Traefik dashboard is not publicly reachable without
 authentication; certificate issuance and renewal are proven, and Story 1.2's certificate-age
-monitoring sees the new certificates.
+monitoring sees the new certificates. **Amended 2026-08-16 by AD-26:** the origin no longer
+runs ACME for a proxied host, so DNS-01 issuance is scoped to hostnames that are **not** behind
+the Cloudflare proxy, and for proxied hosts Traefik serves the existing Origin CA certificate
+instead. If every live hostname is proxied by the time this story opens, DNS-01 is configured
+and proven against a scratch hostname rather than dropped, so the capability exists the day a
+host needs to leave the proxy. AD-26's ordering rule applies: a public certificate is issued
+before any host is taken off the proxy.
 
 ### Story 4.3: Migrate `list-wheel`: the static first candidate
 Move the estate's only application with no server-side component onto the new proxy.
