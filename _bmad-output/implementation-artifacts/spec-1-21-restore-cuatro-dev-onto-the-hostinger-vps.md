@@ -13,8 +13,10 @@ context:
 operator_actions:
   - 'DONE 2026-08-17, by agent. Cloudflare DNS: `cuatro.dev`, `analytics.cuatro.dev` and `www.cuatro.dev` all repointed to 177.7.52.248, DNS-only, TTL 60. Performed with a zone-scoped API token the Operator supplied. REVOKE THAT TOKEN now that the cutover is confirmed.'
   - 'DONE 2026-08-17, by agent. Umami site created (website id b5e26621-88fa-4746-98a0-f045a131163c) and the Hub image rebuilt with it baked in. Tracking script verified in the rendered payload.'
-  - 'OUTSTANDING. GitHub secret: repoint `SERVER_HOST` at 177.7.52.248 and confirm `SERVER_USER` is `deploy` and `SSH_PRIVATE_KEY` authenticates there. Until this is done, do not merge to `main`. The corrected checkout path means a deploy to any unprepared host now fails at `cd` rather than half-succeeding.'
-  - 'OUTSTANDING, security. The Umami admin password was rotated off the shipped default and written to `/home/deploy/cuatro-portfolio/.umami-admin` (mode 600). Change it to a password you choose and keep in your password manager. See the incident note in the Spec Change Log.'
+  - 'DONE 2026-08-17, by Operator. `SERVER_HOST` repointed at 177.7.52.248. This makes the next merge to `main` a real deploy, which is why the merge order below is now load-bearing.'
+  - 'DONE 2026-08-17, by Operator. Umami admin password changed to one the Operator chose. `/home/deploy/cuatro-portfolio/.umami-admin` still holds the agent-generated value and should be deleted or overwritten.'
+  - 'OUTSTANDING, and it is the last one. Revoke the Cloudflare zone-edit API token supplied for this cutover, and remove `CLOUDFLARE_TOKEN` from the local `.env`. The record is in the deferred-work ledger.'
+  - 'OUTSTANDING, ordering. Merge `dev` into `main` before anything else reaches `main`. `origin/main` still carries the pre-move compose file, whose `caddy` service publishes 80 and 443 and whose services are named `app`, `db` and `umami`. A deploy from that commit would reset the box onto it, recreate the shared-network name collisions and contend for the ports `cs-tracker-caddy-1` holds, taking the whole estate down rather than only the Anchor.'
 deferred:
   - summary: 'Two containers answer to `app` on the shared ingress network; cs-tracker.cuatro.dev proxies app:4000. Pre-existing.'
     location: 'cuatro-tracker repository'
@@ -128,7 +130,7 @@ Cutover on the box, in this order:
 - [x] Back up `/home/deploy/cs-tracker/Caddyfile` as `Caddyfile.bak-1-21`, append the fragment, `caddy validate`, then reload. Re-verify all three Satellites immediately; restore the backup if any regressed.
 - [x] Confirm Let's Encrypt issued for all three new hostnames, then verify the matrix above from a validating client.
 - [x] **Operator:** create the Umami site and hand back the website id. Rebuild the image with it set, redeploy, and confirm the tracking script loads on the Hub.
-- [ ] **Operator:** repoint `SERVER_HOST`. Do not merge to `main` until it is done.
+- [x] **Operator:** repoint `SERVER_HOST`. Done 2026-08-17. The merge-order constraint this creates is recorded in `ops/routing-inventory.md`.
 
 Records:
 - [x] `ops/routing-inventory.md`: create it from the enumeration above, carrying one row per hostname per address with what terminates TLS, the container behind it and the port; where `SERVER_HOST` points and what it was repointed to; the old address recorded as the Operator's statement with the contradicting external observation beside it; and what is configured only on the box and in no repository. Note that Story 1.7 completes and verifies the rest rather than claiming this story finished it.

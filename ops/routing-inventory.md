@@ -105,13 +105,23 @@ deferred work. It is also why every service in the Anchor's compose file is name
 | Field | Value | Nature |
 |---|---|---|
 | `SERVER_HOST` before 2026-08-17 | Not this box | **Observed, by absence.** `.github/workflows/deploy.yml` ran `cd ~/projects/cuatro-portfolio`, and no `~/projects` directory has ever existed on `177.7.52.248`. The secret's value is not readable from the repository |
-| `SERVER_HOST` after | `177.7.52.248` | **Operator action. See the status line below** |
+| `SERVER_HOST` after | `177.7.52.248` | **Operator action, completed 2026-08-17** |
 | Checkout path | `/home/deploy/cuatro-portfolio` | **Decided 2026-08-17**, matching the sibling convention. `deploy.yml` was corrected in the same change |
 | Deploy mechanism | `docker compose up --build -d` over SSH | Unchanged. A standing AD-8 violation tracked in Story 1-9 and retired in Epic 3 |
 
-**Deploy repoint status: PENDING as of 2026-08-17.** Until `SERVER_HOST` is repointed, a merge
-to `main` deploys nowhere useful. The corrected path means such a deploy now fails at `cd`
-rather than half-succeeding.
+**Deploy repoint status: DONE 2026-08-17.** The secret now resolves to this box, so a merge to
+`main` is a real deploy against the machine serving all six hostnames.
+
+**That makes one ordering constraint load-bearing until `main` catches up.** As of 2026-08-17
+the box's checkout sits at `main` (`54d3a0d`) with `docker-compose.yml` and `docker/Dockerfile`
+modified in place, because the corrected versions were applied directly during the cutover and
+live on `dev`. `origin/main` still carries the pre-move compose file: a `caddy` service
+publishing `80:80` and `443:443`, and services named `app`, `db` and `umami`. A deploy from
+that commit would `reset --hard` the box onto it, discard the working files, recreate the
+shared-network name collisions, and contend for the ports `cs-tracker-caddy-1` holds. **The
+blast radius is the whole estate, not just the Anchor.** `dev` must reach `main` before
+anything else does. Once it has, the box's checkout and its running configuration agree for
+the first time and this constraint expires.
 
 ## The address the estate left
 
