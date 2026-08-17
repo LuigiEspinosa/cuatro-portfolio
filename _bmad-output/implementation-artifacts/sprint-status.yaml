@@ -66,8 +66,8 @@ development_status:
   # AD-17b (bot mitigation) is recorded separately in ops/bot-mitigation.md.
   1-2-external-uptime-and-certificate-age-monitoring: done
   1-21-restore-cuatro-dev-onto-the-hostinger-vps: done
-  1-3-bot-mitigation-on-the-four-live-subdomains: review
-  1-4-the-capacity-gate-exists-and-fails-closed: backlog
+  1-3-bot-mitigation-on-the-four-live-subdomains: done
+  1-4-the-capacity-gate-exists-and-fails-closed: review
   1-5-capacity-measurement-week: backlog
   1-6-write-the-capacity-gate-threshold-and-open-the-gate: backlog
   1-7-enumerate-the-deployed-routing-table-on-the-box: backlog

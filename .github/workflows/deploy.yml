@@ -8,6 +8,28 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # The checkout and the node setup exist only for the Capacity Gate below.
+      # The deploy itself runs over SSH and needs neither.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The Capacity Gate (AD-9) runs before the deploy rather than after,
+      # because a check that reports on a placement already made is a record and
+      # not a gate. It is blocking and carries no `continue-on-error` and no skip
+      # condition: there is one environment and no staging, so nothing downstream
+      # will catch what this lets through (AD-21).
+      #
+      # The id named here is the Anchor's own and is in `placements`, so this
+      # step passes today and keeps passing. It starts refusing the moment this
+      # workflow is pointed at an id the box has never run, which is the only
+      # moment it exists for. `ops/__tests__/capacity-gate.test.ts` asserts that
+      # this id is one the gate file actually lists.
+      - name: Capacity Gate
+        run: node ops/capacity-gate.mjs cuatro-portfolio
+
       # The host is whatever SERVER_HOST resolves to. This workflow cannot verify
       # which provider that is, so it does not name one.
       #

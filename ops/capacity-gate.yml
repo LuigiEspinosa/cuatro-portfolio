@@ -1,0 +1,46 @@
+# The Capacity Gate (AD-9). New placement is refused mechanically until a
+# measured threshold exists, and any id already in `placements` always deploys,
+# so continuity is never traded against the gate (NFR-2).
+#
+# `.github/workflows/deploy.yml` reads this file through `ops/capacity-gate.mjs`
+# before it deploys anything. That makes this the first file under `ops/` with a
+# machine consumer, so its shape is a contract rather than prose: exactly the
+# seven keys below, nothing nested deeper than one level, and no eighth key. The
+# reader refuses anything it does not recognise, because a gate that cannot read
+# itself must not be the thing that says yes.
+#
+# `placements` lists applications, not hostnames. Umami and Postgres run on the
+# box and are infrastructure rather than Estate applications (`ops/estate.md`),
+# and `www.cuatro.dev` is a 301 with nothing behind it. Listing hostnames would
+# make a genuinely new application indistinguishable from an incumbent that
+# gained a second hostname, which is the distinction this gate exists to draw.
+#
+# Story 1-5 writes `measured_at`, `baseline` and `reading` from a real
+# measurement week. Story 1-6 writes `threshold` and only then may `status`
+# become `open`. The reader rejects `open` while `threshold` is empty. A number
+# written here before the week runs would be a guess dressed as a requirement.
+
+measured_at:
+baseline:
+threshold:
+reading:
+status: blocked
+overflow:
+  path: managed hosting
+  provider: Railway
+  scope: the two heavy applications
+  cost: $15 to $30 per month
+  ceiling: inside NFR-4's $40 to $100 all-in bound
+placements:
+  - id: cuatro-portfolio
+    observed: 2026-08-17
+    note: the Anchor, serving cuatro.dev
+  - id: cs-tracker
+    observed: 2026-08-17
+    note: serving cs-tracker.cuatro.dev
+  - id: cuatro-tracker
+    observed: 2026-08-17
+    note: serving tracker.cuatro.dev
+  - id: digital-library
+    observed: 2026-08-17
+    note: serving library.cuatro.dev

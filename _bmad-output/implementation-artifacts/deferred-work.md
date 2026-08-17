@@ -511,3 +511,76 @@ found them. Append only. Each entry names the spec that surfaced it.
     failing loudly. Pre-existing and not caused by story 1-3, which touched the file
     only for its own status transitions. Left unfixed here because the spec's frozen
     boundaries forbid this story writing that file beyond the workflow's own sync.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  summary: >-
+    The Capacity Gate binds only the Anchor's own deploy workflow, so it is not
+    reachable at the moment a genuinely new application is placed.
+  evidence: |-
+    `.github/workflows/deploy.yml` is the only caller, and it names `cuatro-portfolio`,
+    which is in `placements` by construction. The three Satellites deploy from their own
+    repositories as separate compose projects on the box and never call the checker.
+    `list-wheel` in Epic 2 and every id placed in Epic 4 are the placements AD-9 exists
+    to gate, and none of them passes through this workflow. Story 1-4's scope is the
+    Anchor, so this is a gap in reach rather than a defect in the story, but the gate is
+    weaker than AD-9 reads until Epic 2 or Epic 4 gives it a call site at a real
+    placement.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  summary: >-
+    `status: open` means yes to every id, and nothing ever compares `reading` against
+    `threshold`.
+  evidence: |-
+    Story 1-4's frozen I/O matrix specifies exactly this ("Open with a threshold: Exit 0
+    for any id"), so the code matches its spec. But AD-9 says the gate measures the box's
+    15-minute load average, and once Story 1-6 flips one word the check stops
+    discriminating for good. `threshold` is also validated only as a non-empty string, so
+    `threshold: banana` would open it. Story 1-6 must define what `open` actually checks
+    and what shape a threshold takes, rather than inheriting this placeholder.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  summary: >-
+    A red CI run does not stop a deploy, because `ci.yml` and `deploy.yml` trigger in
+    parallel on a push to `main`.
+  evidence: |-
+    `ci.yml` fires on `push: ['**']` and `deploy.yml` on `push: [main]`, with no `needs`,
+    no `workflow_run`, and no required-check enforcement in the repository. A failing
+    typecheck or a failing test therefore does not hold the deploy. That sits against
+    AD-21's "CI is the only pre-production gate", and it is pre-existing rather than
+    caused by story 1-4, which added a gate inside `deploy.yml` precisely because a check
+    in `ci.yml` would not have blocked anything.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  summary: >-
+    `placements` is self-serve: the same commit can add an id and deploy it, with no
+    review requirement.
+  evidence: |-
+    There is no `CODEOWNERS` file at the repository root or under `.github/`, and nothing
+    checks that an id in `placements` was ever observed running on the box. The gate
+    currently refuses only the person who forgets to edit the file. A `CODEOWNERS` entry
+    on `ops/capacity-gate.yml` would make widening the gate a reviewed act, which is what
+    a fail-closed control needs on a one-operator estate.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  summary: >-
+    `deploy.yml` has no `concurrency` group, so two pushes to `main` can race the same
+    `git reset --hard` on the box.
+  evidence: |-
+    The SSH step resets the box checkout to `origin/main` rather than to the commit that
+    triggered the run, so overlapping runs can leave the box serving a commit whose gate
+    check never ran. Pre-existing, and out of scope for a story whose frozen boundaries
+    forbid editing the SSH step. Epic 3 retires this deploy mechanism entirely, so the
+    cheap fix in the meantime is a `concurrency` group plus pinning the reset to
+    `github.sha`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  summary: >-
+    The capacity gate has no entry in the estate record, no README or AGENTS.md line, and
+    `AGENTS.md` still states a test count of 38.
+  evidence: |-
+    `ops/capacity-gate.yml` is the first file under `ops/` with a machine consumer, and
+    grepping `README.md`, `AGENTS.md` and `ops/estate.md` for "capacity" returns nothing.
+    An operator who hits `capacity gate: REFUSED` is told what to do by the message
+    itself, so this is documentation debt rather than a hole. The suite is 102 tests as of
+    story 1-4 against the 38 recorded in the AGENTS.md block, which is managed by
+    `bmad-project-context` and refreshed by it rather than edited here.
