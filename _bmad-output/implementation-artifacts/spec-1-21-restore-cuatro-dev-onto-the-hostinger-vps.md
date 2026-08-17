@@ -2,7 +2,7 @@
 title: 'Restore cuatro.dev by completing the move onto the Hostinger VPS'
 type: 'feature'
 created: '2026-08-17'
-status: 'in-review'
+status: 'done'
 baseline_commit: '6737a1abe7b8012d3253476c3c2b304a1ff0189a'
 review_loop_iteration: 0
 context:
@@ -201,3 +201,75 @@ that Postgres initialises on.
 - The Hub renders in a browser at `https://cuatro.dev` with no certificate warning.
 - The Umami tracking script loads on the Hub with a non-empty website id, and a page view appears in the Umami dashboard.
 - `ops/monitoring.md` carries exactly one `AD-17a status:` line and it still reads `not-satisfied`.
+
+## Suggested Review Order
+
+**The one change everything else rests on: the Anchor stops being a host and becomes a tenant**
+
+- Why every service is named `anchor-*`. This is the whole story in one comment.
+  [`docker-compose.yml:14`](../../docker-compose.yml#L14)
+
+- No Caddy, no ports, joined to another stack's network by declaration rather than a hidden override.
+  [`docker-compose.yml:113`](../../docker-compose.yml#L113)
+
+- The database is the one service kept off the shared network.
+  [`docker-compose.yml:73`](../../docker-compose.yml#L73)
+
+- The site blocks installed into the shared Caddyfile, mirrored here so the repo describes reality.
+  [`Caddyfile:33`](../../docker/Caddyfile#L33)
+
+**Failure modes that are silent by construction, each now made loud**
+
+- Next binds to `$HOSTNAME`, not loopback, so a 127.0.0.1 probe calls a healthy container sick.
+  [`docker-compose.yml:43`](../../docker-compose.yml#L43)
+
+- `:?` on the build args. An unset value used to ship a site that served fine and measured nothing.
+  [`docker-compose.yml:33`](../../docker-compose.yml#L33)
+
+- `--remove-orphans` is the guard against a surviving old Caddy rebinding 80 and 443.
+  [`deploy.yml:14`](../../.github/workflows/deploy.yml#L14)
+
+- Postgres health gates Umami, sized for a Next build competing for the same two cores.
+  [`docker-compose.yml:92`](../../docker-compose.yml#L92)
+
+**The monitor that was reporting the opposite of the truth**
+
+- Alerted when the health string was present. It would have gone green the moment the Anchor broke.
+  [`monitoring.md:60`](../../ops/monitoring.md#L60)
+
+- Re-gathered observed state: six hostnames, one address, every certificate publicly trusted.
+  [`monitoring.md:324`](../../ops/monitoring.md#L324)
+
+- Truncation convention, stated because the previous gathering had none and drifted.
+  [`monitoring.md:347`](../../ops/monitoring.md#L347)
+
+- The discarded Umami history, dated and costed rather than silently absent.
+  [`monitoring.md:369`](../../ops/monitoring.md#L369)
+
+**The record a rebuild will need**
+
+- What terminates TLS, and the HTTP-01 finding that unblocks Story 1.3's Origin CA step.
+  [`routing-inventory.md:63`](../../ops/routing-inventory.md#L63)
+
+- Two containers already answer to `app`. Pre-existing, and the reason for the naming rule above.
+  [`routing-inventory.md:83`](../../ops/routing-inventory.md#L83)
+
+- Where the deploy actually goes, and the one thing still outstanding.
+  [`routing-inventory.md:103`](../../ops/routing-inventory.md#L103)
+
+- The Operator's statement and the contradicting probe, recorded side by side rather than resolved.
+  [`routing-inventory.md:116`](../../ops/routing-inventory.md#L116)
+
+- Config that exists only on the box, which is what a rebuild must recreate.
+  [`routing-inventory.md:137`](../../ops/routing-inventory.md#L137)
+
+**Peripherals**
+
+- Secrets were being copied into the builder layer on every deploy.
+  [`.dockerignore:1`](../../.dockerignore#L1)
+
+- Both Umami variables are build-time, and only one was ever passed.
+  [`Dockerfile:13`](../../docker/Dockerfile#L13)
+
+- The documented local Docker workflow no longer exists; production compose cannot run locally.
+  [`README.md:32`](../../README.md#L32)

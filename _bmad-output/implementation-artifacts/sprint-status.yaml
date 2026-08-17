@@ -64,7 +64,7 @@ development_status:
   # paid UptimeRobot setting, deliberately not bought, and AD-26 makes it moot when
   # Origin CA lands. 1-10, 1-11, 1-14 and 2-23 stay blocked until 1-3 flips it.
   1-2-external-uptime-and-certificate-age-monitoring: done
-  1-21-restore-cuatro-dev-onto-the-hostinger-vps: in-progress
+  1-21-restore-cuatro-dev-onto-the-hostinger-vps: review
   1-3-bot-mitigation-on-the-four-live-subdomains: backlog
   1-4-the-capacity-gate-exists-and-fails-closed: backlog
   1-5-capacity-measurement-week: backlog
