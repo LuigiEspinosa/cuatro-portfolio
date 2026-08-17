@@ -35,14 +35,23 @@ correction recorded and Story 1.21 closed.
 One row per hostname. All six were verified from outside on 2026-08-17 with a client
 performing full certificate validation.
 
-| Hostname | Address | DNS record | Terminates TLS | Serves it | Container | Port |
-|---|---|---|---|---|---|---|
-| `cuatro.dev` | `177.7.52.248` | A, DNS-only, TTL 60 | `cs-tracker-caddy-1` | `cuatro-portfolio` (the Hub) | `cuatro-portfolio-anchor-app-1` | 3000 |
-| `www.cuatro.dev` | `177.7.52.248` | A, DNS-only, TTL 60 | `cs-tracker-caddy-1` | 301 redirect to the apex, no application behind it | none | n/a |
-| `analytics.cuatro.dev` | `177.7.52.248` | A, DNS-only, TTL 60 | `cs-tracker-caddy-1` | Umami | `cuatro-portfolio-anchor-umami-1` | 3000 |
-| `cs-tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, DNS-only | `cs-tracker-caddy-1` | `cs-tracker` (Phoenix) | `cs-tracker-app-1` | 4000 |
-| `tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, DNS-only | `cs-tracker-caddy-1` | `cuatro-tracker` | `cuatro-tracker-app-1` | 3000 |
-| `library.cuatro.dev` | `177.7.52.248` | A + AAAA, DNS-only | `cs-tracker-caddy-1` | `digital-library`, path split | `digital-library-api-1` (`/api/*`, `/files/*`), `digital-library-web-1` (everything else) | 4000, 3000 |
+**Amended 2026-08-17 by Story 1.3.** Every record below is now **proxied**, TLS terminates at
+Cloudflare, and the origin presents a Cloudflare Origin CA certificate rather than Let's
+Encrypt. The address column is where the origin is, not what a client resolves: a client now
+resolves Cloudflare anycast.
+
+| Hostname | Origin address | DNS record | Terminates TLS | Origin cert | Serves it | Container | Port |
+|---|---|---|---|---|---|---|---|
+| `cuatro.dev` | `177.7.52.248` | A, **proxied** | **Cloudflare edge** | Origin CA | `cuatro-portfolio` (the Hub) | `cuatro-portfolio-anchor-app-1` | 3000 |
+| `www.cuatro.dev` | `177.7.52.248` | A, **proxied** | **Cloudflare edge** | Origin CA | 301 redirect to the apex, no application behind it | none | n/a |
+| `analytics.cuatro.dev` | `177.7.52.248` | A, **proxied** | **Cloudflare edge** | Origin CA | Umami | `cuatro-portfolio-anchor-umami-1` | 3000 |
+| `cs-tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, **both proxied** | **Cloudflare edge** | Origin CA | `cs-tracker` (Phoenix) | `cs-tracker-app-1` | 4000 |
+| `tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, **both proxied** | **Cloudflare edge** | Origin CA | `cuatro-tracker` | `cuatro-tracker-app-1` | 3000 |
+| `library.cuatro.dev` | `177.7.52.248` | A + AAAA, **both proxied** | **Cloudflare edge** | Origin CA | `digital-library`, path split | `digital-library-api-1` (`/api/*`, `/files/*`), `digital-library-web-1` (everything else) | 4000, 3000 |
+
+**Both records per hostname, never one.** The three Satellites carry an `AAAA` beside their
+`A`. Proxying only the `A` would leave an unfiltered IPv6 route to the origin, which would
+satisfy AD-17b on paper while any client with IPv6 walked around the bot rules.
 
 **Not ours, in the same zone.** `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` are
 CNAMEs to Vercel and both serve. `_domainconnect.cuatro.dev` is a proxied Squarespace
@@ -73,12 +82,53 @@ Recorded as deferred work.
 | Admin API | `127.0.0.1:2019`, IPv4 only. `caddy reload` works; a probe to `localhost` fails because it resolves to `::1` first |
 | Reload | Graceful config swap, listeners are not dropped |
 
-**The ACME finding closes an open question that was blocking two stories.** The routing
-checklist could not tell whether the box used HTTP-01 or DNS-01, and Story 1.3 needs the
-answer before it can disable ACME under AD-26. It is HTTP-01, and **the box holds no
-Cloudflare credential of any kind**. That confirms the checklist's working conclusion that the
+**The ACME finding closed an open question that was blocking two stories.** The routing
+checklist could not tell whether the box used HTTP-01 or DNS-01, and Story 1.3 needed the
+answer before it could disable ACME under AD-26. It was HTTP-01, and **the box holds no
+Cloudflare credential of any kind**. That confirmed the checklist's working conclusion that the
 two Cloudflare API tokens found on 2026-08-16 (`tracker-mac` and `cuatro-tracker`) are
 orphaned: nothing on this box uses them to issue anything.
+
+**ACME is now off, applied 2026-08-17 by Story 1.3.** Every one of the six site blocks carries
+an explicit `tls /data/origin-ca/origin.pem /data/origin-ca/origin.key` directive, which is
+what disables automatic certificate management for that site. Caddy confirmed it per hostname
+with "skipping automatic certificate management because one or more matching certificates are
+already loaded". The certificate and key live in the `cs-tracker_caddy_data` volume at
+`/data/origin-ca/`, which was chosen deliberately: that volume is already mounted read-write
+into the container, so the Anchor's story did not have to edit another project's compose file
+to mount a secret.
+
+**Port 80 is still bound and still needed.** Caddy continues to serve the HTTP to HTTPS
+redirect from it. Disabling ACME does not free that port.
+
+### The origin is firewalled to Cloudflare, and `ufw` alone did not do it
+
+**Applied 2026-08-17 by Story 1.3.** Before this, a request sent straight to `177.7.52.248`
+with correct SNI reached the application with no bot rules in front of it, verified by
+observation rather than suspected: `GPTBot` received 403 through Cloudflare and **200 direct**.
+
+| Layer | State | Effect |
+|---|---|---|
+| `ufw` | Ports 80 and 443 allowed from Cloudflare's 15 IPv4 and 7 IPv6 ranges only, allow-from-anywhere removed | **Correct but insufficient.** Docker publishes container ports by DNAT, and that traffic traverses `DOCKER-USER`, never `ufw`'s INPUT chain |
+| `DOCKER-USER`, IPv4 | 15 `RETURN` rules on `eth0` ports 80 and 443, then a catch-all `DROP` | **This is what actually closes it.** Verified 2026-08-17: direct-to-origin times out |
+| `DOCKER-USER`, IPv6 | 7 `RETURN` rules plus a `DROP`, written by the same script to `ip6tables` | **Rules present, path unverified.** The session had no IPv6 egress, so no direct request to `2a02:4780:75:9155::1` was made |
+| Persistence | `/usr/local/sbin/cf-origin-firewall.sh` plus `cf-origin-firewall.service`, enabled | The chain does not survive a reboot, and an unpersisted firewall rule is worse than none because it fails silently |
+
+**Undoing it is not `systemctl stop`.** The unit is `Type=oneshot` with `RemainAfterExit=yes`
+and declares no `ExecStop`, so stopping it leaves every rule in place. Recovery, over SSH on
+port 22, which this firewall does not touch:
+
+```
+sudo systemctl disable --now cf-origin-firewall.service
+sudo iptables -F DOCKER-USER && sudo ip6tables -F DOCKER-USER
+```
+
+**This is the estate's recovery path from a Cloudflare edge outage**, because no DNS change can
+substitute: an unproxied hostname presents the Origin CA certificate, which no browser trusts.
+
+**Cloudflare's ranges change.** The script hardcodes the list fetched on 2026-08-17
+(`etag 38f79d050aa027e3be3865e495dcc9bc`). Nothing re-fetches it. If Cloudflare adds a range,
+traffic from it is dropped and the affected hostnames fail. Recorded as deferred work.
 
 ### Sibling stacks attach to that Caddy's network
 

@@ -365,3 +365,149 @@ found them. Append only. Each entry names the spec that surfaced it.
     living forever, and note that a token in a developer machine's `.env` has a
     different exposure profile from one in a secret store, which is a reasonable
     trade at this estate's size but should be a knowing one.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    The estate now has a hard dependency on Cloudflare for all ingress, and the
+    documented recovery path runs through a firewall rule rather than DNS.
+  evidence: |-
+    Story 1-3 restricted `DOCKER-USER` on `eth0` ports 80 and 443 to Cloudflare's
+    published ranges, which is what makes the bot rules non-bypassable. The cost,
+    which is real and was accepted knowingly, is that a Cloudflare edge outage now
+    takes all six hostnames down with no fast bypass: turning a record back to
+    DNS-only does not help, because the origin would then present a Cloudflare
+    Origin CA certificate that no browser trusts (AD-26's reversibility cost), and
+    the firewall would drop the traffic anyway. Recovery requires SSH to the box and
+    `systemctl stop cf-origin-firewall.service` plus `iptables -F DOCKER-USER`, and
+    that is written in no runbook. Worth a short recovery note in
+    `ops/routing-inventory.md` or a dedicated story, since the person needing it
+    will be under time pressure.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    Cloudflare's IP ranges are hardcoded into the origin firewall script and nothing
+    refreshes them, so a new Cloudflare range silently breaks the estate.
+  evidence: |-
+    `/usr/local/sbin/cf-origin-firewall.sh` embeds the 15 IPv4 and 7 IPv6 CIDRs
+    fetched on 2026-08-17 (`etag 38f79d050aa027e3be3865e495dcc9bc`). Cloudflare adds
+    ranges occasionally and publishes them at `/client/v4/ips`. If traffic arrives
+    from a range not in the script it is dropped, and the failure looks like an
+    intermittent outage affecting some visitors and not others, which is among the
+    hardest shapes to diagnose. The cheap closure is a scheduled job that re-fetches
+    the list, compares the etag, and either rewrites the script or alerts. It must
+    run off the box per AD-18, or it shares the failure it is watching for.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    The estate now depends on a TLS certificate it does not control and cannot
+    renew, and the one rule that would warn about it is still not configured.
+  evidence: |-
+    After the cutover all six hostnames present one Cloudflare Universal SSL
+    certificate, observed 2026-08-17T18:18Z with `notAfter 2026-09-20T23:23:52Z`,
+    34 days remaining against the configured threshold of 28. Cloudflare renews it
+    automatically and it is expected to roll over, but the estate has no visibility
+    into whether that happened until it either renews or expires. Rule 2, the
+    certificate age alert, remains unconfigured because it is a paid UptimeRobot
+    setting, and AD-26's argument for dissolving it covered the *origin* renewal
+    cycle, which is genuinely gone. It did not cover the edge certificate, which is
+    new. `ops/monitoring.md` records this under the observed-state section. Worth
+    deciding deliberately rather than discovering at expiry.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    Bot rule 2 matches self-declared user agents, so a crawler that lies is not
+    caught, and the native controls that would not rely on self-declaration were
+    unreachable.
+  evidence: |-
+    The AI crawler policy the Operator chose (allow Search, block Training and
+    Agent) is implemented as a WAF custom rule listing 17 user-agent substrings.
+    Cloudflare's native AI categories enforce the same policy by verified category
+    rather than by name, but they sit behind the Bot Management API and the token
+    available to the story returned `Authentication error` on
+    `/zones/{id}/bot_management`. `ai_bots_protection` is not a zone setting on this
+    account and `ai-crawl-control` has no route. Two consequences: the current
+    protection is weaker than it reads, and Cloudflare retires the legacy single
+    toggle on 2026-09-15 in favour of independent Search, Agent and Training
+    categories, so this should be revisited before that date rather than after.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    Authenticated Origin Pulls was never considered as an alternative to the
+    hardcoded Cloudflare IP allowlist, and it removes the maintenance problem the
+    allowlist creates.
+  evidence: |-
+    Story 1-3 closed the direct-to-origin bypass with an IP allowlist in
+    `DOCKER-USER`. That works today and carries a standing cost: the ranges are
+    hardcoded, nothing refreshes them, and the failure mode of a stale list is a
+    partial outage affecting some visitors and not others. Cloudflare's mTLS
+    Authenticated Origin Pulls solves the same problem by having the edge present a
+    client certificate the origin verifies, which does not go stale when Cloudflare
+    adds a range. `ops/bot-mitigation.md` explicitly rejects Bot Fight Mode and
+    per-hostname rate limiting by name, under its own standard that a control
+    considered and rejected reads differently from one nobody thought of. This one
+    is simply absent from the record. Worth evaluating alongside the range-refresh
+    job rather than instead of it, since Caddy would need `client_auth` configured
+    and that touches the shared ingress.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    The Origin CA private key has no backup, no recorded fingerprint, and no
+    reprovisioning procedure, and losing it now takes every hostname down with no
+    ACME fallback.
+  evidence: |-
+    The key and certificate live only in the `cs-tracker_caddy_data` Docker volume
+    at `/data/origin-ca/`, plus a copy in `/home/deploy/origin-ca/` on the same box.
+    Both are on the one machine. Every site block now names those paths explicitly,
+    and that directive is what disables ACME, so if the volume is recreated Caddy
+    cannot load the sites and cannot fall back to issuing anything. `ops/monitoring.md`
+    records the issuer, subjects, key type, term and expiry but no serial or SHA-256
+    fingerprint, which is the one value that would let a later reader confirm the
+    origin still presents this certificate rather than another. Three cheap closures:
+    record the fingerprint, copy the key to wherever the estate keeps its other
+    secrets, and write the reissue procedure next to the recovery commands. Note the
+    certificate is valid for fifteen years, so the person who needs this will not be
+    the person who set it up.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    Proxy defaults were checked ad hoc rather than swept, and one payload-altering
+    feature was found only by accident.
+  evidence: |-
+    Scrape Shield email obfuscation was discovered injecting a script into the
+    Anchor's HTML because a verification step happened to dump the rendered page.
+    Nine settings were then read individually (`rocket_loader`, `mirage`, `polish`,
+    `brotli`, `always_use_https`, `automatic_https_rewrites`,
+    `opportunistic_encryption`, `min_tls_version`, `security_level`,
+    `hotlink_protection`) and their values are not written into any `ops/` record.
+    Two of those readings are worth acting on separately: `min_tls_version` is 1.0,
+    and `always_use_https` is off so plaintext requests still reach the origin rather
+    than being redirected at the edge. Neither was changed, because AD-20 says a step
+    of this kind carries nothing else. A recorded sweep of what the proxy turns on by
+    default, with the current value of each, belongs in `ops/` before Epic 2 ships
+    anything that depends on the rendered payload.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    Three dated commitments now exist with no mechanism that will surface them, in a
+    file the repository itself records as read by nothing.
+  evidence: |-
+    The Origin CA certificate expires 2041-08-13 with a review written for
+    2041-02-13; Cloudflare retires the legacy AI bot toggle on 2026-09-15; and the
+    Cloudflare edge certificate needs watching until it is confirmed renewing. All
+    three live in `ops/monitoring.md` or `ops/bot-mitigation.md`, and the Code Map for
+    this story confirms nothing in the repository reads either file programmatically.
+    The nearest one is four weeks out. AD-22 already establishes a bounded re-check
+    for settled inputs and would be the natural home for the first two, which is a
+    smaller change than building a reminder mechanism.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  summary: >-
+    `sprint-status.yaml` carries a `story_location` pointing at a directory that does
+    not exist in this checkout.
+  evidence: |-
+    It reads `c:/Development/cuatro-portfolio/_bmad-output/implementation-artifacts`
+    while the repository is at `C:\CuatroEcosystem\cuatro-portfolio`. Any tool that
+    resolves the key reads an empty directory and would report no stories rather than
+    failing loudly. Pre-existing and not caused by story 1-3, which touched the file
+    only for its own status transitions. Left unfixed here because the spec's frozen
+    boundaries forbid this story writing that file beyond the workflow's own sync.

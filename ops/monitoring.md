@@ -35,6 +35,10 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | Certificate validity rule | Chain validates and issuer is the expected one, asserted per host | **Rule 1. Configured 2026-08-16** as `checkSSLErrors` on all five monitors. Free tier |
 | Certificate age rule | Age greater than two thirds of nominal lifetime, plus a 48 hour grace | **Rule 2. NOT configured. Blocked by the free plan**, see The certificate rule |
 | Down threshold | 2 consecutive failed probes, so roughly 10 minutes to first alert | **Decided, not configured.** The free tier exposes no confirmation-count setting |
+| TLS mode | **Full (strict)**, pinned explicitly, never Flexible | **Applied 2026-08-17T17:12:16Z.** Automatic SSL/TLS was already `custom`, so it is not managing the mode and cannot drift it |
+| Origin certificate | Cloudflare Origin CA, `cuatro.dev` plus `*.cuatro.dev`, RSA 2048, 5475 day term | **Issued 2026-08-17T17:15:00Z.** The longest term offered, per AD-26 |
+| **Origin certificate expiry** | **2041-08-13T17:15:00Z** | **Observed from the issued certificate.** Nothing renews it. See the review below |
+| Origin certificate review | **2041-02-13**, six months before expiry | **Decided 2026-08-17.** A fifteen year horizon is not a reason to leave it unwritten |
 
 ### The monitors as they actually exist, updated 2026-08-17
 
@@ -344,11 +348,50 @@ question for the Capacity Gate and not silently a monitoring gap.
 `poketracker-go` and `Mutuo` are early scaffolding, are not `Live`, and serve nothing to
 probe. FR-31 scopes external monitoring to applications with Status `Live`.
 
-### Observed state, 2026-08-17
+### Observed state, 2026-08-17 at 18:18Z, after the proxy cutover
 
-**Re-gathered after Story 1.21's cutover, replacing the 2026-08-16 table.** The superseded
-table is kept below it, because the difference between the two is the evidence that the story
-did what it claimed.
+**Re-gathered after Story 1.3 switched every record to proxied.** Gathered from a developer
+machine outside the VPS against **2026-08-17T18:18:51Z**, with certificate validation enabled.
+Truncation toward zero, as set out below.
+
+**Every hostname now presents the same certificate**, because Cloudflare serves one Universal
+SSL certificate for the zone rather than six per-host certificates. That is a structural
+change from the table beneath this one, not a coincidence of timing.
+
+| Hostname | HTTP status | Certificate issuer | notBefore (UTC) | notAfter (UTC) | Nominal lifetime | Age | Days remaining | Alert threshold (rule, not configured) | Age rule firing |
+|---|---|---|---|---|---|---|---|---|---|
+| `cuatro.dev` | **200** | `CN=WE1, O=Google Trust Services` | 2026-06-22T22:26:11Z | 2026-09-20T23:23:52Z | 90 days | 55 | 34 | 28 | no |
+| `www.cuatro.dev` | **301** to `https://cuatro.dev/` | `CN=WE1, O=Google Trust Services` | 2026-06-22T22:26:11Z | 2026-09-20T23:23:52Z | 90 days | 55 | 34 | 28 | no |
+| `analytics.cuatro.dev` | **403** to a command-line client | `CN=WE1, O=Google Trust Services` | 2026-06-22T22:26:11Z | 2026-09-20T23:23:52Z | 90 days | 55 | 34 | 28 | no |
+| `cs-tracker.cuatro.dev` | 302 | `CN=WE1, O=Google Trust Services` | 2026-06-22T22:26:11Z | 2026-09-20T23:23:52Z | 90 days | 55 | 34 | 28 | no |
+| `tracker.cuatro.dev` | 307 | `CN=WE1, O=Google Trust Services` | 2026-06-22T22:26:11Z | 2026-09-20T23:23:52Z | 90 days | 55 | 34 | 28 | no |
+| `library.cuatro.dev` | 302 | `CN=WE1, O=Google Trust Services` | 2026-06-22T22:26:11Z | 2026-09-20T23:23:52Z | 90 days | 55 | 34 | 28 | no |
+
+**The `analytics` 403 is a managed challenge, not an outage.** `ops/bot-mitigation.md` rule 4
+challenges that hostname outside `/api/*` and `/script.js`. A command-line client cannot solve
+a challenge and receives 403. It is **not verified in a real browser from this session**,
+because Playwright is not installed until Story 1-10, and it is listed as an outstanding
+Operator check rather than asserted here.
+
+**The origin certificate is no longer in this table, deliberately.** What the origin presents
+is a Cloudflare Origin CA certificate expiring 2041-08-13, verified on 2026-08-17 by reading
+`127.0.0.1:443` per SNI on the box. It is invisible to any external probe by design, which is
+why its expiry lives in the Decisions table with a dated review instead.
+
+**One thing worth watching.** The edge certificate has **34 days remaining**, which is 6 days
+above the 28 in the Alert threshold column. **That column states the rule, not a configured
+setting**: Rule 2 is not configured anywhere, because it is a paid UptimeRobot feature that was
+deliberately not bought, so nothing will actually fire when the figure crosses it. Cloudflare
+renews Universal SSL on its own schedule and it is expected to roll over well before then. If it
+did not, Rule 1 would catch it only at expiry, with no warning window. **This is the first time
+the estate has depended on a certificate it does not control**, and it is the one gap AD-26's
+dissolution argument did not cover.
+
+#### Superseded: observed state, 2026-08-17 at 08:00Z, before the proxy
+
+**Kept because the difference between the two tables is the evidence that this story did what
+it claimed**: six Let's Encrypt certificates on six hostnames became one Cloudflare edge
+certificate, and the origin moved to Origin CA.
 
 Gathered from a developer machine outside the VPS, computed against
 **2026-08-17T08:00:51Z**. HTTP status came from a plain request to the probe target with
@@ -357,7 +400,7 @@ against port 443 for each hostname.
 
 **Scope of this check: the six hostnames below, on 2026-08-17 only.**
 
-| Hostname | HTTP status | Certificate issuer | notBefore (UTC) | notAfter (UTC) | Nominal lifetime | Age | Days remaining | Alert threshold | Age rule firing |
+| Hostname | HTTP status | Certificate issuer | notBefore (UTC) | notAfter (UTC) | Nominal lifetime | Age | Days remaining | Alert threshold (rule, not configured) | Age rule firing |
 |---|---|---|---|---|---|---|---|---|---|
 | `cuatro.dev` | **200** | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:08Z | 2026-11-15T07:00:07Z | 90 days | 0 | 89 | 28 | no |
 | `www.cuatro.dev` | **301** to `https://cuatro.dev/` | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:09Z | 2026-11-15T07:00:08Z | 90 days | 0 | 89 | 28 | no |
@@ -406,7 +449,7 @@ Age and days remaining are computed against **2026-08-16T00:00:00Z** and floored
 days. The threshold column applies the general formula from The certificate rule, so the
 evidence can be tested against the rule rather than merely sitting beside it.
 
-| Hostname | HTTP status | Certificate issuer | notBefore (UTC) | notAfter (UTC) | Nominal lifetime | Age | Days remaining | Alert threshold | Age rule firing |
+| Hostname | HTTP status | Certificate issuer | notBefore (UTC) | notAfter (UTC) | Nominal lifetime | Age | Days remaining | Alert threshold (rule, not configured) | Age rule firing |
 |---|---|---|---|---|---|---|---|---|---|
 | `cuatro.dev` | **404**, TLS validation **fails** | `CN=TRAEFIK DEFAULT CERT`, self signed | 2026-08-15T19:21:43Z | 2027-08-15T19:21:43Z | 365 days | 0 | 364 | 119 | **no** |
 | `analytics.cuatro.dev` | not requested | `CN=TRAEFIK DEFAULT CERT`, self signed | 2026-08-15T19:21:43Z | 2027-08-15T19:21:43Z | 365 days | 0 | 364 | 119 | **no** |
@@ -556,7 +599,12 @@ Either one firing is an alert.
 the expected one. A validation failure or an unexpected issuer alerts immediately,
 regardless of age.**
 
-The expected issuer today is **Let's Encrypt** for every host in the probe table.
+The expected issuer today is **Google Trust Services** for every host in the probe table, and
+this is a change made on 2026-08-17. **Observed, not assumed:** every hostname now presents
+`CN=WE1, O=Google Trust Services, C=US`, which is what Cloudflare's Universal SSL currently
+issues at its edge. The vendor is Cloudflare; the issuer on the wire is Google Trust Services,
+and a probe asserts what is on the wire. Writing "Cloudflare" here would produce an assertion
+that never matches.
 
 **Age alone would have missed the failure this record observed, and it is worth being precise
 about by how much.** On 2026-08-16 `cuatro.dev` was serving a self-signed
@@ -579,22 +627,23 @@ An unexpected but valid issuer is also an alert rather than a silent pass. A cer
 switched to a different public CA without anybody deciding to is either a configuration change
 nobody recorded or something worse, and in both cases the Operator should hear about it.
 
-#### Rule 1 changes when Story 1.3 turns on the Cloudflare proxy
+#### Rule 1 changed on 2026-08-17 when Story 1.3 turned on the Cloudflare proxy
 
-**Decided 2026-08-16, not yet applied.** The Operator approved switching the four live
-subdomains from DNS-only to proxied. On 2026-08-16 they were DNS-only, which is why the issuer
-observed below is Let's Encrypt and why this record was written expecting it.
+**Applied 2026-08-17.** All six live hostnames are proxied, not the four `epics.md` names:
+`www` and `analytics` joined the box in Story 1.21 and were switched with the rest. Nine DNS
+records were involved, because the three Satellites each carry an `AAAA` beside their `A`, and
+an `AAAA` left DNS-only would have been an unfiltered IPv6 path to the origin.
 
-Once the proxy is on, **Cloudflare terminates TLS**, so an external probe sees Cloudflare's
-edge certificate. Two consequences, both load-bearing:
+Cloudflare now terminates TLS, so an external probe sees the edge certificate. Two
+consequences, both load-bearing:
 
-1. **The expected issuer becomes Cloudflare for every proxied host.** Left unchanged, Rule 1
-   alarms on all four the moment Story 1.3 lands. Story 1.3's acceptance now requires this
-   file to be amended in the same change, never afterwards, and states that an alarm caused by
-   that change is a defect in the story rather than a real outage.
-2. **The origin certificate stops being visible from outside**, and it is the one that can
-   silently fail to renew. Cloudflare's edge certificate is Cloudflare-managed and renews
-   itself, so watching it proves very little. Story 1.3 must say how the origin is watched.
+1. **The expected issuer became Google Trust Services for every proxied host**, amended in the
+   table above **in the same change that switched the records**, which is what Story 1.3's
+   acceptance required. **No monitor alarmed**: all six were confirmed UP immediately after the
+   switch, after the WAF rules, and after the certificate swap.
+2. **The origin certificate is no longer visible from outside**, which is deliberate. It is a
+   Cloudflare Origin CA certificate that nothing renews, so there is no renewal to watch. Its
+   expiry is recorded in the Decisions table instead, which is how the origin is watched.
 
 **Decided 2026-08-16: Cloudflare Origin CA, wildcard, behind Full (strict).** This is AD-26.
 The origin presents one Cloudflare Origin CA certificate covering `cuatro.dev` and
@@ -646,9 +695,10 @@ applies: it is not configured, and nobody should record it as if it were.
 renewal that stopped happening. Under AD-26 the origin presents a Cloudflare Origin CA
 certificate valid for up to fifteen years with no ACME client renewing anything, so there is no
 renewal cycle left to watch on the origin. What remains is Cloudflare's edge certificate, which
-Cloudflare renews itself. **Buying the paid tier to watch Rule 2 would be buying a watch for a
-mechanism this estate is removing.** Revisit only if a host ever leaves the proxy and starts
-renewing its own certificate again, which AD-26 already gates.
+Cloudflare renews itself. **Buying the paid tier to watch Rule 2 would have been buying a watch for a
+mechanism this estate has now removed.** Applied 2026-08-17: no ACME client runs on the origin
+for any hostname. Revisit only if a host ever leaves the proxy and starts renewing its own
+certificate again, which AD-26 already gates.
 
 ### Rule 2: certificate age
 
@@ -795,34 +845,50 @@ certificate rolls over.
 ## AD-17a status
 
 ```
-AD-17a status: not-satisfied as of 2026-08-16
+AD-17a status: satisfied as of 2026-08-17
 Alert path last verified: 2026-08-16
-Opens at: Story 1.3, when AD-26 lands
+Closed by: Story 1.3, AD-26 landed
 ```
 
-**The opening condition is fixed, decided by the Operator on 2026-08-16.** This line flips to
-`satisfied` in **Story 1.3**, in the same change that installs the Cloudflare Origin CA
-certificate and disables ACME on the origin. At that moment the certificate-age requirement
-stops being unmet and starts being **moot**, because there is no renewal cycle left to watch.
-The gate is not waived, and the paid tier is not bought: the requirement is dissolved by AD-26
-rather than either ignored or purchased.
+**Closed 2026-08-17 by Story 1.3, in the same change that installed the Cloudflare Origin CA
+certificate and disabled ACME on the origin.** At that moment the certificate-age requirement
+stopped being unmet and became **moot**, because there is no renewal cycle left to watch. The
+gate was not waived, and the paid tier was not bought: **the requirement was dissolved by AD-26**
+rather than either ignored or purchased. A later reader finding no age alert configured should
+read this paragraph, not an oversight.
 
-**Until then, four stories stay blocked**: 1-10, 1-11, 1-14 and 2.23. That is the intended
-behaviour of a blocking predecessor, and the sequence in front of it is short: Story 1.7
-enumerates both boxes, Story 1.21 restores the Anchor, Story 1.3 lands the proxy and Origin CA
-and flips this line.
+**What actually landed, so the flip can be audited rather than trusted.** All nine estate DNS
+records were switched to proxied between 17:14Z and 17:26Z, the zone SSL mode was pinned to
+Full (strict) at 17:12:16Z, and the origin's six site blocks were given an explicit `tls`
+directive naming the Origin CA certificate, which is what disables ACME per site. Caddy
+confirmed it by logging "skipping automatic certificate management because one or more
+matching certificates are already loaded" for every hostname. **Verified on 2026-08-17** by
+reading the certificate the origin presents on `127.0.0.1:443` per SNI: all six return the
+CloudFlare Origin SSL Certificate Authority.
 
-**Most of the gate is now met, and this section records precisely which part is not.** As of
-2026-08-16 the account exists, five monitors are running off the box at five minute intervals,
-certificate chain validation is on, the cost is observed at $0, and the alert path has been
-proven by real alerts the Operator confirmed receiving. **What is missing is the certificate
-*age* half of AD-17a**, which names uptime and certificate-age monitoring together. The age
-alert is a paid setting and was deliberately not bought, because AD-26 removes the renewal cycle
-it would watch. But AD-26 is a decision, not a deployed state: until Story 1.3 installs the
-Origin CA certificate and disables ACME on the origin, the renewal cycle is still live and
-still unwatched. Chain validation catches a failed renewal at the moment of expiry, which is
-detection without a warning window, and a warning window is the whole reason AD-17a says age
-rather than expiry.
+**The four stories that were blocked are unblocked from this date, and not earlier**: 1-10,
+1-11, 1-14 and 2-23.
+
+**How the gate came to be met, both halves.** The uptime half was met on 2026-08-16: the
+account exists, monitors run off the box at five minute intervals, certificate chain validation
+is on, the cost is observed at $0, and the alert path was proven by real alerts the Operator
+confirmed receiving. **Six active monitors now cover the six live hostnames**, the `www` monitor
+having been added by Story 1.21; a seventh is paused, the retired inverted keyword monitor.
+Several statements earlier in this file still say "five monitors" and describe the 2026-08-16
+state correctly for that date.
+
+**The certificate-age half was the part that stayed open, and it closed by dissolution rather
+than by configuration.** AD-17a names uptime and certificate-age monitoring together. The age
+alert is a paid UptimeRobot setting and was deliberately not bought. The argument for not buying
+it was that AD-26 removes the renewal cycle it would watch, and until 2026-08-17 that was a
+decision rather than a deployed state, so the record correctly read `not-satisfied`. On
+2026-08-17 it became deployed state: no ACME client runs on the origin for any hostname.
+
+**One thing the dissolution does not cover, and it is new.** AD-26's argument was about the
+*origin* renewal cycle, which is genuinely gone. The estate now depends on Cloudflare's edge
+certificate instead, which Cloudflare renews and which no rule here watches for age. That is a
+narrower gap than the one that was closed, and it is recorded in the deferred-work ledger rather
+than left implicit.
 
 ### The parse contract
 
@@ -939,19 +1005,19 @@ cannot find itself in the table has not thereby been exempted.
 
 ## Pending Operator actions
 
-Buying and configuring a monitor was web console work outside this repository. **Four of the six
-are now done.** Actions 1, 2 and 5 were completed on 2026-08-16 through the UptimeRobot v3 API.
-Action 3 is blocked by the free plan and is deliberately not bought. **The gate stays shut on
-actions 4 and 6**, which are the two that prove the Operator would actually hear an alert.
+Buying and configuring a monitor was web console work outside this repository. **All six are
+now settled.** Actions 1, 2 and 5 were completed on 2026-08-16 through the UptimeRobot v3 API,
+action 4 the same day. Action 3 was dissolved rather than completed, and **action 6 was
+completed on 2026-08-17 by Story 1.3**. The gate is open.
 
 | # | Action | Constraint | Completed (ISO 8601 UTC) |
 |---|---|---|---|
 | 1 | Create the UptimeRobot account and add an HTTPS monitor for each row of the probe table, plus the one additional `cuatro.dev` root monitor recorded beneath it | Use the probe targets and the redirect rules above, including the `"status":"ok"` keyword assertion on `/api/health`. Configure both `cuatro.dev` monitors even though the host is currently failing | **2026-08-16.** Five monitors, ids in the Decisions section, created by agent through the v3 API |
 | 2 | Enable certificate chain validation and the expected-issuer assertion per host | Rule 1. This is separate from the age threshold and must not be skipped because the age alert is configured | **2026-08-16.** `checkSSLErrors` enabled on all five. The expected-issuer half is not separately configurable and is asserted by chain validation only |
-| 3 | Configure the TLS certificate age alert | Use the nearest value UptimeRobot supports for the recorded rule, and write the actually configured value into the conversion table beside its row | **BLOCKED, not outstanding.** `sslExpirationReminder` is a paid setting (`009-005`). Deliberately not bought, because AD-26 removes the renewal cycle it would watch |
+| 3 | Configure the TLS certificate age alert | Use the nearest value UptimeRobot supports for the recorded rule, and write the actually configured value into the conversion table beside its row | **DISSOLVED 2026-08-17, not outstanding and not waived.** `sslExpirationReminder` is a paid setting (`009-005`) and was deliberately not bought. AD-26 landed on 2026-08-17 and removed the origin renewal cycle it would have watched |
 | 4 | Confirm the alert path reaches a channel the Operator actually reads | **Superseded 2026-08-16.** Telegram dropped; email confirmed receiving real `cuatro.dev` down alerts, which exercises the same chain end to end | **2026-08-16.** Confirmed by the Operator |
 | 5 | Record the actual recurring cost | Write it against the $100 per month ceiling as a named decision, including if it is zero. If the required tier would breach the ceiling, stop and raise it rather than configuring | **2026-08-16.** $0 per month, free tier, read from the account: no payment processor, no active subscription |
-| 6 | Flip the status line above to the positive form with the ISO 8601 UTC date | **Reassigned to Story 1.3 on 2026-08-16.** It flips in the same change that installs Origin CA and disables ACME, which is when the certificate-age requirement becomes moot rather than unmet | **Owned by Story 1.3**, not by this story |
+| 6 | Flip the status line above to the positive form with the ISO 8601 UTC date | **Reassigned to Story 1.3 on 2026-08-16.** It flips in the same change that installs Origin CA and disables ACME, which is when the certificate-age requirement becomes moot rather than unmet | **2026-08-17.** Flipped by Story 1.3 in the same change that issued the Origin CA certificate and disabled ACME on all six site blocks |
 
 **Maintaining this file.** When an Operator action is performed, **strike its row by replacing
 the `_not done_` cell with the ISO 8601 UTC completion date, and leave the row in place.**
