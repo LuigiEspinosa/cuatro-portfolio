@@ -132,6 +132,87 @@ found them. Append only. Each entry names the spec that surfaced it.
     also shows retired `pokemon.cuatro.dev` and `api.pokemon.cuatro.dev` names with
     no current DNS record, probably `poketracker-go`.
 
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    Two containers answer to the DNS name `app` on the shared ingress network, and
+    `cs-tracker.cuatro.dev` is reverse-proxied to `app:4000`. Pre-existing, not
+    caused by Story 1.21, and a live intermittent-failure risk.
+  evidence: |-
+    Observed 2026-08-17 on `177.7.52.248`. `getent ahosts app` inside
+    `cs-tracker-caddy-1` returns both `172.18.0.3` (`cs-tracker-app-1`) and
+    `172.18.0.5` (`cuatro-tracker-app-1`), because Compose gives a service its own
+    name as a network alias and both projects call their service `app`. The shared
+    Caddyfile's `{$PHX_HOST}` block proxies `app:4000`, and `cuatro-tracker-app-1`
+    listens on 3000, so any request Docker's round-robin steers to it cannot
+    connect. `cs-tracker.cuatro.dev` was returning its normal 302 throughout, so
+    either Caddy's retry masks it or the failure is intermittent; neither is a fix.
+    The clean closure is a `cuatro-app`-style rename of `cuatro-tracker`'s service,
+    or an explicit unique alias in the shared Caddyfile, in the `cuatro-tracker`
+    repository rather than this one. Story 1.21 avoided adding a third claimant by
+    naming every Anchor service `anchor-*`, which is pinned in `docker-compose.yml`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    Every hostname in the estate depends on a Caddyfile that lives inside another
+    project's git checkout, where a routine `git reset --hard` would discard it.
+  evidence: |-
+    `/home/deploy/cs-tracker/Caddyfile` carries the site blocks for all six live
+    hostnames, and it sits in the `cs-tracker` working tree. The sibling projects'
+    redeploy scripts run `git fetch && git reset --hard origin/main` in their own
+    directories; the same command run in `cs-tracker` would revert every appended
+    block and take the whole estate off the air until someone noticed. Dated backups
+    exist beside it by convention (`Caddyfile.bak-ops1`, `Caddyfile.bak-library-`,
+    `Caddyfile.bak-1-21`) but nothing enforces or restores them. Epic 4 replaces this
+    with Traefik and per-application routers, which dissolves the problem; until
+    then the cheap mitigation is to move the shared Caddyfile out of any project
+    checkout, or to add its blocks to a directory Caddy imports.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    No host in the estate sends Strict-Transport-Security, and Story 1.21
+    deliberately did not add it.
+  evidence: |-
+    The Anchor's site blocks were written to match the header set already used by
+    `tracker.cuatro.dev`, which is `X-Content-Type-Options`, `X-Frame-Options` and
+    `Referrer-Policy` and nothing else. HSTS and a `Server` header strip were drafted
+    and then removed, because AD-20 says a migration step carries nothing else and
+    HSTS is a transport-policy decision with a long cache lifetime that a host move
+    has no mandate to make. It is a real gap: without it, a first visit over plain
+    HTTP is strippable. Worth a small dedicated story covering the whole estate at
+    once, including whether `includeSubDomains` is safe from the apex, which it is
+    not while any Satellite could need to serve over HTTP for a challenge.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    `cuatro.dev`, `www.cuatro.dev` and `analytics.cuatro.dev` have no AAAA record
+    while the three Satellites on the same box do.
+  evidence: |-
+    The routing checklist flagged on 2026-08-16 that Story 1.21 should decide whether
+    the apex gains an AAAA record on the move. It did not add one. The session had no
+    IPv6 egress, so it could not verify IPv6 serving for the new hostnames or even
+    confirm that the existing AAAA records work, and adding a record whose behaviour
+    cannot be observed would be asserting a property rather than measuring it. The
+    box does have an IPv6 address (`2a02:4780:75:9155::1`) and the shared Caddy binds
+    `[::]:443`, so the path very likely works. Close this from a vantage point with
+    IPv6, by verifying a Satellite over IPv6 first and then adding the three records.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    The `AGENTS.md` context block is stale in two ways that a `/bmad-project-context`
+    refresh would fix.
+  evidence: |-
+    It says the project is "deployed by Docker Compose to one Hetzner box". As of
+    2026-08-17 it is deployed to the Hostinger VPS at `177.7.52.248` as a sibling
+    stack behind a shared Caddy it does not own, which is a materially different
+    deployment model, and the pitfall line telling agents that `docker/Caddyfile` is
+    an incomplete standalone config is now wrong in a new way: that file is a
+    fragment for another project's Caddy. It also states the suite is "38 tests in
+    roughly 45 seconds" while the suite now runs 56 tests in 14 files. Both sit
+    inside the `bmad:context` markers and are replaced on refresh, so they are a
+    refresh item and not an edit to make by hand. The sprint change proposal already
+    assigns this; it is repeated here because Story 1.21 changed the deployment model
+    that the block describes.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
   summary: >-
     RESOLVED 2026-08-16 by AD-26. The spec's deferred item, that Story 4.2 must
@@ -147,3 +228,34 @@ found them. Append only. Each entry names the spec that surfaced it.
     has to leave the proxy, which AD-26 requires before that can happen. Recorded
     here rather than by editing the closed spec, since a done spec is a record of
     what was known then.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    RESOLVED 2026-08-17. Three earlier entries are closed by the Anchor's move: the
+    `cuatro.dev` outage, the estate spanning two serving addresses, and
+    `n8n.cuatro.dev`.
+  evidence: |-
+    The outage entry recorded that `cuatro.dev` presented a self-signed
+    `CN=TRAEFIK DEFAULT CERT` and returned 404 at `/api/health`. On 2026-08-17 the
+    apex serves the Hub over a Let's Encrypt certificate and `/api/health` returns
+    200 with `"status":"ok"` to a client performing full validation. NFR-2 is out of
+    breach and UptimeRobot monitor 803749849 flipped UP.
+
+    The two-address entry recorded that the estate did not serve from one address.
+    All six live hostnames now resolve to `177.7.52.248`. The full topology, and the
+    part of it that is still only on the box, is written down in
+    `ops/routing-inventory.md`.
+
+    The `n8n.cuatro.dev` entry asked what that hostname served, whether its state was
+    worth keeping, and whether it explained the outage. **None of those questions was
+    answered; the record simply no longer exists.** The zone held 26 records on
+    2026-08-16 and holds 25 on 2026-08-17, with no `n8n` among them and no
+    resolution from any public resolver. The port-conflict hypothesis it carried is
+    therefore neither confirmed nor refuted, and cannot now be, because the box it
+    concerned is gone. Recorded as closed-by-disappearance rather than as answered,
+    so nobody later reads it as a diagnosis that was made.
+
+    The one open thread from that cluster is not closed: the entry about
+    `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` being live and absent from
+    `ops/estate.md` still stands. Both were re-confirmed present in the zone on
+    2026-08-17. Story 2-4 owns it.

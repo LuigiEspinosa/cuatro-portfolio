@@ -36,19 +36,37 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | Certificate age rule | Age greater than two thirds of nominal lifetime, plus a 48 hour grace | **Rule 2. NOT configured. Blocked by the free plan**, see The certificate rule |
 | Down threshold | 2 consecutive failed probes, so roughly 10 minutes to first alert | **Decided, not configured.** The free tier exposes no confirmation-count setting |
 
-### The monitors as they actually exist, 2026-08-16
+### The monitors as they actually exist, updated 2026-08-17
 
-| id | Monitor | Type | Assertion | Status when created |
-|---|---|---|---|---|
-| 803750027 | `cuatro.dev /api/health` | Keyword | body contains `"status":"ok"`, case sensitive | **DOWN** |
-| 803749849 | `cuatro.dev root (front door)` | HTTP | status code | **DOWN** |
-| 803750016 | `cs-tracker.cuatro.dev` | HTTP | status code | UP |
-| 803750023 | `tracker.cuatro.dev` | HTTP | status code | UP |
-| 803750025 | `library.cuatro.dev` | HTTP | status code | UP |
+| id | Monitor | Type | Assertion | Status when created | Status 2026-08-17 |
+|---|---|---|---|---|---|
+| 803750027 | `cuatro.dev /api/health` | Keyword | body contains `"status":"ok"`, case sensitive | **DOWN** | recovering, see below |
+| 803749849 | `cuatro.dev root (front door)` | HTTP | status code | **DOWN** | **UP** |
+| 803750016 | `cs-tracker.cuatro.dev` | HTTP | status code | UP | UP |
+| 803750023 | `tracker.cuatro.dev` | HTTP | status code | UP | UP |
+| 803750025 | `library.cuatro.dev` | HTTP | status code | UP | UP |
+| 803756083 | `www.cuatro.dev (301 to apex)` | HTTP | status code **301**, redirects **not** followed | **UP** | **UP** |
 
-**The two `cuatro.dev` monitors came up DOWN immediately**, which is correct and is the first
-machine-generated error signal this estate has ever had. That downtime counts against SM-5 from
-today, honestly, because it is real.
+**The two `cuatro.dev` monitors came up DOWN immediately** on 2026-08-16, which was correct and
+was the first machine-generated error signal this estate has ever had. That downtime counts
+against SM-5, honestly, because it was real: roughly 22 hours from monitor creation until
+Story 1.21 restored the host on 2026-08-17.
+
+**Both recovered on 2026-08-17**, which exercised the other half of the alert path. The record
+of an outage detected, alerted, fixed and confirmed recovered is now complete end to end, on
+real conditions rather than a synthetic test.
+
+**Why the `www` monitor does not follow redirects.** Every other monitor here follows redirects
+and accepts `2xx` or `3xx`, which is why `library.cuatro.dev` reads UP while returning a 302.
+That setting would make the `www` monitor useless: it would follow the 301 to the apex and
+report UP on the apex's health, which the apex's own two monitors already cover. Worse, it
+would keep reading UP if `www` ever stopped redirecting and started serving a duplicate site,
+which is the one failure this row exists to catch. So this monitor alone sets
+`followRedirections: false` and accepts exactly `301`.
+
+**What it cannot assert.** UptimeRobot checks the status code, not the `Location` header, so a
+301 pointing somewhere wrong still reads UP. The redirect target is verified by hand at
+cutover and whenever the block changes, not by this monitor.
 
 **Why the service must run off the box.** AD-17a and AD-18 both require it, and the reason is
 mechanical rather than stylistic. A monitoring agent, exporter, healthcheck or cron job
@@ -138,15 +156,19 @@ The monitored set is **every live `cuatro.dev` subdomain**.
 
 | Hostname | Probe target | Expected response | Nature |
 |---|---|---|---|
-| `cuatro.dev` | `/api/health` | HTTP 200, and the body contains the keyword `"status":"ok"` | **Decided from source, never observed.** See the caveat below |
+| `cuatro.dev` | `/api/health` | HTTP 200, and the body contains the keyword `"status":"ok"` | **Observed passing 2026-08-17.** See the caveat below |
+| `www.cuatro.dev` | `/` | HTTP **301**, redirects not followed | **Observed 2026-08-17.** Added by Story 1.21. The apex is canonical, so this row asserts the redirect rather than a 200 |
 | `cs-tracker.cuatro.dev` | `/` | HTTP 200 | **Decided.** Another repository, so no health endpoint is assumed |
 | `tracker.cuatro.dev` | `/` | HTTP 200 | **Decided.** Another repository, same reason |
 | `library.cuatro.dev` | `/` | HTTP 200 | **Decided.** Another repository, same reason |
 
-**The keyword assertion is decided from source and has never been observed passing.** It is
-read off `app/api/health/route.ts`, which returns `{"status":"ok", version, uptime}`. On the
-only date this record checked, that endpoint returned **404**, so the string
-`"status":"ok"` was never seen on the wire. Two consequences the Operator should hold:
+**The keyword assertion was decided from source and has now been observed passing.** It is
+read off `app/api/health/route.ts`, which returns `{"status":"ok", version, uptime}`. On
+2026-08-16 that endpoint returned **404** and the string was never seen on the wire. On
+2026-08-17, after Story 1.21 moved the Anchor, a validating client received
+`{"status":"ok","version":"3.0.0","uptime":545}` from `https://cuatro.dev/api/health`, so the
+substring is confirmed on the wire for the first time. Two consequences the Operator should
+still hold, because they are properties of the assertion rather than of any one check:
 
 - It is a **whitespace-sensitive substring match**. `"status":"ok"` matches the compact JSON
   that `NextResponse.json` emits today. Pretty-printing the response, reordering to put a
@@ -242,24 +264,19 @@ file exists to prevent.
 
 The exclusions, each named rather than left as a silence:
 
-**`www.cuatro.dev` is not monitored, and is not currently ours to monitor.** On the check date
-it resolved to a different provider than the apex and returned `DEPLOYMENT_NOT_FOUND` from an
-external platform, so it is neither served by the VPS nor covered by the certificate rules
-below. It is recorded here because it resolves, a Visitor could type it, and an undocumented
-resolving hostname is worse than a documented excluded one. Whether it should redirect to the
-apex, be monitored, or be withdrawn is an open question this record does not settle.
+**`www.cuatro.dev` was not ours to monitor on 2026-08-16, and now is.** On that date it resolved
+to a different provider than the apex and returned `DEPLOYMENT_NOT_FOUND` from an external
+platform, so it was neither served by the VPS nor covered by the certificate rules below.
+Story 1.21 repointed it at the VPS on 2026-08-17, where it now serves a 301 to the apex under
+its own Let's Encrypt certificate. It is in the probe table above and has monitor 803756083.
+The open question that closed with it, whether it should redirect, be monitored or be
+withdrawn, was settled by the Operator on 2026-08-16: keep both, apex canonical, `www`
+redirects.
 
 **`list-wheel` is not monitored today.** Its Status is `Live`, but it serves from GitHub Pages
 rather than from a `cuatro.dev` subdomain, so it is neither our host nor our certificate and
 there is nothing here for a certificate-age rule to watch. Story 2-25 relocates it to the VPS,
 at which point the add rule above applies.
-
-**`www.cuatro.dev` joins the monitored set when Story 1.21 lands.** On 2026-08-16 it was the
-only proxied record in the zone and it returned `DEPLOYMENT_NOT_FOUND` from a different
-provider, so there was nothing of ours to probe. The Operator decided on that date to keep both
-`www.cuatro.dev` and `cuatro.dev`, with the apex canonical and `www` redirecting to it with a
-301. That makes `www` a live `cuatro.dev` subdomain under the rule above, so it gets a probe row
-asserting the redirect rather than a 200, and Story 1.21 adds it.
 
 **`analytics.cuatro.dev` is on the box but is not in the probe table.** It is the self-hosted
 Umami instance: infrastructure that supports the estate rather than an application the
@@ -267,6 +284,16 @@ Registry describes or a Visitor is sent to. It is recorded here with that reason
 than dropped silently, so a later reader can see it was considered and can reverse the call
 cheaply. Its certificate shares the fate of the Anchor's, and it is included in the
 observed-state table below for that reason.
+
+**The Umami database was discarded on 2026-08-17, deliberately and with a date.** The instance
+that served `analytics.cuatro.dev` until then lived on `95.216.143.251` in the same compose
+stack as the Hub. That box is gone, no credential for it existed, and its Postgres volume was
+therefore not recoverable. Story 1.21 stood up a **new, empty** Umami rather than migrating
+data. What that costs, named rather than left to be discovered: **SM-1, SM-2 and SM-3 have no
+history before 2026-08-17**, and Story 2.24's custom events start from an empty baseline. Any
+figure any later story reports from Umami describes the period from this date onward and never
+earlier. This is recorded as a deliberate drop, not a silent loss, and the Operator chose it
+knowing the alternative was to keep a box nobody could reach.
 
 **`cuatro-finance` and `cs-tournament` are not monitored because it is not established that
 they serve anything.** Their Statuses in `ops/estate.md` are the unresolved assumption text
@@ -281,11 +308,47 @@ question for the Capacity Gate and not silently a monitoring gap.
 `poketracker-go` and `Mutuo` are early scaffolding, are not `Live`, and serve nothing to
 probe. FR-31 scopes external monitoring to applications with Status `Live`.
 
-### Observed state, 2026-08-16
+### Observed state, 2026-08-17
 
-Read only, gathered from a developer machine outside the VPS. HTTP status came from a plain
-request to the probe target; the certificate fields came from a direct TLS handshake against
-port 443 for each hostname.
+**Re-gathered after Story 1.21's cutover, replacing the 2026-08-16 table.** The superseded
+table is kept below it, because the difference between the two is the evidence that the story
+did what it claimed.
+
+Gathered from a developer machine outside the VPS, computed against
+**2026-08-17T08:00:51Z**. HTTP status came from a plain request to the probe target with
+**certificate validation enabled**; the certificate fields came from a direct TLS handshake
+against port 443 for each hostname.
+
+**Scope of this check: the six hostnames below, on 2026-08-17 only.**
+
+| Hostname | HTTP status | Certificate issuer | notBefore (UTC) | notAfter (UTC) | Nominal lifetime | Age | Days remaining | Alert threshold | Age rule firing |
+|---|---|---|---|---|---|---|---|---|---|
+| `cuatro.dev` | **200** | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:08Z | 2026-11-15T07:00:07Z | 90 days | 0 | 90 | 28 | no |
+| `www.cuatro.dev` | **301** to `https://cuatro.dev/` | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:09Z | 2026-11-15T07:00:08Z | 90 days | 0 | 90 | 28 | no |
+| `analytics.cuatro.dev` | **200** | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:09Z | 2026-11-15T07:00:08Z | 90 days | 0 | 90 | 28 | no |
+| `cs-tracker.cuatro.dev` | 302 | `CN=YE1, O=Let's Encrypt` | 2026-07-29T03:20:20Z | 2026-10-27T03:20:19Z | 90 days | 19 | 70 | 28 | no |
+| `tracker.cuatro.dev` | 307 | `CN=YE1, O=Let's Encrypt` | 2026-07-29T23:27:08Z | 2026-10-27T23:27:07Z | 90 days | 18 | 70 | 28 | no |
+| `library.cuatro.dev` | 302 | `CN=YE2, O=Let's Encrypt` | 2026-07-30T05:15:02Z | 2026-10-28T05:15:01Z | 90 days | 18 | 71 | 28 | no |
+
+**Every hostname now resolves to `177.7.52.248` and every certificate is publicly trusted.**
+The self-signed `TRAEFIK DEFAULT CERT` that this record documented on 2026-08-16 is gone from
+the estate's view, and every status above was obtained **without disabling certificate
+validation**, which is the distinction the previous table had to make and this one does not.
+
+**The three new certificates were issued by the same Caddy that serves the Satellites**, over
+HTTP-01, minutes after the site blocks were installed. That answers a question the previous
+version of this section had to leave open: what terminates TLS is Caddy 2.11.4, on all six
+hostnames, and its renewal behaviour is Caddy's, which is the convention the 48 hour grace
+below was sized against. The caveat further down about an unidentified issuer no longer
+applies to any hostname in this estate.
+
+**One caveat carried forward: the estate is now entirely on 90 day certificates**, all six
+issued or renewing under the schedule that drops to 64 days in February 2027. The configured
+threshold of 28 days remaining is correct for every row today.
+
+#### Superseded: observed state, 2026-08-16
+
+Kept for the record. Every row below describes a topology that no longer exists.
 
 **Scope of this check: the five hostnames below, on 2026-08-16 only.** Nothing here is
 evidence about any other application, and nothing here is evidence about what a monitor would
@@ -337,14 +400,17 @@ the single most useful piece of evidence this file can carry: it is exactly the 
 failure AD-17a exists to catch, it was found by hand rather than by a machine, and nobody was
 notified.
 
-**The estate does not serve from one address.** `cuatro.dev` and `analytics.cuatro.dev`
-resolved to `95.216.143.251`, while `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and
-`library.cuatro.dev` resolved to `177.7.52.248`. Both are observations from 2026-08-16 and
-neither is a decision this record makes. **This record does not identify `177.7.52.248` as
-anyone's infrastructure**: no reverse lookup, no provider attribution and no ownership check
-was performed, and the address is written down only because it differs from the first one.
-The practical consequence for monitoring is that "off the box" is not satisfied by probing
-from the other address: a monitor must sit outside both, which UptimeRobot does.
+**The estate did not serve from one address on 2026-08-16.** `cuatro.dev` and
+`analytics.cuatro.dev` resolved to `95.216.143.251`, while `cs-tracker.cuatro.dev`,
+`tracker.cuatro.dev` and `library.cuatro.dev` resolved to `177.7.52.248`. Both were
+observations from that date and neither was a decision this record made. As written on
+2026-08-16 this record also **did not identify `177.7.52.248` as anyone's infrastructure**,
+because no reverse lookup or ownership check had been performed.
+
+**Closed 2026-08-17 by Story 1.21.** `177.7.52.248` is the Hostinger VPS, and all six
+hostnames now serve from it. The consequence for monitoring is unchanged and is the reason
+this paragraph is kept: "off the box" means outside the serving address, which UptimeRobot
+satisfies. The full topology is in `ops/routing-inventory.md`.
 
 ## Alerting policy
 
@@ -562,33 +628,34 @@ which also records that the `tlsserver` ACME profile switches to 45 day certific
 2026-05-13 and that renewal volume roughly doubles across the transition. AD-22 carries the
 schedule inside its fixed re-check scope, which is where it is re-verified rather than here.
 
-### What terminates TLS today is not what the grace was sized against
+### What terminates TLS, confirmed 2026-08-17
 
-The 48 hour grace below is reasoned from **Caddy's** renewal behaviour, because Caddy is what
-this repository's committed configuration describes. **The observed-state section above
-records something else answering.** On 2026-08-16 the Anchor's address presented a
-certificate whose subject was `CN=TRAEFIK DEFAULT CERT`. This record does not diagnose why,
-and does not claim to know what is terminating TLS on the box today.
+The 48 hour grace below is reasoned from **Caddy's** renewal behaviour. When this record was
+written on 2026-08-16 that was an assumption taken from the repository's committed
+configuration, and the observed state contradicted it: the Anchor's address was presenting a
+`CN=TRAEFIK DEFAULT CERT`, and the software issuing the three Satellites' certificates had not
+been identified at all.
 
-Stated plainly, so it is not discovered later as a contradiction:
+**Story 1.21 identified it directly, on the box.** Recorded here because the grace period
+depends on it:
 
-- **What was observed:** a self-signed certificate identifying itself as a Traefik default on
-  the Anchor's address, and valid Let's Encrypt certificates on the three satellite hosts,
-  whose issuing software was not identified at all.
-- **What the grace assumes:** that whatever issues these certificates attempts renewal at
-  **two thirds of nominal lifetime**. That is Caddy's convention, and the research digest
-  records the same two thirds ratio in Let's Encrypt's own description of the transition
-  (renewal moving from about day 60 of 90 to about day 30 of 45).
-- **What is unconfirmed:** that the software actually running today renews on that ratio
-  rather than on a fixed day count. **The assumption is unverified for whatever is serving
-  now.**
+| Question | Answer | Nature |
+|---|---|---|
+| What terminates TLS for all six hostnames | One shared **Caddy 2.11.4**, container `cs-tracker-caddy-1` | **Observed 2026-08-17** by reading the running container |
+| Challenge type | **HTTP-01** | **Observed.** Certificate storage is under `acme-v02.api.letsencrypt.org-directory`, and no DNS challenge provider is configured |
+| Does it renew at a fraction of lifetime | **Yes.** Caddy renews when less than one third of lifetime remains | Caddy's documented behaviour, and it is now confirmed to be the software actually running |
+| Does anything else issue certificates in the estate | **No** | **Observed.** The Traefik that presented the default certificate was on the address the estate has left |
 
-**Why this matters and not merely tidiness.** If the issuer renews at a fixed number of days
-instead of at a fraction, renewal moves relative to the alert as lifetimes shorten, and the
-threshold either fires on every healthy renewal or stops firing before a broken one. Story
-4.2 confirms the ACME renewal trigger of whatever the rebuild lands on, and the age threshold
-should be treated as provisional until it does. Rule 1 above is not affected by any of this,
-which is a further reason it is not optional.
+**The assumption the grace rests on is therefore no longer unverified.** The two thirds ratio
+is Caddy's own convention, it matches Let's Encrypt's description of the lifetime transition,
+and Caddy is confirmed to be what is running. The threshold can be treated as sound rather
+than provisional for every hostname in the probe table today.
+
+**What is still open, and it is narrower than it was.** Story 4.2 replaces Caddy with Traefik
+and DNS-01 during the Epic 4 rebuild, and Traefik's renewal trigger must be confirmed to be
+relative rather than a fixed day count before the threshold can be carried over. That check
+belongs to Story 4.2 and is recorded in the deferred-work ledger. AD-26 narrows it further:
+proxied hosts stop renewing on the origin altogether.
 
 ### Why the threshold is not exactly two thirds
 

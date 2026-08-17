@@ -1,7 +1,61 @@
+# The Anchor's site blocks, as installed into the shared Caddyfile on the
+# Hostinger VPS at /home/deploy/cs-tracker/Caddyfile.
+#
+# This is a fragment, not a standalone configuration, and no Caddy in this
+# repository's compose stack reads it. The box runs one Caddy
+# (cs-tracker-caddy-1) that owns ports 80 and 443 for the whole estate; the
+# Anchor attaches to that Caddy's network under the aliases `anchor-app` and
+# `anchor-umami`, which is how the reverse_proxy targets below resolve. Running
+# a second binder of 80 or 443 on that box is what took cuatro.dev down.
+#
+# Installing it: back the shared Caddyfile up as Caddyfile.bak-1-21, append
+# these blocks, run `caddy validate`, reload, then re-verify cs-tracker,
+# tracker and library immediately. Restore the backup if any of the three
+# regressed.
+#
+# All three hostnames must be DNS-only, Cloudflare proxy off, before these
+# blocks are first loaded. Caddy issues over HTTP-01 on this box and a proxied
+# record breaks the challenge, leaving the host with no certificate at all.
+#
+# The header set is the estate's, read off the live tracker.cuatro.dev block on
+# 2026-08-17 and matched deliberately rather than improved on. Two headers were
+# considered and left out: Strict-Transport-Security, because no host in the
+# estate sends it today and adding it here would make this migration step carry
+# a transport-policy decision it has no mandate for (AD-20), and `-Server`, for
+# the same reason. Both are recorded as deferred work rather than dropped
+# silently. X-Frame-Options is DENY, as on tracker; library uses SAMEORIGIN
+# only because its EPUB reader frames its own content, and the Hub frames
+# nothing.
+#
+# Indentation is tabs, which is what `caddy fmt` produces. Keep it that way so
+# appending this fragment does not make the shared file report as unformatted.
+
 cuatro.dev {
-  reverse_proxy app:3000
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	reverse_proxy anchor-app:3000
+}
+
+# The apex is canonical. www redirects and never serves a duplicate, so every
+# Registry `live` value and every acceptance criterion naming the apex stays
+# true. {uri} preserves path and query.
+www.cuatro.dev {
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	redir https://cuatro.dev{uri} permanent
 }
 
 analytics.cuatro.dev {
-  reverse_proxy umami:3000
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	reverse_proxy anchor-umami:3000
 }
