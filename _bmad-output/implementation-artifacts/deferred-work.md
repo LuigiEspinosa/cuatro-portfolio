@@ -340,3 +340,28 @@ found them. Append only. Each entry names the spec that surfaced it.
     silent metric loss with no baseline against which the gap would look anomalous,
     and the Hub's tracking script fails quietly when its host is down. One more
     monitor costs nothing on a free tier holding 6 of 50.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    SUPERSEDED 2026-08-17 by Operator decision. The entry above asking for the
+    Cloudflare zone-edit token to be revoked is withdrawn: the token is retained
+    deliberately. Do not action the revoke instruction.
+  evidence: |-
+    The earlier entry treated the cutover token as a credential with no remaining
+    consumer and asked for its revocation. The Operator decided on 2026-08-17 to
+    keep it for future estate work, and to keep it in the gitignored local `.env`
+    as `CLOUDFLARE_TOKEN`. That is a reasonable call: the estate has repeated DNS
+    work ahead of it in Story 1.3 (proxying every record under AD-26) and again in
+    Epic 4, and re-minting a token each time has its own cost.
+
+    **What changes is the tracking, not the decision.** A retained credential is a
+    standing one, so it now appears in the live-credentials table in
+    `ops/routing-inventory.md` beside the two orphaned ACME tokens rather than
+    living only in a spec's frontmatter. It is the single most powerful credential
+    in the estate: zone DNS edit on `cuatro.dev` can repoint the apex, and it is
+    scoped to that zone alone with no account-level rights, which is the correct
+    shape for it. Two things worth doing when convenient, neither urgent and
+    neither blocking: confirm it carries an expiry in Cloudflare rather than
+    living forever, and note that a token in a developer machine's `.env` has a
+    different exposure profile from one in a secret store, which is a reasonable
+    trade at this estate's size but should be a knowing one.

@@ -112,16 +112,34 @@ deferred work. It is also why every service in the Anchor's compose file is name
 **Deploy repoint status: DONE 2026-08-17.** The secret now resolves to this box, so a merge to
 `main` is a real deploy against the machine serving all six hostnames.
 
-**That makes one ordering constraint load-bearing until `main` catches up.** As of 2026-08-17
-the box's checkout sits at `main` (`54d3a0d`) with `docker-compose.yml` and `docker/Dockerfile`
-modified in place, because the corrected versions were applied directly during the cutover and
-live on `dev`. `origin/main` still carries the pre-move compose file: a `caddy` service
-publishing `80:80` and `443:443`, and services named `app`, `db` and `umami`. A deploy from
-that commit would `reset --hard` the box onto it, discard the working files, recreate the
-shared-network name collisions, and contend for the ports `cs-tracker-caddy-1` holds. **The
-blast radius is the whole estate, not just the Anchor.** `dev` must reach `main` before
-anything else does. Once it has, the box's checkout and its running configuration agree for
-the first time and this constraint expires.
+**That makes one ordering constraint load-bearing for the rest of Epic 1.** The Operator's
+standing policy is that `main` is merged only when an epic completes, so the gap below persists
+by design rather than for a few hours.
+
+As of 2026-08-17 the box's checkout sits at `main` (`54d3a0d`) with `docker-compose.yml` and
+`docker/Dockerfile` **modified in place**, because the corrected versions were applied directly
+during the cutover and are committed on `dev`, not `main`. `origin/main` still carries the
+pre-move compose file: a `caddy` service publishing `80:80` and `443:443`, and services named
+`app`, `db` and `umami`. A deploy from that commit would `reset --hard` the box onto it,
+discard the working files, recreate the shared-network name collisions, and contend for the
+ports `cs-tracker-caddy-1` holds. **The blast radius is the whole estate, not just the Anchor.**
+
+**In the normal flow this cannot fire**, because `deploy.yml` triggers only on `main` and
+nothing reaches `main` mid-epic. The live risk is a direct push to `main`, or a hotfix merged
+ahead of the epic close.
+
+**Recovering the box's configuration if it is ever lost** is cheap, because the correct files
+are pushed and reachable from the box:
+
+```
+cd /home/deploy/cuatro-portfolio
+git fetch origin dev
+git checkout origin/dev -- docker-compose.yml docker/Dockerfile .dockerignore
+docker compose --env-file .env.production up -d --remove-orphans
+```
+
+When Epic 1 closes and `dev` reaches `main`, the box's checkout and its running configuration
+agree for the first time, `git status` there goes clean, and this whole section expires.
 
 ## The address the estate left
 
@@ -156,6 +174,17 @@ This set is what a rebuild has to recreate from nothing, and it is the reason St
 | Per-project secrets | `.env` / `.env.production` in each project directory | No, and correctly so |
 | Redeploy and backup scripts | `~/cuatro-redeploy.sh`, `~/library-redeploy.sh`, `~/cuatro-backup.sh`, `~/library-backup.sh` | No |
 | Operator notes | `~/README.md` and its `.bak-*` copies | No |
+
+### Live credentials, tracked here so none is forgotten
+
+| Credential | Scope | Status |
+|---|---|---|
+| Cloudflare zone-edit token, created 2026-08-17 | DNS edit on the `cuatro.dev` zone only. No account-level rights, no other zone | **Retained deliberately** by Operator decision on 2026-08-17, for future estate work. Held in the gitignored local `.env` as `CLOUDFLARE_TOKEN`. This is the only credential in the estate that can rewrite the apex A record, so it is written down rather than left implicit |
+| Cloudflare API token `tracker-mac` | Unverified | Orphaned. Nothing on the box uses it: ingress issues over HTTP-01 and holds no Cloudflare credential. Story 1.3 sequences its revocation after Origin CA lands |
+| Cloudflare API token `cuatro-tracker` | Unverified | Orphaned, same reasoning and same owner |
+| Umami admin password | `analytics.cuatro.dev` | Set by the Operator on 2026-08-17, replacing both the shipped default and the agent-generated rotation. The agent-written `.umami-admin` file was shredded from the box the same day |
+| `deploy` SSH key, GitHub `SSH_PRIVATE_KEY` | Shell on `177.7.52.248`, passwordless sudo | In use by `deploy.yml`. `SERVER_HOST` repointed 2026-08-17 |
+| `github_deploy`, `cuatro_tracker_deploy` | Read on one GitHub repository each | In use by the sibling stacks. Neither can clone `cuatro-portfolio`, which is why that repository is cloned over HTTPS |
 
 **The Anchor deliberately does not follow the override convention.** Its network attachment
 and aliases are committed in `docker-compose.yml` rather than hidden in a box-only override,
