@@ -259,3 +259,84 @@ found them. Append only. Each entry names the spec that surfaced it.
     `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` being live and absent from
     `ops/estate.md` still stands. Both were re-confirmed present in the zone on
     2026-08-17. Story 2-4 owns it.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    No test or CI job observes the serialized body of `/api/health`, which is the
+    contract an external keyword monitor asserts, and no job reads a monitor's
+    configuration. That combination is what let an inverted monitor run for a day.
+  evidence: |-
+    `app/api/health/__tests__/route.test.ts:4-8` mocks `next/server` so
+    `NextResponse.json` returns the plain object, and the assertions read
+    `body.status` off it. Serialization is never observed, so pretty-printing the
+    response, reordering keys, or wrapping it in an envelope keeps all 56 tests
+    green while the substring `"status":"ok"` leaves the wire. `ci.yml` runs
+    typecheck and vitest; `lighthouse.yml` builds and runs Lighthouse with both
+    Umami variables set empty. Nothing anywhere asserts the rendered layout carries
+    the tracking script either. Two cheap closures, neither needing Playwright: a
+    Vitest case asserting the serialized JSON string contains the exact substring,
+    and a Vitest render of `RootLayout` with both env values stubbed asserting the
+    script `src` and `data-website-id`. This is the same class of gap that produced
+    incident 3 in Story 1-21 and hid the inverted monitor.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    `docker/Caddyfile` is a mirror of the file that actually serves, and nothing
+    compares the two, so the repository's claim to describe the running system
+    decays silently from the first edit.
+  evidence: |-
+    The fragment is read by no process. `deploy.yml` never installs it, no CI job
+    runs `caddy validate` against it, and the installed blocks live in another
+    project's checkout at `/home/deploy/cs-tracker/Caddyfile`. Editing the repo copy
+    changes nothing on the box; editing the box copy leaves no trace in git. Two
+    cheap improvements: wrap the installed blocks in `# BEGIN anchor` / `# END
+    anchor` markers so they can be located, diffed and replaced mechanically, and
+    add a deploy or scheduled step that diffs the fragment against the installed
+    region and fails loudly on drift. Related: `ops/routing-inventory.md` already
+    records that a `git reset --hard` in the `cs-tracker` checkout would erase every
+    appended block, and Story 1-21 made `deploy.yml` do exactly that in the Anchor's
+    own directory.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    The `www.cuatro.dev` monitor asserts a 301 status but cannot see the `Location`
+    header, so a redirect to the wrong target, or a loop, reads UP.
+  evidence: |-
+    Monitor 803756083 is configured `followRedirections: false` with success code
+    301 and no keyword. Changing the Caddy block to drop `{uri}`, or pointing it at
+    `www` itself, keeps the status code at 301 and every automated signal green
+    while deep links break or loop. `ops/monitoring.md` records the limitation and
+    names the compensating control as a check by hand at cutover, which has no owner
+    and no schedule. Closing it needs either a probe that can assert a response
+    header, or the re-gather step proposed for the Caddyfile drift item above,
+    capturing the observed `Location` alongside the status code.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    A Cloudflare API token with zone DNS edit rights on `cuatro.dev` was created for
+    the Story 1-21 cutover and must be revoked. It is tracked only in a spec
+    frontmatter line marked DONE.
+  evidence: |-
+    The Operator supplied a zone-scoped token so the agent could repoint three A
+    records on 2026-08-17. The instruction to revoke it sits inside an
+    `operator_actions` entry whose line begins `DONE`, which a later reader will
+    take as complete, and it appears in no `ops/` record. It is a live credential
+    that can rewrite the apex A record of the estate's flagship, which is a larger
+    capability than either of the two orphaned ACME tokens Story 1-3 is already
+    scheduled to revoke. Revoke it, and record the revocation date in
+    `ops/routing-inventory.md` beside those two so all three are tracked in one
+    place. Until then it is an unrevoked standing credential with no consumer, the
+    exact condition that story calls out as an unnecessary key.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  summary: >-
+    `analytics.cuatro.dev` is unmonitored, and Story 1-21 made that a worse trade
+    than when the exclusion was written.
+  evidence: |-
+    `ops/monitoring.md` excludes it as infrastructure rather than an application a
+    Visitor is sent to. That reasoning predates two facts Story 1-21 established:
+    all Umami history before 2026-08-17 was discarded, and SM-1 through SM-3 now
+    depend entirely on an instance nobody probes. Silent Umami downtime is now
+    silent metric loss with no baseline against which the gap would look anomalous,
+    and the Hub's tracking script fails quietly when its host is down. One more
+    monitor costs nothing on a free tier holding 6 of 50.

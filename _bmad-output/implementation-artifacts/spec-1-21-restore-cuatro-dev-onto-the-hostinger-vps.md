@@ -2,7 +2,7 @@
 title: 'Restore cuatro.dev by completing the move onto the Hostinger VPS'
 type: 'feature'
 created: '2026-08-17'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: '6737a1abe7b8012d3253476c3c2b304a1ff0189a'
 review_loop_iteration: 0
 context:
@@ -15,7 +15,37 @@ operator_actions:
   - 'DONE 2026-08-17, by agent. Umami site created (website id b5e26621-88fa-4746-98a0-f045a131163c) and the Hub image rebuilt with it baked in. Tracking script verified in the rendered payload.'
   - 'OUTSTANDING. GitHub secret: repoint `SERVER_HOST` at 177.7.52.248 and confirm `SERVER_USER` is `deploy` and `SSH_PRIVATE_KEY` authenticates there. Until this is done, do not merge to `main`. The corrected checkout path means a deploy to any unprepared host now fails at `cd` rather than half-succeeding.'
   - 'OUTSTANDING, security. The Umami admin password was rotated off the shipped default and written to `/home/deploy/cuatro-portfolio/.umami-admin` (mode 600). Change it to a password you choose and keep in your password manager. See the incident note in the Spec Change Log.'
-deferred: []
+deferred:
+  - summary: 'Two containers answer to `app` on the shared ingress network; cs-tracker.cuatro.dev proxies app:4000. Pre-existing.'
+    location: 'cuatro-tracker repository'
+    severity: high
+  - summary: 'Every hostname depends on a Caddyfile inside another project git checkout, where a reset --hard would erase it.'
+    location: '/home/deploy/cs-tracker/Caddyfile'
+    severity: high
+  - summary: 'No test observes the serialized /api/health body or the rendered tracking script, and no job reads monitor configuration.'
+    location: 'app/api/health/__tests__/route.test.ts, .github/workflows/ci.yml'
+    severity: high
+  - summary: 'docker/Caddyfile mirrors the serving config with nothing comparing the two, so drift is invisible.'
+    location: 'docker/Caddyfile'
+    severity: medium
+  - summary: 'The Cloudflare zone-edit token created for this cutover must be revoked and is tracked only in a DONE frontmatter line.'
+    location: 'Cloudflare account'
+    severity: medium
+  - summary: 'analytics.cuatro.dev is unmonitored while SM-1 to SM-3 now depend entirely on it with no historical baseline.'
+    location: 'ops/monitoring.md'
+    severity: medium
+  - summary: 'The www monitor asserts a 301 status but cannot see the Location header, so a wrong target or a loop reads UP.'
+    location: 'ops/monitoring.md'
+    severity: medium
+  - summary: 'No host in the estate sends Strict-Transport-Security; deliberately not added here under AD-20.'
+    location: 'docker/Caddyfile'
+    severity: medium
+  - summary: 'The three moved hostnames have no AAAA record; IPv6 serving could not be verified from the executing session.'
+    location: 'Cloudflare zone cuatro.dev'
+    severity: low
+  - summary: 'AGENTS.md context block is stale on the deployment model and the test count; a /bmad-project-context refresh item.'
+    location: 'AGENTS.md'
+    severity: low
 ---
 
 <frozen-after-approval reason="human-owned intent: do not modify unless human renegotiates">
@@ -123,6 +153,25 @@ Two defects were introduced by this story's own execution and corrected inside i
 **2. Umami shipped with a live default credential on a public host.** The image's default `admin` / `umami` login authenticated successfully from the public internet from the moment DNS pointed at the box. The exposure window was roughly 07:52Z to 08:20Z. It was made worse before it was fixed: an endpoint-discovery probe sent a real password-change payload rather than an inert one, so it changed the password to the probe string instead of merely reporting that the route existed. The password was then rotated to a generated value, both the default and the probe string were verified rejected, and the credential was written to `/home/deploy/cuatro-portfolio/.umami-admin` at mode 600. **Nothing but an empty analytics instance sat behind it**, and no data existed to take. The Operator still owns changing it to a password of their choosing.
 
 **The lesson worth keeping from the second one:** a probe that writes is not a probe. Discovery against an authenticated API should send a payload that cannot succeed, or should read a route listing, never a well-formed mutation.
+
+**Post-incident audit of the Umami exposure, completed 2026-08-17.** A password rotation does
+not undo persistence, so the database was read directly rather than through the API: one user
+(`admin`, created 07:50:20Z, last updated 08:09:17Z by the rotation), one website (the one this
+story created), and zero rows in `team`, `team_user`, `share`, `report`, `two_factor_auth`,
+`session` and `website_event`. No account, share token or scheduled report was left behind.
+**`UMAMI_APP_SECRET` was also rotated**, because Umami signs auth tokens as JWTs with it and a
+token minted during the exposure window would otherwise stay valid until expiry regardless of
+the new password. Umami was verified serving and the admin login verified working afterwards.
+
+**4. Findings from the review layers that were fixed in place.** The deploy workflow gained
+`--remove-orphans` (without it, a redeploy on a host holding the pre-rename containers leaves
+the old Caddy binding 80 and 443, which is the original outage), `set -euo pipefail` and a
+`reset --hard` instead of a `pull`. A `.dockerignore` was added because `COPY . .` was pulling
+`.env.production` and `.umami-admin` into the builder layer. `.umami-admin` was added to
+`.gitignore`. The Umami build args became `${VAR:?}` so an unset value fails the build rather
+than silently producing a site that measures nothing. `anchor-app` gained a healthcheck, and
+`anchor-db`'s retry budget was widened because the deploy builds Next on the same two cores
+that Postgres initialises on.
 
 **3. The tracking script had never rendered.** Not introduced here, but found here. `app/layout.tsx:59` requires both `NEXT_PUBLIC_UMAMI_WEBSITE_ID` and `NEXT_PUBLIC_UMAMI_URL`, Next inlines `NEXT_PUBLIC_*` at build time, and `docker/Dockerfile` declared a build ARG for only the first. Analytics could not have worked on any previous deploy. Both are now passed, and the rendered payload was verified to carry the script URL and the website id.
 

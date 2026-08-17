@@ -10,6 +10,16 @@ jobs:
     steps:
       # The host is whatever SERVER_HOST resolves to. This workflow cannot verify
       # which provider that is, so it does not name one.
+      #
+      # `--remove-orphans` is load-bearing, not tidiness. Story 1-21 renamed every
+      # service and deleted the `caddy` service; on a host that ran the previous
+      # compose file those containers survive as orphans, including a Caddy still
+      # binding 80 and 443. A second binder of those ports is exactly what took
+      # cuatro.dev down in the first place.
+      #
+      # `reset --hard` rather than `pull`: a pull fails or merges if the box
+      # checkout has drifted, and a deploy that half-applies is worse than one
+      # that refuses.
       - name: Deploy over SSH to SERVER_HOST
         uses: appleboy/ssh-action@v1
         with:
@@ -17,6 +27,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -euo pipefail
             cd ~/cuatro-portfolio
-            git pull origin main
-            docker compose --env-file .env.production up --build -d
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose --env-file .env.production up --build -d --remove-orphans

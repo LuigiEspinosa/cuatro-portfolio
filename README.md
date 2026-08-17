@@ -31,11 +31,24 @@ pnpm build
 
 ## Docker
 
+`docker-compose.yml` is the **production** stack for the Hostinger VPS and does not run
+locally. It publishes no ports and joins `cs-tracker_default`, an external network owned by
+another stack on that box, so `docker compose up` fails immediately anywhere else. That is
+deliberate: the shared Caddy on the VPS is the sole ingress, and a second process binding 80
+or 443 there is what took `cuatro.dev` down in August 2026. Use `pnpm dev` for local work.
+
+To build the image alone, without the stack:
+
 ```bash
-docker compose up --build
+docker build -f docker/Dockerfile \
+  --build-arg NEXT_PUBLIC_UMAMI_WEBSITE_ID=local \
+  --build-arg NEXT_PUBLIC_UMAMI_URL=https://analytics.cuatro.dev \
+  -t cuatro-portfolio-app .
+docker run --rm -p 3000:3000 cuatro-portfolio-app   # http://localhost:3000
 ```
 
-Opens at <http://localhost:3000>. Three-stage build: deps -> builder -> runner (Node 22-slim)
+Both build args are required by the stack and are inlined at build time. Three-stage build:
+deps to builder to runner (Node 22-slim)
 
 ```mermaid
 flowchart LR

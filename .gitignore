@@ -4,6 +4,10 @@
 ### dotenv ###
 .env
 
+### Box-only credentials (Story 1-21) ###
+# Written on the serving host beside the checkout that `git pull` operates on.
+.umami-admin
+
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false

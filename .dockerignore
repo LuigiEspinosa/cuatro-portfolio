@@ -1,0 +1,32 @@
+# The deploy builds in /home/deploy/cuatro-portfolio, which is also where the
+# production secrets live. Without this file `COPY . .` in docker/Dockerfile
+# pulls .env.production and .umami-admin into the builder layer on every build.
+# The runner stage does not copy them forward, so the served image stays clean,
+# but the builder layer persists in the box's image cache.
+.env
+.env.*
+!.env.example
+.umami-admin
+
+.git
+.gitignore
+node_modules
+.next
+out
+build
+coverage
+
+_bmad
+_bmad-output
+.bmad-loop
+.claude
+.vscode
+docs
+ops
+
+*.md
+!README.md
+
+Dockerfile
+docker-compose*.yml
+.dockerignore

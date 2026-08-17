@@ -26,15 +26,37 @@ services:
       dockerfile: docker/Dockerfile
       args:
         # Both are baked into the client bundle at build time, and the tracking
-        # script renders only if both are present. See .env.example.
-        - NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-        - NEXT_PUBLIC_UMAMI_URL=${NEXT_PUBLIC_UMAMI_URL}
+        # script renders only if both are present. The `:?` guards are deliberate:
+        # Compose substitutes an empty string for an unset variable and only warns,
+        # which is how this project shipped a site that served correctly and
+        # measured nothing. Fail the build instead. See .env.example.
+        - NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID:?set it in .env.production; the tracking script needs it at build time}
+        - NEXT_PUBLIC_UMAMI_URL=${NEXT_PUBLIC_UMAMI_URL:?set it in .env.production; the tracking script needs it at build time}
     environment:
       - NODE_ENV=production
     networks:
+      # Only the shared network. The Hub has no server-side need for the database
+      # or Umami; the browser reaches analytics over its public hostname.
       cs-tracker_default:
         aliases:
           - anchor-app
+    healthcheck:
+      # The Hub is the hostname this whole stack exists to serve, and it has a
+      # purpose-built endpoint. Without this, a build that produces a broken
+      # server still reports as running and only the external probe notices.
+      #
+      # The probe reads `process.env.HOSTNAME` inside node, never 127.0.0.1.
+      # Next's standalone `server.js` binds to `process.env.HOSTNAME`, which Docker
+      # sets to the container id, so the server listens on the container's eth0
+      # address ALONE. Loopback is refused, and a probe against 127.0.0.1 reports a
+      # perfectly healthy container as unhealthy. Verified 2026-08-17 against a
+      # negative control on a port nothing serves.
+      test:
+        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   anchor-umami:
@@ -72,11 +94,16 @@ services:
       # volume the postgres image runs a bootstrap postmaster on the socket only,
       # so a socket check can report healthy while network connections are still
       # refused.
+      #
+      # The budget is sized for the worst case this box actually presents: the
+      # deploy runs a Next build on the same two cores while Postgres runs initdb
+      # on a fresh volume. 60s of grace plus 30 retries at 5s is roughly three and
+      # a half minutes before the dependency is declared failed.
       test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U umami -d umami']
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 30
+      start_period: 60s
     # Deliberately not on `cs-tracker_default`. The database is reachable only
     # from this project's own network.
     restart: unless-stopped

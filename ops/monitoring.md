@@ -40,21 +40,57 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 
 | id | Monitor | Type | Assertion | Status when created | Status 2026-08-17 |
 |---|---|---|---|---|---|
-| 803750027 | `cuatro.dev /api/health` | Keyword | body contains `"status":"ok"`, case sensitive | **DOWN** | recovering, see below |
 | 803749849 | `cuatro.dev root (front door)` | HTTP | status code | **DOWN** | **UP** |
+| 803756371 | `cuatro.dev /api/health (keyword)` | Keyword | alert when `"status":"ok"` is **absent**, case sensitive | UP | **UP** |
 | 803750016 | `cs-tracker.cuatro.dev` | HTTP | status code | UP | UP |
 | 803750023 | `tracker.cuatro.dev` | HTTP | status code | UP | UP |
 | 803750025 | `library.cuatro.dev` | HTTP | status code | UP | UP |
 | 803756083 | `www.cuatro.dev (301 to apex)` | HTTP | status code **301**, redirects **not** followed | **UP** | **UP** |
+| 803750027 | **RETIRED 2026-08-17**, paused | Keyword | alerted when `"status":"ok"` was **present**. Inverted | **DOWN** | **paused** |
 
 **The two `cuatro.dev` monitors came up DOWN immediately** on 2026-08-16, which was correct and
 was the first machine-generated error signal this estate has ever had. That downtime counts
 against SM-5, honestly, because it was real: roughly 22 hours from monitor creation until
 Story 1.21 restored the host on 2026-08-17.
 
-**Both recovered on 2026-08-17**, which exercised the other half of the alert path. The record
-of an outage detected, alerted, fixed and confirmed recovered is now complete end to end, on
-real conditions rather than a synthetic test.
+**The front-door monitor recovered on 2026-08-17**, 23 seconds after the cutover, which
+exercised the other half of the alert path. Detected, alerted, fixed, and confirmed recovered,
+on real conditions rather than a synthetic test.
+
+### Monitor 803750027 was inverted, and is retired rather than repaired
+
+**Found 2026-08-17 while re-gathering this section, and it is the most important thing on this
+page.** The keyword monitor created on 2026-08-16 was configured with `keywordType:
+ALERT_EXISTS` against `keywordValue: "status":"ok"`. That alerts when the health string **is
+present**. It is the assertion inverted:
+
+| Endpoint state | What the monitor reported |
+|---|---|
+| `/api/health` returns `{"status":"ok",...}`, healthy | **DOWN** |
+| `/api/health` returns 404, or the keyword disappears | **UP** |
+
+It had therefore never left DOWN since creation, and it would have gone green the moment the
+Anchor broke. On the one hostname NFR-2, FR-18 and SM-6 are measured on, the only body-content
+assertion in the estate was reporting the exact opposite of the truth.
+
+**Why it is retired and not edited.** The UptimeRobot API exposes `keywordValue` and
+`keywordCaseType` for update but not `keywordType`, so the polarity cannot be corrected in
+place. Monitor **803756371** was created with `ALERT_NOT_EXISTS` and 803750027 was renamed and
+**paused**, not deleted, so the 22 hours of genuine outage it recorded survive for SM-5 rather
+than being erased.
+
+**What this cost, stated rather than glossed.** The 2026-08-16 record claimed the alert path
+was proven end to end by real alerts. That claim is still true for the front-door monitor,
+which is a plain status check and was correctly configured. It was **not** true for the keyword
+monitor: its alert fired for the right reason by coincidence, because the host was genuinely
+down and the keyword genuinely absent, which an inverted assertion also reports as down. **A
+broken assertion and a correct one are indistinguishable while the thing they watch is
+broken.** That is the general lesson, and it is why the monitor was caught only when the host
+recovered and the monitor did not.
+
+**The gap this leaves.** Nothing in this repository would have caught it either. The endpoint's
+tests mock `NextResponse.json` and assert a plain object, so no test observes the serialized
+body, and no CI job reads the monitor's configuration. Recorded as deferred work.
 
 **Why the `www` monitor does not follow redirects.** Every other monitor here follows redirects
 and accepts `2xx` or `3xx`, which is why `library.cuatro.dev` reads UP while returning a 302.
@@ -323,12 +359,24 @@ against port 443 for each hostname.
 
 | Hostname | HTTP status | Certificate issuer | notBefore (UTC) | notAfter (UTC) | Nominal lifetime | Age | Days remaining | Alert threshold | Age rule firing |
 |---|---|---|---|---|---|---|---|---|---|
-| `cuatro.dev` | **200** | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:08Z | 2026-11-15T07:00:07Z | 90 days | 0 | 90 | 28 | no |
-| `www.cuatro.dev` | **301** to `https://cuatro.dev/` | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:09Z | 2026-11-15T07:00:08Z | 90 days | 0 | 90 | 28 | no |
-| `analytics.cuatro.dev` | **200** | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:09Z | 2026-11-15T07:00:08Z | 90 days | 0 | 90 | 28 | no |
+| `cuatro.dev` | **200** | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:08Z | 2026-11-15T07:00:07Z | 90 days | 0 | 89 | 28 | no |
+| `www.cuatro.dev` | **301** to `https://cuatro.dev/` | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:09Z | 2026-11-15T07:00:08Z | 90 days | 0 | 89 | 28 | no |
+| `analytics.cuatro.dev` | **200** | `CN=YE1, O=Let's Encrypt` | 2026-08-17T07:00:09Z | 2026-11-15T07:00:08Z | 90 days | 0 | 89 | 28 | no |
 | `cs-tracker.cuatro.dev` | 302 | `CN=YE1, O=Let's Encrypt` | 2026-07-29T03:20:20Z | 2026-10-27T03:20:19Z | 90 days | 19 | 70 | 28 | no |
-| `tracker.cuatro.dev` | 307 | `CN=YE1, O=Let's Encrypt` | 2026-07-29T23:27:08Z | 2026-10-27T23:27:07Z | 90 days | 18 | 70 | 28 | no |
+| `tracker.cuatro.dev` | 307 | `CN=YE1, O=Let's Encrypt` | 2026-07-29T23:27:08Z | 2026-10-27T23:27:07Z | 90 days | 18 | 71 | 28 | no |
 | `library.cuatro.dev` | 302 | `CN=YE2, O=Let's Encrypt` | 2026-07-30T05:15:02Z | 2026-10-28T05:15:01Z | 90 days | 18 | 71 | 28 | no |
+
+**Rounding convention, stated because the previous gathering did not state one and drifted.**
+Age and days remaining are computed against the reference instant above and **truncated toward
+zero**, never rounded up. A certificate with 89 days and 23 hours left has 89 days remaining,
+not 90. Age plus days remaining therefore sums to the nominal lifetime minus at most one day,
+which is arithmetic and not an error.
+
+**The three new certificates carry a `notBefore` one hour before they were requested.** They
+were issued at roughly 07:58Z, after the Caddyfile reload, yet show `notBefore 07:00Z`. That is
+Let's Encrypt backdating issuance by one hour, which is its documented behaviour and not
+evidence that the certificates predate the cutover. Noted because the timestamps in
+`ops/routing-inventory.md` otherwise appear to contradict this table.
 
 **Every hostname now resolves to `177.7.52.248` and every certificate is publicly trusted.**
 The self-signed `TRAEFIK DEFAULT CERT` that this record documented on 2026-08-16 is gone from
