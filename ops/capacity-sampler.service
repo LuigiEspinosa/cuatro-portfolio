@@ -1,0 +1,69 @@
+# The Cuatro capacity sampler, one shot per timer fire (Story 1-5, AD-9).
+#
+# Committed rather than only described, so the install is reproducible and a
+# later reader can diff what is on the box against what was intended. It is
+# installed to /etc/systemd/system/capacity-sampler.service; the script it runs
+# is ops/capacity-sampler.sh installed to /usr/local/sbin/capacity-sampler.sh.
+#
+# The whole point of the settings below is that this is a guest on a serving two
+# vCPU box. It yields CPU to everything it is measuring and reads disk in the
+# idle class, so the measurement perturbs the thing measured as little as a
+# measurement on the same box can.
+
+[Unit]
+Description=Cuatro capacity sampler, one cgroup v2 sample
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+
+ExecStart=/usr/local/sbin/capacity-sampler.sh
+
+# A guest, not a peer. Nice=10 puts it behind every serving process, and idle IO
+# means its append waits for any real request.
+Nice=10
+IOSchedulingClass=idle
+
+# CPUAccounting is what makes the service cgroup carry cpu.stat, which is the
+# counter the sampler reads to write its own cost into every sample. Without it
+# the record would have to assert that the cost is small instead of showing it.
+CPUAccounting=yes
+MemoryAccounting=yes
+
+# A sample is a handful of file reads plus one `docker ps`. If it has not
+# finished in 45 seconds something is wrong, and a sampler that piles up
+# overlapping runs on a two core box is worse than a missing minute.
+TimeoutStartSec=45
+
+# Exit 4 is "Docker was unreachable, so the box row stands alone", which is a
+# degraded sample rather than a failure: the row is written and the note row
+# records why the container rows are absent. Without this the unit enters
+# `failed` on a transient Docker hiccup, and `systemctl status` is exactly what
+# the close-out procedure reads to decide whether the week ran. A permanently
+# red unit would make a real failure indistinguishable from one bad minute.
+# Exit 3, an unwritable log, stays a failure, because that one does lose data.
+SuccessExitStatus=4
+
+# It writes one directory and reads /proc, /sys and the Docker socket. Nothing
+# else needs to be reachable, and a sampler is exactly the kind of small
+# always-running thing worth confining.
+ProtectSystem=strict
+
+# `LogsDirectory` rather than a bare `ReadWritePaths`. systemd creates
+# /var/log/cuatro-capacity itself, owns it to User and Group, and recreates it if
+# it is ever removed. With `ReadWritePaths` alone a missing directory makes
+# systemd refuse to start the unit, so the script's own `mkdir -p` and its
+# documented exit 3 branch would be unreachable from the timer and a week could
+# end on a failure mode nothing describes.
+LogsDirectory=cuatro-capacity
+LogsDirectoryMode=0755
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+ProtectKernelModules=yes
+ProtectControlGroups=no
+LockPersonality=yes

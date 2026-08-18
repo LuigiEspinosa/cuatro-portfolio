@@ -1,0 +1,17 @@
+# Line endings for the files that leave this repository and run somewhere else.
+#
+# `ops/capacity-sampler.sh` and its two systemd units are installed onto Ubuntu
+# straight from a checkout, by the scp block in `ops/capacity-measurement.md`.
+# `core.autocrlf` is true on the authoring machine, so without the rules below a
+# fresh clone hands those files to `scp` with CRLF endings. Bash then fails with
+# `$'\r': command not found` and systemd mis-parses a unit file's last value on
+# every line, which is the kind of break that looks like a box problem rather
+# than a checkout problem.
+#
+# Deliberately narrow. A repository-wide `* text=auto` would renormalise files
+# no story has touched, which is a large unrelated diff.
+
+*.sh text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.mjs text eol=lf

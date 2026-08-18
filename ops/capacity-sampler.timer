@@ -1,0 +1,29 @@
+# One capacity sample a minute, for the measurement week (Story 1-5, AD-9).
+#
+# Installed to /etc/systemd/system/capacity-sampler.timer and enabled, so the
+# week survives a reboot. Committed beside the unit it triggers.
+#
+# OnUnitActiveSec rather than OnCalendar, deliberately. The interval is measured
+# from the last activation, so a slow or failed run shifts the next one instead
+# of stacking a second run on top of it. Nothing downstream assumes a sample
+# landed exactly on the minute: ops/capacity-summary.mjs divides by the elapsed
+# time it observes between two samples, so drift is arithmetic rather than error.
+
+[Unit]
+Description=Run the Cuatro capacity sampler every minute
+
+[Timer]
+# Not at zero. Sampling the box while it is still bringing containers up would
+# record the boot, not the week.
+OnBootSec=2min
+OnUnitActiveSec=60
+
+# The default is one minute, which on a one minute interval is the whole
+# interval. Without this systemd would batch the wakeup and the samples would
+# arrive in clumps.
+AccuracySec=1s
+
+Unit=capacity-sampler.service
+
+[Install]
+WantedBy=timers.target

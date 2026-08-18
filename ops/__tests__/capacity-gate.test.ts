@@ -44,13 +44,32 @@ describe('the committed gate file', () => {
     );
   });
 
-  it('is blocked with no threshold, because nothing has been measured yet', () => {
+  // Narrowed by Story 1-5. The invariant AD-9 actually names is that the gate
+  // stays blocked until a threshold is written, and only Story 1-6 may write
+  // one. The three measurement keys are a different thing: Story 1-5's close-out
+  // fills them from the week, and asserting them empty made a correct close-out
+  // turn CI red while the record told the operator to read that red as proof the
+  // edit was wrong. The obvious response would have been to revert the very
+  // measurement the week was run to produce.
+  it('is blocked with no threshold, because only Story 1-6 may write one', () => {
     const gate = parseGate(committed);
     expect(gate.status).toBe('blocked');
     expect(gate.threshold).toBe('');
-    expect(gate.baseline).toBe('');
-    expect(gate.reading).toBe('');
-    expect(gate.measured_at).toBe('');
+  });
+
+  it('stays shut once the measurement keys are filled, because measuring is not opening', () => {
+    // The exact shape Story 1-5's close-out writes, built from the scalars
+    // `ops/capacity-summary.mjs` emits.
+    const measured = committed
+      .replace('measured_at:', 'measured_at: 2026-08-24')
+      .replace('baseline:', 'baseline: idle band load15 0.08, containers 3.0% of 2 vCPU')
+      .replace('reading:', 'reading: loaded band load15 0.16 max 0.18, peak 3.4%');
+    const gate = parseGate(measured);
+    expect(gate.measured_at).toBe('2026-08-24');
+    expect(gate.status).toBe('blocked');
+    expect(gate.threshold).toBe('');
+    expect(evaluate(gate, 'list-wheel').allowed).toBe(false);
+    expect(evaluate(gate, 'cuatro-portfolio').allowed).toBe(true);
   });
 
   it('lists the four applications running on the box', () => {

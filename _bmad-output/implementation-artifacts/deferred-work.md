@@ -573,6 +573,54 @@ found them. Append only. Each entry names the spec that surfaced it.
     cheap fix in the meantime is a `concurrency` group plus pinning the reset to
     `github.sha`.
 
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  summary: >-
+    The capacity CSV records no core count and no `MemTotal`, so a box resize mid-week would
+    silently change what every "share of the box" figure means, and container RSS has no
+    denominator in the week's own data.
+  evidence: |-
+    `ops/capacity-summary.mjs` carries `DEFAULT_CORES = 2`, matched by hand to what the box has
+    today, and the box row carries `MemAvailable` only. Nothing in the twelve-column schema
+    records `nproc` or `MemTotal`, so if the VPS were resized during the week the summariser
+    would keep dividing by two and every box-share figure, including the two scalars the gate
+    takes, would be wrong by a factor with nothing in the data able to reveal it. Not fixed here
+    because the fix is a schema change and the week is already running: `parseRows` refuses any
+    file whose header differs, so widening the schema mid-week would split the week into two
+    incompatible halves. The cheap version, if this recurs, is a `note` row carrying
+    `cores=$(nproc)` once per run, which is schema-compatible, plus a close-out assertion that
+    the run saw exactly one distinct value.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  summary: >-
+    The sampler's append is unguarded by any lock, and the day-file header is a check-then-write,
+    so two runs meeting at a UTC midnight boundary could truncate a file that already holds
+    samples.
+  evidence: |-
+    `ops/capacity-sampler.sh` writes the header with `printf '%s\n' "${SCHEMA}" > "${out}"` inside
+    an `[ ! -f "${out}" ]` test, and appends rows with `>>` and no `flock`. One timer plus
+    `Type=oneshot` plus `TimeoutStartSec=45` makes overlap unlikely, but it is not impossible: the
+    install deliberately ran the service by hand while the timer was armed, which is exactly how
+    two samples landed 18 seconds apart on 2026-08-17. A small `O_APPEND` write is atomic in
+    practice, which the file relies on without saying so. The closure is a `flock` around both the
+    header creation and the append. Left alone because changing the sampler mid-week means
+    reinstalling the thing being measured, and the observed risk over one week on one timer is
+    very low.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  summary: >-
+    The sampler assumes every container cgroup lives under `system.slice`, and silently counts a
+    container as vanished if it does not.
+  evidence: |-
+    `ops/capacity-sampler.sh` builds the path
+    `${CGROUP_ROOT}/system.slice/docker-${cid}.scope`, which is correct for the box's current
+    setup (Docker 29.6.2, cgroup v2, `systemd` driver, verified 2026-08-17). A container started
+    with a `cgroup_parent`, a rootless daemon, or a driver change would land elsewhere, and the
+    sampler would increment its `vanished` counter every run and omit that container from the
+    entire week with only a note row to show for it. The summariser would then report a footprint
+    that is missing an application without anything looking wrong. A fallback search across
+    plausible parents, or an explicit assertion at install time that every running container
+    resolves to a cgroup, would close it.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
   summary: >-
     The capacity gate has no entry in the estate record, no README or AGENTS.md line, and
