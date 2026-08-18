@@ -632,3 +632,44 @@ found them. Append only. Each entry names the spec that surfaced it.
     itself, so this is documentation debt rather than a hole. The suite is 102 tests as of
     story 1-4 against the 38 recorded in the AGENTS.md block, which is managed by
     `bmad-project-context` and refreshed by it rather than edited here.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
+  summary: >-
+    `anchor-umami` carries no healthcheck, which is a second live AD-8 breach in this
+    repository, and `ARCHITECTURE-SPINE.md` asserts the opposite is already true.
+  evidence: |-
+    AD-8 at `ARCHITECTURE-SPINE.md:128` does not stop at "the box never compiles". It also
+    makes real healthchecks, and services without `container_name` or published `ports`,
+    "requirements on every compose service", and then asserts "both already true behind
+    Traefik". In `docker-compose.yml`, `anchor-app` (`:23`, healthcheck at `:43`) and
+    `anchor-db` (`:84`, healthcheck at `:92`) satisfy it; `anchor-umami` at `:62` has no
+    healthcheck block at all. The architecture document therefore states as settled fact
+    something the repository does not do. This matters beyond tidiness: AD-8 requires
+    healthchecks because `docker-rollout` depends on them, and Story 3.4 is the story that
+    adopts `docker-rollout`. A service with no healthcheck is one `docker-rollout` cannot
+    roll. Found while writing `ops/known-violations.md` and deliberately not recorded there
+    as KV-2: by that file's own admission tests an entry needs an Operator ruling that the
+    breach is tolerated, and no story has taken that ruling. Either it is ruled and promoted
+    to the register, or the healthcheck is added, or `ARCHITECTURE-SPINE.md:128` stops
+    claiming it is already true. Story 3.4 is the natural forcing point.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
+  summary: >-
+    Two of the four places that mention the AD-8 violation still resolve it through the
+    string "Story 1-9" rather than through `ops/known-violations.md`, so the register is
+    reachable from only one of them.
+  evidence: |-
+    `AGENTS.md:80` reads "tracked in story 1-9" and `ops/capacity-measurement.md:332` reads
+    "the standing AD-8 violation tracked in Story 1-9". Only `ops/routing-inventory.md`
+    gained a pointer to the register, because Story 1-9's spec put the other two off limits:
+    the `AGENTS.md` line sits inside the machine-managed `bmad:context` block, which a
+    `/bmad-project-context` refresh rewrites and which must not be hand-edited, and
+    `ops/capacity-measurement.md` belongs to the running measurement week. This is a known
+    consequence of that story's boundaries rather than an oversight, but the effect is real:
+    a future reader hitting either line has to resolve a story key to a spec file to a
+    register, and that story's own stated rationale is that a register nobody can reach from
+    the file they are already reading is not a tracked item. Two cheap closures: add the
+    pointer to `ops/capacity-measurement.md` at close-out, when that file is being edited
+    anyway, and have the `bmad:context` refresh replace "tracked in story 1-9" with the
+    register path. That refresh is already queued by the earlier entry about the stale
+    "one Hetzner box" line.
