@@ -150,6 +150,14 @@ is also called `app`. The shared Caddyfile proxies `app:4000` for `cs-tracker.cu
 `cuatro-tracker-app-1` does not listen on 4000. This predates Story 1.21 and is recorded as
 deferred work. It is also why every service in the Anchor's compose file is named `anchor-*`.
 
+**The deploy mechanism below is a tracked violation, recorded in `ops/known-violations.md` as
+KV-1** (added 2026-08-18 by Story 1-9), which carries the AD-8 citation, the ruling that
+tolerates the breach, why it is not fixed before Story 3-4 retires it, and what a deploy would
+do to the capacity measurement week now running on this box. **This pointer sits above the
+section deliberately and outlives it.** The section below expires when Epic 1 closes and `dev`
+reaches `main`; KV-1 stays open until Epic 3, so the way to the register must not expire with
+the section that first needed it.
+
 ## Where the deploy actually goes
 
 | Field | Value | Nature |
@@ -157,12 +165,7 @@ deferred work. It is also why every service in the Anchor's compose file is name
 | `SERVER_HOST` before 2026-08-17 | Not this box | **Observed, by absence.** `.github/workflows/deploy.yml` ran `cd ~/projects/cuatro-portfolio`, and no `~/projects` directory has ever existed on `177.7.52.248`. The secret's value is not readable from the repository |
 | `SERVER_HOST` after | `177.7.52.248` | **Operator action, completed 2026-08-17** |
 | Checkout path | `/home/deploy/cuatro-portfolio` | **Decided 2026-08-17**, matching the sibling convention. `deploy.yml` was corrected in the same change |
-| Deploy mechanism | `docker compose up --build -d` over SSH | Unchanged. A standing AD-8 violation tracked in Story 1-9 and retired in Epic 3 |
-
-**The deploy mechanism row is a tracked violation, recorded in `ops/known-violations.md` as
-KV-1** (added 2026-08-18 by Story 1-9), which carries the AD-8 citation, why the breach is
-tolerated until Story 3.4 retires it, and what a deploy would do to the capacity measurement
-week now running on this box.
+| Deploy mechanism | `docker compose up --build -d` over SSH | Unchanged. A standing AD-8 violation, retired by Story 3-4 in Epic 3. **Status derived from KV-1** in `ops/known-violations.md`, which is the single place to edit it |
 
 **Deploy repoint status: DONE 2026-08-17.** The secret now resolves to this box, so a merge to
 `main` is a real deploy against the machine serving all six hostnames.
