@@ -159,6 +159,11 @@ deferred work. It is also why every service in the Anchor's compose file is name
 | Checkout path | `/home/deploy/cuatro-portfolio` | **Decided 2026-08-17**, matching the sibling convention. `deploy.yml` was corrected in the same change |
 | Deploy mechanism | `docker compose up --build -d` over SSH | Unchanged. A standing AD-8 violation tracked in Story 1-9 and retired in Epic 3 |
 
+**The deploy mechanism row is a tracked violation, recorded in `ops/known-violations.md` as
+KV-1** (added 2026-08-18 by Story 1-9), which carries the AD-8 citation, why the breach is
+tolerated until Story 3.4 retires it, and what a deploy would do to the capacity measurement
+week now running on this box.
+
 **Deploy repoint status: DONE 2026-08-17.** The secret now resolves to this box, so a merge to
 `main` is a real deploy against the machine serving all six hostnames.
 
