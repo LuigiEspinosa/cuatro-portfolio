@@ -673,3 +673,177 @@ found them. Append only. Each entry names the spec that surfaced it.
     anyway, and have the `bmad:context` refresh replace "tracked in story 1-9" with the
     register path. That refresh is already queued by the earlier entry about the stale
     "one Hetzner box" line.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    RESOLVED 2026-08-24 by observation. The Cloudflare edge certificate renewed. The
+    earlier entry asking whether the estate would find out if it did not renew is
+    narrowed rather than closed.
+  evidence: |-
+    The 2026-08-17 entry recorded `notAfter 2026-09-20T23:23:52Z` on the Universal SSL
+    certificate all six hostnames present, with no visibility into whether Cloudflare
+    would roll it over. Observed 2026-08-24 from outside on all six hostnames: subject
+    `CN=cuatro.dev`, SANs `cuatro.dev` and `*.cuatro.dev`, issuer
+    `C=US, O=Google Trust Services, CN=WE1`, notBefore 2026-08-21T00:18:46Z, notAfter
+    2026-11-19T01:16:34Z. Renewal happened roughly 30 days before expiry, which is the
+    normal Cloudflare cadence.
+
+    What is answered is whether renewal works. What is not answered is whether the
+    estate would notice a failed renewal, and that is unchanged: the certificate-age
+    alert is a paid UptimeRobot setting and remains unconfigured, so the only signal
+    would be six simultaneous TLS failures at expiry. The cheap closure is a scheduled
+    off-box check reading `notAfter` on the apex and alerting under a threshold, which
+    is the same shape as the Cloudflare IP-range refresh job already proposed and could
+    be the same job. Recorded here because a dated observation that renewal works is
+    worth more than the open question it replaces.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    `library-backup.sh` has aborted on line 13 every night since 2026-07-31. The
+    snapshot is still written, so `digital-library` does have a nightly local backup,
+    but the script reports failure, leaves every file root-owned and uncompressed, and
+    never runs its retention prune. Story 1.8 inherits this.
+  evidence: |-
+    Observed 2026-08-24 on `177.7.52.248`. Every line in
+    `/home/deploy/backups/digital-library/backup.log` reads
+    `/home/deploy/library-backup.sh: line 13: USER: unbound variable`. Line 13 is
+    `sudo chown "$USER:$USER" "$OUT"`; cron does not set `USER` in the job environment
+    and the script runs `set -euo pipefail`, so `set -u` aborts on the unset expansion.
+
+    Line 12, `sudo sqlite3 "$DB" ".backup '$OUT'"`, runs first, so a WAL-safe consistent
+    snapshot is written every night. Everything after line 13 does not run: no `chown`,
+    no `gzip`, no prune. The directory holds 25 root-owned uncompressed
+    `library-YYYY-MM-DD_0345.db` files of 90112 bytes each from 2026-07-31 to
+    2026-08-24, plus one `library-2026-07-30_0617.db.gz` of 3106 bytes owned by
+    `deploy`. That `.gz` is 25 days old and the prune deletes `library-*.db.gz` older
+    than 14 days, which independently proves the `find` has not run since.
+
+    There are two bugs, not one. Fixing only the `USER` expansion would start pruning
+    the `.gz` files while the 25 stale uncompressed `.db` files kept growing, because
+    the prune pattern matches `.db.gz` only. Both need fixing together, and the honest
+    framing for Story 1.8 is that this is the worst shape a backup can be in short of
+    not existing: real data, a log that says failure, and an operator trained to ignore
+    it. Not fixed here because Story 1-7's pass is read-only and Story 1.8 is the story
+    that carries a real restore test in its acceptance.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    No backup anywhere in the estate is offsite, and two of the four compose projects
+    have no logical backup at all. Story 1.8 scopes only `digital-library`.
+  evidence: |-
+    Observed 2026-08-24. The `deploy` crontab holds exactly two jobs and root has none:
+    `cuatro-backup.sh` at 03:30 UTC and `library-backup.sh` at 03:45 UTC. Both write
+    under `/home/deploy/backups` on the box they are backing up, which protects against
+    a bad migration and against nothing else.
+
+    `cs-tracker`'s Postgres (`cs-tracker_pgdata`) and `cuatro-portfolio`'s Postgres
+    (`cuatro-portfolio_postgres_data`, which is Umami's store and therefore SM-1 through
+    SM-3's data) have no backup of any kind. Neither do `cuatro-tracker_redis_data`,
+    `digital-library_redis_data`, `cuatro-tracker_qb_config`, or
+    `cs-tracker_caddy_data`, which holds the Origin CA private key that every hostname's
+    TLS depends on and that nothing can reissue automatically.
+
+    `cuatro-backup.sh`'s header comment claims it "Complements Hostinger's weekly
+    whole-box snapshot". No evidence of that snapshot exists on the box and this pass
+    could not reach the Hostinger console, so it is an unverified claim in a script
+    comment rather than an observation. If it is real it is the estate's only offsite
+    copy and it should be written into `ops/` with its retention and its restore
+    procedure; if it is not real the estate has no offsite copy of anything.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    `analytics.cuatro.dev` is a live hostname with no application id, which AD-3 and
+    AD-6 together do not allow for, and no Estate row. Story 2-4 territory.
+  evidence: |-
+    AD-3 (`ARCHITECTURE-SPINE.md:98`) makes the Registry the only hostname-to-application
+    mapping. AD-6 forbids dropping an application by omission. `analytics.cuatro.dev`
+    serves Umami from `cuatro-portfolio-anchor-umami-1`, is proxied, carries WAF rule 4
+    of its own in `ops/bot-mitigation.md`, and has no row in `ops/estate.md`'s fifteen
+    applications and therefore no id Epic 2 could author a `live` value against.
+
+    This is not the same defect as `covidmap` and `future-vizion`, which are live
+    applications simply missing from the record. Umami is infrastructure the estate runs
+    for itself, so the right answer may well be that infrastructure hostnames sit
+    outside the Registry. Either way the exclusion has to be written down, because the
+    current state is that a hostname the estate depends on maps to nothing. Story 2-4
+    already owns the two Vercel hostnames and is the natural place to land this too.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    The build-on-the-box breach is estate-wide, not Anchor-only. Three of the four
+    compose projects build their images on the serving two-core box, while KV-1 records
+    only this repository's deploy workflow.
+  evidence: |-
+    Observed 2026-08-24 by `docker inspect` on all sixteen containers. Six images carry
+    locally-built names with no registry prefix: `cuatro-portfolio-anchor-app`,
+    `cuatro-tracker-app`, `cuatro-tracker-worker`, `cuatro-tracker-migrate`,
+    `digital-library-api` and `digital-library-web`. `cs-tracker:latest` is ambiguous.
+    Only `caddy:2`, `postgres:16`, `postgres:16-alpine`, `redis:7-alpine`,
+    `ghcr.io/umami-software/umami:postgresql-latest` and
+    `linuxserver/qbittorrent:latest` are pulled. `cuatro-redeploy.sh` and
+    `library-redeploy.sh` both run `docker compose up -d --build` on the box, and a
+    weekly `/etc/cron.d/docker-builder-prune` exists precisely because the box
+    accumulates build cache.
+
+    `ops/known-violations.md` KV-1 is scoped to `.github/workflows/deploy.yml`, so a
+    reader would conclude the Anchor is the exception. It is the rule. This is not added
+    to the register here because that file's own admission test requires an Operator
+    ruling that a breach is tolerated, and no story has taken that ruling for the
+    Satellites. Epic 3 is where AD-8 is closed and is the natural forcing point.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    A BitTorrent client and a third-party security agent both run on the serving box and
+    appear in no planning artifact.
+  evidence: |-
+    Observed 2026-08-24. `cuatro-tracker-qbittorrent-1`
+    (`linuxserver/qbittorrent:latest`, `restart: unless-stopped`, no healthcheck) is
+    part of the `cuatro-tracker` compose project with a bind mount at
+    `/home/deploy/cuatro-downloads`. It is on `cuatro-tracker_default` only, publishes
+    no port, and no hostname reaches it, so it is correctly outside the routing table.
+    It is still a CPU, disk and egress consumer on a two-vCPU box whose binding
+    constraint is CPU, running through the Story 1-5 measurement week without appearing
+    in any capacity discussion, and a torrent client on a box that also serves a public
+    portfolio is a reputational and legal exposure nobody has recorded a decision about.
+
+    `monarx-agent.service` ("Monarx Agent - Security Scanner") listens on
+    `127.0.0.1:65529` and is updated weekly by `/etc/cron.d/monarx-update`. It is
+    Hostinger's bundled agent, reachable from nowhere outside the box, so it does not
+    reach a hostname. It is third-party software with host-level visibility that nobody
+    in the planning record chose, which is worth a knowing decision rather than silence.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    `digital-library`'s box-only ingress override is untracked and NOT gitignored,
+    unlike `cuatro-tracker`'s, so it is protected by nobody having run `git clean`
+    rather than by a rule.
+  evidence: |-
+    Observed 2026-08-24. In `/home/deploy/cuatro-tracker`, `git check-ignore -v
+    docker-compose.override.yml` reports `.gitignore:23`. In
+    `/home/deploy/digital-library` the same command reports no rule and `git status
+    --porcelain` lists the file as `??`. `library-redeploy.sh` runs `git fetch` and
+    `git reset --hard origin/main`, which preserves untracked files, so the current
+    redeploy path is safe. Any `git clean -fd`, or a redeploy script gaining one, would
+    delete the file that attaches `library-api` and `library-web` to the shared ingress
+    network and take `library.cuatro.dev` off the air with no error until the next
+    request. One line in that repository's `.gitignore` closes it. This belongs in the
+    `digital-library` repository rather than here.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    `cs-tracker.cuatro.dev` is the only live hostname whose Caddy site block sends no
+    security headers, and its site label is an unresolved environment variable.
+  evidence: |-
+    Observed 2026-08-24 by reading `/home/deploy/cs-tracker/Caddyfile`. Five of the six
+    site blocks carry `X-Content-Type-Options`, `X-Frame-Options` and `Referrer-Policy`.
+    The `{$PHX_HOST}` block carries only its `tls` directive and
+    `reverse_proxy app:4000`. The header set was deliberately matched across the estate
+    when the Anchor's and the library's blocks were written, and this one predates that
+    convention.
+
+    Separately, that block's site label is `{$PHX_HOST}`, which resolves from
+    `PHX_HOST=cs-tracker.cuatro.dev` in `/home/deploy/cs-tracker/.env`. The file alone
+    does not tell a reader which hostname the first block serves, and Epic 4 must carry
+    that indirection across or resolve it deliberately rather than discovering it. Both
+    fixes belong in the `cs-tracker` repository. Recorded here because Story 1-7 is
+    read-only and because `ops/routing-inventory.md` is the file Epic 4 rebuilds from.
