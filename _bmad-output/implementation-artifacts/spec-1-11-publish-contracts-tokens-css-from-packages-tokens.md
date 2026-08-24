@@ -2,17 +2,32 @@
 title: 'Publish `contracts/tokens.css` from `packages/tokens`'
 type: 'feature'
 created: '2026-08-24'
-status: 'in-review'
+status: 'done'
 baseline_commit: '064c087d581d366db0a8259179ef381a962de880'
 baseline_revision: '064c087d581d366db0a8259179ef381a962de880'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
   - '{project-root}/_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md'
 warnings: ['oversized']
-deferred: []
+deferred:
+  - summary: >-
+      Nothing under `contracts/` identifies the folder to a repository that vendors it: no README,
+      no source repository or commit, and no licence line.
+    evidence: |-
+      AD-14 has seven repositories copy the folder under the fixed name `cuatro-contracts/`. The
+      only provenance the published file carries is the header line "Generated from
+      packages/tokens", which names a path that does not exist in a Satellite checkout, so a
+      maintainer who finds a stale copy has no route back to the generator. AD-16 already makes a
+      scheduled job read the `Contract vX.Y.Z` header across those repositories, which is a
+      version but not an origin. Adding a second file under `contracts/` is a published-surface
+      decision rather than a defect in this story, and Story 1.16 (serve `contracts/` at
+      https://cuatro.dev/contracts/) is where the folder first acquires a public identity.
+    location: >-
+      contracts/
+    severity: medium
 ---
 
 <intent-contract>
@@ -220,6 +235,37 @@ Gathered 2026-08-24 against `064c087`, working tree clean.
 
 ## Review Triage Log
 
+### 2026-08-24, Review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 24: (high 1, medium 9, low 14)
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 6: (high 0, medium 2, low 4)
+- addressed_findings:
+  - `[high]` `[patch]` **The Dockerfile change was the only part of this story that can take the site down, and it was the only part with no standing gate.** Making `packages/tokens` a workspace importer turned the `deps` stage into a hand-maintained mirror of every workspace manifest, held together by a comment. Story 1.12 adding `packages/fonts` without its `COPY` line would pass typecheck, the unit suite, the drift gate and the harness, then fail first inside `docker compose up --build` on the production box during a deploy from `main`. Raised independently by two review layers. `docker/__tests__/deps-stage.test.ts` now expands the `packages:` globs and asserts every matched manifest appears on a `COPY` line in that stage. Mutation-verified: deleting the line fails with the missing manifest named and the deploy consequence spelled out.
+  - `[medium]` `[patch]` **The published contract shipped a claim its own contents contradict.** `--tap` carried the comment "The ONE px length in the contract, and deliberately so" into a file declaring eight `px` lengths. The story had already diagnosed that wording defect and settled it in the design's favour, then copied the false sentence into the artifact that gets vendored into seven repositories. The comment now says what is true: `--tap` is the one length authored as a physical-size guarantee, the shape and stroke values are `px` as fixed geometry, and no reader-scaled length is. Pending Operator action 1 now names `DESIGN.md:540` as well as `epics.md:1558-1559`, since both carry the same false claim.
+  - `[medium]` `[patch]` The generator wrote output even when its token source matched no files, so a moved or emptied source directory would have overwritten the published contract with an empty `:root` and exited 0. It now refuses, naming the source directory.
+  - `[medium]` `[patch]` The version went into the header unchecked, so a missing or prerelease value would have published `Contract vundefined`. AD-16's scheduled job reads that header as `X.Y.Z` across seven repositories. Validated before writing.
+  - `[medium]` `[patch]` `.dockerignore`'s `node_modules` matches only the context root in Docker's pattern semantics, so `packages/tokens/node_modules` reached the builder stage through `COPY . .` as a pnpm symlink tree. `**/node_modules` added.
+  - `[medium]` `[patch]` Nothing asserted the published file is structurally valid CSS. The declaration parser was a regex with no notion of braces, so a property outside any rule, or everything after an unclosed brace, still counted toward all thirteen category assertions and the 89 total. For an artifact whose whole value is that seven repositories can `@import` it, a brace-balancing splitter now asserts two top-level rules, all 89 declarations inside the one `:root`, and nothing declared outside a rule.
+  - `[medium]` `[patch]` The reference check covered only `--token-*`, leaving the three `--elev-*` aliases unvalidated by the assertion written for exactly that failure mode. It now covers every `var()` in the file.
+  - `[medium]` `[patch]` `CUATRO_TOKENS_SOURCE` and `CUATRO_TOKENS_OUTPUT` could silently redirect the CI rebuild, leaving `git status -- contracts/` clean and the drift gate green on real drift. The build now prints both resolved paths, the record documents them as build inputs, and a test pins the unredirected default.
+  - `[medium]` `[patch]` The DESIGN.md block locator failed open: a renamed heading gave `indexOf('```css', -1)`, which searches from 0 and locks onto the first CSS fence in the document, while the guard still passed because any non-negative index beats `-1`. It now throws on a missing heading, which is the case the test claimed to catch.
+  - `[medium]` `[patch]` The token source files declared DTCG `$type`s whose values are strings those types do not accept, and carried no note of it, so a downstream author who trusts `$type` read nothing. A top-level `$description` on each file now names the decision and points at the record. `contracts/tokens.css` is unaffected.
+  - `[low]` `[patch]` The "keeps every generator file under packages/" test enumerated files under the package root and asserted each path starts with `packages/`. It could not fail. Replaced with a real check.
+  - `[low]` `[patch]` Nothing asserted the published file's line endings, though `.gitattributes` gained `contracts/** text eol=lf` precisely because a CRLF checkout desyncs the gate from the generator. LF-only and one trailing newline now asserted.
+  - `[low]` `[patch]` Nine smaller fixes to the test file and the CI job: spacing and stroke counts derived from the parsed file rather than appended as literals; the custom-property name class widened so an uppercase name cannot slip past every count; the long timeout scoped to the two cases that spawn a build; an `existsSync` guard naming the `DESIGN.md` coupling; the alpha-uniqueness check rewritten as a property rather than a ban list that `hsla(` slipped; `git add --intent-to-add` before the drift diff so an untracked file's content is printed; `timeout-minutes` on the new job; `--ignored=matching` on the status check; and a `$description` carrying a CSS comment delimiter now rejected.
+  - `[low]` `[patch]` `.gitattributes` had its six-line rationale four rules above the line it explains. Moved.
+  - `[low]` `[patch]` `packages/tokens/package.json` defined a `build` script that nothing invoked, a second definition of the root `tokens:build` with nothing keeping the two in step. Collapsed to one.
+  - `[low]` `[patch]` The record never noted that the shipped header promises `fonts.css` in the same folder while that file is Story 1.12, so vendoring `contracts/` today follows a dangling pointer. Recorded.
+
+One finding was deferred rather than fixed, in frontmatter `deferred`: nothing under `contracts/` identifies the folder to a repository that vendors it, and adding a second published file is Story 1.16's decision rather than this story's.
+
+Six were rejected. The ` -- ` separator this spec template uses in its Code Map and task lists is a structured separator, not a prose dash, which spec-1-10's review adjudicated for the same template. Folding `tokens-contract` into the `test` job trades a deliberate gate separation for one install. Symlink hardening in the test's directory walk defends against a state the build cannot create. Making `contracts/` reachable to the seven repositories is Story 1.16 by name. Proving the roles resolve in a browser rather than in text is the surface `epics.md:1510-1515` reserves for Stories 1.17 and 1.18, using the harness Story 1-10 built. Dropping the DTCG `$type` keys would discard what each value is meant to be; the non-conformance is documented in the JSON instead.
+
+**On the workflow's prefer-bad_spec rule.** Finding 2 has a spec-shaped argument: the spec's Design Notes settled the `px` contradiction but never said the published comment must not repeat it. It was triaged `patch` deliberately. The spec's resolution was correct and the implementation followed it everywhere except one comment string; a loopback would have reverted a verified generator, a verified contract and 45 passing assertions to re-derive them byte-identically around a one-line edit. Recorded here rather than hidden.
+
 ## Design Notes
 
 **Why string values in DTCG-shaped files, with the probe that decided it.** DTCG 2025.10 gives
@@ -288,3 +334,97 @@ too, or the first new file ships unreviewed.
   the new job's triggers are the file's own, not a copy that drifted.
 - Run the rendered-output harness once in `mcr.microsoft.com/playwright:v1.62.1-noble` and confirm the
   committed baseline still matches, since nothing here should change what the Hub renders.
+
+## Auto Run Result
+
+Status: done
+
+**What was implemented.** The Ecosystem has a published token contract. `contracts/tokens.css` v1.0.0
+carries the 89 custom properties `DESIGN.md` section `tokens.css` fixes, in its order, with its
+values, plus the `@media (prefers-reduced-motion: reduce)` block. It is generated by
+`packages/tokens`, a Style Dictionary 5.5.2 package over DTCG-shaped JSON, which is the first entry
+under the repository's first `packages:` key. The published file is committed, its shape is asserted
+inside the already-blocking unit gate, and a new blocking `tokens-contract` CI job rebuilds it and
+fails if the committed output no longer matches its source. Publishing is not adopting: the Hub's
+render is untouched.
+
+**Files changed.**
+
+- `pnpm-workspace.yaml` -- the `packages:` key the first acceptance criterion names.
+- `packages/tokens/package.json` -- private, `type: module`, `version: 1.0.0` as the single source of
+  the contract version, `style-dictionary` pinned exactly at `5.5.2`.
+- `packages/tokens/tokens/*.json` -- seven DTCG-shaped source files. Group keys are the emitted
+  prefixes, so `name/kebab` alone produces the exact custom-property names.
+- `packages/tokens/build.mjs` -- one registered format: the header, the `:root` block in design
+  section order, and the reduced-motion block derived from the `dur` group rather than hand-written.
+  Refuses an empty dictionary, a version that is not `X.Y.Z`, an unmapped group and a `$description`
+  carrying a CSS comment delimiter.
+- `contracts/tokens.css` -- the generated, committed contract. 89 declarations, sha256 `319a8255...`.
+- `packages/tokens/__tests__/tokens-contract.test.ts` -- 60 cases over the published file.
+- `docker/__tests__/deps-stage.test.ts` -- 6 cases keeping the Dockerfile in step with the workspace.
+- `package.json` -- `tokens:build`, the single entry point.
+- `.github/workflows/ci.yml` -- the blocking `tokens-contract` job. The two existing jobs are
+  byte-identical to `064c087`.
+- `docker/Dockerfile` -- the `deps` stage now sees the workspace manifests, so the production build
+  still resolves against the workspace lockfile. The install command is unchanged.
+- `.dockerignore`, `.gitattributes` -- `**/node_modules` out of the build context, LF endings pinned
+  on the published surface.
+- `ops/token-contract.md` -- the record: what v1.0.0 publishes and what it deliberately does not, the
+  value-encoding decision with the Style Dictionary probe output that forced it, the regeneration
+  path and its build inputs, the drift gate with its probe demonstrations, the production-build cost,
+  the stated limits and the Pending Operator actions.
+
+**Review findings.** 24 patched (1 high, 9 medium, 14 low), 1 deferred, 6 rejected, 0 intent gaps,
+0 spec loopbacks. The high finding is the one worth knowing: the change made the Docker `deps` stage
+a hand-maintained mirror of every workspace manifest, and nothing but a comment held it, so the next
+story to add a package would have discovered it as a failed deploy from `main`. See the Review
+Triage Log for each.
+
+**Follow-up review recommended: true.** One patched finding was high severity, which sets the flag on
+its own. Patched counts by severity: high 1, medium 9, low 14, score 41.
+
+**Verification performed.** All figures observed 2026-08-24 on the development host, after the patch
+pass.
+
+- `corepack pnpm install --frozen-lockfile`: clean, `packages/tokens` resolves as a workspace importer.
+- `corepack pnpm typecheck`: passes.
+- `corepack pnpm test --run`: 281 tests in 19 files, no browser started.
+- `corepack pnpm tokens:build` run twice: identical sha256
+  `319a825597995cbecacc43f08da9b24b48db636abc2b1e023ea4387a5cb38462`, and
+  `git status --porcelain --ignored=matching -- contracts/` empty afterwards.
+- Declaration-by-declaration comparison against `DESIGN.md:832-957`: 93 declarations on each side,
+  identical names, values and order.
+- `docker build --no-cache -f docker/Dockerfile --target deps .`: exit 0.
+- Rendered-output harness in `mcr.microsoft.com/playwright:v1.62.1-noble`: 13 passed, committed
+  baseline still matches.
+- The deps-stage gate mutation-checked by deleting its `COPY` line: the test fails naming
+  `packages/tokens/package.json` and the deploy consequence. Restored, tree clean.
+- Four probes run and reverted, outputs in `ops/token-contract.md`: a source edit left unbuilt fires
+  the drift gate; a removed palette entry makes the build refuse rather than publish a dangling
+  reference, and removing the role too fails seven contract cases; a second file under `contracts/`
+  is invisible to `git diff --exit-code` and caught by `git status`; and a token whose group has no
+  section fails the build naming the group.
+- `git diff --stat 064c087 -- app .lighthouserc.js .github/workflows/lighthouse.yml .github/workflows/deploy.yml`:
+  empty. `git ls-files contracts` is exactly `contracts/tokens.css`.
+- Punctuation sweep over all 20 changed files, built on surrogate-pair ranges and run against a
+  positive control carrying an em-dash, an en-dash, an astral emoji and a BMP pictograph. The control
+  reported all four; the changed files reported zero. Every surviving `--` is a CLI flag, git's
+  pathspec separator, a CSS custom property, or this template's list separator.
+
+**Residual risks.**
+
+- **The `tokens-contract` job has never run on a GitHub runner.** Nothing is soft-failed, so a problem
+  there fails the build rather than hiding, but the drift gate's only observations are local.
+- **The drift gate works only because the job rebuilds first.** Without the rebuild step,
+  `git status -- contracts/` is empty even against a stale output. That ordering is load-bearing and
+  is held by nothing but the step order in the workflow file.
+- **A Style Dictionary bump must move three things at once**: the pin, the generated file and the
+  figures in the record. Written into the record, but nothing enforces it mechanically.
+- **The contract test reads `DESIGN.md` off disk**, coupling the unit suite to a planning artifact
+  whose folder name carries a date this story does not own. It fails loudly rather than vacuously,
+  and the coupling is named in the failure message.
+- **The published header promises `contracts/fonts.css` in the same folder** and that file is
+  Story 1.12, so a Satellite that vendors the folder today follows a dangling pointer.
+- **`epics.md:1558-1559` and `DESIGN.md:540` still carry the false claim** that `--tap` is the only
+  `px` length in the contract. The published file no longer repeats it; correcting the planning
+  artifacts is Pending Operator action 1, since a build story may not edit them.
