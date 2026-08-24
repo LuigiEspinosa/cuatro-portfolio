@@ -243,6 +243,26 @@ empty directory, which the generator refuses before it writes.
 | A `$description` carrying `/*` or `*/` | It would close the generated comment early and inject its own prose into the published contract as CSS | **Decision** |
 | A reference to a token that is not in the dictionary | Style Dictionary refuses first, and the generator refuses again for a reference it resolves itself | **Decision** |
 
+Each refusal was run once and its output recorded, because a refusal never observed is not known to
+work. **Observed 2026-08-24**, each against a scratch source and output directory so `contracts/`
+was never touched, and each wrote no file:
+
+```
+Error: packages/tokens/build.mjs: token group "shadow" (from --shadow-soft) has no section. Add it to SECTIONS in packages/tokens/build.mjs, in the position DESIGN.md gives it.
+
+Error: packages/tokens/build.mjs: no tokens were read from <scratch>/empty. Refusing to publish an empty contract over contracts/tokens.css.
+
+Error: packages/tokens/build.mjs: packages/tokens/package.json declares version "1.1.0-rc.1", which is not the exact X.Y.Z the "Contract vX.Y.Z" header must carry for AD-16 to read it.
+
+Error: packages/tokens/build.mjs: the $description on --tap contains a CSS comment delimiter, which would close the generated comment early and inject prose into the published contract.
+```
+
+**A finding from running the last of those.** **Observed 2026-08-24.** Style Dictionary resolves
+`{...}` references inside `$description` as well as inside `$value`, so a description carrying a
+brace fails its reference pass before this generator's own guard is reached. The guard still matters:
+a description carrying only `*/` reaches it, which is the injection shape that would actually have
+published prose as CSS.
+
 | Property | Value | Nature |
 |---|---|---|
 | Generator | `packages/tokens/build.mjs` | **Decision.** AD-1: generators live in `packages/` and are never published |
@@ -322,7 +342,7 @@ contracts/ is not what packages/tokens generates.
 Run 'pnpm tokens:build' and commit the result.
  M contracts/tokens.css
 diff --git a/contracts/tokens.css b/contracts/tokens.css
-index 3ecd9a9..d0f1634 100644
+index f299890..95aaac6 100644
 --- a/contracts/tokens.css
 +++ b/contracts/tokens.css
 @@ -7,7 +7,7 @@
@@ -348,7 +368,7 @@ and both were run.
 | Probe 2a | `--c-focus` deleted from `packages/tokens/tokens/colour.json`, `--token-focus` left referencing it | **Decision** |
 | Result 2a | The build refused and wrote nothing. `git status --porcelain -- contracts/` was empty afterwards, so a broken role can never reach the published file at all | **Observed 2026-08-24** |
 | Probe 2b | `--c-focus` and `--token-focus` both deleted, then rebuilt | **Decision.** This is what it takes to get a shrunken contract past the generator and in front of the shape test |
-| Result 2b | The build succeeded and five cases in `tokens-contract.test.ts` failed: the palette count, the role count, the 89-property total, the declaration-by-declaration comparison against `DESIGN.md`, and the alias count in the DTCG source | **Observed 2026-08-24** |
+| Result 2b | The build succeeded and seven cases in `tokens-contract.test.ts` failed: the "89 declarations inside the single `:root` block" structural case, the palette count, the role count, the 89-property total, the pinned name list, the declaration-by-declaration comparison against `DESIGN.md`, and the alias count in the DTCG source | **Observed 2026-08-24** |
 | Reverted | Yes, by `git checkout -- packages/tokens/tokens/colour.json` then `corepack pnpm tokens:build` | **Observed**, confirmed by `git status --porcelain` |
 
 Style Dictionary's own line from 2a, quoted:
@@ -360,9 +380,11 @@ Style Dictionary's own line from 2a, quoted:
 Vitest's lines from 2b, quoted:
 
 ```
+× puts all 89 declarations inside the single :root block
 × declares exactly 12 palette values
 × declares exactly 12 semantic roles values
 × declares 89 properties in total and no name twice
+× declares exactly the expected names, in the expected order
 × declares the same names in the same order with the same values
 × authors every value as the CSS string the design fixes, with aliases as {group.name}
 
@@ -374,11 +396,24 @@ AssertionError: expected [ '--c-paper', '--c-surface', ...(9) ] to have a length
 | Field | Value | Nature |
 |---|---|---|
 | The probe | `contracts/fonts.css` created in the working tree, standing in for an output a later story's generator adds | **Decision.** This is the mistake Stories 1.12 and 1.13 are positioned to make |
-| Result | `git diff --exit-code -- contracts/` **exited 0**, seeing nothing. `git status --porcelain -- contracts/` reported `?? contracts/fonts.css` | **Observed 2026-08-24** |
-| Reverted | Yes, the file was removed | **Observed**, confirmed by `git status --porcelain` |
+| Result | `git diff --exit-code -- contracts/` **exited 0**, seeing nothing. `git status --porcelain --ignored=matching -- contracts/` reported `?? contracts/fonts.css` | **Observed 2026-08-24** |
+| Result after `git add --intent-to-add` | The diff then names the appeared file and prints its content | **Observed 2026-08-24** |
+| Reverted | Yes, the file was removed and the index reset | **Observed**, confirmed by `git status --porcelain` |
 
 This is the whole reason the gate is written against `git status` rather than against `git diff`. A
-`git diff` gate would have let the first new file under `contracts/` ship unreviewed.
+`git diff` gate would have let the first new file under `contracts/` ship unreviewed. It is also why
+the step runs `git add --intent-to-add` before the diff: without it the log would carry a filename
+and no content on exactly this case. With it, quoted:
+
+```
+diff --git a/contracts/fonts.css b/contracts/fonts.css
+new file mode 100644
+index 0000000..626182a
+--- /dev/null
++++ b/contracts/fonts.css
+@@ -0,0 +1 @@
++/* a second output a later story adds */
+```
 
 ### Probe 4: a token whose group has no section
 
@@ -414,6 +449,7 @@ runs each, alternating, so a slow network minute cannot land entirely on one sid
 | pnpm install step, as pnpm reports it | 11.8 s, 13.6 s, 10.8 s | 12.1 s, 12.3 s, 15.6 s | **Observed 2026-08-24** |
 | Whole `deps` target, wall | 69.8 s, 69.8 s, 73.1 s | 64.8 s, 72.1 s, 84.1 s | **Observed 2026-08-24**, timed around `docker build` |
 | The real command, `docker build --no-cache -f docker/Dockerfile --target deps .` from the repository root | not applicable | **75.9 s wall, 13.3 s install, 574 packages, exit 0** | **Observed 2026-08-24** |
+| The same command re-run after the review pass added `**/node_modules` to `.dockerignore` | not applicable | **61.4 s wall, 10.1 s install, 574 packages, exit 0** | **Observed 2026-08-24.** Kept as its own row rather than replacing the one above, because the difference is dominated by context transfer and by this host, not by the ignore rule |
 
 **What these numbers do and do not say.** The package count is a hard figure: 62 more packages are
 installed into the deps layer than before, and they are there only so a later stage could run the
