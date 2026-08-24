@@ -76,7 +76,7 @@ Satellite also compiles on the box is unestablished, and is claimed neither way 
 | Rule breached | **AD-8**, "Build in CI, push to GHCR; the box never compiles" | **Decision.** `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md:124-128`. AD-8 names the current `deploy.yml` a standing violation of itself until Epic 3 |
 | Offending line | `docker compose --env-file .env.production up --build -d --remove-orphans` | **Observed 2026-08-18 at `6caac0b`**, by reading the file. `.github/workflows/deploy.yml:56`, inside the `appleboy/ssh-action` step that begins at `:45`. `--build` is the whole of the breach |
 | What makes it fire | `push: [main]` | **Observed.** `.github/workflows/deploy.yml:4-5`. Every merge to `main` starts a deploy, and a deploy that reaches the box compiles. It does not always reach the box: the Capacity Gate at `:30-31` runs first, is blocking, and carries no `continue-on-error` and no skip condition, so a merge it refuses never gets as far as the SSH step |
-| Where it compiles | The box at `177.7.52.248`, 2 vCPU | **Observed 2026-08-17** by SSH during Story 1-21, recorded at `ops/routing-inventory.md:24-29`. Since Story 1-21 repointed `SERVER_HOST` that day, this is the machine serving all six live hostnames |
+| Where it compiles | The box at `177.7.52.248`, 2 vCPU | **Observed 2026-08-17** by SSH during Story 1-21 and **re-confirmed 2026-08-24** by Story 1-7, recorded in `ops/routing-inventory.md` under the heading **"The box"** (`:129-148` as of 2026-08-24). Since Story 1-21 repointed `SERVER_HOST` that day, this is the machine serving all six live hostnames |
 | The risk, as research stated it | Compiling on a serving two-core box is **the estate's top unmeasured risk** | **Decision, carried from research into AD-8's `Prevents` line** and restated as forced change C-8 at `ARCHITECTURE-SPINE.md:435`. **It stays unmeasured after the measurement week closes.** The week measures serving, and both mitigations below exist precisely to keep a build out of its readings. What would measure the build cost is a timed build run on the box deliberately, outside the window, and no story has scheduled one |
 | Also tracked as | Forced change **C-8** | **Decision.** `epics.md:1449`, in Story 1-9's acceptance criteria, is what names `ops/known-violations.md` as where C-8 is tracked. `epics.md:725` books C-8 to Epic 1 as a tracked item but names no file |
 | Status | **Open and tolerated** | **Decision.** Whose decision and when is the `Ruled by` and `Ruled on` pair below, not this cell. Recording a violation is not fixing it |
@@ -102,8 +102,10 @@ standing policy is that `main` is merged only when an epic completes, so that co
 handful of times per epic rather than per commit. That is the trade, and it is taken knowingly.
 
 **Today the compile is the smaller half of what a merge to `main` would cost, and that is the
-part a reader of this entry alone would miss.** `ops/routing-inventory.md:177-187`, under "Where
-the deploy actually goes", records the rest: the box's checkout carries `docker-compose.yml` and
+part a reader of this entry alone would miss.** `ops/routing-inventory.md`, under the heading
+**"Where the deploy goes"** (`:1479-1530` as of 2026-08-24, and the heading lost the word
+"actually" when Story 1-7 rewrote and reordered the file), records the rest: the box's checkout
+carries `docker-compose.yml` and
 `docker/Dockerfile` modified in place, the corrected versions are committed on `dev` and not on
 `main`, and `deploy.yml:55` runs
 `git reset --hard origin/main` before the compose line. A deploy from `origin/main` as it stands
@@ -147,7 +149,9 @@ this story records the options rather than taking them:
 1. **Avoid a merge to `main` before 2026-08-24T21:00Z.** This costs nothing under the standing
    merge policy, since Epic 1 is not close to complete. It is defeated by a direct push to
    `main` or by a hotfix merged ahead of the epic close, which is the same live risk
-   `ops/routing-inventory.md:185-187` already names for a different reason. **This mitigation
+   `ops/routing-inventory.md` already names for a different reason, under the heading **"Where
+   the deploy goes"** in the paragraph beginning "In the normal flow this cannot fire"
+   (`:1517-1520` as of 2026-08-24). **This mitigation
    does not expire with the window**, for the estate-wide reason given above.
 2. **Annotate the affected readings.** Let a deploy happen and mark the minutes it covered, so
    the threshold is derived from the serving samples rather than from the build. This is the
@@ -165,14 +169,15 @@ closed that half on 2026-08-17.** The record below is what is true on 2026-08-18
 | Half | State on 2026-08-18 | Owner |
 |---|---|---|
 | The deploy step name | **Resolved 2026-08-17.** The step at `.github/workflows/deploy.yml:45` is named **"Deploy over SSH to SERVER_HOST"**. It names no provider, because the workflow cannot verify which provider the secret resolves to | Story 1-21, closed |
-| `SERVER_HOST` | **Resolved 2026-08-17.** Repointed to `177.7.52.248`, the box the rest of the estate serves from. `ops/routing-inventory.md:166` carries the row and `:170-171` records the repoint as done, both under "Where the deploy actually goes" | Story 1-21, closed |
+| `SERVER_HOST` | **Resolved 2026-08-17.** Repointed to `177.7.52.248`, the box the rest of the estate serves from. `ops/routing-inventory.md` carries it under the heading **"Where the deploy goes"**, in the two rows `SERVER_HOST before 2026-08-17` and `SERVER_HOST after` (`:1489-1490` as of 2026-08-24) | Story 1-21, closed |
 | The `tech` array value | **Open.** `content/projects.ts:30` still lists `'Hetzner VPS'` in `digital-library`'s `tech` array. This is the **one surviving stale Hetzner claim** in the estate's source | **FR-9, in Epic 2.** `epics.md:109-114` narrows FR-9 to exactly this one value. Not this story's to correct, and not a file this story touches |
 
 **The hazard of deploying into the decommissioned box is closed.** Until 2026-08-17 a merge to
 `main` would have deployed into a box that was down, and done it with `--build` on a machine
 being decommissioned. `SERVER_HOST` no longer resolves there, and nothing of the estate's points
-at `95.216.143.251` any more (`ops/routing-inventory.md:202-209`, "The address the estate left",
-the `Estate exposure` row). That hazard is not live and must not be repeated as though it were.
+at `95.216.143.251` any more (`ops/routing-inventory.md`, under the heading **"The address the
+estate left"**, the `Estate exposure` row, `:1532-1551` as of 2026-08-24). That hazard is not
+live and must not be repeated as though it were.
 
 **The live hazard is a sharper version of the same risk.** The deploy now reaches the box that
 serves all six hostnames and that the measurement week is running on. The blast radius grew when
@@ -201,6 +206,16 @@ Story 3-4 rather than optional.
 
 **When a citation drifts.** Every line number in this file was verified on 2026-08-18 against
 the working tree as this file was committed, which is `6caac0b` plus this story's own two files.
+
+**Amended 2026-08-24.** Story 1-7 rewrote and reordered `ops/routing-inventory.md`, which
+invalidated every line-number citation into it that this file carried: `:24-29`, `:166`,
+`:170-171`, `:177-187`, `:185-187` and `:202-209`. Each has been amended in place rather than
+deleted, and each now **names the heading first and gives the dated line number second**, which
+is the shape the note above about `ops/capacity-measurement.md` already prescribes. One heading
+changed its text as well as its position: "Where the deploy actually goes" is now "Where the
+deploy goes", and the amended citations say so. No citation into any other file was affected,
+and no other cell in this file was touched.
+
 A citation that no longer lands is amended in place: follow the
 heading or the quoted text, write the new line number, and re-date the cell. Do not delete the
 citation and do not leave a number that points at the wrong line, because a citation that drifts

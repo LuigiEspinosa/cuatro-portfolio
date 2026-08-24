@@ -2,7 +2,7 @@
 title: 'Enumerate the deployed routing table on the box'
 type: 'chore'
 created: '2026-08-24'
-status: 'done'
+status: 'in-review'
 baseline_commit: '7e57ed2643d281a5fc5a3004ba4d82725f0ce507'
 baseline_revision: '7e57ed2643d281a5fc5a3004ba4d82725f0ce507'
 review_loop_iteration: 0
@@ -11,8 +11,8 @@ context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
   - '{project-root}/ops/routing-inventory.md'
-  - '{project-root}/ops/routing-inventory-checklist.md'
   - '{project-root}/ops/estate.md'
+  - '{project-root}/ops/known-violations.md'
 warnings: ['oversized']
 deferred: []
 operator_actions:
@@ -68,19 +68,35 @@ operator_actions:
 
 Gathered 2026-08-24. Off-box evidence is observed in this session; the on-box half is gathered read-only over SSH during execution.
 
-- `ops/routing-inventory.md` -- the deliverable. Today it is Story 1-21's partial record: the box facts, the six-hostname table, the shared-Caddy ingress, the deploy path, the box-only configuration set, and the live-credentials table. Its closing section, "What Story 1.7 still owes" (`:281-292`), is the exact work list this story closes.
-- `ops/routing-inventory-checklist.md` -- Story 1.7's method, written 2026-08-16. Part 1 (`:51-151`) is a pre-cutover DNS snapshot that is now wrong in every proxied column and still names the two-address topology; Part 2 (`:153-239`) is the on-box command set to run; Part 3 (`:241-265`) is the open-question list, most of which Story 1-21 and 1-3 already answered. Its own header says to delete it or fold it in once the inventory lands.
-- `ops/estate.md:83-99` -- the fifteen-row disposition table. The source for the AD-3 hostname-to-application-id mapping, together with `ARCHITECTURE-SPINE.md:98` (AD-3: the public hostname is declared per Registry entry, never derived from the id).
-- `ops/bot-mitigation.md:47-49,100-109,297-299` -- the WAF rule set, the expected status codes for all six hostnames, and the outstanding operator rows. Row 5 already carries the audit-log read, so this story points at it rather than duplicating it.
-- `docker/Caddyfile` -- the Anchor's three site blocks only, a mirror of a region of the box file and read by no process. Do not infer routing from it.
-- `_bmad-output/implementation-artifacts/deferred-work.md` -- append-only ledger. Two open entries are touched by this pass: the Cloudflare edge certificate needing watching, and the AAAA gap on the three moved hostnames.
-- `_bmad-output/planning-artifacts/epics.md:1349-1392` -- Story 1.7's four acceptance blocks, as amended 2026-08-16.
+- `ops/routing-inventory.md`, the deliverable. Before this story it was Story 1-21's partial record: the box facts, the six-hostname table, the shared-Caddy ingress, the deploy path, the box-only configuration set, and the live-credentials table. Its closing section, "What Story 1.7 still owes", was the exact work list this story closes.
+- `ops/routing-inventory-checklist.md`, Story 1.7's method, written 2026-08-16 and **deleted by this story**. Part 1 was a pre-cutover DNS snapshot that had become wrong in every proxied column and still named the two-address topology. Part 2 was the on-box command set to run, and it is carried forward as the record's "How to re-gather this record" appendix rather than lost. Part 3 was the open-question list, most of which Story 1-21 and 1-3 had already answered. Its own header said to delete it or fold it in once the inventory landed. **No line-number citation into it survives in this spec**, because the file no longer exists.
+- `ops/estate.md:83-99`, the fifteen-row disposition table. The source for the AD-3 mapping in both directions, together with `ARCHITECTURE-SPINE.md:98` (AD-3: the public hostname is declared per Registry entry, never derived from the id).
+- `ops/known-violations.md`, a live register that cites `ops/routing-inventory.md` by line number in five places. Reordering the record invalidates all five, so this story amends them to heading anchors with dated line numbers, which is the shape that file's own "When a citation drifts" note prescribes.
+- `ops/bot-mitigation.md:47-49,100-109,297-299`, the WAF rule set, the expected status codes for all six hostnames, and the outstanding operator rows. Row 5 already carries the audit-log read, so this story points at it rather than duplicating it.
+- `docker/Caddyfile`, the Anchor's three site blocks only, a mirror of a region of the box file and read by no process. Do not infer routing from it.
+- `_bmad-output/implementation-artifacts/deferred-work.md`, the append-only ledger. Two open entries are touched by this pass: the Cloudflare edge certificate needing watching, and the AAAA gap on the three moved hostnames. Entries this story itself wrote are corrected in place; entries written by other stories are not.
+- `_bmad-output/planning-artifacts/epics.md:1349-1392`, Story 1.7's four acceptance blocks, as amended 2026-08-16. The mapping from those four blocks to this spec's seven acceptance criteria is below, because four and seven do not line up on their own.
+
+**How `epics.md`'s four blocks map to this spec's seven acceptance criteria.**
+
+| `epics.md` block | Lines | This spec's criteria |
+|---|---|---|
+| Block 1: one row per hostname per address, proxied state, `www` accounted for, unexpected hostnames recorded | `:1362-1374` | **AC 1** (the per-hostname row) and **AC 2** (proxied state, `www`, unexpected hostnames). One block, split in two because it carries two separately checkable obligations |
+| Block 2: per address, what runs there and how each hostname reaches it, and which configurations exist only on a box | `:1376-1383` | **AC 3** |
+| Block 3: AD-3, each hostname against the application id it serves | `:1385-1388` | **AC 4** |
+| Block 4: NFR-2, the inspection is read-only | `:1390-1392` | **AC 5** |
+| No block | n/a | **AC 6**, retiring the checklist. This story's own scope, not `epics.md`'s: the checklist did not exist when the epic was written |
+| No block | n/a | **AC 7**, enumerating operator actions in frontmatter. A workflow convention, not an epic requirement |
+
+**Which four subdomains NFR-2 means.** `epics.md:250-253` names them: `cuatro.dev`, `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and `library.cuatro.dev`, plus `list-wheel` on its current host, which is not in this zone. AC 5 checks six hostnames rather than four because the record enumerates six serving hostnames: NFR-2's four, plus `www.cuatro.dev`, which is a redirect with no application behind it, plus `analytics.cuatro.dev`, which is infrastructure with no Estate row. **Checking six satisfies the four-subdomain requirement and is stricter than it**, and the two extra hostnames are named here so a reader does not read the mismatch as a defect.
 
 **Observed off the box, 2026-08-24, read-only.**
 
-- Cloudflare zone `cuatro.dev` (id `e90c26d4127883f3b0a56d5932c500f5`, account `cd0752bce97437c466e4786a20ea6618`) holds **25 records, all 25 read**. This closes the checklist's "one record was not read" gap. Six A, three AAAA, three CNAME, five MX, four NS, four TXT. Every `cuatro.dev` A and AAAA record is proxied and points at `177.7.52.248`.
-- Six hostnames probed with a browser user agent: `cuatro.dev` 200, `www` 301 to the apex, `analytics` 403 with `Cf-Mitigated: challenge`, `cs-tracker` 302, `tracker` 307, `library` 302. That is the baseline `ops/bot-mitigation.md:100` records, unchanged.
-- **The Cloudflare edge certificate rolled over.** All six present `CN=cuatro.dev`, SANs `cuatro.dev` and `*.cuatro.dev`, issuer `CN=WE1, O=Google Trust Services`, notBefore 2026-08-21T00:18:46Z, notAfter 2026-11-19T01:16:34Z. The prior observation was notAfter 2026-09-20T23:23:52Z, so renewal happened and the open deferred question is answered by observation.
+- Cloudflare zone `cuatro.dev` (id `e90c26d4127883f3b0a56d5932c500f5`, account `cd0752bce97437c466e4786a20ea6618`) holds **25 records, all 25 read**. Six A, three AAAA, three CNAME, five MX, four NS, four TXT. Every `cuatro.dev` A and AAAA record is proxied and points at `177.7.52.248`. That establishes the enumeration is complete today. It does **not** identify which record the 2026-08-16 reading missed, because the zone held 26 that day and `n8n.cuatro.dev` was deleted in between, so that gap closes as unrecoverable rather than as answered.
+- Six hostnames probed with a browser user agent: `cuatro.dev` 200, `www` 301 to the apex, `analytics` 403 with `Cf-Mitigated: challenge`, `cs-tracker` 302, `tracker` 307, `library` 302. That is the baseline `ops/bot-mitigation.md:100` records, unchanged, and it held again at 2026-08-24T10:49:16Z after every read in this story had run.
+- **The Cloudflare edge certificate rolled over.** All six present subject `CN = cuatro.dev`, SANs `cuatro.dev` and `*.cuatro.dev`, issuer `C = US, O = Google Trust Services, CN = WE1`, notBefore 2026-08-21T00:18:46Z, notAfter 2026-11-19T01:16:34Z. **That issuer string is pasted in the form `openssl x509 -noout -issuer` printed it, and the record uses the same form**, so the two files agree character for character. The prior observation was notAfter 2026-09-20T23:23:52Z, so renewal happened and the open deferred question is answered by observation. The 30-day interval is one observation and is not recorded as a cadence.
+- **The checklist's wildcard question is answerable and is answered.** `GET /zones/{id}/ssl/certificate_packs?status=all` shows two Universal SSL packs created 2025-08-31 at zone activation, both covering `cuatro.dev` and `*.cuatro.dev`, both validated by `txt`: an active Google Trust Services pack and a Let's Encrypt **backup** pack last modified 2026-07-14T06:23:39Z. The 2026-07-14 wildcard is Cloudflare's own, so the inference that something held zone credentials is refuted rather than left open.
+- Zone settings and rulesets read: `ssl strict`, `always_use_https off`, `min_tls_version 1.0`, no HSTS at the edge, four rulesets and none in a redirect or transform phase. The per-phase entrypoints and legacy Page Rules return 403 and are recorded as unknown.
 - `covidmap` and `future-vizion` serve 200 from Vercel on single-name Let's Encrypt `YR1` certificates, DNS-only CNAMEs. Neither is in `ops/estate.md`; that gap is Story 2-4's and is already in the ledger.
 - The zone-scoped token returns 403 on `accounts/{id}/audit_logs` and on `user/tokens`, so the audit-log confirmation is an operator action.
 
@@ -88,12 +104,15 @@ Gathered 2026-08-24. Off-box evidence is observed in this session; the on-box ha
 
 **Execution:**
 
-- `ops/routing-inventory.md` -- gather the on-box read-only pass over `wsl -- ssh deploy@177.7.52.248` and fold it in -- this is the half Story 1-21 did not do. Cover, per compose project: its services, images, volumes, restart policy and what each container actually runs; whether any listener outside Docker holds 80 or 443 or reaches a hostname; and the backup coverage each project has today, which Story 1-8 reads for `digital-library`.
-- `ops/routing-inventory.md` -- reframe the file from Story 1-21's partial record to Story 1.7's complete one -- add the full 25-record zone enumeration with proxied state per record, extend the hostname table to every hostname in the zone including the ones that are not ours, add the 2026-08-24 external observation with certificate detail, and state plainly that this pass was read-only.
-- `ops/routing-inventory.md` -- add the AD-3 mapping table, one row per hostname against the application id it serves -- Epic 2 authors Registry `live` values from it and Epic 4 authors router definitions from it.
-- `ops/routing-inventory.md` -- replace "What Story 1.7 still owes" with a dated close-out -- each former item is either answered here, or named as an operator action with the reason it cannot be done by an agent. The old address `95.216.143.251` is recorded as permanently unenumerable rather than pending.
-- `ops/routing-inventory-checklist.md` -- fold its findings into the record and retire it -- its Part 1 tables are a pre-cutover snapshot that now reads as current state and is wrong in every proxied column, which is worse than absent.
-- `_bmad-output/implementation-artifacts/deferred-work.md` -- append what this pass surfaced and what it closes -- at minimum the observed edge-certificate rollover, and any finding on the box that is real but not this story's to fix.
+- `ops/routing-inventory.md`: gather the on-box read-only pass over `wsl -- ssh deploy@177.7.52.248` and fold it in. This is the half Story 1-21 did not do. Cover, per compose project, its services, images, volumes, restart policy and what each container actually runs; whether any listener outside Docker holds 80 or 443 or reaches a hostname, checked across TCP, UDP **and** host NAT; and the backup coverage each project has today, which Story 1-8 reads for `digital-library`.
+- `ops/routing-inventory.md`: reframe the file from Story 1-21's partial record to Story 1.7's complete one. Add the full 25-record zone enumeration with proxied state per record, extend the hostname table to every hostname in the zone including the ones that are not ours, add the 2026-08-24 external observation with certificate detail, read the zone's behavioural settings and rulesets as well as its records, and state plainly that this pass was read-only, with the real window rather than the interval between two probes.
+- `ops/routing-inventory.md`: add the AD-3 mapping table in **both** directions, one row per hostname against the application id it serves and one row per Estate application id against a hostname or an explicit none. Epic 2 authors Registry `live` values from it and Epic 4 authors router definitions from it, and the reverse pass is what stops Epic 2 authoring a `live` value for a hostname that does not resolve.
+- `ops/routing-inventory.md`: make the record reproducible for a rebuild. Capture each container's image id, resolve whether each image was built on the box or pulled, enumerate each project's declared services, volumes and networks from source and say where declared and running disagree, size every volume and bind mount, and record each `.env` file's variable names (never a value).
+- `ops/routing-inventory.md`: replace "What Story 1.7 still owes" with a dated close-out. Each former item is either answered there, or named as an operator action with the reason it cannot be done by an agent. The old address `95.216.143.251` is recorded as permanently unenumerable rather than pending.
+- `ops/routing-inventory.md`: make the record navigable and self-consistent. Add a contents list, an explicit statement of what would invalidate the record, and a review-by date; state each repeated caveat once and cross-reference it; and paste evidence in one consistent observed form rather than two.
+- `ops/routing-inventory-checklist.md`: fold its findings into the record and delete it. Its Part 1 tables are a pre-cutover snapshot that reads as current state and is wrong in every proxied column, which is worse than absent. **Nothing it held that is still true may be lost**, and that includes its Part 2 command set, which becomes the record's re-gather appendix, and its Certificate Transparency wildcard finding, which gets an explicit disposition.
+- `ops/known-violations.md`: amend the five line-number citations into `ops/routing-inventory.md` that this story's reordering invalidates. Amend in place with a heading anchor and a dated line number, never delete.
+- `_bmad-output/implementation-artifacts/deferred-work.md`: append what this pass surfaced and what it closes. At minimum the observed edge-certificate rollover, and any finding on the box that is real but not this story's to fix. Entries this story wrote may be corrected in place; entries from other stories may not.
 
 **Acceptance Criteria:**
 
@@ -121,13 +140,21 @@ Gathered 2026-08-24. Off-box evidence is observed in this session; the on-box ha
 
 **Commands:**
 
-- `corepack pnpm typecheck` -- expected: passes. No source file changes, so this only proves the tree is undisturbed.
-- `corepack pnpm test --run` -- expected: the full suite passes, unchanged count.
-- `git diff --stat` -- expected: only `ops/routing-inventory.md`, the retired `ops/routing-inventory-checklist.md`, `_bmad-output/implementation-artifacts/deferred-work.md` and this spec.
-- `wsl -- ssh deploy@177.7.52.248 "docker ps --format '{{.Names}} {{.Status}}'"` -- expected: the same container set, all `Up`, before and after the pass.
+The first two prove only that the tree is undisturbed. **The checks that matter for a story
+whose whole output is prose are the third and fourth**, because the failure mode here is a
+dangling reference, not a type error.
+
+- `git grep -n "routing-inventory-checklist"`. Expected: hits **only** inside `done` spec files, which are historical records and are not edited. A hit in any `ops/` file, in a live spec, or in `AGENTS.md` is a dangling reference to a file this story deletes, and must be fixed.
+- `git grep -nE "routing-inventory\.md:[0-9]"`. Expected: hits **only** inside `done` spec files. Reordering the record invalidates every line-number citation into it, and `ops/known-violations.md` is a live register that carried five. Each surviving live citation must name a heading and carry a dated line number that actually lands. Verify by opening the target line, not by assuming.
+- `corepack pnpm typecheck`. Expected: passes. No source file changes, so this only proves the tree is undisturbed.
+- `corepack pnpm test --run`. Expected: the full suite passes, unchanged count.
+- `git diff --stat`. Expected: `ops/routing-inventory.md`, the deleted `ops/routing-inventory-checklist.md`, `ops/known-violations.md`, `_bmad-output/implementation-artifacts/deferred-work.md` and this spec, and nothing else.
+- `wsl -- ssh deploy@177.7.52.248 "docker ps --format '{{.Names}} {{.Status}}'"`. Expected: the same container set, all `Up`, before and after the pass. **Read the uptimes, not just the status**: a container this pass restarted would read minutes rather than weeks, and `Up` alone would not show it.
 
 **Manual checks:**
 
 - Re-probe the six hostnames after the pass and confirm 200, 301, 403, 302, 307, 302. A different code means this pass changed something, which it must not have.
-- Scan both `ops/` files for an em-dash, an en-dash used as a dash, a double-dash standing in for a dash, or an emoji, and confirm none is present.
-- Confirm every table row in the record carries a nature marker, decision or observation, and that no unknown has been rounded into a plausible value.
+- Scan the `ops/` files this story touches, which after the change are `ops/routing-inventory.md` and `ops/known-violations.md`, for an em-dash, an en-dash used as a dash, a double-dash standing in for a dash, or an emoji, and confirm none is present. **The checklist is deleted, so there is no second file to scan there.** Scan this spec on the same rule, outside the `<intent-contract>` block and excluding CLI tokens such as `wsl -- ssh` and `git checkout -- pathspec`.
+- Confirm every table row in the record carries a nature marker, decision or observation, and that no unknown has been rounded into a plausible value. **Pay particular attention to verdicts read off a script comment or a file listing**: those are inferences, and the record must either say so or open the artefact and observe.
+- Confirm no value from any `.env` file appears anywhere in the diff. Variable names are recorded deliberately; a value would be a leak.
+- Open the record's contents list and confirm every anchor resolves to a heading that exists.

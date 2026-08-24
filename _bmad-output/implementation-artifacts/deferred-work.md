@@ -684,9 +684,25 @@ found them. Append only. Each entry names the spec that surfaced it.
     certificate all six hostnames present, with no visibility into whether Cloudflare
     would roll it over. Observed 2026-08-24 from outside on all six hostnames: subject
     `CN=cuatro.dev`, SANs `cuatro.dev` and `*.cuatro.dev`, issuer
-    `C=US, O=Google Trust Services, CN=WE1`, notBefore 2026-08-21T00:18:46Z, notAfter
-    2026-11-19T01:16:34Z. Renewal happened roughly 30 days before expiry, which is the
-    normal Cloudflare cadence.
+    `C = US, O = Google Trust Services, CN = WE1`, notBefore 2026-08-21T00:18:46Z, notAfter
+    2026-11-19T01:16:34Z. The issuer string is pasted in the form
+    `openssl x509 -noout -issuer` printed it, which is the form
+    `ops/routing-inventory.md` now treats as canonical.
+
+    Renewal happened 30 days before the prior certificate's notAfter. **That interval is
+    one observation, not a cadence.** Reading it as "the normal Cloudflare cadence" would be
+    an inference from a single data point, and it is marked as such here rather than
+    asserted: no second renewal has been observed on this zone, and Cloudflare publishes no
+    commitment this estate has read. What is observed is one renewal, one interval, and a
+    working mechanism.
+
+    Confirmed 2026-08-24 by a second, stronger read that also settles the checklist's
+    wildcard question: `GET /zones/{id}/ssl/certificate_packs?status=all` shows two
+    Universal SSL packs, both created 2025-08-31T04:48Z at zone activation, both covering
+    `cuatro.dev` and `*.cuatro.dev`, validated by `txt`. The active pack is Google Trust
+    Services; the backup pack is Let's Encrypt and was last modified 2026-07-14T06:23:39Z.
+    Full disposition in `ops/routing-inventory.md` under "The 2026-07-14 wildcard
+    certificate, closed by observation".
 
     What is answered is whether renewal works. What is not answered is whether the
     estate would notice a failed renewal, and that is unchanged: the certificate-age
@@ -699,32 +715,41 @@ found them. Append only. Each entry names the spec that surfaced it.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
   summary: >-
-    `library-backup.sh` has aborted on line 13 every night since 2026-07-31. The
+    `library-backup.sh` has aborted on line 13 every night since 2026-07-31. A valid
     snapshot is still written, so `digital-library` does have a nightly local backup,
     but the script reports failure, leaves every file root-owned and uncompressed, and
-    never runs its retention prune. Story 1.8 inherits this.
+    never runs its retention prune. Two separate bugs. Story 1.8 inherits this.
   evidence: |-
-    Observed 2026-08-24 on `177.7.52.248`. Every line in
+    Observed 2026-08-24 on `177.7.52.248`. Every one of the 25 lines in
     `/home/deploy/backups/digital-library/backup.log` reads
     `/home/deploy/library-backup.sh: line 13: USER: unbound variable`. Line 13 is
     `sudo chown "$USER:$USER" "$OUT"`; cron does not set `USER` in the job environment
     and the script runs `set -euo pipefail`, so `set -u` aborts on the unset expansion.
+    Line 12, `sudo sqlite3 "$DB" ".backup '$OUT'"`, runs before the abort. Everything
+    after line 13 does not run: no `chown`, no `gzip`, no prune.
 
-    Line 12, `sudo sqlite3 "$DB" ".backup '$OUT'"`, runs first, so a WAL-safe consistent
-    snapshot is written every night. Everything after line 13 does not run: no `chown`,
-    no `gzip`, no prune. The directory holds 25 root-owned uncompressed
-    `library-YYYY-MM-DD_0345.db` files of 90112 bytes each from 2026-07-31 to
-    2026-08-24, plus one `library-2026-07-30_0617.db.gz` of 3106 bytes owned by
-    `deploy`. That `.gz` is 25 days old and the prune deletes `library-*.db.gz` older
-    than 14 days, which independently proves the `find` has not run since.
+    **The full evidence is in `ops/routing-inventory.md` under "Backup coverage, per
+    project", and is deliberately not duplicated here.** That section carries the file
+    listing, the checksums of all 25 snapshots, the `PRAGMA integrity_check` results,
+    the live database and WAL sizes and timestamps, and the reconciliation against
+    `cuatro-backup.sh`. One place to correct if any of it turns out wrong.
 
-    There are two bugs, not one. Fixing only the `USER` expansion would start pruning
-    the `.gz` files while the 25 stale uncompressed `.db` files kept growing, because
-    the prune pattern matches `.db.gz` only. Both need fixing together, and the honest
-    framing for Story 1.8 is that this is the worst shape a backup can be in short of
-    not existing: real data, a log that says failure, and an operator trained to ignore
-    it. Not fixed here because Story 1-7's pass is read-only and Story 1.8 is the story
-    that carries a real restore test in its acceptance.
+    The three things Story 1.8 needs from it, in one line each. **The snapshot is
+    real**: two of the 25 were copied to `/tmp` and both pass `PRAGMA integrity_check`,
+    carry the full schema and are WAL-inclusive, which is observed rather than read off
+    the script's comment. **The prune has never run**: a `.gz` 25 days old survives a
+    14-day policy. **There are two bugs, not one**: fixing only the `USER` expansion
+    would start pruning the `.gz` files while the 25 uncompressed `.db` files kept
+    growing, because the prune pattern matches `.db.gz` only.
+
+    Two things that make the fix smaller than it looks. The database holds one user,
+    one session and **zero books**, and `data/books`, `data/covers` and `data/inbox` are
+    all empty, so this is a correctness and offsite problem rather than a volume one.
+    And what is still unproven is that a snapshot is consistent **under a concurrent
+    writer**: nothing has written to this database since 2026-08-14, so every snapshot
+    in the directory was taken against a quiescent file. Story 1.8 carries the restore
+    test, which is where that gets settled. Not fixed here because Story 1-7's pass is
+    read-only.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
   summary: >-
@@ -770,20 +795,34 @@ found them. Append only. Each entry names the spec that surfaced it.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
   summary: >-
-    The build-on-the-box breach is estate-wide, not Anchor-only. Three of the four
-    compose projects build their images on the serving two-core box, while KV-1 records
-    only this repository's deploy workflow.
+    The build-on-the-box breach is estate-wide, not Anchor-only. All four compose
+    projects build their images on the serving two-core box, while KV-1 records only
+    this repository's deploy workflow.
   evidence: |-
-    Observed 2026-08-24 by `docker inspect` on all sixteen containers. Six images carry
-    locally-built names with no registry prefix: `cuatro-portfolio-anchor-app`,
+    Observed 2026-08-24 by `docker inspect` on all sixteen containers. Seven images
+    carry locally-built names with no registry prefix: `cuatro-portfolio-anchor-app`,
     `cuatro-tracker-app`, `cuatro-tracker-worker`, `cuatro-tracker-migrate`,
-    `digital-library-api` and `digital-library-web`. `cs-tracker:latest` is ambiguous.
-    Only `caddy:2`, `postgres:16`, `postgres:16-alpine`, `redis:7-alpine`,
+    `digital-library-api`, `digital-library-web` and `cs-tracker`. Only `caddy:2`,
+    `postgres:16`, `postgres:16-alpine`, `redis:7-alpine`,
     `ghcr.io/umami-software/umami:postgresql-latest` and
     `linuxserver/qbittorrent:latest` are pulled. `cuatro-redeploy.sh` and
     `library-redeploy.sh` both run `docker compose up -d --build` on the box, and a
     weekly `/etc/cron.d/docker-builder-prune` exists precisely because the box
     accumulates build cache.
+
+    **`cs-tracker:latest` was recorded as ambiguous and is not.** The intended test,
+    that a locally built image has no `RepoDigests`, does not work on this daemon:
+    Docker 29.6.2 here reports every image's `RepoDigests` as `<name>@<its own image
+    id>`, pulled images included, so the field distinguishes nothing. What settles it is
+    `/home/deploy/cs-tracker/docker-compose.yml`, where both `app` and `migrate` declare
+    `build: {context: .}` with `image: cs-tracker:latest`, a `Dockerfile` sits beside
+    it, and `docker image history` shows a locally built Elixir release. The estate-wide
+    claim is therefore exact rather than a lower bound: four projects out of four.
+
+    The disk cost is visible and was not previously recorded: `docker system df -v`
+    reports 6.028 GB of build cache plus a 1.3 GB dangling image and a superseded
+    390 MB `cuatro-portfolio-app:latest` left by the Story 1-21 rename, on a 96 GB disk
+    at 17 percent. The capacity conversation so far has been about cores only.
 
     `ops/known-violations.md` KV-1 is scoped to `.github/workflows/deploy.yml`, so a
     reader would conclude the Anchor is the exception. It is the rule. This is not added
@@ -847,3 +886,90 @@ found them. Append only. Each entry names the spec that surfaced it.
     that indirection across or resolve it deliberately rather than discovering it. Both
     fixes belong in the `cs-tracker` repository. Recorded here because Story 1-7 is
     read-only and because `ops/routing-inventory.md` is the file Epic 4 rebuilds from.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    Two live third-party credentials sit in project `.env` files on the box that nothing
+    in the estate had recorded: a `CLOUDFLARE_API_TOKEN` in `cuatro-tracker` and a
+    `HETZNER_DNS_API_TOKEN` in `digital-library`. The second is for a provider the
+    estate has left. This also corrects a claim in `ops/routing-inventory.md`.
+  evidence: |-
+    Observed 2026-08-24 by reading variable names only, with
+    `grep -E '^[A-Za-z_][A-Za-z0-9_]*=' <file> | cut -d= -f1`. No value was read and
+    none is recorded anywhere.
+
+    `/home/deploy/cuatro-tracker/.env` declares `CLOUDFLARE_API_TOKEN`. Its declared
+    consumer is that project's own `caddy` service, which builds
+    `docker/Dockerfile.caddy` for DNS-01 issuance and is held out of
+    `docker compose up` by the Compose profile `edge` so it does not collide with the
+    shared ingress on 80 and 443. So nothing running uses it, which is the conclusion
+    the record already drew, but the earlier wording "the box holds no Cloudflare
+    credential" is wrong and has been corrected in place. Which of the two orphaned
+    tokens this is, or whether it is a third, is unknown from here.
+
+    `/home/deploy/digital-library/.env` declares `HETZNER_DNS_API_TOKEN`. Nothing in the
+    estate has been on Hetzner since 2026-08-17. A DNS API token for a provider nobody
+    uses is the same shape of unnecessary standing credential that Story 1-3 was
+    scheduled to close for the two Cloudflare tokens, and it is in a different vendor's
+    console, so it is not covered by the audit-log operator action already tracked.
+    Revoking it belongs to whoever owns the `digital-library` repository.
+
+    Two further names worth a decision, neither urgent. `/home/deploy/digital-library/
+    .env` declares `SMTP_HOST`, `SMTP_USER` and `SMTP_PASS`, so the estate sends mail
+    from the box and no planning artifact, monitor or `ops/` record says so. And eleven
+    of the fifty-five variables across the four files are third-party API credentials
+    that exist only on this box, are in no repository and are backed up nowhere; losing
+    the box loses all of them. Full list of names in `ops/routing-inventory.md` under
+    "The variable names each project needs".
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    qBittorrent's WebUI is running on an auto-generated temporary password printed to
+    the container log, with `WebUI\Address=*`. It is safe only because no port is
+    published and no hostname reaches it.
+  evidence: |-
+    Observed 2026-08-24. `/var/lib/docker/volumes/cuatro-tracker_qb_config/_data/
+    qBittorrent/qBittorrent.conf` contains `WebUI\Address=*` and `WebUI\ServerDomains=*`
+    and contains **no** `WebUI\Username` and no `WebUI\Password_PBKDF2`. The container
+    log carries "The WebUI administrator username is: admin" and "The WebUI
+    administrator password was not set. A temporary password is ...", which is the
+    linuxserver image's fallback. The password is not reproduced in any record.
+
+    The compose file sets `WEBUI_PORT=8080` and comments "Internal only - never expose
+    port 8080 externally", and that comment is currently true: the port is exposed in
+    image metadata, published nowhere, the container is on `cuatro-tracker_default`
+    only, and `iptables -t nat -L -n` holds exactly two DNAT rules, both to the ingress
+    Caddy. So the exposure today is zero.
+
+    The reason to record it is that the protection is a network boundary alone, and the
+    boundary is one `ports:` line or one `--profile edge` away from moving. A regenerated
+    password also means the credential changes on every container recreate, while
+    `QBITTORRENT_USER` and `QBITTORRENT_PASS` in that project's `.env` are static, so it
+    is not obvious the application's own credentials still match. Belongs in the
+    `cuatro-tracker` repository. Not touched here: Story 1-7 is read-only.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  summary: >-
+    Every service in the estate runs on a floating image tag, and no image on the box
+    carries a registry manifest digest that a rebuild could pin to. Epic 4 rebuilds from
+    `ops/routing-inventory.md` and would not get the same estate.
+  evidence: |-
+    Observed 2026-08-24. The six pulled images are `caddy:2`, `postgres:16`,
+    `postgres:16-alpine`, `redis:7-alpine`,
+    `ghcr.io/umami-software/umami:postgresql-latest` and
+    `linuxserver/qbittorrent:latest`. Every one of those tags moves. A rebuild in six
+    months gets a different Postgres minor, a different Umami and a different
+    qBittorrent, and nothing in any repository records which ones are running today.
+
+    The usual mitigation, recording `RepoDigests` so the rebuild can pin
+    `image@sha256:...`, does not work from this box: Docker 29.6.2 here reports every
+    image's single `RepoDigests` entry as `<name>@<its own image config id>`, for pulled
+    images as well as built ones. For example `caddy:2` reports
+    `caddy@sha256:844f60b6...`, which is identical to its `Id`. That is not a registry
+    manifest digest and cannot be used to pull the same image elsewhere.
+
+    `ops/routing-inventory.md` now records every container's image id and creation date
+    under "Image identity, so the rebuild is reproducible", which makes a rebuild
+    auditable after the fact. Making it reproducible needs either digests read from the
+    registry, or the GHCR path AD-8 requires, which is Epic 3. Recorded so Epic 4 does
+    not discover it while rebuilding.
