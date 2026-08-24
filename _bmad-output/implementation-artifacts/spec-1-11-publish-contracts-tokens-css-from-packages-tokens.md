@@ -2,7 +2,7 @@
 title: 'Publish `contracts/tokens.css` from `packages/tokens`'
 type: 'feature'
 created: '2026-08-24'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: '064c087d581d366db0a8259179ef381a962de880'
 baseline_revision: '064c087d581d366db0a8259179ef381a962de880'
 review_loop_iteration: 0

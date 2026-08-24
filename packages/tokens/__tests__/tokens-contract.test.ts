@@ -1,7 +1,7 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,11 +19,13 @@ import { fileURLToPath } from 'node:url';
 // a helper that has quietly stopped rejecting anything is caught by the suite
 // rather than by the next Satellite to vendor a broken contract.
 
-// Two cases spawn `node packages/tokens/build.mjs` for real. Vitest's 5 second
-// default is a comfortable fit when this file runs alone and not when it runs
-// beside seventeen others on a loaded machine, so the budget is raised here
-// rather than in `vitest.config.ts`, where it would loosen the whole suite.
-vi.setConfig({ testTimeout: 120_000, hookTimeout: 120_000 });
+/**
+ * The budget for a case that spawns `node packages/tokens/build.mjs` for real.
+ * Passed per case rather than through `vi.setConfig`, so the forty-odd cases
+ * that only read a string off disk keep Vitest's own 5 second default and a
+ * hang in one of them still fails fast.
+ */
+const SPAWN_TIMEOUT = 120_000;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, '..');
@@ -45,18 +47,27 @@ const css = readFileSync(PUBLISHED, 'utf8');
 const packageVersion = (JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8')) as { version: string }).version;
 
 // ---------------------------------------------------------------------------
-// Parsing. Deliberately dumb: a regex over the text, because the whole point of
-// the contract is that a consumer in any language reads it with a file read and
-// a parser rather than with a JavaScript toolchain.
+// Parsing. Deliberately dumb: a regex and a brace counter over the text,
+// because the whole point of the contract is that a consumer in any language
+// reads it with a file read and a parser rather than with a JavaScript
+// toolchain.
 // ---------------------------------------------------------------------------
 
 type Declaration = [name: string, value: string];
 
 const stripComments = (text: string): string => text.replace(/\/\*[\s\S]*?\*\//g, '');
 
+/**
+ * The name class is deliberately wide: anything CSS would accept as a custom
+ * property name up to the colon. A narrow `[a-z0-9-]` class would make a
+ * hand-edited `--c-Paper` invisible to the counts, the duplicate check, the
+ * alpha audit and the comparison against the design, which is the exact place
+ * such a name would appear. Conformance to the naming convention is then
+ * asserted, rather than assumed by the parser.
+ */
 const declarationsIn = (text: string): Declaration[] => {
   const found: Declaration[] = [];
-  const pattern = /(--[a-z0-9-]+)\s*:\s*([^;]+);/g;
+  const pattern = /(--[^\s:;{}()]+)\s*:\s*([^;]+);/g;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(text)) !== null) {
     found.push([match[1], match[2].trim()]);
@@ -64,52 +75,195 @@ const declarationsIn = (text: string): Declaration[] => {
   return found;
 };
 
-/** The published file, split at the one `@media` rule it is allowed to carry. */
-const split = (text: string) => {
-  const stripped = stripComments(text);
-  const index = stripped.indexOf('@media');
-  return {
-    root: index === -1 ? stripped : stripped.slice(0, index),
-    media: index === -1 ? '' : stripped.slice(index),
-  };
+interface Block {
+  prelude: string;
+  body: string;
+}
+
+/**
+ * Splits comment-free CSS into its top-level rules and whatever sits outside
+ * them. A regex over the whole text has no notion of a brace, so a declaration
+ * that has fallen outside every rule, or everything after an unclosed brace,
+ * would otherwise still count toward every assertion below. For an artefact
+ * whose entire value is that seven repositories can `@import` it, that is the
+ * one thing worth parsing properly.
+ */
+const blocksIn = (text: string): { blocks: Block[]; outside: string } => {
+  const blocks: Block[] = [];
+  let outside = '';
+  let prelude = '';
+  let body = '';
+  let depth = 0;
+  for (const character of text) {
+    if (character === '{') {
+      depth += 1;
+      if (depth === 1) {
+        body = '';
+        continue;
+      }
+    } else if (character === '}') {
+      depth -= 1;
+      if (depth < 0) throw new Error('a closing brace with no opening brace');
+      if (depth === 0) {
+        blocks.push({ prelude: prelude.trim(), body });
+        prelude = '';
+        continue;
+      }
+    }
+    if (depth === 0) {
+      prelude += character;
+      outside += character;
+    } else {
+      body += character;
+    }
+  }
+  if (depth !== 0) throw new Error('an opening brace with no closing brace');
+  return { blocks, outside };
 };
 
-const parts = split(css);
-const rootDeclarations = declarationsIn(parts.root);
-const mediaDeclarations = declarationsIn(parts.media);
+const stripped = stripComments(css);
+const topLevel = blocksIn(stripped);
+const rootBlock = topLevel.blocks.find((block) => block.prelude === ':root');
+const mediaBlock = topLevel.blocks.find((block) => block.prelude.startsWith('@media'));
+
+const rootDeclarations = declarationsIn(rootBlock?.body ?? '');
+const mediaDeclarations = declarationsIn(mediaBlock?.body ?? '');
 const rootValues = new Map(rootDeclarations);
+const declaredNames = rootDeclarations.map(([name]) => name);
 
-const namesMatching = (prefix: string): string[] =>
-  rootDeclarations.map(([name]) => name).filter((name) => name.startsWith(prefix));
+const namesWhere = (predicate: (name: string) => boolean): string[] => declaredNames.filter(predicate);
+const namesMatching = (prefix: string): string[] => namesWhere((name) => name.startsWith(prefix));
+
+/** Every name the contract publishes, pinned. A rename is major under AD-16. */
+const EXPECTED_NAMES = [
+  '--c-paper',
+  '--c-surface',
+  '--c-surface-high',
+  '--c-line',
+  '--c-line-strong',
+  '--c-muted',
+  '--c-ink',
+  '--c-accent',
+  '--c-accent-bright',
+  '--c-accent-quiet',
+  '--c-focus',
+  '--c-scrim',
+  '--token-bg',
+  '--token-bg-raised',
+  '--token-bg-raised-2',
+  '--token-text',
+  '--token-text-secondary',
+  '--token-border',
+  '--token-border-interactive',
+  '--token-accent',
+  '--token-accent-hover',
+  '--token-accent-muted',
+  '--token-focus',
+  '--token-scrim',
+  '--f-display',
+  '--f-body',
+  '--f-mono',
+  '--t-3xs',
+  '--t-2xs',
+  '--t-xs',
+  '--t-sm',
+  '--t-base',
+  '--t-md',
+  '--t-lg',
+  '--t-xl',
+  '--t-2xl',
+  '--t-display',
+  '--w-light',
+  '--w-regular',
+  '--w-medium',
+  '--w-bold',
+  '--w-black',
+  '--lh-display',
+  '--lh-heading',
+  '--lh-lede',
+  '--lh-body',
+  '--lh-label',
+  '--tr-display',
+  '--tr-heading',
+  '--tr-name',
+  '--tr-body',
+  '--tr-meta',
+  '--tr-label',
+  '--measure',
+  '--s-2xs',
+  '--s-xs',
+  '--s-sm',
+  '--s-md',
+  '--s-lg',
+  '--s-xl',
+  '--s-2xl',
+  '--s-3xl',
+  '--page-pad',
+  '--tap',
+  '--r-none',
+  '--r-hair',
+  '--r-pill',
+  '--stroke-hair',
+  '--stroke-boundary',
+  '--stroke-emphasis',
+  '--stroke-focus',
+  '--focus-offset',
+  '--elev-0',
+  '--elev-1',
+  '--elev-2',
+  '--dur-micro',
+  '--dur-minor',
+  '--dur-major',
+  '--dur-exit',
+  '--ease-entrance',
+  '--ease-exit',
+  '--ease-toggle',
+  '--z-base',
+  '--z-raised',
+  '--z-dropdown',
+  '--z-sticky',
+  '--z-modal',
+  '--z-toast',
+  '--z-tooltip',
+];
 
 // ---------------------------------------------------------------------------
-// The three assertions that must be able to fail. Each is a function so the
-// suite can run it against synthetic input as well as against the real file: a
-// helper that has stopped rejecting anything would otherwise pass silently.
+// The assertions that must be able to fail. Each is a function so the suite can
+// run it against synthetic input as well as against the real file: a helper
+// that has stopped rejecting anything would otherwise pass silently.
 // ---------------------------------------------------------------------------
+
+const VAR_TARGET = /var\(\s*(--[^\s,)]+)/g;
 
 /**
  * Matrix rows "Role points at a missing palette entry" and "Role is
  * self-referential". AD-14: a self-reference resolves to `transparent` at
  * runtime with no error anywhere, so it has to be caught statically.
+ *
+ * Every `var()` in the file is checked, not only the ones on `--token-*`. The
+ * three `--elev-*` tokens are aliases too, and a check written for this exact
+ * failure mode that skipped a third of the aliases would be a check in name
+ * only. The `--token-*` layer then carries the extra rule AD-14 puts on it.
  */
-const assertRolesResolve = (declarations: Declaration[]): void => {
+const assertReferencesResolve = (declarations: Declaration[]): void => {
   const declared = new Set(declarations.map(([name]) => name));
   for (const [name, value] of declarations) {
+    for (const reference of value.matchAll(VAR_TARGET)) {
+      const target = reference[1];
+      if (target === name) {
+        throw new Error(`${name} references itself, which resolves to transparent once a bundler flattens it (AD-14)`);
+      }
+      if (!declared.has(target)) {
+        throw new Error(`${name} references ${target}, which is not declared in this file`);
+      }
+    }
     if (!name.startsWith('--token-')) continue;
-    const reference = /^var\((--[a-z0-9-]+)\)$/.exec(value);
-    if (!reference) {
+    const whole = /^var\((--[^\s,)]+)\)$/.exec(value);
+    if (!whole) {
       throw new Error(`${name} is not a plain var() reference to a palette value: ${value}`);
     }
-    const target = reference[1];
-    if (target === name) {
-      throw new Error(`${name} references itself, which resolves to transparent once a bundler flattens it (AD-14)`);
-    }
-    if (!target.startsWith('--c-')) {
-      throw new Error(`${name} references ${target}, which is not a --c-* palette value (AD-14)`);
-    }
-    if (!declared.has(target)) {
-      throw new Error(`${name} references ${target}, which is not declared in this file`);
+    if (!whole[1].startsWith('--c-')) {
+      throw new Error(`${name} references ${whole[1]}, which is not a --c-* palette value (AD-14)`);
     }
   }
 };
@@ -134,12 +288,25 @@ const assertHeaderVersion = (text: string, version: string): void => {
 /** Acceptance criterion 2, and the standing AD-1 rule `AGENTS.md` states. */
 const EXECUTABLE = /\.(ts|js|tsx|jsx|mjs|cjs)$/;
 
+const SKIP_DIRECTORIES = new Set([
+  'node_modules',
+  '.git',
+  '.next',
+  '.pnpm-store',
+  '.bmad-loop',
+  '_bmad',
+  '_bmad-output',
+  '.claude',
+  '.vscode',
+  'coverage',
+  'playwright-report',
+  'test-results',
+]);
+
 const filesUnder = (directory: string): string[] => {
   const found: string[] = [];
   for (const entry of readdirSync(directory)) {
-    // `node_modules` is the generator's own dependency tree, not a file this
-    // repository authored, and `.gitignore:125` already ignores it.
-    if (entry === 'node_modules') continue;
+    if (SKIP_DIRECTORIES.has(entry)) continue;
     const full = join(directory, entry);
     if (statSync(full).isDirectory()) found.push(...filesUnder(full));
     else found.push(full);
@@ -147,40 +314,97 @@ const filesUnder = (directory: string): string[] => {
   return found;
 };
 
+const repoRelative = (file: string): string => relative(REPO_ROOT, file).split(sep).join('/');
+
 // ---------------------------------------------------------------------------
 // Matrix row 1: build from source, output rewritten byte-identically.
 // ---------------------------------------------------------------------------
 
-const runBuild = (source: string, output: string) =>
-  spawnSync(process.execPath, [BUILD], {
-    encoding: 'utf8',
-    env: { ...process.env, CUATRO_TOKENS_SOURCE: source, CUATRO_TOKENS_OUTPUT: output },
-  });
+const runBuild = (environment: Record<string, string | undefined>) => {
+  const child = { ...process.env, ...environment };
+  for (const [name, value] of Object.entries(environment)) {
+    if (value === undefined) delete child[name];
+  }
+  return spawnSync(process.execPath, [BUILD], { encoding: 'utf8', env: child });
+};
+
+const scratch = (label: string): string => mkdtempSync(join(tmpdir(), `cuatro-tokens-${label}-`));
 
 describe('building from source', () => {
-  it('reproduces the committed file byte for byte, so the committed file is never hand-maintained', () => {
-    const output = mkdtempSync(join(tmpdir(), 'cuatro-tokens-build-'));
-    try {
-      const result = runBuild(SOURCE_DIR, output);
-      expect(result.status, result.stderr).toBe(0);
-      expect(readFileSync(join(output, 'tokens.css'), 'utf8')).toBe(css);
-    } finally {
-      rmSync(output, { recursive: true, force: true });
-    }
-  });
+  it(
+    'reproduces the committed file byte for byte, so the committed file is never hand-maintained',
+    () => {
+      const output = scratch('build');
+      try {
+        const result = runBuild({ CUATRO_TOKENS_SOURCE: SOURCE_DIR, CUATRO_TOKENS_OUTPUT: output });
+        expect(result.status, result.stderr).toBe(0);
+        expect(readFileSync(join(output, 'tokens.css'), 'utf8')).toBe(css);
+      } finally {
+        rmSync(output, { recursive: true, force: true });
+      }
+    },
+    SPAWN_TIMEOUT
+  );
 
-  it('emits the same bytes twice, so the drift gate is comparing against a stable output', () => {
-    const first = mkdtempSync(join(tmpdir(), 'cuatro-tokens-first-'));
-    const second = mkdtempSync(join(tmpdir(), 'cuatro-tokens-second-'));
-    try {
-      expect(runBuild(SOURCE_DIR, first).status).toBe(0);
-      expect(runBuild(SOURCE_DIR, second).status).toBe(0);
-      expect(readFileSync(join(first, 'tokens.css'), 'utf8')).toBe(readFileSync(join(second, 'tokens.css'), 'utf8'));
-    } finally {
-      rmSync(first, { recursive: true, force: true });
-      rmSync(second, { recursive: true, force: true });
-    }
-  });
+  it(
+    'emits the same bytes twice, so the drift gate is comparing against a stable output',
+    () => {
+      const first = scratch('first');
+      const second = scratch('second');
+      try {
+        expect(runBuild({ CUATRO_TOKENS_SOURCE: SOURCE_DIR, CUATRO_TOKENS_OUTPUT: first }).status).toBe(0);
+        expect(runBuild({ CUATRO_TOKENS_SOURCE: SOURCE_DIR, CUATRO_TOKENS_OUTPUT: second }).status).toBe(0);
+        expect(readFileSync(join(first, 'tokens.css'), 'utf8')).toBe(readFileSync(join(second, 'tokens.css'), 'utf8'));
+      } finally {
+        rmSync(first, { recursive: true, force: true });
+        rmSync(second, { recursive: true, force: true });
+      }
+    },
+    SPAWN_TIMEOUT
+  );
+
+  // `CUATRO_TOKENS_SOURCE` and `CUATRO_TOKENS_OUTPUT` are build inputs, and
+  // either one present in a runner's environment would redirect the build away
+  // from `contracts/`, leave `git status -- contracts/` clean and hold the drift
+  // gate green over real drift. This case pins the unredirected default, and it
+  // pins it without writing anything: an empty source makes the generator refuse
+  // before it writes, and the resolved paths are printed before that.
+  it(
+    'defaults its output to contracts/tokens.css when neither override is set',
+    () => {
+      const source = scratch('empty-source');
+      const before = readFileSync(PUBLISHED, 'utf8');
+      try {
+        const result = runBuild({ CUATRO_TOKENS_SOURCE: source, CUATRO_TOKENS_OUTPUT: undefined });
+        expect(result.stdout).toContain(`writing  ${PUBLISHED.replace(/\\/g, '/')}`);
+        expect(result.stdout).toContain(`reading  ${source.replace(/\\/g, '/')}/*.json`);
+        expect(result.status, 'an empty source directory must not produce a build').not.toBe(0);
+        expect(readFileSync(PUBLISHED, 'utf8'), 'the published contract was written during a test').toBe(before);
+      } finally {
+        rmSync(source, { recursive: true, force: true });
+      }
+    },
+    SPAWN_TIMEOUT
+  );
+
+  it(
+    'refuses to publish an empty contract when the source directory holds no tokens',
+    () => {
+      const source = scratch('no-tokens');
+      const output = scratch('no-tokens-out');
+      try {
+        const result = runBuild({ CUATRO_TOKENS_SOURCE: source, CUATRO_TOKENS_OUTPUT: output });
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain('no tokens were read from');
+        expect(result.stderr).toContain(source.replace(/\\/g, '/'));
+        expect(readdirSync(output), 'a file was written from an empty source').toEqual([]);
+      } finally {
+        rmSync(source, { recursive: true, force: true });
+        rmSync(output, { recursive: true, force: true });
+      }
+    },
+    SPAWN_TIMEOUT
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -188,29 +412,33 @@ describe('building from source', () => {
 // ---------------------------------------------------------------------------
 
 describe('a token whose group has no section', () => {
-  it('fails the build naming the group, rather than emitting it into an arbitrary position or dropping it', () => {
-    const source = mkdtempSync(join(tmpdir(), 'cuatro-tokens-unmapped-'));
-    const output = mkdtempSync(join(tmpdir(), 'cuatro-tokens-unmapped-out-'));
-    try {
-      for (const entry of readdirSync(SOURCE_DIR)) {
-        writeFileSync(join(source, entry), readFileSync(join(SOURCE_DIR, entry)));
+  it(
+    'fails the build naming the group, rather than emitting it into an arbitrary position or dropping it',
+    () => {
+      const source = scratch('unmapped');
+      const output = scratch('unmapped-out');
+      try {
+        for (const entry of readdirSync(SOURCE_DIR)) {
+          writeFileSync(join(source, entry), readFileSync(join(SOURCE_DIR, entry)));
+        }
+        writeFileSync(
+          join(source, 'zzz-unmapped.json'),
+          JSON.stringify({ shadow: { $type: 'dimension', soft: { $value: '4px' } } })
+        );
+
+        const result = runBuild({ CUATRO_TOKENS_SOURCE: source, CUATRO_TOKENS_OUTPUT: output });
+
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain('shadow');
+        expect(result.stderr).toContain('has no section');
+        expect(readdirSync(output), 'a file was written despite the unmapped group').toEqual([]);
+      } finally {
+        rmSync(source, { recursive: true, force: true });
+        rmSync(output, { recursive: true, force: true });
       }
-      writeFileSync(
-        join(source, 'zzz-unmapped.json'),
-        JSON.stringify({ shadow: { $type: 'dimension', soft: { $value: '4px' } } })
-      );
-
-      const result = runBuild(source, output);
-
-      expect(result.status).not.toBe(0);
-      expect(result.stderr).toContain('shadow');
-      expect(result.stderr).toContain('has no section');
-      expect(readdirSync(output), 'a file was written despite the unmapped group').toEqual([]);
-    } finally {
-      rmSync(source, { recursive: true, force: true });
-      rmSync(output, { recursive: true, force: true });
-    }
-  });
+    },
+    SPAWN_TIMEOUT
+  );
 
   it('leaves the ungrouped tokens working, because their group key is the token name itself', () => {
     for (const name of ['--measure', '--page-pad', '--tap', '--focus-offset']) {
@@ -220,18 +448,24 @@ describe('a token whose group has no section', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Matrix rows 5 and 6: a role that does not resolve, and a role that resolves
+// Matrix rows 5 and 6: a reference that does not resolve, and one that resolves
 // to itself.
 // ---------------------------------------------------------------------------
 
-describe('the semantic role layer', () => {
-  it('is every --token-* as a plain var() reference to a --c-* value declared in the same file', () => {
-    expect(() => assertRolesResolve(rootDeclarations)).not.toThrow();
+describe('the reference layer', () => {
+  it('resolves every var() in the file to a property declared in the same file', () => {
+    expect(() => assertReferencesResolve(rootDeclarations)).not.toThrow();
+  });
+
+  it('makes every --token-* a plain var() reference to a --c-* value', () => {
+    for (const name of namesMatching('--token-')) {
+      expect(rootValues.get(name), name).toMatch(/^var\(--c-[a-z0-9-]+\)$/);
+    }
   });
 
   it('fails naming the role and the target when a role points at a palette entry that is not declared', () => {
     expect(() =>
-      assertRolesResolve([
+      assertReferencesResolve([
         ['--c-paper', 'oklch(12% 0.011 288)'],
         ['--token-bg', 'var(--c-missing)'],
       ])
@@ -239,23 +473,35 @@ describe('the semantic role layer', () => {
   });
 
   it('fails naming the role when a role references itself, which is silently transparent at runtime', () => {
-    expect(() => assertRolesResolve([['--token-bg', 'var(--token-bg)']])).toThrow(/--token-bg references itself/);
+    expect(() => assertReferencesResolve([['--token-bg', 'var(--token-bg)']])).toThrow(/--token-bg references itself/);
+  });
+
+  // `--elev-*` is an alias layer too, and was invisible to this check while it
+  // only looked at `--token-*`.
+  it('fails on an elevation alias that points nowhere, and on one that points at itself', () => {
+    expect(() => assertReferencesResolve([['--elev-0', 'var(--c-missing)']])).toThrow(
+      /--elev-0 references --c-missing, which is not declared/
+    );
+    expect(() => assertReferencesResolve([['--elev-1', 'var(--elev-1)']])).toThrow(/--elev-1 references itself/);
   });
 
   it('fails when a role is not a var() reference at all, so text that merely looks like one cannot pass', () => {
-    expect(() => assertRolesResolve([['--token-bg', 'oklch(12% 0.011 288)']])).toThrow(
+    expect(() => assertReferencesResolve([['--token-bg', 'oklch(12% 0.011 288)']])).toThrow(
       /--token-bg is not a plain var\(\) reference/
     );
-    expect(() => assertRolesResolve([['--token-bg', '/* var(--c-paper) */']])).toThrow(
-      /--token-bg is not a plain var\(\) reference/
-    );
+    expect(() =>
+      assertReferencesResolve([
+        ['--c-paper', 'oklch(12% 0.011 288)'],
+        ['--token-bg', 'var(--c-paper) var(--c-paper)'],
+      ])
+    ).toThrow(/--token-bg is not a plain var\(\) reference/);
   });
 
   it('refuses a role that reaches past the palette into another role', () => {
     expect(() =>
-      assertRolesResolve([
-        ['--token-bg', 'var(--c-paper)'],
+      assertReferencesResolve([
         ['--c-paper', 'oklch(12% 0.011 288)'],
+        ['--token-bg', 'var(--c-paper)'],
         ['--token-bg-raised', 'var(--token-bg)'],
       ])
     ).toThrow(/--token-bg-raised references --token-bg, which is not a --c-\* palette value/);
@@ -297,12 +543,63 @@ describe('the contract version in the header', () => {
 });
 
 // ---------------------------------------------------------------------------
+// The file has to be CSS a consumer can @import, not merely text that parses
+// under a regex.
+// ---------------------------------------------------------------------------
+
+describe('the published file as CSS', () => {
+  it('balances its braces', () => {
+    expect(() => blocksIn(stripped)).not.toThrow();
+    expect((stripped.match(/\{/g) ?? []).length).toBe((stripped.match(/\}/g) ?? []).length);
+  });
+
+  it('carries exactly two top-level rules, :root and the reduced-motion query', () => {
+    expect(topLevel.blocks.map((block) => block.prelude)).toEqual([
+      ':root',
+      '@media (prefers-reduced-motion: reduce)',
+    ]);
+  });
+
+  it('declares nothing outside a rule', () => {
+    expect(declarationsIn(topLevel.outside)).toEqual([]);
+    expect(topLevel.outside).not.toContain(';');
+  });
+
+  it('puts all 89 declarations inside the single :root block', () => {
+    expect(rootBlock).toBeDefined();
+    expect(declarationsIn(rootBlock!.body)).toHaveLength(89);
+    expect(declarationsIn(stripped)).toHaveLength(89 + mediaDeclarations.length);
+  });
+
+  it('nests exactly one :root inside the reduced-motion query and nothing else', () => {
+    expect(mediaBlock).toBeDefined();
+    const inner = blocksIn(mediaBlock!.body);
+    expect(inner.blocks.map((block) => block.prelude)).toEqual([':root']);
+    expect(declarationsIn(inner.outside)).toEqual([]);
+  });
+
+  it('is LF only and ends with exactly one newline', () => {
+    // `.gitattributes` carries `contracts/** text eol=lf` precisely because a
+    // CRLF checkout desyncs the drift gate from the generator. When that rule is
+    // lost, this fails as the checkout problem it is rather than as an opaque
+    // byte mismatch in the build case above.
+    expect(css.includes('\r'), 'the published contract holds a CR, so `contracts/** text eol=lf` is not in effect').toBe(
+      false
+    );
+    expect(css.endsWith('\n')).toBe(true);
+    expect(css.endsWith('\n\n')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // The acceptance criteria that are not matrix rows.
 // ---------------------------------------------------------------------------
 
 describe('the published property set', () => {
   // The counts `epics.md:1550` fixes, category by category, plus the total, so
   // a token added to one category and dropped from another cannot net out.
+  // Every member list is filtered out of the parsed file, never appended as a
+  // literal, so deleting `--page-pad` or `--focus-offset` fails its count here.
   const categories: Array<[label: string, names: string[], expected: number]> = [
     ['palette', namesMatching('--c-'), 12],
     ['semantic roles', namesMatching('--token-'), 12],
@@ -311,11 +608,11 @@ describe('the published property set', () => {
     ['weights', namesMatching('--w-'), 5],
     ['line-heights', namesMatching('--lh-'), 5],
     ['tracking', namesMatching('--tr-'), 6],
-    ['spacing steps', [...namesMatching('--s-'), '--page-pad'], 9],
+    ['spacing steps', namesWhere((name) => name.startsWith('--s-') || name === '--page-pad'), 9],
     ['shape', namesMatching('--r-'), 3],
-    ['stroke', [...namesMatching('--stroke-'), '--focus-offset'], 5],
+    ['stroke', namesWhere((name) => name.startsWith('--stroke-') || name === '--focus-offset'), 5],
     ['elevation', namesMatching('--elev-'), 3],
-    ['motion', [...namesMatching('--dur-'), ...namesMatching('--ease-')], 7],
+    ['motion', namesWhere((name) => name.startsWith('--dur-') || name.startsWith('--ease-')), 7],
     ['z-index', namesMatching('--z-'), 7],
   ];
 
@@ -326,33 +623,50 @@ describe('the published property set', () => {
   }
 
   it('declares --measure and --tap once each', () => {
-    expect(namesMatching('--measure')).toEqual(['--measure']);
-    expect(namesMatching('--tap')).toEqual(['--tap']);
+    expect(namesWhere((name) => name === '--measure')).toEqual(['--measure']);
+    expect(namesWhere((name) => name === '--tap')).toEqual(['--tap']);
   });
 
   it('declares 89 properties in total and no name twice', () => {
     expect(rootDeclarations).toHaveLength(89);
-    expect(new Set(rootDeclarations.map(([name]) => name)).size).toBe(89);
+    expect(new Set(declaredNames).size).toBe(89);
   });
 
-  it('authors every palette value in OKLCH on hue 288, with no hex fallback substituted for one', () => {
-    const palette = rootDeclarations.filter(([name]) => name.startsWith('--c-'));
-    for (const [name, value] of palette) {
-      expect(value, `${name} is not an authored OKLCH value on hue 288`).toMatch(
+  it('declares exactly the expected names, in the expected order', () => {
+    expect(declaredNames).toEqual(EXPECTED_NAMES);
+  });
+
+  it('keeps every name inside the naming convention, so a hand-edited one is rejected rather than ignored', () => {
+    for (const name of declaredNames) {
+      expect(name, `${name} is not a lowercase kebab custom property`).toMatch(/^--[a-z][a-z0-9-]*$/);
+    }
+  });
+
+  it('authors every palette value in OKLCH on hue 288, with no hex or other colour space substituted', () => {
+    for (const name of namesMatching('--c-')) {
+      expect(rootValues.get(name), `${name} is not an authored OKLCH value on hue 288`).toMatch(
         /^oklch\(\d+(\.\d+)?% \d+(\.\d+)? 288( \/ \d+(\.\d+)?)?\)$/
       );
     }
-    // Read past the comments: the scrim's own note quotes `rgba()` precisely to
-    // say the FR-17 gate must reject it everywhere else.
-    const declared = `${parts.root}${parts.media}`;
-    expect(declared).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(declared).not.toContain('rgba(');
-    expect(declared).not.toContain('hsl(');
   });
 
-  it('carries the one translucent value on the palette entry and nowhere else', () => {
-    const translucent = rootDeclarations.filter(([, value]) => value.includes('/') && value.startsWith('oklch('));
-    expect(translucent.map(([name]) => name)).toEqual(['--c-scrim']);
+  // Asserted as a property of the values rather than as a ban on three
+  // spellings. `hsla()` contains neither `hsl(` nor `rgba(`, and an eight-digit
+  // hex contains neither, so a ban-list lets both through. An allow-list of the
+  // functions the contract carries does not.
+  it('calls only the four value functions the contract is allowed to carry, and no hex anywhere', () => {
+    const allowed = new Set(['var', 'oklch', 'clamp', 'cubic-bezier']);
+    for (const [name, value] of [...rootDeclarations, ...mediaDeclarations]) {
+      expect(value, `${name} carries a hex colour`).not.toContain('#');
+      for (const call of value.matchAll(/([A-Za-z][A-Za-z-]*)\(/g)) {
+        expect(allowed.has(call[1]), `${name} calls ${call[1]}(), which the contract does not carry`).toBe(true);
+      }
+    }
+  });
+
+  it('carries exactly one translucent value, on the palette entry that exists to be one', () => {
+    const translucent = rootDeclarations.filter(([, value]) => /\s\/\s/.test(value)).map(([name]) => name);
+    expect(translucent).toEqual(['--c-scrim']);
     expect(rootValues.get('--c-scrim')).toBe('oklch(12% 0.011 288 / 0.88)');
     expect(rootValues.get('--token-scrim')).toBe('var(--c-scrim)');
   });
@@ -367,16 +681,18 @@ describe('the hit-target floor and the px rule', () => {
     const readerScaled = rootDeclarations.filter(
       ([name]) => name.startsWith('--t-') || name.startsWith('--s-') || name === '--page-pad' || name === '--measure'
     );
+    expect(readerScaled.length).toBe(20);
     for (const [name, value] of readerScaled) {
       expect(value, `${name} is authored in px and would not scale with the root font size`).not.toContain('px');
     }
   });
 
-  // `epics.md:1558-1559` calls --tap "the only length in the contract authored
-  // in px". `DESIGN.md` section `tokens.css`, which the same criterion names as
-  // what fixes the property set, authors the shape and stroke geometry in px
-  // too, and `DESIGN.md:602` states rules are "1px and opaque". The design block
-  // wins, and the exact set is pinned here so neither can drift unnoticed.
+  // `epics.md:1558-1559` and `DESIGN.md:540` both call --tap "the only length in
+  // the contract authored in px". `DESIGN.md` section `tokens.css`, which the
+  // same criterion names as what fixes the property set, authors the shape and
+  // stroke geometry in px too, and `DESIGN.md:602` states rules are "1px and
+  // opaque". The design block wins, and the exact set is pinned here so neither
+  // can drift unnoticed. See `ops/token-contract.md`.
   it('keeps the shape and stroke geometry in px, and lets nothing else in', () => {
     const inPixels = rootDeclarations.filter(([, value]) => /px\b/.test(value)).map(([name]) => name);
     expect(inPixels.sort()).toEqual(
@@ -392,12 +708,21 @@ describe('the hit-target floor and the px rule', () => {
       ].sort()
     );
   });
+
+  it('publishes a comment about --tap that the file it sits in does not contradict', () => {
+    const comment = (css.match(/\/\*[\s\S]*?\*\//g) ?? []).find((block) => block.includes('hit-target floor')) ?? '';
+    expect(comment, 'the --tap note is not in the published file').not.toBe('');
+    expect(comment).toContain('physical-size guarantee');
+    expect(comment).toContain('BOTH axes');
+    expect(comment).toContain('shape and stroke');
+    expect(comment).not.toContain('ONE px length in the contract');
+  });
 });
 
 describe('the reduced-motion block', () => {
   it('is the one @media rule in the file, and it targets :root', () => {
     expect(css.match(/@media/g)).toHaveLength(1);
-    expect(parts.media.trim()).toMatch(/^@media \(prefers-reduced-motion: reduce\) \{\s*:root \{/);
+    expect(mediaBlock?.prelude).toBe('@media (prefers-reduced-motion: reduce)');
   });
 
   it('collapses exactly the --dur-* set declared in :root, and every one of them to 1ms', () => {
@@ -428,18 +753,30 @@ describe('what the contract must never carry', () => {
   });
 
   it('ships one file under contracts/, and no executable one', () => {
-    const published = filesUnder(CONTRACTS).map((file) => relative(REPO_ROOT, file).split(sep).join('/'));
+    const published = filesUnder(CONTRACTS).map(repoRelative);
     expect(published).toEqual(['contracts/tokens.css']);
     for (const file of published) {
       expect(file, `${file} is executable and contracts/ is the published surface (AD-1)`).not.toMatch(EXECUTABLE);
     }
   });
 
-  it('keeps every generator file under packages/', () => {
-    const generator = filesUnder(PACKAGE_ROOT).map((file) => relative(REPO_ROOT, file).split(sep).join('/'));
-    expect(generator.filter((file) => EXECUTABLE.test(file)).length).toBeGreaterThan(0);
-    for (const file of generator) {
-      expect(file.startsWith('packages/')).toBe(true);
+  it('keeps the generator out of the published surface and out of every manifest above packages/', () => {
+    // AD-1 states two things and this asserts both: nothing executable is
+    // published, and the generator's dependency belongs to the workspace package
+    // alone. Enumerating files under `packages/` and asserting their paths start
+    // with `packages/` proved nothing, which is what this replaces.
+    for (const file of filesUnder(CONTRACTS).map(repoRelative)) {
+      expect(file, `${file} is a script under the published surface`).not.toMatch(/\.(mjs|cjs|js|ts)$/);
+    }
+
+    const manifests = filesUnder(REPO_ROOT)
+      .map(repoRelative)
+      .filter((file) => file.endsWith('package.json') && !file.startsWith('packages/'));
+    expect(manifests, 'the root manifest was not found, so this case would pass over nothing').toContain('package.json');
+    for (const manifest of manifests) {
+      expect(readFileSync(join(REPO_ROOT, manifest), 'utf8'), `${manifest} declares style-dictionary`).not.toContain(
+        'style-dictionary'
+      );
     }
   });
 });
@@ -450,26 +787,58 @@ describe('what the contract must never carry', () => {
 // ---------------------------------------------------------------------------
 
 describe('against DESIGN.md section tokens.css, which fixes the property set', () => {
-  const design = readFileSync(DESIGN, 'utf8');
-  const heading = design.indexOf('### `tokens.css`');
-  const fence = design.indexOf('```css', heading);
-  const end = design.indexOf('```', fence + 6);
-  const block = design.slice(fence + 6, end);
-  const designParts = split(block);
+  /**
+   * Reading the design source off disk is what makes "every name and value
+   * matches the design" a machine assertion. It also couples this suite to a
+   * planning artefact under a dated directory this story does not own, which is
+   * recorded as a stated limit in `ops/token-contract.md`. Every way that
+   * coupling can break throws with the coupling named, rather than throwing
+   * ENOENT during collection or locking onto the wrong fenced block.
+   */
+  const designBlock = (): string => {
+    const where = repoRelative(DESIGN);
+    if (!existsSync(DESIGN)) {
+      throw new Error(
+        `the design source is not at ${where}. This suite reads it to compare the published contract ` +
+          `declaration by declaration; see ops/token-contract.md, "Stated limits".`
+      );
+    }
+    const design = readFileSync(DESIGN, 'utf8');
+    const heading = design.indexOf('### `tokens.css`');
+    if (heading === -1) {
+      throw new Error(`${where} carries no "### \`tokens.css\`" heading, so there is no block to compare against.`);
+    }
+    const fence = design.indexOf('```css', heading);
+    if (fence === -1) {
+      throw new Error(`${where} has no fenced css block after its "### \`tokens.css\`" heading.`);
+    }
+    const end = design.indexOf('```', fence + 6);
+    if (end === -1) {
+      throw new Error(`${where} has an unterminated css fence under its "### \`tokens.css\`" heading.`);
+    }
+    return design.slice(fence + 6, end);
+  };
+
+  const designParts = () => {
+    const block = stripComments(designBlock());
+    const media = block.indexOf('@media');
+    return {
+      root: media === -1 ? block : block.slice(0, media),
+      media: media === -1 ? '' : block.slice(media),
+    };
+  };
 
   it('finds the block, so a moved heading fails here rather than passing vacuously', () => {
-    expect(heading).toBeGreaterThan(-1);
-    expect(fence).toBeGreaterThan(heading);
-    expect(end).toBeGreaterThan(fence);
-    expect(declarationsIn(designParts.root).length).toBeGreaterThan(80);
+    expect(() => designBlock()).not.toThrow();
+    expect(declarationsIn(designParts().root).length).toBeGreaterThan(80);
   });
 
   it('declares the same names in the same order with the same values', () => {
-    expect(rootDeclarations).toEqual(declarationsIn(designParts.root));
+    expect(rootDeclarations).toEqual(declarationsIn(designParts().root));
   });
 
   it('carries the same reduced-motion block', () => {
-    expect(mediaDeclarations).toEqual(declarationsIn(designParts.media));
+    expect(mediaDeclarations).toEqual(declarationsIn(designParts().media));
   });
 });
 
@@ -478,9 +847,21 @@ describe('against DESIGN.md section tokens.css, which fixes the property set', (
 // ---------------------------------------------------------------------------
 
 describe('the DTCG source', () => {
+  const sourceFiles = readdirSync(SOURCE_DIR);
+
   it('is JSON only, so nothing executable can be mistaken for a token file', () => {
-    for (const entry of readdirSync(SOURCE_DIR)) {
+    expect(sourceFiles.length).toBeGreaterThan(0);
+    for (const entry of sourceFiles) {
       expect(entry).toMatch(/\.json$/);
+    }
+  });
+
+  it('carries its own provenance, so a tool author who trusts $type is not left to infer the decision', () => {
+    for (const entry of sourceFiles) {
+      const parsed = JSON.parse(readFileSync(join(SOURCE_DIR, entry), 'utf8')) as { $description?: string };
+      expect(parsed.$description, `${entry} carries no $description`).toBeTypeOf('string');
+      expect(parsed.$description).toContain('CSS strings inside DTCG structure');
+      expect(parsed.$description).toContain('ops/token-contract.md');
     }
   });
 
@@ -496,7 +877,7 @@ describe('the DTCG source', () => {
       }
       for (const value of Object.values(record)) walk(value);
     };
-    for (const entry of readdirSync(SOURCE_DIR)) {
+    for (const entry of sourceFiles) {
       walk(JSON.parse(readFileSync(join(SOURCE_DIR, entry), 'utf8')));
     }
     // Twelve roles plus three elevation steps.

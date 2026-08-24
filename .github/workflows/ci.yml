@@ -30,6 +30,13 @@ jobs:
 
   tokens-contract:
     runs-on: ubuntu-latest
+
+    # The job installs, runs one Node script and reads `git status`, so it is the
+    # fastest thing in this file. A ceiling turns a hung install into a failure
+    # with a cause rather than a job that runs until the platform kills it, which
+    # is the same argument the `rendered-output` job below makes.
+    timeout-minutes: 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -50,15 +57,22 @@ jobs:
       # which is exactly the shape of mistake Stories 1.12 and 1.13 will make
       # when they add a second and a third output under `contracts/`. Reading
       # `git status --porcelain` sees an untracked path and a deleted one too,
-      # so the first new file cannot ship unreviewed. The diff is printed after
-      # the status because it is what names the offending property.
+      # so the first new file cannot ship unreviewed. `--ignored=matching` means
+      # a generated path that `.gitignore` happens to match is reported rather
+      # than hidden, which is the same hole one level down.
+      #
+      # `git add --intent-to-add` before the diff is what makes the diff say
+      # anything at all about an appeared file: without it, `git diff` prints
+      # nothing for an untracked path and the log carries a filename with no
+      # content, on exactly the case this gate was written for.
       - name: Fail if the published contract drifted from its source
         run: |
-          drift="$(git status --porcelain -- contracts/)"
+          drift="$(git status --porcelain --ignored=matching -- contracts/)"
           if [ -n "$drift" ]; then
             echo "contracts/ is not what packages/tokens generates."
             echo "Run 'pnpm tokens:build' and commit the result."
             echo "$drift"
+            git add --intent-to-add -- contracts/
             git --no-pager diff -- contracts/
             exit 1
           fi

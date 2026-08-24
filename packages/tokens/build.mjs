@@ -30,9 +30,16 @@ import StyleDictionary from 'style-dictionary';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
 
-// The two overrides exist so a test can run this generator against a scratch
-// source tree without writing into `contracts/`. They default to the real
-// paths, so an ordinary `pnpm tokens:build` needs no environment at all.
+// `CUATRO_TOKENS_SOURCE` and `CUATRO_TOKENS_OUTPUT` are build inputs, documented
+// in `ops/token-contract.md` under "How the file is regenerated". They exist so a
+// test can run this generator against a scratch source tree without writing into
+// `contracts/`, and they default to the real paths, so an ordinary
+// `pnpm tokens:build` needs no environment at all.
+//
+// Either one set in a CI runner would silently redirect the build away from
+// `contracts/`, leaving `git status -- contracts/` clean and the drift gate green
+// on real drift. The generator therefore prints both resolved paths on every run,
+// so the job log says where it actually wrote rather than where it was assumed to.
 const SOURCE_DIR = process.env.CUATRO_TOKENS_SOURCE
   ? resolve(process.env.CUATRO_TOKENS_SOURCE)
   : join(HERE, 'tokens');
@@ -43,8 +50,23 @@ const OUTPUT_DIR = process.env.CUATRO_TOKENS_OUTPUT
 /** Style Dictionary joins `buildPath` and `destination` as plain strings. */
 const asPosix = (value) => value.replace(/\\/g, '/');
 
-/** The single source of the contract version. AD-16 verifies Satellites against it. */
-const VERSION = JSON.parse(readFileSync(join(HERE, 'package.json'), 'utf8')).version;
+/**
+ * The single source of the contract version. AD-16 has a scheduled job read
+ * `Contract vX.Y.Z` out of every Satellite's vendored copy, so a version that is
+ * not exactly three dot-separated numbers breaks that check estate-wide rather
+ * than here. A missing `version` would otherwise publish `Contract vundefined`,
+ * and a prerelease would publish something the job cannot parse.
+ */
+const VERSION = (() => {
+  const declared = JSON.parse(readFileSync(join(HERE, 'package.json'), 'utf8')).version;
+  if (typeof declared !== 'string' || !/^\d+\.\d+\.\d+$/.test(declared)) {
+    throw new Error(
+      `packages/tokens/build.mjs: packages/tokens/package.json declares version ${JSON.stringify(declared)}, ` +
+        `which is not the exact X.Y.Z the "Contract vX.Y.Z" header must carry for AD-16 to read it.`
+    );
+  }
+  return declared;
+})();
 
 // `DESIGN.md` section order, verbatim. A section can carry more than one group:
 // `--page-pad` sits in the space section, `--focus-offset` in the stroke
@@ -129,7 +151,15 @@ const publishedValue = (token, nameByPath) => {
 };
 
 /** A one-line description trails the declaration; a multi-line one sits above it. */
-const commentLines = (description, indent) => {
+const commentLines = (description, indent, name) => {
+  // A description carrying a comment delimiter closes the generated comment early
+  // and injects its own prose into the published contract as CSS.
+  if (description.includes('*/') || description.includes('/*')) {
+    throw new Error(
+      `packages/tokens/build.mjs: the $description on --${name} contains a CSS comment delimiter, ` +
+        `which would close the generated comment early and inject prose into the published contract.`
+    );
+  }
   const lines = description.split('\n');
   if (lines.length === 1) return { above: [], trailing: `/* ${lines[0]} */` };
   const above = lines.map((line, index) => {
@@ -145,7 +175,7 @@ const declarations = (entries, indent) => {
   const column = indent.length + 2 + Math.max(...entries.map(([name]) => name.length)) + 2;
   const lines = [];
   for (const [name, value, description] of entries) {
-    const { above, trailing } = description ? commentLines(description, indent) : { above: [], trailing: '' };
+    const { above, trailing } = description ? commentLines(description, indent, name) : { above: [], trailing: '' };
     lines.push(...above);
     const declaration = `${indent}--${name}:`.padEnd(column) + `${value};`;
     lines.push(trailing ? `${declaration}   ${trailing}` : declaration);
@@ -156,6 +186,17 @@ const declarations = (entries, indent) => {
 StyleDictionary.registerFormat({
   name: 'cuatro/tokens-css',
   format: ({ dictionary }) => {
+    // A moved or emptied source directory makes the glob match nothing, and Style
+    // Dictionary is content to write the result. Publishing an empty `:root` over
+    // the contract seven repositories vendor is the worst thing this generator
+    // could do quietly, so it refuses instead.
+    if (dictionary.allTokens.length === 0) {
+      throw new Error(
+        `packages/tokens/build.mjs: no tokens were read from ${asPosix(SOURCE_DIR)}. ` +
+          `Refusing to publish an empty contract over contracts/tokens.css.`
+      );
+    }
+
     const nameByPath = new Map(dictionary.allTokens.map((token) => [token.path.join('.'), token.name]));
 
     const ordered = dictionary.allTokens
@@ -224,5 +265,10 @@ const dictionary = new StyleDictionary({
   },
   log: { verbosity: 'verbose' },
 });
+
+// Printed before the build, so a redirected run says so in the job log even when
+// the build then fails.
+console.log(`packages/tokens: reading  ${asPosix(SOURCE_DIR)}/*.json`);
+console.log(`packages/tokens: writing  ${asPosix(join(OUTPUT_DIR, 'tokens.css'))}`);
 
 await dictionary.buildAllPlatforms();

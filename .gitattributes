@@ -11,15 +11,15 @@
 # Deliberately narrow. A repository-wide `* text=auto` would renormalise files
 # no story has touched, which is a large unrelated diff.
 
+*.sh text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.mjs text eol=lf
+
 # `contracts/` is the published surface. It is vendored into seven repositories
 # under one fixed folder name (AD-14), it is generated with `\n` endings by
 # `packages/tokens/build.mjs`, and the `tokens-contract` CI job fails on any
 # difference between the committed file and a fresh build. Without this rule a
 # checkout on the authoring machine holds CRLF, and whether the gate agrees with
 # the generator would depend on whose `core.autocrlf` ran last.
-
-*.sh text eol=lf
-*.service text eol=lf
-*.timer text eol=lf
-*.mjs text eol=lf
 contracts/** text eol=lf

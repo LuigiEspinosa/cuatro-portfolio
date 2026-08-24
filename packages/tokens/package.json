@@ -5,9 +5,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "scripts": {
-    "build": "node build.mjs"
-  },
+  "_entryPoint": "corepack pnpm tokens:build, in the root package.json. This manifest declares no build script on purpose: two definitions of one command drift apart, and the root script is the one CI and ops/token-contract.md drive.",
   "devDependencies": {
     "style-dictionary": "5.5.2"
   }

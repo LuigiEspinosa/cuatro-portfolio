@@ -91,9 +91,12 @@
   --page-pad: clamp(1.25rem, 5vw, 4rem);
 
   /* ── hit target ────────────────────────────────────────── */
-  /* The ONE px length in the contract, and deliberately so: a target floor
-     is a physical-size guarantee and must not shrink with the root font
-     size. Applies on BOTH axes. See DESIGN.md § The hit-target floor. */
+  /* The one length authored as a physical-size guarantee: a target floor is
+     a promise about a fingertip and must not shrink with the root font size.
+     Applies on BOTH axes. The shape and stroke values are px as well, as
+     fixed geometry rather than as a guarantee. No reader-scaled length is px:
+     not the type scale, not the spacing scale, not the measure.
+     See DESIGN.md § The hit-target floor. */
   --tap: 44px;
 
   /* ── shape ─────────────────────────────────────────────── */

@@ -19,10 +19,10 @@ They are the same stories.
 
 ## What v1.0.0 publishes
 
-One file, `contracts/tokens.css`, **6,029 bytes over 142 lines, 1,789 bytes gzipped**
+One file, `contracts/tokens.css`, **6,225 bytes over 145 lines, 1,892 bytes gzipped**
 (**observed 2026-08-24**, by `Get-Item`, `Get-Content` and a `GZipStream` at
 `CompressionLevel.SmallestSize` on the development host). Its sha256 at the closing commit is
-`aa04eec57b549fffb99958cf1483b10550b2aa10dc73f1c047200b9f707b76fa` (**observed 2026-08-24**, by
+`319a825597995cbecacc43f08da9b24b48db636abc2b1e023ea4387a5cb38462` (**observed 2026-08-24**, by
 `Get-FileHash`).
 
 Every name, every value, the section order and the `@media (prefers-reduced-motion: reduce)` block
@@ -68,6 +68,7 @@ contract that covers everything.
 | Not published | Why not | Owner |
 |---|---|---|
 | `contracts/fonts.css` and any `@font-face` rule | A `url()` in `tokens.css` breaks the moment a Satellite vendors the folder to a different depth. The faces travel in their own file, whose `url()` paths are relative to itself | **Decision.** Story 1.12 |
+| ...**and the shipped header already points at that file** | The header reads "Values only. Font files: see fonts.css (same folder)", and `contracts/fonts.css` does not exist yet. **A Satellite that vendors the folder today follows a dangling pointer**: it gets the three `--f-*` family names with no faces behind them, and falls back to a system stack that looks almost right. The header is `DESIGN.md`'s text and stays, because the alternative is a header that changes in Story 1.12 for no reason a consumer can see. Nothing should vendor `contracts/` before Story 1.12 lands | **Observed 2026-08-24**, by reading the published header against `git ls-files contracts`. Owner: Story 1.12, and Story 1.16 which serves the directory |
 | `contracts/tailwind.css`, the `@theme inline` adapter | Generated from this file, and it needs `fonts.css` to exist first | **Decision.** Story 1.13 |
 | `contracts/registry.json` | Hand-authored Registry data, a different artefact with a different lifecycle | **Decision.** Story 2.x |
 | Any light-theme or high-contrast variant | The contract is dark only at v1.0.0, and the header says so | **Decision.** `DESIGN.md` |
@@ -185,6 +186,17 @@ The contract is published as designed, the exact set of eight `px` tokens is pin
 neither side can drift unnoticed, and the wording is raised as Pending Operator action 1 below.
 This story may not edit planning artefacts.
 
+**The published comment on `--tap` deliberately does not match the design block's comment text.**
+**Decision.** `DESIGN.md`'s own comment beside `--tap` reads "The ONE px length in the contract, and
+deliberately so". Shipping that sentence into a file that goes on to declare seven more `px` values
+would have vendored the false claim into seven repositories, where it is read by people who have no
+access to this record. The published comment instead says what is true: `--tap` is the one length
+authored as a physical-size guarantee, the shape and stroke values are `px` as fixed geometry, and
+no reader-scaled length is `px`. **Every name and every value still matches `DESIGN.md:832-957`
+exactly**; this is the single place the contract's comment prose diverges from the design block, it
+is asserted by a test so it cannot silently revert, and the divergence closes when Pending Operator
+action 1 corrects the two planning artefacts.
+
 ## How the file is regenerated
 
 ```
@@ -192,7 +204,44 @@ corepack pnpm tokens:build
 ```
 
 That runs `node packages/tokens/build.mjs`, which reads every `packages/tokens/tokens/*.json` and
-rewrites `contracts/tokens.css`. It is the only thing that writes that file.
+rewrites `contracts/tokens.css`. It is the only thing that writes that file, and the root script is
+the only entry point: `packages/tokens/package.json` deliberately declares no `build` script of its
+own, because two definitions of one command drift apart and CI drives the root one.
+
+### The two build inputs
+
+The generator reads two environment variables. **Both default to the real paths, so an ordinary
+`corepack pnpm tokens:build` needs no environment at all.** They are documented here rather than
+left in a code comment because either one present in a runner's environment would redirect the build
+away from `contracts/`, leave `git status -- contracts/` clean, and hold the drift gate green over
+real drift.
+
+| Variable | Default | What it is for | Nature |
+|---|---|---|---|
+| `CUATRO_TOKENS_SOURCE` | `packages/tokens/tokens` | The DTCG source directory to read | **Decision.** Used by the tests to run the generator against a scratch source |
+| `CUATRO_TOKENS_OUTPUT` | `contracts` | The directory to write `tokens.css` into | **Decision.** Used by the tests to compare a fresh build against the committed file without touching the working tree |
+
+**Neither may be set in CI.** The generator prints both resolved paths on every run, before the
+build, so the job log says where it actually wrote rather than where it was assumed to:
+
+```
+packages/tokens: reading  /home/runner/work/cuatro-portfolio/cuatro-portfolio/packages/tokens/tokens/*.json
+packages/tokens: writing  /home/runner/work/cuatro-portfolio/cuatro-portfolio/contracts/tokens.css
+```
+
+`tokens-contract.test.ts` additionally asserts that with neither variable set the output resolves to
+`contracts/tokens.css`, and it asserts that without writing anything: it points the source at an
+empty directory, which the generator refuses before it writes.
+
+### What the generator refuses
+
+| Refusal | Why | Nature |
+|---|---|---|
+| A source directory holding no tokens | A moved or emptied source makes the glob match nothing, and publishing an empty `:root` over the file seven repositories vendor is the worst thing this generator could do quietly | **Decision** |
+| A `version` that is not exactly `X.Y.Z` | AD-16's scheduled job reads `Contract vX.Y.Z`. A missing version would publish `Contract vundefined` and a prerelease something the job cannot parse | **Decision** |
+| A token group with no section | Never emitted into an arbitrary position and never silently dropped | **Decision** |
+| A `$description` carrying `/*` or `*/` | It would close the generated comment early and inject its own prose into the published contract as CSS | **Decision** |
+| A reference to a token that is not in the dictionary | Style Dictionary refuses first, and the generator refuses again for a reference it resolves itself | **Decision** |
 
 | Property | Value | Nature |
 |---|---|---|
@@ -219,15 +268,22 @@ below exists because that instruction alone is not enforcement.
 | Blocking | Yes. No `continue-on-error`, no `|| true`, no soft-fail | **Decision.** AD-21, and `AGENTS.md` under "Policy" |
 | Triggers | `push` to `**` and `pull_request` to `main` | **Observed 2026-08-24.** The job sits in the existing file and inherits that file's `on:` block at `:3-7` rather than declaring its own, so the two can never drift |
 | Runner | `ubuntu-latest`, Node 22 through `setup-node`, pnpm cache on | **Decision.** The same shape as the `test` job |
-| What it does | Installs, runs `pnpm tokens:build`, then fails if `git status --porcelain -- contracts/` is not empty | **Decision** |
+| Ceiling | `timeout-minutes: 10` | **Decision.** The job installs, runs one Node script and reads `git status`, so it is the fastest thing in the file. A hung install becomes a failure with a cause rather than a job the platform eventually kills, which is the argument the `rendered-output` job already makes |
+| What it does | Installs, runs `pnpm tokens:build`, then fails if `git status --porcelain --ignored=matching -- contracts/` is not empty | **Decision** |
 | Why `git status` and not only `git diff` | `git diff --exit-code` is blind to a file the generator newly created, which is exactly the shape of mistake Stories 1.12 and 1.13 will make when they add a second and a third output. `git status --porcelain` also sees an untracked path and a deleted one | **Decision**, demonstrated by Probe 3 below |
+| Why `--ignored=matching` | A generated path that `.gitignore` happens to match is otherwise invisible to `git status` too, which is the same hole one level down | **Decision** |
+| Why `git add --intent-to-add` before the diff | `git diff` prints nothing for an untracked path, so on the one case this gate exists for the log would carry a filename and no content. The intent-to-add makes the appeared file's content show up in the diff | **Decision** |
 | The two existing jobs | Byte-identical to `064c087` | **Observed 2026-08-24**, by extracting both job blocks from `git show 064c087:.github/workflows/ci.yml` and comparing them case-sensitively against the same ranges of the edited file |
 
 **The gate is not the only thing holding the contract.** `packages/tokens/__tests__/tokens-contract.test.ts`
 sits inside the already-blocking `test` job and asserts the published file against `DESIGN.md`
-declaration by declaration, in order, plus every row of the story's edge-case matrix.
-**Observed 2026-08-24**: 45 cases in that file, and 260 tests in the whole suite, up from the 215
-recorded at `4f4c751`, all green in 91.4 s by `corepack pnpm test --run`.
+declaration by declaration, in order, plus every row of the story's edge-case matrix, plus that the
+file is CSS a consumer can `@import`: braces balance, all 89 declarations sit inside the one `:root`
+rule, nothing is declared outside a rule, and the reduced-motion query is the only other rule.
+`docker/__tests__/deps-stage.test.ts` sits in the same job and holds the Dockerfile obligation
+described further down. **Observed 2026-08-24**: 60 cases in the contract file, 6 in the Dockerfile
+file, and **281 tests in the whole suite**, up from the 215 recorded at `4f4c751`, all green in
+79.8 s by `corepack pnpm test --run`.
 
 ## The probe demonstrations
 
@@ -238,11 +294,18 @@ their output lives in this file.
 **A probe is a one-time demonstration; the standing tests are something else.** **Decision.** A
 demonstration recorded in a file proves the gate could fail on 2026-08-24. It proves nothing about
 the run after someone deletes an assertion. So the failure paths are also asserted permanently, by
-the cases in `tokens-contract.test.ts` that run the same assertion helpers against synthetic input:
-a role pointing at a palette entry that is not declared, a role referencing itself, a role that is
-not a `var()` at all, a role reaching past the palette into another role, a header version that
-disagrees with `package.json`, and a header with no version line. All six assert that the check
-rejects, rather than being broken assertions left behind.
+cases that run the same checks against synthetic input or against a scratch build:
+
+- a role pointing at a palette entry that is not declared, and an elevation alias doing the same;
+- a role referencing itself, and an elevation alias referencing itself;
+- a role that is not a `var()` at all, and one that is more than a single `var()`;
+- a role reaching past the palette into another role;
+- a header version that disagrees with `package.json`, and a header with no version line;
+- a source directory holding no tokens, which must refuse rather than publish an empty contract;
+- a token group with no section, which is Probe 4 run on every suite run;
+- a `deps` stage with a workspace manifest removed, which is the Dockerfile check observed rejecting.
+
+Every one asserts that the check rejects, rather than being a broken assertion left behind.
 
 ### Probe 1: a source value edited and not rebuilt
 
@@ -365,6 +428,23 @@ Story 1-11's boundaries forbid, and it would make the deps layer stop matching t
 `test` job installs from. It is recorded here as the obvious next move if the deps layer ever
 becomes a problem, not as a defect in this story.
 
+**The obligation this created has a standing check, not a comment.** The `deps` stage now has to
+mirror every workspace manifest by hand, and a comment is not enforcement: Story 1.12 adding
+`packages/fonts` without a `COPY` line would pass typecheck, the unit suite, the drift gate and the
+rendered-output harness, and fail first on the deploy from `main`, where there is no staging to
+catch it. `docker/__tests__/deps-stage.test.ts` therefore reads `pnpm-workspace.yaml`, expands its
+`packages:` globs, and asserts that `pnpm-workspace.yaml` and every matched `package.json` appears on
+a `COPY` line of the `deps` stage. It fails naming the manifest that is missing, and it runs inside
+the already-blocking `test` job. **Observed 2026-08-24**, by deleting the
+`COPY packages/tokens/package.json` line and watching the case fail with that manifest named, then
+restoring it.
+
+**`.dockerignore` gained `**/node_modules`.** **Decision.** A `.dockerignore` pattern with no slash
+matches at the context root only, so the existing `node_modules` line left `packages/*/node_modules`
+in the build context and `COPY . .` dragged a workspace package's pnpm symlink tree into the builder
+stage on top of the `node_modules` the deps stage had already placed there. The existing root-level
+line is kept beside the new one rather than replaced, so the intent stays readable.
+
 ## Stated limits
 
 | Limit | Why it is here | Owner |
@@ -372,6 +452,8 @@ becomes a problem, not as a defect in this story.
 | Nothing renders this file yet | Publishing is not adopting. The Hub's render is unchanged and the rendered-output harness still matches its committed baseline | **Decision.** Stories 1.17 and 1.18 |
 | The contract test reads `DESIGN.md` off disk | That is what makes "every name and value matches the design" a machine assertion rather than a manual diff. It also couples the unit suite to a planning artefact. The coupling is deliberate and it fails loudly: one case asserts the heading and the fenced block were found and that the block holds more than eighty declarations, so a moved heading fails rather than passing over an empty parse | **Decision.** Story 1-11 |
 | The published file's whitespace is the generator's, not `DESIGN.md`'s | Values are aligned per section rather than per subgroup, and an inline comment sits three spaces after the semicolon. Every name and every value matches; the column positions do not, and are not asserted | **Decision.** Story 1-11 |
+| The published comment on `--tap` is not the design block's comment text | The design block's comment states a claim its own file contradicts. Rewording it is the only way to avoid vendoring that claim into seven repositories. The divergence is one comment, it is asserted by a test, and it is the only prose in the contract that differs from the design | **Decision.** Story 1-11, closed by Pending Operator action 1 |
+| The CSS is parsed by a brace counter and a regex, not by a CSS parser | Enough to assert that braces balance, that all 89 declarations sit inside the one `:root` rule, and that the reduced-motion query is the only other rule. It is not enough to assert that every value is valid for its property, which no test here claims | **Decision.** Story 1-11 |
 | No contrast ratio, no colour-literal conformance, no hit-target assertion | None of those instruments exists yet, and this story ships the values they will be computed from | **Decision.** Story 2.34 and Story 2.8 |
 | The section rules in the file are box-drawing characters | `U+2500`, copied from the design block. They are not dashes and not emoji, and the punctuation sweep is built so it does not confuse them for either | **Observed 2026-08-24**, by running the sweep against a positive control carrying an em-dash, an en-dash, a double-dash and two emoji, and confirming all five patterns fired before the sweep reported on real files |
 | The DTCG source carries `$description` only where `DESIGN.md` carries a comment | Descriptions are emitted into the published file as comments, so adding one everywhere would put prose into the contract that the design did not write | **Decision.** Story 1-11 |
@@ -383,7 +465,7 @@ prose, in the shape `ops/known-violations.md` and `ops/rendered-output-harness.m
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Correct the `px` wording in `epics.md:1558-1559`** so it reads as a statement about reader-scaled lengths rather than about every length in the contract | Operator | The sentence contradicts its own governing source. `DESIGN.md` authors eight `px` values and the contract ships all eight. This story is forbidden from editing planning artefacts, and the disagreement is settled above rather than left for the next reader to rediscover | _not done_ |
+| 1 | **Correct the `px` wording in `epics.md:1558-1559` and in `DESIGN.md:540`** so both read as statements about reader-scaled lengths rather than about every length in the contract | Operator | Both carry the same false claim, and `DESIGN.md`'s is the one the published comment was copied from. `DESIGN.md` authors eight `px` values and the contract ships all eight. This story is forbidden from editing planning artefacts, so the published comment was reworded instead and the divergence is recorded under "Where `epics.md` and `DESIGN.md` disagree". Correcting both closes it | _not done_ |
 | 2 | **Record the first real CI timing of the `tokens-contract` job**, from the Actions run summary | Operator | Every figure in "What the change cost the production image" is a local host's, and says so. The job has never run on a runner | _not done_ |
 | 3 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Already open as action 3 in `ops/rendered-output-harness.md`, and this story adds to it. `AGENTS.md:52-53` says CI "runs typecheck and tests only", which is now false twice over. `AGENTS.md:64-66` says CI fails on an executable file under `contracts/`, which is the intent but not yet a job; `contracts/` and `packages/` now exist, which that block predates | _not done_ |
 | 4 | **Decide whether the deps layer should stop installing the generator's 62 packages** | Operator | Not a defect and not urgent. Recorded so the option is on the table before the image grows again, and so the next person to look at the deps stage does not rediscover it from scratch | _not done_ |

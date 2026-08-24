@@ -1,4 +1,5 @@
 {
+  "$description": "Values are authored as CSS strings inside DTCG structure, not as DTCG structured color, dimension or duration objects. Style Dictionary 5.5.2 mangles every structured form this contract needs, so $type here is descriptive metadata and the string is the authored value. See ops/token-contract.md, section \"Why the source authors CSS strings inside DTCG structure\".",
   "measure": {
     "$type": "dimension",
     "$value": "46ch"
@@ -21,6 +22,6 @@
   "tap": {
     "$type": "dimension",
     "$value": "44px",
-    "$description": "The ONE px length in the contract, and deliberately so: a target floor\nis a physical-size guarantee and must not shrink with the root font\nsize. Applies on BOTH axes. See DESIGN.md § The hit-target floor."
+    "$description": "The one length authored as a physical-size guarantee: a target floor is\na promise about a fingertip and must not shrink with the root font size.\nApplies on BOTH axes. The shape and stroke values are px as well, as\nfixed geometry rather than as a guarantee. No reader-scaled length is px:\nnot the type scale, not the spacing scale, not the measure.\nSee DESIGN.md § The hit-target floor."
   }
 }
