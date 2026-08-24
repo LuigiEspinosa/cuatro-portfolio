@@ -62,6 +62,42 @@ test.describe('rendered-output harness', () => {
     exercised.add('root-custom-property');
   });
 
+  test('fails when the render is shifted past the tolerance', async ({ page }) => {
+    await page.goto(ROUTE);
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+
+    // The shift is injected into this page only, through the browser, and touches no file.
+    // That is the difference between this test and the probe Story 1-10 applied once and
+    // reverted: the probe edited `WorkHero.scss` to prove the gate could fail at all, and its
+    // output is recorded in `ops/rendered-output-harness.md`. This test is the gate's own
+    // regression test, green on every run, and it is what stops a later change to the
+    // tolerance, to `updateSnapshots`, or to the mask from quietly turning the comparison into
+    // something that cannot fail.
+    await page.addStyleTag({ content: `${HEADING} { transform: translateX(1px); }` });
+
+    const comparison = expect(page).toHaveScreenshot('work-360x800.png', {
+      mask: [page.locator(CANVAS)],
+      // The comparison retries until it matches or this elapses, and it will never match, so
+      // this is a deliberate spend rather than a timeout to be generous with.
+      timeout: 5_000,
+    });
+
+    await expect(comparison).rejects.toThrow(/are different/);
+  });
+
+  test('fails naming the baseline when none is committed', async ({ page }) => {
+    await page.goto(ROUTE);
+
+    const comparison = expect(page).toHaveScreenshot('work-360x800-absent-baseline.png', {
+      mask: [page.locator(CANVAS)],
+      timeout: 5_000,
+    });
+
+    await expect(comparison).rejects.toThrow(/work-360x800-absent-baseline/);
+  });
+
   test('fails naming the selector when nothing matches it', async ({ page }) => {
     await page.goto(ROUTE);
 

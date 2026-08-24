@@ -30,9 +30,10 @@ the failure behaviour are settled in one place.
 | Computed property on a selector | `computedStyleValue` | What value does a named CSS property resolve to on a named selector, in a real browser | **Decision.** Same |
 | Custom property on `:root` | `rootCustomPropertyValue` | What value does a named custom property resolve to on `:root` | **Decision.** Same |
 
-`tests/e2e/rendered-output.pw.ts` runs one test per capability against `/work`, two tests that
+`tests/e2e/rendered-output.pw.ts` runs one test per capability against `/work`, four tests that
 prove the loud-failure behaviour below, and a guard that the run exercised all three
-capabilities rather than passing over an empty selection.
+capabilities rather than passing over an empty selection. Eight tests, all green, in roughly
+16 seconds of test time.
 
 **Why `/work`.** **Decision.** It is the only route that combines a `--monument-bold` call site
 (`.work-hero__heading`, `components/organisms/WorkHero/WorkHero.scss:19`), the `body#work` grid
@@ -172,6 +173,16 @@ A gate never observed to fail is not known to work. Each probe was applied, run,
 recorded here, and reverted. **Neither probe exists in the tree at this story's closing commit**,
 which is why their output lives in this file.
 
+**A probe is a one-time demonstration; the standing tests are something else.** **Decision.** A
+demonstration recorded in a file proves the gate could fail on 2026-08-24. It proves nothing
+about the run after someone raises `maxDiffPixelRatio`, sets `updateSnapshots` to `all`, or
+widens the mask until nothing is compared. So the two screenshot failure paths are also asserted
+permanently, by `fails when the render is shifted past the tolerance` and `fails naming the
+baseline when none is committed` in `tests/e2e/rendered-output.pw.ts`. Both keep the suite green:
+they assert that the comparison rejects, rather than being a broken assertion left behind. The
+shift they use is injected into one page through `addStyleTag` and touches no file, which is what
+separates them from Probe 1's edit to `WorkHero.scss`.
+
 ### Probe 1: a deliberately shifted render
 
 | Field | Value | Nature |
@@ -218,6 +229,8 @@ This is asserted by two permanent tests, not by a probe.
 
 | Case | Behaviour | Nature |
 |---|---|---|
+| A render differs past the tolerance | The comparison rejects, and Playwright's message carries the differing pixel count and ratio | **Observed 2026-08-24.** `tests/e2e/rendered-output.pw.ts`, "fails when the render is shifted past the tolerance", which injects a one-pixel shift through `addStyleTag` and asserts the rejection |
+| No baseline is committed for the name asked for | The comparison rejects naming the exact path it looked for, and writes nothing | **Observed 2026-08-24.** Same file, "fails naming the baseline when none is committed". The snapshot directory held only `work-360x800-chromium-linux.png` after the run |
 | Selector matches nothing | Throws naming the selector and the URL it was looked for on | **Observed 2026-08-24.** `tests/e2e/rendered-output.pw.ts`, "fails naming the selector when nothing matches it" |
 | Custom property not declared on `:root` | Throws naming the property | **Observed 2026-08-24.** Same file, "fails naming the custom property when it is not declared" |
 | Property resolves to an empty string | Throws naming the property, because an empty string is what an unknown property name yields | **Decision.** `tests/e2e/harness.ts` |
