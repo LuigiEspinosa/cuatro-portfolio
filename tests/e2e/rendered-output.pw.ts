@@ -1,5 +1,12 @@
+import { readdirSync } from 'node:fs';
+import { basename, dirname } from 'node:path';
 import { expect, test } from '@playwright/test';
-import { computedStyleValue, expectRouteScreenshot, rootCustomPropertyValue } from './harness';
+import {
+  RENDERED_VIEWPORT,
+  computedStyleValue,
+  expectRouteScreenshot,
+  rootCustomPropertyValue,
+} from './harness';
 
 /**
  * One test per harness capability, against `/work` (Story 1-10).
@@ -14,6 +21,12 @@ import { computedStyleValue, expectRouteScreenshot, rootCustomPropertyValue } fr
 const ROUTE = '/work';
 const HEADING = '.work-hero__heading';
 const CANVAS = '.work-hero__canvas-wrap';
+
+/**
+ * The snapshot name is built from the viewport rather than typed out, so a change to the
+ * viewport cannot leave a file on disk still claiming the old numbers.
+ */
+const SNAPSHOT = `work-${RENDERED_VIEWPORT.width}x${RENDERED_VIEWPORT.height}.png`;
 
 /**
  * The vacuous-pass guard's ledger. Each capability test records itself, and the last test
@@ -34,7 +47,17 @@ const exercised = new Set<string>();
 
 test.describe('rendered-output harness', () => {
   test('captures /work at 360x800 and matches the committed baseline', async ({ page }) => {
-    await expectRouteScreenshot(page, ROUTE, 'work-360x800.png', { mask: [CANVAS] });
+    await expectRouteScreenshot(page, ROUTE, SNAPSHOT, { mask: [CANVAS] });
+
+    // The baseline is only comparable to a render taken at the size it was captured at, and
+    // the mask is only honest if the region it covers is really there. Both are asserted here
+    // rather than assumed from the config.
+    expect(page.viewportSize()).toEqual({ ...RENDERED_VIEWPORT });
+
+    const canvasBox = await page.locator(CANVAS).boundingBox();
+    expect(canvasBox?.width ?? 0).toBeGreaterThan(0);
+    expect(canvasBox?.height ?? 0).toBeGreaterThan(0);
+
     exercised.add('route-screenshot');
   });
 
@@ -62,7 +85,16 @@ test.describe('rendered-output harness', () => {
     exercised.add('root-custom-property');
   });
 
-  test('fails when the render is shifted past the tolerance', async ({ page }) => {
+  test('fails when the render is shifted past the tolerance', async ({ page }, testInfo) => {
+    // Under `pnpm test:e2e:update` Playwright writes a mismatching screenshot instead of
+    // failing on it, so this test would overwrite the real baseline with its own shifted
+    // render and then fail for the wrong reason. It has nothing to contribute to an update
+    // run, so it stands aside from one.
+    test.skip(
+      testInfo.config.updateSnapshots !== 'none',
+      'would overwrite the baseline with its deliberately shifted render'
+    );
+
     await page.goto(ROUTE);
     await page.evaluate(async () => {
       await document.fonts.ready;
@@ -73,29 +105,52 @@ test.describe('rendered-output harness', () => {
     // reverted: the probe edited `WorkHero.scss` to prove the gate could fail at all, and its
     // output is recorded in `ops/rendered-output-harness.md`. This test is the gate's own
     // regression test, green on every run, and it is what stops a later change to the
-    // tolerance, to `updateSnapshots`, or to the mask from quietly turning the comparison into
-    // something that cannot fail.
+    // tolerance or to `updateSnapshots` from quietly turning the comparison into something
+    // that cannot fail.
     await page.addStyleTag({ content: `${HEADING} { transform: translateX(1px); }` });
 
-    const comparison = expect(page).toHaveScreenshot('work-360x800.png', {
+    const comparison = expect(page).toHaveScreenshot(SNAPSHOT, {
       mask: [page.locator(CANVAS)],
       // The comparison retries until it matches or this elapses, and it will never match, so
       // this is a deliberate spend rather than a timeout to be generous with.
-      timeout: 5_000,
+      timeout: 10_000,
     });
 
-    await expect(comparison).rejects.toThrow(/are different/);
+    // Three shapes of the same verdict, because a loaded runner can time out before it gets
+    // two stable captures and that message carries no pixel count. Matching only the pixel
+    // line would turn a slow runner into a wrong-reason failure.
+    await expect(comparison).rejects.toThrow(
+      /are different|stable screenshots|Timed out .* waiting for expect/
+    );
   });
 
-  test('fails naming the baseline when none is committed', async ({ page }) => {
+  test('fails naming the baseline when none is committed', async ({ page }, testInfo) => {
+    // In an update run this would write the missing baseline instead of rejecting, leaving a
+    // stray PNG in the committed snapshot directory that permanently defeats this very check.
+    test.skip(
+      testInfo.config.updateSnapshots !== 'none',
+      'would write the baseline it exists to prove is absent'
+    );
+
     await page.goto(ROUTE);
 
-    const comparison = expect(page).toHaveScreenshot('work-360x800-absent-baseline.png', {
+    const absent = `work-${RENDERED_VIEWPORT.width}x${RENDERED_VIEWPORT.height}-absent-baseline.png`;
+
+    const comparison = expect(page).toHaveScreenshot(absent, {
       mask: [page.locator(CANVAS)],
-      timeout: 5_000,
+      timeout: 10_000,
     });
 
-    await expect(comparison).rejects.toThrow(/work-360x800-absent-baseline/);
+    await expect(comparison).rejects.toThrow(/absent-baseline/);
+  });
+
+  test('keeps exactly one committed baseline', async ({}, testInfo) => {
+    // The failure this catches is a snapshot written as a side effect: an update run that
+    // left a stray file, or a route added without its baseline being reviewed as a change.
+    const expected = basename(testInfo.snapshotPath(SNAPSHOT));
+    const directory = dirname(testInfo.snapshotPath(SNAPSHOT));
+
+    expect(readdirSync(directory).sort()).toEqual([expected]);
   });
 
   test('fails naming the selector when nothing matches it', async ({ page }) => {
@@ -106,12 +161,44 @@ test.describe('rendered-output harness', () => {
     ).rejects.toThrow(/\.work-hero__heading-that-does-not-exist/);
   });
 
+  test('fails naming the property when it resolves to an empty string', async ({ page }) => {
+    await page.goto(ROUTE);
+
+    // An undeclared custom property read off an element is the empty-string case in its most
+    // ordinary form. Returning it would compare equal to any other empty expectation.
+    await expect(computedStyleValue(page, HEADING, '--not-declared-anywhere')).rejects.toThrow(
+      /--not-declared-anywhere/
+    );
+  });
+
   test('fails naming the custom property when it is not declared', async ({ page }) => {
     await page.goto(ROUTE);
 
     await expect(rootCustomPropertyValue(page, '--monument-undeclared')).rejects.toThrow(
       /--monument-undeclared/
     );
+  });
+
+  test('refuses a name that is not a custom property', async ({ page }) => {
+    await page.goto(ROUTE);
+
+    // `font-family` is a real property and resolves to a real value on `:root`, so without
+    // this guard the mistake would return a plausible answer rather than a complaint.
+    await expect(rootCustomPropertyValue(page, 'font-family')).rejects.toThrow(
+      /not a custom property name/
+    );
+  });
+
+  test('refuses to photograph a route that does not answer 2xx', async ({ page }) => {
+    await expect(
+      expectRouteScreenshot(page, '/a-route-that-does-not-exist', SNAPSHOT, { mask: [CANVAS] })
+    ).rejects.toThrow(/answered HTTP 404/);
+  });
+
+  test('refuses a mask selector that matches nothing', async ({ page }) => {
+    await expect(
+      expectRouteScreenshot(page, ROUTE, SNAPSHOT, { mask: ['.no-such-region'] })
+    ).rejects.toThrow(/\.no-such-region/);
   });
 
   test('exercised every capability it claims to cover', () => {

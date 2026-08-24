@@ -2,17 +2,51 @@
 title: 'Install Playwright and establish the rendered-output harness'
 type: 'feature'
 created: '2026-08-24'
-status: 'in-progress'
+status: 'awaiting-operator'
 baseline_commit: '4f4c751092ade52d649841ff0cd5625f680040b6'
 baseline_revision: '4f4c751092ade52d649841ff0cd5625f680040b6'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
   - '{project-root}/.github/workflows/ci.yml'
 warnings: ['oversized']
-deferred: []
+operator_actions:
+  - 'Push this branch so the new blocking `rendered-output` job runs on a GitHub runner for the first time, then record its measured image pull, install and harness step timings in the "What provisioning the browser costs" table of ops/rendered-output-harness.md, keeping the local rows and their methods rather than overwriting them.'
+  - 'Confirm from that first run that `actions/checkout@v4` and `pnpm/action-setup@v4` behave correctly inside the pinned container job, since neither has ever executed in that configuration in this repository.'
+  - 'Decide whether the container job taking the image Node v24.18.1 while the `test` job pins Node 22 is acceptable, or pin the container job explicitly, and record the ruling in Pending Operator action 2 of ops/rendered-output-harness.md.'
+  - 'Run `/bmad-project-context` to refresh the machine-managed `bmad:context` block in AGENTS.md, whose lines 52 to 57 now falsely state that CI runs typecheck and tests only and that Playwright is not installed.'
+deferred:
+  - summary: >-
+      The machine-managed `bmad:context` block in AGENTS.md still states that Playwright is not
+      installed and that no acceptance criterion may claim a rendered-output or browser check.
+    evidence: |-
+      AGENTS.md:52-53 reads "CI (.github/workflows/ci.yml) runs typecheck and tests only" and
+      :55-57 reads "Playwright is not installed. @playwright/test appears only as a transitive
+      lockfile entry, not in package.json. Story 1-10 installs it. Until then no acceptance
+      criterion may claim a rendered-output or browser check." All three claims are false after
+      this story, and Stories 1.12 and 1.17 through 1.19 depend on the capability those lines
+      forbid. The block is rewritten by /bmad-project-context and this story is forbidden from
+      hand-editing it, so the correction belongs to that refresh. It is also Pending Operator
+      action 3 in ops/rendered-output-harness.md and is already foreshadowed by
+      sprint-status.yaml:95-97.
+    location: >-
+      AGENTS.md:52-57
+    severity: medium
+  - summary: >-
+      `useReduceMotion`'s initial state calls matchMedia with an unparenthesised media query, so
+      it always starts false regardless of the user's setting.
+    evidence: |-
+      hooks/useReduceMotion.ts:6 passes 'prefers-reduced-motion: reduce' where a media query
+      requires '(prefers-reduced-motion: reduce)'. An unparenthesised string is not a valid
+      query, so `.matches` is false on first render. The effect at :10 uses the correct form and
+      corrects the value on mount, so the visible consequence is one frame of animated state for
+      a reader who asked for reduced motion. Pre-existing, unrelated to this story, and found
+      while reasoning about what stops the GSAP entrance tweens during a screenshot.
+    location: >-
+      hooks/useReduceMotion.ts:6
+    severity: low
 ---
 
 <intent-contract>
@@ -199,8 +233,11 @@ Gathered 2026-08-24 against `4f4c751`, working tree clean.
   `.lighthouserc.js`, `.github/workflows/lighthouse.yml` and `.github/workflows/deploy.yml` are
   byte-identical to `4f4c751`, and the existing `test` job in `ci.yml` is unchanged.
 - Given a Playwright spec inside Vitest's default globs would break the unit suite, when
-  `corepack pnpm test --run` is executed, then it reports the same 38 tests passing and starts no
-  browser.
+  `corepack pnpm test --run` is executed, then it reports the same unit suite passing, unchanged
+  in count from `4f4c751`, and starts no browser. The figure is **215 tests in 17 files**,
+  observed 2026-08-24; the "38 tests" this criterion was first written with came from
+  `AGENTS.md:46`, which is stale. The frozen intent block carries the same stale figure and is
+  left alone.
 
 ## Spec Change Log
 
@@ -227,6 +264,55 @@ a defect.
 
 ## Review Triage Log
 
+### 2026-08-24, Review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 19: (high 1, medium 8, low 10)
+- defer: 2: (high 0, medium 1, low 1)
+- reject: 6: (high 0, medium 2, low 4)
+- addressed_findings:
+  - `[high]` `[patch]` `pnpm test:e2e:update` would have overwritten the committed baseline with the shift test's deliberately shifted render, and written a stray `absent-baseline` PNG beside it. Bare `--update-snapshots` presets Playwright to `changed`, where a mismatching screenshot is written over rather than failed on, so the only documented way to refresh the baseline would have committed a broken one. Raised independently by three review layers. Both negative screenshot tests now carry `test.skip(testInfo.config.updateSnapshots !== 'none', ...)`, and a new test asserts the snapshot directory holds exactly the one committed PNG. Verified in the pinned container: an update run skips 2 of 13, passes 11, and leaves the baseline byte-identical at `sha256:27f22bb6...`.
+  - `[medium]` `[patch]` The CI container job omitted `options: --ipc=host`, while every green run recorded in `ops/` was produced with it. Chromium's default 64 MB `/dev/shm` crashes the renderer, and `retries: 0` turns one crash into a red build on an unrelated pull request. Added, so both sides of the comparison run on one configuration.
+  - `[medium]` `[patch]` The shift test asserted only `/are different/` under a 5 s comparison budget. A loaded runner that fails to get two stable captures produces a message with no pixel line, which would have gone red for the wrong reason. Budget raised to 10 s and the assertion now covers all three verdict shapes.
+  - `[medium]` `[patch]` `reuseExistingServer: !process.env.CI` on port 3000 let a running `next dev` become the thing measured, silently baselining a development render. The harness now serves on port 3100 and never reuses.
+  - `[medium]` `[patch]` A mask selector that matched nothing masked nothing, silently, so a renamed `.work-hero__canvas-wrap` would have reintroduced the WebGL torus into the comparison as intermittent redness with no stated cause. The helper now throws naming the selector, and a test covers it.
+  - `[medium]` `[patch]` `expectRouteScreenshot` skipped its HTTP status guard entirely when `page.goto` returned null, which is exactly how an error page becomes a baseline. A null response is now a failure naming the route.
+  - `[medium]` `[patch]` The tolerance table counted 288,000 pixels while the torus mask excludes 86,400 of them, overstating the sensitivity over the region actually compared, and a canvas that rendered nothing would still have passed. Both the compared-pixel count and the 30 percent masked share are now recorded, and the screenshot test asserts the masked element has a non-zero bounding box.
+  - `[medium]` `[patch]` The recorded "finding Story 1-18 inherits" told a later story to read `font-family` instead of `font-weight`. `epics.md:1842-1843` already requires 1.18 to set `font-weight` by hand at all four call sites in the same commit, before `:1844` reads it, so the correct finding is "assert both, and set the weight before reading it". Corrected in the ops record, this spec's Design Notes and the `harness.ts` header.
+  - `[medium]` `[patch]` `ops/rendered-output-harness.md` contradicted itself after the second commit: "Eight tests" in one place, "all six tests" in two others, and timing rows measured against a smaller file. Counts corrected to thirteen, the six-test rows kept and labelled with what they measured, and a new dated thirteen-test figure added, per that file's own no-deletion rule.
+  - `[low]` `[patch]` `RENDERED_VIEWPORT` was exported and imported by nothing, so the anti-drift guarantee both the config comment and the ops table credited it with did not exist. It now lives in `harness.ts`, the config imports it, the spec builds the snapshot name from it, and the screenshot test asserts `page.viewportSize()` matches it.
+  - `[low]` `[patch]` `computedStyleValue` used a non-waiting `count()`, so an element rendering one tick later would be reported as absent. It now waits up to 5 s for the selector to attach before deciding.
+  - `[low]` `[patch]` Three loud-failure branches shipped unobserved, against the story's own rule: the non-2xx route guard, the empty-string property guard, and the non-custom-property-name guard. Each now has a standing test.
+  - `[low]` `[patch]` The record never drew the consequence of its own font-substitution argument: `--font-mono` has no Courier New on Linux, so `.work-hero__meta` is baselined against a face no visitor sees. Recorded as a stated limit.
+  - `[low]` `[patch]` A computed `font-family` read returns the resolved declaration, not the face that rasterized, so it cannot detect a broken `@font-face` src. Recorded as a stated limit.
+  - `[low]` `[patch]` The capture is the 360x800 viewport and not `fullPage`, and `ScreenshotOptions` exposes no way to widen it, which Stories 1.17 and 1.20 inherit. Recorded as a stated limit rather than widened, because an untested option would be another unobserved capability.
+  - `[low]` `[patch]` Nothing said that `pnpm test:e2e` cannot pass on this Windows host, where Playwright looks for a `-win32.png` that does not exist. Recorded, along with the fact that the failure writes nothing.
+  - `[low]` `[patch]` The new job had no `timeout-minutes` and the artifact upload no `if-no-files-found`, so a hung browser ran until the platform killed it and an install failure produced a second, unrelated warning. Both added.
+  - `[low]` `[patch]` The claim that the standing tests stop someone who "widens the mask until nothing is compared" holds only for a widening that covers the heading. Reworded, with the other case pointed at the mask-selector test.
+  - `[low]` `[patch]` This spec's own acceptance criterion and verification command asserted "the same 38 tests", a figure copied from the stale `AGENTS.md:46`. The observed suite is 215 tests in 17 files. Corrected in both places outside the frozen block; the identical figure inside `<intent-contract>` is left alone because that block is read-only.
+
+Two findings were deferred rather than fixed, both recorded in frontmatter `deferred`: the stale
+`bmad:context` block in `AGENTS.md`, which only a `/bmad-project-context` refresh may rewrite,
+and an unparenthesised media query in `hooks/useReduceMotion.ts:6` that predates this story.
+
+Six were rejected. The sprint board row is the orchestrator's bookkeeping and not this story's to
+write. The ` -- ` separator this spec template uses in its Code Map and task lists is a structured
+separator, not a prose dash, and matches every sibling spec. A `tests/e2e/tsconfig.json` to stop
+`vitest/globals` types leaking into a Playwright spec is defence against a mistake that would fail
+loudly at runtime anyway. A dependency cache and a `concurrency` group on the new job are costs
+recorded as a decision rather than defects, and adding an unobserved cache mechanism to a blocking
+gate trades a known cost for an unknown failure. The two negative screenshot tests must bypass
+`expectRouteScreenshot` to inject anything at all, and adding a probe hook to the surface later
+stories import would be worse than the duplication. Deriving the capability ledger from the
+harness's exports guards a fourth capability that does not exist.
+
+**On the workflow's prefer-bad_spec rule.** The stale test count came from a spec sentence, which
+argues for `bad_spec` and a full re-derivation. It was triaged `patch` deliberately: the code never
+deviated, the figure was wrong in the spec and in `AGENTS.md` alike, and re-deriving would have
+produced byte-identical code while discarding a verified implementation. The correction is
+recorded here rather than hidden.
+
 ## Design Notes
 
 **Why the container is pinned on both sides.** Playwright names a snapshot per platform, so a
@@ -245,13 +331,16 @@ driven by `useFrame` and can never be stable, so it is masked rather than waited
 region is honest; adding a test hook to the application to freeze it would change the thing being
 measured, which the boundaries forbid.
 
-**The finding Story 1.18 needs.** The AC calls the alias check a `font-weight` read. On three of the
-four call sites that read would prove nothing: `font-weight` computes to `400` there both before and
-after a bad alias, because the weight lives in the family name (`_fonts.scss:91-99`) rather than in a
-declaration. Only `glitch-text.scss:7` sets `700` explicitly. The harness therefore exposes a
-generic "computed value of a named property" helper, and this spec records that the property to name
-at those call sites is `font-family`. Story 1.18 inherits the finding rather than rediscovering it
-after a green run that proved nothing.
+**The finding Story 1.18 needs.** The AC calls the alias check a `font-weight` read. Read against
+the tree as it stands, that read would prove nothing on three of the four call sites: `font-weight`
+computes to `400` there both before and after a bad alias, because the weight lives in the family
+name (`_fonts.scss:91-99`) rather than in a declaration. Only `glitch-text.scss:7` sets `700`
+explicitly. **Corrected during review:** Story 1.18's own criteria already close that hole and the
+order is what matters. `epics.md:1842-1843` requires all four call sites to have `font-weight` set
+alongside `font-family` by hand in the same commit, and only then does `:1844` assert them bold by
+reading computed `font-weight`. The finding to inherit is therefore not "read `font-family` instead"
+but "assert both, and set the weight before reading it". The harness stays generic, which is what
+lets 1.18 do either.
 
 **Tolerance, stated as a rule rather than a number picked in advance.** Keep Playwright's default
 per-pixel `threshold` and set `maxDiffPixelRatio` so that the shift probe's measured ratio exceeds it
@@ -266,8 +355,8 @@ gets lowered rather than the probe made louder. Both numbers go into the record.
   `ERR_PNPM_OUTDATED_LOCKFILE`.
 - `corepack pnpm typecheck` -- expected: pass, with `playwright.config.ts` and `tests/e2e` inside the
   program.
-- `corepack pnpm test --run` -- expected: 38 tests pass, no browser started, no Playwright file
-  collected.
+- `corepack pnpm test --run` -- expected: 215 tests in 17 files pass, no browser started, no
+  Playwright file collected.
 - `docker run --rm -v <repo>:/w -w /w mcr.microsoft.com/playwright:v1.62.1-noble ...` running
   `pnpm exec playwright test` -- expected: all capability tests pass against the committed baseline.
   Same command with each probe applied -- expected: the corresponding test fails, and the diff ratio
@@ -282,4 +371,88 @@ gets lowered rather than the probe made louder. Both numbers go into the record.
 - Re-read `.github/workflows/ci.yml` after editing and confirm the existing `test` job is untouched
   and the new job's `on:` triggers are the file's, not a copy that drifted.
 - Confirm no probe file, probe stylesheet or probe assertion survives in the closing commit.
+- Run the harness once with `--update-snapshots` and confirm the committed baseline is byte-identical
+  afterwards and no second snapshot appeared, since the documented refresh path is the one way a
+  broken baseline could be committed without anyone noticing.
+
+## Auto Run Result
+
+Status: awaiting-operator
+
+**What was implemented.** The Anchor now has a rendered-output harness. `@playwright/test` is a
+direct devDependency pinned exactly at `1.62.1`, a `tests/e2e` harness exposes three capabilities
+(a route screenshot at a fixed viewport against a committed baseline, the computed value of a
+named CSS property on a named selector, and the computed value of a custom property on `:root`),
+and a blocking `rendered-output` job runs them in CI inside the container image the baseline was
+generated in. Both capabilities were demonstrated failing against a probe and both probes were
+removed; the two screenshot failure paths are additionally asserted permanently, so the gate is
+observed failing on every run rather than only on 2026-08-24.
+
+**Files changed.**
+
+- `package.json` -- `@playwright/test` at an exact pin, plus `test:e2e` and `test:e2e:update`.
+- `pnpm-lock.yaml` -- resolves it as a real dependency rather than an unresolved optional peer.
+- `playwright.config.ts` -- browser, viewport, scale factor, motion preference, tolerance,
+  `updateSnapshots: 'none'`, `retries: 0`, and a `webServer` that always builds and serves its own
+  production bundle on port 3100.
+- `tests/e2e/harness.ts` -- the three capabilities and the shared viewport constant, each helper
+  failing loudly rather than returning a value that could compare equal to an expectation.
+- `tests/e2e/rendered-output.pw.ts` -- thirteen tests: three capabilities, nine failure paths, one
+  vacuous-pass guard.
+- `tests/e2e/rendered-output.pw.ts-snapshots/work-360x800-chromium-linux.png` -- the baseline.
+- `vitest.config.ts` -- excludes `tests/e2e/**` while spreading `configDefaults.exclude` back in.
+- `.gitignore` -- Playwright's output directories.
+- `.github/workflows/ci.yml` -- one new blocking job in the pinned container with `--ipc=host` and
+  a 20 minute ceiling. The existing `test` job is untouched.
+- `ops/rendered-output-harness.md` -- the record: tolerance and reasoning, provisioning cost,
+  regeneration rules, both probe demonstrations, the stated limits, and four Operator actions.
+
+**Review findings.** 19 patched (1 high, 8 medium, 10 low), 2 deferred, 6 rejected, 0 intent gaps,
+0 spec loopbacks. The high finding is the one worth knowing: the documented baseline-refresh path
+would have committed a deliberately broken baseline. See the Review Triage Log above for each.
+
+**Follow-up review recommended: true.** One patched finding was high severity, which sets the flag
+on its own. Patched counts by severity: high 1, medium 8, low 10.
+
+**Verification performed.** All browser work ran inside `mcr.microsoft.com/playwright:v1.62.1-noble`,
+the image the CI job pins.
+
+- `corepack pnpm install --frozen-lockfile`: clean, no `ERR_PNPM_OUTDATED_LOCKFILE`.
+- `corepack pnpm typecheck`: passes.
+- `corepack pnpm test --run`: 215 tests in 17 files, no browser started, no Playwright file
+  collected.
+- `pnpm test:e2e` in the container: 13 passed in 22.2 s against the committed baseline.
+- `pnpm test:e2e:update` in the container: 2 skipped, 11 passed, baseline byte-identical at
+  `sha256:27f22bb6ff78c62e019cc8f222665436b7a20c2445a90677bead375c7d763f97`, snapshot directory
+  still holding exactly one file.
+- Probe 1 (a one-pixel `translateX` on `.work-hero__heading` in `WorkHero.scss`): the screenshot
+  test failed at 2,095 differing pixels, ratio 0.007274, a 7.27x margin over the 0.001 tolerance.
+  Reverted.
+- Probe 2 (the expected computed family flipped to `MonumentExtended-Regular`): the computed-style
+  test failed. Reverted.
+- `git diff --stat 4f4c751 -- .lighthouserc.js .github/workflows/lighthouse.yml .github/workflows/deploy.yml`:
+  empty.
+- Punctuation sweep over every written file, built on surrogate-pair ranges and run against a
+  positive control carrying an em-dash, an en-dash, a prose double-dash, an astral emoji and a BMP
+  pictograph. The control reported all five; the written files reported zero em-dashes, zero
+  en-dashes and zero emoji. Every surviving `--` is a CLI flag, a code literal, or this template's
+  list separator.
+
+**Residual risks.**
+
+- **The CI job has never run on a GitHub runner.** `actions/checkout@v4` and `pnpm/action-setup@v4`
+  executing inside a container job is the one part of this change with no observation behind it.
+  Nothing is soft-failed, so a problem there fails the build rather than hiding, and it is the
+  first Operator action.
+- **The provisioning figures are a development host's**, clearly marked as such. The number C-7
+  actually asks for arrives with that first run.
+- **A Playwright version bump must move four things at once**: the pin, the container image tag,
+  the baseline PNG and the figures in the record. Written into the record and into a comment in
+  `ci.yml`, but nothing enforces it mechanically.
+- **`next start` warns that it does not work with `output: standalone`** and serves anyway. The
+  existing Lighthouse job already depends on this behaviour; the harness inherits it rather than
+  introducing it.
+- **The screenshot covers one viewport of one route with 30 percent of the frame masked.** Story
+  1.17's "visually identical" rests on exactly that unless 1.17 widens it first. Recorded as a
+  stated limit rather than papered over.
 </content>

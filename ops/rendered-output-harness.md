@@ -30,10 +30,12 @@ the failure behaviour are settled in one place.
 | Computed property on a selector | `computedStyleValue` | What value does a named CSS property resolve to on a named selector, in a real browser | **Decision.** Same |
 | Custom property on `:root` | `rootCustomPropertyValue` | What value does a named custom property resolve to on `:root` | **Decision.** Same |
 
-`tests/e2e/rendered-output.pw.ts` runs one test per capability against `/work`, four tests that
+`tests/e2e/rendered-output.pw.ts` runs one test per capability against `/work`, nine tests that
 prove the loud-failure behaviour below, and a guard that the run exercised all three
-capabilities rather than passing over an empty selection. Eight tests, all green, in roughly
-16 seconds of test time.
+capabilities rather than passing over an empty selection. Thirteen tests, all green, in
+**22.7 s of test time** (**observed 2026-08-24** in the pinned container). Two of the thirteen
+stand aside from a `--update-snapshots` run, for the reason given under "Regenerating the
+baseline".
 
 **Why `/work`.** **Decision.** It is the only route that combines a `--monument-bold` call site
 (`.work-hero__heading`, `components/organisms/WorkHero/WorkHero.scss:19`), the `body#work` grid
@@ -60,6 +62,10 @@ harness that covers everything.
 | Any `--token-*` name or anything under `contracts/` | This story ships the instrument, not the contract. `contracts/` does not exist yet | **Decision.** Stories 1.11 through 1.14 |
 | Colour contrast ratios | No token roles to compute them against yet | **Decision.** Epic 1 token stories |
 | Any route other than `/work` | One route is enough to establish the instrument. Adding routes is cheap once the instrument exists | **Decision.** Story 1-10 scope |
+| Anything below the fold on `/work` | The comparison is the 360 x 800 viewport, not `fullPage`. `ScreenshotOptions` in `tests/e2e/harness.ts` exposes only `mask`, so a caller cannot widen it today. Story 1.17's "visually identical to the pre-change build" therefore rests on one viewport of one route unless that story widens the capture first. Unlike the route axis, this one is pinned in the config by design and is not free to extend | **Decision.** Story 1-10 scope, and a limit Stories 1.17 and 1.20 inherit knowingly |
+| The 86,400 masked pixels | `.work-hero__canvas-wrap` is 360 x 240 at this viewport, so 30 percent of the frame is excluded. The comparison covers the remaining 201,600. A canvas that renders nothing at all would still pass the screenshot gate, which is why the same test asserts the masked element has a non-zero bounding box | **Observed 2026-08-24**, from `components/organisms/WorkHero/WorkHero.scss:46-48` and the element's bounding box |
+| That `--font-mono` renders for a visitor the way it renders here | `--font-mono: 'Courier New', monospace` (`app/app.scss:31`) has no Courier New in the Linux image, so `.work-hero__meta` (`WorkHero.scss:27`) is baselined against a fallback face no real visitor sees. Pinning the image makes the comparison stable; it does not make that text representative | **Observed 2026-08-24** |
+| That the `@font-face` src still resolves | `computedStyleValue` returns the resolved declaration, not the face that rasterized. It would still answer `MonumentExtended-Bold` if `app/scss/_fonts.scss:91-99` broke and Chromium fell back. Only the screenshot covers rasterization, and only for `.work-hero__heading`. The other three `--monument-bold` call sites live on routes the harness does not capture | **Observed 2026-08-24** |
 | Accessibility | Unchanged and untouched. `.lighthouserc.js` still asserts accessibility at 0.95, severity error, and `.github/workflows/lighthouse.yml` still runs it. Story 1-10 modified neither, and `git diff --stat 4f4c751` over both files plus `deploy.yml` was empty | **Observed 2026-08-24**, by running that diff |
 
 ## The tolerance
@@ -73,7 +79,8 @@ the tolerance is wrong and gets lowered, rather than the probe being made louder
 | Value | Number | Nature |
 |---|---|---|
 | Viewport | 360 x 800, `deviceScaleFactor: 1` | **Decision.** `playwright.config.ts`, exported as `RENDERED_VIEWPORT` so a spec cannot re-declare it and drift from the baseline |
-| Total pixels compared | 288,000 | **Derived** from the viewport |
+| Total pixels in the frame | 288,000 | **Derived** from the viewport |
+| Pixels actually compared | 201,600 | **Derived**: 288,000 less the 86,400 the torus mask covers. The ratio below is Playwright's, computed over the whole frame, so the tolerance is looser over the compared region than the raw number suggests. It is recorded here rather than corrected, because changing the denominator would put this file at odds with every number Playwright prints |
 | Per-pixel `threshold` | Playwright default (0.2, YIQ colour space) | **Decision.** Left alone deliberately, so there is one number to reason about rather than two |
 | `maxDiffPixelRatio` | **0.001** | **Decision.** Equivalent to 288 differing pixels out of 288,000 |
 | Shift probe measured ratio | **0.007274** (2,095 pixels of 288,000) | **Observed 2026-08-24**, by adding `transform: translateX(1px)` to `.work-hero__heading` and running the harness in the pinned container. Playwright's own report rounds this to "ratio 0.01"; 0.007274 is 2095 divided by 288000 |
@@ -110,8 +117,9 @@ version drift the pinning exists to prevent.
 | Download size, linux/amd64 | **949,411,114 bytes (905 MiB) across 7 layers** | **Observed 2026-08-24**, by summing the `size` field of every layer in the amd64 manifest. This is the figure a GitHub-hosted runner transfers, and it is the harder of the two provisioning numbers because it does not depend on whose network measured it |
 | Pull wall time on this host | **50.9 s** | **Observed 2026-08-24** on the Windows 11 development host, Docker server 29.7.2, by `docker rmi` on the tag followed by a timed `docker pull`. **Read this as an upper-bound-shaped local figure, not as the CI figure.** `docker rmi` untags and deletes the image but does not guarantee every layer left the local content store, and this host's network is not the runner's. The CI number is unknown until the first real run, which is Pending Operator action 1 below |
 | Node in the image | v24.18.1 | **Observed 2026-08-24**, by `node -v` inside the container. Note that the existing `test` job pins Node 22 through `setup-node`; the container job takes the image's Node instead, which is the version the pinned browsers were built against |
-| Harness run, cold `.next` | **27.8 s wall** for `pnpm build`, `pnpm start` and all six tests | **Observed 2026-08-24**, by emptying the container's `.next` volume and timing one `docker run` of `pnpm test:e2e`. Playwright reported 24.1 s of that as test time |
-| Harness run, warm `.next` | **24.3 s wall**, 21.5 s reported as test time | **Observed 2026-08-24**, same method without emptying the volume |
+| Harness run, cold `.next`, six-test file | **27.8 s wall** for `pnpm build`, `pnpm start` and all six tests | **Observed 2026-08-24**, by emptying the container's `.next` volume and timing one `docker run` of `pnpm test:e2e`. Playwright reported 24.1 s of that as test time. Measured before the file grew to thirteen tests, and kept rather than overwritten |
+| Harness run, warm `.next`, six-test file | **24.3 s wall**, 21.5 s reported as test time | **Observed 2026-08-24**, same method without emptying the volume |
+| Harness run, thirteen-test file | **22.7 s** reported as test time | **Observed 2026-08-24**, by running the full file in the pinned container after the review pass added the seven further failure-path tests. Nine of the thirteen tests never take a screenshot, so the count grew faster than the clock |
 
 **What these numbers do not include.** `pnpm install --frozen-lockfile` inside the container took
 **4 m 33 s** on this host (**observed 2026-08-24**), but that figure is dominated by pnpm writing
@@ -130,6 +138,19 @@ would differ: `--font-mono: 'Courier New', monospace` (`app/app.scss:31`) has no
 Linux, and glyph rasterization is not portable. Pinning both sides to one image is what makes
 the tolerance a real number rather than a fudge factor.
 
+**Two tests stand aside from an update run, and must keep doing so.** **Decision.** Bare
+`--update-snapshots` presets Playwright's mode to `changed`, in which a mismatching screenshot is
+**written over** rather than failed on, and a missing one is written rather than reported. The
+two tests that exist to prove those very failures would therefore, in an update run, overwrite
+the real baseline with their deliberately shifted render and write a second, unwanted baseline
+under the absent-baseline name. Both carry
+`test.skip(testInfo.config.updateSnapshots !== 'none', ...)` for exactly that reason, and
+`keeps exactly one committed baseline` fails the run if a stray snapshot appears anyway.
+**Observed 2026-08-24** in the pinned container: an update run skipped 2 of 13, passed 11, left
+`work-360x800-chromium-linux.png` byte-identical at
+`sha256:27f22bb6ff78c62e019cc8f222665436b7a20c2445a90677bead375c7d763f97`, and left the snapshot
+directory holding that one file.
+
 The command used on 2026-08-24, from the repository root on the Windows host:
 
 ```
@@ -146,7 +167,19 @@ The two named volumes matter. `node_modules` and `.next` on the Windows host hol
 binaries (`sharp`, `@next/swc`), which a Linux container cannot execute, so both are masked with
 container-local volumes rather than read through the bind mount. `corepack enable` is needed
 because Playwright's `webServer` command calls `pnpm` by name and only `corepack` is on the
-image's PATH; on a GitHub runner `pnpm/action-setup@v4` does that job instead.
+image's PATH; on a GitHub runner `pnpm/action-setup@v4` does that job instead. `--ipc=host` is
+not optional either: Chromium in a container gets a 64 MB `/dev/shm` by default and crashes the
+renderer when it runs out. The CI job carries the same flag as `container.options`, so both
+sides of the comparison run on one configuration.
+
+**The harness does not run on this Windows host, by design.** **Observed 2026-08-24.** Playwright
+names a snapshot per platform, so a bare `pnpm test:e2e` here looks for `work-360x800-win32.png`,
+does not find it, and fails. That is the intended answer: a Windows capture is not comparable to
+the committed Linux one, and `updateSnapshots: 'none'` means the failing run writes nothing to
+be committed by mistake. The supported way to run or refresh the harness locally is the docker
+command above, and nothing else. The server it starts listens on port **3100** rather than 3000,
+so a `next dev` already running cannot be mistaken for the production build the config builds,
+and `reuseExistingServer` is `false` for the same reason.
 
 **When regenerating is legitimate.** **Decision.** Exactly three cases:
 
@@ -175,13 +208,20 @@ which is why their output lives in this file.
 
 **A probe is a one-time demonstration; the standing tests are something else.** **Decision.** A
 demonstration recorded in a file proves the gate could fail on 2026-08-24. It proves nothing
-about the run after someone raises `maxDiffPixelRatio`, sets `updateSnapshots` to `all`, or
-widens the mask until nothing is compared. So the two screenshot failure paths are also asserted
-permanently, by `fails when the render is shifted past the tolerance` and `fails naming the
-baseline when none is committed` in `tests/e2e/rendered-output.pw.ts`. Both keep the suite green:
-they assert that the comparison rejects, rather than being a broken assertion left behind. The
-shift they use is injected into one page through `addStyleTag` and touches no file, which is what
-separates them from Probe 1's edit to `WorkHero.scss`.
+about the run after someone raises `maxDiffPixelRatio` or sets `updateSnapshots` to `all`. So the
+two screenshot failure paths are also asserted permanently, by `fails when the render is shifted
+past the tolerance` and `fails naming the baseline when none is committed` in
+`tests/e2e/rendered-output.pw.ts`. Both keep the suite green: they assert that the comparison
+rejects, rather than being a broken assertion left behind. The shift they use is injected into
+one page through `addStyleTag` and touches no file, which is what separates them from Probe 1's
+edit to `WorkHero.scss`.
+
+What they do not cover is worth stating, because a standing test invites more trust than it has
+earned. The shift they inject lands on `.work-hero__heading`, so they catch a mask widened over
+the heading and not a mask widened over some other region; `refuses a mask selector that matches
+nothing` covers the other common way a mask stops masking. And because the shift is injected
+through the browser, they exercise the comparator rather than the source-to-render path Probe 1
+went through.
 
 ### Probe 1: a deliberately shifted render
 
@@ -209,7 +249,7 @@ Error: expect(page).toHaveScreenshot(expected) failed
 |---|---|---|
 | The probe | The expected computed `font-family` on `.work-hero__heading` changed from `MonumentExtended-Bold` to `MonumentExtended-Regular` in `tests/e2e/rendered-output.pw.ts` | **Decision.** The wrong value is the other real family in the same token block, not a nonsense string, so the probe tests the read rather than the string comparison |
 | Result | The computed-style test failed | **Observed 2026-08-24** in the pinned container |
-| Reverted | Yes | **Observed**, confirmed by the final green run of all six tests |
+| Reverted | Yes | **Observed**, confirmed by the final green run of the whole file |
 
 Playwright's own line, quoted:
 
@@ -225,7 +265,8 @@ Received: "MonumentExtended-Bold"
 `getPropertyValue` answers an undeclared custom property with an empty string. A helper that
 returned that string would pass any equality check against another empty string, and a gate that
 passes over nothing is worse than no gate. Both reads therefore throw, naming what was missing.
-This is asserted by two permanent tests, not by a probe.
+Every row below is asserted by a permanent test rather than by a probe, and by the story's own
+rule a branch that has never been observed to fail is not known to work.
 
 | Case | Behaviour | Nature |
 |---|---|---|
@@ -233,25 +274,40 @@ This is asserted by two permanent tests, not by a probe.
 | No baseline is committed for the name asked for | The comparison rejects naming the exact path it looked for, and writes nothing | **Observed 2026-08-24.** Same file, "fails naming the baseline when none is committed". The snapshot directory held only `work-360x800-chromium-linux.png` after the run |
 | Selector matches nothing | Throws naming the selector and the URL it was looked for on | **Observed 2026-08-24.** `tests/e2e/rendered-output.pw.ts`, "fails naming the selector when nothing matches it" |
 | Custom property not declared on `:root` | Throws naming the property | **Observed 2026-08-24.** Same file, "fails naming the custom property when it is not declared" |
-| Property resolves to an empty string | Throws naming the property, because an empty string is what an unknown property name yields | **Decision.** `tests/e2e/harness.ts` |
-| Route answers a non-2xx status | Throws naming the route and the status, rather than photographing an error page | **Decision.** Same file |
+| Property resolves to an empty string | Throws naming the property, because an empty string is what an unknown property name yields | **Observed 2026-08-24.** Same file, "fails naming the property when it resolves to an empty string", which reads an undeclared custom property off an element |
+| A name that is not a custom property is passed to the `:root` read | Throws saying so, rather than answering with a real property's real value | **Observed 2026-08-24.** Same file, "refuses a name that is not a custom property". `font-family` resolves on `:root`, so without the guard the mistake returns a plausible answer |
+| Route answers a non-2xx status | Throws naming the route and the status, rather than photographing an error page | **Observed 2026-08-24.** Same file, "refuses to photograph a route that does not answer 2xx", against `/a-route-that-does-not-exist` |
+| A navigation produces no response at all | Throws naming the route, because an unchecked status is how an error page becomes a baseline | **Decision.** `tests/e2e/harness.ts`. This is the same-document-navigation case; no route in the Hub reaches it today |
+| A mask selector matches nothing | Throws naming the selector, rather than masking nothing and comparing an animated region | **Observed 2026-08-24.** Same file, "refuses a mask selector that matches nothing". This is what a renamed `.work-hero__canvas-wrap` would otherwise do: unmask the WebGL torus and make the gate intermittently red for no stated reason |
+| A stray or extra baseline appears on disk | The run fails, because one test asserts the snapshot directory holds exactly the one committed PNG | **Observed 2026-08-24.** Same file, "keeps exactly one committed baseline" |
+| An element renders a tick after the read is asked for | `computedStyleValue` waits up to 5 s for the selector to attach before deciding it is absent | **Decision.** `tests/e2e/harness.ts`. A bare `count()` answers immediately and would report "not there" when the truth was "not yet" |
 | The run matched no tests | Playwright exits non-zero by default and no `--pass-with-no-tests` flag is passed anywhere | **Observed 2026-08-24**, by reading `playwright test --help` in the pinned image |
 | The run matched some but not all capability tests | The last test in the file fails, because each capability test records itself and that test asserts all three were recorded | **Decision.** Note that Playwright restarts its worker after any failure, which resets that ledger, so this guard also fails on a run that was already failing. That is redundant noise on a red run, not a hole: the guard can only pass when all three capability tests ran and passed |
 
 ## The finding Story 1-18 inherits
 
-**The property to read at the `--monument-bold` call sites is `font-family`, not `font-weight`.**
-**Observed 2026-08-24**, by reading the four call sites and `app/scss/_fonts.scss:91-99`.
+**A `font-weight` read at the `--monument-bold` call sites is meaningful only because Story 1.18
+sets that weight by hand in the same commit. Read against the tree as it stands, it proves
+nothing.** **Observed 2026-08-24**, by reading the four call sites, `app/scss/_fonts.scss:91-99`
+and `epics.md:1838-1846`.
 
-Story 1.18's acceptance criteria describe the alias check as a `font-weight` read. On three of
-the four call sites that read would prove nothing. `WorkHero.scss:19`, `ProjectsHero.scss:19` and
-`error-page.scss:24` set the family alone, so their computed `font-weight` is `400` today and
-would still be `400` after an alias silently dropped bold. The weight lives in the family name,
-declared by the `@font-face` block at `app/scss/_fonts.scss:91-99`. Only `glitch-text.scss:7`
-sets `font-weight: 700` itself.
+`WorkHero.scss:19`, `ProjectsHero.scss:19` and `error-page.scss:24` set the family alone, so
+their computed `font-weight` is `400` today and would still be `400` after an alias silently
+dropped bold. The weight lives in the family name, declared by the `@font-face` block. Only
+`glitch-text.scss:7` sets `font-weight: 700` itself.
 
-The harness therefore exposes a generic "computed value of a named property" helper rather than
-a font-weight helper, and Story 1.18 names `font-family` at those call sites.
+Story 1.18's own acceptance criteria already close that hole, and the order matters: `epics.md:1842-1843`
+requires all four call sites to have `font-weight` **set alongside `font-family` by hand in that
+same commit**, and only then does `:1844` assert them bold by reading computed `font-weight`. So
+the read is not wrong, it is second. A story that performed the read without the by-hand step
+first would get four green assertions that mean nothing.
+
+The practical consequence for Story 1.18: assert **both**. `font-family` catches an alias that
+retargets the family, `font-weight` catches a weight that was never set or was set at only three
+of the four sites, and neither one alone covers the other. The harness therefore exposes a
+generic "computed value of a named property" helper rather than a font-weight helper. Story
+1-10's own Probe 2 used a deliberately wrong **family** rather than a wrong weight, because on
+today's tree a wrong weight is what the correct code already computes.
 
 Two shapes of the same name come back, and both are asserted so neither surprises a later story.
 **Observed 2026-08-24** in the pinned container:
@@ -271,7 +327,10 @@ modified.
 | Blocking | Yes. No `continue-on-error`, no `|| true`, no soft-fail, no `--pass-with-no-tests` | **Decision.** AD-21, and `AGENTS.md` under "Policy" |
 | Triggers | `push` to `**` and `pull_request` to `main` | **Observed 2026-08-24.** The job sits in the existing file and inherits that file's `on:` block at `:3-7` rather than declaring its own, so the two can never drift |
 | Runner | `ubuntu-latest` with `container: mcr.microsoft.com/playwright:v1.62.1-noble` | **Decision** |
-| On failure | Uploads `playwright-report/` for 7 days | **Decision.** A red screenshot gate is unreadable without its diff image |
+| Container options | `--ipc=host` | **Decision.** The default 64 MB `/dev/shm` crashes the Chromium renderer, `retries` is 0 by design, and the documented baseline command carries the same flag, so both sides of the comparison run on one configuration |
+| Ceiling | `timeout-minutes: 20` | **Decision.** The job builds the Hub and drives a browser, so it is the slowest thing in the file. A hung browser becomes a failure with a cause rather than a job the platform eventually kills |
+| On failure | Uploads `playwright-report/` for 7 days, `if-no-files-found: ignore` | **Decision.** A red screenshot gate is unreadable without its diff image, and an install failure that produces no report should not add a second, unrelated warning on top of the real cause |
+| No dependency cache | The job pays a full `pnpm install` every run | **Decision**, recorded rather than fixed. Caching inside a container job is a different mechanism from the `test` job's `setup-node` cache, and adding one that has never been observed working would trade a known cost for an unknown failure mode on a blocking gate |
 
 **Vitest never sees a Playwright spec.** Two independent guards, because one would be a single
 point of failure. The specs are named `*.pw.ts`, which Vitest's default include globs
@@ -290,6 +349,7 @@ use.
 |---|---|---|---|---|
 | 1 | **Record the first real CI timing of the `rendered-output` job**: image pull, install, and the harness step, from the Actions run summary | Operator | The provisioning figures above are a local host's, and say so. The CI figure is the one C-7 actually asks for, and it cannot be observed until this job runs on a runner. Replace the "Pull wall time on this host" row with a CI row when it is, keeping the local row and its method rather than overwriting it | _not done_ |
 | 2 | **Confirm the container job's Node version is acceptable**, or pin it | Operator | The `test` job pins Node 22 through `setup-node`. The `rendered-output` job takes the image's Node, observed as v24.18.1, because that is the runtime the pinned browsers were built against. Two Node versions in one workflow is a deliberate consequence of pinning the image, and it is recorded rather than hidden | _not done_ |
+| 3 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Three lines in that block are false as of this story. `AGENTS.md:52-53` says CI "runs typecheck and tests only"; `:55-57` says "Playwright is not installed" and "until then no acceptance criterion may claim a rendered-output or browser check". A later agent reading that will refuse to write the browser assertions Stories 1.12 and 1.17 through 1.19 now depend on. The block is machine-managed and this story is forbidden from hand-editing it, and `sprint-status.yaml:95-97` already carries the same reminder for other reasons | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the
 ISO 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the

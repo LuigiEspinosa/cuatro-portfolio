@@ -31,6 +31,11 @@ jobs:
   rendered-output:
     runs-on: ubuntu-latest
 
+    # The job builds the Hub and drives a browser, so it is the slowest thing in this file.
+    # A ceiling turns a hung browser into a failure with a cause rather than a job that runs
+    # until the platform kills it.
+    timeout-minutes: 20
+
     # The baseline PNG in `tests/e2e/rendered-output.pw.ts-snapshots/` was generated inside
     # this exact image. Glyph rasterization is not portable, and `--font-mono` has no Courier
     # New on Linux, so pinning both sides to one image is what makes the tolerance a real
@@ -38,6 +43,11 @@ jobs:
     # then regenerate the baseline. See `ops/rendered-output-harness.md`.
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble
+      # Chromium in a container gets a 64 MB `/dev/shm` by default and crashes the renderer
+      # when it runs out. `retries` is 0 by design, so one such crash is a red build on an
+      # unrelated pull request. This is also the flag the documented baseline-regeneration
+      # command uses, which keeps both sides of the comparison on one configuration.
+      options: --ipc=host
 
     steps:
       - uses: actions/checkout@v4
@@ -57,3 +67,6 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+          # An install or build failure fails before any report exists. Warning about the
+          # missing artifact would bury the real cause under a second, unrelated complaint.
+          if-no-files-found: ignore

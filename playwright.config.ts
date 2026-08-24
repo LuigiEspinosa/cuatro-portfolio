@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { RENDERED_VIEWPORT } from './tests/e2e/harness';
 
 /**
  * The rendered-output harness (Story 1-10).
@@ -12,14 +13,11 @@ import { defineConfig } from '@playwright/test';
  * See `ops/rendered-output-harness.md` for the tolerance and its reasoning.
  */
 
-const PORT = 3000;
+// Deliberately not 3000. `next dev` takes that port, and a reused dev server would render a
+// development build into a baseline that claims to be the production one. The harness always
+// starts its own server, so there is nothing to reuse and nothing to mistake.
+const PORT = 3100;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
-
-/**
- * The screenshot viewport. Exported so a spec cannot drift from the baseline it compares
- * against by re-declaring the numbers.
- */
-export const RENDERED_VIEWPORT = { width: 360, height: 800 } as const;
 
 /**
  * Share of differing pixels tolerated before a screenshot comparison fails.
@@ -86,7 +84,9 @@ export default defineConfig({
   webServer: {
     command: `pnpm build && pnpm start --port ${PORT}`,
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
+    // Never reuse. A server already on this port is not known to be this build, and a baseline
+    // is only worth what the build behind it was.
+    reuseExistingServer: false,
     timeout: 300_000,
     stdout: 'pipe',
     stderr: 'pipe',
