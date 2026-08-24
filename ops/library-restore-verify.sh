@@ -9,19 +9,26 @@
 # evidence: it pulls the object back out of the bucket, decrypts it, unpacks it,
 # opens the database and reads it.
 #
+# Everything it reads is asserted, not printed. A count that comes back as an
+# error message, a database with no schema in it, or a database with no tables
+# in it all fail the run. That floor exists because `PRAGMA integrity_check`
+# passes on a valid empty database, and a valid empty database is exactly what a
+# naive `cp` of this store's 4096 byte main file produces, so integrity alone
+# would certify the one wrong answer this store invites.
+#
 # Callable on its own, and called by `library-backup.sh` as its last check
 # before the nightly run is allowed to report success.
 #
 #   library-restore-verify.sh                 verify the newest local archive's object
 #   library-restore-verify.sh <object-key>    verify that object
 #
-# Configuration comes from the environment, or from LIBRARY_BACKUP_CONFIG when
-# this is run by hand. It needs the same five S3 variables `s3-object.sh` needs,
-# plus BACKUP_PASSPHRASE.
+# Configuration comes from the environment when `library-backup.sh` invokes it,
+# and from LIBRARY_BACKUP_CONFIG when it is run by hand. It needs the same five
+# S3 variables `s3-object.sh` needs, plus BACKUP_PASSPHRASE.
 #
 # Everything it writes lives inside one `mktemp -d` scratch directory that is
-# removed on every exit path, successful or not. It never writes to the live
-# store, to the backup directory, or anywhere else.
+# removed on every exit path, including a signal, because that directory holds
+# a decrypted database carrying a user row and a session row.
 #
 # Exit codes: 0 the restore was proved, 1 anything else.
 
@@ -37,13 +44,23 @@ S3_PREFIX="${S3_PREFIX:-digital-library}"
 S3_CLIENT="${S3_OBJECT_CLIENT:-${HERE}/s3-object.sh}"
 
 SCRATCH=''
+SCRATCH_CREATED=0
 
 cleanup() {
-  if [ -n "${SCRATCH}" ] && [ -d "${SCRATCH}" ]; then
-    rm -rf -- "${SCRATCH}"
-  fi
+  [ "${SCRATCH_CREATED}" -eq 1 ] || return 0
+  [ -n "${SCRATCH}" ] || return 0
+  [ -d "${SCRATCH}" ] || return 0
+  case "${SCRATCH}" in
+    */library-restore-??????) rm -rf -- "${SCRATCH}" ;;
+  esac
 }
+
+# Bash does not run an EXIT trap on an untrapped fatal signal, so without these
+# a SIGTERM would leave a decrypted plaintext database on disk.
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
 
 say() {
   printf '%s: %s\n' "${PROGRAM}" "$*"
@@ -54,16 +71,30 @@ die() {
   exit 1
 }
 
-# The config file is sourced rather than parsed, which is why it must be root
-# owned and mode 0600 on the box. It is a shell fragment of KEY=value lines and
-# it is the one place the passphrase and the bucket credentials exist.
-if [ -f "${CONFIG_FILE}" ]; then
-  # shellcheck disable=SC1090
-  . "${CONFIG_FILE}" || die "cannot read ${CONFIG_FILE}"
+# Read through the same allowlist `library-backup.sh` uses, in a subshell with a
+# cleared environment, so a hand-edited config cannot redirect this script's own
+# paths or its scratch directory. Skipped entirely when the caller has already
+# put the values in the environment, which is what the nightly job does.
+CONFIG_ALLOWLIST='S3_ENDPOINT S3_REGION S3_BUCKET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY BACKUP_PASSPHRASE S3_PREFIX S3_CONNECT_TIMEOUT S3_MAX_TIME'
+
+if [ -z "${BACKUP_PASSPHRASE:-}" ] && { [ -e "${CONFIG_FILE}" ] || sudo test -e "${CONFIG_FILE}" 2>/dev/null; }; then
+  if ! CONFIG_VALUES="$(
+    env -i PATH="${PATH}" CUATRO_CONFIG_FILE="${CONFIG_FILE}" CUATRO_ALLOW="${CONFIG_ALLOWLIST}" \
+      bash -c '
+        set +u
+        . "${CUATRO_CONFIG_FILE}" || exit 1
+        for name in ${CUATRO_ALLOW}; do
+          if [ -n "${!name+set}" ]; then printf "%s=%q\n" "${name}" "${!name}"; fi
+        done
+      ' 2>/dev/null
+  )"; then
+    die "${CONFIG_FILE} exists and cannot be read by this account (uid $(id -u)). It should be owned root:$(id -gn 2>/dev/null) mode 0640 in a directory mode 0755"
+  fi
+  eval "${CONFIG_VALUES}"
 fi
 
 [ -n "${BACKUP_PASSPHRASE:-}" ] || die "BACKUP_PASSPHRASE is not set, so nothing can be decrypted. Set it in ${CONFIG_FILE}"
-[ -x "${S3_CLIENT}" ] || [ -f "${S3_CLIENT}" ] || die "cannot find the object client at ${S3_CLIENT}"
+[ -f "${S3_CLIENT}" ] || die "cannot find the object client at ${S3_CLIENT}"
 
 export S3_ENDPOINT="${S3_ENDPOINT:-}"
 export S3_REGION="${S3_REGION:-auto}"
@@ -85,6 +116,7 @@ fi
 
 SCRATCH="$(mktemp -d "${TMPDIR:-/tmp}/library-restore-XXXXXX")" \
   || die 'cannot create a scratch directory'
+SCRATCH_CREATED=1
 
 archive="${SCRATCH}/archive.tar.gz.gpg"
 plain="${SCRATCH}/archive.tar.gz"
@@ -120,38 +152,55 @@ for dir in books covers inbox; do
   if [ -d "${tree}/${dir}" ]; then
     say "media directory ${dir} present, $(find "${tree}/${dir}" -type f | wc -l | tr -d ' ') files"
   else
-    say "media directory ${dir} MISSING from the archive"
+    die "media directory ${dir} is missing from the archive, so the coverage this record claims is not what was uploaded"
   fi
 done
 
 # --- open and read ------------------------------------------------------------
 #
-# The point of the whole story. `integrity_check` on a file that was never
-# opened proves nothing about the file the backup would be restored from, so it
-# is run here, on the copy that came back out of the bucket.
+# The point of the whole story, and the reason every value below is asserted
+# rather than printed. A restore that printed `schema objects: Error: ...` and
+# then exited 0 would certify nothing while looking like proof.
 
-integrity="$(sqlite3 "${db}" 'PRAGMA integrity_check;' 2>&1)"
+if ! integrity="$(sqlite3 "${db}" 'PRAGMA integrity_check;' 2>&1)"; then
+  die "the restored database would not open for PRAGMA integrity_check: ${integrity}"
+fi
 if [ "${integrity}" != 'ok' ]; then
   die "the restored database fails PRAGMA integrity_check: ${integrity}"
 fi
 say 'PRAGMA integrity_check ok'
 
-objects="$(sqlite3 "${db}" 'SELECT count(*) FROM sqlite_master;' 2>&1)"
+if ! objects="$(sqlite3 "${db}" 'SELECT count(*) FROM sqlite_master;' 2>&1)"; then
+  die "the restored database would not answer a schema object count: ${objects}"
+fi
+case "${objects}" in
+  ''|*[!0-9]*) die "the restored database answered a schema object count that is not a number: ${objects}" ;;
+esac
+if [ "${objects}" -lt 1 ]; then
+  die 'the restored database holds no schema objects at all, which is what a file copy of this store would produce rather than a backup of it'
+fi
 say "schema objects: ${objects}"
 
-tables="$(sqlite3 "${db}" "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;" 2>&1)"
+if ! tables="$(sqlite3 "${db}" "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;" 2>&1)"; then
+  die "the restored database would not list its tables: ${tables}"
+fi
+
+table_count=0
 while IFS= read -r table; do
   [ -n "${table}" ] || continue
-  # A row count is tolerant on purpose. An FTS5 shadow table needs the module
-  # compiled in, and a restore that proved every ordinary table and could not
-  # read one virtual table is still a proved restore, so this reports rather
-  # than aborts.
-  if count="$(sqlite3 "${db}" "SELECT count(*) FROM \"${table}\";" 2>&1)"; then
-    say "table ${table}: ${count} rows"
-  else
-    say "table ${table}: not readable (${count})"
+  table_count=$(( table_count + 1 ))
+  if ! count="$(sqlite3 "${db}" "SELECT count(*) FROM \"${table}\";" 2>&1)"; then
+    die "the restored database holds a table it cannot read, ${table}: ${count}"
   fi
+  case "${count}" in
+    ''|*[!0-9]*) die "the restored table ${table} answered a row count that is not a number: ${count}" ;;
+  esac
+  say "table ${table}: ${count} rows"
 done <<< "${tables}"
 
-say "restore verified from the bucket for ${KEY}"
+if [ "${table_count}" -lt 1 ]; then
+  die 'the restored database holds no tables, so there is nothing in it to restore'
+fi
+
+say "restore verified from the bucket for ${KEY}: ${objects} schema objects across ${table_count} tables"
 exit 0

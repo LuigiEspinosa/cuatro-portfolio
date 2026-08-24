@@ -976,30 +976,44 @@ found them. Append only. Each entry names the spec that surfaced it.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
   summary: >-
-    RESOLVED. The two Story 1-7 entries above that Story 1-8 inherited, the
-    `library-backup.sh` failure and `digital-library` having no offsite path, are both
-    closed in code. The offsite half is installed and awaiting an Operator credential,
-    which is tracked in `ops/backup-digital-library.md` rather than here.
+    RESOLVED IN CODE. Closes the code half of two entries from
+    `spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`, identified below by
+    their own summary lines. The offsite half is installed and awaiting an Operator
+    credential, tracked in `ops/backup-digital-library.md` rather than here.
   evidence: |-
     Resolved 2026-08-24. Appended rather than edited into the two entries it answers, so
     the trail stays readable.
 
+    **The two entries this closes**, both with
+    `source_spec: _bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`:
+
+    1. The entry whose summary begins "`library-backup.sh` has aborted on line 13 every
+       night since 2026-07-31". **Closed in full.**
+    2. The entry whose summary begins "No backup anywhere in the estate is offsite, and
+       two of the four compose projects have no logical backup at all". **Closed for
+       `digital-library` only.** Its estate-wide half stays open, as that entry itself
+       says, and is restated at the end of this one.
+
     **The `library-backup.sh` failure is fixed.** `ops/library-backup.sh` replaces it,
     installed at `/usr/local/sbin/library-backup.sh` mode 0755 root owned, sha256
-    `a2993ec4...` matching the committed file. Ownership is taken with `id -u` and
-    `id -g`, never `$USER`. Run under the exact environment that broke the old one
-    (`env -i` with no `USER` and cron's `PATH`), the retired script still prints
-    `line 13: USER: unbound variable` and exits 1 while the new one completes its local
-    half and prints a full summary line. The `deploy` crontab now points at the installed
-    path, still two jobs at 03:30 and 03:45. `/home/deploy/library-backup.sh` was renamed
-    to `.retired-2026-08-24`, not deleted.
+    `6d1c25f1...` matching the committed file, which a test now holds true against the
+    checksum recorded in `ops/backup-digital-library.md`. Ownership is taken with `id -u`
+    and `id -g`, never `$USER`. Every acceptance run is performed in the exact environment
+    that broke the old one, `env -i` with no `USER` and cron's `PATH`, as `deploy` rather
+    than as root: the retired script still prints `line 13: USER: unbound variable` and
+    exits 1, while the new one completes its local half and prints a full summary line.
+    The `deploy` crontab now points at the installed path, still two jobs at 03:30 and
+    03:45. `/home/deploy/library-backup.sh` was renamed to `.retired-2026-08-24`, not
+    deleted.
 
     **Both of Story 1-7's two bugs are fixed, not just the visible one.** The prune
     pattern is `library-*` bounded to regular files at depth one, which covers all three
     generations of naming the directory has held. Its first run removed 11 files, being
     the 25-day-old `.gz` and the ten `.db` files dated 2026-07-31 to 2026-08-09. Both of
-    the two distinct SHA-256 contents Story 1-7 recorded survive inside the 14-day window,
-    so no evidence was lost.
+    the two distinct SHA-256 contents Story 1-7 recorded survive inside the window, so no
+    evidence was lost. The window is `-mtime +14`, which removes a file once it is 15
+    whole days old rather than 14, and the record and the summary field both say so
+    rather than rounding.
 
     **The verdict Story 1-7 could not reach is settled.** A `sqlite3 .backup` snapshot
     taken while another connection was committing 600 autocommit transactions landed

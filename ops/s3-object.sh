@@ -21,11 +21,14 @@
 #
 # Configuration is environment only, never a file in this repository:
 #
-#   S3_ENDPOINT           https://<account>.r2.cloudflarestorage.com, no trailing key
+#   S3_ENDPOINT           https://<account>.r2.cloudflarestorage.com, scheme and
+#                         host only, no path and no object key
 #   S3_REGION             defaults to `auto`, which is what Cloudflare R2 wants
 #   S3_BUCKET             bucket name, used path-style
 #   S3_ACCESS_KEY_ID      access key id
 #   S3_SECRET_ACCESS_KEY  secret access key
+#   S3_CONNECT_TIMEOUT    seconds to wait for the connection, default 15
+#   S3_MAX_TIME           seconds for the whole transfer, default 300
 #
 # Exit codes: 0 success, 1 any refusal or failure. Every failure names what
 # failed and why, because the defect this story replaces failed silently.
@@ -173,6 +176,23 @@ require_config() {
     die "missing required configuration: ${missing[*]}"
   fi
   S3_REGION="${S3_REGION:-auto}"
+
+  # The endpoint and the bucket both land inside the string that gets signed and
+  # inside the URL that curl sends. If either carries something the signer and
+  # curl would read differently, a path on the endpoint or a space in the bucket
+  # name, the request is signed over one URI and sent to another, and the whole
+  # failure surfaces as a 403 at 03:45 that nobody reads. Refuse here instead.
+  if ! printf '%s' "${S3_ENDPOINT}" | grep -Eq '^https?://[A-Za-z0-9][A-Za-z0-9.-]*(:[0-9]+)?/?$'; then
+    die "S3_ENDPOINT must be a scheme and host with no path, for example https://account.r2.cloudflarestorage.com. Got: ${S3_ENDPOINT}"
+  fi
+  if ! printf '%s' "${S3_BUCKET}" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*$'; then
+    die "S3_BUCKET must be a plain bucket name with no slash and no space. Got: ${S3_BUCKET}"
+  fi
+
+  S3_CONNECT_TIMEOUT="${S3_CONNECT_TIMEOUT:-15}"
+  S3_MAX_TIME="${S3_MAX_TIME:-300}"
+  case "${S3_CONNECT_TIMEOUT}" in ''|*[!0-9]*) die "S3_CONNECT_TIMEOUT must be a whole number of seconds, got: ${S3_CONNECT_TIMEOUT}" ;; esac
+  case "${S3_MAX_TIME}" in ''|*[!0-9]*) die "S3_MAX_TIME must be a whole number of seconds, got: ${S3_MAX_TIME}" ;; esac
 }
 
 endpoint_host() {
@@ -202,7 +222,12 @@ cmd_put() {
   # `--data-binary` reads the whole body into memory. That is acceptable only
   # because `library-backup.sh` refuses to call this above MAX_ARCHIVE_BYTES,
   # and that ceiling is the reason the check exists.
+  #
+  # The two timeouts are not tuning. Without them an endpoint that accepts the
+  # connection and then stalls hangs the 03:45 job forever, with no summary
+  # line, which is the failure shape this whole story exists to remove.
   status="$(curl -sS -o /dev/null -w '%{http_code}' -X PUT \
+    --connect-timeout "${S3_CONNECT_TIMEOUT}" --max-time "${S3_MAX_TIME}" \
     --data-binary "@${file}" \
     -H "Host: ${host}" \
     -H "x-amz-content-sha256: ${payload}" \
@@ -238,6 +263,7 @@ cmd_get() {
   # caller comparing checksums never reads an error body as if it were an object.
   partial="${out}.partial.$$"
   status="$(curl -sS -o "${partial}" -w '%{http_code}' -X GET \
+    --connect-timeout "${S3_CONNECT_TIMEOUT}" --max-time "${S3_MAX_TIME}" \
     -H "Host: ${host}" \
     -H "x-amz-content-sha256: ${EMPTY_SHA256}" \
     -H "x-amz-date: ${amz_date}" \

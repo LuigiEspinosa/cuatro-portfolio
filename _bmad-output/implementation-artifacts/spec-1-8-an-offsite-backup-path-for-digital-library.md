@@ -2,7 +2,7 @@
 title: 'An offsite backup path for digital-library'
 type: 'feature'
 created: '2026-08-24'
-status: 'awaiting-operator'
+status: 'in-review'
 baseline_commit: 'ed9c816c1d4efac219b385aaad2d71fb355c20d6'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -10,6 +10,15 @@ context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
 warnings: ['oversized']
+operator_actions:
+  - 'Create a Cloudflare R2 bucket, not public, and note the account id from its endpoint https://<account-id>.r2.cloudflarestorage.com.'
+  - 'Read the current R2 free tier for storage and for Class A and Class B operations, and correct the cost table in ops/backup-digital-library.md if the published numbers have moved, because this build could not reach the console and the $0.00 there is a decision rather than an observation.'
+  - 'Create an R2 API token scoped to that one bucket with Object Read and Write and nothing else, generate a passphrase of at least 32 random characters, and store the Access Key ID, the Secret Access Key and the passphrase in the password manager before writing any of them to the box.'
+  - 'Write /etc/cuatro/library-backup.env on 177.7.52.248 owned root:deploy mode 0640 inside /etc/cuatro owned root:root mode 0755, holding S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY and BACKUP_PASSPHRASE, using an editor rather than echo so the secret never reaches the shell history. The group must be deploy, because the cron entry runs as deploy and a root-only 0600 file makes every night exit 1 with offsite=config-unreadable.'
+  - 'Add an object lifecycle rule to the bucket that deletes objects under the prefix digital-library/ after 30 days, because the scripts never delete an object and offsite retention exists nowhere else.'
+  - 'Run the job once in the shape cron runs it, as deploy: env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /usr/local/sbin/library-backup.sh. Not sudo and not from an interactive shell. It must exit 0 with offsite=ok-digital-library/library-..., roundtrip=sha256-match and restore=verified.'
+  - 'From a machine that is not the box, download one object from the bucket and decrypt it with the passphrase as stored in the password manager, then list the archive, then delete both files. This is the only check that catches a passphrase mistyped into the password manager, because encryption and verification on the box both read the same value from the same file.'
+  - 'Paste the summary line from the first offsite run into ops/backup-digital-library.md under a First offsite run heading with its UTC date, replace the projected object size in the cost table with the measured one, record the outcome of the off-box decrypt, and update named limits 1, 2 and 5 to describe the state that now holds.'
 deferred:
   - summary: >-
       No cron job on the box has its exit status monitored by anything, which is the actual
@@ -140,12 +149,12 @@ Gathered 2026-08-24 over SSH as `deploy@177.7.52.248` against `ed9c816`, read-on
 - **`crontab -l` for `deploy` holds exactly two jobs**, `cuatro-backup.sh` at 03:30 and
   `library-backup.sh` at 03:45, both appending to a log under `/home/deploy/backups/<project>`.
   Root has no crontab.
-- `ops/routing-inventory.md:1205-1336` -- Story 1-7's read-only pass. Carries the full evidence:
+- `ops/routing-inventory.md:1205-1336`: Story 1-7's read-only pass. Carries the full evidence:
   the 25 files, their two distinct SHA-256 contents, the `PRAGMA integrity_check` results, the
   reconciliation against `cuatro-backup.sh`, and the one verdict it could not reach, that a snapshot
   is consistent under a **concurrent writer**. That is this story's to settle. Do not duplicate that
   evidence here; add a dated pointer to it.
-- `_bmad-output/implementation-artifacts/deferred-work.md` -- two entries this story answers, both
+- `_bmad-output/implementation-artifacts/deferred-work.md`: two entries this story answers, both
   from spec 1-7: the `library-backup.sh` failure and the estate-wide absence of any offsite copy.
   Append the resolution rather than editing them.
 - **Install precedent:** Story 1-5 put `capacity-sampler.sh` in `/usr/local/sbin` from a checkout and
@@ -168,12 +177,12 @@ Gathered 2026-08-24 over SSH as `deploy@177.7.52.248` against `ed9c816`, read-on
 ## Tasks & Acceptance
 
 **Execution:**
-- `ops/s3-object.sh` -- an S3-compatible object client in bash: `put`, `get`, `selftest`. AWS
+- `ops/s3-object.sh`: an S3-compatible object client in bash: `put`, `get`, `selftest`. AWS
   SigV4 over `curl` and `openssl`, payload-signed single request, headers `host`,
   `x-amz-content-sha256`, `x-amz-date`. Validates the object key against `^[A-Za-z0-9._/-]+$` with
   no `..` and no leading `/` before any network call. `selftest` recomputes the golden vector and
   compares. No `list` and no `delete`: retention offsite is a lifecycle rule.
-- `ops/library-backup.sh` -- the nightly job. Stages in order: snapshot with
+- `ops/library-backup.sh`: the nightly job. Stages in order: snapshot with
   `sudo sqlite3 "$DB" ".backup"`, take ownership with `id -u`/`id -g` rather than `$USER`,
   `PRAGMA integrity_check` on the snapshot, tar the snapshot plus `books`, `covers` and `inbox`,
   gzip, `gpg --batch --symmetric --cipher-algo AES256`, size ceiling check, `put`, `get` the object
@@ -181,31 +190,31 @@ Gathered 2026-08-24 over SSH as `deploy@177.7.52.248` against `ed9c816`, read-on
   all three naming generations, and one summary line carrying every stage's verdict. Reports the
   Redis emptiness check rather than assuming it. Exits 75 with the remedy named when the config file
   is absent, after the local stages have completed.
-- `ops/library-restore-verify.sh` -- the real restore, callable on its own and called by the nightly
+- `ops/library-restore-verify.sh`: the real restore, callable on its own and called by the nightly
   job. Takes an object key, or defaults to the newest local archive's key. Downloads into a scratch
   directory, decrypts, untars, opens the database, asserts `PRAGMA integrity_check` is `ok`, prints
   the schema object count and the row count of every table, and removes the scratch directory.
   Never writes outside the scratch directory.
-- `ops/__tests__/library-backup.test.ts` -- one case per matrix row. A Node reference implementation
+- `ops/__tests__/library-backup.test.ts`: one case per matrix row. A Node reference implementation
   of SigV4 derives the expected signature from first principles and pins the golden vector, and the
   bash implementation is executed against the same inputs, so a change to either without the other
   fails. Orchestration cases run `ops/library-backup.sh` against a `PATH` of stubs for `sqlite3`,
   `sudo`, `gpg`, `docker` and `curl`, in a scratch directory.
-- Box install -- three scripts to `/usr/local/sbin` mode 0755, `sha256sum` matched against the
+- Box install: three scripts to `/usr/local/sbin` mode 0755, `sha256sum` matched against the
   committed files, `selftest` run and recorded, crontab repointed at the installed path, and
   `/home/deploy/library-backup.sh` renamed to `.retired-2026-08-24` rather than deleted.
-- Concurrency proof -- settle Story 1-7's open verdict: on a scratch WAL database in `/tmp`, run a
+- Concurrency proof, settling Story 1-7's open verdict: on a scratch WAL database in `/tmp`, run a
   writer while `sqlite3 .backup` runs, then integrity-check and row-count the result. Nice'd,
   sub-second, its UTC window recorded.
-- `ops/backup-digital-library.md` -- the record: what is backed up and what is deliberately not,
+- `ops/backup-digital-library.md` is the record: what is backed up and what is deliberately not,
   the Redis verdict with its evidence, the method and why it is not `restic`, the offsite provider
   and its recurring cost as a named decision against NFR-4, the restore procedure, the store and its
   path in the form Epic 2 needs for the Registry `tech` array and Epic 4 needs for the rebuild, the
   Operator actions still owed, and the named limits.
-- `ops/routing-inventory.md` -- one dated pointer in the backup coverage section to the new record,
+- `ops/routing-inventory.md`: one dated pointer in the backup coverage section to the new record,
   so a reader landing on Story 1-7's evidence is not left with a verdict that has since changed.
   Nothing else in that file is touched.
-- `_bmad-output/implementation-artifacts/deferred-work.md` -- append the resolution of the two 1-7
+- `_bmad-output/implementation-artifacts/deferred-work.md`: append the resolution of the two 1-7
   entries this story closes, and append anything this build finds that belongs to no story.
 
 **Acceptance Criteria:**
@@ -259,14 +268,14 @@ create.
 ## Verification
 
 **Commands:**
-- `corepack pnpm test --run` -- expected: the suite at `ed9c816` plus the new file, all passing.
-- `corepack pnpm typecheck` -- expected: pass.
-- `bash -n ops/s3-object.sh ops/library-backup.sh ops/library-restore-verify.sh` -- expected: clean parse.
-- `bash ops/s3-object.sh selftest` -- expected: the golden vector matches, exit 0.
-- On the box, `sha256sum` of each installed script against the committed file -- expected: identical.
-- On the box, one full run with no config file -- expected: local stages complete, summary line
+- `corepack pnpm test --run`, expected: the suite at `ed9c816` plus the new file, all passing.
+- `corepack pnpm typecheck`, expected: pass.
+- `bash -n ops/s3-object.sh ops/library-backup.sh ops/library-restore-verify.sh`, expected: clean parse.
+- `bash ops/s3-object.sh selftest`, expected: the golden vector matches, exit 0.
+- On the box, `sha256sum` of each installed script against the committed file, expected: identical.
+- On the box, one full run with no config file, expected: local stages complete, summary line
   reports `offsite=not-configured`, exit 75, and the backup directory holds a fresh archive.
-- The concurrency proof on a scratch database -- expected: `integrity_check` `ok` and a row count
+- The concurrency proof on a scratch database, expected: `integrity_check` `ok` and a row count
   consistent with a point in the writer's sequence, never a torn read.
 - Punctuation sweep over every file written, using regex escapes rather than literal characters,
   run against a positive control carrying all three forbidden characters so it cannot pass vacuously.
