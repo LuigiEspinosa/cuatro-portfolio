@@ -68,11 +68,11 @@ development_status:
   1-21-restore-cuatro-dev-onto-the-hostinger-vps: done
   1-3-bot-mitigation-on-the-four-live-subdomains: done
   1-4-the-capacity-gate-exists-and-fails-closed: done
-  1-5-capacity-measurement-week: done
+  1-5-capacity-measurement-week: awaiting-operator
   1-6-write-the-capacity-gate-threshold-and-open-the-gate: backlog
   1-7-enumerate-the-deployed-routing-table-on-the-box: backlog
   1-8-an-offsite-backup-path-for-digital-library: backlog
-  1-9-record-the-build-on-the-box-violation-as-a-tracked-item: review
+  1-9-record-the-build-on-the-box-violation-as-a-tracked-item: done
   1-10-install-playwright-and-establish-the-rendered-output-harness: backlog
   1-11-publish-contracts-tokens-css-from-packages-tokens: backlog
   1-12-publish-contracts-fonts-css-with-latin-subset-faces: backlog
