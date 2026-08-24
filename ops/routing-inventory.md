@@ -1204,6 +1204,16 @@ Appended to the ledger. Not changed by this pass.
 
 ## Backup coverage, per project
 
+**Partly superseded on 2026-08-24 by Story 1-8. The record for `digital-library`'s backup path is
+now `ops/backup-digital-library.md`.** Three things in this section have since changed on the box:
+`/home/deploy/library-backup.sh` was retired and the crontab repointed at
+`/usr/local/sbin/library-backup.sh`, the retention prune ran for the first time and removed the
+eleven files older than fourteen days, and the one verdict this pass could not reach, that a
+snapshot is consistent **under a concurrent writer**, was settled by test on a scratch database.
+**Everything below is deliberately left as it was gathered**, because it is the evidence Story 1-8
+was built from and rewriting it would destroy the trail. Read it as the state at 2026-08-24T12:00Z
+and `ops/backup-digital-library.md` for the state after.
+
 **Observed 2026-08-24.** The `deploy` crontab holds exactly two jobs and root has none.
 
 ```

@@ -973,3 +973,92 @@ found them. Append only. Each entry names the spec that surfaced it.
     auditable after the fact. Making it reproducible needs either digests read from the
     registry, or the GHCR path AD-8 requires, which is Epic 3. Recorded so Epic 4 does
     not discover it while rebuilding.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  summary: >-
+    RESOLVED. The two Story 1-7 entries above that Story 1-8 inherited, the
+    `library-backup.sh` failure and `digital-library` having no offsite path, are both
+    closed in code. The offsite half is installed and awaiting an Operator credential,
+    which is tracked in `ops/backup-digital-library.md` rather than here.
+  evidence: |-
+    Resolved 2026-08-24. Appended rather than edited into the two entries it answers, so
+    the trail stays readable.
+
+    **The `library-backup.sh` failure is fixed.** `ops/library-backup.sh` replaces it,
+    installed at `/usr/local/sbin/library-backup.sh` mode 0755 root owned, sha256
+    `a2993ec4...` matching the committed file. Ownership is taken with `id -u` and
+    `id -g`, never `$USER`. Run under the exact environment that broke the old one
+    (`env -i` with no `USER` and cron's `PATH`), the retired script still prints
+    `line 13: USER: unbound variable` and exits 1 while the new one completes its local
+    half and prints a full summary line. The `deploy` crontab now points at the installed
+    path, still two jobs at 03:30 and 03:45. `/home/deploy/library-backup.sh` was renamed
+    to `.retired-2026-08-24`, not deleted.
+
+    **Both of Story 1-7's two bugs are fixed, not just the visible one.** The prune
+    pattern is `library-*` bounded to regular files at depth one, which covers all three
+    generations of naming the directory has held. Its first run removed 11 files, being
+    the 25-day-old `.gz` and the ten `.db` files dated 2026-07-31 to 2026-08-09. Both of
+    the two distinct SHA-256 contents Story 1-7 recorded survive inside the 14-day window,
+    so no evidence was lost.
+
+    **The verdict Story 1-7 could not reach is settled.** A `sqlite3 .backup` snapshot
+    taken while another connection was committing 600 autocommit transactions landed
+    strictly mid-sequence three times (2093, 2093 and 2096 rows against 2000 before and
+    2600 after), passed `PRAGMA integrity_check` every time, and had contiguous ids with
+    no truncated row. Windows and full evidence in `ops/backup-digital-library.md`.
+
+    **What is not closed is the credential half**, which no agent can perform: the R2
+    bucket, its scoped token, the passphrase and the offsite lifecycle rule. Until they
+    exist the nightly job exits 75 every night and the estate still has no offsite copy of
+    `digital-library`. That is enumerated as seven imperative Operator actions in
+    `ops/backup-digital-library.md`, which is the record to read, not this ledger.
+
+    **The estate-wide half of the second entry is untouched and stays open.** Story 1-8
+    scopes `digital-library` only. `cs-tracker_pgdata`, `cuatro-portfolio_postgres_data`,
+    `cs-tracker_caddy_data` and the rest still have no backup of any kind, no backup
+    anywhere is offsite, and `cuatro-backup.sh`'s claim to complement a Hostinger weekly
+    snapshot is still an unverified comment in a script.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  summary: >-
+    No cron job on the box has its exit status monitored by anything. That is the actual
+    reason the `library-backup.sh` failure survived 25 nights, and fixing one script does
+    not fix it.
+  evidence: |-
+    Observed 2026-08-24. The `deploy` crontab's two jobs both append stdout and stderr to
+    a log file under `/home/deploy/backups/<project>` and nothing reads either log. There
+    is no `MAILTO`, no local MTA observed, and `ops/monitoring.md`'s probes are external
+    HTTP and certificate checks against hostnames, which cannot see a backup job at all.
+
+    Story 1-8 makes the signal correct rather than visible: the new job emits exactly one
+    greppable summary line and an exit status that agrees with it, so a monitor now has
+    something unambiguous to read. Nothing reads it. A backup that reports failure to
+    nobody is the same failure mode as one that reports success falsely, and the estate
+    has now demonstrated it once for 25 consecutive nights.
+
+    The cheap closure is the same shape as the off-box certificate-age check already
+    proposed in this ledger: a scheduled job that reads the last line of each backup log,
+    or a healthcheck ping the job makes on exit 0. It is `ops/monitoring.md`'s file and
+    another story's decision, so it is recorded rather than taken here.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  summary: >-
+    The box now runs two different backup idioms, and `cuatro-backup.sh` is the one still
+    uncommitted, unencrypted, unpruned by any reviewed code and local only. The three
+    scripts Story 1-8 committed would cover it with a change of source command.
+  evidence: |-
+    Observed 2026-08-24. `/home/deploy/cuatro-backup.sh` is still an uncommitted script on
+    the box, running `pg_dump -U tracker -Fc tracker` at 03:30 into
+    `/home/deploy/backups/cuatro-tracker`, with its own inline `find -mtime +14 -delete`.
+    Story 1-7 verified its retention arithmetic reconciles, so it is working, and it is
+    still the same three defects Story 1-8 was written to remove from its sibling: no copy
+    leaves the box, nothing is encrypted, and no committed test covers it.
+
+    `ops/s3-object.sh` and `ops/library-restore-verify.sh` are deliberately generic about
+    what they move: the first takes a file and a key, the second takes a key and proves a
+    SQLite database. Pointing the same path at `pg_dump` output needs a Postgres flavoured
+    restore check and nothing else, and it would reuse the same bucket, the same token and
+    the same passphrase file. Recorded rather than done because Story 1-8's boundaries name
+    `digital-library` and only `digital-library`, and because the same argument applies to
+    `cs-tracker`'s and the Anchor's Postgres, neither of which has any backup at all. That
+    is one story, not three, and it is not this one.
