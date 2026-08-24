@@ -70,7 +70,14 @@ development_status:
   1-4-the-capacity-gate-exists-and-fails-closed: done
   1-5-capacity-measurement-week: awaiting-operator
   1-6-write-the-capacity-gate-threshold-and-open-the-gate: backlog
-  1-7-enumerate-the-deployed-routing-table-on-the-box: backlog
+  # 1-7 parked by hand 2026-08-24. Its dev session was killed by the 90 minute
+  # session wall at phase dev-verify, so the orchestrator recorded no result and
+  # never advanced this row. The work is complete and committed (55e281e, b4aeee7,
+  # f9e7bde) and the spec is finalized at awaiting-operator with seven
+  # operator_actions. There is no park record under .bmad-loop/operator/, so
+  # `bmad-loop confirm` cannot see it: close this row by hand once those actions
+  # are done. The spec also carries followup_review_recommended: true, unspent.
+  1-7-enumerate-the-deployed-routing-table-on-the-box: awaiting-operator
   1-8-an-offsite-backup-path-for-digital-library: backlog
   1-9-record-the-build-on-the-box-violation-as-a-tracked-item: done
   1-10-install-playwright-and-establish-the-rendered-output-harness: backlog
