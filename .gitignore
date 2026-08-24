@@ -108,6 +108,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+### Playwright (Story 1-10) ###
+# Run output only. The committed baselines live in
+# `tests/e2e/rendered-output.pw.ts-snapshots/` and are deliberately not ignored.
+/test-results/
+/playwright-report/
+/blob-report/
+
 ### react ###
 .DS_*
 *.log

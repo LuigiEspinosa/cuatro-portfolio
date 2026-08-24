@@ -27,3 +27,33 @@ jobs:
 
       - name: Unit tests
         run: pnpm test --run
+
+  rendered-output:
+    runs-on: ubuntu-latest
+
+    # The baseline PNG in `tests/e2e/rendered-output.pw.ts-snapshots/` was generated inside
+    # this exact image. Glyph rasterization is not portable, and `--font-mono` has no Courier
+    # New on Linux, so pinning both sides to one image is what makes the tolerance a real
+    # number. Bump the image tag and the `@playwright/test` pin in `package.json` together,
+    # then regenerate the baseline. See `ops/rendered-output-harness.md`.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rendered-output harness
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
