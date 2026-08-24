@@ -2,10 +2,10 @@
 title: 'An offsite backup path for digital-library'
 type: 'feature'
 created: '2026-08-24'
-status: 'in-review'
+status: 'awaiting-operator'
 baseline_commit: 'ed9c816c1d4efac219b385aaad2d71fb355c20d6'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -53,6 +53,34 @@ deferred:
       Anchor's Postgres, neither of which has any backup at all. That is one story, not three.
     location: 'ops/backup-digital-library.md'
     severity: medium
+  - summary: >-
+      No CI job reads a shell script, so a syntax error in any committed `ops/*.sh` is caught
+      by nothing until it runs on the box at 03:45.
+    evidence: |-
+      `.github/workflows/ci.yml` runs `pnpm typecheck` and `pnpm test --run` and nothing else,
+      and `tsconfig.json:34-41` excludes shell scripts from typecheck entirely. This story's
+      suite reads the scripts as text and executes them through stubs, which catches a great
+      deal, but `bash -n` and the punctuation sweep are both commands a person ran once by
+      hand. The repository has carried committed shell scripts since Story 1-5 and the gap is
+      older than this story, so it is not this story's defect. A `bash -n` step over
+      `ops/*.sh` is one line, and AD-21 makes it blocking if it is added at all. Adding a CI
+      job is a scope decision for a story that owns CI rather than one that owns a backup.
+    location: '.github/workflows/ci.yml'
+    severity: medium
+  - summary: >-
+      Both backup logs on the box grow without bound and nothing truncates them, and the new
+      job deliberately writes more per run than the one it replaces.
+    evidence: |-
+      Observed 2026-08-24. Both `deploy` crontab entries append to
+      `/home/deploy/backups/<project>/backup.log`, no logrotate stanza covers either path, and
+      the retention prune is correctly scoped to `library-*` so it can never remove the log
+      beside the archives. The volumes are small, one line per night per job, so this is a
+      slow leak rather than a risk, and it predates this story: `cuatro-backup.sh` has the
+      same shape. Recorded because the same closure covers both jobs and because the entry
+      about nothing monitoring the exit status would naturally be solved by whatever reads
+      these files.
+    location: 'ops/backup-digital-library.md'
+    severity: low
 ---
 
 <intent-contract>
@@ -235,6 +263,81 @@ Gathered 2026-08-24 over SSH as `deploy@177.7.52.248` against `ed9c816`, read-on
 
 ## Review Triage Log
 
+### 2026-08-24, Review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 25: (high 3, medium 14, low 8)
+- defer: 2: (high 0, medium 2, low 0)
+- reject: 2: (high 0, medium 0, low 2)
+- addressed_findings:
+  - `[high]` `[patch]` The offsite half could never run. The record's Operator action created the
+    config root-owned 0600 inside a 0700 directory while the cron entry runs as `deploy`, so every
+    night would have taken the not-configured branch and exited 75 after the Operator had done
+    everything. Ownership model changed to `0755` on the directory and `root:deploy` `0640` on the
+    file, and an unreadable config is now a distinct reported state rather than an absent one.
+  - `[high]` `[patch]` Acceptance validated the wrong execution context. Operator action 6 ran the
+    job under `sudo` as root while cron runs it as `deploy`, which is the exact mismatch that hid
+    the failure this story replaces. Every box run and the acceptance step now use the cron shape,
+    and a root run no longer leaves root-owned archives in the backup directory.
+  - `[high]` `[patch]` The restore proved almost nothing. Only `PRAGMA integrity_check` was
+    asserted; the schema and row counts were printed and never read, so a valid but empty database,
+    which is exactly what a naive `cp` of this store produces, passed as verified. The verifier now
+    asserts every value it reads, and the same schema floor was added to the snapshot stage.
+  - `[medium]` `[patch]` `operator_actions` was missing from the spec frontmatter, so the owed work
+    existed only as a table in the ops record. Added as eight imperative strings.
+  - `[medium]` `[patch]` No timeouts on `curl` or on the Redis `docker exec` probe, so a stalled
+    endpoint or a wedged daemon hung the nightly job with no summary line.
+  - `[medium]` `[patch]` A non-numeric size ceiling or retention window failed open: with no
+    `set -e` the comparison returned 2, the condition read false, and the summary still recorded
+    `within-ceiling`. All four numeric knobs are validated at preflight.
+  - `[medium]` `[patch]` `prune_local` was called bare on the exit-75 path, so a failed prune broke
+    the story's central contract that the summary line and the exit status agree.
+  - `[medium]` `[patch]` Only `EXIT` was trapped, and bash does not run an `EXIT` trap on an
+    untrapped fatal signal, so a `SIGTERM` left the verifier's decrypted plaintext database behind.
+  - `[medium]` `[patch]` No single-instance guard, while the record instructs the Operator to run
+    the job by hand. Added, with a refusal to overwrite an existing archive.
+  - `[medium]` `[patch]` The config was sourced with `.`, so a stray assignment could clobber the
+    scratch path the `EXIT` trap removes. It is now read through an allowlist in a cleared
+    environment and cannot set any path or executable.
+  - `[medium]` `[patch]` `S3_ENDPOINT` and `S3_BUCKET` were unvalidated, so a typo produced a
+    signed URI disagreeing with the request and a nightly 403 nobody reads.
+  - `[medium]` `[patch]` `tar` exits 1 on "file changed as we read it", which would have aborted
+    the whole backup the first time the media tree stopped being empty. Retried once, then fails.
+  - `[medium]` `[patch]` No busy timeout on `sqlite3 .backup`, so a transient lock lost the night.
+  - `[medium]` `[patch]` Four factual errors in the record: five actions announced above seven,
+    two wrong action cross-references in the named limits, and ten stages above a table of eleven.
+  - `[medium]` `[patch]` The cost table presented a local unencrypted archive size as an observed
+    offsite volume, which is a projection under this record's own NFR-9 discipline.
+  - `[medium]` `[patch]` The two variables that redirect a run to a different executable appeared
+    in no table, and the config was sourced after half the knobs it looked able to set had resolved.
+  - `[medium]` `[patch]` The `curl` stub discarded headers, so no test observed the request
+    carrying the signature: deleting the `Authorization` header left every case green. The stub now
+    records full argv and three cases assert the header against the Node reference.
+  - `[medium]` `[patch]` Implemented branches with no test: misconfigured, unreadable config,
+    unreachable Redis, no-prune-on-failure, newline and empty keys, bad endpoint and bucket.
+  - `[medium]` `[patch]` Nothing tied the committed scripts to the hashes recorded as installed.
+    A test now hashes each script against the record's pins, so drift fails the suite.
+  - `[medium]` `[patch]` The real `gpg` encrypt and decrypt had never executed anywhere: the suite
+    stubs it and the first box run had no passphrase. Proved on the box under the cron shape with a
+    throwaway passphrase, including that a wrong passphrase fails.
+  - `[low]` `[patch]` Prose double dashes throughout the new files, against a repository rule, and
+    a punctuation sweep that passed over them. Sweep rebuilt to catch a prose dash without flagging
+    a CLI flag, and checked against a control.
+  - `[low]` `[patch]` The append-only ledger lost its trailing newline, so the next entry would
+    have concatenated onto the last line, and the resolution entry named what it closed by position.
+  - `[low]` `[patch]` Retention was described as 14 days while `find -mtime +14` removes at 15.
+  - `[low]` `[patch]` The suite inherited the `jsdom` environment, resolved paths through
+    `__dirname`, and left roughly twenty scratch roots per run behind, some holding an unencrypted
+    fixture database.
+  - `[low]` `[patch]` The summary named a `.tar.gz.gpg` artifact before encryption was attempted,
+    so a `gpg` failure reported a file that never existed.
+  - `[low]` `[patch]` The unsafe-key suite carried a comment describing a newline case it did not
+    run, which reads as coverage.
+  - `[low]` `[patch]` No way for the Operator to detect a passphrase mistyped into the password
+    manager, since encryption and verification both read the same value from the same file on the
+    same box. Added as an off-box Operator action, with an RPO and an RTO for the store.
+
 ## Design Notes
 
 **Why a bash SigV4 client and not `restic` or `rclone`.** AD-10 asks for a path equivalent to
@@ -284,3 +387,73 @@ create.
 - Confirm `/home/deploy/digital-library/data` is byte-identical after the build: same three files,
   same sizes, same mtimes.
 - Confirm `crontab -l` holds two jobs and the library one points at `/usr/local/sbin`.
+
+## Auto Run Result
+
+Status: awaiting-operator
+Blocking condition: none. The story is finished as far as an agent can take it. The remaining
+acceptance depends on a Cloudflare console act and a credential, which are enumerated in the
+frontmatter `operator_actions` and, with their evidence columns, in `ops/backup-digital-library.md`.
+
+**What was implemented.** `digital-library`'s backup was replaced rather than repaired. The
+uncommitted `/home/deploy/library-backup.sh`, which had aborted on `USER: unbound variable` every
+night since 2026-07-31, is retired to `.retired-2026-08-24` and the `deploy` crontab now runs a
+committed job at the same 03:45. A run takes a checkpointed `sqlite3 .backup` snapshot of the live
+store, asserts its integrity and that it holds a schema, archives it with the `books`, `covers` and
+`inbox` trees, encrypts it with AES256, pushes it to an S3-compatible bucket, downloads it back and
+compares SHA-256, restores it into a scratch directory and asserts what came back is a real
+database, prunes locally, and emits one summary line whose every field carries a verdict and whose
+exit status agrees with it. Offsite is unconfigured today, so the job completes its local half and
+exits 75 rather than reporting a success the estate does not have.
+
+**Files changed.**
+- `ops/s3-object.sh`: an S3-compatible `put`, `get` and `selftest` in bash over `curl` and
+  `openssl`, SigV4 payload-signed, with key, endpoint and bucket validation before any request.
+- `ops/library-backup.sh`: the nightly job, eleven stages, one summary line, single-instance guard.
+- `ops/library-restore-verify.sh`: the real restore, every value asserted rather than printed.
+- `ops/__tests__/library-backup.test.ts`: 53 cases, one describe per matrix row plus the branches
+  found at review, running the real scripts against stubbed box binaries.
+- `ops/backup-digital-library.md`: the record. Method, the Redis cache verdict with its evidence,
+  the R2 cost decision against NFR-4, retention on both sides, RPO and RTO, the restore procedure,
+  the store in the form Epic 2's Registry `tech` array and Epic 4's rebuild need it, nine named
+  limits, and the Operator actions with an evidence column.
+- `ops/routing-inventory.md`: one dated pointer from Story 1-7's backup coverage section.
+- `_bmad-output/implementation-artifacts/deferred-work.md`: the resolution of the two Story 1-7
+  entries this story inherited, plus what this build found that belongs to no story.
+- `vitest.setup.ts`: its DOM shim is guarded so a node-environment test file can opt out.
+
+**Review findings.** Four layers ran in parallel against the diff. 25 patches applied, 0 intent
+gaps, 0 spec defects, 2 deferred, 2 rejected. The three that mattered: the config ownership the
+record prescribed would have made the offsite half exit 75 forever after the Operator finished
+every action; the acceptance step ran the job as root while cron runs it as `deploy`, which is the
+same context mismatch that hid the original failure for 25 nights; and the restore verified nothing,
+since it asserted only `PRAGMA integrity_check`, which passes on the empty database a naive `cp` of
+this store produces. Full triage above.
+
+**Follow-up review recommended: true.** Patched this pass: high 3, medium 14, low 8. Any high
+patched finding sets the flag on its own.
+
+**Verification.** `corepack pnpm test --run`: 215 tests in 17 files, all pass. `corepack pnpm
+typecheck`: pass. `bash -n` clean on all three scripts. `bash ops/s3-object.sh selftest`: the golden
+SigV4 vector matches byte for byte, and the Node reference in the suite reproduces both vectors AWS
+publishes before deriving it. On the box: the three installed scripts hash identically to the
+committed files (`6d1c25f1`, `5ab0b586`, `0c4d8502`); a cron-shaped run at 2026-08-24T12:52:13Z
+completed every local stage and exited 75; the live store is byte-identical, `library.db` still
+`d405fbc2...` with its mtime unchanged; all three containers healthy and `library.cuatro.dev`
+serving. Story 1-7's open verdict is settled: three timed runs on a scratch WAL database put the
+snapshot strictly mid-writer-sequence with contiguous ids and `integrity_check ok`, so
+`sqlite3 .backup` is consistent under a concurrent writer, observed rather than read off
+documentation. The real `gpg` path was proved on the box under the cron shape with a throwaway
+passphrase, including that a wrong passphrase fails, because the suite necessarily stubs it.
+
+**Residual risks.**
+1. No offsite copy exists yet. Until the eight Operator actions are done, `digital-library` still
+   has only local snapshots, which is the AD-10 defect narrowed rather than closed.
+2. No live request has ever been made to Cloudflare R2 by this estate. The signature is proved
+   against AWS's published vectors and the request against a recorded stub argv; a real 200 is
+   Operator action 6.
+3. The R2 free-tier figures are marked Decided, not Observed. Operator action 2 corrects them.
+4. The suite stubs `gpg`, so the box proof is point-in-time. A change to those invocations fails the
+   flag-set test but does not re-prove the round trip, which needs a manual re-run.
+5. Nothing monitors the job's exit status, which is why the original failure survived 25 nights.
+   Deferred, because it is `ops/monitoring.md`'s file.
