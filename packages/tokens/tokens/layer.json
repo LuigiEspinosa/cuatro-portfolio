@@ -1,0 +1,12 @@
+{
+  "z": {
+    "$type": "number",
+    "base": { "$value": "1" },
+    "raised": { "$value": "10" },
+    "dropdown": { "$value": "100" },
+    "sticky": { "$value": "200" },
+    "modal": { "$value": "400" },
+    "toast": { "$value": "500" },
+    "tooltip": { "$value": "600" }
+  }
+}

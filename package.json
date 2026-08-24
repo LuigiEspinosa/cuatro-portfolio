@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
     "typecheck": "tsc --noEmit",
+    "tokens:build": "node packages/tokens/build.mjs",
     "linkg": "next lint"
   },
   "dependencies": {

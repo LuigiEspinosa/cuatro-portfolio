@@ -28,6 +28,41 @@ jobs:
       - name: Unit tests
         run: pnpm test --run
 
+  tokens-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild the published contract
+        run: pnpm tokens:build
+
+      # `git diff --exit-code` is blind to a file the generator newly created,
+      # which is exactly the shape of mistake Stories 1.12 and 1.13 will make
+      # when they add a second and a third output under `contracts/`. Reading
+      # `git status --porcelain` sees an untracked path and a deleted one too,
+      # so the first new file cannot ship unreviewed. The diff is printed after
+      # the status because it is what names the offending property.
+      - name: Fail if the published contract drifted from its source
+        run: |
+          drift="$(git status --porcelain -- contracts/)"
+          if [ -n "$drift" ]; then
+            echo "contracts/ is not what packages/tokens generates."
+            echo "Run 'pnpm tokens:build' and commit the result."
+            echo "$drift"
+            git --no-pager diff -- contracts/
+            exit 1
+          fi
+
   rendered-output:
     runs-on: ubuntu-latest
 

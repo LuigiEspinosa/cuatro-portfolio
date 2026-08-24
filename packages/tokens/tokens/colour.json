@@ -1,0 +1,38 @@
+{
+  "c": {
+    "$type": "color",
+    "paper": { "$value": "oklch(12% 0.011 288)" },
+    "surface": { "$value": "oklch(16% 0.013 288)" },
+    "surface-high": { "$value": "oklch(20% 0.014 288)" },
+    "line": { "$value": "oklch(28% 0.015 288)" },
+    "line-strong": { "$value": "oklch(51% 0.020 288)" },
+    "muted": { "$value": "oklch(68% 0.012 288)" },
+    "ink": { "$value": "oklch(95% 0.005 288)" },
+    "accent": { "$value": "oklch(66% 0.165 288)" },
+    "accent-bright": { "$value": "oklch(76% 0.145 288)" },
+    "accent-quiet": { "$value": "oklch(46% 0.110 288)" },
+    "focus": { "$value": "oklch(84% 0.130 288)" },
+    "scrim": {
+      "$value": "oklch(12% 0.011 288 / 0.88)",
+      "$description": "The ONE translucent value in the contract. The FR-17 conformance gate\n(Story 2.34) must permit the alpha on THIS declaration and reject it\neverywhere else, including any hand-written rgba() that reproduces it."
+    }
+  },
+  "token": {
+    "$type": "color",
+    "bg": { "$value": "{c.paper}" },
+    "bg-raised": { "$value": "{c.surface}" },
+    "bg-raised-2": { "$value": "{c.surface-high}" },
+    "text": { "$value": "{c.ink}" },
+    "text-secondary": { "$value": "{c.muted}" },
+    "border": { "$value": "{c.line}" },
+    "border-interactive": { "$value": "{c.line-strong}" },
+    "accent": { "$value": "{c.accent}" },
+    "accent-hover": { "$value": "{c.accent-bright}" },
+    "accent-muted": { "$value": "{c.accent-quiet}" },
+    "focus": { "$value": "{c.focus}" },
+    "scrim": {
+      "$value": "{c.scrim}",
+      "$description": "between imagery and text only. Never a surface."
+    }
+  }
+}

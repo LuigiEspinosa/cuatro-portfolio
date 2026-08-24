@@ -1,0 +1,8 @@
+{
+  "elev": {
+    "$type": "color",
+    "0": { "$value": "{c.paper}" },
+    "1": { "$value": "{c.surface}" },
+    "2": { "$value": "{c.surface-high}" }
+  }
+}

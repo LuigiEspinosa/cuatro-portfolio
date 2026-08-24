@@ -1,7 +1,13 @@
 FROM node:22-slim AS deps
 RUN corepack enable
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+# `pnpm-workspace.yaml` and every workspace manifest it globs must be here, not
+# just the root manifest. The lockfile carries `packages/tokens` as an importer
+# from Story 1-11 onward, and `--frozen-lockfile` fails on an importer whose
+# manifest this stage cannot see. Adding a second workspace package means adding
+# its `package.json` here in the same change.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/tokens/package.json ./packages/tokens/
 RUN pnpm install --frozen-lockfile
 
 FROM node:22-slim AS builder

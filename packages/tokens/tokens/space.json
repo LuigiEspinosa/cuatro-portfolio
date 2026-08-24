@@ -1,0 +1,26 @@
+{
+  "measure": {
+    "$type": "dimension",
+    "$value": "46ch"
+  },
+  "s": {
+    "$type": "dimension",
+    "2xs": { "$value": "0.25rem" },
+    "xs": { "$value": "0.5rem" },
+    "sm": { "$value": "0.75rem" },
+    "md": { "$value": "1rem" },
+    "lg": { "$value": "1.5rem" },
+    "xl": { "$value": "2.5rem" },
+    "2xl": { "$value": "4rem" },
+    "3xl": { "$value": "6rem" }
+  },
+  "page-pad": {
+    "$type": "dimension",
+    "$value": "clamp(1.25rem, 5vw, 4rem)"
+  },
+  "tap": {
+    "$type": "dimension",
+    "$value": "44px",
+    "$description": "The ONE px length in the contract, and deliberately so: a target floor\nis a physical-size guarantee and must not shrink with the root font\nsize. Applies on BOTH axes. See DESIGN.md § The hit-target floor."
+  }
+}

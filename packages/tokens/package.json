@@ -1,0 +1,14 @@
+{
+  "name": "@cuatro/tokens",
+  "version": "1.0.0",
+  "description": "Generates contracts/tokens.css. AD-1: this package is never published; contracts/ is.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "style-dictionary": "5.5.2"
+  }
+}
