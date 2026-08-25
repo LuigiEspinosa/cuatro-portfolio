@@ -6,8 +6,10 @@
  * cluster three named families with no @font-face for any of them.
  * inline is MANDATORY, not stylistic: without it a var() resolves where the
  * theme variable is defined rather than where it is used, and it fails silently.
- * Compile this file into the same folder it sits in, or the faces 404: the
- * url()s fonts.css declares are copied through unrebased. See ops/tailwind-adapter.md.
+ * Import this file from your own stylesheet, then write your compiled CSS into
+ * THIS folder, beside fonts.css and fonts/. The url()s in fonts.css are copied
+ * through unrebased, so they resolve against wherever your build writes its
+ * output. Anywhere else and every face 404s. See ops/tailwind-adapter.md.
  * A value change or an addition is a MINOR bump. A rename, including fixing a
  * typo in a token name, or a removal is MAJOR.
  * Generated from packages/tokens. Never edit this file by hand.

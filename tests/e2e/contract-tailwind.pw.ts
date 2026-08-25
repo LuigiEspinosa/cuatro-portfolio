@@ -1,6 +1,16 @@
 import { test, expect, type Page } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { RENDERED_VIEWPORT, computedStyleValue } from './harness';
@@ -28,10 +38,12 @@ import { RENDERED_VIEWPORT, computedStyleValue } from './harness';
  *     `DESIGN.md:1058-1066`, and without it a pass above would prove nothing.
  *  3. **The faces load.** The adapter imports `fonts.css` precisely so the
  *     cluster gets faces and not just family names, so every woff2 the compiled
- *     output requests must answer 200 and `document.fonts.check` must report
- *     each family available. `RESTYLE-SPEC.md:648` (F-2) is why the check is not
- *     a computed `font-family` read: a stack reads identically when every woff2
- *     has 404'd.
+ *     output requests must answer HTTP 200. That status assertion is the load
+ *     bearing one. `document.fonts.check` sits beside it but cannot carry the
+ *     check alone, because it answers `true` for a family with no `@font-face`
+ *     rule at all; and a computed `font-family` read cannot carry it either,
+ *     because a stack reads identically when every woff2 has 404'd
+ *     (`RESTYLE-SPEC.md:648`, F-2).
  *  4. **The placement rule is load-bearing.** The pinned CLI copies the `url()`s
  *     out of `fonts.css` through the `@import` unrebased, so the compiled
  *     stylesheet has to land in the vendored folder beside them. The same build
@@ -113,6 +125,15 @@ const probes: Probe[] = THEME_MAP.sections
     };
   });
 
+/**
+ * Utilities outside the one-rule-per-namespace probe set that the record makes a
+ * behavioural claim about, so the claim is asserted rather than asserted-in-prose.
+ */
+const EXTRA_UTILITIES: { utility: string; token: string }[] = [
+  { utility: 'min-w-tap', token: '--tap' },
+  { utility: 'min-h-tap', token: '--tap' },
+];
+
 /** `contracts/` copied five directories deep, under AD-14's fixed folder name. */
 const VENDORED_AT = ['assets', 'static', 'vendor', 'third-party', 'design', 'cuatro-contracts'];
 
@@ -171,8 +192,21 @@ const tailwindCli = (): string => {
   return join(dirname(manifestPath), manifest.bin.tailwindcss);
 };
 
-const compile = (input: string, output: string): void => {
+/**
+ * Compiles `input` to `output` with the pinned CLI, hermetically.
+ *
+ * **Why `cwd` is pinned to the scratch root.** `@source` *adds* to Tailwind's
+ * automatic source detection rather than replacing it, and that detection is
+ * rooted at the working directory. Spawned with the inherited repository root,
+ * the compiler would crawl the whole repository for class names, so what gets
+ * minted, and therefore the `SHIPPED_BY_TAILWIND` split the negative control
+ * rests on, could move because of text in a file that has nothing to do with the
+ * contract. Rooting the scan at the scratch tree makes the compile depend on the
+ * three fixture pages and the vendored folder and nothing else.
+ */
+const compile = (input: string, output: string, cwd: string): void => {
   const result = spawnSync(process.execPath, [tailwindCli(), '--input', input, '--output', output], {
+    cwd,
     encoding: 'utf8',
     timeout: 120_000,
   });
@@ -216,6 +250,13 @@ const buildTree = (): Tree => {
     )
     .join('\n');
 
+  // `--spacing-tap` carries the 44px hit-target floor, and `ops/tailwind-adapter.md`
+  // says a consumer reaches it as `min-w-tap` and `min-h-tap` as well as `p-tap`.
+  // PROBE_RULES probes the `--spacing-*` namespace through `p-*` alone, so those
+  // two names are put in front of the compiler here and asserted separately.
+  // A claim in the record that nothing exercises is a claim, not a fact.
+  const extras = `\n    <div class="${EXTRA_UTILITIES.map((extra) => extra.utility).join(' ')}"></div>`;
+
   // The probe and its control differ in exactly one thing: the probe wears the
   // utility and the control declares the token itself. Everything else that
   // could move a computed value, the font the `ch` unit resolves against
@@ -244,7 +285,7 @@ const buildTree = (): Tree => {
 </style>
 </head>
 <body>
-${rows}
+${rows}${extras}
 </body>
 </html>
 `;
@@ -266,13 +307,13 @@ ${rows}
 
   const compiled = join(vendored, 'compiled.css');
   const withoutTheme = join(vendored, 'compiled-no-theme.css');
-  compile(join(root, 'consumer.css'), compiled);
-  compile(join(root, 'consumer-no-theme.css'), withoutTheme);
+  compile(join(root, 'consumer.css'), compiled, root);
+  compile(join(root, 'consumer-no-theme.css'), withoutTheme, root);
 
   // The same compile written one directory above the vendored folder. Its
   // `@font-face` rules carry the identical `./fonts/...` urls, which is the
   // point: they are relative to wherever the compiled file lands.
-  compile(join(root, 'consumer.css'), join(root, 'misplaced.css'));
+  compile(join(root, 'consumer.css'), join(root, 'misplaced.css'), root);
 
   writeFileSync(join(root, 'no-theme.html'), page(`${href}/compiled-no-theme.css`));
   writeFileSync(join(root, 'misplaced.html'), page('misplaced.css'));
@@ -281,7 +322,7 @@ ${rows}
 };
 
 const serve = (root: string): Promise<Server> =>
-  new Promise((done) => {
+  new Promise((done, fail) => {
     const server = createServer((request, response) => {
       const requested = decodeURIComponent(new URL(request.url ?? '/', 'http://127.0.0.1').pathname);
       const target = normalize(join(root, requested === '/' ? '/fixture.html' : requested));
@@ -292,6 +333,9 @@ const serve = (root: string): Promise<Server> =>
       response.writeHead(200, { 'content-type': MIME[extname(target)] ?? 'application/octet-stream' });
       response.end(readFileSync(target));
     });
+    // Without this the promise never settles when `listen` fails, and the file
+    // hangs until Playwright's timeout with no cause in the log.
+    server.once('error', fail);
     server.listen(0, '127.0.0.1', () => done(server));
   });
 
@@ -329,11 +373,29 @@ const familiesAvailable = (page: Page) =>
     FACES.faces.map((face) => face.family)
   );
 
-let tree: Tree;
-let server: Server;
+let tree: Tree | undefined;
+let server: Server | undefined;
 let origin: string;
 
+/**
+ * Removes any scratch tree an earlier run left behind.
+ *
+ * The tree has to live inside the repository (see the file comment), so a run
+ * killed between `beforeAll` and `afterAll` leaves a copy of `contracts/` plus a
+ * compiled Tailwind build sitting in the working tree. `.gitignore` keeps it out
+ * of a commit; this keeps it off the disk, and it runs before the new tree is
+ * made so a leftover cannot be mistaken for this run's.
+ */
+const sweepLeftovers = (): void => {
+  for (const entry of readdirSync(REPO_ROOT)) {
+    if (entry.startsWith('.cuatro-tailwind-probe-')) {
+      rmSync(join(REPO_ROOT, entry), { recursive: true, force: true });
+    }
+  }
+};
+
 test.beforeAll(async () => {
+  sweepLeftovers();
   tree = buildTree();
   server = await serve(tree.root);
   const address = server.address();
@@ -342,9 +404,28 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  await new Promise<void>((done) => server.close(() => done()));
-  rmSync(tree.root, { recursive: true, force: true });
+  // Both handles are guarded and the removal is in a `finally`, because a throw
+  // in `beforeAll` leaves either one unassigned: teardown would then throw over
+  // the real failure and the scratch tree would survive the run.
+  try {
+    if (server) {
+      // `close()` stops accepting new connections and resolves only when every
+      // open one has ended. Chromium holds keep-alive sockets open, so without
+      // `closeAllConnections()` this waits for their idle timeout rather than
+      // for the server.
+      server.closeAllConnections();
+      await new Promise<void>((done) => (server as Server).close(() => done()));
+    }
+  } finally {
+    if (tree) rmSync(tree.root, { recursive: true, force: true });
+  }
 });
+
+/** The scratch tree, or a failure naming why there is none. */
+const scratchTree = (): Tree => {
+  if (!tree) throw new Error('contract-tailwind: the scratch tree was never built, so there is nothing to read');
+  return tree;
+};
 
 test('every mapping in theme-map.json mints a utility that resolves to the same value as its token', async ({
   page,
@@ -355,12 +436,42 @@ test('every mapping in theme-map.json mints a utility that resolves to the same 
   );
   expect(declared, 'the theme map declares no mappings, so this test would pass over nothing').toBeGreaterThan(0);
 
-  const compiled = readFileSync(tree.compiled, 'utf8');
+  const compiled = readFileSync(scratchTree().compiled, 'utf8');
   const unminted = probes.filter((probe) => !mints(compiled, probe.utility));
   expect(
     unminted.map((probe) => `${probe.key} -> .${probe.utility}`),
     'the compiled Tailwind build declares no rule for these utilities, so the mapping mints nothing'
   ).toEqual([]);
+
+  // **The assertion that stops a row passing on a coincidence.**
+  //
+  // Comparing the probe against its control is vacuous wherever the contract's
+  // value happens to equal Tailwind 4.3.3's own default, and seven rows are in
+  // that position: `--r-none` is 0 and so is Tailwind's, `--w-light` is 300,
+  // `--w-medium` 500, `--w-bold` 700, `--t-sm` 0.875rem, `--t-base` 1rem, and
+  // `--tr-body` is 0em, which computes to `normal` on both sides. Delete any of
+  // those from the map and the computed-value comparison alone stays green.
+  //
+  // So each utility's compiled rule is required to read the contract token its
+  // mapping names. It is the **token** and not the theme key because that is
+  // what `inline` means: Tailwind substitutes the theme variable's value at the
+  // use site, so `.bg-bg` emits `background-color: var(--token-bg)` rather than
+  // `var(--color-bg)`. Observed 2026-08-25 against 4.3.3. A row that mints from
+  // Tailwind's own default reads no `var(--<token>)` at all and fails here.
+  const unbound = probes
+    .map((probe) => ({ probe, body: ruleBody(compiled, probe.utility) }))
+    .filter(({ probe, body }) => !body?.includes(`var(${probe.token})`))
+    .map(({ probe, body }) => `.${probe.utility} { ${body?.trim() ?? 'no rule'} } does not read var(${probe.token})`);
+  expect(unbound, 'a minted utility is not bound to the contract token its mapping names').toEqual([]);
+
+  // The two names `ops/tailwind-adapter.md` claims for the hit-target floor
+  // beyond the one PROBE_RULES covers.
+  for (const extra of EXTRA_UTILITIES) {
+    expect(
+      ruleBody(compiled, extra.utility),
+      `.${extra.utility} does not read var(${extra.token}), and the record says a consumer reaches the floor that way`
+    ).toContain(`var(${extra.token})`);
+  }
 
   const response = await page.goto(`${origin}/`, { waitUntil: 'load' });
   expect(response?.status(), 'the fixture page did not answer 200').toBe(200);
@@ -390,7 +501,7 @@ test('every mapping in theme-map.json mints a utility that resolves to the same 
 });
 
 test('the same fixture with no @theme block binds not one utility to the contract', async ({ page }) => {
-  const withoutTheme = readFileSync(tree.withoutTheme, 'utf8');
+  const withoutTheme = readFileSync(scratchTree().withoutTheme, 'utf8');
   const present = probes.filter((probe) => mints(withoutTheme, probe.utility));
   const absent = probes.filter((probe) => !mints(withoutTheme, probe.utility));
 
@@ -452,10 +563,18 @@ test('every face the adapter pulls in answers 200 and is available to the docume
     expect(statuses.get(url), `${face.family}: ${url} did not answer HTTP 200`).toBe(200);
   }
 
+  // **The HTTP 200 assertion above is what makes this check real, not the
+  // availability read below it.** `document.fonts.check` answers `true` for a
+  // family with no matching `@font-face` rule at all, because an unmatched
+  // family falls through to a system font the browser considers available, so on
+  // its own it would pass against an adapter that never imported `fonts.css`.
+  // The status assertion is what proves the faces were actually fetched from the
+  // vendored folder. What availability adds is the other half of F-2
+  // (`RESTYLE-SPEC.md:648`): a computed `font-family` read returns the declared
+  // stack and passes identically when every woff2 has 404'd, so it cannot be the
+  // check either. The two together are the check.
   const available = await familiesAvailable(page);
   for (const face of FACES.faces) {
-    // F-2: a computed `font-family` read passes identically when every woff2 has
-    // 404'd, so availability is the check.
     expect(available[face.family], `${face.family} is not available to the document`).toBe(true);
   }
 });
@@ -472,6 +591,18 @@ test('the identical build placed outside the vendored folder cannot resolve a si
   // the `@import` unrebased, so the compiled file must land beside them.
   const observed = [...statuses.entries()].map(([url, status]) => `${status} ${url}`);
   console.log(`contract-tailwind misplaced build:\n${observed.join('\n') || 'no woff2 was requested'}`);
+
+  // Asserted by URL and status, not as "nothing was a 200". A browser that
+  // requested no woff2 at all would satisfy that weaker form, and the record
+  // claims this check observes every face 404ing.
+  expect(statuses.size, 'the misplaced page requested no woff2 at all, so this check observed nothing').toBeGreaterThan(
+    0
+  );
+  for (const face of FACES.faces) {
+    // The misplaced build sits at the server root, so its urls resolve there.
+    const url = `${origin}/fonts/${face.file}`;
+    expect(statuses.get(url), `${face.family}: ${url} did not answer HTTP 404 from a misplaced build`).toBe(404);
+  }
   expect(
     observed.filter((line) => line.startsWith('200')),
     'a compiled build one directory above the vendored folder still resolved a face, so the ' +

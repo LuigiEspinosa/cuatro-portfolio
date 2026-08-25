@@ -326,14 +326,70 @@ const TAILWIND_NAMESPACES = [
   '--animate-',
 ];
 
+/**
+ * Which contract tokens each Tailwind namespace is allowed to read.
+ *
+ * Without this, `--color-bg: var(--s-md)` passes every other refusal in this
+ * file, publishes, and mints `.bg-bg { background-color: var(--s-md) }`, which
+ * is a length in a colour slot. It also survives the browser check, because that
+ * check compares the utility against a control element reading the same token,
+ * and the same wrong token on both sides compares equal. A type rule is the only
+ * place that mistake can be caught.
+ *
+ * An entry is a prefix if it ends in `-`, and an exact name otherwise, which is
+ * how the three ungrouped contract tokens (`--measure`, `--page-pad`, `--tap`)
+ * are admitted without opening their namespaces to everything.
+ *
+ * A namespace absent from this table is refused even when Tailwind themes it:
+ * minting into a new namespace means deciding which tokens may feed it, and that
+ * is a reviewed line here rather than an accident in the map.
+ */
+const NAMESPACE_TOKENS = {
+  '--color-': ['--token-'],
+  '--font-': ['--f-'],
+  '--font-weight-': ['--w-'],
+  '--text-': ['--t-'],
+  '--tracking-': ['--tr-'],
+  '--leading-': ['--lh-'],
+  '--spacing-': ['--s-', '--page-pad', '--tap'],
+  '--radius-': ['--r-'],
+  '--container-': ['--measure'],
+};
+
 /** The raw palette is never consumed outside `contracts/` (AD-14). */
 const PALETTE_PREFIX = '--c-';
 
 /** Anything a custom property name may carry here. Deliberately narrow. */
 const CUSTOM_PROPERTY = /^--[A-Za-z0-9][A-Za-z0-9_-]*$/;
 
+/**
+ * Every refusal ends with the same clause, appended here rather than written out
+ * at each site, so the promise the record makes about these messages is
+ * structural. Two of them used to end differently: one in lower case and one
+ * with a raw `error.message` and no clause at all.
+ */
 const refuseAdapter = (message) => {
-  throw new Error(`packages/tokens/build.mjs: ${message}`);
+  throw new Error(`packages/tokens/build.mjs: ${message} Nothing was published.`);
+};
+
+/**
+ * The namespace a theme key belongs to, by **longest** prefix, or null.
+ *
+ * Longest wins because `--font-` is a prefix of `--font-weight-`: matched the
+ * other way round, `--font-weight-bold` would be filed as a font family and the
+ * type rule above would then demand it read an `--f-*` token.
+ *
+ * A key equal to a namespace with nothing after it (`--font-weight-`) is not a
+ * key. Tailwind stores it and mints nothing, so it is reported rather than
+ * published.
+ */
+const namespaceOf = (key) => {
+  let found = null;
+  for (const namespace of TAILWIND_NAMESPACES) {
+    if (!key.startsWith(namespace)) continue;
+    if (found === null || namespace.length > found.length) found = namespace;
+  }
+  return found;
 };
 
 /**
@@ -343,19 +399,26 @@ const refuseAdapter = (message) => {
 const readThemeMap = () => {
   const where = asPosix(THEME_MAP_PATH);
   if (!existsSync(THEME_MAP_PATH)) {
-    refuseAdapter(
-      `the Tailwind theme map is missing at ${where}. contracts/tailwind.css is generated from it, ` +
-        `so nothing was published.`
-    );
+    refuseAdapter(`the Tailwind theme map is missing at ${where}. contracts/tailwind.css is generated from it.`);
   }
   let parsed;
   try {
     parsed = JSON.parse(readFileSync(THEME_MAP_PATH, 'utf8'));
   } catch (error) {
-    return refuseAdapter(`the Tailwind theme map at ${where} is not readable JSON: ${error.message}`);
+    return refuseAdapter(`the Tailwind theme map at ${where} is not readable JSON: ${error.message}.`);
+  }
+  // `null`, a number, a string and an array all parse as valid JSON and all
+  // reach the next line. Reading `.sections` off them throws a raw TypeError
+  // with no path, no key and nothing telling the reader which file to open, so
+  // the shape is checked rather than assumed.
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    refuseAdapter(
+      `the Tailwind theme map at ${where} parses to ${Array.isArray(parsed) ? 'an array' : JSON.stringify(parsed)}, ` +
+        `and it has to be a JSON object carrying a "sections" array.`
+    );
   }
   if (!Array.isArray(parsed.sections)) {
-    refuseAdapter(`the Tailwind theme map at ${where} declares no "sections" array. Nothing was published.`);
+    refuseAdapter(`the Tailwind theme map at ${where} declares no "sections" array.`);
   }
   return { where, sections: parsed.sections };
 };
@@ -369,12 +432,13 @@ const readThemeMap = () => {
  * snapshot of it, so a renamed token fails this build rather than shipping an
  * adapter that silently resolves to nothing.
  *
- * Every message ends "Nothing was published", and that is a fact about Style
- * Dictionary rather than a hope: `buildPlatform` formats every file in the
- * platform before it writes any of them, so a throw in either format leaves the
- * output directory untouched. Verified 2026-08-25 against 5.5.2 by running this
- * generator with a corrupted map into an empty scratch directory and observing
- * it still empty afterwards.
+ * Every message ends "Nothing was published.", because `refuseAdapter` appends
+ * that clause rather than each site writing it out. And the clause is true, as a
+ * fact about Style Dictionary rather than as a hope: `buildPlatform` formats
+ * every file in the platform before it writes any of them, so a throw in either
+ * format leaves the output directory untouched. Verified 2026-08-25 against
+ * 5.5.2 by running this generator with a corrupted map into an empty scratch
+ * directory and observing it still empty afterwards.
  */
 const validateThemeMap = ({ where, sections }, allTokens) => {
   const declared = new Set(allTokens.map((token) => `--${token.name}`));
@@ -383,16 +447,16 @@ const validateThemeMap = ({ where, sections }, allTokens) => {
 
   for (const [index, section] of sections.entries()) {
     if (typeof section?.title !== 'string' || section.title.trim() === '') {
-      refuseAdapter(`section ${index} in ${where} carries no title. Nothing was published.`);
+      refuseAdapter(`section ${index} in ${where} carries no title.`);
     }
     if (section.title.includes('/*') || section.title.includes('*/')) {
       refuseAdapter(
         `the section title ${JSON.stringify(section.title)} in ${where} carries a CSS comment ` +
-          `delimiter, which would close the generated comment early. Nothing was published.`
+          `delimiter, which would close the generated comment early.`
       );
     }
     if (!Array.isArray(section.entries) || section.entries.length === 0) {
-      refuseAdapter(`the section "${section.title}" in ${where} names no entries. Nothing was published.`);
+      refuseAdapter(`the section "${section.title}" in ${where} names no entries.`);
     }
 
     for (const entry of section.entries) {
@@ -409,19 +473,28 @@ const validateThemeMap = ({ where, sections }, allTokens) => {
         if (typeof name !== 'string' || !CUSTOM_PROPERTY.test(name)) {
           refuseAdapter(
             `an entry in section "${section.title}" of ${where} declares ${what} ` +
-              `${JSON.stringify(name)}, which is not a custom property name of the form --name. ` +
-              `Nothing was published.`
+              `${JSON.stringify(name)}, which is not a custom property name of the form --name.`
           );
         }
       }
 
       // Matrix row "A key in an unknown namespace". `--colour-bg` is accepted by
       // Tailwind, stored, and mints nothing at all, silently.
-      if (!TAILWIND_NAMESPACES.some((namespace) => key.startsWith(namespace) && key.length > namespace.length)) {
+      const namespace = namespaceOf(key);
+      if (namespace === null) {
         refuseAdapter(
           `the theme key ${key} in ${where} is in a namespace Tailwind v4 does not theme, so it ` +
             `would mint no utility at all and report nothing. Permitted namespaces are ` +
-            `${TAILWIND_NAMESPACES.join(', ')}. Nothing was published.`
+            `${TAILWIND_NAMESPACES.join(', ')}.`
+        );
+      }
+
+      // A key that is exactly a namespace names nothing inside it. Tailwind
+      // stores `--font-weight-` and mints no utility from it.
+      if (key === namespace) {
+        refuseAdapter(
+          `the theme key ${key} in ${where} is the bare ${namespace} namespace with no name after ` +
+            `it, so it would mint no utility at all.`
         );
       }
 
@@ -432,7 +505,7 @@ const validateThemeMap = ({ where, sections }, allTokens) => {
         refuseAdapter(
           `the theme key ${key} in ${where} reads var(${token}), the same name on both sides of the ` +
             `var(). AD-14 forbids it: a self-reference resolves to transparent once a bundler ` +
-            `flattens the imports, silently. Nothing was published.`
+            `flattens the imports, silently.`
         );
       }
 
@@ -442,7 +515,26 @@ const validateThemeMap = ({ where, sections }, allTokens) => {
         refuseAdapter(
           `the theme key ${key} in ${where} reads ${token}, which is the raw --c-* palette. AD-14 ` +
             `keeps the palette inside contracts/: the semantic role layer is the only thing a ` +
-            `consumer reads. Nothing was published.`
+            `consumer reads.`
+        );
+      }
+
+      // Matrix row "A mapping crosses a type". A length in a colour slot parses,
+      // publishes, mints, and is compared equal by a browser check that reads
+      // the same wrong token on both sides. Nothing downstream can catch it.
+      const permitted = NAMESPACE_TOKENS[namespace];
+      if (!permitted) {
+        refuseAdapter(
+          `the theme key ${key} in ${where} is in the ${namespace} namespace, which this adapter ` +
+            `mints nothing into. Minting into a new namespace means deciding which contract tokens ` +
+            `may feed it, so add ${namespace} to NAMESPACE_TOKENS in packages/tokens/build.mjs.`
+        );
+      }
+      if (!permitted.some((allowed) => (allowed.endsWith('-') ? token.startsWith(allowed) : token === allowed))) {
+        refuseAdapter(
+          `the theme key ${key} in ${where} reads ${token}, which is not a token the ${namespace} ` +
+            `namespace may read. Keys in ${namespace} read ${permitted.join(', ')}. A crossing ` +
+            `mapping publishes and mints, and puts a value of the wrong kind into the slot.`
         );
       }
 
@@ -452,14 +544,14 @@ const validateThemeMap = ({ where, sections }, allTokens) => {
       if (!declared.has(token)) {
         refuseAdapter(
           `the theme key ${key} in ${where} reads ${token}, which is not a token this dictionary ` +
-            `publishes into contracts/tokens.css. Nothing was published.`
+            `publishes into contracts/tokens.css.`
         );
       }
 
       if (seen.has(key)) {
         refuseAdapter(
           `the theme key ${key} appears twice in ${where}, first reading ${seen.get(key)} and then ` +
-            `${token}. One of the two would be discarded silently. Nothing was published.`
+            `${token}. One of the two would be discarded silently.`
         );
       }
       seen.set(key, token);
@@ -473,7 +565,7 @@ const validateThemeMap = ({ where, sections }, allTokens) => {
   if (validated.length === 0) {
     refuseAdapter(
       `the Tailwind theme map at ${where} declares no mappings, so the @theme inline block would be ` +
-        `published empty and mint no utility at all. Nothing was published.`
+        `published empty and mint no utility at all.`
     );
   }
 
@@ -494,8 +586,10 @@ StyleDictionary.registerFormat({
       ' * cluster three named families with no @font-face for any of them.',
       ' * inline is MANDATORY, not stylistic: without it a var() resolves where the',
       ' * theme variable is defined rather than where it is used, and it fails silently.',
-      ' * Compile this file into the same folder it sits in, or the faces 404: the',
-      ' * url()s fonts.css declares are copied through unrebased. See ops/tailwind-adapter.md.',
+      ' * Import this file from your own stylesheet, then write your compiled CSS into',
+      ' * THIS folder, beside fonts.css and fonts/. The url()s in fonts.css are copied',
+      ' * through unrebased, so they resolve against wherever your build writes its',
+      ' * output. Anywhere else and every face 404s. See ops/tailwind-adapter.md.',
       ' * A value change or an addition is a MINOR bump. A rename, including fixing a',
       ' * typo in a token name, or a removal is MAJOR.',
       ' * Generated from packages/tokens. Never edit this file by hand.',

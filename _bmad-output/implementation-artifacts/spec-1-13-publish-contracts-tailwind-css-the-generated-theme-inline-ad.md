@@ -5,7 +5,7 @@ created: '2026-08-25'
 status: 'done'
 baseline_commit: 'c07038dbccb84e51092dd7810fa66dc8368323e7'
 baseline_revision: 'c07038dbccb84e51092dd7810fa66dc8368323e7'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - '{project-root}/AGENTS.md'
@@ -265,6 +265,86 @@ Gathered 2026-08-25 against `c07038d`, working tree clean.
 
 ## Review Triage Log
 
+### 2026-08-25, Review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 12
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[P1]` `[patch]` **`theme-map.json` was its own oracle.** The case comparing the published block
+    against the map proved the generator copied the map faithfully and nothing about whether the map
+    was right, the namespace counts were derived from the same map, and the `DESIGN.md` comparison
+    pins only 14 of 55 rows. Deleting `--spacing-tap`, or re-pointing `--color-accent-muted` at
+    `--token-focus`, kept every gate green. A literal `EXPECTED_MAPPINGS` array of all 55 pairs, nine
+    per-namespace counts filtered out of the parsed published file, and a hard total of 55 now stand
+    beside it, on the shape `tokens-contract.test.ts:729-763` uses.
+  - `[P2]` `[patch]` **Nothing checked that a mapping's token was the right kind for its namespace.**
+    `--color-bg: var(--s-md)` satisfied every refusal, published, minted, and passed the browser
+    probe, because the control element that probe compares against reads the same wrong token. A
+    per-namespace table of permitted token prefixes now refuses a crossing mapping naming the key,
+    the token and the permitted prefixes, with a standing case and a matrix row in the record.
+  - `[P3]` `[patch]` **The acceptance probe was vacuous on seven of 55 rows.** `probe === control`
+    proves nothing wherever the contract's value equals Tailwind 4.3.3's own default, which is true
+    of `--r-none`, `--w-light`, `--w-medium`, `--w-bold`, `--t-sm`, `--t-base` and `--tr-body`. Every
+    probed utility's compiled rule body is now required to read `var(<contract token>)`. It is the
+    token and not the theme key because that is what `inline` means, which is also what settles P4.
+  - `[P4]` `[patch]` **`--radius-none` was reported as minting nothing, and it does not.** Settled
+    with P3's rule-body assertion: **observed 2026-08-25** against 4.3.3, the themed build compiles
+    `.rounded-none { border-radius: var(--r-none) }`, where a build with no `@theme` block compiles
+    `.rounded-none { border-radius: 0 }`. Defining the key replaces Tailwind's static declaration
+    with one that reads the contract token, so the mapping stays and the record now carries that
+    evidence beside the `--ease-*` exclusion. Both compute to `0px`, which is why only the rule body
+    can tell them apart.
+  - `[P5]` `[patch]` **Teardown was not robust and the scratch tree lives inside the repository.**
+    `server.close()` does not resolve while Chromium holds a keep-alive socket, and a throw in
+    `beforeAll` left both handles unassigned so teardown threw over the real failure and the tree
+    survived. `closeAllConnections()` before `close()`, both handles guarded, the `rmSync` in a
+    `finally`, a leftover sweep in `beforeAll`, an `error` handler before `listen` so a failed listen
+    rejects instead of hanging, and a `.gitignore` rule beside the Playwright run-output rules.
+  - `[P6]` `[patch]` **The compile was not hermetic.** `@source` adds to Tailwind's automatic source
+    detection rather than replacing it, and that detection is rooted at the working directory, which
+    was the repository root. What got minted could therefore move because of unrelated repository
+    text, and the pinned `SHIPPED_BY_TAILWIND` split rests on exactly that. The CLI is now spawned
+    with `cwd` set to the scratch root, and the record states the mechanism. Verified that the
+    explicit `@source` is still honoured from a directory `.gitignore` matches.
+  - `[P7]` `[patch]` Two generator edges. A map parsing to `null`, a number, a string or an array
+    reached `parsed.sections` and threw a raw `TypeError` naming no file and no key; it is refused by
+    name now. And a key equal to a bare namespace (`--font-weight-`) was published and minted
+    nothing; the namespace is matched by longest prefix and an empty suffix is refused. One standing
+    case each, plus one for the array form.
+  - `[P8]` `[patch]` **Two refusals did not end with the clause the record and the docstring both
+    claimed for all of them:** the missing-map message ended in lower case and the unreadable-JSON
+    message ended with a raw `error.message`. `refuseAdapter` now appends the exact clause, so the
+    property is structural rather than per site, and every standing case asserts it.
+  - `[P9]` `[patch]` The misplaced-build check asserted only that no observed response was a 200,
+    which a page requesting no woff2 at all would satisfy, while the record claimed it observed every
+    face 404. It now asserts three 404s by URL and guards that at least one face was requested.
+  - `[P10]` `[patch]` The four module-scope reads failed collection with a bare ENOENT while the same
+    file took care to throw a named, explanatory error for the `DESIGN.md` coupling. They now get the
+    same treatment.
+  - `[P11]` `[patch]` Six record corrections: Probe 2's prose said "four writing lines" over a block
+    showing two reading and two writing; `ops/font-contract.md:38` still said the adapter was not
+    published; the amended row in `ops/token-contract.md` left a published file inside a table headed
+    "what it deliberately does not publish", so the publication moved to a published-surface note and
+    the row is kept struck through as history; a stated limit added for `--font-sans` and
+    `--font-mono` retargeting Tailwind's `--default-font-family` and `--default-mono-font-family`,
+    which changes a consumer's base body and code font; the `--spacing-tap` reachability claim is now
+    asserted (`min-w-tap` and `min-h-tap` compile to `var(--tap)`) rather than stated; and Pending
+    Operator actions 2 and 5 extended to cover `TAILWIND_NAMESPACES` drifting from the installed
+    compiler and `AGENTS.md:7` reading "Sass (no Tailwind)".
+  - `[P12]` `[patch]` **The published header told a consumer to do something no consumer does.** It
+    said "compile this file into the same folder it sits in"; a consumer compiles its own entry
+    stylesheet, and it is that output which must land in the vendored folder. Reworded, regenerated
+    and committed. Separately, the comment at the faces check cited F-2 as though
+    `document.fonts.check` carried the weight, and it does not: it answers `true` for a family with
+    no matching `@font-face` rule at all, so the comment now says plainly that the HTTP 200 assertion
+    beside it is what makes the check real.
+
+No finding was deferred, rejected, or raised as an intent gap or a spec loopback. Every published
+byte that moved was moved by regenerating the file, never by hand.
+
 ## Design Notes
 
 **Why the generator is `packages/tokens/build.mjs` and not a new package.** AC 3 is written as
@@ -375,29 +455,35 @@ no edit, and it was observed doing so against a hand-edited committed adapter.
   because the Style Dictionary source glob would otherwise read it as tokens.
 - `packages/tokens/build.mjs` -- extended only. A `cuatro/tailwind-css` format, a second entry in the
   `files` array, the map path resolved from the source directory so a scratch run needs no third
-  build input, and both new resolved paths printed before the build. Nine refusals, each naming the
-  key and the file, each ending "Nothing was published", which Style Dictionary makes true by
-  formatting every file in a platform before writing any of them. The existing format, the sections
-  and the emitted `tokens.css` are unchanged.
-- `contracts/tailwind.css` -- the generated and committed third published file. 4,374 bytes.
-- `packages/tokens/__tests__/tailwind-adapter.test.ts` -- new. 34 cases: the published file's shape,
-  its mappings, the AD-16 header, the comparison against the authored block in `DESIGN.md`, and one
-  standing case per generator refusal, each run against a corrupted copy of both inputs through
-  `CUATRO_TOKENS_SOURCE` and `CUATRO_TOKENS_OUTPUT`.
+  build input, and both new resolved paths printed before the build. Thirteen refusals, each naming
+  the key and the file, each ending with the exact clause "Nothing was published." because
+  `refuseAdapter` appends it, which Style Dictionary makes true by formatting every file in a
+  platform before writing any of them. Among them a per-namespace type rule, so a length cannot sit
+  in a colour slot. The existing format, the sections and the emitted `tokens.css` are unchanged.
+- `contracts/tailwind.css` -- the generated and committed third published file. 4,522 bytes.
+- `packages/tokens/__tests__/tailwind-adapter.test.ts` -- new. 52 cases: a literal 55-pair oracle for
+  the mapping set with per-namespace counts and a hard total, the published file's shape, the AD-16
+  header, the comparison against the authored block in `DESIGN.md`, and one standing case per
+  generator refusal, each run against a corrupted copy of both inputs through `CUATRO_TOKENS_SOURCE`
+  and `CUATRO_TOKENS_OUTPUT`.
 - `packages/tokens/__tests__/tokens-contract.test.ts`, `packages/fonts/__tests__/fonts-contract.test.ts`
   -- the pinned published-file list widened to the new exact set of nine, and nothing else.
 - `package.json`, `pnpm-lock.yaml` -- `tailwindcss` and `@tailwindcss/cli` pinned exact at 4.3.3 in
   `devDependencies`. 36 new lockfile entries, 0 removed, no new workspace importer.
 - `tests/e2e/contract-tailwind.pw.ts` -- new. Four checks against a scratch tree with `contracts/`
-  vendored five directories deep, compiled by the pinned CLI and served over `node:http`.
-- `ops/tailwind-adapter.md` -- new record. `ops/token-contract.md` -- the one row at `:72` amended.
+  vendored five directories deep, compiled hermetically by the pinned CLI and served over
+  `node:http`. Every probed utility is asserted both by computed value against a control element and
+  by its compiled rule reading the contract token, so a row cannot pass on a coincidence of values.
+- `.gitignore` -- one rule for the scratch tree, beside the Playwright run-output rules.
+- `ops/tailwind-adapter.md` -- new record. `ops/token-contract.md` and `ops/font-contract.md` -- the
+  lines that said the adapter was not published yet.
 
 **Verification performed**, all on 2026-08-25:
 
 - `corepack pnpm install --frozen-lockfile` -- "Lockfile is up to date, resolution step is skipped",
   "all 2 workspace projects", 764 ms, and the lockfile byte-identical before and after.
 - `corepack pnpm typecheck` -- pass, with both new files inside the program.
-- `corepack pnpm test --run` -- **413 passed, 21 files, 74.2 s**, up from the 379 observed at
+- `corepack pnpm test --run` -- **431 passed, 21 files, 76.6 s**, up from the 379 observed at
   `c07038d`. No browser started.
 - `corepack pnpm tokens:build` run twice -- all four resolved paths printed,
   `git status --porcelain --ignored=matching -- contracts/` shows only the one added file, and
@@ -422,15 +508,20 @@ no edit, and it was observed doing so against a hand-edited committed adapter.
   custom property name, a CLI flag, a git pathspec separator, an ASCII rule in a comment, or a
   markdown table rule.
 
-**Two findings worth carrying forward.**
+**Three findings worth carrying forward.**
 
 1. **`DESIGN.md:1001` names `--radius-DEFAULT`.** In Tailwind v4 that mints `.rounded-DEFAULT`, not
    the bare `.rounded`, which keeps its own hardcoded `0.25rem`. The `*-DEFAULT` convention is a v3
    idiom. It is left out of the map and recorded as Pending Operator action 1.
 2. **The pinned CLI does not rebase `url()` across an `@import`.** The compiled output carries
-   `./fonts/...` verbatim, so a consumer must compile into the vendored `cuatro-contracts/` folder or
-   every face 404s silently. Stated as a rule in `ops/tailwind-adapter.md` and measured both ways in
-   the harness.
+   `./fonts/...` verbatim, so a consumer's compiled output must land in the vendored
+   `cuatro-contracts/` folder or every face 404s silently. Stated as a rule in
+   `ops/tailwind-adapter.md`, carried in the published header, and measured both ways in the harness.
+3. **Adopting the adapter changes a consumer's base body and code font.** Tailwind derives
+   `--default-font-family` from `--font-sans` and `--default-mono-font-family` from `--font-mono`,
+   and Preflight sets those on `html` and on `code`, `pre`, `kbd` and `samp`. That is the intended
+   outcome of adopting a type contract, and it is the one mapping whose effect reaches elements
+   nobody opted in, so it is a stated limit rather than a footnote.
 
 **Residual risks.**
 
@@ -440,5 +531,10 @@ no edit, and it was observed doing so against a hand-edited committed adapter.
 - Tailwind's paired `--text-*--line-height` defaults survive under the overridden sizes, so
   `.text-sm` still carries a line height from Tailwind's scale. Stated limit.
 - The browser check builds its scratch tree inside the repository, because the CLI cannot resolve
-  `@import "tailwindcss"` from `tmpdir()`. Teardown removes it, and Playwright runs `afterAll` on
-  failure as well as success, but a hard kill of the process would leave one behind.
+  `@import "tailwindcss"` from `tmpdir()`. Teardown is guarded and runs its removal in a `finally`,
+  the next run sweeps any leftover, and `.gitignore` keeps one out of a commit, but a hard kill of
+  the process still leaves a tree on disk until the next run.
+- `TAILWIND_NAMESPACES` in `packages/tokens/build.mjs` is a hand-copied transcription of Tailwind
+  v4's theme namespace list, and nothing compares it to the installed compiler. A namespace added
+  upstream would be refused here; one removed upstream would be accepted and mint nothing. Pending
+  Operator action 2.

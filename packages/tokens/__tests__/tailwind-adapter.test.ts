@@ -51,17 +51,124 @@ const DESIGN = join(
   'DESIGN.md'
 );
 
-const css = readFileSync(PUBLISHED, 'utf8');
-const tokensCss = readFileSync(TOKENS_CSS, 'utf8');
-const packageVersion = (JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8')) as { version: string })
-  .version;
+/**
+ * Reading a file this suite depends on, with the dependency named on failure.
+ *
+ * A bare `readFileSync` at module scope fails collection with an ENOENT and a
+ * path, which says nothing about why this suite wanted the file or what to do
+ * about it. The `DESIGN.md` coupling below already gets that treatment; these
+ * four are the same kind of coupling and now get it too.
+ */
+const readOrExplain = (path: string, why: string): string => {
+  if (!existsSync(path)) {
+    throw new Error(`packages/tokens/__tests__/tailwind-adapter.test.ts: ${path} is missing. ${why}`);
+  }
+  return readFileSync(path, 'utf8');
+};
+
+const css = readOrExplain(
+  PUBLISHED,
+  'It is the published Tailwind adapter, and this whole suite asserts its contents. Run "pnpm tokens:build".'
+);
+const tokensCss = readOrExplain(
+  TOKENS_CSS,
+  'This suite reads it to check that every name the adapter references is one the token contract declares. Run "pnpm tokens:build".'
+);
+const packageVersion = (
+  JSON.parse(
+    readOrExplain(
+      join(PACKAGE_ROOT, 'package.json'),
+      'It carries the single source of the contract version that AD-16 has a scheduled job read out of the published header.'
+    )
+  ) as { version: string }
+).version;
 
 interface ThemeMap {
   sections: { title: string; entries: { key: string; token: string }[] }[];
 }
 
-const themeMap = JSON.parse(readFileSync(THEME_MAP_PATH, 'utf8')) as ThemeMap;
+const themeMap = JSON.parse(
+  readOrExplain(
+    THEME_MAP_PATH,
+    'It is the translation table contracts/tailwind.css is generated from, and this suite checks the published file against it.'
+  )
+) as ThemeMap;
 const mapEntries = themeMap.sections.flatMap((section) => section.entries);
+
+/**
+ * **Every mapping the adapter publishes, written out.**
+ *
+ * This list exists because `theme-map.json` cannot be its own oracle. The case
+ * below that compares the published block against the map proves the generator
+ * copied the map faithfully, and proves nothing about whether the map is right:
+ * deleting `--spacing-tap` from it, or re-pointing `--color-accent-muted` at
+ * `--token-focus`, would keep that case, the namespace counts and the browser
+ * probe all green, because every one of them is derived from the same map. The
+ * comparison against `DESIGN.md`'s authored block pins only 14 of the 55 rows,
+ * so it does not close the gap either.
+ *
+ * So the 55 pairs are literal here, in published order, on the same reasoning
+ * and in the same shape as `EXPECTED_NAMES` in `tokens-contract.test.ts`. A
+ * mapping added, dropped or re-pointed fails this list and has to be changed in
+ * two places by someone who meant it.
+ */
+const EXPECTED_MAPPINGS: [key: string, token: string][] = [
+  ['--color-bg', '--token-bg'],
+  ['--color-surface', '--token-bg-raised'],
+  ['--color-surface-2', '--token-bg-raised-2'],
+  ['--color-ink', '--token-text'],
+  ['--color-muted', '--token-text-secondary'],
+  ['--color-line', '--token-border'],
+  ['--color-line-strong', '--token-border-interactive'],
+  ['--color-accent', '--token-accent'],
+  ['--color-accent-hover', '--token-accent-hover'],
+  ['--color-accent-muted', '--token-accent-muted'],
+  ['--color-focus', '--token-focus'],
+  ['--color-scrim', '--token-scrim'],
+  ['--font-display', '--f-display'],
+  ['--font-sans', '--f-body'],
+  ['--font-mono', '--f-mono'],
+  ['--text-3xs', '--t-3xs'],
+  ['--text-2xs', '--t-2xs'],
+  ['--text-xs', '--t-xs'],
+  ['--text-sm', '--t-sm'],
+  ['--text-base', '--t-base'],
+  ['--text-md', '--t-md'],
+  ['--text-lg', '--t-lg'],
+  ['--text-xl', '--t-xl'],
+  ['--text-2xl', '--t-2xl'],
+  ['--text-display', '--t-display'],
+  ['--font-weight-light', '--w-light'],
+  ['--font-weight-regular', '--w-regular'],
+  ['--font-weight-medium', '--w-medium'],
+  ['--font-weight-bold', '--w-bold'],
+  ['--font-weight-black', '--w-black'],
+  ['--leading-display', '--lh-display'],
+  ['--leading-heading', '--lh-heading'],
+  ['--leading-lede', '--lh-lede'],
+  ['--leading-body', '--lh-body'],
+  ['--leading-label', '--lh-label'],
+  ['--tracking-display', '--tr-display'],
+  ['--tracking-heading', '--tr-heading'],
+  ['--tracking-name', '--tr-name'],
+  ['--tracking-body', '--tr-body'],
+  ['--tracking-meta', '--tr-meta'],
+  ['--tracking-label', '--tr-label'],
+  ['--spacing-2xs', '--s-2xs'],
+  ['--spacing-xs', '--s-xs'],
+  ['--spacing-sm', '--s-sm'],
+  ['--spacing-md', '--s-md'],
+  ['--spacing-lg', '--s-lg'],
+  ['--spacing-xl', '--s-xl'],
+  ['--spacing-2xl', '--s-2xl'],
+  ['--spacing-3xl', '--s-3xl'],
+  ['--spacing-page-pad', '--page-pad'],
+  ['--spacing-tap', '--tap'],
+  ['--radius-none', '--r-none'],
+  ['--radius-hair', '--r-hair'],
+  ['--radius-pill', '--r-pill'],
+  ['--container-measure', '--measure'],
+];
 
 // ---------------------------------------------------------------------------
 // Parsing. The same deliberately dumb approach `tokens-contract.test.ts` takes:
@@ -154,10 +261,93 @@ describe('the shape the adapter is required to have', () => {
 // AD-14: the two namespaces, and every reference resolving.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// The published mapping set, pinned literally. `theme-map.json` cannot be its
+// own oracle, so this is the list that a dropped or re-pointed mapping fails.
+// ---------------------------------------------------------------------------
+
+describe('the published mapping set', () => {
+  // Every member list is filtered out of the parsed published file, never
+  // appended as a literal, so a mapping deleted from the map fails its namespace
+  // count here rather than quietly making the count smaller on both sides.
+  const keysMatching = (namespace: string): string[] =>
+    mappings.map(([key]) => key).filter((key) => key.startsWith(namespace));
+
+  const namespaces: Array<[label: string, keys: string[], expected: number]> = [
+    ['colour', keysMatching('--color-'), 12],
+    ['family', keysMatching('--font-').filter((key) => !key.startsWith('--font-weight-')), 3],
+    ['type scale', keysMatching('--text-'), 10],
+    ['weight', keysMatching('--font-weight-'), 5],
+    ['line-height', keysMatching('--leading-'), 5],
+    ['tracking', keysMatching('--tracking-'), 6],
+    ['spacing', keysMatching('--spacing-'), 10],
+    ['radius', keysMatching('--radius-'), 3],
+    ['container', keysMatching('--container-'), 1],
+  ];
+
+  for (const [label, keys, expected] of namespaces) {
+    it(`mints exactly ${expected} ${label} mappings`, () => {
+      expect(keys).toHaveLength(expected);
+    });
+  }
+
+  it('publishes 55 mappings in total and no key twice', () => {
+    // The hard total, so a mapping moved out of one namespace and into another
+    // cannot net out across the nine counts above.
+    expect(mappings).toHaveLength(55);
+    expect(new Set(mappings.map(([key]) => key)).size).toBe(55);
+    expect(namespaces.reduce((total, [, keys]) => total + keys.length, 0)).toBe(55);
+  });
+
+  it('declares exactly the expected mappings, in the expected order', () => {
+    expect(mappings).toEqual(EXPECTED_MAPPINGS.map(([key, token]) => [key, `var(${token})`]));
+  });
+
+  it('keeps every key and token inside the naming convention', () => {
+    for (const [key, value] of mappings) {
+      expect(key, `${key} is not a lowercase kebab custom property`).toMatch(/^--[a-z][a-z0-9-]*$/);
+      const target = /^var\((--[^\s,)]+)\)$/.exec(value)?.[1] as string;
+      expect(target, `${target} is not a lowercase kebab custom property`).toMatch(/^--[a-z][a-z0-9-]*$/);
+    }
+  });
+});
+
 describe('what every mapping must be', () => {
   it('publishes exactly the mappings theme-map.json declares, in its order', () => {
+    // This proves the generator copied the map faithfully. It does not prove the
+    // map is right, which is what EXPECTED_MAPPINGS above is for.
     expect(mappings).toEqual(mapEntries.map((entry) => [entry.key, `var(${entry.token})`]));
     expect(mappings.length, 'the map is empty, so every assertion below would pass over nothing').toBeGreaterThan(0);
+  });
+
+  it('reads a token of the right kind for its namespace, so a length cannot sit in a colour slot', () => {
+    // The same table `packages/tokens/build.mjs` refuses on, asserted against the
+    // published file as well as against the map the generator read.
+    const permitted: [namespace: string, allowed: string[]][] = [
+      ['--color-', ['--token-']],
+      ['--font-weight-', ['--w-']],
+      ['--font-', ['--f-']],
+      ['--text-', ['--t-']],
+      ['--tracking-', ['--tr-']],
+      ['--leading-', ['--lh-']],
+      ['--spacing-', ['--s-', '--page-pad', '--tap']],
+      ['--radius-', ['--r-']],
+      ['--container-', ['--measure']],
+    ];
+    for (const [key, value] of mappings) {
+      const target = /^var\((--[^\s,)]+)\)$/.exec(value)?.[1] as string;
+      // Longest prefix first: `--font-` is a prefix of `--font-weight-`.
+      const rule = [...permitted]
+        .sort((left, right) => right[0].length - left[0].length)
+        .find(([namespace]) => key.startsWith(namespace));
+      expect(rule, `${key} is in no namespace this adapter mints into`).toBeDefined();
+      expect(
+        (rule as [string, string[]])[1].some((allowed) =>
+          allowed.endsWith('-') ? target.startsWith(allowed) : target === allowed
+        ),
+        `${key} reads ${target}, which is not a token the ${(rule as [string, string[]])[0]} namespace may read`
+      ).toBe(true);
+    }
   });
 
   it('never carries the same name on both sides of its var()', () => {
@@ -342,21 +532,33 @@ const runBuild = (environment: Record<string, string | undefined>) => {
 const scratch = (label: string): string => mkdtempSync(join(tmpdir(), `cuatro-tailwind-${label}-`));
 
 /**
- * A copy of both build inputs with the map mutated. Nothing here touches the
+ * How a case corrupts the map: mutate the parsed object, replace the file with
+ * raw text that may not be valid JSON, or delete it outright.
+ */
+type Corruption = { mutate: (map: ThemeMap) => void } | { raw: string } | { absent: true };
+
+/**
+ * A copy of both build inputs with the map corrupted. Nothing here touches the
  * real `packages/tokens/tokens/` or the real `contracts/`.
  */
-const corrupted = (label: string, mutate: (map: ThemeMap) => void): string => {
+const corrupted = (label: string, corruption: Corruption): string => {
   const root = scratch(label);
   cpSync(SOURCE_DIR, join(root, 'tokens'), { recursive: true });
+  const target = join(root, 'theme-map.json');
+  if ('absent' in corruption) return root;
+  if ('raw' in corruption) {
+    writeFileSync(target, corruption.raw, 'utf8');
+    return root;
+  }
   const map = JSON.parse(readFileSync(THEME_MAP_PATH, 'utf8')) as ThemeMap;
-  mutate(map);
-  writeFileSync(join(root, 'theme-map.json'), JSON.stringify(map, null, 2), 'utf8');
+  corruption.mutate(map);
+  writeFileSync(target, JSON.stringify(map, null, 2), 'utf8');
   return root;
 };
 
 /** Runs the generator against a corrupted input tree and returns what it said. */
-const refusal = (label: string, mutate: (map: ThemeMap) => void) => {
-  const inputs = corrupted(label, mutate);
+const refusal = (label: string, corruption: Corruption) => {
+  const inputs = corrupted(label, corruption);
   const output = scratch(`${label}-out`);
   try {
     const result = runBuild({
@@ -410,7 +612,7 @@ describe('building the adapter from source', () => {
   it(
     'reads its map from beside the source directory, so a scratch run needs no third build input',
     () => {
-      const inputs = corrupted('relocated', () => undefined);
+      const inputs = corrupted('relocated', { mutate: () => undefined });
       const output = scratch('relocated-out');
       try {
         const result = runBuild({
@@ -430,91 +632,183 @@ describe('building the adapter from source', () => {
 });
 
 describe('the refusals, each run against a corrupted copy of the inputs', () => {
+  /**
+   * The clause `refuseAdapter` appends to every message. `ops/tailwind-adapter.md`
+   * states it as a property of the whole set, so it is asserted on every case
+   * rather than left to whichever message happened to be written with it. Two
+   * refusals used to end differently, one in lower case and one with a raw
+   * `error.message` and no clause at all.
+   */
+  const CLAUSE = 'Nothing was published.';
+
   const cases: {
     label: string;
     title: string;
-    mutate: (map: ThemeMap) => void;
-    expected: (string | RegExp)[];
+    corruption: Corruption;
+    expected: string[];
   }[] = [
     {
       label: 'missing-token',
       title: 'refuses a mapping that names a token the dictionary does not publish',
-      mutate: (map) => {
-        map.sections[0].entries[0].token = '--token-brand';
+      corruption: {
+        mutate: (map) => {
+          map.sections[0].entries[0].token = '--token-brand';
+        },
       },
-      expected: ['--color-bg', '--token-brand', 'Nothing was published'],
+      expected: ['--color-bg', '--token-brand'],
     },
     {
       label: 'cycle',
       title: 'refuses a mapping that carries the same name on both sides of its var(), citing AD-14',
-      mutate: (map) => {
-        map.sections[0].entries.push({ key: '--color-accent-cycle', token: '--color-accent-cycle' });
+      corruption: {
+        mutate: (map) => {
+          map.sections[0].entries.push({ key: '--color-accent-cycle', token: '--color-accent-cycle' });
+        },
       },
-      expected: ['--color-accent-cycle', 'AD-14', 'transparent', 'Nothing was published'],
+      expected: ['--color-accent-cycle', 'AD-14', 'transparent'],
     },
     {
       label: 'palette',
       title: 'refuses a mapping that reads the raw --c-* palette',
-      mutate: (map) => {
-        map.sections[0].entries[0].token = '--c-accent';
+      corruption: {
+        mutate: (map) => {
+          map.sections[0].entries[0].token = '--c-accent';
+        },
       },
-      expected: ['--color-bg', '--c-accent', 'AD-14', 'Nothing was published'],
+      expected: ['--color-bg', '--c-accent', 'AD-14'],
+    },
+    {
+      label: 'crossing',
+      title: 'refuses a mapping whose token is the wrong kind for its namespace',
+      corruption: {
+        mutate: (map) => {
+          // A length in a colour slot. It parses, publishes and mints, and the
+          // browser probe compares it equal because the control element reads
+          // the same wrong token. This refusal is the only thing that sees it.
+          map.sections[0].entries[0].token = '--s-md';
+        },
+      },
+      expected: ['--color-bg', '--s-md', '--token-', 'may read'],
     },
     {
       label: 'namespace',
       title: 'refuses a key in a namespace Tailwind v4 does not theme, naming the permitted ones',
-      mutate: (map) => {
-        map.sections[0].entries[0].key = '--colour-bg';
+      corruption: {
+        mutate: (map) => {
+          map.sections[0].entries[0].key = '--colour-bg';
+        },
       },
-      expected: ['--colour-bg', 'mint no utility', '--color-', '--spacing-', 'Nothing was published'],
+      expected: ['--colour-bg', 'mint no utility', '--color-', '--spacing-'],
+    },
+    {
+      label: 'unfed-namespace',
+      title: 'refuses a key in a Tailwind namespace this adapter feeds no token into',
+      corruption: {
+        mutate: (map) => {
+          map.sections[0].entries[0].key = '--shadow-raised';
+        },
+      },
+      expected: ['--shadow-raised', '--shadow-', 'NAMESPACE_TOKENS'],
+    },
+    {
+      label: 'bare-namespace',
+      title: 'refuses a key that is a bare namespace with nothing after it',
+      corruption: {
+        mutate: (map) => {
+          // Tailwind stores `--font-weight-` and mints nothing from it. Matched
+          // by shortest prefix this would read as the `--font-` namespace and be
+          // refused for the wrong reason, which is why the generator matches by
+          // longest.
+          map.sections[3].entries[0].key = '--font-weight-';
+        },
+      },
+      expected: ['--font-weight-', 'bare', 'mint no utility'],
     },
     {
       label: 'empty-section',
       title: 'refuses a section that names no entries',
-      mutate: (map) => {
-        map.sections = [{ title: 'nothing', entries: [] }];
+      corruption: {
+        mutate: (map) => {
+          map.sections = [{ title: 'nothing', entries: [] }];
+        },
       },
-      expected: ['names no entries', 'Nothing was published'],
+      expected: ['names no entries'],
     },
     {
       label: 'empty-map',
       title: 'refuses a map with no mappings rather than publishing an empty @theme block',
-      mutate: (map) => {
-        map.sections = [];
+      corruption: {
+        mutate: (map) => {
+          map.sections = [];
+        },
       },
-      expected: ['declares no mappings', 'mint no utility at all', 'Nothing was published'],
+      expected: ['declares no mappings', 'mint no utility at all'],
     },
     {
       label: 'no-sections',
       title: 'refuses a map with no sections at all',
-      mutate: (map) => {
-        delete (map as { sections?: unknown }).sections;
+      corruption: {
+        mutate: (map) => {
+          delete (map as { sections?: unknown }).sections;
+        },
       },
-      expected: ['no "sections" array', 'Nothing was published'],
+      expected: ['no "sections" array'],
     },
     {
       label: 'duplicate',
       title: 'refuses the same Tailwind key declared twice, because one of the two is discarded silently',
-      mutate: (map) => {
-        map.sections[0].entries.push({ key: '--color-bg', token: '--token-text' });
+      corruption: {
+        mutate: (map) => {
+          map.sections[0].entries.push({ key: '--color-bg', token: '--token-text' });
+        },
       },
-      expected: ['--color-bg', 'appears twice', 'Nothing was published'],
+      expected: ['--color-bg', 'appears twice'],
     },
     {
       label: 'malformed',
       title: 'refuses a key that is not a plain custom property name',
-      mutate: (map) => {
-        map.sections[0].entries[0].key = '--color-bg; } body { display: none';
+      corruption: {
+        mutate: (map) => {
+          map.sections[0].entries[0].key = '--color-bg; } body { display: none';
+        },
       },
-      expected: ['not a custom property name', 'Nothing was published'],
+      expected: ['not a custom property name'],
     },
     {
       label: 'delimiter',
       title: 'refuses a section title carrying a CSS comment delimiter',
-      mutate: (map) => {
-        map.sections[0].title = 'colour */ body { display: none } /*';
+      corruption: {
+        mutate: (map) => {
+          map.sections[0].title = 'colour */ body { display: none } /*';
+        },
       },
-      expected: ['CSS comment delimiter', 'Nothing was published'],
+      expected: ['CSS comment delimiter'],
+    },
+    {
+      label: 'absent',
+      title: 'refuses a missing map file, naming the path it looked at',
+      corruption: { absent: true },
+      expected: ['theme map is missing', 'theme-map.json'],
+    },
+    {
+      label: 'unreadable',
+      title: 'refuses a map that is not readable JSON',
+      corruption: { raw: '{ not json' },
+      expected: ['not readable JSON'],
+    },
+    {
+      label: 'not-an-object',
+      title: 'refuses a map that parses to null rather than throwing a raw TypeError',
+      // `null`, a number and a string are all valid JSON and all used to reach
+      // `parsed.sections` and throw a TypeError naming no file and no key.
+      corruption: { raw: 'null' },
+      expected: ['parses to null', '"sections" array'],
+    },
+    {
+      label: 'an-array',
+      title: 'refuses a map that parses to an array',
+      corruption: { raw: '[]' },
+      expected: ['parses to an array', '"sections" array'],
     },
   ];
 
@@ -522,12 +816,13 @@ describe('the refusals, each run against a corrupted copy of the inputs', () => 
     it(
       testCase.title,
       () => {
-        const { result, published } = refusal(testCase.label, testCase.mutate);
+        const { result, published } = refusal(testCase.label, testCase.corruption);
         const said = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
         expect(result.status, `the generator exited 0 and said:\n${said}`).not.toBe(0);
         for (const fragment of testCase.expected) {
           expect(said, `the refusal did not name ${fragment}:\n${said}`).toContain(fragment);
         }
+        expect(said, `the refusal did not end with "${CLAUSE}":\n${said}`).toContain(CLAUSE);
         // "Nothing published" is the column the matrix actually cares about: a
         // refusal that has already rewritten `tokens.css` is not a refusal.
         expect(published, `the generator wrote ${published.join(', ')} while refusing`).toEqual([]);
@@ -535,50 +830,4 @@ describe('the refusals, each run against a corrupted copy of the inputs', () => 
       SPAWN_TIMEOUT
     );
   }
-
-  it(
-    'refuses a missing map file, naming the path it looked at',
-    () => {
-      const inputs = corrupted('absent', () => undefined);
-      const output = scratch('absent-out');
-      try {
-        rmSync(join(inputs, 'theme-map.json'), { force: true });
-        const result = runBuild({
-          CUATRO_TOKENS_SOURCE: join(inputs, 'tokens'),
-          CUATRO_TOKENS_OUTPUT: output,
-        });
-        const said = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-        expect(result.status, said).not.toBe(0);
-        expect(said).toContain('theme map is missing');
-        expect(readdirSync(output)).toEqual([]);
-      } finally {
-        rmSync(inputs, { recursive: true, force: true });
-        rmSync(output, { recursive: true, force: true });
-      }
-    },
-    SPAWN_TIMEOUT
-  );
-
-  it(
-    'refuses a map that is not readable JSON',
-    () => {
-      const inputs = corrupted('unreadable', () => undefined);
-      const output = scratch('unreadable-out');
-      try {
-        writeFileSync(join(inputs, 'theme-map.json'), '{ not json', 'utf8');
-        const result = runBuild({
-          CUATRO_TOKENS_SOURCE: join(inputs, 'tokens'),
-          CUATRO_TOKENS_OUTPUT: output,
-        });
-        const said = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-        expect(result.status, said).not.toBe(0);
-        expect(said).toContain('not readable JSON');
-        expect(readdirSync(output)).toEqual([]);
-      } finally {
-        rmSync(inputs, { recursive: true, force: true });
-        rmSync(output, { recursive: true, force: true });
-      }
-    },
-    SPAWN_TIMEOUT
-  );
 });
