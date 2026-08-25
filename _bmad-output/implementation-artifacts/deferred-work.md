@@ -1076,3 +1076,11 @@ found them. Append only. Each entry names the spec that surfaced it.
     `digital-library` and only `digital-library`, and because the same argument applies to
     `cs-tracker`'s and the Anchor's Postgres, neither of which has any backup at all. That
     is one story, not three, and it is not this one.
+
+### DW-1: Nothing under `contracts/` identifies the folder to a repository that vendors it: no README, no source repository or commit, and no licence line.
+origin: spec-deferred 3a3801b1c64f
+location: contracts/
+source_spec: `spec-1-11-publish-contracts-tokens-css-from-packages-tokens.md`
+severity: medium
+reason: AD-14 has seven repositories copy the folder under the fixed name `cuatro-contracts/`. The only provenance the published file carries is the header line "Generated from packages/tokens", which names a path that does not exist in a Satellite checkout, so a maintainer who finds a stale copy has no route back to the generator. AD-16 already makes a scheduled job read the `Contract vX.Y.Z` header across those repositories, which is a version but not an origin. Adding a second file under `contracts/` is a published-surface decision rather than a defect in this story, and Story 1.16 (serve `contracts/` at https://cuatro.dev/contracts/) is where the folder first acquires a public identity.
+status: open

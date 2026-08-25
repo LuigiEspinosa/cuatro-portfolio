@@ -81,7 +81,7 @@ development_status:
   1-8-an-offsite-backup-path-for-digital-library: backlog
   1-9-record-the-build-on-the-box-violation-as-a-tracked-item: done
   1-10-install-playwright-and-establish-the-rendered-output-harness: backlog
-  1-11-publish-contracts-tokens-css-from-packages-tokens: backlog
+  1-11-publish-contracts-tokens-css-from-packages-tokens: done
   1-12-publish-contracts-fonts-css-with-latin-subset-faces: backlog
   1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: backlog
   1-14-ci-enforces-the-contract-boundary: backlog
