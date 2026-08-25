@@ -15,16 +15,46 @@
 # make a genuinely new application indistinguishable from an incumbent that
 # gained a second hostname, which is the distinction this gate exists to draw.
 #
-# Story 1-5 writes `measured_at`, `baseline` and `reading` from a real
-# measurement week. Story 1-6 writes `threshold` and only then may `status`
-# become `open`. The reader rejects `open` while `threshold` is empty. A number
-# written here before the week runs would be a guess dressed as a requirement.
+# Story 1-5 filled `measured_at`, `baseline` and `reading` from a real
+# measurement week, closed 2026-08-25. Story 1-6 derived `threshold` from that
+# week and moved `status` to `open` on 2026-08-25, because the measured baseline
+# (load15 0.08) sits far below the derived figure. The derivation, its rejected
+# alternative, the review date and the conditions that re-block the gate are in
+# `ops/capacity-threshold.md`. Read that before editing either key here.
+#
+# What the reader enforces about `status: open`, exactly, because the difference
+# matters at 2am:
+#
+#   1. While reading the file: `threshold` is not empty and names a positive
+#      load15 figure. A threshold nobody could act on fails closed, so
+#      `threshold: banana` is refused. This one rejects the file, which means it
+#      says no to every id, an incumbent included. That is the standing
+#      behaviour for any gate this reader cannot read at all.
+#   2. While deciding a placement: the load15 figure in `baseline` above sits
+#      below the load15 figure in `threshold`. Where it does not, the gate is
+#      contradicting itself and is treated as blocked until `status` is
+#      corrected or the threshold is re-derived. That comparison is between two
+#      values written in THIS FILE.
+#
+# Rule 2 is checked at placement and not while parsing, so an id in `placements`
+# still deploys from a gate that is refusing new placement. AD-9 is explicit that
+# existing ids always deploy and NFR-2 is never traded against the gate, and
+# `.github/workflows/deploy.yml` names an incumbent, so a parse-level version of
+# rule 2 could only ever have stopped the Anchor deploying while never once
+# refusing the new id it exists to refuse.
+#
+# Nothing anywhere compares either number against a live reading from the box.
+# `.github/workflows/deploy.yml` runs the checker on a GitHub runner, which has
+# no view of 177.7.52.248, so a gate left open after the box grew past its line
+# keeps saying yes until somebody re-measures and writes a new `baseline` here.
+# That is a limit of this design and not an oversight: see the limits section of
+# `ops/capacity-threshold.md`.
 
 measured_at: 2026-08-25
 baseline: idle band load15 0.08, containers 3.0% of 2 vCPU, 1.23 GiB container RSS, measured over 10127 minutes to 2026-08-25T00:33:34Z
-threshold:
+threshold: load15 0.60 on 2 vCPU, derived in ops/capacity-threshold.md from the week to 2026-08-25T00:33:34Z
 reading: loaded band load15 0.18 max 0.27, containers 3.0% of 2 vCPU, peak 7.1%, top cs-tracker-db-1 at 1.2% of one core, 1.23 GiB container RSS
-status: blocked
+status: open
 overflow:
   path: managed hosting
   provider: Railway

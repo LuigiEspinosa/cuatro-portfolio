@@ -22,7 +22,34 @@ import { fileURLToPath } from 'node:url';
 const GATE_FILE = 'capacity-gate.yml';
 export const GATE_PATH = `ops/${GATE_FILE}`;
 
+// Where the threshold in that file came from, and what a status move requires.
+// Named in the refusals rather than left to the reader to find, and exported so
+// the test can assert the pointer is still there: a message that quietly stops
+// naming the record is how an operator ends up guessing at a number.
+export const THRESHOLD_RECORD = 'ops/capacity-threshold.md';
+
 const SCALAR_KEYS = ['measured_at', 'baseline', 'threshold', 'reading', 'status'];
+// AD-9 gates on the box's 15-minute load average, so an open gate has to name
+// one, and so does the baseline it is compared against. This reader enforces
+// two things about those figures and it is worth being exact about which:
+//
+//   1. Shape. An open gate names a positive load15 figure. That is the hole the
+//      Story 1-4 review found: `threshold` was validated only as a non-empty
+//      string, so `threshold: banana` would have opened it.
+//   2. A file-level comparison. An open gate's own recorded `baseline` sits
+//      below its own recorded `threshold`, which is the condition AD-9 puts on
+//      moving the status.
+//
+// Neither is a live reading. Nothing at the call site samples the box:
+// `deploy.yml` runs this checker on a GitHub runner, which has no view of the
+// origin, so a comparison against the box's actual load would be a claim this
+// code cannot keep. The two numbers compared are both written in the file.
+//
+// The keyword is matched case insensitively and tolerates one colon after it,
+// so `Load15 0.60` and `load15: 0.60` both read. The trailing lookahead, rather
+// than `\b`, is what stops `load15 0.60min` from reading as 0.60: a figure has
+// to end at a space, a comma or the end of the value.
+const LOAD15 = /(?:^|\s)load15:?\s+(\d+(?:\.\d+)?)(?=$|[\s,])/i;
 const MAP_KEYS = ['overflow'];
 const LIST_KEYS = ['placements'];
 const KEYS = [...SCALAR_KEYS, ...MAP_KEYS, ...LIST_KEYS];
@@ -48,6 +75,26 @@ const PLACEMENT_OPTIONAL = ['observed', 'note'];
 
 /** Thrown only for a gate this reader will not accept, never for a defect in the reader. */
 export class GateError extends Error {}
+
+/**
+ * The 15-minute load average a gate value names, or `null` where it names none.
+ * Exported because `baseline`, `reading` and `threshold` all carry one, and both
+ * this reader and the test compare them.
+ *
+ * **First match wins.** A value naming two figures reads the first one and
+ * ignores the rest, which is what makes `reading: loaded band load15 0.18 max
+ * 0.27, ...` read as 0.18 rather than as 0.27. That is deliberate: the leading
+ * figure in every value the summariser writes is the one that value is about.
+ * A value that needs both figures compared needs two keys, not a cleverer
+ * regular expression.
+ *
+ * @param {string} value
+ * @returns {number | null}
+ */
+export function load15(value) {
+  const match = LOAD15.exec(String(value).trim());
+  return match === null ? null : Number(match[1]);
+}
 
 function fail(lineNumber, message) {
   throw new GateError(lineNumber === null ? message : `line ${lineNumber}: ${message}`);
@@ -176,9 +223,36 @@ export function parseGate(text) {
     ids.push(entry.id);
   }
 
-  if (gate.status === 'open' && gate.threshold.trim() === '') {
-    fail(null, 'status is open while threshold is empty. A gate cannot be open on an unmeasured box (AD-9)');
+  if (gate.status === 'open') {
+    const written = gate.threshold.trim();
+    if (written === '') {
+      fail(null, 'status is open while threshold is empty. A gate cannot be open on an unmeasured box (AD-9)');
+    }
+    const figure = load15(written);
+    if (figure === null) {
+      fail(
+        null,
+        `status is open while threshold ${JSON.stringify(written)} names no load15 figure. AD-9 gates on the ` +
+          'box 15-minute load average, so an open gate has to carry one, written as "load15 0.60". A threshold ' +
+          'nobody can act on is not a threshold'
+      );
+    }
+    if (figure <= 0) {
+      fail(
+        null,
+        `status is open while threshold names load15 ${figure}. Zero is not a capacity line, so this gate would ` +
+          'be open against nothing (AD-9)'
+      );
+    }
   }
+
+  // The comparison AD-9 puts on the status is NOT made here, deliberately.
+  // Every refusal in this function is syntactic: the file cannot be read, so
+  // nothing can be decided from it and it says no to everything, incumbents
+  // included. A gate recording a baseline that has reached its threshold is a
+  // different thing. It is perfectly readable and it is saying something
+  // specific, so it is answered where placement is decided, in `evaluate`, and
+  // an id already in `placements` still passes. See the note there.
 
   return gate;
 }
@@ -191,6 +265,12 @@ function refusal(detail) {
  * Decide whether `id` may be placed. Returns a result rather than exiting, so
  * the tests can assert on the same code path the deploy workflow runs.
  *
+ * Three states, not two. `open` and `blocked` are what the file says; the third
+ * is a gate that says `open` while its own recorded `baseline` has reached its
+ * own recorded `threshold`, which is AD-9's condition on the status contradicted
+ * by the file's own numbers. That is refused for a new id and treated as blocked
+ * until the status is corrected.
+ *
  * @param {Gate} gate
  * @param {string} id
  * @returns {Result}
@@ -199,10 +279,36 @@ export function evaluate(gate, id) {
   const wanted = String(id).trim();
   const ids = gate.placements.map((entry) => entry.id);
 
+  // Before the status is consulted, in every state, because AD-9 says existing
+  // ids always deploy and NFR-2 is never traded against the gate. This is why
+  // the contradiction below is answered here and not while parsing: the parser
+  // refuses a gate outright, and `.github/workflows/deploy.yml` names an
+  // incumbent, so a parse-level refusal could only ever have stopped the Anchor
+  // deploying while never once refusing the new id the rule exists to refuse.
   if (ids.includes(wanted)) {
     return { allowed: true, message: `capacity gate: ${wanted} is in placements, the deploy may proceed` };
   }
+
   if (gate.status === 'open') {
+    // Both figures have to parse for the rule to apply. Where `baseline` names
+    // none, nothing is compared and the gate is read as it is written: failing
+    // closed on the absence of a number would refuse gates that are fine.
+    const threshold = load15(gate.threshold);
+    const measured = load15(gate.baseline);
+    if (threshold !== null && measured !== null && measured >= threshold) {
+      return {
+        allowed: false,
+        message: refusal([
+          `  ${GATE_PATH} reads status: open, but its own baseline names load15 ${measured} and its own`,
+          `  threshold names load15 ${threshold}. A gate is open only while the measured baseline sits`,
+          '  below the written threshold (AD-9), so this one is treated as blocked until the status is',
+          `  corrected. ${JSON.stringify(wanted)} is not in placements and may not be placed.`,
+          `  Re-derive the threshold or set status: blocked. Both acts are described in ${THRESHOLD_RECORD}`,
+          `  Ids that pass regardless, because continuity is never traded against the gate: ${ids.join(', ')}`,
+          `  If it has to ship anyway, the decided overflow is ${gate.overflow.path} (${gate.overflow.provider}).`,
+        ]),
+      };
+    }
     return {
       allowed: true,
       message: `capacity gate: status is open against a threshold of ${gate.threshold}, ${wanted} may be placed`,
@@ -212,10 +318,12 @@ export function evaluate(gate, id) {
     allowed: false,
     message: refusal([
       `  ${GATE_PATH} has status: blocked, and placements does not list ${JSON.stringify(wanted)}.`,
-      '  Unproven capacity fails closed (AD-9). Story 1-5 measures the box, Story 1-6 writes the',
-      '  threshold and opens the gate. Until then no new application id may be placed.',
+      '  Unproven capacity fails closed (AD-9). A blocked gate refuses every new application id',
+      '  whatever threshold is written beside it, so what has to change is the status, and only',
+      '  against a measurement that supports it.',
+      `  How a threshold is derived and what authorises a status move: ${THRESHOLD_RECORD}`,
       `  Ids that pass today: ${ids.join(', ')}`,
-      `  If it has to ship before then, the decided overflow is ${gate.overflow.path} (${gate.overflow.provider}).`,
+      `  If it has to ship anyway, the decided overflow is ${gate.overflow.path} (${gate.overflow.provider}).`,
     ]),
   };
 }

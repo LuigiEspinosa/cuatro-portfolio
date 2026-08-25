@@ -21,8 +21,11 @@
 //      and clamping it to zero would discard the busiest minutes of the week,
 //      which are exactly the minutes a peak reading exists to capture.
 //   3. The idle floor and the loaded band are percentiles of observed load15,
-//      not a constant. Picking a load number here would smuggle in the guess
-//      Story 1-6 is supposed to derive from this data.
+//      not a constant. Picking a load number here would smuggle in the judgement
+//      that belongs to whoever derives the threshold. This tool summarises a
+//      week and never decides what the box may hold: Story 1-6 derived the first
+//      threshold from its output, and a later re-derivation works the same way.
+//      `ops/capacity-threshold.md` is where that reasoning lives.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -787,7 +790,18 @@ export function render(summary) {
   out.push(`reading: ${values.reading}`);
   out.push('```');
   out.push('');
-  out.push('`threshold` stays empty and `status` stays `blocked`. Story 1-6 opens the gate, not this one.');
+  // Deliberately says nothing about what `threshold` and `status` currently
+  // hold. This tool is run by a close-out session, and the first one ran against
+  // a gate that was blocked with an empty threshold while a later re-derivation
+  // runs against a gate that is already open. An instruction naming one of those
+  // states is wrong in the other, and the operator reading it has no way to tell
+  // which era they are in. So point at the two files that always know.
+  out.push(
+    'This summariser writes neither `threshold` nor `status`, in any era. Both are judgement, not ' +
+      'arithmetic over the week. The gate\'s current state is in `ops/capacity-gate.yml`, and how a ' +
+      'threshold is derived, what authorises a status move and what re-blocks the gate are in ' +
+      '`ops/capacity-threshold.md`. A re-derivation follows that record\'s re-block table.'
+  );
 
   return out.join('\n');
 }

@@ -555,11 +555,23 @@ describe('the two scalars ops/capacity-gate.yml takes', () => {
     expect(gate.threshold).toBe('');
   });
 
-  it('never write a threshold and never open the gate, because Story 1-6 does that', () => {
+  // Asserts the invariant rather than the sentence. The wording used to name the
+  // state the gate happened to be in on close-out day, which a later
+  // re-derivation session would have been told to restore, and correcting it
+  // then would have meant deleting an assertion rather than fixing a red test.
+  // What is actually true in every era is that this tool emits neither key.
+  it('never emits a threshold line and never emits a status line, in any era', () => {
     const out = render(model(text));
-    expect(out).toContain('`threshold` stays empty and `status` stays `blocked`');
     expect(out).not.toMatch(/^threshold:/m);
-    expect(out).not.toMatch(/status: open/);
+    expect(out).not.toMatch(/^status:/m);
+    expect(out).not.toMatch(/status: (open|blocked)/);
+  });
+
+  it('points the close-out session at the two files that know the gate state', () => {
+    const out = render(model(text));
+    expect(out).toContain('writes neither `threshold` nor `status`');
+    expect(out).toContain('ops/capacity-gate.yml');
+    expect(out).toContain('ops/capacity-threshold.md');
   });
 });
 

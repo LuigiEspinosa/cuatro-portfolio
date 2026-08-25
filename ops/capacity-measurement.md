@@ -279,8 +279,15 @@ heading, replacing nothing above it. The block already marks every figure as obs
 | `baseline` | the `baseline:` line the summariser printed | `ops/capacity-summary.mjs` |
 | `reading` | the `reading:` line the summariser printed | `ops/capacity-summary.mjs` |
 
-**`threshold` stays empty and `status` stays `blocked`.** Story 1-6 opens the gate. A threshold
-written here would be Story 1-6's judgement made by whoever happened to run the close-out.
+**`threshold` stayed empty and `status` stayed `blocked` through this close-out**, which ran on
+2026-08-25. A threshold written here would have been Story 1-6's judgement made by whoever happened
+to run the close-out. The pasted summariser block further down repeats the same instruction, and it
+was true on close-out day for the same reason.
+
+**Story 1-6 has since written both**, on **2026-08-25**: `threshold` carries `load15 0.60 on 2 vCPU`
+and `status` is `open`. The derivation is `ops/capacity-threshold.md`. So the committed gate no
+longer matches the two cells this step told the close-out to leave alone, and that is the intended
+end state rather than a drift from it.
 
 **Both values are scalars, and must stay on one line.** `ops/capacity-gate.mjs` lists `baseline`
 and `reading` in `SCALAR_KEYS` and refuses anything nested under them, and it refuses any value
@@ -300,16 +307,24 @@ growing after the record was written invites a later reader to summarise a diffe
 the one the gate cites.
 
 **7. Re-run the repository's gates.** `corepack pnpm test --run` and `corepack pnpm typecheck`
-both have to pass. `ops/__tests__/capacity-gate.test.ts` asserts exactly two things about the
-committed gate: `status` is `blocked` and `threshold` is empty. Those are the two keys the
-close-out must not touch, and a failure there means the edit went further than it should have.
+both have to pass.
 
-**It does not assert that `measured_at`, `baseline` and `reading` are empty, and it must not.**
+**What `ops/__tests__/capacity-gate.test.ts` asserted about the committed gate on close-out day,
+2026-08-25:** that `status` was `blocked` and `threshold` was empty. Those were the two keys the
+close-out must not touch, and a failure there would have meant the edit went further than it should
+have. **Story 1-6 inverted both assertions on 2026-08-25**, because it is the one story AD-9 permits
+to write a threshold and move the status. Read this paragraph as a record of what guarded the
+close-out, not as a description of the current file: the committed gate is now `open` against
+`load15 0.60 on 2 vCPU`, and the test asserts that instead, plus that the baseline load15 sits below
+the threshold load15.
+
+**It did not assert that `measured_at`, `baseline` and `reading` were empty, and it must not.**
 It did until Story 1-5, which meant a correct close-out turned CI red while this file told the
 operator to read that red as proof the edit was wrong. The obvious response would have been to
-revert the measurement the week was run to produce. The test now covers the opposite case too: a
-gate with all three measurement keys filled and `threshold` still empty must continue to refuse a
-new id and continue to pass an incumbent.
+revert the measurement the week was run to produce. The demonstration that a gate with all three
+measurement keys filled and `threshold` still empty refuses a new id and passes an incumbent lives
+on in the suite, moved onto a synthetic gate by Story 1-6 once the committed one stopped being
+blocked.
 
 ## What this week will not claim
 
@@ -420,6 +435,11 @@ Under load the three heaviest are `cs-tracker-db-1` at 1.2% of one core, `cuatro
 
 ### The two scalars `ops/capacity-gate.yml` takes
 
+> **Annotation added 2026-08-25 by Story 1-6, outside the pasted output below:** the closing line of
+> this block is the summariser's instruction to the close-out session and was true that day. It is
+> **retired**. `threshold` now carries `load15 0.60 on 2 vCPU` and `status` is `open`. Do not copy
+> that line into the gate. See `ops/capacity-threshold.md`.
+
 Paste these two lines, and nothing nested, because `ops/capacity-gate.mjs` reads both as scalars.
 
 ```
@@ -460,7 +480,7 @@ dynamic range to sit in, and should not read the loaded band as showing what loa
 | 2a | **Check once, around 2026-08-21** | A week measured by nobody can die on day three and look identical to a week that ran. One command, below | **2026-08-24T09:55:45Z.** Late, and it should be recorded as late rather than as done on time. The check that was meant for day four was run on close-out day, so for four days nothing was watching. The week survived it: 10129 of 10129 expected samples, no gaps, `Result=success` |
 | 3 | **Run the close-out procedure above** | Pull the CSVs, summarise, paste the block, fill the three gate keys, stop the timer | **2026-08-25T00:33:34Z** |
 | 4 | Note whether any deploy to `main` landed inside the week | A build on the serving box is a real but atypical minute, and the threshold Story 1-6 derives should not be anchored to one | **2026-08-25T00:33:34Z.** None did. `main` is at `54d3a0d` from 2026-08-15 with no merges since, so no build minute is inside the data |
-| 5 | Hand the closed record to Story 1-6 | Story 1-6 writes `threshold` and opens the gate. It is the only story that may | _not done_ |
+| 5 | Hand the closed record to Story 1-6 | Story 1-6 writes `threshold` and opens the gate. It is the only story that may | **2026-08-25.** Done. Story 1-6 derived `load15 0.60 on 2 vCPU` from the figures above and moved `status` to `open`, the measured baseline of load15 0.08 being 13% of it. The derivation, the rejected alternative and the condition that re-blocks the gate are in `ops/capacity-threshold.md` |
 
 **Maintaining this file.** When an action is performed, replace the cell with the ISO 8601 UTC
 completion date and leave the row in place. Deletion is not used: which part of the measurement
