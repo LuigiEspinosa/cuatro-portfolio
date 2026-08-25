@@ -329,7 +329,7 @@ be a named decision rather than an incidental subscription.
 | Region | `auto`, which is what R2 expects | **Decided** |
 | **Marginal recurring cost at this volume** | **$0.00 per month** | **Decided**, from the vendor's published free tier. **Not observed:** this build did not reach the Cloudflare console, and the Operator confirms it at bucket creation (action 2 below) |
 | Free tier, as published | 10 GB of storage, 1 million Class A operations per month, 10 million Class B operations per month, and no egress charge | **Decided**, unverified by this build |
-| **Projected nightly object size** | **about 3329 bytes** | **Projection, not an observation of offsite volume.** No object has ever been uploaded. It is built from two observations: a local `.tar.gz` of 3252 bytes on 2026-08-24T12:52Z, plus the 77 byte OpenPGP envelope measured in the encryption proof above. The first offsite run replaces this row with a measured figure (action 8) |
+| **Measured nightly object size** | **3350 bytes** | **Observed 2026-08-25T02:48:28Z**, from the first offsite run below. The projection this row replaced was about 3329 bytes, so the estimate was low by 21 bytes, or 0.6% |
 | Projected operations per night | one Class A (`PUT`) and two Class B (`GET`, one for the round trip and one for the restore) | **Decided**, from the eleven stages above |
 | Where it would stop being free | Storage, not operations. At roughly 30 objects retained, the free tier ends when a single nightly archive passes roughly 340 MB. Operations would need a hundred-fold increase in run frequency to matter | **Decided**, arithmetic on the two rows above |
 | NFR-4 ceiling | $40 to $100 per month all-in. **Untouched** | **Decided** |
@@ -536,31 +536,69 @@ structures. Story 1-7 counted the 11 tables; the summary line's `objects=23` cou
 **The whole of `digital-library`'s state fits in a 3252 byte file.** This is a correctness and
 offsite problem, not a volume problem.
 
+## First offsite run
+
+**2026-08-25T02:48:28Z.** The configuration was written, the job was run in the exact shape cron
+runs it, and it passed every stage. This is the run that turns named limits 1, 2 and 5 from
+statements about a gap into statements about a state.
+
+```
+library-backup ts=2026-08-25T02:48:28Z snapshot=ok own=ok integrity=ok objects=23
+  archive=library-20260825T024828Z.tar.gz.gpg tar=first-attempt bytes=3350 encrypt=aes256
+  size=within-ceiling redis=empty offsite=ok-digital-library/library-20260825T024828Z.tar.gz.gpg
+  roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
+```
+
+| Item | Value | Nature |
+|---|---|---|
+| Bucket | `cuatro-backups`, not public | **Observed** |
+| Object size | 3350 bytes | **Observed** |
+| Round trip | `sha256-match` | **Observed** |
+| Restore from the bucket | `verified`, 23 schema objects across 11 tables | **Observed** |
+| Lifecycle rule | `expire-digital-library-30d`, prefix `digital-library/`, 30 days, Enabled | **Observed 2026-08-25**, set through the S3 API and read back |
+| Passphrase length | 48 characters, generated on the box from `openssl rand` | **Observed** |
+| Off-box decrypt | Downloaded from the bucket to the workstation, decrypted, listed `library.db`, `books/`, `covers/`, `inbox/`, both local files deleted | **Observed 2026-08-25T02:52Z** |
+
+**The endpoint form in the row above is load-bearing, and the first attempt failed on it.** The run
+at `2026-08-25T02:47:43Z` exited 1 with `offsite=put-failed`, because `S3_ENDPOINT` had been written
+with the bucket appended as a path. `ops/s3-object.sh` refuses that rather than guessing, and named
+the exact problem. Scheme and host only, and the bucket travels in `S3_BUCKET`.
+
+**One half of action 7 is still owed, and it is the half that matters.** The off-box decrypt above
+used the passphrase read from `/etc/cuatro/library-backup.env` over ssh, which proves the object is
+decryptable away from the box. It does **not** prove the password manager holds the same value,
+because no copy has been filed there yet. Until the Operator files it and repeats the decrypt from
+that copy, named limit 5 stands in full.
+
 ## Named limits
 
 Written down because a coverage claim with an unstated hole reads as coverage.
 
-1. **There is no offsite copy yet.** Until the Operator completes actions 1 to 5, the nightly job
-   exits 75 every night and the estate's only copies of `digital-library` are on the box being
-   backed up. **This is the state as of 2026-08-24.**
-2. **Nothing has been sent to a real S3 endpoint by this build.** The SigV4 arithmetic is proved
-   against AWS's own published vectors and against an independent implementation, the request that
-   carries it is proved against a stub endpoint, and the encryption is proved for real on the box.
-   **A live 200 from Cloudflare R2 has not been observed**, and action 6 below is where it is.
+1. **There is an offsite copy, as of 2026-08-25.** Actions 1 and 3 to 6 are complete: the bucket
+   exists, the config is written, the lifecycle rule is set, and the first run put a verified object
+   in the bucket. What remains of the original limit is action 2, the free-tier figures, which are
+   still the vendor's published numbers rather than ones read from the console.
+2. **A live 200 from Cloudflare R2 has now been observed.** The first offsite run above did a real
+   `PUT`, a real `GET` for the round trip, and a real restore from the bucket. The SigV4 arithmetic
+   remains proved against AWS's published vectors and an independent implementation, and it is now
+   also proved against the real endpoint.
 3. **Nothing alerts if the nightly job starts failing.** Cron appends to
    `/home/deploy/backups/digital-library/backup.log` and nobody reads it. The exit status is
    correct and the summary line is greppable, and neither is monitored. This is the same class of
    gap that let the retired script fail for 25 nights unnoticed, and it is recorded in
    `_bmad-output/implementation-artifacts/deferred-work.md` rather than solved here, because
    `ops/monitoring.md` is another story's file.
-4. **Offsite retention is set by nobody until the Operator sets it.** The scripts never delete an
-   object, deliberately. If no lifecycle rule is created, objects accumulate. Nothing is lost, and
-   the cost line eventually stops being $0.
-5. **The passphrase is the only thing between the bucket and the data, and there is no escrow.**
-   Lose it and every offsite object is unreadable. Worse, encryption and verification both read the
-   same value from the same file on the same box, so a passphrase mistyped into the password manager
-   would leave every nightly run green while the copy of record was unopenable by anybody. Action 7
-   is the only thing that detects that, and it is the reason the action exists.
+4. **Offsite retention is set.** `expire-digital-library-30d` deletes objects under
+   `digital-library/` after 30 days, observed 2026-08-25 by writing the rule and reading it back.
+   The scripts still never delete an object, deliberately, so the rule is the only thing bounding
+   growth and it lives in the vendor, outside this repository.
+5. **The passphrase is the only thing between the bucket and the data, there is no escrow, and it is
+   not yet in a password manager.** It exists in exactly one place: `/etc/cuatro/library-backup.env`
+   on `177.7.52.248`. **Lose the box and every offsite object becomes unreadable**, which inverts
+   the point of an offsite copy. The off-box decrypt in the first-run section proves the object
+   opens away from the box, but it read the passphrase from that same file, so it cannot detect a
+   password manager entry that is wrong or absent. Filing it is the single highest-value action
+   outstanding in this story.
 6. **Redis is not backed up.** Correct today on the evidence above, and it is a decision that
    expires the moment `DBSIZE` is not 0. The nightly job reports it; nothing enforces it.
 7. **The other three projects in the estate still have no offsite backup, and two have no backup at

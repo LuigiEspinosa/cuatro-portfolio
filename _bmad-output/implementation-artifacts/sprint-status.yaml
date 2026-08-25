@@ -73,7 +73,11 @@ development_status:
   # carries the summary and the gate carries measured_at, baseline and reading.
   # threshold stays empty and status stays blocked: 1-6 opens the gate.
   1-5-capacity-measurement-week: done
-  1-6-write-the-capacity-gate-threshold-and-open-the-gate: backlog
+  # 1-6 closed by hand 2026-08-25. Its dev session was killed by the 240 minute
+  # session wall after committing, so the orchestrator recorded no result. The
+  # work is complete at ec682a3 and the spec is finalized at status: done.
+  # followup_review_recommended: true is unspent.
+  1-6-write-the-capacity-gate-threshold-and-open-the-gate: done
   # 1-7 parked by hand 2026-08-24. Its dev session was killed by the 90 minute
   # session wall at phase dev-verify, so the orchestrator recorded no result and
   # never advanced this row. The work is complete and committed (55e281e, b4aeee7,
@@ -82,9 +86,20 @@ development_status:
   # `bmad-loop confirm` cannot see it: close this row by hand once those actions
   # are done. The spec also carries followup_review_recommended: true, unspent.
   1-7-enumerate-the-deployed-routing-table-on-the-box: awaiting-operator
-  1-8-an-offsite-backup-path-for-digital-library: backlog
+  # 1-8 parked by hand 2026-08-25, same session-wall cause as 1-6 and 1-7. Work is
+  # complete at 708e638 and 33a7d78. Operator actions 1 and 3 to 7 were completed
+  # 2026-08-25: bucket cuatro-backups, config at /etc/cuatro/library-backup.env,
+  # lifecycle rule expire-digital-library-30d, first offsite run verified. Still
+  # owed: action 2 (read the R2 free tier from the console) and the password
+  # manager half of action 7, which named limit 5 depends on entirely.
+  1-8-an-offsite-backup-path-for-digital-library: awaiting-operator
   1-9-record-the-build-on-the-box-violation-as-a-tracked-item: done
-  1-10-install-playwright-and-establish-the-rendered-output-harness: backlog
+  # 1-10 parked by hand 2026-08-25, same session-wall cause. Work is complete at
+  # cc03c0c, 915bf5e and 064c087. The branch was pushed 2026-08-25 and CI run
+  # 32801557172 passed with rendered-output: success, so the first-run and
+  # action-behaviour questions are answered. Still owed: the decision on the
+  # container job taking image Node v24.18.1 while the test job pins Node 22.
+  1-10-install-playwright-and-establish-the-rendered-output-harness: awaiting-operator
   1-11-publish-contracts-tokens-css-from-packages-tokens: done
   1-12-publish-contracts-fonts-css-with-latin-subset-faces: backlog
   1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: backlog
