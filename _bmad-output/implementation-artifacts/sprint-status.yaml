@@ -101,7 +101,11 @@ development_status:
   # container job taking image Node v24.18.1 while the test job pins Node 22.
   1-10-install-playwright-and-establish-the-rendered-output-harness: awaiting-operator
   1-11-publish-contracts-tokens-css-from-packages-tokens: done
-  1-12-publish-contracts-fonts-css-with-latin-subset-faces: backlog
+  # 1-12 closed by hand 2026-08-25. Its session was killed when the driving
+  # process exited, so the orchestrator recorded no result. Work is complete at
+  # 11a82bf and the spec is finalized at status: done with
+  # followup_review_recommended: false, so no review is owed.
+  1-12-publish-contracts-fonts-css-with-latin-subset-faces: done
   1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: backlog
   1-14-ci-enforces-the-contract-boundary: backlog
   1-15-determine-cs-tracker-s-daisyui-adoption-route: backlog
