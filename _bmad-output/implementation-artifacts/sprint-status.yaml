@@ -106,7 +106,11 @@ development_status:
   # 11a82bf and the spec is finalized at status: done with
   # followup_review_recommended: false, so no review is owed.
   1-12-publish-contracts-fonts-css-with-latin-subset-faces: done
-  1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: backlog
+  # 1-13 closed by hand 2026-08-25. Work is complete at dd490c5, 016613a and
+  # ba111a2, and the spec is finalized at status: done. The session finished at
+  # 10:34 and then idled until it was stopped at 13:15, so the orchestrator never
+  # recorded a result. followup_review_recommended: true is unspent.
+  1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: done
   1-14-ci-enforces-the-contract-boundary: backlog
   1-15-determine-cs-tracker-s-daisyui-adoption-route: backlog
   1-16-serve-contracts-at-https-cuatro-dev-contracts: backlog
