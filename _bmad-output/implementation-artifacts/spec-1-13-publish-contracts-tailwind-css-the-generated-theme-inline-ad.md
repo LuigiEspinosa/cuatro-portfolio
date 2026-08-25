@@ -5,8 +5,8 @@ created: '2026-08-25'
 status: 'done'
 baseline_commit: 'c07038dbccb84e51092dd7810fa66dc8368323e7'
 baseline_revision: 'c07038dbccb84e51092dd7810fa66dc8368323e7'
-review_loop_iteration: 1
-followup_review_recommended: false
+review_loop_iteration: 0
+followup_review_recommended: true
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -14,7 +14,18 @@ context:
   - '{project-root}/_bmad-output/implementation-artifacts/spec-1-12-publish-contracts-fonts-css-with-latin-subset-faces.md'
   - '{project-root}/_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md'
 warnings: ['oversized']
-deferred: []
+deferred:
+  - summary: >-
+      The published-surface case in packages/tokens/__tests__/tokens-contract.test.ts is still
+      titled "ships one file under contracts/" while the list it asserts now holds nine paths.
+    evidence: |-
+      Pre-existing drift: the title was already wrong after Story 1-12 widened the list to eight,
+      and Story 1-13 widened it to nine. The assertion is correct; only its name is stale. This
+      story's spec permits exactly one edit in that file, the pinned list itself, so renaming the
+      case was out of bounds here.
+    location: >-
+      packages/tokens/__tests__/tokens-contract.test.ts:881
+    severity: low
 ---
 
 <intent-contract>
@@ -269,9 +280,9 @@ Gathered 2026-08-25 against `c07038d`, working tree clean.
 
 - intent_gap: 0
 - bad_spec: 0
-- patch: 12
-- defer: 0
-- reject: 0
+- patch: 12: (high 4, medium 5, low 3)
+- defer: 1: (high 0, medium 0, low 1)
+- reject: 4: (high 0, medium 0, low 4)
 - addressed_findings:
   - `[P1]` `[patch]` **`theme-map.json` was its own oracle.** The case comparing the published block
     against the map proved the generator copied the map faithfully and nothing about whether the map
@@ -522,6 +533,26 @@ no edit, and it was observed doing so against a hand-edited committed adapter.
    and Preflight sets those on `html` and on `code`, `pre`, `kbd` and `samp`. That is the intended
    outcome of adopting a type contract, and it is the one mapping whose effect reaches elements
    nobody opted in, so it is a stated limit rather than a footnote.
+
+**Review findings.** Four review layers ran against the full diff (blind hunter, edge-case hunter,
+verification-gap reviewer, intent-alignment auditor). One pass, no intent gap and no spec repair.
+
+- **12 patches applied**, 4 high, 5 medium, 3 low, itemised in the Review Triage Log above. The four
+  high ones all attack the same class of defect: a check that could pass over nothing. The map was
+  its own oracle, no rule tied a token's kind to its namespace, seven probe rows compared two values
+  that were equal by coincidence, and one mapping was reported inert and had to be settled by
+  evidence rather than by argument.
+- **1 deferred**, low: the stale case title in `tokens-contract.test.ts`, which this story's
+  boundaries put out of reach. It is in frontmatter `deferred`.
+- **4 rejected**: that the spec ships with empty change-log and triage headings (workflow scaffolding,
+  not a defect); that `RESTYLE-SPEC.md` is cited in a comment without appearing in `context`; that
+  `pnpm test` never runs the browser check (by design, `vitest.config.ts` excludes `tests/e2e/**` and
+  the blocking `rendered-output` job runs it); and that nothing tests what overriding thirteen stock
+  Tailwind utility names does to a page already written against stock Tailwind (a consequence of
+  adopting a contract, recorded as a stated limit, and no adopter exists yet).
+
+**Follow-up review recommended: true.** Patched counts this pass are high 4, medium 5, low 3. A high
+patched finding sets the flag on its own; the score `3 x 5 + 1 x 3` is 18 against a threshold of 5.
 
 **Residual risks.**
 
