@@ -59,7 +59,7 @@ harness that covers everything.
 |---|---|---|
 | The 44x44 hit-target floor | Needs a Suite Directory that does not exist | **Decision.** Story 2.8 |
 | The Status mark's three structural axes | Same | **Decision.** Story 2.10 |
-| Any `--token-*` name or anything under `contracts/` | This story ships the instrument, not the contract. `contracts/` does not exist yet | **Decision.** Stories 1.11 through 1.14 |
+| Any `--token-*` name, and anything under `contracts/` other than the font faces | Story 1-10 shipped the instrument, not the contract. Story 1-12 added the second spec file, `tests/e2e/contract-fonts.pw.ts`, which asserts that `contracts/fonts.css` resolves from a folder vendored at an arbitrary depth and that the font swap moves no sample block beyond a recorded tolerance. No `--token-*` role is asserted in a browser yet | **Decision.** Stories 1.11 through 1.14, amended 2026-08-25 by Story 1-12 |
 | Colour contrast ratios | No token roles to compute them against yet | **Decision.** Epic 1 token stories |
 | Any route other than `/work` | One route is enough to establish the instrument. Adding routes is cheap once the instrument exists | **Decision.** Story 1-10 scope |
 | Anything below the fold on `/work` | The comparison is the 360 x 800 viewport, not `fullPage`. `ScreenshotOptions` in `tests/e2e/harness.ts` exposes only `mask`, so a caller cannot widen it today. Story 1.17's "visually identical to the pre-change build" therefore rests on one viewport of one route unless that story widens the capture first. Unlike the route axis, this one is pinned in the config by design and is not free to extend | **Decision.** Story 1-10 scope, and a limit Stories 1.17 and 1.20 inherit knowingly |

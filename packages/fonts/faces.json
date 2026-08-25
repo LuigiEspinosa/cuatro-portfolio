@@ -1,0 +1,159 @@
+{
+  "$description": "Written by packages/fonts/subset.py from the pinned sources in packages/fonts/sources.json. packages/fonts/build.mjs reads this and packages/fonts/fallback-metrics.json and never opens a font binary, which is what keeps pnpm fonts:build deterministic arithmetic on a runner with no Python and no browser. Never hand-edited.",
+  "budgetBytes": 120000,
+  "totalBytes": 94400,
+  "totalGzipBytes": 94489,
+  "faces": [
+    {
+      "id": "bricolage-grotesque",
+      "family": "Bricolage Grotesque",
+      "role": "display",
+      "licence": "SIL Open Font License 1.1",
+      "repository": "https://github.com/ateliertriay/bricolage",
+      "sourceCommit": "8070cdb6a383aafd10792111cd94e4d472aa0f0c",
+      "file": "bricolage-grotesque-latin.woff2",
+      "licenceFile": "OFL-bricolage-grotesque.txt",
+      "licenceSha256": "4b5a7d8f37f5602621c8a8d7358a6a2e71317e6c231c661e15aef0275d3e07ba",
+      "bytes": 58992,
+      "gzipBytes": 59030,
+      "sha256": "f27b91934aa5559116b55e670d5d0e0c00d4408b0e1a44c3d0b59ab20afb792c",
+      "glyphs": 262,
+      "axes": {
+        "wght": [
+          700.0,
+          800.0,
+          800.0
+        ],
+        "wdth": [
+          75.0,
+          100.0,
+          100.0
+        ]
+      },
+      "axisLimits": {
+        "opsz": 24,
+        "wdth": [
+          75,
+          100
+        ],
+        "wght": [
+          700,
+          800
+        ]
+      },
+      "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+      "layoutFeatures": [
+        "kern",
+        "liga",
+        "calt",
+        "ccmp",
+        "locl",
+        "mark",
+        "mkmk",
+        "tnum"
+      ],
+      "metrics": {
+        "unitsPerEm": 1000,
+        "hheaAscender": 930,
+        "hheaDescender": -270,
+        "hheaLineGap": 0,
+        "typoAscender": 930,
+        "typoDescender": -270,
+        "typoLineGap": 0,
+        "winAscent": 1160,
+        "winDescent": 400
+      }
+    },
+    {
+      "id": "geist",
+      "family": "Geist",
+      "role": "body",
+      "licence": "SIL Open Font License 1.1",
+      "repository": "https://github.com/vercel/geist-font",
+      "sourceCommit": "a0a06a3d916dcf92fe96f12051a124f89056b36a",
+      "file": "geist-latin.woff2",
+      "licenceFile": "OFL-geist.txt",
+      "licenceSha256": "c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90",
+      "bytes": 24124,
+      "gzipBytes": 24152,
+      "sha256": "db540d97a0afd5f39a8f331c2b4aa259c56e943e05acfae752637fcf1976e336",
+      "glyphs": 264,
+      "axes": {
+        "wght": [
+          300.0,
+          400.0,
+          600.0
+        ]
+      },
+      "axisLimits": {
+        "wght": [
+          300,
+          600
+        ]
+      },
+      "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+      "layoutFeatures": [
+        "kern",
+        "liga",
+        "calt",
+        "ccmp",
+        "locl",
+        "mark",
+        "mkmk",
+        "tnum"
+      ],
+      "metrics": {
+        "unitsPerEm": 1000,
+        "hheaAscender": 1005,
+        "hheaDescender": -295,
+        "hheaLineGap": 0,
+        "typoAscender": 1005,
+        "typoDescender": -295,
+        "typoLineGap": 0,
+        "winAscent": 1088,
+        "winDescent": 262
+      }
+    },
+    {
+      "id": "geist-mono",
+      "family": "Geist Mono",
+      "role": "mono",
+      "licence": "SIL Open Font License 1.1",
+      "repository": "https://github.com/vercel/geist-font",
+      "sourceCommit": "a0a06a3d916dcf92fe96f12051a124f89056b36a",
+      "file": "geist-mono-latin.woff2",
+      "licenceFile": "OFL-geist-mono.txt",
+      "licenceSha256": "c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90",
+      "bytes": 11284,
+      "gzipBytes": 11307,
+      "sha256": "14bf6b01f51a5172bc24327b63ee2a3b3e04d87329fccba275dc9789e7cbb89c",
+      "glyphs": 309,
+      "axes": {},
+      "axisLimits": {
+        "wght": 400
+      },
+      "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+      "layoutFeatures": [
+        "kern",
+        "liga",
+        "calt",
+        "ccmp",
+        "locl",
+        "mark",
+        "mkmk",
+        "tnum"
+      ],
+      "metrics": {
+        "unitsPerEm": 1000,
+        "hheaAscender": 1005,
+        "hheaDescender": -295,
+        "hheaLineGap": 0,
+        "typoAscender": 1005,
+        "typoDescender": -295,
+        "typoLineGap": 0,
+        "winAscent": 1088,
+        "winDescent": 394
+      }
+    }
+  ]
+}

@@ -880,7 +880,16 @@ describe('what the contract must never carry', () => {
 
   it('ships one file under contracts/, and no executable one', () => {
     const published = filesUnder(CONTRACTS).map(repoRelative);
-    expect(published).toEqual(['contracts/tokens.css']);
+    expect([...published].sort()).toEqual([
+      'contracts/fonts.css',
+      'contracts/fonts/OFL-bricolage-grotesque.txt',
+      'contracts/fonts/OFL-geist-mono.txt',
+      'contracts/fonts/OFL-geist.txt',
+      'contracts/fonts/bricolage-grotesque-latin.woff2',
+      'contracts/fonts/geist-latin.woff2',
+      'contracts/fonts/geist-mono-latin.woff2',
+      'contracts/tokens.css',
+    ]);
     for (const file of published) {
       expect(file, `${file} is executable and contracts/ is the published surface (AD-1)`).not.toMatch(EXECUTABLE);
     }

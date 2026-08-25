@@ -31,3 +31,4 @@
 # a binary and the wrong one only for a text format nobody has published yet.
 contracts/**/*.css text eol=lf
 contracts/**/*.json text eol=lf
+contracts/**/*.txt text eol=lf
