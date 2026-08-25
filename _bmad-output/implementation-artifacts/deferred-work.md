@@ -1084,3 +1084,27 @@ source_spec: `spec-1-11-publish-contracts-tokens-css-from-packages-tokens.md`
 severity: medium
 reason: AD-14 has seven repositories copy the folder under the fixed name `cuatro-contracts/`. The only provenance the published file carries is the header line "Generated from packages/tokens", which names a path that does not exist in a Satellite checkout, so a maintainer who finds a stale copy has no route back to the generator. AD-16 already makes a scheduled job read the `Contract vX.Y.Z` header across those repositories, which is a version but not an origin. Adding a second file under `contracts/` is a published-surface decision rather than a defect in this story, and Story 1.16 (serve `contracts/` at https://cuatro.dev/contracts/) is where the folder first acquires a public identity.
 status: open
+
+### DW-2: The bmad:context block in AGENTS.md describes a CI file, a suite size and a browser toolchain that stopped being true four stories ago.
+origin: spec-deferred 591fb1589fe3
+location: AGENTS.md:52-57
+source_spec: `spec-1-14-ci-enforces-the-contract-boundary.md`
+severity: low
+reason: AGENTS.md:52-53 reads "CI (.github/workflows/ci.yml) runs typecheck and tests only" against a file that now carries five jobs, "The full suite is 38 tests in roughly 45 seconds" against a suite this story leaves at 474, and AGENTS.md:55-57 reads "Playwright is not installed" against a rendered-output job that runs pnpm test:e2e. Pre-existing: stale since Stories 1-10 and 1-11. Every story since has recorded it as a Pending Operator action rather than fixing it, because the block is managed by bmad-project-context and edits inside it are replaced on refresh, which is why this story's boundaries forbid touching it. It needs one bmad-project-context refresh, not a per-story note.
+status: open
+
+### DW-3: No job in ci.yml declares a permissions block, so all five inherit the repository default GITHUB_TOKEN scope rather than the contents:read they each need.
+origin: spec-deferred 96247ee3936d
+location: .github/workflows/ci.yml
+source_spec: `spec-1-14-ci-enforces-the-contract-boundary.md`
+severity: low
+reason: .github/workflows/ci.yml declares no `permissions:` key at the top level and none on any of the five jobs. Every job here only reads the tree and runs a command, so `contents: read` is the whole requirement, and a single top-level block would close it for all five at once. The new contract-purity job's own comment claims that "nothing reaching this runner can redirect it", which is true of argv and of `env:` and says nothing about the token the runner hands the process. Pre-existing: the four jobs at b1e02da have the same gap, and this story's boundaries forbid touching them or any line of the file outside the job it adds, so closing it properly means one top-level key, which is a change to the file as a whole rather than to one job.
+status: open
+
+### DW-4: Follow-up review still recommended for 1-14-ci-enforces-the-contract-boundary after the damping cap was spent
+origin: review-budget-followup
+location: n/a
+source_spec: `spec-1-14-ci-enforces-the-contract-boundary.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260825-132509-427b; this entry preserves the lingering recommendation for a deliberate later review.
+status: open

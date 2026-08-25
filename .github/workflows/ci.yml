@@ -141,6 +141,41 @@ jobs:
             exit 1
           fi
 
+  contract-purity:
+    runs-on: ubuntu-latest
+
+    # AD-1 says CI fails if any file under `contracts/` matches
+    # `\.(ts|js|tsx|jsx|mjs|cjs)$`, and `AGENTS.md` tells every agent that it
+    # does. This job is where that becomes true. It is blocking and carries no
+    # `continue-on-error`, no `|| true` and no skip condition: there is one
+    # environment and no staging, so nothing downstream catches what it lets
+    # through (AD-21, which names `contracts/` purity in its list of gates that
+    # may never become warnings).
+    #
+    # It declares no `on:` of its own, so it runs on this file's triggers,
+    # `push` to `**` and `pull_request` to `main`, and the two can never drift.
+    #
+    # It installs nothing and uses no pnpm cache, deliberately. The checker
+    # imports only `node:` builtins, the way `deploy.yml` runs the Capacity
+    # Gate, so the boundary is still reported on the run where
+    # `pnpm install --frozen-lockfile` fails, which is the run where a hurried
+    # fix is most likely to reach for the published folder. That also makes this
+    # the fastest job in the file, hence the ceiling below.
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No argument and no `env:`. The directory the checker opens is fixed in
+      # its source, so nothing reaching this runner can redirect it. See
+      # `ops/contract-purity.md`.
+      - name: Contract purity
+        run: node ops/contract-purity.mjs
+
   rendered-output:
     runs-on: ubuntu-latest
 
