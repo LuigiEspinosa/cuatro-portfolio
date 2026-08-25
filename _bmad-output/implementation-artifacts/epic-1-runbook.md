@@ -11,9 +11,21 @@ spec for the review pass. Your job is the command, the blocker below, and the op
 
 ## Blocker to settle first: stories 1-15 and 1-19 target a repo the loop cannot reach
 
-Two Epic 1 stories act on **`cs-tracker`**, which is a separate git repository still sitting at
-`C:\Development\cs-tracker-workspace\cs-tracker` — outside the loop's project root and outside
-`C:\CuatroEcosystem`:
+> **Settled 2026-08-25: option 1 was taken.** `cs-tracker-workspace` was moved from
+> `C:\Development` to **`C:\CuatroEcosystem\cs-tracker-workspace`**, so the repo now lives at
+> `C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker` on `main`, clean, at `ff7667b`. The whole
+> workspace moved rather than the bare repo, because its `_bmad`, `_bmad-output`, `docs` and
+> `claude-design` folders sit beside the repo rather than inside it, unlike `cuatro-portfolio`.
+>
+> **This fixes the location and not the commit boundary.** The caveat in option 1 below still
+> holds in full: the loop commits to `cuatro-portfolio`'s `dev` branch and `[scm]` still has no
+> notion of a second repository. Expect 1-19 to park or to leave uncommitted work in
+> `cs-tracker` that a human commits. The paragraph below is left as written, with only the path
+> corrected, because what the move did and did not buy is the point.
+
+Two Epic 1 stories act on **`cs-tracker`**, which is a separate git repository at
+`C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker` — inside the ecosystem root since
+2026-08-25, but still outside the loop's project root:
 
 - **`1-15-determine-cs-tracker-s-daisyui-adoption-route`** — closes O-3, needs to read
   `cs-tracker`'s `assets/css/app.css` and test whether `@plugin "daisyui/theme"` accepts a

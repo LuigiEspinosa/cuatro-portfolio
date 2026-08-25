@@ -47,7 +47,10 @@ last_updated: 08-18-2026
 project: cuatro-portfolio
 project_key: NOKEY
 tracking_system: file-system
-story_location: c:/Development/cuatro-portfolio/_bmad-output/implementation-artifacts
+# Corrected 2026-08-25. Read c:/Development/cuatro-portfolio until then, a path that
+# has not existed since the repository moved, so any tool resolving this key saw an
+# empty directory and reported no stories rather than failing. Filed from story 1-3.
+story_location: c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
 development_status:
   epic-1: in-progress
   # Amended 08-16-2026 by the topology correction.
