@@ -60,10 +60,17 @@ describe('the committed gate file', () => {
   it('stays shut once the measurement keys are filled, because measuring is not opening', () => {
     // The exact shape Story 1-5's close-out writes, built from the scalars
     // `ops/capacity-summary.mjs` emits.
+    //
+    // Whole lines are replaced rather than the bare `key:` prefix, so this
+    // fixture is the same whether the committed gate's measurement keys are
+    // still empty or already filled by a close-out. Matching on the prefix
+    // appended to a filled value instead of overwriting it, which turned this
+    // test red the moment Story 1-5 closed out and pointed the blame at the
+    // measurement rather than at the fixture.
     const measured = committed
-      .replace('measured_at:', 'measured_at: 2026-08-24')
-      .replace('baseline:', 'baseline: idle band load15 0.08, containers 3.0% of 2 vCPU')
-      .replace('reading:', 'reading: loaded band load15 0.16 max 0.18, peak 3.4%');
+      .replace(/^measured_at:.*$/m, 'measured_at: 2026-08-24')
+      .replace(/^baseline:.*$/m, 'baseline: idle band load15 0.08, containers 3.0% of 2 vCPU')
+      .replace(/^reading:.*$/m, 'reading: loaded band load15 0.16 max 0.18, peak 3.4%');
     const gate = parseGate(measured);
     expect(gate.measured_at).toBe('2026-08-24');
     expect(gate.status).toBe('blocked');

@@ -20,10 +20,10 @@
 # become `open`. The reader rejects `open` while `threshold` is empty. A number
 # written here before the week runs would be a guess dressed as a requirement.
 
-measured_at:
-baseline:
+measured_at: 2026-08-25
+baseline: idle band load15 0.08, containers 3.0% of 2 vCPU, 1.23 GiB container RSS, measured over 10127 minutes to 2026-08-25T00:33:34Z
 threshold:
-reading:
+reading: loaded band load15 0.18 max 0.27, containers 3.0% of 2 vCPU, peak 7.1%, top cs-tracker-db-1 at 1.2% of one core, 1.23 GiB container RSS
 status: blocked
 overflow:
   path: managed hosting

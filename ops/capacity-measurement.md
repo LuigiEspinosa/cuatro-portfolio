@@ -338,15 +338,128 @@ The named limits, written before the data exists so they cannot be quietly relax
 - **A container that appears in exactly one sample gets no CPU rate at all.** One cumulative
   counter is not a rate, and the record names those segments rather than leaving a blank.
 
+## What the week measured
+
+**Observed** from `2026-08-17T20:59:34Z` to `2026-08-25T00:33:34Z` UTC, a span of 10294 minutes. 10129 box samples against 10129 expected at one sample every 60 seconds, bracketing 10127 minutes of observed time. No samples were missed.
+
+Every share below is stated against **one core** and against the **whole box**, which is 2 vCPU. Rates come from the elapsed time between two samples of the same cgroup, never from the nominal interval.
+
+### The box
+
+| Reading | Value | Nature |
+|---|---|---|
+| load15 min | 0.05 | **Observed** |
+| load15 p10, the idle floor | 0.08 | **Observed** |
+| load15 p50 | 0.11 | **Observed** |
+| load15 p90, the loaded band | 0.16 | **Observed** |
+| load15 p99 | 0.21 | **Observed** |
+| load15 max | 0.27 | **Observed** |
+| MemAvailable mean | 5.47 GiB | **Observed** |
+| MemAvailable floor | 5.21 GiB | **Observed** |
+| Box PSI some, share of wall time | 1.6% | **Observed** |
+| All containers, CPU mean | 3.0% of the box | **Derived** |
+| All containers, CPU peak in one interval | 7.1% of the box | **Derived** |
+| All containers, RSS mean | 1.23 GiB | **Derived** |
+| All containers, RSS peak | 1.37 GiB | **Derived** |
+
+### Per container, whole run
+
+| Container | Samples | Segments | CPU mean (1 core) | CPU peak (1 core) | CPU mean (box) | Mem mean | Mem peak | PSI some | Coverage |
+|---|---|---|---|---|---|---|---|---|---|
+| `cs-tracker-db-1` | 10129 | 1 | 1.2% | 1.4% | 0.6% | 194 MiB | 206 MiB | 0.1% | full |
+| `cuatro-tracker-redis-1` | 10129 | 1 | 0.8% | 0.9% | 0.4% | 5 MiB | 7 MiB | 0.1% | full |
+| `cuatro-portfolio-anchor-app-1` | 10129 | 1 | 0.7% | 3.5% | 0.3% | 72 MiB | 103 MiB | 0.0% | full |
+| `cuatro-portfolio-anchor-db-1` | 10129 | 1 | 0.6% | 0.7% | 0.3% | 24 MiB | 27 MiB | 0.1% | full |
+| `cuatro-tracker-postgres-1` | 10129 | 1 | 0.6% | 0.9% | 0.3% | 65 MiB | 68 MiB | 0.1% | full |
+| `cs-tracker-app-1` | 10129 | 1 | 0.5% | 2.2% | 0.3% | 201 MiB | 344 MiB | 0.0% | full |
+| `digital-library-redis-1` | 10129 | 1 | 0.4% | 0.6% | 0.2% | 4 MiB | 6 MiB | 0.0% | full |
+| `digital-library-web-1` | 10129 | 1 | 0.3% | 0.6% | 0.2% | 45 MiB | 61 MiB | 0.0% | full |
+| `digital-library-api-1` | 10129 | 1 | 0.3% | 0.6% | 0.2% | 43 MiB | 57 MiB | 0.0% | full |
+| `cuatro-tracker-app-1` | 10129 | 1 | 0.3% | 7.3% | 0.1% | 112 MiB | 147 MiB | 0.0% | full |
+| `cuatro-tracker-worker-1` | 10129 | 1 | 0.2% | 0.4% | 0.1% | 131 MiB | 134 MiB | 0.0% | full |
+| `cuatro-tracker-qbittorrent-1` | 10129 | 1 | 0.0% | 0.0% | 0.0% | 25 MiB | 25 MiB | 0.0% | full |
+| `cs-tracker-caddy-1` | 10129 | 1 | 0.0% | 2.4% | 0.0% | 26 MiB | 38 MiB | 0.0% | full |
+| `cuatro-portfolio-anchor-umami-1` | 10129 | 1 | 0.0% | 2.0% | 0.0% | 307 MiB | 314 MiB | 0.0% | full |
+
+### The idle floor and the loaded band
+
+Both bands are percentiles of the load15 the box actually had, not thresholds chosen in advance. Idle is every sample at or below the tenth percentile, loaded every sample at or above the ninetieth.
+
+| Band | load15 | Samples | Containers, CPU | Container RSS | Dominant container |
+|---|---|---|---|---|---|
+| Idle, load15 at or below 0.08 | 0.08 | 1402 | 3.0% of the box | 1.23 GiB | cs-tracker-db-1 |
+| Loaded, load15 at or above 0.16 | 0.18 | 1508 | 3.0% of the box | 1.23 GiB | cs-tracker-db-1 |
+
+Under load the three heaviest are `cs-tracker-db-1` at 1.2% of one core, `cuatro-tracker-redis-1` at 0.8% of one core, `cuatro-portfolio-anchor-app-1` at 0.7% of one core.
+
+### What the measurement cost
+
+**Observed, not assumed.** The sampler recorded its own CPU time on each of 10129 runs out of 10129 rows. Mean 69 ms of CPU per run, peak 104 ms, peak RSS 10 MiB. Over the covered span that is 0.113% of one core and 0.057% of the box.
+
+### Per day
+
+| Day | Box samples | Missed | load15 p50 | load15 max | Containers CPU mean | Containers CPU peak | RSS peak |
+|---|---|---|---|---|---|---|---|
+| 2026-08-17 | 179 | 0 | 0.09 | 0.18 | 3.0% | 3.4% | 1.23 GiB |
+| 2026-08-18 | 1417 | 0 | 0.11 | 0.22 | 3.0% | 4.1% | 1.31 GiB |
+| 2026-08-19 | 1416 | 0 | 0.11 | 0.25 | 3.0% | 4.4% | 1.35 GiB |
+| 2026-08-20 | 1417 | 0 | 0.12 | 0.25 | 3.0% | 3.7% | 1.28 GiB |
+| 2026-08-21 | 1417 | 0 | 0.11 | 0.24 | 3.0% | 5.5% | 1.36 GiB |
+| 2026-08-22 | 1416 | 0 | 0.12 | 0.26 | 3.0% | 7.1% | 1.35 GiB |
+| 2026-08-23 | 1417 | 0 | 0.11 | 0.27 | 3.0% | 5.5% | 1.35 GiB |
+| 2026-08-24 | 1416 | 0 | 0.10 | 0.21 | 3.0% | 3.7% | 1.37 GiB |
+| 2026-08-25 | 34 | 0 | 0.12 | 0.19 | 3.0% | 3.3% | 1.26 GiB |
+
+### What this summary does not claim
+
+- Coverage is 10127 minutes, stated in minutes rather than as a week, because the number of minutes actually sampled is the only thing the data supports.
+
+- The sampler is a guest on the box it measures, so every figure includes the sampler. Its cost is stated above rather than subtracted.
+
+- Load average is the box, and PSI plus cgroup CPU is the attribution. Neither says anything about what the box would do under traffic it did not receive.
+
+### The two scalars `ops/capacity-gate.yml` takes
+
+Paste these two lines, and nothing nested, because `ops/capacity-gate.mjs` reads both as scalars.
+
+```
+baseline: idle band load15 0.08, containers 3.0% of 2 vCPU, 1.23 GiB container RSS, measured over 10127 minutes to 2026-08-25T00:33:34Z
+reading: loaded band load15 0.18 max 0.27, containers 3.0% of 2 vCPU, peak 7.1%, top cs-tracker-db-1 at 1.2% of one core, 1.23 GiB container RSS
+```
+
+`threshold` stays empty and `status` stays `blocked`. Story 1-6 opens the gate, not this one.
+
+### Close-out notes the summariser could not know
+
+**The week ran past its earliest close-out and the record says so.** The span above ends at
+`2026-08-25T00:33:34Z` rather than at the decided `2026-08-24T21:00Z`, because the close-out was
+performed three and a half hours after the gate opened rather than at it. Those extra minutes are
+included rather than trimmed: discarding observed samples to make a span match a planned number
+would be the decided-as-observed substitution NFR-9 forbids. `measured_at` is therefore `2026-08-25`,
+the UTC date the data actually ends, and not the `2026-08-24` the procedure anticipated.
+
+**No deploy to `main` landed inside the week**, which closes Operator action 4. `main` is at
+`54d3a0d` from 2026-08-15, two days before the week started, and carries no merges since. So no
+`docker compose up --build` minute from the standing AD-8 violation is inside this data, and the
+threshold Story 1-6 derives is a threshold about serving rather than about a build. This is the
+one caveat in "What this week will not claim" that the week resolved by observation.
+
+**The two bands are distinct in load15 and identical in container CPU.** `p10` is 0.08 and `p90`
+is 0.16, so the percentile split is real rather than the degenerate case the method section warned
+about. But container CPU reads 3.0% of the box and container RSS 1.23 GiB in **both** bands. The
+variation in load15 is therefore not attributable to the containers the gate governs. Story 1-6
+should read this as evidence that a threshold anchored to container CPU has very little observed
+dynamic range to sit in, and should not read the loaded band as showing what load costs.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | 1 | Install the sampler and units, create the log directory, enable the timer | Verified: timer enabled and active, samples one per minute, 16 rows each | **2026-08-17T20:59:52Z** |
-| 2 | **Let the week run to 2026-08-24T21:00Z** | Nothing to do. The timer is enabled, so it survives a reboot | _running_ |
-| 2a | **Check once, around 2026-08-21** | A week measured by nobody can die on day three and look identical to a week that ran. One command, below | _not done_ |
-| 3 | **Run the close-out procedure above** | Pull the CSVs, summarise, paste the block, fill the three gate keys, stop the timer | _not done_ |
-| 4 | Note whether any deploy to `main` landed inside the week | A build on the serving box is a real but atypical minute, and the threshold Story 1-6 derives should not be anchored to one | _not done_ |
+| 2 | **Let the week run to 2026-08-24T21:00Z** | Nothing to do. The timer is enabled, so it survives a reboot | **2026-08-24T21:00:00Z** |
+| 2a | **Check once, around 2026-08-21** | A week measured by nobody can die on day three and look identical to a week that ran. One command, below | **2026-08-24T09:55:45Z.** Late, and it should be recorded as late rather than as done on time. The check that was meant for day four was run on close-out day, so for four days nothing was watching. The week survived it: 10129 of 10129 expected samples, no gaps, `Result=success` |
+| 3 | **Run the close-out procedure above** | Pull the CSVs, summarise, paste the block, fill the three gate keys, stop the timer | **2026-08-25T00:33:34Z** |
+| 4 | Note whether any deploy to `main` landed inside the week | A build on the serving box is a real but atypical minute, and the threshold Story 1-6 derives should not be anchored to one | **2026-08-25T00:33:34Z.** None did. `main` is at `54d3a0d` from 2026-08-15 with no merges since, so no build minute is inside the data |
 | 5 | Hand the closed record to Story 1-6 | Story 1-6 writes `threshold` and opens the gate. It is the only story that may | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace the cell with the ISO 8601 UTC

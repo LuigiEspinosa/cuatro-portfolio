@@ -191,3 +191,6 @@ _bmad/render/
 # BMad skills are installed by \mad-loop init\ / \
 px bmad-method install\, not versioned
 .claude/skills/
+
+# Story 1-5 measurement week: raw CSVs are evidence pulled from the box, never committed
+capacity-week/
