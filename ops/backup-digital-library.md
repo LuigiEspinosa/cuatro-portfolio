@@ -564,11 +564,18 @@ at `2026-08-25T02:47:43Z` exited 1 with `offsite=put-failed`, because `S3_ENDPOI
 with the bucket appended as a path. `ops/s3-object.sh` refuses that rather than guessing, and named
 the exact problem. Scheme and host only, and the bucket travels in `S3_BUCKET`.
 
-**One half of action 7 is still owed, and it is the half that matters.** The off-box decrypt above
-used the passphrase read from `/etc/cuatro/library-backup.env` over ssh, which proves the object is
-decryptable away from the box. It does **not** prove the password manager holds the same value,
-because no copy has been filed there yet. Until the Operator files it and repeats the decrypt from
-that copy, named limit 5 stands in full.
+**The passphrase was filed in the Operator's password manager on 2026-08-25**, which removes the
+single-copy risk: the value no longer exists only on `177.7.52.248`.
+
+**What is still owed is the decrypt from that copy, and the distinction is not pedantic.** The
+off-box decrypt above read the passphrase from `/etc/cuatro/library-backup.env` over ssh, so it
+proves the object opens away from the box and nothing more. A manager entry that is truncated,
+mistyped or pasted with a stray character would still leave every nightly run green, because
+encryption and nightly verification both read the same value from the same file on the same box.
+Nothing on the box can see that divergence. `ops/verify-backup-passphrase.ps1` is the check that
+can: it prompts for the passphrase, downloads the newest object from the bucket and decrypts it,
+without the value reaching a command line, a history file or disk. Named limit 5 closes when that
+script prints `DECRYPT: ok`.
 
 ## Named limits
 
@@ -592,13 +599,14 @@ Written down because a coverage claim with an unstated hole reads as coverage.
    `digital-library/` after 30 days, observed 2026-08-25 by writing the rule and reading it back.
    The scripts still never delete an object, deliberately, so the rule is the only thing bounding
    growth and it lives in the vendor, outside this repository.
-5. **The passphrase is the only thing between the bucket and the data, there is no escrow, and it is
-   not yet in a password manager.** It exists in exactly one place: `/etc/cuatro/library-backup.env`
-   on `177.7.52.248`. **Lose the box and every offsite object becomes unreadable**, which inverts
-   the point of an offsite copy. The off-box decrypt in the first-run section proves the object
-   opens away from the box, but it read the passphrase from that same file, so it cannot detect a
-   password manager entry that is wrong or absent. Filing it is the single highest-value action
-   outstanding in this story.
+5. **The passphrase is the only thing between the bucket and the data, and there is no escrow.**
+   It was filed in the Operator's password manager on 2026-08-25, so it no longer exists only on
+   `177.7.52.248` and losing the box no longer costs the archive. **The filed copy has not been
+   tested**, and an untested copy is a belief rather than a backup: everything on the box reads the
+   passphrase from one file, so a wrong or truncated manager entry is invisible to every nightly
+   run. `ops/verify-backup-passphrase.ps1` decrypts a real object from the bucket using whatever
+   the Operator pastes, which is the only thing that distinguishes the two cases. This limit closes
+   when that script prints `DECRYPT: ok`, and not before.
 6. **Redis is not backed up.** Correct today on the evidence above, and it is a decision that
    expires the moment `DBSIZE` is not 0. The nightly job reports it; nothing enforces it.
 7. **The other three projects in the estate still have no offsite backup, and two have no backup at
