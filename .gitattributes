@@ -19,7 +19,15 @@
 # `contracts/` is the published surface. It is vendored into seven repositories
 # under one fixed folder name (AD-14), it is generated with `\n` endings by
 # `packages/tokens/build.mjs`, and the `tokens-contract` CI job fails on any
-# difference between the committed file and a fresh build. Without this rule a
+# difference between the committed file and a fresh build. Without these rules a
 # checkout on the authoring machine holds CRLF, and whether the gate agrees with
 # the generator would depend on whose `core.autocrlf` ran last.
-contracts/** text eol=lf
+#
+# Listed by format rather than as `contracts/**`. Story 1.12 publishes
+# `fonts.css` and the font files it points at, and `text` on a `.woff2` makes git
+# normalise line endings inside a binary on check-in, which corrupts the face in
+# every repository that vendors the folder. This file carries no `* text=auto`,
+# so a format absent from this list is left alone, which is the safe default for
+# a binary and the wrong one only for a text format nobody has published yet.
+contracts/**/*.css text eol=lf
+contracts/**/*.json text eol=lf

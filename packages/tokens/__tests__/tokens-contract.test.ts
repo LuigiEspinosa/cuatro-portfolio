@@ -325,7 +325,10 @@ const runBuild = (environment: Record<string, string | undefined>) => {
   for (const [name, value] of Object.entries(environment)) {
     if (value === undefined) delete child[name];
   }
-  return spawnSync(process.execPath, [BUILD], { encoding: 'utf8', env: child });
+  // `timeout` on the spawn itself, not only on the Vitest case. `spawnSync`
+  // blocks the worker thread, so Vitest's per-case budget cannot interrupt it: a
+  // generator that hangs would run until the CI platform killed the whole job.
+  return spawnSync(process.execPath, [BUILD], { encoding: 'utf8', env: child, timeout: SPAWN_TIMEOUT });
 };
 
 const scratch = (label: string): string => mkdtempSync(join(tmpdir(), `cuatro-tokens-${label}-`));
@@ -366,22 +369,46 @@ describe('building from source', () => {
   // `CUATRO_TOKENS_SOURCE` and `CUATRO_TOKENS_OUTPUT` are build inputs, and
   // either one present in a runner's environment would redirect the build away
   // from `contracts/`, leave `git status -- contracts/` clean and hold the drift
-  // gate green over real drift. This case pins the unredirected default, and it
-  // pins it without writing anything: an empty source makes the generator refuse
-  // before it writes, and the resolved paths are printed before that.
+  // gate green over real drift. The `tokens-contract` job pins both empty so no
+  // environment can reach the generator, and these two cases pin what an
+  // unredirected run resolves to. One default each, because a case that
+  // overrides one of them says nothing about the other.
   it(
-    'defaults its output to contracts/tokens.css when neither override is set',
+    'defaults its output to contracts/tokens.css when CUATRO_TOKENS_OUTPUT is unset',
     () => {
+      // Pinned without writing anything: an empty source makes the generator
+      // refuse before it writes, and the resolved paths are printed before that.
       const source = scratch('empty-source');
       const before = readFileSync(PUBLISHED, 'utf8');
       try {
         const result = runBuild({ CUATRO_TOKENS_SOURCE: source, CUATRO_TOKENS_OUTPUT: undefined });
         expect(result.stdout).toContain(`writing  ${PUBLISHED.replace(/\\/g, '/')}`);
-        expect(result.stdout).toContain(`reading  ${source.replace(/\\/g, '/')}/*.json`);
         expect(result.status, 'an empty source directory must not produce a build').not.toBe(0);
         expect(readFileSync(PUBLISHED, 'utf8'), 'the published contract was written during a test').toBe(before);
       } finally {
+        // The assertion above reports a regression; this keeps that regression
+        // from also leaving the published contract overwritten in the tree.
+        if (readFileSync(PUBLISHED, 'utf8') !== before) writeFileSync(PUBLISHED, before);
         rmSync(source, { recursive: true, force: true });
+      }
+    },
+    SPAWN_TIMEOUT
+  );
+
+  it(
+    'defaults its source to packages/tokens/tokens when CUATRO_TOKENS_SOURCE is unset',
+    () => {
+      const output = scratch('default-source');
+      try {
+        const result = runBuild({ CUATRO_TOKENS_SOURCE: undefined, CUATRO_TOKENS_OUTPUT: output });
+        expect(result.stdout).toContain(`reading  ${SOURCE_DIR.replace(/\\/g, '/')}/*.json`);
+        expect(result.status, result.stderr).toBe(0);
+        expect(
+          readFileSync(join(output, 'tokens.css'), 'utf8'),
+          'the default source directory no longer produces the committed contract'
+        ).toBe(css);
+      } finally {
+        rmSync(output, { recursive: true, force: true });
       }
     },
     SPAWN_TIMEOUT
@@ -445,6 +472,105 @@ describe('a token whose group has no section', () => {
       expect(rootValues.has(name), `${name} is not declared`).toBe(true);
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// The generator's remaining refusals.
+//
+// `ops/token-contract.md` records each of these as a one-time probe, which
+// proves the refusal worked on the day it was run and nothing about the run
+// after someone deletes the guard. These run the real generator against a copy
+// of the committed source with one file corrupted, on every suite run.
+// ---------------------------------------------------------------------------
+
+/** The committed DTCG source, copied so a case can corrupt one file of it. */
+const scratchSource = (label: string): string => {
+  const source = scratch(label);
+  for (const entry of readdirSync(SOURCE_DIR)) {
+    writeFileSync(join(source, entry), readFileSync(join(SOURCE_DIR, entry)));
+  }
+  return source;
+};
+
+describe('what the generator refuses to publish', () => {
+  it(
+    'refuses a $description carrying a CSS comment delimiter, which would inject prose as CSS',
+    () => {
+      const source = scratchSource('bad-description');
+      const output = scratch('bad-description-out');
+      try {
+        const colour = JSON.parse(readFileSync(join(source, 'colour.json'), 'utf8')) as {
+          c: { paper: { $description?: string } };
+        };
+        // Closes the generated comment early. Everything after it lands in the
+        // published file as CSS, where a browser drops the malformed run and
+        // whatever declaration it collides with, in seven repositories at once.
+        colour.c.paper.$description = 'ends the comment */ --injected: red';
+        writeFileSync(join(source, 'colour.json'), JSON.stringify(colour));
+
+        const result = runBuild({ CUATRO_TOKENS_SOURCE: source, CUATRO_TOKENS_OUTPUT: output });
+
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain('CSS comment delimiter');
+        expect(readdirSync(output), 'a file was written despite the injected comment delimiter').toEqual([]);
+      } finally {
+        rmSync(source, { recursive: true, force: true });
+        rmSync(output, { recursive: true, force: true });
+      }
+    },
+    SPAWN_TIMEOUT
+  );
+
+  it(
+    'refuses a $value carrying a CSS delimiter, which would end the declaration early',
+    () => {
+      const source = scratchSource('bad-value');
+      const output = scratch('bad-value-out');
+      try {
+        const colour = JSON.parse(readFileSync(join(source, 'colour.json'), 'utf8')) as {
+          c: { paper: { $value: string } };
+        };
+        colour.c.paper.$value = 'oklch(12% 0.011 288); --injected: red';
+        writeFileSync(join(source, 'colour.json'), JSON.stringify(colour));
+
+        const result = runBuild({ CUATRO_TOKENS_SOURCE: source, CUATRO_TOKENS_OUTPUT: output });
+
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain('CSS delimiter');
+        expect(readdirSync(output), 'a file was written despite the injected value delimiter').toEqual([]);
+      } finally {
+        rmSync(source, { recursive: true, force: true });
+        rmSync(output, { recursive: true, force: true });
+      }
+    },
+    SPAWN_TIMEOUT
+  );
+
+  it(
+    'refuses a source with no durations, rather than publishing a contract with no reduced-motion block',
+    () => {
+      // Reduced-motion compliance is the one behaviour the token layer
+      // federates. The block is derived from the `dur` group, so an emptied
+      // group would otherwise drop the whole `@media` rule and exit 0.
+      const source = scratchSource('no-durations');
+      const output = scratch('no-durations-out');
+      try {
+        const motion = JSON.parse(readFileSync(join(source, 'motion.json'), 'utf8')) as { dur?: unknown };
+        delete motion.dur;
+        writeFileSync(join(source, 'motion.json'), JSON.stringify(motion));
+
+        const result = runBuild({ CUATRO_TOKENS_SOURCE: source, CUATRO_TOKENS_OUTPUT: output });
+
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain('prefers-reduced-motion');
+        expect(readdirSync(output), 'a file was written despite having no durations to collapse').toEqual([]);
+      } finally {
+        rmSync(source, { recursive: true, force: true });
+        rmSync(output, { recursive: true, force: true });
+      }
+    },
+    SPAWN_TIMEOUT
+  );
 });
 
 // ---------------------------------------------------------------------------

@@ -139,7 +139,7 @@ const REFERENCE = /\{([^{}]+)\}/g;
  */
 const publishedValue = (token, nameByPath) => {
   const authored = String(token.original.$value ?? token.original.value);
-  return authored.replace(REFERENCE, (_whole, path) => {
+  const resolved = authored.replace(REFERENCE, (_whole, path) => {
     const target = nameByPath.get(path.trim());
     if (!target) {
       throw new Error(
@@ -148,6 +148,19 @@ const publishedValue = (token, nameByPath) => {
     }
     return `var(--${target})`;
   });
+  // The same refusal `commentLines` makes for a `$description`, for the value.
+  // A value carrying `;` or a brace ends the declaration early and emits the
+  // rest of itself as CSS the design never wrote, and a comment delimiter closes
+  // an adjacent generated comment. The published file goes to seven
+  // repositories, so the generator refuses rather than letting the shape test
+  // downstream decide whether it noticed.
+  if (/[;{}]|\/\*|\*\/|\n/.test(resolved)) {
+    throw new Error(
+      `packages/tokens/build.mjs: the value of --${token.name} contains a CSS delimiter (${JSON.stringify(resolved)}), ` +
+        `which would end the declaration early and emit the rest of itself into the published contract.`
+    );
+  }
+  return resolved;
 };
 
 /** A one-line description trails the declaration; a multi-line one sits above it. */
@@ -240,15 +253,24 @@ StyleDictionary.registerFormat({
 
     // Derived from the `dur` group rather than hand-written, so a duration added
     // to the source cannot be left out of the reduced-motion contract.
+    //
+    // An empty group is a refusal rather than an omission. Reduced-motion
+    // compliance is the one behaviour the token layer federates, and a source
+    // that no longer has durations would otherwise publish a contract missing
+    // the whole `@media` block with an exit code of 0.
     const durations = ordered.filter(({ token }) => token.path[0] === MOTION_DURATION_GROUP);
-    if (durations.length > 0) {
-      lines.push('');
-      lines.push('@media (prefers-reduced-motion: reduce) {');
-      lines.push('  :root {');
-      lines.push(...declarations(durations.map(({ token }) => [token.name, REDUCED_MOTION_VALUE]), '    '));
-      lines.push('  }');
-      lines.push('}');
+    if (durations.length === 0) {
+      throw new Error(
+        `packages/tokens/build.mjs: no tokens in the "${MOTION_DURATION_GROUP}" group, so the ` +
+          `@media (prefers-reduced-motion: reduce) block would be published empty. Refusing.`
+      );
     }
+    lines.push('');
+    lines.push('@media (prefers-reduced-motion: reduce) {');
+    lines.push('  :root {');
+    lines.push(...declarations(durations.map(({ token }) => [token.name, REDUCED_MOTION_VALUE]), '    '));
+    lines.push('  }');
+    lines.push('}');
 
     return `${lines.join('\n')}\n`;
   },
