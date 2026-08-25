@@ -22,7 +22,7 @@
 //      `name/kebab` alone produces the exact custom-property names with no
 //      rename transform to review and nothing to drift.
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import StyleDictionary from 'style-dictionary';
@@ -46,6 +46,14 @@ const SOURCE_DIR = process.env.CUATRO_TOKENS_SOURCE
 const OUTPUT_DIR = process.env.CUATRO_TOKENS_OUTPUT
   ? resolve(process.env.CUATRO_TOKENS_OUTPUT)
   : join(REPO_ROOT, 'contracts');
+
+// The Tailwind adapter's translation table. It sits beside the source directory
+// rather than inside it, because the source glob is `tokens/*.json` and a map
+// file in there would be read as tokens. Resolving it from `SOURCE_DIR` rather
+// than from `HERE` means a scratch run through `CUATRO_TOKENS_SOURCE` picks up
+// the scratch tree's own map, so the generator has two build inputs and not
+// three.
+const THEME_MAP_PATH = join(SOURCE_DIR, '..', 'theme-map.json');
 
 /** Style Dictionary joins `buildPath` and `destination` as plain strings. */
 const asPosix = (value) => value.replace(/\\/g, '/');
@@ -276,13 +284,260 @@ StyleDictionary.registerFormat({
   },
 });
 
+// ---------------------------------------------------------------------------
+// `contracts/tailwind.css`, the generated `@theme inline` adapter (Story 1-13).
+//
+// A plain `:root` file of custom properties mints zero utility classes in
+// Tailwind v4 (`DESIGN.md:1058-1066`), so the four Tailwind consumers would
+// import the contract and still have no `bg-accent`. This adapter is what turns
+// the role layer into utilities, and it is emitted from the same dictionary that
+// publishes `tokens.css`, so a renamed token fails this build rather than
+// shipping an adapter that silently resolves to nothing.
+// ---------------------------------------------------------------------------
+
+/**
+ * The theme namespaces Tailwind v4 actually reads. A key outside them is not a
+ * typo the compiler complains about: it is accepted, stored, and mints nothing,
+ * which is the silent failure this generator exists to make loud.
+ *
+ * `--ease-*` is listed because Tailwind does theme it. The contract's own
+ * easings are still not mapped, and they fail one refusal later, on the
+ * self-reference rule, which is the accurate reason. See `ops/tailwind-adapter.md`.
+ */
+const TAILWIND_NAMESPACES = [
+  '--color-',
+  '--font-',
+  '--font-weight-',
+  '--text-',
+  '--tracking-',
+  '--leading-',
+  '--breakpoint-',
+  '--container-',
+  '--spacing-',
+  '--radius-',
+  '--shadow-',
+  '--inset-shadow-',
+  '--drop-shadow-',
+  '--text-shadow-',
+  '--blur-',
+  '--perspective-',
+  '--aspect-',
+  '--ease-',
+  '--animate-',
+];
+
+/** The raw palette is never consumed outside `contracts/` (AD-14). */
+const PALETTE_PREFIX = '--c-';
+
+/** Anything a custom property name may carry here. Deliberately narrow. */
+const CUSTOM_PROPERTY = /^--[A-Za-z0-9][A-Za-z0-9_-]*$/;
+
+const refuseAdapter = (message) => {
+  throw new Error(`packages/tokens/build.mjs: ${message}`);
+};
+
+/**
+ * The map as data, structurally checked. Every refusal names the key it is about
+ * and the file it came from, because the person reading it is editing that file.
+ */
+const readThemeMap = () => {
+  const where = asPosix(THEME_MAP_PATH);
+  if (!existsSync(THEME_MAP_PATH)) {
+    refuseAdapter(
+      `the Tailwind theme map is missing at ${where}. contracts/tailwind.css is generated from it, ` +
+        `so nothing was published.`
+    );
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(THEME_MAP_PATH, 'utf8'));
+  } catch (error) {
+    return refuseAdapter(`the Tailwind theme map at ${where} is not readable JSON: ${error.message}`);
+  }
+  if (!Array.isArray(parsed.sections)) {
+    refuseAdapter(`the Tailwind theme map at ${where} declares no "sections" array. Nothing was published.`);
+  }
+  return { where, sections: parsed.sections };
+};
+
+/**
+ * Every row of the adapter's half of the I/O matrix. Returns the sections with
+ * their entries in map order.
+ *
+ * `allTokens` is the dictionary this same run is about to publish, which is the
+ * point: the map is validated against the contract it adapts, not against a
+ * snapshot of it, so a renamed token fails this build rather than shipping an
+ * adapter that silently resolves to nothing.
+ *
+ * Every message ends "Nothing was published", and that is a fact about Style
+ * Dictionary rather than a hope: `buildPlatform` formats every file in the
+ * platform before it writes any of them, so a throw in either format leaves the
+ * output directory untouched. Verified 2026-08-25 against 5.5.2 by running this
+ * generator with a corrupted map into an empty scratch directory and observing
+ * it still empty afterwards.
+ */
+const validateThemeMap = ({ where, sections }, allTokens) => {
+  const declared = new Set(allTokens.map((token) => `--${token.name}`));
+  const seen = new Map();
+  const validated = [];
+
+  for (const [index, section] of sections.entries()) {
+    if (typeof section?.title !== 'string' || section.title.trim() === '') {
+      refuseAdapter(`section ${index} in ${where} carries no title. Nothing was published.`);
+    }
+    if (section.title.includes('/*') || section.title.includes('*/')) {
+      refuseAdapter(
+        `the section title ${JSON.stringify(section.title)} in ${where} carries a CSS comment ` +
+          `delimiter, which would close the generated comment early. Nothing was published.`
+      );
+    }
+    if (!Array.isArray(section.entries) || section.entries.length === 0) {
+      refuseAdapter(`the section "${section.title}" in ${where} names no entries. Nothing was published.`);
+    }
+
+    for (const entry of section.entries) {
+      const { key, token } = entry ?? {};
+
+      // A name that is not a plain custom property is refused before it can be
+      // read as anything else: a value carrying `;`, a brace or a comment
+      // delimiter would end its declaration early and emit the rest of itself
+      // into a file seven repositories vendor.
+      for (const [what, name] of [
+        ['key', key],
+        ['token', token],
+      ]) {
+        if (typeof name !== 'string' || !CUSTOM_PROPERTY.test(name)) {
+          refuseAdapter(
+            `an entry in section "${section.title}" of ${where} declares ${what} ` +
+              `${JSON.stringify(name)}, which is not a custom property name of the form --name. ` +
+              `Nothing was published.`
+          );
+        }
+      }
+
+      // Matrix row "A key in an unknown namespace". `--colour-bg` is accepted by
+      // Tailwind, stored, and mints nothing at all, silently.
+      if (!TAILWIND_NAMESPACES.some((namespace) => key.startsWith(namespace) && key.length > namespace.length)) {
+        refuseAdapter(
+          `the theme key ${key} in ${where} is in a namespace Tailwind v4 does not theme, so it ` +
+            `would mint no utility at all and report nothing. Permitted namespaces are ` +
+            `${TAILWIND_NAMESPACES.join(', ')}. Nothing was published.`
+        );
+      }
+
+      // Matrix row "A mapping is a cycle". AD-14: `--color-bg: var(--color-bg)`
+      // survives only by cascade accident and resolves to `transparent` the
+      // moment a bundler flattens the imports, with no error anywhere.
+      if (key === token) {
+        refuseAdapter(
+          `the theme key ${key} in ${where} reads var(${token}), the same name on both sides of the ` +
+            `var(). AD-14 forbids it: a self-reference resolves to transparent once a bundler ` +
+            `flattens the imports, silently. Nothing was published.`
+        );
+      }
+
+      // Matrix row "A mapping reads the raw palette". The semantic role layer is
+      // the only thing a consumer reads (AD-14).
+      if (token.startsWith(PALETTE_PREFIX)) {
+        refuseAdapter(
+          `the theme key ${key} in ${where} reads ${token}, which is the raw --c-* palette. AD-14 ` +
+            `keeps the palette inside contracts/: the semantic role layer is the only thing a ` +
+            `consumer reads. Nothing was published.`
+        );
+      }
+
+      // Matrix row "A mapping names a token that is gone". Validated against the
+      // dictionary this run is publishing, so a renamed token fails the build
+      // rather than shipping an adapter that resolves to nothing.
+      if (!declared.has(token)) {
+        refuseAdapter(
+          `the theme key ${key} in ${where} reads ${token}, which is not a token this dictionary ` +
+            `publishes into contracts/tokens.css. Nothing was published.`
+        );
+      }
+
+      if (seen.has(key)) {
+        refuseAdapter(
+          `the theme key ${key} appears twice in ${where}, first reading ${seen.get(key)} and then ` +
+            `${token}. One of the two would be discarded silently. Nothing was published.`
+        );
+      }
+      seen.set(key, token);
+      validated.push({ section: section.title, key, token });
+    }
+  }
+
+  // Matrix row "An empty map". Publishing an empty `@theme` block is publishing
+  // an adapter that mints nothing, which is the exact state this file exists to
+  // end.
+  if (validated.length === 0) {
+    refuseAdapter(
+      `the Tailwind theme map at ${where} declares no mappings, so the @theme inline block would be ` +
+        `published empty and mint no utility at all. Nothing was published.`
+    );
+  }
+
+  return validated;
+};
+
+StyleDictionary.registerFormat({
+  name: 'cuatro/tailwind-css',
+  format: ({ dictionary }) => {
+    const mappings = validateThemeMap(readThemeMap(), dictionary.allTokens);
+
+    const lines = [
+      '/* Cuatro Ecosystem, Tailwind v4 Adapter',
+      ` * Contract v${VERSION} · generated @theme inline · dark only`,
+      ' * The single entry point for a Tailwind v4 consumer. Import order is fixed:',
+      ' * tailwindcss, then tokens.css, then fonts.css, then the theme block.',
+      ' * fonts.css is REQUIRED here: an adapter pulling in only tokens.css hands the',
+      ' * cluster three named families with no @font-face for any of them.',
+      ' * inline is MANDATORY, not stylistic: without it a var() resolves where the',
+      ' * theme variable is defined rather than where it is used, and it fails silently.',
+      ' * Compile this file into the same folder it sits in, or the faces 404: the',
+      ' * url()s fonts.css declares are copied through unrebased. See ops/tailwind-adapter.md.',
+      ' * A value change or an addition is a MINOR bump. A rename, including fixing a',
+      ' * typo in a token name, or a removal is MAJOR.',
+      ' * Generated from packages/tokens. Never edit this file by hand.',
+      ' */',
+      '@import "tailwindcss";',
+      '@import "./tokens.css";',
+      '@import "./fonts.css";',
+      '',
+      '@theme inline {',
+    ];
+
+    // Grouped in map order, one comment per section, values aligned within the
+    // section exactly as `tokens.css` aligns its own.
+    const grouped = [];
+    for (const mapping of mappings) {
+      const last = grouped[grouped.length - 1];
+      if (last && last.title === mapping.section) last.entries.push(mapping);
+      else grouped.push({ title: mapping.section, entries: [mapping] });
+    }
+
+    grouped.forEach((group, index) => {
+      if (index > 0) lines.push('');
+      lines.push(sectionComment(group.title));
+      lines.push(...declarations(group.entries.map((entry) => [entry.key.slice(2), `var(${entry.token})`]), '  '));
+    });
+
+    lines.push('}');
+
+    return `${lines.join('\n')}\n`;
+  },
+});
+
 const dictionary = new StyleDictionary({
   source: [`${asPosix(SOURCE_DIR)}/*.json`],
   platforms: {
     css: {
       transforms: ['name/kebab'],
       buildPath: `${asPosix(OUTPUT_DIR)}/`,
-      files: [{ destination: 'tokens.css', format: 'cuatro/tokens-css' }],
+      files: [
+        { destination: 'tokens.css', format: 'cuatro/tokens-css' },
+        { destination: 'tailwind.css', format: 'cuatro/tailwind-css' },
+      ],
     },
   },
   log: { verbosity: 'verbose' },
@@ -291,6 +546,8 @@ const dictionary = new StyleDictionary({
 // Printed before the build, so a redirected run says so in the job log even when
 // the build then fails.
 console.log(`packages/tokens: reading  ${asPosix(SOURCE_DIR)}/*.json`);
+console.log(`packages/tokens: reading  ${asPosix(THEME_MAP_PATH)}`);
 console.log(`packages/tokens: writing  ${asPosix(join(OUTPUT_DIR, 'tokens.css'))}`);
+console.log(`packages/tokens: writing  ${asPosix(join(OUTPUT_DIR, 'tailwind.css'))}`);
 
 await dictionary.buildAllPlatforms();

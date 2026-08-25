@@ -888,6 +888,7 @@ describe('what the contract must never carry', () => {
       'contracts/fonts/bricolage-grotesque-latin.woff2',
       'contracts/fonts/geist-latin.woff2',
       'contracts/fonts/geist-mono-latin.woff2',
+      'contracts/tailwind.css',
       'contracts/tokens.css',
     ]);
     for (const file of published) {

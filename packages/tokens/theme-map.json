@@ -1,0 +1,119 @@
+{
+  "$comment": [
+    "The translation table behind contracts/tailwind.css. One Tailwind v4 theme key per",
+    "contract token that should mint a utility, in the order the @theme inline block emits.",
+    "",
+    "This is data and not code because the names differ on purpose: --color-surface reads",
+    "--token-bg-raised and --color-ink reads --token-text. A rule could not produce that; a",
+    "table can, and a table is reviewable line by line.",
+    "",
+    "It sits beside tokens/ rather than inside it because the Style Dictionary source glob is",
+    "tokens/*.json, and a map file in that directory would be read as tokens.",
+    "",
+    "packages/tokens/build.mjs refuses a key in a namespace Tailwind v4 does not theme, a key",
+    "and a token that are the same name (AD-14: a cycle that resolves to transparent), a",
+    "reference to the raw --c-* palette, a token the dictionary does not publish, a duplicate",
+    "key and an empty map. What is deliberately left out, and why, is recorded in",
+    "ops/tailwind-adapter.md."
+  ],
+  "sections": [
+    {
+      "title": "colour: Tailwind --color-* from our --token-* roles",
+      "entries": [
+        { "key": "--color-bg", "token": "--token-bg" },
+        { "key": "--color-surface", "token": "--token-bg-raised" },
+        { "key": "--color-surface-2", "token": "--token-bg-raised-2" },
+        { "key": "--color-ink", "token": "--token-text" },
+        { "key": "--color-muted", "token": "--token-text-secondary" },
+        { "key": "--color-line", "token": "--token-border" },
+        { "key": "--color-line-strong", "token": "--token-border-interactive" },
+        { "key": "--color-accent", "token": "--token-accent" },
+        { "key": "--color-accent-hover", "token": "--token-accent-hover" },
+        { "key": "--color-accent-muted", "token": "--token-accent-muted" },
+        { "key": "--color-focus", "token": "--token-focus" },
+        { "key": "--color-scrim", "token": "--token-scrim" }
+      ]
+    },
+    {
+      "title": "type: families",
+      "entries": [
+        { "key": "--font-display", "token": "--f-display" },
+        { "key": "--font-sans", "token": "--f-body" },
+        { "key": "--font-mono", "token": "--f-mono" }
+      ]
+    },
+    {
+      "title": "type: scale",
+      "entries": [
+        { "key": "--text-3xs", "token": "--t-3xs" },
+        { "key": "--text-2xs", "token": "--t-2xs" },
+        { "key": "--text-xs", "token": "--t-xs" },
+        { "key": "--text-sm", "token": "--t-sm" },
+        { "key": "--text-base", "token": "--t-base" },
+        { "key": "--text-md", "token": "--t-md" },
+        { "key": "--text-lg", "token": "--t-lg" },
+        { "key": "--text-xl", "token": "--t-xl" },
+        { "key": "--text-2xl", "token": "--t-2xl" },
+        { "key": "--text-display", "token": "--t-display" }
+      ]
+    },
+    {
+      "title": "type: weight",
+      "entries": [
+        { "key": "--font-weight-light", "token": "--w-light" },
+        { "key": "--font-weight-regular", "token": "--w-regular" },
+        { "key": "--font-weight-medium", "token": "--w-medium" },
+        { "key": "--font-weight-bold", "token": "--w-bold" },
+        { "key": "--font-weight-black", "token": "--w-black" }
+      ]
+    },
+    {
+      "title": "type: line-height",
+      "entries": [
+        { "key": "--leading-display", "token": "--lh-display" },
+        { "key": "--leading-heading", "token": "--lh-heading" },
+        { "key": "--leading-lede", "token": "--lh-lede" },
+        { "key": "--leading-body", "token": "--lh-body" },
+        { "key": "--leading-label", "token": "--lh-label" }
+      ]
+    },
+    {
+      "title": "type: tracking",
+      "entries": [
+        { "key": "--tracking-display", "token": "--tr-display" },
+        { "key": "--tracking-heading", "token": "--tr-heading" },
+        { "key": "--tracking-name", "token": "--tr-name" },
+        { "key": "--tracking-body", "token": "--tr-body" },
+        { "key": "--tracking-meta", "token": "--tr-meta" },
+        { "key": "--tracking-label", "token": "--tr-label" }
+      ]
+    },
+    {
+      "title": "space",
+      "entries": [
+        { "key": "--spacing-2xs", "token": "--s-2xs" },
+        { "key": "--spacing-xs", "token": "--s-xs" },
+        { "key": "--spacing-sm", "token": "--s-sm" },
+        { "key": "--spacing-md", "token": "--s-md" },
+        { "key": "--spacing-lg", "token": "--s-lg" },
+        { "key": "--spacing-xl", "token": "--s-xl" },
+        { "key": "--spacing-2xl", "token": "--s-2xl" },
+        { "key": "--spacing-3xl", "token": "--s-3xl" },
+        { "key": "--spacing-page-pad", "token": "--page-pad" },
+        { "key": "--spacing-tap", "token": "--tap" }
+      ]
+    },
+    {
+      "title": "shape",
+      "entries": [
+        { "key": "--radius-none", "token": "--r-none" },
+        { "key": "--radius-hair", "token": "--r-hair" },
+        { "key": "--radius-pill", "token": "--r-pill" }
+      ]
+    },
+    {
+      "title": "measure, as a container width",
+      "entries": [{ "key": "--container-measure", "token": "--measure" }]
+    }
+  ]
+}
