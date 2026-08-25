@@ -221,17 +221,25 @@ real drift.
 | `CUATRO_TOKENS_SOURCE` | `packages/tokens/tokens` | The DTCG source directory to read | **Decision.** Used by the tests to run the generator against a scratch source |
 | `CUATRO_TOKENS_OUTPUT` | `contracts` | The directory to write `tokens.css` into | **Decision.** Used by the tests to compare a fresh build against the committed file without touching the working tree |
 
-**Neither may be set in CI.** The generator prints both resolved paths on every run, before the
-build, so the job log says where it actually wrote rather than where it was assumed to:
+**Neither may be set in CI, and the job no longer relies on that being true.** **Decision.** The
+`Rebuild the published contract` step in `.github/workflows/ci.yml` pins both variables to the empty
+string, which the generator treats as unset, so no environment reaching that runner can redirect the
+build away from `contracts/` and leave the drift check reading an untouched directory. Documenting
+the hazard and then trusting the environment was the weaker half of this pair.
+
+The generator also prints both resolved paths on every run, before the build, so the job log says
+where it actually wrote rather than where it was assumed to:
 
 ```
 packages/tokens: reading  /home/runner/work/cuatro-portfolio/cuatro-portfolio/packages/tokens/tokens/*.json
 packages/tokens: writing  /home/runner/work/cuatro-portfolio/cuatro-portfolio/contracts/tokens.css
 ```
 
-`tokens-contract.test.ts` additionally asserts that with neither variable set the output resolves to
-`contracts/tokens.css`, and it asserts that without writing anything: it points the source at an
-empty directory, which the generator refuses before it writes.
+`tokens-contract.test.ts` pins both defaults, one case each, since a case that overrides one variable
+says nothing about the other. The output default is pinned without writing anything: it points the
+source at an empty directory, which the generator refuses before it writes, and it restores the
+published file if a regression ever does write. The source default is pinned by redirecting only the
+output and asserting the result equals the committed contract byte for byte.
 
 ### What the generator refuses
 
@@ -241,6 +249,8 @@ empty directory, which the generator refuses before it writes.
 | A `version` that is not exactly `X.Y.Z` | AD-16's scheduled job reads `Contract vX.Y.Z`. A missing version would publish `Contract vundefined` and a prerelease something the job cannot parse | **Decision** |
 | A token group with no section | Never emitted into an arbitrary position and never silently dropped | **Decision** |
 | A `$description` carrying `/*` or `*/` | It would close the generated comment early and inject its own prose into the published contract as CSS | **Decision** |
+| A `$value` carrying `;`, `{`, `}`, a comment delimiter or a newline | The same injection one field over. A value with a `;` ends its declaration early and emits the rest of itself as CSS the design never wrote | **Decision** |
+| A source with no tokens in the `dur` group | Reduced-motion compliance is the one behaviour the token layer federates. The `@media` block is derived from that group, so an emptied group would drop the whole rule and exit 0 | **Decision** |
 | A reference to a token that is not in the dictionary | Style Dictionary refuses first, and the generator refuses again for a reference it resolves itself | **Decision** |
 
 Each refusal was run once and its output recorded, because a refusal never observed is not known to
@@ -255,7 +265,17 @@ Error: packages/tokens/build.mjs: no tokens were read from <scratch>/empty. Refu
 Error: packages/tokens/build.mjs: packages/tokens/package.json declares version "1.1.0-rc.1", which is not the exact X.Y.Z the "Contract vX.Y.Z" header must carry for AD-16 to read it.
 
 Error: packages/tokens/build.mjs: the $description on --tap contains a CSS comment delimiter, which would close the generated comment early and inject prose into the published contract.
+
+Error: packages/tokens/build.mjs: the value of --c-paper contains a CSS delimiter ("oklch(12% 0.011 288); --injected: red"), which would end the declaration early and emit the rest of itself into the published contract.
+
+Error: packages/tokens/build.mjs: no tokens in the "dur" group, so the @media (prefers-reduced-motion: reduce) block would be published empty. Refusing.
 ```
+
+The last two were added by the review pass on 2026-08-24 and are **observed** the same way, each
+against a copy of the committed source with one file corrupted, each exiting 1 with an empty output
+directory. Unlike the four above them they are not one-time probes: every refusal in the table now
+has a standing case in `tokens-contract.test.ts` that runs the real generator on every suite run, so
+a guard someone deletes fails the unit gate rather than waiting for the next probe.
 
 **A finding from running the last of those.** **Observed 2026-08-24.** Style Dictionary resolves
 `{...}` references inside `$description` as well as inside `$value`, so a description carrying a
@@ -272,7 +292,7 @@ published prose as CSS.
 | Version | Read from `packages/tokens/package.json` at build time | **Decision** |
 | Section order | `SECTIONS` in `build.mjs`, in `DESIGN.md` order | **Decision.** A group key that is not in that list fails the build rather than being emitted into an arbitrary position or silently dropped |
 | Determinism | Two consecutive builds emit identical bytes | **Observed 2026-08-24**, and asserted permanently by `tokens-contract.test.ts` |
-| Line endings | `\n`, pinned by `contracts/** text eol=lf` in `.gitattributes` | **Decision.** `core.autocrlf` is true on the authoring machine. Without the rule, whether the drift gate agrees with the generator would depend on whose checkout ran last, and the folder is vendored into seven repositories |
+| Line endings | `\n`, pinned by `contracts/**/*.css` and `contracts/**/*.json` `text eol=lf` in `.gitattributes` | **Decision.** `core.autocrlf` is true on the authoring machine. Without the rule, whether the drift gate agrees with the generator would depend on whose checkout ran last, and the folder is vendored into seven repositories. Listed by format rather than as `contracts/**`: Story 1.12 publishes font files under the same folder, and `text` on a `.woff2` makes git normalise line endings inside a binary on check-in, which corrupts the face everywhere it is vendored. `.gitattributes` carries no `* text=auto`, so a format absent from the list is left alone |
 | The workspace | `pnpm-workspace.yaml` gained `packages: ['packages/*']`. `packages/tokens` is `private`, so it can never be published to a registry by accident | **Decision** |
 
 **Never hand-edit `contracts/tokens.css`.** Edit the DTCG source, rebuild, and commit both. The gate
@@ -301,9 +321,9 @@ declaration by declaration, in order, plus every row of the story's edge-case ma
 file is CSS a consumer can `@import`: braces balance, all 89 declarations sit inside the one `:root`
 rule, nothing is declared outside a rule, and the reduced-motion query is the only other rule.
 `docker/__tests__/deps-stage.test.ts` sits in the same job and holds the Dockerfile obligation
-described further down. **Observed 2026-08-24**: 60 cases in the contract file, 6 in the Dockerfile
-file, and **281 tests in the whole suite**, up from the 215 recorded at `4f4c751`, all green in
-79.8 s by `corepack pnpm test --run`.
+described further down. **Observed 2026-08-24**, after the review pass: 64 cases in the contract file,
+9 in the Dockerfile file, and **288 tests in the whole suite**, up from the 215 recorded at
+`4f4c751`, all green in 75.5 s by `corepack pnpm test --run`.
 
 ## The probe demonstrations
 
@@ -323,7 +343,12 @@ cases that run the same checks against synthetic input or against a scratch buil
 - a header version that disagrees with `package.json`, and a header with no version line;
 - a source directory holding no tokens, which must refuse rather than publish an empty contract;
 - a token group with no section, which is Probe 4 run on every suite run;
-- a `deps` stage with a workspace manifest removed, which is the Dockerfile check observed rejecting.
+- a `$description` carrying a CSS comment delimiter, and a `$value` carrying one;
+- a source whose `dur` group is empty, which would otherwise publish no reduced-motion block at all;
+- a `deps` stage with a workspace manifest removed, which is the Dockerfile check observed rejecting;
+- a `deps` stage that copies a workspace manifest to the context root, which names the right file and
+  still breaks the install;
+- a `COPY` form the Dockerfile reader cannot parse, which it refuses rather than skipping.
 
 Every one asserts that the check rejects, rather than being a broken assertion left behind.
 
@@ -429,7 +454,13 @@ The generator's own line, quoted:
 Error: packages/tokens/build.mjs: token group "shadow" (from --shadow-soft) has no section. Add it to SECTIONS in packages/tokens/build.mjs, in the position DESIGN.md gives it.
 ```
 
-## What the change cost the production image
+## What the change cost the production build
+
+**The served image does not grow, and the heading says so deliberately.** **Observed 2026-08-24**, by
+reading `docker/Dockerfile`: the `runner` stage copies `.next/standalone`, `.next/static` and
+`public` from the builder and nothing else, so no `node_modules` from the `deps` stage reaches the
+container that serves `cuatro.dev`. The cost of this change lands on the `deps` and `builder` layers
+and on build time. Every figure below is about those.
 
 `docker/Dockerfile:4` copied `package.json` and `pnpm-lock.yaml` alone and then ran
 `pnpm install --frozen-lockfile`. A workspace lockfile with an importer whose manifest that stage
@@ -452,14 +483,16 @@ runs each, alternating, so a slow network minute cannot land entirely on one sid
 | The same command re-run after the review pass added `**/node_modules` to `.dockerignore` | not applicable | **61.4 s wall, 10.1 s install, 574 packages, exit 0** | **Observed 2026-08-24.** Kept as its own row rather than replacing the one above, because the difference is dominated by context transfer and by this host, not by the ignore rule |
 
 **What these numbers do and do not say.** The package count is a hard figure: 62 more packages are
-installed into the deps layer than before, and they are there only so a later stage could run the
-generator, which it never does. The **wall-time ranges overlap**, so this host cannot measure the
+installed into the deps layer than before, and nothing consumes them. Not only does no later stage
+run the generator, no later stage could: the `builder` stage copies `/app/node_modules` alone, and
+pnpm puts the workspace package's link tree at `/app/packages/tokens/node_modules`, which is not
+copied. **Observed 2026-08-24**, by reading `docker/Dockerfile:16`. The **wall-time ranges overlap**, so this host cannot measure the
 added time and **no figure for it is claimed here**. A reader who wants one should take it from the
 first real deploy rather than from this table. The honest reading is that the cost is small enough
 to sit under this host's run-to-run variance, not that it is zero.
 
 **A cheaper shape exists and was not taken.** Filtering the deps install to the root importer would
-keep the 62 packages out of the production image entirely. It changes the install command, which
+keep the 62 packages out of the deps layer entirely. It changes the install command, which
 Story 1-11's boundaries forbid, and it would make the deps layer stop matching the lockfile the
 `test` job installs from. It is recorded here as the obvious next move if the deps layer ever
 becomes a problem, not as a defect in this story.
@@ -469,11 +502,26 @@ mirror every workspace manifest by hand, and a comment is not enforcement: Story
 `packages/fonts` without a `COPY` line would pass typecheck, the unit suite, the drift gate and the
 rendered-output harness, and fail first on the deploy from `main`, where there is no staging to
 catch it. `docker/__tests__/deps-stage.test.ts` therefore reads `pnpm-workspace.yaml`, expands its
-`packages:` globs, and asserts that `pnpm-workspace.yaml` and every matched `package.json` appears on
-a `COPY` line of the `deps` stage. It fails naming the manifest that is missing, and it runs inside
-the already-blocking `test` job. **Observed 2026-08-24**, by deleting the
-`COPY packages/tokens/package.json` line and watching the case fail with that manifest named, then
-restoring it.
+`packages:` globs, and asserts three properties of the `deps` stage, not one. Naming a manifest on a
+`COPY` line is the weakest of the three:
+
+| Property | The edit it rejects | Nature |
+|---|---|---|
+| Every matched `package.json`, and `pnpm-workspace.yaml`, is copied | A package added without its `COPY` line | **Decision.** Fails naming the manifest that is missing |
+| Each lands at that package's own directory | `COPY packages/tokens/package.json ./`, which names the right file, flattens it onto `/app/package.json`, clobbers the root manifest and fails the install | **Decision.** Added by the review pass on 2026-08-24 |
+| Each is copied before `RUN pnpm install --frozen-lockfile` | The same `COPY` moved below the install, a plausible layer-cache edit, which passes a check that reads only line contents | **Decision.** Added by the review pass on 2026-08-24 |
+
+A `COPY` form the reader cannot parse, the exec form or a backslash continuation, is a hard failure
+rather than a skipped line: a guard whose purpose is to catch an omission must not pass over a line
+it did not understand. The check runs inside the already-blocking `test` job. **Observed
+2026-08-24**, by deleting the `COPY packages/tokens/package.json` line and watching the case fail
+with that manifest named, then restoring it; the destination and unparseable-form rejections are
+asserted on every suite run against a mutated copy of the stage.
+
+**What this check still does not do.** It reads the Dockerfile as text. It never runs
+`docker build`, and nothing in CI does either, so the one executing verification of the `deps` stage
+is the local `docker build --target deps` recorded above and the deploy from `main` itself. Owner:
+Pending Operator action 5.
 
 **`.dockerignore` gained `**/node_modules`.** **Decision.** A `.dockerignore` pattern with no slash
 matches at the context root only, so the existing `node_modules` line left `packages/*/node_modules`
@@ -493,6 +541,8 @@ line is kept beside the new one rather than replaced, so the intent stays readab
 | No contrast ratio, no colour-literal conformance, no hit-target assertion | None of those instruments exists yet, and this story ships the values they will be computed from | **Decision.** Story 2.34 and Story 2.8 |
 | The section rules in the file are box-drawing characters | `U+2500`, copied from the design block. They are not dashes and not emoji, and the punctuation sweep is built so it does not confuse them for either | **Observed 2026-08-24**, by running the sweep against a positive control carrying an em-dash, an en-dash, a double-dash and two emoji, and confirming all five patterns fired before the sweep reported on real files |
 | The DTCG source carries `$description` only where `DESIGN.md` carries a comment | Descriptions are emitted into the published file as comments, so adding one everywhere would put prose into the contract that the design did not write | **Decision.** Story 1-11 |
+| The contract assumes OKLCH support and publishes no fallback | All twelve palette values are `oklch()`, with no `@supports` guard and no hex beside them. `DESIGN.md:239-242` makes the authored OKLCH the source of truth and a hex merely a fallback, and substituting one is forbidden by this story. A consumer whose audience needs a fallback has to add it in its own stylesheet; the contract states no minimum browser | **Decision.** `DESIGN.md`, recorded here because the folder is vendored into seven repositories with different audiences |
+| The line-ending rule is only ever exercised on a Windows checkout | `contracts/**/*.css text eol=lf` exists because `core.autocrlf` is true on the authoring machine. The case that asserts the published file holds no `CR` passes on an `ubuntu-latest` runner whether or not the rule exists, since git checks out LF there anyway. The rule is real and the assertion is real; CI is not where either is tested | **Observed 2026-08-24**, by reading the rule against the runner's checkout behaviour |
 
 ## Pending Operator actions
 
@@ -502,17 +552,21 @@ prose, in the shape `ops/known-violations.md` and `ops/rendered-output-harness.m
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
 | 1 | **Correct the `px` wording in `epics.md:1558-1559` and in `DESIGN.md:540`** so both read as statements about reader-scaled lengths rather than about every length in the contract | Operator | Both carry the same false claim, and `DESIGN.md`'s is the one the published comment was copied from. `DESIGN.md` authors eight `px` values and the contract ships all eight. This story is forbidden from editing planning artefacts, so the published comment was reworded instead and the divergence is recorded under "Where `epics.md` and `DESIGN.md` disagree". Correcting both closes it | _not done_ |
-| 2 | **Record the first real CI timing of the `tokens-contract` job**, from the Actions run summary | Operator | Every figure in "What the change cost the production image" is a local host's, and says so. The job has never run on a runner | _not done_ |
+| 2 | **Record the first real CI timing of the `tokens-contract` job**, from the Actions run summary | Operator | Every figure in "What the change cost the production build" is a local host's, and says so. The job has never run on a runner | _not done_ |
 | 3 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Already open as action 3 in `ops/rendered-output-harness.md`, and this story adds to it. `AGENTS.md:52-53` says CI "runs typecheck and tests only", which is now false twice over. `AGENTS.md:64-66` says CI fails on an executable file under `contracts/`, which is the intent but not yet a job; `contracts/` and `packages/` now exist, which that block predates | _not done_ |
-| 4 | **Decide whether the deps layer should stop installing the generator's 62 packages** | Operator | Not a defect and not urgent. Recorded so the option is on the table before the image grows again, and so the next person to look at the deps stage does not rediscover it from scratch | _not done_ |
+| 4 | **Decide whether the deps layer should stop installing the generator's 62 packages** | Operator | Not a defect and not urgent. Recorded so the option is on the table before the layer grows again, and so the next person to look at the deps stage does not rediscover it from scratch | _not done_ |
+| 5 | **Decide whether CI should build the `deps` target**, so the workspace-manifest obligation has an executing check rather than a text one | Operator | `docker/__tests__/deps-stage.test.ts` reads the Dockerfile as text and cannot observe an install. The one executing verification today is a local build and the deploy from `main`, which is the place with no staging behind it. A `docker build --target deps` step is the obvious shape; the cost is a Docker build on every push, which is why this is a decision and not a fix | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row
 with its own date and method and keep the old one, so a later reader can see whether a number moved
 or was simply re-stated. Deletion is not used here.
 
-**When the contract version moves.** Three things change together and a change to fewer than all
-three is a defect: the `version` in `packages/tokens/package.json`, the regenerated
-`contracts/tokens.css` whose header carries it, and the counts and figures in this file. The
+**When the contract version moves.** Four things change together and a change to fewer than all four
+is a defect: the `version` in `packages/tokens/package.json`, the regenerated `contracts/tokens.css`
+whose header carries it, the counts and figures in this file, and `tokens-contract.test.ts`, which
+pins the version literally as well as pinning `EXPECTED_NAMES` and thirteen category counts. The
 generator reads the version out of the manifest precisely so the first two cannot be done apart, and
-`tokens-contract.test.ts` fails naming both values if they ever are.
+`tokens-contract.test.ts` fails naming both values if they ever are. Adding a token is the same shape
+one field over: the source file, the regenerated contract, this file's category table and total, and
+the test's name list and counts.

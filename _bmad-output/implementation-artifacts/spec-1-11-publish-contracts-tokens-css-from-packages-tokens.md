@@ -28,6 +28,31 @@ deferred:
     location: >-
       contracts/
     severity: medium
+  - summary: >-
+      The `test` job in `.github/workflows/ci.yml` carries no `timeout-minutes`, and it is now the
+      job that owns every case which spawns a real build.
+    evidence: |-
+      The `tokens-contract` and `rendered-output` jobs both declare a ceiling and both argue for it
+      in a comment. The `test` job does not, and it is the one that grew: it runs eight cases that
+      spawn `node packages/tokens/build.mjs`. Story 1-11 hardened that half by passing `timeout` to
+      `spawnSync`, so a hung generator now fails its own case rather than the job. The job-level
+      ceiling is still absent, and a hang anywhere else in the suite runs until the platform kills
+      it with no cause in the log. This story's boundaries forbid editing the `test` job, so the
+      one-line fix cannot be made here.
+    location: >-
+      .github/workflows/ci.yml:10-29
+    severity: low
+  - summary: >-
+      `.github/workflows/ci.yml` declares no `permissions:` block, so every job runs with the
+      default token scope.
+    evidence: |-
+      The workflow runs on `push` to `**` and checks out the repository to run tests. A
+      workflow-level `permissions: contents: read` is the conventional least-privilege default for
+      that shape and costs one line. The gap predates this story, which only added a third job under
+      the same default, and closing it means editing a shared file beyond the story's scope.
+    location: >-
+      .github/workflows/ci.yml:1-7
+    severity: low
 ---
 
 <intent-contract>
@@ -266,6 +291,89 @@ Six were rejected. The ` -- ` separator this spec template uses in its Code Map 
 
 **On the workflow's prefer-bad_spec rule.** Finding 2 has a spec-shaped argument: the spec's Design Notes settled the `px` contradiction but never said the published comment must not repeat it. It was triaged `patch` deliberately. The spec's resolution was correct and the implementation followed it everywhere except one comment string; a loopback would have reverted a verified generator, a verified contract and 45 passing assertions to re-derive them byte-identically around a one-line edit. Recorded here rather than hidden.
 
+### 2026-08-24, Follow-up review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 9: (high 0, medium 4, low 5)
+- defer: 2: (high 0, medium 0, low 2)
+- reject: 11: (high 0, medium 3, low 8)
+- addressed_findings:
+  - `[medium]` `[patch]` **`contracts/** text eol=lf` was a landmine for the next story in this
+    epic.** Story 1.12 publishes `fonts.css` and the font files it points at into the same folder,
+    and `text` on a `.woff2` makes git normalise line endings inside a binary on check-in, which
+    corrupts the face in all seven repositories that vendor the folder. The rule is now listed by
+    format, `contracts/**/*.css` and `contracts/**/*.json`. `git check-attr` confirms `tokens.css`
+    is still `text: set, eol: lf` and that a `.woff2` under the same folder is now unspecified.
+    `.gitattributes` carries no `* text=auto`, so leaving a format off the list is the safe default.
+  - `[medium]` `[patch]` **The one hole the record identified in its own drift gate was documented
+    rather than closed.** `ops/token-contract.md` said "Neither `CUATRO_TOKENS_SOURCE` nor
+    `CUATRO_TOKENS_OUTPUT` may be set in CI", named the consequence exactly (the rebuild redirected,
+    `git status -- contracts/` clean, the gate green over real drift) and then relied on a printed
+    log line nobody reads on a green run. The `Rebuild the published contract` step now pins both to
+    the empty string, which the generator treats as unset, so no environment reaching that runner
+    can redirect it.
+  - `[medium]` `[patch]` **The Dockerfile check asserted the weakest of the three properties that
+    keep the deploy alive.** It read only the sources on each `COPY` line, so
+    `COPY packages/tokens/package.json ./` passed while flattening the manifest onto
+    `/app/package.json`, clobbering the root manifest and failing the install; and the same `COPY`
+    moved below `RUN pnpm install --frozen-lockfile` passed too. Both are plausible edits and both
+    end as a failed deploy from `main`, the one place with no staging behind it. The check now
+    asserts the destination directory and the position relative to the install, and refuses a `COPY`
+    form it cannot parse rather than skipping the line. Raised independently by two review layers.
+  - `[medium]` `[patch]` **Three of the generator's five refusals had only a one-time probe behind
+    them**, in a story whose own stated principle is that a gate never observed to fail is not known
+    to work. Deleting the `$description` delimiter guard left the whole suite green, because every
+    case reads a committed file whose descriptions carry no delimiter. Each refusal now has a
+    standing case that runs the real generator against a corrupted copy of the committed source, and
+    the record says which are probes and which are permanent.
+  - `[low]` `[patch]` `build.mjs` guarded `$description` against a CSS delimiter and left `$value`
+    unguarded, the same injection one field over: a value carrying `;` ends its declaration early
+    and emits the rest of itself as CSS. It also published no `@media (prefers-reduced-motion:
+    reduce)` block at all, silently and with exit 0, if the `dur` group were ever emptied. Both now
+    refuse, both observed refusing with an empty output directory, both asserted permanently.
+  - `[low]` `[patch]` `spawnSync` carried no `timeout`, and Vitest cannot interrupt a synchronous
+    spawn, so a hung generator would have blocked the worker past its case budget and run until the
+    CI platform killed the job. The spawn now carries the same budget as the case.
+  - `[low]` `[patch]` The case titled "defaults its output to contracts/tokens.css when neither
+    override is set" set `CUATRO_TOKENS_SOURCE`, as its own assertion proved, so the default source
+    directory was pinned by nothing. Split into one case per variable, and the output case now
+    restores the published file if a regression ever writes it rather than only reporting that one
+    did.
+  - `[low]` `[patch]` Four smaller fixes to `deps-stage.test.ts`: the workspace-glob reader stopped
+    at the first comment or blank line under `packages:` and silently dropped every glob below it;
+    `expandGlob` counted any directory as a package, so a scratch directory under `packages/` turned
+    the suite red, and returned filesystem order into an order-sensitive comparison; an identity
+    round-trip through `relative(REPO_ROOT, join(REPO_ROOT, x))`; and two assertions with no failure
+    message in a file whose whole value is the message it prints.
+  - `[low]` `[patch]` Record corrections in `ops/token-contract.md`. "What the change cost the
+    production image" was the wrong frame: the `runner` stage copies `.next/standalone`,
+    `.next/static` and `public` and no `node_modules`, so the served image does not grow, and the 62
+    packages are not merely unused by a later stage, no later stage could use them, since the
+    `builder` copies `/app/node_modules` alone and not the workspace link tree. Also added: the
+    version-move checklist undercounted at three (the test pins the version literally as well), an
+    OKLCH stated limit for a contract vendored into seven repositories with different audiences, a
+    stated limit that the line-ending rule is only ever exercised on a Windows checkout, the new
+    standing assertions, and Pending Operator action 5, that nothing in CI builds the `deps` target
+    so the Dockerfile obligation has a text check and no executing one.
+
+Two findings were deferred rather than fixed, both in `.github/workflows/ci.yml` and both blocked by
+this story's own boundaries: the `test` job has no `timeout-minutes` and the story may not edit that
+job, and the workflow declares no `permissions:` block, which predates this story.
+
+Eleven were rejected. Three are worth naming. A cyclic alias, `a` to `b` to `a` with no direct
+self-reference, is not reachable: every `--token-*` is asserted to be a plain `var()` at a `--c-*`
+value, every `--c-*` is asserted to be an OKLCH literal, and the whole file is compared to
+`DESIGN.md` declaration by declaration. Folding `tokens-contract` into the `test` job to save one
+install trades a deliberate gate separation for a runtime figure, which the previous pass already
+adjudicated. Widening the executable-extension list under `contracts/` adds nothing, because a
+separate case pins the folder's contents to exactly `contracts/tokens.css`, which forbids every
+extension rather than six. The remainder were scope (`AGENTS.md`, the dead `linkg` script, and the
+`epics.md` and `DESIGN.md` wording, all forbidden by the intent and all already carried as Pending
+Operator actions), style (the `$description` provenance repeated per source file, which the previous
+pass added deliberately so each file stands alone), or observations about the diff handed to the
+reviewers rather than about the change.
+
 ## Design Notes
 
 **Why string values in DTCG-shaped files, with the probe that decided it.** DTCG 2025.10 gives
@@ -344,9 +452,16 @@ carries the 89 custom properties `DESIGN.md` section `tokens.css` fixes, in its 
 values, plus the `@media (prefers-reduced-motion: reduce)` block. It is generated by
 `packages/tokens`, a Style Dictionary 5.5.2 package over DTCG-shaped JSON, which is the first entry
 under the repository's first `packages:` key. The published file is committed, its shape is asserted
-inside the already-blocking unit gate, and a new blocking `tokens-contract` CI job rebuilds it and
-fails if the committed output no longer matches its source. Publishing is not adopting: the Hub's
-render is untouched.
+inside the already-blocking unit gate, and a blocking `tokens-contract` CI job rebuilds it and fails
+if the committed output no longer matches its source. Publishing is not adopting: the Hub's render is
+untouched.
+
+This follow-up review pass changed no published byte. `contracts/tokens.css` is still sha256
+`319a825597995cbecacc43f08da9b24b48db636abc2b1e023ea4387a5cb38462`. What it hardened is the ring
+around that file: the two properties of the Docker `deps` stage that a text check was not asserting,
+the one drift-gate hole the record had documented instead of closing, a `.gitattributes` rule that
+would have corrupted Story 1.12's font files, and three generator refusals that had a probe behind
+them and no standing test.
 
 **Files changed.**
 
@@ -357,74 +472,72 @@ render is untouched.
   prefixes, so `name/kebab` alone produces the exact custom-property names.
 - `packages/tokens/build.mjs` -- one registered format: the header, the `:root` block in design
   section order, and the reduced-motion block derived from the `dur` group rather than hand-written.
-  Refuses an empty dictionary, a version that is not `X.Y.Z`, an unmapped group and a `$description`
-  carrying a CSS comment delimiter.
+  Refuses an empty dictionary, a version that is not `X.Y.Z`, an unmapped group, a `$description` or
+  a `$value` carrying a CSS delimiter, and a source with no durations to collapse.
 - `contracts/tokens.css` -- the generated, committed contract. 89 declarations, sha256 `319a8255...`.
-- `packages/tokens/__tests__/tokens-contract.test.ts` -- 60 cases over the published file.
-- `docker/__tests__/deps-stage.test.ts` -- 6 cases keeping the Dockerfile in step with the workspace.
+- `packages/tokens/__tests__/tokens-contract.test.ts` -- 64 cases over the published file, including
+  a standing case per generator refusal and one pinned default per build input.
+- `docker/__tests__/deps-stage.test.ts` -- 9 cases keeping the Dockerfile in step with the workspace:
+  every workspace manifest copied, to its own directory, before the install that reads it.
 - `package.json` -- `tokens:build`, the single entry point.
-- `.github/workflows/ci.yml` -- the blocking `tokens-contract` job. The two existing jobs are
-  byte-identical to `064c087`.
-- `docker/Dockerfile` -- the `deps` stage now sees the workspace manifests, so the production build
-  still resolves against the workspace lockfile. The install command is unchanged.
-- `.dockerignore`, `.gitattributes` -- `**/node_modules` out of the build context, LF endings pinned
-  on the published surface.
+- `.github/workflows/ci.yml` -- the blocking `tokens-contract` job, with both build inputs pinned
+  empty so no runner environment can redirect the rebuild. The two existing jobs are byte-identical
+  to `064c087`: the diff against the baseline removes no line from this file.
+- `docker/Dockerfile` -- the `deps` stage sees the workspace manifests, so the production build still
+  resolves against the workspace lockfile. The install command is unchanged.
+- `.dockerignore`, `.gitattributes` -- `**/node_modules` out of the build context; LF pinned on the
+  published surface by format rather than by `contracts/**`, so a future font binary is left alone.
 - `ops/token-contract.md` -- the record: what v1.0.0 publishes and what it deliberately does not, the
   value-encoding decision with the Style Dictionary probe output that forced it, the regeneration
-  path and its build inputs, the drift gate with its probe demonstrations, the production-build cost,
-  the stated limits and the Pending Operator actions.
+  path and its build inputs, the drift gate with its probe demonstrations, what the change cost the
+  production build, the stated limits and five Pending Operator actions.
 
-**Review findings.** 24 patched (1 high, 9 medium, 14 low), 1 deferred, 6 rejected, 0 intent gaps,
-0 spec loopbacks. The high finding is the one worth knowing: the change made the Docker `deps` stage
-a hand-maintained mirror of every workspace manifest, and nothing but a comment held it, so the next
-story to add a package would have discovered it as a failed deploy from `main`. See the Review
-Triage Log for each.
+**Review findings, this pass.** 9 patched (0 high, 4 medium, 5 low), 2 deferred, 11 rejected, 0
+intent gaps, 0 spec loopbacks. Follow-up review recommended: **true**, by the rule (no high, so
+`3 x 4 + 1 x 5 = 17`, which is at or above 5). The two deferred findings are both in
+`.github/workflows/ci.yml` and both blocked by this story's boundaries, not by difficulty.
 
-**Follow-up review recommended: true.** One patched finding was high severity, which sets the flag on
-its own. Patched counts by severity: high 1, medium 9, low 14, score 41.
+**Verification performed**, all on 2026-08-24 on the development host:
 
-**Verification performed.** All figures observed 2026-08-24 on the development host, after the patch
-pass.
+- `corepack pnpm install --frozen-lockfile` -- "Lockfile is up to date, resolution step is skipped",
+  done in 842 ms. No manifest changed this pass.
+- `corepack pnpm typecheck` -- pass.
+- `corepack pnpm test --run` -- **288 passed, 19 files, 75.5 s**, up from the 281 recorded before
+  this pass. 64 cases in `tokens-contract.test.ts`, 9 in `deps-stage.test.ts`, counted per file.
+- `corepack pnpm tokens:build`, run twice -- sha256 of `contracts/tokens.css` identical before, after
+  the first build and after the second, and `git status --porcelain --ignored=matching -- contracts/`
+  empty each time.
+- The two new refusals observed rejecting, each against a copy of the committed source with one file
+  corrupted, each exiting 1 with an empty output directory. Both messages are quoted verbatim in
+  `ops/token-contract.md`.
+- `git check-attr text eol -- contracts/tokens.css` -- `text: set`, `eol: lf`. The same command
+  against a `.woff2` under `contracts/` returns unspecified, which is the point of the narrowing.
+- `git diff --stat 064c087 -- app .lighthouserc.js .github/workflows/lighthouse.yml
+  .github/workflows/deploy.yml` -- empty.
+- `git diff 064c087 -- .github/workflows/ci.yml` -- 59 added lines and **no removed line**, so both
+  pre-existing jobs are byte-identical to the baseline.
+- Punctuation sweep over every file written this pass plus the published contract, built on
+  surrogate-pair ranges and run against a positive control carrying an em-dash, an en-dash, a
+  double-dash and two emoji. All five patterns fired on the control first. No em-dash, en-dash or
+  emoji in any swept file. Every double-dash hit is a git pathspec separator inside backticks
+  (`git status -- contracts/`) or the spec template's structured Code Map separator, which
+  spec-1-10's review adjudicated for this template.
 
-- `corepack pnpm install --frozen-lockfile`: clean, `packages/tokens` resolves as a workspace importer.
-- `corepack pnpm typecheck`: passes.
-- `corepack pnpm test --run`: 281 tests in 19 files, no browser started.
-- `corepack pnpm tokens:build` run twice: identical sha256
-  `319a825597995cbecacc43f08da9b24b48db636abc2b1e023ea4387a5cb38462`, and
-  `git status --porcelain --ignored=matching -- contracts/` empty afterwards.
-- Declaration-by-declaration comparison against `DESIGN.md:832-957`: 93 declarations on each side,
-  identical names, values and order.
-- `docker build --no-cache -f docker/Dockerfile --target deps .`: exit 0.
-- Rendered-output harness in `mcr.microsoft.com/playwright:v1.62.1-noble`: 13 passed, committed
-  baseline still matches.
-- The deps-stage gate mutation-checked by deleting its `COPY` line: the test fails naming
-  `packages/tokens/package.json` and the deploy consequence. Restored, tree clean.
-- Four probes run and reverted, outputs in `ops/token-contract.md`: a source edit left unbuilt fires
-  the drift gate; a removed palette entry makes the build refuse rather than publish a dangling
-  reference, and removing the role too fails seven contract cases; a second file under `contracts/`
-  is invisible to `git diff --exit-code` and caught by `git status`; and a token whose group has no
-  section fails the build naming the group.
-- `git diff --stat 064c087 -- app .lighthouserc.js .github/workflows/lighthouse.yml .github/workflows/deploy.yml`:
-  empty. `git ls-files contracts` is exactly `contracts/tokens.css`.
-- Punctuation sweep over all 20 changed files, built on surrogate-pair ranges and run against a
-  positive control carrying an em-dash, an en-dash, an astral emoji and a BMP pictograph. The control
-  reported all four; the changed files reported zero. Every surviving `--` is a CLI flag, git's
-  pathspec separator, a CSS custom property, or this template's list separator.
+**Not re-run this pass, with the reason.** `docker build --target deps` and the rendered-output
+harness. Nothing in this pass touches `docker/Dockerfile`, `.dockerignore`, the lockfile, any
+manifest, `app/`, or any component stylesheet, so neither input changed since both were observed
+passing. The Dockerfile's own text is unchanged; what changed is the test that reads it.
 
 **Residual risks.**
 
-- **The `tokens-contract` job has never run on a GitHub runner.** Nothing is soft-failed, so a problem
-  there fails the build rather than hiding, but the drift gate's only observations are local.
-- **The drift gate works only because the job rebuilds first.** Without the rebuild step,
-  `git status -- contracts/` is empty even against a stale output. That ordering is load-bearing and
-  is held by nothing but the step order in the workflow file.
-- **A Style Dictionary bump must move three things at once**: the pin, the generated file and the
-  figures in the record. Written into the record, but nothing enforces it mechanically.
-- **The contract test reads `DESIGN.md` off disk**, coupling the unit suite to a planning artifact
-  whose folder name carries a date this story does not own. It fails loudly rather than vacuously,
-  and the coupling is named in the failure message.
-- **The published header promises `contracts/fonts.css` in the same folder** and that file is
-  Story 1.12, so a Satellite that vendors the folder today follows a dangling pointer.
-- **`epics.md:1558-1559` and `DESIGN.md:540` still carry the false claim** that `--tap` is the only
-  `px` length in the contract. The published file no longer repeats it; correcting the planning
-  artifacts is Pending Operator action 1, since a build story may not edit them.
+- The `tokens-contract` job has still never run on a GitHub runner. Everything recorded about it was
+  observed by running its commands locally against the committed tree. Pending Operator action 2.
+- Nothing in CI builds the Docker image. The `deps` stage obligation is asserted by reading the
+  Dockerfile as text, which now covers the destination and the ordering but still cannot observe an
+  install. The first executing check remains the deploy from `main`. Pending Operator action 5.
+- The shipped header points at `contracts/fonts.css`, which is Story 1.12. A Satellite that vendors
+  the folder today follows a dangling pointer. Recorded in the record with its owner; unchanged by
+  this pass.
+- `AGENTS.md` still describes CI as "typecheck and tests only" and the suite as 38 tests. Correcting
+  it by hand is forbidden here. Pending Operator action 3.
+
