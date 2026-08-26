@@ -201,3 +201,10 @@ px bmad-method install\, not versioned
 
 # Story 1-5 measurement week: raw CSVs are evidence pulled from the box, never committed
 capacity-week/
+
+# Story 1-16: the served copy of the published surface, written by
+# `packages/contracts-serve/publish.mjs` at the start of `pnpm build` so the
+# Hub's own Next server answers /contracts/. AD-4's rule is one authored
+# location: `contracts/` at the repository root is it, and a committed second
+# copy here is the drift that rule forbids. Generated output, never committed.
+/public/contracts/
