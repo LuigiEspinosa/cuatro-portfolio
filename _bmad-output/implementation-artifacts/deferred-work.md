@@ -1116,3 +1116,19 @@ source_spec: `spec-1-15-determine-cs-tracker-s-daisyui-adoption-route.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260825-161421-c4ac; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+### DW-6: Three of the Hub's rendering surfaces, /cv, /recommendation and the 404, are visited by no test in this repository and captured by no screenshot baseline, and they are the only surfaces where the base
+origin: spec-deferred 60453c2584eb
+location: tests/e2e/rendered-output.pw.ts:21
+source_spec: `spec-1-17-anchor-migration-step-1-add-the-contract-change-nothing.md`
+severity: medium
+reason: components/atoms/Container/Container.tsx:13-15 sets <body id={route}> from the stripped, hyphenated pathname, so /cv and /recommendation produce body#cv and body#recommendation and the 404 produces an id derived from whatever path was requested. None of the three matches body#work/body#projects (app/app.scss:53-55), body[id=''] (HomeLayout.scss:1-2) or #celeste (celeste.scss:1-2), so the base rule body { background: var(--black-color) } is what paints there. tests/e2e/rendered-output.pw.ts pins ROUTE = '/work' and every browser assertion in this story visits /work only, so nothing renders those three surfaces at all. This is pre-existing: Story 1-10 chose one route and one viewport deliberately and ops/rendered-output-harness.md states the limit. It is recorded because Story 1-18 redefines --black-color as a token reference, which is exactly the value those three surfaces paint, so the story most likely to move them is the next one.
+status: open
+
+### DW-7: Follow-up review still recommended for 1-17-anchor-migration-step-1-add-the-contract-change-nothing after the damping cap was spent
+origin: review-budget-followup
+location: n/a
+source_spec: `spec-1-17-anchor-migration-step-1-add-the-contract-change-nothing.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260826-004746-da95; this entry preserves the lingering recommendation for a deliberate later review.
+status: open

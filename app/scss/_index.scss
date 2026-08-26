@@ -1,2 +1,37 @@
+// The design token contract (Story 1-17, Anchor migration step 1).
+//
+// The Anchor loads `contracts/` directly rather than vendoring it. `contracts/` is the
+// estate's published surface (AD-1) and this repository is its publisher, so a second
+// authored copy here would be the drift AD-4 forbids. The vendored `cuatro-contracts/`
+// folder AD-14 mandates is a Satellite mechanism, and `public/contracts/` is a generated,
+// gitignored copy written by `pnpm build` for serving (Story 1-16), not a stylesheet input.
+// This resolves `DESIGN.md` section Sequence step 1 ("drop the files into app/scss/") in
+// place, as decided in `epics.md:1777-1781`.
+//
+// The rule that keeps the contract inlined is the RULE, not the extension. Measured against
+// this repository's own Dart Sass 1.98.0 on four one-line fixtures: `@use` inlines a plain
+// CSS file whether or not the load carries the `.css` extension, and so does a bare
+// `@import`. Only the pair of `@import` with an explicit `.css` extension passes through as a
+// runtime `@import` for the browser to resolve. So the load-bearing choice below is `@use`.
+// The extensionless spelling is the house convention and is kept because it is unambiguous,
+// not because it is what does the work. See `ops/anchor-token-adoption.md`.
+//
+// A runtime `@import` would be silently wrong twice: the contract would be fetched from a URL
+// Next never emits, and the relative `url("./fonts/<file>.woff2")` values in
+// `contracts/fonts.css` would resolve against wherever the browser fetched the stylesheet
+// from rather than against the contract folder.
+//
+// Position matters as well as form. Dart Sass emits module CSS in source order, so these two
+// loads sit above the forwards below to keep the contract's `@font-face` blocks ahead of the
+// Anchor's own. Order between them is tokens then fonts, matching AD-14's file order and
+// `contracts/tailwind.css`.
+//
+// Nothing in this repository consumes any of these names yet, and that is the point: this
+// story adds the contract and changes no pixel. Story 1-18 redefines the Hub's sixteen
+// existing custom properties in `app/app.scss` as references to the token roles, and that is
+// the commit that changes how `cuatro.dev` looks.
+@use '../../contracts/tokens';
+@use '../../contracts/fonts';
+
 @forward './fonts';
 @forward './print';
