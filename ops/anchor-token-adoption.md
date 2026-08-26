@@ -1,12 +1,16 @@
 # The Anchor's token adoption
 
-The written record of step 1 of the Anchor's two-step adoption of the design token contract:
-what was wired and where, which contract version, why the Anchor loads `contracts/` directly
-rather than vendoring it, what the build pipeline does to the contract's values on the way
-through, what the rendered comparison actually proved and what it did not, and what Stories 1-18
-and 1-20 do to this file next.
+The written record of the Anchor's two-step adoption of the design token contract: what was wired
+and where, which contract version, why the Anchor loads `contracts/` directly rather than
+vendoring it, what the build pipeline does to the contract's values on the way through, what the
+rendered comparison actually proved and what it did not, and then what step 2 aliased onto what,
+how `--accent-dim` resolved across its fifteen call sites, where the weight half of the font
+mapping lives, and what the roles measure against the ground they land on.
 
-Written during Story 1-17 on **2026-08-26** (ISO 8601 UTC), against baseline commit `b984ca7`.
+Written during Story 1-17 on **2026-08-26** (ISO 8601 UTC), against baseline commit `b984ca7`, and
+**extended during Story 1-18 on 2026-08-26**, against baseline commit `3e9bb25`. Everything above
+"Step 2" is step 1's record and is left as it was written, except where a later measurement
+corrected it and says so.
 
 This file is a record, not Registry data, and nothing here is a published contract surface. It
 follows the pattern `ops/token-contract.md`, `ops/font-contract.md`,
@@ -291,17 +295,24 @@ hyphenated path:
 | `/work`, `/projects` | `work`, `projects` | `rgb(10, 0, 15)` | `body#work, body#projects` (`app/app.scss:53-55`) |
 | `/` | `` (empty) | `rgb(10, 0, 15)` | `body[id='']` (`components/organisms/HomeLayout/HomeLayout.scss:1-2`) |
 | `/celeste` | `celeste` | `rgb(68, 68, 68)` | `#celeste` (`components/organisms/Celeste/celeste.scss:1-2`) |
-| `/cv`, `/recommendation` | `cv`, `recommendation` | `rgb(0, 0, 0)` | **Nothing overrides.** They match none of the three rules above, so the base rule paints and the base rule is `var(--black-color)` |
+| ~~`/cv`, `/recommendation`~~ | ~~`cv`, `recommendation`~~ | ~~`rgb(0, 0, 0)`~~ | **This row is wrong, and Story 1-18 found it out by trying to read the value there.** Neither route renders HTML at all: `next.config.js` under `redirects()` sends `/cv` to `/pdf/cv.pdf` and `/recommendation` to `/pdf/recommendation-letter.pdf`, both `permanent: true`, so a browser navigation to either starts a **download**. `app/cv/page.tsx` and `app/recommendation/page.tsx` exist and are never reached. **Observed 2026-08-26** by `page.goto('/cv')` in the pinned container failing with "Download is starting", and by reading `next.config.js` |
 | any unrouted path (the 404) | the requested path, stripped | `rgb(0, 0, 0)` | **Nothing overrides**, for the same reason. `app/not-found.tsx` renders through the same root layout and the same `Body`, so the 404 surface is a third place the base rule paints. `components/organisms/ErrorPage/error-page.scss:7` paints `#0a000f` on the error container, not on `body` |
 
 **An earlier version of this section said "and it does not on any route", which is wrong**, and
 wrong in the direction that matters: it would tell the author of Story 1-18, the story that
-redefines `--black-color` as a token reference, that no route in the Hub shows that value. Two
-routes and the 404 surface do. None of the three is captured by the screenshot baseline and none is
-visited by any browser assertion in this story, so the value they paint is held by the
-`--black-color` probe below and by nothing else. **Observed 2026-08-26** by reading the four
-stylesheets, `app/not-found.tsx` and `Container.tsx` against `app/*/page.tsx`, not by rendering
-`/cv`, `/recommendation` or a 404.
+redefines `--black-color` as a token reference, that no route in the Hub shows that value.
+
+**The correction it made instead was still one route too generous, and Story 1-18 corrected it
+again by measurement.** `/cv` and `/recommendation` are permanent redirects to PDFs, so the base
+`body` rule paints on **exactly one** surface in the whole Hub: the **404**, which
+`app/not-found.tsx` renders through the same root layout and the same `Body`, and whose id is the
+stripped path and therefore matches none of the three overrides. That is where Story 1-18's ground
+assertion is made, and it is the only place it can be made.
+
+The lesson worth keeping is the one this row keeps failing on: **both earlier versions of this
+table were derived by reading stylesheets rather than by rendering the routes**, and both were
+wrong in the same direction, claiming a surface paints a value it never paints. **Observed
+2026-08-26** by rendering all six routes plus the 404 in the pinned container.
 
 The check therefore asserts what is actually true and observable: `body` still computes
 `color: rgb(255, 255, 255)` on `/work`, `body#work` still paints `rgb(10, 0, 15)` over the base

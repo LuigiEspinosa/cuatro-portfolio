@@ -9,7 +9,9 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: var(--accent-dim);
+    // Boundary, not ornament: `&[data-open='true']::before` below rewrites this same `background`,
+    // so this bar is where a person reads the open state (Story 1-18, AD-19's 3:1 floor).
+    background: var(--token-border-interactive);
     transition: background 0.3s ease;
   }
 

@@ -22,6 +22,9 @@
 
   &__code {
     font-family: var(--monument-bold);
+    // `--monument-bold` maps to `--f-display` plus `--w-black`, and a family alias cannot carry
+    // the weight half. This site set the family alone before Story 1-18, so it computed 400.
+    font-weight: var(--w-black);
     font-size: clamp(6rem, 18vw, 14rem);
     line-height: 1;
     margin: 0;
@@ -55,7 +58,9 @@
     font-size: 0.9rem;
     color: var(--light-gray-color);
     text-decoration: none;
-    border-left: 1px solid var(--accent-dim);
+    // Boundary, not ornament: `&:hover` below rewrites this same `border-left-color`, so this edge
+    // is where a person reads the hover state (Story 1-18, AD-19's 3:1 floor).
+    border-left: 1px solid var(--token-border-interactive);
     padding: 0.6rem 1rem;
     transition:
       border-left-color 0.2 ease,

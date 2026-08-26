@@ -17,6 +17,9 @@
 
   &__heading {
     font-family: var(--monument-bold);
+    // `--monument-bold` maps to `--f-display` plus `--w-black`, and a family alias cannot carry
+    // the weight half. This site set the family alone before Story 1-18, so it computed 400.
+    font-weight: var(--w-black);
     font-size: clamp(2rem, 4vw, 3.5rem);
     line-height: 1.1;
     margin: 0;

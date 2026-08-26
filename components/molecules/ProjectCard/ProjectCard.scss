@@ -26,7 +26,9 @@
   padding: 2rem;
   background: rgba(10, 0, 20, 0.6);
   border: 1px solid var(--accent-dim);
-  border-left: 3px solid var(--accent-dim);
+  // Boundary, not ornament: `&:hover` below rewrites this same `border-left-color`, so this edge
+  // is where a person reads the hover state (Story 1-18, AD-19's 3:1 floor).
+  border-left: 3px solid var(--token-border-interactive);
   transition:
     border-left-color 0.25s ease,
     background 0.25s ease;

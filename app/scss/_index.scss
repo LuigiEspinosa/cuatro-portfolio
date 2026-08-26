@@ -26,10 +26,11 @@
 // Anchor's own. Order between them is tokens then fonts, matching AD-14's file order and
 // `contracts/tailwind.css`.
 //
-// Nothing in this repository consumes any of these names yet, and that is the point: this
-// story adds the contract and changes no pixel. Story 1-18 redefines the Hub's sixteen
-// existing custom properties in `app/app.scss` as references to the token roles, and that is
-// the commit that changes how `cuatro.dev` looks.
+// Story 1-17 added these two loads and consumed nothing, so the render was byte-identical.
+// Story 1-18 then redefined the Hub's own custom properties in `app/app.scss` as references to
+// the token roles, and that is the commit that changed how `cuatro.dev` looks. The alias layer
+// in `app/app.scss` is now the one place the Hub reads these names, apart from three named
+// per-call-site resolutions of `--accent-dim`, and Story 2.22 removes it.
 @use '../../contracts/tokens';
 @use '../../contracts/fonts';
 

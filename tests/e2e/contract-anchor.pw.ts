@@ -1,15 +1,39 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from './harness';
+import {
+  BASE_MATCH,
+  CONTRACTS,
+  CONTRACT_FACES,
+  CONTRACT_FACE_COUNT,
+  CONTRACT_FAMILIES,
+  DECLARED,
+  DECLARED_COUNT,
+  FLAT_NAMES,
+  HUB_DECLARED,
+  REDUCED,
+  REDUCED_COUNT,
+  REDUCED_MATCH,
+  TYPED_ROUTES,
+  WOFF2_SIGNATURE,
+  compareInPage,
+  compareWithControls,
+  expandVars,
+  expectCanvasControl,
+  faceBlocksIn,
+  type ComparisonEntry,
+  type ComparisonResult,
+} from './contract-values';
 
 /**
- * The Anchor consumes the published contract (Story 1-17, Anchor migration step 1).
+ * The Anchor's stylesheet graph carries the published contract (Story 1-17, Anchor migration
+ * step 1), and Story 1-18 then consumed it through the alias layer in `app/app.scss`.
  *
- * `app/scss/_index.scss` loads `contracts/tokens.css` and `contracts/fonts.css`, and nothing
- * in the Hub reads a single name from either. This file is the browser half of proving both
- * halves of that sentence at once: the contract is really in the stylesheet graph, and the
- * render did not move.
+ * This file is the browser half of proving that the contract is really in the graph and that its
+ * values arrive meaning what the contract declares. `tests/e2e/anchor-alias.pw.ts` is the browser
+ * half of Story 1-18 and asserts what the aliases paint; the last case here is the narrow one this
+ * file owns, which is that the four properties it probed before the alias layer landed now resolve
+ * to the roles rather than to the literals they used to carry.
  *
  * Four things a unit test over the source text cannot establish, and this can:
  *
@@ -20,6 +44,11 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  *     runtime `@import`. `app/__tests__/anchor-contract.test.ts` pins the rule at source; this
  *     file measures the consequence, by requiring the contract's own declarations to appear in
  *     a stylesheet the page links and no `@import` to survive anywhere in one.
+ *
+ * The parsers and the value comparator live in `./contract-values`, which is not a spec and is
+ * therefore importable. Story 1-18 moved them there so its own spec reuses this comparison rather
+ * than writing a second one; two comparators would drift, and the drifted one would be the one
+ * reporting green.
  *  2. **That the face URLs survive the build.** `contracts/fonts.css` carries
  *     `url("./fonts/<file>.woff2")` relative to itself. Whether Next's SCSS pipeline rewrites
  *     those correctly is a claim about a build pipeline, so it is measured: the emitted URL is
@@ -46,123 +75,25 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  * `/work`, except where a second browser context is opened deliberately and says why.
  */
 
-// `__dirname` rather than `import.meta.url`: Playwright transpiles a spec to CommonJS and the
-// repository declares no `"type": "module"`, so `import.meta` is a syntax error at run time
-// here even though TypeScript accepts it.
-const REPO_ROOT = resolve(__dirname, '..', '..');
-const CONTRACTS = join(REPO_ROOT, 'contracts');
-
-/** Read off disk rather than restated. A value written here twice is a value that can drift. */
-const TOKENS_CSS = readFileSync(join(CONTRACTS, 'tokens.css'), 'utf8');
-const FONTS_CSS = readFileSync(join(CONTRACTS, 'fonts.css'), 'utf8');
-const APP_SCSS = readFileSync(join(REPO_ROOT, 'app', 'app.scss'), 'utf8');
-
 /** The only URL any assertion in this file visits. */
 const ROUTE = '/work';
 
 /**
- * The counts `contracts/tokens.css` publishes at v1.0.0, pinned rather than bounded, because a
- * floor cannot see a removed name: the loop that reads each one back simply gets shorter and
- * stays green. `app/__tests__/anchor-contract.test.ts` pins the same two numbers from its own
- * parse, so a change to either has to be made in both places deliberately.
+ * The four properties this file probed before Story 1-18, now as alias-to-role pairs.
+ *
+ * Story 1-17 pinned these four against the literals `app/app.scss` authored, which was the whole
+ * content of "add the contract, change nothing". Story 1-18 spends that: the pins are now the
+ * thing that must **not** be true, so each name is carried forward against the role it was mapped
+ * onto and against the literal it used to hold, and both directions are asserted. The role is
+ * named here and **valued from the running browser**, so nothing in this table is a colour typed
+ * by hand.
  */
-const DECLARED_COUNT = 89;
-const REDUCED_COUNT = 4;
-
-const withoutComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, '');
-
-/** The `--name: value` pairs in one declaration block, in source order. */
-const declarationsIn = (block: string): Map<string, string> => {
-  const found = new Map<string, string>();
-  for (const raw of block.split(';')) {
-    const at = raw.indexOf(':');
-    if (at === -1) continue;
-    const name = raw.slice(0, at).trim();
-    if (!name.startsWith('--')) continue;
-    found.set(name, raw.slice(at + 1).trim());
-  }
-  return found;
-};
-
-const source = withoutComments(TOKENS_CSS);
-
-const REDUCED_MATCH = /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)\s*\{\s*:root\s*\{([^}]*)\}/.exec(
-  source
-);
-const BASE_MATCH = /:root\s*\{([^}]*)\}/.exec(REDUCED_MATCH ? source.replace(REDUCED_MATCH[0], '') : source);
-
-/** Every custom property `contracts/tokens.css` puts on `:root` outside a media query. */
-const DECLARED = declarationsIn(BASE_MATCH ? BASE_MATCH[1] : '');
-
-/** The four `--dur-*` values the contract redefines under `prefers-reduced-motion: reduce`. */
-const REDUCED = declarationsIn(REDUCED_MATCH ? REDUCED_MATCH[1] : '');
-
-/**
- * The same names again, by a parser that reads the whole file flat rather than by block.
- *
- * The two fail differently: this one cannot tell the two blocks apart, and the structured one
- * above would silently truncate if a second `:root`, an `@layer` wrapper or any nested brace
- * appeared. Agreement between them is what says neither did.
- */
-const FLAT_NAMES = [...source.matchAll(/(--[A-Za-z0-9_-]+)\s*:/g)].map((found) => found[1]);
-
-/**
- * Every custom property `app/app.scss` declares, which is all sixteen the Hub has.
- *
- * The `//` strip is guarded on the preceding character, exactly as
- * `app/__tests__/anchor-contract.test.ts` guards it, so a `url(https://...)` or a
- * protocol-relative `url(//host/...)` does not take the rest of its line with it. The two halves
- * parse the same file and had drifted to two different rules here.
- */
-const HUB_DECLARED = declarationsIn(
-  /:root\s*\{([^}]*)\}/.exec(withoutComments(APP_SCSS).replace(/(^|[^:(])\/\/.*$/gm, '$1'))?.[1] ?? ''
-);
-
-/**
- * The four pre-change values this story probes, named here and **valued from `app/app.scss`**
- * rather than restated. Sass normalises the single quotes that file authors to double quotes on
- * the way out, which is why the comparison normalises quotes and why that is an observation
- * about the pipeline rather than an unexplained literal. **Observed 2026-08-26**, and the same
- * pair is recorded at `ops/rendered-output-harness.md:317-318`.
- */
-const PRE_CHANGE_NAMES = ['--white-color', '--black-color', '--accent', '--monument-bold'] as const;
-
-const normaliseQuotes = (value: string): string => value.replace(/'/g, '"');
-
-/**
- * A declared value with its `var()` references replaced by what the contract declares them as.
- *
- * This is not a convenience. The computed value of a custom property is its token stream
- * **after** substitution, so `--token-bg`, declared `var(--c-paper)`, resolves on `:root` to
- * `--c-paper`'s own value and never to the string `var(--c-paper)`. Comparing the authored text
- * against that would report all twelve semantic roles and all three elevation steps as drifted
- * when the contract is behaving exactly as designed.
- *
- * A name the contract does not declare is left alone rather than dropped, so an unresolvable
- * reference reaches the comparison as itself and fails there instead of silently becoming empty.
- *
- * Non-convergence throws rather than returning a half-expanded string. A cycle, or a chain
- * deeper than ten, would otherwise surface as a value mismatch on some unrelated-looking
- * property rather than as what it is.
- *
- * `active` is the map the caller is comparing against, which is `DECLARED` with `REDUCED` merged
- * over it when the reduced-motion query matched. Substituting from `DECLARED` alone would resolve
- * a reference to a name the reduced-motion block redefines back to its base value and report drift
- * on a property behaving correctly. Nothing exercises that today, because the four reduced values
- * are literal `1ms`, and that is exactly why it has to be right before something does.
- */
-const expandVars = (value: string, active: Map<string, string> = DECLARED): string => {
-  let out = value;
-  for (let depth = 0; depth < 10; depth += 1) {
-    const next = out.replace(/var\(\s*(--[A-Za-z0-9_-]+)\s*\)/g, (whole, name: string) => active.get(name) ?? whole);
-    if (next === out) return out;
-    out = next;
-  }
-  throw new Error(
-    `contract-anchor: "${value}" did not stop expanding after ten passes, so contracts/tokens.css ` +
-      `carries a var() cycle or a chain deeper than this substitution follows (reached "${out}")`
-  );
-};
+const ALIAS_PROBES = [
+  { alias: '--white-color', role: '--token-text', retired: '#fff' },
+  { alias: '--black-color', role: '--token-bg', retired: '#000' },
+  { alias: '--accent', role: '--token-accent', retired: '#5b21b6' },
+  { alias: '--monument-bold', role: '--f-display', retired: "'MonumentExtended-Bold'" },
+] as const;
 
 /**
  * Three names from three different scales, spelled out so a parser that silently returned a
@@ -184,9 +115,6 @@ const FLUID_VIEWPORT = { width: 600, height: 800 } as const;
 /** Names only the contract declares, so finding one in a stylesheet is evidence of the inlining. */
 const CONTRACT_MARKERS = ['--c-paper', '--token-scrim'] as const;
 
-/** The first four bytes of every woff2 file, so a 200 carrying an HTML error page is not a face. */
-const WOFF2_SIGNATURE = 'wOF2';
-
 /**
  * Every runtime `@import` in `css`. Named rather than inlined, so the planted control beside the
  * assertion calls the same function the assertion calls: an absence check whose matcher stopped
@@ -200,269 +128,6 @@ const WOFF2_SIGNATURE = 'wOF2';
  * the same reason on the source side; the two halves now agree.
  */
 const importsIn = (css: string): string[] => [...css.matchAll(/@import\s*[^;]+;/g)].map((found) => found[0]);
-
-interface FaceBlock {
-  family: string;
-  urls: string[];
-}
-
-/** Every `@font-face` block in `css`, with its family name unquoted and its `url()` values raw. */
-const faceBlocksIn = (css: string): FaceBlock[] => {
-  const blocks: FaceBlock[] = [];
-  const opener = /@font-face\s*\{/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = opener.exec(css)) !== null) {
-    let depth = 1;
-    let index = opener.lastIndex;
-    while (index < css.length && depth > 0) {
-      if (css[index] === '{') depth += 1;
-      else if (css[index] === '}') depth -= 1;
-      index += 1;
-    }
-
-    const body = css.slice(opener.lastIndex, index - 1);
-    const family = /font-family\s*:\s*([^;]+)/.exec(body)?.[1]?.trim().replace(/^["']|["']$/g, '') ?? '';
-    const urls = [...body.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)"']*))\s*\)/g)]
-      .map((found) => (found[1] ?? found[2] ?? found[3] ?? '').trim())
-      .filter((url) => url !== '');
-
-    blocks.push({ family, urls });
-    opener.lastIndex = index;
-  }
-
-  return blocks;
-};
-
-/** The three families the published font contract declares, read from the contract itself. */
-const CONTRACT_FACES = faceBlocksIn(withoutComments(FONTS_CSS));
-const CONTRACT_FAMILIES = CONTRACT_FACES.map((face) => face.family);
-
-/**
- * Pinned, on the same rule as the 89 and the 4. Every face assertion in this file loops over
- * `CONTRACT_FAMILIES`, so a contract that dropped to one face would shorten all of them and stay
- * green while the record still claimed three. The story's own matrix names the number.
- */
-const CONTRACT_FACE_COUNT = 3;
-
-interface ComparisonEntry {
-  name: string;
-  declared: string;
-  observed: string;
-}
-
-interface ComparisonResult extends ComparisonEntry {
-  route: string;
-  declaredCanonical: string;
-  observedCanonical: string;
-  equal: boolean;
-}
-
-/** The six typed comparator routes, in the order the comparator tries them. */
-const TYPED_ROUTES = ['colour', 'time', 'easing', 'length', 'family', 'number'] as const;
-
-/**
- * Canonicalise both sides of every pair through the browser's own parser and report whether
- * they mean the same thing.
- *
- * The route is chosen from the **declared** value's type and then required of the observed
- * value too, so a colour that arrived as a length is a disagreement rather than a silent
- * fallthrough to a string comparison. A value carrying `var()` never leaves the text route:
- * `var()` is accepted by every property, so a typed route would canonicalise both sides to the
- * same invalid-at-computed-value default and pass over nothing.
- */
-const compareInPage = (page: Page, entries: ComparisonEntry[]): Promise<ComparisonResult[]> =>
-  page.evaluate((pairs: ComparisonEntry[]) => {
-    const probe = document.createElement('div');
-    // `transition-property: none` is not decoration. The time route sets `transition-duration`
-    // on this same element, and a non-zero duration with the default `transition-property: all`
-    // makes every later write to it start a transition, at which point `getComputedStyle`
-    // answers with the animation's current value rather than the one just written. A control
-    // caught that: `44px` and `45px` both read back as `3px`, the last length written before
-    // the first duration landed, and compared equal. Pinning the property list to `none` is
-    // what makes the read the value and not a frame of an animation towards it.
-    probe.style.cssText =
-      'position:absolute;left:-99999px;top:0;display:block;box-sizing:border-box;' +
-      'font:16px/1 monospace;padding:0;border:0;transition-property:none;animation:none;';
-    document.body.appendChild(probe);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-
-    // Whitespace around commas and just inside brackets is a minifier's business, not a
-    // contract's. Runs collapse to one space rather than to none, so a string such as
-    // "Bricolage Grotesque" keeps the space that is part of its name.
-    const collapse = (value: string): string =>
-      value
-        .replace(/\s+/g, ' ')
-        .replace(/\s*,\s*/g, ',')
-        .replace(/\(\s+/g, '(')
-        .replace(/\s+\)/g, ')')
-        .trim()
-        .toLowerCase();
-
-    const throughProperty = (property: string, value: string): string => {
-      probe.style.setProperty(property, '');
-      probe.style.setProperty(property, value);
-      return collapse(window.getComputedStyle(probe).getPropertyValue(property));
-    };
-
-    /**
-     * Does the 2D context accept `value` as a fill colour?
-     *
-     * **This is the colour route's fail-open guard, and without it the route is unsound.**
-     * `fillStyle` is specified to *ignore* a value it cannot parse, silently leaving the
-     * previous colour in place. With `globalCompositeOperation = 'copy'` both sides of a pair
-     * would then rasterise the same stale pixel and compare **equal**, and the control pair
-     * beside them is the very shape that would go stale too, so nothing would report it. The
-     * `CSS.supports` gate above does not cover this: `CSS.supports('color', x)` is the CSS
-     * parser's answer and the canvas has its own.
-     *
-     * Two sentinels rather than one, so a value that *is* the sentinel colour, written in any
-     * spelling, is not mistaken for a rejected one: an accepted value serialises the same way
-     * after either sentinel, and a rejected one leaves whichever sentinel preceded it.
-     */
-    const canvasAccepts = (value: string): boolean => {
-      if (!context) return false;
-      context.fillStyle = '#010203';
-      context.fillStyle = value;
-      const afterFirst = context.fillStyle;
-      context.fillStyle = '#040506';
-      context.fillStyle = value;
-      return context.fillStyle === afterFirst;
-    };
-
-    const routes: { name: string; property: string; canonical: (value: string) => string }[] = [
-      {
-        name: 'colour',
-        property: 'color',
-        canonical: (value) => {
-          if (!context) return `no-canvas:${collapse(value)}`;
-          // Reported rather than swallowed. An unparsed value now reaches the comparison as a
-          // distinct string and fails there naming itself, instead of silently comparing equal
-          // to whatever was in the context before it.
-          if (!canvasAccepts(value)) return `unparsed-by-canvas:${collapse(value)}`;
-          // `copy` rather than the default `source-over`, so the pixel is the colour itself
-          // rather than the colour composited over whatever was there. Read back as four
-          // 8-bit channels: that is the same sRGB rounding both an `oklch()` and the `lab()`
-          // the minifier emits in its place go through, which is exactly the equivalence
-          // being asserted. Its resolution is therefore 1/255 per channel, which the
-          // near-neighbour negative control below probes and the ops record states as a limit.
-          context.globalCompositeOperation = 'copy';
-          context.fillStyle = value;
-          context.fillRect(0, 0, 1, 1);
-          const data = context.getImageData(0, 0, 1, 1).data;
-          return `srgb8(${data[0]},${data[1]},${data[2]},${data[3]})`;
-        },
-      },
-      { name: 'time', property: 'transition-duration', canonical: (v) => throughProperty('transition-duration', v) },
-      {
-        name: 'easing',
-        property: 'transition-timing-function',
-        canonical: (v) => throughProperty('transition-timing-function', v),
-      },
-      // `outline-offset` rather than `width` or `margin-left`, for two reasons a control found
-      // rather than a reader. Negative first: the contract's tracking scale is negative
-      // (`--tr-display: -0.05em`) and a negative `width` is invalid, so a `width` route would
-      // drop those six values to the text comparison, where `-0.05em` and the minifier's
-      // `-.05em` are different strings. Then staleness: `margin-left` resolves to a **used**
-      // value, and reading one back off an absolutely positioned probe returned the previous
-      // length rather than the one just set. `outline-offset` computes to an absolute px length
-      // at style time, with no layout involved, and resolves `vw` against the viewport, which
-      // is what lets the fluid tokens be measured at a second width.
-      { name: 'length', property: 'outline-offset', canonical: (v) => throughProperty('outline-offset', v) },
-      { name: 'family', property: 'font-family', canonical: (v) => throughProperty('font-family', v) },
-      { name: 'number', property: 'line-height', canonical: (v) => throughProperty('line-height', v) },
-    ];
-
-    const results: ComparisonResult[] = pairs.map((pair) => {
-      const carriesVar = /var\(/i.test(pair.declared) || /var\(/i.test(pair.observed);
-      const route = carriesVar ? undefined : routes.find((candidate) => CSS.supports(candidate.property, pair.declared));
-
-      if (!route) {
-        return {
-          ...pair,
-          route: carriesVar ? 'text (var)' : 'text',
-          declaredCanonical: collapse(pair.declared),
-          observedCanonical: collapse(pair.observed),
-          equal: collapse(pair.declared) === collapse(pair.observed),
-        };
-      }
-
-      if (!CSS.supports(route.property, pair.observed)) {
-        return {
-          ...pair,
-          route: route.name,
-          declaredCanonical: route.canonical(pair.declared),
-          observedCanonical: `not a ${route.name}: ${collapse(pair.observed)}`,
-          equal: false,
-        };
-      }
-
-      const declaredCanonical = route.canonical(pair.declared);
-      const observedCanonical = route.canonical(pair.observed);
-      return {
-        ...pair,
-        route: route.name,
-        declaredCanonical,
-        observedCanonical,
-        equal: declaredCanonical === observedCanonical,
-      };
-    });
-
-    // The colour route's guard, on a planted pair, through the same predicate the route calls.
-    // A real colour must be accepted and a string no colour parser takes must not, or
-    // `unparsed-by-canvas` can never fire and the route is fail-open again. It rides back with
-    // every call rather than living in a separate `page.evaluate`, so it is the same context,
-    // the same canvas and the same function the comparison just used. The name is repeated
-    // outside this callback because a module constant cannot cross into the page.
-    //
-    // Each side is measured **once** and both the reported value and the verdict read that one
-    // measurement. Calling `canvasAccepts` again per field would mutate the shared context between
-    // calls, so the evidence the failure prints and the verdict it prints it for would be two
-    // different observations of a stateful thing.
-    const acceptedReal = canvasAccepts('oklch(12% 0.011 288)');
-    const acceptedGarbage = canvasAccepts('not-a-colour');
-    results.push({
-      name: 'control: the canvas reports a colour it cannot parse',
-      declared: 'a real colour is accepted',
-      observed: 'a string no colour parser takes is rejected',
-      route: 'canvas',
-      declaredCanonical: String(acceptedReal),
-      observedCanonical: String(acceptedGarbage),
-      equal: acceptedReal && !acceptedGarbage,
-    });
-
-    probe.remove();
-    return results;
-  }, entries);
-
-/** The name `compareInPage` gives its own canvas guard. Repeated there, and asserted here. */
-const CANVAS_CONTROL_NAME = 'control: the canvas reports a colour it cannot parse';
-
-/**
- * Assert the colour route's own guard fired on this call, then hand back the real results.
- *
- * Every call site wraps its `compareInPage` in this, because the guard is worth nothing if the
- * one place it is checked is not the place the comparison ran.
- */
-const expectCanvasControl = (results: ComparisonResult[]): ComparisonResult[] => {
-  const control = results.find((result) => result.name === CANVAS_CONTROL_NAME);
-  expect(control, `the comparator returned no "${CANVAS_CONTROL_NAME}", so the colour route is unguarded`).toBeTruthy();
-  expect(
-    control?.equal,
-    // Both sides printed in the same shape, so the reader is not left working out that a `true`
-    // on the right means the canvas answered `false`. Each is the raw answer the predicate gave.
-    `the canvas guard did not behave: asked about a real colour it answered ` +
-      `"${control?.declaredCanonical}" (want "true"), asked about a string no colour parser takes it ` +
-      `answered "${control?.observedCanonical}" (want "false"). Unless both are as wanted, ` +
-      `"unparsed-by-canvas" cannot fire and a value the canvas ignores compares equal to whatever was ` +
-      `in the context before it`
-  ).toBe(true);
-  return results.filter((result) => result.name !== CANVAS_CONTROL_NAME);
-};
 
 /**
  * A context matching the one `playwright.config.ts` builds, with the named overrides applied.
@@ -550,19 +215,20 @@ test('the token contract declares a real list of names', () => {
   expect(expandVars('var(--token-bg)')).toBe(DECLARED.get(roleTarget?.[1] ?? ''));
   expect(expandVars('var(--token-bg)'), '--token-bg still carries a var() after substitution').not.toMatch(/var\(/);
 
-  // The Hub's own sixteen, read from `app/app.scss` so the pre-change expectations below are
-  // not literals restated here. `app/__tests__/anchor-contract.test.ts` holds the count and the
-  // no-collision claim; this is the part this file depends on.
-  expect(HUB_DECLARED.size, 'app/app.scss no longer declares sixteen custom properties').toBe(16);
-  for (const name of PRE_CHANGE_NAMES) {
-    expect([...HUB_DECLARED.keys()], `app/app.scss no longer declares ${name}`).toContain(name);
-    expect([...DECLARED.keys()], `${name} is now declared by the contract as well as by the Hub`).not.toContain(name);
+  // The Hub's own fifteen, read from `app/app.scss` so the alias expectations below are not
+  // literals restated here. `app/__tests__/anchor-contract.test.ts` holds the count, the mapping
+  // table and the no-collision claim; this is the part this file depends on. Sixteen before
+  // Story 1-18, which deleted the one property O-11 closed.
+  expect(HUB_DECLARED.size, 'app/app.scss no longer declares fifteen custom properties').toBe(15);
+  for (const { alias, role } of ALIAS_PROBES) {
+    expect([...HUB_DECLARED.keys()], `app/app.scss no longer declares ${alias}`).toContain(alias);
+    expect([...DECLARED.keys()], `${alias} is now declared by the contract as well as by the Hub`).not.toContain(alias);
+    // The alias layer, read from the file rather than assumed: each of the four really is a
+    // reference to the role this file goes on to compare it against, so a probe that agreed with
+    // a role the property does not point at cannot pass.
+    expect([...DECLARED.keys()], `contracts/tokens.css no longer declares ${role}`).toContain(role);
+    expect(HUB_DECLARED.get(alias), `app/app.scss no longer aliases ${alias} onto ${role}`).toBe(`var(${role})`);
   }
-  // The quote normalisation is not inert: at least one of the four is authored single-quoted.
-  expect(
-    PRE_CHANGE_NAMES.some((name) => normaliseQuotes(HUB_DECLARED.get(name) ?? '') !== HUB_DECLARED.get(name)),
-    'no pre-change value is single-quoted, so the quote normalisation below is untested'
-  ).toBe(true);
 
   // The font half of the contract, on the same rule as the counts above: **pinned** at three,
   // not bounded. Every face assertion in this file loops over `CONTRACT_FAMILIES`, so a contract
@@ -614,7 +280,9 @@ test('every custom property the token contract declares resolves on :root in the
   /**
    * Controls, run through the same comparator in the same page and in the same call. Seven
    * pairs of them, fourteen in all: one pair on each of the six typed routes and one on the
-   * `text (var)` route.
+   * `text (var)` route. They live in `./contract-values` beside the comparator they probe, so
+   * `tests/e2e/anchor-alias.pw.ts` runs the same fourteen rather than a second set that could
+   * drift from this one.
    *
    * **Neither text route is meant to be reached by a contract value**, and the case asserts
    * below that neither is. They differ in what reaching them would mean, which is why one
@@ -626,58 +294,9 @@ test('every custom property the token contract declares resolves on :root in the
    * the comparator alone.
    *
    * A fifteenth control rides back from inside `compareInPage` itself: `expectCanvasControl`
-   * asserts the colour route's own fail-open guard fired on this call.
-   *
-   * Each positive is a rewrite this pipeline really performs, and the negative beside it is the
-   * smallest real difference of the same shape. The colour negative is a neighbour one 8-bit
-   * step away, because the route rasterises to 8-bit sRGB and 1/255 per channel is its actual
-   * resolution: a grossly different colour would prove nothing about where the boundary lies.
-   *
-   * This is not decoration. The `a different length` control is what caught the comparator
-   * reading a transitioning value rather than the value it had just written, at which point
-   * every length in the contract was comparing equal to every other length.
+   * asserts the colour route own fail-open guard fired on this call.
    */
-  const CONTROLS: (ComparisonEntry & { expected: boolean })[] = [
-    { name: 'control: oklch against its lab rewrite', declared: 'oklch(12% 0.011 288)', observed: 'lab(1.52265% .480853 -1.49071)', expected: true },
-    { name: 'control: a colour one 8-bit step away', declared: 'oklch(12% 0.011 288)', observed: '#070509', expected: false },
-    { name: 'control: ms against s', declared: '120ms', observed: '.12s', expected: true },
-    { name: 'control: a different duration', declared: '120ms', observed: '121ms', expected: false },
-    { name: 'control: an easing respaced', declared: 'cubic-bezier(0.16, 1, 0.3, 1)', observed: 'cubic-bezier(.16,1,.3,1)', expected: true },
-    { name: 'control: a different easing', declared: 'cubic-bezier(0.16, 1, 0.3, 1)', observed: 'cubic-bezier(0.17, 1, 0.3, 1)', expected: false },
-    { name: 'control: leading zero stripped', declared: '0.6875rem', observed: '.6875rem', expected: true },
-    { name: 'control: a different length', declared: '44px', observed: '45px', expected: false },
-    { name: 'control: a stack respaced', declared: '"Geist", ui-sans-serif, system-ui', observed: '"Geist",ui-sans-serif,system-ui', expected: true },
-    { name: 'control: a different stack', declared: '"Geist", ui-sans-serif, system-ui', observed: '"Geist Mono", ui-sans-serif, system-ui', expected: false },
-    { name: 'control: a trailing zero', declared: '1.6', observed: '1.60', expected: true },
-    { name: 'control: a different number', declared: '600', observed: '601', expected: false },
-    { name: 'control: var() spelled the same', declared: 'var(--c-paper)', observed: 'var( --c-paper )', expected: true },
-    { name: 'control: a var() pointing elsewhere', declared: 'var(--c-paper)', observed: 'var(--c-ink)', expected: false },
-  ];
-
-  const results = expectCanvasControl(await compareInPage(page, [...entries, ...CONTROLS]));
-  const byName = new Map(results.map((result) => [result.name, result]));
-
-  // Every control's outcome is printed before any of them is asserted, so a red run says what
-  // the comparator did on all fourteen rather than stopping at the first surprise.
-  const controlReport = CONTROLS.map((control) => {
-    const result = byName.get(control.name);
-    return (
-      `  ${control.name}: "${control.declared}" against "${control.observed}" -> ` +
-      `${result ? (result.equal ? 'equal' : 'unequal') : 'not compared'} ` +
-      `(${result?.route}: ${result?.declaredCanonical} against ${result?.observedCanonical}), ` +
-      `expected ${control.expected ? 'equal' : 'unequal'}`
-    );
-  });
-  console.log(`contract-anchor comparator controls:\n${controlReport.join('\n')}`);
-
-  expect(CONTROLS.length, 'a control pair was lost, so a route is no longer probed').toBe((TYPED_ROUTES.length + 1) * 2);
-  const misbehaved = CONTROLS.filter((control) => byName.get(control.name)?.equal !== control.expected);
-  expect(
-    misbehaved.map((control) => control.name),
-    `the comparator is not measuring equivalence:\n${controlReport.join('\n')}`
-  ).toEqual([]);
-
-  const compared = results.filter((result) => !result.name.startsWith('control:'));
+  const compared = await compareWithControls(page, entries, 'contract-anchor');
   const wrong = compared.filter((result) => !result.equal);
 
   // Each of the six typed routes is exercised by at least one real token, so a route that
@@ -986,59 +605,73 @@ test('the compiled stylesheet carries the contract faces and every face URL answ
   }
 });
 
-test('the Hub renders the values it rendered before the contract was wired in', async ({ page }) => {
+test('the Hub renders the roles it was aliased onto, not the values it rendered before', async ({ page }) => {
   const onWork = await page.goto(ROUTE, { waitUntil: 'load' });
   expect(onWork?.status(), `${ROUTE} did not answer 200`).toBe(200);
 
-  // `body` still takes its colour from `--white-color`, and `body#work` (`app/app.scss:53-55`)
-  // still paints its own background over `background: var(--black-color)` at a higher
-  // specificity. Both are asserted, because a change that moved either would move the render.
-  expect(await computedStyleValue(page, 'body', 'color')).toBe('rgb(255, 255, 255)');
+  // **This case is the inversion of Story 1-17's, not a new one.** It used to pin
+  // `rgb(255, 255, 255)`, `rgb(0, 0, 0)` and `'MonumentExtended-Bold'` and assert nothing had
+  // moved. Story 1-18 spends exactly that claim, so the old pins are now the values that must
+  // **not** be read, and each one is asserted in both directions: against the role the alias
+  // points at, and against the literal it used to carry. A comparator that silently agreed with
+  // everything would fail the second direction.
+  //
+  // `body#work` (`app/app.scss:53-55`) still paints its own `#0a000f` over
+  // `background: var(--black-color)` at a higher specificity, and that hardcoded value **stays**:
+  // it is Story 2.29 and Story 2.34's work, not this story's. So the ground on this route is
+  // unmoved and the copy colour on it is not.
   expect(await computedStyleValue(page, 'body', 'background-color')).toBe('rgb(10, 0, 15)');
+  const bodyColour = await computedStyleValue(page, 'body', 'color');
+  expect(bodyColour, 'body still computes pure white, so the alias layer did not land').not.toBe(
+    'rgb(255, 255, 255)'
+  );
 
-  // The expectations come from `app/app.scss` itself. Sass normalises the single quotes that
-  // file authors to double quotes on the way out, which is the one transform applied here and
-  // is recorded in `ops/anchor-token-adoption.md` rather than left as an unexplained literal.
+  // The Hub's aliases against the roles they point at, read side by side off the same `:root` in
+  // the same page. Nothing here is a colour typed by hand: the expectation is whatever the
+  // contract resolves the role to, and the retired literal is the negative beside it.
+  const entries: ComparisonEntry[] = [];
+  for (const { alias, role, retired } of ALIAS_PROBES) {
+    const observed = await rootCustomPropertyValue(page, alias);
+    entries.push({ name: `${alias} against ${role}`, declared: await rootCustomPropertyValue(page, role), observed });
+    entries.push({ name: `${alias} against its retired ${retired}`, declared: retired, observed });
+  }
+  entries.push({ name: 'body colour against --token-text', declared: await rootCustomPropertyValue(page, '--token-text'), observed: bodyColour });
+
+  const compared = await compareWithControls(page, entries, 'contract-anchor alias probes');
+  const byName = new Map(compared.map((result) => [result.name, result]));
+  console.log(
+    `contract-anchor alias probes:\n` +
+      compared.map((r) => `  ${r.name}: "${r.declared}" against "${r.observed}" -> ${r.equal} (${r.route})`).join('\n')
+  );
+
   const drift: string[] = [];
-  for (const name of PRE_CHANGE_NAMES) {
-    const authored = HUB_DECLARED.get(name);
-    expect(authored, `app/app.scss no longer declares ${name}`).toBeTruthy();
-    const expectedValue = normaliseQuotes(authored ?? '');
-    const actual = await rootCustomPropertyValue(page, name);
-    if (actual !== expectedValue) {
-      drift.push(`${name}: app/app.scss authors "${authored}", expected "${expectedValue}", read "${actual}"`);
+  for (const { alias, role, retired } of ALIAS_PROBES) {
+    const onRole = byName.get(`${alias} against ${role}`);
+    const onRetired = byName.get(`${alias} against its retired ${retired}`);
+    if (!onRole?.equal) {
+      drift.push(
+        `${alias} does not resolve to ${role}: :root answers "${onRole?.observed}" where ${role} is ` +
+          `"${onRole?.declared}" (${onRole?.route}: ${onRole?.declaredCanonical} against ${onRole?.observedCanonical})`
+      );
+    }
+    if (onRetired?.equal) {
+      drift.push(`${alias} still resolves to its retired value ${retired}, so the alias layer did not land`);
     }
   }
-  expect(drift, `a pre-change custom property moved:\n${drift.join('\n')}`).toEqual([]);
+  const onBody = byName.get('body colour against --token-text');
+  if (!onBody?.equal) {
+    drift.push(`body computes "${onBody?.observed}" where --token-text is "${onBody?.declared}"`);
+  }
+  expect(drift, `the alias layer does not resolve to the contract:\n${drift.join('\n')}`).toEqual([]);
 
-  // `--black-color` resolving to pure black is read on a probe rather than on `body`, because
-  // **the base `body` background is not visible on `/work`**, the one URL this file visits:
-  // `body#work` and `body#projects` override it (`app/app.scss:53-55`), `body[id='']` overrides
-  // it for `/` (`components/organisms/HomeLayout/HomeLayout.scss:1-2`) and `#celeste` overrides
-  // it for `/celeste` (`components/organisms/Celeste/celeste.scss:1-2`). It **is** visible on
-  // `/cv` and `/recommendation`, whose `body#cv` and `body#recommendation` match none of those
-  // rules, and on the 404 surface, which `app/not-found.tsx` renders through the same root layout
-  // and the same `Body` and whose id likewise matches none of them. None of the three is visited
-  // here or captured by the screenshot baseline. So the probe is not a convenience: it is the only
-  // place in this suite where the value they paint is observed at all. Observed 2026-08-26,
-  // recorded in
-  // `ops/anchor-token-adoption.md` § "A second finding".
-  const used = await page.evaluate(() => {
-    const probe = document.createElement('div');
-    probe.style.cssText =
-      'position:absolute;left:-99999px;top:0;width:1px;height:1px;' +
-      'background-color:var(--black-color);color:var(--white-color);';
-    document.body.appendChild(probe);
-    const computed = window.getComputedStyle(probe);
-    const read = { background: computed.backgroundColor, color: computed.color };
-    probe.remove();
-    return read;
-  });
-  expect(used.background, 'var(--black-color) no longer resolves to pure black').toBe('rgb(0, 0, 0)');
-  expect(used.color, 'var(--white-color) no longer resolves to pure white').toBe('rgb(255, 255, 255)');
+  // Every entry above really was compared, rather than quietly dropped by a comparator that
+  // returned a shorter list than it was handed.
+  expect(compared.length, 'the comparator returned a different number of results than it was given').toBe(
+    entries.length
+  );
 
-  // None of the Hub's sixteen is a contract name, which is why the render can be identical by
-  // construction rather than by luck. `app/__tests__/anchor-contract.test.ts` is the
+  // None of the Hub's fifteen is a contract name, which is what lets the alias layer reference
+  // the roles without shadowing them. `app/__tests__/anchor-contract.test.ts` is the
   // authoritative check with both counts pinned; this asserts the same thing where the values
   // were just read, so neither half can drift alone.
   const collisions = [...HUB_DECLARED.keys()].filter((name) => DECLARED.has(name));

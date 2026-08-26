@@ -64,8 +64,8 @@ harness that covers everything.
 | Any route other than `/work` | One route is enough to establish the instrument. Adding routes is cheap once the instrument exists | **Decision.** Story 1-10 scope |
 | Anything below the fold on `/work` | The comparison is the 360 x 800 viewport, not `fullPage`. `ScreenshotOptions` in `tests/e2e/harness.ts` exposes only `mask`, so a caller cannot widen it today. Story 1.17's "visually identical to the pre-change build" therefore rests on one viewport of one route unless that story widens the capture first. Unlike the route axis, this one is pinned in the config by design and is not free to extend | **Decision.** Story 1-10 scope, and a limit Stories 1.17 and 1.20 inherit knowingly |
 | The 86,400 masked pixels | `.work-hero__canvas-wrap` is 360 x 240 at this viewport, so 30 percent of the frame is excluded. The comparison covers the remaining 201,600. A canvas that renders nothing at all would still pass the screenshot gate, which is why the same test asserts the masked element has a non-zero bounding box | **Observed 2026-08-24**, from `components/organisms/WorkHero/WorkHero.scss:46-48` and the element's bounding box |
-| That `--font-mono` renders for a visitor the way it renders here | `--font-mono: 'Courier New', monospace` (`app/app.scss:31`) has no Courier New in the Linux image, so `.work-hero__meta` (`WorkHero.scss:27`) is baselined against a fallback face no real visitor sees. Pinning the image makes the comparison stable; it does not make that text representative | **Observed 2026-08-24** |
-| That the `@font-face` src still resolves | `computedStyleValue` returns the resolved declaration, not the face that rasterized. It would still answer `MonumentExtended-Bold` if `app/scss/_fonts.scss:91-99` broke and Chromium fell back. Only the screenshot covers rasterization, and only for `.work-hero__heading`. The other three `--monument-bold` call sites live on routes the harness does not capture | **Observed 2026-08-24** |
+| ~~That `--font-mono` renders for a visitor the way it renders here~~ **Closed 2026-08-26 by Story 1-18** | It read `--font-mono: 'Courier New', monospace` (`app/app.scss:31`), which has no Courier New in the Linux image, so `.work-hero__meta` (`WorkHero.scss:27`) was baselined against a fallback face no real visitor sees. Story 1-18 aliased it onto the contract's `--f-mono`, whose first family is the self-hosted Geist Mono, so both sides now render the same shipped face. The row is kept rather than deleted because the regenerated baseline is the first one where that is true | **Observed 2026-08-26** |
+| That the `@font-face` src still resolves, **for anything other than the display face** | `computedStyleValue` returns the resolved declaration, not the face that rasterized. Only the screenshot covers rasterization, and only for `.work-hero__heading`. Story 1-18 closed the display half: `tests/e2e/anchor-alias.pw.ts` asserts the contract's display family reports `loaded` through `document.fonts` and that its `url()` answers 200 as `font/woff2` with a `wOF2` body, and it reads the computed weight and family at all four `--monument-bold` call sites on the routes that render them, which the screenshot cannot reach. The body and mono faces are still declaration-only here | **Observed 2026-08-24**, amended **2026-08-26** by Story 1-18 |
 | Accessibility | Unchanged and untouched. `.lighthouserc.js` still asserts accessibility at 0.95, severity error, and `.github/workflows/lighthouse.yml` still runs it. Story 1-10 modified neither, and `git diff --stat 4f4c751` over both files plus `deploy.yml` was empty | **Observed 2026-08-24**, by running that diff |
 
 ## The tolerance
@@ -150,6 +150,42 @@ under the absent-baseline name. Both carry
 `work-360x800-chromium-linux.png` byte-identical at
 `sha256:27f22bb6ff78c62e019cc8f222665436b7a20c2445a90677bead375c7d763f97`, and left the snapshot
 directory holding that one file.
+
+**The committed baseline moved on 2026-08-26, once, on purpose.** Story 1-18 aliased the Hub's
+custom properties onto the contract's semantic roles, which is the one commit in the Anchor's
+migration whose whole purpose is that the site looks different. That is regeneration case 1 below,
+and it is the first time this file's figure has changed.
+
+| Field | Value | Nature |
+|---|---|---|
+| sha256 **before** | `27f22bb6ff78c62e019cc8f222665436b7a20c2445a90677bead375c7d763f97` | **Observed 2026-08-26**, by `Get-FileHash ... -Algorithm SHA256` at `3e9bb25` |
+| sha256 **after** | `4203eccab7a108cb2b9c9f0fd04106f85595145474c89c9c7c55139bb18d278f` | **Observed 2026-08-26**, same command after the regeneration. 172,273 bytes |
+| Command | the `docker run` below, with `pnpm run test:e2e:update` | **Decision.** Verbatim, so the baseline is generated in the image it is compared in |
+| Update run | 2 of 36 skipped, 34 passed, the snapshot directory left holding that one PNG | **Observed 2026-08-26** |
+| Compare run | the same command with `pnpm test:e2e`: **36 passed, 50.5 s** | **Observed 2026-08-26**, after the regeneration |
+| What moved | The display face on the headings (Monument Extended to the contract's Bricolage Grotesque, at weight 800 rather than 400), the mono face (`Courier New` to Geist Mono), the body face (General Sans to Geist), the copy and secondary text colours, and `--page-padding` from `clamp(1.5rem, 4vw, 3rem)` to the contract's `clamp(1.25rem, 5vw, 4rem)`, which is 24px to 20px at this viewport | **Observed 2026-08-26**, by reading the two captures side by side |
+| What did **not** move | The `body#work` ground. `#0a000f` is a hardcoded cybercore value that Stories 2.29 and 2.34 own, and AD-20 forbids a migration step carrying it | **Decision.** Story 1-18 scope |
+
+**The visual check a person owes this capture, performed 2026-08-26.** Violet-tinted paper rather
+than pure black, the contract's display face on `.work-hero__heading`, no missing glyph, and no
+collapsed layout. The heading now wraps to **three** lines where the wider Monument Extended face
+took **five**, so the hero is shorter and the work list moves up into the frame. Measured rather
+than eyeballed: `document.body.scrollWidth` at this viewport is **490** after the change and was
+**494** before it, and in both cases the overflow comes from `.work-item__sub` and
+`.work-item__icon` below the fold, which is a pre-existing property of that component and not
+something this story caused. The heading's own line boxes end at x=206, 219 and 286 inside a
+216px column, so nothing is clipped. **Observed 2026-08-26**, by reading `getClientRects()` on the
+heading's text nodes in the pinned container, once against this story's tree and once against
+`app/app.scss` reverted to `3e9bb25`.
+
+**Two capability assertions in `tests/e2e/rendered-output.pw.ts` moved with it.** `:69` and `:84`
+pinned `MonumentExtended-Bold` and `"MonumentExtended-Bold"`, which is exactly the value Story
+1-18 changes. Both now derive the expectation from `contracts/tokens.css` rather than restating
+it: the computed `font-family` is compared on its **first family** against `--f-display`'s first
+family, and the `:root` read is compared against `--f-display`'s own computed value read from the
+same page. The two shapes recorded under "The finding Story 1-18 inherits" below are therefore
+stale as literals and intact as a pair: a computed `font-family` still loses the quotes Chromium
+does not need, and the custom property still carries its token stream through.
 
 The command used on 2026-08-24, from the repository root on the Windows host:
 
@@ -316,6 +352,20 @@ Two shapes of the same name come back, and both are asserted so neither surprise
 |---|---|---|
 | Computed `font-family` on `.work-hero__heading` | `MonumentExtended-Bold` | Chromium serialises a family name that is a valid identifier sequence without quotes |
 | Computed `--monument-bold` on `:root` | `"MonumentExtended-Bold"` | A custom property carries its declared token stream through untouched, and Sass normalises the single quotes at `app/app.scss:29` to double quotes on the way out |
+
+**This finding was answered by Story 1-18 on 2026-08-26, and the answer is recorded rather than
+the section deleted.** All four call sites now set `font-weight: var(--w-black)` beside
+`font-family: var(--monument-bold)` in the same commit that made the family an alias, and
+`tests/e2e/anchor-alias.pw.ts` reads the computed weight and the computed family at each of the
+four, on the route that renders it: `/work` for `.work-hero__heading`, `/projects` for
+`.projects-hero__heading`, `/` for `.glitch-text__inner` and the 404 surface for
+`.error-page__code`. All four compute **800**. The by-hand step came first and the read second,
+which is the order this section said had to hold.
+
+The two values in the table above are the pre-Story-1-18 literals and are kept as a record of the
+**pair of shapes**, which is the part that is still true: a computed `font-family` is a resolved
+stack with only the quotes Chromium needs, and a custom property on `:root` is a token stream
+after substitution. Both reads now answer with the contract's display stack instead.
 
 ## The CI job
 

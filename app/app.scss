@@ -1,34 +1,64 @@
 @use './scss/' as *;
 
+// The transitional alias layer (Story 1-18, Anchor migration step 2).
+//
+// Every property below is one of the Hub's own names redefined as a reference to a semantic role
+// published by `contracts/tokens.css`, following `DESIGN.md` section The mapping and
+// `rebaseline-2026-08-15.md` section O-10. That is what lets fifteen component stylesheets keep
+// working untouched while Epic 2 rebuilds them one at a time. It is scaffolding rather than
+// architecture, and Story 2.22 deletes this block once the last component reads the roles directly.
+//
+// No alias points at a `--c-*` palette entry. The raw palette is not consumed outside `contracts/`
+// (AD-14), so every target here is a `--token-*` colour role, an `--f-*` family or a spacing role.
+//
+// The weight half of the font mapping is not here, and cannot be. `--monument-bold` maps to
+// `--f-display` plus `--w-black` and `--monument-regular` to `--f-display` plus `--w-bold`, and a
+// custom property that carries a family cannot also carry a weight. The four live
+// `--monument-bold` call sites therefore set `font-weight: var(--w-black)` beside `font-family`
+// themselves (`glitch-text.scss:5`, `error-page.scss:24`, `ProjectsHero.scss:19`,
+// `WorkHero.scss:19`), and `tests/e2e/anchor-alias.pw.ts` reads the computed weight back in a real
+// browser, because a family-only alias drops bold invisibly to a screenshot and to a reading of
+// the CSS.
+//
+// The cybercore glow alias is gone, which closes O-11. It was closed on 2026-08-15 with evidence:
+// exactly one occurrence in the repository, its own declaration, and zero call sites. The name is
+// deliberately not written here, so a repository-wide search for it finds nothing at all.
 :root {
   // Colors
-  --white-color: #fff;
-  --black-color: #000;
-  --light-gray-color: #b4b4cc;
-  --gray-color: #6b5f80;
-  --accent: #5b21b6;
-  --accent-dim: rgba(91, 33, 182, 0.22);
-  --accent-glow: rgba(139, 92, 246, 0.4);
+  --white-color: var(--token-text);
+  --black-color: var(--token-bg);
+  --light-gray-color: var(--token-text-secondary);
+  --gray-color: var(--token-border-interactive);
+  --accent: var(--token-accent);
+  // Ornament, which is twelve of its fifteen call sites. The other three are a boundary a person
+  // reads state from, and each of those reads `var(--token-border-interactive)` at the call site
+  // instead: `WorkItem.scss:12`, `ProjectCard.scss:29`, `error-page.scss:58`.
+  --accent-dim: var(--token-accent-muted);
 
   // Spacing
-  --page-padding: clamp(1.5rem, 4vw, 3rem);
+  --page-padding: var(--page-pad);
 
   // Hero
+  // Stays local and stays literal. A viewport height is a layout constant, and the contract
+  // carries none.
   --hero-height: 40vh;
 
-  // General Sans
-  --font-regular: 'GeneralSans-Regular';
-  --font-bold: 'GeneralSans-Bold';
+  // Body type
+  --font-regular: var(--f-body);
+  --font-bold: var(--f-body);
 
   // Confillia
-  --confillia-normal: 'Confillia Normal';
+  --confillia-normal: var(--f-display);
+  // Story 2.20 owns this one. It retargets `--confillia-normal` to the display family at
+  // `wdth 75` and deletes this property in the same act, and O-6 (does the substitute read
+  // acceptably) is still open. Zero call sites, so it is left exactly as it was.
   --confillia-bold: 'Confillia';
 
-  // Monument Extended
-  --monument-regular: 'MonumentExtended-Regular';
-  --monument-bold: 'MonumentExtended-Bold';
+  // Display type
+  --monument-regular: var(--f-display);
+  --monument-bold: var(--f-display);
 
-  --font-mono: 'Courier New', monospace;
+  --font-mono: var(--f-mono);
 }
 
 * {

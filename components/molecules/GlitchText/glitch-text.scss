@@ -4,7 +4,9 @@
   &__inner {
     font-family: var(--monument-bold);
     font-size: clamp(3rem, 8vw, 7rem);
-    font-weight: 700;
+    // `--monument-bold` maps to `--f-display` plus `--w-black`, and a family alias cannot carry
+    // the weight half. This was the literal 700 before Story 1-18.
+    font-weight: var(--w-black);
     line-height: 0.9;
     text-transform: uppercase;
     color: var(--light-gray-color);

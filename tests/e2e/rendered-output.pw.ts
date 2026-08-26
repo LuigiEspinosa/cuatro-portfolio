@@ -7,6 +7,7 @@ import {
   expectRouteScreenshot,
   rootCustomPropertyValue,
 } from './harness';
+import { DISPLAY_FAMILY, firstFamily } from './contract-values';
 
 /**
  * One test per harness capability, against `/work` (Story 1-10).
@@ -66,7 +67,18 @@ test.describe('rendered-output harness', () => {
 
     const family = await computedStyleValue(page, HEADING, 'font-family');
 
-    expect(family).toBe('MonumentExtended-Bold');
+    // `MonumentExtended-Bold` until Story 1-18, which aliased `--monument-bold` onto the
+    // contract's `--f-display`. The expected value is **derived from `contracts/tokens.css`**
+    // rather than restated, so a MINOR bump that changes which face the display role names moves
+    // this assertion with it instead of failing it.
+    //
+    // The first family rather than the whole stack: a computed `font-family` carries every
+    // fallback, and Chromium quotes only the members that need it, so an equality against the
+    // whole string would pin a serialisation rather than the adoption. Which face is asked for
+    // first is what the adoption turns on.
+    expect(DISPLAY_FAMILY, 'contracts/tokens.css declares no --f-display, so this case measures nothing').not.toBe('');
+    expect(firstFamily(family), `${HEADING} does not ask for the contract's display family first`).toBe(DISPLAY_FAMILY);
+    expect(family, `${HEADING} still renders the retired local face`).not.toContain('MonumentExtended');
     exercised.add('computed-property');
   });
 
@@ -74,14 +86,20 @@ test.describe('rendered-output harness', () => {
     await page.goto(ROUTE);
 
     const declared = await rootCustomPropertyValue(page, '--monument-bold');
+    const role = await rootCustomPropertyValue(page, '--f-display');
 
-    // Double quotes, not the single quotes `app/app.scss:29` is written with: Sass
-    // normalises a quoted string to double quotes on the way out, and a custom property
-    // carries its declared token stream through to the computed value untouched. The
-    // computed `font-family` above loses the quotes entirely, because Chromium serialises a
-    // family name that is a valid identifier sequence without them. Two capabilities, two
-    // different shapes of the same name, which is why both are asserted rather than one.
-    expect(declared).toBe('"MonumentExtended-Bold"');
+    // `"MonumentExtended-Bold"` until Story 1-18. The alias layer redefined `--monument-bold` as
+    // `var(--f-display)`, and the computed value of a custom property is its token stream
+    // **after** substitution, so `:root` now answers with the display role's whole stack. The
+    // expectation is that role's own computed value, read from the same `:root` in the same page,
+    // which is what keeps this a derivation rather than a second copy of the contract.
+    //
+    // Two capabilities, two different shapes of the same name: the computed `font-family` above
+    // is a resolved stack on an element, this is the custom property's token stream on `:root`.
+    // Both are asserted because neither covers the other.
+    expect(declared, '--monument-bold no longer resolves to the display role').toBe(role);
+    expect(firstFamily(declared), '--monument-bold does not name the display family first').toBe(DISPLAY_FAMILY);
+    expect(declared, '--monument-bold still carries the retired local face').not.toContain('MonumentExtended');
     exercised.add('root-custom-property');
   });
 
