@@ -1108,3 +1108,11 @@ source_spec: `spec-1-14-ci-enforces-the-contract-boundary.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260825-132509-427b; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+### DW-5: Follow-up review still recommended for 1-15-determine-cs-tracker-s-daisyui-adoption-route after the damping cap was spent
+origin: review-budget-followup
+location: n/a
+source_spec: `spec-1-15-determine-cs-tracker-s-daisyui-adoption-route.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260825-161421-c4ac; this entry preserves the lingering recommendation for a deliberate later review.
+status: open

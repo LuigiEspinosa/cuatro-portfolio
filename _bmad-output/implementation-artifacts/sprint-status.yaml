@@ -115,7 +115,7 @@ development_status:
   # recorded a result. followup_review_recommended: true is unspent.
   1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: done
   1-14-ci-enforces-the-contract-boundary: done
-  1-15-determine-cs-tracker-s-daisyui-adoption-route: backlog
+  1-15-determine-cs-tracker-s-daisyui-adoption-route: done
   1-16-serve-contracts-at-https-cuatro-dev-contracts: backlog
   1-17-anchor-migration-step-1-add-the-contract-change-nothing: backlog
   1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: backlog
