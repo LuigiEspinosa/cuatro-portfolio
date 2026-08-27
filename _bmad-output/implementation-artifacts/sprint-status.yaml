@@ -92,13 +92,16 @@ development_status:
   # Story 2-4 where AD-6 puts it. The Page Rules read stays a known unknown that
   # nothing depends on. followup_review_recommended: true is still unspent.
   1-7-enumerate-the-deployed-routing-table-on-the-box: done
-  # 1-8 parked by hand 2026-08-25, same session-wall cause as 1-6 and 1-7. Work is
-  # complete at 708e638 and 33a7d78. Operator actions 1 and 3 to 7 were completed
-  # 2026-08-25: bucket cuatro-backups, config at /etc/cuatro/library-backup.env,
-  # lifecycle rule expire-digital-library-30d, first offsite run verified. Still
-  # owed: action 2 (read the R2 free tier from the console) and the password
-  # manager half of action 7, which named limit 5 depends on entirely.
-  1-8-an-offsite-backup-path-for-digital-library: awaiting-operator
+  # 1-8 closed by hand 2026-08-27. Work committed at 708e638 and 33a7d78. All eight
+  # operator_actions are done: bucket cuatro-backups, config at
+  # /etc/cuatro/library-backup.env owned root:deploy 0640, lifecycle rule
+  # expire-digital-library-30d, first offsite run 2026-08-25 with
+  # roundtrip=sha256-match and restore=verified, the R2 free tier re-read and
+  # unchanged, and on 2026-08-27 the password manager's copy of the passphrase was
+  # proven to decrypt a real nightly object from a machine that is not the box.
+  # Named limit 5 is closed. The estate also has a confirmed Hostinger weekly
+  # whole-box snapshot, recorded in ops/routing-inventory.md with its four caveats.
+  1-8-an-offsite-backup-path-for-digital-library: done
   1-9-record-the-build-on-the-box-violation-as-a-tracked-item: done
   # 1-10 parked by hand 2026-08-25, same session-wall cause. Work is complete at
   # cc03c0c, 915bf5e and 064c087. The branch was pushed 2026-08-25 and CI run
