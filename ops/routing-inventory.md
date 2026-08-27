@@ -1600,10 +1600,66 @@ perform it.
 |---|---|
 | Read the Cloudflare account audit log, then revoke `tracker-mac` and `cuatro-tracker` | The only token in the estate is **zone-scoped**. **Observed 2026-08-24:** `GET /accounts/{id}/audit_logs` returns HTTP 403 `Authentication error` (code 10000) and `GET /user/tokens` returns HTTP 403 `Unauthorized to access requested resource` (code 9109). Reading the log needs an account-scoped token and revoking needs `User > API Tokens > Edit`, neither of which the agent holds, and **never revoke, rotate or create a credential** is a standing boundary. Already tracked as `ops/bot-mitigation.md` Pending Operator action 5. **Operator decision 2026-08-27: not revoking for now**, see "Decisions taken on this story's operator actions" below |
 | Confirm `analytics.cuatro.dev` passes the managed challenge in a real browser | Playwright arrives in Story 1-10 and no acceptance criterion may claim a rendered-output result before it. Already `ops/bot-mitigation.md` action 3. **Re-tested 2026-08-27 now that Playwright exists: a headed Chromium did not clear the challenge.** See "The challenge does not clear for an automated browser" in `ops/bot-mitigation.md`. One load in an ordinary browser is still owed |
-| Confirm the Hostinger weekly whole-box snapshot exists | It is claimed in a script comment and appears nowhere on the box. Confirming it needs the Hostinger console, which the agent cannot reach |
-| Verify IPv6 serving and the v6 `DOCKER-USER` path | One `curl` from a vantage point with IPv6 closes it. See [The IPv6 caveat, stated once](#the-ipv6-caveat-stated-once) for what is and is not claimed |
+| Confirm the Hostinger weekly whole-box snapshot exists | It is claimed in a script comment and appears nowhere on the box. Confirming it needs the Hostinger console, which the agent cannot reach. **Answered 2026-08-27: it exists.** See "The Hostinger whole-box snapshot, confirmed" below |
+| Verify IPv6 serving and the v6 `DOCKER-USER` path | One `curl` from a vantage point with IPv6 closes it. See [The IPv6 caveat, stated once](#the-ipv6-caveat-stated-once) for what is and is not claimed. **Half answered 2026-08-27: v6 serving confirmed for all three Satellites.** The direct-to-origin DROP test is still owed. See "IPv6 serving, confirmed" below |
 | Decide whether `analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows | A Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration |
 | Read the zone's legacy Page Rules, and the `http_request_dynamic_redirect`, `http_request_transform`, `http_response_headers_transform` and `http_config_settings` ruleset phases | The zone-scoped token returns HTTP 403 code 9109 on `pagerules` and `request is not authorized` on each phase entrypoint. **Observed 2026-08-24.** The zone-level `GET /rulesets` listing shows no redirect or transform ruleset, and the `www` 301 is settled independently by a direct origin probe, so nothing depends on this. It is listed so the unknown is a known one |
+
+### The Hostinger whole-box snapshot, confirmed
+
+**Observed 2026-08-27** by the Operator, from the Hostinger hPanel VPS backups page. The snapshot
+`/home/deploy/cuatro-backup.sh` claims to complement is real, which had been an unverified comment
+in a script since before this record existed.
+
+| Item | Value | Nature |
+|---|---|---|
+| Cadence | **Weekly**, automatic (`Respaldos automáticos, cada semana`) | **Observed** |
+| Snapshots retained | **Two** | **Observed.** Only two rows are listed |
+| Most recent | 2026-08-24 01:45, 16.07 GB | **Observed** |
+| Previous | 2026-08-17 02:08, 20.21 GB | **Observed** |
+| Location | United States | **Observed.** The box itself is a Hostinger VPS; the snapshot is held by the same vendor |
+| System | Ubuntu 24.04 LTS, whole box | **Observed** |
+| Stated restore time | 36 minutes | **Observed**, as quoted by the console |
+| Restore procedure | The `Restablecer` button per snapshot in hPanel, VPS, Backups | **Observed** |
+
+**This is a real safety net and it is narrower than "we have backups" implies.** Four things a
+later reader needs, none of which the console states as a caveat:
+
+- **Two snapshots is roughly fourteen days of history.** A corruption noticed on day fifteen has
+  no clean snapshot to go back to. Every fault older than the oldest snapshot is unrecoverable
+  from this mechanism.
+- **It is not independent of the thing it protects.** The box is a Hostinger VPS and the snapshot
+  is held by Hostinger, in the same account. It survives disk failure and a bad deploy; it does not
+  survive account loss, billing suspension, or vendor failure. `digital-library`'s Cloudflare R2
+  copy is the only backup in the estate held by a different vendor from the box.
+- **It restores the whole box, not a file.** Recovering one deleted row or one corrupted volume
+  means restoring everything to that point and losing every change since. That is why
+  `ops/backup-digital-library.md`'s per-application path is not made redundant by this.
+- **Nobody has ever restored from it.** The 36 minutes is the vendor's figure, and the snapshot is
+  an assumption about recoverability until a restore is actually performed once.
+
+**The size moved from 20.21 GB to 16.07 GB between the two snapshots**, a drop of about 4 GB in a
+week. Not investigated here. It is consistent with log rotation or an image prune and it is also
+what a deleted volume would look like, so it is recorded rather than explained.
+
+### IPv6 serving, confirmed
+
+**Observed 2026-08-27** by the Operator, from a mobile connection with WiFi disabled, verified as
+genuinely IPv6 by `test-ipv6.com` scoring **10/10** before the hostnames were tried.
+
+**All three Satellite hostnames carrying an `AAAA` load over IPv6**: `cs-tracker.cuatro.dev`,
+`tracker.cuatro.dev` and `library.cuatro.dev`. The v6 path through Cloudflare to the origin works,
+which had never been observed from any session because none has had IPv6 egress.
+
+**This unblocks adding `AAAA` records for the apex, `www` and `analytics`**, which the AD-3 table
+notes as the asymmetry a visitor on an IPv6-only network would notice.
+
+**The other half of the action is still owed, and it is the security-relevant half.** Confirming
+that the three hostnames serve over v6 says nothing about whether the v6 `DOCKER-USER` DROP rule
+works, because those requests arrive through Cloudflare, which is exactly the path the rule permits.
+What is untested is a **direct** request to the origin's v6 address, `2a02:4780:75:9155::1`,
+bypassing the edge. Until that is refused, the v6 rules are present and the bypass is unproven,
+and `ops/bot-mitigation.md`'s "the filter is bypassable" section is the one that governs.
 
 ### Decisions taken on this story's operator actions
 

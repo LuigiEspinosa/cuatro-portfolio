@@ -609,10 +609,20 @@ Written down because a coverage claim with an unstated hole reads as coverage.
    when that script prints `DECRYPT: ok`, and not before.
 6. **Redis is not backed up.** Correct today on the evidence above, and it is a decision that
    expires the moment `DBSIZE` is not 0. The nightly job reports it; nothing enforces it.
-7. **The other three projects in the estate still have no offsite backup, and two have no backup at
-   all.** Story 1-8 scopes `digital-library` only. The estate-wide gap is in the deferred ledger,
-   and `cuatro-backup.sh`'s claim to complement a Hostinger weekly snapshot remains an unverified
-   comment in a script.
+7. **The other three projects have no per-application backup, but the box is snapshotted weekly.**
+   Story 1-8 scopes `digital-library` only, and the estate-wide per-application gap is in the
+   deferred ledger. What changed on 2026-08-27: `cuatro-backup.sh`'s claim to complement a
+   Hostinger weekly snapshot **was verified and is true**. Two snapshots exist, 2026-08-24 and
+   2026-08-17, whole box, restorable in a stated 36 minutes. Details and caveats are in
+   `ops/routing-inventory.md` under "The Hostinger whole-box snapshot, confirmed".
+
+   **This does not make the offsite path here redundant, and the reasons are worth stating.** The
+   snapshot retains **two** copies, so it covers roughly fourteen days and no longer; it is held by
+   **Hostinger, the same vendor that hosts the box**, so it survives disk failure and a bad deploy
+   but not account loss; it restores the **whole box**, so recovering one corrupted SQLite file
+   means reverting every other application to that point; and **no restore has ever been
+   performed**, so its recoverability is an assumption. The R2 copy is per-application,
+   independently held, retained 30 days, and verified by a real restore on every run.
 8. **`put` reads the whole body into memory.** Acceptable only because the run refuses to upload
    above `MAX_ARCHIVE_BYTES`, which is why that check exists rather than being trusted to stay
    small, and why a non-numeric ceiling fails the run instead of being ignored.
