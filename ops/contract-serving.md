@@ -154,6 +154,53 @@ The same spec also compares the served **bytes** against the authored file for a
 truncated or stale served copy answers 200 with the right type and hands a consumer a contract
 nobody published, which the status alone cannot see.
 
+### Live over HTTPS, 2026-08-27
+
+**Observed 2026-08-27**, Pending Operator action 1, after `main` was deployed at `cb51ed9`. This
+is the first time the surface has been read over the real edge rather than off the harness's own
+server. The 404 baseline above and the harness table are both left in place: this is a third
+reading by a third method, not a correction of either.
+
+Fetched with `Invoke-WebRequest` from a workstation against `https://cuatro.dev`, sending
+`cuatro-verify/1.0 (+https://cuatro.dev)` as the user agent, per Pending Operator action 4.
+
+| Path under `/contracts/` | Status | Content type | Bytes | `cf-cache-status` |
+|---|---|---|---|---|
+| `tokens.css` | 200 | `text/css; charset=UTF-8` | 6225 | REVALIDATED |
+| `fonts.css` | 200 | `text/css; charset=UTF-8` | 2957 | REVALIDATED |
+| `tailwind.css` | 200 | `text/css; charset=UTF-8` | 4522 | REVALIDATED |
+| `fonts/bricolage-grotesque-latin.woff2` | 200 | `font/woff2` | 58992 | REVALIDATED |
+| `fonts/geist-latin.woff2` | 200 | `font/woff2` | 24124 | REVALIDATED |
+| `fonts/geist-mono-latin.woff2` | 200 | `font/woff2` | 11284 | REVALIDATED |
+| `fonts/OFL-bricolage-grotesque.txt` | 200 | `text/plain; charset=UTF-8` | 4403 | DYNAMIC |
+| `fonts/OFL-geist.txt` | 200 | `text/plain; charset=UTF-8` | 4383 | DYNAMIC |
+| `fonts/OFL-geist-mono.txt` | 200 | `text/plain; charset=UTF-8` | 4383 | DYNAMIC |
+
+**All nine answer 200 with the type the table above predicts**, so the content types Next sends on
+the deployed Linux container match the ones observed on the Windows development host. That was an
+open question until this reading.
+
+**The edge rewrites the cache header, and the two halves of the surface are treated differently.**
+The origin sends `cache-control: public, max-age=0`, as recorded in the limits table. What a
+consumer actually receives is:
+
+- **CSS and woff2:** `cache-control: public, max-age=14400`, `cf-cache-status: REVALIDATED`. The
+  zone's `browser_cache_ttl` of 14400 is being applied and the object is held at the edge.
+- **The three OFL licence files:** `cache-control: public, max-age=0`, `cf-cache-status: DYNAMIC`.
+  Not cached at the edge at all.
+
+**This sharpens Pending Operator action 2 rather than settling it.** The four-hour staleness
+window is not theoretical: it is in the `max-age` a consumer is being handed right now, for
+exactly the three contract files that matter. The licence files, which never change, are the ones
+being served uncached. That is backwards from what either party would choose deliberately, and it
+is a consequence of Cloudflare's default cacheable-extension list rather than any decision recorded
+here. The versioned-URL policy decided in "The cache policy" is what makes the CSS half safe; the
+`.txt` half costs a request each time and harms nothing.
+
+**Not re-tested here: the empty user agent 403.** A `""` user agent could not be reproduced from
+`Invoke-WebRequest`, which substitutes its own default, so the 2026-08-26 observation stands as
+recorded and this reading neither confirms nor contradicts it.
+
 ## The rendered check, and why the status is the assertion
 
 `contracts/fonts.css` carries `url("./fonts/<file>.woff2")`, relative to the stylesheet itself,
@@ -377,6 +424,47 @@ $ git status --porcelain --ignored=matching -- contracts/
 The third command is the contract drift gate's own check, run over the same tree. It is clean,
 which is the point: this story publishes the surface and does not change it.
 
+## The deploy pipeline was broken, and had been for twelve days
+
+**Observed and repaired 2026-08-27.** Recorded here because this story is the one that found it,
+and because nothing else in the estate would have.
+
+**What happened.** Merging `main` at `cb51ed9` fired the `Deploy` workflow, which failed in twelve
+seconds: `ssh: handshake failed: unable to authenticate, attempted methods [none publickey]`. The
+box's `/home/deploy/.ssh/authorized_keys` held exactly one key, the Operator's own. The GitHub
+Actions deploy key was not on the machine at all.
+
+**Why.** Story 1-21 restored `cuatro.dev` onto a new Hostinger VPS on 2026-07-20. The
+`SERVER_HOST` secret was updated for the new box on 2026-08-17. `SSH_PRIVATE_KEY` and
+`SERVER_USER` were not: both still dated from **2026-03-09** and described the machine that had
+been replaced. The host was updated and the credentials were forgotten.
+
+**Why nobody noticed.** A deploy fires only on a push to `main`, and nothing merged to `main`
+between 2026-08-15 and 2026-08-27. The pipeline was broken for twelve days without a single
+failing run, because it never ran. This is the same class of silent failure that
+`ops/backup-digital-library.md` names in its limit 3, where a nightly job's exit status is written
+to a log nobody reads. **No monitor in this estate watches whether a deploy succeeds.**
+
+**What was wrong, in the order it was found.** Each fix exposed the next, which is worth recording
+because a reader hitting one of these will likely hit the rest:
+
+| # | Symptom | Cause |
+|---|---|---|
+| 1 | `handshake failed ... [none publickey]` | No deploy public key in `authorized_keys` on the new box |
+| 2 | `ssh.ParsePrivateKey: ssh: no key found` | The private key was piped into `gh secret set` through PowerShell, which re-encoded the line endings. OpenSSH keys need LF and a trailing newline |
+| 3 | `ssh: this private key is passphrase protected` | `ssh-keygen -N '""'` in PowerShell passes a literal two-character passphrase, not an empty one |
+| 4 | `handshake failed ... [none publickey]`, key valid | `SERVER_USER` still named the old box's user. `sshd` has `permitrootlogin no` and only `deploy` owns a repo checkout |
+
+**The repair.** A fresh ed25519 key was generated with `cmd /c ssh-keygen -N ""`, so the empty
+passphrase survives; the public half replaced the stale entry in `authorized_keys`, leaving the
+Operator's own key untouched; the private half was written to the secret with
+`cmd /c "gh secret set SSH_PRIVATE_KEY < <file>"`, whose redirection is byte-exact where a
+PowerShell pipe is not; `SERVER_USER` was set to `deploy`; and the key material was deleted.
+
+**What is still owed.** Nothing watches this pipeline. A deploy that fails now is as silent as the
+twelve days above, and the next person to notice will be whoever wonders why the site is stale.
+That belongs with the monitoring gap already in the deferred ledger, not in this file.
+
 ## The cache policy
 
 **Decided 2026-08-27**, Pending Operator action 2. **The decision only. Nothing below is built,
@@ -441,7 +529,7 @@ rather than left in prose, in the shape `ops/token-contract.md`, `ops/font-contr
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Confirm the surface live over HTTPS after the merge to `main`** | Operator | A deploy fires only on a push to `main`, and this story's work is committed on `dev`, so no agent here can assert the live URL. After the deploy, fetch each of these and record the status and the `content-type`: `https://cuatro.dev/contracts/tokens.css`, `/contracts/fonts.css`, `/contracts/tailwind.css`, `/contracts/fonts/bricolage-grotesque-latin.woff2`, `/contracts/fonts/geist-latin.woff2`, `/contracts/fonts/geist-mono-latin.woff2`, `/contracts/fonts/OFL-bricolage-grotesque.txt`, `/contracts/fonts/OFL-geist.txt`, `/contracts/fonts/OFL-geist-mono.txt`. **A correct answer is `200` with `text/css`, `font/woff2` and `text/plain` respectively**, matching the table under "The observed content types". Send a real user agent, per action 4. Write the result into this file as a new dated subsection under that heading, beside the 404 baseline, and leave the baseline in place | _not done_ |
+| 1 | **Confirm the surface live over HTTPS after the merge to `main`** | Operator | A deploy fires only on a push to `main`, and this story's work is committed on `dev`, so no agent here can assert the live URL. After the deploy, fetch each of these and record the status and the `content-type`: `https://cuatro.dev/contracts/tokens.css`, `/contracts/fonts.css`, `/contracts/tailwind.css`, `/contracts/fonts/bricolage-grotesque-latin.woff2`, `/contracts/fonts/geist-latin.woff2`, `/contracts/fonts/geist-mono-latin.woff2`, `/contracts/fonts/OFL-bricolage-grotesque.txt`, `/contracts/fonts/OFL-geist.txt`, `/contracts/fonts/OFL-geist-mono.txt`. **A correct answer is `200` with `text/css`, `font/woff2` and `text/plain` respectively**, matching the table under "The observed content types". Send a real user agent, per action 4. Write the result into this file as a new dated subsection under that heading, beside the 404 baseline, and leave the baseline in place | **2026-08-27.** All nine answer 200 with the expected type. Recorded as "Live over HTTPS, 2026-08-27" under that heading, with the 404 baseline left in place. **The deploy that made this possible had to be repaired first**: see "The deploy pipeline was broken" below |
 | 2 | **Decide the cache policy for the published surface** | Operator | The origin sends `max-age=0` and the zone is `cache_level aggressive` with `browser_cache_ttl 14400` and `edge_cache_ttl 7200`, so a republished contract can be served stale from the edge for up to four hours under an unchanged URL. AD-16's versioning is deprecate, migrate, remove, which tolerates that; a consumer polling for a fresh Registry does not. Decide it once, record it here, and purge the edge on a contract publish if the answer is to keep the zone default | **2026-08-27. Ruling: version the URL and let the edge cache hard.** See "The cache policy" below. The decision is recorded; **the implementation is not built** and is not this story's work |
 | 3 | **Settle the Traefik-versus-Hub question before Epic 4 plans its work** | Operator | `epics.md:1741-1742` names it as the interim-versus-final decision and this story treated it as not one to take unattended. Today's answer is the Hub, and the table under "What Epic 3 and Epic 4 each do to this" says Epic 4 then changes nothing here. If the answer becomes Traefik, that table is what has to be rewritten, and this mechanism becomes the interim | _not done_ |
 | 4 | **Tell every Satellite that a build-time fetch must send a user agent** | Operator | Observed on the live apex: an empty user agent answers **403** at the Cloudflare edge, and so does `GPTBot/1.0`. AD-4 has seven repositories fetch `https://cuatro.dev/contracts/registry.json` at build time, and a fetch that sends no user agent fails against a mechanism that is working perfectly. This pairs with `ops/tailwind-adapter.md` Pending Operator action 3, which is the other adoption instruction that fails silently if it is missed | **Written down 2026-08-27** as "The adoption instruction every Satellite needs" below, so the instruction exists in one citable place. **Not yet delivered to any Satellite**: `cs-tracker` is the only one that has begun adoption, in Story 1-19, and it is the first consumer this has to reach |
