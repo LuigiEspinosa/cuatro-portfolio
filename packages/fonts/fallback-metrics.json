@@ -1,0 +1,79 @@
+{
+  "$description": "Written by packages/fonts/measure.mjs inside the pinned Playwright image. packages/fonts/build.mjs derives every size-adjust, ascent-override, descent-override and line-gap-override in contracts/fonts.css from these numbers. Both sides of every ratio come from one browser, one pixel size and one string, on purpose. Never hand-edited: tests/e2e/contract-fonts.pw.ts is what catches this file going stale.",
+  "provenance": {
+    "image": "mcr.microsoft.com/playwright:v1.62.1-noble",
+    "imageDigest": "sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e",
+    "chromium": "151.0.7922.34",
+    "measuredUtc": "2026-08-25T03:27:34.199Z",
+    "pixelSize": 100,
+    "sampleString": "Handgloves ABCxyz 0123"
+  },
+  "families": {
+    "Bricolage Grotesque": {
+      "token": "--f-display",
+      "file": "fonts/bricolage-grotesque-latin.woff2",
+      "fallbackStack": "\"Archivo\", system-ui, sans-serif",
+      "face": {
+        "advance": 1206,
+        "ascent": 93,
+        "descent": 27,
+        "normalLineHeight": 120,
+        "lineGap": 0
+      },
+      "fallback": {
+        "advance": 1112.79296875,
+        "ascent": 96,
+        "descent": 30,
+        "normalLineHeight": 135,
+        "lineGap": 9,
+        "resolvedFonts": [
+          "WenQuanYi Zen Hei"
+        ]
+      }
+    },
+    "Geist": {
+      "token": "--f-body",
+      "file": "fonts/geist-latin.woff2",
+      "fallbackStack": "ui-sans-serif, system-ui, sans-serif",
+      "face": {
+        "advance": 1169,
+        "ascent": 101,
+        "descent": 30,
+        "normalLineHeight": 131,
+        "lineGap": 0
+      },
+      "fallback": {
+        "advance": 1112.79296875,
+        "ascent": 96,
+        "descent": 30,
+        "normalLineHeight": 135,
+        "lineGap": 9,
+        "resolvedFonts": [
+          "WenQuanYi Zen Hei"
+        ]
+      }
+    },
+    "Geist Mono": {
+      "token": "--f-mono",
+      "file": "fonts/geist-mono-latin.woff2",
+      "fallbackStack": "ui-monospace, SFMono-Regular, monospace",
+      "face": {
+        "advance": 1320,
+        "ascent": 101,
+        "descent": 30,
+        "normalLineHeight": 131,
+        "lineGap": 0
+      },
+      "fallback": {
+        "advance": 1100,
+        "ascent": 96,
+        "descent": 30,
+        "normalLineHeight": 135,
+        "lineGap": 9,
+        "resolvedFonts": [
+          "WenQuanYi Zen Hei Mono"
+        ]
+      }
+    }
+  }
+}

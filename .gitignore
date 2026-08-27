@@ -4,6 +4,10 @@
 ### dotenv ###
 .env
 
+### Box-only credentials (Story 1-21) ###
+# Written on the serving host beside the checkout that `git pull` operates on.
+.umami-admin
+
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false
@@ -104,6 +108,20 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+### Playwright (Story 1-10) ###
+# Run output only. The committed baselines live in
+# `tests/e2e/rendered-output.pw.ts-snapshots/` and are deliberately not ignored.
+/test-results/
+/playwright-report/
+/blob-report/
+
+# `tests/e2e/contract-tailwind.pw.ts` (Story 1-13) builds its scratch tree here
+# rather than under the system temp directory, because the Tailwind CLI resolves
+# `@import "tailwindcss"` by walking up from its input file looking for
+# `node_modules`. Teardown removes it and the spec sweeps leftovers on the next
+# run; this keeps a tree from a killed run out of a commit meanwhile.
+/.cuatro-tailwind-probe-*/
+
 ### react ###
 .DS_*
 *.log
@@ -180,3 +198,13 @@ _bmad/render/
 # BMad skills are installed by \mad-loop init\ / \
 px bmad-method install\, not versioned
 .claude/skills/
+
+# Story 1-5 measurement week: raw CSVs are evidence pulled from the box, never committed
+capacity-week/
+
+# Story 1-16: the served copy of the published surface, written by
+# `packages/contracts-serve/publish.mjs` at the start of `pnpm build` so the
+# Hub's own Next server answers /contracts/. AD-4's rule is one authored
+# location: `contracts/` at the repository root is it, and a committed second
+# copy here is the drift that rule forbids. Generated output, never committed.
+/public/contracts/

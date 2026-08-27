@@ -1,0 +1,12 @@
+{
+  "name": "@cuatro/tokens",
+  "version": "1.0.0",
+  "description": "Generates contracts/tokens.css. AD-1: this package is never published; contracts/ is.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "_entryPoint": "corepack pnpm tokens:build, in the root package.json. This manifest declares no build script on purpose: two definitions of one command drift apart, and the root script is the one CI and ops/token-contract.md drive.",
+  "devDependencies": {
+    "style-dictionary": "5.5.2"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$description": "Values are authored as CSS strings inside DTCG structure, not as DTCG structured color, dimension or duration objects. Style Dictionary 5.5.2 mangles every structured form this contract needs, so $type here is descriptive metadata and the string is the authored value. See ops/token-contract.md, section \"Why the source authors CSS strings inside DTCG structure\".",
+  "f": {
+    "$type": "fontFamily",
+    "display": { "$value": "\"Bricolage Grotesque\", \"Archivo\", system-ui, sans-serif" },
+    "body": { "$value": "\"Geist\", ui-sans-serif, system-ui, sans-serif" },
+    "mono": { "$value": "\"Geist Mono\", ui-monospace, SFMono-Regular, monospace" }
+  },
+  "t": {
+    "$type": "dimension",
+    "3xs": { "$value": "0.6875rem" },
+    "2xs": { "$value": "0.75rem" },
+    "xs": { "$value": "0.8125rem" },
+    "sm": { "$value": "0.875rem" },
+    "base": { "$value": "1rem" },
+    "md": { "$value": "1.25rem" },
+    "lg": { "$value": "1.5625rem" },
+    "xl": { "$value": "1.9531rem" },
+    "2xl": { "$value": "2.4414rem" },
+    "display": { "$value": "clamp(2.25rem, 9vw, 4.5rem)" }
+  },
+  "w": {
+    "$type": "fontWeight",
+    "light": { "$value": "300" },
+    "regular": { "$value": "400" },
+    "medium": { "$value": "500" },
+    "bold": { "$value": "700" },
+    "black": { "$value": "800" }
+  },
+  "lh": {
+    "$type": "number",
+    "display": { "$value": "0.95" },
+    "heading": { "$value": "1.1" },
+    "lede": { "$value": "1.55" },
+    "body": { "$value": "1.6" },
+    "label": { "$value": "1.4" }
+  },
+  "tr": {
+    "$type": "dimension",
+    "display": { "$value": "-0.05em" },
+    "heading": { "$value": "-0.03em" },
+    "name": { "$value": "-0.015em" },
+    "body": { "$value": "0em" },
+    "meta": { "$value": "0.09em" },
+    "label": { "$value": "0.14em" }
+  }
+}

@@ -27,3 +27,194 @@ jobs:
 
       - name: Unit tests
         run: pnpm test --run
+
+  tokens-contract:
+    runs-on: ubuntu-latest
+
+    # The job installs, runs one Node script and reads `git status`, so it is the
+    # fastest thing in this file. A ceiling turns a hung install into a failure
+    # with a cause rather than a job that runs until the platform kills it, which
+    # is the same argument the `rendered-output` job below makes.
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # `CUATRO_TOKENS_SOURCE` and `CUATRO_TOKENS_OUTPUT` are build inputs that
+      # exist so a test can run the generator against a scratch tree. Either one
+      # present in this runner's environment would redirect the rebuild away from
+      # `contracts/`, leave the check below reading an untouched directory, and
+      # hold this gate green over real drift. Both are pinned empty here, which
+      # the generator treats as unset, so no environment reaching this job can
+      # redirect it. See `ops/token-contract.md`, "The two build inputs".
+      - name: Rebuild the published contract
+        run: pnpm tokens:build
+        env:
+          CUATRO_TOKENS_SOURCE: ''
+          CUATRO_TOKENS_OUTPUT: ''
+
+      # `git diff --exit-code` is blind to a file the generator newly created,
+      # which is exactly the shape of mistake Stories 1.12 and 1.13 will make
+      # when they add a second and a third output under `contracts/`. Reading
+      # `git status --porcelain` sees an untracked path and a deleted one too,
+      # so the first new file cannot ship unreviewed. `--ignored=matching` means
+      # a generated path that `.gitignore` happens to match is reported rather
+      # than hidden, which is the same hole one level down.
+      #
+      # `git add --intent-to-add` before the diff is what makes the diff say
+      # anything at all about an appeared file: without it, `git diff` prints
+      # nothing for an untracked path and the log carries a filename with no
+      # content, on exactly the case this gate was written for.
+      - name: Fail if the published contract drifted from its source
+        run: |
+          drift="$(git status --porcelain --ignored=matching -- contracts/)"
+          if [ -n "$drift" ]; then
+            echo "contracts/ is not what packages/tokens generates."
+            echo "Run 'pnpm tokens:build' and commit the result."
+            echo "$drift"
+            git add --intent-to-add -- contracts/
+            git --no-pager diff -- contracts/
+            exit 1
+          fi
+
+  fonts-contract:
+    runs-on: ubuntu-latest
+
+    # The job installs, runs one Node script over two committed JSON files and
+    # reads `git status`. It never subsets a font and never starts a browser:
+    # both of those need a toolchain the runners do not have, which is exactly
+    # why `packages/fonts/build.mjs` is arithmetic over committed inputs. Same
+    # ceiling as `tokens-contract`, for the same reason.
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # `CUATRO_FONTS_SOURCE` and `CUATRO_FONTS_OUTPUT` are build inputs that
+      # exist so a test can run the generator against a scratch tree. Either one
+      # present in this runner's environment would redirect the rebuild away
+      # from `contracts/`, leave the check below reading an untouched directory,
+      # and hold this gate green over real drift. Both are pinned empty here,
+      # which the generator treats as unset, so no environment reaching this job
+      # can redirect it. See `ops/font-contract.md`, "The two build inputs".
+      - name: Rebuild the published font contract
+        run: pnpm fonts:build
+        env:
+          CUATRO_FONTS_SOURCE: ''
+          CUATRO_FONTS_OUTPUT: ''
+
+      # The same shape as the `tokens-contract` check above, and for the same
+      # reasons: `git status --porcelain` sees an untracked path and a deleted
+      # one where `git diff --exit-code` sees neither, `--ignored=matching`
+      # reports a generated path that `.gitignore` happens to match rather than
+      # hiding it, and `git add --intent-to-add` is what makes the diff print
+      # the content of a file that has only just appeared.
+      - name: Fail if the published font contract drifted from its source
+        run: |
+          drift="$(git status --porcelain --ignored=matching -- contracts/)"
+          if [ -n "$drift" ]; then
+            echo "contracts/ is not what packages/fonts generates."
+            echo "Run 'pnpm fonts:build' and commit the result."
+            echo "$drift"
+            git add --intent-to-add -- contracts/
+            git --no-pager diff -- contracts/
+            exit 1
+          fi
+
+  contract-purity:
+    runs-on: ubuntu-latest
+
+    # AD-1 says CI fails if any file under `contracts/` matches
+    # `\.(ts|js|tsx|jsx|mjs|cjs)$`, and `AGENTS.md` tells every agent that it
+    # does. This job is where that becomes true. It is blocking and carries no
+    # `continue-on-error`, no `|| true` and no skip condition: there is one
+    # environment and no staging, so nothing downstream catches what it lets
+    # through (AD-21, which names `contracts/` purity in its list of gates that
+    # may never become warnings).
+    #
+    # It declares no `on:` of its own, so it runs on this file's triggers,
+    # `push` to `**` and `pull_request` to `main`, and the two can never drift.
+    #
+    # It installs nothing and uses no pnpm cache, deliberately. The checker
+    # imports only `node:` builtins, the way `deploy.yml` runs the Capacity
+    # Gate, so the boundary is still reported on the run where
+    # `pnpm install --frozen-lockfile` fails, which is the run where a hurried
+    # fix is most likely to reach for the published folder. That also makes this
+    # the fastest job in the file, hence the ceiling below.
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No argument and no `env:`. The directory the checker opens is fixed in
+      # its source, so nothing reaching this runner can redirect it. See
+      # `ops/contract-purity.md`.
+      - name: Contract purity
+        run: node ops/contract-purity.mjs
+
+  rendered-output:
+    runs-on: ubuntu-latest
+
+    # The job builds the Hub and drives a browser, so it is the slowest thing in this file.
+    # A ceiling turns a hung browser into a failure with a cause rather than a job that runs
+    # until the platform kills it.
+    timeout-minutes: 20
+
+    # The baseline PNG in `tests/e2e/rendered-output.pw.ts-snapshots/` was generated inside
+    # this exact image. Glyph rasterization is not portable, and `--font-mono` has no Courier
+    # New on Linux, so pinning both sides to one image is what makes the tolerance a real
+    # number. Bump the image tag and the `@playwright/test` pin in `package.json` together,
+    # then regenerate the baseline. See `ops/rendered-output-harness.md`.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      # Chromium in a container gets a 64 MB `/dev/shm` by default and crashes the renderer
+      # when it runs out. `retries` is 0 by design, so one such crash is a red build on an
+      # unrelated pull request. This is also the flag the documented baseline-regeneration
+      # command uses, which keeps both sides of the comparison on one configuration.
+      options: --ipc=host
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rendered-output harness
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          # An install or build failure fails before any report exists. Warning about the
+          # missing artifact would bury the real cause under a second, unrelated complaint.
+          if-no-files-found: ignore

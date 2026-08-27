@@ -1,0 +1,20 @@
+{
+  "$description": "Values are authored as CSS strings inside DTCG structure, not as DTCG structured color, dimension or duration objects. Style Dictionary 5.5.2 mangles every structured form this contract needs, so $type here is descriptive metadata and the string is the authored value. See ops/token-contract.md, section \"Why the source authors CSS strings inside DTCG structure\".",
+  "r": {
+    "$type": "dimension",
+    "none": { "$value": "0" },
+    "hair": { "$value": "2px" },
+    "pill": { "$value": "999px" }
+  },
+  "stroke": {
+    "$type": "dimension",
+    "hair": { "$value": "1px" },
+    "boundary": { "$value": "1px" },
+    "emphasis": { "$value": "2px" },
+    "focus": { "$value": "2px" }
+  },
+  "focus-offset": {
+    "$type": "dimension",
+    "$value": "3px"
+  }
+}

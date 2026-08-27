@@ -4,7 +4,7 @@
   &__inner {
     font-family: var(--monument-bold);
     font-size: clamp(3rem, 8vw, 7rem);
-    font-weight: 700;
+    font-weight: var(--w-black); // set by hand: --monument-bold's alias carries family, not weight
     line-height: 0.9;
     text-transform: uppercase;
     color: var(--light-gray-color);

@@ -53,14 +53,5 @@ modules:
     repoUrl: https://github.com/bmad-code-org/bmad-loop
     channel: stable
     sha: 8d33e927d42158e034ba28043d1ce4c9ee237716
-  - name: gds
-    version: v0.7.0
-    installDate: 2026-08-15T18:53:06.131Z
-    lastUpdated: 2026-08-15T18:53:06.392Z
-    source: external
-    npmPackage: bmad-game-dev-studio
-    repoUrl: https://github.com/bmad-code-org/bmad-module-game-dev-studio.git
-    channel: stable
-    sha: bc64332b1841bef31cbcdffbf81de52ecba60c7f
 ides:
   - claude-code

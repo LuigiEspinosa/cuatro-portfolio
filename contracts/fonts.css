@@ -1,0 +1,64 @@
+/* Cuatro Ecosystem, Font Faces
+ * Contract v1.0.0 · latin subset · variable woff2
+ * Every url() here is relative to this file, so a vendored contracts/ folder
+ * resolves at whatever depth it lands. Values: see tokens.css (same folder).
+ * A value change or an addition is a MINOR bump. A rename, including fixing a
+ * typo in a token name, or a removal is MAJOR.
+ * Each face ships with its OFL licence text beside it under ./fonts/.
+ * Generated from packages/fonts. Never edit this file by hand.
+ */
+
+/* Bricolage Grotesque · display · SIL Open Font License 1.1
+ * 58992 bytes, 262 glyphs, latin subset. Licence: ./fonts/OFL-bricolage-grotesque.txt
+ * Overrides tuned against "Archivo", system-ui, sans-serif
+ * as that stack resolves in mcr.microsoft.com/playwright:v1.62.1-noble.
+ */
+@font-face {
+  font-family:       "Bricolage Grotesque";
+  src:               url("./fonts/bricolage-grotesque-latin.woff2") format("woff2");
+  font-weight:       700 800;
+  font-stretch:      75% 100%;
+  font-style:        normal;
+  font-display:      swap;
+  unicode-range:     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  size-adjust:       92.271%;
+  ascent-override:   104.041%;
+  descent-override:  32.513%;
+  line-gap-override: 9.754%;
+}
+
+/* Geist · body · SIL Open Font License 1.1
+ * 24124 bytes, 264 glyphs, latin subset. Licence: ./fonts/OFL-geist.txt
+ * Overrides tuned against ui-sans-serif, system-ui, sans-serif
+ * as that stack resolves in mcr.microsoft.com/playwright:v1.62.1-noble.
+ */
+@font-face {
+  font-family:       "Geist";
+  src:               url("./fonts/geist-latin.woff2") format("woff2");
+  font-weight:       300 600;
+  font-style:        normal;
+  font-display:      swap;
+  unicode-range:     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  size-adjust:       95.192%;
+  ascent-override:   100.849%;
+  descent-override:  31.515%;
+  line-gap-override: 9.455%;
+}
+
+/* Geist Mono · mono · SIL Open Font License 1.1
+ * 11284 bytes, 309 glyphs, latin subset. Licence: ./fonts/OFL-geist-mono.txt
+ * Overrides tuned against ui-monospace, SFMono-Regular, monospace
+ * as that stack resolves in mcr.microsoft.com/playwright:v1.62.1-noble.
+ */
+@font-face {
+  font-family:       "Geist Mono";
+  src:               url("./fonts/geist-mono-latin.woff2") format("woff2");
+  font-weight:       400;
+  font-style:        normal;
+  font-display:      swap;
+  unicode-range:     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  size-adjust:       83.333%;
+  ascent-override:   115.2%;
+  descent-override:  36%;
+  line-gap-override: 10.8%;
+}

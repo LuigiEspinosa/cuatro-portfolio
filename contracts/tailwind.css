@@ -1,0 +1,94 @@
+/* Cuatro Ecosystem, Tailwind v4 Adapter
+ * Contract v1.0.0 · generated @theme inline · dark only
+ * The single entry point for a Tailwind v4 consumer. Import order is fixed:
+ * tailwindcss, then tokens.css, then fonts.css, then the theme block.
+ * fonts.css is REQUIRED here: an adapter pulling in only tokens.css hands the
+ * cluster three named families with no @font-face for any of them.
+ * inline is MANDATORY, not stylistic: without it a var() resolves where the
+ * theme variable is defined rather than where it is used, and it fails silently.
+ * Import this file from your own stylesheet, then write your compiled CSS into
+ * THIS folder, beside fonts.css and fonts/. The url()s in fonts.css are copied
+ * through unrebased, so they resolve against wherever your build writes its
+ * output. Anywhere else and every face 404s. See ops/tailwind-adapter.md.
+ * A value change or an addition is a MINOR bump. A rename, including fixing a
+ * typo in a token name, or a removal is MAJOR.
+ * Generated from packages/tokens. Never edit this file by hand.
+ */
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./fonts.css";
+
+@theme inline {
+  /* ── colour: Tailwind --color-* from our --token-* roles ── */
+  --color-bg:           var(--token-bg);
+  --color-surface:      var(--token-bg-raised);
+  --color-surface-2:    var(--token-bg-raised-2);
+  --color-ink:          var(--token-text);
+  --color-muted:        var(--token-text-secondary);
+  --color-line:         var(--token-border);
+  --color-line-strong:  var(--token-border-interactive);
+  --color-accent:       var(--token-accent);
+  --color-accent-hover: var(--token-accent-hover);
+  --color-accent-muted: var(--token-accent-muted);
+  --color-focus:        var(--token-focus);
+  --color-scrim:        var(--token-scrim);
+
+  /* ── type: families ────────────────────────────────────── */
+  --font-display: var(--f-display);
+  --font-sans:    var(--f-body);
+  --font-mono:    var(--f-mono);
+
+  /* ── type: scale ───────────────────────────────────────── */
+  --text-3xs:     var(--t-3xs);
+  --text-2xs:     var(--t-2xs);
+  --text-xs:      var(--t-xs);
+  --text-sm:      var(--t-sm);
+  --text-base:    var(--t-base);
+  --text-md:      var(--t-md);
+  --text-lg:      var(--t-lg);
+  --text-xl:      var(--t-xl);
+  --text-2xl:     var(--t-2xl);
+  --text-display: var(--t-display);
+
+  /* ── type: weight ──────────────────────────────────────── */
+  --font-weight-light:   var(--w-light);
+  --font-weight-regular: var(--w-regular);
+  --font-weight-medium:  var(--w-medium);
+  --font-weight-bold:    var(--w-bold);
+  --font-weight-black:   var(--w-black);
+
+  /* ── type: line-height ─────────────────────────────────── */
+  --leading-display: var(--lh-display);
+  --leading-heading: var(--lh-heading);
+  --leading-lede:    var(--lh-lede);
+  --leading-body:    var(--lh-body);
+  --leading-label:   var(--lh-label);
+
+  /* ── type: tracking ────────────────────────────────────── */
+  --tracking-display: var(--tr-display);
+  --tracking-heading: var(--tr-heading);
+  --tracking-name:    var(--tr-name);
+  --tracking-body:    var(--tr-body);
+  --tracking-meta:    var(--tr-meta);
+  --tracking-label:   var(--tr-label);
+
+  /* ── space ─────────────────────────────────────────────── */
+  --spacing-2xs:      var(--s-2xs);
+  --spacing-xs:       var(--s-xs);
+  --spacing-sm:       var(--s-sm);
+  --spacing-md:       var(--s-md);
+  --spacing-lg:       var(--s-lg);
+  --spacing-xl:       var(--s-xl);
+  --spacing-2xl:      var(--s-2xl);
+  --spacing-3xl:      var(--s-3xl);
+  --spacing-page-pad: var(--page-pad);
+  --spacing-tap:      var(--tap);
+
+  /* ── shape ─────────────────────────────────────────────── */
+  --radius-none: var(--r-none);
+  --radius-hair: var(--r-hair);
+  --radius-pill: var(--r-pill);
+
+  /* ── measure, as a container width ─────────────────────── */
+  --container-measure: var(--measure);
+}

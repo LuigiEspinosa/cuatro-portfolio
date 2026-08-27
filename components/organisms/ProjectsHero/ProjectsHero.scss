@@ -17,6 +17,7 @@
 
   &__heading {
     font-family: var(--monument-bold);
+    font-weight: var(--w-black); // set by hand: --monument-bold's alias carries family, not weight
     font-size: clamp(2rem, 4vw, 3.5rem);
     line-height: 1.1;
     margin: 0;

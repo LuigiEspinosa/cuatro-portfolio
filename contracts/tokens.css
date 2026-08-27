@@ -1,0 +1,145 @@
+/* Cuatro Ecosystem, Design Tokens
+ * Contract v1.0.0 · dark only · anchor hue 288
+ * Values only. Font files: see fonts.css (same folder).
+ * A value change or an addition is a MINOR bump. A rename, including fixing a
+ * typo in a token name, or a removal is MAJOR.
+ * Generated from packages/tokens. Never edit this file by hand.
+ */
+:root {
+  /* ── colour: palette ───────────────────────────────────── */
+  --c-paper:         oklch(12% 0.011 288);
+  --c-surface:       oklch(16% 0.013 288);
+  --c-surface-high:  oklch(20% 0.014 288);
+  --c-line:          oklch(28% 0.015 288);
+  --c-line-strong:   oklch(51% 0.020 288);
+  --c-muted:         oklch(68% 0.012 288);
+  --c-ink:           oklch(95% 0.005 288);
+  --c-accent:        oklch(66% 0.165 288);
+  --c-accent-bright: oklch(76% 0.145 288);
+  --c-accent-quiet:  oklch(46% 0.110 288);
+  --c-focus:         oklch(84% 0.130 288);
+  /* The ONE translucent value in the contract. The FR-17 conformance gate
+     (Story 2.34) must permit the alpha on THIS declaration and reject it
+     everywhere else, including any hand-written rgba() that reproduces it. */
+  --c-scrim:         oklch(12% 0.011 288 / 0.88);
+
+  /* ── colour: semantic roles (consume these) ────────────── */
+  --token-bg:                 var(--c-paper);
+  --token-bg-raised:          var(--c-surface);
+  --token-bg-raised-2:        var(--c-surface-high);
+  --token-text:               var(--c-ink);
+  --token-text-secondary:     var(--c-muted);
+  --token-border:             var(--c-line);
+  --token-border-interactive: var(--c-line-strong);
+  --token-accent:             var(--c-accent);
+  --token-accent-hover:       var(--c-accent-bright);
+  --token-accent-muted:       var(--c-accent-quiet);
+  --token-focus:              var(--c-focus);
+  --token-scrim:              var(--c-scrim);   /* between imagery and text only. Never a surface. */
+
+  /* ── type: families ────────────────────────────────────── */
+  --f-display: "Bricolage Grotesque", "Archivo", system-ui, sans-serif;
+  --f-body:    "Geist", ui-sans-serif, system-ui, sans-serif;
+  --f-mono:    "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* ── type: scale (1.25 from 16px) ──────────────────────── */
+  --t-3xs:     0.6875rem;
+  --t-2xs:     0.75rem;
+  --t-xs:      0.8125rem;
+  --t-sm:      0.875rem;
+  --t-base:    1rem;
+  --t-md:      1.25rem;
+  --t-lg:      1.5625rem;
+  --t-xl:      1.9531rem;
+  --t-2xl:     2.4414rem;
+  --t-display: clamp(2.25rem, 9vw, 4.5rem);
+
+  /* ── type: weight ──────────────────────────────────────── */
+  --w-light:   300;
+  --w-regular: 400;
+  --w-medium:  500;
+  --w-bold:    700;
+  --w-black:   800;
+
+  /* ── type: line-height ─────────────────────────────────── */
+  --lh-display: 0.95;
+  --lh-heading: 1.1;
+  --lh-lede:    1.55;
+  --lh-body:    1.6;
+  --lh-label:   1.4;
+
+  /* ── type: tracking ────────────────────────────────────── */
+  --tr-display: -0.05em;
+  --tr-heading: -0.03em;
+  --tr-name:    -0.015em;
+  --tr-body:    0em;
+  --tr-meta:    0.09em;
+  --tr-label:   0.14em;
+
+  /* ── measure ───────────────────────────────────────────── */
+  --measure: 46ch;
+
+  /* ── space (4pt base) ──────────────────────────────────── */
+  --s-2xs:    0.25rem;
+  --s-xs:     0.5rem;
+  --s-sm:     0.75rem;
+  --s-md:     1rem;
+  --s-lg:     1.5rem;
+  --s-xl:     2.5rem;
+  --s-2xl:    4rem;
+  --s-3xl:    6rem;
+  --page-pad: clamp(1.25rem, 5vw, 4rem);
+
+  /* ── hit target ────────────────────────────────────────── */
+  /* The one length authored as a physical-size guarantee: a target floor is
+     a promise about a fingertip and must not shrink with the root font size.
+     Applies on BOTH axes. The shape and stroke values are px as well, as
+     fixed geometry rather than as a guarantee. No reader-scaled length is px:
+     not the type scale, not the spacing scale, not the measure.
+     See DESIGN.md § The hit-target floor. */
+  --tap: 44px;
+
+  /* ── shape ─────────────────────────────────────────────── */
+  --r-none: 0;
+  --r-hair: 2px;
+  --r-pill: 999px;
+
+  /* ── stroke ────────────────────────────────────────────── */
+  --stroke-hair:     1px;
+  --stroke-boundary: 1px;
+  --stroke-emphasis: 2px;
+  --stroke-focus:    2px;
+  --focus-offset:    3px;
+
+  /* ── elevation (lightness, not shadow) ─────────────────── */
+  --elev-0: var(--c-paper);
+  --elev-1: var(--c-surface);
+  --elev-2: var(--c-surface-high);
+
+  /* ── motion ────────────────────────────────────────────── */
+  --dur-micro:     120ms;
+  --dur-minor:     220ms;
+  --dur-major:     420ms;
+  --dur-exit:      165ms;   /* ~75% of minor */
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit:     cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-toggle:   cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ── layer ─────────────────────────────────────────────── */
+  --z-base:     1;
+  --z-raised:   10;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-modal:    400;
+  --z-toast:    500;
+  --z-tooltip:  600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-micro: 1ms;
+    --dur-minor: 1ms;
+    --dur-major: 1ms;
+    --dur-exit:  1ms;
+  }
+}

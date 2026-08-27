@@ -1,7 +1,72 @@
+# The Anchor's site blocks, as installed into the shared Caddyfile on the
+# Hostinger VPS at /home/deploy/cs-tracker/Caddyfile.
+#
+# This is a fragment, not a standalone configuration, and no Caddy in this
+# repository's compose stack reads it. The box runs one Caddy
+# (cs-tracker-caddy-1) that owns ports 80 and 443 for the whole estate; the
+# Anchor attaches to that Caddy's network under the aliases `anchor-app` and
+# `anchor-umami`, which is how the reverse_proxy targets below resolve. Running
+# a second binder of 80 or 443 on that box is what took cuatro.dev down.
+#
+# Installing it: back the shared Caddyfile up as Caddyfile.bak-1-21, append
+# these blocks, run `caddy validate`, reload, then re-verify cs-tracker,
+# tracker and library immediately. Restore the backup if any of the three
+# regressed.
+#
+# All three hostnames are Cloudflare-proxied as of 2026-08-17 (story 1-3, AD-26).
+# TLS terminates at Cloudflare with mode Full (strict); the origin presents a
+# Cloudflare Origin CA certificate covering cuatro.dev and *.cuatro.dev, which
+# expires 2041-08-13 and is renewed by nothing. The explicit `tls` directive in
+# each block is what disables ACME for that site: Caddy logs "skipping automatic
+# certificate management" when a matching certificate is already loaded.
+#
+# The Origin CA certificate is NOT publicly trusted. A hostname cannot leave the
+# Cloudflare proxy until a publicly trusted certificate has been issued for it
+# first, which is AD-26's accepted reversibility cost. Turning the orange cloud
+# off to debug breaks the host immediately.
+#
+# The header set is the estate's, read off the live tracker.cuatro.dev block on
+# 2026-08-17 and matched deliberately rather than improved on. Two headers were
+# considered and left out: Strict-Transport-Security, because no host in the
+# estate sends it today and adding it here would make this migration step carry
+# a transport-policy decision it has no mandate for (AD-20), and `-Server`, for
+# the same reason. Both are recorded as deferred work rather than dropped
+# silently. X-Frame-Options is DENY, as on tracker; library uses SAMEORIGIN
+# only because its EPUB reader frames its own content, and the Hub frames
+# nothing.
+#
+# Indentation is tabs, which is what `caddy fmt` produces. Keep it that way so
+# appending this fragment does not make the shared file report as unformatted.
+
 cuatro.dev {
-  reverse_proxy app:3000
+	tls /data/origin-ca/origin.pem /data/origin-ca/origin.key
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	reverse_proxy anchor-app:3000
+}
+
+# The apex is canonical. www redirects and never serves a duplicate, so every
+# Registry `live` value and every acceptance criterion naming the apex stays
+# true. {uri} preserves path and query.
+www.cuatro.dev {
+	tls /data/origin-ca/origin.pem /data/origin-ca/origin.key
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	redir https://cuatro.dev{uri} permanent
 }
 
 analytics.cuatro.dev {
-  reverse_proxy umami:3000
+	tls /data/origin-ca/origin.pem /data/origin-ca/origin.key
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	reverse_proxy anchor-umami:3000
 }

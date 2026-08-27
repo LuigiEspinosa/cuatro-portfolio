@@ -1,0 +1,14 @@
+{
+  "actions": [
+    "Merge this branch to `main` so the deploy fires, then confirm the surface live over HTTPS. Fetch https://cuatro.dev/contracts/tokens.css, /contracts/fonts.css, /contracts/tailwind.css, /contracts/fonts/bricolage-grotesque-latin.woff2, /contracts/fonts/geist-latin.woff2, /contracts/fonts/geist-mono-latin.woff2, /contracts/fonts/OFL-bricolage-grotesque.txt, /contracts/fonts/OFL-geist.txt and /contracts/fonts/OFL-geist-mono.txt. A correct answer is 200 with text/css, font/woff2 and text/plain respectively. Record the result as a new dated subsection of ops/contract-serving.md beside the observed 404 baseline, and leave the baseline in place. This is Pending Operator action 1 in that file.",
+    "Decide the cache policy for the published surface and record it in ops/contract-serving.md. The origin sends `cache-control: public, max-age=0` and the Cloudflare zone in front of it is `cache_level aggressive` with `browser_cache_ttl 14400` and `edge_cache_ttl 7200`, so a contract republished under an unchanged URL can be served stale from the edge for up to four hours. Pending Operator action 2.",
+    "Settle the Traefik-versus-Hub question before Epic 4 plans its work. epics.md:1741-1742 names it as the interim-versus-final decision and this story treated it as not one to take unattended. Today the Hub serves the directory and Epic 4 then changes nothing; if the answer becomes Traefik, the Epic 3 and Epic 4 table in ops/contract-serving.md is what has to be rewritten. Pending Operator action 3.",
+    "Tell every Satellite that a build-time fetch of the Registry must send a user agent. Observed 2026-08-26 against the live apex: an empty user agent answers 403 at the Cloudflare edge, and so does GPTBot/1.0. AD-4 has seven repositories fetch https://cuatro.dev/contracts/registry.json at build time, and a fetch that sends no user agent fails against a mechanism that is working perfectly. Pending Operator action 4.",
+    "Record the first real CI run of the `rendered-output` job with the new spec, from the Actions run summary. The three new browser checks have only ever run against a server started on a Windows development host, so the content types Next sends on Linux are unconfirmed. Pending Operator action 5.",
+    "Run `/bmad-project-context` to refresh the machine-managed `bmad:context` block in AGENTS.md. Its lines 52 to 57 still describe CI as typecheck and tests only and state that Playwright is not installed, both false, and nothing in it says that `pnpm build` now publishes into `public/contracts/`. Still open from Stories 1-10, 1-12 and 1-13. Pending Operator action 6."
+  ],
+  "parked_at": "2026-08-26",
+  "run_id": "20260825-233632-92c4",
+  "spec_file": "_bmad-output/implementation-artifacts/spec-1-16-serve-contracts-at-https-cuatro-dev-contracts.md",
+  "story_key": "1-16-serve-contracts-at-https-cuatro-dev-contracts"
+}

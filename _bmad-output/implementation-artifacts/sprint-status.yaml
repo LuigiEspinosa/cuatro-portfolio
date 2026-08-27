@@ -9,7 +9,10 @@
 #   - backlog: Story only exists in epic file
 #   - ready-for-dev: Story file created, ready for development
 #   - in-progress: Developer actively working on implementation
-#   - review: Implementation complete, ready for review
+#   - review: Build complete and self-reviewed; waiting on a human to read it
+#   - awaiting-operator: Agent work is committed, but remaining acceptance criteria
+#       need human actions outside the repo. Written by bmad-loop; clear it with
+#       `bmad-loop confirm <story-key>`
 #   - done: Story completed
 
 # Retrospective Status:
@@ -25,36 +28,97 @@
 # ===============
 # - Epic transitions to 'in-progress' automatically when its first story starts (via build's sprint sync)
 # - Stories can be worked in parallel if team capacity allows
-# - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
-# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - bmad-build creates the story spec, implements it, and runs its own adversarial
+#     review layers in a single pass. bmad-create-story and bmad-dev-story are deprecated
+# - bmad-build ends by setting the spec frontmatter to 'done' and this board to 'review'.
+#     The spec means the build finished; the board means no human has read it yet
+# - At 'review', read the spec's Suggested Review Order (or run bmad-checkpoint-preview),
+#     then move the story to 'done' yourself
+# - bmad-code-review is not a required step on every story. Run it when the spec sets
+#     followup_review_recommended, when you want a cold second opinion (fresh context,
+#     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 08-15-2026 19:59
+last_updated: 08-18-2026
+# Amended 08-15-2026 by the restyle scope change.
+# Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
+# Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
+# Actionable stories: 82 -> 93.
 project: cuatro-portfolio
 project_key: NOKEY
 tracking_system: file-system
-story_location: 
-  c:/Development/cuatro-portfolio/_bmad-output/implementation-artifacts
+# Corrected 2026-08-25. Read c:/Development/cuatro-portfolio until then, a path that
+# has not existed since the repository moved, so any tool resolving this key saw an
+# empty directory and reported no stories rather than failing. Filed from story 1-3.
+story_location: c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
 development_status:
-  epic-1: backlog
-  1-1-archive-the-four-retired-repositories: backlog
-  1-2-external-uptime-and-certificate-age-monitoring: backlog
-  1-3-bot-mitigation-on-the-four-live-subdomains: backlog
-  1-4-the-capacity-gate-exists-and-fails-closed: backlog
-  1-5-capacity-measurement-week: backlog
-  1-6-write-the-capacity-gate-threshold-and-open-the-gate: backlog
-  1-7-enumerate-the-deployed-routing-table-on-the-box: backlog
-  1-8-an-offsite-backup-path-for-digital-library: backlog
-  1-9-record-the-build-on-the-box-violation-as-a-tracked-item: backlog
-  1-10-install-playwright-and-establish-the-rendered-output-harness: backlog
-  1-11-publish-contracts-tokens-css-from-packages-tokens: backlog
-  1-12-publish-contracts-fonts-css-with-latin-subset-faces: backlog
-  1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: backlog
-  1-14-ci-enforces-the-contract-boundary: backlog
-  1-15-determine-cs-tracker-s-daisyui-adoption-route: backlog
-  1-16-serve-contracts-at-https-cuatro-dev-contracts: backlog
-  1-17-anchor-migration-step-1-add-the-contract-change-nothing: backlog
-  1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: backlog
+  epic-1: in-progress
+  # Amended 08-16-2026 by the topology correction.
+  # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-16.md
+  # The estate spans two serving addresses and cuatro.dev is DOWN (NFR-2 in violation).
+  # STORY NUMBER IS NOT EXECUTION POSITION. 1-21 runs FIRST, ahead of 1-3.
+  # 1-5 now depends on 1-21: a threshold measured on the box the estate is leaving has
+  # no referent, and 1-6 plus AD-17c sit behind it.
+  # Numbers are NOT reshuffled: story keys stay stable.
+  1-1-archive-the-four-retired-repositories: done
+  # 1-2 closed 2026-08-16. Monitors live, alert path proven by real alerts on email.
+  # The AD-17a gate was owned by 1-3 and is now OPEN: ops/monitoring.md reads
+  # "AD-17a status: satisfied as of 2026-08-17". The certificate-age half was dissolved
+  # by AD-26 rather than bought, because no ACME client renews on the origin any more.
+  # 1-10, 1-11, 1-14 and 2-23 are unblocked from 2026-08-17, not earlier.
+  # AD-17b (bot mitigation) is recorded separately in ops/bot-mitigation.md.
+  1-2-external-uptime-and-certificate-age-monitoring: done
+  1-21-restore-cuatro-dev-onto-the-hostinger-vps: done
+  1-3-bot-mitigation-on-the-four-live-subdomains: done
+  1-4-the-capacity-gate-exists-and-fails-closed: done
+  # 1-5 closed by hand 2026-08-25. The week ran 2026-08-17T20:59:34Z to
+  # 2026-08-25T00:33:34Z, 10129 of 10129 expected samples with no gaps. The record
+  # carries the summary and the gate carries measured_at, baseline and reading.
+  # threshold stays empty and status stays blocked: 1-6 opens the gate.
+  1-5-capacity-measurement-week: done
+  # 1-6 closed by hand 2026-08-25. Its dev session was killed by the 240 minute
+  # session wall after committing, so the orchestrator recorded no result. The
+  # work is complete at ec682a3 and the spec is finalized at status: done.
+  # followup_review_recommended: true is unspent.
+  1-6-write-the-capacity-gate-threshold-and-open-the-gate: done
+  # 1-7 parked by hand 2026-08-24. Its dev session was killed by the 90 minute
+  # session wall at phase dev-verify, so the orchestrator recorded no result and
+  # never advanced this row. The work is complete and committed (55e281e, b4aeee7,
+  # f9e7bde) and the spec is finalized at awaiting-operator with seven
+  # operator_actions. There is no park record under .bmad-loop/operator/, so
+  # `bmad-loop confirm` cannot see it: close this row by hand once those actions
+  # are done. The spec also carries followup_review_recommended: true, unspent.
+  1-7-enumerate-the-deployed-routing-table-on-the-box: awaiting-operator
+  # 1-8 parked by hand 2026-08-25, same session-wall cause as 1-6 and 1-7. Work is
+  # complete at 708e638 and 33a7d78. Operator actions 1 and 3 to 7 were completed
+  # 2026-08-25: bucket cuatro-backups, config at /etc/cuatro/library-backup.env,
+  # lifecycle rule expire-digital-library-30d, first offsite run verified. Still
+  # owed: action 2 (read the R2 free tier from the console) and the password
+  # manager half of action 7, which named limit 5 depends on entirely.
+  1-8-an-offsite-backup-path-for-digital-library: awaiting-operator
+  1-9-record-the-build-on-the-box-violation-as-a-tracked-item: done
+  # 1-10 parked by hand 2026-08-25, same session-wall cause. Work is complete at
+  # cc03c0c, 915bf5e and 064c087. The branch was pushed 2026-08-25 and CI run
+  # 32801557172 passed with rendered-output: success, so the first-run and
+  # action-behaviour questions are answered. Still owed: the decision on the
+  # container job taking image Node v24.18.1 while the test job pins Node 22.
+  1-10-install-playwright-and-establish-the-rendered-output-harness: awaiting-operator
+  1-11-publish-contracts-tokens-css-from-packages-tokens: done
+  # 1-12 closed by hand 2026-08-25. Its session was killed when the driving
+  # process exited, so the orchestrator recorded no result. Work is complete at
+  # 11a82bf and the spec is finalized at status: done with
+  # followup_review_recommended: false, so no review is owed.
+  1-12-publish-contracts-fonts-css-with-latin-subset-faces: done
+  # 1-13 closed by hand 2026-08-25. Work is complete at dd490c5, 016613a and
+  # ba111a2, and the spec is finalized at status: done. The session finished at
+  # 10:34 and then idled until it was stopped at 13:15, so the orchestrator never
+  # recorded a result. followup_review_recommended: true is unspent.
+  1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: done
+  1-14-ci-enforces-the-contract-boundary: done
+  1-15-determine-cs-tracker-s-daisyui-adoption-route: done
+  1-16-serve-contracts-at-https-cuatro-dev-contracts: awaiting-operator
+  1-17-anchor-migration-step-1-add-the-contract-change-nothing: done
+  1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: done
   1-19-cs-tracker-adopts-the-token-contract: backlog
   1-20-record-the-adopted-contract-version-and-the-automation-polic: backlog
   epic-1-retrospective: optional
@@ -63,7 +127,7 @@ development_status:
   # and starts the token migration, so three lines in the AGENTS.md block go stale here.
 
   epic-2: backlog
-  2-1-the-three-pre-existing-repository-defects: backlog
+  2-1-the-pre-existing-repository-defects: backlog
   2-2-measure-the-narrative-bundle-against-the-asset-budget: backlog
   2-3-the-registry-schema-and-its-blocking-ci-gate: backlog
   2-4-confirm-the-assumed-statuses-hostnames-and-tech-values: backlog
@@ -80,15 +144,27 @@ development_status:
   2-15-nav-reshape-to-two-destinations: backlog
   2-16-cv-built-around-the-existing-worktimeline: backlog
   2-17-secondary-surface-states: backlog
-  2-18-migration-step-3-retire-the-alpha-hairlines: backlog
-  2-19-migration-step-4-sweep-the-colour-literals: backlog
+  # 2-18 DELETED 2026-08-15 (restyle scope change). Absorbed by 2-31.
+  # 2-19 REPLACED 2026-08-15 by 2-34, a blocking CI gate.
+  # 2-21 DELETED 2026-08-15. A rewritten stylesheet has no call sites to rename.
+  # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
   2-20-migration-step-5-swap-the-type: backlog
-  2-21-migration-step-6-rename-the-call-sites: backlog
   2-22-migration-step-7-delete-the-aliases: backlog
   2-23-scheduled-registry-verification-external-to-the-box: backlog
   2-24-hub-visitor-instrumentation: backlog
   2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
+  # Hub components rebuilt token-native (FR-37), added 2026-08-15.
+  # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
+  # 2-20 is a blocking predecessor of all of them (the type layer precedes any redesign).
+  2-27-redesign-glitchtext-token-native: backlog
+  2-28-redesign-scanlineoverlay-token-native-and-add-token-scrim: backlog
+  2-29-redesign-homelayout-token-native: backlog
+  2-30-redesign-error404-token-native: backlog
+  2-31-redesign-workitem-and-hudlabel-token-native: backlog
+  2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog
+  2-33-redesign-workhero-and-worktimeline-token-native: backlog
+  2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
   epic-2-retrospective: optional
 
   epic-3: backlog
@@ -145,3 +221,19 @@ development_status:
   7-1-copy-the-repositories-into-the-wsl2-ext4-filesystem: backlog
   7-2-repair-worktrees-and-git-configuration: backlog
   epic-7-retrospective: optional
+
+  # Epic 8 added 2026-08-15 by the restyle scope change.
+  # EPIC NUMBER IS NOT EXECUTION POSITION. Wave 1 (8-1..8-4) runs after epic-2.
+  # Wave 2 (8-5, 8-6) runs after epic-3, because AD-20 forbids a merge step from
+  # carrying anything else, so a merge target is restyled after its merge ships.
+  # BLOCKED by epic-2 and by the UX Restyle Specification, which does not exist yet.
+  # No restyle story exists for StreamVault, MaiCoin, poketracker-go, Mutuo or
+  # cuatro-finance. AD-25 creates one when the Suite Directory renders them, not before.
+  epic-8: backlog
+  8-1-cs-tracker-visual-restyle: backlog
+  8-2-digital-library-adopts-the-contract-and-is-restyled: backlog
+  8-3-list-wheel-visual-restyle: backlog
+  8-4-record-the-restyle-floor-and-the-per-application-coherence-ch: backlog
+  8-5-cuatro-tracker-visual-restyle: backlog
+  8-6-cs-tournament-visual-restyle: backlog
+  epic-8-retrospective: optional

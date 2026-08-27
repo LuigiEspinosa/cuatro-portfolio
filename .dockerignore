@@ -1,0 +1,37 @@
+# The deploy builds in /home/deploy/cuatro-portfolio, which is also where the
+# production secrets live. Without this file `COPY . .` in docker/Dockerfile
+# pulls .env.production and .umami-admin into the builder layer on every build.
+# The runner stage does not copy them forward, so the served image stays clean,
+# but the builder layer persists in the box's image cache.
+.env
+.env.*
+!.env.example
+.umami-admin
+
+.git
+.gitignore
+# A `.dockerignore` pattern with no slash matches at the context root only, so
+# `node_modules` alone leaves `packages/*/node_modules` in the context and
+# `COPY . .` drags a workspace package's pnpm symlink tree into the builder
+# stage, on top of the `node_modules` the deps stage already put there.
+node_modules
+**/node_modules
+.next
+out
+build
+coverage
+
+_bmad
+_bmad-output
+.bmad-loop
+.claude
+.vscode
+docs
+ops
+
+*.md
+!README.md
+
+Dockerfile
+docker-compose*.yml
+.dockerignore

@@ -1,0 +1,19 @@
+{
+  "$description": "Values are authored as CSS strings inside DTCG structure, not as DTCG structured color, dimension or duration objects. Style Dictionary 5.5.2 mangles every structured form this contract needs, so $type here is descriptive metadata and the string is the authored value. See ops/token-contract.md, section \"Why the source authors CSS strings inside DTCG structure\".",
+  "dur": {
+    "$type": "duration",
+    "micro": { "$value": "120ms" },
+    "minor": { "$value": "220ms" },
+    "major": { "$value": "420ms" },
+    "exit": {
+      "$value": "165ms",
+      "$description": "~75% of minor"
+    }
+  },
+  "ease": {
+    "$type": "cubicBezier",
+    "entrance": { "$value": "cubic-bezier(0.16, 1, 0.3, 1)" },
+    "exit": { "$value": "cubic-bezier(0.7, 0, 0.84, 0)" },
+    "toggle": { "$value": "cubic-bezier(0.65, 0, 0.35, 1)" }
+  }
+}

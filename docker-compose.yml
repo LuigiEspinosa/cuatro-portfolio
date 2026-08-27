@@ -1,38 +1,87 @@
-services:
-  caddy:
-    image: caddy:2-alpine
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./docker/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - app
-    restart: unless-stopped
+# The Anchor runs as a sibling stack on the Hostinger VPS, not as a standalone
+# host. One shared Caddy (cs-tracker-caddy-1) owns ports 80 and 443 for the
+# whole estate, so nothing here publishes a port and nothing here runs a second
+# proxy. Ingress reaches the Hub and Umami over the external network below,
+# under the aliases the shared Caddyfile reverse-proxies by name.
+#
+# `cs-tracker_default` is declared external on purpose. On a box where that
+# network does not exist, `docker compose up` fails immediately instead of
+# quietly standing up a stack nothing can route to.
+#
+# EVERY SERVICE IS NAMED `anchor-*`, AND THAT IS LOAD-BEARING. Compose gives a
+# service its own name as a DNS alias on every network it joins. The shared
+# network already answers to `app`, `db`, `web`, `api` and `worker` from three
+# other stacks, so a service here called `app` would take a second lease on a
+# name cs-tracker's Caddyfile already reverse-proxies, and a service called `db`
+# would make this stack's own `DATABASE_URL` ambiguous between two databases.
+# Both were observed happening on 2026-08-17: `app` resolved to this stack's
+# container instead of cs-tracker's, and Umami authenticated against
+# cs-tracker's Postgres and failed with 28P01. Do not rename these back.
+name: cuatro-portfolio
 
-  app:
+services:
+  anchor-app:
     build:
       context: .
       dockerfile: docker/Dockerfile
       args:
-        - NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+        # Both are baked into the client bundle at build time, and the tracking
+        # script renders only if both are present. The `:?` guards are deliberate:
+        # Compose substitutes an empty string for an unset variable and only warns,
+        # which is how this project shipped a site that served correctly and
+        # measured nothing. Fail the build instead. See .env.example.
+        - NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID:?set it in .env.production; the tracking script needs it at build time}
+        - NEXT_PUBLIC_UMAMI_URL=${NEXT_PUBLIC_UMAMI_URL:?set it in .env.production; the tracking script needs it at build time}
     environment:
       - NODE_ENV=production
+    networks:
+      # Only the shared network. The Hub has no server-side need for the database
+      # or Umami; the browser reaches analytics over its public hostname.
+      cs-tracker_default:
+        aliases:
+          - anchor-app
+    healthcheck:
+      # The Hub is the hostname this whole stack exists to serve, and it has a
+      # purpose-built endpoint. Without this, a build that produces a broken
+      # server still reports as running and only the external probe notices.
+      #
+      # The probe reads `process.env.HOSTNAME` inside node, never 127.0.0.1.
+      # Next's standalone `server.js` binds to `process.env.HOSTNAME`, which Docker
+      # sets to the container id, so the server listens on the container's eth0
+      # address ALONE. Loopback is refused, and a probe against 127.0.0.1 reports a
+      # perfectly healthy container as unhealthy. Verified 2026-08-17 against a
+      # negative control on a port nothing serves.
+      test:
+        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
-  umami:
+  anchor-umami:
     image: ghcr.io/umami-software/umami:postgresql-latest
     environment:
-      - DATABASE_URL=postgresql://umami:${POSTGRES_PASSWORD}@db:5432/umami
+      # `anchor-db`, never `db`. See the naming note above.
+      - DATABASE_URL=postgresql://umami:${POSTGRES_PASSWORD}@anchor-db:5432/umami
       - DATABASE_TYPE=postgresql
       - APP_SECRET=${UMAMI_APP_SECRET}
     depends_on:
-      - db
+      # `service_started` is not enough. On a fresh volume Postgres runs a
+      # bootstrap pass before the role exists, and Umami crash-loops on 28P01
+      # until it finishes. Gate on the healthcheck instead.
+      anchor-db:
+        condition: service_healthy
+    networks:
+      # `default` is how Umami reaches the database. `cs-tracker_default` is how
+      # the shared Caddy reaches Umami.
+      default:
+      cs-tracker_default:
+        aliases:
+          - anchor-umami
     restart: unless-stopped
 
-  db:
+  anchor-db:
     image: postgres:16-alpine
     environment:
       - POSTGRES_DB=umami
@@ -40,9 +89,28 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Target TCP (-h 127.0.0.1), not the default unix socket. On a fresh
+      # volume the postgres image runs a bootstrap postmaster on the socket only,
+      # so a socket check can report healthy while network connections are still
+      # refused.
+      #
+      # The budget is sized for the worst case this box actually presents: the
+      # deploy runs a Next build on the same two cores while Postgres runs initdb
+      # on a fresh volume. 60s of grace plus 30 retries at 5s is roughly three and
+      # a half minutes before the dependency is declared failed.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U umami -d umami']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    # Deliberately not on `cs-tracker_default`. The database is reachable only
+    # from this project's own network.
     restart: unless-stopped
 
+networks:
+  cs-tracker_default:
+    external: true
+
 volumes:
-  caddy_data:
-  caddy_config:
   postgres_data:

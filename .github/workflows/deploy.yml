@@ -8,13 +8,49 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Hetzner
+      # The checkout and the node setup exist only for the Capacity Gate below.
+      # The deploy itself runs over SSH and needs neither.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The Capacity Gate (AD-9) runs before the deploy rather than after,
+      # because a check that reports on a placement already made is a record and
+      # not a gate. It is blocking and carries no `continue-on-error` and no skip
+      # condition: there is one environment and no staging, so nothing downstream
+      # will catch what this lets through (AD-21).
+      #
+      # The id named here is the Anchor's own and is in `placements`, so this
+      # step passes today and keeps passing. It starts refusing the moment this
+      # workflow is pointed at an id the box has never run, which is the only
+      # moment it exists for. `ops/__tests__/capacity-gate.test.ts` asserts that
+      # this id is one the gate file actually lists.
+      - name: Capacity Gate
+        run: node ops/capacity-gate.mjs cuatro-portfolio
+
+      # The host is whatever SERVER_HOST resolves to. This workflow cannot verify
+      # which provider that is, so it does not name one.
+      #
+      # `--remove-orphans` is load-bearing, not tidiness. Story 1-21 renamed every
+      # service and deleted the `caddy` service; on a host that ran the previous
+      # compose file those containers survive as orphans, including a Caddy still
+      # binding 80 and 443. A second binder of those ports is exactly what took
+      # cuatro.dev down in the first place.
+      #
+      # `reset --hard` rather than `pull`: a pull fails or merges if the box
+      # checkout has drifted, and a deploy that half-applies is worse than one
+      # that refuses.
+      - name: Deploy over SSH to SERVER_HOST
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/projects/cuatro-portfolio
-            git pull origin main
-            docker compose --env-file .env.production up --build -d
+            set -euo pipefail
+            cd ~/cuatro-portfolio
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose --env-file .env.production up --build -d --remove-orphans

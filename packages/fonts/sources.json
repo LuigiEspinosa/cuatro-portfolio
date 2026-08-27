@@ -1,0 +1,96 @@
+{
+  "$description": "Upstream provenance for the three published faces in contracts/fonts/. Every url is pinned to a commit rather than to a branch: a branch url rots the moment upstream force-pushes or retags, and the sha256 beside it is what turns 'we downloaded this' into a checkable claim. packages/fonts/subset.py verifies every source against this file before it instances anything, and refuses on a mismatch. Read ops/font-contract.md for why these three families and why these axis limits.",
+  "downloaded": "2026-08-25",
+  "unicodeRange": "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD",
+  "layoutFeatures": ["kern", "liga", "calt", "ccmp", "locl", "mark", "mkmk", "tnum"],
+  "families": [
+    {
+      "id": "bricolage-grotesque",
+      "family": "Bricolage Grotesque",
+      "role": "display",
+      "repository": "https://github.com/ateliertriay/bricolage",
+      "licence": "SIL Open Font License 1.1",
+      "source": {
+        "file": "bricolage-grotesque-variable.ttf",
+        "commit": "8070cdb6a383aafd10792111cd94e4d472aa0f0c",
+        "url": "https://raw.githubusercontent.com/ateliertriay/bricolage/8070cdb6a383aafd10792111cd94e4d472aa0f0c/fonts/variable/BricolageGrotesque%5Bopsz,wdth,wght%5D.ttf",
+        "bytes": 408496,
+        "sha256": "413e7357809ddd12fd80a96a8a396de0e401638d4acd3cb3e37532f0472ac682"
+      },
+      "licenceSource": {
+        "file": "OFL-bricolage-grotesque.txt",
+        "commit": "394e4453be679f7df042c09044d5209aaa3dd2f9",
+        "url": "https://raw.githubusercontent.com/ateliertriay/bricolage/394e4453be679f7df042c09044d5209aaa3dd2f9/OFL.txt",
+        "bytes": 4403,
+        "sha256": "4b5a7d8f37f5602621c8a8d7358a6a2e71317e6c231c661e15aef0275d3e07ba"
+      },
+      "axisLimits": {
+        "opsz": 24,
+        "wdth": [75, 100],
+        "wght": [700, 800]
+      },
+      "published": {
+        "face": "bricolage-grotesque-latin.woff2",
+        "licence": "OFL-bricolage-grotesque.txt"
+      }
+    },
+    {
+      "id": "geist",
+      "family": "Geist",
+      "role": "body",
+      "repository": "https://github.com/vercel/geist-font",
+      "licence": "SIL Open Font License 1.1",
+      "source": {
+        "file": "geist-variable.ttf",
+        "commit": "a0a06a3d916dcf92fe96f12051a124f89056b36a",
+        "url": "https://raw.githubusercontent.com/vercel/geist-font/a0a06a3d916dcf92fe96f12051a124f89056b36a/fonts/Geist/variable/Geist%5Bwght%5D.ttf",
+        "bytes": 169056,
+        "sha256": "73894e0448cae90a92b6c2f8732b7bb9acb7b94c418bff559dad4a18e1de9659"
+      },
+      "licenceSource": {
+        "file": "OFL-geist.txt",
+        "commit": "c40c1aec7e72b9ebdce65a4fccd03cb3950a359b",
+        "url": "https://raw.githubusercontent.com/vercel/geist-font/c40c1aec7e72b9ebdce65a4fccd03cb3950a359b/OFL.txt",
+        "bytes": 4383,
+        "sha256": "c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90"
+      },
+      "axisLimits": {
+        "wght": [300, 600]
+      },
+      "published": {
+        "face": "geist-latin.woff2",
+        "licence": "OFL-geist.txt"
+      }
+    },
+    {
+      "id": "geist-mono",
+      "family": "Geist Mono",
+      "role": "mono",
+      "repository": "https://github.com/vercel/geist-font",
+      "licence": "SIL Open Font License 1.1",
+      "source": {
+        "file": "geist-mono-variable.ttf",
+        "commit": "a0a06a3d916dcf92fe96f12051a124f89056b36a",
+        "url": "https://raw.githubusercontent.com/vercel/geist-font/a0a06a3d916dcf92fe96f12051a124f89056b36a/fonts/GeistMono/variable/GeistMono%5Bwght%5D.ttf",
+        "bytes": 171968,
+        "sha256": "87c2aff9723544a9adaea19d92e42a33705c9723624801b6e0224c2206a6af0d"
+      },
+      "licenceSource": {
+        "file": "OFL-geist.txt",
+        "commit": "c40c1aec7e72b9ebdce65a4fccd03cb3950a359b",
+        "url": "https://raw.githubusercontent.com/vercel/geist-font/c40c1aec7e72b9ebdce65a4fccd03cb3950a359b/OFL.txt",
+        "bytes": 4383,
+        "sha256": "c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90"
+      },
+      "axisLimits": {
+        "wght": 400
+      },
+      "published": {
+        "face": "geist-mono-latin.woff2",
+        "licence": "OFL-geist-mono.txt"
+      }
+    }
+  ],
+  "budgetComment": "UX-DR7's 120 KB ceiling on the published faces, in bytes. KB is 1000 bytes throughout this contract, which is the reading the spec's own arithmetic uses (91,232 bytes is written there as 91.2 KB). Taking KB as 1024 bytes would only widen the ceiling, so the narrower reading is the safe one.",
+  "budgetBytes": 120000
+}

@@ -1,11 +1,12 @@
 {
+  "_comment": "bmad-loop hook relay. The path is RELATIVE on purpose. bmad-loop init writes it as \"$CLAUDE_PROJECT_DIR/.bmad-loop/bmad_loop_hook.py\", which is POSIX shell expansion: on Windows PowerShell $CLAUDE_PROJECT_DIR is a shell variable rather than an environment variable, expands to empty, and every hook died with exit 2 on C:\\.bmad-loop\\bmad_loop_hook.py. The orchestrator then never saw a session end and waited out the full session_timeout_min on every story. Hooks run with the project root as cwd, so a relative path needs no expansion and stays correct on every shell and OS. Use $env:CLAUDE_PROJECT_DIR only if this ever has to become absolute, and note that form is PowerShell-only.",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py SessionStart"
+            "command": "uv run --no-project python \".bmad-loop/bmad_loop_hook.py\" SessionStart"
           }
         ]
       }
@@ -15,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py Stop"
+            "command": "uv run --no-project python \".bmad-loop/bmad_loop_hook.py\" Stop"
           }
         ]
       }
@@ -25,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py SessionEnd"
+            "command": "uv run --no-project python \".bmad-loop/bmad_loop_hook.py\" SessionEnd"
           }
         ]
       }
@@ -35,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project python \"$CLAUDE_PROJECT_DIR\"/.bmad-loop/bmad_loop_hook.py PreCompact"
+            "command": "uv run --no-project python \".bmad-loop/bmad_loop_hook.py\" PreCompact"
           }
         ]
       }
