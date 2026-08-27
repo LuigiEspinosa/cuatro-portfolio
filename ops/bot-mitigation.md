@@ -288,13 +288,50 @@ either as the gate being open, rather than testing for the positive form.
 **Treat `partially-satisfied` as not satisfied** for any gating decision. It exists to say
 which part is open, not to authorise proceeding.
 
+## The challenge does not clear for an automated browser
+
+**Observed 2026-08-27**, Pending Operator action 3. Story 1-10 installed Playwright, which is what
+made this testable at all: the action was written when no agent here could drive a browser.
+
+**Method.** Headed Chromium through Playwright, not headless, navigating to
+`https://analytics.cuatro.dev/` and waiting fifteen seconds for the interstitial to resolve. Headed
+deliberately: a managed challenge is entitled to treat a headless signature as a bot, so a headless
+result would prove nothing either way.
+
+**Result: the challenge never cleared.** The hostname answered `307`, then `403` with
+`cf-mitigated: challenge`. The challenge platform ran a full orchestration cycle, then the document
+answered `403 cf-mitigated: challenge` a second time and ran a second cycle. The page left in front
+of the browser was titled `Just a moment...` reading *"Verifying you are human. This may take a few
+seconds."* It never became Umami.
+
+**What this does and does not prove.**
+
+- **It proves the interstitial is not trivially passed**, and that two full challenge cycles can
+  complete without admitting the client. Whatever is being scored, this client failed it twice.
+- **It does not prove a human cannot get in.** Playwright-driven Chromium carries automation
+  signatures, `navigator.webdriver` among them, that an ordinary browser does not. A managed
+  challenge refusing an automation-controlled browser is the feature working, not failing.
+
+**So the remaining question is narrow and still needs a human**: open `https://analytics.cuatro.dev/`
+in your normal browser once. If it loads, the rule is correct and this is closed. If it shows the
+same `Just a moment...` loop, **the dashboard is unreachable for everybody** and rule 4 is the one
+to relax, exactly as the action says.
+
+**Why this matters more than a dashboard being awkward.** `_bmad-output/implementation-artifacts/spec-1-7-...md`
+already carries a deferred entry noting that nobody has confirmed Umami has kept **receiving**
+events since the challenge went live on 2026-08-17. Collection and dashboard access are different
+paths: `ops/bot-mitigation.md:49` exempts `/api/` and `/script.js` from rule 4, so collection is
+designed to be unaffected. But if the dashboard cannot be opened, then nobody can check whether
+collection is working either, and the two unknowns compound. SM-1 through SM-3 depend on that
+instance and all its history before 2026-08-17 was discarded.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | 1 | Apply the `DOCKER-USER` rules and the `cf-origin-firewall.service` unit | The action that closed the bypass and made AD-17b real | **2026-08-17T18:14Z** |
 | 2 | Turn off Scrape Shield email obfuscation | Verified afterwards: the `cdn-cgi` script is gone from the Anchor's HTML and the Umami script and website id are intact | **2026-08-17T18:17Z** |
-| 3 | Confirm `analytics.cuatro.dev` loads in a real browser | The managed challenge cannot be solved by a command-line client, and Playwright is not installed until Story 1-10, so no agent here can assert a rendered result. **Open the dashboard once and confirm the interstitial passes.** If it does not, rule 4 is the one to relax | _not done_ |
+| 3 | Confirm `analytics.cuatro.dev` loads in a real browser | The managed challenge cannot be solved by a command-line client, and Playwright is not installed until Story 1-10, so no agent here can assert a rendered result. **Open the dashboard once and confirm the interstitial passes.** If it does not, rule 4 is the one to relax | **Partly answered 2026-08-27, and the answer is bad.** See "The challenge does not clear for an automated browser" below. Playwright now exists, so this was re-run in a real headed Chromium: it did **not** pass. **Still owed: one load in your own ordinary browser**, which is the only thing that separates "the challenge is too strict" from "the challenge is correctly refusing automation" |
 | 4 | Grant Zone > Bot Management > Edit and set the native AI categories | Allow Search, block Agent and Training. Stronger than rule 2's user-agent list because it does not rely on self-declaration. **Worth doing before 2026-09-15**, when the legacy toggle is retired | _not done_ |
 | 5 | Read the Cloudflare audit log, then revoke `tracker-mac` and `cuatro-tracker` | The token available to this story is zone-scoped and returned `Unauthorized` on `user/tokens`, so it cannot list or revoke tokens. **Read the log first**, per the epic: a token doing something other than ACME must not be revoked by assumption | _not done_ |
 | 6 | Re-fetch Cloudflare's IP ranges into `cf-origin-firewall.sh` when they change | The script hardcodes the list fetched 2026-08-17 and nothing refreshes it. A new Cloudflare range would be dropped and those hostnames would fail | _standing_ |

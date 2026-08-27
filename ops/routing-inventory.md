@@ -1598,12 +1598,41 @@ perform it.
 
 | Action | Why an agent cannot do it |
 |---|---|
-| Read the Cloudflare account audit log, then revoke `tracker-mac` and `cuatro-tracker` | The only token in the estate is **zone-scoped**. **Observed 2026-08-24:** `GET /accounts/{id}/audit_logs` returns HTTP 403 `Authentication error` (code 10000) and `GET /user/tokens` returns HTTP 403 `Unauthorized to access requested resource` (code 9109). Reading the log needs an account-scoped token and revoking needs `User > API Tokens > Edit`, neither of which the agent holds, and **never revoke, rotate or create a credential** is a standing boundary. Already tracked as `ops/bot-mitigation.md` Pending Operator action 5 |
-| Confirm `analytics.cuatro.dev` passes the managed challenge in a real browser | Playwright arrives in Story 1-10 and no acceptance criterion may claim a rendered-output result before it. Already `ops/bot-mitigation.md` action 3 |
+| Read the Cloudflare account audit log, then revoke `tracker-mac` and `cuatro-tracker` | The only token in the estate is **zone-scoped**. **Observed 2026-08-24:** `GET /accounts/{id}/audit_logs` returns HTTP 403 `Authentication error` (code 10000) and `GET /user/tokens` returns HTTP 403 `Unauthorized to access requested resource` (code 9109). Reading the log needs an account-scoped token and revoking needs `User > API Tokens > Edit`, neither of which the agent holds, and **never revoke, rotate or create a credential** is a standing boundary. Already tracked as `ops/bot-mitigation.md` Pending Operator action 5. **Operator decision 2026-08-27: not revoking for now**, see "Decisions taken on this story's operator actions" below |
+| Confirm `analytics.cuatro.dev` passes the managed challenge in a real browser | Playwright arrives in Story 1-10 and no acceptance criterion may claim a rendered-output result before it. Already `ops/bot-mitigation.md` action 3. **Re-tested 2026-08-27 now that Playwright exists: a headed Chromium did not clear the challenge.** See "The challenge does not clear for an automated browser" in `ops/bot-mitigation.md`. One load in an ordinary browser is still owed |
 | Confirm the Hostinger weekly whole-box snapshot exists | It is claimed in a script comment and appears nowhere on the box. Confirming it needs the Hostinger console, which the agent cannot reach |
 | Verify IPv6 serving and the v6 `DOCKER-USER` path | One `curl` from a vantage point with IPv6 closes it. See [The IPv6 caveat, stated once](#the-ipv6-caveat-stated-once) for what is and is not claimed |
 | Decide whether `analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows | A Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration |
 | Read the zone's legacy Page Rules, and the `http_request_dynamic_redirect`, `http_request_transform`, `http_response_headers_transform` and `http_config_settings` ruleset phases | The zone-scoped token returns HTTP 403 code 9109 on `pagerules` and `request is not authorized` on each phase entrypoint. **Observed 2026-08-24.** The zone-level `GET /rulesets` listing shows no redirect or transform ruleset, and the `www` 301 is settled independently by a direct origin probe, so nothing depends on this. It is listed so the unknown is a known one |
+
+### Decisions taken on this story's operator actions
+
+**2026-08-27.** Three of the six actions above are now settled as decisions rather than as work.
+Recorded here because a decision not to act is a state a later reader needs, and an action left at
+`_not done_` forever is indistinguishable from one nobody looked at.
+
+**The two Cloudflare API tokens stay, for now.** The Operator's decision is not to revoke
+`tracker-mac` or `cuatro-tracker` at this time. What that accepts, stated plainly rather than left
+implied: both remain live credentials of unknown scope, the audit log establishing what they are
+used for has still not been read, and this pass found `CLOUDFLARE_API_TOKEN` declared in
+`/home/deploy/cuatro-tracker/.env`, which falsifies the earlier claim that the box holds no
+Cloudflare credential. Its consumer is the profiled `caddy` service in that project, which never
+starts on this box, and which of the two tokens it holds was not determined because the value was
+deliberately not read. **This is a deferral, not a clearance.** The same applies to
+`HETZNER_DNS_API_TOKEN` in `/home/deploy/digital-library/.env`, a live DNS credential for a
+provider the estate left on 2026-08-17.
+
+**The Registry membership question moves to Story 2-4, where it already belonged.** Whether
+`analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows, or
+whether infrastructure hostnames are declared outside the Registry entirely, is an AD-6 membership
+decision. A routing enumeration has no mandate to take it and this record should not hold it open
+as though it were owed here. The AD-3 table above already names all three as gaps rather than as
+correct absences, which is the part this story does own.
+
+**The IPv6 verification stays open and stays the Operator's.** Confirmed again 2026-08-27: the
+workstation driving this work has **no IPv6 egress**, so the v6 `DOCKER-USER` DROP path against
+`2a02:4780:75:9155::1` is unverifiable from here as it has been in every session. The v6 rules are
+present and the path is unverified, and those remain different claims.
 
 ### What the retired gathering checklist held that is still true
 
