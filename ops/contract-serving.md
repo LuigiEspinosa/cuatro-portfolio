@@ -377,6 +377,62 @@ $ git status --porcelain --ignored=matching -- contracts/
 The third command is the contract drift gate's own check, run over the same tree. It is clean,
 which is the point: this story publishes the surface and does not change it.
 
+## The cache policy
+
+**Decided 2026-08-27**, Pending Operator action 2. **The decision only. Nothing below is built,
+and no story has yet been written to build it.**
+
+**The rule: a published contract is fetched at a versioned URL, and versioned URLs are cached
+hard at the edge.** A URL, once published, never changes what it returns. Republishing means
+publishing a new URL.
+
+Why this rather than lowering the TTL:
+
+- **It removes staleness by construction rather than by tuning.** A shorter edge TTL narrows the
+  window in which a consumer reads yesterday's contract; it does not close it. Under versioned
+  URLs the question cannot arise, because the bytes behind a URL are immutable.
+- **It already matches how the contract is versioned.** AD-16 has a scheduled job read the
+  `Contract vX.Y.Z` header across seven repositories, so a version is a concept the surface
+  already carries. Putting that version in the path makes the URL agree with the header instead
+  of leaving the header as the only place the version appears.
+- **It suits AD-16's deprecate, migrate, remove.** All three states need the old contract to keep
+  answering while consumers move. Under an unchanged URL, "the old one still works" and "the new
+  one is published" are the same fact and cannot both be true.
+- **The alternative puts the correctness of the surface in the zone config**, outside this
+  repository, where nothing in CI can assert it and `ops/routing-inventory.md` records that the
+  ruleset entrypoints are not even readable with the token the estate holds.
+
+**What this costs.** The unversioned paths under "The observed content types" stay as they are, so
+this is additive rather than a migration. Something has to publish both a versioned path and a
+stable alias, and something has to decide what the alias points at. **Neither exists**, and until
+they do the four-hour staleness window in the limits table is still the live behaviour.
+
+**What must not be concluded from this.** The gap between deciding and building is real, and while
+it is open a republished contract at an unchanged URL can still be served stale for up to four
+hours. This entry records a direction, not a fix.
+
+## The adoption instruction every Satellite needs
+
+**Written 2026-08-27**, Pending Operator action 4. Recorded here so seven repositories can be
+pointed at one paragraph instead of seven retellings.
+
+> **A build-time fetch of anything under `https://cuatro.dev/contracts/` must send a real
+> `User-Agent` header.** The Cloudflare bot mitigation from Story 1-3 answers **403** to an empty
+> user agent, and also to `GPTBot/1.0`. Several HTTP clients send no user agent by default. A
+> Satellite that fetches the Registry with such a client gets a 403 from a mechanism that is
+> working exactly as designed, and the failure looks like the contract surface being down.
+
+Suggested value: the consuming repository's own name, for example
+`cuatro-portfolio-build/1.0 (+https://cuatro.dev)`, so an edge log attributes a build fetch to the
+repository that made it.
+
+**Observed 2026-08-26** against the live apex, recorded in Story 1-16's probes. It pairs with
+`ops/tailwind-adapter.md` Pending Operator action 3: both are adoption instructions that fail
+silently when missed, and both are owed to the same seven repositories.
+
+**Not yet delivered.** `cs-tracker` is the first Satellite to adopt, in Story 1-19, so it is the
+first place this has to land.
+
 ## Pending Operator actions
 
 This file hands the Operator work it cannot do from a development host. They are tracked here
@@ -386,9 +442,9 @@ rather than left in prose, in the shape `ops/token-contract.md`, `ops/font-contr
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
 | 1 | **Confirm the surface live over HTTPS after the merge to `main`** | Operator | A deploy fires only on a push to `main`, and this story's work is committed on `dev`, so no agent here can assert the live URL. After the deploy, fetch each of these and record the status and the `content-type`: `https://cuatro.dev/contracts/tokens.css`, `/contracts/fonts.css`, `/contracts/tailwind.css`, `/contracts/fonts/bricolage-grotesque-latin.woff2`, `/contracts/fonts/geist-latin.woff2`, `/contracts/fonts/geist-mono-latin.woff2`, `/contracts/fonts/OFL-bricolage-grotesque.txt`, `/contracts/fonts/OFL-geist.txt`, `/contracts/fonts/OFL-geist-mono.txt`. **A correct answer is `200` with `text/css`, `font/woff2` and `text/plain` respectively**, matching the table under "The observed content types". Send a real user agent, per action 4. Write the result into this file as a new dated subsection under that heading, beside the 404 baseline, and leave the baseline in place | _not done_ |
-| 2 | **Decide the cache policy for the published surface** | Operator | The origin sends `max-age=0` and the zone is `cache_level aggressive` with `browser_cache_ttl 14400` and `edge_cache_ttl 7200`, so a republished contract can be served stale from the edge for up to four hours under an unchanged URL. AD-16's versioning is deprecate, migrate, remove, which tolerates that; a consumer polling for a fresh Registry does not. Decide it once, record it here, and purge the edge on a contract publish if the answer is to keep the zone default | _not done_ |
+| 2 | **Decide the cache policy for the published surface** | Operator | The origin sends `max-age=0` and the zone is `cache_level aggressive` with `browser_cache_ttl 14400` and `edge_cache_ttl 7200`, so a republished contract can be served stale from the edge for up to four hours under an unchanged URL. AD-16's versioning is deprecate, migrate, remove, which tolerates that; a consumer polling for a fresh Registry does not. Decide it once, record it here, and purge the edge on a contract publish if the answer is to keep the zone default | **2026-08-27. Ruling: version the URL and let the edge cache hard.** See "The cache policy" below. The decision is recorded; **the implementation is not built** and is not this story's work |
 | 3 | **Settle the Traefik-versus-Hub question before Epic 4 plans its work** | Operator | `epics.md:1741-1742` names it as the interim-versus-final decision and this story treated it as not one to take unattended. Today's answer is the Hub, and the table under "What Epic 3 and Epic 4 each do to this" says Epic 4 then changes nothing here. If the answer becomes Traefik, that table is what has to be rewritten, and this mechanism becomes the interim | _not done_ |
-| 4 | **Tell every Satellite that a build-time fetch must send a user agent** | Operator | Observed on the live apex: an empty user agent answers **403** at the Cloudflare edge, and so does `GPTBot/1.0`. AD-4 has seven repositories fetch `https://cuatro.dev/contracts/registry.json` at build time, and a fetch that sends no user agent fails against a mechanism that is working perfectly. This pairs with `ops/tailwind-adapter.md` Pending Operator action 3, which is the other adoption instruction that fails silently if it is missed | _not done_ |
+| 4 | **Tell every Satellite that a build-time fetch must send a user agent** | Operator | Observed on the live apex: an empty user agent answers **403** at the Cloudflare edge, and so does `GPTBot/1.0`. AD-4 has seven repositories fetch `https://cuatro.dev/contracts/registry.json` at build time, and a fetch that sends no user agent fails against a mechanism that is working perfectly. This pairs with `ops/tailwind-adapter.md` Pending Operator action 3, which is the other adoption instruction that fails silently if it is missed | **Written down 2026-08-27** as "The adoption instruction every Satellite needs" below, so the instruction exists in one citable place. **Not yet delivered to any Satellite**: `cs-tracker` is the only one that has begun adoption, in Story 1-19, and it is the first consumer this has to reach |
 | 5 | **Record the first real CI run of the `rendered-output` job with the new spec**, from the Actions run summary | Operator | The three new browser checks have only ever run against a server started on a Windows development host. The runner figures, and the content types Next sends on Linux, are unknown until the job runs once. Same open item as `ops/tailwind-adapter.md` action 4 | _not done_ |
 | 6 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10, 1-12 and 1-13, and this story widens it again. `AGENTS.md:52-53` describes CI as typecheck and tests only, against a file with five jobs, and `AGENTS.md:55-57` says Playwright is not installed and that no acceptance criterion may claim a browser check, which is now false for four spec files. Nothing in `AGENTS.md` yet says that `pnpm build` publishes into `public/contracts/`, which is the first thing an agent editing the build script needs to know | _not done_ |
 

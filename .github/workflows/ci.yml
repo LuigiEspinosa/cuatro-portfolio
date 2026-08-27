@@ -202,6 +202,21 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
+      # Pinned 2026-08-27, Story 1-10 Operator action 3. Without this the job
+      # takes whatever Node the Playwright image ships, which was v24.18.1 while
+      # every other job here pins 22. Two Node majors across one workflow means a
+      # browser check can pass on one runtime and fail on the other, and catching
+      # real rendered output is the entire point of this job. The image tag still
+      # governs the browser and the fonts, so the committed baseline PNG is
+      # unaffected: this pins the runtime, not the renderer.
+      #
+      # Deliberately no `cache: pnpm` here, unlike the other jobs. Caching would
+      # change the install timings that `ops/rendered-output-harness.md` records
+      # as measured, and that is a separate decision from this one.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

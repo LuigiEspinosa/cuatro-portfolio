@@ -122,6 +122,33 @@ version drift the pinning exists to prevent.
 | Harness run, warm `.next`, six-test file | **24.3 s wall**, 21.5 s reported as test time | **Observed 2026-08-24**, same method without emptying the volume |
 | Harness run, thirteen-test file | **22.7 s** reported as test time | **Observed 2026-08-24**, by running the full file in the pinned container after the review pass added the seven further failure-path tests. Nine of the thirteen tests never take a screenshot, so the count grew faster than the clock |
 
+### The CI figures, measured on a runner
+
+**Observed 2026-08-25** from Actions run `32801557172`, the first execution of this job on a
+GitHub runner. These are the figures C-7 asked for; the local rows above are kept beside them
+rather than overwritten, because they were measured by a different method on a different machine.
+
+| Step | Wall | Nature |
+|---|---|---|
+| Whole job | **69 s**, 02:28:58Z to 02:30:07Z | **Observed** |
+| `Initialize containers`, which is the image pull | **28 s** | **Observed.** The provisioning cost C-7 names, paid on a cold runner |
+| `actions/checkout@v4` | 1 s | **Observed** |
+| `pnpm/action-setup@v4` | 1 s | **Observed** |
+| `pnpm install --frozen-lockfile` | **6 s** | **Observed.** Against 4 m 33 s on the Windows development host below, which is the bind-mount penalty rather than a real install cost |
+| `Rendered-output harness`, the thirteen tests | **28 s** | **Observed.** Against 22.7 s of reported test time locally, so the runner is close to the development host once provisioned |
+
+**The image pull and the harness cost the same**, 28 s each, so roughly half this job is
+provisioning that no amount of test tuning will remove. That is the number C-7 wanted written down.
+
+**`actions/checkout@v4` and `pnpm/action-setup@v4` both behaved correctly inside the pinned
+container job**, which had never been exercised in this repository before this run. Both completed
+in about a second with no warnings. That closes the second thing the first run existed to answer.
+
+**These timings predate the Node 22 pin** recorded in Operator action 2 below. They describe the
+job as it ran on the image's own Node v24.18.1. The pin changes the runtime, not the image, so the
+image-pull figure is unaffected; the install and harness figures could move slightly and have not
+been re-measured.
+
 **What these numbers do not include.** `pnpm install --frozen-lockfile` inside the container took
 **4 m 33 s** on this host (**observed 2026-08-24**), but that figure is dominated by pnpm writing
 its store onto a bind-mounted Windows filesystem and says nothing about CI, where the store is on
@@ -368,8 +395,8 @@ use.
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Record the first real CI timing of the `rendered-output` job**: image pull, install, and the harness step, from the Actions run summary | Operator | The provisioning figures above are a local host's, and say so. The CI figure is the one C-7 actually asks for, and it cannot be observed until this job runs on a runner. Replace the "Pull wall time on this host" row with a CI row when it is, keeping the local row and its method rather than overwriting it | _not done_ |
-| 2 | **Confirm the container job's Node version is acceptable**, or pin it | Operator | The `test` job pins Node 22 through `setup-node`. The `rendered-output` job takes the image's Node, observed as v24.18.1, because that is the runtime the pinned browsers were built against. Two Node versions in one workflow is a deliberate consequence of pinning the image, and it is recorded rather than hidden | _not done_ |
+| 1 | **Record the first real CI timing of the `rendered-output` job**: image pull, install, and the harness step, from the Actions run summary | Operator | The provisioning figures above are a local host's, and say so. The CI figure is the one C-7 actually asks for, and it cannot be observed until this job runs on a runner. Replace the "Pull wall time on this host" row with a CI row when it is, keeping the local row and its method rather than overwriting it | **2026-08-25.** Run `32801557172`, recorded in "The CI figures, measured on a runner" above. The local rows were kept beside them. The same run also confirmed `actions/checkout@v4` and `pnpm/action-setup@v4` behave inside the pinned container |
+| 2 | **Confirm the container job's Node version is acceptable**, or pin it | Operator | The `test` job pins Node 22 through `setup-node`. The `rendered-output` job takes the image's Node, observed as v24.18.1, because that is the runtime the pinned browsers were built against. Two Node versions in one workflow is a deliberate consequence of pinning the image, and it is recorded rather than hidden | **2026-08-27. Ruling: pinned to Node 22.** A `setup-node` step was added to the job, so every job in the workflow now runs one Node major. The reasoning against leaving it: two Node majors means a browser check can pass on one runtime and fail on the other, and catching real rendered output is what this job is for, so a runtime difference between it and the `test` job undermines the signal rather than adding coverage. The argument for leaving it, that the browsers were built against the image's Node, applies to the browser binaries and not to the Node that runs Playwright's test process. The image tag still governs the browser and the fonts, so the committed baseline PNG is unaffected |
 | 3 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Three lines in that block are false as of this story. `AGENTS.md:52-53` says CI "runs typecheck and tests only"; `:55-57` says "Playwright is not installed" and "until then no acceptance criterion may claim a rendered-output or browser check". A later agent reading that will refuse to write the browser assertions Stories 1.12 and 1.17 through 1.19 now depend on. The block is machine-managed and this story is forbidden from hand-editing it, and `sprint-status.yaml:95-97` already carries the same reminder for other reasons | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the
