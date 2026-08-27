@@ -103,12 +103,15 @@ development_status:
   # whole-box snapshot, recorded in ops/routing-inventory.md with its four caveats.
   1-8-an-offsite-backup-path-for-digital-library: done
   1-9-record-the-build-on-the-box-violation-as-a-tracked-item: done
-  # 1-10 parked by hand 2026-08-25, same session-wall cause. Work is complete at
-  # cc03c0c, 915bf5e and 064c087. The branch was pushed 2026-08-25 and CI run
-  # 32801557172 passed with rendered-output: success, so the first-run and
-  # action-behaviour questions are answered. Still owed: the decision on the
-  # container job taking image Node v24.18.1 while the test job pins Node 22.
-  1-10-install-playwright-and-establish-the-rendered-output-harness: awaiting-operator
+  # 1-10 closed by hand 2026-08-27. Work committed at cc03c0c, 915bf5e and 064c087.
+  # All four operator_actions are done: CI run 32801557172 recorded its measured
+  # timings (28 s image pull, 6 s install, 28 s harness, 69 s job) in
+  # ops/rendered-output-harness.md beside the local rows; that run confirmed
+  # actions/checkout@v4 and pnpm/action-setup@v4 behave inside the pinned container;
+  # the container job is now pinned to Node 22 with the ruling recorded; and the
+  # bmad:context block in AGENTS.md was refreshed, which also closed the same
+  # outstanding item for stories 1-12, 1-13 and 1-16.
+  1-10-install-playwright-and-establish-the-rendered-output-harness: done
   1-11-publish-contracts-tokens-css-from-packages-tokens: done
   # 1-12 closed by hand 2026-08-25. Its session was killed when the driving
   # process exited, so the orchestrator recorded no result. Work is complete at
