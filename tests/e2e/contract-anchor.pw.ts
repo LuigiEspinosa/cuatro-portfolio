@@ -130,6 +130,48 @@ const PRE_CHANGE_NAMES = ['--white-color', '--black-color', '--accent', '--monum
 const normaliseQuotes = (value: string): string => value.replace(/'/g, '"');
 
 /**
+ * The token role a Hub property is aliased onto, or `null` while it is authored as a literal.
+ *
+ * Added by Story 1-18, the alias layer. Before it, every one of the Hub's sixteen was a literal
+ * and the comparison below was against the text `app/app.scss` authors. Twelve of them are now
+ * `var()` references, and the computed value of a custom property is its token stream **after**
+ * substitution, so what `:root` answers for an aliased name is the role's value and never the
+ * string `var(--token-text)`. The comparison therefore reads the role in the same page instead.
+ */
+const aliasRole = (name: string): string | null =>
+  /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/.exec(HUB_DECLARED.get(name) ?? '')?.[1] ?? null;
+
+/**
+ * The computed colour of a throwaway element painted `background-color: var(<name>)`.
+ *
+ * A computed colour and a custom property's token stream do not serialise the same way, so a
+ * role that is going to be compared against a computed `color` or `background-color` is put
+ * through a real element in the same page rather than compared as text.
+ */
+const probeRoleColours = async (page: Page, names: readonly string[]): Promise<Record<string, string>> => {
+  const read = await page.evaluate((properties: string[]) => {
+    const probe = document.createElement('div');
+    document.body.appendChild(probe);
+    const answers: Record<string, string> = {};
+    for (const property of properties) {
+      probe.style.cssText =
+        `position:absolute;left:-99999px;top:0;width:1px;height:1px;background-color:var(${property});`;
+      answers[property] = window.getComputedStyle(probe).backgroundColor;
+    }
+    probe.remove();
+    return answers;
+  }, [...names]);
+
+  // `background-color` falls back to the initial transparent when the reference does not
+  // resolve, and two unresolved roles would then compare equal to each other. Reported here
+  // rather than returned.
+  for (const name of names) {
+    expect(read[name], `var(${name}) did not resolve to a colour on the probe`).not.toBe('rgba(0, 0, 0, 0)');
+  }
+  return read;
+};
+
+/**
  * A declared value with its `var()` references replaced by what the contract declares them as.
  *
  * This is not a convenience. The computed value of a custom property is its token stream
@@ -557,12 +599,29 @@ test('the token contract declares a real list of names', () => {
   for (const name of PRE_CHANGE_NAMES) {
     expect([...HUB_DECLARED.keys()], `app/app.scss no longer declares ${name}`).toContain(name);
     expect([...DECLARED.keys()], `${name} is now declared by the contract as well as by the Hub`).not.toContain(name);
+
+    // **Story 1-18 aliased all four onto token roles.** The role each one names is read off
+    // `app/app.scss` and checked against the contract here, so the comparison further down is
+    // against a role the contract really declares rather than against a name a retarget invented.
+    const role = aliasRole(name);
+    expect(
+      role,
+      `app/app.scss authors ${name} as "${HUB_DECLARED.get(name)}" rather than as a var() reference to a role`
+    ).toBeTruthy();
+    expect([...DECLARED.keys()], `${name} is aliased onto ${role}, which the contract does not declare`).toContain(
+      role
+    );
   }
-  // The quote normalisation is not inert: at least one of the four is authored single-quoted.
+
+  // The quote normalisation is not inert. Before Story 1-18 this was measured on the four names
+  // above, which were single-quoted family literals; they are `var()` references now, so it is
+  // measured over everything `app/app.scss` declares. `--confillia-normal` and `--confillia-bold`
+  // are the two that story deliberately left as single-quoted literals, pending O-6 and UX-DR12.
   expect(
-    PRE_CHANGE_NAMES.some((name) => normaliseQuotes(HUB_DECLARED.get(name) ?? '') !== HUB_DECLARED.get(name)),
-    'no pre-change value is single-quoted, so the quote normalisation below is untested'
+    [...HUB_DECLARED.values()].some((value) => normaliseQuotes(value) !== value),
+    'nothing in app/app.scss is single-quoted, so the quote normalisation is untested'
   ).toBe(true);
+  expect(normaliseQuotes("'Confillia Normal'"), 'the quote normaliser no longer fires').toBe('"Confillia Normal"');
 
   // The font half of the contract, on the same rule as the counts above: **pinned** at three,
   // not bounded. Every face assertion in this file loops over `CONTRACT_FAMILIES`, so a contract
@@ -961,13 +1020,22 @@ test('the compiled stylesheet carries the contract faces and every face URL answ
   // response body proves the bytes arrived, and `document.fonts` proves the browser parsed
   // them into real `@font-face` rules on this page.
   //
-  // **Not `document.fonts.check`.** Nothing in the Hub sets a contract family on anything, so
-  // an unused face is never downloaded and `check` correctly answers `false`. That absence is
-  // this story's whole point rather than a defect, so the check here is declaration and the
-  // load status is logged rather than asserted. `tests/e2e/contract-serving.pw.ts` is where
-  // availability is asserted, on a fixture that actually uses the families, and at each face's
-  // own weight, because `Bricolage Grotesque` publishes `font-weight: 700 800` and a bare
+  // **Not `document.fonts.check`, and the reason changed with Story 1-18.** The reason used to be
+  // that nothing in the Hub set a contract family on anything, so an unused face was never
+  // downloaded and `check` correctly answered `false`. **That is no longer true**: the alias layer
+  // points `--font-regular`, `--font-bold`, `--monument-regular`, `--monument-bold` and
+  // `--font-mono` at `--f-body`, `--f-display` and `--f-mono`, so all three published families are
+  // now used and all three load on this route.
+  //
+  // The check here is still **declaration**, and the load status is still logged rather than
+  // asserted, but for a different reason: which faces a given route happens to rasterise is a
+  // property of that route's content, not of the wiring this case is about, and pinning it here
+  // would make an unrelated content change fail a wiring assertion. What is asserted is that every
+  // published family reached `document.fonts` at all. `tests/e2e/contract-serving.pw.ts` is where
+  // availability is asserted, on a fixture that uses the families, and at each face's own weight,
+  // because `Bricolage Grotesque` publishes `font-weight: 700 800` and a bare
   // `16px "Bricolage Grotesque"` asks about a weight no published face declares.
+  // `tests/e2e/anchor-aliases.pw.ts` is where the families are asserted to reach real call sites.
   const declaredToDocument = await page.evaluate(() =>
     [...document.fonts].map((face) => ({ family: face.family.replace(/^["']|["']$/g, ''), status: face.status }))
   );
@@ -986,43 +1054,67 @@ test('the compiled stylesheet carries the contract faces and every face URL answ
   }
 });
 
-test('the Hub renders the values it rendered before the contract was wired in', async ({ page }) => {
+test('the Hub renders the token roles its alias layer maps its own names onto', async ({ page }) => {
   const onWork = await page.goto(ROUTE, { waitUntil: 'load' });
   expect(onWork?.status(), `${ROUTE} did not answer 200`).toBe(200);
 
-  // `body` still takes its colour from `--white-color`, and `body#work` (`app/app.scss:53-55`)
-  // still paints its own background over `background: var(--black-color)` at a higher
-  // specificity. Both are asserted, because a change that moved either would move the render.
-  expect(await computedStyleValue(page, 'body', 'color')).toBe('rgb(255, 255, 255)');
+  // **What changed here, and which story changed it.** This case was
+  // `the Hub renders the values it rendered before the contract was wired in`, and it asserted
+  // that these same reads still answered pure white and pure black, because Story 1-17 wired the
+  // contract in and consumed nothing. **Story 1-18 wrote the alias layer**: `--white-color` is
+  // now `var(--token-text)` and `--black-color` is `var(--token-bg)`, so pure white and pure
+  // black are retired from the system. The reads are the same reads. What moved is the expected
+  // value, and it is sourced from the role in this same page rather than restated as a literal.
+
+  const roles = await probeRoleColours(page, ['--token-text', '--token-bg']);
+
+  // The two roles must differ, or every comparison below could be satisfied by one colour.
+  expect(roles['--token-text'], '--token-text and --token-bg resolve to the same colour').not.toBe(roles['--token-bg']);
+
+  // `body` takes its colour from `--white-color`, which is `--token-text` now. `body#work`
+  // (`app/app.scss`) still paints its own background over `background: var(--black-color)` at a
+  // higher specificity, and that `#0a000f` literal belongs to UX-DR10 and the Epic 2 redesign
+  // rather than to this step, so it is asserted unmoved.
+  expect(await computedStyleValue(page, 'body', 'color'), 'body no longer paints --token-text').toBe(
+    roles['--token-text']
+  );
   expect(await computedStyleValue(page, 'body', 'background-color')).toBe('rgb(10, 0, 15)');
 
-  // The expectations come from `app/app.scss` itself. Sass normalises the single quotes that
-  // file authors to double quotes on the way out, which is the one transform applied here and
-  // is recorded in `ops/anchor-token-adoption.md` rather than left as an unexplained literal.
+  // Each of the four against the role it names, read on `:root` in the same page. Both sides are
+  // custom property token streams here, so this comparison is exact rather than canonicalised,
+  // and it fails naming the property, the role and both values.
   const drift: string[] = [];
   for (const name of PRE_CHANGE_NAMES) {
-    const authored = HUB_DECLARED.get(name);
-    expect(authored, `app/app.scss no longer declares ${name}`).toBeTruthy();
-    const expectedValue = normaliseQuotes(authored ?? '');
-    const actual = await rootCustomPropertyValue(page, name);
-    if (actual !== expectedValue) {
-      drift.push(`${name}: app/app.scss authors "${authored}", expected "${expectedValue}", read "${actual}"`);
+    const role = aliasRole(name);
+    expect(role, `app/app.scss no longer aliases ${name} onto a token role`).toBeTruthy();
+    const aliased = await rootCustomPropertyValue(page, name);
+    const direct = await rootCustomPropertyValue(page, role ?? '');
+    if (aliased !== direct) {
+      drift.push(`${name} aliases ${role}: ${name} reads "${aliased}", ${role} reads "${direct}"`);
     }
   }
-  expect(drift, `a pre-change custom property moved:\n${drift.join('\n')}`).toEqual([]);
+  expect(drift, `an alias no longer resolves to the role it names:\n${drift.join('\n')}`).toEqual([]);
 
-  // `--black-color` resolving to pure black is read on a probe rather than on `body`, because
-  // **the base `body` background is not visible on `/work`**, the one URL this file visits:
+  // `--black-color` is read on a probe rather than on `body`, because **the base `body`
+  // background is not visible on `/work`**, the one URL this file visits:
   // `body#work` and `body#projects` override it (`app/app.scss:53-55`), `body[id='']` overrides
   // it for `/` (`components/organisms/HomeLayout/HomeLayout.scss:1-2`) and `#celeste` overrides
-  // it for `/celeste` (`components/organisms/Celeste/celeste.scss:1-2`). It **is** visible on
-  // `/cv` and `/recommendation`, whose `body#cv` and `body#recommendation` match none of those
-  // rules, and on the 404 surface, which `app/not-found.tsx` renders through the same root layout
-  // and the same `Body` and whose id likewise matches none of them. None of the three is visited
-  // here or captured by the screenshot baseline. So the probe is not a convenience: it is the only
-  // place in this suite where the value they paint is observed at all. Observed 2026-08-26,
-  // recorded in
-  // `ops/anchor-token-adoption.md` § "A second finding".
+  // it for `/celeste` (`components/organisms/Celeste/celeste.scss:1-2`).
+  //
+  // **Corrected by Story 1-18.** This comment used to say the base rule is visible on `/cv` and
+  // `/recommendation`, whose `body#cv` and `body#recommendation` match none of those rules. Those
+  // two routes never render: `next.config.js` redirects both, permanently, to a PDF, so a browser
+  // asked for either starts a download. The claim came from
+  // `ops/anchor-token-adoption.md` § "A second finding", which reached it by reading stylesheets
+  // and said so, and Story 1-18 falsified it by navigating. **The one surface where the base rule
+  // paints is the 404**, which `app/not-found.tsx` renders through the same root layout and the
+  // same `Body`, and whose stripped id matches none of the three rules above.
+  //
+  // That surface is not visited here and is not captured by the screenshot baseline, so this probe
+  // is not a convenience: it is the only place in **this file** where the value it paints is
+  // observed at all. `tests/e2e/anchor-aliases.pw.ts` reads the real `body` on the 404 surface,
+  // and the probe is kept rather than replaced because the two answer different questions: a probe
+  // on `/work` is what fails if the alias stops resolving anywhere.
   const used = await page.evaluate(() => {
     const probe = document.createElement('div');
     probe.style.cssText =
@@ -1034,8 +1126,17 @@ test('the Hub renders the values it rendered before the contract was wired in', 
     probe.remove();
     return read;
   });
-  expect(used.background, 'var(--black-color) no longer resolves to pure black').toBe('rgb(0, 0, 0)');
-  expect(used.color, 'var(--white-color) no longer resolves to pure white').toBe('rgb(255, 255, 255)');
+  expect(used.background, 'var(--black-color) no longer resolves to what --token-bg resolves to').toBe(
+    roles['--token-bg']
+  );
+  expect(used.color, 'var(--white-color) no longer resolves to what --token-text resolves to').toBe(
+    roles['--token-text']
+  );
+
+  // The inversion stated as its own claim rather than left implicit in the two above. Story 1-17
+  // asserted these were pure black and pure white; retiring both is what Story 1-18 is for.
+  expect(used.background, 'pure black is retired from the system').not.toBe('rgb(0, 0, 0)');
+  expect(used.color, 'pure white is retired from the system').not.toBe('rgb(255, 255, 255)');
 
   // None of the Hub's sixteen is a contract name, which is why the render can be identical by
   // construction rather than by luck. `app/__tests__/anchor-contract.test.ts` is the

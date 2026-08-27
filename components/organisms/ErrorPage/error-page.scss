@@ -22,6 +22,7 @@
 
   &__code {
     font-family: var(--monument-bold);
+    font-weight: var(--w-black); // set by hand: --monument-bold's alias carries family, not weight
     font-size: clamp(6rem, 18vw, 14rem);
     line-height: 1;
     margin: 0;

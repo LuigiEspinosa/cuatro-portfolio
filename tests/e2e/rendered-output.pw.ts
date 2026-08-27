@@ -1,6 +1,6 @@
 import { readdirSync } from 'node:fs';
 import { basename, dirname } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import {
   RENDERED_VIEWPORT,
   computedStyleValue,
@@ -45,6 +45,61 @@ const SNAPSHOT = `work-${RENDERED_VIEWPORT.width}x${RENDERED_VIEWPORT.height}.pn
 const CAPABILITIES = ['route-screenshot', 'computed-property', 'root-custom-property'] as const;
 const exercised = new Set<string>();
 
+/**
+ * The computed `font-family` of a throwaway element declared `font-family: <value>`.
+ *
+ * Added by Story 1-18. The two capability tests below used to compare against the literal
+ * `MonumentExtended-Bold`, which that story retired by aliasing `--monument-bold` onto a
+ * published family. Reading the expectation off a probe in the same page keeps both tests
+ * measuring the capability rather than a font name, and keeps them from having to restate a value
+ * the contract is free to retune under a MINOR bump.
+ */
+const probeFamily = async (page: Page, value: string): Promise<string> => {
+  const read = await page.evaluate((declared) => {
+    const probe = document.createElement('div');
+    probe.style.cssText = `position:absolute;left:-99999px;top:0;width:1px;height:1px;font-family:${declared};`;
+    document.body.appendChild(probe);
+    const computed = window.getComputedStyle(probe).fontFamily;
+    probe.remove();
+    return computed;
+  }, value);
+  return read.trim();
+};
+
+/**
+ * The same read, with the reference **proved to have resolved** before the answer is returned.
+ *
+ * This is the failure the plain read had. `font-family` is inherited, so a probe declared
+ * `font-family: var(--undeclared)` does not go blank: it falls back to whatever `body` sets, which
+ * is exactly what `.work-hero__heading` would also fall back to if `var(--monument-bold)` stopped
+ * resolving. The two would then compare **equal**, and `not.toMatch(/MonumentExtended/)` would pass
+ * as well, so the capability test would be green while the display family reached no heading. The
+ * inherited family is measured through a name nothing declares, and the two are required to differ.
+ */
+const probedFamily = async (page: Page, value: string): Promise<string> => {
+  const read = await probeFamily(page, value);
+  expect(read, `the probe read no font-family back for "${value}"`).not.toBe('');
+
+  const UNRESOLVABLE = 'var(--a-custom-property-nothing-declares)';
+  const inherited = await probeFamily(page, UNRESOLVABLE);
+  expect(
+    read,
+    `the probe for "${value}" read "${read}", which is the same family a probe for ` +
+      `"${UNRESOLVABLE}" reads. That is what an unresolved reference looks like: font-family is ` +
+      `inherited, so the probe falls back to the body family rather than going blank, and so would ` +
+      `the element this value is about to be compared against.`
+  ).not.toBe(inherited);
+
+  return read;
+};
+
+/** A family stack with its quoting and its inter-item spacing normalised away. */
+const normaliseFamilyStack = (value: string): string =>
+  value
+    .replace(/["']/g, '')
+    .replace(/\s*,\s*/g, ',')
+    .trim();
+
 test.describe('rendered-output harness', () => {
   test('captures /work at 360x800 and matches the committed baseline', async ({ page }) => {
     await expectRouteScreenshot(page, ROUTE, SNAPSHOT, { mask: [CANVAS] });
@@ -66,7 +121,15 @@ test.describe('rendered-output harness', () => {
 
     const family = await computedStyleValue(page, HEADING, 'font-family');
 
-    expect(family).toBe('MonumentExtended-Bold');
+    // **Amended by Story 1-18**, which aliased `--monument-bold` onto the published display
+    // family and retired `MonumentExtended-Bold` from this call site. The expectation is read
+    // through a probe in the same page rather than restated as a literal, so a MINOR bump that
+    // retunes the family stack moves both sides together instead of failing the harness's own
+    // capability test for a reason that has nothing to do with the harness.
+    const aliased = await probedFamily(page, 'var(--monument-bold)');
+    expect(family, `${HEADING} no longer resolves to what var(--monument-bold) resolves to`).toBe(aliased);
+    expect(family, 'the retired Monument Extended family still reaches the heading').not.toMatch(/MonumentExtended/);
+
     exercised.add('computed-property');
   });
 
@@ -75,13 +138,19 @@ test.describe('rendered-output harness', () => {
 
     const declared = await rootCustomPropertyValue(page, '--monument-bold');
 
-    // Double quotes, not the single quotes `app/app.scss:29` is written with: Sass
-    // normalises a quoted string to double quotes on the way out, and a custom property
-    // carries its declared token stream through to the computed value untouched. The
-    // computed `font-family` above loses the quotes entirely, because Chromium serialises a
-    // family name that is a valid identifier sequence without them. Two capabilities, two
-    // different shapes of the same name, which is why both are asserted rather than one.
-    expect(declared).toBe('"MonumentExtended-Bold"');
+    // Two capabilities, two different shapes of the same family, which is why both are asserted
+    // rather than one. A custom property carries its declared token stream through to the
+    // computed value untouched, quotes and all, while the computed `font-family` above drops the
+    // quotes from any family name that is a valid identifier sequence. Before Story 1-18 the two
+    // shapes were `"MonumentExtended-Bold"` and `MonumentExtended-Bold`; the alias layer changed
+    // the family, not the pair of shapes, so what is asserted is the pair rather than the
+    // literals it used to produce.
+    expect(declared, '--monument-bold is no longer a quoted family stack').toMatch(/"/);
+    expect(normaliseFamilyStack(declared), 'the two shapes of the family no longer agree').toBe(
+      normaliseFamilyStack(await probedFamily(page, 'var(--monument-bold)'))
+    );
+    expect(declared, 'the retired Monument Extended family is still on :root').not.toMatch(/MonumentExtended/);
+
     exercised.add('root-custom-property');
   });
 

@@ -1,34 +1,86 @@
 @use './scss/' as *;
 
+// The alias layer (Story 1-18, Anchor migration step 2, UX-DR9 and FR-17).
+//
+// Every custom property the Hub already had keeps its name and gains a new value: a var()
+// reference to a role the published token contract puts on :root. All fifteen component
+// stylesheets go on reading the old names, so the whole site changes appearance from one file.
+//
+// This is deliberate scaffolding rather than a destination. UX-DR14 deletes this layer once the
+// components are rebuilt token-native; until then the old name is the only thing a component
+// stylesheet says, and this is the one place the old name means anything.
+//
+// The mapping is epics.md:1821-1836 and DESIGN.md section "The mapping", whose value-by-value
+// half for the cybercore properties is rebaseline-2026-08-15.md section O-10. Follow the table,
+// do not invent a row. Four properties are deliberately left as literals, each with its reason
+// written beside it rather than left to read as an oversight.
+
 :root {
   // Colors
-  --white-color: #fff;
-  --black-color: #000;
-  --light-gray-color: #b4b4cc;
-  --gray-color: #6b5f80;
-  --accent: #5b21b6;
-  --accent-dim: rgba(91, 33, 182, 0.22);
+  --white-color: var(--token-text);
+  --black-color: var(--token-bg);
+  --light-gray-color: var(--token-text-secondary);
+  --gray-color: var(--token-border-interactive);
+  --accent: var(--token-accent);
+  // The ornament value, which is eleven of the fifteen call sites. The other four take the
+  // boundary role through the scoped redefinitions below.
+  --accent-dim: var(--token-accent-muted);
+  // Left alone pending O-11, which is open. Zero call sites either way, so this costs nothing.
   --accent-glow: rgba(139, 92, 246, 0.4);
 
   // Spacing
-  --page-padding: clamp(1.5rem, 4vw, 3rem);
+  --page-padding: var(--page-pad);
 
   // Hero
+  // Stays local: a viewport height is a layout constant and the contract carries none.
   --hero-height: 40vh;
 
-  // General Sans
-  --font-regular: 'GeneralSans-Regular';
-  --font-bold: 'GeneralSans-Bold';
+  // General Sans, retired. Both aliases land on the body family; weight is a separate axis and
+  // --font-bold has had zero call sites since the cybercore rebrand.
+  --font-regular: var(--f-body);
+  --font-bold: var(--f-body);
 
-  // Confillia
+  // Confillia. Neither retargeted nor deleted: both belong to the type swap (UX-DR12,
+  // epics.md:2786-2790) and the retarget is gated on O-6, which is open.
   --confillia-normal: 'Confillia Normal';
   --confillia-bold: 'Confillia';
 
-  // Monument Extended
-  --monument-regular: 'MonumentExtended-Regular';
-  --monument-bold: 'MonumentExtended-Bold';
+  // Monument Extended, retired. The old names bake weight into the family name, which a family
+  // alias cannot carry, so font-weight is set by hand beside font-family at the four
+  // --monument-bold call sites in this same commit. --monument-regular needs no hand edit: its
+  // three call sites ask for a weight below the 700 800 range the published display face
+  // declares, which the variable face clamps to 700, which is exactly the display family at bold
+  // that the mapping assigns them. Neither the family nor the weight role is named in this
+  // comment on purpose: the consumer scan reads this file whole, so a role named in prose would
+  // read as a reference. Both are written out in ops/anchor-token-adoption.md instead.
+  --monument-regular: var(--f-display);
+  --monument-bold: var(--f-display);
 
-  --font-mono: 'Courier New', monospace;
+  --font-mono: var(--f-mono);
+}
+
+// --accent-dim resolves per call site across its fifteen (epics.md:1831-1834). A custom property
+// is inherited and can be redeclared on any selector, so the resolution happens here rather than
+// at a call site. That is what reconciles "resolved per call site" with epics.md:1836, "every one
+// of the fifteen component stylesheets keeps working with no edit", which otherwise read as
+// contradictory, and it is why three component selectors appear in a global file.
+//
+// The rule that decides a site, stated so it can be falsified: a declaration is a boundary a
+// person reads state from when some selector repaints that same property under :hover,
+// :focus-visible or a data-state attribute, or when it is the only visual indicator of a
+// component's state. Everything else is ornament. The per-site table for all fifteen is in
+// ops/anchor-token-adoption.md and every row is asserted on the real element by
+// tests/e2e/anchor-aliases.pw.ts.
+.work-item::before,
+.project-card,
+.error-page__back {
+  --accent-dim: var(--token-border-interactive);
+}
+
+// The counter-scope. A tech chip inherits from the card it sits in, and a fill is ornament, so
+// the card's boundary value is taken back off it.
+.project-card__tech li {
+  --accent-dim: var(--token-accent-muted);
 }
 
 * {

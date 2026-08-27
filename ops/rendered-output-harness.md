@@ -39,7 +39,8 @@ baseline".
 
 **Why `/work`.** **Decision.** It is the only route that combines a `--monument-bold` call site
 (`.work-hero__heading`, `components/organisms/WorkHero/WorkHero.scss:19`), the `body#work` grid
-background keyed off `<body id={route}>` (`app/app.scss:53-60`,
+background keyed off `<body id={route}>` (`app/app.scss:105-112` since Story 1-18 inserted the
+alias layer above it, `:53-60` before that,
 `components/atoms/Container/Container.tsx:12-16`), and server-rendered content whose GSAP
 entrance tweens already sit behind `if (!reduceMotion)`. A screenshot of `/work` therefore
 covers three separate mechanisms at once.
@@ -64,8 +65,8 @@ harness that covers everything.
 | Any route other than `/work` | One route is enough to establish the instrument. Adding routes is cheap once the instrument exists | **Decision.** Story 1-10 scope |
 | Anything below the fold on `/work` | The comparison is the 360 x 800 viewport, not `fullPage`. `ScreenshotOptions` in `tests/e2e/harness.ts` exposes only `mask`, so a caller cannot widen it today. Story 1.17's "visually identical to the pre-change build" therefore rests on one viewport of one route unless that story widens the capture first. Unlike the route axis, this one is pinned in the config by design and is not free to extend | **Decision.** Story 1-10 scope, and a limit Stories 1.17 and 1.20 inherit knowingly |
 | The 86,400 masked pixels | `.work-hero__canvas-wrap` is 360 x 240 at this viewport, so 30 percent of the frame is excluded. The comparison covers the remaining 201,600. A canvas that renders nothing at all would still pass the screenshot gate, which is why the same test asserts the masked element has a non-zero bounding box | **Observed 2026-08-24**, from `components/organisms/WorkHero/WorkHero.scss:46-48` and the element's bounding box |
-| That `--font-mono` renders for a visitor the way it renders here | `--font-mono: 'Courier New', monospace` (`app/app.scss:31`) has no Courier New in the Linux image, so `.work-hero__meta` (`WorkHero.scss:27`) is baselined against a fallback face no real visitor sees. Pinning the image makes the comparison stable; it does not make that text representative | **Observed 2026-08-24** |
-| That the `@font-face` src still resolves | `computedStyleValue` returns the resolved declaration, not the face that rasterized. It would still answer `MonumentExtended-Bold` if `app/scss/_fonts.scss:91-99` broke and Chromium fell back. Only the screenshot covers rasterization, and only for `.work-hero__heading`. The other three `--monument-bold` call sites live on routes the harness does not capture | **Observed 2026-08-24** |
+| That `--font-mono` renders for a visitor the way it renders here | **Closed by Story 1-18, and the reason it was open is gone.** Until 2026-08-26 this read `--font-mono: 'Courier New', monospace` (`app/app.scss:31`), which has no Courier New in the Linux image, so `.work-hero__meta` (`WorkHero.scss:27`) was baselined against a fallback face no real visitor sees. `app/app.scss:59` now reads `--font-mono: var(--f-mono)`, which is `"Geist Mono", ui-monospace, SFMono-Regular, monospace`, and `contracts/fonts.css` serves that face to the container and to a visitor alike, so the baselined text is representative for the first time | **Observed 2026-08-24**, superseded **2026-08-26** by Story 1-18 |
+| That the `@font-face` src still resolves | `computedStyleValue` returns the resolved declaration, not the face that rasterized. Until 2026-08-26 it would still have answered `MonumentExtended-Bold` if `app/scss/_fonts.scss:91-99` broke and Chromium fell back; since Story 1-18 the same hole exists one family over, against the contract's `Bricolage Grotesque`. Only the screenshot covers rasterization, and only for `.work-hero__heading`. The other three `--monument-bold` call sites live on routes the harness does not capture | **Observed 2026-08-24**, restated against the adopted face **2026-08-26** |
 | Accessibility | Unchanged and untouched. `.lighthouserc.js` still asserts accessibility at 0.95, severity error, and `.github/workflows/lighthouse.yml` still runs it. Story 1-10 modified neither, and `git diff --stat 4f4c751` over both files plus `deploy.yml` was empty | **Observed 2026-08-24**, by running that diff |
 
 ## The tolerance
@@ -130,13 +131,20 @@ omission.
 ## Regenerating the baseline
 
 The committed baseline is `tests/e2e/rendered-output.pw.ts-snapshots/work-360x800-chromium-linux.png`.
+Its sha256 is `4203eccab7a108cb2b9c9f0fd04106f85595145474c89c9c7c55139bb18d278f` (**Observed
+2026-08-26**, by `Get-FileHash ... -Algorithm SHA256`). Story 1-18 regenerated it once, under case
+1 below, replacing `27f22bb6ff78c62e019cc8f222665436b7a20c2445a90677bead375c7d763f97`. The
+2026-08-24 observations further down this section were made against that earlier file and are
+dated as such; this line is the current value.
 
 **It must be generated inside `mcr.microsoft.com/playwright:v1.62.1-noble`.** **Decision.**
 Playwright names a snapshot per platform, so a baseline made on the Windows host would be
 `-win32.png` and CI would fail on a missing `-linux.png`. Even forcing the name, the render
-would differ: `--font-mono: 'Courier New', monospace` (`app/app.scss:31`) has no Courier New on
-Linux, and glyph rasterization is not portable. Pinning both sides to one image is what makes
-the tolerance a real number rather than a fudge factor.
+would differ, because glyph rasterization is not portable. Until 2026-08-26 the sharper half of
+that argument was `--font-mono: 'Courier New', monospace` (`app/app.scss:31`), a family Linux does
+not carry at all; Story 1-18 mapped that property onto `--f-mono` and the contract serves the face
+to both platforms, so what remains is the rasterizer difference alone. Pinning both sides to one
+image is what makes the tolerance a real number rather than a fudge factor.
 
 **Two tests stand aside from an update run, and must keep doing so.** **Decision.** Bare
 `--update-snapshots` presets Playwright's mode to `changed`, in which a mismatching screenshot is
@@ -316,6 +324,19 @@ Two shapes of the same name come back, and both are asserted so neither surprise
 |---|---|---|
 | Computed `font-family` on `.work-hero__heading` | `MonumentExtended-Bold` | Chromium serialises a family name that is a valid identifier sequence without quotes |
 | Computed `--monument-bold` on `:root` | `"MonumentExtended-Bold"` | A custom property carries its declared token stream through untouched, and Sass normalises the single quotes at `app/app.scss:29` to double quotes on the way out |
+
+**Closed by Story 1-18 on 2026-08-26, and the two rows above no longer describe this tree.** The
+story set `font-weight: var(--w-black)` at all four `--monument-bold` call sites in the same commit
+that aliased the family, in that order, so the read is no longer second. Both values above moved
+with it: the computed `font-family` on `.work-hero__heading` is now the contract's display stack
+and the computed `--monument-bold` on `:root` is now the `var(--f-display)` reference rather than a
+quoted family name. `tests/e2e/rendered-output.pw.ts` was amended in that commit to read both
+expectations off a probe in the same page rather than to restate either literal, which is why the
+capability tests survived a change that falsified the strings they had been asserting. The four
+weights are asserted at their own call sites by `tests/e2e/anchor-aliases.pw.ts`, on four different
+routes, which is the part this harness said it could not cover. **Observed 2026-08-26**, by reading
+the amended file and by running the suite in the pinned container. `ops/anchor-token-adoption.md`
+§ "The four hand-set weights, and why a family alias needed them" is the full record.
 
 ## The CI job
 

@@ -1132,3 +1132,51 @@ source_spec: `spec-1-17-anchor-migration-step-1-add-the-contract-change-nothing.
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260826-004746-da95; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+### DW-8: The ground a visitor actually sees is still the cybercore literal on every route, because the hardcoded colour values in the component stylesheets are a later story's act and the alias layer cannot re
+origin: spec-deferred a79a806f0a61
+location: app/app.scss:107
+source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
+severity: medium
+reason: app/app.scss:107 (body#work, body#projects), HomeLayout.scss:2 and error-page.scss:7 each paint #0a000f as a literal at a higher specificity than the base body rule, so the --token-bg this story wires onto --black-color is visible on the 404 surface and nowhere else. ProjectCard.scss:27,36,67, WorkItem.scss:35,145 and error-page.scss:9-10,28 carry the same shape of literal. Their mapping is rebaseline-2026-08-15.md section O-10 and it is assigned to UX-DR10 and the Epic 2 redesign, not to this migration step, so this is recorded rather than fixed. It matters because the story's user story is written at the pixel surface and the aliases are asserted at the custom-property surface, which is exactly the gap between "the Hub renders in the Ecosystem's visual identity" and what a visitor sees after this commit.
+status: open
+
+### DW-9: The retired display face is still preloaded on every route and the face that replaced it is not, so each page fetches roughly 20 KB it never paints and the first-paint width guarantee the preload exis
+origin: spec-deferred 295c0abf8f2c
+location: app/layout.tsx:41-45
+source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
+severity: medium
+reason: app/layout.tsx:41-45 preloads /fonts/MonumentExtended-Bold.woff2 with as='font', and app/scss/_fonts.scss:92-95 still declares its @font-face. After this commit no rule resolves that family: the four --monument-bold call sites resolve to --f-display, which is Bricolage Grotesque, and contracts/fonts.css:16-22 publishes that face with font-display: swap and nothing preloads it. app/layout.tsx:39 states the preload's own purpose, "Preload display fonts so SplitText measures correct widths on first paint", and .glitch-text__inner is both a SplitText consumer and one of the four sites this story moved onto the display face. Nothing in the story observes the document head: every new assertion reads resolved CSS, and the one pixel baseline is /work, which renders no GlitchText. It is caused by this commit and it is outside this commit's stated edit boundary: the intent limits source edits to app/app.scss and the four font-weight lines, and app/layout.tsx is neither, so it belongs to the stor
+status: open
+
+### DW-10: The tech chip label fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor, because --accent-dim lost its alpha to two opaque token roles and the label now reads against the chip fill rather than aga
+origin: spec-deferred bc3c95f49531
+location: components/molecules/ProjectCard/ProjectCard.scss:66
+source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
+severity: medium
+reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord
+status: open
+
+### DW-11: Eight local @font-face declarations are resolved by nothing after this commit, not the one the record previously named, and the story that retires the local faces inherits that inventory plus the publ
+origin: spec-deferred 268fa6aabf8d
+location: app/scss/_fonts.scss:20-95
+source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
+severity: low
+reason: app/scss/_fonts.scss:20,30,40,50,60,72,82,92 declare GeneralSans-Light, GeneralSans-Regular, GeneralSans-Medium, GeneralSans-Semibold, GeneralSans-Bold, MonumentExtended-Light, MonumentExtended-Regular and MonumentExtended-Bold. --font-regular and --font-bold were the last consumers of the GeneralSans five and --monument-regular and --monument-bold of the Monument three; all four are now aliases onto --f-body and --f-display. Observed 2026-08-26 by git grep over app, components, hooks, content and contracts, which returns only the declarations themselves and the one preload at app/layout.tsx:42. Not fixed here because app/scss/_fonts.scss is neither app/app.scss nor one of the four font-weight lines. Recorded in ops/anchor-token-adoption.md, "Stated limits of step 2".
+status: open
+
+### DW-12: The comment carrying the two @use lines that load the contract still states that nothing in the repository consumes any of these names, which is the claim this commit falsified.
+origin: spec-deferred dd454bb484eb
+location: app/scss/_index.scss:29-32
+source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
+severity: low
+reason: app/scss/_index.scss:29-32 reads "Nothing in this repository consumes any of these names yet, and that is the point: this story adds the contract and changes no pixel", written by Story 1-17. The alias layer in app/app.scss is now a consumer of ten roles and the four font-weight call sites of one more. The comment goes on to name Story 1-18 as the commit that will change it, so it is stale rather than misleading to a careful reader, but it sits directly on the two loads it explains. Not fixed here: app/scss/_index.scss is neither app/app.scss nor one of the four font-weight lines, and this story's contract admits no third source file. Recorded in ops/anchor-token-adoption.md, "Stated limits of step 2".
+status: open
+
+### DW-13: Follow-up review still recommended for 1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r after the damping cap was spent
+origin: review-budget-followup
+location: n/a
+source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260826-202635-4db0; this entry preserves the lingering recommendation for a deliberate later review.
+status: open

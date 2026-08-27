@@ -24,11 +24,15 @@ import { dirname, join, relative, resolve } from 'node:path';
  *  2. **No name collides.** All sixteen of the Hub's custom properties are declared in
  *     `app/app.scss`, none of the eighty-nine contract names is among them, and both counts are
  *     pinned so the intersection cannot be empty because a list was.
- *  3. **Nothing consumes the contract yet.** That is the whole content of "add the contract,
- *     change nothing", and it is asserted rather than inferred from the absence of intent:
- *     every name `contracts/tokens.css` declares is looked for in every `.scss`, `.ts` and
- *     `.tsx` under every shipped source root, `app/`, `components/`, `hooks/` and `content/`,
- *     and the count of files read is asserted so the scan cannot pass over an empty selection.
+ *  3. **The contract is consumed by the alias layer and by nothing else.** Story 1-17 asserted
+ *     that nothing consumed it at all; Story 1-18 wrote the alias layer, so the case is
+ *     **inverted rather than deleted**. Every name `contracts/tokens.css` declares is looked for
+ *     in every scanned file under every shipped source root, `app/`, `components/`, `hooks/` and
+ *     `content/`, and the count of files read is asserted so the scan cannot pass over an empty
+ *     selection. `app/app.scss` must reference exactly the pinned set of roles the mapping names,
+ *     the four `--monument-bold` call sites exactly `--w-black`, and every other scanned file
+ *     none, so a component stylesheet reaching for a role and an alias silently retargeted both
+ *     fail.
  *  4. **There is no second authored copy.** The Anchor is the publisher, not a Satellite
  *     (AD-1, AD-4), so it loads `contracts/` directly and vendors nothing. The listing is
  *     `git ls-files` rather than the working tree, because `pnpm build` writes the generated,
@@ -125,6 +129,82 @@ const REDUCED_COUNT = 4;
 
 /** The Hub's own custom properties, all sixteen of them, all in one file. */
 const HUB_PROPERTY_COUNT = 16;
+
+/**
+ * **The mapping, property by property**, which is the whole content of Story 1-18's first
+ * acceptance criterion. `epics.md:1821-1836` and `DESIGN.md` § The mapping, whose value-by-value
+ * half for the cybercore properties is `rebaseline-2026-08-15.md` § O-10.
+ *
+ * **Pairwise, not as a set.** An earlier version of this file pinned only the set of roles the
+ * alias layer references and then asserted that each aliased property named *some* member of it.
+ * Swapping `--light-gray-color` and `--gray-color` onto each other's roles leaves that set
+ * unchanged and passed every gate in both halves of the story, while turning the Hub's secondary
+ * text into a border colour and its borders into text. The row is what this criterion is about,
+ * so the row is what is pinned.
+ *
+ * `--accent-dim` maps to two roles, which is the point of it: `--token-accent-muted` is the
+ * `:root` value and the eleven ornament call sites, and `--token-border-interactive` arrives
+ * through the three scoped redefinitions for the four boundary call sites
+ * (`epics.md:1831-1834`). It is the only row with a second role, and that is asserted below.
+ */
+const MAPPING: ReadonlyArray<readonly [property: string, roles: readonly string[]]> = [
+  ['--white-color', ['--token-text']],
+  ['--black-color', ['--token-bg']],
+  ['--light-gray-color', ['--token-text-secondary']],
+  ['--gray-color', ['--token-border-interactive']],
+  ['--accent', ['--token-accent']],
+  ['--accent-dim', ['--token-accent-muted', '--token-border-interactive']],
+  ['--page-padding', ['--page-pad']],
+  ['--font-regular', ['--f-body']],
+  ['--font-bold', ['--f-body']],
+  ['--monument-regular', ['--f-display']],
+  ['--monument-bold', ['--f-display']],
+  ['--font-mono', ['--f-mono']],
+];
+
+/** The role the alias layer declares a property as on `:root`, which is the first of its row. */
+const ROLE_ON_ROOT = new Map(MAPPING.map(([property, roles]) => [property, roles[0]]));
+
+/** The twelve Hub properties the alias layer redefines as `var()` references, from the map. */
+const ALIASED_PROPERTIES = MAPPING.map(([property]) => property);
+
+/**
+ * The roles the alias layer references, **derived from the map** rather than restated beside it.
+ *
+ * A second list would be a second place to keep in step, and the failure it would hide is a row
+ * changed in one and not the other.
+ */
+const ALIAS_ROLES = [...new Set(MAPPING.flatMap(([, roles]) => roles))];
+
+/**
+ * The four the alias layer deliberately leaves authored as literals.
+ *
+ * Not an oversight, and each is held by something open: `--accent-glow` by O-11, `--hero-height`
+ * by being a layout constant the contract carries no role for, and the two Confillia names by the
+ * type swap (UX-DR12) and O-6.
+ */
+const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height', '--confillia-normal', '--confillia-bold'] as const;
+
+/**
+ * The four `--monument-bold` call sites, the only component stylesheets this story edits.
+ *
+ * A family alias cannot carry the weight that lived in the family name `MonumentExtended-Bold`,
+ * so each of these sets `font-weight` alongside `font-family` by hand. That makes each of them a
+ * second, named consumer of the contract, which is why the scan below allows exactly one role
+ * from exactly these four paths rather than allowing none from anywhere but `app/app.scss`.
+ */
+const WEIGHT_CALL_SITES = [
+  'components/molecules/GlitchText/glitch-text.scss',
+  'components/organisms/ErrorPage/error-page.scss',
+  'components/organisms/ProjectsHero/ProjectsHero.scss',
+  'components/organisms/WorkHero/WorkHero.scss',
+] as const;
+
+/** The one role those four are allowed to name, per `DESIGN.md` § The mapping. */
+const WEIGHT_ROLE = '--w-black';
+
+/** The one file that carries the alias layer. */
+const ALIAS_LAYER = 'app/app.scss';
 
 /**
  * One tracked file under each pathspec the copy check lists, so an empty `git ls-files` cannot read
@@ -546,7 +626,7 @@ describe('no contract name collides with a name the Hub already declares', () =>
   });
 });
 
-describe('nothing in the Anchor consumes the contract yet', () => {
+describe('the Anchor consumes the contract through the alias layer and nowhere else', () => {
   const files = atCollection(`could not scan ${SCANNED.join(', ')}:`, () =>
     SCANNED.flatMap((directory) => scannedUnder(directory)).sort()
   );
@@ -622,28 +702,68 @@ describe('nothing in the Anchor consumes the contract yet', () => {
     }
   });
 
-  it('references no name the token contract declares, from any of them', () => {
-    const references: string[] = [];
+  it('is consumed by the alias layer in app/app.scss and by nothing else', () => {
+    // Story 1-17's case asserted zero references from every scanned file, and its failure
+    // message said a consumer "is Story 1-18's act and not this one's". This is that act, so the
+    // case is inverted rather than deleted: the same scan, over the same files, now says exactly
+    // where a contract name is allowed to appear and exactly which names are allowed there.
+    const referencesBy = new Map<string, string[]>();
     let scanned = 0;
 
     for (const file of files) {
       const contents = readFileSync(resolve(REPO_ROOT, file), 'utf8');
       scanned += 1;
-      for (const name of TOKEN_NAMES) {
-        if (referenceTo(name).test(contents)) references.push(`${file} references ${name}`);
-      }
+      const found = TOKEN_NAMES.filter((name) => referenceTo(name).test(contents)).sort();
+      if (found.length > 0) referencesBy.set(file, found);
     }
 
     expect(scanned, 'no file was read').toBe(files.length);
+    expect(files, `${ALIAS_LAYER} was not among the scanned files, so the case below is vacuous`).toContain(ALIAS_LAYER);
+    for (const site of WEIGHT_CALL_SITES) {
+      expect(files, `${site} was not among the scanned files`).toContain(site);
+    }
+
+    // The pinned lists are checked against the contract before they are compared against the
+    // sources. A role renamed in `contracts/tokens.css` would otherwise make every list below
+    // agree on a name the contract no longer declares, and a MAJOR bump is meant to be loud.
+    for (const role of [...ALIAS_ROLES, WEIGHT_ROLE]) {
+      expect(TOKEN_NAMES, `${role} is in the pinned mapping but the contract no longer declares it`).toContain(role);
+    }
+
+    // Claim one: the alias layer references exactly the roles the mapping names. An alias
+    // silently retargeted to some other role fails here, and so does one dropped altogether.
     expect(
-      references,
-      `a source already consumes the contract, which is Story 1-18's act and not this one's:\n` +
-        references.join('\n')
+      referencesBy.get(ALIAS_LAYER) ?? [],
+      `${ALIAS_LAYER} does not reference exactly the roles epics.md:1821-1836 maps onto. An alias ` +
+        `retargeted to a different role, or dropped, changes what the whole site paints from one line.`
+    ).toEqual([...ALIAS_ROLES].sort());
+
+    // Claim two: the four `--monument-bold` call sites reference exactly `--w-black`, which is
+    // the weight a family alias cannot carry, and nothing else.
+    for (const site of WEIGHT_CALL_SITES) {
+      expect(
+        referencesBy.get(site) ?? [],
+        `${site} is a --monument-bold call site and may name ${WEIGHT_ROLE} and no other contract name`
+      ).toEqual([WEIGHT_ROLE]);
+    }
+
+    // Claim three: nothing else reaches for a role at all. A component stylesheet consuming a
+    // token role directly is the Epic 2 rebuild, not this step, and it would leave the alias
+    // layer no longer describing what the site reads.
+    const allowed = new Set<string>([ALIAS_LAYER, ...WEIGHT_CALL_SITES]);
+    const elsewhere = [...referencesBy]
+      .filter(([file]) => !allowed.has(file))
+      .map(([file, names]) => `${file} references ${names.join(', ')}`);
+    expect(
+      elsewhere,
+      `a source outside the alias layer consumes the contract, so the migration no longer runs ` +
+        `through one file:\n${elsewhere.join('\n')}`
     ).toEqual([]);
 
-    // The scan, against a planted positive control string rather than against a file. A run
-    // that read every file and matched nothing looks identical to a run whose matcher was
-    // broken, and this is what separates the two. Both shapes a consumer could take.
+    // The scan, against planted control strings rather than against a file. A run that read
+    // every file and matched nothing looks identical to a run whose matcher was broken, and this
+    // is what separates the two. Both shapes a consumer could take, through the same predicate
+    // the loop above calls.
     for (const planted of [
       `.control { color: var(${TOKEN_NAMES[0]}); }`,
       `element.style.setProperty('${TOKEN_NAMES[0]}', 'red');`,
@@ -652,6 +772,149 @@ describe('nothing in the Anchor consumes the contract yet', () => {
         TOKEN_NAMES.some((name) => referenceTo(name).test(planted)),
         `the scan does not fire on "${planted}", so its zero result means nothing`
       ).toBe(true);
+    }
+    expect(
+      TOKEN_NAMES.some((name) => referenceTo(name).test('.control { color: var(--accent-dim); }')),
+      'the scan fires on a Hub name, so the partition above cannot tell a role from an alias'
+    ).toBe(false);
+  });
+
+  it('aliases each of the twelve onto the role the mapping assigns it, and leaves the other four as literals', () => {
+    // The mapping is a whitelist in both directions, **row by row**. Twelve properties become
+    // `var()` references to a named role; the other four stay literals because something open
+    // holds each of them, and aliasing one anyway is a silent departure from the plan that no
+    // rendered check would see as a defect. Read off `app/app.scss` rather than off the browser,
+    // because what is being asserted is what the file authors.
+    const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
+    const root = /:root\s*\{([^}]*)\}/.exec(source);
+    expect(root, 'no :root block was parsed out of app/app.scss, so this case measures nothing').not.toBeNull();
+
+    const declarationsIn = (block: string): Map<string, string> => {
+      const found = new Map<string, string>();
+      for (const raw of block.split(';')) {
+        const at = raw.indexOf(':');
+        if (at === -1) continue;
+        const name = raw.slice(0, at).trim();
+        if (name.startsWith('--')) found.set(name, raw.slice(at + 1).trim());
+      }
+      return found;
+    };
+
+    const declared = declarationsIn(root?.[1] ?? '');
+
+    expect(declared.size, 'app/app.scss no longer declares sixteen custom properties on :root').toBe(
+      HUB_PROPERTY_COUNT
+    );
+    expect(
+      [...declared.keys()].sort(),
+      'the aliased and literal lists do not partition the Hub sixteen'
+    ).toEqual([...ALIASED_PROPERTIES, ...LITERAL_PROPERTIES].sort());
+
+    const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
+
+    // The matcher, on a planted pair, before either verdict below is read as good news.
+    expect(IS_VAR_REFERENCE.test('var(--token-bg)')).toBe(true);
+    expect(IS_VAR_REFERENCE.test('rgba(139, 92, 246, 0.4)')).toBe(false);
+
+    // **Row by row, not against the set.** `toContain` over `ALIAS_ROLES` would pass on any
+    // permutation of the twelve across the ten roles, and swapping `--light-gray-color` with
+    // `--gray-color` is a permutation that turns secondary text into a border colour with every
+    // gate green.
+    const wrong: string[] = [];
+    for (const name of ALIASED_PROPERTIES) {
+      const value = declared.get(name) ?? '';
+      const reference = IS_VAR_REFERENCE.exec(value);
+      expect(reference, `app/app.scss authors ${name} as "${value}" rather than as a var() reference`).not.toBeNull();
+      const assigned = ROLE_ON_ROOT.get(name);
+      if (reference?.[1] !== assigned) {
+        wrong.push(`${name} references ${reference?.[1]}, and epics.md:1821-1836 assigns it ${assigned}`);
+      }
+    }
+    expect(
+      wrong,
+      `an alias names a role the mapping does not assign it. A permutation of the twelve across ` +
+        `the ten roles leaves every set-level check green and repaints the whole site:\n${wrong.join('\n')}`
+    ).toEqual([]);
+
+    // **The second half of the `--accent-dim` row**, which lives outside `:root` by design. The
+    // scoped redefinitions are what make one property resolve per call site
+    // (`epics.md:1831-1834`), and without this the boundary role would be pinned nowhere at
+    // source: the `:root` parse above sees only the ornament value.
+    //
+    // Parsed by the declaration regex rather than by `declarationsIn`, because a selector list
+    // carrying `::before` puts a colon ahead of the declaration in the same `;`-delimited chunk
+    // and a first-colon split would read `.work-item:` as the property name and skip the row.
+    const accentDim = MAPPING.find(([property]) => property === '--accent-dim');
+    expect(accentDim?.[1].length, 'the --accent-dim row no longer carries two roles').toBe(2);
+    const [ornamentRole, boundaryRole] = accentDim?.[1] ?? [];
+
+    const afterRoot = source.slice((root?.index ?? 0) + (root?.[0].length ?? 0));
+    const SCOPED = /(?:^|[;{])\s*--accent-dim\s*:\s*([^;}]+)/gm;
+    const scopedValues = [...afterRoot.matchAll(SCOPED)].map((found) => found[1].trim());
+
+    // The matcher, on a planted control in the shape that defeats a first-colon split.
+    expect(
+      [...'.work-item::before, .a { --accent-dim: var(--x); }'.matchAll(SCOPED)].map((found) => found[1].trim())
+    ).toEqual(['var(--x)']);
+
+    expect(
+      scopedValues,
+      `app/app.scss no longer redeclares --accent-dim outside :root in the two blocks the mapping ` +
+        `needs: the boundary scope, without which the four boundary call sites fall below the 3:1 ` +
+        `floor AD-19 asserts, and the counter-scope that takes the card's value back off its chips`
+    ).toEqual([`var(${boundaryRole})`, `var(${ornamentRole})`]);
+
+    // **The selector lists are parsed, not substring-matched.** `.project-card` is a substring of
+    // `.project-card__tech li`, so asking whether the source contains it was satisfied by the
+    // counter-scope alone: dropping the card out of the boundary block left this check green and
+    // put the card's two borders on the ornament role, below the 3:1 floor AD-19 asserts.
+    const SCOPED_BLOCK = /([^{}]*)\{[^{}]*--accent-dim\s*:[^{}]*\}/g;
+    const selectorsOf = (text: string): string[] =>
+      [...text.matchAll(SCOPED_BLOCK)].flatMap((found) =>
+        found[1]
+          .split(/\r?\n/)
+          .filter((line) => !line.trim().startsWith('//'))
+          .join(' ')
+          .split(',')
+          .map((one) => one.trim())
+          .filter((one) => one !== '')
+      );
+
+    // The parser, on a planted control: a comment line in the prelude, a multi-selector list, and
+    // a longer selector that must not stand in for the shorter one it contains.
+    expect(
+      selectorsOf('// note\n.project-card__tech li { --accent-dim: var(--x); }'),
+      'the selector parser no longer separates a selector from a longer one containing it'
+    ).toEqual(['.project-card__tech li']);
+    expect(selectorsOf('.a::before,\n.b { --accent-dim: var(--x); }')).toEqual(['.a::before', '.b']);
+
+    expect(
+      selectorsOf(afterRoot).sort(),
+      `app/app.scss no longer scopes --accent-dim on exactly the four selectors the mapping needs. ` +
+        `A selector renamed in its component stylesheet silently stops matching, and that call site ` +
+        `falls back to the :root value`
+    ).toEqual(['.error-page__back', '.project-card', '.project-card__tech li', '.work-item::before'].sort());
+
+    expect(
+      MAPPING.filter(([, roles]) => roles.length > 1).map(([property]) => property),
+      'a property other than --accent-dim now maps to more than one role, which the story does not do'
+    ).toEqual(['--accent-dim']);
+
+    for (const name of LITERAL_PROPERTIES) {
+      const value = declared.get(name) ?? '';
+      expect(value, `app/app.scss no longer declares ${name}`).not.toBe('');
+      expect(
+        IS_VAR_REFERENCE.test(value),
+        `app/app.scss authors ${name} as "${value}", a var() reference. It is held by an open ` +
+          `question (O-11 for --accent-glow, O-6 and UX-DR12 for the two Confillia names) or, for ` +
+          `--hero-height, by the contract carrying no viewport height at all.`
+      ).toBe(false);
+      for (const role of TOKEN_NAMES) {
+        expect(
+          referenceTo(role).test(value),
+          `app/app.scss authors ${name} as "${value}", which names the contract role ${role}`
+        ).toBe(false);
+      }
     }
   });
 
