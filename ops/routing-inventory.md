@@ -1654,12 +1654,23 @@ which had never been observed from any session because none has had IPv6 egress.
 **This unblocks adding `AAAA` records for the apex, `www` and `analytics`**, which the AD-3 table
 notes as the asymmetry a visitor on an IPv6-only network would notice.
 
-**The other half of the action is still owed, and it is the security-relevant half.** Confirming
-that the three hostnames serve over v6 says nothing about whether the v6 `DOCKER-USER` DROP rule
-works, because those requests arrive through Cloudflare, which is exactly the path the rule permits.
-What is untested is a **direct** request to the origin's v6 address, `2a02:4780:75:9155::1`,
-bypassing the edge. Until that is refused, the v6 rules are present and the bypass is unproven,
-and `ops/bot-mitigation.md`'s "the filter is bypassable" section is the one that governs.
+**The security-relevant half is now also confirmed.** Serving over v6 through Cloudflare says
+nothing about the v6 `DOCKER-USER` DROP rule, because those requests arrive by the path the rule
+permits. The test that matters is a **direct** request to the origin's v6 address, bypassing the
+edge entirely.
+
+**Observed 2026-08-27**, same mobile IPv6 connection: `http://[2a02:4780:75:9155::1]` was
+**refused**. The v6 DROP path works.
+
+**What that closes.** The origin is not reachable over IPv6 by anything that skips Cloudflare, so
+the `AAAA` records cannot be used to route around the WAF rules, the AI-crawler block or the
+managed challenge. Before this reading the v6 rules were present and the path was unverified, which
+`ops/bot-mitigation.md` was careful to call different claims. They are now the same claim. Both
+address families are confirmed closed to direct origin access: v4 by the probes recorded on
+2026-08-17, v6 here.
+
+**This is the last of Story 1.7's six operator actions to be resolved**, and it is the only one
+that closed by observation rather than by decision.
 
 ### Decisions taken on this story's operator actions
 
