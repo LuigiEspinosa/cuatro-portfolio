@@ -44,17 +44,25 @@ one app. Planning artifacts live in `_bmad-output/planning-artifacts/`.
 - `pnpm` is not on PATH on this host. Prefix every command with `corepack`, as in
   `corepack pnpm build` or `corepack pnpm typecheck`.
 - `corepack pnpm test` starts Vitest in watch mode and never exits. Always pass `--run`.
-  The full suite is 38 tests in roughly 45 seconds, so run all of it.
+  The full suite is 600 tests across 26 files in roughly 85 seconds, so run all of it.
 - There is no lint gate and no working lint command: the script is misspelled `linkg`,
   and `next lint` was removed in Next 16, so `corepack pnpm linkg` fails too. Do not put
   lint in an acceptance criterion, and do not add an `eslint` invocation to CI, until a
   story lands a flat `eslint.config.mjs`.
-- CI (`.github/workflows/ci.yml`) runs typecheck and tests only. Lighthouse CI runs
-  separately on `main` and PRs and asserts accessibility at 0.95 or above, so an a11y
-  regression fails the build even though no unit test covers it.
-- Playwright is not installed. `@playwright/test` appears only as a transitive lockfile
-  entry, not in `package.json`. Story 1-10 installs it. Until then no acceptance
-  criterion may claim a rendered-output or browser check.
+- CI (`.github/workflows/ci.yml`) runs five jobs: `test`, `tokens-contract`,
+  `fonts-contract`, `contract-purity` and `rendered-output`. Lighthouse CI runs separately
+  on `main` and PRs and asserts accessibility at 0.95 or above, so an a11y regression fails
+  the build even though no unit test covers it.
+- Playwright is installed and `rendered-output` is a blocking CI job. Run it with
+  `corepack pnpm test:e2e`. It runs in the pinned container image
+  `mcr.microsoft.com/playwright:v1.62.1-noble` with Node 22, and the committed baseline PNG
+  was generated inside that exact image. Regenerate baselines with
+  `corepack pnpm test:e2e:update` in that image only, never on this host: glyph
+  rasterization is not portable and a locally regenerated snapshot fails CI.
+- `corepack pnpm build` runs `node packages/contracts-serve/publish.mjs` first, which copies
+  `contracts/` into `public/contracts/` so the Hub serves it at `/contracts/`.
+  `public/contracts/` is generated and never committed. Editing it instead of `contracts/`
+  changes nothing.
 
 ## Conventions that differ from defaults
 
@@ -81,8 +89,19 @@ one app. Planning artifacts live in `_bmad-output/planning-artifacts/`.
   sequence, because the replacement needs GHCR images that do not exist yet.
 - Treat `docker/Caddyfile` as incomplete, not authoritative. It routes only `cuatro.dev`
   and `analytics.cuatro.dev`, yet `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and
-  `library.cuatro.dev` all resolve. Story 1-7 enumerates the real table. Do not infer
-  routing from the file.
+  `library.cuatro.dev` all resolve. The real table is enumerated in
+  `ops/routing-inventory.md`; read that rather than inferring routing from the file.
+- **Piping a string from PowerShell into a native command or `wsl` appends CRLF.** Anything
+  that treats `\r` as data then breaks in ways that read as a wrong value rather than an
+  encoding fault: an OpenSSH private key becomes unparseable, a bash heredoc gets `\r` on
+  every line, and `gpg --passphrase-fd 0` strips the `\n` but keeps the `\r`, so a correct
+  passphrase fails. All three happened on 2026-08-27. Use `cmd /c "prog < file"` for
+  byte-exact stdin, or strip it on the far side with `tr -d '\r'`.
+- Deploys go over SSH from `.github/workflows/deploy.yml` as the `deploy` user, and
+  **nothing monitors whether they succeed**. That pipeline was broken for twelve days
+  unnoticed, because nothing merges to `main` often enough to expose it. If a change is
+  green in CI but absent from the site, check the Deploy workflow before debugging code.
+  The diagnosis and the repair commands are in `ops/contract-serving.md`.
 - Font tokens bake weight into the family name (`--monument-bold: 'MonumentExtended-Bold'`
   at `app/app.scss:29`). Aliasing one to a family-only token silently drops bold. Live
   `--monument-bold` call sites: `glitch-text.scss:5`, `error-page.scss:24`,

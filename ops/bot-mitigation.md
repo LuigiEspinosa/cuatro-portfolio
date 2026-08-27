@@ -312,18 +312,49 @@ seconds."* It never became Umami.
   signatures, `navigator.webdriver` among them, that an ordinary browser does not. A managed
   challenge refusing an automation-controlled browser is the feature working, not failing.
 
-**So the remaining question is narrow and still needs a human**: open `https://analytics.cuatro.dev/`
-in your normal browser once. If it loads, the rule is correct and this is closed. If it shows the
-same `Just a moment...` loop, **the dashboard is unreachable for everybody** and rule 4 is the one
-to relax, exactly as the action says.
+**Answered 2026-08-27 by the Operator: the site loads normally in an ordinary browser.** So the
+two readings resolve in the reassuring direction. The managed challenge admits a human and refuses
+an automation-controlled browser, which is the rule working as designed rather than a
+misconfiguration. **Rule 4 does not need relaxing**, and this action is closed.
 
-**Why this matters more than a dashboard being awkward.** `_bmad-output/implementation-artifacts/spec-1-7-...md`
-already carries a deferred entry noting that nobody has confirmed Umami has kept **receiving**
-events since the challenge went live on 2026-08-17. Collection and dashboard access are different
-paths: `ops/bot-mitigation.md:49` exempts `/api/` and `/script.js` from rule 4, so collection is
-designed to be unaffected. But if the dashboard cannot be opened, then nobody can check whether
-collection is working either, and the two unknowns compound. SM-1 through SM-3 depend on that
-instance and all its history before 2026-08-17 was discarded.
+**The useful residue is a testing constraint, not a defect.** No agent in this repository can reach
+`analytics.cuatro.dev` through a browser, now or later, because the thing that stops it is the
+automation signature itself and not a setting anyone intends to change. Any future acceptance
+criterion that needs a rendered result from that hostname has to be written as an Operator action.
+
+## Umami is still collecting, verified against the database
+
+**Observed 2026-08-27.** Story 1-7 filed a deferred entry noting that nobody had confirmed Umami
+kept **receiving** events after the managed challenge went live on 2026-08-17. Collection and
+dashboard access are different paths, and rule 4 exempts `/api/` and `/script.js` precisely so
+collection is unaffected, but that was a design claim rather than an observation.
+
+**It is now an observation, and it did not need the dashboard.** Counting rows in `website_event`
+directly, from `cuatro-portfolio-anchor-db-1`:
+
+| Reading | Value |
+|---|---|
+| Total events | 37 |
+| First event | `2026-08-17 12:08:05+00` |
+| Latest event | `2026-08-27 19:13:42+00` |
+
+Per day: 3, 5, 4, 0, 6, 4, 2, 2, 4, 2, 5 across 2026-08-17 to 2026-08-27. **Events on nine of the
+eleven days, including today**, so the exemption works and the filter has not silently cut
+collection off. The two zero days (2026-08-20 and one other) are consistent with a personal site
+that some days nobody visits, not with a break: collection resumed by itself either side of them.
+
+**Why this was worth checking rather than assuming.** All Umami history before 2026-08-17 was
+discarded, `analytics.cuatro.dev` is deliberately unmonitored, and SM-1 through SM-3 depend on this
+instance. A collection failure would have been silent and would have had no baseline against which
+the gap looked anomalous. The volume is low enough that it is worth saying plainly: 37 events over
+eleven days is a real signal but a thin one, and any metric built on it should say so.
+
+**The query is the cheap repeat**, and needs no Umami credentials:
+
+```
+docker exec cuatro-portfolio-anchor-db-1 psql -U umami -d umami -t \
+  -c 'select date(created_at) d, count(*) from website_event group by d order by d;'
+```
 
 ## Pending Operator actions
 
@@ -331,7 +362,7 @@ instance and all its history before 2026-08-17 was discarded.
 |---|---|---|---|
 | 1 | Apply the `DOCKER-USER` rules and the `cf-origin-firewall.service` unit | The action that closed the bypass and made AD-17b real | **2026-08-17T18:14Z** |
 | 2 | Turn off Scrape Shield email obfuscation | Verified afterwards: the `cdn-cgi` script is gone from the Anchor's HTML and the Umami script and website id are intact | **2026-08-17T18:17Z** |
-| 3 | Confirm `analytics.cuatro.dev` loads in a real browser | The managed challenge cannot be solved by a command-line client, and Playwright is not installed until Story 1-10, so no agent here can assert a rendered result. **Open the dashboard once and confirm the interstitial passes.** If it does not, rule 4 is the one to relax | **Partly answered 2026-08-27, and the answer is bad.** See "The challenge does not clear for an automated browser" below. Playwright now exists, so this was re-run in a real headed Chromium: it did **not** pass. **Still owed: one load in your own ordinary browser**, which is the only thing that separates "the challenge is too strict" from "the challenge is correctly refusing automation" |
+| 3 | Confirm `analytics.cuatro.dev` loads in a real browser | The managed challenge cannot be solved by a command-line client, and Playwright is not installed until Story 1-10, so no agent here can assert a rendered result. **Open the dashboard once and confirm the interstitial passes.** If it does not, rule 4 is the one to relax | **2026-08-27.** The Operator confirmed the site loads normally in an ordinary browser. A headed Chromium under Playwright did **not** pass, so the challenge admits humans and refuses automation, which is the rule working. Rule 4 needs no relaxing. See "The challenge does not clear for an automated browser" |
 | 4 | Grant Zone > Bot Management > Edit and set the native AI categories | Allow Search, block Agent and Training. Stronger than rule 2's user-agent list because it does not rely on self-declaration. **Worth doing before 2026-09-15**, when the legacy toggle is retired | _not done_ |
 | 5 | Read the Cloudflare audit log, then revoke `tracker-mac` and `cuatro-tracker` | The token available to this story is zone-scoped and returned `Unauthorized` on `user/tokens`, so it cannot list or revoke tokens. **Read the log first**, per the epic: a token doing something other than ACME must not be revoked by assumption | _not done_ |
 | 6 | Re-fetch Cloudflare's IP ranges into `cf-origin-firewall.sh` when they change | The script hardcodes the list fetched 2026-08-17 and nothing refreshes it. A new Cloudflare range would be dropped and those hostnames would fail | _standing_ |
