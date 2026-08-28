@@ -1275,3 +1275,55 @@ source_spec: `spec-1-20-record-the-adopted-contract-version-and-the-automation-p
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260827-161430-4676; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+### DW-19: Nothing pins what `contracts/tailwind.css` makes `max-w-*` resolve to, so DW-15 shipped silently and its eventual fix has no gate to prove it landed.
+origin: operator-approved 2026-08-28
+location: contracts/tailwind.css:76-85, and an absent test under ops/__tests__/
+source_spec: n/a, raised by the `bmad-project-context` refresh of 2026-08-28
+severity: medium
+reason: |-
+  Observed 2026-08-28 by compiling the published adapter with the repository's own
+  `tailwindcss` 4.3.3: a probe importing `contracts/tailwind.css` and using `max-w-md`
+  emits `max-width: var(--s-md)`, which is `1rem`. `--container-md: 28rem` is present
+  in the same output and loses. That is DW-15 reproduced mechanically, off a checkout,
+  with no browser and no consumer repository involved.
+
+  The gap this entry records is not the defect, which DW-15 holds. It is that the
+  `tokens-contract` and `fonts-contract` jobs both compare generated output against
+  committed output, so they prove the file is what the generator makes and neither says
+  anything about what the file MEANS to a consumer. A named spacing key shadowing a
+  container key is invisible to a byte comparison, which is why the first instrument to
+  see DW-15 was a human looking at a screenshot.
+
+  **Decision deferred, not taken.** Whether the check asserts today's behaviour, which
+  documents the defect and turns red when DW-15's fix lands, or asserts the intended
+  container widths, which is red now and green when the fix lands. The second is the
+  useful shape if the fix is scheduled and the first is the useful shape if it is not,
+  and that ordering belongs to DW-15's contract decision under AD-16 rather than here.
+  Either shape is a Node test under `ops/__tests__/` running the same compile, with no
+  browser, so it fits the runners the way `contract-purity` already does.
+status: open
+
+### DW-20: A failed deploy is reported to nobody, and the monitoring that exists watches the site rather than the pipeline.
+origin: operator-approved 2026-08-28
+location: .github/workflows/deploy.yml
+source_spec: n/a, raised by the `bmad-project-context` refresh of 2026-08-28
+severity: medium
+reason: |-
+  Observed 2026-08-28 by reading the file. `.github/workflows/deploy.yml` runs on push
+  to `main` and carries three steps, none of which reports a failure: no `if: failure()`
+  step, no issue, no webhook.
+
+  `ops/monitoring.md` covers external uptime and certificate age, which is a different
+  instrument answering a different question. An uptime monitor sees the site as it was
+  before a deploy that never ran, so a deploy that fails while the previous release
+  keeps serving stays green on every signal the estate currently has. That is the exact
+  shape of the twelve day break recorded in the AGENTS.md pitfall, and it recurs
+  because nothing merges to `main` often enough for a human to notice the absence.
+
+  The remedy is small and has no contract dimension: a step conditioned on failure that
+  reaches the Operator on the channel `ops/monitoring.md` already establishes. Recorded
+  rather than done because this refresh's boundary was the AGENTS.md block, and a change
+  to `deploy.yml` is a deploy path change that deserves its own story and its own
+  verification.
+status: open
