@@ -680,6 +680,45 @@ fill is premultiplied on its way through the canvas and the green channel rounds
 sides take the identical path and report the identical value, so the row is a valid comparison; the
 figure is simply not the un-premultiplied triple.
 
+### Read a third time, on the two deployed origins
+
+**Observed 2026-08-27**, after Pending Operator action 1 landed. The reading above was taken from
+compiled stylesheets in a fixture page; this one was taken from `https://cuatro.dev` and
+`https://cs-tracker.cuatro.dev` as a Visitor receives them, through Cloudflare, in one headed
+Chromium, at 1440x900. That is what acceptance criterion 5 asks for and what the limits table
+below could not claim while nothing was deployed.
+
+**All 25 rows agree, exact to the byte**, by the same canvas rasterisation the probe uses.
+
+| Role | Painted sRGB, both origins | Role | Painted sRGB, both origins |
+|---|---|---|---|
+| `--token-bg` | `6,5,9,255` | `--token-accent-hover` | `173,161,255,255` |
+| `--token-bg-raised` | `13,12,19,255` | `--token-accent-muted` | `86,76,145,255` |
+| `--token-bg-raised-2` | `22,21,28,255` | `--token-border` | `40,40,48,255` |
+| `--token-text` | `238,238,242,255` | `--token-border-interactive` | `101,100,113,255` |
+| `--token-text-secondary` | `152,151,159,255` | `--token-focus` | `198,189,255,255` |
+| `--token-accent` | `143,126,240,255` | `--token-scrim` | `6,5,9,224` |
+
+The three `--f-*` families and the ten `--t-*` sizes agree once whitespace is normalised. They
+differ only in how each pipeline emits separators: `"Geist", ui-sans-serif` from Next against
+`"Geist",ui-sans-serif` from the Tailwind CLI, and `clamp(2.25rem, 9vw, 4.5rem)` against
+`clamp(2.25rem,9vw,4.5rem)`. Same declaration, different minifier.
+
+**Before the deploy, the same probe read `cs-tracker` at 0 of 25.** None of the twelve roles, three
+families or ten sizes was declared on `:root`, because the origin was still serving the Story 7.1
+build. That is the before half of the measurement and it is worth keeping: it is the only reading
+that shows the adoption changed the deployed site rather than only the repository.
+
+**The colour-space trap caught a second reader, which is why it is worth restating.** The section
+above explains that Next serialises to `lab()` while the Tailwind CLI leaves `oklch()` alone. A
+verification pass on 2026-08-27 reproduced that trap in a new way: it compared
+`getComputedStyle(el).color` on the assumption that the property normalises to sRGB. **It does
+not.** Current Chromium preserves the author's colour space in the computed value, so that
+comparison reads back the serialisation again and reports **12 of 12 colour roles differing**, which
+is an artefact of the instrument and not a fact about the stylesheets. Painting through a canvas is
+the only comparison that answers the question. Anyone re-running this check by hand will meet the
+same trap.
+
 ## Which gates cover this, and which do not
 
 | Gate | Covers | Nature |
@@ -718,7 +757,42 @@ four distinct findings rather than flattening them into one failure.
 | **The `@source not` exclusion is precautionary** | Measured: with it removed and nothing planted, the build mints the identical 366 selectors. It stops a planted candidate, so it works; it stops nothing today | **Observed 2026-08-27** |
 | **DW-1 will turn two gates red when it is fixed** | `contracts/` is exactly nine files today, and that count is pinned twice: by `@expected_files` in `cs-tracker`'s Elixir suite and by the probe's whole-tree comparison. The folder-identifying file DW-1 asks for is a tenth file, so adding it fails both **in `cs-tracker`** until that repository re-vendors. That is the correct behaviour for a drift check and it is a real coordination cost, so it is written down rather than discovered | **Decision.** `_bmad-output/implementation-artifacts/deferred-work.md` |
 | **The `mix assets.deploy --minify` figure is unknown** | Both compiled-byte figures here are unminified. The deploy path adds `--minify`, and no run recorded here used it | **Observed 2026-08-27**, by reading `mix.exs` |
-| **Nothing is deployed** | `cs-tracker.cuatro.dev` still serves the Story 7.1 palette until the Operator deploys. This story changes a repository, not a running site | **Decision.** Pending Operator action 1 |
+| **Deployed 2026-08-27** | `cs-tracker.cuatro.dev` now serves this adoption, verified on the live origin at 25 of 25 rows. The limit as written is retired; what replaces it is narrower: the deployed reading is still one host, one Chromium and one viewport, and nothing re-runs it | **Observed.** Pending Operator action 1, closed |
+
+## The fonts task could not run in the container
+
+**Observed and fixed 2026-08-27**, during the deploy this story's action 1 asks for. Recorded
+because the story shipped believing its own change was deployable and it was not.
+
+**What happened.** `docker compose up -d --build` failed twice with:
+
+```
+** (Mix) The task "cuatro.fonts" could not be found
+Dockerfile:49  >>> RUN mix assets.setup
+```
+
+**Why.** This story added `cuatro.fonts` to the `assets.setup` alias, reasoning that the dev
+watchers call Tailwind and esbuild directly and never reach `assets.build`. That reasoning holds
+in a working tree and fails in the image, because `cs-tracker`'s Dockerfile stages its copies:
+`RUN mix assets.setup` is line 49, `COPY lib lib` is line 53, and `COPY assets assets` is line 58.
+So the task is invoked four lines before the file defining it enters the image, and nine before the
+`.woff2` faces it copies. **Both absences are fatal, and the second is fatal by design**: the task
+refuses to exit successfully having copied nothing, which is the behaviour that makes a silent
+404 impossible.
+
+**The fix**, committed as `32a466a` in `cs-tracker`: drop `cuatro.fonts` from `assets.setup` and
+leave it in `assets.build` and `assets.deploy`, where it already was. `assets.setup` installs
+tooling; an asset copy step does not belong in it, and the Dockerfile runs it early precisely so
+that layer stays cached. The dev case the original reasoning worried about is still covered,
+because the `setup` alias runs `assets.build`. The alternative, reordering the Dockerfile, was
+rejected: moving `assets.setup` after `COPY lib` re-downloads the Tailwind and esbuild binaries on
+every source change.
+
+**What this says about the story's gates.** Every local run passed, because a working tree has
+`lib/` and `assets/` present throughout. `mix precommit` does not build an image, and `cs-tracker`
+has no CI at all, which is **DW-14**, filed by this story and demonstrated by this failure within
+hours of it being written. A change that alters how the application builds was never built the way
+production builds it.
 
 ## Pending Operator actions
 
@@ -727,10 +801,10 @@ This file hands the Operator work Story 1-19 may not do, in the shape `ops/token
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Push and deploy `cs-tracker`** | Operator | Pushing to a remote and deploying are Operator acts and neither is a story's. Until it happens, `cs-tracker.cuatro.dev` serves the Story 7.1 warm-orange palette and a Visitor moving between the two applications still sees two products, which is the very thing FR-18 measures | _not done_ |
+| 1 | **Push and deploy `cs-tracker`** | Operator | Pushing to a remote and deploying are Operator acts and neither is a story's. Until it happens, `cs-tracker.cuatro.dev` serves the Story 7.1 warm-orange palette and a Visitor moving between the two applications still sees two products, which is the very thing FR-18 measures | **2026-08-27.** Commits `3f37cce`, `8adb8e2`, `6807f7a` pushed to `origin/main`, then `32a466a`. Deployed by the `docs/deployment.md` redeploy path: `migrate` exited 0 with "Migrations already up", `app` restarted, only `caddy` publishes 80/443. **The first build failed** and needed `32a466a`: see "The fonts task could not run in the container" below |
 | 2 | **Add this probe to AD-22's refresh scope**, then re-run `node ops/cs-tracker-adoption-probe.mjs` on that schedule | Operator | The real trigger is narrower than the schedule and matters more: **any Tailwind or daisyUI bump reaching `cs-tracker`**, and **any contract MINOR**. Nothing in CI can catch either, since nothing in CI runs this. The probe exits non-zero if the mapping stops resolving or the two stylesheets stop agreeing, so re-running it is the whole check. `ops/daisyui-route.md`'s own action 2 asks for the same thing for the sibling probe, and the two should go into the scope together | _not done_ |
 | 3 | **Decide whether `--color-secondary` should stay on a repeated ground** | Operator | The contract has three grounds and daisyUI wants five fills. `--color-neutral` was moved off a ground in this story because it is live; `--color-secondary` is not used anywhere in `cs-tracker` today, so it was left repeating `--color-base-300`. The first surface that wants a secondary fill will need this decided, and both alternatives cost something a story may not spend: publishing a fourth ground is a contract MINOR, and mapping it onto an accent role changes what the word means | _not done_ |
-| 4 | **Record the visual check of the deployed application**, once action 1 lands | Operator | Every figure here is read off a compiled stylesheet in a fixture page. What no probe here has seen is the application's own screens at their own widths, and the seam list is explicit that S-6, dense data UI, is where a token contract's reach ends. This is the pass that would find a surface the fixture never rendered. **Watch the `--depth: 0` change in particular**: buttons, inputs, menus and tabs lose daisyUI's shadow and gradient overlay, which is the intended outcome and is also the largest single change to how a control looks | _not done_ |
+| 4 | **Record the visual check of the deployed application**, once action 1 lands | Operator | Every figure here is read off a compiled stylesheet in a fixture page. What no probe here has seen is the application's own screens at their own widths, and the seam list is explicit that S-6, dense data UI, is where a token contract's reach ends. This is the pass that would find a surface the fixture never rendered. **Watch the `--depth: 0` change in particular**: buttons, inputs, menus and tabs lose daisyUI's shadow and gradient overlay, which is the intended outcome and is also the largest single change to how a control looks | **2026-08-27. Passed, and it found exactly what this row existed to find.** The Operator judged the family resemblance sound and the `--depth: 0` flattening correct. It also surfaced a layout defect no probe here could see: an empty-state card wrapping to one word per line, traced to `contracts/tailwind.css` naming its spacing keys so that `max-w-md` resolves to `--spacing-md` (`1rem`) instead of `--container-md` (`28rem`). Filed as **DW-15**, and it is a defect in the published contract rather than in `cs-tracker` |
 | 5 | **Evaluate seam S-8 on the running application**, during the same pass | Operator | S-8 is the one seam whose antecedent, "if LiveView DOM patching visibly interrupts a transition", cannot be observed anywhere this story reaches. The transitions that survive are enumerated above. If one snaps under `phx-update`, the fix is `phx-update="ignore"` on the animated container, and it is cheap once known | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
