@@ -129,7 +129,7 @@ development_status:
   1-17-anchor-migration-step-1-add-the-contract-change-nothing: done
   1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: done
   1-19-cs-tracker-adopts-the-token-contract: awaiting-operator
-  1-20-record-the-adopted-contract-version-and-the-automation-polic: backlog
+  1-20-record-the-adopted-contract-version-and-the-automation-polic: done
   epic-1-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-2.
   # Epic 1 installs Playwright (1-10), enumerates the real Caddy routing table (1-7),

@@ -64,6 +64,12 @@ import { createRequire } from 'node:module';
 import { dirname, extname, join, normalize, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { CS_TRACKER_TOKENS, RECORD_REL, headerVersion, recordedAdoptedVersion, recordedVersionVerdict } from './contract-adoption.mjs';
+
+// Story 1-20's stand-in for step 6 of the change-propagation runbook, re-exported
+// so `ops/__tests__/cs-tracker-adoption-probe.test.ts` pins it beside the other
+// pure verdicts this file uses.
+export { recordedVersionVerdict };
 
 const require_ = createRequire(import.meta.url);
 
@@ -88,8 +94,14 @@ export const CONTRACTS = join(REPO_ROOT, 'contracts');
 /** `cs-tracker`, resolved beside this repository rather than hardcoded. Read only. */
 export const CS_TRACKER = resolve(REPO_ROOT, '..', 'cs-tracker-workspace', 'cs-tracker');
 
-/** AD-14's fixed folder name. A scheduled drift check looks here across seven repositories. */
-export const VENDORED_REL = join('assets', 'css', 'cuatro-contracts');
+/**
+ * AD-14's fixed folder name. A scheduled drift check looks here across seven
+ * repositories. Derived from the one path the record's `cs-tracker` row must
+ * name (`CS_TRACKER_TOKENS` in `ops/contract-adoption.mjs`), so the folder
+ * this probe reads and the file the record names cannot drift apart; the
+ * sibling suite pins the two equal.
+ */
+export const VENDORED_REL = join(...dirname(CS_TRACKER_TOKENS).split('/'));
 
 /** Every scratch directory this probe makes starts with this. */
 export const SCRATCH_PREFIX = 'cuatro-cs-tracker-adoption-';
@@ -1044,6 +1056,34 @@ async function probe() {
           `${comparison.extra.length} extra (${comparison.extra.join(', ') || 'none'}), ` +
           `${comparison.differing.length} differing (` +
           `${comparison.differing.map((d) => `${d.path}: contracts ${d.source} against vendored ${d.vendored}`).join('; ') || 'none'})`
+    );
+
+    // ---- case: the record states the version the vendored header carries
+    // Story 1-20. The version `ops/contract-adoption.md` records for cs-tracker
+    // is what Story 2.5 seeds `token_contract` from, and nothing else holds it
+    // to the folder: every other pin on the version is a literal in a test.
+    // This is the hand-run stand-in for step 6's declaration-against-header
+    // comparison until Story 2.23's scheduled job exists.
+    const recordText = readOrNull(join(REPO_ROOT, ...RECORD_REL.split('/')));
+    const vendoredTokensCss = readOrNull(join(vendoredDir, 'tokens.css'));
+    const readOr = (text, read) => {
+      if (text === null) return null;
+      try {
+        return read(text);
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    };
+    const recorded = recordedVersionVerdict({
+      recorded: readOr(recordText, (text) => recordedAdoptedVersion(text, 'cs-tracker')),
+      header: readOr(vendoredTokensCss, headerVersion),
+    });
+    record(
+      'The record states the version the vendored header carries',
+      recorded.pass,
+      `${recorded.detail} (${RECORD_REL} against ${VENDORED_REL.replace(/\\/g, '/')}/tokens.css` +
+        `${recordText === null ? '; the record could not be read' : ''}` +
+        `${vendoredTokensCss === null ? '; the vendored tokens.css could not be read' : ''})`
     );
 
     // ---- case: it compiles at all --------------------------------------

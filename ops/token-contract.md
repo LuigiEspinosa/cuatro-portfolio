@@ -176,6 +176,9 @@ broken check across seven repositories at once, and it fails silently rather tha
 
 Recording the version each Satellite has actually adopted, and the policy the scheduled job runs
 under, is **Story 1.20**. Nothing in this story claims a Satellite has adopted anything.
+Story 1-20 recorded both in `ops/contract-adoption.md` on 2026-08-27, together with the exact
+file the drift check reads, the change-propagation runbook and its rehearsal, and the propagation
+ledger Epic 6 reads.
 
 ## Where `epics.md` and `DESIGN.md` disagree, and how it was settled
 

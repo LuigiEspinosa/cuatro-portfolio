@@ -2,7 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
+import { CS_TRACKER_TOKENS } from '../contract-adoption.mjs';
 import {
   COMPONENT_IDS,
   CONTRACTS,
@@ -19,6 +20,7 @@ import {
   SIZE_COUNT,
   UNCOVERED_COLOUR_COUNT,
   UNPAINTED,
+  VENDORED_REL,
   VERDICT,
   colourMapping,
   compareHashes,
@@ -34,6 +36,7 @@ import {
   namesInNamespace,
   oklchLiterals,
   preflightCount,
+  recordedVersionVerdict,
   retiredLiterals,
   routeVerdict,
   selectionRule,
@@ -185,6 +188,43 @@ describe('the sha256 comparison', () => {
     // passed here would report a byte-identical copy of a folder that does not
     // exist, which is the vacuous pass the story forbids.
     expect(compareHashes(new Map(), new Map()).identical).toBe(false);
+  });
+});
+
+describe('the recorded-version case, Story 1-20', () => {
+  // The hand-run stand-in for step 6 of the change-propagation runbook: the
+  // version `ops/contract-adoption.md` records for cs-tracker against the
+  // header of the vendored tokens.css. Pinned here as well as in
+  // `ops/__tests__/contract-adoption.test.ts`, because this is the suite that
+  // keeps the probe able to fail.
+  it('passes when the record and the vendored header carry one version', () => {
+    expect(recordedVersionVerdict({ recorded: '1.0.0', header: '1.0.0' })).toEqual({
+      pass: true,
+      detail: 'the record states 1.0.0 and the vendored tokens.css header reads Contract v1.0.0',
+    });
+  });
+
+  it('fails a planted drift naming both values', () => {
+    const verdict = recordedVersionVerdict({ recorded: '1.0.0', header: '1.0.1' });
+    expect(verdict.pass).toBe(false);
+    expect(verdict.detail).toBe('the record states 1.0.0 and the vendored tokens.css header reads Contract v1.0.1; the two must be one version');
+  });
+
+  it('fails rather than passes when either side could not be read as a semver', () => {
+    expect(recordedVersionVerdict({ recorded: null, header: '1.0.0' }).pass).toBe(false);
+    expect(recordedVersionVerdict({ recorded: 'not adopted', header: '1.0.0' }).detail).toMatch(/not a semver/);
+    expect(recordedVersionVerdict({ recorded: '1.0.0', header: 'the stylesheet carries no "Contract vX.Y.Z" header line' }).pass).toBe(false);
+    expect(recordedVersionVerdict({ recorded: '1.0.0', header: undefined }).pass).toBe(false);
+  });
+
+  it('reads the vendored header out of the file the record names, not out of a second constant', () => {
+    // The record's cs-tracker row must name `CS_TRACKER_TOKENS`, and this
+    // probe reads `join(VENDORED_REL, 'tokens.css')`. Two constants would let a
+    // folder move in cs-tracker carry the probe's read path away from the path
+    // the record hands Story 2.23, with every suite still green; one derived
+    // from the other, pinned here, cannot.
+    expect(VENDORED_REL.split(sep).concat('tokens.css').join('/')).toBe(CS_TRACKER_TOKENS);
+    expect(CS_TRACKER_TOKENS).toBe('assets/css/cuatro-contracts/tokens.css');
   });
 });
 

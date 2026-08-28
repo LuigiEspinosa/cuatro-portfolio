@@ -513,7 +513,11 @@ no `.next/static` reports the named Block If condition and reads nothing. Beyond
 host (`corepack pnpm exec playwright install chromium`).
 
 It takes no argument and reads no environment variable that selects what it tests, so the run that
-produced the transcript below is the run anyone else gets.
+produced the transcript below is the run anyone else gets. Since Story 1-20 it carries a nineteenth
+case, added after that story's rehearsal: it parses the `cs-tracker` row of `ops/contract-adoption.md`
+through `ops/contract-adoption.mjs` and holds the adopted version recorded there equal to the
+`Contract vX.Y.Z` header of the vendored `tokens.css`, failing naming both values. The transcript
+below predates it and shows eighteen cases.
 
 **Read the exit code, not just the word non-zero:**
 
@@ -707,7 +711,7 @@ four distinct findings rather than flattening them into one failure.
 | **The two applications still paint visibly different borders** | `cs-tracker` draws every border from `border-base-300`, which maps to `--token-bg-raised-2` (`rgba(22, 21, 28)`). The Hub draws borders from `--token-border` (`rgba(40, 40, 48)`), a different value. daisyUI publishes no separate border **colour** role, only `--border` for the width, so there is nowhere in the theme layer to put it. **The FR-18 case reports 25 of 25 equal and this divergence at the same time, and both are true**: that case compares `:root` values, not what a component paints. Settled in Story 8.1, where the components stop reading daisyUI's names | **Observed 2026-08-27** |
 | **`--color-secondary` repeats `--color-base-300`** | The contract publishes three grounds; daisyUI wants five fills. Nothing in this application paints a secondary surface, so the repetition costs nothing visible today. `--color-neutral` was moved off a ground because it is live | **Decision**, disclosed rather than discovered later |
 | **Seam S-8's antecedent was not evaluated** | "If visible" needs a running LiveView application. Recorded in its own section above, with the surviving transitions enumerated, and handed to the Operator | **Decision** |
-| **The 44x44 hit-target pass was not made here** | `epics.md:1955-1962` puts the manual accessibility pass in Story 1.20. The contract's `--tap` is vendored and reachable; nothing in this story measures a hit target | **Decision.** Story 1.20 |
+| **The 44x44 hit-target pass was not made here** | `epics.md:1955-1962` puts the manual accessibility pass in Story 1.20. The contract's `--tap` is vendored and reachable; nothing in this story measures a hit target. Made by Story 1.20 on 2026-08-27 against the running application at 360px and recorded, findings included, in `ops/cs-tracker-accessibility-pass.md` | **Decision.** Story 1.20 |
 | **The probe reads a compiled stylesheet, not a running Phoenix server** | `mix test` needs a Postgres and `mix phx.server` needs the whole stack, and neither renders CSS differently from the compiler. What was NOT exercised is LiveView actually serving those class strings; that is what `mix test`'s LiveView suites cover, separately | **Decision**, with the split disclosed |
 | **The FR-18 reading is one host, one Chromium, one viewport** | Windows 11 development host, Chromium 151.0.7922.34, 1280x720. No other operating system, browser engine or viewport has run it, and nothing re-runs it on a schedule | **Decision.** Pending Operator action 2 |
 | **`DAISYUI_DEFAULT_PRIMARY` is hand-copied** | The value the components must DIFFER from, `oklch(0.45 0.24 277.023)`, comes from `ops/daisyui-route.md`'s `unmapped` control rather than from a build made here. Under `cs-tracker`'s real `themes: false` there is no daisyUI default at `:root` to measure. Every "equal to the token value" claim is measured against a probe element in the same page, so the hand-copied value carries only the negative half of the comparison | **Decision**, disclosed |

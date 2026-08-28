@@ -131,3 +131,34 @@ one app. Planning artifacts live in `_bmad-output/planning-artifacts/`.
   story is about it.
 
 <!-- /bmad:context -->
+
+## Dependency automation policy
+
+Stated here because this is where it binds (NFR-10, FR-19, AD-16). Kept outside the managed
+block above so a context refresh does not replace it.
+
+- **No automated dependency merge is enabled in any estate repository without a real test
+  suite**, and a real test suite is one that exists, exercises the application's own code
+  rather than tooling or scaffolding, and runs on a CI service on every push to the default
+  branch. That establishes that the suite runs; it does not gate a merge on its own.
+- **Enabling automation needs a fourth condition, separate from having a suite:** the suite's
+  run is a required status check on the default branch, through branch protection or a
+  ruleset, so a merge nobody is watching cannot land while the run is red. Observed on
+  2026-08-27, that holds nowhere in the estate (this repository's `main` protection names no
+  check), and it cannot hold in the four private repositories on the current GitHub plan. The
+  definitions, the observed state of all eleven repositories and the method are in
+  `ops/contract-adoption.md`.
+- **None is enabled here.** No Dependabot or Renovate configuration anywhere in the
+  repository (fifteen file locations under the root, `.github/` and `.gitlab/`, plus a
+  `renovate` key in `package.json`, all listed in `ops/contract-adoption.mjs`),
+  `allow_auto_merge` off, automated security fixes off, zero bot-authored pull requests.
+- **Enabling one is a recorded decision that lands in one commit with the configuration.**
+  `ops/__tests__/contract-adoption.test.ts` holds the record's Anchor cell and the
+  configuration present in the repository equal in both directions: a cell reading `none`
+  with a configuration present fails naming the path, and a cell naming a configuration that
+  is absent fails the same way. So the record's policy row (date, the required check that
+  makes the merge safe, the reason) and the configuration file are one change, never two.
+  The test holds the configuration files and the `package.json` key; `allow_auto_merge`,
+  security fixes, bot-authored pull requests and a workflow step that merges are observed by
+  the `gh api` sweep the record describes, not by the test. That commit also moves the two
+  literal pins in the same suite that state today's `none` cell and empty present list.

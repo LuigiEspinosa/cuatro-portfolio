@@ -1188,3 +1188,90 @@ source_spec: `spec-1-19-cs-tracker-adopts-the-token-contract.md`
 severity: medium
 reason: Observed 2026-08-27. `cs-tracker` has no `.github` directory; `mix precommit` is its only gate, and every case in `test/cs_tracker_web/token_contract_test.exs` asserts against the text of `assets/css/app.css` rather than against a compiled or rendered stylesheet. `ops/cs-tracker-adoption-probe.mjs` is deliberately not a CI job, because it needs a browser and a checkout of the other repository and neither is on a runner. So a route-A regression that leaves the source text untouched, which is exactly the shape a Tailwind or daisyUI bump takes, ships with everything green. This is the standing shape of the verification rather than a defect this story introduced, and it is the reason both probes' re-run is handed to the Operator. It is recorded here because the estate now has two adopted applications and one un-gated hand-run check between them, which is a growing exposure rather than a fixed one.
 status: open
+
+### DW-15: `contracts/tailwind.css` maps the spacing scale onto named keys, which silently redefines Tailwind's `max-w-sm` through `max-w-2xl` from container widths to spacing values in every consumer.
+origin: operator-observed 2026-08-27
+location: contracts/tailwind.css:76-85
+source_spec: `spec-1-19-cs-tracker-adopts-the-token-contract.md`
+severity: high
+reason: |-
+  Observed 2026-08-27 on the deployed `cs-tracker.cuatro.dev`, from a screenshot the
+  Operator took after the adoption. An empty-state card reading "Items you view will
+  show up here" wrapped to one or two words per line. The container is
+  `<div class="flex max-w-md flex-col items-center gap-3">` and it computed to
+  `max-width: 16px`, against the 28rem that `max-w-md` means in stock Tailwind v4.
+
+  The cause is the `@theme` block at `contracts/tailwind.css:76-85`, which maps the
+  contract's spacing scale onto NAMED keys: `--spacing-md: var(--s-md)` and its seven
+  siblings. Tailwind v4 resolves `max-w-md` from `--container-md` when nothing else
+  claims the key, but a named `--spacing-md` takes precedence, and `--s-md` is `1rem`.
+  So `max-w-md` became 16px. The same applies to `sm`, `lg`, `xl` and `2xl`, which are
+  all both spacing names and container names.
+
+  This is a defect in the published contract, not in `cs-tracker`. AD-14 has seven
+  repositories vendor this file, and every one that writes `max-w-md` gets a 16px
+  container instead of a 448px one. It is high severity because it is silent: nothing
+  errors, the utility resolves, and the page merely looks wrong in a way that reads as
+  a styling mistake in the consumer rather than as a contract fault.
+
+  It survived Story 1-19's gates because `cuatro.dev` uses Sass rather than Tailwind
+  utilities, so the Hub cannot exercise `max-w-*` at all, and `cs-tracker`'s own tests
+  assert against the text of `app.css` rather than against rendered output. The first
+  instrument to see it was a human looking at a screenshot.
+
+  Not fixed here because the remedy is a published-surface change with more than one
+  defensible shape: rename the spacing keys so they cannot collide (`--spacing-s-md`),
+  restate the container scale explicitly beside the spacing scale, or drop the named
+  spacing keys and require the numeric scale. Choosing between those is a contract
+  decision, and the contract is versioned under AD-16.
+status: open
+
+### DW-16: `bandit 1.11.1`, the HTTP server in front of `cs-tracker.cuatro.dev`, carries two HIGH advisories that are both remote-triggerable resource exhaustion.
+origin: operator-observed 2026-08-27
+location: C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker (mix.lock)
+source_spec: `spec-1-19-cs-tracker-adopts-the-token-contract.md`
+severity: high
+reason: |-
+  Observed 2026-08-27 in the deploy build log, printed by `mix deps.get` as
+  `bandit 1.11.1 VULNERABLE!`. Three advisories:
+
+  - EEF-CVE-2026-74836 (HIGH, CVE-2026-74836, GHSA-xj8g-532w-jv94): HTTP/2
+    connection-window starvation pins Plug processes indefinitely.
+  - EEF-CVE-2026-65623 (HIGH, CVE-2026-65623, GHSA-vg8x-66vg-5pxh): quadratic CPU
+    blow-up reassembling fragmented WebSocket messages.
+  - EEF-CVE-2026-75484 (MEDIUM, CVE-2026-75484, GHSA-x3gh-xhj4-3vq8): HTTP/2 header
+    values containing CR, LF or NUL are passed to the application unvalidated.
+
+  Why this matters more here than the severities alone suggest: both HIGH entries are
+  remote-triggerable resource exhaustion, and `cs-tracker` shares a two vCPU box with
+  the Anchor, `cuatro-tracker` and `digital-library`. `ops/capacity-measurement.md`
+  measured the whole estate at 3.0% of that box, so there is headroom, but the failure
+  mode of both advisories is one application consuming the box rather than degrading
+  alone. `cs-tracker` also uses LiveView, which means WebSocket traffic is its normal
+  operating mode rather than an edge case, and that is the second advisory's surface.
+
+  Mitigating context, stated so the severity is not overstated: the hostname is proxied
+  through Cloudflare (Story 1-3), so the origin is not directly reachable over v4 or v6
+  and an attacker has to come through the edge, where the bot mitigation and the managed
+  challenge apply.
+
+  Not fixed here because a dependency bump on a serving application is its own change
+  with its own verification, and this story's boundary is the token contract. The fix is
+  to raise `bandit` in `mix.lock` to a release carrying the patches and redeploy.
+status: open
+
+### DW-17: The Operator's cs-tracker commit 32a466a removed cuatro.fonts from the assets.setup alias after this story's rehearsal, so Story 1-19's record, its probe pin "The build pipeline places them" and cs-tr
+origin: spec-deferred dd2c45a1f4b2
+location: ops/cs-tracker-adoption-probe.mjs
+source_spec: `spec-1-20-record-the-adopted-contract-version-and-the-automation-polic.md`
+severity: medium
+reason: Observed 2026-08-27T22:47:57Z by `node ops/cs-tracker-adoption-probe.mjs` against `cs-tracker` at `32a466a`: 19 cases, 18 PASS, 1 FAIL, the failure reading `It runs in assets.setup: false`. `git -C cs-tracker show 32a466a -- mix.exs` removes `"cuatro.fonts"` from `"assets.setup"` and says why: the Dockerfile runs `assets.setup` before `COPY lib lib` and `COPY assets assets`, so the task could not be found there and the container build broke on 2026-08-27, while `setup` still reaches `assets.build`, which runs it. Not caused by this story and not its to reconcile: the pin, the record row and the `cs-tracker/AGENTS.md` lines are Story 1-19's, which is awaiting-operator. Recorded in `ops/contract-adoption.md` as Pending Operator action 7 and the pin left red deliberately rather than moved.
+status: open
+
+### DW-18: Follow-up review still recommended for 1-20-record-the-adopted-contract-version-and-the-automation-polic after the damping cap was spent
+origin: review-budget-followup
+location: n/a
+source_spec: `spec-1-20-record-the-adopted-contract-version-and-the-automation-polic.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260827-161430-4676; this entry preserves the lingering recommendation for a deliberate later review.
+status: open

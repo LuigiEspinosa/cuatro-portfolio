@@ -643,6 +643,12 @@ policy". This file is where the Anchor's half of that lands.
 | The automation policy: what the scheduled job checks, how often, and what it does when a consumer is behind | Story 1-20's own content. `ops/token-contract.md:177` already points at it |
 | The Satellite side of the same table | Story 1-19 is where `cs-tracker` adopts, and `ops/daisyui-route.md` is where its route was decided |
 
+Story 1-20 landed all three rows in `ops/contract-adoption.md` on 2026-08-27: the adopted-versions
+table there carries the Anchor at `1.0.0` with the file each version is read from (adopted and
+loaded are one version here, because the Anchor `@use`s `contracts/` in place and vendors nothing),
+the automation policy is its own section with the eleven-repository observation, and `cs-tracker`'s
+row sits in the same table at the version read off its vendored header.
+
 ## Stated limits
 
 | Limit | Why it stands | Nature |
