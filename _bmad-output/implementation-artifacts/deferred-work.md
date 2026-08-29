@@ -1327,3 +1327,77 @@ reason: |-
   to `deploy.yml` is a deploy path change that deserves its own story and its own
   verification.
 status: open
+### DW-21: Four content defects of the same class as the one story 2-1 fixed still ship to the page from `content/work.ts`.
+origin: spec-deferred 2026-08-29
+location: content/work.ts:44
+source_spec: `spec-2-1-the-pre-existing-repository-defects.md`
+severity: low
+reason: |-
+  Found by the story 2-1 review while the `Dev.` typo was being corrected, and left alone
+  because that spec's Never clause forbids fixing unrelated defects opportunistically and
+  padding the diff.
+
+  `content/work.ts:44` reads `'Nests.js'` for Nest.js and `:130` reads `'Emal Development'`
+  for email development. The file is also inconsistent about two names it spells both ways:
+  `Javascript` at `:34` against `JavaScript` at `:146`, and `Typescript` at `:79` against
+  `TypeScript` at `:35`.
+
+  These are not cosmetic. `WorkItem.tsx:98-102` renders every `tech` entry as an `<li>`, so
+  all four reach the rendered CV exactly the way `Dev. 2025` did, and this is a page whose
+  audience is technical readers judging the author on it. The new guard added by story 2-1,
+  `content/__tests__/work.test.ts`, covers `period` only and would not catch any of them.
+
+  Whether the `tech` arrays should be pinned against a vocabulary the way `period` is now
+  pinned against the twelve-month set is the open question, and it belongs with story 2-6,
+  the editorial voice pass, rather than with a defect fix.
+status: open
+
+### DW-22: Two implementations of the same Playwright navigation guard, and six spec files that get neither.
+origin: spec-deferred 2026-08-29
+location: tests/e2e/celeste-header.pw.ts:25
+source_spec: `spec-2-1-the-pre-existing-repository-defects.md`
+severity: low
+reason: |-
+  `tests/e2e/harness.ts:66-84` refuses to read anything off a page that produced no response
+  or answered non-2xx, because an unchecked status is how an error page becomes a baseline.
+  That guard lives inside `expectRouteScreenshot`, so it is reachable only by a test taking a
+  screenshot.
+
+  Story 2-1 needed the same guard for an assertions-only spec and reimplemented it as a local
+  `goTo`, with different message wording. The harness header states its contract is that every
+  helper names the route, selector or property it was asked for in any failure, and there are
+  now two implementations of that rule which can drift apart.
+
+  The remedy is to hoist one navigation helper into `harness.ts` and have both call it, which
+  also gives it to the other `.pw.ts` files that today call `page.goto` with no status check at
+  all. Deferred rather than done because it edits a file shared by every rendered assertion in
+  the repository, which is a change that deserves its own verification rather than riding along
+  inside a defect fix.
+status: open
+
+### DW-23: The container invocation that actually runs the e2e suite is nowhere recorded, and the one a reader would construct fails.
+origin: spec-deferred 2026-08-29
+location: ops/rendered-output-harness.md
+source_spec: `spec-2-1-the-pre-existing-repository-defects.md`
+severity: medium
+reason: |-
+  Measured 2026-08-29 while verifying story 2-1. `AGENTS.md` says to regenerate baselines inside
+  `mcr.microsoft.com/playwright:v1.62.1-noble` and never on the host, which is correct, but no
+  file records how to start the suite in that image.
+
+  The obvious invocation does not work. `playwright.config.ts:85` sets `webServer.command` to
+  `pnpm build && pnpm start`, and bare `pnpm` is not on PATH in that image: CI only has it
+  because `pnpm/action-setup` puts it there. The run dies with `pnpm: not found` and exit 127,
+  which reads as a broken harness rather than a missing tool. What works is `corepack enable`
+  first, then `corepack pnpm install --frozen-lockfile && corepack pnpm test:e2e`.
+
+  On a Windows host there is a second step: the repository is bind-mounted, so the Linux install
+  overwrites the host's `node_modules` unless it is masked with a Docker volume. Without that,
+  running the container suite silently breaks the host toolchain, and the symptom appears later
+  in an unrelated command.
+
+  Both belong in `ops/rendered-output-harness.md` beside the tolerance and its reasoning, since
+  that file is where a reader goes to run this harness. Deferred rather than done because the
+  story 2-1 spec's scope was the two defects and their tests, and `ops/` is the estate's
+  operational record rather than story output.
+status: open

@@ -49,7 +49,8 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
 - `pnpm` is not on PATH on this host. Prefix every command with `corepack`, as in
   `corepack pnpm build`.
 - `corepack pnpm test` starts Vitest in watch mode and never exits. Always pass `--run`. The
-  full suite is 730 tests across 29 files in roughly 105 seconds, so run all of it.
+  full suite is 738 tests across 32 files in roughly 90 to 120 seconds depending on load, so
+  run all of it.
 - There is no lint gate and no working lint command: the script is misspelled `linkg`, and
   `next lint` was removed in Next 16, so `corepack pnpm linkg` fails too. Do not put lint in
   an acceptance criterion, and do not add an `eslint` invocation to CI, until a story lands a
@@ -116,10 +117,14 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
 - Adding an application to `deploy.yml` trips the Capacity Gate (AD-9), which refuses any id
   not in `placements` in `ops/capacity-gate.yml`. The gate is open on a measured threshold
   (load15 0.60). Read `ops/capacity-threshold.md` before editing `threshold` or `status`.
-- One open defect, with its own story. Do not fix it opportunistically and pad an unrelated
-  diff: `Dev. 2025` should read `Dec.` (`content/work.ts:18`).
-- `Celeste.tsx` hides the header by mutating the DOM in an effect. Known; leave unless the
-  story is about it.
+- `Body` writes the route onto `<body id>` (`Container.tsx:12-16`), and five rules across three
+  stylesheets key on that id, `#celeste header` among them. A route that needs different chrome
+  takes a rule on that id, never an effect that mutates another component's node: Story 2-1
+  removed the one that did, because a mutation outlives a cleanup that never runs.
+- On the 404, `usePathname()` answers `/_not-found` during the prerender and the requested path
+  on the client, so `<body id>` differs across hydration and settles on whichever side ran last.
+  Assert on markup both sides render identically (`.error-page`), never on that id. A chrome
+  regression on one side only shows up as a timing-dependent browser test, not a clean failure.
 
 <!-- /bmad:context -->
 
