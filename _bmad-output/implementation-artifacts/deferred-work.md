@@ -1401,3 +1401,41 @@ reason: |-
   story 2-1 spec's scope was the two defects and their tests, and `ops/` is the estate's
   operational record rather than story output.
 status: open
+
+### DW-24: The font reachability pass reads `font-family` declarations only, so a family named through the `font` shorthand or defined only under a theme selector would read as unreachable.
+origin: spec-deferred 2026-08-29
+location: ops/asset-budget.mjs
+source_spec: `spec-2-2-measure-the-narrative-bundle-against-the-asset-budget.md`
+severity: low
+reason: |-
+  Found 2026-08-29 by the story 2-2 review layers. `resolveFontReachability` reads the built CSS
+  for `font-family` declarations and follows `var()` chains to a fixed point. Two shapes escape it.
+  A family named only through the `font` shorthand (`font: 700 1rem/1.2 Geist`) carries the family
+  in its tail and is never read. A custom property redefined under a theme selector or a media
+  query is recorded once rather than per definition, so a family reachable only through the earlier
+  definition reads as unreachable.
+
+  Neither shape exists in the Hub today, confirmed by grep across `app/` and `components/`, so no
+  figure in `ops/asset-budget.md` is wrong because of it. It is filed because the reachability
+  column is what a later story would use to justify deleting a face, and a false unreachable is the
+  expensive direction. Story 2.20 retires the legacy faces and is the natural place to widen the
+  method, since it is the story that acts on the column.
+status: open
+
+### DW-25: `ops/asset-budget.mjs` re-reads the whole source tree on every call and re-gzips each chunk once per referencing document.
+origin: spec-deferred 2026-08-29
+location: ops/asset-budget.mjs
+source_spec: `spec-2-2-measure-the-narrative-bundle-against-the-asset-budget.md`
+severity: low
+reason: |-
+  Found 2026-08-29 by the story 2-2 review layers. `collect` calls `findReferences` once per asset
+  and `findImporters` once per unique referrer and again per module in the orphan sweep, and each
+  call re-reads its whole file list from disk. Separately, every referenced chunk is read and
+  gzipped again for each of the eight documents that reference it, even though the `chunks` map
+  already holds the gzipped size keyed by that exact path.
+
+  The cost is invisible today: the tool finishes in seconds on eight flat routes and it is run by
+  hand rather than in CI, so nothing gates on its runtime. It is filed because the work grows with
+  routes and with the source tree, and Epic 2 adds routes while Epic 3 moves the whole application
+  under `apps/hub`. One read into a map removes the chunk half of it outright.
+status: open

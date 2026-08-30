@@ -29,13 +29,13 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
 - Architecture invariants AD-1 to AD-23:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 19 records that are the operational source of truth, not the planning
+- **`ops/` holds 20 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
   `routing-inventory.md` (the real routing table), `estate.md` (every application and its
   disposition), `known-violations.md` (what is knowingly in breach, and what closes it),
   `capacity-threshold.md`, `contract-serving.md`, `cs-tracker-token-adoption.md`,
   `rendered-output-harness.md`, `monitoring.md`, `backup-digital-library.md`,
-  `bot-mitigation.md`.
+  `bot-mitigation.md`, `asset-budget.md` (what the build actually ships, weighed).
 - Token contract, and the restyle specification Epic 2 rebuilds the Hub against:
   `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md` and
   `RESTYLE-SPEC.md` beside it.
