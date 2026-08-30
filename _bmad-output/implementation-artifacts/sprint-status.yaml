@@ -50,8 +50,7 @@ tracking_system: file-system
 # Corrected 2026-08-25. Read c:/Development/cuatro-portfolio until then, a path that
 # has not existed since the repository moved, so any tool resolving this key saw an
 # empty directory and reported no stories rather than failing. Filed from story 1-3.
-story_location: 
-  c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
+story_location: c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
 development_status:
   epic-1: in-progress
   # Amended 08-16-2026 by the topology correction.
@@ -137,7 +136,7 @@ development_status:
   # and starts the token migration, so three lines in the AGENTS.md block go stale here.
 
   epic-2: in-progress
-  2-1-the-pre-existing-repository-defects: review
+  2-1-the-pre-existing-repository-defects: done
   2-2-measure-the-narrative-bundle-against-the-asset-budget: backlog
   2-3-the-registry-schema-and-its-blocking-ci-gate: backlog
   2-4-confirm-the-assumed-statuses-hostnames-and-tech-values: backlog
@@ -248,116 +247,118 @@ development_status:
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
 action_items:
-  - id: "epic-1-retro-item-1-settle-the-shape-of-the-contracts-tailwi"
+  - id: 'epic-1-retro-item-1-settle-the-shape-of-the-contracts-tailwi'
     epic: 1
-    action: "Settle the shape of the contracts/tailwind.css spacing-key fix (rename
+    action: 'Settle the shape of the contracts/tailwind.css spacing-key fix (rename
       to --spacing-s-*, restate the container scale, or drop the named keys) and ship
-      it under AD-16. DW-15."
-    owner: "Cuatro"
+      it under AD-16. DW-15.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-2-add-the-dw-19-gate-a-node-test-under-ops"
+  - id: 'epic-1-retro-item-2-add-the-dw-19-gate-a-node-test-under-ops'
     epic: 1
-    action: "Add the DW-19 gate: a Node test under ops/__tests__/ compiling the published
+    action: 'Add the DW-19 gate: a Node test under ops/__tests__/ compiling the published
       adapter and pinning what max-w-sm through max-w-2xl resolve to. Polarity follows
-      the item above."
-    owner: "Cuatro"
+      the item above.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-3-decide-what-happens-to-the-five-stories"
+  - id: 'epic-1-retro-item-3-decide-what-happens-to-the-five-stories'
     epic: 1
-    action: "Decide what happens to the five stories carrying an unrecorded followup_review_recommended:
-      true (1-1, 1-8, 1-10, 1-16, 1-19): run the reviews or file DW entries."
-    owner: "Cuatro"
+    action:
+      'Decide what happens to the five stories carrying an unrecorded followup_review_recommended:
+      true (1-1, 1-8, 1-10, 1-16, 1-19): run the reviews or file DW entries.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-4-respell-fr-17-as-1-2-at-epics-md-753-sto"
+  - id: 'epic-1-retro-item-4-respell-fr-17-as-1-2-at-epics-md-753-sto'
     epic: 1
-    action: "Respell FR-17 as 1 / 2 at epics.md:753. Story 2.34 in Epic 2 is what
-      enforces it."
-    owner: "Cuatro"
+    action: 'Respell FR-17 as 1 / 2 at epics.md:753. Story 2.34 in Epic 2 is what
+      enforces it.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-5-correct-epics-md-967-from-twenty-stories"
+  - id: 'epic-1-retro-item-5-correct-epics-md-967-from-twenty-stories'
     epic: 1
-    action: "Correct epics.md:967 from Twenty stories to twenty-one."
-    owner: "Cuatro"
+    action: 'Correct epics.md:967 from Twenty stories to twenty-one.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-6-audit-every-deploy-secret-against-the-cu"
+  - id: 'epic-1-retro-item-6-audit-every-deploy-secret-against-the-cu'
     epic: 1
-    action: "Audit every deploy secret against the current box, not just SERVER_HOST.
-      Story 1-21 updated one of three and the pipeline was dead twelve days."
-    owner: "Cuatro"
+    action: 'Audit every deploy secret against the current box, not just SERVER_HOST.
+      Story 1-21 updated one of three and the pipeline was dead twelve days.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-7-land-dw-20-a-failure-conditioned-step-in"
+  - id: 'epic-1-retro-item-7-land-dw-20-a-failure-conditioned-step-in'
     epic: 1
-    action: "Land DW-20: a failure-conditioned step in deploy.yml that reaches the
-      Operator on the channel ops/monitoring.md establishes."
-    owner: "Cuatro"
+    action: 'Land DW-20: a failure-conditioned step in deploy.yml that reaches the
+      Operator on the channel ops/monitoring.md establishes.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-8-run-bmad-loop-sweep-migrate-on-deferred"
+  - id: 'epic-1-retro-item-8-run-bmad-loop-sweep-migrate-on-deferred'
     epic: 1
-    action: "Run bmad-loop-sweep --migrate on deferred-work.md so all 74 entries carry
-      a status field, and mark the entries already resolved in fact."
-    owner: "Cuatro"
+    action: 'Run bmad-loop-sweep --migrate on deferred-work.md so all 74 entries carry
+      a status field, and mark the entries already resolved in fact.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-9-advance-the-frontmatter-of-spec-1-7-spec"
+  - id: 'epic-1-retro-item-9-advance-the-frontmatter-of-spec-1-7-spec'
     epic: 1
-    action: "Advance the frontmatter of spec-1-7, spec-1-8 and spec-1-10 from awaiting-operator
-      to done, matching the board."
-    owner: "Cuatro"
+    action: 'Advance the frontmatter of spec-1-7, spec-1-8 and spec-1-10 from awaiting-operator
+      to done, matching the board.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-10-extract-the-shared-probe-scaffold-into-o"
+  - id: 'epic-1-retro-item-10-extract-the-shared-probe-scaffold-into-o'
     epic: 1
-    action: "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
+    action:
+      "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
       and daisyui-route-probe.mjs, keeping the daisyUI copy's comments."
-    owner: "Cuatro"
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-11-close-stories-1-16-and-1-19-by-completin"
+  - id: 'epic-1-retro-item-11-close-stories-1-16-and-1-19-by-completin'
     epic: 1
-    action: "Close stories 1-16 and 1-19 by completing their remaining operator actions
-      in .bmad-loop/operator/*.json."
-    owner: "Cuatro"
+    action: 'Close stories 1-16 and 1-19 by completing their remaining operator actions
+      in .bmad-loop/operator/*.json.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-12-process-act-on-the-oversized-spec-warnin"
+  - id: 'epic-1-retro-item-12-process-act-on-the-oversized-spec-warnin'
     epic: 1
-    action: "Process: act on the oversized spec warning by splitting the story, instead
-      of carrying it. It fired on 15 of 21 stories in epic 1."
-    owner: "Cuatro"
+    action: 'Process: act on the oversized spec warning by splitting the story, instead
+      of carrying it. It fired on 15 of 21 stories in epic 1.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-13-process-put-the-story-key-in-every-commi"
+  - id: 'epic-1-retro-item-13-process-put-the-story-key-in-every-commi'
     epic: 1
     action: "Process: put the story key in every commit subject including hand-driven
       work. All eleven feat: commits in epic 1's first half carry none."
-    owner: "Cuatro"
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
-  - id: "epic-1-retro-item-14-process-when-a-story-moves-a-host-treat"
+  - id: 'epic-1-retro-item-14-process-when-a-story-moves-a-host-treat'
     epic: 1
-    action: "Process: when a story moves a host, treat the credentials that describe
-      it as a set rather than a single field."
-    owner: "Cuatro"
+    action: 'Process: when a story moves a host, treat the credentials that describe
+      it as a set rather than a single field.'
+    owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
