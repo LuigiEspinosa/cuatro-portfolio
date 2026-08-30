@@ -179,8 +179,43 @@ export const RETIRED_LITERALS = [
 
 export const RETIRED_COUNT = 27;
 
-/** How many files the published contract is, pinned so a narrowed walk fails. */
-export const CONTRACT_FILE_COUNT = 9;
+/**
+ * The nine paths the TOKEN contract is, relative to `contracts/`, and the only
+ * thing a Satellite ever vendors.
+ *
+ * **Why the source side of the verbatim-copy comparison is a list rather than
+ * the whole tree.** Until Story 2-3 this probe hashed every file under
+ * `contracts/` against `cs-tracker`'s vendored `cuatro-contracts/`. That story
+ * published `registry.json` and `registry.schema.json` on the same surface, and
+ * AD-4 has Satellites fetch the Registry over HTTPS at **build** time while
+ * AD-14's `cuatro-contracts/` folder is the token contract and nothing else. A
+ * whole-tree comparison would therefore report two files a Satellite must never
+ * vendor, permanently, as a drift finding.
+ *
+ * Named here rather than derived by filtering the folder, because a filter is a
+ * rule that widens itself: every file a later story publishes would join the
+ * comparison silently. `hashTokenContract` refuses if any of the nine is absent
+ * from `contracts/`, so the narrowing cannot shrink without failing either.
+ */
+export const TOKEN_CONTRACT_PATHS = [
+  'fonts.css',
+  'fonts/OFL-bricolage-grotesque.txt',
+  'fonts/OFL-geist-mono.txt',
+  'fonts/OFL-geist.txt',
+  'fonts/bricolage-grotesque-latin.woff2',
+  'fonts/geist-latin.woff2',
+  'fonts/geist-mono-latin.woff2',
+  'tailwind.css',
+  'tokens.css',
+];
+
+/**
+ * How many files the vendored token contract is, pinned so a narrowed walk
+ * fails. It has always meant the token contract's nine and still does; what
+ * changed in Story 2-3 is that the published surface is eleven files and this
+ * is no longer the same number.
+ */
+export const CONTRACT_FILE_COUNT = TOKEN_CONTRACT_PATHS.length;
 
 /**
  * The markers planted into `cs-tracker` for the two source-scan cases, and the
@@ -300,6 +335,32 @@ export function hashTree(dir) {
     hashes.set(rel, createHash('sha256').update(readFileSync(join(dir, ...rel.split('/')))).digest('hex'));
   }
   return hashes;
+}
+
+/**
+ * `{ relative path -> sha256 }` for the nine token-contract paths under `dir`,
+ * and the ones that are not there.
+ *
+ * This is the SOURCE side of the verbatim-copy comparison: the vendored side is
+ * still hashed whole by `hashTree`, so a file a Satellite added to its
+ * `cuatro-contracts/` is still reported as extra. `absent` is what stops the
+ * narrowing from shrinking silently: a token-contract file deleted from
+ * `contracts/` would otherwise leave eight paths on both sides and report a
+ * verbatim copy of a contract that had lost a face.
+ *
+ * @param {string} dir
+ */
+export function hashTokenContract(dir) {
+  const hashes = new Map();
+  const absent = [];
+  for (const rel of TOKEN_CONTRACT_PATHS) {
+    try {
+      hashes.set(rel, createHash('sha256').update(readFileSync(join(dir, ...rel.split('/')))).digest('hex'));
+    } catch {
+      absent.push(rel);
+    }
+  }
+  return { hashes, absent };
 }
 
 /**
@@ -1037,18 +1098,32 @@ async function probe() {
     say('');
 
     // ---- case: the folder is a verbatim copy ---------------------------
+    // The SOURCE side is the nine token-contract paths, not the whole
+    // `contracts/` tree. Story 2-3 published `registry.json` and
+    // `registry.schema.json` on the same surface, and AD-4 has Satellites fetch
+    // the Registry over HTTPS at build time while AD-14's `cuatro-contracts/`
+    // is the token contract only, so a whole-tree comparison would report two
+    // files a Satellite must never vendor. The VENDORED side is still hashed
+    // whole, so a file added there is still reported as extra.
     const vendoredDir = join(CS_TRACKER, VENDORED_REL);
-    const sourceHashes = hashTree(CONTRACTS);
+    const { hashes: sourceHashes, absent } = hashTokenContract(CONTRACTS);
     const comparison = compareHashes(sourceHashes, hashTree(vendoredDir));
     record(
+      // The case name is unchanged, because three records quote it.
       'The folder is a verbatim copy',
-      // The count is pinned as well as the comparison. A tree walk that stopped
-      // recursing would hand `compareHashes` the three top-level stylesheets on
-      // both sides, find nothing wrong, and report a verbatim copy having never
-      // looked at the three faces or the three licence texts.
-      comparison.identical && comparison.equal.length === CONTRACT_FILE_COUNT,
-      comparison.identical
-        ? `${comparison.equal.length} file(s) (pinned at ${CONTRACT_FILE_COUNT}) under ` +
+      // The count is pinned as well as the comparison, and so is the presence of
+      // all nine on the source side. A tree walk that stopped recursing, or a
+      // narrowing that quietly lost a path, would hand `compareHashes` a shorter
+      // list on both sides, find nothing wrong, and report a verbatim copy
+      // having never looked at the three faces or the three licence texts.
+      absent.length === 0 && comparison.identical && comparison.equal.length === CONTRACT_FILE_COUNT,
+      absent.length > 0
+        ? `${absent.length} of the ${CONTRACT_FILE_COUNT} token-contract paths are absent from ` +
+          `contracts/ (${absent.join(', ')}), so the comparison would have shrunk silently rather ` +
+          `than failed. Nothing was compared`
+        : comparison.identical
+        ? `${comparison.equal.length} file(s) (pinned at ${CONTRACT_FILE_COUNT}, the token contract's ` +
+          `own paths rather than everything under contracts/) under ` +
           `${VENDORED_REL.replace(/\\/g, '/')} are byte-identical to contracts/ by sha256: ` +
           comparison.equal.map((path) => `${path} ${sourceHashes.get(path)}`).join(', ')
         : `not a verbatim copy. ${comparison.equal.length} equal, ` +

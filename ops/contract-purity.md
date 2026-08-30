@@ -351,6 +351,25 @@ harness that is broken in some other way.
 | The invoked-directly guard's fallback is asserted on the module's source, not by running it | Reaching it needs a path the operating system will not resolve while still being the script Node just executed, which no portable call arranges on both hosts. The property the case pins is the one that matters: the fallback compares the two paths and never answers `false`, because a guard that decides it was not invoked directly runs nothing and exits 0, which is the gate failing open | **Decision.** Found by the second review pass, which is also when the fallback stopped being a `false` |
 | The link refusal falls back to a directory junction where a file symlink is not permitted | A Windows host without Developer Mode refuses a file symlink. The case then links a dedicated empty directory instead, which `lstat` reports as a link just the same, rather than skipping itself. File symlinks are permitted on this host, so the primary fixture is the one that ran here | **Observed 2026-08-25** |
 
+## The surface is eleven files from 2026-08-29
+
+**Observed 2026-08-29**, Story 2-3. `node ops/contract-purity.mjs` now reports
+`read contracts/, 11 files, none executable and no link (AD-1)`. The nine in the probe output above
+were the token contract; the two added are `contracts/registry.json` and
+`contracts/registry.schema.json`, the App Registry and its schema (AD-4). Both are JSON, so the
+extension rule is unaffected and nothing in this gate changed. The figure `9` in the table under
+"The suite" is left in place with its own date, as this file's maintenance rule requires.
+
+**They are the first hand-authored files on the published surface.** Everything else under
+`contracts/` is generated. That does not weaken AD-1, which is about what a consumer executes rather
+than about who wrote the file, and it is why `packages/tokens/build.mjs:3-5` was corrected in the
+same story: it claimed nothing under `contracts/` is hand-edited.
+
+**One case in `ops/__tests__/contract-purity.test.ts` moved.** The job-set case pinned five job
+names, and `ci.yml` now carries six: `registry-schema` was added after `contract-purity` and is the
+Registry's own blocking gate. No other line of that file was touched, and the case that holds the
+existing jobs' steps is unchanged. `ops/registry-schema.md` is the new job's record.
+
 ## Pending Operator actions
 
 This file hands the Operator work it cannot do from a development host. They are tracked here rather

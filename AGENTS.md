@@ -29,13 +29,14 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
 - Architecture invariants AD-1 to AD-23:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- **`ops/` holds 20 records that are the operational source of truth, not the planning
+- **`ops/` holds 21 records that are the operational source of truth, not the planning
   artifacts.** Answer an operational question from there before inferring it from code:
   `routing-inventory.md` (the real routing table), `estate.md` (every application and its
   disposition), `known-violations.md` (what is knowingly in breach, and what closes it),
   `capacity-threshold.md`, `contract-serving.md`, `cs-tracker-token-adoption.md`,
   `rendered-output-harness.md`, `monitoring.md`, `backup-digital-library.md`,
-  `bot-mitigation.md`, `asset-budget.md` (what the build actually ships, weighed).
+  `bot-mitigation.md`, `asset-budget.md` (what the build actually ships, weighed),
+  `registry-schema.md` (the App Registry's shape and its blocking gate).
 - Token contract, and the restyle specification Epic 2 rebuilds the Hub against:
   `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md` and
   `RESTYLE-SPEC.md` beside it.
@@ -73,7 +74,9 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
   accident and dies when a bundler flattens it (AD-14).
 - Creating or editing `contracts/`? It is the published surface: no `.ts`, `.js`, `.tsx`,
   `.jsx`, `.mjs`, or `.cjs` under it, ever. Generators and schema tooling go in `packages/`,
-  which is never published (AD-1).
+  which is never published (AD-1). `contracts/registry.json` and
+  `contracts/registry.schema.json` are the only hand-authored files there (AD-4); everything
+  else is generated, so editing it by hand is a change the next `tokens:build` throws away.
 - A consumer's vendored contract folder is named `cuatro-contracts/` exactly. A scheduled job
   locates tokens by that fixed path across seven repositories (AD-14, AD-16).
 - Name a new component stylesheet for its component in PascalCase, beside the component, as
@@ -121,6 +124,15 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
   stylesheets key on that id, `#celeste header` among them. A route that needs different chrome
   takes a rule on that id, never an effect that mutates another component's node: Story 2-1
   removed the one that did, because a mutation outlives a cleanup that never runs.
+- Three committed listings pin the contents of `contracts/` path by path, so a file added there
+  fails all three at once and none of the failures says "a file was added":
+  `packages/tokens/__tests__/tokens-contract.test.ts`,
+  `packages/fonts/__tests__/fonts-contract.test.ts` and
+  `ops/__tests__/cs-tracker-adoption-probe.test.ts`. The last one also drives the vendored-copy
+  comparison, whose source side is the token contract's nine paths only
+  (`TOKEN_CONTRACT_PATHS`), because a Satellite fetches the Registry over HTTPS and never
+  vendors it (AD-4, AD-14). `cs-tracker`'s own Elixir suite pins the same nine and cannot see
+  this repository, so a tenth token-contract file is a two-repository change.
 - On the 404, `usePathname()` answers `/_not-found` during the prerender and the requested path
   on the client, so `<body id>` differs across hydration and settles on whichever side ran last.
   Assert on markup both sides render identically (`.error-page`), never on that id. A chrome

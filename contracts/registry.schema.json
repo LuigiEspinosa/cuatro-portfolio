@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cuatro.dev/contracts/registry.schema.json",
+  "title": "The Cuatro Ecosystem App Registry",
+  "description": "The shape of contracts/registry.json, the estate's only App Registry (AD-4). Draft-07 rather than 2020-12, because the gate and the editor have to agree and draft-07 is the dialect every editor and every language's validator implements fully. No \"format\" keyword appears anywhere: it is annotation-only in some validators and an assertion in others, so a URL is constrained by \"pattern\" instead. See ops/registry-schema.md.",
+  "type": "object",
+  "required": ["$schema", "contract_version", "applications"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "./registry.schema.json",
+      "description": "AD-4's authoring half: the hook an editor follows to validate this file while it is being written. Required with a fixed value, so deleting it is a red build rather than the silent loss of half the contract."
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "The Registry's own semver (AD-5). A value change is a minor bump; any field rename is major (AD-16)."
+    },
+    "applications": {
+      "type": "array",
+      "description": "One entry per application, never per repository (AD-6): an archived or absorbed application keeps its entry, so the entry count and the repository count are different numbers by design. No minItems yet, because the envelope this schema shipped beside carries zero entries and Story 2.5 is what writes them.",
+      "items": { "$ref": "#/definitions/application" }
+    }
+  },
+  "definitions": {
+    "application": {
+      "type": "object",
+      "description": "One Registry entry (AD-5): eight required fields, four optional ones, and nothing else. additionalProperties is false, so a field a consumer cannot rely on never reaches one.",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "status",
+        "tech",
+        "source",
+        "demo",
+        "identity"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "The application's single id (AD-3): lowercase kebab-case, equal to its repository name, and the name every derived identifier follows from. The public hostname is not derived from it; three live hostnames already diverge, so a hostname is declared in \"live\" and nowhere else."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The application's display name, as a reader sees it."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One to three reader-facing sentences. No marketing adjectives and no first person."
+        },
+        "status": {
+          "type": "string",
+          "description": "The application's lifecycle state (FR-7). Exactly one of four strings; the Suite Directory renders Live and Complete and holds the other two (FR-35).",
+          "enum": ["Live", "Complete", "In progress", "Archived"],
+          "enumDescriptions": [
+            "Deployed and reachable. Carries a \"live\" URL, and is rendered by the Suite Directory.",
+            "Finished and not deployed. Rendered by the Suite Directory.",
+            "Being built. Held in the Registry (FR-5) and not rendered (FR-35).",
+            "Retired. Held in the Registry, not rendered, and may carry no \"live\" URL."
+          ]
+        },
+        "tech": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "What the application runs on today. A wrong value is a defect, not a cosmetic issue."
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^https://",
+          "description": "The repository URL, required on every entry without exception: the drill-through from a running application to its code is the Registry's contract with a reader (FR-6)."
+        },
+        "demo": {
+          "type": "string",
+          "description": "What a Visitor can do with this application before they click (FR-27). Required with an explicit value: absence is never a permitted way to say \"not applicable\" (AD-5).",
+          "enum": ["demo-account", "open", "not-deployed", "none"],
+          "enumDescriptions": [
+            "Usable with the estate's one demo principal, demo@cuatro.dev (AD-13).",
+            "Usable with no authentication at all.",
+            "Nothing to reach: the application is not running anywhere.",
+            "Deployed, and no demo access is offered."
+          ]
+        },
+        "identity": {
+          "type": "string",
+          "description": "How the application authenticates (AD-12). Required with an explicit value: absence is never a permitted way to say \"not applicable\" (AD-5).",
+          "enum": ["oidc", "wallet", "none"],
+          "enumDescriptions": [
+            "Participates in cross-app identity through its own OIDC client (AD-11).",
+            "Wallet-based authentication: structurally exempt from OIDC, not unimplemented (AD-12).",
+            "No authentication at all, declared rather than left blank (FR-24)."
+          ]
+        },
+        "live": {
+          "type": "string",
+          "pattern": "^https://",
+          "description": "The deployed URL. Required when \"status\" is Live and forbidden when it is Archived (FR-6, FR-28). A free URL field: no hostname is ever derived from an id (AD-3)."
+        },
+        "family": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "A grouping key shared by related applications, spelled like an id."
+        },
+        "absorbed_into": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "The id of the application this one's code now lives in (AD-6). An absorbed application keeps its entry."
+        },
+        "token_contract": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "The version of the token contract this application has adopted (AD-16), verified against the Contract vX.Y.Z header in its vendored cuatro-contracts/tokens.css."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["status"],
+            "properties": { "status": { "const": "Live" } }
+          },
+          "then": {
+            "required": ["live"],
+            "description": "FR-6 and AD-5, first half: \"live\" is required when \"status\" is Live. An entry the Suite Directory renders as running has to say where it runs."
+          }
+        },
+        {
+          "if": {
+            "required": ["status"],
+            "properties": { "status": { "const": "Archived" } }
+          },
+          "then": {
+            "not": { "required": ["live"] },
+            "description": "FR-6 and FR-28, second half: \"live\" is forbidden when \"status\" is Archived. An application taken offline loses its URL in the same change, so no entry ever presents a \"live\" URL that does not resolve."
+          }
+        }
+      ]
+    }
+  }
+}

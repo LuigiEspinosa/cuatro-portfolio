@@ -18,6 +18,7 @@ import {
   RETIRED_LITERALS,
   ROLE_COUNT,
   SIZE_COUNT,
+  TOKEN_CONTRACT_PATHS,
   UNCOVERED_COLOUR_COUNT,
   UNPAINTED,
   VENDORED_REL,
@@ -31,6 +32,7 @@ import {
   fixtureDrift,
   fixtureHtml,
   fontUrls,
+  hashTokenContract,
   hashTree,
   hubFixtureHtml,
   namesInNamespace,
@@ -95,7 +97,7 @@ const THEME_BLOCK = `
   --border: var(--stroke-boundary);
 `;
 
-/** The nine relative paths the published contract is, at v1.0.0. */
+/** The nine relative paths the TOKEN contract is, at v1.0.0. */
 const CONTRACT_PATHS = [
   'fonts.css',
   'fonts/OFL-bricolage-grotesque.txt',
@@ -108,6 +110,15 @@ const CONTRACT_PATHS = [
   'tokens.css',
 ];
 
+/**
+ * The eleven paths the PUBLISHED SURFACE is, from Story 2-3. The Registry pair
+ * is published (AD-4) and is not part of the token contract: a Satellite fetches
+ * `registry.json` over HTTPS at build time and never vendors it, and AD-14's
+ * `cuatro-contracts/` folder is the token contract only. The walk sees eleven;
+ * the verbatim-copy comparison compares nine.
+ */
+const PUBLISHED_PATHS = [...CONTRACT_PATHS, 'registry.json', 'registry.schema.json'].sort();
+
 describe('the tree walk the comparison rests on', () => {
   // `compareHashes` cannot see a walk that stopped recursing: it would be handed
   // the three top-level stylesheets on both sides, find nothing wrong, pass the
@@ -117,16 +128,16 @@ describe('the tree walk the comparison rests on', () => {
   it('fileList descends into fonts/ and reports every published path', () => {
     const found = fileList(CONTRACTS);
 
-    expect(found).toEqual(CONTRACT_PATHS);
-    expect(found).toHaveLength(CONTRACT_FILE_COUNT);
+    expect(found).toEqual(PUBLISHED_PATHS);
+    expect(found).toHaveLength(11);
     expect(found.filter((path: string) => path.startsWith('fonts/'))).toHaveLength(6);
   });
 
   it('hashTree hashes every one of them, faces included', () => {
     const hashes = hashTree(CONTRACTS);
 
-    expect([...hashes.keys()].sort()).toEqual(CONTRACT_PATHS);
-    expect(hashes.size).toBe(CONTRACT_FILE_COUNT);
+    expect([...hashes.keys()].sort()).toEqual(PUBLISHED_PATHS);
+    expect(hashes.size).toBe(11);
     for (const [path, hash] of hashes) {
       expect(hash, `${path} was not hashed`).toMatch(/^[0-9a-f]{64}$/);
     }
@@ -139,6 +150,50 @@ describe('the tree walk the comparison rests on', () => {
   it('fileList reads nothing out of a directory that is not there, rather than throwing', () => {
     expect(fileList(join(CONTRACTS, 'nowhere'))).toEqual([]);
     expect(hashTree(join(CONTRACTS, 'nowhere')).size).toBe(0);
+  });
+});
+
+describe('the source side of the verbatim-copy comparison', () => {
+  // Story 2-3 narrowed it from the whole `contracts/` tree to the nine
+  // token-contract paths. Without the narrowing the probe would report
+  // `registry.json` and `registry.schema.json` as two files missing from every
+  // Satellite's vendored folder, permanently, when AD-4 has a Satellite fetch
+  // the Registry over HTTPS at build time and never vendor it at all.
+  it('is the nine token-contract paths, named rather than filtered out of the folder', () => {
+    expect([...TOKEN_CONTRACT_PATHS].sort()).toEqual(CONTRACT_PATHS);
+    expect(CONTRACT_FILE_COUNT).toBe(9);
+    expect(TOKEN_CONTRACT_PATHS).toHaveLength(CONTRACT_FILE_COUNT);
+  });
+
+  it('carries neither Registry file, which a Satellite must never vendor', () => {
+    expect(TOKEN_CONTRACT_PATHS).not.toContain('registry.json');
+    expect(TOKEN_CONTRACT_PATHS).not.toContain('registry.schema.json');
+    // And the two are on the published surface, so the exclusion is a decision
+    // rather than a description of a folder that never held them.
+    expect(fileList(CONTRACTS)).toContain('registry.json');
+    expect(fileList(CONTRACTS)).toContain('registry.schema.json');
+  });
+
+  it('hashes all nine out of the real folder, and reports none absent', () => {
+    const { hashes, absent } = hashTokenContract(CONTRACTS);
+
+    expect(absent, 'a token-contract path is missing from contracts/').toEqual([]);
+    expect([...hashes.keys()].sort()).toEqual(CONTRACT_PATHS);
+    expect(hashes.size).toBe(CONTRACT_FILE_COUNT);
+    // The same hashes the whole-tree walk produces for those nine, so narrowing
+    // the source side changed which files are compared and nothing else.
+    const whole = hashTree(CONTRACTS);
+    for (const path of CONTRACT_PATHS) expect(hashes.get(path)).toBe(whole.get(path));
+  });
+
+  it('reports every path it could not read rather than comparing a shorter list', () => {
+    // The refusal the narrowing needs: a filter over the folder would simply
+    // return eight paths if a face were deleted, hand `compareHashes` eight on
+    // both sides, and report a verbatim copy of a contract that had lost a face.
+    const { hashes, absent } = hashTokenContract(join(CONTRACTS, 'nowhere'));
+
+    expect(absent).toEqual(TOKEN_CONTRACT_PATHS);
+    expect(hashes.size).toBe(0);
   });
 });
 

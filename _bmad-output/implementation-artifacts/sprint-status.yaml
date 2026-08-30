@@ -138,7 +138,7 @@ development_status:
   epic-2: in-progress
   2-1-the-pre-existing-repository-defects: done
   2-2-measure-the-narrative-bundle-against-the-asset-budget: done
-  2-3-the-registry-schema-and-its-blocking-ci-gate: backlog
+  2-3-the-registry-schema-and-its-blocking-ci-gate: in-progress
   2-4-confirm-the-assumed-statuses-hostnames-and-tech-values: backlog
   2-5-author-contracts-registry-json: backlog
   2-6-the-editorial-voice-pass: backlog

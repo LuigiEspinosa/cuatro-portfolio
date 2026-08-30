@@ -794,6 +794,44 @@ has no CI at all, which is **DW-14**, filed by this story and demonstrated by th
 hours of it being written. A change that alters how the application builds was never built the way
 production builds it.
 
+## The vendored comparison narrowed to the token contract's nine, 2026-08-29
+
+**Observed and changed 2026-08-29**, Story 2-3. `contracts/` is no longer nine files: that story
+published `contracts/registry.json` and `contracts/registry.schema.json`, and the surface
+`node ops/contract-purity.mjs` reads is now **eleven**.
+
+The verbatim-copy case compared the **whole** `contracts/` tree against `cs-tracker`'s vendored
+`cuatro-contracts/`. AD-4 has Satellites fetch the Registry over HTTPS at **build** time, and AD-14's
+`cuatro-contracts/` folder is the token contract, so from the moment the Registry landed that
+comparison would have reported two files a Satellite must never vendor, permanently, as drift. The
+narrowing is therefore forced rather than opportunistic.
+
+What changed in `ops/cs-tracker-adoption-probe.mjs`: the comparison's **source** side is now
+`TOKEN_CONTRACT_PATHS`, the nine token-contract paths named in one exported constant with that
+reason beside it, hashed by `hashTokenContract`, which reports any of the nine that is absent from
+`contracts/` and fails the case rather than comparing a shorter list on both sides. The **vendored**
+side is still hashed whole by `hashTree`, so a file a Satellite added to its own folder is still
+reported as extra. `CONTRACT_FILE_COUNT` still means the token contract's nine and is now derived
+from that list rather than written as a literal.
+
+`fileList` and `hashTree` are still pinned against the real folder in
+`ops/__tests__/cs-tracker-adoption-probe.test.ts`, now at the **eleven** published paths, and four
+new cases hold the narrowing: that the source list is the nine, that it carries neither Registry
+file while the folder does, that all nine hash out of the real folder with the same digests the
+whole-tree walk produces, and that an unreadable folder reports nine absent rather than an empty
+comparison.
+
+**Observed 2026-08-29** by `node ops/cs-tracker-adoption-probe.mjs` against the `cs-tracker`
+checkout beside this repository: **"The folder is a verbatim copy" passes**, 9 files (pinned at 9)
+byte-identical by sha256. One unrelated case fails on that run, "The build pipeline places them",
+which is the `cuatro.fonts` alias moved out of `assets.setup` by `cs-tracker`'s `32a466a` and
+recorded under "The fonts task could not run in the container" above; the probe's assertion was not
+updated when the alias moved, and it predates Story 2-3.
+
+The DW-1 row in "Stated limits" still stands and is now narrower than it reads: the count `@expected_files`
+pins in `cs-tracker`'s own Elixir suite is the **token contract's** nine, which the Registry pair does
+not change. A tenth **token-contract** file is still the coordination cost that row describes.
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 1-19 may not do, in the shape `ops/token-contract.md`,

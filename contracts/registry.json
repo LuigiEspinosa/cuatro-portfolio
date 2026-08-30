@@ -1,0 +1,5 @@
+{
+  "$schema": "./registry.schema.json",
+  "contract_version": "1.0.0",
+  "applications": []
+}

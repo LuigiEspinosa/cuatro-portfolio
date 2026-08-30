@@ -176,6 +176,40 @@ jobs:
       - name: Contract purity
         run: node ops/contract-purity.mjs
 
+  registry-schema:
+    runs-on: ubuntu-latest
+
+    # AD-4 makes `contracts/registry.json` the estate's only App Registry and
+    # `contracts/registry.schema.json` the thing that fixes its shape: the file
+    # carries `$schema` so an editor validates while the entries are written,
+    # and CI validates so a malformed entry cannot ship. This job is the CI
+    # half. It is blocking and carries no `continue-on-error`, no `|| true` and
+    # no skip condition: AD-21 names Registry schema validation in its list of
+    # gates that may never become warnings, and there is one environment and no
+    # staging, so nothing downstream catches what it lets through.
+    #
+    # It declares no `on:` of its own, so it runs on this file's triggers,
+    # `push` to `**` and `pull_request` to `main`, and the two can never drift.
+    #
+    # It installs nothing and uses no pnpm cache, deliberately, exactly as the
+    # `contract-purity` job above does. The validator imports only `node:`
+    # builtins and adds no dependency, `ajv` included, so the Registry is still
+    # validated on the run where `pnpm install --frozen-lockfile` fails.
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No argument and no `env:`. Both files the validator opens are fixed in
+      # its source and resolved beside the module, so nothing reaching this
+      # runner can redirect it. See `ops/registry-schema.md`.
+      - name: Registry schema
+        run: node ops/registry-schema.mjs
+
   rendered-output:
     runs-on: ubuntu-latest
 

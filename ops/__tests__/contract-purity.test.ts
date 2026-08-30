@@ -1012,7 +1012,7 @@ describe('the CI wiring', () => {
       jobNames,
       'the order is a reader convenience rather than a rule, since jobs run in parallel. The set is not: a job' +
         ' added or removed here changes what holds AD-1 and what this suite has been told to expect'
-    ).toEqual(['test', 'tokens-contract', 'fonts-contract', JOB, 'rendered-output']);
+    ).toEqual(['test', 'tokens-contract', 'fonts-contract', JOB, 'registry-schema', 'rendered-output']);
   });
 
   it('leaves the four existing jobs carrying the steps they carried', () => {
