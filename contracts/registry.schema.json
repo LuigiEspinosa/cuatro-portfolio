@@ -59,8 +59,8 @@
           "description": "The application's lifecycle state (FR-7). Exactly one of four strings; the Suite Directory renders Live and Complete and holds the other two (FR-35).",
           "enum": ["Live", "Complete", "In progress", "Archived"],
           "enumDescriptions": [
-            "Deployed and reachable. Carries a \"live\" URL, and is rendered by the Suite Directory.",
-            "Finished and not deployed. Rendered by the Suite Directory.",
+            "Deployed and reachable. Required to carry a \"live\" URL, and rendered by the Suite Directory.",
+            "Finished. Rendered by the Suite Directory. Whether it carries a \"live\" URL is not constrained here: AD-5 fixes that for Live and for Archived only.",
             "Being built. Held in the Registry (FR-5) and not rendered (FR-35).",
             "Retired. Held in the Registry, not rendered, and may carry no \"live\" URL."
           ]
@@ -74,8 +74,8 @@
         },
         "source": {
           "type": "string",
-          "pattern": "^https://",
-          "description": "The repository URL, required on every entry without exception: the drill-through from a running application to its code is the Registry's contract with a reader (FR-6)."
+          "pattern": "^https://[^\\s/]+(/\\S*)?$",
+          "description": "The repository URL, required on every entry without exception: the drill-through from a running application to its code is the Registry's contract with a reader (FR-6). The pattern requires a host after the scheme and forbids whitespace anywhere, so a bare \"https://\" is not a URL this Registry accepts."
         },
         "demo": {
           "type": "string",
@@ -100,8 +100,8 @@
         },
         "live": {
           "type": "string",
-          "pattern": "^https://",
-          "description": "The deployed URL. Required when \"status\" is Live and forbidden when it is Archived (FR-6, FR-28). A free URL field: no hostname is ever derived from an id (AD-3)."
+          "pattern": "^https://[^\\s/]+(/\\S*)?$",
+          "description": "The deployed URL. Required when \"status\" is Live and forbidden when it is Archived (FR-6, FR-28). A free URL field: no hostname is ever derived from an id (AD-3). The pattern requires a host after the scheme and forbids whitespace anywhere, so a bare \"https://\" is not a URL this Registry accepts."
         },
         "family": {
           "type": "string",

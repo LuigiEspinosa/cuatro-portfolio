@@ -218,6 +218,29 @@ export const TOKEN_CONTRACT_PATHS = [
 export const CONTRACT_FILE_COUNT = TOKEN_CONTRACT_PATHS.length;
 
 /**
+ * The two paths on the published surface that are NOT the token contract: the
+ * App Registry and its schema (AD-4), added by Story 2-3.
+ *
+ * A Satellite fetches `registry.json` over HTTPS at build time and vendors
+ * neither of them, which is exactly why they are named here rather than left to
+ * be inferred: the difference between this list and `TOKEN_CONTRACT_PATHS` is
+ * the whole content of the narrowing, and a test asserts the two together
+ * account for every file under `contracts/`.
+ */
+export const REGISTRY_PATHS = ['registry.json', 'registry.schema.json'];
+
+/**
+ * Every path the published surface is, which is the token contract plus the
+ * Registry pair. Pinned in one place for the same reason the nine are: a walk
+ * that stopped recursing, or a file added under `contracts/` with nobody
+ * noticing, has to fail a count rather than pass a shorter comparison.
+ */
+export const PUBLISHED_SURFACE_PATHS = [...TOKEN_CONTRACT_PATHS, ...REGISTRY_PATHS].sort();
+
+/** How many files `contracts/` publishes. Eleven from Story 2-3, nine before it. */
+export const PUBLISHED_FILE_COUNT = PUBLISHED_SURFACE_PATHS.length;
+
+/**
  * The markers planted into `cs-tracker` for the two source-scan cases, and the
  * utility selector each one would mint if it were scanned.
  *
@@ -339,28 +362,41 @@ export function hashTree(dir) {
 
 /**
  * `{ relative path -> sha256 }` for the nine token-contract paths under `dir`,
- * and the ones that are not there.
+ * and the ones that could not be read, each with the reason.
  *
  * This is the SOURCE side of the verbatim-copy comparison: the vendored side is
  * still hashed whole by `hashTree`, so a file a Satellite added to its
- * `cuatro-contracts/` is still reported as extra. `absent` is what stops the
+ * `cuatro-contracts/` is still reported as extra. `unread` is what stops the
  * narrowing from shrinking silently: a token-contract file deleted from
  * `contracts/` would otherwise leave eight paths on both sides and report a
  * verbatim copy of a contract that had lost a face.
+ *
+ * **A path that would not read is not the same finding as a path that is gone.**
+ * The first draft swallowed the error and called both "absent", which reports a
+ * permission fault to an operator as a deleted file and sends them to restore
+ * something that is already there. The `code` is carried instead, so `ENOENT`
+ * reads as absent and anything else reads as unreadable, with the reason.
  *
  * @param {string} dir
  */
 export function hashTokenContract(dir) {
   const hashes = new Map();
-  const absent = [];
+  /** @type {{ path: string, code: string, absent: boolean }[]} */
+  const unread = [];
   for (const rel of TOKEN_CONTRACT_PATHS) {
     try {
       hashes.set(rel, createHash('sha256').update(readFileSync(join(dir, ...rel.split('/')))).digest('hex'));
-    } catch {
-      absent.push(rel);
+    } catch (error) {
+      const code =
+        error instanceof Error && typeof (/** @type {{ code?: unknown }} */ (error).code) === 'string'
+          ? String(/** @type {{ code?: unknown }} */ (error).code)
+          : error instanceof Error
+            ? error.message
+            : String(error);
+      unread.push({ path: rel, code, absent: code === 'ENOENT' });
     }
   }
-  return { hashes, absent };
+  return { hashes, unread };
 }
 
 /**
@@ -1106,7 +1142,7 @@ async function probe() {
     // files a Satellite must never vendor. The VENDORED side is still hashed
     // whole, so a file added there is still reported as extra.
     const vendoredDir = join(CS_TRACKER, VENDORED_REL);
-    const { hashes: sourceHashes, absent } = hashTokenContract(CONTRACTS);
+    const { hashes: sourceHashes, unread } = hashTokenContract(CONTRACTS);
     const comparison = compareHashes(sourceHashes, hashTree(vendoredDir));
     record(
       // The case name is unchanged, because three records quote it.
@@ -1116,11 +1152,16 @@ async function probe() {
       // narrowing that quietly lost a path, would hand `compareHashes` a shorter
       // list on both sides, find nothing wrong, and report a verbatim copy
       // having never looked at the three faces or the three licence texts.
-      absent.length === 0 && comparison.identical && comparison.equal.length === CONTRACT_FILE_COUNT,
-      absent.length > 0
-        ? `${absent.length} of the ${CONTRACT_FILE_COUNT} token-contract paths are absent from ` +
-          `contracts/ (${absent.join(', ')}), so the comparison would have shrunk silently rather ` +
-          `than failed. Nothing was compared`
+      unread.length === 0 && comparison.identical && comparison.equal.length === CONTRACT_FILE_COUNT,
+      unread.length > 0
+        ? `${unread.length} of the ${CONTRACT_FILE_COUNT} token-contract paths could not be read out ` +
+          `of contracts/ (` +
+          unread.map((one) => `${one.path}: ${one.absent ? 'absent' : `unreadable, ${one.code}`}`).join('; ') +
+          `). The comparison below ran over the ${sourceHashes.size} that could be read and is ` +
+          `reported as a failure for that reason, rather than as the shorter verbatim copy it would ` +
+          `otherwise have looked like: ${comparison.equal.length} equal, ` +
+          `${comparison.missing.length} missing, ${comparison.extra.length} extra, ` +
+          `${comparison.differing.length} differing`
         : comparison.identical
         ? `${comparison.equal.length} file(s) (pinned at ${CONTRACT_FILE_COUNT}, the token contract's ` +
           `own paths rather than everything under contracts/) under ` +

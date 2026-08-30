@@ -353,8 +353,13 @@ harness that is broken in some other way.
 
 ## The surface is eleven files from 2026-08-29
 
-**Observed 2026-08-29**, Story 2-3. `node ops/contract-purity.mjs` now reports
-`read contracts/, 11 files, none executable and no link (AD-1)`. The nine in the probe output above
+**Observed 2026-08-29**, Story 2-3. `node ops/contract-purity.mjs` now prints, verbatim:
+
+```
+contract purity: read contracts/, 11 files, none executable and no link (AD-1).
+```
+
+The nine in the probe output above
 were the token contract; the two added are `contracts/registry.json` and
 `contracts/registry.schema.json`, the App Registry and its schema (AD-4). Both are JSON, so the
 extension rule is unaffected and nothing in this gate changed. The figure `9` in the table under

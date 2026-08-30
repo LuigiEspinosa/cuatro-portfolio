@@ -47,7 +47,7 @@ modified.
 
 | Property | Value | Nature |
 |---|---|---|
-| Blocking | Yes. The job carries no `continue-on-error`, no `|| true`, no `if:`, no `needs:` and no soft exit, so a malformed Registry is a red job on every push and every pull request | **Decision.** AD-21, which names Registry schema validation in its list of gates that may never become warnings, and `AGENTS.md` under "Policy" |
+| Blocking | Yes. The job carries no `continue-on-error`, no `\|\| true`, no `if:`, no `needs:` and no soft exit, so a malformed Registry is a red job on every push and every pull request | **Decision.** AD-21, which names Registry schema validation in its list of gates that may never become warnings, and `AGENTS.md` under "Policy" |
 | **How far that reach goes** | A red job stops **nothing mechanically today**. GitHub holds a merge only on a **required status check**, and `.github/workflows/deploy.yml` fires on the same push to `main` with no `needs:` and no `workflow_run:`, so a red Registry job does not hold a deploy either | **Observed 2026-08-29** for the deploy half, by reading both workflow files. The required-check half is a repository setting no command on this host can read. The same is true of all six jobs; `ops/contract-purity.md`'s Operator action 2 already asks for it and this story adds a sixth job to that sitting. Pending Operator action 2 |
 | Triggers | `push` to `**` and `pull_request` to `main` | **Observed 2026-08-29.** The job sits in the existing file and inherits that file's `on:` block at `:3-7` rather than declaring its own, so the two can never drift. A standing case asserts the job declares no `on:` of its own |
 | Position | After `contract-purity`, before `rendered-output` | **Decision.** Jobs run in parallel, so the position is a reader convenience. Two standing cases now pin the six job names as a set that happens to be ordered, one in this story's suite and the pre-existing one in `ops/__tests__/contract-purity.test.ts` |
@@ -84,6 +84,39 @@ reading the module's source, for the reason that record gives.
 **The invoked-directly guard never answers "no" when it cannot tell**, for the same reason and with
 the same `realpathSync` fallback, held by its own case.
 
+## What is escaped, and what is not
+
+**Everything that reaches a refusal from outside this module is escaped**, on the reasoning
+`ops/contract-purity.md` sets out under "Characters that forge or disguise a line": a value carrying
+a newline forges a line that reads like this gate's own prose and can push the real violation out of
+an operator's view, and a bidirectional override or a zero-width character lets two different values
+be drawn identically in a log.
+
+Three things reach a refusal from outside: a **Registry value**, quoted through `show()`; a
+**pointer**, built from Registry and schema property names; and a **parser or filesystem message**.
+The story's review pass found the second and third of those printed raw, so a schema carrying a
+property name with a newline forged a line the first was protected against. All three now go through
+the escaping. **A violation's detail is deliberately not escaped as a whole**, because it is this
+module's own prose assembled around already-escaped parts, and a blanket escape would print a quoted
+`pattern` with a doubled backslash: the one string an operator is being sent to the schema to
+compare. That is the same line `ops/contract-purity.md` draws under "Only the untrusted half of a
+reason is escaped", and both halves have a case.
+
+**The two escapers share one predicate.** `printable()` and the `escapeInvisible()` that `show()`
+uses differ only in what they do to a backslash: `JSON.stringify` has already escaped the backslash
+and the C0 range by the time `show()` runs, so doubling them there would print every authored newline
+as `\\n`, which is noise rather than safety. They disagreed about exactly one character before the
+review pass, U+007F, which `JSON.stringify` does not escape either, so a DEL in an id reached the log
+as itself. One shared `HIDES` predicate now decides which code points are dangerous, and a standing
+case runs ten of them, DEL and a C0 control included.
+
+**The quoting is injective up to truncation, and not past it.** A value longer than 120 code points
+is cut, so two values agreeing on their first 120 print identically. That is a deliberate trade: a
+hand-authored `id` or URL that long is already the defect. The cut is by **code point** rather than
+by UTF-16 code unit, because a cut by code unit can land between the halves of an astral character
+and emit a lone surrogate, which is a code point neither escaper describes and no terminal draws.
+Both properties have a case.
+
 ## The dialect, and why `format` appears nowhere
 
 **Draft-07, not 2020-12.** **Decision.** The gate and the editor have to agree, and draft-07 is the
@@ -112,11 +145,21 @@ Registry is parsed**, so a schema carrying an unimplemented keyword can never pr
 an instance, and a standing case plants a keyword and a violation together and requires the keyword
 to be what is reported.
 
-Two smaller refusals follow from the same argument and are noted rather than tabled: a `$ref`
+Three smaller refusals follow from the same argument and are noted rather than tabled. A `$ref`
 carrying siblings is refused, because draft-07 discards every sibling of `$ref` and the schema would
-read as though those rules bound while nothing applied them; and a subschema that is not an object,
+read as though those rules bound while nothing applied them. A subschema that is not an object,
 which includes draft-07's legal boolean schemas, is refused because this validator applies no rule
-to one.
+to one. And **an `if` carrying neither `then` nor `else` is refused**, because the condition is
+evaluated and its answer discarded: the schema reads as though it still carried a rule while
+asserting nothing. That last one is the keyword audit's own argument one level down, and it guards
+exactly the two members that carry the `live` condition, where deleting a `then` in an edit would
+otherwise leave both halves looking intact.
+
+**A leading byte order mark is stripped before either file is parsed.** **Decision.** `JSON.parse`
+throws on a U+FEFF, so a valid Registry saved by an editor on the Windows host these files are
+authored on would read as malformed with a message about position 0 that says nothing about a
+character its author cannot see. Only a leading one is stripped; a U+FEFF anywhere else is inside a
+string value, where it is escaped when quoted. Both halves have a case.
 
 **`enumDescriptions` is VS Code's own annotation**, and it is here because draft-07 has no other way
 to say what an enum value means. The idiom would be `oneOf` with one `const` and one `description`
@@ -133,7 +176,7 @@ true rather than a claim about the author's care.
 | `status` | `Live`, `Complete`, `In progress`, `Archived` | AD-5 fixes exactly these four. FR-35 renders the first two and holds the other two | **Decision**, transcribed from AD-5 |
 | `identity` | `oidc`, `wallet`, `none` | AD-12: every entry carries one, absence is not a permitted value. `MaiCoin` is `wallet` and structurally exempt, not unimplemented | **Decision**, transcribed from AD-12 |
 | `demo` | `demo-account`, `open`, `not-deployed`, `none` | FR-27 names three categories: usable with a Demo Account, usable without authentication, not deployed. `none` is the fourth, deployed with no demo access offered, which C-10 and FR-27's `MaiCoin` bullet both need | **Decision.** The one value set this story adds to rather than transcribes, and it is recorded as such |
-| `live` | any `^https://` string | AD-3: **no hostname is derived from an id**. Three live hostnames already diverge from their ids, so the Registry is the only mapping and this is a free URL field | **Decision**, from AD-3 |
+| `live`, `source` | `^https://[^\s/]+(/\S*)?$` | AD-3: **no hostname is derived from an id**. Three live hostnames already diverge from their ids, so the Registry is the only mapping and the host is free. What the pattern does fix is that there **is** a host and that the value carries no whitespace | **Decision**, from AD-3. The pattern was `^https://` until the story's review pass, which is an anchor and nothing else: it accepted the bare scheme `"https://"`, `"https:// "`, and a value with an embedded space or newline. `source` is FR-6's drill-through to the code and `live` is what FR-28 says must resolve, so a hostless value passing the gate is the Registry lying in the one field a reader clicks. Nine values, four accepted and five refused, have standing cases |
 | `contract_version`, `token_contract` | `^\d+\.\d+\.\d+$` | AD-5's envelope version and AD-16's adopted token contract version | **Decision** |
 
 **`demo` is a closed set of four rather than an object with a mode and a URL.** **Decision.** An
@@ -162,7 +205,7 @@ the tree at this story's closing commit**, which is why its output lives in this
 
 | Field | Value | Nature |
 |---|---|---|
-| The fixture | Three entries breaking five rules between them: a `Live` entry with no `live`, an entry carrying `"status": "Retired"` and a `"licence"` field and no `demo`, and an `Archived` entry carrying a `live` URL and repeating the first entry's id | **Decision.** One entry per class of refusal the matrix names, in one file, because "every violation in a run" is the claim being demonstrated |
+| The fixture | Three entries breaking **six** rules between them: a `Live` entry with no `live`; an entry carrying `"status": "Retired"` and a `"licence"` field and no `demo`, which is three; and an `Archived` entry carrying a `live` URL and repeating the first entry's id, which is two | **Decision.** One entry per class of refusal the matrix names, in one file, because "every violation in a run" is the claim being demonstrated. The count is six and the output below lists six |
 | Result | The job's command exited **1** and wrote the refusal to stderr, naming all six violations by JSON Pointer, in sorted order, each with the rule that rejected it | **Observed 2026-08-29** on the Windows 11 development host, by running `node ops/registry-schema.mjs` against the working tree |
 | Removed | Yes | **Observed**, confirmed by the gate exiting 0 again against the committed envelope |
 
@@ -215,8 +258,13 @@ an author too.
 ## The published surface is now eleven files
 
 `contracts/` was nine files and is eleven. **Observed 2026-08-29** by `node ops/contract-purity.mjs`,
-which reports `read contracts/, 11 files, none executable and no link (AD-1)`, and by
-`corepack pnpm build`, after which `public/contracts/` holds the same eleven.
+which prints, verbatim:
+
+```
+contract purity: read contracts/, 11 files, none executable and no link (AD-1).
+```
+
+and by `corepack pnpm build`, after which `public/contracts/` holds the same eleven.
 
 **The two new files are the only hand-authored things on the published surface.** Everything else
 under `contracts/` is generated by `packages/tokens/build.mjs` or `packages/fonts/build.mjs`. Those
@@ -242,7 +290,7 @@ meaning the token contract's nine and is now derived from that list rather than 
 
 ## What holds the failure paths permanently
 
-`ops/__tests__/registry-schema.test.ts` carries **68 cases**, one per row of the story's I/O matrix
+`ops/__tests__/registry-schema.test.ts` carries **79 cases**, one per row of the story's I/O matrix
 plus one per refusal no matrix row names plus the wiring cases, and it sits inside the
 already-blocking `test` job. The demonstration above proves the gate could fail on 2026-08-29; these
 are what keep it able to fail after a later edit. Every refusal case is built from strings or from a
@@ -251,16 +299,16 @@ scratch tree under `tmpdir()`, so a test run never mutates the committed pair.
 | What the block holds | Cases |
 |---|---|
 | The committed pair validates, and an empty list is data rather than a refusal | 4 |
-| The dialect, the value sets, the keyword set and the enum descriptions | 8 |
-| Every refusal the matrix names, plus the escaping and the sorting | 29 |
-| The pure parts: pointers on every violation, the audit, the duplicate-id rule | 7 |
+| The dialect, the value sets, the URL pattern, the keyword set and the enum descriptions | 9 |
+| Every refusal the matrix names, plus the escaping, the truncation, the byte order mark and the sorting | 36 |
+| The pure parts: pointers on every violation, the audit, `else`, the schema form of `additionalProperties`, the uncountable-Registry refusal, the duplicate-id rule | 10 |
 | The gate as the job runs it, through the real binary | 11 |
 | The `ci.yml` wiring | 9 |
 
 | Figure | Value | Nature |
 |---|---|---|
-| Cases added | **68** in `ops/__tests__/registry-schema.test.ts`, plus **4** in `ops/__tests__/cs-tracker-adoption-probe.test.ts` for the narrowing | **Observed 2026-08-29**, counted per file by Vitest |
-| Whole suite | **877 passed, 34 files** by `corepack pnpm test --run`, from 805 in 33 files before this story | **Observed 2026-08-29** on the development host. No browser started. The before figure is the after figure less the 72 cases this story added, rather than a second measured run. `AGENTS.md` still states 738 in 32 files, which was already stale at this story's baseline |
+| Cases added | **79** in `ops/__tests__/registry-schema.test.ts`, plus **6** in `ops/__tests__/cs-tracker-adoption-probe.test.ts` for the narrowing | **Observed 2026-08-29** at the review pass, counted per file by Vitest. It was 68 and 4 before that pass |
+| Whole suite | **890 passed, 34 files** by `corepack pnpm test --run`, from 805 in 33 files before this story | **Observed 2026-08-29** at the review pass, on the development host. No browser started. The before figure is the after figure less the 85 cases this story added, rather than a second measured run. `AGENTS.md` stated 738 in 32 files, which was already stale at this story's baseline, and was corrected to the measured figure by this story |
 | Typecheck | Pass, with the new test file inside the program | **Observed 2026-08-29** by `corepack pnpm typecheck`. `tsconfig.json:34-41` puts `**/*.ts` in the program, and the `.mjs` gate carries JSDoc types for it |
 | Gate dependencies | None. `node:fs`, `node:path` and `node:url`, and no `node:process` | **Decision**, asserted by three standing cases reading the module's own source |
 
@@ -281,6 +329,7 @@ names the keyword.
 |---|---|---|
 | **A red job holds no merge and no deploy on its own** | The job fails, and nothing mechanical follows until `registry-schema` is a required status check on `main`. `deploy.yml` fires on the same push with no `needs:`, so a deploy proceeds beside a red CI run. That is true of all six jobs in the file | **Observed 2026-08-29** by reading the two workflow files. Pending Operator action 2 |
 | **The application list is empty, and `minItems` is deliberately absent** | The envelope this story ships carries zero entries, so `minItems: 1` would fail its own gate. Zero entries is a fact about the data, not a claim that the Estate is empty. **Story 2.5 tightens it** when it writes the entries, and that tightening is the one entry rule this schema knowingly leaves open | **Decision**, and asserted by a standing case so the absence is recorded rather than assumed |
+| **Only two status combinations are constrained, and the enum descriptions must not imply more** | AD-5 fixes exactly two: `live` is required when `status` is `Live`, and forbidden when it is `Archived`. Everything else validates, and three combinations are worth naming because a reader will expect otherwise. **A `Complete` entry carrying a `live` URL validates**, which is why that value's description no longer says "not deployed": it said so while the schema enforced nothing of the kind. **A `Live` entry declaring `demo: not-deployed` validates**, though the two read as a contradiction. **An `Archived` entry declaring `demo: open` validates**, though it has no `live` URL to open. A schema may not claim more than it enforces, and tightening any of the three is a change to AD-5 rather than to this file | **Decision.** Found by the story's review pass, which is also when the `Complete` description was corrected |
 | **Duplicate ids are invisible to the editor** | The rule cannot be expressed in draft-07, so AD-4's authoring half does not cover it. An author writing a second entry with an id they already used sees nothing until CI runs | **Decision**, stated above and in the refusal itself |
 | **The gate says nothing about whether an entry is true** | A `description` that lies, a stale `status`, a `tech` array naming the wrong framework and a `live` URL that does not resolve all validate. FR-32's scheduled link check is Story 2.23 | **Decision** |
 | **It reads the committed tree on a runner, not what is served** | A file changed at `https://cuatro.dev/contracts/registry.json` on the box, without a commit, is invisible here. The same limit `ops/contract-purity.md` records for its own gate | **Decision** |

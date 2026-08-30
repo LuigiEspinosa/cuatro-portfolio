@@ -56,6 +56,11 @@ export const BEYOND_THE_SCHEMA =
 /** @param {string} relative */
 const beside = (relative) => fileURLToPath(new URL(`../${relative}`, import.meta.url));
 
+// The byte order mark, written as an escape and never as the character itself:
+// an invisible U+FEFF sitting in a source file is precisely the defect this
+// constant exists to handle one level up.
+const BOM = '\uFEFF';
+
 // ---------------------------------------------------------------------------
 // Printing
 // ---------------------------------------------------------------------------
@@ -77,20 +82,34 @@ const REORDERS_TEXT = (/** @type {number} */ point) =>
   (point >= 0x2066 && point <= 0x2069);
 const IS_A_CONTROL = (/** @type {number} */ point) => point >= 0x80 && point <= 0x9f;
 
+// The C0 range and DEL. Named, so the two escapers below can be held to the same
+// answer about them: they were not, and DEL reached an operator's log as itself
+// through `show()` while `printable()` escaped it.
+const IS_C0_OR_DEL = (/** @type {number} */ point) => point < 0x20 || point === 0x7f;
+
+/**
+ * True for every code point that forges a line, rewrites one, or is drawn as
+ * something other than what it is. One predicate, so `printable` and
+ * `escapeInvisible` cannot disagree about which characters are dangerous. They
+ * differ only in what they do to a backslash, and that difference is argued
+ * where `escapeInvisible` is defined.
+ *
+ * @param {number} point
+ */
+const HIDES = (point) =>
+  IS_C0_OR_DEL(point) ||
+  IS_A_CONTROL(point) ||
+  DRAWS_AS_NOTHING.has(point) ||
+  FORGES_A_LINE.has(point) ||
+  REORDERS_TEXT(point);
+
 /** @param {string} text */
 export function printable(text) {
   return [...String(text)]
     .map((character) => {
       const point = character.codePointAt(0) ?? 0;
       if (character === '\\') return String.raw`\\`;
-      if (
-        point > 31 &&
-        point !== 127 &&
-        !IS_A_CONTROL(point) &&
-        !DRAWS_AS_NOTHING.has(point) &&
-        !FORGES_A_LINE.has(point) &&
-        !REORDERS_TEXT(point)
-      ) {
+      if (!HIDES(point)) {
         return character;
       }
       if (character === '\n') return String.raw`\n`;
@@ -102,17 +121,21 @@ export function printable(text) {
     .join('');
 }
 
-/** How long a quoted instance value may get before it is cut. */
+/** How many code points of a quoted instance value are printed before it is cut. */
 const SHOWN = 120;
 
 /**
- * The four classes `JSON.stringify` leaves through. It already escapes the C0
- * range, the quote and the backslash, and that alone is injective, so the
- * backslashes it wrote are left as they are here: doubling them would print
- * every authored newline as `\\n`, which is noise rather than safety. What it
- * does not escape is U+2028 and U+2029, the C1 controls, the bidirectional
- * overrides and the code points drawn as nothing, and each of those forges or
- * disguises a line exactly as a raw newline would.
+ * The escaping applied on top of `JSON.stringify`.
+ *
+ * `JSON.stringify` escapes the quote and the backslash, and the C0 range as
+ * `\n`, `\t` and `\u00XX`, so the backslashes it wrote are left as they are
+ * here: doubling them would print every authored newline as `\\n`, which is
+ * noise rather than safety. What it does **not** escape is DEL, the C1 controls,
+ * U+2028 and U+2029, the bidirectional overrides and the code points drawn as
+ * nothing, and each of those forges or disguises a line exactly as a raw newline
+ * would. `HIDES` is the shared predicate, so this and `printable` cannot come to
+ * different answers about a character; the C0 range appears in it too and is
+ * simply never reached here, because `JSON.stringify` got there first.
  *
  * @param {string} text
  */
@@ -120,14 +143,7 @@ const escapeInvisible = (text) =>
   [...text]
     .map((character) => {
       const point = character.codePointAt(0) ?? 0;
-      if (
-        !IS_A_CONTROL(point) &&
-        !DRAWS_AS_NOTHING.has(point) &&
-        !FORGES_A_LINE.has(point) &&
-        !REORDERS_TEXT(point)
-      ) {
-        return character;
-      }
+      if (!HIDES(point)) return character;
       return `\\u${point.toString(16).padStart(4, '0')}`;
     })
     .join('');
@@ -135,12 +151,22 @@ const escapeInvisible = (text) =>
 /**
  * A value as it is safe to quote in a message.
  *
+ * **Injective up to truncation, and not past it.** The escaping itself maps two
+ * distinct values to two distinct strings, but a value longer than `SHOWN` is
+ * cut, and two values agreeing on their first `SHOWN` code points then print
+ * identically. That is a deliberate trade: a Registry entry is hand-authored and
+ * an `id` or a URL that long is already the defect. The cut is by **code point**
+ * rather than by UTF-16 code unit, so it can never split a surrogate pair and
+ * emit a lone surrogate, which is the one way this could produce a string
+ * neither escaper is able to describe.
+ *
  * @param {unknown} value
  */
 const show = (value) => {
   if (value === undefined) return 'nothing';
   const text = JSON.stringify(value) ?? String(value);
-  return escapeInvisible(text.length > SHOWN ? `${text.slice(0, SHOWN - 3)}...` : text);
+  const points = [...text];
+  return escapeInvisible(points.length > SHOWN ? `${points.slice(0, SHOWN - 3).join('')}...` : text);
 };
 
 /** A quoted key or keyword name. */
@@ -169,8 +195,23 @@ const escapeToken = (token) => String(token).replace(/~/g, '~0').replace(/\//g, 
  */
 const at = (base, token) => `${base}/${escapeToken(token)}`;
 
-/** The whole document has the empty pointer, which reads as nothing at all. */
-const where = (/** @type {string} */ pointer) => (pointer === '' ? '(the document root)' : pointer);
+/**
+ * A pointer as it is safe to print. Escaped, because a pointer is built from
+ * property names and a schema or a Registry may carry a name holding a newline
+ * or a bidirectional override; unescaped, such a name forges a line inside the
+ * refusal exactly as a value does. The whole document has the empty pointer,
+ * which reads as nothing at all, so it is given a word instead.
+ *
+ * @param {string} pointer
+ * @param {string} empty
+ */
+const pointerText = (pointer, empty) => (pointer === '' ? empty : printable(pointer));
+
+/** A pointer into the Registry. */
+const where = (/** @type {string} */ pointer) => pointerText(pointer, '(the document root)');
+
+/** A pointer into the schema. */
+const inSchema = (/** @type {string} */ pointer) => pointerText(pointer, '(the schema root)');
 
 // ---------------------------------------------------------------------------
 // The fixed keyword set
@@ -294,7 +335,7 @@ export function auditSchema(schema) {
     if (!isPlainObject(node)) {
       say(
         pointer,
-        `${where(pointer)} is ${show(node)} where a subschema was expected. Only an object schema is` +
+        `${inSchema(pointer)} is ${show(node)} where a subschema was expected. Only an object schema is` +
           ' implemented, so nothing here could be applied'
       );
       return;
@@ -307,8 +348,21 @@ export function auditSchema(schema) {
       // the gate refuses rather than enforcing a rule the editor never applies.
       say(
         pointer,
-        `${where(pointer)} carries $ref beside ${keys.filter((key) => key !== '$ref').map(q).join(', ')}.` +
+        `${inSchema(pointer)} carries $ref beside ${keys.filter((key) => key !== '$ref').map(q).join(', ')}.` +
           ' Draft-07 ignores every sibling of $ref, so those rules would bind here and nowhere else'
+      );
+    }
+
+    if (Object.hasOwn(node, 'if') && !Object.hasOwn(node, 'then') && !Object.hasOwn(node, 'else')) {
+      // The same failure the whole keyword audit exists to prevent, one level
+      // down: an `if` with no branch is evaluated and its result discarded, so
+      // the condition reads like a rule and asserts nothing at all. Both halves
+      // of the `live` condition are written this way, and losing a `then` in an
+      // edit would leave the schema looking as though it still carried them.
+      say(
+        pointer,
+        `${inSchema(pointer)} carries "if" with neither "then" nor "else". The condition would be` +
+          ' evaluated and its answer thrown away, so it asserts nothing'
       );
     }
 
@@ -753,10 +807,24 @@ export function inspect(schemaSource, registrySource) {
     .map((source) => ({ label: source.label, error: String(source.error) }));
   if (unread.length > 0) return { ...empty, stage: 'unread', unread };
 
-  /** @param {Source} source */
+  /**
+   * A leading U+FEFF is stripped before the parse. `JSON.parse` throws on a
+   * byte order mark, and the editor on the Windows host these two files are
+   * authored on can write one, so a perfectly valid Registry would otherwise
+   * read as malformed with a message about position 0 that says nothing about
+   * a character the author cannot see. Only a leading one: a U+FEFF anywhere
+   * else is inside a string value, where `show()` escapes it.
+   *
+   * @param {Source} source
+   */
   const parse = (source) => {
     try {
-      return { value: JSON.parse(String(source.text)), error: null };
+      // Written as an escape, never as the character itself: a source file
+      // carrying an invisible byte order mark is the defect this line exists to
+      // handle, one level up.
+      const text = String(source.text);
+      const body = text.startsWith(BOM) ? text.slice(BOM.length) : text;
+      return { value: JSON.parse(body), error: null };
     } catch (error) {
       return { value: null, error: error instanceof Error ? error.message : String(error) };
     }
@@ -855,7 +923,7 @@ export function report(inspection) {
         '  not implement, so the Registry was not read at all. A keyword nothing applies is a rule the',
         '  gate is green over.',
         ...inspection.unsupported.map(
-          (finding) => `    ${printable(finding.pointer) || '(the schema root)'}: ${finding.detail}`
+          (finding) => `    ${inSchema(finding.pointer)}: ${finding.detail}`
         ),
         '  Either implement the keyword in ops/registry-schema.mjs, with a case in its suite, or take',
         '  it out of the schema. The schema and the check agree by construction or not at all.',
@@ -870,8 +938,16 @@ export function report(inspection) {
       message: refusal([
         `  ${count} violation${plural(count)} in ${REGISTRY}, by JSON Pointer:`,
         ...inspection.violations.flatMap((violation) => [
-          `    ${printable(where(violation.instance))}: ${violation.detail}`,
-          `      rule: ${violation.rule}${violation.schema === null ? '' : `, at ${violation.schema}`}`,
+          // Both pointers are escaped, and the detail is not. A detail is
+          // assembled from this module's own prose plus already-escaped parts:
+          // `q()` for a property name and `show()` for a value. Escaping the
+          // whole line a second time would print a quoted `pattern` with a
+          // doubled backslash, which is the one string an operator is being
+          // sent to the schema to compare. Same line, and the same reasoning,
+          // as `ops/contract-purity.md` under "Only the untrusted half of a
+          // reason is escaped".
+          `    ${where(violation.instance)}: ${violation.detail}`,
+          `      rule: ${violation.rule}${violation.schema === null ? '' : `, at ${inSchema(violation.schema)}`}`,
           ...(violation.note === null ? [] : [`      ${printable(violation.note)}`]),
         ]),
         `  Fix the entries, or renegotiate the shape in ${SCHEMA} and in`,

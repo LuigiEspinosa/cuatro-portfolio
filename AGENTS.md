@@ -50,8 +50,9 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
 - `pnpm` is not on PATH on this host. Prefix every command with `corepack`, as in
   `corepack pnpm build`.
 - `corepack pnpm test` starts Vitest in watch mode and never exits. Always pass `--run`. The
-  full suite is 738 tests across 32 files in roughly 90 to 120 seconds depending on load, so
-  run all of it.
+  full suite is 890 tests across 34 files in roughly 85 to 120 seconds depending on load, so
+  run all of it. Measured 2026-08-29; it was 738 in 32 files at the end of Epic 1, so treat
+  this figure as a rough expectation and not as a number to assert on.
 - There is no lint gate and no working lint command: the script is misspelled `linkg`, and
   `next lint` was removed in Next 16, so `corepack pnpm linkg` fails too. Do not put lint in
   an acceptance criterion, and do not add an `eslint` invocation to CI, until a story lands a
@@ -133,6 +134,11 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
   (`TOKEN_CONTRACT_PATHS`), because a Satellite fetches the Registry over HTTPS and never
   vendors it (AD-4, AD-14). `cs-tracker`'s own Elixir suite pins the same nine and cannot see
   this repository, so a tenth token-contract file is a two-repository change.
+- The same shape holds for `.github/workflows/ci.yml`: **two** suites pin its job names as an
+  exact set, so adding or removing a job fails both, and neither failure says "a job was added".
+  They are `ops/__tests__/contract-purity.test.ts` and `ops/__tests__/registry-schema.test.ts`,
+  each of which reads the file for its own gate. Update both, and give the new job its own
+  wiring cases beside the module it runs rather than adding them to one of those two.
 - On the 404, `usePathname()` answers `/_not-found` during the prerender and the requested path
   on the client, so `<body id>` differs across hydration and settles on whichever side ran last.
   Assert on markup both sides render identically (`.error-page`), never on that id. A chrome

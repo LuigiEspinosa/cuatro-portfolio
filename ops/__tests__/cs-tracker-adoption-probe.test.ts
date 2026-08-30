@@ -14,6 +14,9 @@ import {
   FIXTURE_ELEMENTS,
   MAPPED_COLOUR_COUNT,
   MAPPED_SHAPE_COUNT,
+  PUBLISHED_FILE_COUNT,
+  PUBLISHED_SURFACE_PATHS,
+  REGISTRY_PATHS,
   RETIRED_COUNT,
   RETIRED_LITERALS,
   ROLE_COUNT,
@@ -116,8 +119,24 @@ const CONTRACT_PATHS = [
  * `registry.json` over HTTPS at build time and never vendors it, and AD-14's
  * `cuatro-contracts/` folder is the token contract only. The walk sees eleven;
  * the verbatim-copy comparison compares nine.
+ *
+ * Written out here rather than taken from the module, so the pinned list and the
+ * module's own `PUBLISHED_SURFACE_PATHS` are two statements that have to agree
+ * rather than one restated twice.
  */
-const PUBLISHED_PATHS = [...CONTRACT_PATHS, 'registry.json', 'registry.schema.json'].sort();
+const PUBLISHED_PATHS = [
+  'fonts.css',
+  'fonts/OFL-bricolage-grotesque.txt',
+  'fonts/OFL-geist-mono.txt',
+  'fonts/OFL-geist.txt',
+  'fonts/bricolage-grotesque-latin.woff2',
+  'fonts/geist-latin.woff2',
+  'fonts/geist-mono-latin.woff2',
+  'registry.json',
+  'registry.schema.json',
+  'tailwind.css',
+  'tokens.css',
+];
 
 describe('the tree walk the comparison rests on', () => {
   // `compareHashes` cannot see a walk that stopped recursing: it would be handed
@@ -129,7 +148,10 @@ describe('the tree walk the comparison rests on', () => {
     const found = fileList(CONTRACTS);
 
     expect(found).toEqual(PUBLISHED_PATHS);
-    expect(found).toHaveLength(11);
+    expect(PUBLISHED_SURFACE_PATHS, 'the module and this file disagree about the surface').toEqual(
+      PUBLISHED_PATHS
+    );
+    expect(found).toHaveLength(PUBLISHED_FILE_COUNT);
     expect(found.filter((path: string) => path.startsWith('fonts/'))).toHaveLength(6);
   });
 
@@ -137,7 +159,7 @@ describe('the tree walk the comparison rests on', () => {
     const hashes = hashTree(CONTRACTS);
 
     expect([...hashes.keys()].sort()).toEqual(PUBLISHED_PATHS);
-    expect(hashes.size).toBe(11);
+    expect(hashes.size).toBe(PUBLISHED_FILE_COUNT);
     for (const [path, hash] of hashes) {
       expect(hash, `${path} was not hashed`).toMatch(/^[0-9a-f]{64}$/);
     }
@@ -174,10 +196,28 @@ describe('the source side of the verbatim-copy comparison', () => {
     expect(fileList(CONTRACTS)).toContain('registry.schema.json');
   });
 
-  it('hashes all nine out of the real folder, and reports none absent', () => {
-    const { hashes, absent } = hashTokenContract(CONTRACTS);
+  it('accounts for every published file, so nothing can escape the comparison quietly', () => {
+    // The guard the narrowing actually needs. Without it, a TENTH token-contract
+    // file published under `contracts/` would simply not be in
+    // `TOKEN_CONTRACT_PATHS`, would never be compared against the vendored
+    // folder, and every case here would stay green while a Satellite ran on a
+    // contract missing a file. The published surface minus the token contract
+    // has to be exactly the Registry pair and nothing else.
+    const published = fileList(CONTRACTS);
+    const beyondTheTokenContract = published.filter((path: string) => !TOKEN_CONTRACT_PATHS.includes(path));
 
-    expect(absent, 'a token-contract path is missing from contracts/').toEqual([]);
+    expect(
+      beyondTheTokenContract,
+      'a file under contracts/ is neither a token-contract path nor the Registry pair, so it is' +
+        ' published and compared against nothing'
+    ).toEqual(REGISTRY_PATHS);
+    expect(published).toHaveLength(CONTRACT_FILE_COUNT + REGISTRY_PATHS.length);
+  });
+
+  it('hashes all nine out of the real folder, and reports none unread', () => {
+    const { hashes, unread } = hashTokenContract(CONTRACTS);
+
+    expect(unread, 'a token-contract path could not be read out of contracts/').toEqual([]);
     expect([...hashes.keys()].sort()).toEqual(CONTRACT_PATHS);
     expect(hashes.size).toBe(CONTRACT_FILE_COUNT);
     // The same hashes the whole-tree walk produces for those nine, so narrowing
@@ -190,10 +230,36 @@ describe('the source side of the verbatim-copy comparison', () => {
     // The refusal the narrowing needs: a filter over the folder would simply
     // return eight paths if a face were deleted, hand `compareHashes` eight on
     // both sides, and report a verbatim copy of a contract that had lost a face.
-    const { hashes, absent } = hashTokenContract(join(CONTRACTS, 'nowhere'));
+    const { hashes, unread } = hashTokenContract(join(CONTRACTS, 'nowhere'));
 
-    expect(absent).toEqual(TOKEN_CONTRACT_PATHS);
+    expect(unread.map((one: { path: string }) => one.path)).toEqual(TOKEN_CONTRACT_PATHS);
     expect(hashes.size).toBe(0);
+  });
+
+  it('says whether a path is gone or merely unreadable, which are different repairs', () => {
+    // A bare catch reported a permission fault as a deleted file and sent an
+    // operator to restore something that was already there. The code is carried
+    // instead, and ENOENT is the only one that means absent.
+    const { unread } = hashTokenContract(join(CONTRACTS, 'nowhere'));
+
+    for (const one of unread) {
+      expect(one.code, `${one.path} was reported with no reason`).toBe('ENOENT');
+      expect(one.absent).toBe(true);
+    }
+
+    // The other half: `contracts/` itself is a directory, so reading `fonts.css`
+    // out of the repository root gives a code that is not ENOENT on at least one
+    // path, and it must not be reported as absent. Read out of the fonts
+    // directory, where `fonts` is a directory rather than a file, EISDIR is what
+    // a POSIX host answers and EACCES or ENOENT is possible on Windows, so the
+    // assertion is on the correspondence rather than on the code itself.
+    const { unread: fromFonts } = hashTokenContract(CONTRACTS.replace(/contracts$/, join('contracts', 'fonts')));
+    expect(fromFonts.length, 'nothing failed to read, so this case measured nothing').toBeGreaterThan(0);
+    for (const one of fromFonts) {
+      expect(one.absent, `${one.path} reported ${one.code} and absent=${one.absent}`).toBe(
+        one.code === 'ENOENT'
+      );
+    }
   });
 });
 

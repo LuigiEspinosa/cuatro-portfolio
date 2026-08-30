@@ -64,6 +64,9 @@ const registryText = atCollection(
 );
 const shippedSchema = atCollection(`the committed ${SCHEMA} is not JSON.`, () => JSON.parse(schemaText));
 
+/** The pattern `source` and `live` are held to. Written once, asserted both ways below. */
+const HTTPS = String.raw`^https://[^\s/]+(/\S*)?$`;
+
 type Source = { label: string; text: string | null; error: string | null };
 const asSchema = (text: string | null, error: string | null = null): Source => ({ label: SCHEMA, text, error });
 const asRegistry = (text: string | null, error: string | null = null): Source => ({ label: REGISTRY, text, error });
@@ -160,8 +163,40 @@ describe('the shipped schema', () => {
     // so the editor and the gate would not agree about what the schema asserts.
     // `source` and `live` are constrained by `pattern` instead.
     expect(schemaText).not.toContain('"format"');
-    expect(shippedSchema.definitions.application.properties.source.pattern).toBe('^https://');
-    expect(shippedSchema.definitions.application.properties.live.pattern).toBe('^https://');
+    expect(shippedSchema.definitions.application.properties.source.pattern).toBe(HTTPS);
+    expect(shippedSchema.definitions.application.properties.live.pattern).toBe(HTTPS);
+  });
+
+  it('constrains a URL to a host and no whitespace, not merely to a scheme', () => {
+    // `^https://` on its own is an anchor and nothing else: it accepts the bare
+    // scheme, a scheme followed by a space, and a value carrying an embedded
+    // space or newline. `source` is FR-6's drill-through to the code and `live`
+    // is what FR-28 says must resolve, so a hostless value passing the gate is
+    // the Registry lying in the one field a reader clicks.
+    const url = new RegExp(HTTPS);
+
+    for (const accepted of [
+      'https://cuatro.dev',
+      'https://cuatro.dev/',
+      'https://github.com/luigiespinosa/cs-tracker',
+      'https://cs-tracker.cuatro.dev/scores?page=2',
+    ]) {
+      expect(url.test(accepted), `${accepted} is a URL the Registry has to accept`).toBe(true);
+    }
+
+    for (const refused of [
+      'https://',
+      'https:// ',
+      'https://cuatro dev',
+      'https://cuatro.dev/a b',
+      'https://cuatro.dev\nhttps://elsewhere.example',
+      'https:///no-host',
+      'http://cuatro.dev',
+    ]) {
+      expect(url.test(refused), `${JSON.stringify(refused)} is not a URL and the pattern accepts it`).toBe(
+        false
+      );
+    }
   });
 
   it('fixes the value sets AD-5, AD-12 and FR-27 name, and nothing beside them', () => {
@@ -414,6 +449,71 @@ describe('the gate refuses', () => {
     expect(result.message).toContain('3 enum value(s) and 1 description(s)');
   });
 
+  it('an if carrying neither then nor else, which asserts nothing at all', () => {
+    // The same failure the keyword audit exists to prevent, one level down: the
+    // condition is evaluated and its answer discarded, so the schema reads as
+    // though it still carried the `live` rule while enforcing neither half.
+    const gutted = JSON.parse(schemaText);
+    delete gutted.definitions.application.allOf[0].then;
+    const result = report(inspect(asSchema(JSON.stringify(gutted)), asRegistry(registryText)));
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('"if" with neither "then" nor "else"');
+    expect(result.message).toContain('/definitions/application/allOf/0');
+  });
+
+  it('and refuses it before validating, so a gutted condition is never reported as valid', () => {
+    // The entry below breaks the `live` half that the deleted `then` carried. A
+    // gate that audited after validating would report the Registry as valid,
+    // which is the exact hole a discarded condition opens.
+    const gutted = JSON.parse(schemaText);
+    delete gutted.definitions.application.allOf[0].then;
+    const result = report(
+      inspect(asSchema(JSON.stringify(gutted)), asRegistry(envelope(entry({ status: 'Live' }))))
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('the Registry was not read at all');
+  });
+
+  it('without letting a schema property name forge a line either', () => {
+    // A pointer is built from property names, and a name is not this module's
+    // own prose. Unescaped, a name carrying a newline fakes a line inside the
+    // refusal exactly as a Registry value does, and the schema half was the half
+    // that was still raw.
+    const widened = JSON.parse(schemaText);
+    // The offending name carries the finding, so the pointer the refusal prints
+    // is the one built from it.
+    widened.definitions.application.properties['evil\n    /nothing-to-see-here: fine'] = { formatt: 'uri' };
+    const result = report(inspect(asSchema(JSON.stringify(widened)), asRegistry(registryText)));
+
+    expect(result.ok).toBe(false);
+    // `~1` is RFC 6901's own escape for a `/` inside a pointer token, and `\n`
+    // is this module's. Both have to be applied, or the pointer is either
+    // ambiguous or a forged line.
+    expect(result.message).toContain(String.raw`evil\n    ~1nothing-to-see-here: fine`);
+    const forged = result.message.split('\n').filter((line) => line.includes('nothing-to-see-here'));
+    expect(forged, 'a schema property name printed a line of its own').toHaveLength(1);
+  });
+
+  it('a byte order mark, which the authoring host writes and JSON.parse rejects', () => {
+    // A U+FEFF at the head of the file makes `JSON.parse` throw at position 0,
+    // so a perfectly valid Registry reads as malformed with a message about a
+    // character its author cannot see. Both files are stripped of a leading one
+    // before the parse, and only a leading one.
+    const marked = report(inspect(asSchema(`\uFEFF${schemaText}`), asRegistry(`\uFEFF${registryText}`)));
+
+    expect(marked.ok, marked.message).toBe(true);
+    expect(marked.message).toContain('0 applications');
+  });
+
+  it('and still refuses a byte order mark that is inside the file rather than at its head', () => {
+    const inside = against(`{\uFEFF "$schema": "./registry.schema.json", "applications": [] }`);
+
+    expect(inside.ok).toBe(false);
+    expect(inside.message).toContain('is not JSON');
+  });
+
   it('a Live entry with no live URL, naming which half of FR-6 failed', () => {
     const result = against(envelope(entry({ status: 'Live' })));
 
@@ -581,6 +681,26 @@ describe('the gate refuses', () => {
     expect(result.message).toContain('/applications/0/live');
   });
 
+  it('a source that is a bare scheme with no host, and a live carrying a space', () => {
+    // The two shapes `^https://` alone let through. Run against the whole gate
+    // rather than against the pattern, so what is asserted is the verdict a
+    // runner reaches and not a regular expression read out of the same file.
+    const hostless = against(envelope(entry({ source: 'https://' })));
+    const spaced = against(envelope(entry({ status: 'Live', live: 'https://demo.example/a b' })));
+
+    expect(hostless.ok).toBe(false);
+    expect(hostless.message).toContain('/applications/0/source');
+    expect(spaced.ok).toBe(false);
+    expect(spaced.message).toContain('/applications/0/live');
+
+    // And a real URL still passes, so the tightening did not simply refuse
+    // everything.
+    const real = against(
+      envelope(entry({ status: 'Live', live: 'https://cs-tracker.cuatro.dev/scores?page=2' }))
+    );
+    expect(real.ok, real.message).toBe(true);
+  });
+
   it('without letting a Registry value forge a line inside the refusal', () => {
     // The Registry is hand-authored and committed, and the refusal is still
     // built from its contents. A name carrying a newline would otherwise fake a
@@ -616,7 +736,12 @@ describe('the gate refuses', () => {
     //
     // Built from code points rather than written into this file, so this source
     // carries no character that draws as something other than what it is.
-    for (const point of [0x2028, 0x2029, 0x202e, 0x200f, 0x009b, 0x200b, 0x00ad, 0xfeff]) {
+    //
+    // 0x7f is DEL and 0x07 is a C0 control. `JSON.stringify` escapes the C0
+    // range and stops at 0x1f, so DEL passed straight through `show()` while
+    // `printable()` escaped it: the two escapers disagreed about one character
+    // and the one that prints every Registry value was the looser of the two.
+    for (const point of [0x2028, 0x2029, 0x202e, 0x200f, 0x009b, 0x200b, 0x00ad, 0xfeff, 0x7f, 0x07]) {
       const hidden = String.fromCodePoint(point);
       const result = against(envelope(entry({ id: `probe${hidden}` })));
 
@@ -633,6 +758,22 @@ describe('the gate refuses', () => {
     expect(idWith(0x200b).ok).toBe(false);
     expect(idWith(0x200c).ok).toBe(false);
     expect(idWith(0x200b).message).not.toBe(idWith(0x200c).message);
+  });
+
+  it('and cuts a long value by code point, so it never emits half a character', () => {
+    // A value longer than the quoting limit is truncated, and a cut by UTF-16
+    // code unit can land between the two halves of an astral character and emit
+    // a lone surrogate: a code point neither escaper describes and no terminal
+    // draws. Cut by code point, that is not reachable.
+    const result = against(envelope(entry({ id: '\u{1F600}'.repeat(200) })));
+
+    expect(result.ok).toBe(false);
+    expect(result.message, 'the value was not truncated, so this case measured nothing').toContain('...');
+    const lone = [...result.message].filter((character) => {
+      const point = character.codePointAt(0) ?? 0;
+      return point >= 0xd800 && point <= 0xdfff;
+    });
+    expect(lone, 'the truncation split a surrogate pair').toHaveLength(0);
   });
 });
 
@@ -655,6 +796,61 @@ describe('the validator itself', () => {
 
     expect(violations).toHaveLength(1);
     expect(violations[0].rule).toBe('type');
+  });
+
+  it('refuses a Registry it validated but could not count, rather than passing over it', () => {
+    // The refusal that makes "a green run means the Registry was read" true. It
+    // fires only when the schema has stopped requiring `applications`, so the
+    // fixture is a schema that no longer does: the envelope then validates, the
+    // gate has nothing to count, and a pass there would be a green run over a
+    // Registry with no application list at all.
+    const loosened = JSON.parse(schemaText);
+    loosened.required = loosened.required.filter((name: string) => name !== 'applications');
+    const result = report(
+      inspect(
+        asSchema(JSON.stringify(loosened)),
+        asRegistry(JSON.stringify({ $schema: './registry.schema.json', contract_version: '1.0.0' }))
+      )
+    );
+
+    expect(result.ok, 'a Registry with no application list was reported as valid').toBe(false);
+    expect(result.message).toContain('no application list this gate could count');
+    expect(result.message).toContain('the schema stopped requiring one');
+  });
+
+  it('takes the else branch when the if does not match, not only the then branch', () => {
+    // `else` is implemented and the shipped schema uses neither `else` nor a
+    // schema-form `additionalProperties`, so both are refusals with no standing
+    // case: implemented, exercised by nothing, and free to stop working. Same
+    // argument this file makes everywhere else.
+    const schema = {
+      type: 'object',
+      if: { required: ['kind'], properties: { kind: { const: 'a' } } },
+      then: { required: ['onlyOnA'] },
+      else: { required: ['onlyOffA'] },
+    };
+
+    expect(validate(schema, { kind: 'a', onlyOnA: 1 })).toEqual([]);
+    expect(validate(schema, { kind: 'b', onlyOffA: 1 })).toEqual([]);
+    expect(validate(schema, { kind: 'a' })[0].detail).toContain('"onlyOnA"');
+    const off = validate(schema, { kind: 'b' });
+    expect(off, 'the else branch was never applied, so half the condition asserts nothing').toHaveLength(1);
+    expect(off[0].detail).toContain('"onlyOffA"');
+    expect(off[0].schema).toContain('/else/');
+  });
+
+  it('applies the schema form of additionalProperties, not only the false form', () => {
+    const schema = {
+      type: 'object',
+      properties: { named: { type: 'string' } },
+      additionalProperties: { type: 'number' },
+    };
+
+    expect(validate(schema, { named: 'x', extra: 7 })).toEqual([]);
+    const wrong = validate(schema, { named: 'x', extra: 'seven' });
+    expect(wrong, 'an additional property was validated against nothing').toHaveLength(1);
+    expect(wrong[0].instance).toBe('/extra');
+    expect(wrong[0].detail).toContain('expected number, found string');
   });
 
   it('applies the duplicate-id rule to ids only, and reports every repeat', () => {

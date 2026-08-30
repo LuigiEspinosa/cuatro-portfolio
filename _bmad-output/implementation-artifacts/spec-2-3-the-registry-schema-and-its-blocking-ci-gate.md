@@ -2,7 +2,7 @@
 title: 'Story 2.3: The Registry schema and its blocking CI gate'
 type: 'feature'
 created: '2026-08-29'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: '3251f2bd40b4b290e2e935c53cc15405e05b2891'
 review_loop_iteration: 0
 context:
@@ -139,9 +139,9 @@ this story too.
       `additionalProperties: false`. An entry requires `id`, `name`, `description`, `status`, `tech`,
       `source`, `demo`, `identity`; permits `live`, `family`, `absorbed_into`, `token_contract`;
       forbids anything else. `status` enum of four, `identity` enum of three, `demo` enum of four,
-      `id`/`family`/`absorbed_into` kebab-case, `source`/`live` `^https://`, `tech` a non-empty
-      unique array of non-empty strings. Two `allOf` `if`/`then` members carry the `live` condition.
-      Every enum value carries a `description` saying what it means.
+      `id`/`family`/`absorbed_into` kebab-case, `source`/`live` `^https://[^\s/]+(/\S*)?$`, `tech` a
+      non-empty unique array of non-empty strings. Two `allOf` `if`/`then` members carry the `live`
+      condition. Every enum value carries a `description` saying what it means.
 - [ ] `contracts/registry.json`, new: `$schema`, `contract_version: "1.0.0"`, `applications: []`.
 - [ ] `ops/registry-schema.mjs`, new: read both files, refuse on any keyword outside the implemented
       set, validate, apply the duplicate-`id` rule, and report every violation with its pointer.
@@ -212,6 +212,14 @@ this story too.
   idiom for per-value descriptions is barred by the same story. The validator implements
   `enumDescriptions` as an annotation and holds it to one description per enum member, so the claim
   is mechanically true. Recorded in `ops/registry-schema.md` under the dialect and as a stated limit.
+- **2026-08-29, review.** The Execution bullet specified `^https://` for `source` and `live`. Shipped
+  as `^https://[^\s/]+(/\S*)?$` and the bullet amended to match. The literal pattern is an anchor and
+  nothing else: `"https://"` with no host at all, `"https:// "`, and any value carrying an embedded
+  space or newline all validated against it. `source` is FR-6's drill-through from a running
+  application to its code and `live` is what FR-28 says must resolve, so a hostless value passing the
+  gate is the Registry lying in the one field a reader clicks. Nine values, four accepted and five
+  refused, have standing cases, and the tightening is recorded in `ops/registry-schema.md` under the
+  value sets.
 
 ## Design Notes
 
