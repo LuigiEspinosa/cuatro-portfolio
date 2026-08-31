@@ -2,7 +2,7 @@
 title: 'Story 2.3: The Registry schema and its blocking CI gate'
 type: 'feature'
 created: '2026-08-29'
-status: 'in-review'
+status: 'done'
 baseline_commit: '3251f2bd40b4b290e2e935c53cc15405e05b2891'
 review_loop_iteration: 0
 context:
@@ -133,7 +133,7 @@ this story too.
 
 **Execution:**
 
-- [ ] `contracts/registry.schema.json`, new: draft-07, `$id`
+- [x] `contracts/registry.schema.json`, new: draft-07, `$id`
       `https://cuatro.dev/contracts/registry.schema.json`. Envelope requires `$schema` (const
       `./registry.schema.json`), `contract_version` (`^\d+\.\d+\.\d+$`) and `applications`, with
       `additionalProperties: false`. An entry requires `id`, `name`, `description`, `status`, `tech`,
@@ -142,39 +142,39 @@ this story too.
       `id`/`family`/`absorbed_into` kebab-case, `source`/`live` `^https://[^\s/]+(/\S*)?$`, `tech` a
       non-empty unique array of non-empty strings. Two `allOf` `if`/`then` members carry the `live`
       condition. Every enum value carries a `description` saying what it means.
-- [ ] `contracts/registry.json`, new: `$schema`, `contract_version: "1.0.0"`, `applications: []`.
-- [ ] `ops/registry-schema.mjs`, new: read both files, refuse on any keyword outside the implemented
+- [x] `contracts/registry.json`, new: `$schema`, `contract_version: "1.0.0"`, `applications: []`.
+- [x] `ops/registry-schema.mjs`, new: read both files, refuse on any keyword outside the implemented
       set, validate, apply the duplicate-`id` rule, and report every violation with its pointer.
       Exported pure functions plus `main()`; the CLI half copies `contract-purity.mjs` exactly.
-- [ ] `ops/__tests__/registry-schema.test.ts`, new: a case per matrix row against scratch fixtures, a
+- [x] `ops/__tests__/registry-schema.test.ts`, new: a case per matrix row against scratch fixtures, a
       positive control that validates the committed pair, a case pinning the implemented keyword set
       against the keywords the shipped schema actually uses (so a schema edit cannot outrun the
       validator), and a subprocess block running the real binary. Cover the `ci.yml` job the way
       `contract-purity.test.ts` does: the command line, the absence of `env:`, `on:` and
       `continue-on-error`, and the job-name set.
-- [ ] `.github/workflows/ci.yml`: add one `registry-schema` job after `contract-purity`, modelled on
+- [x] `.github/workflows/ci.yml`: add one `registry-schema` job after `contract-purity`, modelled on
       it. Nothing else in the file changes.
-- [ ] `ops/registry-schema.md`, new: the record. Why the gate exists (AD-4, AD-21, and that neither
+- [x] `ops/registry-schema.md`, new: the record. Why the gate exists (AD-4, AD-21, and that neither
       the file nor the check existed at the baseline commit); what it checks and what it does not; the
       job table; "Nothing redirects it"; the dialect and `format` decisions; the value sets with the
       requirement each answers; the demonstration, which is the gate run against a deliberately
       malformed `registry.json` with its output verbatim and the fixture removed in the same story;
       stated limits (empty list, `minItems`, duplicate ids invisible to the editor, the vendored-copy
       narrowing); and the work handed to the Operator.
-- [ ] `packages/tokens/__tests__/tokens-contract.test.ts` and
+- [x] `packages/tokens/__tests__/tokens-contract.test.ts` and
       `packages/fonts/__tests__/fonts-contract.test.ts`: both listings gain
       `contracts/registry.json` and `contracts/registry.schema.json`, sorted.
-- [ ] `ops/cs-tracker-adoption-probe.mjs` and `ops/__tests__/cs-tracker-adoption-probe.test.ts`: the
+- [x] `ops/cs-tracker-adoption-probe.mjs` and `ops/__tests__/cs-tracker-adoption-probe.test.ts`: the
       walk cases assert the eleven-file surface; the verbatim-copy comparison narrows its source side
       to the nine token-contract paths, named in one exported constant with the AD-4 reason beside
       it, and refuses if any of the nine is absent from `contracts/` so the comparison cannot shrink
       silently. `CONTRACT_FILE_COUNT` keeps meaning the token contract's nine.
-- [ ] `ops/cs-tracker-token-adoption.md` and `ops/contract-purity.md`: one dated paragraph each,
+- [x] `ops/cs-tracker-token-adoption.md` and `ops/contract-purity.md`: one dated paragraph each,
       appended, recording that the published surface is eleven files from this story and that the
       vendored comparison is the token contract's nine.
-- [ ] `packages/tokens/build.mjs:4-5`: correct the comment. It is the only thing that writes the
+- [x] `packages/tokens/build.mjs:4-5`: correct the comment. It is the only thing that writes the
       three stylesheets; two hand-authored JSON files now sit beside them.
-- [ ] `AGENTS.md`: 21 records with `registry-schema.md` named; the AD-1 line notes the Registry pair
+- [x] `AGENTS.md`: 21 records with `registry-schema.md` named; the AD-1 line notes the Registry pair
       as the published surface's only hand-authored files; one pitfall line saying three committed
       listings pin the contents of `contracts/` and a file added there fails all three.
 
@@ -272,3 +272,90 @@ Registry lands under `contracts/` the probe would report two files a Satellite m
   confirm the editor marks it. That is AD-4's authoring half, which no CLI here can assert.
 - Read the gate's output against a fixture breaking three rules at once and confirm all three are
   named, with pointers, in one run.
+
+## Suggested Review Order
+
+**The contract, which is the thing everything else exists to enforce**
+
+- Start here. AD-5's eight required fields, and the four that are optional.
+  [`registry.schema.json:30`](../../contracts/registry.schema.json#L30)
+
+- The conditional half: `live` required on `Live`, forbidden on `Archived`.
+  [`registry.schema.json:122`](../../contracts/registry.schema.json#L122)
+
+- Four closed value sets. `demo` is the one this story had to decide.
+  [`registry.schema.json:83`](../../contracts/registry.schema.json#L83)
+
+- The review found `^https://` accepted a URL with no host at all.
+  [`registry.schema.json:77`](../../contracts/registry.schema.json#L77)
+
+- The envelope, empty on purpose, carrying the hook the editor validates through.
+  [`registry.json:2`](../../contracts/registry.json#L2)
+
+**The gate, and the three ways a validator fails open**
+
+- A keyword the validator does not implement is refused before the Registry is read.
+  [`registry-schema.mjs:324`](../../ops/registry-schema.mjs#L324)
+
+- The implemented set, in one place, so the audit and the applier cannot disagree.
+  [`registry-schema.mjs:238`](../../ops/registry-schema.mjs#L238)
+
+- Uniqueness of `id`, the one rule draft-07 cannot express and the editor never catches.
+  [`registry-schema.mjs:745`](../../ops/registry-schema.mjs#L745)
+
+- Four refusal stages. The last is what makes a green run mean the Registry was read.
+  [`registry-schema.mjs:889`](../../ops/registry-schema.mjs#L889)
+
+- A byte order mark from the editor on this host must not read as a malformed Registry.
+  [`registry-schema.mjs:811`](../../ops/registry-schema.mjs#L811)
+
+- Blocking, and installing nothing, so it still reports when the install fails.
+  [`ci.yml:179`](../../.github/workflows/ci.yml#L179)
+
+**The published surface grew from nine files to eleven**
+
+- The vendored comparison narrowed to the nine a Satellite actually copies.
+  [`cs-tracker-adoption-probe.mjs:200`](../../ops/cs-tracker-adoption-probe.mjs#L200)
+
+- Absent and unreadable are different repairs, so the probe stopped conflating them.
+  [`cs-tracker-adoption-probe.mjs:382`](../../ops/cs-tracker-adoption-probe.mjs#L382)
+
+- The guard the narrowing needed: a tenth contract file cannot escape the comparison.
+  [`cs-tracker-adoption-probe.test.ts:199`](../../ops/__tests__/cs-tracker-adoption-probe.test.ts#L199)
+
+- Two of the three committed listings that pin the surface path by path.
+  [`tokens-contract.test.ts:894`](../../packages/tokens/__tests__/tokens-contract.test.ts#L894)
+
+- The generator is no longer the only thing that writes the published folder.
+  [`build.mjs:5`](../../packages/tokens/build.mjs#L5)
+
+**The record, which is where the reasoning lives**
+
+- The demonstration: the gate run against a deliberately malformed Registry, output verbatim.
+  [`registry-schema.md:200`](../../ops/registry-schema.md#L200)
+
+- What the gate does not check, stated rather than left to be inferred.
+  [`registry-schema.md:326`](../../ops/registry-schema.md#L326)
+
+- Why `format` appears nowhere, and why the dialect is draft-07.
+  [`registry-schema.md:120`](../../ops/registry-schema.md#L120)
+
+- The purity gate's own reading, re-observed at eleven files.
+  [`contract-purity.md:354`](../../ops/contract-purity.md#L354)
+
+- The narrowing, and the pre-existing probe failure it is carefully not.
+  [`cs-tracker-token-adoption.md:797`](../../ops/cs-tracker-token-adoption.md#L797)
+
+**Tests and orientation**
+
+- The refusal that had no standing case until the review found it.
+  [`registry-schema.test.ts:806`](../../ops/__tests__/registry-schema.test.ts#L806)
+
+- Nine URL values, four accepted and five refused, pinning the tightened pattern.
+  [`registry-schema.test.ts:171`](../../ops/__tests__/registry-schema.test.ts#L171)
+
+- The `ci.yml` job set is six now, and two suites pin it.
+  [`contract-purity.test.ts:1010`](../../ops/__tests__/contract-purity.test.ts#L1010)
+
+- Twenty-one records, and the pitfall that cost this story a discovery.
+  [`AGENTS.md:128`](../../AGENTS.md#L128)

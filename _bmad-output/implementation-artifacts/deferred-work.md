@@ -1439,3 +1439,76 @@ reason: |-
   routes and with the source tree, and Epic 2 adds routes while Epic 3 moves the whole application
   under `apps/hub`. One read into a map removes the chunk half of it outright.
 status: open
+
+### DW-26: `contracts/registry.schema.json` cannot carry `minItems: 1` on `applications` until Story 2.5 authors entries, so a Registry that loses every entry validates.
+origin: spec-deferred 2026-08-29
+location: contracts/registry.schema.json
+source_spec: `spec-2-3-the-registry-schema-and-its-blocking-ci-gate.md`
+severity: medium
+reason: |-
+  Story 2-3 ships the envelope with `applications: []` so the gate has a real instance from its
+  first run rather than a check that passes over nothing. A `minItems: 1` written today would fail
+  on the file the same story ships, so the one entry-count rule the schema could carry is
+  deliberately absent.
+
+  The consequence is narrow but real: once Story 2.5 authors the entries, an edit that empties the
+  array validates, and the Hub would render an empty Suite Directory from a green build. The
+  tightening belongs in Story 2.5, in the same commit that first makes it true, and
+  `ops/registry-schema.md` names it as a pending Operator action. Filed here as well because the
+  record is not the mechanism the estate uses for cross-story carryover, and a tightening that
+  survives only if the next author reads one `ops/` file is a tightening that will not happen.
+status: open
+
+### DW-27: The Registry gate applies one structural rule beyond the schema, so `absorbed_into` and `family` are unchecked references.
+origin: spec-deferred 2026-08-29
+location: ops/registry-schema.mjs
+source_spec: `spec-2-3-the-registry-schema-and-its-blocking-ci-gate.md`
+severity: medium
+reason: |-
+  Found 2026-08-29 by the story 2-3 review layers. Draft-07 cannot express uniqueness or referential
+  integrity, so the gate carries those rules itself, and it carries exactly one: duplicate `id`. An
+  `absorbed_into` naming an id no entry holds, or naming the entry's own id, validates. So does a
+  `family` value only one entry carries, which is a grouping key that groups nothing.
+
+  Nothing is wrong today because `applications` is empty. It becomes live work in Story 2.5, which
+  authors `absorbed_into: cuatro-tracker` on `tcg-tracker` and `absorbed_into: cuatro-portfolio` on
+  `connect-four-react` under AD-6, and which sets `family` on exactly three of the four Tracker
+  entries. A typo in either is caught by nothing: not by the gate, not by the editor, and not by
+  AD-18's scheduled check, which verifies `source`, `live` and `token_contract` against reality and
+  says nothing about references inside the file. The same argument that justified the duplicate-`id`
+  rule justifies this one, and it belongs beside it, in Story 2.5 or before.
+status: open
+
+### DW-28: A Registry object carrying the same key twice validates, because `JSON.parse` silently keeps the last one.
+origin: spec-deferred 2026-08-29
+location: ops/registry-schema.mjs
+source_spec: `spec-2-3-the-registry-schema-and-its-blocking-ci-gate.md`
+severity: low
+reason: |-
+  Found 2026-08-29 by the story 2-3 review layers. An entry written with two `status` keys parses to
+  one value, the last, and the gate validates that value. The editor half of AD-4 does flag a
+  duplicate key, so the two readers disagree: the author sees a warning while the gate is green, or
+  the reverse if the value the editor is looking at is not the one that survived the parse.
+
+  Detecting it needs a scanner rather than a `JSON.parse` option, since a reviver never sees the
+  discarded value, which is why it is filed rather than fixed inside the story. The exposure is a
+  hand-authored file with one author, so the realistic case is a merge that duplicates a key rather
+  than a mistake nobody would make. `ops/registry-schema.md` records it as a stated limit.
+status: open
+
+### DW-29: `tests/e2e/contract-serving.pw.ts:68-72` still says `contracts/registry.json` arrives in Story 2-5.
+origin: spec-deferred 2026-08-29
+location: tests/e2e/contract-serving.pw.ts
+source_spec: `spec-2-3-the-registry-schema-and-its-blocking-ci-gate.md`
+severity: low
+reason: |-
+  Found 2026-08-29 by the story 2-3 review layers. The comment was accurate when it was written and
+  is not any more: the Registry and its schema arrived in Story 2-3, and the spec that identified
+  the file as already correct forbade touching `tests/` and made an unchanged `tests/` an acceptance
+  criterion, so the comment could not be corrected in the same story that falsified it.
+
+  Nothing fails because of it. The spec enumerates the surface at runtime and already expected
+  `application/json`, so the file's behaviour was right before the comment went stale. It is one
+  line, and the natural place to take it is the next story that touches this spec for another
+  reason, or Story 2.5 when the file stops being an empty envelope.
+status: open
