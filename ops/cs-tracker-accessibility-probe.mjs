@@ -199,7 +199,17 @@ export function isConnectionFailure(error) {
 
 /** Two paths name one file, compared after resolution and case-insensitively, as this host's filesystem does. */
 export function samePath(a, b) {
-  const norm = (p) => resolve(String(p ?? '')).replace(/\\/g, '/').toLowerCase();
+  // The separators are converted BEFORE `resolve`, and again after. Order is the
+  // whole point of this line. On Linux a backslash is an ordinary filename
+  // character, so `resolve('C:\\Repo\\ops\\..\\ops\\probe.mjs')` treats the lot
+  // as one relative name, collapses nothing, and a replace afterwards leaves the
+  // `..` sitting in the string: two spellings of one file then compare unequal
+  // on the runner while agreeing on the Windows authoring host, which is how the
+  // `test` job came to be red from 2026-08-28 to 2026-08-31 (DW-30). Converted
+  // first, `resolve` sees real separators on both platforms and collapses `..`
+  // on both. The second replace is still needed, because `resolve` hands back
+  // backslashes on Windows whatever it was given.
+  const norm = (p) => resolve(String(p ?? '').replace(/\\/g, '/')).replace(/\\/g, '/').toLowerCase();
   return norm(a) === norm(b);
 }
 

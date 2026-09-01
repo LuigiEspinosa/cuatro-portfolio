@@ -260,7 +260,17 @@ describe('the inputs and the failure classes', () => {
 
   it('compares the invoking path with its own case-insensitively and after resolution', () => {
     expect(samePath('C:\\Repo\\ops\\probe.mjs', 'c:/repo/ops/probe.mjs')).toBe(true);
+    // The `..` case runs on both platforms and is the reason `samePath` converts
+    // separators before it resolves rather than after. Resolving first collapses
+    // nothing on Linux, where a backslash is an ordinary filename character, so
+    // this line passed on the authoring host and failed on every CI run from
+    // 2026-08-28 to 2026-08-31 (DW-30). Do not reorder the two operations, and do
+    // not make this case conditional on `process.platform`: a guard that answers
+    // wrongly on the runner is what the red was telling us about.
     expect(samePath('C:\\Repo\\ops\\..\\ops\\probe.mjs', 'C:\\Repo\\ops\\probe.mjs')).toBe(true);
+    // The same collapse with the separator this platform calls its own, so the
+    // case above is read as being about the separator rather than about `..`.
+    expect(samePath('ops/../ops/probe.mjs', 'ops/probe.mjs')).toBe(true);
     expect(samePath('C:\\Repo\\ops\\probe.mjs', 'C:\\Repo\\ops\\other.mjs')).toBe(false);
   });
 
