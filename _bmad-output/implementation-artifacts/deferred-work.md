@@ -1512,3 +1512,34 @@ reason: |-
   line, and the natural place to take it is the next story that touches this spec for another
   reason, or Story 2.5 when the file stops being an empty envelope.
 status: open
+
+### DW-30: The `test` job has been red on every CI run since 2026-08-28, on one case that asserts Windows path semantics and therefore cannot pass on the runner.
+origin: spec-deferred 2026-08-31
+location: ops/__tests__/cs-tracker-accessibility-probe.test.ts
+source_spec: `spec-2-3-the-registry-schema-and-its-blocking-ci-gate.md`
+severity: high
+reason: |-
+  Observed 2026-08-31 by watching run 33434472577, and confirmed against the four runs before it:
+  `c490f33`, `967abfd`, `9662d03` and `cdacfee` all failed the same single case, so the estate's only
+  pre-production gate has been red since 2026-08-28 with nobody stopped by it. AD-21 makes every CI
+  gate blocking precisely because there is no staging, and a job that is always red is a job whose
+  next real failure is indistinguishable from its standing one.
+
+  The failure is not a defect in the probe. `samePath` in `ops/cs-tracker-accessibility-probe.mjs`
+  normalises with `resolve(String(p)).replace(/\\/g, '/').toLowerCase()`, which calls `resolve`
+  before the separators are converted. On Linux a backslash is an ordinary filename character, so
+  `resolve('C:\\Repo\\ops\\..\\ops\\probe.mjs')` prefixes the working directory and collapses
+  nothing; the `..` survives the later replace and the two sides compare unequal. The case at
+  `ops/__tests__/cs-tracker-accessibility-probe.test.ts:263` therefore passes on the Windows
+  authoring host and can never pass on `ubuntu-latest`. The two cases either side of it pass on both,
+  because neither carries a `..`.
+
+  Two fixes, and they are not equivalent. Converting the separators before resolving rather than
+  after (`resolve(String(p).replace(/\\/g, '/'))`) makes the comparison correct on both platforms and
+  keeps all three assertions, which is the better one: the invoked-directly guard this function
+  serves must never answer "no" wrongly, or the probe does nothing when it is run. Making the third
+  assertion conditional on `process.platform` only stops the red and leaves the same latent wrong
+  answer. Either way it belongs to a story that owns `ops/cs-tracker-accessibility-probe.mjs`, since
+  the first fix changes production behaviour in an Epic 1 deliverable. Filed at `1b7cc1c` being the
+  last green run, and `bf23fac` (Story 1-20) being where the file arrived.
+status: open
