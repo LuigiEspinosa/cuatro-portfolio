@@ -1542,4 +1542,13 @@ reason: |-
   answer. Either way it belongs to a story that owns `ops/cs-tracker-accessibility-probe.mjs`, since
   the first fix changes production behaviour in an Epic 1 deliverable. Filed at `1b7cc1c` being the
   last green run, and `bf23fac` (Story 1-20) being where the file arrived.
-status: open
+
+  **Closed 2026-08-31 at `415e05b`**, by the Operator's instruction, taking the first fix:
+  `norm` converts separators before it resolves and again after, so `..` collapses on both
+  platforms. Demonstrated before the push by running both the old and the new normalisation under
+  `path.posix.resolve`, which is what the runner does: the old one answers `false` on the `..` case
+  and the new one `true`, with the other three cases unchanged either way. The case at
+  `ops/__tests__/cs-tracker-accessibility-probe.test.ts:263` is kept rather than made conditional on
+  `process.platform`, and a forward-slash `..` case is added beside it so the pair reads as being
+  about the separator rather than about `..`.
+status: done
