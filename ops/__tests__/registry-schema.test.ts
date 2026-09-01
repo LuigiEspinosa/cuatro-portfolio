@@ -1159,13 +1159,21 @@ describe('the CI wiring', () => {
     const actions = [...instructionsOf(JOB).matchAll(/^\s*- uses: (.+)$/gm)].map((match) => match[1].trim());
 
     expect(actions, `the ${JOB} job gained or lost an action step`).toEqual([
-      'actions/checkout@v4',
-      'actions/setup-node@v4',
+      'actions/checkout@v7',
+      'actions/setup-node@v7',
     ]);
     expect(instructionsOf(JOB), 'the job installs, so it no longer runs when the install fails').not.toContain(
       'pnpm install'
     );
     expect(instructionsOf(JOB)).not.toContain('cache: pnpm');
+    // From v5, `setup-node` caches automatically whenever `package.json` carries
+    // a `packageManager` field, and this repository's does. The absence of a
+    // `cache:` line above therefore stopped meaning "no cache" on its own, and
+    // this is the line that still means it. Without it the action looks for a
+    // pnpm this job never installs.
+    expect(instructionsOf(JOB), 'setup-node will cache off packageManager unless this is here').toMatch(
+      /^\s+package-manager-cache: false$/m
+    );
   });
 
   it("declares no on: of its own, so it runs on the file's triggers and the two cannot drift", () => {

@@ -392,3 +392,19 @@ than left in prose, in the shape `ops/token-contract.md`, `ops/font-contract.md`
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row
 with its own date and method and keep the old one, so a later reader can see whether a number moved
 or was simply re-stated. Deletion is not used here.
+
+## The actions moved off Node 20, 2026-08-31
+
+**Observed 2026-08-31** on run 33550154642: every job in `ci.yml` logged the same annotation, that
+`actions/checkout@v4`, `actions/setup-node@v4` and `pnpm/action-setup@v4` target Node.js 20, which is
+deprecated, and that the runner was already forcing them onto Node.js 24. Nothing was failing, and
+all six jobs would have failed together once the removal completed. **Changed the same day** to
+`checkout@v7`, `setup-node@v7` and `action-setup@v6`, with `upload-artifact@v7` on `rendered-output`.
+
+**The Installs row above needs one more line to stay true.** From `setup-node` v5 the action caches
+automatically whenever `package.json` carries a `packageManager` field, and this repository's carries
+`pnpm@10.31.0`. An absent `cache:` line therefore stopped meaning "no cache" on its own. This job has
+no `pnpm/action-setup` step, so the automatic path would have looked for a pnpm that was never
+installed. `package-manager-cache: false` is now written into the job by name, which is both the fix
+and the record of the decision, and a standing case in `ops/__tests__/contract-purity.test.ts` pins
+it. The job still installs nothing, and the claim is now held by an input rather than by an absence.

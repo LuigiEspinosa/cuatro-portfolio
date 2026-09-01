@@ -353,3 +353,17 @@ names the keyword.
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row
 with its own date and method and keep the old one, so a later reader can see whether a number moved
 or was simply re-stated. Deletion is not used here.
+
+## The actions moved off Node 20, 2026-08-31
+
+**Changed 2026-08-31**, one day after this gate first ran, and for the whole file rather than for
+this job: `actions/checkout@v4`, `actions/setup-node@v4` and `pnpm/action-setup@v4` all target
+Node.js 20, which is deprecated. This job now uses `checkout@v7` and `setup-node@v7`. The reasoning
+and the run that surfaced it are in `ops/contract-purity.md` under the same heading, recorded once
+rather than in both files.
+
+**The Installs row above gains `package-manager-cache: false`.** From `setup-node` v5 the action
+caches automatically whenever `package.json` carries a `packageManager` field, so this job, which has
+no `pnpm/action-setup` step, would have had the action looking for a pnpm nothing installed. The
+input is written in by name and pinned by a standing case, so "installs nothing, which is what makes
+it run when the install fails" is now held by a declared input rather than by the absence of a line.

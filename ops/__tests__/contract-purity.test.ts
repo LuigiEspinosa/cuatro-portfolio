@@ -996,9 +996,17 @@ describe('the CI wiring', () => {
     // states as a fact that the job carries exactly three steps.
     const actions = [...instructionsOf(JOB).matchAll(/^\s*- uses: (.+)$/gm)].map((match) => match[1].trim());
     expect(actions, `the ${JOB} job gained or lost an action step`).toEqual([
-      'actions/checkout@v4',
-      'actions/setup-node@v4',
+      'actions/checkout@v7',
+      'actions/setup-node@v7',
     ]);
+    // From v5, `setup-node` caches automatically whenever `package.json` carries
+    // a `packageManager` field, and this repository's does. This job has no
+    // `pnpm/action-setup` step, so the automatic path would look for a pnpm that
+    // was never installed, and `ops/contract-purity.md` states as a fact that
+    // the job uses no cache.
+    expect(instructionsOf(JOB), 'setup-node will cache off packageManager unless this is here').toMatch(
+      /^\s+package-manager-cache: false$/m
+    );
   });
 
   it('carries the ceiling the record states', () => {

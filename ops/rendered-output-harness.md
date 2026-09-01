@@ -409,3 +409,20 @@ all four is a defect: the `@playwright/test` pin in `package.json`, the `contain
 `.github/workflows/ci.yml`, the committed baseline PNG, and the figures in this file. The pin is
 exact (`"1.62.1"`, no caret, unlike every neighbouring range) precisely so that this stays a
 deliberate act rather than something a lockfile refresh can do quietly.
+
+## The actions moved off Node 20, 2026-08-31
+
+**Changed 2026-08-31.** The timings above were taken on `actions/checkout@v4` and
+`pnpm/action-setup@v4`, and the paragraph recording that both behaved correctly inside the pinned
+container was about those versions. The job now runs `checkout@v7`, `action-setup@v6`,
+`setup-node@v7` and `upload-artifact@v7`, because all three of the originals target Node.js 20, which
+is deprecated. The 1 s figures are left as they were taken rather than restated: they are observed
+values with a date, and no re-measurement has been made on the new versions.
+
+**One input was added, and it is what keeps the install timing meaningful.** From `setup-node` v5 the
+action caches automatically whenever `package.json` carries a `packageManager` field, and this
+repository's carries `pnpm@10.31.0`. This job deliberately omits `cache: pnpm` so that the **6 s**
+install above measures a cold one, and that omission would have silently stopped meaning anything.
+`package-manager-cache: false` is now written into the job, so the recorded figure still describes
+what the job does. Anyone re-measuring the install should check that line is still there first: a
+warm cache would move the number without moving anything this file says.
