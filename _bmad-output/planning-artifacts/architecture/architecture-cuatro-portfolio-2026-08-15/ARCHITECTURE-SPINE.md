@@ -95,7 +95,8 @@ graph TD
 
 - **Binds:** all
 - **Prevents:** the Registry id, image name, compose service, database, router and OIDC client drifting into four different spellings of the same application
-- **Rule:** Each application has exactly one id: lowercase kebab-case, equal to its repository name. Derived without exception, GHCR image `ghcr.io/luigiespinosa/<id>`, compose service `<id>`, Traefik router `<id>`, Postgres database and role `<id>` with hyphens as underscores, Clerk client `<id>`. The **public hostname is not derived**: three live hostnames already diverge from their ids, so the hostname is declared per entry in the Registry and the Registry is the only mapping.
+- **Rule:** Each application has exactly one id: lowercase kebab-case, being **the repository name lowercased, keeping exactly the hyphens that name already carries and adding none**. So `StreamVault` gives `streamvault` and never `stream-vault`, and `poketracker-go` gives itself. Derived without exception, GHCR image `ghcr.io/luigiespinosa/<id>`, compose service `<id>`, Traefik router `<id>`, Postgres database and role `<id>` with hyphens as underscores, Clerk client `<id>`. The **public hostname is not derived**: three live hostnames already diverge from their ids, so the hostname is declared per entry in the Registry and the Registry is the only mapping.
+- **Narrowed 2026-09-03**, by an Operator ruling during Story 2-5. This rule read "equal to its repository name", and that made two requirements that four repositories cannot both satisfy: `Lumen`, `StreamVault`, `MaiCoin` and `Mutuo` are not lowercase, so an id equal to the repository name is not kebab-case and a kebab-case id is not equal to the repository name. Lowercase wins, because it is the half the blocking `registry-schema` gate enforces and the half every derived identifier above already relies on. **The consequence is that `id` and the Registry's `source` are deliberately different strings for those four**, and the `source` keeps the repository's real capitalisation so the link resolves. Renaming the repositories and widening the id pattern were both considered and rejected; the reasoning is in `ops/registry-inputs.md` under stated limit 0.
 
 ### AD-4: The App Registry is authored JSON, validated by schema
 
@@ -245,7 +246,7 @@ graph TD
 
 | Concern | Convention |
 | --- | --- |
-| Application identity | One kebab-case id per application, equal to the repository name (AD-3). Postgres identifiers substitute underscores for hyphens. Hostnames are declared in the Registry, never derived. |
+| Application identity | One kebab-case id per application, being the repository name lowercased with no hyphen added (AD-3, narrowed 2026-09-03). The Registry's `source` keeps the repository's real capitalisation and is never rebuilt from an id. Postgres identifiers substitute underscores for hyphens. Hostnames are declared in the Registry, never derived. |
 | Files & directories | `apps/<id>/`, `packages/<name>/`, `contracts/`. Anchor components stay atoms / molecules / organisms as they are today. |
 | Contract artifacts | Lowercase, extension-typed, no version in the filename: the version lives in the file's own header and in `contract_version`. |
 | Registry data | `status` is one of four exact strings. `tech[]` reflects what the application runs on today; a wrong value is a defect, not a cosmetic issue. `description` is one to three sentences, reader-facing, no marketing adjectives, no first person. |

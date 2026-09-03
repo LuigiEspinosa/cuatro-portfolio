@@ -214,9 +214,15 @@ contain, whether they are maintained, or whether their applications run.
 ### What a reader should not conclude from this entry
 
 **This is not a statement that the Registry is broken.** SM-4 is a success measure over published
-links and the Registry is `applications: []` until Story 2-5, so nothing is currently failing it.
-This entry exists so that Story 2-5 authors those four `source` values knowing what they do, rather
-than discovering it when someone clicks one.
+links. This entry exists so that Story 2-5 authors those four `source` values knowing what they do,
+rather than discovering it when someone clicks one.
+
+**Amended 2026-09-03: the breach is now live, and this section said the opposite.** It read "the
+Registry is `applications: []` until Story 2-5, so nothing is currently failing it". Story 2-5 has
+run. Fourteen entries ship, four of them carrying a `source` that returns 404 for an anonymous
+Visitor, so FR-10 and SM-4 are breached in fact rather than in prospect. The ruling is unchanged and
+the remedy is unchanged; what changed is that the cost is being paid now. Recorded rather than
+rewritten, because this section was explicitly written to be revisited at this point.
 
 **Nor is it a statement that these three should be public.** The breach is recorded; the remedy is
 not chosen. There are two remedies and this entry picks neither: publish the repository, or rule

@@ -1457,7 +1457,11 @@ reason: |-
   `ops/registry-schema.md` names it as a pending Operator action. Filed here as well because the
   record is not the mechanism the estate uses for cross-story carryover, and a tightening that
   survives only if the next author reads one `ops/` file is a tightening that will not happen.
-status: open
+
+  Closed 2026-09-03 by `spec-2-5-author-contracts-registry-json.md`, in the same commit that
+  authored the fourteen entries, and demonstrated failing against an emptied envelope. The standing
+  case that asserted `minItems` was absent now asserts it is 1.
+status: done
 
 ### DW-27: The Registry gate applies one structural rule beyond the schema, so `absorbed_into` and `family` are unchecked references.
 origin: spec-deferred 2026-08-29
@@ -1477,7 +1481,13 @@ reason: |-
   AD-18's scheduled check, which verifies `source`, `live` and `token_contract` against reality and
   says nothing about references inside the file. The same argument that justified the duplicate-`id`
   rule justifies this one, and it belongs beside it, in Story 2.5 or before.
-status: open
+
+  Closed 2026-09-03 by `spec-2-5-author-contracts-registry-json.md`. Two rules were added beside
+  the duplicate-id one, `absorbed_into resolves` and `family groups`, both exported by name with
+  standing cases and both demonstrated failing against a planted fixture. `family` is deliberately
+  not held to naming an entry: it is a grouping label, not a reference, and `tracker-family` is the
+  id of none of its three members.
+status: done
 
 ### DW-28: A Registry object carrying the same key twice validates, because `JSON.parse` silently keeps the last one.
 origin: spec-deferred 2026-08-29
@@ -1574,7 +1584,15 @@ status: done
 
     This is pre-existing and was not introduced by Story 2-4. It is filed because Story 2-4
     exists to remove exactly this class of decision from Story 2-5 and did not remove this one.
-  status: open
+
+    Closed 2026-09-03 by an Operator ruling taken at Story 2-5's planning checkpoint, before any
+    entry was authored, so it was never the mid-flight escalation it was filed to prevent. The
+    first resolution was taken: AD-3's second half narrows to "the lowercase kebab-case form of
+    its repository name", the four ids are `lumen`, `streamvault`, `maicoin` and `mutuo`, no
+    repository was renamed and the schema pattern is unchanged. `ARCHITECTURE-SPINE.md:98` and
+    its conventions row were amended in the same change, and the full reasoning is stated limit 0
+    of `ops/registry-inputs.md`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
   summary: >-
@@ -1631,4 +1649,166 @@ status: done
     problem and a `/bmad-project-context` refresh is already booked as a reminder in
     `sprint-status.yaml` before epic 3. Filed so the two record pointers are re-checked after
     that refresh runs, not before.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  summary: >-
+    `epics.md:2202-2204` still states Story 2.5's acceptance as "each id matches its repository name
+    exactly", which four shipped entries deliberately do not satisfy after AD-3 was narrowed. The
+    spine was amended and the epic was not, so the two now disagree.
+  evidence: |-
+    The Operator narrowed AD-3 on 2026-09-03 so an id is the repository name lowercased.
+    `ARCHITECTURE-SPINE.md`'s AD-3 rule and its conventions row were amended in the same change.
+    `epics.md` was not, and it is the artifact the remaining Epic 2 stories are specced from, so the
+    next author reading Story 2.6 or 2.7 finds the superseded rule stated as an acceptance criterion.
+
+    Not fixed in Story 2-5 because amending the acceptance criteria of an epic after the story has
+    shipped is a different kind of edit from recording a ruling, and `epics.md` also carries the
+    `list-wheel` hostname deviation Story 2-4 already recorded against `:2155-2156`. Both are the
+    same job: one pass over Epic 2's text reconciling it with the rulings taken during execution.
+
+    The substance is settled and recorded in `ARCHITECTURE-SPINE.md` and in stated limit 0 of
+    `ops/registry-inputs.md`. What is missing is the bookkeeping in the planning artifact.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  summary: >-
+    Nothing holds `contracts/registry.json` equal to `ops/registry-inputs.md`, and the Operator
+    deferred the check on 2026-09-03. Filed here because the same argument DW-26 makes says an
+    `ops/` stated limit is not the mechanism that survives.
+  evidence: |-
+    Fourteen entries were transcribed by hand from `ops/registry-inputs.md`. No test reads both
+    files, the gate validates shape rather than content, and FR-32's scheduled link check is Story
+    2.23 and does not exist. A `tech` value corrected in one file and not the other is invisible,
+    and FR-9 makes a wrong `tech` value a defect rather than a cosmetic issue.
+
+    `minItems: 1` covers only the degenerate case: an emptied array is now a refusal, an array cut
+    from fourteen entries to one is not. `ops/estate.md`'s disposition table is a third listing of
+    the same fourteen applications and is equally unguarded.
+
+    Recorded as stated limit 1 of `ops/registry-inputs.md` and in `ops/registry-schema.md`'s stated
+    limits. DW-26's own closing argument was that "a tightening that survives only if the next author
+    reads one `ops/` file is a tightening that will not happen", which applies to this one too.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  summary: >-
+    The `token_contract` value Story 2-5 authored on the `cs-tracker` entry is held equal to nothing,
+    so `ops/contract-adoption.md`'s runbook step 5 is the only thing keeping the Registry's adopted
+    version in step with the vendored header.
+  evidence: |-
+    `contracts/registry.json` now carries `"token_contract": "1.0.0"` on `cs-tracker`, the field's
+    first populated value anywhere. The schema constrains it to `^\d+\.\d+\.\d+$` and nothing else,
+    and no test in the repository reads the value: the only non-prose hits for `token_contract` are
+    the schema's own definition, the field name inside the `Object.keys(fields)` list in
+    `ops/__tests__/registry-schema.test.ts`, and two comments in `ops/cs-tracker-adoption-probe.mjs`.
+
+    `ops/__tests__/contract-adoption.test.ts` already imports `recordedAdoptedVersion` and parses
+    `ops/contract-adoption.md`, so the check is one case in a file that has the record loaded: read
+    the committed Registry and compare the two. It was not added here because the spec's Code Map
+    scoped the test work to `ops/__tests__/registry-schema.test.ts`.
+
+    Consequence on the next contract bump: the vendored header moves and the record moves, both
+    pinned by the blocking `test` job, while the Registry's declaration does not, and the gate still
+    exits 0. That is exactly the drift AD-16 and AD-18 exist to catch, and AD-18's scheduled job is
+    Story 2.23.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  summary: >-
+    Story 2.6 inherits three description problems Story 2-5 found and was ruled not to fix: two of
+    the six `EXPERIENCE.md` drafts contradict their repositories, a third contradicts the Registry
+    itself, and five of the eight authored descriptions end with the same sentence.
+  evidence: |-
+    Recorded in full in `ops/registry-inputs.md` under "The transcription happened, 2026-09-03".
+    Filed here as well because that is one `ops/` file the next author has to know to open, and
+    Story 2.6's own epic text points at `EXPERIENCE.md` rather than at this record.
+
+    `cs-tracker`'s repository describes a "Personal CS2 skins tracker, single-user, local-only"
+    where the shipped draft says it tracks "matches and player statistics". `cuatro-tracker`'s
+    describes a media tracker for "movies, TV shows, anime, manga, and video games" where the draft
+    says "collections and what is still missing from them". `cuatro-portfolio`'s draft says the Hub
+    "lists every application that is running", while the file it describes carries five `In progress`
+    and three `Archived` entries.
+
+    The drafts shipped verbatim under an Operator ruling of 2026-09-03, on the ground that Story 2.6
+    confirms them against the running software and GitHub metadata is a weaker source than either.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  summary: >-
+    Three `tech` arrays in `contracts/registry.json` are materially thinner than their projects'
+    architecture guides, and none was changed because changing one is a change to
+    `ops/registry-inputs.md`.
+  evidence: |-
+    The arrays were read from manifests on the branch carrying the code, which is evidence about what
+    an application runs on today; a guide is a plan, which is why the record was left alone.
+
+    `poketracker-go` ships `Go · PostgreSQL · pgx · sqlc` while its guide names Flutter and a Python
+    discord.py bot beside the Go backend, so the array describes the backend and not the application.
+    `Mutuo` ships `Bun · Vue · Drizzle ORM · Caddy · Docker` while its guide names PostgreSQL, and
+    `ops/registry-inputs.md`'s own store list declares a store for nine applications and omits Mutuo.
+    `Lumen` ships `Markdown · WSL2` while its guide names Tauri, Rust, React, CodeMirror and tantivy;
+    that one is probably right as it stands, because the repository holds no code.
+
+    FR-9 makes a wrong `tech` value a defect rather than a cosmetic issue, and stated limit 8 of
+    `ops/registry-inputs.md` already records that the granularity ruling is applied unevenly.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  summary: >-
+    DW-29's stale comment at `tests/e2e/contract-serving.pw.ts:68-72` got staler: it says
+    `contracts/registry.json` arrives in Story 2-5, which has now happened, and Story 2-5 was
+    forbidden from touching `tests/`.
+  evidence: |-
+    DW-29 was filed by Story 2-3 and names Story 2.5 as "the natural place to take it". Story 2-5's
+    spec put `tests/` in its Never list and made an unchanged `tests/` an acceptance criterion, for
+    the same reason Story 2-3 could not fix it: the story that falsifies a comment is not always the
+    story allowed to edit the file holding it.
+
+    The comment is now wrong twice rather than once. Nothing fails because of it. Filed as a pointer
+    so DW-29 is not read as still waiting on Story 2.5, which cannot take it.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  summary: >-
+    AD-3 and `contracts/registry.schema.json` both say "three live hostnames already diverge from
+    their ids". Against the Registry Story 2-5 shipped, five of the six `Live` entries diverge.
+  evidence: |-
+    Of the six `Live` entries, only `cs-tracker` sits at `<id>.cuatro.dev`. `cuatro-portfolio` serves
+    at `cuatro.dev`, `cuatro-tracker` at `tracker.cuatro.dev`, `digital-library` at
+    `library.cuatro.dev`, `cs-tournament` at `inclusivcup.vercel.app` and `list-wheel` at
+    `luigiespinosa.github.io/list-wheel/`.
+
+    The claim is pre-existing prose written before the Registry existed, and it is used as the
+    justification for the rule rather than as the rule itself, so nothing behaves differently for it
+    being wrong. It was not corrected in Story 2-5 because that spec's Ask First covers "any change
+    to AD-3 beyond ruling 1's narrowing", and re-counting the divergence is such a change.
+
+    Worth fixing when Epic 2's planning text is reconciled, since the count appears in the published
+    schema as well as in the spine and is now checkable against a shipped file.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  summary: >-
+    One case in the unit suite failed once and passed on three other runs of the same tree, and it
+    was not identified because the run that failed had its output truncated. The suite gates
+    production, so a case that fails one run in four is worth naming.
+  evidence: |-
+    Observed 2026-09-03 on the Windows development host, across four full `corepack pnpm test --run`
+    invocations against the same working tree. Run 2 reported `1 failed | 897 passed (898)`; runs 3
+    and 4 reported `898 passed (898)` with exit 0, and run 1 (against an earlier tree) reported
+    `896 passed (896)`. No source file changed between runs 2, 3 and 4.
+
+    The failing case was not captured: that invocation piped through `Select-Object -Last 8`, which
+    kept the summary and discarded the failure block naming the file and the assertion. Runs 3 and 4
+    were re-run specifically to identify it and both were green, so it did not reproduce.
+
+    Not this story's change: nothing in it is timing-dependent, and the two runs that bracket the
+    failure exercise exactly the same code. The estate has form here, `ops/__tests__/
+    cs-tracker-accessibility-probe.test.ts` having been red on every CI run for three days under
+    DW-30, which is why an unexplained one-in-four failure is filed rather than assumed away.
+
+    The cheap next step is to run the suite with `--reporter=verbose` into a file a few times and
+    watch for a case whose duration swings, rather than to go looking now with nothing to go on.
   status: open

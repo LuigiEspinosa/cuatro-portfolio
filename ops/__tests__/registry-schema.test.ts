@@ -11,8 +11,10 @@ import {
   REGISTRY,
   SCHEMA,
   auditSchema,
+  danglingAbsorbedInto,
   duplicateIds,
   inspect,
+  lonelyFamilies,
   report,
   validate,
 } from '../registry-schema.mjs';
@@ -115,25 +117,68 @@ describe('the committed Registry', () => {
     expect(result.message).toMatch(/\d+ applications?/);
   });
 
-  it('carries the envelope AD-4 and AD-5 fix, with zero entries and no minItems', () => {
+  it('carries the envelope AD-4 and AD-5 fix, and the entries Story 2.5 authored', () => {
     const committed = JSON.parse(registryText);
 
     expect(committed.$schema).toBe('./registry.schema.json');
-    expect(committed.contract_version).toBe('1.0.0');
-    expect(committed.applications).toEqual([]);
-    // The one entry rule the schema deliberately leaves open. `minItems: 1` on
-    // the list would fail the envelope this story ships against its own gate,
-    // and Story 2.5 is what earns the tightening.
-    expect(shippedSchema.properties.applications.minItems).toBeUndefined();
+    // 1.1.0 from Story 2.5, not the 1.0.0 Story 2-3's empty envelope carried.
+    // The field's own rule is that a value change is a minor bump, and going
+    // from zero entries to fourteen while narrowing `applications` is the
+    // largest value change the file will ever see. A Satellite fetches this
+    // over HTTPS at build time and has no other way to tell the two apart.
+    expect(committed.contract_version).toBe('1.1.0');
+    expect(Array.isArray(committed.applications)).toBe(true);
+    expect(committed.applications.length).toBeGreaterThan(0);
+    // The one entry rule the schema deliberately left open until there were
+    // entries to hold it to. Story 2-3 could not set it: `minItems: 1` against
+    // the empty envelope it shipped would have failed its own gate on the first
+    // run. Story 2.5 wrote the entries and set it in the same commit.
+    expect(shippedSchema.properties.applications.minItems).toBe(1);
   });
 
-  it('is an empty list treated as a fact rather than as a refusal', () => {
-    // The distinction the whole "a green run has to mean something was read"
-    // argument rests on: a missing file is a refusal, zero entries is data.
+  it('is a list that can no longer be emptied without the gate saying so', () => {
+    // This case asserted the opposite until Story 2.5, and the distinction it
+    // was written for was real at the time: a missing file was a refusal and
+    // zero entries was data, because nobody had authored an entry yet. Once the
+    // entries exist, an edit that empties the array is a Registry describing
+    // nothing, and the Hub would render an empty Suite Directory off a green
+    // build. The missing-file refusal is still a separate one, asserted below.
     const result = against(envelope());
 
-    expect(result.ok, result.message).toBe(true);
-    expect(result.message).toContain('0 applications');
+    expect(result.ok, result.message).toBe(false);
+    expect(result.message).toContain('/applications');
+    expect(result.message).toContain('minItems');
+  });
+
+  it('keeps source at the repository capitalisation, which four ids deliberately do not match', () => {
+    // AD-3 was narrowed on 2026-09-03: an id is the repository name lowercased,
+    // so `Lumen`, `StreamVault`, `MaiCoin` and `Mutuo` carry ids that are not
+    // their repository name spelled exactly. GitHub is case-sensitive on the
+    // path, so `source` keeps the real spelling and the two fields are
+    // deliberately different strings for those four.
+    //
+    // Without this case the invariant lives only in prose, and a later "make
+    // the URLs consistent" edit lowercases four `source` values, gives them a
+    // 404 each, and leaves the gate and the whole suite green: no pattern in
+    // the schema constrains capitalisation, and FR-32's link check is Story
+    // 2.23 and does not exist.
+    const committed = JSON.parse(registryText);
+    const sourceOf = (id: string): string =>
+      committed.applications.find((entry: { id: string }) => entry.id === id).source;
+
+    expect(sourceOf('lumen')).toBe('https://github.com/LuigiEspinosa/Lumen');
+    expect(sourceOf('streamvault')).toBe('https://github.com/LuigiEspinosa/StreamVault');
+    expect(sourceOf('maicoin')).toBe('https://github.com/LuigiEspinosa/MaiCoin');
+    expect(sourceOf('mutuo')).toBe('https://github.com/LuigiEspinosa/Mutuo');
+
+    // And the general rule, so a fifth mixed-case repository is covered too: no
+    // entry's `source` may be rebuilt from its id when the two disagree.
+    const rebuilt = committed.applications.filter(
+      (entry: { id: string; source: string }) =>
+        entry.source !== `https://github.com/LuigiEspinosa/${entry.id}` &&
+        entry.source.toLowerCase() === `https://github.com/luigiespinosa/${entry.id}`
+    );
+    expect(rebuilt, 'no entry relies on capitalisation the id does not carry').toHaveLength(4);
   });
 
   it('is the file the schema hook points at, so AD-4 authoring half is wired', () => {
@@ -359,9 +404,10 @@ describe('the gate refuses', () => {
     expect(result.ok).toBe(false);
     expect(result.message).toContain(REGISTRY);
     expect(result.message).toContain('contract_version');
-    expect(result.message, 'a missing file and an empty list are reported as the same thing').toContain(
-      'zero'
-    );
+    expect(
+      result.message,
+      'the refusal no longer distinguishes zero bytes read from zero entries found'
+    ).toContain('zero');
   });
 
   it('both files missing at once, naming both rather than only the first', () => {
@@ -504,7 +550,10 @@ describe('the gate refuses', () => {
     const marked = report(inspect(asSchema(`\uFEFF${schemaText}`), asRegistry(`\uFEFF${registryText}`)));
 
     expect(marked.ok, marked.message).toBe(true);
-    expect(marked.message).toContain('0 applications');
+    // The committed pair, so the count is whatever the Registry currently
+    // carries. Asserting a literal here would make every added application a
+    // failure in a case that is about an invisible character.
+    expect(marked.message).toMatch(/\d+ applications?, valid/);
   });
 
   it('and still refuses a byte order mark that is inside the file rather than at its head', () => {
@@ -591,6 +640,79 @@ describe('the gate refuses', () => {
     expect(result.message).toContain('"demo-app"');
     expect(result.message).toContain(BEYOND_THE_SCHEMA);
     expect(result.message).toContain('AD-3');
+  });
+
+  it('an absorbed_into naming no entry, which draft-07 cannot express at all', () => {
+    const result = against(envelope(entry({ absorbed_into: 'ghost-app' })));
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('/applications/0/absorbed_into');
+    expect(result.message).toContain('"ghost-app"');
+    expect(result.message).toContain('AD-6');
+    expect(result.message).toContain(BEYOND_THE_SCHEMA);
+  });
+
+  it('an entry absorbing itself, which resolves and is still wrong', () => {
+    const result = against(envelope(entry({ absorbed_into: 'demo-app' })));
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('/applications/0/absorbed_into');
+    expect(result.message, 'a self-reference was accepted because the id exists').toContain(
+      "this entry's own"
+    );
+    expect(result.message).toContain(BEYOND_THE_SCHEMA);
+  });
+
+  it('a family carried by one entry alone, because a family groups (FR-11)', () => {
+    const result = against(
+      envelope(
+        entry({ family: 'tracker-family' }),
+        entry({ id: 'second-app', family: 'other-family' })
+      )
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('/applications/0/family');
+    expect(result.message).toContain('/applications/1/family');
+    expect(result.message).toContain('FR-11');
+    expect(result.message, 'a lonely family was reported for one entry but not the other').toContain(
+      '2 violations'
+    );
+    expect(result.message).toContain(BEYOND_THE_SCHEMA);
+  });
+
+  it('all three structural rules in one run, so none of them masks another', () => {
+    // Fixture A of the 2026-09-03 demonstration, as a standing case. Each rule
+    // fires once, which is what makes a refusal naming two of the three proof
+    // that the third stopped working rather than proof that it passed.
+    const result = against(
+      envelope(
+        entry({ id: 'alpha', absorbed_into: 'ghost-app' }),
+        entry({ id: 'beta', absorbed_into: 'beta' }),
+        entry({ id: 'alpha', family: 'lonely-family' })
+      )
+    );
+
+    expect(result.ok).toBe(false);
+    // Four violations across three rules: the duplicate id, both halves of the
+    // reference rule, and the lonely family.
+    expect(result.message).toContain('4 violations');
+    expect(result.message).toContain('/applications/2/id');
+    expect(result.message).toContain('/applications/0/absorbed_into');
+    expect(result.message).toContain('/applications/1/absorbed_into');
+    expect(result.message).toContain('/applications/2/family');
+  });
+
+  it('and passes both reference rules when the entries resolve, so they can be satisfied', () => {
+    const result = against(
+      envelope(
+        entry({ family: 'tracker-family' }),
+        entry({ id: 'second-app', family: 'tracker-family', absorbed_into: 'demo-app' })
+      )
+    );
+
+    expect(result.ok, result.message).toBe(true);
+    expect(result.message).toContain('every reference resolves');
   });
 
   it('an envelope with no $schema, because AD-4 authoring hook is required', () => {
@@ -862,6 +984,50 @@ describe('the validator itself', () => {
     ]);
     expect(duplicateIds({ applications: [] })).toEqual([]);
     expect(duplicateIds({}), 'a Registry with no list produced a duplicate-id finding').toEqual([]);
+  });
+
+  it('applies the absorbed_into rule to strings only, and reports every dangling value', () => {
+    // A non-string value is the schema's to reject. Reporting it here as well
+    // would print two complaints for one defect, which is the same argument the
+    // `type` keyword's early return above makes.
+    expect(danglingAbsorbedInto({ applications: [{ id: 'a', absorbed_into: 7 }] })).toEqual([]);
+    expect(danglingAbsorbedInto({ applications: [] })).toEqual([]);
+    expect(danglingAbsorbedInto({}), 'a Registry with no list produced a reference finding').toEqual([]);
+
+    const findings = danglingAbsorbedInto({
+      applications: [
+        { id: 'a', absorbed_into: 'b' },
+        { id: 'b', absorbed_into: 'gone' },
+        { id: 'c', absorbed_into: 'also-gone' },
+      ],
+    });
+    expect(findings.map((violation) => violation.instance)).toEqual([
+      '/applications/1/absorbed_into',
+      '/applications/2/absorbed_into',
+    ]);
+  });
+
+  it('counts family members across every entry, so a real pair is never reported', () => {
+    expect(
+      lonelyFamilies({ applications: [{ id: 'a', family: 'f' }, { id: 'b', family: 'f' }] }),
+      'a family carried by two entries was reported as lonely'
+    ).toEqual([]);
+    expect(lonelyFamilies({ applications: [] })).toEqual([]);
+    expect(lonelyFamilies({}), 'a Registry with no list produced a family finding').toEqual([]);
+    // Same deferral to the schema the absorbed_into rule makes, for the same
+    // reason: a wrong-typed field is one defect and gets one complaint.
+    expect(lonelyFamilies({ applications: [{ id: 'a', family: 7 }] })).toEqual([]);
+
+    // Three entries, two families, one of which is a pair. Only the single is
+    // reported, and it is reported once rather than once per entry examined.
+    const findings = lonelyFamilies({
+      applications: [
+        { id: 'a', family: 'paired' },
+        { id: 'b', family: 'paired' },
+        { id: 'c', family: 'alone' },
+      ],
+    });
+    expect(findings.map((violation) => violation.instance)).toEqual(['/applications/2/family']);
   });
 
   it('refuses a subschema that is not an object, rather than applying nothing', () => {

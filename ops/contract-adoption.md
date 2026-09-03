@@ -116,7 +116,7 @@ search:
 | Path | `assets/css/cuatro-contracts/tokens.css` | **Decision.** AD-14's fixed folder name under `assets/css/`, `ops/cs-tracker-token-adoption.md:76` |
 | Line | 2 | **Observed 2026-08-27**, the second line of the file at `8adb8e2` |
 | Pattern | `Contract v(\d+\.\d+\.\d+)` | **Decision.** The generator refuses anything but exact `X.Y.Z` (`packages/tokens/build.mjs:68-77`), so the capture is always three dot-separated integers |
-| Compared against | `token_contract` on the `cs-tracker` entry of `contracts/registry.json`, which Story 2.5 sets to `1.0.0`, the value recorded here (`epics.md:2223-2224`) | **Decision.** The field does not exist yet |
+| Compared against | `token_contract` on the `cs-tracker` entry of `contracts/registry.json`, which Story 2.5 sets to `1.0.0`, the value recorded here (`epics.md:2223-2224`) | **Observed 2026-09-03.** The field now exists and carries `1.0.0`, authored by Story 2-5. It said "the field does not exist yet" until then. **Nothing holds the two equal**: no test reads the Registry's value, and the schema constrains it only to `^\d+\.\d+\.\d+$`, so step 5 below is the only thing keeping them in step |
 | When the folder is renamed or moved | The check **fails** rather than skipping (`epics.md:2893-2896`) | **Decision.** AD-16: a Satellite that renames the folder breaks the check rather than the styling |
 | The served surface it may also read | `https://cuatro.dev/contracts/tokens.css` | **Observed 2026-08-27T21:54:08Z** by `Invoke-WebRequest`: `200`, `content-type: text/css; charset=UTF-8`, `last-modified: Thu, 27 Aug 2026 19:06:39 GMT`, `etag: W/"1851-1a0449dfa18"`, `server: cloudflare`, line 2 of the body `Contract v1.0.0 · dark only · anchor hue 288` |
 
@@ -404,7 +404,11 @@ second, and the ledger row names both commits. Edit the `cs-tracker` entry of
 `contracts/registry.json` so `token_contract` reads the new version; the Registry schema is validated
 in CI (AD-4). The field moving with the bump instead would declare a version the folder does not yet
 carry, and the check in step 6 would then be red for as long as the re-vendor took rather than
-proving anything. **Not walkable today**: the field is Story 2.5's and does not exist yet.
+proving anything. **Walkable from 2026-09-03**: Story 2-5 authored the field and it reads `1.0.0`.
+This step said "not walkable today: the field is Story 2.5's and does not exist yet" until then.
+**It is also the step most likely to be skipped**, because nothing turns red if it is: the vendored
+header and this record are both pinned by the blocking `test` job, and the Registry's copy of the
+version is pinned by nothing at all.
 
 ### Step 6: confirm the scheduled drift check reads the new value
 

@@ -27,10 +27,13 @@
 // is even parsed, so an unsupported keyword can never be reported as a valid
 // instance.
 //
-// **One rule is enforced beyond the schema.** Uniqueness of `id` across entries
-// cannot be expressed in draft-07. It is applied here as a named structural
-// rule, said so in the refusal, and recorded as a stated limit in
-// `ops/registry-schema.md`: the editor will not catch it.
+// **Three rules are enforced beyond the schema.** Uniqueness of `id` across
+// entries, `absorbed_into` naming an entry that exists and is not itself, and a
+// `family` value being shared rather than carried alone: draft-07 can express
+// none of the three, because each is a statement about the entries as a set
+// rather than about one value. They are applied here as named structural rules,
+// said so in the refusal, and recorded in `ops/registry-schema.md`: the editor
+// will not catch any of them.
 
 import { readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -48,10 +51,10 @@ const MUST_CARRY = {
   [REGISTRY]: 'the envelope carrying $schema, contract_version and the application list (AD-4)',
 };
 
-/** The one rule this gate applies beyond the schema, worded once. */
+/** The rules this gate applies beyond the schema, worded once for all three. */
 export const BEYOND_THE_SCHEMA =
-  'Uniqueness across entries cannot be expressed in draft-07, so this is the one rule this gate' +
-  ' applies beyond the schema, and the editor will not catch it.';
+  'Uniqueness and reference across entries cannot be expressed in draft-07, so this is one of the' +
+  ' three rules this gate applies beyond the schema, and the editor will not catch it.';
 
 /** @param {string} relative */
 const beside = (relative) => fileURLToPath(new URL(`../${relative}`, import.meta.url));
@@ -732,7 +735,7 @@ export function validate(schema, instance) {
 }
 
 /**
- * The one rule beyond the schema: no two entries share an `id`.
+ * The first of the three rules beyond the schema: no two entries share an `id`.
  *
  * Draft-07 has no way to say it, so it is applied here, named in the refusal,
  * and recorded as a stated limit. AD-3 makes the id the name every other
@@ -768,6 +771,140 @@ export function duplicateIds(instance) {
       note: BEYOND_THE_SCHEMA,
     });
   });
+
+  return violations.sort(order);
+}
+
+/**
+ * The application list, or `null` when there is nothing here this gate can walk.
+ * The schema has already refused a Registry with no list by the time these rules
+ * run; returning `null` means they add no second complaint about it.
+ *
+ * @param {unknown} instance
+ * @returns {unknown[] | null}
+ */
+const applicationsOf = (instance) => {
+  if (!isPlainObject(instance)) return null;
+  const applications = /** @type {Record<string, unknown>} */ (instance).applications;
+  return Array.isArray(applications) ? applications : null;
+};
+
+/**
+ * One string field off one entry, or `null` when the entry or the field is not
+ * something a structural rule can read. A field of the wrong type is the
+ * schema's to reject, and complaining about it here too would inflate the count
+ * an operator reads for a single defect.
+ *
+ * @param {unknown} entry
+ * @param {string} name
+ * @returns {string | null}
+ */
+const fieldOf = (entry, name) => {
+  if (!isPlainObject(entry)) return null;
+  const value = /** @type {Record<string, unknown>} */ (entry)[name];
+  return typeof value === 'string' ? value : null;
+};
+
+/**
+ * The second rule beyond the schema: `absorbed_into` names an entry that exists,
+ * and never the entry carrying it.
+ *
+ * Draft-07 cannot express a reference at all, so a value pointing at nothing
+ * validates and the Registry ships a relationship to an application it does not
+ * describe. AD-6 keeps an absorbed application's entry precisely so a reader can
+ * follow the field to where the code went, and a dangling value breaks the one
+ * guarantee the field exists to make. A self-reference is reported separately
+ * because it resolves and is still wrong: it says the code moved to where it
+ * already was.
+ *
+ * @param {unknown} instance
+ * @returns {Violation[]}
+ */
+export function danglingAbsorbedInto(instance) {
+  /** @type {Violation[]} */
+  const violations = [];
+  const applications = applicationsOf(instance);
+  if (applications === null) return violations;
+
+  const known = new Set(
+    applications.map((entry) => fieldOf(entry, 'id')).filter((id) => id !== null)
+  );
+
+  applications.forEach((entry, index) => {
+    const target = fieldOf(entry, 'absorbed_into');
+    if (target === null) return;
+
+    if (target === fieldOf(entry, 'id')) {
+      violations.push({
+        instance: `/applications/${index}/absorbed_into`,
+        rule: 'absorbed_into resolves',
+        schema: null,
+        detail:
+          `the id ${show(target)} is this entry's own (AD-6: absorbed_into names where the code` +
+          ' now lives, which is never the entry itself)',
+        note: BEYOND_THE_SCHEMA,
+      });
+      return;
+    }
+
+    if (!known.has(target)) {
+      violations.push({
+        instance: `/applications/${index}/absorbed_into`,
+        rule: 'absorbed_into resolves',
+        schema: null,
+        detail:
+          `no entry in this Registry carries the id ${show(target)} (AD-6: an absorbed application` +
+          ' keeps its entry and names where its code now lives)',
+        note: BEYOND_THE_SCHEMA,
+      });
+    }
+  });
+
+  return violations.sort(order);
+}
+
+/**
+ * The third rule beyond the schema: a `family` value is shared, never carried
+ * alone.
+ *
+ * `family` exists to group (FR-11), and draft-07 can neither count the entries
+ * carrying a value nor compare them to each other. A value appearing exactly
+ * once is the one thing the field cannot mean: either the second member was
+ * dropped, or one of the two spellings is wrong, and both are invisible until a
+ * reader finds a group of one in the directory. Same argument as the
+ * duplicate-id rule, which is why it sits beside it.
+ *
+ * @param {unknown} instance
+ * @returns {Violation[]}
+ */
+export function lonelyFamilies(instance) {
+  /** @type {Violation[]} */
+  const violations = [];
+  const applications = applicationsOf(instance);
+  if (applications === null) return violations;
+
+  /** @type {Map<string, number[]>} */
+  const members = new Map();
+  applications.forEach((entry, index) => {
+    const family = fieldOf(entry, 'family');
+    if (family === null) return;
+    const held = members.get(family);
+    if (held === undefined) members.set(family, [index]);
+    else held.push(index);
+  });
+
+  for (const [family, indexes] of members) {
+    if (indexes.length > 1) continue;
+    violations.push({
+      instance: `/applications/${indexes[0]}/family`,
+      rule: 'family groups',
+      schema: null,
+      detail:
+        `${show(family)} is carried by this entry alone (FR-11: a family groups, so either a` +
+        ' second entry shares the value or the field does not belong on this one)',
+      note: BEYOND_THE_SCHEMA,
+    });
+  }
 
   return violations.sort(order);
 }
@@ -848,7 +985,12 @@ export function inspect(schemaSource, registrySource) {
   }
 
   const registry = registryParse.value;
-  const violations = [...validate(schemaParse.value, registry), ...duplicateIds(registry)].sort(order);
+  const violations = [
+    ...validate(schemaParse.value, registry),
+    ...duplicateIds(registry),
+    ...danglingAbsorbedInto(registry),
+    ...lonelyFamilies(registry),
+  ].sort(order);
   const applications = isPlainObject(registry)
     ? /** @type {Record<string, unknown>} */ (registry).applications
     : null;
@@ -897,8 +1039,9 @@ export function report(inspection) {
             `${/** @type {Record<string, string>} */ (MUST_CARRY)[file.label] ?? 'the Registry contract'}.`
         ),
         '  A gate that passes over a file it never opened is worse than no gate, so a missing or',
-        '  unreadable file is a refusal and never a pass. An empty application list is not that: zero',
-        '  entries is a fact about the data, and Story 2.5 is what changes it.',
+        '  unreadable file is a refusal and never a pass. An empty application list is a refusal too',
+        '  since Story 2.5 authored the entries and set minItems, but it is a different one: this',
+        '  branch means zero bytes were read, not that zero entries were found in a file that parsed.',
       ]),
     };
   }
@@ -972,7 +1115,8 @@ export function report(inspection) {
     ok: true,
     message:
       `registry schema: read ${REGISTRY} against ${SCHEMA}, ${entries} ` +
-      `application${plural(entries)}, valid, no duplicate id (AD-4, AD-5).`,
+      `application${plural(entries)}, valid, no duplicate id, every reference resolves, ` +
+      'every family groups (AD-4, AD-5).',
   };
 }
 

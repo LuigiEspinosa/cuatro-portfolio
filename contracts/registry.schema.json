@@ -19,7 +19,8 @@
     },
     "applications": {
       "type": "array",
-      "description": "One entry per application, never per repository (AD-6): an archived or absorbed application keeps its entry, so the entry count and the repository count are different numbers by design. No minItems yet, because the envelope this schema shipped beside carries zero entries and Story 2.5 is what writes them.",
+      "minItems": 1,
+      "description": "One entry per application, never per repository (AD-6): an archived or absorbed application keeps its entry, so the entry count and the repository count are different numbers by design. minItems is 1 from Story 2.5, the story that first wrote entries here. Until then the envelope carried zero and the constraint would have failed its own gate; after it, an edit that empties the array would otherwise validate and the Hub would render an empty Suite Directory from a green build.",
       "items": { "$ref": "#/definitions/application" }
     }
   },
@@ -42,7 +43,7 @@
         "id": {
           "type": "string",
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-          "description": "The application's single id (AD-3): lowercase kebab-case, equal to its repository name, and the name every derived identifier follows from. The public hostname is not derived from it; three live hostnames already diverge, so a hostname is declared in \"live\" and nowhere else."
+          "description": "The application's single id (AD-3): lowercase kebab-case, and the name every derived identifier follows from. It is the repository name lowercased, keeping only the hyphens that name already has, so four repositories with capitals (Lumen, StreamVault, MaiCoin, Mutuo) carry ids that are not their repository name spelled exactly. Never rebuild \"source\" from an id: those four resolve only at the repository's real capitalisation. AD-3 read \"equal to its repository name\" until it was narrowed on 2026-09-03, because that half and lowercase kebab-case cannot both hold for those four. The public hostname is not derived either, and is declared in \"live\" and nowhere else."
         },
         "name": {
           "type": "string",
@@ -106,12 +107,12 @@
         "family": {
           "type": "string",
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-          "description": "A grouping key shared by related applications, spelled like an id."
+          "description": "A grouping key shared by related applications, spelled like an id. A value carried by exactly one entry is refused: draft-07 cannot count the entries sharing a value, so the rule is applied by the gate beside the duplicate-id one. A family that groups nothing is a misspelling in one of the two entries that meant to share it, not a group of one."
         },
         "absorbed_into": {
           "type": "string",
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-          "description": "The id of the application this one's code now lives in (AD-6). An absorbed application keeps its entry."
+          "description": "The id of the application this one's code now lives in (AD-6). An absorbed application keeps its entry. A value naming no entry in this file is refused, and so is an entry naming itself: draft-07 cannot express a reference at all, so both rules are applied by the gate beside the duplicate-id one."
         },
         "token_contract": {
           "type": "string",

@@ -1,5 +1,158 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.0.0",
-  "applications": []
+  "contract_version": "1.1.0",
+  "applications": [
+    {
+      "id": "cuatro-portfolio",
+      "name": "Cuatro Ecosystem",
+      "description": "The front door to the suite. Lists every application that is running, what it does, and where its source lives.",
+      "status": "Live",
+      "tech": ["Next.js", "React", "TypeScript", "Sass", "Docker", "Caddy"],
+      "source": "https://github.com/LuigiEspinosa/cuatro-portfolio",
+      "demo": "open",
+      "identity": "none",
+      "live": "https://cuatro.dev"
+    },
+    {
+      "id": "cuatro-tracker",
+      "name": "Cuatro Tracker",
+      "description": "Keeps a running record of collections and what is still missing from them.",
+      "status": "Live",
+      "tech": ["Next.js", "React", "Prisma", "PostgreSQL", "Redis", "BullMQ"],
+      "source": "https://github.com/LuigiEspinosa/cuatro-tracker",
+      "demo": "none",
+      "identity": "none",
+      "live": "https://tracker.cuatro.dev",
+      "family": "tracker-family"
+    },
+    {
+      "id": "cs-tracker",
+      "name": "CS Tracker",
+      "description": "Tracks Counter-Strike matches and player statistics, updating in place as results come in.",
+      "status": "Live",
+      "tech": ["Elixir", "Phoenix", "LiveView", "PostgreSQL", "Oban", "Docker"],
+      "source": "https://github.com/LuigiEspinosa/cs-tracker",
+      "demo": "none",
+      "identity": "none",
+      "live": "https://cs-tracker.cuatro.dev",
+      "family": "tracker-family",
+      "token_contract": "1.0.0"
+    },
+    {
+      "id": "digital-library",
+      "name": "Digital Library",
+      "description": "A self-hosted library for ebooks and comics. It reads EPUB, PDF and CBZ in the browser, finds a title by full-text search, and can send one to a Kindle.",
+      "status": "Live",
+      "tech": ["SvelteKit", "Fastify", "SQLite", "Redis", "BullMQ", "Docker"],
+      "source": "https://github.com/LuigiEspinosa/digital-library",
+      "demo": "none",
+      "identity": "none",
+      "live": "https://library.cuatro.dev"
+    },
+    {
+      "id": "cs-tournament",
+      "name": "CS Tournament",
+      "description": "Runs a Counter-Strike tournament from sign-up through the bracket to a final result.",
+      "status": "Live",
+      "tech": ["Next.js", "React", "TypeScript", "Supabase", "PostgreSQL", "Vercel"],
+      "source": "https://github.com/LuigiEspinosa/cs-tournament",
+      "demo": "none",
+      "identity": "none",
+      "live": "https://inclusivcup.vercel.app"
+    },
+    {
+      "id": "list-wheel",
+      "name": "List Wheel",
+      "description": "Turns any list into a wheel and picks one entry at random.",
+      "status": "Live",
+      "tech": ["Angular", "TypeScript", "RxJS", "GitHub Pages"],
+      "source": "https://github.com/LuigiEspinosa/list-wheel",
+      "demo": "open",
+      "identity": "none",
+      "live": "https://luigiespinosa.github.io/list-wheel/"
+    },
+    {
+      "id": "cuatro-finance",
+      "name": "Cuatro Finance",
+      "description": "A self-hosted personal finance application for Colombian accounts, covering expense tracking, budgets, debt payoff and investments across pesos, dollars and crypto. It reads transactions from connected banks and forecasts cash flow. It is in early development and nothing is deployed yet.",
+      "status": "In progress",
+      "tech": ["Next.js", "React", "TypeScript", "Prisma", "PostgreSQL", "Docker"],
+      "source": "https://github.com/LuigiEspinosa/cuatro-finance",
+      "demo": "not-deployed",
+      "identity": "none"
+    },
+    {
+      "id": "streamvault",
+      "name": "StreamVault",
+      "description": "A self-hosted stream recorder. It watches a list of streamers, starts recording the moment one goes live, and collects the results in a library that can be browsed, played and pruned. It is in early development and nothing is deployed yet.",
+      "status": "In progress",
+      "tech": ["Python", "FastAPI", "Nuxt", "SQLite", "Docker", "Caddy"],
+      "source": "https://github.com/LuigiEspinosa/StreamVault",
+      "demo": "not-deployed",
+      "identity": "none"
+    },
+    {
+      "id": "maicoin",
+      "name": "MaiCoin",
+      "description": "A learning project that walks an ERC-20 token through its whole life, from writing the contract to a dashboard where connected wallets can check balances, send tokens and watch them being minted and burned. It runs on a test network rather than the main one, so no real money is involved. It is in early development and nothing is deployed yet.",
+      "status": "In progress",
+      "tech": ["Solidity", "Hardhat", "TypeScript", "ethers.js", "OpenZeppelin"],
+      "source": "https://github.com/LuigiEspinosa/MaiCoin",
+      "demo": "not-deployed",
+      "identity": "wallet"
+    },
+    {
+      "id": "poketracker-go",
+      "name": "PokéTracker GO",
+      "description": "A Pokémon GO companion for completionists: a Pokédex tracker covering every catchable variant, paired with a watchlist. A rule added to the watchlist tells a bot which spawn announcements to watch for, and a phone alert follows when one matches. It is in early development and nothing is deployed yet.",
+      "status": "In progress",
+      "tech": ["Go", "PostgreSQL", "pgx", "sqlc"],
+      "source": "https://github.com/LuigiEspinosa/poketracker-go",
+      "demo": "not-deployed",
+      "identity": "none",
+      "family": "tracker-family"
+    },
+    {
+      "id": "mutuo",
+      "name": "Mutuo",
+      "description": "A therapy platform connecting patients with licensed therapists. It covers the path from finding a match to booking an appointment, meeting over encrypted video, and keeping notes and assigned work afterwards, with separate portals for patients, therapists and administrators. It is in early development and nothing is deployed yet.",
+      "status": "In progress",
+      "tech": ["Bun", "Vue", "Drizzle ORM", "Caddy", "Docker"],
+      "source": "https://github.com/LuigiEspinosa/Mutuo",
+      "demo": "not-deployed",
+      "identity": "none"
+    },
+    {
+      "id": "lumen",
+      "name": "Lumen",
+      "description": "A desktop Markdown note-taking application for developers working inside WSL2, keeping its notes in a git repository and committing them without leaving the editor. It was never built: the repository holds no code, and it is archived.",
+      "status": "Archived",
+      "tech": ["Markdown", "WSL2"],
+      "source": "https://github.com/LuigiEspinosa/Lumen",
+      "demo": "not-deployed",
+      "identity": "none"
+    },
+    {
+      "id": "tcg-tracker",
+      "name": "TCG Tracker",
+      "description": "A trading card game collection tracker. It was never built, and the idea folds into Cuatro Tracker as one of its domains.",
+      "status": "Archived",
+      "tech": ["Next.js", "React", "Prisma", "PostgreSQL"],
+      "source": "https://github.com/LuigiEspinosa/tcg-tracker",
+      "demo": "not-deployed",
+      "identity": "none",
+      "absorbed_into": "cuatro-tracker"
+    },
+    {
+      "id": "connect-four-react",
+      "name": "Connect Four",
+      "description": "A browser version of Connect Four, played against the computer or against another person at the same screen. It is retired as a standalone application, and the game is set to be rebuilt inside the Cuatro Ecosystem hub.",
+      "status": "Archived",
+      "tech": ["React", "TypeScript", "Vite", "GSAP", "Zustand"],
+      "source": "https://github.com/LuigiEspinosa/connect-four-react",
+      "demo": "not-deployed",
+      "identity": "none",
+      "absorbed_into": "cuatro-portfolio"
+    }
+  ]
 }

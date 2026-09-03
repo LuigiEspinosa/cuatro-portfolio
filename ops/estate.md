@@ -190,9 +190,16 @@ already predicted. The six are `cuatro-portfolio`, `cuatro-tracker`, `cs-tournam
 `cs-tracker`, `digital-library` and `list-wheel`.
 
 **Where the confirmed Registry field values live.** This file states disposition. The values
-Story 2.5 transcribes into `contracts/registry.json`, which is `status`, `live`, `tech`,
-`demo` and `identity` for all fourteen applications with the method or reason behind each, are
-in **`ops/registry-inputs.md`**. Read that file before authoring a Registry entry, not this one.
+Story 2.5 transcribed into `contracts/registry.json` on **2026-09-03**, which are `status`, `live`,
+`source`, `tech`, `demo` and `identity` for all fourteen applications with the method or reason
+behind each, are in **`ops/registry-inputs.md`**. Read that file before authoring a Registry entry,
+not this one.
+
+**The Registry now exists and is the authority over both files.** `contracts/registry.json` carries
+fourteen entries, one per row of the disposition table below. Where it and this record disagree, the
+Registry is what ships and is what a consumer reads; this file is what should have caught it. **The
+two are held equal by nothing**, which is stated limit 1 of `ops/registry-inputs.md` and was
+deliberately left open on 2026-09-03, so a row added here and not there stays invisible.
 
 ### `connect-four-react`, absorbed with its code still in place
 

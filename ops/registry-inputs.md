@@ -332,28 +332,53 @@ can reach today. `main` is a `bun` and Drizzle rewrite skeleton and does not car
 
 ## Stated limits
 
-0. **AD-3 cannot hold in full for four applications, and Story 2-5 hits it on its first pass.**
-   AD-3 (`ARCHITECTURE-SPINE.md:98`) asserts two things at once: an id is lowercase kebab-case,
-   **and** it equals its repository name. `contracts/registry.schema.json:44` enforces the first
-   as `^[a-z0-9]+(-[a-z0-9]+)*$` through the blocking `registry-schema` gate, and
-   `ops/__tests__/registry-schema.test.ts:676` pins the refusal on a capitalised id. But four
-   repositories are not lowercase: **`Lumen`, `StreamVault`, `MaiCoin` and `Mutuo`.** For those
-   four the two halves of AD-3 are in direct conflict and one must give.
+0. ~~**AD-3 cannot hold in full for four applications, and Story 2-5 hits it on its first pass.**~~
+   **Resolved 2026-09-03 by an Operator ruling, before Story 2-5 authored a single entry.** The
+   limit is struck rather than deleted, because the conflict it names is real and the ruling is
+   what a later reader needs to find when they hit it again.
 
-   **This record does not settle it, and it is the one decision Story 2-4 failed to remove from
-   Story 2-5.** It is a pre-existing contradiction in AD-3 rather than anything this story
-   introduced, and resolving it is an architecture change: either the ids are lowercased and stop
-   equalling their repository names, or the repositories are renamed, or AD-3's second half is
-   narrowed. **The Operator should rule before Story 2-5 runs**, because the alternative is
-   exactly the mid-flight escalation `epics.md:2141` split this story out to prevent. The `source`
-   values above are spelled with real capitalisation precisely so that whichever way the id goes,
-   the drill-through link is already correct.
+   **The conflict, as it stood.** AD-3 (`ARCHITECTURE-SPINE.md:98`) asserted two things at once: an
+   id is lowercase kebab-case, **and** it equals its repository name.
+   The `id` property in `contracts/registry.schema.json` enforces the first as
+   `^[a-z0-9]+(-[a-z0-9]+)*$` through the blocking `registry-schema` gate, and
+   `ops/__tests__/registry-schema.test.ts` pins the refusal on a capitalised id. Both are named
+   rather than cited by line, which is the repair `ops/known-violations.md` already prescribes for a
+   citation that drifts: this file's own line numbers moved twice while the change was being made. Four repositories are not lowercase: **`Lumen`, `StreamVault`, `MaiCoin` and
+   `Mutuo`.** For those four the two halves were in direct conflict and one had to give.
 
-1. **Nothing holds this record equal to `contracts/registry.json`.** The Registry is
-   `applications: []` until Story 2-5, so a check would assert over nothing today. Once entries
-   exist, a drift between this file and the Registry would be invisible. **Story 2-5 owns that
-   check**, and it is the natural place for it: the same story that writes the entries is the one
-   that can pin them. **The nearer gap is unguarded too**: the fourteen applications are now
+   **The ruling: AD-3's second half narrows.** An id is **the repository name lowercased, keeping
+   exactly the hyphens that name already carries and adding none**, so those four carry the ids
+   `lumen`, `streamvault`, `maicoin` and `mutuo`. The operation is stated that precisely on purpose:
+   "the kebab-case form of `StreamVault`" does not decide between `streamvault` and `stream-vault`,
+   and leaving it undecided would hand the next author the same question this ruling exists to close.
+   No repository is renamed, the `id` pattern is unchanged, and the gate is untouched.
+   `ARCHITECTURE-SPINE.md`'s AD-3 rule and its Application identity conventions row were amended in
+   the same change, so the spine and the shipped Registry now say the same thing. **The
+   `contracts/registry.schema.json` `id` description was amended too**, because the gate prints a
+   schema node's description in every refusal and it would otherwise have taught an author the
+   superseded rule at the exact moment it refused a capitalised id.
+
+   **The two alternatives, and why each lost.** *Rename the four repositories:* it keeps both halves
+   literally true, but it is a GitHub console action outside this repository that would have blocked
+   Story 2-5 outright, and three of the four are private with a `source` that does not resolve for
+   an anonymous Visitor anyway (**KV-2**). *Widen the `id` pattern to accept capitals:* it edits the
+   schema Story 2-3 shipped, breaks its standing refusal case, and pushes mixed case into every
+   identifier AD-3 derives, the GHCR image, compose service, Traefik router, Postgres role and Clerk
+   client, all of which are lowercase in practice today. The narrowing costs nothing downstream
+   because nothing downstream was ever using the capitalised form.
+
+   **The consequence to hold on to: `id` and `source` are deliberately different strings for those
+   four.** The `source` values in the table above keep the repository's real capitalisation, which is
+   why the drill-through still resolves. **Do not "fix" that by lowercasing the URLs**: four of them
+   would 404.
+
+1. **Nothing holds this record equal to `contracts/registry.json`.** It said the Registry was
+   `applications: []` so a check would assert over nothing; that is no longer true, and the limit
+   now bites: fourteen entries exist and a drift between this file and the Registry is invisible.
+   It said **Story 2-5 owns that check**. **Put to the Operator on 2026-09-03 and deliberately
+   deferred**, so Story 2-5 authored the entries and did not pin them. The limit stands, unowned,
+   and the reason to keep reading it is that the two files are now genuinely capable of disagreeing
+   where before they were not. **The nearer gap is unguarded too**: the fourteen applications are now
    listed in `ops/estate.md`'s disposition table and again in this file's two tables, and
    `ops/contract-adoption.mjs` pins only the eleven-name sentence, so a row added to one file and
    not the other is invisible today.
@@ -414,3 +439,61 @@ can reach today. `main` is a `bun` and Drizzle rewrite skeleton and does not car
   authored, that constraint can be set, and Story 2-3 recorded it as work for this point.
 - **Four `source` links will not resolve anonymously.** Author them anyway, per AD-5, and read
   **KV-2** first so it is a known cost rather than a discovery.
+
+## The transcription happened, 2026-09-03
+
+Story `2-5-author-contracts-registry-json` transcribed this record into `contracts/registry.json` at
+baseline commit `d21f0c7`. Fourteen entries, `minItems: 1` set, and two structural rules added to the
+gate. Every item in the Handover above was carried out. **Where this file and the Registry now
+disagree, the Registry is what ships and this file is what should have caught it**, which is what the
+preamble has said since it was written.
+
+**What this record did not supply, and where those values came from instead.** `name` and
+`description` were out of scope here, and `epics.md:2188` gives descriptions to Story 2.6. The
+Registry still needs both on every entry, so Story 2-5 authored them under an Operator ruling and
+recorded the source of each. **Read this before Story 2.6 runs.**
+
+| Source | Entries | Nature |
+|---|---|---|
+| `EXPERIENCE.md:247-252`, verbatim | `cuatro-portfolio`, `cuatro-tracker`, `cs-tracker`, `digital-library`, `cs-tournament`, `list-wheel` | **Decision**, per the Operator's ruling that the six drafts ship as written and Story 2.6 confirms them against the running software |
+| Each project's own architecture guide under `C:\Development\<project>\`, compressed to FR-8's shape | `cuatro-finance`, `streamvault`, `maicoin`, `poketracker-go`, `mutuo`, `lumen`, `connect-four-react` | **Observed 2026-09-03.** These guides are the only place in the estate that says what these applications are *for*; the PRD gives dispositions and stacks and no purpose |
+| Inferred from the id, with no source behind it | `tcg-tracker` | **Decision.** The repository is empty, carries no description and has no project guide. "A trading card game collection tracker" is read off the name, which is a weaker basis than any other description in the file. Its `tech` array is weak for a *different* reason, set out above: that array is `cuatro-tracker`'s, inferred from PRD section 5.2's disposition rather than from the name |
+
+**Three of the six verbatim drafts are contradicted by something, and Story 2.6 should start
+there.** The first two were observed on 2026-09-03 by
+`gh repo list LuigiEspinosa --json name,description`; the third is contradicted by the Registry
+itself:
+
+- **`cs-tracker`.** The repository describes "Personal CS2 skins tracker, single-user, local-only".
+  The shipped draft says it "Tracks Counter-Strike matches and player statistics". Skins and matches
+  are different things, and "local-only" sits oddly against an application serving at
+  `cs-tracker.cuatro.dev`, so at least one of the two statements is stale.
+- **`cuatro-tracker`.** The repository describes "a self-hosted, privacy-first media tracker" for
+  "movies, TV shows, anime, manga, and video games". The shipped draft says it "Keeps a running
+  record of collections and what is still missing from them", which is broader and names no medium.
+
+- **`cuatro-portfolio`.** The draft says the Hub "Lists every application that is **running**". The
+  file it describes carries five `In progress` and three `Archived` entries that are not running,
+  which FR-35 holds back from the directory but which are in the Registry all the same (AD-6). The
+  draft is accurate about the *rendered directory* and wrong about the Registry, and the entry
+  describes the Registry's own application. **Found by reading the shipped file against its own
+  description**, not by any external source, which is why it is the one of the three that could not
+  have been caught before the entries existed.
+
+**None was corrected here**, because the ruling was that the drafts ship verbatim and 2.6 confirms
+them against the software rather than against GitHub metadata, which is a weaker source than either.
+
+**One more thing for Story 2.6, which is voice rather than fact.** Five of the eight authored
+descriptions end with the same sentence, "It is in early development and nothing is deployed yet."
+It is true in all five cases and it spends a third of FR-8's three-sentence budget restating what
+`status` and `demo` already carry on the same entry, five times over in one directory. The repetition
+was accepted here because this story authors structure and 2.6 owns the voice pass; it is the
+cheapest thing on that story's list.
+
+**Three `tech` arrays look thin beside their project guides, and none was changed.** The arrays in
+this record were read from the manifest on the branch carrying the code, which is evidence about what
+an application runs on today; a guide is a plan. `poketracker-go`'s guide names Flutter and a Python
+Discord bot beside the Go backend; `Mutuo`'s names PostgreSQL, which appears in neither this record's
+array nor its store list; `Lumen`'s names Tauri, Rust and React for a repository that holds no code at
+all, which is why its array stays `Markdown · WSL2`. **Recorded rather than corrected**: changing a
+`tech` value is a change to this record, and FR-9 makes a wrong one a defect either way.
