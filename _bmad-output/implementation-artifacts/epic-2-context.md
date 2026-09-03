@@ -51,7 +51,8 @@ renumbered, so every surviving key keeps its meaning.
 
 ## Requirements & Constraints
 
-**Registry.** One entry per Estate application, archived and absorbed ones included. Required on
+**Registry.** One entry per Estate application, archived and absorbed ones included, so the entry
+count and the repository count are different numbers and neither validates the other. Required on
 every entry: `id`, `name`, `description`, `status`, `tech`, `source`, `demo`, `identity`.
 Optional: `live`, `family`, `absorbed_into`, `token_contract`. `demo` and `identity` carry an
 explicit value including `none`, because absence is never "not applicable". `live` is required
@@ -78,6 +79,18 @@ Directory is a distinguishable first-party event from loading the homepage, and 
 link distinguishable from a `source` link; targets are 60% suite reach and 35% click-through.
 
 ## Technical Decisions
+
+**Application ids, narrowed by Operator ruling on 2026-09-03.** Each application has exactly one
+id: lowercase kebab-case, being the repository name lowercased, keeping exactly the hyphens that
+name already carries and adding none. `StreamVault` gives `streamvault`, never `stream-vault`;
+`poketracker-go` gives itself. The consequence is binding on every Registry consumer: for the four
+repositories whose names are not lowercase (`Lumen`, `StreamVault`, `MaiCoin`, `Mutuo`) the `id`
+and the `source` are deliberately different strings, and `source` keeps the repository's real
+capitalisation so the link resolves. `source` is therefore never rebuilt from an id. Story text
+that still reads "the id equals its repository name" is superseded by this narrowing. Everything
+else stays derived from the id (image name, compose service, Traefik router, Postgres database and
+role with hyphens as underscores, Clerk client); the public hostname is the single exception and is
+declared per entry.
 
 The token contract is `Contract v1.0.0` and **Epic 2 does not move it**: `--token-scrim` and
 `--tap` (44px, the only `px` length in the contract, never hand-written) already ship in v1.0.0,
