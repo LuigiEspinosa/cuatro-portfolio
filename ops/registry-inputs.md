@@ -2,10 +2,13 @@
 
 The confirmed field values Story 2.5 transcribes into `contracts/registry.json`: `status`,
 `live`, `source`, `tech`, `demo` and `identity` for every application in the Estate, with the
-method or the reason behind each one.
+method or the reason behind each one. **Since 2026-09-03 it also carries the per-entry
+`description` check**, which is Story 2.6's, under "The descriptions were confirmed" at the end.
 
 Written during Story `2-4-confirm-the-assumed-statuses-hostnames-and-tech-values` on
 **2026-09-02** (ISO 8601 UTC), at baseline commit `d3be1562e9fe04a8a594bc8ca44dd185c68aebf7`.
+**Amended 2026-09-03 by Story 2-5** with the transcription record, and again the same day by
+**Story 2-6** with the description evidence and a narrowing of stated limit 6.
 
 **This file is a record, not Registry data**, and nothing here is a published contract surface.
 The Registry is `contracts/registry.json`, hand authored under AD-4 and validated by the
@@ -398,6 +401,21 @@ can reach today. `main` is a `bun` and Drizzle rewrite skeleton and does not car
    application, which is what the Registry entry is about, and not every tool in the repository.
 6. **Nothing here was verified against a running system except the hostnames.** Status values
    rest on what serves and what the Operator ruled, not on functional testing.
+
+   **Narrowed 2026-09-03 by Story 2-6, and not closed.** The descriptions were confirmed against
+   the **source of each application**, on a recorded ladder: the local checkout of the code that is
+   deployed, then the project guide under `C:\Development\<project>\`, then nothing. Seven of the
+   fourteen were settled at the first tier and six at the second; one, `tcg-tracker`, has neither.
+   That is a real narrowing, because a checkout is the software rather than a plan, and it is what
+   refuted three of the six drafts `EXPERIENCE.md` supplied.
+
+   **What it does not establish is that the software behaves as the description says.** Nothing was
+   exercised. **Four of the six deployed applications sit behind a login and no demo account exists
+   anywhere in the estate**, which is Story 5.8's to create (AD-13), so there is no route by which
+   this story could have used any of the four as a Visitor does. The two that are open,
+   `cuatro-portfolio` and `list-wheel`, were not exercised either, because doing it for two of six
+   would have made the record's evidence uneven in a way a later reader would misread. `status` and
+   the hostnames still rest on what serves, exactly as this limit says.
 7. **The AD-6 membership sweep was scoped to the DNS zone, not to the account.** `covidmap` and
    `future-vizion` were found because they appear in the `cuatro.dev` zone that Story 1-7
    enumerated. **An ungoverned repository deployed on a third-party hostname would not have been
@@ -482,13 +500,16 @@ itself:
 
 **None was corrected here**, because the ruling was that the drafts ship verbatim and 2.6 confirms
 them against the software rather than against GitHub metadata, which is a weaker source than either.
+**All three were corrected on 2026-09-03 by Story 2-6**, each against a local checkout rather than
+against the metadata that raised the question: see "The descriptions were confirmed" below.
 
 **One more thing for Story 2.6, which is voice rather than fact.** Five of the eight authored
 descriptions end with the same sentence, "It is in early development and nothing is deployed yet."
 It is true in all five cases and it spends a third of FR-8's three-sentence budget restating what
 `status` and `demo` already carry on the same entry, five times over in one directory. The repetition
 was accepted here because this story authors structure and 2.6 owns the voice pass; it is the
-cheapest thing on that story's list.
+cheapest thing on that story's list. **Done 2026-09-03**: the sentence is gone from all five and a
+standing case now refuses any sentence carried by two entries.
 
 **Three `tech` arrays look thin beside their project guides, and none was changed.** The arrays in
 this record were read from the manifest on the branch carrying the code, which is evidence about what
@@ -497,3 +518,70 @@ Discord bot beside the Go backend; `Mutuo`'s names PostgreSQL, which appears in 
 array nor its store list; `Lumen`'s names Tauri, Rust and React for a repository that holds no code at
 all, which is why its array stays `Markdown · WSL2`. **Recorded rather than corrected**: changing a
 `tech` value is a change to this record, and FR-9 makes a wrong one a defect either way.
+
+## The descriptions were confirmed, 2026-09-03
+
+Story `2-6-the-editorial-voice-pass` read all fourteen against a source of record and corrected what
+the evidence refuted. **The Registry is what ships**; this section says what settled each value and
+at which tier, and does not restate the text.
+
+**The ladder, stated once.** The **local checkout** of the code that is deployed comes first, because
+for a deployed application the checkout is the software that is running. The **project guide** under
+`C:\Development\<project>\` comes second, and is a plan rather than an observation, which is why an
+application with a checkout is never settled from its guide. **Nothing** is the third tier and is
+recorded as such rather than filled in from the id.
+
+| Entry | Tier | What settled it | Verdict |
+|---|---|---|---|
+| `cuatro-portfolio` | Checkout | This working tree, and `contracts/registry.json` itself | **Corrected.** The draft said the Hub "lists every application that is **running**", and the file it describes carries five `In progress` and three `Archived` entries that are not (AD-6). The correction drops the falsifiable half: the entry no longer says which applications are listed are running, because `status` is what carries that per entry. **The claim that remains is about the Registry the Hub publishes**, which holds all fourteen. It is deliberately **not** a claim about the rendered directory, which FR-35 limits to `Live` and `Complete`, today six of the fourteen, and which `epics.md:610-613` fixes in the footer at "Six applications". A reader who tests the description against the rendered page and against the published `registry.json` gets two different counts, and the description answers to the second |
+| `cuatro-tracker` | Checkout | `prisma/schema.prisma`: `enum MediaType`, and `release_date` carrying the comment "THE sort field" | **Corrected.** The draft said "collections and what is still missing from them", naming no medium. The schema tracks movies, TV shows, anime, manga and video games on one timeline ordered by release date, and the repository description and README both say so in those words |
+| `cs-tracker` | Checkout | `C:\CuatroEcosystem\cs-tracker-workspace`: the contexts are `catalog`, `inventory`, `wishlist` and `prices`, and the LiveViews are browse, dashboard, inventory, item and wishlist | **Corrected, and it was the worst of the three.** The draft said it "tracks Counter-Strike matches and player statistics". **There is no match and no player anywhere in the application**: every occurrence of "match" in `lib/` is the verb. `Prices.Source` registers five marketplaces in `config/runtime.exs`, and `CLAUDE.md` calls the application "a personal CS2 skins tracker" |
+| `digital-library` | Checkout | `C:\Development\digital-library-workspace`: EPUB, PDF and CBZ/CBR, FTS5 search, send-to-Kindle by EPUB passthrough | **Confirmed unchanged.** Every claim in the draft is in the guide and in the workspace record |
+| `cs-tournament` | Checkout | The route tree under `app/`: `auth/steam`, `api/roster/enroll`, `(viewer)/bracket`, `(viewer)/leaderboards`, `(viewer)/ceremonia` | **Confirmed unchanged.** Sign-up through the bracket to a final result is the route tree read end to end. **Its README is stale and was not used**: it carries a Figma link and nothing about the application |
+| `list-wheel` | Checkout | `C:\Development\list-wheel-workspace`: a `.txt` file loaded, shuffled and spun, with the winner highlighted | **Confirmed unchanged** |
+| `cuatro-finance` | Guide | `docs/finance-guide.docx.md` § 1, and the repository README | **Trimmed only.** The two substantive sentences are confirmed; the third was the repeated closing sentence and was cut |
+| `streamvault` | Guide | `streamvault-guide.docx.md` § 1: watchlist, auto-detection on going live, recording library with in-browser playback and delete | **Trimmed only** |
+| `maicoin` | Guide | `maicoin-architecture-guide.docx.md` § 1: the ERC-20 lifecycle, the wallet dashboard, Sepolia rather than mainnet, "no real money" | **Trimmed only** |
+| `poketracker-go` | Guide, by substitute | The workspace `CLAUDE.md` under "What This Project Is". **Its guide is an unconverted binary `.docx`** and no other guide in the estate is, so the readable substitute was used and is named here rather than left implicit | **Trimmed only.** The substitute confirms the shipped text line for line: a per-variant Pokédex checklist, a watchlist whose rules are the bot's filter, and a phone alert |
+| `mutuo` | Guide | `docs/mutuo-architecture-guide.docx.md` § 1 and its Three Portals table | **Trimmed only** |
+| `lumen` | Guide | `wsl-notes-architecture-guide.docx.md` § 1 | **Confirmed unchanged.** It carried no repeated sentence |
+| `tcg-tracker` | **Nothing** | The tree holds `_bmad`, `.claude` and `docs` and no product evidence at all. The repository is empty and carries no GitHub description | **Reworded, not re-sourced.** The first sentence still rests on the id alone, which is where Story 2-5 left it and is the weakest basis in the file. What changed is the second: it said the idea "folds into" Cuatro Tracker in the present tense, where no fold has happened. It now words the relationship as intent, which is how its sibling `connect-four-react` already worded the same thing |
+| `connect-four-react` | Checkout | `C:\Development\connect-four-react`: `GameMode` is `local` or `ai`, and `SetupScreen` offers "Two players, same device" and "Play against AI" | **Confirmed unchanged** |
+
+**The three contradictions this record handed forward are resolved.** All three were found by
+reading a claim against something, and **none of them was findable by the gate**: two were refuted by
+a checkout and the third by the Registry it sits in. The gate that Story 2-6 added would have been
+green over all three on the day they shipped, which is stated limit 7 of `ops/registry-schema.md`
+made concrete rather than an argument against the rule.
+
+**Where GitHub metadata and a checkout disagreed, the checkout won.** `cs-tracker`'s repository
+description says "single-user, local-only", and the application serves at `cs-tracker.cuatro.dev`
+behind a Steam login. The corrected description says nothing about either, because the deployment
+posture is `status`, `live` and `demo`'s job and the contradiction is not this field's to settle.
+`cuatro-tracker`'s repository description agreed with its checkout and was corroborating rather than
+deciding.
+
+**The repeated closing sentence is gone from all five.** "It is in early development and nothing is
+deployed yet" was true on every one of `cuatro-finance`, `streamvault`, `maicoin`, `poketracker-go`
+and `mutuo`, and spent a third of FR-8's budget restating what `status: In progress` and
+`demo: not-deployed` already carry on the same entry, five times over in one directory. **It was
+invisible entry by entry and obvious in a column**, which is why a standing case now holds that no
+sentence appears verbatim on more than one entry rather than leaving it to a reader's attention.
+
+**Four of the fourteen now open on "A self-hosted", and it was left.** `cuatro-tracker`,
+`digital-library`, `cuatro-finance` and `streamvault` each do, which is visible in a column in the
+way the repeated closing sentence was. It is not the same defect: self-hosting is a true and
+load-bearing property of all four, it is the estate's defining posture rather than a filler phrase,
+and each opening names a different thing. **Trading it for rhythm would cost accuracy**, so it is
+recorded as an observation for the next editorial pass rather than edited away.
+
+**Two entries still restate their `status` and were deliberately left.** `lumen` ends "it is
+archived" and `connect-four-react` opens its second sentence "It is retired as a standalone
+application". Neither shared a sentence with anything, both were confirmed at their tier, and neither
+is in the set Story 2-6 was scoped to change. Recorded so the next editorial pass finds them named
+rather than rediscovers them.
+
+**`contract_version` did not move, and that is a question rather than a ruling.** Nine `description`
+values changed and the envelope still says `1.1.0`. The field's own rule is that a value change is a
+minor bump, which read literally makes this `1.2.0`; Story 2-6's boundaries put moving it behind an
+Operator decision, so it was left. Filed as pending Operator action 6 in `ops/registry-schema.md`.

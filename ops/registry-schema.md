@@ -3,14 +3,17 @@
 The written record of `contracts/registry.schema.json`, `ops/registry-schema.mjs` and the
 `registry-schema` job in `.github/workflows/ci.yml`: why the gate exists, what it checks and what it
 deliberately does not, the job's properties and how far its blocking reach actually goes, the
-dialect and `format` decisions, the value sets with the requirement each answers, the three rules
+dialect and `format` decisions, the value sets with the requirement each answers, the four rules
 applied beyond the schema, the demonstration with its output verbatim, which standing cases hold the
 failure paths permanently, the stated limits, and the work this file hands the Operator.
 
 Written during Story 2-3 on **2026-08-29** (ISO 8601 UTC), against baseline commit `3251f2b`.
 **Amended during Story 2-5 on 2026-09-03**, at baseline commit `d21f0c7`, when the fourteen entries
 were authored: `minItems: 1` was set, two structural rules were added, and the demonstration was
-re-run. Every 2026-08-29 statement it supersedes is struck or labelled rather than deleted.
+re-run. **Amended again during Story 2-6 on 2026-09-03**, at baseline commit `4b71ae2`, when the
+fourteen descriptions were confirmed against their sources: a fourth rule was added for the
+mechanizable half of FR-8, and the demonstration was re-run a third time. Every statement either
+amendment supersedes is struck or labelled rather than deleted.
 
 This file is a record, not Registry data, and nothing here is a published contract surface. It
 follows the pattern `ops/contract-purity.md`, `ops/token-contract.md` and `ops/font-contract.md`
@@ -37,7 +40,8 @@ ships is inherited by every consumer in every estate language.
 | It checks | It does not check | Nature |
 |---|---|---|
 | Every entry against AD-5's shape: the eight required fields, the four optional ones, the three closed value sets, the kebab-case and `https://` patterns, and both halves of the `live` condition | Whether a `live` or `source` URL resolves | **Decision.** FR-32 gives link verification to a scheduled job, which is Story 2.23. A gate on a runner asserting a URL resolves would fail on a network blip |
-| Three named rules **beyond** the schema: no two entries share an `id`, every `absorbed_into` names an entry that is not itself, and no `family` value is carried alone | Whether an id matches a repository that exists, and whether a `family` value names anything | **Decision.** AD-3 derives every other identifier from the id; a repository sweep is a different check with a different failure mode. A family key is a label rather than a reference, so it is not held to naming an entry |
+| Four named rules **beyond** the schema: no two entries share an `id`, every `absorbed_into` names an entry that is not itself, no `family` value is carried alone, and every `description` keeps the mechanizable half of FR-8's editorial contract while every `name` and `description` is typeset | Whether an id matches a repository that exists, and whether a `family` value names anything | **Decision.** AD-3 derives every other identifier from the id; a repository sweep is a different check with a different failure mode. A family key is a label rather than a reference, so it is not held to naming an entry |
+| Of FR-8: one to three sentences, the six banned adjectives as whole words, ten first-person words at a word boundary, and the three untypeset punctuation forms in `name` and `description` | Whether a description **leads with the thing itself**, whether a status synonym has crept into prose, whether a number was invented, and **whether a sentence is carried by two entries** | **Decision**, 2026-09-03. The first three need judgement and each would refuse honest prose. FR-8's fourth clause is the clearest case: "leads with the thing itself" is satisfied by "Turns any list into a wheel" and by "A self-hosted library for ebooks and comics", and no pattern separates either from the framing FR-8 actually bans. The fourth is mechanical and is deliberately not here: see the stated limit below |
 | That the list is not empty, since Story 2.5 authored entries and set `minItems: 1` | Whether the entry count matches `ops/registry-inputs.md` | **Decision**, deferred by the Operator on 2026-09-03. Stated limit below |
 | That every keyword in the schema is one this validator implements, before the Registry is read at all | Any dialect feature outside the implemented set | **Decision.** A validator that silently ignores a keyword is green over the rule it never applied. The set is listed below |
 | That both files exist, parse, and were actually read | The served copy at `https://cuatro.dev/contracts/registry.json` | **Decision.** The gate reads the committed tree on a runner. Stated limit below |
@@ -188,26 +192,124 @@ object was the alternative and is deferred: Story 2.4 records Mutuo's pre-existi
 FR-25 is where a richer shape would earn itself. Widening `demo` later is a Registry minor bump, and
 narrowing it is not, which is the asymmetry that makes starting closed the cheap direction.
 
-## The three rules beyond the schema
+## The four rules beyond the schema
 
-**It was one rule until 2026-09-03.** Story 2.5 added the second and the third in the change that
-first authored entries, because both are about `absorbed_into` and `family`, and until that day no
-entry carried either field for a rule to be wrong about.
+**It was one rule until 2026-09-03, then three, and is now four.** Story 2.5 added the second and the
+third in the change that first authored entries, because both are about `absorbed_into` and `family`,
+and until that day no entry carried either field for a rule to be wrong about. Story 2.6 added the
+fourth on the same date, when the fourteen descriptions were confirmed against their sources: FR-8
+lived only as prose in the `description` node's annotation, which asserts nothing in either reader,
+so the contract every `description` is written to was held by nobody. **That annotation is unchanged
+and still asserts nothing**, which is what an annotation does; what moved is that the mechanizable
+half of what it says is now applied by the gate.
 
-Each is a statement about the entries **as a set** rather than about one value, which is exactly what
-draft-07 has no keyword for. Each is applied by `ops/registry-schema.mjs`, named in its own refusal,
-and exported by name with a standing case, so a rule cannot quietly stop firing.
+The first three are each a statement about the entries **as a set** rather than about one value,
+which is exactly what draft-07 has no keyword for. The fourth is a rule that has to **name the word
+it found**, which a schema refusal cannot do. Each is applied by `ops/registry-schema.mjs`, named in
+its own refusal, and exported by name with a standing case, so a rule cannot quietly stop firing.
 
 | Rule | What it refuses | Why the schema cannot |
 |---|---|---|
 | `unique id` | Two entries carrying one `id` | Draft-07 cannot compare two entries. AD-3 makes the id the name every other identifier is derived from, so two entries sharing one is two applications claiming the same GHCR image, compose service, Traefik router and Postgres database |
 | `absorbed_into resolves` | A value naming no entry in the file, and an entry naming itself | Draft-07 cannot express a reference at all. AD-6 keeps an absorbed application's entry so a reader can follow the field to where the code went; a dangling value breaks the one guarantee the field makes, and a self-reference resolves while saying the code moved to where it already was |
 | `family groups` | A `family` value carried by exactly one entry | Draft-07 can neither count the entries carrying a value nor compare them. FR-11 makes `family` a grouping, and a value appearing once is the one thing it cannot mean: either the second member was dropped or one of the two spellings is wrong |
+| `editorial voice` | A `description` outside one to three sentences, or carrying one of the six banned adjectives **as a whole word** in any case, or one of ten first-person words at a word boundary; and a `name` or a `description` carrying a straight double quote, a double hyphen or three periods | `not` with a `pattern` is implemented and would bind, but the validator compiles patterns with no flags, so a case-insensitive list needs character classes, and `not`'s refusal says only "this value matches a shape the schema forbids here". **An editorial gate that cannot name the word it found teaches nothing**, and teaching the author at the moment of refusal is the whole of what this rule is for |
 
 **The editor catches none of them**, which is a stated limit rather than an oversight: AD-4's
-authoring half is the editor validating while the entries are written, and these three are what that
-half does not cover. `BEYOND_THE_SCHEMA` is the one sentence all three refusals carry, worded once and
-pinned by a case, and it says so to whoever reads the log.
+authoring half is the editor validating while the entries are written, and these four are what that
+half does not cover. `BEYOND_THE_SCHEMA` is the one sentence all four refusals carry, worded once and
+pinned by a case, and it says so to whoever reads the log. It was reworded on 2026-09-03 because its
+old text argued from uniqueness and reference, which is true of the first three rules and of none of
+the fourth.
+
+**Why the sentence counter is honest against this field and would not be in general.** Counting
+terminators is a naive way to count sentences: an abbreviation or a version number breaks it. It is
+safe here precisely because FR-8 bans the thing that would break it. "The stack is the `tech` field's
+job", so `Next.js` and `v1.2` cannot appear in a `description` without already being a defect a
+person has to catch. **That dependency is the reason the rule can be trusted and the reason it must
+never be lifted onto another field**: `tech` carries `Next.js` and `ethers.js` today, and the same
+counter over that array would be wrong on its first run.
+
+**A sentence ends at a terminator plus any run of closing punctuation, and that is not a nicety.**
+**Corrected 2026-09-03 at the review, after the first implementation shipped without it.** The
+counter's first form was a bare `[.!?]` before whitespace or the end of the string, which counted a
+description ending in a typeset ellipsis, or in a full stop inside a closing curly quote, as **zero**
+sentences and refused it citing "never four". The punctuation half of the same rule refuses three
+periods and a straight quote and therefore **requires the author to write exactly those two shapes**.
+The rule was refusing what it mandated. U+2026 is now a terminator for the same reason it is the
+mandated replacement for three periods, and U+201D, U+2019, `)`, `]` and `}` close a sentence without
+ending it. **The general form of the lesson: the two halves of one rule may never contradict each
+other on a shape the rule itself forces.** Five positive controls hold it, one per shape, beside a
+four-sentence fixture ending the same way so the allowance cannot swallow the count.
+
+**The punctuation half reads `name` and `description`; the rest reads `description`.** **Narrowed
+2026-09-03 at the review, by Operator ruling, from every string in the Registry.** `epics.md:2271`
+sets UX-DR38's typeset rule over "every string in the Registry", and read literally that reaches
+`source`, `live`, `id`, `family` and `absorbed_into`. **For a URL it is an unfixable refusal**: a
+repository whose name carries a double hyphen would have been refused and told to write an em dash,
+which is a repair that 404s the entry, and which the story separately forbids. Nothing in the shipped
+Registry trips it, which is what made it a trap rather than a bug. UX-DR38 governs what a Visitor
+reads, so the rule reads the two fields a Visitor reads. **The `id` and `family` patterns already
+refuse a double hyphen on their own**, being kebab-case, so the narrowing gives up nothing there; the
+exposure was `source` and `live`, whose pattern permits one.
+
+**The two punctuation rules in this estate govern different things and do not conflict**: a string a
+Visitor reads is a product string and takes a curly quote, an em dash and an ellipsis, while prose
+written **into** this repository, this record included, takes no dash at all (`AGENTS.md:23-25`).
+`DESIGN.md:491-497` states the reconciliation. The gate's own source names the three typeset
+replacements **by code point rather than by character**, the same idiom it already uses for the byte
+order mark, which is what lets one file carry a rule about a character it may not itself contain.
+
+**The straight single quote is deliberately not among the three forms.** **Decision**, 2026-09-03.
+`DESIGN.md:491` says "curly quotes", which in ordinary typesetting covers the apostrophe, and an
+apostrophe inside a word is by far the commonest case. It is out because the story's matrix names
+three forms and only three, and widening a refusal past the row that authorises it is how a gate
+starts refusing things nobody agreed to. Nothing costs anything today: **no shipped `name` or
+`description` carries an apostrophe at all**, straight or curly. The cheap moment to add it is the
+first entry that wants one, in the same change that decides whether `it's` is written with U+2019.
+
+**The banned adjectives match as whole words and the refusal names the text it matched.**
+**Corrected 2026-09-03 at the review, by Operator ruling.** The substring form shipped first and was
+wrong in both directions: it refused `"modernization"` and `"trailblazing"`, which are honest prose,
+and it named the list entry it matched against rather than the author's own word, so a refusal citing
+"blazing" sent its author looking for a word not in their description. That contradicts the reason
+the rule sits outside the schema at all. **`"blazingly"` now passes and that is the recorded cost**:
+FR-8 bans six words by name, and a rule that refuses honest prose is switched off by the next author
+rather than read.
+
+**First person is ten words, not four.** **Corrected 2026-09-03 at the review.** The story's matrix
+row listed `I`, `we`, `our` and `my` as examples and they shipped as the definition, so
+`"It shows us the file and gives me mine."` passed a rule advertised as banning first person. The set
+is `i`, `we`, `us`, `our`, `ours`, `my`, `mine`, `me`, `myself`, `ourselves`, matched at word
+boundaries and never as substrings: "Wednesday" must not read as "we", "four" as "our", "because" as
+"us" and "some" as "me". A standing case runs all four collisions through in one description.
+
+**What the rule deliberately does not assert.** FR-8's fourth clause, "leads with the thing itself",
+is not mechanized: it is satisfied by "Turns any list into a wheel" and by "A self-hosted library for
+ebooks and comics", and no pattern separates either from the framing FR-8 bans. Neither is UX-DR38's
+status-synonym rule, which needs a word list that would refuse an entry legitimately using the word
+"live", nor its "never invent a metric" rule, which cannot tell a supplied number from an invented
+one. Each of the three would refuse honest prose, and a gate that does that is a gate the next author
+switches off rather than reads.
+
+**And it does not hold that no sentence appears on two entries, which was the story's headline
+defect.** Five of the fourteen descriptions ended with "It is in early development and nothing is
+deployed yet" before Story 2.6, and the repetition is what the pass was largely for. It is a
+statement about the entries **as a set**, exactly the shape of the first three rules, and it could be
+a fifth one. It is not, because the story's matrix authorises four and a rule the matrix does not
+name is a refusal nobody agreed to. **What holds it instead is one case in
+`ops/__tests__/registry-schema.test.ts`**, which splits every shipped description on the same
+exported `SENTENCE_END` the gate counts with, and fails if any sentence appears twice. See the stated
+limit below for what that costs: the check exists in this repository and nowhere else.
+
+**The green line is built from the rule list, not from a literal.** **Corrected 2026-09-03 at the
+review.** `RULES_BEYOND_THE_SCHEMA` pairs each rule's function with the clause it contributes,
+`inspect()` runs that array and reports the clauses of the rules it actually ran, and `report()`
+joins them. Before that the clauses were a literal inside `report()`, so the line named four rules
+whether or not four ran: unwiring a rule left its clause printing and the case asserting that clause
+stayed green, which defeats the whole argument for enumerating rather than counting. Two cases now
+hold it in both directions, one pinning the list as a literal so a fifth rule is deliberate, one
+requiring every clause in the list to reach the line.
 
 **A note on the second rule's scope.** It reads `absorbed_into` only. `family` is deliberately **not**
 required to name an entry, because a family key is a grouping label rather than a reference to an
@@ -276,9 +378,13 @@ registry schema: read contracts/registry.json against contracts/registry.schema.
 ```
 
 **Both quotations above are history from 2026-08-29 and are kept rather than corrected.** Story 2.5
-reworded `BEYOND_THE_SCHEMA` for three rules and widened the pass line, so neither string is what the
-gate prints today. The 2026-09-03 runs below are the current ones. This file does not delete what it
-supersedes, which is the same idiom `ops/estate.md` and `ops/known-violations.md` follow.
+reworded `BEYOND_THE_SCHEMA` for three rules and widened the pass line, and Story 2.6 reworded it
+again for four and widened the line again, so neither string is what the gate prints today. **The
+`BEYOND_THE_SCHEMA` line quoted in the 2026-09-03 fixture A output below is history for the same
+reason**: it argued from uniqueness and reference, which is true of the first three rules and of none
+of the fourth, and the sentence the gate prints today is quoted under fixture C. The last run in this
+file is the current one. This file does not delete what it supersedes, which is the same idiom
+`ops/estate.md` and `ops/known-violations.md` follow.
 
 ## The demonstration, re-run 2026-09-03 for the two new rules
 
@@ -334,7 +440,7 @@ the constraint explains itself to whoever hits it:
       One entry per application, never per repository (AD-6): an archived or absorbed application keeps its entry, so the entry count and the repository count are different numbers by design. minItems is 1 from Story 2.5, the story that first wrote entries here. Until then the envelope carried zero and the constraint would have failed its own gate; after it, an edit that empties the array would otherwise validate and the Hub would render an empty Suite Directory from a green build.
 ```
 
-And the committed pair today:
+And the committed pair as it stood at the end of Story 2-5:
 
 ```
 registry schema: read contracts/registry.json against contracts/registry.schema.json, 14 applications, valid, no duplicate id, every reference resolves, every family groups (AD-4, AD-5).
@@ -344,7 +450,106 @@ registry schema: read contracts/registry.json against contracts/registry.schema.
 applied one rule beyond the schema. It now applies three and names all three, because a green line
 claiming less than the run actually checked is the same defect in the other direction as a gate that
 is green over a rule it never applied. **The line enumerates rather than counting**, so adding a
-fourth rule without extending it leaves a visible gap rather than a silently stale number.
+fourth rule without extending it leaves a visible gap rather than a silently stale number. **That
+argument was then cashed**: Story 2-6 added a fourth rule and extended the clause list in the same
+change, and the line quoted above is superseded by the one below.
+
+## The demonstration, re-run 2026-09-03 for the editorial rule
+
+Story 2.6 added `editorial voice`, and a rule never observed to fail is not known to work. One
+fixture was planted in `contracts/registry.json`, the gate run against it, the output recorded here,
+and the file restored. **Restoration was verified by SHA-256 rather than by eye**, on the same
+reasoning as the run above: an elided digest cannot be re-checked and re-checking is the entire point
+of recording it. **No fixture is in the tree at this story's closing commit**, and the gate exits 0
+against the restored file.
+
+```
+SHA-256 of contracts/registry.json, before and after the fixture, at this story's final tree:
+5330D3D1198C60098C104D6F6A785BEF74604A49918EC60E0DD318EDC81D15F8
+```
+
+**This digest is not the one recorded for Story 2-5**, and it should not be: nine of the fourteen
+descriptions changed in this story. The 2026-09-03 digest above it,
+`BFB28AF7BAA039F17C10D01287403B1BFC40EF3EBB4B63ABBB5BDBE05706D7A9`, was correct for the tree Story
+2-5 closed on and is kept as history rather than corrected.
+
+| Field | Value | Nature |
+|---|---|---|
+| Fixture D | Four entries breaking the rule in its four separable ways: `cuatro-portfolio`'s `description` replaced by four sentences carrying three of the six banned adjectives, two of them capitalised; `cuatro-tracker`'s replaced by a first-person sentence using three of the six words the first implementation missed, beside the word "Wednesday"; `cs-tracker`'s **`name`** rewritten to carry all three untypeset forms; and `digital-library`'s `description` left with no sentence end at all | **Decision.** The first entry proves the sentence count and the adjective list fire independently on one value and that the refusal names the author's capitalisation rather than the list entry; the second proves the corrected ten-word set fires and does not collide with a word containing "we"; the third proves the punctuation half reads a field that is not `description`; the fourth proves the underrun has wording of its own rather than citing "never four" |
+| Result | The command exited **1** with **eleven** violations: one sentence-count overrun, three adjectives, three first-person words, three untypeset forms and one underrun, each naming the exact thing found | **Observed 2026-09-03** on the Windows 11 development host, by running `node ops/registry-schema.mjs` against the working tree |
+| Removed | Yes, byte for byte | **Observed 2026-09-03** by SHA-256 comparison against the pre-fixture copy, which is the digest above |
+
+**This supersedes a fixture C run recorded here earlier the same day**, which was taken against the
+rule as first implemented and is not kept: unlike the 2026-08-29 and Story 2-5 quotations above, it
+was not a record of a shipped rule failing but of a rule the review then corrected in four places, so
+keeping it would preserve output no version of this gate now produces. The corrections themselves are
+recorded under "The four rules beyond the schema" above, which is where a reader looking for what
+changed will be.
+
+Fixture D, quoted verbatim from the violation count down. The `BEYOND_THE_SCHEMA` line is repeated
+under every violation and is elided here after its first appearance, marked where it was cut.
+
+**The block below carries an em dash, an ellipsis and a pair of curly quotes, and that is not a
+breach of `AGENTS.md:23-25`.** It is program output quoted verbatim inside a fenced block, and those
+three characters are the replacements the refusal exists to name. Rewriting them would falsify the
+one property this section claims. `DESIGN.md:491-497` is the reconciliation: the product renders
+typeset punctuation and the repository's own prose takes none, and a record quoting the product is
+still quoting the product.
+
+```
+  11 violations in contracts/registry.json, by JSON Pointer:
+    /applications/0/description: 4 sentences, where FR-8 fixes one to three and says "never four": "A Powerful front door. It lists things. It is Beautiful. It is seamless."
+      rule: editorial voice
+      This is one of the four rules this gate applies beyond the schema, none of which draft-07 can express, and the editor will not catch it.
+    /applications/0/description: the marketing adjective "Beautiful", as a whole word (FR-8 bans six by name: powerful, seamless, cutting-edge, modern, beautiful, blazing)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/0/description: the marketing adjective "Powerful", as a whole word (FR-8 bans six by name: powerful, seamless, cutting-edge, modern, beautiful, blazing)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/0/description: the marketing adjective "seamless", as a whole word (FR-8 bans six by name: powerful, seamless, cutting-edge, modern, beautiful, blazing)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/1/description: the first-person word "me" at a word boundary (FR-8: no first person, and a Registry entry describes the application rather than its author)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/1/description: the first-person word "mine" at a word boundary (FR-8: no first person, and a Registry entry describes the application rather than its author)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/1/description: the first-person word "us" at a word boundary (FR-8: no first person, and a Registry entry describes the application rather than its author)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/2/name: a double hyphen, "--", where copy a Visitor reads takes an em dash, "—" (UX-DR38 and DESIGN.md, over "name" and "description" only: an id, a family, an absorbed_into and a URL are machine-readable and are left alone, because typesetting one would break the value)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/2/name: a straight double quote, "\"", where copy a Visitor reads takes a curly quote, "“”" (UX-DR38 and DESIGN.md, over "name" and "description" only: an id, a family, an absorbed_into and a URL are machine-readable and are left alone, because typesetting one would break the value)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/2/name: three periods, "...", where copy a Visitor reads takes an ellipsis, "…" (UX-DR38 and DESIGN.md, over "name" and "description" only: an id, a family, an absorbed_into and a URL are machine-readable and are left alone, because typesetting one would break the value)
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+    /applications/3/description: no sentence end at all, where FR-8 fixes one to three sentences. A terminator, optionally followed by a closing quote or bracket, is what ends one: "A library with no full stop"
+      rule: editorial voice
+      [BEYOND_THE_SCHEMA, as above]
+```
+
+**Four things in that output are the point of it.** The fixture's second description reads "It shows
+us the file and gives me mine, on a Wednesday."; the refusal names `us`, `me` and `mine`, which the
+first implementation's four-word set let through entirely, and says nothing about the `we` inside
+"Wednesday", which is the collision a substring match would have made. A standing case holds that
+second half from the other side, by requiring a description carrying "Wednesday", "four", "because",
+"some" and "mist" to pass. Every adjective is named **as the author wrote it**, `Powerful` and
+`Beautiful` with their capitals, rather than as the lowercase list entry it matched against, which is
+exactly what a schema `not` could not have said. Three violations sit on a `name` rather than on a
+`description`, which is the punctuation half's scope made visible, and no violation sits on a
+`source` or an `id`, which is the narrowing. And the last violation says "no sentence end at all"
+rather than citing "never four", because the value broke the other end of the range.
+
+And the committed pair today:
+
+```
+registry schema: read contracts/registry.json against contracts/registry.schema.json, 14 applications, valid, no duplicate id, every reference resolves, every family groups, every description in FR-8 voice, every name and description typeset (AD-4, AD-5).
+```
 
 **Every message a violation carries comes out of the schema.** **Decision.** The second and third
 lines of each violation are the rule's own JSON Pointer and the `description` of the schema node
@@ -388,7 +593,7 @@ meaning the token contract's nine and is now derived from that list rather than 
 
 ## What holds the failure paths permanently
 
-`ops/__tests__/registry-schema.test.ts` carries **87 cases**, one per row of each story's I/O matrix
+`ops/__tests__/registry-schema.test.ts` carries **99 cases**, one per row of each story's I/O matrix
 plus one per refusal no matrix row names plus the wiring cases, and it sits inside the
 already-blocking `test` job. The demonstrations above prove the gate could fail on the days they were
 run; these are what keep it able to fail after a later edit. Every refusal case is built from strings
@@ -396,10 +601,10 @@ or from a scratch tree under `tmpdir()`, so a test run never mutates the committ
 
 | What the block holds | Cases |
 |---|---|
-| The committed pair validates, carries entries, keeps `source` at the repository's capitalisation, and an emptied list is a refusal | 5 |
+| The committed pair validates, carries entries, keeps `source` at the repository's capitalisation, keeps all fourteen descriptions in FR-8 voice with no sentence repeated across entries, names the four rules with the clause each contributes, and an emptied list is a refusal | 7 |
 | The dialect, the value sets, the URL pattern, the keyword set and the enum descriptions | 9 |
-| Every refusal the matrix names, plus the escaping, the truncation, the byte order mark and the sorting | 41 |
-| The pure parts: pointers on every violation, the audit, `else`, the schema form of `additionalProperties`, the uncountable-Registry refusal, and the three structural rules | 12 |
+| Every refusal the matrix names, plus the escaping, the truncation, the byte order mark and the sorting | 50 |
+| The pure parts: pointers on every violation, the audit, `else`, the schema form of `additionalProperties`, the uncountable-Registry refusal, and the four rules beyond the schema | 13 |
 | The gate as the job runs it, through the real binary | 11 |
 | The `ci.yml` wiring | 9 |
 
@@ -416,7 +621,10 @@ character.
 | Cases in the file | **87** in `ops/__tests__/registry-schema.test.ts` | **Observed 2026-09-03** by Vitest. Story 2-5 added eight: three gate-level refusals for the new rules (dangling, self-reference, lonely family), one positive control proving they can be satisfied, one exercising all three structural rules in a single run, two unit-level cases for the rules themselves, and one holding `source` at the repository's capitalisation. Three existing cases were inverted rather than added to, and a fourth stopped asserting a literal entry count |
 | Whole suite | **890 passed, 34 files** by `corepack pnpm test --run`, from 805 in 33 files before this story | **Observed 2026-08-29** at the review pass, on the development host. No browser started. The before figure is the after figure less the 85 cases this story added, rather than a second measured run. `AGENTS.md` stated 738 in 32 files, which was already stale at this story's baseline, and was corrected to the measured figure by this story |
 | Whole suite | **898 passed, 34 files** by `corepack pnpm test --run` in 84 to 136s | **Observed 2026-09-03** on the development host, after Story 2-5 and its review pass. No browser started. Eight more than the 890 above, and no file added. **One of four runs reported a single failure that the other three did not**, and it was not identified because that run's output was truncated; filed in `deferred-work.md` rather than assumed away |
-| Typecheck | Pass, with the new test file inside the program | **Observed 2026-08-29** by `corepack pnpm typecheck`, and **re-confirmed 2026-09-03** after Story 2-5 added two exported rules to the `.mjs`. `tsconfig.json:34-41` puts `**/*.ts` in the program, and the `.mjs` gate carries JSDoc types for it |
+| Whole suite | **910 passed, 34 files** by `corepack pnpm test --run` in 81s | **Observed 2026-09-03** on the development host, after Story 2-6 and its review pass. No browser started. Twelve more than the 898 above, and no file added. It was 906 before the review pass, which added four cases. **The one-in-four failure recorded on the row above did not recur** across the three full runs this story made; it stays filed in `deferred-work.md` rather than closed, since green runs are not evidence about an intermittent |
+| Cases in the file | **99** in `ops/__tests__/registry-schema.test.ts` | **Observed 2026-09-03** by Vitest, after Story 2-6 and its review pass. Twelve more than the 87 above: seven gate-level refusals for the new rule (four sentences, no sentence end at all, a banned adjective as a whole word, first person across the ten-word set, an untypeset form in `name` or `description`, two forms inside one string, and the mandated punctuation counted as a sentence end); two gate-level positive controls, one over the `entry()` fixture every other case is built from and one over honest prose merely containing a banned stem; one pinning the four rules and the clause each contributes; one unit-level case for the rule itself; and one asserting the shipped fourteen conform and repeat no sentence. The all-rules-in-one-run case was extended from three rules to four rather than added to. It was 95 before the review pass, which added four |
+| Cases failing before the rule was wired in | **10**, being 9 of the 12 new cases plus the extended all-rules case | **Observed 2026-09-03** by deleting the `editorial voice` entry from `RULES_BEYOND_THE_SCHEMA` and re-running the file. The three that stay green are the two that call `editorialVoice` directly, which exercise the rule whether or not the pipeline runs it, and the honest-prose positive control, which passes either way by design. **The green-line positive control now goes red with them**, which it did not in the first implementation: the clauses were a literal inside `report()`, so the line named four rules whether or not four ran. The module was restored and the gate re-run before anything was committed |
+| Typecheck | Pass, with the new test file inside the program | **Observed 2026-08-29** by `corepack pnpm typecheck`, and **re-confirmed 2026-09-03** after Story 2-5 added two exported rules to the `.mjs`, and again after Story 2-6 added a third. `tsconfig.json:34-41` puts `**/*.ts` in the program, and the `.mjs` gate carries JSDoc types for it |
 | Gate dependencies | None. `node:fs`, `node:path` and `node:url`, and no `node:process` | **Decision**, asserted by three standing cases reading the module's own source |
 
 **A positive control sits beside all of them**: the committed pair must validate, and the shipped
@@ -439,8 +647,11 @@ names the keyword.
 | **The entry count is pinned nowhere, so `minItems: 1` is a partial mitigation** | Fourteen entries exist and nothing holds that number, or the entries themselves, equal to `ops/registry-inputs.md`, which is the record they were transcribed from. A row edited in one file and not the other is invisible. **The harm `minItems: 1` is argued from is not fully covered by it**: an edit that empties the array is now a refusal, and an edit that cuts fourteen entries to one is not, though it produces very nearly the same directory. Considered by the Operator on 2026-09-03 and **deliberately deferred**: it stays stated limit 1 of `ops/registry-inputs.md` rather than becoming a check here | **Decision.** The suite asserts `\d+ applications` on purpose, so adding an application is not a test failure in a case about something else |
 | **A Registry with no renderable entry validates** | FR-35 renders `Live` and `Complete`. Nothing requires at least one entry to carry either, so fourteen entries all flipped to `In progress` pass the gate and give the Hub an empty Suite Directory, which is the outcome `minItems` was set to prevent by a different route. Not closed here: it is a product rule about what the directory must contain, not a shape rule about the Registry, and AD-5 does not state it | **Decision**, 2026-09-03. Recorded because the argument for `minItems` invites the question |
 | **Only two status combinations are constrained, and the enum descriptions must not imply more** | AD-5 fixes exactly two: `live` is required when `status` is `Live`, and forbidden when it is `Archived`. Everything else validates, and three combinations are worth naming because a reader will expect otherwise. **A `Complete` entry carrying a `live` URL validates**, which is why that value's description no longer says "not deployed": it said so while the schema enforced nothing of the kind. **A `Live` entry declaring `demo: not-deployed` validates**, though the two read as a contradiction. **An `Archived` entry declaring `demo: open` validates**, though it has no `live` URL to open. A schema may not claim more than it enforces, and tightening any of the three is a change to AD-5 rather than to this file | **Decision.** Found by the story's review pass, which is also when the `Complete` description was corrected |
-| **All three structural rules are invisible to the editor** | None can be expressed in draft-07, so AD-4's authoring half covers none of them. An author writing a second entry with an id they already used, an `absorbed_into` pointing at nothing, or a `family` whose partner they forgot, sees nothing until CI runs. **Widened 2026-09-03** from one rule to three | **Decision**, stated above and in every one of the three refusals |
-| **The gate says nothing about whether an entry is true** | A `description` that lies, a stale `status`, a `tech` array naming the wrong framework and a `live` URL that does not resolve all validate. FR-32's scheduled link check is Story 2.23 | **Decision** |
+| **All four rules beyond the schema are invisible to the editor** | None can be expressed in draft-07, so AD-4's authoring half covers none of them. An author writing a second entry with an id they already used, an `absorbed_into` pointing at nothing, a `family` whose partner they forgot, or a fourth sentence in a `description`, sees nothing until CI runs. **Widened 2026-09-03** from one rule to three, and again the same day to four | **Decision**, stated above and in every one of the four refusals |
+| **The gate constrains a description's form and says nothing about whether it is true** | It now holds every `description` to FR-8's shape: one to three sentences, no banned adjective, no first person, typeset punctuation. It still cannot tell that a description is **wrong**. A `description` that lies, a stale `status`, a `tech` array naming the wrong framework and a `live` URL that does not resolve all validate. FR-32's scheduled link check is Story 2.23 | **Decision.** Reworded 2026-09-03 so it does not read as contradicting the new rule, and **Story 2.6 is the proof of it**: three of the fourteen descriptions were refuted by the software they described, and all three were green under every rule this gate applies. Each was found by a person reading a claim against a checkout. An editorial rule constrains form, never truth; what it buys is that the cheap regressions stop, so the expensive check stays affordable |
+| **The story's headline defect is guarded in this repository and nowhere else** | Five of the fourteen descriptions ended with the same sentence before Story 2.6, which is most of what that pass was for, and **no rule in this gate refuses it**. What refuses it is one case in `ops/__tests__/registry-schema.test.ts`, which splits every shipped description on the module's own exported `SENTENCE_END` and fails if a sentence appears twice. So the green line does not name it, `BEYOND_THE_SCHEMA` does not carry it, and a Satellite validating the fetched Registry against the published draft-07 schema gets nothing from it. **It is a statement about the entries as a set, exactly the shape of the first three rules, and it could be a fifth one** | **Decision**, 2026-09-03. Not made a fifth rule because the story's I/O matrix authorises four, and a refusal the matrix does not name is one nobody agreed to. Recorded here rather than left for a reader to infer from the absence of a clause, which is the same argument the enumerated green line rests on |
+| **The straight single quote is not one of the three untypeset forms** | `DESIGN.md:491` says "curly quotes", which ordinarily covers the apostrophe, and an apostrophe inside a word is the commonest case of all. The gate refuses only `"`, `--` and `...`, so `it's` with a straight apostrophe passes. **Nothing costs anything today**: no shipped `name` or `description` carries an apostrophe at all | **Decision**, 2026-09-03. The story's matrix names three forms and widening a refusal past the row authorising it is how a gate starts refusing what nobody agreed to. The cheap moment to add it is the first entry that wants an apostrophe |
+| **The sentence counter depends on a rule it does not itself enforce** | `editorial voice` counts sentence terminators, which an abbreviation or a version number breaks. It is honest against `description` only because FR-8 puts the stack in `tech`, so `Next.js` cannot appear in a `description` without already being a defect. **The rule must never be lifted onto another field**: `tech` carries `Next.js` and `ethers.js` today and the same counter over it would be wrong on its first run | **Decision**, 2026-09-03. Recorded because the rule reads as more general than it is |
 | **It reads the committed tree on a runner, not what is served** | A file changed at `https://cuatro.dev/contracts/registry.json` on the box, without a commit, is invisible here. The same limit `ops/contract-purity.md` records for its own gate | **Decision** |
 | **The vendored comparison no longer covers the whole published surface** | `ops/cs-tracker-adoption-probe.mjs` compares the token contract's nine paths against `cs-tracker`'s vendored folder. Nothing compares the served `registry.json` against what a Satellite fetched, because a Satellite fetches it at build time and vendors nothing | **Decision**, forced by AD-4 and AD-14. Recorded above |
 | **`enumDescriptions` is not a JSON Schema keyword** | It is VS Code's own annotation. An editor that does not implement it shows no per-value description, and every validator ignores it. Nothing asserts on it in either reader, so the cost of it being ignored is a missing hint and never a missing rule | **Decision** |
@@ -456,7 +667,8 @@ names the keyword.
 | 2 | **Make `registry-schema` a required status check on `main`**, in the branch protection settings | Operator | Until it is, AD-21's "blocking" means the job goes red and nothing stops. `ops/contract-purity.md`'s action 2 asks for the same thing for the other five jobs, and this is the sixth: they are worth doing in one sitting | _not done_ |
 | 3 | **When Story 2.5 fills the application list, tighten `applications` with `minItems: 1`** | Story 2.5 | The one entry rule this schema deliberately leaves open. It cannot be set while the envelope is empty, and it should not be left open once it is not. Done in the same commit that authored the fourteen entries, and demonstrated failing against an emptied envelope | **2026-09-03** |
 | 4 | **When a Satellite starts fetching `https://cuatro.dev/contracts/registry.json`, confirm it validates what it fetched** | Operator | This gate validates the committed file. A Satellite fetching at build time is reading a served copy, and nothing here sees that copy. Draft-07 was chosen precisely so a Satellite in any language can run the same schema | _not done_ |
-| 5 | **Confirm AD-4's authoring half in the editor**: open `contracts/registry.json` in VS Code, paste an entry with `"status": "Live"` and no `live`, and check that the editor marks it before anything is saved | Operator | Half of AD-4 is the editor validating while entries are written, and no command on this host can assert it. **Its original window has closed**: this asked to be done before Story 2.5 wrote the real entries, and 2.5 ran on 2026-09-03 without it. Still worth doing, and now more so, because Story 2.6 rewrites every `description` in a fourteen-entry file and is the next chance to find out whether the editor half works | _not done_ |
+| 5 | **Confirm AD-4's authoring half in the editor**: open `contracts/registry.json` in VS Code, paste an entry with `"status": "Live"` and no `live`, and check that the editor marks it before anything is saved | Operator | Half of AD-4 is the editor validating while entries are written, and no command on this host can assert it. **Its original window has closed twice.** It asked to be done before Story 2.5 wrote the real entries, and 2.5 ran on 2026-09-03 without it; it was then re-aimed at Story 2.6, which edited nine of the fourteen descriptions on the same date, also without it. **This story could not close it and did not try**: the editor's behaviour is a GUI observation and every check here runs through a command. It stays open, and the next window is any story that hand-edits the Registry. **The gap it names widened rather than narrowed on 2026-09-03**: the gate now applies four rules the editor cannot see instead of three, and the fourth is the one an author trips most often, since it fires on a fourth sentence rather than on a structural mistake | _not done_ |
+| 6 | **Rule on whether `contract_version` moves for a text-only pass.** Story 2.6 changed nine of the fourteen `description` values and left the version at `1.1.0` | Operator | The field's own rule is "a value change is a minor bump; any field rename is major (AD-16)", which read literally makes nine changed values a bump to `1.2.0`. Story 2-6's boundaries put moving the version behind an Ask First, so it was left alone rather than moved on the story's own judgement. **The cost of leaving it**: AD-4 has Satellites fetch this file over HTTPS at build time, and the version is the only signal one of them has that a description it renders has changed. **The cost of the rule as written**: every editorial correction becomes a minor bump, and the version stops meaning anything a consumer can act on. Worth settling once rather than per story | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row

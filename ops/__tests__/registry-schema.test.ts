@@ -10,9 +10,12 @@ import {
   KEYWORDS,
   REGISTRY,
   SCHEMA,
+  RULES_BEYOND_THE_SCHEMA,
+  SENTENCE_END,
   auditSchema,
   danglingAbsorbedInto,
   duplicateIds,
+  editorialVoice,
   inspect,
   lonelyFamilies,
   report,
@@ -115,6 +118,100 @@ describe('the committed Registry', () => {
     expect(result.message).toContain(REGISTRY);
     expect(result.message).toContain(SCHEMA);
     expect(result.message).toMatch(/\d+ applications?/);
+    // The green line enumerates the rules beyond the schema rather than
+    // counting them. **Read from the rule list rather than from a literal**, so
+    // a rule taken out of the pipeline takes its clause out of the line and this
+    // case goes red. Written as a literal until 2026-09-03, when the review
+    // found that `report()` printed all four clauses whether or not four rules
+    // ran: the case asserting the clause stayed green with the rule unwired,
+    // which defeats the entire argument for enumerating rather than counting.
+    for (const rule of RULES_BEYOND_THE_SCHEMA) {
+      expect(result.message, `the green line stopped naming "${rule.clause}"`).toContain(rule.clause);
+    }
+  });
+
+  it('names four rules beyond the schema, each with the clause it contributes', () => {
+    // The list pinned as a literal, so a fifth rule or a reworded clause is a
+    // deliberate change rather than a drift. The case above holds the other
+    // direction: whatever is in this list has to reach the green line.
+    expect(RULES_BEYOND_THE_SCHEMA.map((rule) => rule.name)).toEqual([
+      'unique id',
+      'absorbed_into resolves',
+      'family groups',
+      'editorial voice',
+    ]);
+    expect(RULES_BEYOND_THE_SCHEMA.map((rule) => rule.clause)).toEqual([
+      'no duplicate id',
+      'every reference resolves',
+      'every family groups',
+      'every description in FR-8 voice, every name and description typeset',
+    ]);
+    // And the rule name each one puts on a violation is the name above, so the
+    // list is not merely a table of labels beside the functions.
+    const broken = { applications: [{ id: 'a', family: 'lonely', absorbed_into: 'gone', description: 'x' }] };
+    const named = new Set(
+      RULES_BEYOND_THE_SCHEMA.flatMap((rule) => rule.apply(broken)).map((violation) => violation.rule)
+    );
+    expect([...named].sort()).toEqual(['absorbed_into resolves', 'editorial voice', 'family groups']);
+  });
+
+  it('carries fourteen descriptions in FR-8 voice, which is the shape the fourth rule holds', () => {
+    // Story 2.6's deliverable, asserted against the rule rather than against a
+    // transcription of the text: a case that pinned the sentences themselves
+    // would fail on every honest edit and be deleted the first time one landed.
+    //
+    // The three refuted descriptions Story 2-5 shipped were corrected here, and
+    // no rule in this file could have caught any of them: the gate constrains
+    // form and never truth, and `cs-tracker` tracking skins rather than matches
+    // took a checkout to establish. What this case holds is the half that is
+    // mechanical, over every entry rather than over the six the Directory
+    // renders (SM-8).
+    const committed = JSON.parse(registryText);
+
+    expect(editorialVoice(committed), 'a shipped description no longer conforms to FR-8').toEqual([]);
+
+    // One definition of "sentence", imported from the module that applies the
+    // rule. A second one written here disagreed with the module's the moment
+    // closing punctuation was added to it, which is precisely the drift a
+    // duplicated definition produces.
+    const ends = new RegExp(`${SENTENCE_END}(?:\\s|$)`, 'g');
+    const splitOn = new RegExp(`(?<=${SENTENCE_END})\\s+`);
+
+    for (const application of committed.applications) {
+      // Asserted rather than coerced. `String(undefined)` counts zero sentences
+      // and fails this case with a message about sentence counts, which sends a
+      // reader looking for the wrong defect.
+      expect(typeof application.description, `${application.id} carries no description string`).toBe(
+        'string'
+      );
+      const sentences = (application.description.match(ends) ?? []).length;
+      expect(sentences, `${application.id} is not one to three sentences`).toBeGreaterThan(0);
+      expect(sentences, `${application.id} is not one to three sentences`).toBeLessThan(4);
+    }
+
+    // And no sentence is carried by two entries. Five of the fourteen ended with
+    // "It is in early development and nothing is deployed yet." until this
+    // story: true on all five, and a third of FR-8's budget spent restating what
+    // `status` and `demo` already carry on the same entry. It was invisible
+    // entry by entry and obvious in a column, which is why the check is here
+    // rather than in a reader's judgement.
+    //
+    // **This is the only thing holding it, and it holds it in this repository
+    // alone.** The gate applies no such rule, so a Satellite fetching the
+    // Registry over HTTPS gets no protection from it and neither would another
+    // repository editing this file. Recorded as a stated limit in
+    // `ops/registry-schema.md` rather than left for a reader to infer from the
+    // absence of a clause in the green line.
+    const sentences = committed.applications.flatMap((application: { description: string }) =>
+      application.description
+        .split(splitOn)
+        .map((sentence: string) => sentence.trim())
+        .filter((sentence: string) => sentence.length > 0)
+    );
+    const repeated = sentences.filter(
+      (sentence: string, index: number) => sentences.indexOf(sentence) !== index
+    );
+    expect(repeated, 'a sentence is carried verbatim by more than one entry').toEqual([]);
   });
 
   it('carries the envelope AD-4 and AD-5 fix, and the entries Story 2.5 authored', () => {
@@ -681,26 +778,237 @@ describe('the gate refuses', () => {
     expect(result.message).toContain(BEYOND_THE_SCHEMA);
   });
 
-  it('all three structural rules in one run, so none of them masks another', () => {
-    // Fixture A of the 2026-09-03 demonstration, as a standing case. Each rule
-    // fires once, which is what makes a refusal naming two of the three proof
-    // that the third stopped working rather than proof that it passed.
+  it('a four-sentence description, naming the pointer, the count and FR-8', () => {
+    const result = against(envelope(entry({ description: 'One thing. Then another. Then a third. And a fourth.' })));
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('/applications/0/description');
+    expect(result.message).toContain('4 sentences');
+    expect(result.message).toContain('FR-8');
+    expect(result.message).toContain('never four');
+    expect(result.message).toContain(BEYOND_THE_SCHEMA);
+  });
+
+  it('and a description carrying no sentence end at all, in its own words', () => {
+    // "One to three sentences" is a range and this is the other end of it. The
+    // wording is deliberately not the overrun's: this value did not break
+    // "never four", and an author told it did goes looking for a sentence to
+    // delete rather than for the full stop they left off.
+    const result = against(envelope(entry({ description: 'A description someone stopped writing' })));
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('/applications/0/description');
+    expect(result.message).toContain('no sentence end at all');
+    expect(result.message).toContain('one to three sentences');
+    expect(
+      result.message,
+      'the underrun cites "never four", a rule this value did not break'
+    ).not.toContain('never four');
+  });
+
+  it('a description ending in the punctuation the other half of this rule mandates', () => {
+    // The contradiction the review found, as a standing case. The counter's
+    // first form was a bare terminator before whitespace or end, so a
+    // description ending in a typeset ellipsis, or in a full stop inside a
+    // closing curly quote, counted **zero** sentences and was refused citing
+    // "never four", while the punctuation half refuses the untypeset forms and
+    // therefore requires exactly those shapes. The two halves of one rule may
+    // never contradict each other on a shape the rule itself mandates.
+    //
+    // Built from code points, so this source file carries neither an ellipsis
+    // nor a curly quote of its own.
+    const ellipsis = String.fromCodePoint(0x2026);
+    const openQuote = String.fromCodePoint(0x201c);
+    const closeQuote = String.fromCodePoint(0x201d);
+
+    for (const [what, description] of [
+      ['a typeset ellipsis', `It reads EPUB, PDF and more${ellipsis}`],
+      ['a full stop inside a closing curly quote', `It is called ${openQuote}a contract.${closeQuote}`],
+      ['a full stop inside a bracket', 'It reads EPUB (and PDF.)'],
+      ['a closing bracket after the stop', 'It reads EPUB (and PDF).'],
+      ['three of them, the last closing a quote', `One. Two. It is ${openQuote}three.${closeQuote}`],
+    ] as const) {
+      const result = against(envelope(entry({ description })));
+      expect(result.ok, `${what}: ${result.message}`).toBe(true);
+    }
+
+    // And the count is still taken, so the closers did not turn the counter off:
+    // four sentences ending the same way is still four.
+    const four = against(
+      envelope(entry({ description: `One. Two. Three. It is ${openQuote}four.${closeQuote}` }))
+    );
+    expect(four.ok, 'the closing-punctuation allowance swallowed the count').toBe(false);
+    expect(four.message).toContain('4 sentences');
+  });
+
+  it('a banned adjective as a whole word, naming the text it matched', () => {
+    // The half that cannot be a schema rule. `not` with a `pattern` is
+    // implemented and would bind, but patterns compile with no flags, so a
+    // case-insensitive list needs character classes, and `not`'s refusal says
+    // only "this value matches a shape the schema forbids here". An editorial
+    // gate that cannot name the word teaches nothing, and teaching the author is
+    // the whole of what this rule is for.
+    const result = against(envelope(entry({ description: 'A Blazing renderer for cutting-edge lists.' })));
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('/applications/0/description');
+    // The text as the author wrote it, not the list entry it matched against.
+    // Reporting the lowercase stem sends an author looking for a word that is
+    // not in their description.
+    expect(result.message, 'the refusal named the list entry rather than the text found').toContain(
+      '"Blazing"'
+    );
+    expect(result.message).toContain('"cutting-edge"');
+    expect(result.message).toContain('powerful, seamless, cutting-edge, modern, beautiful, blazing');
+  });
+
+  it('and passes honest prose that merely contains one, which is the accepted cost', () => {
+    // Substring matching shipped first and refused both of these. FR-8 bans six
+    // words by name; "modernization" and "trailblazing" are not those words, and
+    // a rule that refuses honest prose is switched off by the next author rather
+    // than read. "blazingly" passing with them is the recorded cost of the same
+    // ruling.
+    for (const description of [
+      'A modernization of the tool it replaces.',
+      'A trailblazing approach to picking one entry.',
+      'It renders blazingly quickly on a long list.',
+    ]) {
+      const result = against(envelope(entry({ description })));
+      expect(result.ok, `${description} was refused: ${result.message}`).toBe(true);
+    }
+  });
+
+  it('first person across the whole set, without colliding with a word that contains one', () => {
+    const result = against(
+      envelope(entry({ description: 'We publish it on Wednesday, for our own use.' }))
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('"We"');
+    expect(result.message).toContain('"our"');
+    expect(result.message).toContain('first-person');
+
+    // The six the first implementation missed. The story's matrix listed `I`,
+    // `we`, `our` and `my` as examples and they shipped as the definition, so a
+    // description reading "It shows us the file and gives me mine" passed a rule
+    // advertised as banning first person.
+    for (const word of ['us', 'ours', 'mine', 'me', 'myself', 'ourselves']) {
+      const refused = against(envelope(entry({ description: `It hands ${word} the file.` })));
+      expect(refused.ok, `"${word}" passed a rule that bans first person`).toBe(false);
+      expect(refused.message).toContain(`"${word}"`);
+    }
+
+    // And the collisions the rule must not make. "Wednesday" carries "we",
+    // "four" carries "our", "because" carries "us", "some" carries "me" and
+    // "mist" carries "i": a substring match would refuse every one of them.
+    const innocent = against(
+      envelope(
+        entry({
+          description: 'On Wednesday it lists four items, because some of them arose from a mist.',
+        })
+      )
+    );
+    expect(innocent.ok, innocent.message).toBe(true);
+  });
+
+  it('an untypeset form in name or description, and never in an id or a URL', () => {
+    // UX-DR38 governs the copy a Visitor reads. It read every string in the
+    // Registry until the review, which made a repository whose name carries a
+    // double hyphen an unfixable refusal: the gate demanded an em dash and the
+    // story separately forbids altering a `source` URL, and the demanded repair
+    // 404s the entry. Nothing tripped it, which is what made it a trap.
+    const quoted = against(envelope(entry({ description: 'It calls the file a "contract".' })));
+    const dashed = against(envelope(entry({ name: 'Demo -- App' })));
+    const trailed = against(envelope(entry({ description: 'It reads EPUB, PDF and more...' })));
+
+    expect(quoted.ok).toBe(false);
+    expect(quoted.message).toContain('/applications/0/description');
+    expect(quoted.message).toContain('a straight double quote');
+    expect(quoted.message).toContain('a curly quote');
+
+    expect(dashed.ok).toBe(false);
+    expect(dashed.message, 'the rule reads description alone, not name too').toContain(
+      '/applications/0/name'
+    );
+    expect(dashed.message).toContain('a double hyphen');
+    expect(dashed.message).toContain('an em dash');
+
+    expect(trailed.ok).toBe(false);
+    expect(trailed.message).toContain('three periods');
+    expect(trailed.message).toContain('an ellipsis');
+
+    // The machine-readable fields, which are left alone. **`source` and `live`
+    // are where the exposure actually was**: the `id` and `family` patterns are
+    // kebab-case and refuse a double hyphen on their own, so the schema already
+    // covers those two, while the URL pattern permits one and a repository
+    // really can be named that way. The only repair the rule could have demanded
+    // is one that breaks the link FR-6 exists to provide.
+    const machine = against(
+      envelope(
+        entry({
+          status: 'Live',
+          source: 'https://github.com/luigiespinosa/demo--app',
+          live: 'https://demo--app.example/a...b',
+        })
+      )
+    );
+    expect(machine.ok, `a machine-readable field was refused for punctuation: ${machine.message}`).toBe(
+      true
+    );
+  });
+
+  it('and reports every form a single string carries, rather than the first', () => {
+    // The unit case below covers one form per field. This is the case that was
+    // missing: two forms in one value, which is what an author who has not read
+    // UX-DR38 actually writes.
+    const result = against(envelope(entry({ description: 'It says "hi" and then trails off...' })));
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('a straight double quote');
+    expect(result.message).toContain('three periods');
+    expect(result.message, 'only one of the two forms in one string was reported').toContain(
+      '2 violations'
+    );
+  });
+
+  it('and passes the fixture every other case in this file is built from', () => {
+    // The positive control the editorial rule needs most. Its own `description`
+    // feeds every fixture in this suite, so a rule that refused it would turn
+    // one bad regular expression into a hundred failures naming nothing.
+    const result = against(envelope(entry()));
+
+    expect(result.ok, result.message).toBe(true);
+    // From the rule list, so this goes red if the rule leaves the pipeline. A
+    // literal here would stay green, which is the defect the review found in the
+    // first implementation of this very assertion.
+    const editorial = RULES_BEYOND_THE_SCHEMA.find((rule) => rule.name === 'editorial voice');
+    expect(editorial, 'the editorial rule is no longer in the rule list at all').toBeDefined();
+    expect(result.message).toContain(String(editorial?.clause));
+  });
+
+  it('all four rules beyond the schema in one run, so none of them masks another', () => {
+    // Fixture A of the first 2026-09-03 demonstration, extended by Story 2-6
+    // for the fourth rule. Each rule fires once, which is
+    // what makes a refusal naming three of the four proof that the fourth
+    // stopped working rather than proof that it passed.
     const result = against(
       envelope(
         entry({ id: 'alpha', absorbed_into: 'ghost-app' }),
         entry({ id: 'beta', absorbed_into: 'beta' }),
-        entry({ id: 'alpha', family: 'lonely-family' })
+        entry({ id: 'alpha', family: 'lonely-family' }),
+        entry({ id: 'delta', description: 'One thing. Then another. Then a third. And a fourth.' })
       )
     );
 
     expect(result.ok).toBe(false);
-    // Four violations across three rules: the duplicate id, both halves of the
-    // reference rule, and the lonely family.
-    expect(result.message).toContain('4 violations');
+    // Five violations across four rules: the duplicate id, both halves of the
+    // reference rule, the lonely family, and the four-sentence description.
+    expect(result.message).toContain('5 violations');
     expect(result.message).toContain('/applications/2/id');
     expect(result.message).toContain('/applications/0/absorbed_into');
     expect(result.message).toContain('/applications/1/absorbed_into');
     expect(result.message).toContain('/applications/2/family');
+    expect(result.message).toContain('/applications/3/description');
   });
 
   it('and passes both reference rules when the entries resolve, so they can be satisfied', () => {
@@ -1028,6 +1336,54 @@ describe('the validator itself', () => {
       ],
     });
     expect(findings.map((violation) => violation.instance)).toEqual(['/applications/2/family']);
+  });
+
+  it('reads name and description as strings only, and no other field at all', () => {
+    // Same deferral to the schema the other two reference rules make, for the
+    // same reason: a wrong-typed field is one defect and gets one complaint.
+    expect(editorialVoice({ applications: [{ id: 'a', description: 7 }] })).toEqual([]);
+    expect(editorialVoice({ applications: [{ id: 'a', name: 7, description: 'One thing.' }] })).toEqual([]);
+    expect(editorialVoice({ applications: [] })).toEqual([]);
+    expect(editorialVoice({}), 'a Registry with no list produced an editorial finding').toEqual([]);
+    expect(editorialVoice('not a Registry at all')).toEqual([]);
+
+    // The envelope is not walked. It was until the review, along with every
+    // other string in the document, which is how a `source` URL came to be
+    // refused for a double hyphen.
+    expect(
+      editorialVoice({ $schema: './registry...json', applications: [] }),
+      'the rule still walks the envelope, so a URL or an id can be refused for punctuation'
+    ).toEqual([]);
+    expect(
+      editorialVoice({
+        applications: [
+          { id: 'a--b', description: 'One thing.', source: 'https://example.test/a--b', family: 'f--g' },
+        ],
+      }),
+      'a machine-readable field was refused for punctuation'
+    ).toEqual([]);
+
+    // One finding per form per field: a `name` and a `description` each
+    // carrying a different form produce two, at their own pointers.
+    const across = editorialVoice({
+      applications: [{ id: 'a', name: 'A -- B', description: 'It trails off... and stops.' }],
+    });
+    expect(across.map((violation) => violation.instance)).toEqual([
+      '/applications/0/description',
+      '/applications/0/name',
+    ]);
+
+    // And two forms inside **one** string produce two findings at one pointer,
+    // which is the case the comment above this block used to claim while the
+    // fixture below it spread the two forms across two fields.
+    const within = editorialVoice({
+      applications: [{ id: 'a', name: 'A', description: 'It says "hi" and trails off...' }],
+    });
+    expect(within).toHaveLength(2);
+    expect(within.map((violation) => violation.instance)).toEqual([
+      '/applications/0/description',
+      '/applications/0/description',
+    ]);
   });
 
   it('refuses a subschema that is not an object, rather than applying nothing', () => {

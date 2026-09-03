@@ -5,7 +5,7 @@
     {
       "id": "cuatro-portfolio",
       "name": "Cuatro Ecosystem",
-      "description": "The front door to the suite. Lists every application that is running, what it does, and where its source lives.",
+      "description": "The front door to the suite. It lists the applications in the Ecosystem, says what each one does, and links to where its source lives.",
       "status": "Live",
       "tech": ["Next.js", "React", "TypeScript", "Sass", "Docker", "Caddy"],
       "source": "https://github.com/LuigiEspinosa/cuatro-portfolio",
@@ -16,7 +16,7 @@
     {
       "id": "cuatro-tracker",
       "name": "Cuatro Tracker",
-      "description": "Keeps a running record of collections and what is still missing from them.",
+      "description": "A self-hosted tracker for movies, TV shows, anime, manga and video games. Every entry sits on one timeline ordered by release date, so the five kinds are read together rather than as separate lists.",
       "status": "Live",
       "tech": ["Next.js", "React", "Prisma", "PostgreSQL", "Redis", "BullMQ"],
       "source": "https://github.com/LuigiEspinosa/cuatro-tracker",
@@ -28,7 +28,7 @@
     {
       "id": "cs-tracker",
       "name": "CS Tracker",
-      "description": "Tracks Counter-Strike matches and player statistics, updating in place as results come in.",
+      "description": "Tracks Counter-Strike 2 skins. It carries a catalog of items, syncs a Steam inventory, holds a wishlist with target prices, and follows what each item sells for across several marketplaces.",
       "status": "Live",
       "tech": ["Elixir", "Phoenix", "LiveView", "PostgreSQL", "Oban", "Docker"],
       "source": "https://github.com/LuigiEspinosa/cs-tracker",
@@ -74,7 +74,7 @@
     {
       "id": "cuatro-finance",
       "name": "Cuatro Finance",
-      "description": "A self-hosted personal finance application for Colombian accounts, covering expense tracking, budgets, debt payoff and investments across pesos, dollars and crypto. It reads transactions from connected banks and forecasts cash flow. It is in early development and nothing is deployed yet.",
+      "description": "A self-hosted personal finance application for Colombian accounts, covering expense tracking, budgets, debt payoff and investments across pesos, dollars and crypto. It reads transactions from connected banks and forecasts cash flow.",
       "status": "In progress",
       "tech": ["Next.js", "React", "TypeScript", "Prisma", "PostgreSQL", "Docker"],
       "source": "https://github.com/LuigiEspinosa/cuatro-finance",
@@ -84,7 +84,7 @@
     {
       "id": "streamvault",
       "name": "StreamVault",
-      "description": "A self-hosted stream recorder. It watches a list of streamers, starts recording the moment one goes live, and collects the results in a library that can be browsed, played and pruned. It is in early development and nothing is deployed yet.",
+      "description": "A self-hosted stream recorder. It watches a list of streamers, starts recording the moment one goes live, and collects the results in a library that can be browsed, played and pruned.",
       "status": "In progress",
       "tech": ["Python", "FastAPI", "Nuxt", "SQLite", "Docker", "Caddy"],
       "source": "https://github.com/LuigiEspinosa/StreamVault",
@@ -94,7 +94,7 @@
     {
       "id": "maicoin",
       "name": "MaiCoin",
-      "description": "A learning project that walks an ERC-20 token through its whole life, from writing the contract to a dashboard where connected wallets can check balances, send tokens and watch them being minted and burned. It runs on a test network rather than the main one, so no real money is involved. It is in early development and nothing is deployed yet.",
+      "description": "A learning project that walks an ERC-20 token through its whole life, from writing the contract to a dashboard where connected wallets can check balances, send tokens and watch them being minted and burned. It runs on a test network rather than the main one, so no real money is involved.",
       "status": "In progress",
       "tech": ["Solidity", "Hardhat", "TypeScript", "ethers.js", "OpenZeppelin"],
       "source": "https://github.com/LuigiEspinosa/MaiCoin",
@@ -104,7 +104,7 @@
     {
       "id": "poketracker-go",
       "name": "PokéTracker GO",
-      "description": "A Pokémon GO companion for completionists: a Pokédex tracker covering every catchable variant, paired with a watchlist. A rule added to the watchlist tells a bot which spawn announcements to watch for, and a phone alert follows when one matches. It is in early development and nothing is deployed yet.",
+      "description": "A Pokémon GO companion for completionists: a Pokédex tracker covering every catchable variant, paired with a watchlist. A rule added to the watchlist tells a bot which spawn announcements to watch for, and a phone alert follows when one matches.",
       "status": "In progress",
       "tech": ["Go", "PostgreSQL", "pgx", "sqlc"],
       "source": "https://github.com/LuigiEspinosa/poketracker-go",
@@ -115,7 +115,7 @@
     {
       "id": "mutuo",
       "name": "Mutuo",
-      "description": "A therapy platform connecting patients with licensed therapists. It covers the path from finding a match to booking an appointment, meeting over encrypted video, and keeping notes and assigned work afterwards, with separate portals for patients, therapists and administrators. It is in early development and nothing is deployed yet.",
+      "description": "A therapy platform connecting patients with licensed therapists. It covers the path from finding a match to booking an appointment, meeting over encrypted video, and keeping notes and assigned work afterwards, with separate portals for patients, therapists and administrators.",
       "status": "In progress",
       "tech": ["Bun", "Vue", "Drizzle ORM", "Caddy", "Docker"],
       "source": "https://github.com/LuigiEspinosa/Mutuo",
@@ -135,7 +135,7 @@
     {
       "id": "tcg-tracker",
       "name": "TCG Tracker",
-      "description": "A trading card game collection tracker. It was never built, and the idea folds into Cuatro Tracker as one of its domains.",
+      "description": "A trading card game collection tracker. It was never built, and the idea is set to fold into Cuatro Tracker as one of its domains.",
       "status": "Archived",
       "tech": ["Next.js", "React", "Prisma", "PostgreSQL"],
       "source": "https://github.com/LuigiEspinosa/tcg-tracker",

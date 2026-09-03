@@ -27,13 +27,15 @@
 // is even parsed, so an unsupported keyword can never be reported as a valid
 // instance.
 //
-// **Three rules are enforced beyond the schema.** Uniqueness of `id` across
-// entries, `absorbed_into` naming an entry that exists and is not itself, and a
-// `family` value being shared rather than carried alone: draft-07 can express
-// none of the three, because each is a statement about the entries as a set
-// rather than about one value. They are applied here as named structural rules,
-// said so in the refusal, and recorded in `ops/registry-schema.md`: the editor
-// will not catch any of them.
+// **Four rules are enforced beyond the schema.** Uniqueness of `id` across
+// entries, `absorbed_into` naming an entry that exists and is not itself, a
+// `family` value being shared rather than carried alone, and the mechanizable
+// half of FR-8's editorial contract. Draft-07 can express none of the four. The
+// first three are each a statement about the entries as a set rather than about
+// one value; the fourth is a rule that has to name the word it found, which a
+// schema refusal cannot do. They are applied here as named rules, said so in the
+// refusal, and recorded in `ops/registry-schema.md`: the editor will not catch
+// any of them.
 
 import { readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -51,10 +53,10 @@ const MUST_CARRY = {
   [REGISTRY]: 'the envelope carrying $schema, contract_version and the application list (AD-4)',
 };
 
-/** The rules this gate applies beyond the schema, worded once for all three. */
+/** The rules this gate applies beyond the schema, worded once for all four. */
 export const BEYOND_THE_SCHEMA =
-  'Uniqueness and reference across entries cannot be expressed in draft-07, so this is one of the' +
-  ' three rules this gate applies beyond the schema, and the editor will not catch it.';
+  'This is one of the four rules this gate applies beyond the schema, none of which draft-07 can' +
+  ' express, and the editor will not catch it.';
 
 /** @param {string} relative */
 const beside = (relative) => fileURLToPath(new URL(`../${relative}`, import.meta.url));
@@ -289,6 +291,7 @@ const isPlainObject = (/** @type {unknown} */ value) =>
  *             unparsed: { label: string, error: string }[],
  *             unsupported: Unsupported[],
  *             violations: Violation[],
+ *             applied: string[],
  *             entries: number | null }} Inspection
  * @typedef {{ ok: boolean, message: string }} Result
  */
@@ -909,6 +912,265 @@ export function lonelyFamilies(instance) {
   return violations.sort(order);
 }
 
+/**
+ * The six adjectives `EXPERIENCE.md:234-240` bans **by name**, matched as whole
+ * words and case-insensitively.
+ *
+ * **Whole word rather than substring, by Operator ruling of 2026-09-03.** The
+ * substring form shipped first and was wrong in both directions at once. It
+ * refused `"modernization"` and `"trailblazing"`, which are honest prose, and it
+ * reported the list entry it matched **against** rather than the text it matched,
+ * so an author told their description carries "blazing" had to go looking for a
+ * word that is not in it. That contradicts the reason this rule exists at all: a
+ * gate that cannot name what it found teaches nothing.
+ *
+ * **`"blazingly"` passes, and that is the accepted cost.** FR-8 bans six words
+ * by name and this list is those six words. A rule that refuses honest prose is
+ * switched off by the next author rather than read, which costs more than one
+ * adverb.
+ */
+const MARKETING_ADJECTIVES = ['powerful', 'seamless', 'cutting-edge', 'modern', 'beautiful', 'blazing'];
+
+/** The six, as one whole-word alternation. */
+const ADJECTIVE = String.raw`\b(?:${MARKETING_ADJECTIVES.join('|')})\b`;
+
+/**
+ * First person, at a word boundary rather than as a substring.
+ *
+ * **The set is ten words, not the four the story's first matrix row listed.**
+ * That row named `I`, `we`, `our` and `my` as examples and they shipped as the
+ * definition, so `"It shows us the file and gives me mine."` passed a rule
+ * advertised as banning first person. Corrected 2026-09-03.
+ *
+ * **Longest alternative first**, so the reported text is the whole word: at
+ * `"ours"` an `our`-first ordering matches `our`, fails its trailing boundary,
+ * backtracks and reaches the right answer anyway, but only by accident of
+ * backtracking. Ordering it explicitly is what makes the reported text
+ * dependable rather than lucky.
+ *
+ * The boundaries are the whole of the rule's safety: "Wednesday" must not read
+ * as "we", "four" must not read as "our", "because" must not read as "us" and
+ * "some" must not read as "me". The rule is worthless if it refuses honest
+ * prose, because the next author turns it off rather than reading it.
+ */
+const FIRST_PERSON = String.raw`\b(?:ourselves|myself|ours|mine|our|we|us|my|me|i)\b`;
+
+/**
+ * What ends a sentence, for FR-8's count.
+ *
+ * A terminator, then **any run of closing punctuation**, and the count is taken
+ * where that run is followed by whitespace or the end of the string.
+ *
+ * **The closers are not a nicety: without them the two halves of this one rule
+ * contradict each other.** The punctuation half requires a typeset ellipsis and
+ * typeset curly quotes, and the counter's first form, a bare `[.!?]` before
+ * whitespace or end, counted a description ending in one of exactly those as
+ * **zero** sentences and refused it citing "never four". The rule was forcing
+ * the author to write a shape it then refused. U+2026 is a terminator here for
+ * the same reason it is the mandated replacement for three periods, and U+201D,
+ * U+2019, `)`, `]` and `}` close a sentence without ending it.
+ *
+ * **Counting terminators is a naive way to count sentences in general**: an
+ * abbreviation or a version number breaks it. It is honest **against this field
+ * only**, and precisely because FR-8 bans the thing that would break it. "The
+ * stack is the `tech` field's job", so `Next.js` and `v1.2` cannot appear in a
+ * `description` without already being a defect that a person reading the entry
+ * has to catch. That dependency is why this rule can be trusted here and why it
+ * must never be lifted onto another field.
+ *
+ * Exported because `ops/__tests__/registry-schema.test.ts` splits the shipped
+ * descriptions into sentences to check that none is carried by two entries, and
+ * a second definition of "sentence" written there would disagree with this one
+ * the first time either moved.
+ */
+export const SENTENCE_END = '[.!?\\u2026][\\u201d\\u2019")\\]}]*';
+
+/** The count is taken where a sentence end meets whitespace or the string end. */
+const TERMINATOR = `${SENTENCE_END}(?:\\s|$)`;
+
+/**
+ * The three untypeset forms `DESIGN.md:491-497` refuses in reader-facing copy,
+ * and the typeset character each stands in for.
+ *
+ * **The replacements are named by code point, never written as the characters
+ * themselves**, the same way `BOM` is above and for a related reason: two
+ * punctuation rules apply to different things here and do not conflict. A string
+ * a Visitor reads is a product string and takes typeset punctuation; prose
+ * written **into** this repository, this file included, takes no dash at all
+ * (`AGENTS.md:23-25`). `DESIGN.md:491-497` states the reconciliation, and citing
+ * it is what stops the next reader taking UX-DR38 for a contradiction. The code
+ * point is what lets one source file carry a rule about a character it may not
+ * itself contain.
+ *
+ * The straight single quote is deliberately **not** here, though "curly quotes"
+ * would ordinarily cover an apostrophe. The story's matrix names three forms and
+ * only three, and the reason it is out is recorded in `ops/registry-schema.md`
+ * rather than decided here.
+ */
+const UNTYPESET = [
+  { found: '"', wrote: 'a straight double quote', takes: 'a curly quote', points: [0x201c, 0x201d] },
+  { found: '--', wrote: 'a double hyphen', takes: 'an em dash', points: [0x2014] },
+  { found: '...', wrote: 'three periods', takes: 'an ellipsis', points: [0x2026] },
+];
+
+/**
+ * The two fields the punctuation half reads: the copy a Visitor actually reads.
+ *
+ * **It read every string in the Registry until 2026-09-03, and that was a trap
+ * rather than a rule.** `source` and `live` are URLs and `id`, `family` and
+ * `absorbed_into` are identifiers. A repository whose name carries a double
+ * hyphen would have been refused and told to write an em dash, which is a repair
+ * that 404s the entry, and which this story separately forbids. Nothing in the
+ * shipped Registry trips it today, which is exactly what makes it a trap: the
+ * first entry that did would have had no legal way out.
+ *
+ * `epics.md:2271` sets UX-DR38 over "every string in the Registry" and cannot
+ * have meant an identifier, because the repair it demands breaks the one field a
+ * reader clicks. **Operator ruling of 2026-09-03: `name` and `description`.**
+ */
+const READER_FACING = ['name', 'description'];
+
+/**
+ * The fourth rule beyond the schema: the mechanizable half of FR-8's editorial
+ * contract, plus the typeset-punctuation rule over the copy a Visitor reads.
+ *
+ * **Why this cannot be a schema rule.** `not` with a `pattern` is implemented and
+ * would bind, but the validator compiles patterns with no flags, so a
+ * case-insensitive list needs character classes, and `not`'s refusal says only
+ * "this value matches a shape the schema forbids here". An editorial gate that
+ * cannot name the word it found teaches nothing, and teaching the author is the
+ * whole of what this rule is for. The other three rules live outside the schema
+ * for their own reasons; this one is here for that one.
+ *
+ * **What it asserts and what it deliberately does not.** It applies the four
+ * halves that are mechanical: one to three sentences, the six banned adjectives,
+ * first person, and the three untypeset forms. It says nothing about "leads with
+ * the thing itself", about status synonyms, or about an invented number, all of
+ * which need judgement and would refuse honest prose. **It does not hold that no
+ * sentence is carried by two entries**, which was this story's headline defect;
+ * that is a check in this repository's suite and nowhere else, and
+ * `ops/registry-schema.md` states the limit. And it says nothing about whether a
+ * `description` is **true**: no rule can know that `cs-tracker` tracks skins
+ * rather than matches, and that took a checkout. Form, never truth.
+ *
+ * @param {unknown} instance
+ * @returns {Violation[]}
+ */
+export function editorialVoice(instance) {
+  /** @type {Violation[]} */
+  const violations = [];
+  const applications = applicationsOf(instance);
+  if (applications === null) return violations;
+
+  /**
+   * @param {string} pointer
+   * @param {string} detail
+   */
+  const say = (pointer, detail) =>
+    violations.push({
+      instance: pointer,
+      rule: 'editorial voice',
+      schema: null,
+      detail,
+      note: BEYOND_THE_SCHEMA,
+    });
+
+  applications.forEach((entry, index) => {
+    // Every pattern is compiled here rather than held as a module-level `RegExp`:
+    // a shared global regular expression carries `lastIndex` between calls, and a
+    // rule whose answer depends on how many entries ran before it is worse than
+    // no rule at all.
+    for (const field of READER_FACING) {
+      const text = fieldOf(entry, field);
+      if (text === null) continue;
+      const spot = `/applications/${index}/${field}`;
+      for (const form of UNTYPESET) {
+        if (!text.includes(form.found)) continue;
+        say(
+          spot,
+          `${form.wrote}, ${show(form.found)}, where copy a Visitor reads takes ${form.takes},` +
+            ` ${show(String.fromCodePoint(...form.points))} (UX-DR38 and DESIGN.md, over "name" and` +
+            ' "description" only: an id, a family, an absorbed_into and a URL are machine-readable' +
+            ' and are left alone, because typesetting one would break the value)'
+        );
+      }
+    }
+
+    const description = fieldOf(entry, 'description');
+    if (description === null) return;
+    const pointer = `/applications/${index}/description`;
+
+    const sentences = (description.match(new RegExp(TERMINATOR, 'g')) ?? []).length;
+    if (sentences === 0) {
+      // Its own wording. The overrun cites "never four", which is the rule a
+      // fourth sentence breaks; a value with no terminator at all broke the
+      // other end of the range and being told about "never four" sends its
+      // author looking for a sentence to delete.
+      say(
+        pointer,
+        'no sentence end at all, where FR-8 fixes one to three sentences. A terminator, optionally' +
+          ` followed by a closing quote or bracket, is what ends one: ${show(description)}`
+      );
+    } else if (sentences > 3) {
+      say(
+        pointer,
+        `${sentences} sentences, where FR-8 fixes one to three and says "never four":` +
+          ` ${show(description)}`
+      );
+    }
+
+    /** @type {Set<string>} */
+    const adjectives = new Set();
+    for (const match of description.matchAll(new RegExp(ADJECTIVE, 'gi'))) adjectives.add(match[0]);
+    for (const found of [...adjectives].sort()) {
+      say(
+        pointer,
+        `the marketing adjective ${show(found)}, as a whole word (FR-8 bans six by name: ` +
+          `${MARKETING_ADJECTIVES.join(', ')})`
+      );
+    }
+
+    /** @type {Set<string>} */
+    const person = new Set();
+    for (const match of description.matchAll(new RegExp(FIRST_PERSON, 'gi'))) person.add(match[0]);
+    for (const word of [...person].sort()) {
+      say(
+        pointer,
+        `the first-person word ${show(word)} at a word boundary (FR-8: no first person, and a` +
+          ' Registry entry describes the application rather than its author)'
+      );
+    }
+  });
+
+  return violations.sort(order);
+}
+
+/**
+ * The rules this gate applies beyond the schema, as data: the function that
+ * applies each and the clause the green line says it applied.
+ *
+ * **This list is why "the line enumerates rather than counts" is true rather
+ * than merely intended.** The clauses were written into `report()` as a literal
+ * until 2026-09-03, so the green line claimed four rules whether or not four ran:
+ * unwiring a rule left its clause printing and the positive control asserting
+ * that clause stayed green, which defeats the whole argument for enumerating.
+ * The clause now travels with the function, `inspect()` reports the clauses of
+ * the rules it actually ran, and a rule taken out of this array takes its clause
+ * out of the line with it.
+ *
+ * @type {{ name: string, clause: string, apply: (instance: unknown) => Violation[] }[]}
+ */
+export const RULES_BEYOND_THE_SCHEMA = [
+  { name: 'unique id', clause: 'no duplicate id', apply: duplicateIds },
+  { name: 'absorbed_into resolves', clause: 'every reference resolves', apply: danglingAbsorbedInto },
+  { name: 'family groups', clause: 'every family groups', apply: lonelyFamilies },
+  {
+    name: 'editorial voice',
+    clause: 'every description in FR-8 voice, every name and description typeset',
+    apply: editorialVoice,
+  },
+];
+
 // ---------------------------------------------------------------------------
 // The run
 // ---------------------------------------------------------------------------
@@ -936,6 +1198,7 @@ export function inspect(schemaSource, registrySource) {
     unparsed: [],
     unsupported: [],
     violations: [],
+    applied: [],
     entries: null,
   };
 
@@ -987,9 +1250,7 @@ export function inspect(schemaSource, registrySource) {
   const registry = registryParse.value;
   const violations = [
     ...validate(schemaParse.value, registry),
-    ...duplicateIds(registry),
-    ...danglingAbsorbedInto(registry),
-    ...lonelyFamilies(registry),
+    ...RULES_BEYOND_THE_SCHEMA.flatMap((rule) => rule.apply(registry)),
   ].sort(order);
   const applications = isPlainObject(registry)
     ? /** @type {Record<string, unknown>} */ (registry).applications
@@ -999,6 +1260,9 @@ export function inspect(schemaSource, registrySource) {
     ...empty,
     stage: 'validated',
     violations,
+    // What ran, not what this file hopes ran. `report()` builds the green line
+    // from exactly this, so the line cannot claim a rule the run did not apply.
+    applied: RULES_BEYOND_THE_SCHEMA.map((rule) => rule.clause),
     entries: Array.isArray(applications) ? applications.length : null,
   };
 }
@@ -1115,8 +1379,12 @@ export function report(inspection) {
     ok: true,
     message:
       `registry schema: read ${REGISTRY} against ${SCHEMA}, ${entries} ` +
-      `application${plural(entries)}, valid, no duplicate id, every reference resolves, ` +
-      'every family groups (AD-4, AD-5).',
+      `application${plural(entries)}, valid, ` +
+      // Enumerated from the rules that actually ran. A rule removed from
+      // `RULES_BEYOND_THE_SCHEMA` loses its clause here in the same edit, so the
+      // line can never claim more than the run checked, which is the same defect
+      // in the other direction as a gate green over a rule it never applied.
+      `${inspection.applied.join(', ')} (AD-4, AD-5).`,
   };
 }
 

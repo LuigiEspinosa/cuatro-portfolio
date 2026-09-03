@@ -1733,6 +1733,139 @@ status: done
 
     The drafts shipped verbatim under an Operator ruling of 2026-09-03, on the ground that Story 2.6
     confirms them against the running software and GitHub metadata is a weaker source than either.
+
+    Closed 2026-09-03 by Story `2-6-the-editorial-voice-pass`. All three contradictions were resolved
+    against a local checkout rather than against the metadata that raised them: `cs-tracker`'s
+    contexts are `catalog`, `inventory`, `wishlist` and `prices` and the word "match" appears in
+    `lib/` only as a verb, `cuatro-tracker`'s `prisma/schema.prisma` carries an `enum MediaType` and
+    a `release_date` commented "THE sort field", and `cuatro-portfolio`'s claim about "every
+    application that is running" was refuted by the Registry it is an entry in. The repeated closing
+    sentence is gone from all five entries that carried it, and a standing case in
+    `ops/__tests__/registry-schema.test.ts` now refuses any sentence carried by two entries. The
+    per-entry evidence and the tier that settled each is in `ops/registry-inputs.md` under "The
+    descriptions were confirmed, 2026-09-03".
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  summary: >-
+    `list-wheel` ships `RxJS` in its `tech` array against a README that states signals-first state
+    and no source file that imports it. Found while confirming the description; not repaired,
+    because changing a `tech` value is a change to `ops/registry-inputs.md`.
+  evidence: |-
+    Observed 2026-09-03 in the local checkout at `C:\Development\list-wheel-workspace\list-wheel`.
+    `package.json` declares `"rxjs": "~7.8.0"`, which is how the array came to name it: the arrays in
+    `ops/registry-inputs.md` were read from the manifest on the branch carrying the code, and a
+    manifest is what Angular's own dependency tree puts there whether the application uses it or not.
+
+    Nothing under `src/` imports from `rxjs`, and the README's own Highlights say so in as many
+    words: "Signals-first state: all shared state lives in `EntryService` as Angular signals; no
+    NgRx, no `BehaviorSubject`, no manual subscriptions."
+
+    FR-9 makes a wrong `tech` value a defect rather than a cosmetic issue, and this is the clearest
+    instance in the Registry: a reader who can detect an error in `tech` is exactly the reader FR-9
+    says the field is for, and `RxJS` tells them the application is built the way it deliberately is
+    not. It sits beside the three thin arrays already filed above and is a different failure: those
+    understate a stack, this one names something absent.
+
+    Story 2-6 was forbidden from repairing it. Its boundaries put any change to `tech` behind an
+    Operator decision, on the ground that those values are `ops/registry-inputs.md`'s and changing
+    one is a change to that record. The cheap repair is one array in the Registry and one row in that
+    record, in one change, with stated limit 8 there updated.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  summary: >-
+    A description and the entry's own `absorbed_into` can contradict each other, and nothing reads
+    the two together. `tcg-tracker` says the idea "is set to fold into" Cuatro Tracker while its
+    `absorbed_into` asserts the fold as accomplished fact.
+  evidence: |-
+    Found at the Story 2-6 review, 2026-09-03. Three instances, all pre-existing in substance and one
+    sharpened by this story's wording:
+
+    `tcg-tracker` carries `"absorbed_into": "cuatro-tracker"`, whose schema description reads "The id
+    of the application this one's code now lives in (AD-6)". Its description now reads "the idea is
+    set to fold into Cuatro Tracker as one of its domains", which is intent. The field says done and
+    the prose says pending. Story 2-6 changed the prose from the present tense precisely because no
+    fold has happened, which makes the field the wrong half rather than the prose.
+
+    `connect-four-react` has the same shape: `absorbed_into: cuatro-portfolio` beside "the game is set
+    to be rebuilt inside the Cuatro Ecosystem hub". That wording predates this story.
+
+    And a third, across two entries rather than within one: `cuatro-tracker`'s corrected description
+    closes its domain list at five kinds, "movies, TV shows, anime, manga and video games", while
+    `tcg-tracker` says a sixth folds into it. Both are true of what exists today and they read as a
+    contradiction in a directory column, which is the reading a Visitor gets.
+
+    **Not fixable inside this story.** `absorbed_into` is on the Ask First list, being one of
+    `ops/registry-inputs.md`'s values, and cross-entry coherence between a description and a
+    structural field is outside the frozen scope. **It is also a candidate rule** rather than only an
+    edit: "an `absorbed_into` whose target does not describe the absorption" is a statement about the
+    entries as a set, the same shape as the three rules the gate already applies. The cheap first step
+    is deciding whether `absorbed_into` means "has moved" or "will move", because the schema
+    description says the first and two of the two entries carrying it mean the second.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  summary: >-
+    `contract_version` stayed at `1.1.0` while nine of the fourteen `description` values changed, and
+    the field's own rule says a value change is a minor bump.
+  evidence: |-
+    `contracts/registry.schema.json` describes `contract_version` as "The Registry's own semver
+    (AD-5). A value change is a minor bump; any field rename is major (AD-16)." Read literally, nine
+    changed values in one commit is a bump to `1.2.0`.
+
+    Story 2-6's boundaries put moving the version behind an Operator decision, with the note that a
+    text-only pass may not need one, so it was left rather than moved on the story's own judgement.
+
+    The exposure is real but small: AD-4 has Satellites fetch this file over HTTPS at build time, and
+    the version is the only signal a Satellite has that a description it renders has changed. The
+    exposure in the other direction is that every editorial correction becomes a minor bump and the
+    version stops meaning anything a consumer can act on.
+
+    Filed as pending Operator action 6 in `ops/registry-schema.md`. Worth settling once as a rule
+    rather than per story. A standing case in `ops/__tests__/registry-schema.test.ts` pins the value
+    as a literal, so whichever way it is settled the change is one line there beside the Registry.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  summary: >-
+    Two descriptions still restate what `status` already carries, and were left because they were
+    outside the set Story 2-6 was scoped to change.
+  evidence: |-
+    `lumen` ends "It was never built: the repository holds no code, and it is archived" and
+    `connect-four-react` opens its second sentence "It is retired as a standalone application". Both
+    entries carry `"status": "Archived"`, so the clause is a restatement in the same sense the
+    repeated "It is in early development and nothing is deployed yet" was on the other five.
+
+    It is a weaker case than that one was. Neither sentence is shared with another entry, so the
+    column-reading defect does not arise, and both descriptions are two sentences rather than three,
+    so neither is spending a budget it needs. `connect-four-react`'s clause is also load-bearing: it
+    is what makes the following "set to be rebuilt inside the Cuatro Ecosystem hub" parse.
+
+    Left as a note for the next editorial pass rather than as a repair. Recorded so it is found named
+    rather than rediscovered.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  summary: >-
+    `tcg-tracker`'s description still rests on its id and nothing else, and Story 2-6 confirmed that
+    there is no source anywhere to confirm it against.
+  evidence: |-
+    Observed 2026-09-03. `C:\Development\tcg-tracker` holds `_bmad`, `.claude` and `docs` and no
+    product evidence at all: no code, no README, no architecture guide, and the GitHub repository is
+    empty at zero bytes and carries no description. It is the only one of the fourteen with no tier
+    on the evidence ladder.
+
+    Story 2-6 reworded the second sentence, which said the idea "folds into" Cuatro Tracker in the
+    present tense where no fold has happened, to word the relationship as intent the way
+    `connect-four-react` already does. The first sentence, "A trading card game collection tracker",
+    is read off the id and was not re-sourced, because there is nothing to re-source it against.
+
+    This is the same shape as stated limit 2 of `ops/registry-inputs.md`, which records that the
+    entry's `tech` array is an inference from a disposition. Both are inferences and both are the
+    weakest values in the file, but they are inferences from different things: the array from PRD
+    section 5.2's disposition, the description from the name. The Operator should overwrite either if
+    the intent was something else, and nothing else will surface the question.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
