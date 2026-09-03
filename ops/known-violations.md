@@ -217,12 +217,18 @@ contain, whether they are maintained, or whether their applications run.
 links. This entry exists so that Story 2-5 authors those four `source` values knowing what they do,
 rather than discovering it when someone clicks one.
 
-**Amended 2026-09-03: the breach is now live, and this section said the opposite.** It read "the
-Registry is `applications: []` until Story 2-5, so nothing is currently failing it". Story 2-5 has
-run. Fourteen entries ship, four of them carrying a `source` that returns 404 for an anonymous
-Visitor, so FR-10 and SM-4 are breached in fact rather than in prospect. The ruling is unchanged and
-the remedy is unchanged; what changed is that the cost is being paid now. Recorded rather than
-rewritten, because this section was explicitly written to be revisited at this point.
+**Amended 2026-09-03: the breach is committed, and becomes live when Epic 2 merges.** This section
+read "the Registry is `applications: []` until Story 2-5, so nothing is currently failing it".
+Story 2-5 has run: fourteen entries are authored on `dev`, four carrying a `source` that returns 404
+for an anonymous Visitor.
+
+**The distinction matters and is the reason this paragraph is worded carefully.** The estate merges
+to `main` at the end of each epic, and `cuatro.dev` deploys from `main` on every push, so nothing
+Story 2-5 wrote is served yet. SM-4 is a success measure over **published** links, so it is not
+breached today. It will be, without any further edit, the moment Epic 2 merges. The ruling and the
+remedy are both unchanged; what changed is that the cost is now committed rather than hypothetical,
+and the last moment to reverse it is that merge. Recorded rather than rewritten, because this section
+was explicitly written to be revisited at this point.
 
 **Nor is it a statement that these three should be public.** The breach is recorded; the remedy is
 not chosen. There are two remedies and this entry picks neither: publish the repository, or rule
