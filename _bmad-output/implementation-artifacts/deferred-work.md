@@ -1552,3 +1552,83 @@ reason: |-
   `process.platform`, and a forward-slash `..` case is added beside it so the pair reads as being
   about the separator rather than about `..`.
 status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  summary: >-
+    AD-3 asserts an application id is lowercase kebab-case AND equal to its repository name.
+    Four repositories are not lowercase, so both halves cannot hold and Story 2-5 must
+    adjudicate id casing mid-flight unless the Operator rules first.
+  evidence: |-
+    `ARCHITECTURE-SPINE.md:98` states both halves in one sentence. The blocking gate enforces
+    the first: `contracts/registry.schema.json:44` pins `^[a-z0-9]+(-[a-z0-9]+)*$`, and
+    `ops/__tests__/registry-schema.test.ts:676` has a standing case refusing a capitalised id.
+    The four repositories are `Lumen`, `StreamVault`, `MaiCoin` and `Mutuo`, observed
+    2026-09-02 by an account listing.
+
+    Three resolutions and they are not equivalent: lowercase the ids and give up "equal to its
+    repository name" for those four, rename the repositories, or narrow AD-3's second half to
+    a default rather than a rule. The first is cheapest and breaks the derivation AD-3 uses for
+    GHCR image, compose service, Traefik router, Postgres role and Clerk client names, all of
+    which are already lowercase in practice. Recorded as stated limit 0 in
+    `ops/registry-inputs.md`, and the `source` values there are spelled with real
+    capitalisation so the drill-through link is correct whichever way the id goes.
+
+    This is pre-existing and was not introduced by Story 2-4. It is filed because Story 2-4
+    exists to remove exactly this class of decision from Story 2-5 and did not remove this one.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  summary: >-
+    `ops/routing-inventory.md` still carries four handovers to Story 2-4 as open questions, and
+    one citation into `ops/estate.md` that Story 2-4 made false in both its line number and its
+    fact.
+  evidence: |-
+    `AGENTS.md` names `routing-inventory.md` first among the operational records to read, so a
+    reader arriving there is sent to look for decisions that have already been taken.
+
+    `:488` states "`ops/estate.md:92` carries `[ASSUMPTION: Live on Vercel]`". That cell now
+    reads ``Live``: `inclusivcup.vercel.app`, and `:92` is unrelated prose after this story
+    inserted roughly forty lines above it. `:453-454`, `:501`, `:1605` and `:1693` still
+    describe the `covidmap` and `future-vizion` membership question as owned by Story 2-4 and
+    undecided; it was ruled on 2026-09-02 and is KV-3 in `ops/known-violations.md`.
+
+    Story 2-4's Tasks did not name `routing-inventory.md`, and its acceptance criteria hold the
+    diff to four files, so the repair belongs to a story that owns that file. The repair itself
+    is what that file already prescribes for drifting citations: name the heading, give the
+    dated line number second.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  summary: >-
+    `epics.md:2141` says Story 2-4 closes open items O-4, O-5 and PRD section 13 Q9. The
+    decisions were taken and recorded, but none of the three registers that carry those items
+    was marked closed.
+  evidence: |-
+    The registers are `ARCHITECTURE-SPINE.md:460` (the open-questions list naming the
+    `cs-tournament` and `list-wheel` hostnames) and the equivalent entries in
+    `EXPERIENCE.md:1049-1050`. `ops/registry-inputs.md` still refers to "open item O-5" in the
+    present tense, which is accurate about the register and misleading about the decision.
+
+    The substance is done: `cs-tournament` is `Live` at `inclusivcup.vercel.app`, `list-wheel`
+    takes `wheel.cuatro.dev`, and both Statuses are confirmed. What is missing is the
+    bookkeeping in the planning artifacts, which Story 2-4's Tasks did not cover and which its
+    acceptance criteria forbid it from touching.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  summary: >-
+    The `ops/registry-inputs.md` pointer Story 2-4 added to AGENTS.md sits inside the managed
+    `bmad:context` block and will be dropped by the next `/bmad-project-context` refresh, with
+    no test turning red.
+  evidence: |-
+    `AGENTS.md:2` says edits inside the block are replaced on refresh, and the markers are at
+    `:1` and `:148`. The edit adding "22 records" and the `registry-inputs.md` clause is at
+    `:32-40`, inside them. `ops/__tests__/contract-adoption.test.ts:439-454` is the only test
+    over `AGENTS.md` and deliberately asserts the dependency-automation policy sits *after* the
+    closing marker, commenting that nothing else would turn red if a refresh dropped it.
+
+    Story 2-3 did the same thing for `registry-schema.md` and the spec directed it here, so
+    this is the established pattern rather than a deviation. DW-2 already records the general
+    problem and a `/bmad-project-context` refresh is already booked as a reminder in
+    `sprint-status.yaml` before epic 3. Filed so the two record pointers are re-checked after
+    that refresh runs, not before.
+  status: open

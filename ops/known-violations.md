@@ -60,6 +60,8 @@ edit, and this row is the copy.
 | Id | Violation | Rule breached | Status | Opened | Retired by | Retired on |
 |---|---|---|---|---|---|---|
 | KV-1 | The serving box compiles | AD-8 | **Open**, tolerated deliberately | 2026-08-18 | Story 3-4 (Epic 3) | _not retired_ |
+| KV-2 | Four Registry `source` links resolve for nobody but the Operator | FR-10, SM-4 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
+| KV-3 | Two applications serve on `cuatro.dev` from outside the Registry | AD-6 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
 
 ---
 
@@ -185,6 +187,88 @@ the target was corrected, which is the right trade and still a cost worth naming
 
 ---
 
+## KV-2: Four Registry `source` links resolve for nobody but the Operator
+
+**Four links, three of them repairable.** The count in the heading is the breach; the count in
+the repair below is three, because `StreamVault` is ruled permanently private. Both numbers are
+correct and they are not the same number.
+
+**Scope: repository visibility, and nothing else.** This entry is about whether an anonymous reader
+can open the `source` link the Registry will carry. It makes no claim about what those repositories
+contain, whether they are maintained, or whether their applications run.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **FR-10**, the drill-through path, and **SM-4**, every Registry link resolves | **Decision.** FR-10 requires every entry without exception to carry a `source` resolving to a repository, `Archived` entries and the Hub's own included. `epics.md:2208-2211` states it as Story 2-5's acceptance. A private repository returns 404 to an anonymous reader, so the link exists and does not resolve |
+| Offending repositories | `cs-tracker`, `cs-tournament`, `Mutuo` | **Observed 2026-09-02** by `gh repo list LuigiEspinosa --json name,visibility,isArchived`. All three read `PRIVATE`. Their applications are `Live`, `Live` and `In progress` respectively, so this is not a question about archived code |
+| Excluded from repair, not from the breach | `StreamVault` | **Decision.** It is also `PRIVATE`, observed in the same call, and it is deliberately so: a personal tool the Operator does not intend to publish. It still carries a `source` the Registry requires and that source still will not resolve. Naming it here is the honest form; omitting it would make this entry read as a complete list of unresolving links when it is not. **It is not a candidate for the repair below** |
+| What the Registry will carry | A `source` per entry regardless | **Decision.** AD-5 makes `source` required with no exception, so Story 2-5 authors these four links knowing three are repairable and one is not. The alternative, omitting the field, is forbidden by the schema Story 2-3 shipped and would fail the blocking `registry-schema` job |
+| Why it is not repaired here | Making a repository public is a GitHub console action with consequences this story cannot weigh | **Decision.** Story 2-4 confirms values; it performs no console action and takes no view on whether any of these three should be published. `cs-tournament` and `Mutuo` may carry credentials, client material or third-party integration keys, and `ops/contract-adoption.md:182` already records that the four private repositories cannot carry a required status check on the current GitHub plan. Publishing one is the Operator's call on its contents, not a Registry chore |
+| Status | **Open and tolerated** | **Decision.** Recording the breach is not repairing it |
+| Ruled by | **The Operator**, during Story 2-4's planning checkpoint | **Decision.** Asked whether to make the three public or record the breach, the Operator chose to record it. No separate architectural sentence tolerates this one, unlike KV-1, so the ruling is an Operator act and is cited as one |
+| Ruled on | **2026-09-02** | **Decision.** The date of that checkpoint, which is also the date this entry was written. The two coincide here and are still different facts |
+| Opened | **2026-09-02** | **Decision.** Written by Story 2-4 |
+| Retired by | **`unassigned`** | **Decision.** No story is scheduled to change any repository's visibility. `ops/known-violations.md` admits an entry on `unassigned` precisely so a tolerated breach nobody has scheduled a fix for is written down rather than kept out. It becomes a standing question for the Operator, carried in the pending table below |
+| Retired on | _not retired_ | Filled when **all three** repairable repositories have been ruled either way, each either public or recorded as permanently private, which is what pending action 5 tracks. A single ruling retires nothing on its own. `StreamVault` is already in the second category and is not one of the three |
+
+### What a reader should not conclude from this entry
+
+**This is not a statement that the Registry is broken.** SM-4 is a success measure over published
+links and the Registry is `applications: []` until Story 2-5, so nothing is currently failing it.
+This entry exists so that Story 2-5 authors those four `source` values knowing what they do, rather
+than discovering it when someone clicks one.
+
+**Nor is it a statement that these three should be public.** The breach is recorded; the remedy is
+not chosen. There are two remedies and this entry picks neither: publish the repository, or rule
+that it stays private and accept a permanently unresolving `source` for that entry, as
+`StreamVault` already does.
+
+---
+
+## KV-3: Two applications serve on `cuatro.dev` from outside the Registry
+
+**Scope: the two hostnames named below.** `analytics.cuatro.dev` is not in scope: it serves
+self-hosted Umami, which is infrastructure this estate runs rather than an application the Registry
+describes, and Story 2-4 ruled it out on that ground. `ad-analysis.cuatro.dev` is not in scope
+either: it is **NXDOMAIN, observed 2026-09-02**, so nothing serves and there is no breach to record.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-6**, Registry membership is by application, not by repository | **Decision.** `ARCHITECTURE-SPINE.md:112`. AD-6's operative clause is that no application is ever dropped by omission. Two applications serving on the estate's own domain, in no Estate row and in no planning artifact, are dropped by exactly that |
+| Offending hostnames | `covidmap.cuatro.dev`, `future-vizion.cuatro.dev` | **Observed 2026-09-02** by HTTPS request: both return 200. Both resolve to Vercel and neither is served by the box. Recorded first by Story 1-7 at `ops/routing-inventory.md:453-454` as observed absences, and handed to Story 2-4 at `:1605` as an AD-6 membership decision |
+| Their repositories | `LuigiEspinosa/covidmap` (Vue, default branch `master`) and `LuigiEspinosa/future-vizion` (HTML) | **Observed 2026-09-02** by `gh repo list LuigiEspinosa --limit 100 --json name,visibility,isArchived,primaryLanguage,pushedAt,homepageUrl`, and the default branch separately by `gh api repos/LuigiEspinosa/<id>`. Both public, neither archived, last pushed 2026-04-13 and 2026-04-11. **The shorter three-field call cited elsewhere in this file returns none of the language, push-date or default-branch values**, and is not what gathered them |
+| The ruling | **Excluded from the Estate and from the Registry; the two subdomains are retired** | **Decision**, taken by the Operator at Story 2-4's planning checkpoint. They predate the Ecosystem, appear in no PRD section, architecture invariant or epic, and adding them would expand the Estate's scope by a decision Story 2-4 was not chartered to take |
+| Why exclusion needs a retirement to be honest | There is no `status` that admits them without rendering them | **Decision.** Both really are live, so the only truthful `status` is `Live`. **FR-35 renders `Live` and `Complete`** (`contracts/registry.schema.json:59`, `epics.md:86`), so `Complete` would render them too, and the only values that hold an entry back are `In progress` and `Archived`, each of which would be false. No truthful value keeps them out. Retiring the subdomains removes the fact that creates the breach, which is the one resolution AD-6 does not treat as omission |
+| What retirement means concretely | Delete the two Cloudflare CNAME records, and the `_vercel` TXT record that verifies `future-vizion` | **Decision.** `ops/routing-inventory.md:180-181` carries both CNAMEs and `:195` the TXT record. The repositories are not archived, deleted or made private by this: only their `cuatro.dev` hostnames go. `future-vizion` also has a GitHub Pages CNAME set to the same hostname (**observed 2026-09-02** by `gh api repos/LuigiEspinosa/future-vizion/pages`), which is currently shadowed by the Vercel DNS record and should be cleared in the same pass, or Pages will re-serve the name |
+| Status | **Open and tolerated** | **Decision.** The ruling is taken; the DNS change is not made. Until it is, both hostnames serve and the breach is live |
+| Ruled by | **The Operator**, during Story 2-4's planning checkpoint | **Decision.** Story 1-7 declined to take it, correctly: `ops/routing-inventory.md:1605` records that this is "a Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration" |
+| Ruled on | **2026-09-02** | **Decision.** The date of that checkpoint |
+| Opened | **2026-09-02** | **Decision.** Written by Story 2-4. The breach itself is older: it was observable on 2026-08-16, when Story 1-7 first found both hostnames in the zone |
+| Retired by | **`unassigned`** | **Decision.** No story owns the DNS change. Epic 4 rebuilds the estate's routing wholesale and would incidentally settle it, but no acceptance criterion there names these two hostnames, so booking it to Epic 4 would be inventing a commitment. It is carried as an Operator action below instead |
+| Retired on | _not retired_ | Filled when both hostnames stop resolving. Verify with a DNS lookup, not by loading the page: a cached certificate or a browser's HSTS state can outlive the record |
+
+### The count consequence, stated because its absence is the surprising part
+
+**This ruling is what holds the Estate's counts steady against these two applications**, and that
+is worth saying plainly because a reader who finds two live applications excluded may expect the
+numbers to have moved. Neither was ever counted in either figure and this ruling does not add
+them, so neither figure moves **on account of KV-3**. Had the Operator ruled the other way, both
+would have gained two, and the sentence beginning "The 11 repositories at this waypoint are"
+would have had to move with them, which `ops/contract-adoption.mjs` parses and two tables in
+`ops/contract-adoption.md` are held equal to.
+
+**The application count did fall on 2026-09-02, for an unrelated reason, and this entry is not
+it.** It went from 15 to 14 when `apple-music-workspace` was ruled out of the Estate, having no
+repository at all. That is recorded under Counts in `ops/estate.md`. The repository count at the
+waypoint is unchanged at 11. A reader who arrives here looking for why the count moved is in the
+wrong entry.
+
+**Citations into `ops/estate.md` name their sentence, not a line number**, because this change
+inserted roughly forty lines above the parsed sentence and moved it. `ops/known-violations.md`
+already prescribes exactly that repair for drifting citations.
+
+---
+
 ## Pending Operator actions
 
 This file hands the Operator decisions it is not entitled to take. They are tracked here rather
@@ -196,6 +280,9 @@ than left in prose, in the shape `ops/capacity-measurement.md:341-350` uses.
 | 2 | **Rule on the `deploy.yml` hazards in `deferred-work.md`**: no `concurrency` group, CI not blocking the deploy, the self-serve `placements` log | Operator | Whether each is a violation admitted here or stays deferred work. Story 1-9 was scoped to KV-1 only and did not ask | _not done_ |
 | 3 | **Retire KV-1 and date it** | Story 3-4 | An acceptance criterion of that story (`epics.md:3962-3965`). Fill `Retired on`, set `Status` to `Retired`, then bring the index row into line | _not done_ |
 | 4 | **Mark the measurement-week section expired** | Story 1-5 close-out | Due on or after 2026-08-24T21:00Z. The rest of KV-1 stays open | _not done_ |
+| 5 | **Rule on each of `cs-tracker`, `cs-tournament` and `Mutuo`**: publish it, or record that it stays private (KV-2) | Operator | Three separate calls, not one. Each turns on that repository's contents. A "stays private" ruling retires nothing on its own: it moves that entry into the same category as `StreamVault`, and KV-2 retires when all three have been ruled either way | _not done_ |
+| 6 | **Retire `covidmap.cuatro.dev` and `future-vizion.cuatro.dev`** (KV-3) | Operator | Delete both Cloudflare CNAMEs and the `_vercel` TXT record. The two repositories stay public and unarchived; only the hostnames go. Verify by DNS lookup, not by loading the page | _not done_ |
+| 7 | **Clear the GitHub Pages CNAME on `future-vizion`** | Operator | In the same pass as action 6. Pages holds `future-vizion.cuatro.dev` as its custom domain, shadowed today by the Vercel DNS record. Removing only the Cloudflare record leaves Pages ready to re-serve the name | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the
 ISO 8601 UTC completion date and leave the row in place. Deletion is not used, here or anywhere
