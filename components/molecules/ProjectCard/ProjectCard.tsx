@@ -4,13 +4,13 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGsapContext } from '@/hooks/useGsapContext';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
-import type { ProjectEntry } from '@/content/projects';
+import type { RegistryEntry } from '@/lib/registry';
 import './ProjectCard.scss';
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface ProjectCardProps {
-  project: ProjectEntry;
+  project: RegistryEntry;
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
@@ -41,11 +41,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
         ))}
       </ul>
       <div className='project-card__links'>
-        {project.github && (
-          <a href={project.github} target='_blank' rel='noopener noreferrer'>
-            // Github
-          </a>
-        )}
+        {/* `source` has no exceptions in the Registry, so this link is not conditional. `live` is. */}
+        <a href={project.source} target='_blank' rel='noopener noreferrer'>
+          // Github
+        </a>
         {project.live && (
           <a href={project.live} target='_blank' rel='noopener noreferrer'>
             Live →

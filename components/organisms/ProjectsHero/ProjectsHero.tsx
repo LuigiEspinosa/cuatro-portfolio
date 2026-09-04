@@ -7,14 +7,20 @@ import { useGsapContext } from '@/hooks/useGsapContext';
 import HudLabel from '@/components/atoms/HudLabel/HudLabel';
 import { TorusKnotCanvas } from '@/components/molecules/TorusKnotCanvas/TorusKnotCanvas';
 import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
-import { projects } from '@/content/projects';
 import './ProjectsHero.scss';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const PROJECT_COUNT = projects.length;
+/**
+ * `count` is a prop rather than a read of the Registry, because this is a client component: a
+ * module-scope import here would ship all fourteen entries to the browser to render one number.
+ * The page that renders the cards already holds the list (Story 2.7).
+ */
+interface ProjectsHeroProps {
+  count: number;
+}
 
-export function ProjectsHero() {
+export function ProjectsHero({ count }: ProjectsHeroProps) {
   const scrollRef = useRef({ value: 0 });
 
   const heroRef = useGsapContext<HTMLElement>(() => {
@@ -56,7 +62,7 @@ export function ProjectsHero() {
           Source Work
         </h1>
         <p className='projects-hero__meta'>
-          {PROJECT_COUNT}&nbsp;PROJECTS&nbsp;&nbsp;//&nbsp;&nbsp;ONGOING
+          {count}&nbsp;PROJECTS&nbsp;&nbsp;//&nbsp;&nbsp;ONGOING
         </p>
       </div>
 

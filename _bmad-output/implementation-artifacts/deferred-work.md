@@ -1945,3 +1945,110 @@ status: done
     The cheap next step is to run the suite with `--reporter=verbose` into a file a few times and
     watch for a case whose duration swings, rather than to go looking now with nothing to go on.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  summary: >-
+    Deleting `content/projects.ts` leaves three records citing it by line number, so each now
+    points at a file that does not exist.
+  evidence: |-
+    `ops/backup-digital-library.md:46` cites `content/projects.ts:12` as where the application id
+    was observed, and `:54` cites `:23,26,30` for three `tech` values. `CHANGELOG.md:111` describes
+    it as a "typed TypeScript array with 1 project entry".
+    `portfolio-architecture-guide.docx.md:151,179,192` describes the content-as-code pattern it was
+    half of.
+
+    None was corrected here. All four are historical records of what was observed on a date, and
+    rewriting an observation because its subject was later deleted is how a record stops being
+    evidence. `ops/known-violations.md:175` is the one that had to move, because it stated a
+    violation as open in the present tense, and it did move.
+
+    The cheap fix, when someone is in those files anyway, is a trailing "retired by Story 2.7"
+    rather than a rewritten citation.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  summary: >-
+    `ProjectCard` labels every `source` link "// Github", but the Registry schema requires only that
+    `source` resolve to a repository.
+  evidence: |-
+    All fourteen committed entries are `github.com` URLs, so the label is true today and the card
+    was not changed: the story swaps the data source and keeps the markup. A GitLab or self-hosted
+    source would render under a label naming the wrong host, and nothing would fail.
+
+    Not repaired here because changing the link text is on this spec's Ask First list, and the
+    Suite Directory (Story 2.9) rewrites this markup against `RESTYLE-SPEC.md` anyway. Worth
+    deciding there rather than twice.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  summary: >-
+    `/projects` went from one card to six with no rendered-output coverage. The Playwright harness
+    holds a baseline for `/work` only.
+  evidence: |-
+    `tests/e2e/rendered-output.pw.ts` is deliberately one route (Story 1-10 chose `/work` because it
+    combines a `--monument-bold` call site, the `body#work` rule and a server-rendered entrance
+    tween). So "unchanged in appearance" was established by reading the diff and by
+    `app/projects/__tests__/page.test.tsx`, which asserts structure, links and counts, not paint.
+
+    Not worth a baseline of its own: Story 2.14 redirects `/projects` to `/#suite`, and Story 2.9
+    builds the surface that replaces it. Filed so the gap is a known one rather than an assumed
+    coverage.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  summary: >-
+    The projects hero reads "{count} PROJECTS" over data that can now be 1 or 0, so "1 PROJECTS" and
+    "0 PROJECTS // ONGOING" are both reachable strings.
+  evidence: |-
+    Before Story 2.7 the number was `projects.length` over a one-entry TypeScript array, so the copy
+    was effectively fixed. It is now `renderedApplications.length`, which is six today and moves
+    with the Registry.
+
+    Not fixed here because the copy is 2023 legacy that Story 2.9 and Story 2.13 rewrite against
+    `RESTYLE-SPEC.md`, and this story's boundary is the data source rather than the wording. Pick it
+    up there, or when the hero is redesigned, rather than pluralising a line that is about to be
+    replaced.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  summary: >-
+    `/projects` has no empty state. With no rendered entry it draws an empty `<ul>` under a hero
+    reading zero.
+  evidence: |-
+    `selectRendered([])` returns `[]` and is tested, so the rule is safe; the route is what has
+    nothing to say. The state is unreachable today (six entries are `Live`) and would need every
+    application to leave `Live` or `Complete` at once.
+
+    Filed rather than built because an empty state is a designed surface, and the surface that
+    replaces this route is Story 2.9's Suite Directory. Deciding it twice is the waste.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  summary: >-
+    `AGENTS.md` should record that exactly two sources may name `contracts/`, and that the Registry
+    module may name only the Registry pair.
+  evidence: |-
+    The pitfalls list already records the two guards of this exact shape: the three committed
+    listings that pin `contracts/` path by path, and the two suites that pin `ci.yml` job names.
+    `app/__tests__/anchor-contract.test.ts` now holds a third of the same kind, so the next agent to
+    add a `contracts/` reference finds out from a red test rather than from the guide.
+
+    Not written here because that list sits inside the `bmad:context` block, which is managed by
+    `bmad-project-context` and replaced on refresh. It belongs in the refresh the board already
+    schedules before epic 3, not in a hand edit that the next run deletes.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  summary: >-
+    `SCANNED_EXTENSIONS` in `app/__tests__/anchor-contract.test.ts` carries no `.json`, so a JSON
+    module under a shipped source root is invisible to both the consumer scan and the new
+    `contracts/` mention check.
+  evidence: |-
+    The list is `.scss .css .ts .tsx .js .jsx .mjs .cjs`, chosen when no shipped source was JSON.
+    Story 2.7 makes a JSON import a normal thing for this repository to do, and a `.json` file
+    landing under `app/`, `components/`, `hooks/`, `content/` or `lib/` carrying token names or a
+    `contracts/` path would pass both guards unread.
+
+    Not widened here because the same constant feeds the root pin, `PRESENT_EXTENSIONS` and two
+    count floors in that file, so the change is that file's to make deliberately rather than a
+    side effect of this story. Nothing under a scanned root is JSON today, so the gap is latent.
+  status: open

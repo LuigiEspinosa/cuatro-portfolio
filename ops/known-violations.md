@@ -166,13 +166,14 @@ Operator sets, not one a register imposes.
 
 The story that opened this item was written on 2026-08-16, when the workflow step read "Deploy
 to Hetzner" and `SERVER_HOST` still pointed at the box being decommissioned. **Story 1-21
-closed that half on 2026-08-17.** The record below is what is true on 2026-08-18.
+closed that half on 2026-08-17.** The record below was written against 2026-08-18 and each row now
+carries its own date, because the third half moved later than the other two.
 
-| Half | State on 2026-08-18 | Owner |
+| Half | State, dated per row | Owner |
 |---|---|---|
 | The deploy step name | **Resolved 2026-08-17.** The step at `.github/workflows/deploy.yml:45` is named **"Deploy over SSH to SERVER_HOST"**. It names no provider, because the workflow cannot verify which provider the secret resolves to | Story 1-21, closed |
 | `SERVER_HOST` | **Resolved 2026-08-17.** Repointed to `177.7.52.248`, the box the rest of the estate serves from. `ops/routing-inventory.md` carries it under the heading **"Where the deploy goes"**, in the two rows `SERVER_HOST before 2026-08-17` and `SERVER_HOST after` (`:1489-1490` as of 2026-08-24) | Story 1-21, closed |
-| The `tech` array value | **Open.** `content/projects.ts:30` still lists `'Hetzner VPS'` in `digital-library`'s `tech` array. This is the **one surviving stale Hetzner claim** in the estate's source | **FR-9, in Epic 2.** `epics.md:109-114` narrows FR-9 to exactly this one value. Not this story's to correct, and not a file this story touches |
+| The `tech` array value | **Open on 2026-08-18. Committed fixed on `dev` 2026-09-04, and it lands when Epic 2 merges to `main`.** Story 2.7 deleted `content/projects.ts` whole and repointed the Hub at `contracts/registry.json`, so the file carrying `'Hetzner VPS'` no longer exists. The stale value was never copied across: the Registry's `digital-library` entry lists `SvelteKit`, `Fastify`, `SQLite`, `Redis`, `BullMQ` and `Docker`, and no entry in it names Hetzner. This was the last stale Hetzner claim in the estate's source | Story 2.7. It was retired rather than corrected, which is what `ops/registry-inputs.md:152-156` says should happen to it. Serving still shows the old page until the epic merges, so this is not closed on a deploy the way the two rows above are |
 
 **The hazard of deploying into the decommissioned box is closed.** Until 2026-08-17 a merge to
 `main` would have deployed into a box that was down, and done it with `--build` on a machine

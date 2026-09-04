@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-03-2026
+last_updated: 09-04-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -142,7 +142,7 @@ development_status:
   2-4-confirm-the-assumed-statuses-hostnames-and-tech-values: done
   2-5-author-contracts-registry-json: done
   2-6-the-editorial-voice-pass: done
-  2-7-retire-content-projects-ts-the-hub-imports-the-published-reg: backlog
+  2-7-retire-content-projects-ts-the-hub-imports-the-published-reg: review
   2-8-assert-the-44-44-hit-target-floor: backlog
   2-9-the-suite-directory: backlog
   2-10-assert-the-status-mark-s-three-structural-axes: backlog

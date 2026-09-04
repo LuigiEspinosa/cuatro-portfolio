@@ -76,8 +76,19 @@ const familiesIn = (source: string): string[] =>
  * components, and a GSAP hook is the most likely place in this repository for a
  * `setProperty('--token-...')` or a token-driven duration to arrive. A scan that stopped at two
  * roots would report "nothing consumes the contract" about a file it never opened.
+ *
+ * `lib/` arrived with Story 2.7, which retired the Hub's TypeScript copy of the Registry and gave
+ * it one typed read of the published JSON instead. It is listed rather than excused: the module is compiled into
+ * the route that renders the Suite, so it ships, and the next module to land beside it is exactly
+ * the kind of shared helper a token value would arrive in.
  */
-const SCANNED = ['app', 'components', 'hooks', 'content'] as const;
+const SCANNED = ['app', 'components', 'hooks', 'content', 'lib'] as const;
+
+/** The Hub's one read of `contracts/registry.json`, and the only source outside the alias layer allowed to name the folder. */
+const REGISTRY_MODULE = 'lib/registry.ts';
+
+/** The two paths that module may name: the Registry and the schema that fixes its shape (AD-4). */
+const REGISTRY_PATHS = ['contracts/registry.json', 'contracts/registry.schema.json'];
 
 /**
  * The extensions a consumer could arrive in: a stylesheet, or a `setProperty('--token-...')`.
@@ -111,6 +122,11 @@ const NOT_SHIPPED_ROOTS = ['tests', 'contracts', 'packages', 'ops'] as const;
  * `content/`. Asserted as a floor rather than as an equality so a later story adding a component
  * does not fail this file, while a scan that read nothing, or lost a root, or lost an extension,
  * does.
+ *
+ * Story 2.7 left the total where it was by coincidence rather than by design: the retired module
+ * under `content/` was deleted in the same change that added `lib/registry.ts`. The floor is stated
+ * here rather than recounted, so that coincidence is recorded and not mistaken for a check that
+ * noticed.
  */
 const MINIMUM_SCANNED_FILES = 59;
 
@@ -964,8 +980,34 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     const mentions = files.filter((file) => /contracts\//.test(readFileSync(resolve(REPO_ROOT, file), 'utf8')));
     expect(
       mentions,
-      'contracts/ is mentioned by a source other than the one file this story wires it into'
-    ).toEqual(['app/scss/_index.scss']);
+      'contracts/ is mentioned by a source other than the two this repository wires it into'
+    ).toEqual(['app/scss/_index.scss', REGISTRY_MODULE].sort());
+
+    // The second file is allowed the App Registry and nothing else. `contracts/` publishes two
+    // unrelated things: a stylesheet the alias layer loads, and a JSON document the Hub reads as
+    // data (AD-4, Story 2.7). Widening the file list above without this would let a token or font
+    // stylesheet reach the Hub through the Registry module, which is the exact bypass the case was
+    // written to refuse.
+    //
+    // Asserted as a subset rather than as an equality, because the schema path is named only in the
+    // comment explaining why that module's one type assertion is safe: an equality would turn red
+    // on a comment edit and say "named something beyond the Registry", which is the opposite of
+    // what happened. The Registry itself is required separately, so the subset cannot pass by the
+    // module naming nothing at all.
+    const named = [
+      ...new Set(
+        [...readFileSync(resolve(REPO_ROOT, REGISTRY_MODULE), 'utf8').matchAll(/contracts\/[\w.-]+/g)].map(
+          (found) => found[0]
+        )
+      ),
+    ].sort();
+    expect(named, `${REGISTRY_MODULE} does not import the Registry it exists to read`).toContain(
+      'contracts/registry.json'
+    );
+    expect(
+      named.filter((path) => !REGISTRY_PATHS.includes(path)),
+      `${REGISTRY_MODULE} names something under contracts/ beyond the Registry pair`
+    ).toEqual([]);
   });
 });
 

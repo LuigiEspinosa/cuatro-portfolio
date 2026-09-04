@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Container } from '@/components/atoms/Container/Container';
 import { ProjectCard } from '@/components/molecules/ProjectCard/ProjectCard';
-import { projects } from '@/content/projects';
+import { renderedApplications } from '@/lib/registry';
 import { ProjectsHero } from '@/components/organisms/ProjectsHero/ProjectsHero';
 
 export const metadata: Metadata = {
@@ -17,11 +17,11 @@ export const metadata: Metadata = {
 export default function ProjectsPage() {
   return (
     <Container>
-      <ProjectsHero />
+      <ProjectsHero count={renderedApplications.length} />
       <ul className='projects-grid'>
-        {projects.map((project) => (
-          <li key={project.id}>
-            <ProjectCard project={project} />
+        {renderedApplications.map((application) => (
+          <li key={application.id}>
+            <ProjectCard project={application} />
           </li>
         ))}
       </ul>
