@@ -330,3 +330,37 @@ Every Registry `source` link must resolve for an anonymous Visitor, so all four 
 breach of FR-10 and SM-4. It is recorded as **KV-2** in `ops/known-violations.md`, with
 `StreamVault` named there as deliberately private and excluded from repair. Read that entry
 rather than re-deriving the problem here.
+
+## Planned, and not yet an application
+
+**Nothing in this section is an Estate application, is counted anywhere in this file, or is
+eligible for a Registry entry.** It exists so that a decided intention is written down rather
+than remembered. An entry here graduates into the disposition table above on the day a
+repository exists for it, and not before. Until then it changes no count: the governed set
+stays fourteen repositories, the waypoint stays eleven, and the Registry stays at fourteen
+entries.
+
+**Why the bar is a repository and not an idea.** AD-5 accepts exactly `Live`, `Complete`,
+`In progress` and `Archived`, and a thing not yet started is none of them. `source` is
+required on every Registry entry with no exceptions and must resolve to a repository rather
+than a profile page. `apple-music-workspace` is the precedent: it held a disposition row here
+until 2026-09-02 and was removed precisely because no repository of that name exists and no
+conforming Registry entry could be authored for it. Recording a planned application in the
+disposition table would repeat that error deliberately.
+
+| Planned application | Concept | Platform | Recorded | Ruled by |
+|---|---|---|---|---|
+| Habit RPG, name undecided | A role-playing game layer over habit tracking, covering both habits to build and habits to quit. `habitica.com` is the stated reference for the RPG framing; the quitting half is the part that reference does not cover and is the reason for building rather than adopting | iOS | **2026-09-06** | **Decision.** The Operator, asked where a not-yet-started application belongs, chose this record over a Registry entry and over a product brief |
+
+**What is not decided.** No name, no repository, no stack, no scope, no position in the epic
+sequence, and no relationship to the Tracker Family, which already holds `cuatro-tracker`,
+`cs-tracker`, `tcg-tracker` and `poketracker-go` and is the obvious place to ask whether this
+belongs. None of that is inferred here, because this record states disposition and does not
+invent it.
+
+**The next step, when it is taken.** A product brief defining the quit-habit mechanic, since
+that is the half no reference product supplies. Then a repository, then a row in the
+disposition table, then a Registry entry authored against `ops/registry-inputs.md`. It is an
+iOS application, so it is the first in the Estate that is not served from the box and not
+reachable by a hostname, which the Registry's `live` and `demo` fields are both shaped around.
+That is a real modelling question and it is open, not answered.
