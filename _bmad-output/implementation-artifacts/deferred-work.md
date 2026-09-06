@@ -2174,3 +2174,19 @@ status: done
     KV-5, but no sprint change proposal or `epics.md` annotation carries them, so a later reader of
     the epic sees criteria that were not met verbatim and a board row reading done.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  summary: `tests/e2e/contract-anchor.pw.ts:903` flakes on a live HTTP fetch and takes the blocking
+    `rendered-output` gate red with it.
+  evidence: CI run 34020245249, on commit `9f71fba`, failed with `Error: apiRequestContext.get:
+    socket hang up` at `contract-anchor.pw.ts:923`, the `expect(sheet.status()).toBe(200)` inside
+    the case that walks every contract face URL. 44 passed, 1 failed, and the commit was
+    documentation only, so nothing in the tree could have caused it. The run before it and the two
+    after it are green on the same case. AD-21 makes every gate blocking and forbids
+    `continue-on-error`, which is correct and is exactly why a transient network read inside one
+    matters: a gate that goes red for a reason nobody caused is the kind that gets worked around,
+    and `ops/rendered-output-harness.md:227-232` already names regenerating to get a build green as
+    the failure mode it exists to prevent. Observed 2026-09-06. The fix is a bounded retry on the
+    request, or asserting the served bytes rather than re-fetching over the network, not a
+    `test.retry` on the whole case, which would hide a real 404 as readily as a hang up.
+  status: open
