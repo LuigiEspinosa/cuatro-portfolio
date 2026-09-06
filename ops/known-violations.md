@@ -62,6 +62,8 @@ edit, and this row is the copy.
 | KV-1 | The serving box compiles | AD-8 | **Open**, tolerated deliberately | 2026-08-18 | Story 3-4 (Epic 3) | _not retired_ |
 | KV-2 | Four Registry `source` links resolve for nobody but the Operator | FR-10, SM-4 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
 | KV-3 | Two applications serve on `cuatro.dev` from outside the Registry | AD-6 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
+| KV-4 | Fifteen controls ship under the 44x44 hit-target floor | AD-19 (A-4), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Stories 2-9, 2-15, 2-30 and 2-32 | _not retired_ |
+| KV-5 | Thirty-six elements sit past the right edge at 360px, clipped rather than absent | AD-19 (A-5), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Story 2-9 | _not retired_ |
 
 ---
 
@@ -282,6 +284,132 @@ already prescribes exactly that repair for drifting citations.
 
 ---
 
+## KV-4: Fifteen controls ship under the 44x44 hit-target floor
+
+**Scope: what the Hub renders, measured.** This entry is about controls that exist and are too
+small, on the five surfaces the Hub serves as HTML. It makes no claim about surfaces Epic 2 has
+not built yet, and none about the Satellites, whose own controls this repository cannot measure.
+
+**This entry exists because something now measures the floor.** Until 2026-09-06 the breach was
+real and invisible: `ops/rendered-output-harness.md` recorded the floor as deliberately unasserted,
+nothing in the repository measured a hit target, and `--tap` shipped in the contract with zero
+consumers. Story 2-8 installed the instrument and this is the first reading it produced.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-19**, the accessibility floor, booked as **A-4** at `EXPERIENCE.md:763` and binding on **FR-3**. Its pointer half is stated at `EXPERIENCE.md:727-732`: a minimum target of 44x44px **on the interactive element itself**, as `min-height: var(--tap)` plus `display: inline-flex`, and never as vertical padding on a plain inline element | **Decision.** `ARCHITECTURE-SPINE.md`, AD-19. `epics.md:2334-2342` is where Story 2-8 is required to assert it rather than claim it |
+| What is in breach | **Fifteen authored controls**, rendering as **39 of the 43 elements the sweep measures**: one logo link, six chrome nav links, two project-card links repeated across six cards, one 404 back link, two home nav links and three home contact links | **Observed 2026-09-06** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by `getBoundingClientRect()` after fonts resolved. Every size is in `ops/hit-target-floor.md` under "The exemption ledger", per element |
+| The shape of the breach | **Height, almost everywhere.** Fourteen of the fifteen clear the floor on width and fail on height, at 17.00 to 38.19px tall. One fails on both: the chrome `Blog` link, at 38.41 x 22.00 | **Observed 2026-09-06**, same method. The nearest miss is `a.error-page__back` at 108.58 x 38.19, 5.81px short |
+| Not in breach | The four `button.work-item__header` controls, at 216.00 x 88.80 | **Observed 2026-09-06.** Recorded because a register of breaches that listed every control would say nothing, and because the sweep asserts at least one measured element clears the floor so the comparison discriminates |
+| Where it is tracked mechanically | `ops/hit-target-floor.md` § The exemption ledger, and `EXEMPTIONS` in `tests/e2e/hit-target-floor.pw.ts`, held equal in both directions by `ops/__tests__/hit-target-floor.test.ts` | **Decision.** This entry is the register; those two are the ledger the build enforces. A row deleted from the ledger without a line changed here is the one drift this file cannot see, which is why the surfaces are listed above individually rather than as a count |
+| Status | **Open and tolerated** | **Decision.** Recording a breach is not fixing it. Story 2-8's boundaries forbid changing any component or stylesheet, because a repair made here would land outside the story that planned it and outside that story's own criteria |
+| Ruled by | **The Operator**, at Story 2-8's planning | **Decision.** Asked how the floor should be asserted against a Hub already in breach, the Operator ruled that the sweep is universal and the known breaches are carried in a dated exemption ledger that can only shrink, rather than the sweep being scoped to what already passes. That ruling is what tolerates these fifteen. This register's admission test (`:24-36`) takes an Operator act or a sentence in the breached decision, and AD-19 carries no such sentence, so the act is cited and no sentence is invented for it |
+| Ruled on | **2026-09-06** | **Decision.** The date of that planning checkpoint, which is also the date this entry was written and the date the breach was first measured. The three coincide here and are still different facts |
+| Where the repairs are booked | **Three of the six ledger rows are booked by an acceptance criterion that names this floor; three are booked by ownership only** | **Observed 2026-09-06**, by reading `epics.md`. Verified: `:2655-2658` makes each chrome nav link reach 44px in both dimensions and pass this assertion (Story 2-15); `:3441-3442` requires the 404 exits at 44x44 on both axes measured in a browser (Story 2-30); `:2399-2401` requires the directory's two links at 44x44 via `min-height` plus `inline-flex` (Story 2-9). **Not established**: no acceptance criterion in `epics.md` names the floor for the chrome **logo**, the **home nav links** or the **contact links**. Story 2-32 names `Logo` and `ContactContainer` in its title (`:3559`) and its floor criterion at `:3576-3584` is written about the **nav links**; the home nav links live in `HomeLayout.tsx`, whose redesign is Story 2-29, which names no floor criterion at all. Those three rows are booked to Story 2-32 by Story 2-8's own frozen boundaries, not by a criterion in the epic |
+| Opened | **2026-09-06** | **Decision.** The date this entry was written, by Story 2-8, which is also the date the breach was first measured rather than inferred |
+| Retired by | **Stories 2-9, 2-15, 2-30 and 2-32**, each deleting its own ledger row in the commit that repairs its surface | **Decision.** The sweep makes that unavoidable: a listed element that starts clearing the floor fails as a stale row, so a story cannot repair a surface and leave the exemption behind. The three rows with no criterion of their own are the ones most likely to be missed, and they are the reason the row above says so plainly rather than claiming uniform coverage |
+| Retired on | _not retired_ | Filled when the ledger is empty. Verify by reading the ledger, not by reading a stylesheet: this is the floor `EXPERIENCE.md:731-732` says is the single easiest one to miss while appearing to be met |
+
+### The one surface nobody had counted
+
+**`Logo.tsx:7` was not on the list of surfaces this breach was expected to have.** **Observed
+2026-09-06**, by sweeping rather than by reading. Story 2-8's own code map named four surfaces, and
+the sweep found five. The logo link is a plain inline `<a>` around a 184 x 66 image, so the
+element's own box is the 20px text line box while the image paints past the bottom of it. A finger
+lands on the image and activates the link, so the effective target is larger than the measured one,
+and AD-19 is nonetheless about the element itself.
+
+This is the argument for a universal sweep rather than a list of surfaces someone remembered, and
+it is recorded here rather than only in `ops/hit-target-floor.md` because it changes what this
+entry counts: fifteen controls, not the fourteen a reader of the plan would have expected.
+
+### What a reader should not conclude from this entry
+
+**This is not a statement that the floor is unenforced.** It is enforced from 2026-09-06, on every
+route, and a new or regressed control that is too small fails the build on arrival. What is
+tolerated is a closed list of surfaces that were already in breach when the instrument was
+installed, each with a story that closes it.
+
+**Nor is it the whole of AD-19.** `.lighthouserc.js:15` still asserts accessibility at 0.95 with
+severity error and was not touched by Story 2-8 (**observed 2026-09-06** by
+`git diff --stat 9f71fba -- .lighthouserc.js`, which was empty). Contrast, focus order and the
+manual pass are separate instruments with separate owners, and `ops/hit-target-floor.md` § What
+this deliberately does not assert lists what the sweep leaves to them. A-4's **independently
+addressable** clause is among them: it is a statement about two boxes rather than one, and nothing
+on the shipped Hub puts two targets on one line at 360 wide.
+
+### Maintaining the ledger this entry counts
+
+Not an Operator action, so it is not in the table at the foot of this file: that table hands the
+Operator decisions this register is not entitled to take, and this is work the four stories already
+own. It is written here instead, beside the count it keeps true.
+
+**A repair moves four things and a change to fewer than four is a defect:**
+
+1. the row in `ops/hit-target-floor.md` § The exemption ledger,
+2. the entry in `EXEMPTIONS` in `tests/e2e/hit-target-floor.pw.ts`,
+3. the surface named in the "What is in breach" cell above, and
+4. **the KV-4 index row at the top of this file**, whose count and closing stories
+   `ops/__tests__/hit-target-floor.test.ts` pins as literals.
+
+The first two are held equal by that suite; the third and fourth are prose and are the reason the
+surfaces are listed individually above rather than as a bare number. The per-surface counts in
+`ops/hit-target-floor.md` § The surfaces swept move with them, since deleting a control changes what
+the sweep measures.
+
+**The last story to land retires the entry**: fill `Retired on`, set `Status` to `Retired`, and
+bring the index row into line.
+
+---
+
+## KV-5: Thirty-six elements sit past the right edge at 360px, clipped rather than absent
+
+**Scope: horizontal overflow at AD-19's width, measured on elements.** This entry is about A-5's
+no-horizontal-scroll half. The Status half of A-5 is not in scope: nothing renders a Status yet and
+Story 2-10 owns it.
+
+**Why this is a violation and not deferred work.** This register's discriminator (`:38-45`) is the
+ruling, not the severity. An Operator ruling exists, dated, tolerating the breach; a named story
+closes it; and the condition is measured rather than suspected. That is the admission test, and it
+is met. It would have sat in `deferred-work.md` only if nobody had ruled on it.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-19**, booked as **A-5** at `EXPERIENCE.md:764` and binding on **FR-3**: no horizontal scroll at 360px. **`DESIGN.md:558-559`** states the mechanism it requires: `html, body { overflow-x: clip }` globally, `clip` rather than `hidden` because `hidden` breaks sticky positioning, and widths `100%` with container padding, never `100vw` | **Decision.** `ARCHITECTURE-SPINE.md`, AD-19 |
+| Offending lines | `app/app.scss:96-98`, `width: 100vw` with `overflow-x: hidden` on `body`, and `:100-102`, `overflow: hidden` on the home route. Two rules broken in one block | **Observed 2026-09-06 at `9f71fba`**, by reading the file |
+| What is actually outside the viewport | **36 elements**: 28 on `/work`, furthest `span.work-item__icon` at **490.67** against a 360 viewport, and 8 on `/projects`, furthest `div.projects-hero__text` at **372.00**. `/`, `/celeste` and the 404 are clean | **Observed 2026-09-06** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by comparing **every element's right edge** against `window.innerWidth`. **The left edge was not swept in that census**, so 36 is a floor on the count rather than the whole of it. The standing A-5 assertion checks both edges, on interactive elements only |
+| Why it is invisible without measuring | On `/projects` the eight sit 12px past the edge while `document.documentElement.scrollWidth` reads **360**, because the hero's own `overflow: hidden` (`ProjectsHero.scss:9`) clips them. On `/work` there is no clipping ancestor and the same reading is **491**, where `app/app.scss:98` stops it becoming a scrollbar rather than stopping it being reported | **Observed 2026-09-06**, same method. A `scrollWidth` check would have been green on `/projects` while the condition it exists to detect was present, which is why Story 2-8 asserts A-5 on element edges |
+| Not caught by the Story 2-8 sweep | None of the 36 is interactive, and that sweep measures interactive elements | **Decision**, recorded rather than widened. `ops/hit-target-floor.md` § What this deliberately does not assert carries it, so a green A-5 is not read as "nothing on the Hub overflows at 360" |
+| Status | **Open and tolerated** | **Decision.** Recording a breach is not repairing it |
+| Ruled by | **The Operator**, at Story 2-8's planning: `app/app.scss` is recorded, not repaired, in that story | **Decision.** The ruling is quoted in that story's frozen boundaries as a Never clause, dated. Story 2-8 ships the instrument and changes no stylesheet |
+| Ruled on | **2026-09-06** | **Decision.** The date of that checkpoint, which is also the date the overflow was first measured |
+| Opened | **2026-09-06** | **Decision.** Written by Story 2-8 |
+| Retired by | **Story 2-9**, which already names the repair as its own acceptance criterion | **Decision.** `epics.md:2423-2427`: "`clip` replaces `hidden`, because `hidden` breaks sticky positioning" and "widths are `100%` with container padding, never `100vw`". Story 2-22 is booked into the same block, deleting the alias layer above it |
+| Retired on | _not retired_ | Filled when no element sits outside the viewport at 360 and `app/app.scss` no longer sets `100vw` or `overflow-x: hidden`. Verify by measuring elements, not by reading `scrollWidth`, for the reason two rows above |
+
+### The two halves have to land together
+
+**Replacing `hidden` with `clip` on a tree that still overflows is worse than the state shipping
+today.** **Decision.** It turns a clipped page into one with real horizontal scroll, which A-5
+forbids outright. So the stylesheet half and the component half are one change:
+
+| Half | Where | Owner |
+|---|---|---|
+| The stylesheet | `app/app.scss:92-102` | **Story 2-9** (`epics.md:2423-2427`) |
+| The hero grid columns, which measure 300 inside a 216 content box because a grid item's `min-width: auto` refuses to shrink below min-content | `WorkHero.scss:1-9`, `ProjectsHero.scss:1-9`, with `.container` at `width: min(80%, 1920px)` (`container.scss:2-4`) feeding it | **Story 2-33** for `WorkHero`; **Story 2-9** replaces the projects surface |
+| `.work-item__sub`'s `white-space: nowrap` in a `flex: 1` column, which pushes `.work-item__meta` to 372.38 and the icon to 490.67 | `WorkItem.scss:64` | **Story 2-31** |
+
+Whoever takes `epics.md:2423-2427` should re-run the Story 2-8 sweep afterwards and widen its A-5
+arm past interactive elements once the overflow is gone, rather than take the stylesheet line on
+its own.
+
+**The measurements, the per-route breakdown and the reasoning are in
+`_bmad-output/implementation-artifacts/deferred-work.md`**, filed by Story 2-8 under its own spec.
+That entry is the evidence; this one is the ruling. It is cited rather than duplicated, so there is
+one place to change when a figure is re-measured.
+
+---
+
 ## Pending Operator actions
 
 This file hands the Operator decisions it is not entitled to take. They are tracked here rather
@@ -296,6 +424,8 @@ than left in prose, in the shape `ops/capacity-measurement.md:341-350` uses.
 | 5 | **Rule on each of `cs-tracker`, `cs-tournament` and `Mutuo`**: publish it, or record that it stays private (KV-2) | Operator | Three separate calls, not one. Each turns on that repository's contents. A "stays private" ruling retires nothing on its own: it moves that entry into the same category as `StreamVault`, and KV-2 retires when all three have been ruled either way | _not done_ |
 | 6 | **Retire `covidmap.cuatro.dev` and `future-vizion.cuatro.dev`** (KV-3) | Operator | Delete both Cloudflare CNAMEs and the `_vercel` TXT record. The two repositories stay public and unarchived; only the hostnames go. Verify by DNS lookup, not by loading the page | _not done_ |
 | 7 | **Clear the GitHub Pages CNAME on `future-vizion`** | Operator | In the same pass as action 6. Pages holds `future-vizion.cuatro.dev` as its custom domain, shadowed today by the Vercel DNS record. Removing only the Cloudflare record leaves Pages ready to re-serve the name | _not done_ |
+| 8 | **Rule on `Logo.tsx:7`, which no story listed as under the floor** | Operator | Story 2-32 names `Logo` in its title and is booked as the closer, so this is recorded rather than asked as a blocker. It is raised because the logo link is the one surface the plan did not know about, and because its effective target (a 184 x 66 image) is larger than its measured box, which is a reasonable thing to rule is not worth repairing | _not done_ |
+| 9 | **Rule on whether the three ledger rows with no acceptance criterion of their own need one** (KV-4) | Operator | `chrome-logo`, `home-nav` and `home-contact` are booked to Story 2-32 by Story 2-8's boundaries rather than by any criterion in `epics.md`, and the home nav links are authored in `HomeLayout.tsx`, whose redesign is Story 2-29. Either 2-32's criteria widen to name them or 2-29 takes the home pair. Left as a question rather than answered, because moving a story's acceptance criteria is not a register's call | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the
 ISO 8601 UTC completion date and leave the row in place. Deletion is not used, here or anywhere
