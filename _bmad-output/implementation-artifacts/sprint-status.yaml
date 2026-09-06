@@ -143,7 +143,15 @@ development_status:
   2-5-author-contracts-registry-json: done
   2-6-the-editorial-voice-pass: done
   2-7-retire-content-projects-ts-the-hub-imports-the-published-reg: done
-  2-8-assert-the-44-44-hit-target-floor: review
+  # 2-8 closed 2026-09-06. Merged by PR #73 at 2431886, all six CI jobs green,
+  # rendered-output included, which is the first run of the new sweep on a real
+  # runner. Two departures from the literal acceptance criteria stand, both by
+  # Operator ruling of 2026-09-06 and both argued in ops/hit-target-floor.md:
+  # the floor is asserted as 44x44 or covered by a dated ledger row (KV-4), and
+  # A-5 is scoped to interactive elements because /work overflows (KV-5). Neither
+  # is reflected in epics.md yet; that is filed in deferred-work.md and is a
+  # sprint change proposal the retro should pick up.
+  2-8-assert-the-44-44-hit-target-floor: done
   2-9-the-suite-directory: backlog
   2-10-assert-the-status-mark-s-three-structural-axes: backlog
   2-11-the-premise-block-and-the-framework-band: backlog
