@@ -20,15 +20,30 @@ dotted. They are the same stories.
 
 ## What the harness asserts
 
-`tests/e2e/harness.ts` exposes exactly three capabilities. Stories 1.12, 1.17, 1.18 and 1.19
+`tests/e2e/harness.ts` exposes exactly three capabilities. Stories 1-12, 1-17, 1-18, 1-19 and 2-8
 import that file rather than reaching for Playwright directly, so the viewport, the browser and
-the failure behaviour are settled in one place.
+the failure behaviour are settled in one place. Story 2-8 imports two of the three,
+`RENDERED_VIEWPORT` and `rootCustomPropertyValue`, and edited none of them.
+
+**Story ids in this paragraph and in the rows Story 2-8 added are hyphenated**, per the rule at the
+head of `ops/known-violations.md`. The dotted forms elsewhere in this file are older text and were
+left as written rather than rewritten by a story that was not editing them.
 
 | Capability | Helper | What it answers | Nature |
 |---|---|---|---|
 | Route screenshot | `expectRouteScreenshot` | Did this route's render change beyond the stated tolerance | **Decision.** Scope set by Story 1-10 |
 | Computed property on a selector | `computedStyleValue` | What value does a named CSS property resolve to on a named selector, in a real browser | **Decision.** Same |
 | Custom property on `:root` | `rootCustomPropertyValue` | What value does a named custom property resolve to on `:root` | **Decision.** Same |
+
+**What the specs built on those three capabilities assert.** This table is the coverage answer, and
+it lives here rather than under the heading below saying what is not covered: a reader scanning for
+whether something is asserted reads the heading before the cell.
+
+| Assertion | Spec file | What it answers | Nature |
+|---|---|---|---|
+| The 44x44 hit-target floor, and A-5's no-horizontal-scroll half | `tests/e2e/hit-target-floor.pw.ts` | Does every interactive element on every Hub surface measure at least `--tap` on both axes, or appear in a dated exemption ledger that can only shrink; and does any measured element's edge sit outside the viewport at 360 wide. The floor is read off `--tap` on `:root` rather than written, and the route set is derived from `app/` rather than hand-listed. The ledger, the probe output and the stated limits are in `ops/hit-target-floor.md` | **Decision.** Story 2-8, **2026-09-06**. This supersedes the row that used to sit under "what it deliberately does not assert" claiming the floor needed a Suite Directory. **That reason was wrong about its own blocker**: a sweep over every interactive element needs no Directory to measure, and scoping it to compliant surfaces is what would have made it vacuous |
+| The alias layer, per call site | `tests/e2e/anchor-aliases.pw.ts` | Does each of the fifteen `--accent-dim` call sites resolve to the role its use earns, and do the four `--monument-bold` sites carry the weight a family alias cannot | **Decision.** Story 1-18 |
+| The header suppression on `/celeste` | `tests/e2e/celeste-header.pw.ts` | Is the header rendered and hidden by a stylesheet rather than mutated by an effect, and is that a different mechanism from the home route rendering no header at all | **Decision.** Story 2-1 |
 
 `tests/e2e/rendered-output.pw.ts` runs one test per capability against `/work`, nine tests that
 prove the loud-failure behaviour below, and a guard that the run exercised all three
@@ -58,8 +73,7 @@ harness that covers everything.
 
 | Not asserted | Why not | Owner |
 |---|---|---|
-| The 44x44 hit-target floor | Needs a Suite Directory that does not exist | **Decision.** Story 2.8 |
-| The Status mark's three structural axes | Same | **Decision.** Story 2.10 |
+| The Status mark's three structural axes | Needs a Status mark, which nothing renders yet. The Suite Directory that renders one is Story 2-9 | **Decision.** Story 2-10 |
 | Any `--token-*` name, and anything under `contracts/` other than the font faces | Story 1-10 shipped the instrument, not the contract. Story 1-12 added the second spec file, `tests/e2e/contract-fonts.pw.ts`, which asserts that `contracts/fonts.css` resolves from a folder vendored at an arbitrary depth and that the font swap moves no sample block beyond a recorded tolerance. No `--token-*` role is asserted in a browser yet | **Decision.** Stories 1.11 through 1.14, amended 2026-08-25 by Story 1-12 |
 | Colour contrast ratios | No token roles to compute them against yet | **Decision.** Epic 1 token stories |
 | Any route other than `/work` | One route is enough to establish the instrument. Adding routes is cheap once the instrument exists | **Decision.** Story 1-10 scope |
@@ -121,6 +135,8 @@ version drift the pinning exists to prevent.
 | Harness run, cold `.next`, six-test file | **27.8 s wall** for `pnpm build`, `pnpm start` and all six tests | **Observed 2026-08-24**, by emptying the container's `.next` volume and timing one `docker run` of `pnpm test:e2e`. Playwright reported 24.1 s of that as test time. Measured before the file grew to thirteen tests, and kept rather than overwritten |
 | Harness run, warm `.next`, six-test file | **24.3 s wall**, 21.5 s reported as test time | **Observed 2026-08-24**, same method without emptying the volume |
 | Harness run, thirteen-test file | **22.7 s** reported as test time | **Observed 2026-08-24**, by running the full file in the pinned container after the review pass added the seven further failure-path tests. Nine of the thirteen tests never take a screenshot, so the count grew faster than the clock |
+| Whole `pnpm test:e2e` run, eight spec files, **60 tests** | **1 m 41.3 s** measured by `time` around the command; **1.7 min** as Playwright's own headline for the same run. The `docker run` wall around it was **105.2 s** | **Observed 2026-09-06** on the Windows development host, after Story 2-8 added `tests/e2e/hit-target-floor.pw.ts`. **Read what each figure covers**: the command is `pnpm build && pnpm start` plus all sixty tests, Playwright's headline starts when the run does and so includes that build, and the docker wall adds four seconds of `corepack enable` and `pnpm install --frozen-lockfile` against the warm named volumes. The image pull is in none of them; it is the 28 s row in the CI table below. **This is the figure the CI job actually pays**, because `.github/workflows/ci.yml:276-277` runs the whole directory rather than one file; every row above describes one spec file inside that run and is kept rather than overwritten |
+| Of that run, the hit-target spec alone | **24.6 s** across its fifteen cases, of which the sweep case was **13.7 s** | **Observed 2026-09-06**, same run, by summing the per-case durations the list reporter printed. Five navigations, five hydration waits and 43 elements measured at two round trips each. `ops/hit-target-floor.md` carries the breakdown and the same numbers |
 
 ### The CI figures, measured on a runner
 
@@ -143,6 +159,14 @@ provisioning that no amount of test tuning will remove. That is the number C-7 w
 **`actions/checkout@v4` and `pnpm/action-setup@v4` both behaved correctly inside the pinned
 container job**, which had never been exercised in this repository before this run. Both completed
 in about a second with no warnings. That closes the second thing the first run existed to answer.
+
+**These timings also predate every spec file added after 2026-08-25.** The 28 s row measures the
+thirteen tests in `rendered-output.pw.ts`, which was the whole of `tests/e2e` on the day it was
+taken. The job has always run the directory (`ci.yml:276-277`), and the directory now holds eight
+spec files and 58 tests, so the CI figure for the step is stale in scale rather than in method. The
+local 2026-09-06 row above is the closest measurement of the current shape, and no re-run on a
+runner has been made. Whoever next reads an Actions summary for this job should add a CI row beside
+it rather than editing this one.
 
 **These timings predate the Node 22 pin** recorded in Operator action 2 below. They describe the
 job as it ran on the image's own Node v24.18.1. The pin changes the runtime, not the image, so the

@@ -2052,3 +2052,125 @@ status: done
     count floors in that file, so the change is that file's to make deliberately rather than a
     side effect of this story. Nothing under a scanned root is JSON today, so the gap is latent.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  summary: >-
+    `app/app.scss:92-102` breaches `DESIGN.md:558`: `width: 100vw` with `overflow-x: hidden` where
+    the contract says widths are `100%` and the clip is `clip`. Thirty-six elements really do sit
+    past the right edge at 360px, and on one route the clipping is what stops `scrollWidth` from
+    saying so. **Promoted to KV-5 in `ops/known-violations.md`; this entry is the evidence behind
+    that ruling and is not open work on its own.**
+  evidence: |-
+    **Read KV-5 first.** An Operator ruling of 2026-09-06 tolerates this breach and Story 2-9 closes
+    it (`epics.md:2423-2427`), which by this register's own discriminator makes it a known violation
+    rather than deferred work: the test is the ruling, not the severity. KV-5 carries the ruling, the
+    owner and the retirement condition. What follows is the measurement it rests on, kept here rather
+    than duplicated into that file so a re-measurement has one place to land.
+
+    `DESIGN.md:558-559` states the rule and its reason: `html, body { overflow-x: clip }` globally,
+    `clip` rather than `hidden` because `hidden` breaks sticky positioning, and widths `100%` with
+    container padding, never `100vw`. `app/app.scss:96-98` ships `width: 100vw` and
+    `overflow-x: hidden` on `body`, and `:100-102` adds `overflow: hidden` outright on the home
+    route. Two rules broken in one block.
+
+    Measured 2026-09-06 in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by comparing
+    every element's right edge against `window.innerWidth` on each of the five HTML surfaces.
+    Thirty-six elements overflow: 28 on `/work`, furthest `span.work-item__icon` at 490.67, and 8 on
+    `/projects`, furthest `div.projects-hero__text` at 372.00. `/`, `/celeste` and the 404 are clean.
+
+    **`/projects` is the sharp half.** Its eight elements sit 12px past the viewport while
+    `document.documentElement.scrollWidth` reads 360. An A-5 check written against `scrollWidth`
+    would be green on that route while the condition it exists to detect was present. That is why
+    Story 2-8 asserts A-5 on element right edges, and it is the concrete case for `clip` over
+    `hidden` that `DESIGN.md:558` argues in the abstract. On `/work` the same reading is 491, so
+    nothing hides it there; both readings are in `ops/hit-target-floor.md`.
+
+    Which rule does the hiding differs by route and both were checked. On `/projects` it is the
+    hero's own `overflow: hidden` (`ProjectsHero.scss:9`), not `body`'s. On `/work` the work-item
+    overflow has no clipping ancestor at all and reaches `scrollWidth`, where `body`'s
+    `overflow-x: hidden` then stops it becoming a scrollbar. So `app/app.scss` is the reason a
+    visitor cannot scroll to the overflow, and it is one of two reasons a reader cannot see it.
+
+    The overflowing elements are their own components' defects rather than the stylesheet's, and
+    they land in two shapes. `.container` is `width: min(80%, 1920px)` with `padding: 0 1rem`
+    (`container.scss:2-4`), so at 360 the page content box is 256 and a hero's is 216 after its own
+    `--page-padding`; both hero grid columns then measure **300**, because a grid item's
+    `min-width: auto` refuses to shrink below its min-content size (`WorkHero.scss:1-9`,
+    `ProjectsHero.scss:1-9`). And `.work-item__sub` carries `white-space: nowrap`
+    (`WorkItem.scss:64`) inside a `flex: 1` column, so a long period-and-location string pushes
+    `.work-item__meta` to 372.38 and the icon beside it to 490.67.
+
+    **Not repaired here, by an Operator ruling of 2026-09-06**: Story 2-8 ships the instrument and
+    changes no stylesheet. **Story 2-9 owns the `body` half and already names it as an acceptance
+    criterion** (`epics.md:2423-2427`): "`clip` replaces `hidden`, because `hidden` breaks sticky
+    positioning" and "widths are `100%` with container padding, never `100vw`". Story 2-22 is the
+    other story booked into the same block, deleting the alias layer above it, so whichever lands
+    first should expect the other in the same file. The component half belongs to Story 2-31
+    (`WorkItem`), Story 2-33 (`WorkHero`) and Story 2-9, which replaces the projects surface.
+
+    **The two halves have to land together.** Replacing `hidden` with `clip` on a tree that still
+    overflows changes what a visitor sees from a clipped page to a page with real horizontal
+    scroll, which A-5 forbids outright. Whoever takes `epics.md:2423-2427` should re-run the Story
+    2-8 sweep and widen its A-5 arm past interactive elements once the overflow is gone, rather
+    than take the stylesheet line on its own.
+
+    None of the 36 is interactive, so none fails the Story 2-8 sweep, which measures interactive
+    elements. The gap is recorded there under what the assertion deliberately does not cover, so a
+    green A-5 is not read as "nothing on the Hub overflows at 360".
+  status: promoted to KV-5 in `ops/known-violations.md` on 2026-09-06
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  summary: `DESIGN.md:645-648` states something the Story 2-8 probe measured to be false, and four
+    later stories will read it as guidance.
+  evidence: The passage says vertical padding on a plain inline element "paints outward without
+    affecting layout or hit-testing" and measures "~29px tall no matter what the padding says".
+    The probe recorded in `ops/hit-target-floor.md` shows 0.25rem giving 29.00 and 0.75rem giving
+    44.00, so padding does grow the border box that `boundingBox()` reports. The practical warning
+    survives, since the real-world case really is ~29px, but the stated mechanism is wrong and
+    Stories 2-9, 2-15, 2-30 and 2-32 all repair hit targets against it. Correcting a UX spine is
+    outside a story that ships an instrument and changes no component.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  summary: `epics.md:3576` premises a Story 2.32 acceptance criterion on a measurement the Story
+    2-8 sweep disproved.
+  evidence: The criterion reads that the shipped links measure ~16x27px. The sweep measured the
+    chrome nav links at 38.41 to 98.13 wide by 22.00 tall, recorded in the ledger and in KV-4. This
+    story is the first instrument in the repository positioned to correct that number, and it is
+    left standing in the criterion that four surfaces are repaired against. Editing `epics.md` is a
+    planning-artifact change, not an implementation one.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  summary: `tests/e2e/harness.ts:24` still names only the Epic 1 consumers of the harness, now that
+    a sixth spec imports it.
+  evidence: The docstring reads "Stories 1.12, 1.17, 1.18 and 1.19 import this file", and
+    `hit-target-floor.pw.ts` now imports `RENDERED_VIEWPORT` and `rootCustomPropertyValue` from it.
+    `ops/rendered-output-harness.md` was updated to add the story; the file a reader actually opens
+    was not. Story 2-8's boundaries made `harness.ts` reuse-only, so this is filed rather than
+    fixed.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  summary: The hit-target sweep does not skip controls inside an `inert` subtree or at
+    `opacity: 0`, and whether it should is an Ask First decision the story did not take.
+  evidence: `hit-target-floor.pw.ts` skips `aria-hidden`, `display: none` and zero-area nodes. An
+    `inert` subtree and a fully transparent control are both unreachable in fact, so measuring them
+    either fails the floor for an element no one can tap or pads the count that proves measurement
+    happened. The spec's Ask First list covers any element the sweep should skip beyond the
+    visibility and accessibility-tree rule in its frozen matrix, so adding these silently was not
+    available.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  summary: What shipped departs from the literal wording of Story 2.8's acceptance criteria in two
+    places, and nothing records that where `epics.md` is read.
+  evidence: `epics.md:2337-2338` requires that for every interactive element the assertion asserts
+    `boundingBox()` measures at least 44x44; what shipped asserts at least 44x44 or covered by a
+    dated ledger row, with 39 of 43 elements on the ledger. `epics.md:2342` requires A-5 asserted as
+    no horizontal scroll at 360px; what shipped scopes A-5 to interactive elements, because `/work`
+    reports `documentElement.scrollWidth` 491 and repairing it belongs to Story 2-9. Both departures
+    follow from Operator rulings of 2026-09-06 and are argued in `ops/hit-target-floor.md`, KV-4 and
+    KV-5, but no sprint change proposal or `epics.md` annotation carries them, so a later reader of
+    the epic sees criteria that were not met verbatim and a board row reading done.
+  status: open
