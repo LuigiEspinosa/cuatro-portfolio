@@ -2556,3 +2556,204 @@ status: done
     `HudLabel` into it. That is the point at which the prop's contract is worth restating against
     every real call site rather than against one.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    `glitch-text.scss:15` runs an infinite loop on the home route, animating `text-shadow` and
+    `clip-path`. Story 2-12 repaired the homepage entrance and left this one, which is on the same
+    route, because Story 2-27 owns it by name.
+  evidence: |-
+    `components/molecules/GlitchText/glitch-text.scss:15` sets `animation: glitch-loop 6s infinite`
+    on `.glitch-text__inner`, and the keyframes drive `text-shadow` and `clip-path`.
+    `EXPERIENCE.md:685-699` allows `transform` and `opacity` only and `:693-694` allows one
+    orchestrated entrance per page load with no loop in it, so this is two breaches in one rule.
+
+    It is on `/`, which is the route Story 2-12 measured, and `tests/e2e/narrative.pw.ts`'s property
+    sweep does not catch it: the sweep reads inline declarations, which is where GSAP writes, and a
+    CSS `@keyframes` animation writes nowhere. That is a real limit of that instrument as well as a
+    real breach, and both belong to the story that owns the component. The `prefers-reduced-motion`
+    guard at `:17-19` is present and correct, so a visitor who asks for stillness gets it; the
+    breach is for everyone else.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    `ScanlineOverlay.scss:39` runs an infinite grain animation. Story 2-28 owns it and Story 2-12
+    left it untouched.
+  evidence: |-
+    `components/atoms/ScanlineOverlay/ScanlineOverlay.scss:39` sets
+    `animation: grain-shift 0.4s steps(2) infinite` on the grain layer, which is a loop
+    `EXPERIENCE.md:693-694` does not admit, at 2.5 steps a second for as long as the page is open.
+    Its `prefers-reduced-motion` guard at `:41-43` is present.
+
+    Same shape as the `glitch-text` entry above: a CSS animation rather than a tween, so it is
+    invisible to the inline-declaration sweep `tests/e2e/narrative.pw.ts` runs, and the component is
+    outside Story 2-12's boundaries by name.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    `HomeLayout.scss` still transitions `opacity` on hover for the dim-siblings effect and `color` on
+    two link rules, all three on the route Story 2-12 repaired. `epics.md:3322-3326` gives the
+    dim-siblings retirement to Story 2-29 by name.
+  evidence: |-
+    `components/organisms/HomeLayout/HomeLayout.scss:80-82` sets `opacity: 0.2` on every unhovered
+    panel while any panel is hovered, driven by the `transition: opacity 0.4s ease` at `:40`. `:127`
+    and `:159` each set `transition: color 0.2s ease` on a link.
+
+    `opacity` is an allowed property, so the dim-siblings rule is not a property breach; it is a
+    retirement `epics.md:3322-3326` already books to Story 2-29, which is also the story that makes
+    `HomeLayout.scss` token-native. The two `color` transitions are the ordinary kind of breach:
+    `color` is neither `transform` nor `opacity`. All three were explicitly outside Story 2-12's
+    boundaries, which permitted exactly one declaration in this file to move, `filter: brightness(0)`
+    to `opacity: 0` at `:190`.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    `WorkItem.tsx:41-55` animates `height` on every accordion open and close, which is a layout
+    property on the main thread. Story 2-31 owns the component.
+  evidence: |-
+    `components/atoms/WorkItem/WorkItem.tsx:41-48` tweens `height` to the measured `scrollHeight` on
+    open and `:51-55` tweens it back to `0` on close, with `overflow: hidden` set around both.
+    `EXPERIENCE.md:685-699` allows `transform` and `opacity` only, and `height` is the canonical
+    example of the rule's reason: every frame is a layout pass rather than a composite.
+
+    It is honest work rather than careless: animating an accordion to `auto` needs a measured target
+    and this is the usual way to get one. The conformant replacement is a grid-template-rows or a
+    transform-based reveal, which is a rebuild of the component's open state rather than a tweak, and
+    Story 2-31 is the rebuild. The reduced-motion path is handled at `:36`, which sets the duration
+    to zero rather than skipping the tween.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    `WorkTimeline.tsx:19-29` adds a scroll-triggered fade-up on `/work`, which is a second
+    orchestrated entrance on a route that already has one. Story 2-33 owns it, together with
+    `WorkHero`.
+  evidence: |-
+    `components/organisms/WorkTimeline/WorkTimeline.tsx:19-29` calls `ScrollTrigger.batch` on
+    `.work-item` and runs `gsap.from` with `y` and `opacity` as each batch enters at `top 85%`. The
+    properties are conformant; what is not is `DESIGN.md:1292` and `EXPERIENCE.md:693-694`, which
+    allow one orchestrated entrance per page load.
+
+    Recorded from Story 2-12 rather than fixed because that story's boundaries name `WorkTimeline`
+    and `WorkHero` as Story 2-33's and forbid touching them, and because `/work` is a route Story
+    2-12 was required to leave byte-identical in shape: its R3F boundary carries the same static
+    import defect the homepage's did and is deliberately still standing.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    `app/providers.tsx:4-6` imports `lenis`, `gsap` and `ScrollTrigger` at module scope and the root
+    layout renders `Providers`, so 56,582 gzipped bytes of narrative library ship on every route,
+    including `/celeste` and the 404, which have no motion of their own to drive.
+  evidence: |-
+    Re-measured 2026-09-07 by `node ops/asset-budget.mjs` against `.next/BUILD_ID`
+    `4t7MWb-CjvVVQ3SnWvKDb`: `08pj4xkz~kajd.js` (gsap, 26,971 gzipped), `0r_9pnds9g3a0.js`
+    (gsap/ScrollTrigger, 17,542) and `0nwet2hiefxan.js` (lenis, 12,069) are each referenced by all
+    seven prerendered documents. The figure and the shape are unchanged from the 2026-08-29 reading.
+
+    Story 2-12 named this in its boundaries and refused it: the story's subject is the homepage's
+    narrative bundle, and these three are on every route, so moving them is a change with a
+    different blast radius and a different test surface. It is the larger half of what
+    `EXPERIENCE.md` Rule 1 claims and `ops/asset-budget.md` § What this reads against the budget's
+    own rules falsifies. The cheap version is a client boundary that mounts `Providers` only where
+    something needs it; the honest version needs to decide whether Lenis belongs on `/celeste` and
+    the 404 at all, which is a design decision rather than a bundling one.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    A dynamically imported chunk that fails to arrive takes the whole route down through Next's
+    default error boundary. Story 2-12 caught it for the homepage's gem and left the identical shape
+    standing at `TorusCanvas` and `TorusKnotCanvas` on `/work` and `/projects`.
+  evidence: |-
+    Observed 2026-09-07 in `mcr.microsoft.com/playwright:v1.62.1-noble`, by aborting every script
+    carrying a WebGL fingerprint with `page.route` and loading `/`. Before the fix the premise block,
+    the Suite Directory and the footer were all gone: `next/dynamic` resolves through `React.lazy`,
+    a rejected import throws during render, and the nearest boundary is Next's own, which replaces
+    the route rather than the component. A visitor whose connection dropped one request got an error
+    page instead of the Directory.
+
+    `components/molecules/GemComponent/GemComponent.tsx:16-30` now resolves the failed import to a
+    component that draws nothing, which is what makes the page independent of the payload rather
+    than merely deferring it, and `tests/e2e/narrative.pw.ts` holds it there.
+
+    `components/molecules/TorusCanvas/TorusCanvas.tsx:8` and
+    `components/molecules/TorusKnotCanvas/TorusKnotCanvas.tsx:8` wrap `Scene` the same way and have no
+    such catch, so `/work` and `/projects` still fail whole-route on a dropped chunk. Nothing tests
+    it, because Story 2-12's boundaries put both routes out of scope and its aborting test visits `/`
+    only. The fix is three lines each, and it belongs with whichever story closes those two
+    boundaries.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    The homepage still pulls narrative bytes shortly after hydration, because Next prefetches the
+    `/work` and `/projects` route bundles behind the two `<Link>`s in the hero nav. The deferral is
+    real for first paint and smaller than it looks for a session.
+  evidence: |-
+    Observed 2026-09-07 in the pinned container, by recording every script request on `/` and
+    subtracting the set the document itself references. Five chunks were fetched that the document
+    does not name: the three the gem's boundary defers, plus two carrying `three-stdlib`
+    (`0bmu3elf~urvv.js` and `0a3g1m.trcqpl.js` in that build; chunk names are content hashes and
+    move every build). The two extra ones are the route bundles behind
+    `HomeLayout.tsx`'s `<Link href='/work'>` and `<Link href='/projects'>`, which the App Router
+    prefetches once they are in the viewport.
+
+    This does not weaken the acceptance criterion Story 2-12 met, which is about what the `/`
+    document references before it can paint, and `ops/asset-budget.md` measures exactly that. It
+    does mean the § Every route figure for `/` understates what a homepage visitor's browser ends up
+    fetching, and that closing the `TorusCanvas` and `TorusKnotCanvas` boundaries would shrink the
+    homepage's real transfer as well as those two routes'. Worth a line in
+    `ops/asset-budget.md` § Stated limits when that file is next re-measured, and worth knowing
+    before anyone reads `/` at 295,123 gzipped as the whole story.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    The `/` document emits its two font preloads twice, four `<link rel=preload as=font>` elements
+    for two files, because `app/layout.tsx` declares them and Next re-emits them for the route.
+  evidence: |-
+    Observed 2026-09-07 in `.next/server/app/index.html`: `MonumentExtended-Bold.woff2` and
+    `ConfilliaNormal-Regular.woff2` each appear twice, once with `crossorigin` before `type` and
+    once after, so they are two separate emissions rather than one duplicated string.
+
+    It costs no transfer: a browser fetches a URL once whatever the number of links, and
+    `ops/asset-budget.mjs` deduplicates on the resolved path, so no figure in `ops/asset-budget.md`
+    is affected. `tests/e2e/narrative.pw.ts` therefore asserts on the distinct set of preloaded
+    faces rather than on the element count, and says so.
+
+    Filed because it is a document the estate serves saying something twice, which is the kind of
+    thing that reads as a bug to whoever finds it next, and because Pending Operator action 2 in
+    `ops/asset-budget.md` already has both preloads under review: at least one of the two faces
+    (`MonumentExtended-Bold`) is reached by no rule at all, so the cheapest resolution may be to
+    remove one of them rather than to deduplicate it.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  summary: >-
+    A Playwright spec cannot import `ops/asset-budget.mjs`, so `tests/e2e/narrative.pw.ts` parses the
+    `FINGERPRINTS` table out of the file as text. Two consumers now read one table by two different
+    mechanisms, and only one of them would fail loudly if the table's shape changed.
+  evidence: |-
+    Observed 2026-09-07. `ops/__tests__/asset-budget.test.ts:8-46` imports the tool directly and
+    Vitest handles the ES module. Playwright transpiles a spec to CommonJS, the repository declares
+    no `"type": "module"`, and the tool uses `import.meta.url` at `:1880` and `:1904`, so the same
+    import fails the whole file with `SyntaxError: Cannot use 'import.meta' outside a module` and
+    `No tests found`.
+
+    The spec's own rule is that the table is reused rather than restated, so the file reads it out
+    of the source with a regex and guards the parse two ways: the entry count is held equal to the
+    tool's own declaration count, and the scan is shown discriminating against a real
+    narrative-bearing chunk. That closes the vacuity risk and does not close the coupling: a table
+    reformatted to double quotes, or to one entry per several lines, would fail the parse guard with
+    a message about the parse rather than about the table.
+
+    Two clean closures, neither urgent. Move the fingerprint table into a small `.ts` module both
+    consumers import, leaving `ops/asset-budget.mjs` importing it too. Or drop `import.meta.url` from
+    the tool's `main` default argument, which is the only thing making it unloadable from CommonJS.
+    The first is better and is a change to a file `ops/__tests__/asset-budget.test.ts` pins as
+    literals, so it lands with that suite.
+  status: open

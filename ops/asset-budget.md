@@ -32,7 +32,7 @@ the difference between a figure a reader can re-derive and one they have to take
 | Section | Where it comes from |
 |---|---|
 | § The build this reading was taken from | **Verbatim**, `node ops/asset-budget.mjs` |
-| § The narrative bundle, its table | **Verbatim** |
+| § The narrative bundle, both of its tables | **Verbatim**, each from its own dated run |
 | § The narrative assets, its table and the orphan paragraph | **Verbatim** |
 | § The non-3D path, both readings and every table under them | **Verbatim** |
 | § Every route | **Verbatim** |
@@ -99,6 +99,83 @@ Every chunk in the build a narrative fingerprint hits. The whole chunk is attrib
 libraries found in it, which overstates wherever a chunk mixes narrative and shell code. That is a
 stated limit with a direction, and the direction is the safe one.
 
+**Two readings, and both are kept.** The first was taken during Story 2-2 on 2026-08-29 and is the
+one every other figure in this file belongs to. The second was taken during Story 2-12 on
+2026-09-07, after that story put the homepage's narrative behind one dynamic boundary, and it is the
+current state of the build. Neither replaces the other in place, per § Maintaining this file: a
+reader needs to see whether a number moved or was only re-stated, and the two tables side by side
+are what makes the answer legible. Every other section of this file is still the 2026-08-29 reading,
+and § The build this reading was taken from names that build rather than this one.
+
+### The 2026-09-07 reading, after Story 2-12
+
+Taken from `.next/BUILD_ID` `4t7MWb-CjvVVQ3SnWvKDb`, written 2026-09-07T15:05:52Z at commit
+`f5990d0c58ed0a834a93abd7affb14487d0e62f8`, with no measured input dirty. The table is **verbatim**,
+`node ops/asset-budget.mjs`; this provenance sentence is editorial.
+
+| Chunk | Bytes on disk | Bytes gzipped | Libraries | On which routes | Nature |
+|---|---|---|---|---|---|
+| `0g0oqlx4fsym~.js` | 870,402 | 228,423 | three, @react-three/fiber | `/projects`, `/work` | **Observed** |
+| `0l5n1hvmbx652.js` | 253,014 | 105,895 | @react-three/postprocessing, postprocessing | none: loaded on demand | **Observed** |
+| `08pj4xkz~kajd.js` | 70,032 | 26,971 | gsap | `/`, `/_not-found`, `/celeste`, `/cv`, `/projects`, `/recommendation`, `/work` | **Observed** |
+| `0r_9pnds9g3a0.js` | 43,379 | 17,542 | gsap/ScrollTrigger | `/`, `/_not-found`, `/celeste`, `/cv`, `/projects`, `/recommendation`, `/work` | **Observed** |
+| `0nwet2hiefxan.js` | 38,538 | 12,069 | lenis | `/`, `/_not-found`, `/celeste`, `/cv`, `/projects`, `/recommendation`, `/work` | **Observed** |
+| `0w3yhq-w7~d3~.js` | 28,173 | 9,501 | three-stdlib | `/work` | **Observed** |
+| `0smmibz.77jp0.js` | 21,694 | 6,947 | three-stdlib | `/projects` | **Observed** |
+| `0qod5vojegloo.js` | 24,566 | 6,464 | three, @react-three/drei | none: loaded on demand | **Observed** |
+| `0n9mb1l0dkz1g.js` | 24,526 | 6,459 | three, @react-three/drei | none: loaded on demand | **Observed** |
+| `14jqidvd7kupm.js` | 14,848 | 6,079 | gsap/SplitText | `/` | **Observed** |
+| **Total, every narrative chunk in the build** | **1,389,172** | **426,350** |  |  | **Observed** |
+| Of that, on the heaviest 3D route `/work` |  | 294,506 |  |  | **Derived** |
+| Of that, referenced by no document and loaded on demand |  | 118,818 |  |  | **Derived** |
+| Estimate this replaces |  | 300,000 to 450,000 |  |  | **Decision**. `EXPERIENCE.md:946` |
+| Against the estimate |  | inside the range, 23,650 below the top |  |  | **Derived** |
+
+**What is deferred now: 118,818 gzipped bytes, 27.9 percent of the narrative, against 6,459 and 1.5
+percent on 2026-08-29.** **Derived.** Three chunks are referenced by no prerendered document:
+`0l5n1hvmbx652.js` (`@react-three/postprocessing` and `postprocessing`, 105,895), and the two drei
+and `three` barrels at 6,464 and 6,459. The homepage requests all of them after hydration, which
+`tests/e2e/narrative.pw.ts` observes directly.
+
+**What is still not deferred: 307,532 gzipped bytes, and `/work` and `/projects` carry almost all of
+it.** **Derived.** `0g0oqlx4fsym~.js`, the 228,423-byte `three` and `@react-three/fiber` chunk, is
+still on both of those documents at first paint, and the two `three-stdlib` chunks with it. **Story
+2-12 did not touch them and did not intend to.** Their boundaries, `TorusCanvas.tsx:8` and
+`TorusKnotCanvas.tsx:8`, carry exactly the fault `GemComponent.tsx:5-6` carried, described under the
+2026-08-29 reading below, and closing them is a separate story. Read the flip in the § Every route
+column as a homepage result and nothing wider: `/` reads **no** for WebGL and `/work` and
+`/projects` still read **yes**.
+
+**`/` is a non-3D route as of this reading.** **Observed 2026-09-07.** Its document references no
+chunk carrying a WebGL fingerprint, which `tests/e2e/narrative.pw.ts` asserts by fetching every
+script the document names and scanning each, and which the same test shows discriminating: run
+against a build with the static import restored, it finds `three`, `@react-three/fiber`,
+`@react-three/postprocessing` and `postprocessing` in the eager entry. The route's wire total is
+295,123 gzipped against 625,823 on 2026-08-29, but **the two are not a clean before and after**: the
+2026-08-29 build predates Stories 2-9 and 2-11, and `/`'s own document grew from 14,774 to 32,531
+bytes over that span as the premise block and the Suite Directory landed on it. The WebGL column is
+the comparison this story is entitled to make; the byte delta spans four stories.
+
+**`gsap` and `lenis` are unchanged, and still the wider defect.** **Observed 2026-09-07.**
+`app/providers.tsx:4-6` still imports all three at module scope and the root layout still renders
+`Providers`, so 56,582 gzipped bytes of narrative library are on every route including `/celeste` and
+the 404. Story 2-12's boundaries named them and left them: they are on every route rather than in
+the homepage's narrative bundle, so moving them is a different change with a different blast radius.
+
+**What would be traded, and is not being traded here.** **Decision.** If the narrative had exceeded
+450 KB, `EXPERIENCE.md:963` names `@react-three/postprocessing` as the first thing to examine. It
+did not, so nothing is traded. For whoever revisits this: `@react-three/postprocessing` and
+`postprocessing` are now a chunk of their own at 105,895 gzipped bytes, fetched by `/` after
+hydration rather than before first paint, and dropping it would cost the `EffectComposer` and
+`Bloom` pass at `GemNarrative.tsx:32-34`, which is the glow the gem reads as. Neither Story 2-2 nor
+Story 2-12 makes that call.
+
+### The 2026-08-29 reading, superseded and kept
+
+Taken during Story 2-2 from `.next/BUILD_ID` `uXKXS8QHdHPNgUPIdvcnq` at commit `9662d03`, which is
+the build § The build this reading was taken from describes and the one every other section here
+still belongs to.
+
 | Chunk | Bytes on disk | Bytes gzipped | Libraries | On which routes | Nature |
 |---|---|---|---|---|---|
 | `0g0oqlx4fsym~.js` | 870,402 | 228,423 | three, @react-three/fiber | `/`, `/projects`, `/work` | **Observed** |
@@ -128,18 +205,12 @@ the siblings the other two import at their own line 5 and 6 (`Torus.tsx:4-5`, `T
 `CanvasOrbitControls.tsx:3-5`). A static import is not deferred by a dynamic call next to it, so the
 libraries land in the parent's chunk regardless and only `Scene.tsx` and the drei
 `PerformanceMonitor` it uses at `Scene.tsx:5` end up behind the split. That is the 6,459 bytes.
+**Story 2-12 closed the `GemComponent` third of this on 2026-09-07 and left the other two standing.**
 
 **`gsap` and `lenis` are worse.** **Observed 2026-08-29.** `app/providers.tsx:4-6` imports `lenis`,
 `gsap` and `ScrollTrigger` at module scope, and the root layout renders `Providers`, so all three are
 on every route including the ones with no 3D at all. 56,582 gzipped bytes of narrative library are on
-`/celeste` and on the 404.
-
-**What would be traded, and is not being traded here.** **Decision.** If the narrative had exceeded
-450 KB, `EXPERIENCE.md:963` names `@react-three/postprocessing` as the first thing to examine. It
-did not, so nothing is traded. For whoever revisits this: the chunk carrying
-`@react-three/postprocessing`, `postprocessing` and `gsap/SplitText` is 110,487 gzipped bytes on `/`
-alone, and dropping it would cost the `EffectComposer` and `Bloom` pass at `GemComponent.tsx:37-39`,
-which is the glow the gem reads as. Story 2-2 does not make that call.
+`/celeste` and on the 404. Still true on 2026-09-07.
 
 ## The narrative assets
 
@@ -374,6 +445,15 @@ the assumption the budget's own decomposition is built on, which is why reading 
 reading one fails by 102.8 percent. It is the rule the central finding actually breaks, and it is
 named here rather than left for a reader to infer.
 
+**Amended 2026-09-07 by Story 2-12, and only for `/`.** **Derived**, from the 2026-09-07 reading
+above. The homepage's document now references no chunk carrying a WebGL fingerprint, so on that one
+route the sentence "if the narrative is not loaded, nothing on the page is missing" is a claim a
+test can and does make: `tests/e2e/narrative.pw.ts` aborts the narrative's request outright and
+asserts the premise, the Suite Directory and the footer still render and `/#suite` still moves
+focus. Across the build the rule still does not hold: 307,532 of 426,350 gzipped narrative bytes,
+72.1 percent, are on a document at first paint, and 56,582 of them are on routes with no 3D at all.
+Pending Operator action 6 stays open on that basis rather than closing on the homepage's result.
+
 **Rule 4 is the one the preload figures test.** `EXPERIENCE.md:956-957` says "Preload only what the
 non-3D path needs." The two preloaded faces cost 31,239 gzipped bytes on a route that is already
 143,945 over budget, and at least 19,936 of those are a family no rule can reach. That is a finding
@@ -523,7 +603,7 @@ than left in prose, in the shape `ops/font-contract.md` and `ops/rendered-output
 | 3 | **Decide the disposition of the four orphaned assets and two orphaned components** | Operator | 1,215,179 bytes under `public/assets/home/` and two `.tsx` files are reachable from nothing. Deleting a published asset is a reversibility question, not a cleanup | _not done_ |
 | 4 | **Re-run `node ops/asset-budget.mjs` when Story 2-20 retires the legacy faces, and add a row** | Operator | 962,952 bytes on disk, 692,644 gzipped across nine unreached families and three formats each, are the largest single thing this reading found that a named story already plans to remove. The figure after it lands is what tells whether it worked | _not done_ |
 | 5 | **Re-run it again once the non-3D front door lands (Story 2-13)** | Operator | The 140 KB budget is 102.8 percent breached today, and 245,605 of the 283,945 is JavaScript on a route with no 3D on it. Whether that story moves the number is the question this record exists to make answerable | _not done_ |
-| 6 | **Rule on whether `EXPERIENCE.md` Rule 1 is repaired or retired** | Operator | § What this reads against the budget's own rules shows it does not hold. Either the narrative is genuinely deferred, which is a change to three components and `app/providers.tsx`, or the rule is rewritten to describe what the Hub does. Both are decisions this story may not take | _not done_ |
+| 6 | **Rule on whether `EXPERIENCE.md` Rule 1 is repaired or retired** | Operator | § What this reads against the budget's own rules shows it does not hold. Either the narrative is genuinely deferred, which is a change to three components and `app/providers.tsx`, or the rule is rewritten to describe what the Hub does. Both are decisions this story may not take. **Narrowed 2026-09-07 by Story 2-12**: one of the three components is done and the rule now holds on `/`. It still fails on `/work` and `/projects` (`TorusCanvas.tsx:8`, `TorusKnotCanvas.tsx:8`) and on every route through `app/providers.tsx`, so the decision is unchanged in kind and smaller in size | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row
