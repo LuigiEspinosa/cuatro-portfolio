@@ -247,10 +247,10 @@ re-run.
 
 | Field | Value |
 |---|---|
-| Method | Render `/` at 360 wide with the display or browser desaturated, or print-preview the page, and read the four marks with no legend to hand |
-| Checked by | _not yet performed_ |
-| Checked on | _not yet performed_ |
-| Result | _not yet performed_ |
+| Method | Rendered `/` at a 360 wide viewport against the local dev server, with one of each of the four values planted across the six marks and the page desaturated by `filter: grayscale(1)` on the root element. The plant mirrors what the component renders, the dot removed from the three values that do not carry one, so what was read is the directory as it would ship rather than a picture of one that does not exist. Read with no legend to hand |
+| Checked by | The Operator |
+| Checked on | **2026-09-06** |
+| Result | **Pass.** All four Status values distinguishable in greyscale with no legend. `Live` and `Complete`, the pair with identical boxes and therefore the one the whole argument rests on, separated by the dot alone |
 
 **Three of the four values cannot be seen on the running site, for two different reasons.**
 `RENDERED_STATUSES` (`lib/registry.ts:91`) is `Live` and `Complete`, so the FR-35 filter holds back
