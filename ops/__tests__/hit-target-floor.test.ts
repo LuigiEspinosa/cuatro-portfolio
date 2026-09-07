@@ -36,9 +36,24 @@ const LIGHTHOUSE_REL = '.lighthouserc.js';
 const HARNESS_RECORD_REL = 'ops/rendered-output-harness.md';
 const VIOLATIONS_REL = 'ops/known-violations.md';
 
+/**
+ * Read a tracked file, with line endings normalised to `\n`.
+ *
+ * **The normalisation is what makes this suite runnable on the authoring machine.** Every parser
+ * below anchors on `\n`: the two block extractors on `= [\n` and `\n];`, the object matcher on
+ * `{\n` and `\n  },`. `core.autocrlf` is true here and `.gitattributes` deliberately covers only
+ * the formats that leave the repository, so a Windows checkout holds `.ts` and `.md` with CRLF and
+ * every one of those anchors misses. The suite then failed at collection with "no EXEMPTIONS
+ * literal was found", which reads as a deleted const rather than as a checkout property, and the
+ * ledger it exists to hold honest could not be verified anywhere but CI.
+ *
+ * Normalising here rather than widening each regex to `\r?\n` keeps the anchors readable and
+ * cannot miss one that is added later. It does not weaken the reflow guard, which depends on
+ * indentation and trailing commas, neither of which a line ending carries.
+ */
 const read = (relative: string): string => {
   try {
-    return readFileSync(resolve(REPO_ROOT, relative), 'utf8');
+    return readFileSync(resolve(REPO_ROOT, relative), 'utf8').replace(/\r\n/g, '\n');
   } catch (error) {
     throw new Error(`${HERE}: ${relative} could not be read: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -676,17 +691,34 @@ describe('the assertion is sourced and scoped the way the record says', () => {
       return row ?? '';
     };
 
+    // The closing stories are pinned as literals, so narrowing either row is an edit here as well
+    // as there. Story 2-9 landed on 2026-09-06 and left both rows: it closed KV-4's
+    // `directory-links` and KV-5's stylesheet half, and neither entry retires on a partial repair.
     const kv4 = indexRow('KV-4');
     expect(kv4, 'the KV-4 index row does not name AD-19').toContain('AD-19');
     expect(kv4, 'the KV-4 index row is not Open').toContain('**Open**');
-    expect(kv4, 'the KV-4 index row names no closing stories').toContain('Stories 2-9, 2-15, 2-30 and 2-32');
+    expect(kv4, 'the KV-4 index row names no closing stories').toContain('Stories 2-15, 2-30 and 2-32');
     expect(kv4, 'the KV-4 index row claims a retirement date').toContain('_not retired_');
 
     const kv5 = indexRow('KV-5');
     expect(kv5, 'the KV-5 index row does not name the rule it breaches').toContain('AD-19');
     expect(kv5, 'the KV-5 index row is not Open').toContain('**Open**');
-    expect(kv5, 'the KV-5 index row names no closing story').toContain('Story 2-9');
+    expect(kv5, 'the KV-5 index row names no closing story').toContain('Stories 2-31, 2-33 and 2-14');
     expect(kv5, 'the KV-5 index row claims a retirement date').toContain('_not retired_');
+
+    // The register's own rule is that the index is the copy, so a closing story named in an index
+    // row that no entry names would be a row nobody derived. Both are read back off the entries.
+    const entryOf = (id: string): string => {
+      const at = violations.indexOf(`## ${id}:`);
+      expect(at, `${VIOLATIONS_REL} carries no ${id} entry`).toBeGreaterThan(-1);
+      return violations.slice(at, violations.indexOf('\n---', at));
+    };
+    expect(entryOf('KV-4'), "the KV-4 entry does not name the index row's closing stories").toContain(
+      'Stories 2-15, 2-30 and 2-32'
+    );
+    expect(entryOf('KV-5'), "the KV-5 entry does not name the index row's closing stories").toContain(
+      'Stories 2-31, 2-33 and 2-14'
+    );
   });
 
   it('writes story ids hyphenated in the text this story authored', () => {

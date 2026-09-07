@@ -59,28 +59,29 @@
   --font-mono: var(--f-mono);
 }
 
-// --accent-dim resolves per call site across its fifteen (epics.md:1831-1834). A custom property
-// is inherited and can be redeclared on any selector, so the resolution happens here rather than
-// at a call site. That is what reconciles "resolved per call site" with epics.md:1836, "every one
-// of the fifteen component stylesheets keeps working with no edit", which otherwise read as
-// contradictory, and it is why three component selectors appear in a global file.
+// --accent-dim resolves per call site, across fifteen of them when Story 1-18 wrote this rule and
+// twelve since Story 2-9 (epics.md:1831-1834). A custom property is inherited and can be
+// redeclared on any selector, so the resolution happens here rather than at a call site. That is
+// what reconciles "resolved per call site" with epics.md:1836, "every one of the fifteen component
+// stylesheets keeps working with no edit", which otherwise read as contradictory, and it is why
+// component selectors appear in a global file at all.
 //
 // The rule that decides a site, stated so it can be falsified: a declaration is a boundary a
 // person reads state from when some selector repaints that same property under :hover,
 // :focus-visible or a data-state attribute, or when it is the only visual indicator of a
-// component's state. Everything else is ornament. The per-site table for all fifteen is in
+// component's state. Everything else is ornament. The per-site table is in
 // ops/anchor-token-adoption.md and every row is asserted on the real element by
 // tests/e2e/anchor-aliases.pw.ts.
+//
+// Story 2-9 removed the third selector and the counter-scope beneath it. The card the Suite
+// Directory replaced is gone, and so is the counter-scope that existed only to take that card's
+// boundary value back off the chips inheriting it. Both selectors lost their subject when the
+// component was deleted, and their call sites went with it. `.work-item::before` declares on a
+// pseudo-element, which its siblings do not inherit from, so nothing else needs the value taken
+// back.
 .work-item::before,
-.project-card,
 .error-page__back {
   --accent-dim: var(--token-border-interactive);
-}
-
-// The counter-scope. A tech chip inherits from the card it sits in, and a fill is ornament, so
-// the card's boundary value is taken back off it.
-.project-card__tech li {
-  --accent-dim: var(--token-accent-muted);
 }
 
 * {
@@ -89,17 +90,23 @@
   box-sizing: border-box;
 }
 
+// `clip`, not `hidden`, and on both elements (`DESIGN.md:558-559`). The two clip identically; what
+// `clip` does not do is make the element a scroll container, which is why `hidden` breaks
+// descendant `position: sticky`. Widths are `100%` with container padding, never `100vw`, which
+// includes the scrollbar gutter and is itself a source of horizontal overflow.
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background: var(--black-color);
   font-family: var(--font-regular);
   color: var(--white-color);
-  width: 100vw;
-  height: 100vh;
-  overflow-x: hidden;
-
-  &[id=''] {
-    overflow: hidden;
-  }
+  width: 100%;
+  // A minimum rather than a height. `height: 100vh` clamped the document to one viewport, which is
+  // the reason a homepage section below the hero could not be scrolled to at all.
+  min-height: 100vh;
 }
 
 body#work,

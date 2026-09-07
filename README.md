@@ -113,7 +113,6 @@ flowchart TD
     subgraph components["Animated components"]
         HL[HomeLayout]
         WT[WorkTimeline]
-        PC[ProjectCard]
     end
 
     RM[useReducedMotion] -->|gates all animations| components

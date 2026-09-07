@@ -62,8 +62,8 @@ edit, and this row is the copy.
 | KV-1 | The serving box compiles | AD-8 | **Open**, tolerated deliberately | 2026-08-18 | Story 3-4 (Epic 3) | _not retired_ |
 | KV-2 | Four Registry `source` links resolve for nobody but the Operator | FR-10, SM-4 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
 | KV-3 | Two applications serve on `cuatro.dev` from outside the Registry | AD-6 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
-| KV-4 | Fifteen controls ship under the 44x44 hit-target floor | AD-19 (A-4), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Stories 2-9, 2-15, 2-30 and 2-32 | _not retired_ |
-| KV-5 | Thirty-six elements sit past the right edge at 360px, clipped rather than absent | AD-19 (A-5), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Story 2-9 | _not retired_ |
+| KV-4 | Thirteen controls ship under the 44x44 hit-target floor | AD-19 (A-4), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Stories 2-15, 2-30 and 2-32 | _not retired_ |
+| KV-5 | Thirty-six elements sit past the right edge at 360px, clipped rather than absent | AD-19 (A-5), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Stories 2-31, 2-33 and 2-14 | _not retired_ |
 
 ---
 
@@ -284,7 +284,7 @@ already prescribes exactly that repair for drifting citations.
 
 ---
 
-## KV-4: Fifteen controls ship under the 44x44 hit-target floor
+## KV-4: Thirteen controls ship under the 44x44 hit-target floor
 
 **Scope: what the Hub renders, measured.** This entry is about controls that exist and are too
 small, on the five surfaces the Hub serves as HTML. It makes no claim about surfaces Epic 2 has
@@ -298,16 +298,16 @@ consumers. Story 2-8 installed the instrument and this is the first reading it p
 | Field | Value | Nature |
 |---|---|---|
 | Rule breached | **AD-19**, the accessibility floor, booked as **A-4** at `EXPERIENCE.md:763` and binding on **FR-3**. Its pointer half is stated at `EXPERIENCE.md:727-732`: a minimum target of 44x44px **on the interactive element itself**, as `min-height: var(--tap)` plus `display: inline-flex`, and never as vertical padding on a plain inline element | **Decision.** `ARCHITECTURE-SPINE.md`, AD-19. `epics.md:2334-2342` is where Story 2-8 is required to assert it rather than claim it |
-| What is in breach | **Fifteen authored controls**, rendering as **39 of the 43 elements the sweep measures**: one logo link, six chrome nav links, two project-card links repeated across six cards, one 404 back link, two home nav links and three home contact links | **Observed 2026-09-06** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by `getBoundingClientRect()` after fonts resolved. Every size is in `ops/hit-target-floor.md` under "The exemption ledger", per element |
-| The shape of the breach | **Height, almost everywhere.** Fourteen of the fifteen clear the floor on width and fail on height, at 17.00 to 38.19px tall. One fails on both: the chrome `Blog` link, at 38.41 x 22.00 | **Observed 2026-09-06**, same method. The nearest miss is `a.error-page__back` at 108.58 x 38.19, 5.81px short |
-| Not in breach | The four `button.work-item__header` controls, at 216.00 x 88.80 | **Observed 2026-09-06.** Recorded because a register of breaches that listed every control would say nothing, and because the sweep asserts at least one measured element clears the floor so the comparison discriminates |
+| What is in breach | **Thirteen authored controls**, rendering as **27 of the 53 elements the sweep measures**: one logo link, six chrome nav links, one 404 back link, two home nav links and three home contact links | **Observed 2026-09-06** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by `getBoundingClientRect()` after fonts resolved. Every size is in `ops/hit-target-floor.md` under "The exemption ledger", per element. **Fifteen controls and 39 of 43 elements when this entry was opened**: Story 2-9 deleted the two `.project-card__links` controls, rendered six times each on `/projects`, along with the component that carried them |
+| The shape of the breach | **Height, almost everywhere.** Twelve of the thirteen clear the floor on width and fail on height, at 20.00 to 38.19px tall. One fails on both: the chrome `Blog` link, at 38.41 x 22.00 | **Observed 2026-09-06**, same method. The nearest miss is `a.error-page__back` at 108.58 x 38.19, 5.81px short. The 17.00px lower bound in the opening reading was the two card links, which are gone |
+| Not in breach | The four `button.work-item__header` controls at 216.00 x 88.80, and the 22 Suite Directory links, eleven on each of the two surfaces the directory renders on | **Observed 2026-09-06.** Recorded because a register of breaches that listed every control would say nothing, and because the sweep asserts at least one measured element clears the floor so the comparison discriminates. The directory's links are the first controls in the Hub authored against the floor rather than exempted from it |
 | Where it is tracked mechanically | `ops/hit-target-floor.md` § The exemption ledger, and `EXEMPTIONS` in `tests/e2e/hit-target-floor.pw.ts`, held equal in both directions by `ops/__tests__/hit-target-floor.test.ts` | **Decision.** This entry is the register; those two are the ledger the build enforces. A row deleted from the ledger without a line changed here is the one drift this file cannot see, which is why the surfaces are listed above individually rather than as a count |
 | Status | **Open and tolerated** | **Decision.** Recording a breach is not fixing it. Story 2-8's boundaries forbid changing any component or stylesheet, because a repair made here would land outside the story that planned it and outside that story's own criteria |
 | Ruled by | **The Operator**, at Story 2-8's planning | **Decision.** Asked how the floor should be asserted against a Hub already in breach, the Operator ruled that the sweep is universal and the known breaches are carried in a dated exemption ledger that can only shrink, rather than the sweep being scoped to what already passes. That ruling is what tolerates these fifteen. This register's admission test (`:24-36`) takes an Operator act or a sentence in the breached decision, and AD-19 carries no such sentence, so the act is cited and no sentence is invented for it |
 | Ruled on | **2026-09-06** | **Decision.** The date of that planning checkpoint, which is also the date this entry was written and the date the breach was first measured. The three coincide here and are still different facts |
-| Where the repairs are booked | **Three of the six ledger rows are booked by an acceptance criterion that names this floor; three are booked by ownership only** | **Observed 2026-09-06**, by reading `epics.md`. Verified: `:2655-2658` makes each chrome nav link reach 44px in both dimensions and pass this assertion (Story 2-15); `:3441-3442` requires the 404 exits at 44x44 on both axes measured in a browser (Story 2-30); `:2399-2401` requires the directory's two links at 44x44 via `min-height` plus `inline-flex` (Story 2-9). **Not established**: no acceptance criterion in `epics.md` names the floor for the chrome **logo**, the **home nav links** or the **contact links**. Story 2-32 names `Logo` and `ContactContainer` in its title (`:3559`) and its floor criterion at `:3576-3584` is written about the **nav links**; the home nav links live in `HomeLayout.tsx`, whose redesign is Story 2-29, which names no floor criterion at all. Those three rows are booked to Story 2-32 by Story 2-8's own frozen boundaries, not by a criterion in the epic |
+| Where the repairs are booked | **Two of the five remaining ledger rows are booked by an acceptance criterion that names this floor; three are booked by ownership only** | **Observed 2026-09-06**, by reading `epics.md`. Verified: `:2655-2658` makes each chrome nav link reach 44px in both dimensions and pass this assertion (Story 2-15); `:3441-3442` requires the 404 exits at 44x44 on both axes measured in a browser (Story 2-30). The third such row, `:2399-2401` for the directory's two links, **has landed**: Story 2-9 closed it. **Not established**: no acceptance criterion in `epics.md` names the floor for the chrome **logo**, the **home nav links** or the **contact links**. Story 2-32 names `Logo` and `ContactContainer` in its title (`:3559`) and its floor criterion at `:3576-3584` is written about the **nav links**; the home nav links live in `HomeLayout.tsx`, whose redesign is Story 2-29, which names no floor criterion at all. Those three rows are booked to Story 2-32 by Story 2-8's own frozen boundaries, not by a criterion in the epic |
 | Opened | **2026-09-06** | **Decision.** The date this entry was written, by Story 2-8, which is also the date the breach was first measured rather than inferred |
-| Retired by | **Stories 2-9, 2-15, 2-30 and 2-32**, each deleting its own ledger row in the commit that repairs its surface | **Decision.** The sweep makes that unavoidable: a listed element that starts clearing the floor fails as a stale row, so a story cannot repair a surface and leave the exemption behind. The three rows with no criterion of their own are the ones most likely to be missed, and they are the reason the row above says so plainly rather than claiming uniform coverage |
+| Retired by | **Stories 2-15, 2-30 and 2-32**, each deleting its own ledger row in the commit that repairs its surface. **Story 2-9 has done so**, on 2026-09-06 | **Decision.** The sweep makes that unavoidable: a listed element that starts clearing the floor fails as a stale row, so a story cannot repair a surface and leave the exemption behind. Story 2-9 is the demonstration that the mechanism works rather than merely being described. The three rows with no criterion of their own are the ones most likely to be missed, and they are the reason the row above says so plainly rather than claiming uniform coverage |
 | Retired on | _not retired_ | Filled when the ledger is empty. Verify by reading the ledger, not by reading a stylesheet: this is the floor `EXPERIENCE.md:731-732` says is the single easiest one to miss while appearing to be met |
 
 ### The one surface nobody had counted
@@ -320,8 +320,9 @@ lands on the image and activates the link, so the effective target is larger tha
 and AD-19 is nonetheless about the element itself.
 
 This is the argument for a universal sweep rather than a list of surfaces someone remembered, and
-it is recorded here rather than only in `ops/hit-target-floor.md` because it changes what this
-entry counts: fifteen controls, not the fourteen a reader of the plan would have expected.
+it is recorded here rather than only in `ops/hit-target-floor.md` because it changed what this
+entry counted when it opened: fifteen controls, not the fourteen a reader of the plan would have
+expected. Thirteen remain.
 
 ### What a reader should not conclude from this entry
 
@@ -335,8 +336,9 @@ severity error and was not touched by Story 2-8 (**observed 2026-09-06** by
 `git diff --stat 9f71fba -- .lighthouserc.js`, which was empty). Contrast, focus order and the
 manual pass are separate instruments with separate owners, and `ops/hit-target-floor.md` § What
 this deliberately does not assert lists what the sweep leaves to them. A-4's **independently
-addressable** clause is among them: it is a statement about two boxes rather than one, and nothing
-on the shipped Hub puts two targets on one line at 360 wide.
+addressable** clause was among them, because it is a statement about two boxes rather than one and
+nothing on the shipped Hub put two targets on one line at 360 wide. Story 2-9's directory does,
+and the clause is asserted from 2026-09-06 in the same spec file.
 
 ### Maintaining the ledger this entry counts
 
@@ -376,32 +378,39 @@ is met. It would have sat in `deferred-work.md` only if nobody had ruled on it.
 | Field | Value | Nature |
 |---|---|---|
 | Rule breached | **AD-19**, booked as **A-5** at `EXPERIENCE.md:764` and binding on **FR-3**: no horizontal scroll at 360px. **`DESIGN.md:558-559`** states the mechanism it requires: `html, body { overflow-x: clip }` globally, `clip` rather than `hidden` because `hidden` breaks sticky positioning, and widths `100%` with container padding, never `100vw` | **Decision.** `ARCHITECTURE-SPINE.md`, AD-19 |
-| Offending lines | `app/app.scss:96-98`, `width: 100vw` with `overflow-x: hidden` on `body`, and `:100-102`, `overflow: hidden` on the home route. Two rules broken in one block | **Observed 2026-09-06 at `9f71fba`**, by reading the file |
-| What is actually outside the viewport | **36 elements**: 28 on `/work`, furthest `span.work-item__icon` at **490.67** against a 360 viewport, and 8 on `/projects`, furthest `div.projects-hero__text` at **372.00**. `/`, `/celeste` and the 404 are clean | **Observed 2026-09-06** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by comparing **every element's right edge** against `window.innerWidth`. **The left edge was not swept in that census**, so 36 is a floor on the count rather than the whole of it. The standing A-5 assertion checks both edges, on interactive elements only |
-| Why it is invisible without measuring | On `/projects` the eight sit 12px past the edge while `document.documentElement.scrollWidth` reads **360**, because the hero's own `overflow: hidden` (`ProjectsHero.scss:9`) clips them. On `/work` there is no clipping ancestor and the same reading is **491**, where `app/app.scss:98` stops it becoming a scrollbar rather than stopping it being reported | **Observed 2026-09-06**, same method. A `scrollWidth` check would have been green on `/projects` while the condition it exists to detect was present, which is why Story 2-8 asserts A-5 on element edges |
+| Offending lines | **Repaired 2026-09-06 by Story 2-9.** `app/app.scss` shipped `width: 100vw` with `overflow-x: hidden` on `body` and `overflow: hidden` on the home route, two rules broken in one block. It now ships `width: 100%`, `min-height` in place of `height: 100vh`, and `html, body { overflow-x: clip }`, with the home-route rule removed. `HomeLayout.scss` lost the `@media (max-width: 767px) { overflow: auto }` that overrode it, which would otherwise have set `overflow-x` back to `auto` on the home route at exactly the width A-5 is measured at | **Observed 2026-09-06 at `9f71fba`** by reading the file, and **re-read 2026-09-06** after the repair |
+| What still breaches it | **The component half.** 36 elements sit outside the viewport at 360, clipped rather than absent, and the stylesheet no longer has anything to do with why | **Observed 2026-09-06** in the pinned container, after the repair. The census is in `ops/hit-target-floor.md` § The overflow this assertion does not cover |
+| What is actually outside the viewport | **36 elements**: 28 on `/work`, furthest `span.work-item__icon` at **490.67** against a 360 viewport, and 8 on `/projects`, furthest `div.projects-hero__text` at **372.00**. `/`, `/celeste` and the 404 are clean, `/` included after the Suite Directory landed on it | **Observed 2026-09-06** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by comparing **every element's right edge** against `window.innerWidth`. **Re-measured 2026-09-06** after Story 2-9, both edges this time: the count is unchanged and no element sits past the left edge on any route, so 36 is the number rather than a floor on it |
+| Why it is invisible without measuring | On `/projects` the eight sit 12px past the edge while `document.scrollingElement.scrollWidth` reads **360**, because the hero's own `overflow: hidden` (`ProjectsHero.scss:9`) clips them. On `/work` there is no clipping ancestor and the root reading is **360** too, now that `overflow-x: clip` propagates to the viewport; `document.body.scrollWidth` still reports **491** there, which is a second box rather than a second answer | **Observed 2026-09-06**, same method, before and after the repair. A `scrollWidth` check would have been green on `/projects` while the condition it exists to detect was present, which is why Story 2-8 asserts A-5 on element edges |
 | Not caught by the Story 2-8 sweep | None of the 36 is interactive, and that sweep measures interactive elements | **Decision**, recorded rather than widened. `ops/hit-target-floor.md` § What this deliberately does not assert carries it, so a green A-5 is not read as "nothing on the Hub overflows at 360" |
-| Status | **Open and tolerated** | **Decision.** Recording a breach is not repairing it |
+| Status | **Open and tolerated**, on the component half only | **Decision.** Recording a breach is not repairing it, and repairing half of one does not retire the entry. The stylesheet half is closed and the entry says where |
 | Ruled by | **The Operator**, at Story 2-8's planning: `app/app.scss` is recorded, not repaired, in that story | **Decision.** The ruling is quoted in that story's frozen boundaries as a Never clause, dated. Story 2-8 ships the instrument and changes no stylesheet |
 | Ruled on | **2026-09-06** | **Decision.** The date of that checkpoint, which is also the date the overflow was first measured |
 | Opened | **2026-09-06** | **Decision.** Written by Story 2-8 |
-| Retired by | **Story 2-9**, which already names the repair as its own acceptance criterion | **Decision.** `epics.md:2423-2427`: "`clip` replaces `hidden`, because `hidden` breaks sticky positioning" and "widths are `100%` with container padding, never `100vw`". Story 2-22 is booked into the same block, deleting the alias layer above it |
-| Retired on | _not retired_ | Filled when no element sits outside the viewport at 360 and `app/app.scss` no longer sets `100vw` or `overflow-x: hidden`. Verify by measuring elements, not by reading `scrollWidth`, for the reason two rows above |
+| Retired by | **Stories 2-31, 2-33 and 2-14**, which between them own every one of the remaining 36 elements: 2-31 and 2-33 the 28 on `/work`, and 2-14 the 8 on `/projects`, by redirecting the route that renders them | **Decision.** Story 2-9 landed the stylesheet half on 2026-09-06 (`epics.md:2423-2427`: "`clip` replaces `hidden`, because `hidden` breaks sticky positioning" and "widths are `100%` with container padding, never `100vw`"), and its own frozen boundaries forbade touching `WorkItem.scss` or `WorkHero.scss`. **The `/projects` eight were unowned until 2026-09-06** and are recorded that way in the table below rather than silently folded into 2-33, whose title scopes it to `WorkHero`: an entry whose closing stories do not cover its own census can never close. Story 2-22 is booked into the same block, deleting the alias layer above it |
+| Retired on | _not retired_ | Half the condition is now met: `app/app.scss` no longer sets `100vw` or `overflow-x: hidden`. Fill this when no element sits outside the viewport at 360. Verify by measuring elements, not by reading `scrollWidth`, for the reason two rows above |
 
-### The two halves have to land together
+### The two halves, and what happened when the first one landed
 
-**Replacing `hidden` with `clip` on a tree that still overflows is worse than the state shipping
-today.** **Decision.** It turns a clipped page into one with real horizontal scroll, which A-5
-forbids outright. So the stylesheet half and the component half are one change:
+**Replacing `hidden` with `clip` on a tree that still overflows was expected to be worse than the
+state that shipped before it.** **Decision, 2026-09-06.** The reasoning was that it would turn a
+clipped page into one with real horizontal scroll, which A-5 forbids outright.
 
-| Half | Where | Owner |
-|---|---|---|
-| The stylesheet | `app/app.scss:92-102` | **Story 2-9** (`epics.md:2423-2427`) |
-| The hero grid columns, which measure 300 inside a 216 content box because a grid item's `min-width: auto` refuses to shrink below min-content | `WorkHero.scss:1-9`, `ProjectsHero.scss:1-9`, with `.container` at `width: min(80%, 1920px)` (`container.scss:2-4`) feeding it | **Story 2-33** for `WorkHero`; **Story 2-9** replaces the projects surface |
-| `.work-item__sub`'s `white-space: nowrap` in a `flex: 1` column, which pushes `.work-item__meta` to 372.38 and the icon to 490.67 | `WorkItem.scss:64` | **Story 2-31** |
+**That reading was wrong, and it was measured rather than argued.** **Observed 2026-09-06** in the
+pinned container, on all five surfaces: `overflow-x: clip` clips exactly as `hidden` did, and what
+it additionally does not do is make the element a scroll container. `document.scrollingElement.scrollWidth`
+reads 360 against a 360 viewport on every route, `/work` included, where it read 491 before. So the
+two halves did not have to land together after all, and the stylesheet half landed alone.
 
-Whoever takes `epics.md:2423-2427` should re-run the Story 2-8 sweep afterwards and widen its A-5
-arm past interactive elements once the overflow is gone, rather than take the stylesheet line on
-its own.
+| Half | Where | Owner | State |
+|---|---|---|---|
+| The stylesheet | `app/app.scss`, plus the mobile override in `HomeLayout.scss` | **Story 2-9** (`epics.md:2423-2427`) | **Landed 2026-09-06** |
+| The hero grid columns, which measure 300 inside a 216 content box because a grid item's `min-width: auto` refuses to shrink below min-content | `WorkHero.scss:1-9`, with `.container` at `width: min(80%, 1920px)` (`container.scss:2-4`) feeding it | **Story 2-33** | Open |
+| The same shape in `ProjectsHero.scss:1-9`, which is the other 8 of the 36 | `ProjectsHero.scss:1-9`, same containing block | **Story 2-14**, which redirects `/projects` to `/#suite`. After that redirect nothing renders `ProjectsHero` on any route and the eight elements cease to exist rather than being repaired. **Assigned 2026-09-06**, having been left unowned: Story 2-9 replaced the card grid beneath the hero and its frozen boundaries forbade touching the hero, Story 2-33 is scoped to `WorkHero` by its own title, and an entry cannot retire while eight of its elements belong to nobody. If Story 2-14 is ever descoped, this row returns to unowned and must be reassigned rather than quietly inherited | Open |
+| `.work-item__sub`'s `white-space: nowrap` in a `flex: 1` column, which pushes `.work-item__meta` to 372.38 and the icon to 490.67 | `WorkItem.scss:64` | **Story 2-31** | Open |
+
+Whoever closes the last of those should widen the Story 2-8 sweep's A-5 arm past interactive
+elements once the overflow is gone, and retire this entry.
 
 **The measurements, the per-route breakdown and the reasoning are in
 `_bmad-output/implementation-artifacts/deferred-work.md`**, filed by Story 2-8 under its own spec.

@@ -181,11 +181,13 @@ test.describe('the site header', () => {
     // carries no header, so the count above only means something once the home route is known
     // to have rendered.
     //
-    // **Read as an attribute, not as the selector `body[id='']`.** Two rules key on that
-    // selector and both work in the cascade: `HomeLayout.scss:1-6`, which is what actually
-    // paints the home ground, and `app/app.scss:100`, which is `&[id='']` nested under `body`
-    // and sets `overflow: hidden` alone (the base ground is `body`'s own `background` at
-    // `app/app.scss:93`). What the selector cannot be is a locator. Chromium answers
+    // **Read as an attribute, not as the selector `body[id='']`.** One rule keys on that
+    // selector and works in the cascade: `HomeLayout.scss`, which is what actually paints the home
+    // ground (the base ground is `body`'s own `background` in `app/app.scss`). A second rule keyed
+    // on it until 2026-09-06, `&[id='']` nested under `body` in `app/app.scss` setting
+    // `overflow: hidden` alone, which Story 2-9 deleted because it was the one reason a homepage
+    // section below the hero could not be scrolled to. What the selector cannot be is a locator,
+    // and that is what this note is for. Chromium answers
     // `querySelectorAll` for
     // any compound ending in `[id='...']` out of the document's id map, and that map never
     // holds the empty string, so `body[id='']` resolves to **zero** elements while

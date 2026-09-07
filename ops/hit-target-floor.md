@@ -79,6 +79,12 @@ rather than a special case.
 **Observed 2026-09-06** in `mcr.microsoft.com/playwright:v1.62.1-noble`, at the pinned 360 x 800
 viewport, by reading the counts the sweep prints when it fails (see the probe below).
 
+**Re-measured 2026-09-06** by the same method, after Story 2-9 replaced the `/projects` card grid
+with the Suite Directory and mounted the same directory on `/`. `/` went from 5 to 16 and
+`/projects` from 19 to 18; the other three did not move. Both numbers were read off the sweep's own
+failure output in the pinned container, not computed from the six rendered Registry entries, which
+is the arithmetic that would have been wrong had a link failed to render.
+
 **These three numbers are pinned, not bounded.** **Decision.** They are `SURFACES` in
 `tests/e2e/hit-target-floor.pw.ts`, held equal to this table by
 `ops/__tests__/hit-target-floor.test.ts` the same way the exemption ledger is. A bounded "at least
@@ -88,13 +94,13 @@ one commit.
 
 | Surface | Status | Candidates found | Skipped | Measured |
 |---|---|---|---|---|
-| `/` | 200 | 5 | 0 | 5 |
+| `/` | 200 | 16 | 0 | 16 |
 | `/work` | 200 | 11 | 0 | 11 |
-| `/projects` | 200 | 19 | 0 | 19 |
+| `/projects` | 200 | 18 | 0 | 18 |
 | `/celeste` | 200 | 7 | 7 | 0 |
 | `/a-route-that-does-not-exist` | 404 | 8 | 0 | 8 |
 
-**43 elements measured across five surfaces.**
+**53 elements measured across five surfaces.**
 
 **The route set itself is derived from `app/`, not from this table.** **Decision.** A standing case
 walks `app/` for `page.tsx`, `route.ts` and `not-found.tsx`, in the shape
@@ -149,7 +155,6 @@ one of its routes**, so a row covering three surfaces cannot go half stale in si
 |---|---|---|---|---|---|---|
 | `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/projects`, `/a-route-that-does-not-exist` | 3 | 184.00 x 20.00 | Story 2-32 |
 | `chrome-nav` | `nav.navbar a` | `components/atoms/Navbar/Navbar.tsx:6,7,8,9,12,19` | `/work`, `/projects`, `/a-route-that-does-not-exist` | 18 | 38.41 x 22.00 to 98.13 x 22.00 | Story 2-15 |
-| `directory-links` | `.project-card__links a` | `components/molecules/ProjectCard/ProjectCard.tsx:45,49` | `/projects` | 12 | 45.88 x 17.00 to 58.61 x 17.00 | Story 2-9 |
 | `error-back` | `a.error-page__back` | `components/organisms/ErrorPage/Error404.tsx:50` | `/a-route-that-does-not-exist` | 1 | 108.58 x 38.19 | Story 2-30 |
 | `home-nav` | `a.nav-link` | `components/organisms/HomeLayout/HomeLayout.tsx:64,67` | `/` | 2 | 320.00 x 23.00 | Story 2-32 |
 | `home-contact` | `.contact-container a` | `components/molecules/ContactContainer/ContactContainer.tsx:5,8,15` | `/` | 3 | 58.00 x 23.00 to 84.00 x 23.00 | Story 2-32 |
@@ -160,13 +165,19 @@ resolved and after the home entrance had settled. `EXPERIENCE.md:731-732` says t
 single easiest one to miss while appearing to meet it, and reading a stylesheet is exactly how it
 gets missed.
 
-**Six rows for five surfaces, where the story's code map named four.** **Observed 2026-09-06.**
-`chrome-logo` was not on that list and was found by sweeping: `Logo.tsx:7` is a plain inline `<a>`
-wrapping a 184 x 66 image, so the element's own box is the 20px text line box while the image
-paints past the bottom of it. That is the same class of defect the ledger exists to record, and it
-is the clearest argument for a universal sweep over a list of surfaces someone remembered. Story
-2-32 names `Logo` in its own title (`epics.md:3559`) and is what closes it. The home surface is
-carried as two rows because it is authored in two files at two different sizes.
+**Six rows at Story 2-8, five now, where that story's code map named four.** **Observed
+2026-09-06.** `chrome-logo` was not on that list and was found by sweeping: `Logo.tsx:7` is a plain
+inline `<a>` wrapping a 184 x 66 image, so the element's own box is the 20px text line box while
+the image paints past the bottom of it. That is the same class of defect the ledger exists to
+record, and it is the clearest argument for a universal sweep over a list of surfaces someone
+remembered. Story 2-32 names `Logo` in its own title (`epics.md:3559`) and is what closes it. The
+home surface is carried as two rows because it is authored in two files at two different sizes.
+
+**`directory-links` was deleted by Story 2-9**, in the commit that replaced the `/projects` card
+grid with the Suite Directory. **Observed 2026-09-06** in the pinned container: the directory's
+live and source links measure at or above the floor on both axes, so the sweep reports no unlisted
+element under it on either surface the directory renders on. This is the ledger shrinking in the
+direction it is only allowed to move.
 
 **Per-element detail behind the ranges**, **observed 2026-09-06**, so a later reader can see how
 far under the floor each one is without running anything:
@@ -180,8 +191,6 @@ far under the floor each one is without running anything:
 | `nav.navbar a`, "Github" | 56.55 x 22.00 | Height |
 | `nav.navbar a`, "LinkedIn" | 72.55 x 22.00 | Height |
 | `nav.navbar a`, "Contact Me" | 98.13 x 22.00 | Height |
-| `.project-card__links a`, "// Github" | 58.61 x 17.00 | Height. The shortest box on the site, at 12.8px mono with no padding |
-| `.project-card__links a`, "Live →" | 45.88 x 17.00 | Height |
 | `a.error-page__back` | 108.58 x 38.19 | Height. The nearest miss, 5.81px short |
 | `a.nav-link`, both home links | 320.00 x 23.00 | Height |
 | `.contact-container a`, "Github" | 68.00 x 23.00 | Height |
@@ -192,20 +201,31 @@ far under the floor each one is without running anything:
 **The four `.work-item__header` buttons are load-bearing for the whole assertion.** **Decision.**
 A standing case asserts that at least one measured element clears the floor and at least one does
 not. Without it, a floor misread as an enormous number would put every element under it, and the
-sweep would still be green because everything under the floor is on the ledger today.
+sweep would still be green because everything under the floor is on the ledger today. Story 2-9
+added 22 more elements that clear the floor, which strengthens the same case rather than replacing
+it: the buttons are on a route the directory does not render on.
 
 ## The tolerated breach
 
-**39 of the 43 measured elements are under the floor**, and the four that clear it are the
-`.work-item__header` buttons. Behind those 39 rendered instances are **15 authored controls**: one
-logo link, six chrome nav links, two project-card links repeated across six cards, one back link,
-two home nav links and three home contact links. **Observed 2026-09-06.**
+**27 of the 53 measured elements are under the floor.** Behind those 27 rendered instances are
+**13 authored controls**: one logo link, six chrome nav links, one back link, two home nav links
+and three home contact links. **Observed 2026-09-06**, after Story 2-9.
 
-Those 15 are a live breach of AD-19 and are recorded as **KV-4** in
-`ops/known-violations.md`, with the ruling that tolerates them and the four stories that retire
-it. The A-5 half, `app/app.scss:92-102` against `DESIGN.md:558` and the 36 elements it clips, is
-**KV-5** in the same file. This file describes the instrument; that file is the register of what
-the estate is knowingly running in breach.
+**Re-measured 2026-09-06**, and the earlier reading is kept rather than overwritten: it was 39 of
+43 behind 15 controls, the extra two being the card links `.project-card__links a` rendered six
+times each on `/projects`. Story 2-9 deleted the component and its ledger row together, so both the
+authored count and the rendered count fell.
+
+The 26 elements that clear the floor are the four `.work-item__header` buttons and the 22 Suite
+Directory links, eleven on each of the two surfaces the directory renders on. **Observed
+2026-09-06.**
+
+Those 13 are a live breach of AD-19 and are recorded as **KV-4** in
+`ops/known-violations.md`, with the ruling that tolerates them and the three stories that retire
+it. The A-5 half is **KV-5** in the same file: Story 2-9 repaired its stylesheet half, and the
+component half, 28 elements owned by `WorkItem.scss` and `WorkHero.scss`, keeps that entry `Open`.
+This file describes the instrument; that file is the register of what the estate is knowingly
+running in breach.
 
 ## The probe demonstration
 
@@ -301,14 +321,23 @@ that covers everything.
 
 | Not asserted | Why not | Owner |
 |---|---|---|
-| **A-4's "independently addressable" clause** | `EXPERIENCE.md:763` requires two adjacent targets to be separately hittable as well as big enough, which is a statement about the relationship between two boxes rather than about one box. The sweep measures boxes. Nothing on the shipped Hub puts two targets on one line at 360 wide, so there is nothing to overlap today, and the check lands with the surface that first does | **Decision.** Story 2-9 (`epics.md:2399-2401`, `--s-lg` between the live and source links) and Story 2-32 (`epics.md:3583-3584`, two adjacent targets confirmed not to overlap) |
 | A plain inline element padded to exactly the floor | It measures 44.00 and passes, as the table above shows. Closing it means asserting something about `display` or about overlap rather than about a box, which is a different predicate from the one AD-19 states | **Decision.** Story 2-8 scope. Story 2-32 asserts the shape (`min-height` plus `inline-flex` plus `padding-inline`) at the surface it rebuilds (`epics.md:3579-3580`) |
-| Non-interactive elements against A-5 | The sweep measures interactive elements, and A-5 is asserted on the right edge of each one. **The Hub does overflow at 360 today, on elements that are not targets**, and that is measured rather than assumed: see the row below | **Decision.** Filed as deferred work, repaired by Story 2-9 |
-| The Status mark's axes, and Status truncation | Not interactive (`EXPERIENCE.md:351`), and nothing renders a Status yet | **Decision.** Story 2-10 |
+| Non-interactive elements against A-5 | The sweep measures interactive elements, and A-5 is asserted on the right edge of each one. **The Hub does overflow at 360 today, on elements that are not targets**, and that is measured rather than assumed: see the row below | **Decision.** Filed as deferred work. Story 2-9 repaired the stylesheet half; Stories 2-31, 2-33 and 2-14 own the elements that still sit outside the viewport |
+| The Status mark's axes, and Status truncation | Not interactive (`EXPERIENCE.md:351`). The Suite Directory renders a Status from 2026-09-06 and this sweep still does not read one: the three structural axes are a different predicate needing a different instrument | **Decision.** Story 2-10 |
 | Any viewport other than 360 x 800 | AD-19 states the floor at 360, and a second Playwright project is a change to the harness rather than to this assertion | **Decision.** Story 2-8 scope |
 | Whether a target is reachable by keyboard, or has a focus ring | A different requirement with a different instrument | **Decision.** Story 2-26 |
 | The union of an element and what it paints | `boundingBox()` measures the element's own border box. `.logo a` is the live case: its box is 20px tall and the image inside it is 66px, so the thing a finger actually hits is larger than the thing the floor measures. The floor is deliberately about the element itself (`EXPERIENCE.md:727`), and the row is exempted rather than argued away | **Decision.** Story 2-32 |
 | Contrast, and anything Lighthouse covers | `.lighthouserc.js:15` still asserts accessibility at 0.95, severity error, and was not touched. **Observed 2026-09-06**, by `git diff --stat 9f71fba -- .lighthouserc.js`, which was empty | **Decision.** Unchanged by this story (AD-19, AD-21) |
+
+**One row left this table on 2026-09-06.** **A-4's "independently addressable" clause**
+(`EXPERIENCE.md:763`) asks whether two adjacent targets are separately hittable as well as big
+enough, which is a statement about the relationship between two boxes rather than about one box.
+At Story 2-8 nothing on the shipped Hub put two targets on one line at 360 wide, so there was
+nothing to overlap, and the row said the check lands with the surface that first does. Story 2-9's
+Suite Directory is that surface, and the clause is now a standing case in the same spec file: the
+two destinations on a row are measured against `--s-lg`, resolved through a probe element because
+it is authored in `rem` and has no pixel value until something lays it out. Story 2-32
+(`epics.md:3583-3584`) still owns the same clause for the chrome nav.
 
 ### The overflow this assertion does not cover, measured
 
@@ -332,20 +361,47 @@ on that route while the condition it exists to detect was present. That is why A
 element right edges here, and it is the argument `DESIGN.md:558` makes for `overflow-x: clip` over
 `hidden` in the first place.
 
-**Which rule does the hiding differs by route, and both were checked.** **Observed 2026-09-06.**
-On `/projects` it is the hero's own `overflow: hidden` (`ProjectsHero.scss:9`), not `body`'s. On
-`/work` the work-item overflow has no clipping ancestor, so it reaches `scrollWidth` at 491, where
-`app/app.scss:98` then stops it becoming a scrollbar rather than stopping it being reported. So
-`app/app.scss` is why a visitor cannot scroll to the overflow, and it is one of two reasons a
-reader cannot see it.
+**Which rule does the hiding differs by route, and both were checked.** **Observed 2026-09-06**,
+before Story 2-9. On `/projects` it is the hero's own `overflow: hidden` (`ProjectsHero.scss:9`),
+not `body`'s. On `/work` the work-item overflow has no clipping ancestor, so it reached
+`scrollWidth` at 491, where `body`'s `overflow-x: hidden` then stopped it becoming a scrollbar
+rather than stopping it being reported.
+
+**Re-measured 2026-09-06, after Story 2-9 swapped `hidden` for `clip`**, by the same method in the
+pinned container. The swap was the hazard KV-5's own note named: `clip` on a tree that still
+overflows could have turned a clipped page into one with real horizontal scroll, which A-5 forbids
+outright. It did not.
+
+| Surface | `document.scrollingElement.scrollWidth` | `body.scrollWidth` | `window.innerWidth` | Past the right edge | Past the left edge |
+|---|---|---|---|---|---|
+| `/` | 360 | 360 | 360 | 0 | 0 |
+| `/work` | 360 | **491** | 360 | **28** | 0 |
+| `/projects` | 360 | 360 | 360 | **8** | 0 |
+| `/celeste` | 360 | 360 | 360 | 0 | 0 |
+| `/a-route-that-does-not-exist` | 360 | 360 | 360 | 0 | 0 |
+
+**No route gained horizontal scroll**, which is the one thing the swap could have got wrong. The
+element counts are unchanged, and `/`'s is still zero with the directory on it. The left edge was
+swept this time and is clean everywhere, so the earlier census's caveat that 36 was a floor on the
+count rather than the whole of it is now closed: 36 is the number.
+
+**`/work` is where the two readings separate, and it is worth reading carefully.**
+`document.scrollingElement.scrollWidth` is 360 while `document.body.scrollWidth` is 491. The root
+element's `overflow-x: clip` propagates to the viewport, so the viewport's scrolling area is
+clamped and there is nothing to scroll to; `body` is a separate box whose own scroll width still
+reports the overflow it contains. The visitor-facing fact is the first number. The second is why a
+`scrollWidth` check is a poor instrument for A-5 either way, which is the argument this section
+already made from the other direction on `/projects`.
+
+`/` scrolls to **2442px** tall against an 800px viewport, so the Suite Directory below the hero is
+reachable. Under the rule Story 2-9 removed, `body` was clamped to one viewport and it was not.
 
 None of the 36 elements is interactive, so none of them fails this sweep. All of them are recorded
 as **KV-5** in `ops/known-violations.md`, with the Operator ruling of 2026-09-06 that tolerates the
-breach and the story that retires it; the measurements and the two shapes the overflow takes are in
-the `deferred-work.md` entry that KV-5 cites. Story 2-9 owns the stylesheet half
-(`epics.md:2423-2427`); Stories 2-31, 2-33 and 2-9 own the components. **The two halves have to
-land together**: replacing `hidden` with `clip` on a tree that still overflows turns a clipped page
-into one with real horizontal scroll, which A-5 forbids outright.
+breach and the stories that retire it; the measurements and the two shapes the overflow takes are
+in the `deferred-work.md` entry that KV-5 cites. Story 2-9 landed the stylesheet half
+(`epics.md:2423-2427`); Stories 2-31 and 2-33 own the 28 on `/work` and Story 2-14 the 8 on
+`/projects`, by redirecting the route that renders them, and KV-5 stays `Open` until they do.
 
 ## Failing loudly rather than vacuously
 
@@ -363,7 +419,7 @@ fail is not known to work.
 | A row matching an element that is not under the floor | Fails on the arithmetic as well as on the element, which is what wires the per-row `under` tally to something | **Observed 2026-09-06.** Same case |
 | A route `app/` serves that nothing sweeps | Fails naming the unregistered route. The route set is walked off the filesystem rather than restated | **Observed 2026-09-06.** "every route app/ serves is registered as a swept surface or as a non-Hub route" |
 | A hidden or decorative candidate | Skipped with a stated reason, never measured and never counted | **Observed 2026-09-06.** "never sweeps a hidden or decorative node, and never counts one", which asserts `/celeste`'s seven real skips and then plants one node per arm of the rule: `aria-hidden`, the `hidden` attribute, `display: none`, zero area and `visibility: hidden`. **Each arm is looked up by name**, so an arm that stopped being planted fails rather than quietly stopping being demonstrated |
-| An element outside **either** edge | A-5 fails naming the element and the edge it measured. An element at a negative x scrolls the page as surely as one past the right edge | **Observed 2026-09-06.** "A-5 fails on an element outside either edge, which the document scroll width does not show". The case asserts its **own premise** first, that the surface carries no element outside the viewport before anything is planted, and then that `document.body.scrollWidth` did **not** grow when it was, which is the measurement the whole element-edge method rests on |
+| An element outside **either** edge | A-5 fails naming the element and the edge it measured. An element at a negative x scrolls the page as surely as one past the right edge | **Observed 2026-09-06.** "A-5 fails on an element outside either edge, which a scroll width check reports inconsistently". The case asserts its **own premise** first, that the surface carries no element outside the viewport before anything is planted. **Re-measured 2026-09-06 after Story 2-9** and re-stated in both directions: on that planted page `document.body.scrollWidth` does not grow, both planted elements being absolutely positioned against the initial containing block, while `document.documentElement.scrollWidth` does, `overflow-x: clip` on the root not clamping out-of-flow content the way it clamps in-flow overflow. On `/work` the same root read answers 360 against elements at 490, the opposite result from the same call. Both are now asserted, because the disagreement is the measurement the element-edge method rests on. The earlier form asserted only that `body` did not grow and attributed it to `body`'s `overflow-x: hidden`, which was true for an unrelated reason and stayed true after that rule was replaced |
 | A surface that yields nothing, or a count that moved | Fails naming the route and the count. Driven as a predicate over synthetic counts rather than as an inline assertion inside the sweep, because the earlier shape asserted a message it had itself supplied and was green with the guard deleted | **Observed 2026-09-06.** "the count guard fires on every way a surface can go vacuous", plus the empty-fixture half of "the candidate selector matches controls and passes over ordinary content" |
 | An element under the floor matched by a row that does not list this route | Reported as a route mismatch naming the row, not as "nothing lists it", which would send a reader hunting for a row that exists | **Observed 2026-09-06.** "separates an unlisted element from one whose row does not list this route" |
 | An exemption selector the browser cannot parse | Throws naming the row rather than a page-side `SyntaxError` from inside `Element.matches` | **Observed 2026-09-06.** "the ledger is well formed before anything is measured against it" |
@@ -422,9 +478,11 @@ separately at 28 s on a cold runner.
 
 | Figure | Value | Nature |
 |---|---|---|
-| Cases in this file | 15 | **Observed 2026-09-06** |
+| Cases in this file | 15 | **Observed 2026-09-06**, before Story 2-9 |
+| Cases in this file | 16 | **Observed 2026-09-06**, after Story 2-9 added the A-4 independently-addressable case. The sweep now measures 53 elements rather than 43, on the same five surfaces |
 | This file inside a whole `pnpm test:e2e` run | **24.6 s** across its fifteen cases, of which the sweep case was **13.7 s** | **Observed 2026-09-06** in the pinned container on the Windows development host, by summing the per-case durations Playwright's list reporter printed. The sweep is five navigations, five hydration waits and 43 elements measured at two round trips each |
 | This file run alone | Playwright total **49.7 s**, of which its fifteen cases were **26.6 s** and the sweep **14.6 s** | **Observed 2026-09-06**, by `pnpm exec playwright test hit-target-floor` in the same container. The gap between the total and the cases is the `pnpm build` the `webServer` performs before the first test, which a whole-suite run pays once for eight spec files rather than for one |
+| Whole `pnpm test:e2e`, nine spec files, 71 tests | **1.7 min** and **3.7 min** on two runs of the same tree, with `docker run` walls of **108.8 s** and **229.1 s** | **Observed 2026-09-06**, same host, after Story 2-9 added `tests/e2e/suite-directory.pw.ts` and one case here. The spread is host load, which is the point of recording more than one reading. The row below is the eight-file reading and is kept rather than overwritten |
 | Whole `pnpm test:e2e`, eight spec files, 60 tests | **1 m 41.3 s** by `time` around the command, **1.7 min** as Playwright's own headline for the same run. The `docker run` wall around it was **105.2 s** | **Observed 2026-09-06**, same host. The command covers `pnpm build && pnpm start` plus all sixty tests; the extra four seconds of docker wall are `corepack enable` and `pnpm install --frozen-lockfile` against the warm named volumes. **The image pull is in none of these**: `ops/rendered-output-harness.md` records it separately at 28 s on a cold runner, and that is the figure the `rendered-output` job pays on top |
 
 ## Maintaining this file
@@ -435,6 +493,13 @@ fewer than all three is a defect: the row in the table above, the entry in `EXEM
 `tests/e2e/hit-target-floor.pw.ts`, and the corresponding line in `ops/known-violations.md` under
 KV-4. The Vitest agreement suite holds the first two equal; the third is prose and is the reason
 KV-4 lists the surfaces individually rather than as a count.
+
+**The per-surface counts move with it, and they are read rather than computed.** Deleting a control
+changes what the sweep measures, so § The surfaces swept moves in the same commit. Take the numbers
+off the sweep's own failure output in the pinned container: the run prints `found`, `skipped` and
+`measured` per route when a pin disagrees, which is the reading. Arithmetic over the Registry looks
+identical and is wrong the moment a control fails to render, which is the case the pin exists to
+catch.
 
 **When the ledger empties, KV-4 retires.** Set its `Status` to `Retired`, fill `Retired on`, and
 bring the derived index row in line, which is what that file's own rules require.

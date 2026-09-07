@@ -1,0 +1,336 @@
+// The Suite Directory (Story 2-9).
+//
+// **The first token-native stylesheet in the Hub.** Every other component file still reads the
+// Epic 1 aliases (`--white-color`, `--accent-dim`, `--monument-bold`), which `app/app.scss` maps
+// onto contract roles one file at a time. This one names the roles directly, because it is new
+// rather than migrated and there is no old name for it to keep. `app/__tests__/anchor-contract.test.ts`
+// carries the list of files allowed to do that, and `app/app.scss:18-60` stays where it is:
+// deleting the alias layer is Story 2-22.
+//
+// **It declares no custom property of its own.** All sixteen of the Hub's live in `app/app.scss`,
+// which is what makes the collision argument against the contract's eighty-nine checkable in one
+// place. A `--name:` here would break that, and it is asserted rather than remembered.
+//
+// The row geometry below is transcribed from `RESTYLE-SPEC.md:238-274`, not designed here. Three
+// implementations across the estate diverging on this grid is most of what that file exists to
+// prevent, so the fractions, the `minmax(0, …)`, the single `760px` breakpoint and the flush
+// `padding-inline` are copied rather than reconsidered.
+
+.suite-directory {
+  padding-block: var(--s-2xl) var(--s-3xl);
+  // The list pads itself. It is deliberately not inside `.container`, whose `min(80%, 1920px)`
+  // leaves 288px of content at a 360px viewport and is what `ops/known-violations.md:399` blames
+  // for the hero overflow beside it.
+  padding-inline: var(--page-pad);
+}
+
+// ── Head ──────────────────────────────────────────────────────────────────────
+
+.suite-directory__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2xs) var(--s-md);
+  padding-block-end: var(--s-sm);
+  // A hairline, not an emphasis rule: a heading rule marks nothing actionable
+  // (`RESTYLE-SPEC.md:302-304`).
+  border-block-end: var(--stroke-hair) solid var(--token-border);
+}
+
+.suite-directory__heading {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: var(--t-md);
+  font-weight: var(--w-bold);
+  // The `wdth 85` axis of the published display face, through the CSS property that selects it
+  // rather than through `font-variation-settings`, which would bypass font matching.
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-heading);
+  text-transform: uppercase;
+  color: var(--token-text);
+}
+
+.suite-directory__count {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--token-text-secondary);
+}
+
+// ── Rows ──────────────────────────────────────────────────────────────────────
+
+.suite-directory__list,
+.suite-directory__family-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.suite-directory__row {
+  display: grid;
+  gap: var(--s-2xs) var(--s-md); // row-gap, column-gap
+  padding-block: var(--s-md);
+  padding-inline: 0; // the row is flush; the PAGE is padded
+  align-items: start;
+  // A separator between siblings, at the container's content width, never a card edge.
+  border-block-end: var(--stroke-hair) solid var(--token-border);
+  overflow-wrap: break-word;
+
+  // < 760px, single column, reading order is DOM order
+  grid-template-columns: 1fr auto; // name | status
+  grid-template-areas:
+    'name   status'
+    'desc   desc'
+    'meta   meta'
+    'links  links';
+}
+
+// The last member of a list drops its rule so it does not trail off the end of the page, and the
+// last member inside the Family group drops it so it does not double with the container's bottom
+// edge (`DESIGN.md:669-670`).
+.suite-directory__list > .suite-directory__row:last-child,
+.suite-directory__family-list > .suite-directory__row:last-child {
+  border-block-end: 0;
+}
+
+// **The container's top edge is the same case and was missed.** The Family group is boxed on all
+// four sides, so a row sitting directly above it puts its own bottom rule against the group's top
+// border with nothing between them. Two adjacent 1px rules paint as one 2px rule, and 2px is the
+// **emphasis** treatment, which in this vocabulary means a current route or an active link and
+// nothing else (`RESTYLE-SPEC.md:304`). The group keeps its four borders and the redundant
+// separator goes, which is the same trade the rule above makes at the other edge.
+.suite-directory__list > .suite-directory__row:has(+ .suite-directory__family) {
+  border-block-end: 0;
+}
+
+@media (min-width: 760px) {
+  .suite-directory__row {
+    // name+meta | description+links | status.
+    // Fractions, not fixed widths, so it holds at any container width.
+    grid-template-columns: minmax(12ch, 3fr) minmax(0, 5fr) auto;
+    grid-template-areas:
+      'name  desc   status'
+      'meta  links  status';
+    column-gap: var(--s-lg);
+  }
+}
+
+.suite-directory__name {
+  grid-area: name;
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: var(--t-base);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-name);
+  text-transform: uppercase;
+  color: var(--token-text);
+}
+
+.suite-directory__description {
+  grid-area: desc;
+  margin: 0;
+  // Capped inside its own column, not by the column.
+  max-inline-size: var(--measure);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  letter-spacing: var(--tr-body);
+  color: var(--token-text-secondary);
+}
+
+.suite-directory__tech {
+  grid-area: meta;
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+  color: var(--token-text-secondary);
+}
+
+// ── Status mark ───────────────────────────────────────────────────────────────
+//
+// Outlined, never filled, and carried by structure rather than by hue: the dot separates `Live`
+// from `Complete`, the dash separates `Complete` from `In progress`, and the border's absence
+// separates `In progress` from `Archived`. Four values, three structural axes, no two alike in
+// greyscale (`DESIGN.md:298-323`). Opacity expresses nothing here, ever.
+//
+// Two of the four never reach this directory today, the filter being over `Live` and `Complete`.
+// They are written anyway, because the taxonomy is the taxonomy and a value that renders wrong the
+// first time it appears is the failure the structural axes exist to prevent.
+
+.suite-directory__status {
+  grid-area: status;
+  // In both layouts, so the mark hangs from the top rather than centring against a
+  // variable-height description.
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2xs);
+  margin: 0;
+  padding: var(--s-2xs) var(--s-xs);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  border-radius: var(--r-none);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  // A-5: the Status never truncates and never wraps mid-value.
+  white-space: nowrap;
+  color: var(--token-text-secondary);
+}
+
+.suite-directory__status[data-status='Live'] {
+  border-color: var(--token-accent);
+  color: var(--token-accent);
+}
+
+.suite-directory__status[data-status='In progress'] {
+  border-style: dashed;
+}
+
+.suite-directory__status[data-status='Archived'] {
+  border: 0;
+  padding-inline: 0;
+}
+
+// A 4px square at `--r-none`, not a pill: the plate has corners and so does the dot
+// (`DESIGN.md:621-624`, which settles the `--r-pill` typo at `RESTYLE-SPEC.md:387`).
+//
+// **The fill is deliberate and is a known tension with F-8.** `DESIGN.md:298-303` specifies a
+// filled square and `:305-314` explains why it is load-bearing rather than ornament: without it
+// `Live` and `Complete` are both `1px solid` and sit 1.13:1 apart in greyscale. `RESTYLE-SPEC.md:654`
+// states F-8 as a binary grep for `--token-accent` used as a fill, expecting zero occurrences, and
+// this is one. It needs a named exemption in Story 2.34's gate, the way `::selection` has one at
+// `RESTYLE-SPEC.md:657`, and that is filed in `deferred-work.md`. Do not resolve it by unfilling
+// the dot.
+.suite-directory__dot {
+  flex: none;
+  inline-size: 4px;
+  block-size: 4px;
+  border-radius: var(--r-none);
+  background: var(--token-accent);
+}
+
+// ── Links ─────────────────────────────────────────────────────────────────────
+//
+// Two independently addressable targets on one row, each meeting the floor on the element itself
+// and never on a wrapper. The row is never wholly clickable: it carries two destinations and a
+// whole-row target would have to pick one.
+
+.suite-directory__links {
+  grid-area: links;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  // So the two `--tap` boxes cannot overlap.
+  gap: var(--s-lg);
+}
+
+.suite-directory__live,
+.suite-directory__source,
+.suite-directory__here {
+  // `min-block-size` with `inline-flex`, never `padding-block` on a plain inline element: vertical
+  // padding there paints outward without growing the hit area, which is the single easiest way to
+  // miss this floor while appearing to meet it. `min-inline-size` carries the other axis, because
+  // `SOURCE` in mono at `--t-2xs` measures under the floor on width.
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+// The rule is drawn on the inner span rather than on the `--tap` box, or it floats away from the
+// text by the height of the padding.
+//
+// **`min-inline-size: 0` is load-bearing and was measured, not reasoned.** The span is a flex item
+// of the `inline-flex` link above, so its automatic minimum is its min-content width, and a bare
+// domain is one unbroken token. Left at `auto` the span refuses to shrink and the row's
+// `overflow-wrap` never gets the chance to break it: a 126-character hostname planted at a 360px
+// viewport put this span's right edge at 1007px, which is A-5 outright. The links carry no
+// `--measure` cap the way the description does, so nothing else was holding them.
+.suite-directory__rule {
+  min-inline-size: 0;
+}
+
+.suite-directory__live {
+  color: var(--token-text);
+}
+
+.suite-directory__live .suite-directory__rule {
+  border-block-end: var(--stroke-emphasis) solid var(--token-accent);
+}
+
+.suite-directory__source {
+  color: var(--token-text-secondary);
+}
+
+.suite-directory__source .suite-directory__rule {
+  border-block-end: var(--stroke-hair) solid var(--token-border-interactive);
+}
+
+// Not a link, and not styled as one: the reader is already here.
+.suite-directory__here {
+  color: var(--token-text-secondary);
+}
+
+// One signal, and it is a recolour. The underline never appears on hover and never changes width:
+// both are layout changes and both reflow the line.
+.suite-directory__live:hover .suite-directory__rule,
+.suite-directory__source:hover .suite-directory__rule {
+  border-block-end-color: var(--token-accent-hover);
+}
+
+.suite-directory__live:focus-visible,
+.suite-directory__source:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-hair);
+}
+
+// ── Family group ──────────────────────────────────────────────────────────────
+//
+// The one containment layer in the whole directory, and the only place a box is drawn around
+// entries (`DESIGN.md:665-670`). Card-in-card cannot occur, because a row is never a card and a
+// container never nests.
+
+.suite-directory__family {
+  border: var(--stroke-hair) solid var(--token-border);
+  padding-inline: var(--s-md);
+  padding-block-start: var(--s-md);
+}
+
+.suite-directory__family-name {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  color: var(--token-accent);
+}
+
+.suite-directory__family-line {
+  margin: 0;
+  max-inline-size: var(--measure);
+  padding-block-end: var(--s-sm);
+  border-block-end: var(--stroke-hair) solid var(--token-border);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-body);
+  color: var(--token-text-secondary);
+}

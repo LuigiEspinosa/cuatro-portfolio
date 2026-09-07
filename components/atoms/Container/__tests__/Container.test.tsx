@@ -2,14 +2,16 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Body } from '../Container';
 
 /**
- * `Body` writes the current route onto `<body id>`, and five rules across three stylesheets
+ * `Body` writes the current route onto `<body id>`, and four rules across three stylesheets
  * key on that id:
  *
- *  1. `app/app.scss:100` -- `body[id='']`, `overflow: hidden` on the home route
- *  2. `app/app.scss:105-106` -- `body#work, body#projects`, the grid ground
- *  3. `components/organisms/HomeLayout/HomeLayout.scss:1` -- `body[id='']`, the home ground
- *  4. `components/organisms/Celeste/celeste.scss:1` -- `#celeste`, the whole `/celeste` surface
- *  5. `components/organisms/Celeste/celeste.scss:8` -- `#celeste header`, added by Story 2-1
+ *  1. `app/app.scss` -- `body#work, body#projects`, the grid ground
+ *  2. `components/organisms/HomeLayout/HomeLayout.scss` -- `body[id='']`, the home ground
+ *  3. `components/organisms/Celeste/celeste.scss:1` -- `#celeste`, the whole `/celeste` surface
+ *  4. `components/organisms/Celeste/celeste.scss:8` -- `#celeste header`, added by Story 2-1
+ *
+ * Five until 2026-09-06: Story 2-9 deleted `body[id=''] { overflow: hidden }` from `app/app.scss`,
+ * which was the single reason a section below the homepage hero could not be scrolled to.
  *
  * The header suppression on `/celeste` now depends on this value, and nothing tested it. A
  * silent change to the derivation, a leading slash left on or the attribute dropped when the

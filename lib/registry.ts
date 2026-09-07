@@ -105,3 +105,107 @@ export function selectRendered(entries: readonly RegistryEntry[]): readonly Regi
 
 /** The entries the committed Registry marks rendered. Six as of Contract v1.1.0, all of them `Live`. */
 export const renderedApplications: readonly RegistryEntry[] = selectRendered(applications);
+
+/**
+ * The origin the Hub itself is served from, declared once for the whole repository.
+ *
+ * Two readers consume this and there is deliberately no second literal: `app/layout.tsx` builds
+ * `metadataBase` from it, and the Suite Directory compares it against each entry's `live` to decide
+ * which row carries `You are here` (`EXPERIENCE.md:291`). Written twice, the two would drift the
+ * day the Hub moved, and the failure would be a directory that links the visitor to the page they
+ * are already on while every test stayed green, because each half would still agree with itself.
+ */
+export const HUB_ORIGIN = 'https://cuatro.dev';
+
+/** A URL's origin, or `null` for anything `URL` refuses. The Registry's shape is a schema's job. */
+const originOf = (url: string): string | null => {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Whether `entry` is the application serving `origin`, which is what `You are here` marks.
+ *
+ * **Compared on origin, never on `id`.** An id match would be a second hand-maintained fact about
+ * which entry is the Hub, and it would go on being true after the Hub moved to another hostname.
+ * Origin is the thing the sentence actually claims: the reader is already on this application. Move
+ * `HUB_ORIGIN` and the mark moves with it, with no other edit.
+ *
+ * `origin` is a parameter for the reason `selectRendered` takes its list: a rule that takes its
+ * input can be exercised against a state the committed file is not in.
+ */
+export function isCurrentOrigin(entry: RegistryEntry, origin: string = HUB_ORIGIN): boolean {
+  if (entry.live === undefined) return false;
+  const declared = originOf(origin);
+  return declared !== null && originOf(entry.live) === declared;
+}
+
+/**
+ * Rendered entries in reading order: every `Live` before every `Complete`, file order within each.
+ *
+ * The rank comes from `RENDERED_STATUSES`, so the order is the same fact that decides what renders
+ * at all rather than a second opinion about it. `Array.prototype.sort` is stable, which is what
+ * keeps the Registry's own order intact inside a status: nothing here sorts alphabetically or by
+ * date, because the Registry's order is the Registry's to decide (AD-4).
+ *
+ * A status outside the rendered list sorts last rather than throwing. `selectRendered` has already
+ * removed those, and a comparator is the wrong place to discover it has not.
+ */
+export function orderByStatus(entries: readonly RegistryEntry[]): readonly RegistryEntry[] {
+  const rank = (entry: RegistryEntry): number => {
+    const at = RENDERED_STATUSES.indexOf(entry.status);
+    return at === -1 ? RENDERED_STATUSES.length : at;
+  };
+  return [...entries].sort((left, right) => rank(left) - rank(right));
+}
+
+/** One thing the directory draws: a lone entry, or a family rendered as a group. */
+export type DirectoryItem =
+  | { readonly kind: 'entry'; readonly entry: RegistryEntry }
+  | { readonly kind: 'family'; readonly family: string; readonly members: readonly RegistryEntry[] };
+
+/**
+ * The entries as the directory draws them, with each `family` collapsed into one group.
+ *
+ * A group takes the position of its first member, so `orderByStatus` still decides where the group
+ * sits. Members keep the order they arrive in.
+ *
+ * **Grouping wins over ordering, and that is a decision rather than a side effect.** The two rules
+ * can disagree: a `Complete` family member is drawn inside its group, above `Live` entries that
+ * come after the group, which is not what "every `Live` precedes every `Complete`" would give on
+ * its own. `EXPERIENCE.md:356-358` settles it. The group is "a labelled container holding whichever
+ * members pass the FR-35 filter", and its framing line holds regardless of how many render and
+ * names no count. A family split across the page by status would not be that container, and the
+ * reader's question at the group is which implementations exist, not which shipped first.
+ *
+ * Nothing in the committed Registry exercises this today, every rendered entry being `Live`. It
+ * arrives the day `poketracker-go`, the third `tracker-family` member, changes status, so it is
+ * pinned over a fixture rather than left to be discovered then.
+ *
+ * **A family of one is still a group.** The framing line names no count
+ * (`EXPERIENCE.md:292`), so a family that loses a member to a status change needs no other edit; a
+ * rule that unwrapped a single member would make the box appear and disappear as the estate moved.
+ */
+export function groupByFamily(entries: readonly RegistryEntry[]): readonly DirectoryItem[] {
+  const drawn = new Set<string>();
+  const items: DirectoryItem[] = [];
+
+  for (const entry of entries) {
+    if (entry.family === undefined) {
+      items.push({ kind: 'entry', entry });
+      continue;
+    }
+    if (drawn.has(entry.family)) continue;
+    drawn.add(entry.family);
+    items.push({
+      kind: 'family',
+      family: entry.family,
+      members: entries.filter((candidate) => candidate.family === entry.family),
+    });
+  }
+
+  return items;
+}

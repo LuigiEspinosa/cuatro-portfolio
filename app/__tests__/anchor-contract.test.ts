@@ -219,6 +219,22 @@ const WEIGHT_CALL_SITES = [
 /** The one role those four are allowed to name, per `DESIGN.md` § The mapping. */
 const WEIGHT_ROLE = '--w-black';
 
+/**
+ * The stylesheets that consume contract roles **directly**, rather than through an alias.
+ *
+ * A different partition from `WEIGHT_CALL_SITES` above, and deliberately not an extension of it.
+ * Those four are migrated cybercore files that name exactly `--w-black`, because the weight that
+ * lived in the family name `MonumentExtended-Bold` is the one thing a family alias cannot carry;
+ * anything else they named would be a component reaching past the alias layer mid-migration. The
+ * files here are Epic 2 rebuilds with no old name to keep, so they name whatever roles they need
+ * and the alias layer is not in their path at all.
+ *
+ * The list is a whitelist rather than a pattern, and each member is asserted to reference at least
+ * one role, so a file added here that consumes nothing is a hole rather than an entry. Story 2-22
+ * deletes the alias layer, at which point this partition and `WEIGHT_CALL_SITES` collapse into one.
+ */
+const TOKEN_NATIVE_STYLESHEETS = ['components/organisms/SuiteDirectory/SuiteDirectory.scss'] as const;
+
 /** The one file that carries the alias layer. */
 const ALIAS_LAYER = 'app/app.scss';
 
@@ -735,7 +751,7 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
 
     expect(scanned, 'no file was read').toBe(files.length);
     expect(files, `${ALIAS_LAYER} was not among the scanned files, so the case below is vacuous`).toContain(ALIAS_LAYER);
-    for (const site of WEIGHT_CALL_SITES) {
+    for (const site of [...WEIGHT_CALL_SITES, ...TOKEN_NATIVE_STYLESHEETS]) {
       expect(files, `${site} was not among the scanned files`).toContain(site);
     }
 
@@ -763,10 +779,22 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
       ).toEqual([WEIGHT_ROLE]);
     }
 
-    // Claim three: nothing else reaches for a role at all. A component stylesheet consuming a
-    // token role directly is the Epic 2 rebuild, not this step, and it would leave the alias
-    // layer no longer describing what the site reads.
-    const allowed = new Set<string>([ALIAS_LAYER, ...WEIGHT_CALL_SITES]);
+    // Claim three: the token-native stylesheets consume roles directly, and each really does.
+    // Listed rather than pattern-matched, and asserted non-empty in both directions: a file named
+    // here that references nothing is a hole in claim four below rather than an entry, and it
+    // would read as "the rebuild happened" while the file still went through the alias layer.
+    for (const site of TOKEN_NATIVE_STYLESHEETS) {
+      expect(
+        (referencesBy.get(site) ?? []).length,
+        `${site} is listed as token-native and names no contract role, so listing it exempts a file ` +
+          `that is not consuming the contract at all`
+      ).toBeGreaterThan(0);
+    }
+
+    // Claim four: nothing else reaches for a role at all. A component stylesheet consuming a
+    // token role directly is an Epic 2 rebuild, which is what the list above admits one file at a
+    // time; anywhere else it leaves the alias layer no longer describing what the site reads.
+    const allowed = new Set<string>([ALIAS_LAYER, ...WEIGHT_CALL_SITES, ...TOKEN_NATIVE_STYLESHEETS]);
     const elsewhere = [...referencesBy]
       .filter(([file]) => !allowed.has(file))
       .map(([file, names]) => `${file} references ${names.join(', ')}`);
@@ -873,17 +901,25 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
       [...'.work-item::before, .a { --accent-dim: var(--x); }'.matchAll(SCOPED)].map((found) => found[1].trim())
     ).toEqual(['var(--x)']);
 
+    // **One block, not two.** Story 2-9 deleted the Suite Directory's predecessor and the
+    // counter-scope that existed only to take the card's boundary value back off the chips
+    // inheriting it. The boundary scope remains and is the load-bearing half: without it the
+    // boundary call sites fall below the 3:1 floor AD-19 asserts. The ornament role is still
+    // pinned, on `:root`, by the row-by-row comparison above, so removing this reading of it
+    // narrows what is checked here and not what is checked.
     expect(
       scopedValues,
-      `app/app.scss no longer redeclares --accent-dim outside :root in the two blocks the mapping ` +
-        `needs: the boundary scope, without which the four boundary call sites fall below the 3:1 ` +
-        `floor AD-19 asserts, and the counter-scope that takes the card's value back off its chips`
-    ).toEqual([`var(${boundaryRole})`, `var(${ornamentRole})`]);
+      `app/app.scss no longer redeclares --accent-dim outside :root in the boundary scope, without ` +
+        `which the remaining boundary call sites fall below the 3:1 floor AD-19 asserts`
+    ).toEqual([`var(${boundaryRole})`]);
+    expect(ornamentRole, 'the --accent-dim ornament role is no longer the first of its row').toBe(
+      '--token-accent-muted'
+    );
 
-    // **The selector lists are parsed, not substring-matched.** `.project-card` is a substring of
-    // `.project-card__tech li`, so asking whether the source contains it was satisfied by the
-    // counter-scope alone: dropping the card out of the boundary block left this check green and
-    // put the card's two borders on the ornament role, below the 3:1 floor AD-19 asserts.
+    // **The selector lists are parsed, not substring-matched.** `.work-item` is a substring of
+    // `.work-item::before`, so asking whether the source contains a selector was satisfied by a
+    // longer one containing it: dropping a shorter selector out of the boundary block left this
+    // check green and put that call site on the ornament role, below the 3:1 floor AD-19 asserts.
     const SCOPED_BLOCK = /([^{}]*)\{[^{}]*--accent-dim\s*:[^{}]*\}/g;
     const selectorsOf = (text: string): string[] =>
       [...text.matchAll(SCOPED_BLOCK)].flatMap((found) =>
@@ -899,17 +935,24 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     // The parser, on a planted control: a comment line in the prelude, a multi-selector list, and
     // a longer selector that must not stand in for the shorter one it contains.
     expect(
-      selectorsOf('// note\n.project-card__tech li { --accent-dim: var(--x); }'),
+      selectorsOf('// note\n.work-item::before { --accent-dim: var(--x); }'),
       'the selector parser no longer separates a selector from a longer one containing it'
-    ).toEqual(['.project-card__tech li']);
+    ).toEqual(['.work-item::before']);
+    // The containment the comment above names, planted as the pair it names: the shorter selector
+    // must not be reported when only the longer one is present. A control that planted a single
+    // selector demonstrated the comment stripping and nothing about containment at all.
+    expect(
+      selectorsOf('.work-item::before { --accent-dim: var(--x); }'),
+      'the parser reports .work-item for a block that only declares .work-item::before'
+    ).not.toContain('.work-item');
     expect(selectorsOf('.a::before,\n.b { --accent-dim: var(--x); }')).toEqual(['.a::before', '.b']);
 
     expect(
       selectorsOf(afterRoot).sort(),
-      `app/app.scss no longer scopes --accent-dim on exactly the four selectors the mapping needs. ` +
+      `app/app.scss no longer scopes --accent-dim on exactly the two selectors the mapping needs. ` +
         `A selector renamed in its component stylesheet silently stops matching, and that call site ` +
         `falls back to the :root value`
-    ).toEqual(['.error-page__back', '.project-card', '.project-card__tech li', '.work-item::before'].sort());
+    ).toEqual(['.error-page__back', '.work-item::before'].sort());
 
     expect(
       MAPPING.filter(([, roles]) => roles.length > 1).map(([property]) => property),

@@ -1,7 +1,15 @@
 @media print {
+  // The Status dot is exempted from the decorative sweep, and it is the one exception here.
+  //
+  // It carries `aria-hidden` because it is a 4px square with no text for a screen reader to read,
+  // which is what puts it in this selector's way. But print is the medium with no colour at all,
+  // and `DESIGN.md:305-314` is explicit that the dot is what separates `Live` from `Complete`
+  // structurally: without it the two are both `1px solid` and sit **1.13:1 apart in greyscale**,
+  // which is no distinction at all. Hiding it would delete the taxonomy exactly where hue cannot
+  // stand in for it, so it is excluded from the rule rather than fought with a later `display`.
   header,
   canvas,
-  [aria-hidden='true'] {
+  [aria-hidden='true']:not(.suite-directory__dot) {
     display: none !important;
   }
 
@@ -12,8 +20,25 @@
     line-height: 1.5;
   }
 
+  // The mark in ink. `body` above forces the ground white and the text black, which would leave
+  // the mark's accent border and accent fill as the only colour on the page and, on a greyscale
+  // printer, as two indistinct greys. Only colour is forced: the dashed border style that
+  // separates `In progress` from `Complete`, and the absent border that separates `Archived` from
+  // both, are structural and survive untouched.
+  .suite-directory__status {
+    border-color: #000 !important;
+    color: #000 !important;
+  }
+
+  .suite-directory__dot {
+    background: #000 !important;
+  }
+
+  // A family group is one thing to read, so it does not split across a page break. Its members
+  // carry the same instruction through the row rule beside it.
   .work-item,
-  .project-card {
+  .suite-directory__row,
+  .suite-directory__family {
     break-inside: avoid;
   }
 

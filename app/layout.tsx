@@ -6,9 +6,12 @@ import './app.scss';
 import { Header } from '@/components/molecules/Header/Header';
 import { Body } from '@/components/atoms/Container/Container';
 import { Providers } from '@/app/providers';
+import { HUB_ORIGIN } from '@/lib/registry';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://cuatro.dev'),
+  // The one declaration of where the Hub is served from, shared with the Suite Directory's
+  // `You are here` rule so the site cannot declare one origin and compare against another.
+  metadataBase: new URL(HUB_ORIGIN),
   title: {
     template: '%s | Luigi Espinosa',
     default: 'Luigi Espinosa | Senior Frontend Engineer',

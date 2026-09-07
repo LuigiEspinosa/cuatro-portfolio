@@ -1,13 +1,16 @@
+// Story 2-9 removed the `@media (max-width: 767px) { overflow: auto }` that sat here. It was an
+// override of `app/app.scss`'s `body[id=''] { overflow: hidden }`, letting the home route scroll on
+// mobile while the desktop layout stayed pinned to one viewport. That rule is gone, so the override
+// has nothing left to override; worse, `overflow` is a shorthand, so it would have set `overflow-x`
+// back to `auto` on this selector and turned the new global `overflow-x: clip` into real horizontal
+// scroll at exactly the 360px width A-5 is measured at. Load-bearing in the wrong direction, and
+// therefore deleted rather than kept.
 body[id=''] {
   background-color: #0a000f;
   background-image:
     linear-gradient(rgba(140, 90, 210, 0.06) 1px, transparent 1px),
     linear-gradient(90deg, rgba(140, 90, 210, 0.06) 1px, transparent 1px);
   background-size: 56px 56px;
-
-  @media (max-width: 767px) {
-    overflow: auto;
-  }
 }
 
 // Layout

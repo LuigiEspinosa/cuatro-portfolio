@@ -5,11 +5,15 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   DEMO_VALUES,
+  HUB_ORIGIN,
   IDENTITY_VALUES,
   REGISTRY_STATUSES,
   RENDERED_STATUSES,
   REQUIRED_FIELDS,
   applications,
+  groupByFamily,
+  isCurrentOrigin,
+  orderByStatus,
   renderedApplications,
   selectRendered,
   type RegistryEntry,
@@ -183,6 +187,252 @@ describe('which entries a Visitor sees is a rule over status', () => {
     const entries = [entry({ id: 'kept', status: 'Live', live: 'https://kept.cuatro.dev' }), entry({ id: 'dropped' })];
     selectRendered(entries);
     expect(entries.map((application) => application.id)).toEqual(['kept', 'dropped']);
+  });
+});
+
+describe('the order a Visitor reads them in is a rule over status', () => {
+  // Story 2-9. Nothing in the committed Registry is `Complete`, so every arm of this rule but the
+  // last is provable only against fixtures. That is the same reason `selectRendered` takes its
+  // list, and it is why these cases build entries rather than reading the file.
+
+  it('puts every Live before every Complete, whatever order the file holds them in', () => {
+    const entries = [
+      entry({ id: 'finished', status: 'Complete' }),
+      entry({ id: 'running', status: 'Live', live: 'https://running.cuatro.dev' }),
+    ];
+    expect(orderByStatus(entries).map((application) => application.id)).toEqual(['running', 'finished']);
+  });
+
+  it('preserves file order inside a status, so it is not sorting by name', () => {
+    // Deliberately reverse-alphabetical inside the `Live` group. An alphabetical sort, or one over
+    // any other field, returns `bravo` first and fails here rather than quietly reordering the
+    // Registry, whose order is the Registry's to decide.
+    const entries = [
+      entry({ id: 'zulu', name: 'Zulu', status: 'Live', live: 'https://zulu.cuatro.dev' }),
+      entry({ id: 'alpha', name: 'Alpha', status: 'Complete' }),
+      entry({ id: 'bravo', name: 'Bravo', status: 'Live', live: 'https://bravo.cuatro.dev' }),
+    ];
+    expect(orderByStatus(entries).map((application) => application.id)).toEqual(['zulu', 'bravo', 'alpha']);
+  });
+
+  it('leaves a list of one status exactly where it found it', () => {
+    // Which is the committed Registry today: all six rendered entries are `Live`, so the rule has
+    // to be a no-op on it. A comparator that reordered equal ranks would show up here.
+    expect(orderByStatus(renderedApplications).map((application) => application.id)).toEqual(
+      renderedApplications.map((application) => application.id)
+    );
+  });
+
+  it('sorts a status it does not rank last rather than throwing', () => {
+    // `selectRendered` has already removed these. A comparator is the wrong place to discover it
+    // has not, so the unranked value goes to the end and the caller still gets a list.
+    const entries = [entry({ id: 'held', status: 'Archived' }), entry({ id: 'shown', status: 'Live', live: 'https://shown.cuatro.dev' })];
+    expect(orderByStatus(entries).map((application) => application.id)).toEqual(['shown', 'held']);
+  });
+
+  it('does not mutate the list it is given', () => {
+    const entries = [
+      entry({ id: 'finished', status: 'Complete' }),
+      entry({ id: 'running', status: 'Live', live: 'https://running.cuatro.dev' }),
+    ];
+    orderByStatus(entries);
+    expect(entries.map((application) => application.id)).toEqual(['finished', 'running']);
+  });
+
+  it('returns nothing for an empty list', () => {
+    expect(orderByStatus([])).toEqual([]);
+  });
+});
+
+describe('You are here is a property of the origin, never of an id', () => {
+  it('marks the entry whose live hostname is the declared origin', () => {
+    expect(isCurrentOrigin(entry({ status: 'Live', live: HUB_ORIGIN }))).toBe(true);
+  });
+
+  it('moves with the origin instead of staying on one entry', () => {
+    // The whole argument for comparing origins rather than matching an id: move the Hub and the
+    // mark moves with it. An id match would go on claiming the visitor was here after the move.
+    const hub = entry({ id: 'the-hub', status: 'Live', live: 'https://elsewhere.example' });
+    expect(isCurrentOrigin(hub)).toBe(false);
+    expect(isCurrentOrigin(hub, 'https://elsewhere.example')).toBe(true);
+  });
+
+  it('compares origins, so a path or a trailing slash still matches', () => {
+    expect(isCurrentOrigin(entry({ status: 'Live', live: `${HUB_ORIGIN}/` }))).toBe(true);
+    expect(isCurrentOrigin(entry({ status: 'Live', live: `${HUB_ORIGIN}/projects` }))).toBe(true);
+  });
+
+  it('does not match a different scheme, a different port or a subdomain of the same site', () => {
+    for (const live of ['http://cuatro.dev', 'https://cuatro.dev:8443', 'https://tracker.cuatro.dev']) {
+      expect(isCurrentOrigin(entry({ status: 'Live', live })), `${live} is not the Hub's origin`).toBe(false);
+    }
+  });
+
+  it('does not match an entry carrying no live hostname', () => {
+    expect(isCurrentOrigin(entry({ status: 'Complete' }))).toBe(false);
+  });
+
+  it('answers false for a value URL refuses, on either side, rather than throwing', () => {
+    expect(isCurrentOrigin(entry({ status: 'Live', live: 'not-a-url' }))).toBe(false);
+    expect(isCurrentOrigin(entry({ status: 'Live', live: HUB_ORIGIN }), 'not-a-url')).toBe(false);
+  });
+
+  it('marks exactly one committed entry, and it is the Hub itself', () => {
+    const here = renderedApplications.filter((application) => isCurrentOrigin(application));
+    expect(here.map((application) => application.id)).toEqual(['cuatro-portfolio']);
+  });
+
+  it('is the one origin the site declares, so metadataBase cannot drift from the mark', () => {
+    // The repository holds one origin, not two. `app/layout.tsx` builds `metadataBase` from this
+    // declaration, and a second literal anywhere under `app/` is exactly the drift this refuses:
+    // both halves would go on agreeing with themselves while the site declared one origin and the
+    // directory compared against another.
+    //
+    // **Scoped to `app/`, not to `app/layout.tsx`.** The first version of this case read the layout
+    // alone and passed while three route files each hard-coded the same hostname in
+    // `openGraph.url`, which is three more places to forget on the day the Hub moves. Next resolves
+    // a relative `url` against `metadataBase`, so those are authored relative and this is what
+    // holds them that way.
+    const routeFiles: string[] = [];
+    const walkApp = (directory: string) => {
+      for (const found of readdirSync(join(REPO_ROOT, directory), { withFileTypes: true })) {
+        if (found.isDirectory()) {
+          if (found.name !== '__tests__') walkApp(`${directory}/${found.name}`);
+          continue;
+        }
+        if (/\.tsx?$/.test(found.name)) routeFiles.push(`${directory}/${found.name}`);
+      }
+    };
+    walkApp('app');
+
+    expect(routeFiles.length, 'no source was found under app/, so the scan below is vacuous').toBeGreaterThan(5);
+    expect(routeFiles, 'app/layout.tsx was not scanned').toContain('app/layout.tsx');
+    expect(routeFiles, 'app/page.tsx was not scanned').toContain('app/page.tsx');
+
+    const layout = readFileSync(join(REPO_ROOT, 'app', 'layout.tsx'), 'utf8');
+    expect(layout, 'app/layout.tsx no longer builds metadataBase from the declared origin').toContain(
+      'new URL(HUB_ORIGIN)'
+    );
+
+    // No `g` flag: `RegExp.test` with one is stateful through `lastIndex`, so a shared instance
+    // would answer differently on the same input depending on which file was scanned before it.
+    const literal = new RegExp(HUB_ORIGIN.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const writtenTwice = routeFiles.filter((path) => literal.test(readFileSync(join(REPO_ROOT, path), 'utf8')));
+    expect(
+      writtenTwice,
+      `a source under app/ writes the Hub origin as a literal rather than consuming HUB_ORIGIN. ` +
+        `An openGraph url is authored relative and resolved against metadataBase:\n${writtenTwice.join('\n')}`
+    ).toEqual([]);
+
+    // The matcher, on planted controls, so an empty result is a measurement rather than a regex
+    // that stopped matching the origin it was built from.
+    expect(literal.test(`url: '${HUB_ORIGIN}/work'`), 'the scan no longer fires on a hard-coded origin').toBe(true);
+    expect(literal.test("url: '/work'"), 'the scan fires on a relative url').toBe(false);
+  });
+});
+
+describe('a family renders as one group, which is a rule over the family field', () => {
+  it('collapses a family into one group, positioned at its first member', () => {
+    const entries = [
+      entry({ id: 'alone', status: 'Live', live: 'https://alone.cuatro.dev' }),
+      entry({ id: 'first', status: 'Live', live: 'https://first.cuatro.dev', family: 'a-family' }),
+      entry({ id: 'between', status: 'Live', live: 'https://between.cuatro.dev' }),
+      entry({ id: 'second', status: 'Live', live: 'https://second.cuatro.dev', family: 'a-family' }),
+    ];
+    expect(
+      groupByFamily(entries).map((item) => (item.kind === 'entry' ? item.entry.id : `${item.family}: ${item.members.map((m) => m.id).join(', ')}`))
+    ).toEqual(['alone', 'a-family: first, second', 'between']);
+  });
+
+  it('renders a family of one as a group, so the box does not come and go', () => {
+    // The framing line names no count (`EXPERIENCE.md:292`), so a family that loses a member to a
+    // status change needs no other edit. A rule that unwrapped a lone member would make the one
+    // container in the directory appear and disappear as the estate moved.
+    const grouped = groupByFamily([entry({ id: 'only', status: 'Live', live: 'https://only.cuatro.dev', family: 'a-family' })]);
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0].kind).toBe('family');
+  });
+
+  it('leaves an entry carrying no family ungrouped', () => {
+    const grouped = groupByFamily([entry({ id: 'alone', status: 'Live', live: 'https://alone.cuatro.dev' })]);
+    expect(grouped).toEqual([{ kind: 'entry', entry: expect.objectContaining({ id: 'alone' }) }]);
+  });
+
+  it('keeps two families apart rather than merging them into one box', () => {
+    const entries = [
+      entry({ id: 'one', status: 'Live', live: 'https://one.cuatro.dev', family: 'first-family' }),
+      entry({ id: 'two', status: 'Live', live: 'https://two.cuatro.dev', family: 'second-family' }),
+    ];
+    expect(groupByFamily(entries).map((item) => (item.kind === 'family' ? item.family : item.entry.id))).toEqual([
+      'first-family',
+      'second-family',
+    ]);
+  });
+
+  it('draws every entry exactly once', () => {
+    const entries = [
+      entry({ id: 'a', status: 'Live', live: 'https://a.cuatro.dev', family: 'a-family' }),
+      entry({ id: 'b', status: 'Live', live: 'https://b.cuatro.dev', family: 'a-family' }),
+      entry({ id: 'c', status: 'Live', live: 'https://c.cuatro.dev' }),
+    ];
+    const drawn = groupByFamily(entries).flatMap((item) =>
+      item.kind === 'entry' ? [item.entry.id] : item.members.map((member) => member.id)
+    );
+    expect(drawn.sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('groups the committed family over what the filter left, not over the whole Registry', () => {
+    // Three `tracker-family` members are committed and one is `In progress`, so the group the
+    // directory draws holds two. Read off the file rather than pinned, so the day the third ships
+    // this case follows it.
+    const families = new Set(renderedApplications.map((application) => application.family).filter((family) => family !== undefined));
+    expect(families.size, 'no committed rendered entry carries a family, so this case is vacuous').toBeGreaterThan(0);
+
+    for (const family of families) {
+      const group = groupByFamily(renderedApplications).find((item) => item.kind === 'family' && item.family === family);
+      expect(group, `${family} is carried by a rendered entry and is not drawn as a group`).toBeDefined();
+      expect(group?.kind === 'family' ? group.members.map((member) => member.id) : []).toEqual(
+        renderedApplications.filter((application) => application.family === family).map((application) => application.id)
+      );
+    }
+  });
+
+  it('holds a Complete member inside the group, above Live entries that follow it', () => {
+    // **Where the two rules disagree, and which one wins.** `orderByStatus` would put every `Live`
+    // before every `Complete`; grouping pulls a `Complete` family member up into its group, which
+    // sits at its first member's position. `EXPERIENCE.md:356-358` settles it in favour of the
+    // group: it holds whichever members pass the filter, and its framing line names no count.
+    //
+    // Not reachable from the committed Registry, every rendered entry being `Live`. It arrives the
+    // day the third `tracker-family` member changes status, which is why it is pinned here.
+    const ordered = orderByStatus([
+      entry({ id: 'family-live', status: 'Live', live: 'https://one.cuatro.dev', family: 'a-family' }),
+      entry({ id: 'family-complete', status: 'Complete', family: 'a-family' }),
+      entry({ id: 'loner', status: 'Live', live: 'https://two.cuatro.dev' }),
+    ]);
+
+    // The premise: ordering alone separates the two family members and puts the loner between them.
+    expect(ordered.map((application) => application.id)).toEqual(['family-live', 'loner', 'family-complete']);
+
+    const drawn = groupByFamily(ordered);
+    expect(
+      drawn.map((item) => (item.kind === 'entry' ? item.entry.id : `${item.family}: ${item.members.map((m) => m.id).join(', ')}`))
+    ).toEqual(['a-family: family-live, family-complete', 'loner']);
+  });
+
+  it('leaves a group holding one status alone, so the case above is about the disagreement', () => {
+    const ordered = orderByStatus([
+      entry({ id: 'family-one', status: 'Live', live: 'https://one.cuatro.dev', family: 'a-family' }),
+      entry({ id: 'family-two', status: 'Live', live: 'https://two.cuatro.dev', family: 'a-family' }),
+      entry({ id: 'loner', status: 'Complete' }),
+    ]);
+    expect(
+      groupByFamily(ordered).map((item) => (item.kind === 'entry' ? item.entry.id : item.family))
+    ).toEqual(['a-family', 'loner']);
+  });
+
+  it('returns nothing for an empty list', () => {
+    expect(groupByFamily([])).toEqual([]);
   });
 });
 

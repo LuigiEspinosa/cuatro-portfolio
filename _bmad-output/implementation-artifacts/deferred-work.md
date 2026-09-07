@@ -1151,10 +1151,10 @@ status: open
 
 ### DW-10: The tech chip label fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor, because --accent-dim lost its alpha to two opaque token roles and the label now reads against the chip fill rather than aga
 origin: spec-deferred bc3c95f49531
-location: components/molecules/ProjectCard/ProjectCard.scss:66
+location: components/organisms/WorkItem/WorkItem.scss:144
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: medium
-reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord
+reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord Amended 2026-09-06 by Story 2-9: half of this defect is gone with the component that carried it. ProjectCard.scss:66 was deleted when the Suite Directory replaced the card grid, so the location above moves to the surviving half, WorkItem.scss:144 on /work, which is unchanged and still at 2.56:1. The entry stays open on that half. The Suite Directory renders no tech chip at all: its tech line is unfilled mono text at --token-text-secondary, so the replacement did not reproduce the defect.
 status: open
 
 ### DW-11: Eight local @font-face declarations are resolved by nothing after this commit, not the one the record previously named, and the story that retires the local faces inherits that inventory plus the publ
@@ -1978,7 +1978,14 @@ status: done
     Not repaired here because changing the link text is on this spec's Ask First list, and the
     Suite Directory (Story 2.9) rewrites this markup against `RESTYLE-SPEC.md` anyway. Worth
     deciding there rather than twice.
-  status: open
+
+
+    **Answered 2026-09-06 by Story 2-9, which is where this entry said the decision belonged.**
+    The label is now `Source` on every entry, verbatim from `EXPERIENCE.md:290` ("Not `GitHub`, not
+    `Code`"), with `Source: {name}` as its accessible name per A-10. It names no host, so a GitLab
+    or self-hosted `source` renders correctly with no edit, which is the condition this entry was
+    opened about. `ProjectCard` and its `// Github` label were deleted in the same commit.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
   summary: >-
@@ -2189,4 +2196,128 @@ status: done
     the failure mode it exists to prevent. Observed 2026-09-06. The fix is a bounded retry on the
     request, or asserting the served bytes rather than re-fetching over the network, not a
     `test.retry` on the whole case, which would hide a real 404 as readily as a hang up.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  summary: The `Live` status dot fills 4px with `--token-accent`, which F-8's gate greps for and
+    expects zero of. It needs a named exemption in Story 2.34 exactly as `::selection` has one at
+    F-11, or that gate fails on the taxonomy's load-bearing element.
+  evidence: >-
+    `components/organisms/SuiteDirectory/SuiteDirectory.scss` sets
+    `background: var(--token-accent)` on `.suite-directory__dot`. That is correct and is not the
+    thing to change. `DESIGN.md:298-303` specifies the `Live` mark as a **4px filled square** in
+    the accent, and `:621-624` settles it as a square at `--r-none` against the residual
+    `--r-pill` typo at `RESTYLE-SPEC.md:387`; `DESIGN.md:305-314` is explicit that the dot is the
+    taxonomy's load-bearing element rather than an ornament, because without it `Live` and
+    `Complete` are both `1px solid` and sit **1.13:1 apart in greyscale**, which is no distinction
+    at all. Filled is the specification, and DESIGN.md wins any value.
+
+
+    The tension is with the enforceable half of the accent budget. `RESTYLE-SPEC.md:654` states
+    F-8 as a binary check and says so in those words: grep the built CSS for `--token-accent` used
+    as a `background`, `background-color` or `fill`, at any state including `:hover`, expecting
+    **zero occurrences**, the 3% figure being design intent rather than a gate because it has no
+    defined denominator. The dot is an occurrence. So F-8 as written and the status taxonomy as
+    written cannot both hold once anything renders a `Live` mark, and Story 2-9 is the story that
+    first renders one.
+
+
+    The shape of the resolution already exists in the same table. `RESTYLE-SPEC.md:657` gives
+    `::selection` an accent ground and says outright that F-8's grep **excludes `::selection`
+    explicitly**, so the specification already contemplates named exemptions rather than a
+    weakened predicate. The dot wants the same treatment: a second named exemption, scoped to the
+    status mark's dot, with the greyscale argument beside it. What must not happen is the gate
+    being softened to "accent fill under some size" or dropped to a warning, which AD-21 forbids
+    anyway: F-8 is binary precisely so it cannot be argued with per call site, and the value of the
+    exemption is that it is a short, readable list somebody has to add to on purpose.
+
+
+    Filed rather than fixed because the gate does not exist yet. Story 2.34 (`epics.md:3695`) is
+    the story that implements FR-17 conformance as a blocking CI grep, its acceptance criteria
+    already carry a permitted set and a separately argued alpha exception written against a
+    palette entry rather than a role name, and this is a third entry of the same kind. Story 2-9's
+    own boundaries make `contracts/` read only and add no CI job, so writing the exemption here
+    was not available. Whoever takes 2.34 should also confirm that the exemption is written
+    against the dot's selector rather than against `--token-accent`, for the same reason the alpha
+    exception is written against the palette entry: an exemption naming the role would readmit
+    accent fills everywhere.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  summary: >-
+    `epics.md` books `ProjectCard` and `ProjectCard.scss` retirement to Story 2.14 in five places.
+    Story 2-9 retired them, so five planning statements now describe work that is already done.
+  evidence: |-
+    `epics.md:568` ("`ProjectCard` and `ProjectsHero` are retired with it"), `:2616` (a Story 2.14
+    acceptance criterion reading "**Then** `ProjectCard` and `ProjectsHero` are retired along with
+    their stylesheets"), `:2736`, `:2744` and `:3543` (each stating `ProjectCard.scss` "is retired
+    by Story 2.14" or "needs nothing, being retired"). Story 2-9 deleted the component, its
+    stylesheet and its tests, because `tests/e2e/hit-target-floor.pw.ts` carried the
+    `directory-links` exemption with `closedBy: 'Story 2-9'` and
+    `ops/__tests__/hit-target-floor.test.ts:537-558` fails once 2-9 reads `done` on the board while
+    that row survives. The ledger and the epic disagreed about which story owned the retirement,
+    and the ledger is the one with a test behind it.
+
+    `ProjectsHero` is **not** retired: it still renders on `/projects` above the directory, so the
+    2.14 criterion is half true rather than wholly stale. Editing `epics.md` is a planning-artifact
+    change and Story 2-8 set the precedent of filing rather than making one from inside a build.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  summary: >-
+    On `/projects` the hero and the Suite Directory start at different left edges, because one is
+    inside `Container` and the other deliberately is not.
+  evidence: |-
+    `app/projects/page.tsx` keeps `<ProjectsHero />` inside `Container` and renders
+    `<SuiteDirectory />` outside it. `container.scss:2-4` is `width: min(80%, 1920px)` with
+    `padding: 0 1rem`, so at a 360px viewport the hero's content starts at roughly 52px;
+    `.suite-directory` pads itself with `var(--page-pad)`, which clamps to 20px at that width. The
+    two sections on one page are about 32px out of alignment.
+
+    Neither half is wrong on its own. The directory is outside `Container` on purpose, because
+    `min(80%, ...)` leaves 288px of content at 360px, which `ops/known-violations.md:399` blames
+    for the hero overflow in the first place; the hero keeps the wrapper it was authored against
+    because its geometry is Story 2-33's. Filed rather than fixed because Story 2-14 redirects
+    `/projects` to `/#suite`, after which the surface renders nothing and the misalignment cannot
+    be seen. If 2-14 is descoped or delayed, this becomes visible work.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  summary: >-
+    Every Suite Directory link opens a new tab and none carries the external-navigation mark the
+    contract declares as one of its three glyphs.
+  evidence: |-
+    `SuiteDirectoryRow` sets `target='_blank' rel='noopener noreferrer'` on both the live and the
+    source link, carried over from `ProjectCard`. `RESTYLE-SPEC.md:553` states that the system has
+    no icon set and that "the three glyphs in the system are an arrow, an external-navigation mark
+    and the 4px status square", so a mark for exactly this exists in the vocabulary and the
+    directory uses none of it. WCAG G201 treats warning the user about a new window as advisory
+    rather than a violation, so this is a design question and not a floor breach.
+
+    Filed rather than decided because adding a glyph to a row is a composition change and no spine
+    states it: `DESIGN.md:658-663` specifies the Registry Entry as name, status, description, tech
+    and links, and lists no mark. The alternative resolution is to drop `target='_blank'`
+    altogether, which is a behaviour change `EXPERIENCE.md` does not ask for either.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  summary: >-
+    `list-wheel`'s live link renders as `luigiespinosa.github.io`, which names the operator rather
+    than the application and would collide with any second GitHub Pages entry.
+  evidence: |-
+    `bareDomain` in `components/organisms/SuiteDirectory/SuiteDirectory.tsx` renders
+    `new URL(entry.live).hostname`, dropping the path. For five of the six rendered entries that is
+    exactly right and is what `EXPERIENCE.md:289` asks for: "The bare domain, `library.cuatro.dev`
+    ... The URL *is* the evidence." For `list-wheel`, whose `live` is
+    `https://luigiespinosa.github.io/list-wheel/`, the bare domain is the operator's GitHub Pages
+    host, and the `/list-wheel/` segment that identifies the application is discarded.
+
+    This is in tension with A-9 (`EXPERIENCE.md:768`), "link text is self-describing out of
+    context", which names `library.cuatro.dev` as an example of text that is. A host shared by
+    every GitHub Pages project of one account is not, and a second such entry would render an
+    identical label pointing somewhere else. The letter of the contract is satisfied and the
+    purpose is not.
+
+    Filed rather than fixed because the copy rule is stated in a spine and changing it (to host
+    plus first path segment for non-apex URLs, say) is an editorial decision rather than an
+    implementation one. Story 2-25 relocates `list-wheel` onto a `cuatro.dev` subdomain, which
+    dissolves the case; if that story moves out, this wants deciding on its own.
   status: open

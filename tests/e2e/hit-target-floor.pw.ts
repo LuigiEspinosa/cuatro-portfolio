@@ -22,8 +22,9 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *  1. An element under the floor that no row lists **fails**. A new or regressed control cannot
  *     arrive quietly.
  *  2. An element a row lists that now **clears** the floor also fails, as a stale row. Stories
- *     2-9, 2-15, 2-30 and 2-32 must delete their row in the commit that repairs the surface, so
- *     the ledger can only shrink and nothing has to remember to widen a scope later.
+ *     2-15, 2-30 and 2-32 must delete their row in the commit that repairs the surface, so
+ *     the ledger can only shrink and nothing has to remember to widen a scope later. Story 2-9
+ *     already has.
  *  3. A row that stops matching **on any one of the routes it lists** fails, so a row covering
  *     three surfaces cannot go half stale in silence.
  *  4. A row **covers an exact number of elements**, so a seventh nav link at 40 x 22 cannot be
@@ -35,12 +36,15 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * rejects (`epics.md:3740`, `DESIGN.md:654-656`), and a floor restated in a spec file is a floor
  * that drifts from the contract it claims to enforce.
  *
- * **A-5 is measured on elements, not on `scrollWidth`.** `app/app.scss:92-102` ships
- * `width: 100vw` with `overflow-x: hidden`, and the home route adds `overflow: hidden` outright,
- * so the document's scroll width is clamped by the clipping rather than by the absence of
- * overflow. Comparing each measured element's edges to the viewport detects the real condition
- * while that breach of `DESIGN.md:558` still stands. The breach is KV-5 in
- * `ops/known-violations.md` and is repaired by Story 2-9 (`epics.md:2423-2427`), not here.
+ * **A-5 is measured on elements, not on `scrollWidth`.** Story 2-9 repaired the stylesheet half of
+ * KV-5, so `app/app.scss` now ships `100%` widths with `overflow-x: clip` and the home route no
+ * longer clamps itself to one viewport. `clip` clips exactly as `hidden` did, which is the point:
+ * the document's scroll width still reports as though nothing overflowed, while 28 elements on
+ * `/work` really do sit past the right edge. Comparing each measured element's edges to the
+ * viewport is what detects that. The remaining half of KV-5 is the component one, `WorkItem.scss`
+ * and `WorkHero.scss` on `/work` booked to Stories 2-31 and 2-33, and `ProjectsHero.scss` on
+ * `/projects` booked to Story 2-14, which redirects that route away rather than repairing it. The
+ * entry stays `Open` until all three land.
  *
  * **No screenshot is taken.** This file writes no snapshot directory, so `keeps exactly one
  * committed baseline` in `tests/e2e/rendered-output.pw.ts` stays true. Same precedent as
@@ -79,9 +83,9 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * rule and none is left to measure.
  */
 const SURFACES = [
-  { route: '/', status: 200, entrance: true, found: 5, skipped: 0, measured: 5 },
+  { route: '/', status: 200, entrance: true, found: 16, skipped: 0, measured: 16 },
   { route: '/work', status: 200, entrance: false, found: 11, skipped: 0, measured: 11 },
-  { route: '/projects', status: 200, entrance: false, found: 19, skipped: 0, measured: 19 },
+  { route: '/projects', status: 200, entrance: false, found: 18, skipped: 0, measured: 18 },
   { route: '/celeste', status: 200, entrance: false, found: 7, skipped: 7, measured: 0 },
   { route: NOT_FOUND, status: 404, entrance: false, found: 8, skipped: 0, measured: 8 },
 ] as const;
@@ -182,11 +186,13 @@ interface Exemption {
  * The ledger. Held equal to the table in `ops/hit-target-floor.md` in both directions by
  * `ops/__tests__/hit-target-floor.test.ts`, so neither file is the only reader of the other.
  *
- * **Six rows for five surfaces, where the story's own code map named four.** The chrome logo was
- * not on that list and was found by measuring: its `<a>` is a plain inline box, so its rect is
- * the text line box while the 66px-tall image inside it paints past the bottom. Story 2-32 names
- * `Logo` in its title and is what closes it. The home surface is carried as two rows because it
- * is authored in two files at two different sizes.
+ * **Six rows at Story 2-8, five now.** The chrome logo was not on that story's own list of four
+ * and was found by measuring: its `<a>` is a plain inline box, so its rect is the text line box
+ * while the 66px-tall image inside it paints past the bottom. Story 2-32 names `Logo` in its title
+ * and is what closes it. The home surface is carried as two rows because it is authored in two
+ * files at two different sizes. Story 2-9 deleted `directory-links` in the commit that replaced
+ * the card grid with the Suite Directory, whose two links meet the floor on both axes; the ledger
+ * can only shrink, so nothing had to remember to widen a scope afterwards.
  */
 const EXEMPTIONS: readonly Exemption[] = [
   {
@@ -206,15 +212,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     covers: 18,
     measured: '38.41 x 22.00 to 98.13 x 22.00',
     closedBy: 'Story 2-15',
-  },
-  {
-    id: 'directory-links',
-    selector: '.project-card__links a',
-    source: 'components/molecules/ProjectCard/ProjectCard.tsx:45,49',
-    routes: ['/projects'],
-    covers: 12,
-    measured: '45.88 x 17.00 to 58.61 x 17.00',
-    closedBy: 'Story 2-9',
   },
   {
     id: 'error-back',
@@ -961,7 +958,7 @@ test.describe('the hit-target floor', () => {
     expect(
       stale,
       `an exemption lists an element that now clears the floor. The row is what forces the ledger ` +
-        `to shrink as Stories 2-9, 2-15, 2-30 and 2-32 land, so it is deleted rather than ` +
+        `to shrink as Stories 2-15, 2-30 and 2-32 land, so it is deleted rather than ` +
         `kept:\n${stale.join('\n')}`
     ).toEqual([]);
 
@@ -974,7 +971,7 @@ test.describe('the hit-target floor', () => {
     expect(
       wide,
       `A-5: an interactive element's edge is outside the viewport at the pinned width. This is ` +
-        `measured on the element because body carries overflow-x: hidden, so the document's ` +
+        `measured on the element because html and body carry overflow-x: clip, so the document's ` +
         `scroll width is clamped by the clipping rather than by the absence of ` +
         `overflow:\n${wide.join('\n')}`
     ).toEqual([]);
@@ -1323,7 +1320,7 @@ test.describe('the hit-target floor', () => {
     expect(verdict.under.filter((line) => line.includes('planted-'))).toEqual([]);
   });
 
-  test('A-5 fails on an element outside either edge, which the document scroll width does not show', async ({
+  test('A-5 fails on an element outside either edge, which a scroll width check reports inconsistently', async ({
     page,
   }) => {
     await goTo(page, NOT_FOUND, 404);
@@ -1394,13 +1391,32 @@ test.describe('the hit-target floor', () => {
       inner: window.innerWidth,
     }));
 
-    // The measurement behind the design note. `body` carries `overflow-x: hidden`, so an element
-    // 140px past the right edge does not widen the scroll box a `scrollWidth` check would read.
+    // **The measurement behind the design note, and it is asserted in both directions because the
+    // two standard readings disagree on this page.** Measured 2026-09-06 in the pinned image:
+    // `document.body.scrollWidth` does **not** grow, because both planted elements are absolutely
+    // positioned against the initial containing block and `body` is therefore not their containing
+    // block; `document.documentElement.scrollWidth` **does**, because `overflow-x: clip` on the
+    // root does not clamp out-of-flow content the way it clamps in-flow overflow. On `/work` the
+    // same root read answers 360 while elements sit at 490 (`ops/hit-target-floor.md` § The
+    // overflow this assertion does not cover), which is the opposite result from the same call.
+    //
+    // So a `scrollWidth` check answers differently depending on which element is asked and on how
+    // the overflow was produced, and one page carries both answers. That is the whole argument for
+    // measuring element edges, and this asserts it rather than asserting about it.
+    //
+    // The earlier form of this read asserted only that `body` did not grow and named `body`'s
+    // `overflow-x: hidden` as the cause. It was true for an unrelated reason, the absolute
+    // positioning, and it stayed true after Story 2-9 replaced that rule.
     expect(
       after.bodyScroll,
-      'body scroll width grew with the planted overflow, so overflow-x: hidden is no longer clipping ' +
-        'and the reason this assertion measures elements has changed'
+      `body scroll width grew to ${after.bodyScroll} against a viewport of ${after.inner}, so the ` +
+        `two readings no longer disagree and the note this case carries needs re-measuring`
     ).toBeLessThanOrEqual(after.inner);
+    expect(
+      after.documentScroll,
+      `the document scroll width did not grow with the planted overflow, so both readings now agree ` +
+        `and this case no longer shows that a scroll width check depends on which element is asked`
+    ).toBeGreaterThan(after.inner);
 
     const { measured } = await measureSurface(page);
     const verdict = judge(NOT_FOUND, measured, floor, after.inner);
@@ -1462,6 +1478,93 @@ test.describe('the hit-target floor', () => {
     await expect(rootCustomPropertyValue(page, '--tap-that-is-not-declared')).rejects.toThrow(
       /--tap-that-is-not-declared/
     );
+  });
+
+  test('the two destinations on a directory row are separately addressable, --s-lg apart', async ({
+    page,
+  }) => {
+    // **A-4's independently addressable clause** (`EXPERIENCE.md:763`), which `ops/hit-target-floor.md`
+    // recorded as unasserted with the note that the check lands with the first surface to put two
+    // targets on one line at this viewport. Until Story 2-9 there was no such surface. There is now,
+    // so the clause is asserted here rather than left booked.
+    //
+    // The size half of A-4 is the sweep's, and it is repeated per box here only because a pair that
+    // met the floor while overlapping would satisfy the sweep and fail this clause. What this case
+    // adds is the relationship between two boxes, which is a different predicate from either box.
+    //
+    // Both lengths come from the contract in the running page, never from a literal. `--s-lg` is
+    // authored in `rem`, so it is resolved through a probe element rather than parsed: a
+    // reader-scaled length has no pixel value until something lays it out.
+    await goTo(page, '/');
+    await settle(page, { route: '/', entrance: true });
+
+    const floor = await floorFrom(page);
+    const apartBy = await page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.position = 'absolute';
+      probe.style.inlineSize = 'var(--s-lg)';
+      document.body.append(probe);
+      const resolved = probe.getBoundingClientRect().width;
+      probe.remove();
+      return resolved;
+    });
+    expect(apartBy, 'the probe resolved --s-lg to nothing, so the comparison below is vacuous').toBeGreaterThan(0);
+
+    const directoryRows = page.locator('.suite-directory__row');
+    const rowCount = await directoryRows.count();
+    expect(rowCount, 'the directory renders no row on /, so this case measures nothing').toBeGreaterThan(0);
+
+    const wrong: string[] = [];
+    let pairs = 0;
+
+    for (let index = 0; index < rowCount; index += 1) {
+      const links = directoryRows.nth(index).locator('a[href]');
+      // The Hub's own row carries one destination, `You are here` having replaced the other. A row
+      // with nothing to overlap is not a failure of this clause.
+      if ((await links.count()) < 2) continue;
+
+      const first = await links.nth(0).boundingBox();
+      const second = await links.nth(1).boundingBox();
+      if (!first || !second) {
+        wrong.push(`row ${index} carries a link with no box, so it cannot be hit at all`);
+        continue;
+      }
+      pairs += 1;
+
+      for (const [which, box] of [
+        ['the first', first],
+        ['the second', second],
+      ] as const) {
+        if (box.width < floor || box.height < floor) {
+          wrong.push(
+            `row ${index}: ${which} destination measures ${box.width.toFixed(2)} x ${box.height.toFixed(2)}, ` +
+              `under the floor of ${floor}`
+          );
+        }
+      }
+
+      // The largest separation on either axis. Two boxes that overlap on both axes give a negative
+      // answer, which is what makes "not overlapping" and "far enough apart" one comparison.
+      const measuredApart = Math.max(
+        second.x - (first.x + first.width),
+        first.x - (second.x + second.width),
+        second.y - (first.y + first.height),
+        first.y - (second.y + second.height)
+      );
+      if (measuredApart < apartBy - EDGE_SLACK) {
+        wrong.push(
+          `row ${index}: the two destinations sit ${measuredApart.toFixed(2)} apart on their ` +
+            `separating axis, and --s-lg resolves to ${apartBy.toFixed(2)} here. Two --tap boxes ` +
+            `closer than that can overlap, which makes them one target by touch`
+        );
+      }
+    }
+
+    expect(pairs, 'no directory row carried two destinations, so nothing was compared').toBeGreaterThan(0);
+    expect(
+      wrong,
+      `a Suite Directory row does not carry two independently addressable targets:\n${wrong.join('\n')}`
+    ).toEqual([]);
   });
 
   test('the routes that render no Hub markup are excluded by measurement, not by omission', async ({

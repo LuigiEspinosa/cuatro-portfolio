@@ -1,95 +1,55 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import ProjectsPage from '../page';
-import { applications, renderedApplications } from '@/lib/registry';
+import { renderedApplications } from '@/lib/registry';
 
 /**
- * `/projects` over the published Registry (Story 2.7).
+ * `/projects` over the Suite Directory (Story 2-9, rewritten from the Story 2-7 card-grid file).
  *
- * The route swapped its data source and nothing else, so this asserts the wiring: the cards are the
- * entries the Registry marks rendered (FR-35), each link resolves to the field the entry declares,
- * and the hero is told how many there are. What those entries say is not this file's business.
+ * The route swapped what it renders and nothing else, so this asserts the wiring: the same
+ * component the homepage mounts, the hero still told how many entries there are, and the directory
+ * outside `Container` rather than inside it. **What the directory itself renders is
+ * `components/organisms/SuiteDirectory/__tests__` business**, and duplicating those cases here
+ * would put the same claim in two files that could disagree.
  *
  * `ProjectsHero` is mocked because it mounts a WebGL canvas, which jsdom has no renderer for. Its
- * one prop is asserted here and the component's own file asserts that it paints it. `ProjectCard`
- * renders for real, so a card that stopped emitting a link fails here and not only in its own file.
+ * one prop is asserted here and the component's own file asserts that it paints it. The directory
+ * renders for real and reads the real Registry: mocking `@/lib/registry` to make it render would
+ * leave the wiring this file exists to check unproven.
  *
- * Cards are found through their own `<h2>` rather than by text lookup: the schema does not make
- * `name` unique, so two entries could legitimately share one and a bare `getByText` would throw on
- * valid data.
+ * The route is not deleted. Story 2-14 redirects it, at which point the two mount points collapse
+ * to one.
  */
-
-vi.mock('gsap', () => {
-  const gsapMock = {
-    context: vi.fn((_fn: (ctx: unknown) => void) => {
-      _fn({});
-      return { revert: vi.fn() };
-    }),
-    from: vi.fn(),
-    registerPlugin: vi.fn(),
-  };
-  return { gsap: gsapMock, default: gsapMock };
-});
-
-vi.mock('gsap/ScrollTrigger', () => ({ ScrollTrigger: { update: vi.fn() } }));
-
-vi.mock('@/hooks/useReduceMotion', () => ({ useReduceMotion: () => false }));
 
 vi.mock('@/components/organisms/ProjectsHero/ProjectsHero', () => ({
   ProjectsHero: ({ count }: { count: number }) => <div data-testid='projects-hero'>{count}</div>,
 }));
 
-/** The rendered cards, in document order, so a case can index them against the Registry. */
-const cards = (container: HTMLElement) => [...container.querySelectorAll<HTMLElement>('.projects-grid > li article')];
-
 describe('the projects route', () => {
-  it('renders one card per rendered entry, in Registry order', () => {
+  it('renders the Suite Directory, one row per rendered entry', () => {
     const { container } = render(<ProjectsPage />);
-    const rendered = cards(container);
-    expect(rendered.length).toBe(renderedApplications.length);
-    expect(rendered.length).toBeGreaterThan(0);
-    expect(rendered.map((card) => card.querySelector('h2')?.textContent)).toEqual(
-      renderedApplications.map((application) => application.name)
-    );
-  });
-
-  it('gives each card the entry name, description and tech list', () => {
-    const { container } = render(<ProjectsPage />);
-    cards(container).forEach((card, index) => {
-      const application = renderedApplications[index];
-      expect(within(card).getByRole('heading', { level: 2 })).toHaveTextContent(application.name);
-      expect(within(card).getByText(application.description)).toBeInTheDocument();
-      for (const technology of application.tech) {
-        expect(within(card).getByText(technology)).toBeInTheDocument();
-      }
-    });
-  });
-
-  it('links each card to the source and the live hostname the entry declares', () => {
-    const { container } = render(<ProjectsPage />);
-    cards(container).forEach((card, index) => {
-      const application = renderedApplications[index];
-      expect(within(card).getByRole('link', { name: /github/i })).toHaveAttribute('href', application.source);
-      if (application.live) {
-        expect(within(card).getByRole('link', { name: /live/i })).toHaveAttribute('href', application.live);
-      } else {
-        expect(within(card).queryByRole('link', { name: /live/i })).not.toBeInTheDocument();
-      }
-    });
-  });
-
-  it('renders no entry the Registry holds back', () => {
-    const { container } = render(<ProjectsPage />);
-    const shown = new Set(renderedApplications.map((application) => application.id));
-    const held = applications.filter((application) => !shown.has(application.id));
-    expect(held.length, 'every committed entry is rendered, so this case proves nothing today').toBeGreaterThan(0);
-    const headings = cards(container).map((card) => card.querySelector('h2')?.textContent);
-    for (const application of held) {
-      expect(headings, `${application.id} is not rendered by FR-35 and must not appear`).not.toContain(application.name);
-    }
+    const rows = container.querySelectorAll('.suite-directory__row');
+    expect(rows.length, 'the route renders no directory row').toBeGreaterThan(0);
+    expect(rows.length).toBe(renderedApplications.length);
+    expect(screen.getByRole('heading', { level: 2, name: 'The Suite' })).toBeInTheDocument();
   });
 
   it('tells the hero how many entries it rendered', () => {
     render(<ProjectsPage />);
     expect(screen.getByTestId('projects-hero')).toHaveTextContent(String(renderedApplications.length));
+  });
+
+  it('renders no card grid, the component the grid was replaced by drawing rows', () => {
+    const { container } = render(<ProjectsPage />);
+    expect(container.querySelector('.projects-grid')).toBeNull();
+  });
+
+  it('keeps the directory outside Container, which the directory pads for itself', () => {
+    // `container.scss:2-4` is `width: min(80%, 1920px)`, which leaves 288px of content at 360px and
+    // is what `ops/known-violations.md:399` blames for the hero overflow beside it. jsdom applies
+    // no stylesheets, so this is asserted on the tree rather than on a measurement.
+    const { container } = render(<ProjectsPage />);
+    const directory = container.querySelector('.suite-directory');
+    expect(directory, 'the route renders no directory').not.toBeNull();
+    expect(directory?.closest('.container'), 'the directory is inside Container').toBeNull();
   });
 });

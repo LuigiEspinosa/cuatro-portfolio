@@ -410,6 +410,8 @@ component stylesheet changed for this**. That is what reconciles `epics.md:1831-
 per call site across its fifteen", with `epics.md:1836`, "every one of the fifteen component
 stylesheets keeps working with no edit", which otherwise read as contradictory.
 
+**As Story 1-18 wrote it**, four scoped selectors in two blocks:
+
 ```scss
 :root { --accent-dim: var(--token-accent-muted); }        // ornament, 11 of 15
 .work-item::before,                                        // repainted at [data-open='true']
@@ -418,8 +420,22 @@ stylesheets keeps working with no edit", which otherwise read as contradictory.
 .project-card__tech li { --accent-dim: var(--token-accent-muted); }  // inherits the card, is ornament
 ```
 
-The counter-scope on `.project-card__tech li` is needed because a chip inherits from the card it
-sits in. Without it, the card's boundary value would reach a decorative fill.
+The counter-scope on the card's tech chips was needed because a chip inherits from the card it sits
+in. Without it, the card's boundary value would have reached a decorative fill.
+
+**As it stands since 2026-09-06**, two scoped selectors in one block:
+
+```scss
+:root { --accent-dim: var(--token-accent-muted); }        // ornament, 10 of 12
+.work-item::before,                                        // repainted at [data-open='true']
+.error-page__back { --accent-dim: var(--token-border-interactive); }
+```
+
+Story 2-9 replaced the `/projects` card grid with the Suite Directory and deleted `ProjectCard.scss`
+whole, which took the card and its chips with it. The counter-scope went with them and is not
+missing: `.work-item::before` declares on a **pseudo-element**, and a sibling does not inherit
+through one, so `.work-item__tech li` reads the `:root` ornament value directly and there is
+nothing to take back off it.
 
 **The rule that decides a site**, stated so it can be falsified: a declaration is a **boundary** a
 person reads state from when some selector repaints that same property under `:hover`,
@@ -449,6 +465,17 @@ the fifteen files and its neighbouring state rules.
 row would simply loop less. All fifteen are read on the real element in a real browser by
 `tests/e2e/anchor-aliases.pw.ts`, for the property that call site declares, and compared against
 the assigned role read through a probe in the same page.
+
+**Twelve since 2026-09-06, and the table above is kept as the Story 1-18 reading rather than
+rewritten.** Story 2-9 replaced the `/projects` card grid with the Suite Directory and deleted
+`ProjectCard.scss` whole, taking the two boundary rows (`:28`, `:29`) and the one ornament row
+(`:66`) with it. The counter-scope on the card's tech chips went with them, so `app/app.scss` now
+scopes `--accent-dim` on two selectors rather than four, in one block rather than two:
+`.work-item::before` and `.error-page__back`, both boundaries. The chips that still read the
+ornament value are `.work-item__tech li`, which inherits from `:root` because the surviving scope
+declares on a pseudo-element and a sibling does not inherit through one. The counts in
+`tests/e2e/anchor-aliases.pw.ts` moved in the same commit: twelve call sites, two boundaries, ten
+ornament, and two `--monument-regular` sites rather than three.
 
 **One row is read in a second browser context at 1024 wide**, and it is worth writing down rather
 than discovering later. `HomeLayout.scss:154` is the desktop `border-right` on the contact links.
@@ -484,6 +511,9 @@ like an oversight.** `contracts/fonts.css:19` publishes the display face at `fon
 Its three call sites (`WorkItem.scss:52` and `ProjectCard.scss:40` at `font-weight: 500`,
 `error-page.scss:40` at the initial `400`) request a weight below that range, which the variable
 face clamps to 700, which is exactly the `--f-display` plus `--w-bold` the mapping assigns them.
+**Two since 2026-09-06**: Story 2-9 deleted `ProjectCard.scss` with the component it styled, and
+`tests/e2e/anchor-aliases.pw.ts` moved its `DISPLAY_REGULAR_SITES` table from three rows to two in
+the same commit. The argument is unchanged for the two that remain.
 
 **Those four lines are the only place outside `app/app.scss` that names a contract role**, and the
 consumer scan in `app/__tests__/anchor-contract.test.ts` is written to say exactly that rather
@@ -521,6 +551,8 @@ below a floor. `.lighthouserc.js:5-15` asserts accessibility at 0.95 severity er
 
 **The chip row, in full, because it is the one the rest of this table would let a reader miss.**
 `ProjectCard.scss:66` and `WorkItem.scss:144` set `background: var(--accent-dim)` on a tech chip
+(the first of those was deleted by Story 2-9 on 2026-09-06; the measurement below is the reading
+taken when both existed and the surviving half is `WorkItem.scss:144`)
 and `color: var(--light-gray-color)` on its label. Before this commit `--accent-dim` was
 `rgba(91, 33, 182, 0.22)`, so the chip barely lifted the `#0a000f` ground behind it and the label
 kept most of its 10.14:1. Both token roles are opaque, so the fill now sits at the ornament role's
@@ -614,10 +646,10 @@ family the contract is free to retune under a MINOR bump. Nothing else in that f
 |---|---|
 | An alias in `app/app.scss` is retargeted onto a different role | `app/__tests__/anchor-contract.test.ts` fails naming the property, the role it now names and the role `epics.md:1821-1836` assigns it. **The mapping is pinned row by row rather than as a set**: an earlier version pinned only the set of ten roles and asserted each property named some member of it, under which swapping `--light-gray-color` and `--gray-color` onto each other's roles passed every gate in both halves. The browser half fails too, on the per-alias comparison |
 | A component stylesheet starts reading a token role directly | The consumer partition fails naming the file and the role. The four weight call sites are the only named exception and they may name `--w-black` and nothing else |
-| A sixteenth `var(--accent-dim)` call site appears under `components/`, or one of the fifteen moves | `tests/e2e/anchor-aliases.pw.ts` counts `var(--accent-dim)` across the component stylesheets **on disk** and compares that per-file count against its table, so a new call site fails naming the file it appeared in. Until that count existed the table was pinned against a literal declared beside it and read no stylesheet at all, and a new call site would have taken the ornament role in silence. The same counter holds `--monument-bold` at four and `--monument-regular` at three. **The counter walks `components/` and only `components/`**, which is where all three sets of call sites live today (**Observed 2026-08-26**, by `git grep` for each of the three over `app`, `components`, `hooks` and `content`). A call site added under `app/`, `hooks/` or `content/` is outside its reach and would take the `:root` role in silence, so this row promises `components/` rather than the repository. The Vitest consumer scan in `app/__tests__/anchor-contract.test.ts` walks all four roots, but it partitions contract names rather than counting Hub-property call sites, so it does not close that gap either |
-| One of the scoped `--accent-dim` selectors is renamed in its component stylesheet | The scope silently stops applying and that call site falls back to the ornament role. Two things catch it: `app/__tests__/anchor-contract.test.ts` requires all four scoped selectors to be present in `app/app.scss` by name, and the per-call-site case in the browser fails naming the file, the line and both values |
+| A thirteenth `var(--accent-dim)` call site appears under `components/`, or one of the twelve moves (fifteen until Story 2-9 deleted `ProjectCard.scss` on 2026-09-06) | `tests/e2e/anchor-aliases.pw.ts` counts `var(--accent-dim)` across the component stylesheets **on disk** and compares that per-file count against its table, so a new call site fails naming the file it appeared in. Until that count existed the table was pinned against a literal declared beside it and read no stylesheet at all, and a new call site would have taken the ornament role in silence. The same counter holds `--monument-bold` at four and `--monument-regular` at two (three until Story 2-9). **The counter walks `components/` and only `components/`**, which is where all three sets of call sites live today (**Observed 2026-08-26**, by `git grep` for each of the three over `app`, `components`, `hooks` and `content`). A call site added under `app/`, `hooks/` or `content/` is outside its reach and would take the `:root` role in silence, so this row promises `components/` rather than the repository. The Vitest consumer scan in `app/__tests__/anchor-contract.test.ts` walks all four roots, but it partitions contract names rather than counting Hub-property call sites, so it does not close that gap either |
+| One of the scoped `--accent-dim` selectors is renamed in its component stylesheet | The scope silently stops applying and that call site falls back to the ornament role. Two things catch it: `app/__tests__/anchor-contract.test.ts` pins the scoped selectors present in `app/app.scss` as an exact sorted array, two of them since Story 2-9 and four before it, and the per-call-site case in the browser fails naming the file, the line and both values |
 | A `font-weight` line is removed from one of the four call sites | That site computes `400` and the weight assertion fails naming it. This is the exact regression the four lines exist to prevent |
-| `contracts/fonts.css` republishes the display face with a lower bound at or below 500 | The clamp `--monument-regular` relies on stops happening, and `.error-page__title` and `.project-card h2` quietly stop being bold. `tests/e2e/anchor-aliases.pw.ts` parses the published range and asserts its lower bound is above the heaviest weight those three call sites request, so this fails as a named precondition rather than as a silent lightening on two routes no screenshot covers |
+| `contracts/fonts.css` republishes the display face with a lower bound at or below 500 | The clamp `--monument-regular` relies on stops happening, and `.error-page__title` and `.work-item__company` quietly stop being bold. `tests/e2e/anchor-aliases.pw.ts` parses the published range and asserts its lower bound is above the heaviest weight those call sites request, so this fails as a named precondition rather than as a silent lightening on routes no screenshot covers. The third site named here until 2026-09-06 was the card heading, deleted with its component by Story 2-9 |
 | `--accent-glow`, `--hero-height` or either Confillia name is aliased or deleted | The literals case fails naming the property, and whichever open question holds it (O-11, O-6, UX-DR12) has been closed without being recorded |
 | `next.config.js` stops redirecting `/cv` and `/recommendation` | The route sweep's redirect pin fails, and the corrected body-ground table above is stale: those two routes would become surfaces the base rule paints |
 | The contract retunes a role's value under a MINOR bump | **The blocking `rendered-output` job fails, and that is new as of this story.** Every assertion is still read from the role rather than restated, so none of those fail. The committed baseline PNG is the exception: a baseline is a restated pixel value, and step 2 is what coupled it to the contract. Before this commit the Hub painted cybercore literals and a retune moved nothing in the frame; after it, `--c-ink`, `--c-accent`, `--c-line-strong`, `--c-accent-quiet` and `--f-display` all reach `/work`, against a `maxDiffPixelRatio` of 0.001, which is 288 of 288,000 pixels. A retune is then case 1 of `ops/rendered-output-harness.md` § `When regenerating is legitimate` and the baseline is regenerated deliberately by the story that takes the bump. The `rgb(...)` column and the contrast table above go stale at the same moment and are re-measured by the method each states |

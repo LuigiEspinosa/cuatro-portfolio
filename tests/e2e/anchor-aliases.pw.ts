@@ -11,10 +11,10 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  * claim about what the Hub *resolves*, and almost none of it is visible to a screenshot:
  *
  *  1. **An alias that resolves to the wrong role** paints a plausible violet either way.
- *  2. **`--accent-dim` doing two jobs.** It is ornament at eleven of its fifteen call sites and
- *     a boundary a person reads state from at the other four, so a single global alias drops the
+ *  2. **`--accent-dim` doing two jobs.** It is ornament at ten of its twelve call sites and
+ *     a boundary a person reads state from at the other two, so a single global alias drops the
  *     boundary uses below the 3:1 floor AD-19 asserts while looking entirely reasonable. Each of
- *     the fifteen is read on its real element here, for the property that call site declares.
+ *     the twelve is read on its real element here, for the property that call site declares.
  *  3. **The alias trap.** `--monument-bold` baked its weight into the family name
  *     `MonumentExtended-Bold`. A family alias cannot carry that, so `font-weight` is set by hand
  *     beside `font-family` at the four call sites **in the same commit**, and only then read.
@@ -124,7 +124,7 @@ const ROUTES = ['/', '/cv', '/work', '/projects', '/recommendation', '/celeste',
 
 /**
  * A path the Hub does not route, which renders `app/not-found.tsx` through the same root layout
- * and the same `Body`. Two of the fifteen `--accent-dim` call sites and one `--monument-bold`
+ * and the same `Body`. Two of the twelve `--accent-dim` call sites and one `--monument-bold`
  * call site live only here.
  */
 const NOT_FOUND = '/a-route-that-does-not-exist';
@@ -225,7 +225,7 @@ const probeRoleColours = async (page: Page, names: readonly string[]): Promise<R
 /**
  * The computed value of `property` on a **pseudo-element** of the first match for `selector`.
  *
- * `computedStyleValue` in the harness reads the element itself, and two of the fifteen
+ * `computedStyleValue` in the harness reads the element itself, and two of the twelve
  * `--accent-dim` call sites are on `::before` (`WorkItem.scss:12` and `:126`). Rather than widen
  * the harness, this reads the pseudo-element here, with the same two rules the harness holds to:
  * it names what it was asked for in any failure, and it never returns a value that could compare
@@ -342,10 +342,16 @@ interface CallSite {
 }
 
 /**
- * All fifteen, counted 2026-08-26 by `git grep -o -- "var(--accent-dim)" -- components`.
+ * All twelve, counted 2026-09-06 by `git grep -o -- "var(--accent-dim)" -- components`.
  *
- * Four are boundaries and eleven are ornament, which is what makes a single global alias unable
+ * Two are boundaries and ten are ornament, which is what makes a single global alias unable
  * to pass this case.
+ *
+ * **Fifteen at Story 1-18, twelve now.** Story 2-9 deleted `ProjectCard.scss` whole when the Suite
+ * Directory replaced the card grid, taking two boundary rows (the card's top and left edges) and
+ * one ornament row (its tech-chip fill) with it. The counts below moved in the same commit,
+ * because a table pinned at fifteen against a tree holding twelve fails as a missing call site,
+ * which is the opposite of what happened.
  */
 const CALL_SITES: readonly CallSite[] = [
   // A static rule beside a non-interactive label. Nothing repaints it.
@@ -377,19 +383,6 @@ const CALL_SITES: readonly CallSite[] = [
   // A fill.
   { at: 'WorkItem.scss:144', route: '/work', selector: '.work-item__tech li', property: 'background-color', verdict: 'ornament' },
 
-  // `ProjectCard.scss:34-37` repaints `border-left-color` on hover. Both edges of one box read as
-  // one boundary, so they take one value.
-  { at: 'ProjectCard.scss:28', route: '/projects', selector: '.project-card', property: 'border-top-color', verdict: 'boundary' },
-  { at: 'ProjectCard.scss:29', route: '/projects', selector: '.project-card', property: 'border-left-color', verdict: 'boundary' },
-  // A fill, counter-scoped back off the card because a chip inherits from the card it sits in.
-  {
-    at: 'ProjectCard.scss:66',
-    route: '/projects',
-    selector: '.project-card__tech li',
-    property: 'background-color',
-    verdict: 'ornament',
-  },
-
   // `error-page.scss:66-69` repaints `border-left-color` on hover.
   { at: 'error-page.scss:59', route: NOT_FOUND, selector: '.error-page__back', property: 'border-left-color', verdict: 'boundary' },
 
@@ -418,8 +411,8 @@ const CALL_SITES: readonly CallSite[] = [
   { at: 'WorkHero.scss:8', route: '/work', selector: '.work-hero', property: 'border-bottom-color', verdict: 'ornament' },
 ];
 
-const CALL_SITE_COUNT = 15;
-const BOUNDARY_COUNT = 4;
+const CALL_SITE_COUNT = 12;
+const BOUNDARY_COUNT = 2;
 
 /** The four `--monument-bold` call sites, each on the route that renders it. */
 const WEIGHT_SITES = [
@@ -435,23 +428,25 @@ const WEIGHT_SITE_COUNT = 4;
 const WEIGHT_ROLE = '--w-black';
 
 /**
- * The three `--monument-regular` call sites, and the `font-weight` each one asks for.
+ * The two `--monument-regular` call sites, and the `font-weight` each one asks for.
  *
  * `DESIGN.md` § The mapping assigns them `--f-display` plus `--w-bold`, and `app/app.scss` gets
  * there without a hand edit by relying on the variable face **clamping** a request below its
  * published range up to the range's lower bound. That is an argument, and the premise it rests on
  * is a value in `contracts/fonts.css` that a MINOR bump is free to change. Republished as
- * `400 800`, `.error-page__title` renders at 400 and `.project-card h2` at 500, two of these three
+ * `400 800`, `.error-page__title` renders at 400 and `.work-item__company` at 500, both of these
  * stop being bold, and nothing else in this story reacts: the alias comparison reads `:root`
- * token streams, `WEIGHT_SITES` never visits these selectors, and the screenshot covers neither
- * `/projects` nor the 404. So the clamp is asserted as a precondition below rather than argued.
+ * token streams, `WEIGHT_SITES` never visits these selectors, and the screenshot masks neither
+ * heading. So the clamp is asserted as a precondition below rather than argued.
  *
- * **No `font-weight` line is added at these three.** The acceptance criteria name four call sites
+ * **Three at Story 1-18, two now.** Story 2-9 deleted `ProjectCard.scss` with the component it
+ * styled, and the card heading at `:40` was the third.
+ *
+ * **No `font-weight` line is added at these.** The acceptance criteria name four call sites
  * and these are not among them.
  */
 const DISPLAY_REGULAR_SITES = [
   { at: 'WorkItem.scss:52', route: '/work', selector: '.work-item__company', requests: 500 },
-  { at: 'ProjectCard.scss:40', route: '/projects', selector: '.project-card h2', requests: 500 },
   // No `font-weight` of its own, so it asks for the initial 400.
   { at: 'error-page.scss:40', route: NOT_FOUND, selector: '.error-page__title', requests: 400 },
 ] as const;
@@ -487,7 +482,7 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
 /**
  * Run `read` against `/` in a second context 1024 wide.
  *
- * The project pins 360 (AD-19's floor), and one of the fifteen call sites is a rule that only
+ * The project pins 360 (AD-19's floor), and one of the twelve call sites is a rule that only
  * applies above 767px. Opening a context is deliberate and says so, on the pattern
  * `tests/e2e/contract-anchor.pw.ts` set for its wide-viewport and no-preference reads.
  */
@@ -535,10 +530,10 @@ test('parses a real alias layer, so every case below measures something', () => 
   // could be satisfied by one value and would prove nothing.
   expect(CONTRACT.get(ORNAMENT), `${ORNAMENT} and ${BOUNDARY} are declared the same`).not.toBe(CONTRACT.get(BOUNDARY));
 
-  // The call-site table, pinned on both counts. Eleven ornament and four boundary is what makes a
+  // The call-site table, pinned on both counts. Ten ornament and two boundary is what makes a
   // single global alias unable to pass, and a table that lost a row would simply loop less.
-  expect(CALL_SITES.length, 'the --accent-dim table no longer carries fifteen call sites').toBe(CALL_SITE_COUNT);
-  expect(CALL_SITES.filter((site) => site.verdict === 'boundary').length, 'the four boundary sites moved').toBe(
+  expect(CALL_SITES.length, 'the --accent-dim table no longer carries twelve call sites').toBe(CALL_SITE_COUNT);
+  expect(CALL_SITES.filter((site) => site.verdict === 'boundary').length, 'the two boundary sites moved').toBe(
     BOUNDARY_COUNT
   );
   expect(new Set(CALL_SITES.map((site) => site.at)).size, 'two rows name the same call site').toBe(CALL_SITE_COUNT);
@@ -549,9 +544,9 @@ test('parses a real alias layer, so every case below measures something', () => 
   // site is, not just that the total moved.
   //
   // Non-empty and carrying the files the tables name, rather than pinned at a literal count of
-  // stylesheets under `components/`: that literal read as though it were the fifteen consumers of
-  // the Hub's properties, which is a different fifteen, and it would have to move for any
-  // unrelated component added. A basename collision, which is what would actually drop call sites
+  // stylesheets under `components/`: that literal read as though it were the count of consumers of
+  // the Hub's properties, which is a different set, and it would have to move for any unrelated
+  // component added. A basename collision, which is what would actually drop call sites
   // out of these counts, is refused where the map is built.
   expect(COMPONENT_STYLESHEETS.size, 'no component stylesheet was read, so the counts below are vacuous').toBeGreaterThan(
     0
@@ -580,7 +575,7 @@ test('parses a real alias layer, so every case below measures something', () => 
 
   expect(
     sortedEntries(callSitesOf('--accent-dim')),
-    `the --accent-dim call sites on disk are not the fifteen this file tables. A call site missing ` +
+    `the --accent-dim call sites on disk are not the twelve this file tables. A call site missing ` +
       `from the table silently takes the :root ornament role, and if it is a boundary it falls below ` +
       `the 3:1 floor AD-19 asserts with every case here green`
   ).toEqual(sortedEntries(tabled(CALL_SITES)));
@@ -593,7 +588,7 @@ test('parses a real alias layer, so every case below measures something', () => 
 
   expect(
     sortedEntries(callSitesOf('--monument-regular')),
-    'the --monument-regular call sites on disk are not the three whose clamp this file checks'
+    'the --monument-regular call sites on disk are not the two whose clamp this file checks'
   ).toEqual(sortedEntries(tabled(DISPLAY_REGULAR_SITES)));
 
   // The parsers, on planted controls, before any empty or agreeing result is read as good news.
@@ -704,7 +699,7 @@ test('the four properties this story must not move still hold their authored lit
   );
 });
 
-test('--accent-dim resolves to the role its call site earns, at all fifteen', async ({ page, browser }) => {
+test('--accent-dim resolves to the role its call site earns, at all twelve', async ({ page, browser }) => {
   const readSite = async (target: Page, site: CallSite, roles: Record<string, string>): Promise<string | null> => {
     const expected = roles[site.verdict === 'boundary' ? BOUNDARY : ORNAMENT];
     const actual = site.pseudo
@@ -746,8 +741,8 @@ test('--accent-dim resolves to the role its call site earns, at all fifteen', as
   }
 
   // A selector that matched nothing throws out of `computedStyleValue` rather than being skipped,
-  // so this count can only reach fifteen by reading fifteen real elements.
-  expect(read, 'fewer than fifteen call sites were read').toBe(CALL_SITE_COUNT);
+  // so this count can only reach twelve by reading twelve real elements.
+  expect(read, 'fewer than twelve call sites were read').toBe(CALL_SITE_COUNT);
   expect(
     wrong,
     `a --accent-dim call site resolves to the wrong role. Ornament and boundary are two different ` +
@@ -757,7 +752,7 @@ test('--accent-dim resolves to the role its call site earns, at all fifteen', as
 });
 
 test('the pseudo-element read is a real read, not the element beside it', async ({ page }) => {
-  // The planted control for `computedPseudoValue`, which two of the fifteen rows depend on. If
+  // The planted control for `computedPseudoValue`, which two of the twelve rows depend on. If
   // the pseudo argument were dropped, both rows would silently read the originating element
   // instead, and `.work-item` inherits the same `--accent-dim` its `::before` overrides, so the
   // ornament row would still pass and only the boundary row would fail, for an obscure reason.
@@ -839,9 +834,9 @@ test('the display face still clamps --monument-regular up, which is a preconditi
   page,
 }) => {
   // `--monument-regular` gets no hand-set weight, and the reason `app/app.scss` gives is that its
-  // three call sites request a weight below the range the display face publishes and the variable
+  // call sites request a weight below the range the display face publishes and the variable
   // face clamps them up to its lower bound. **That premise lives in `contracts/fonts.css` and a
-  // MINOR bump is free to change it.** Republished as `400 800`, two of these three quietly stop
+  // MINOR bump is free to change it.** Republished as `400 800`, both of these quietly stop
   // being bold and nothing else in this story notices. So the premise is checked here.
   const displayFamily = firstFamily(CONTRACT.get('--f-display') ?? '');
   expect(displayFamily, 'contracts/tokens.css declares no first family for --f-display').not.toBe('');
@@ -861,17 +856,18 @@ test('the display face still clamps --monument-regular up, which is a preconditi
   expect(
     range?.[0] ?? 0,
     `${displayFamily} publishes font-weight ${range?.join(' ')}, and the heaviest weight the ` +
-      `--monument-regular call sites request is ${heaviestRequested}. The mapping assigns those three ` +
+      `--monument-regular call sites request is ${heaviestRequested}. The mapping assigns them ` +
       `the display family at bold and relies on the face clamping the request up to its lower bound. ` +
       `With a lower bound at or below ${heaviestRequested} the clamp stops happening and ` +
       `${DISPLAY_REGULAR_SITES.map((site) => site.at).join(', ')} render lighter than the mapping says, ` +
       `with no other case in this story reacting.`
   ).toBeGreaterThan(heaviestRequested);
 
-  // And the family itself reaches all three, which is the other half of the same claim. The
-  // weight is deliberately not asserted here: these three request 400 and 500 by design and the
+  // And the family itself reaches both, which is the other half of the same claim. The
+  // weight is deliberately not asserted here: these two request 400 and 500 by design and the
   // clamp happens at rasterization, not in the computed value. No font-weight line is added to
-  // these stylesheets, because the acceptance criteria name four call sites and not seven.
+  // these stylesheets, because the acceptance criteria name four call sites and these are not
+  // among them.
   const wrong: string[] = [];
   let read = 0;
 
@@ -889,7 +885,7 @@ test('the display face still clamps --monument-regular up, which is a preconditi
     }
   }
 
-  expect(read, 'fewer than three --monument-regular call sites were read').toBe(DISPLAY_REGULAR_SITES.length);
+  expect(read, 'fewer than two --monument-regular call sites were read').toBe(DISPLAY_REGULAR_SITES.length);
   expect(wrong, `a --monument-regular call site does not resolve the display family:\n${wrong.join('\n')}`).toEqual([]);
 });
 
