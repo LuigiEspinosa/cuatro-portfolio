@@ -2,12 +2,14 @@ import { render, screen, within } from '@testing-library/react';
 import { SuiteDirectory, SuiteDirectoryRow } from '../SuiteDirectory';
 import {
   HUB_ORIGIN,
+  REGISTRY_STATUSES,
   applications,
   groupByFamily,
   isCurrentOrigin,
   orderByStatus,
   renderedApplications,
   type RegistryEntry,
+  type RegistryStatus,
 } from '@/lib/registry';
 
 /**
@@ -30,8 +32,12 @@ import {
  * see is the markup: which entries are drawn, in what order, with what strings, and where each
  * link points.
  *
- * **The Status mark's three structural axes are rendered here and asserted by Story 2-10**, which
- * depends on this one. Nothing below reads a border, a dash or a dot.
+ * **The Status mark's three structural axes are rendered here and Story 2-10 asserts them, split
+ * across two suites because they fail in two independent places.** Which values emit a dot is
+ * markup, is this file's, and is the last block below. Whether the border is solid, dashed or
+ * absent, and whether the dot is actually painted, are the stylesheet's and are
+ * `tests/e2e/status-mark.pw.ts`. Asserting the painted half here would mean this file inventing a
+ * dot for the three values that never render, which makes the test the author of what it asserts.
  *
  * Rows are found through their own heading rather than by text lookup: the schema does not make
  * `name` unique, so two entries could legitimately share one and a bare `getByText` would throw on
@@ -349,5 +355,106 @@ describe('a Complete entry, which the committed Registry does not hold', () => {
     const { container } = drawRow({ ...finished, status: 'Live' });
     expect(container.querySelector('.suite-directory__live')).toBeNull();
     expect(container.querySelectorAll('a[href=""]')).toHaveLength(0);
+  });
+});
+
+describe("the Status mark's dot, which is the axis this file can see (Story 2-10)", () => {
+  /**
+   * **Axis 1, the half that is markup.** `DESIGN.md:305-314` makes the dot the load-bearing
+   * element of the taxonomy: without it `Live` and `Complete` are both `1px solid` and sit
+   * **1.13:1 apart in greyscale**, so the whole distinction would be the word. AD-19 says an
+   * implementation that drops the dot breaks FR-7 while appearing to satisfy it, and this is where
+   * that is caught, because dropping it is an edit to `SuiteDirectory.tsx:96` rather than to a
+   * stylesheet.
+   *
+   * **Absent, never hidden.** The three other values emit no element at all. A dot rendered and
+   * then hidden in CSS would satisfy any check written against what a reader sees while leaving a
+   * node in the accessibility tree and one stylesheet edit away from reappearing on `Archived`.
+   *
+   * The four values come from `REGISTRY_STATUSES` rather than a list written here, so a fifth
+   * status added to the schema arrives in this loop instead of being silently unasserted.
+   */
+  const marked = (status: RegistryStatus, live?: string): HTMLElement => {
+    const { container } = render(
+      <ul>
+        <SuiteDirectoryRow
+          entry={{
+            id: 'probe',
+            name: 'Probe',
+            description: 'One sentence about the thing itself.',
+            status,
+            tech: ['TypeScript'],
+            source: 'https://github.com/LuigiEspinosa/probe',
+            demo: 'none',
+            identity: 'none',
+            ...(live === undefined ? {} : { live }),
+          }}
+        />
+      </ul>
+    );
+    const mark = container.querySelector<HTMLElement>('.suite-directory__status');
+    expect(mark, `a ${status} row draws no Status mark at all`).not.toBeNull();
+    return mark as HTMLElement;
+  };
+
+  /** The default pairing: only `Live` carries a hostname, as AD-5 and the schema require. */
+  const usual = (status: RegistryStatus): HTMLElement =>
+    marked(status, status === 'Live' ? 'https://probe.cuatro.dev' : undefined);
+
+  it('loops over the exported taxonomy, which lib/__tests__/registry.test.ts holds to the schema', () => {
+    // This file loops `REGISTRY_STATUSES` rather than a list of its own, so a fifth value arrives
+    // in every case below. What makes that list trustworthy is asserted elsewhere and deliberately
+    // not restated here: `lib/__tests__/registry.test.ts` compares it against the `status` enum in
+    // `contracts/registry.schema.json`, so this case pins the shape it depends on and no more.
+    expect(REGISTRY_STATUSES.length, 'the taxonomy is empty, so every case below loops zero times').toBeGreaterThan(0);
+    expect(REGISTRY_STATUSES).toContain('Live');
+  });
+
+  it.each(REGISTRY_STATUSES)('keys the mark on data-status for %s, which is the stylesheet seam', (status) => {
+    // The one attribute `SuiteDirectory.scss:192-204` selects on, and the only seam
+    // `tests/e2e/status-mark.pw.ts` is allowed to vary. A mark that stopped carrying it would
+    // leave every browser case planting an attribute nothing reads.
+    expect(usual(status).getAttribute('data-status')).toBe(status);
+  });
+
+  it('draws the dot for Live', () => {
+    expect(usual('Live').querySelector('.suite-directory__dot')).not.toBeNull();
+  });
+
+  it.each(['Complete', 'In progress', 'Archived'] as const)('draws no dot for %s', (status) => {
+    const mark = usual(status);
+    expect(mark.querySelector('.suite-directory__dot'), `a ${status} mark carries a dot`).toBeNull();
+    // The stronger claim: nothing at all besides the word, so the axis cannot come back as a
+    // differently named node that the selector above stops finding.
+    expect(mark.children, `a ${status} mark draws an element beside its text`).toHaveLength(0);
+    expect(mark.textContent).toBe(status);
+  });
+
+  it('follows status and not the presence of a live URL, which the usual fixtures cannot separate', () => {
+    // **The two are confounded in every case above**, because AD-5 gives `live` to `Live` and the
+    // schema forbids it on `Archived`, so the fixtures pair them exactly. A dot re-keyed on
+    // `entry.live` rather than `entry.status` would pass all of them. These two combinations are
+    // the ones that pull the keys apart: `Complete` may carry a hostname (`registry.schema.json:64`
+    // constrains it neither way) and a `Live` entry can arrive without one from a hand-built
+    // object, which `SuiteDirectory.tsx:87` already guards the link against.
+    expect(
+      marked('Complete', 'https://probe.cuatro.dev').querySelector('.suite-directory__dot'),
+      'a Complete entry with a live URL draws a dot, so the dot follows the URL rather than the status'
+    ).toBeNull();
+    expect(
+      marked('Live').querySelector('.suite-directory__dot'),
+      'a Live entry with no live URL draws no dot, so the dot follows the URL rather than the status'
+    ).not.toBeNull();
+  });
+
+  it('hides the dot from assistive technology, it being a 4px square with nothing to read', () => {
+    expect(usual('Live').querySelector('.suite-directory__dot')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('leaves the value readable as text on every one of the four', () => {
+    // A-3 and the no-legend rule: the dot confirms the word, and never replaces it.
+    for (const status of REGISTRY_STATUSES) {
+      expect(usual(status).textContent, `a ${status} mark does not read its own value`).toContain(status);
+    }
   });
 });

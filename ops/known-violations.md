@@ -367,8 +367,11 @@ bring the index row into line.
 ## KV-5: Thirty-six elements sit past the right edge at 360px, clipped rather than absent
 
 **Scope: horizontal overflow at AD-19's width, measured on elements.** This entry is about A-5's
-no-horizontal-scroll half. The Status half of A-5 is not in scope: nothing renders a Status yet and
-Story 2-10 owns it.
+no-horizontal-scroll half. The Status half of A-5 is not in scope and is not in breach either:
+Story 2-10 asserted it on 2026-09-06 in `tests/e2e/status-mark.pw.ts`, and every rendered mark fits
+its own box at 360 with no clipping, no ellipsis and no wrap. The count, the boxes and the routes
+that reading covers are in `ops/status-mark-axes.md`, and are deliberately not restated here: a
+number copied into this entry is a number that rots the day an entry is added to the Registry.
 
 **Why this is a violation and not deferred work.** This register's discriminator (`:38-45`) is the
 ruling, not the severity. An Operator ruling exists, dated, tolerating the breach; a named story

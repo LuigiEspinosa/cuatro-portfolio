@@ -2321,3 +2321,67 @@ status: done
     implementation one. Story 2-25 relocates `list-wheel` onto a `cuatro.dev` subdomain, which
     dissolves the case; if that story moves out, this wants deciding on its own.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  summary: >-
+    `DESIGN.md:310-314` attributes the 1.13:1 greyscale figure to the `Live` and `Complete` border
+    pair, and the shipped border pair measures 1.773:1. The 1.13 is the text pair, exactly.
+  evidence: |-
+    Measured 2026-09-06 in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 wide, by resolving
+    each computed colour to sRGB through a 1 by 1 canvas and computing WCAG relative-luminance
+    contrast. Borders: `rgb(143, 126, 240)` against `rgb(101, 100, 113)`, **1.773:1**. Text:
+    `rgb(143, 126, 240)` against `rgb(152, 151, 159)`, **1.133:1**. Both readings and the method
+    are recorded in `ops/status-mark-axes.md`.
+
+    The sentence at `DESIGN.md:310-314` reads "If `Live` and `Complete` were distinguished only by
+    border *colour* ... they would sit 1.13:1 apart in greyscale". That number belongs to the text
+    pair as shipped, not the border pair. **The argument is unaffected**: 1.773:1 is still far
+    under 3:1, WCAG 2.1 SC 1.4.11's non-text floor, so neither figure rescues a colour-only
+    distinction and the dot is load-bearing either way. `tests/e2e/status-mark.pw.ts` asserts the
+    bound rather than either number, so nothing depends on which one the prose names.
+
+    Filed rather than fixed because editing `DESIGN.md` is outside Story 2-10 and the design
+    documents are a spine: a value in one is changed deliberately, not as a side effect of a story
+    that was measuring something else.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  summary: >-
+    The Status mark is unasserted under `forced-colors`, where a user stylesheet or a high-contrast
+    mode can override the border colour and the dot's fill together.
+  evidence: |-
+    Story 2-10 asserts the three axes in the screen and print media. `forced-colors` is a third
+    medium with its own rules: it can replace `background-color` on the dot and `border-color` on
+    the mark with system colours, and `forced-color-adjust` governs whether an author may opt out.
+    The dashed and dropped borders survive it, being structural, but the dot is a filled box and a
+    fill is exactly what that mode reassigns.
+
+    No requirement in this plan names `forced-colors`, so this is not a breach of anything: it is a
+    medium nobody has ruled on. `ops/status-mark-axes.md` records it under what the assertion
+    deliberately does not cover, with no owner, rather than booking it to a story that does not
+    exist. Story 2-26, the Hub's focus standard and manual accessibility pass, is the natural place
+    to decide whether the estate makes a claim there at all.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  summary: >-
+    Three Playwright spec files now carry their own copy of `goTo`, `plantStyle` and
+    `EDGE_SLACK = 0.5` instead of importing them from `tests/e2e/harness.ts`.
+  evidence: |-
+    `tests/e2e/harness.ts` exists precisely to hold what more than one spec file needs, and today
+    it exports only `RENDERED_VIEWPORT`, `expectRouteScreenshot`, `computedStyleValue` and
+    `rootCustomPropertyValue`. Meanwhile `EDGE_SLACK = 0.5` is declared with the same value and
+    nearly the same comment in `tests/e2e/hit-target-floor.pw.ts:252`,
+    `tests/e2e/suite-directory.pw.ts:57` and `tests/e2e/status-mark.pw.ts`; `plantStyle` is
+    byte-similar in the last two; `durationMs` is now duplicated between them as well; and each
+    file has its own `goTo` differing only in which selector it waits for.
+
+    The hazard is not the duplication itself but that these are measurement tolerances. Three
+    copies of a slack figure drift, and a spec file whose slack is looser than its neighbours'
+    reports a layout as clean that the others would fail, with nothing anywhere saying the two
+    disagreed.
+
+    Filed rather than fixed because lifting them touches `hit-target-floor.pw.ts`, whose literals
+    `ops/__tests__/hit-target-floor.test.ts` parses as text, and Story 2-10's boundaries put that
+    file off limits. A story that owns the harness can lift all four helpers in one change.
+  status: open

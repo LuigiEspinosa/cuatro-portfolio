@@ -8,10 +8,11 @@ cover.
 **The requirement is A-4**, `EXPERIENCE.md:763`: "Targets at least 44x44px, independently
 addressable, via `min-height` plus `inline-flex`, **measured, not assumed**", binding on FR-3.
 This story implements the measured-not-assumed half of it and the first clause. **A-5**,
-`EXPERIENCE.md:764`, is asserted alongside it, less the Status half, which nothing renders yet and
-Story 2-10 owns. Where this file says "the floor" it means A-4; where it says A-5 it means the
-no-horizontal-scroll half of A-5. **Independently addressable** is the clause of A-4 this story
-does **not** close, and it is filed as such under the stated limits below.
+`EXPERIENCE.md:764`, is asserted alongside it, less the Status half, which Story 2-10 closed on
+2026-09-06 in `tests/e2e/status-mark.pw.ts` and recorded in `ops/status-mark-axes.md`. Where this
+file says "the floor" it means A-4; where it says A-5 it means the no-horizontal-scroll half of
+A-5. **Independently addressable** is the clause of A-4 this story does **not** close, and it is
+filed as such under the stated limits below.
 
 Written during Story 2-8 on **2026-09-06** (ISO 8601 UTC), against baseline commit
 `9f71fba`.
@@ -38,7 +39,7 @@ a seventh job would fail the two suites that pin the job names as an exact set.
 | The route set | Is every route `app/` serves either a swept surface or a declared non-Hub route | **Decision.** Derived from the filesystem, so a route a later story adds cannot go unswept while KV-4 claims every route is covered |
 | The ledger, forwards | Does anything under the floor escape the ledger | **Decision.** An unlisted breach fails the build naming the route, a stable selector and the measured box |
 | The ledger, backwards | Does the ledger still describe the tree | **Decision.** A listed element that now clears the floor fails as a **stale row**; so does a row that has stopped matching **on any one of the routes it lists**; and so does a row that covers a different number of elements than it says. The list can only shrink |
-| A-5 | Does any measured element's right **or left** edge sit outside the viewport at 360 wide | **Decision.** `EXPERIENCE.md:764`, less the Status half, which nothing renders yet and Story 2-10 owns |
+| A-5 | Does any measured element's right **or left** edge sit outside the viewport at 360 wide | **Decision.** `EXPERIENCE.md:764`, less the Status half, which Story 2-10 asserts in `tests/e2e/status-mark.pw.ts` because the mark is not interactive and this sweep never reaches it |
 | The count | Did each surface yield exactly what it is registered to yield | **Decision.** The three per-surface counts are pinned rather than bounded, and the guard is a predicate driven by a standing case with synthetic counts rather than an inline assertion inside the sweep |
 
 **The floor is read, never written.** **Decision.** It comes off `--tap` on `:root` in the
@@ -323,7 +324,7 @@ that covers everything.
 |---|---|---|
 | A plain inline element padded to exactly the floor | It measures 44.00 and passes, as the table above shows. Closing it means asserting something about `display` or about overlap rather than about a box, which is a different predicate from the one AD-19 states | **Decision.** Story 2-8 scope. Story 2-32 asserts the shape (`min-height` plus `inline-flex` plus `padding-inline`) at the surface it rebuilds (`epics.md:3579-3580`) |
 | Non-interactive elements against A-5 | The sweep measures interactive elements, and A-5 is asserted on the right edge of each one. **The Hub does overflow at 360 today, on elements that are not targets**, and that is measured rather than assumed: see the row below | **Decision.** Filed as deferred work. Story 2-9 repaired the stylesheet half; Stories 2-31, 2-33 and 2-14 own the elements that still sit outside the viewport |
-| The Status mark's axes, and Status truncation | Not interactive (`EXPERIENCE.md:351`). The Suite Directory renders a Status from 2026-09-06 and this sweep still does not read one: the three structural axes are a different predicate needing a different instrument | **Decision.** Story 2-10 |
+| The Status mark's axes, and Status truncation | Not interactive (`EXPERIENCE.md:351`), so this sweep never reaches the mark and the three structural axes are a different predicate needing a different instrument. **Closed elsewhere, not still open:** Story 2-10 built that instrument on 2026-09-06 as `tests/e2e/status-mark.pw.ts`, recorded in `ops/status-mark-axes.md`. Nothing moved in this file's ledger or surfaces, because a non-interactive element is outside the floor by property rather than by exemption | **Decision.** Story 2-10, **2026-09-06** |
 | Any viewport other than 360 x 800 | AD-19 states the floor at 360, and a second Playwright project is a change to the harness rather than to this assertion | **Decision.** Story 2-8 scope |
 | Whether a target is reachable by keyboard, or has a focus ring | A different requirement with a different instrument | **Decision.** Story 2-26 |
 | The union of an element and what it paints | `boundingBox()` measures the element's own border box. `.logo a` is the live case: its box is 20px tall and the image inside it is 66px, so the thing a finger actually hits is larger than the thing the floor measures. The floor is deliberately about the element itself (`EXPERIENCE.md:727`), and the row is exempted rather than argued away | **Decision.** Story 2-32 |
@@ -482,6 +483,7 @@ separately at 28 s on a cold runner.
 | Cases in this file | 16 | **Observed 2026-09-06**, after Story 2-9 added the A-4 independently-addressable case. The sweep now measures 53 elements rather than 43, on the same five surfaces |
 | This file inside a whole `pnpm test:e2e` run | **24.6 s** across its fifteen cases, of which the sweep case was **13.7 s** | **Observed 2026-09-06** in the pinned container on the Windows development host, by summing the per-case durations Playwright's list reporter printed. The sweep is five navigations, five hydration waits and 43 elements measured at two round trips each |
 | This file run alone | Playwright total **49.7 s**, of which its fifteen cases were **26.6 s** and the sweep **14.6 s** | **Observed 2026-09-06**, by `pnpm exec playwright test hit-target-floor` in the same container. The gap between the total and the cases is the `pnpm build` the `webServer` performs before the first test, which a whole-suite run pays once for eight spec files rather than for one |
+| Whole `pnpm test:e2e`, ten spec files, 89 tests | **2.0 min**, Playwright's own headline for the run | **Observed 2026-09-06**, same host, after Story 2-10 added `tests/e2e/status-mark.pw.ts` and its eighteen cases. **The `docker run` wall was not timed on this run**, so it is left blank rather than carried over from the row below, which would present a nine-file figure as a ten-file one. An earlier reading of the same file at fifteen cases was 2.2 min, so the spread here is host load rather than the three cases added by review |
 | Whole `pnpm test:e2e`, nine spec files, 71 tests | **1.7 min** and **3.7 min** on two runs of the same tree, with `docker run` walls of **108.8 s** and **229.1 s** | **Observed 2026-09-06**, same host, after Story 2-9 added `tests/e2e/suite-directory.pw.ts` and one case here. The spread is host load, which is the point of recording more than one reading. The row below is the eight-file reading and is kept rather than overwritten |
 | Whole `pnpm test:e2e`, eight spec files, 60 tests | **1 m 41.3 s** by `time` around the command, **1.7 min** as Playwright's own headline for the same run. The `docker run` wall around it was **105.2 s** | **Observed 2026-09-06**, same host. The command covers `pnpm build && pnpm start` plus all sixty tests; the extra four seconds of docker wall are `corepack enable` and `pnpm install --frozen-lockfile` against the warm named volumes. **The image pull is in none of these**: `ops/rendered-output-harness.md` records it separately at 28 s on a cold runner, and that is the figure the `rendered-output` job pays on top |
 
