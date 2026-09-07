@@ -1,4 +1,4 @@
-import { createElement, useEffect } from 'react';
+import { createElement } from 'react';
 import { render, renderHook } from '@testing-library/react';
 import { useReduceMotion } from '../useReduceMotion';
 
@@ -74,8 +74,6 @@ describe('useReduceMotion', () => {
     const Probe = () => {
       const value = useReduceMotion();
       seen.push(value);
-      // A no-op effect, so the component is one React would re-render after mount if state moved.
-      useEffect(() => undefined, []);
       return null;
     };
 
@@ -92,6 +90,9 @@ describe('useReduceMotion', () => {
   });
 
   it('Subscribes to matchMedia changes on mount', () => {
+    // `vi.fn()`, not `vi.fn`. The two cases below carried the factory itself forward from the file
+    // this one replaces, so the hook was calling `addEventListener` on a mock-maker rather than on
+    // a mock and the counterpart assertion passed only because the other spy was real.
     const addEventListener = vi.fn();
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -99,7 +100,7 @@ describe('useReduceMotion', () => {
         matches: false,
         media: '',
         addEventListener,
-        removeEventListener: vi.fn,
+        removeEventListener: vi.fn(),
       }),
     });
     renderHook(() => useReduceMotion());
@@ -113,12 +114,21 @@ describe('useReduceMotion', () => {
       value: vi.fn().mockReturnValue({
         matches: false,
         media: '',
-        addEventListener: vi.fn,
+        addEventListener: vi.fn(),
         removeEventListener,
       }),
     });
     const { unmount } = renderHook(() => useReduceMotion());
     unmount();
     expect(removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+
+  it('answers false rather than throwing where matchMedia does not exist', () => {
+    // A bare jsdom and some embedded webviews have no `matchMedia`. The call sits in a `useState`
+    // initializer, so a throw there is a component that never mounts rather than a caught render
+    // error, and this hook is on every route through four consumers.
+    Object.defineProperty(window, 'matchMedia', { writable: true, value: undefined });
+    const { result } = renderHook(() => useReduceMotion());
+    expect(result.current).toBe(false);
   });
 });

@@ -23,7 +23,11 @@ import { Scene } from '@/components/atoms/Scene/Scene';
  * announcing a wait is the defect. An empty transparent container is the intended state.
  *
  * `tests/e2e/narrative.pw.ts` holds the boundary from the served document, by fingerprint rather
- * than by chunk name, and proves the page whole with this module's request aborted.
+ * than by chunk name, proves the page whole with this module's request aborted, and separately
+ * proves that a `<canvas>` really does mount when the request is allowed through.
+ *
+ * **One export, named.** `GemComponent`'s loader reads `module.GemNarrative`; a default beside it
+ * would let a second import site resolve to a different binding for the same component.
  */
 export function GemNarrative() {
   return (
@@ -35,5 +39,3 @@ export function GemNarrative() {
     </Scene>
   );
 }
-
-export default GemNarrative;

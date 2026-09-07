@@ -1,4 +1,7 @@
+import type { ComponentType, ReactNode } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { render, screen } from '@testing-library/react';
+import dynamic from 'next/dynamic';
 import GemComponent from '../GemComponent';
 
 /**
@@ -6,27 +9,43 @@ import GemComponent from '../GemComponent';
  *
  * **What is not asserted here.** Whether the boundary actually defers anything is a fact about the
  * served document, not about the import graph, and `tests/e2e/narrative.pw.ts` settles it by
- * fetching every script `/` references and scanning for a WebGL fingerprint. A jsdom case reading
- * the import graph would prove the thing that was already true before this story and missed the
- * defect: `GemComponent.tsx:8-10` wrapped `Scene` in `next/dynamic` the whole time while `:5-6`
- * pulled `@react-three/postprocessing` and `ParticleWave` in statically beside it.
+ * fetching every script `/` references and scanning for a WebGL fingerprint. Whether the narrative
+ * then really mounts is also settled there, by looking for a `<canvas>` in a real browser. A jsdom
+ * case reading the import graph would prove the thing that was already true before this story and
+ * missed the defect: `GemComponent.tsx` wrapped `Scene` in `next/dynamic` the whole time while
+ * pulling `@react-three/postprocessing` and `ParticleWave` in statically beside it.
  *
- * What is settled here is the shape the move must not break: both branches of the probe still
- * render, the fallback still carries its image, and neither branch announces a wait.
+ * What is settled here is the shape the move must not break: three probe branches rather than two,
+ * the fallback carrying its image, and neither branch announcing a wait.
  *
- * The mock replaces `next/dynamic` wholesale, which is what keeps jsdom from needing a WebGL
- * context. The mocks for `@/components/atoms/Gem/Gem`, `@react-three/drei` and
- * `@react-three/postprocessing` that stood here before are gone: none of those modules is reachable
- * from this component any more, and a mock for a module nothing imports is how an orphan survives a
- * green suite (`ops/asset-budget.md:180-183` records the same trap).
+ * The `next/dynamic` mock **honours the options object**, which is the point of it. A mock taking
+ * only the loader would discard a `loading:` option silently, and the no-spinner case below would
+ * then pass against exactly the code it exists to forbid.
  */
+interface DynamicOptions {
+  loading?: () => ReactNode;
+  ssr?: boolean;
+}
+
 vi.mock('next/dynamic', () => ({
-  default: () => {
-    const MockNarrative = () => <div data-testid='narrative' />;
+  default: (_loader: unknown, options?: DynamicOptions) => {
+    const MockNarrative = () =>
+      options?.loading ? <>{options.loading()}</> : <div data-testid='narrative' />;
     MockNarrative.displayName = 'MockNarrative';
     return MockNarrative;
   },
 }));
+
+/**
+ * Anything that would tell a visitor to wait.
+ *
+ * Kept character for character identical to the list in `tests/e2e/narrative.pw.ts`, so a spinner
+ * that one sweep would catch cannot slip past the other. Substring matching on `class` throughout,
+ * because `is-loading` and `LoadingRing` are the same defect as `loading`.
+ */
+const ANNOUNCES_A_WAIT =
+  '[role="progressbar"], [role="status"], [aria-busy="true"], [class*="spinner"], ' +
+  '[class*="skeleton"], [class*="loading"], [class*="loader"]';
 
 /** jsdom has no WebGL, so the probe is answered by hand, one branch per block below. */
 const withWebgl = (available: boolean) => {
@@ -34,6 +53,17 @@ const withWebgl = (available: boolean) => {
     .fn()
     .mockReturnValue(available ? ({} as WebGLRenderingContext) : null);
 };
+
+describe('GemComponent before the probe has answered', () => {
+  it('renders an empty container and nothing else, which is what the server emits', () => {
+    // The state the render tree is in on the server and on the first client commit. It matters for
+    // payload rather than for pixels: `next/dynamic` starts its import when the component renders,
+    // so a `<GemNarrative />` here would fetch the whole narrative before anyone knows whether the
+    // device can use it. `renderToStaticMarkup` is the only way to observe this branch, because
+    // Testing Library flushes the probe effect before it hands the tree back.
+    expect(renderToStaticMarkup(<GemComponent />)).toBe('<div id="gem-canvas"></div>');
+  });
+});
 
 describe('GemComponent with WebGL available', () => {
   beforeEach(() => withWebgl(true));
@@ -53,13 +83,26 @@ describe('GemComponent with WebGL available', () => {
     // announcing a wait is the defect. The dynamic import therefore takes no `loading:` option and
     // no `<Suspense>` fallback, and an empty transparent container is the intended state.
     const { container } = render(<GemComponent />);
-    const announcing = container.querySelectorAll(
-      '[role="progressbar"], [role="status"], [aria-busy="true"], .spinner, .skeleton, .loading'
-    );
+    const announcing = [...container.querySelectorAll(ANNOUNCES_A_WAIT)].map((node) => node.outerHTML);
+    expect(announcing, 'the gem announces a wait while the narrative loads').toEqual([]);
+  });
+
+  it('and that sweep fires, measured against a boundary given a loading option', () => {
+    // The control for the case above, and it exercises the mock as well as the selector list: a
+    // `loading:` option reaches the mock, the mock renders it, and the sweep finds it. Before Story
+    // 2-12's review the mock took no options argument, so adding `loading:` to the real component
+    // left both this suite and the browser one green.
+    const WithSpinner = dynamic(() => Promise.resolve(() => null), {
+      loading: () => <div className='spinner' />,
+      ssr: false,
+    }) as ComponentType;
+
+    const { container } = render(<WithSpinner />);
     expect(
-      [...announcing].map((node) => node.outerHTML),
-      'the gem announces a wait while the narrative loads'
-    ).toEqual([]);
+      container.querySelectorAll(ANNOUNCES_A_WAIT).length,
+      'a planted loading option was not seen, so the sweep above reports a clean render for the ' +
+        'wrong reason'
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -76,7 +119,11 @@ describe('GemComponent with no WebGL', () => {
     expect(image, 'the fallback is decoration and needs no name').toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('renders no narrative at all on the fallback path', () => {
+  it('renders no narrative at all, so the chunk is never asked for', () => {
+    // `next/dynamic` issues its import on first render of the returned component. Not rendering it
+    // is therefore the whole of the gate: a device that cannot use the narrative does not download
+    // it. This is the jsdom half of that claim; the browser half is the request ledger in
+    // `tests/e2e/narrative.pw.ts`.
     render(<GemComponent />);
     expect(screen.queryByTestId('narrative')).not.toBeInTheDocument();
   });

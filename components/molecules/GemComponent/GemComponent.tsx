@@ -16,16 +16,24 @@ import dynamic from 'next/dynamic';
 const GemNarrative = dynamic(
   () =>
     import('./GemNarrative')
-      .then((module) => module.GemNarrative)
-      // A chunk that never arrives resolves to a component that draws nothing, so the rest of the
-      // page is untouched. Without this the rejected import reaches React, which hands it to Next's
-      // default error boundary, and a visitor whose connection dropped one request gets an error
-      // page instead of the premise and the Suite Directory. That is the payload independence
-      // `EXPERIENCE.md:951-952` claims and `tests/e2e/narrative.pw.ts` measures by aborting the
-      // request outright. Rendering nothing rather than the 1.75 MB fallback image is deliberate:
-      // the non-3D front door is Story 2-13's, and an empty transparent container is the state this
-      // route is already designed around.
-      .catch(() => () => null),
+      // A module that resolves without the export is as fatal as one that never resolves: React
+      // throws element-type-invalid on `undefined` and Next's default error boundary takes the
+      // route with it. The `??` is the same containment as the `catch` below, one failure earlier.
+      .then((module) => module.GemNarrative ?? (() => null))
+      .catch((error: unknown) => {
+        // Logged rather than swallowed. Without this a genuine regression and a visitor whose
+        // connection dropped one request are indistinguishable, and the suite that asserts no
+        // uncaught error would be certifying the silence rather than the containment.
+        console.error('GemComponent: the narrative chunk failed to load, so the gem is not drawn', error);
+
+        // A chunk that never arrives resolves to a component that draws nothing, so the rest of the
+        // page is untouched. That is the payload independence `EXPERIENCE.md:951-952` claims and
+        // `tests/e2e/narrative.pw.ts` measures by aborting the request outright. Rendering nothing
+        // rather than the 1.75 MB fallback image is deliberate: the non-3D front door is Story
+        // 2-13's, and an empty transparent container is the state this route is already designed
+        // around.
+        return () => null;
+      }),
   { ssr: false }
 );
 
@@ -41,10 +49,19 @@ const GemComponent = () => {
     setWebglAvailable(!!ctx);
   }, []);
 
-  if (webglAvailable === false) {
+  // Three branches, not two, and the middle one is the payload fix. Rendering `<GemNarrative />`
+  // while the probe still answers `null` starts the dynamic import before anyone knows whether the
+  // device can use it, so a visitor with no WebGL would download the whole narrative to draw a
+  // static PNG. An empty container is what the route is designed around anyway, so waiting one
+  // effect costs nothing visible.
+  if (webglAvailable === null) {
+    return <div id='gem-canvas' />;
+  }
+
+  if (!webglAvailable) {
     return (
       <div id='gem-canvas'>
-        {/* Static screenshort shown on devices without WebGL support */}
+        {/* Static screenshot shown on devices without WebGL support */}
         <img src='/assets/home/gem-fallback.png' alt='' aria-hidden='true' />
       </div>
     );
