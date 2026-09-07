@@ -257,6 +257,89 @@ body[id=''] {
   }
 }
 
+// ── The non-3D front door (Story 2-13) ────────────────────────────────────────
+//
+// **The same stacking shape the `max-width: 767px` block above already ships, applied at every
+// width, with the viewport lock released.** Not a second layout: those rules already turn these
+// panels static and put them in reading order, which is exactly what
+// `EXPERIENCE.md:154-169` diagrams for this path. What the modifier adds is the release of
+// `height: 100dvh`, so the hero is as tall as its content and the premise and framework band below
+// it are the first thing after it, and the removal of the gem's box.
+//
+// **It is written once and applied twice, and the second application is the reason it is a mixin.**
+// `prefers-reduced-motion: reduce` is the one trigger of the four that CSS can answer, so it is
+// answered in CSS: that visitor's very first paint is the flat hero, before a single script has
+// run, and nothing flashes at `100dvh` before collapsing. The other three triggers (no WebGL,
+// `saveData`, a slow `effectiveType`) are only knowable from script, so they arrive as the modifier
+// class after hydration. `hooks/useNarrativePath.ts` is where that decision lives; this is only its
+// shape.
+//
+// Both blocks sit last in the file deliberately. Every selector here is one class deep, the same as
+// the `max-width` block it overrides, so order is what decides it.
+
+@mixin flat-hero($container) {
+  #{$container} {
+    height: auto;
+    // The lock, released. Not `min-height: 100dvh`: a floor at the viewport would leave the premise
+    // exactly where the locked hero left it, one scroll down, and this path's whole claim is that
+    // the typographic hero is what the visitor lands on.
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem var(--page-padding) 5rem;
+    gap: 2.5rem;
+  }
+
+  #{$container} .home-panel {
+    position: static;
+    width: 100%;
+
+    &--name {
+      order: 1;
+    }
+
+    // The HUD label is a decorative corner mark for a layout that no longer has corners.
+    &--sys {
+      display: none;
+    }
+
+    &--nav {
+      order: 3;
+    }
+
+    // **Order and nothing else.** Below 768 the block above already turns this panel's links
+    // around, and above it they keep the alignment and the border edge the panel has always had:
+    // nav on the left, contact on the right, which is the panel identity Story 2-29 owns. Restating
+    // the mobile swap here would also plant a thirteenth `--accent-dim` call site, and
+    // `tests/e2e/anchor-aliases.pw.ts` holds the twelve on disk equal to the twelve it tables,
+    // reading the desktop `border-right-color` at 1024 on a reduced-motion context, which is this
+    // path.
+    &--contact {
+      order: 4;
+    }
+  }
+
+  // React renders neither of these on this path at all. This is the pre-hydration half of the same
+  // claim: a reduced-motion visitor's served document still carries both elements, and below 768
+  // both are items in the hero's column, so without this the hero would paint a gem-sized hole and
+  // a control it does not offer, and then collapse them.
+  #{$container} .home-gem,
+  #{$container} .skip-control {
+    display: none;
+  }
+}
+
+@include flat-hero('.home-container--flat');
+
+@media (prefers-reduced-motion: reduce) {
+  @include flat-hero('.home-container');
+}
+
+// The narrowest widths, tightened. **Moved below the two includes above by Story 2-13**, and only
+// moved: the declarations are Story 2-9's and are unchanged. Both includes restate `padding` and
+// `gap` on a selector one class deep, so left where it was this block would have stopped applying
+// to the flat front door and 360 would have been spaced for a wider viewport than it has.
 @media (max-width: 420px) {
   .home-container {
     padding: 1.5rem var(--page-padding) 5rem;

@@ -256,14 +256,21 @@ sibling chain to a fixed point, so an asset named only by a dead asset is dead t
 | Asset | Bytes on disk | Bytes gzipped | Referenced from | Reached | Nature |
 |---|---|---|---|---|---|
 | `environment_D.hdr` | 14,377 | 9,996 | `components/atoms/Gem/Gem.tsx:16`, imported by nothing | **no** | **Observed** |
-| `gem-fallback.png` | 1,755,015 | 1,752,140 | `components/molecules/GemComponent/GemComponent.tsx:28` | yes | **Observed** |
+| `gem-fallback.png` | _deleted 2026-09-07_ (was 1,755,015) | _deleted 2026-09-07_ (was 1,752,140) | **nothing**, the file is gone | **no** | **Observed** |
 | `gem.glb` | 600,008 | 189,403 | `components/atoms/Gem/Gem.tsx:19`, imported by nothing | **no** | **Observed** |
 | `gem.gltf` | 1,826 | 542 | **nothing** | **no** | **Observed** |
 | `gem_data.bin` | 598,968 | 188,827 | `public/assets/home/gem.gltf:91` | **no** | **Observed** |
-| **Total** | **2,970,194** | **2,140,908** |  |  | **Observed** |
-| Reachable from a module something imports | 1,755,015 |  |  |  | **Derived** |
+| **Total** | **1,215,179** (was 2,970,194) | **388,768** (was 2,140,908) |  |  | **Observed** |
+| Reachable from a module something imports | 0 (was 1,755,015) |  |  |  | **Derived** |
 | Reachable from nothing | 1,215,179 |  |  |  | **Derived** |
 | Estimate this replaces | not inspected | not inspected |  |  | **Decision**. `EXPERIENCE.md:947` |
+
+**Amended 2026-09-07 by Story 2-13.** The `gem-fallback.png` row and the three figures under it
+moved because the file was deleted, not because it was re-weighed: it was the only asset here that
+anything imported, so the "reachable from a module something imports" figure is now zero and the
+total is exactly the orphan figure that was already carried below it. The four remaining assets are
+unchanged and still reachable from nothing. Nothing else in this section was re-measured on that
+date.
 
 Components outside `app/` that nothing imports: `components/atoms/Gem/Gem.tsx`,
 `components/atoms/VenomSculpture/VenomSculpture.tsx`. **Observed**, by resolving every `from '...'`,
@@ -282,12 +289,21 @@ named by nothing at all, at another 600,794 bytes.
 different story's risk, and `GemComponent.test.tsx:14` still mocks `@/components/atoms/Gem/Gem`,
 which is how an orphan survives a green suite.
 
-**`gem-fallback.png` is the largest file under `public/`**, at 1,755,015 bytes, and it gzips to
-1,752,140, which is what a PNG does. It is live: `GemComponent.tsx:24-31` renders it when the WebGL
-probe fails. **Observed 2026-08-29**, and the string `gem-fallback` appears in none of the eight
-prerendered documents, because the probe starts at `null` and the server renders the Scene branch. So
-it is in no route total below, and for a visitor without WebGL it is a 1.75 MB image fetched after
-hydration on a path the budget never modelled.
+**`gem-fallback.png` was the largest file under `public/`**, at 1,755,015 bytes, gzipping to
+1,752,140, which is what a PNG does. It was live: `GemComponent.tsx:24-31` rendered it when the WebGL
+probe failed. **Observed 2026-08-29**, and the string `gem-fallback` appeared in none of the eight
+prerendered documents, because the probe started at `null` and the server rendered the Scene branch.
+So it was in no route total below, and for a visitor without WebGL it was a 1.75 MB image fetched
+after hydration on a path the budget never modelled.
+
+**Deleted 2026-09-07 by Story 2-13, and nothing replaced it.** **Observed.** The non-3D front door
+now renders no image at all: `EXPERIENCE.md:172-178` closes Q7 with one artefact rather than two, and
+`:173-176` refuses a still of the 3D scene by name, because a still of a 3D scene reads as a broken
+one. What that visitor gets instead is the typographic hero the same diagram draws, built out of the
+premise block and the framework band that were already on the page. So the worst case this record
+described, 1.75 MB fetched after hydration by exactly the visitor least able to afford it, is now
+zero bytes of image on that path, and `/`'s document total below is unchanged, the file never having
+been in it. `tests/e2e/front-door.pw.ts` asserts the absence on all four triggers of that path.
 
 ## The non-3D path
 
@@ -663,7 +679,8 @@ measurement that covers everything.
 | The tool re-reads everything on every call, and its cost grows with the build | It walks `app/` and `components/` once per asset and once per orphan check, and gzips each chunk once for the build table and again for each document that references it. On this build that is a second or two and nobody notices. On a build with many more routes it would be quadratic in the wrong place. It is a reading run by hand, not a gate on a runner, so the cost is recorded rather than optimised | **Decision.** Story 2-2 scope |
 | No browser was involved | Every figure is a file on disk weighed by a script. Nothing here says what a browser prioritised, what it fetched first, what it fetched at all, or how long any of it took. SM-1 measures Suite Directory interactive, which is a browser measurement this file does not make and does not replace | **Decision.** Story 2-2 scope |
 | A route's figure counts what its document references, and not what the router prefetches next | **Added 2026-09-07.** `/` reads 295,154 and carries no WebGL chunk, which is a true statement about first paint and an incomplete one about a session. `HomeLayout` renders `<Link href='/work'>` and `<Link href='/projects'>`, and the App Router prefetches both route bundles once they are in the viewport, so a homepage visitor's browser does fetch `three` and `three-stdlib` shortly after hydration. Observed in the pinned Playwright container by recording every script request on `/` and subtracting the set the document names. The tool reads prerendered documents and cannot see this; closing the `TorusCanvas` and `TorusKnotCanvas` boundaries would shrink the homepage's real transfer as well as those two routes' | **Observed 2026-09-07.** Filed in `deferred-work.md` as DW-38 |
-| The `/` figure is the document, not the session | 625,823 is what `/` references at first paint. It excludes `gem-fallback.png`, which only a visitor without WebGL fetches, and every route chunk a client-side navigation would pull afterwards | **Decision** |
+| The `/` figure is the document, not the session | 625,823 is what `/` references at first paint. It excluded `gem-fallback.png`, which only a visitor without WebGL fetched, and it excludes every route chunk a client-side navigation would pull afterwards. **Amended 2026-09-07:** the exclusion no longer has a subject. Story 2-13 deleted that file and the non-3D path renders no image at all, so the figure is unchanged and there is no longer an image outside it. What a non-3D visitor now fetches beyond this document is strictly less than what a default-path one does, and `tests/e2e/front-door.pw.ts` measures the difference on all four triggers | **Decision**, amended |
+| `/` is no longer among the prerendered documents this file weighs | **Added 2026-09-07.** Story 2-13 reads the `Save-Data` request header in `app/page.tsx`, on an Operator ruling that a trigger answerable before the document paints must be answered there. `headers()` is a dynamic API, so `/` is server-rendered on demand: the build prints `ƒ /`, `.next/server/app` holds seven documents rather than eight, and this tool, which takes a route's assets from its own prerendered HTML, has no file to read for the homepage. Every `/` figure in this file is therefore the reading of 2026-08-29 and cannot be re-taken by `corepack node ops/asset-budget.mjs` alone; re-measuring it needs a request against a running server, which is how `tests/e2e/narrative.pw.ts` already reads the same document. The tool still runs, refusing only an empty set, and nothing gates on either | **Observed 2026-09-07.** Filed in `deferred-work.md` as DW-50 |
 | Nothing gates on the figures | `.github/workflows/ci.yml` gained no job. Two things here are pinned by `ops/__tests__/asset-budget.test.ts` and cannot drift silently, the three contract-face figures and the fingerprint table, and everything else in this file goes stale invisibly until someone re-runs the tool. Story 2-34 is the gate story | **Decision.** Story 2-2 boundary |
 
 ## What this closes
@@ -671,8 +688,8 @@ measurement that covers everything.
 **`EXPERIENCE.md` open item O-2, "Narrative bundle and asset weight are unmeasured", is closed on
 2026-08-29** by this file, in the way Story 1-2 closed AD-17a in `ops/monitoring.md`: the planning
 artifact is not edited, and the `ops/` record is where the measurement lives. The narrative bundle is
-418,757 gzipped bytes, the narrative assets are 2,970,194 bytes on disk, and both carry their method
-above.
+418,757 gzipped bytes, the narrative assets were 2,970,194 bytes on disk and are 1,215,179 since
+Story 2-13 deleted `gem-fallback.png` on 2026-09-07, and both carry their method above.
 
 `EXPERIENCE.md:946-947` still reads "Unmeasured" and `:961-964` still calls the weight open, and
 correcting that wording is a planning-artifact edit this story is not permitted to make. It is

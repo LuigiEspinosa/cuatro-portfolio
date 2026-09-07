@@ -188,11 +188,11 @@ const goTo = async (page: Page, route: string): Promise<void> => {
 /**
  * An init script that makes every WebGL context request answer `null`.
  *
- * `GemComponent`'s probe effect asks a detached `<canvas>` for a `webgl` context and renders the
- * static fallback when there is none, so this is how the fallback path is reached in a browser that
- * does have WebGL. It is the path `filter: brightness(0)` used to black out, which is why the gem's
- * reveal is measured on both. Anchored on the symbol rather than on a line range: this file has
- * already outlived two of its own line citations.
+ * `hooks/useNarrativePath.ts` asks a detached `<canvas>` for a `webgl` context and answers `'flat'`
+ * when there is none, so this is how the non-3D front door is reached in a browser that does have
+ * WebGL. Until Story 2-13 that path rendered a static image of the same scene; it now renders
+ * nothing at all, and the stub is still how the path is reached. Anchored on the symbol rather than
+ * on a line range: this file has already outlived two of its own line citations.
  */
 const NO_WEBGL = `
   const original = HTMLCanvasElement.prototype.getContext;
@@ -359,7 +359,7 @@ test.describe('the narrative is not in what the browser fetches before it can pa
   });
 
   test('and that scan discriminates, measured against the narrative chunk the page then fetches', async ({
-    page,
+    browser,
     request,
     baseURL,
   }) => {
@@ -368,36 +368,45 @@ test.describe('the narrative is not in what the browser fetches before it can pa
     // it. So the same scan is run over the scripts the browser requested that the document did not
     // name, and it must find `three` there. A scan that found nothing anywhere would pass the case
     // above for the wrong reason.
+    //
+    // **On a context that has not asked for reduced motion, since Story 2-13.**
+    // `playwright.config.ts:79` runs every test with `reducedMotion: 'reduce'`, which is one of the
+    // four triggers of the non-3D front door: on that context the narrative is never requested at
+    // all, and this control would have nothing to find. The case above is unaffected, because the
+    // served document is the same on both paths.
     const document = await request.get(new URL(ROUTE, baseURL).href);
     const eager = new Set(documentScriptUrls(await document.text(), baseURL as string));
 
-    const requested: string[] = [];
-    page.on('request', (issued) => {
-      if (issued.resourceType() === 'script') requested.push(issued.url());
+    const found = await withMotion(browser, async (page) => {
+      const requested: string[] = [];
+      page.on('request', (issued) => {
+        if (issued.resourceType() === 'script') requested.push(issued.url());
+      });
+
+      await goTo(page, ROUTE);
+
+      // The dynamic import is issued from an effect after hydration and after the path has been
+      // decided, so the request is not on the navigation's own timeline. Polled rather than slept
+      // through: a narrative that never arrives fails here with a message rather than after a sleep.
+      const onDemand = () => [...new Set(requested)].filter((url) => !eager.has(url));
+      await expect
+        .poll(() => onDemand().length, {
+          timeout: SETTLE_TIMEOUT,
+          message:
+            'the browser fetched no script the document did not already name, so either the narrative ' +
+            'never loads or this control has nothing to measure',
+        })
+        .toBeGreaterThan(0);
+
+      const carrying: string[] = [];
+      for (const url of onDemand()) {
+        const response = await request.get(url);
+        if (response.status() !== 200) continue;
+        const libraries = webglLibrariesIn(await response.text());
+        if (libraries.length > 0) carrying.push(`${url.split('/').pop()} carries ${libraries.join(', ')}`);
+      }
+      return carrying;
     });
-
-    await goTo(page, ROUTE);
-
-    // The dynamic import is issued from an effect after hydration and after the WebGL probe has
-    // answered, so the request is not on the navigation's own timeline. Polled rather than slept
-    // through: a narrative that never arrives fails here with a message rather than after a sleep.
-    const onDemand = () => [...new Set(requested)].filter((url) => !eager.has(url));
-    await expect
-      .poll(() => onDemand().length, {
-        timeout: SETTLE_TIMEOUT,
-        message:
-          'the browser fetched no script the document did not already name, so either the narrative ' +
-          'never loads or this control has nothing to measure',
-      })
-      .toBeGreaterThan(0);
-
-    const found: string[] = [];
-    for (const url of onDemand()) {
-      const response = await request.get(url);
-      if (response.status() !== 200) continue;
-      const libraries = webglLibrariesIn(await response.text());
-      if (libraries.length > 0) found.push(`${url.split('/').pop()} carries ${libraries.join(', ')}`);
-    }
 
     console.log(`narrative: on-demand scripts carrying WebGL:\n${found.join('\n') || '(none)'}`);
 
@@ -415,16 +424,25 @@ const GEM_ONLY_MARKS = WEBGL_MARKS.filter((entry) => entry.library.includes('pos
 /**
  * Load `/` once and report which narrative chunks the browser actually fetched.
  *
- * The wait is on the page reaching a state where the probe has answered (a canvas, or the fallback
- * image) and then on the script request set going quiet, so the two paths this is called on are
- * compared at the same point in their lives rather than at the same number of milliseconds.
+ * The wait is on the page reaching a state where the path has been decided (a canvas on the
+ * narrative path, the flat modifier on the other) and then on the script request set going quiet,
+ * so the two paths this is called on are compared at the same point in their lives rather than at
+ * the same number of milliseconds.
+ *
+ * **The context asks for no reduced motion explicitly.** It is one of Story 2-13's four non-3D
+ * triggers, and this helper is called to compare a WebGL path against a WebGL-less one: a context
+ * that quietly inherited `reduce` would put both loads on the same path and the comparison would
+ * report no difference, which is the exact shape of the failure it exists to catch.
  */
 const narrativeChunksOn = async (
   browser: Browser,
   request: APIRequestContext,
   inits: string[]
 ): Promise<{ chunks: Set<string>; postprocessing: boolean }> => {
-  const context = await browser.newContext({ viewport: { ...RENDERED_VIEWPORT } });
+  const context = await browser.newContext({
+    viewport: { ...RENDERED_VIEWPORT },
+    reducedMotion: 'no-preference',
+  });
   try {
     const page = await context.newPage();
     for (const init of inits) await page.addInitScript(init);
@@ -436,8 +454,8 @@ const narrativeChunksOn = async (
 
     await goTo(page, ROUTE);
     await expect(
-      page.locator('#gem-canvas canvas, #gem-canvas img'),
-      'the probe never answered on this path, so nothing can be compared'
+      page.locator('#gem-canvas canvas, .home-container--flat'),
+      'the path was never decided on this load, so nothing can be compared'
     ).toBeVisible({ timeout: SETTLE_TIMEOUT });
 
     // Quiescence rather than a sleep: poll until the request set stops growing across two reads.
@@ -475,43 +493,65 @@ const narrativeChunksOn = async (
 // ---------------------------------------------------------------------------
 
 test.describe('the narrative still runs', () => {
-  test('mounts a real canvas inside #gem-canvas once the chunk arrives', async ({ page }) => {
+  test('mounts a real canvas inside #gem-canvas once the chunk arrives', async ({ browser }) => {
     // The failure this whole story could have shipped: a boundary that defers perfectly and never
     // mounts anything. Every payload case in this file passes in that world, and so do the gem's
     // reveal cases, because GSAP writes to the wrapper whether or not the canvas exists. Only
     // looking for the canvas catches it.
-    await goTo(page, ROUTE);
+    //
+    // On a `no-preference` context since Story 2-13: the project's default context asks for
+    // reduced motion, which is now the non-3D path and mounts no canvas by design.
+    const size = await withMotion(browser, async (page) => {
+      await goTo(page, ROUTE);
 
-    const canvas = page.locator('#gem-canvas canvas');
-    await expect(canvas, 'no canvas ever mounted, so the narrative is deferred and never runs').toBeVisible({
-      timeout: SETTLE_TIMEOUT,
+      const canvas = page.locator('#gem-canvas canvas');
+      await expect(canvas, 'no canvas ever mounted, so the narrative is deferred and never runs').toBeVisible({
+        timeout: SETTLE_TIMEOUT,
+      });
+
+      return canvas.evaluate((node) => ({
+        width: (node as HTMLCanvasElement).width,
+        height: (node as HTMLCanvasElement).height,
+      }));
     });
 
-    const size = await canvas.evaluate((node) => ({
-      width: (node as HTMLCanvasElement).width,
-      height: (node as HTMLCanvasElement).height,
-    }));
     expect(size.width, 'the canvas mounted with no drawing buffer width').toBeGreaterThan(0);
     expect(size.height, 'the canvas mounted with no drawing buffer height').toBeGreaterThan(0);
   });
 
-  test('and that read discriminates, measured on the path where no canvas may mount', async ({ page }) => {
+  test('and that read discriminates, measured on the path where no canvas may mount', async ({ browser }) => {
     // The control, and it is the real WebGL-less path rather than a planted one: with the probe
-    // answering `null`, `GemComponent` renders the static fallback and must not mount a canvas at
-    // all. If a canvas turned up here the case above would be reporting something that appears on
-    // every path, which is nothing.
-    await page.addInitScript(NO_WEBGL);
-    await goTo(page, ROUTE);
+    // answering `null`, the front door is the flat one and nothing at all is drawn in the hero. If
+    // a canvas turned up here the case above would be reporting something that appears on every
+    // path, which is nothing.
+    //
+    // **It asserts an absence where it used to assert an image.** Until Story 2-13 this path
+    // rendered `gem-fallback.png`, a 1,755,015-byte still of the same scene;
+    // `EXPERIENCE.md:173-176` refuses one by name, so the file is deleted and the hero draws
+    // nothing. The `no-preference` context is what makes the WebGL stub the trigger under test
+    // rather than the motion preference the config sets.
+    const hero = await withMotion(
+      browser,
+      async (page) => {
+        await goTo(page, ROUTE);
 
-    await expect(
-      page.locator('#gem-canvas img'),
-      'the WebGL-less path renders no fallback image, so this control is not on the path it claims'
-    ).toBeVisible({ timeout: SETTLE_TIMEOUT });
+        await expect(
+          page.locator('.home-container--flat'),
+          'the WebGL-less load never reached the non-3D path, so this control is not on the path it claims'
+        ).toBeVisible({ timeout: SETTLE_TIMEOUT });
 
-    expect(
-      await page.locator('#gem-canvas canvas').count(),
-      'a canvas mounted on the path where the WebGL probe answered null'
-    ).toBe(0);
+        return {
+          canvases: await page.locator('.home-container canvas').count(),
+          images: await page.locator('.home-container img').count(),
+          gems: await page.locator('.home-gem, #gem-canvas').count(),
+        };
+      },
+      [NO_WEBGL]
+    );
+
+    expect(hero.canvases, 'a canvas mounted on the path where the WebGL probe answered null').toBe(0);
+    expect(hero.images, 'the non-3D path renders an image in the hero, which EXPERIENCE.md:173-176 refuses').toBe(0);
+    expect(hero.gems, 'the non-3D path leaves the gem container behind, so the hero has a hole in it').toBe(0);
   });
 
   test('and the gem chunk is never even requested on that path', async ({ browser, request }) => {
@@ -632,84 +672,108 @@ test.describe('the page is whole with the narrative blocked', () => {
     ).toEqual([]);
   };
 
+  // Every case in this block runs on a `no-preference` context since Story 2-13. Blocking the
+  // narrative is only a measurement on the path that requests one, and `playwright.config.ts:79`
+  // makes reduced motion, which is a non-3D trigger, the default for every test.
   test('the premise, the Directory and the footer render, and /#suite still focuses the heading', async ({
-    page,
+    browser,
     request,
   }) => {
-    const errors: string[] = [];
-    page.on('pageerror', (error) => errors.push(`${error.name}: ${error.message}`));
+    await withMotion(browser, async (page) => {
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(`${error.name}: ${error.message}`));
 
-    const ledger = await blockNarrative(page, request);
+      const ledger = await blockNarrative(page, request);
 
-    const response = await page.goto(`${ROUTE}#${HEADING_ID}`, { waitUntil: 'load' });
-    expect(response?.status(), 'the home route did not answer 200').toBe(200);
-    await page.evaluate(async () => {
-      await document.fonts.ready;
+      const response = await page.goto(`${ROUTE}#${HEADING_ID}`, { waitUntil: 'load' });
+      expect(response?.status(), 'the home route did not answer 200').toBe(200);
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+      });
+
+      await expectCleanBlock(ledger);
+      console.log(`narrative: aborted ${ledger.aborted.length} narrative request(s): ${ledger.aborted.join(', ')}`);
+
+      await expect(page.locator('.premise'), 'the premise block is gone with the narrative blocked').toBeVisible();
+      await expect(
+        page.locator('.suite-directory__row').first(),
+        'the Suite Directory renders no row with the narrative blocked'
+      ).toBeVisible();
+      await expect(page.locator('footer.site-footer'), 'the footer is gone with the narrative blocked').toBeVisible();
+
+      // `toBeInViewport` retries, which is what handles Lenis taking ownership of the scroll
+      // position a moment after hydration. Same concern as `tests/e2e/suite-directory.pw.ts:326-336`,
+      // without the fixed wait.
+      await expect(
+        page.locator(`#${HEADING_ID}`),
+        `#${HEADING_ID} is off screen after the fragment navigation`
+      ).toBeInViewport({ timeout: SETTLE_TIMEOUT });
+
+      await expect
+        .poll(() => page.evaluate(() => document.activeElement?.id ?? '(none)'), {
+          timeout: SETTLE_TIMEOUT,
+          message:
+            `#${HEADING_ID} is not focused with the narrative blocked, so the payload the page is ` +
+            `supposed to be independent of is what was moving focus`,
+        })
+        .toBe(HEADING_ID);
+
+      // The narrative failing to arrive is a load failure, not an application fault, and it must
+      // not surface as one. A chunk-load rejection reaching `window.onerror` would mean a visitor
+      // on a flaky connection sees an error page instead of the Directory. The rejection is not
+      // silent either: `GemComponent` logs it to the console before containing it.
+      expect(errors, `the page reported an error with the narrative blocked:\n${errors.join('\n')}`).toEqual([]);
     });
-
-    await expectCleanBlock(ledger);
-    console.log(`narrative: aborted ${ledger.aborted.length} narrative request(s): ${ledger.aborted.join(', ')}`);
-
-    await expect(page.locator('.premise'), 'the premise block is gone with the narrative blocked').toBeVisible();
-    await expect(
-      page.locator('.suite-directory__row').first(),
-      'the Suite Directory renders no row with the narrative blocked'
-    ).toBeVisible();
-    await expect(page.locator('footer.site-footer'), 'the footer is gone with the narrative blocked').toBeVisible();
-
-    // `toBeInViewport` retries, which is what handles Lenis taking ownership of the scroll position
-    // a moment after hydration. Same concern as `tests/e2e/suite-directory.pw.ts:326-336`, without
-    // the fixed wait.
-    await expect(
-      page.locator(`#${HEADING_ID}`),
-      `#${HEADING_ID} is off screen after the fragment navigation`
-    ).toBeInViewport({ timeout: SETTLE_TIMEOUT });
-
-    await expect
-      .poll(() => page.evaluate(() => document.activeElement?.id ?? '(none)'), {
-        timeout: SETTLE_TIMEOUT,
-        message:
-          `#${HEADING_ID} is not focused with the narrative blocked, so the payload the page is ` +
-          `supposed to be independent of is what was moving focus`,
-      })
-      .toBe(HEADING_ID);
-
-    // The narrative failing to arrive is a load failure, not an application fault, and it must not
-    // surface as one. A chunk-load rejection reaching `window.onerror` would mean a visitor on a
-    // flaky connection sees an error page instead of the Directory. The rejection is not silent
-    // either: `GemComponent` logs it to the console before containing it.
-    expect(errors, `the page reported an error with the narrative blocked:\n${errors.join('\n')}`).toEqual([]);
   });
 
-  test('and nothing announces the wait, from the first frame to settle', async ({ page, request }) => {
+  test('and nothing announces the wait, from the first frame to settle', async ({ browser, request }) => {
     // `EXPERIENCE.md:658-659` refuses a spinner. The blocked path is where one would be visible for
     // good, so it is the path read here, and the recorder catches a flash as readily as a permanent
     // one: a `loading:` component that mounts and unmounts in 40ms is still a spinner.
-    await page.addInitScript(ANNOUNCEMENT_RECORDER);
-    const ledger = await blockNarrative(page, request);
-    await goTo(page, ROUTE);
-    await expectCleanBlock(ledger);
+    await withMotion(
+      browser,
+      async (page) => {
+        const ledger = await blockNarrative(page, request);
+        await goTo(page, ROUTE);
+        await expectCleanBlock(ledger);
 
-    const seen = await announcements(page);
-    expect(seen, `the route announced a wait while the narrative was missing:\n${seen.join('\n')}`).toEqual([]);
+        const seen = await announcements(page);
+        expect(seen, `the route announced a wait while the narrative was missing:\n${seen.join('\n')}`).toEqual([]);
+      },
+      [ANNOUNCEMENT_RECORDER]
+    );
   });
 
-  test('and nothing announces it on the clean path either', async ({ page }) => {
-    await page.addInitScript(ANNOUNCEMENT_RECORDER);
-    await goTo(page, ROUTE);
+  test('and nothing announces it on the clean path either', async ({ browser }) => {
+    await withMotion(
+      browser,
+      async (page) => {
+        await goTo(page, ROUTE);
 
-    // Read after the canvas is up, so the whole window in which a `loading:` component would have
-    // been mounted is behind the recorder.
-    await expect(page.locator('#gem-canvas canvas')).toBeVisible({ timeout: SETTLE_TIMEOUT });
+        // Read after the canvas is up, so the whole window in which a `loading:` component would
+        // have been mounted is behind the recorder.
+        await expect(page.locator('#gem-canvas canvas')).toBeVisible({ timeout: SETTLE_TIMEOUT });
 
-    const seen = await announcements(page);
-    expect(seen, `the route announced a wait while the narrative loaded:\n${seen.join('\n')}`).toEqual([]);
+        const seen = await announcements(page);
+        expect(seen, `the route announced a wait while the narrative loaded:\n${seen.join('\n')}`).toEqual([]);
+      },
+      [ANNOUNCEMENT_RECORDER]
+    );
   });
 
   test('and the recorder catches an announcement that is gone before the read', async ({ page }) => {
     // The control, and it is deliberately a transient. A settled-DOM sweep passes this; the recorder
-    // is what does not. Planted at document start and removed 100ms later, which is roughly the
-    // lifetime of a real `loading:` component on a warm connection.
+    // is what does not. Planted at document start and removed two frames later, which is shorter
+    // than the lifetime of a real `loading:` component on a warm connection.
+    //
+    // **Two frames rather than a 100ms timer, since Story 2-13.** The timer form failed once in the
+    // pinned container on the non-3D front door, reporting that the recorder had missed the plant.
+    // It had: `requestAnimationFrame` does not fire while the main thread is busy hydrating, and
+    // when the thread frees up the browser can run a due 100ms timer before the next frame, so the
+    // spinner was added and removed without a single sample in between. The timer measured wall
+    // clock; what this control needs is that the recorder's own sampler cannot miss a transient, so
+    // the removal is now scheduled on the same clock the sampler runs on. It is still gone long
+    // before the read, which the count assertion below holds.
     await page.addInitScript(ANNOUNCEMENT_RECORDER);
     await page.addInitScript(`
       const planted = document.createElement('div');
@@ -717,7 +781,7 @@ test.describe('the page is whole with the narrative blocked', () => {
       planted.setAttribute('role', 'progressbar');
       const attach = () => {
         document.body.append(planted);
-        setTimeout(() => planted.remove(), 100);
+        requestAnimationFrame(() => requestAnimationFrame(() => planted.remove()));
       };
       if (document.body) attach();
       else document.addEventListener('DOMContentLoaded', attach, { once: true });
@@ -819,59 +883,63 @@ test.describe("the / document's preload set", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("the gem's reveal", () => {
-  for (const webgl of [true, false]) {
-    test(`goes 0 to 1 on opacity with no filter anywhere, WebGL ${webgl ? 'present' : 'absent'}`, async ({
+  // **One case where there were two, because the WebGL-less twin no longer has a subject.** Until
+  // Story 2-13 the gem's wrapper was on the page whether or not a canvas mounted, holding a static
+  // image, so the reveal was worth reading on both. That path now renders no `.home-gem` at all,
+  // which `the narrative still runs` above asserts directly. What is left here is the reveal on the
+  // one path that has a gem to reveal.
+  test('goes 0 to 1 on opacity with no filter anywhere', async ({ browser }) => {
+    const samples = await withMotion(
       browser,
-    }) => {
-      const samples = await withMotion(
-        browser,
-        async (page) => {
-          await goTo(page, ROUTE);
-          await expect
-            .poll(async () => (await gemSamples(page)).at(-1)?.opacity ?? -1, {
-              timeout: SETTLE_TIMEOUT,
-              message: 'the gem never reached full opacity, so the reveal does not complete',
-            })
-            .toBe(1);
-          return gemSamples(page);
-        },
-        webgl ? [GEM_SAMPLER] : [GEM_SAMPLER, NO_WEBGL]
-      );
+      async (page) => {
+        await goTo(page, ROUTE);
+        await expect
+          .poll(async () => (await gemSamples(page)).at(-1)?.opacity ?? -1, {
+            timeout: SETTLE_TIMEOUT,
+            message: 'the gem never reached full opacity, so the reveal does not complete',
+          })
+          .toBe(1);
+        return gemSamples(page);
+      },
+      [GEM_SAMPLER]
+    );
 
-      expect(samples.length, 'the sampler recorded no frame, so the home route renders no .home-gem').toBeGreaterThan(
-        1
-      );
+    expect(samples.length, 'the sampler recorded no frame, so the home route renders no .home-gem').toBeGreaterThan(1);
 
-      expect(
-        samples[0].opacity,
-        'the gem is already fully opaque on the first frame, so the stylesheet no longer holds an ' +
-          'initial state and the tween is a flourish rather than a reveal'
-      ).toBeLessThan(1);
-      expect(samples.at(-1)?.opacity, 'the gem never reaches full opacity').toBe(1);
+    expect(
+      samples[0].opacity,
+      'the gem is already fully opaque on the first frame, so the stylesheet no longer holds an ' +
+        'initial state and the tween is a flourish rather than a reveal'
+    ).toBeLessThan(1);
+    expect(samples.at(-1)?.opacity, 'the gem never reaches full opacity').toBe(1);
 
-      // `filter: brightness(0)` at `HomeLayout.scss:190` is what the reveal used to undo. Left
-      // behind it would black out the fallback image too, which is why this is read on both paths,
-      // and on every frame rather than at three chosen moments.
-      const filtered = [...new Set(samples.map((sample) => sample.filter))].filter((value) => value !== 'none');
-      expect(
-        filtered,
-        `the gem carried a filter during the entrance, and EXPERIENCE.md:685-699 allows transform ` +
-          `and opacity only: ${filtered.join(', ')}`
-      ).toEqual([]);
-    });
-  }
+    // `filter: brightness(0)` at `HomeLayout.scss:190` is what the reveal used to undo. Read on
+    // every frame rather than at three chosen moments, because a filter that appears mid-entrance
+    // and is gone by the end is the same breach as one that stays.
+    const filtered = [...new Set(samples.map((sample) => sample.filter))].filter((value) => value !== 'none');
+    expect(
+      filtered,
+      `the gem carried a filter during the entrance, and EXPERIENCE.md:685-699 allows transform ` +
+        `and opacity only: ${filtered.join(', ')}`
+    ).toEqual([]);
+  });
 
   for (const webgl of [true, false]) {
-    test(`is at its final state immediately under reduced motion, WebGL ${
+    test(`the reduced-motion hero is at its final state immediately, WebGL ${
       webgl ? 'present' : 'absent'
     }`, async ({ page }) => {
-      // **The branch that is now the gem's only reveal for a reduced-motion visitor.**
-      // `HomeLayout.scss:190` is `opacity: 0` and the timeline never runs for them, so
-      // `gsap.set('.home-gem', { opacity: 1 })` in `HomeLayout`'s reduced-motion branch is the one
-      // thing that ever undoes it. Delete that line and this visitor gets a permanently blank hero,
-      // including the static fallback image, and every case above stays green because they all open
-      // a `no-preference` context. `toBeVisible` would not catch it either: an element at
-      // `opacity: 0` is visible to Playwright.
+      // **What this case measures changed with Story 2-13, and the reason it still exists did
+      // not.** `HomeLayout.scss` opens the role line, the sys panel, the nav links and the contact
+      // links at `opacity: 0`, and the timeline that lifts them never runs for a reduced-motion
+      // visitor: `gsap.set(finalState, { opacity: 1, y: 0 })` in `HomeLayout`'s reduced-motion
+      // branch is the one thing that ever does. Delete that line and this visitor gets a
+      // permanently blank hero, while every `no-preference` case above stays green. `toBeVisible`
+      // would not catch it either: an element at `opacity: 0` is visible to Playwright.
+      //
+      // The gem half of it is gone rather than moved: reduced motion is one of the four non-3D
+      // triggers, so this hero has no `.home-gem` to reveal, which is asserted here as the second
+      // half of the same read. The WebGL stub is carried through both values to show that: on this
+      // context it changes nothing, because the motion preference has already decided the path.
       //
       // This case runs on the default context, which `playwright.config.ts:79` already sets to
       // `reducedMotion: 'reduce'`.
@@ -882,49 +950,42 @@ test.describe("the gem's reveal", () => {
         .poll(
           () =>
             page.evaluate(() => {
-              const gem = document.querySelector('.home-gem');
-              return gem ? Number.parseFloat(getComputedStyle(gem).opacity) : -1;
+              const role = document.querySelector('.home-role');
+              return role ? Number.parseFloat(getComputedStyle(role).opacity) : -1;
             }),
           {
             timeout: SETTLE_TIMEOUT,
             message:
-              'a reduced-motion visitor never sees the gem: the stylesheet holds it at opacity 0 ' +
+              'a reduced-motion visitor never sees the hero: the stylesheet holds it at opacity 0 ' +
               "and HomeLayout's reduced-motion branch is the only thing that undoes it",
           }
         )
         .toBe(1);
 
-      const filter = await page.evaluate(() => {
-        const gem = document.querySelector('.home-gem');
-        return gem ? getComputedStyle(gem).filter : 'no .home-gem';
-      });
-      expect(filter, 'the gem carries a filter at rest under reduced motion').toBe('none');
+      expect(
+        await page.locator('.home-gem').count(),
+        'the reduced-motion hero still carries the gem container, which EXPERIENCE.md:656 says is ' +
+          'never requested on this path'
+      ).toBe(0);
     });
   }
 
   test('and that reduced-motion read fires, measured against the state it is asserting away', async ({ page }) => {
-    // The control. It plants exactly the failure the case above exists for, the gem left at the
+    // The control. It plants exactly the failure the case above exists for, the hero left at the
     // stylesheet's initial state, and shows the read reporting it rather than answering 1 always.
     await goTo(page, ROUTE);
     await page.evaluate(() => {
       const style = document.createElement('style');
-      style.textContent = '.home-gem { opacity: 0 !important; filter: brightness(0) !important; }';
+      style.textContent = '.home-role { opacity: 0 !important; }';
       document.head.append(style);
     });
 
     const read = await page.evaluate(() => {
-      const gem = document.querySelector('.home-gem');
-      if (!gem) return null;
-      const style = getComputedStyle(gem);
-      return { opacity: Number.parseFloat(style.opacity), filter: style.filter };
+      const role = document.querySelector('.home-role');
+      return role ? Number.parseFloat(getComputedStyle(role).opacity) : -1;
     });
 
-    expect(read?.opacity, 'a gem planted at opacity 0 still read as 1, so the read is a constant').toBe(0);
-    expect(
-      read?.filter,
-      'a planted brightness(0) was read as "none", so the filter read reports a clean gem for the ' +
-        'wrong reason'
-    ).toContain('brightness');
+    expect(read, 'a hero planted at opacity 0 still read as 1, so the read is a constant').toBe(0);
   });
 });
 

@@ -5,7 +5,8 @@ import dynamic from 'next/dynamic';
 import GemComponent from '../GemComponent';
 
 /**
- * The WebGL probe and its fallback, after Story 2-12 moved the narrative behind one boundary.
+ * The narrative's two branches, after Story 2-12 moved it behind one boundary and Story 2-13 moved
+ * the decision out into `hooks/useNarrativePath.ts` and deleted the poster frame.
  *
  * **What is not asserted here.** Whether the boundary actually defers anything is a fact about the
  * served document, not about the import graph, and `tests/e2e/narrative.pw.ts` settles it by
@@ -15,8 +16,12 @@ import GemComponent from '../GemComponent';
  * missed the defect: `GemComponent.tsx` wrapped `Scene` in `next/dynamic` the whole time while
  * pulling `@react-three/postprocessing` and `ParticleWave` in statically beside it.
  *
- * What is settled here is the shape the move must not break: three probe branches rather than two,
- * the fallback carrying its image, and neither branch announcing a wait.
+ * **The path is a prop, so these cases pass it rather than arranging a probe.** The decision is
+ * taken once per page, by `HomeLayout`, and this component reads the answer. There is deliberately
+ * no case for `'flat'`: the flat front door renders no `.home-gem` wrapper at all, so this
+ * component is not mounted on it, and the prop's type says so. Which inputs produce which answer is
+ * `hooks/__tests__/useNarrativePath.test.ts`, and that the hero drops this whole subtree on the
+ * flat path is `components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx`.
  *
  * The `next/dynamic` mock **honours the options object**, which is the point of it. A mock taking
  * only the loader would discard a `loading:` option silently, and the no-spinner case below would
@@ -47,34 +52,36 @@ const ANNOUNCES_A_WAIT =
   '[role="progressbar"], [role="status"], [aria-busy="true"], [class*="spinner"], ' +
   '[class*="skeleton"], [class*="loading"], [class*="loader"]';
 
-/** jsdom has no WebGL, so the probe is answered by hand, one branch per block below. */
-const withWebgl = (available: boolean) => {
-  HTMLCanvasElement.prototype.getContext = vi
-    .fn()
-    .mockReturnValue(available ? ({} as WebGLRenderingContext) : null);
-};
-
-describe('GemComponent before the probe has answered', () => {
+describe('GemComponent before the path has been decided', () => {
   it('renders an empty container and nothing else, which is what the server emits', () => {
     // The state the render tree is in on the server and on the first client commit. It matters for
     // payload rather than for pixels: `next/dynamic` starts its import when the component renders,
-    // so a `<GemNarrative />` here would fetch the whole narrative before anyone knows whether the
-    // device can use it. `renderToStaticMarkup` is the only way to observe this branch, because
-    // Testing Library flushes the probe effect before it hands the tree back.
-    expect(renderToStaticMarkup(<GemComponent />)).toBe('<div id="gem-canvas"></div>');
+    // so a `<GemNarrative />` here would fetch the whole narrative before anyone knows whether this
+    // visitor is on the narrative path at all.
+    //
+    // **It is the default path's geometry, not the flat path's, and that is deliberate.** The
+    // undecided branch renders the container the gem will fill; resolving to `'flat'` then removes
+    // the box this sits in rather than adding one, so the page shrinks late instead of growing late.
+    expect(renderToStaticMarkup(<GemComponent path='undecided' />)).toBe('<div id="gem-canvas"></div>');
+  });
+
+  it('asks for no narrative while undecided, so the chunk is never fetched early', () => {
+    // `next/dynamic` issues its import on first render of the returned component. Not rendering it
+    // is therefore the whole of the gate. This is the jsdom half of that claim; the browser half is
+    // the request ledger in `tests/e2e/front-door.pw.ts`, which watches all four non-3D triggers.
+    render(<GemComponent path='undecided' />);
+    expect(screen.queryByTestId('narrative')).not.toBeInTheDocument();
   });
 });
 
-describe('GemComponent with WebGL available', () => {
-  beforeEach(() => withWebgl(true));
-
+describe('GemComponent on the narrative path', () => {
   it('renders the gem canvas container', () => {
-    render(<GemComponent />);
+    render(<GemComponent path='narrative' />);
     expect(document.getElementById('gem-canvas')).toBeInTheDocument();
   });
 
   it('renders the narrative behind the dynamic boundary', () => {
-    render(<GemComponent />);
+    render(<GemComponent path='narrative' />);
     expect(screen.getByTestId('narrative')).toBeInTheDocument();
   });
 
@@ -82,7 +89,7 @@ describe('GemComponent with WebGL available', () => {
     // `EXPERIENCE.md:658-659` refuses a spinner: on the one path where nothing is missing,
     // announcing a wait is the defect. The dynamic import therefore takes no `loading:` option and
     // no `<Suspense>` fallback, and an empty transparent container is the intended state.
-    const { container } = render(<GemComponent />);
+    const { container } = render(<GemComponent path='narrative' />);
     const announcing = [...container.querySelectorAll(ANNOUNCES_A_WAIT)].map((node) => node.outerHTML);
     expect(announcing, 'the gem announces a wait while the narrative loads').toEqual([]);
   });
@@ -104,27 +111,15 @@ describe('GemComponent with WebGL available', () => {
         'wrong reason'
     ).toBeGreaterThan(0);
   });
-});
 
-describe('GemComponent with no WebGL', () => {
-  beforeEach(() => withWebgl(false));
-
-  it('falls back to the static image, which the boundary move must not strand', () => {
-    // The fallback is the branch that survives every failure mode this story could introduce, so
-    // it is the one worth pinning: it imports nothing narrative and must render on its own.
-    const { container } = render(<GemComponent />);
-    const image = container.querySelector('#gem-canvas img');
-    expect(image, 'the no-WebGL branch renders no fallback image').not.toBeNull();
-    expect(image).toHaveAttribute('src', '/assets/home/gem-fallback.png');
-    expect(image, 'the fallback is decoration and needs no name').toHaveAttribute('aria-hidden', 'true');
-  });
-
-  it('renders no narrative at all, so the chunk is never asked for', () => {
-    // `next/dynamic` issues its import on first render of the returned component. Not rendering it
-    // is therefore the whole of the gate: a device that cannot use the narrative does not download
-    // it. This is the jsdom half of that claim; the browser half is the request ledger in
-    // `tests/e2e/narrative.pw.ts`.
-    render(<GemComponent />);
-    expect(screen.queryByTestId('narrative')).not.toBeInTheDocument();
+  it('renders no image on any path it can be mounted on', () => {
+    // The poster frame is gone. Until Story 2-13 the WebGL-less branch rendered a 1,755,015-byte
+    // still of this same scene, which `EXPERIENCE.md:173-176` refuses by name because a still of a
+    // 3D scene reads as a broken one. Neither branch left here has an image in it, and the flat
+    // front door has no gem at all rather than a picture of one.
+    for (const path of ['undecided', 'narrative'] as const) {
+      const { container } = render(<GemComponent path={path} />);
+      expect(container.querySelector('img'), `the ${path} branch renders an image`).toBeNull();
+    }
   });
 });

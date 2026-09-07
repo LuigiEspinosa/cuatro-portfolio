@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import type { NarrativePath } from '@/hooks/useNarrativePath';
 
 /**
- * The homepage's WebGL probe and its fallback, and nothing else (Story 2-12).
+ * The homepage's narrative, and nothing else (Stories 2-12 and 2-13).
  *
  * Everything narrative sits behind the one dynamic boundary below, in `GemNarrative`. Nothing in
  * this module's import graph reaches `three`, `@react-three/fiber` or `@react-three/postprocessing`
@@ -29,42 +29,44 @@ const GemNarrative = dynamic(
         // A chunk that never arrives resolves to a component that draws nothing, so the rest of the
         // page is untouched. That is the payload independence `EXPERIENCE.md:951-952` claims and
         // `tests/e2e/narrative.pw.ts` measures by aborting the request outright. Rendering nothing
-        // rather than the 1.75 MB fallback image is deliberate: the non-3D front door is Story
-        // 2-13's, and an empty transparent container is the state this route is already designed
-        // around.
+        // rather than an image of the scene is the same answer the flat path below gives, and for
+        // the same reason: `EXPERIENCE.md:173-176` refuses a still of a 3D scene by name.
         return () => null;
       }),
   { ssr: false }
 );
 
-const GemComponent = () => {
-  // null = not yet checked (avoids fallback flash on capable devices)
-  const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
+/**
+ * The two states a gem that is on the page can be in.
+ *
+ * `'flat'` is not one of them, and that is structural rather than an omission: the non-3D front
+ * door renders no `.home-gem` wrapper at all, so this component is not mounted on it. Deleting
+ * `public/assets/home/gem-fallback.png` is what made that possible. There is no third branch here
+ * drawing nothing, because nothing is drawn by not being rendered, and a branch for a value this
+ * component cannot receive would be a branch no test could reach honestly.
+ */
+type MountedNarrativePath = Exclude<NarrativePath, 'flat'>;
 
-  useEffect(() => {
-    const canvas = document.createElement('canvas');
-    const ctx =
-      canvas.getContext('webgl') ??
-      (canvas.getContext('experimental-webgl') as WebGLRenderingContext | null);
-    setWebglAvailable(!!ctx);
-  }, []);
+interface GemComponentProps {
+  /**
+   * The decided path, taken from `HomeLayout` rather than decided again here.
+   *
+   * One page, one decision: `useNarrativePath` is called once, by the component that owns the hero,
+   * and this reads the answer. Calling the hook here as well would probe WebGL a second time and
+   * subscribe to the motion query a third.
+   */
+  path: MountedNarrativePath;
+}
 
-  // Three branches, not two, and the middle one is the payload fix. Rendering `<GemNarrative />`
-  // while the probe still answers `null` starts the dynamic import before anyone knows whether the
-  // device can use it, so a visitor with no WebGL would download the whole narrative to draw a
-  // static PNG. An empty container is what the route is designed around anyway, so waiting one
-  // effect costs nothing visible.
-  if (webglAvailable === null) {
+const GemComponent = ({ path }: GemComponentProps) => {
+  // Two branches, and the first one is the payload fix. Rendering `<GemNarrative />` while the
+  // decision is still `'undecided'` starts the dynamic import before anyone knows whether this
+  // visitor is on the narrative path at all, so a device with no WebGL, a connection reporting
+  // `saveData` or a reduced-motion preference would download the whole narrative to draw nothing.
+  // An empty container is what the route is designed around anyway, so waiting one effect costs
+  // nothing visible, and it is the default path's geometry rather than the flat path's.
+  if (path === 'undecided') {
     return <div id='gem-canvas' />;
-  }
-
-  if (!webglAvailable) {
-    return (
-      <div id='gem-canvas'>
-        {/* Static screenshot shown on devices without WebGL support */}
-        <img src='/assets/home/gem-fallback.png' alt='' aria-hidden='true' />
-      </div>
-    );
   }
 
   return (

@@ -234,6 +234,8 @@ const WEIGHT_ROLE = '--w-black';
  * deletes the alias layer, at which point this partition and `WEIGHT_CALL_SITES` collapse into one.
  */
 const TOKEN_NATIVE_STYLESHEETS = [
+  'components/atoms/SkipControl/SkipControl.scss',
+  'components/atoms/SkipLink/SkipLink.scss',
   'components/molecules/PlateMark/PlateMark.scss',
   'components/organisms/Premise/Premise.scss',
   'components/organisms/SiteFooter/SiteFooter.scss',

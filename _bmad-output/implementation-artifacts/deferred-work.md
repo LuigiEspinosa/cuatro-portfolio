@@ -2827,3 +2827,322 @@ status: done
     answered. Story 2-29 rebuilds this stylesheet and is where the decision belongs; Story 2-13,
     which builds the non-3D front door, is the other candidate.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-43
+  summary: >-
+    A-6, the accessibility skip-link, is named in four planning artifacts and required by none of
+    them. No story's acceptance criteria asked for one to be built, so nothing scheduled it, and
+    Story 2-13 built it because it was standing next to the skip control.
+  evidence: |-
+    **Corrected 2026-09-07 after review.** This entry first claimed that no story named A-6 and that
+    no story's criteria mentioned a skip-link. Both were false as written. `epics.md:637` books A-6
+    in the accessibility floor as "skip-link is the first tabbable element"; `epics.md:580` and
+    `:2582-2583` both require the skip control to be distinct from it; `EXPERIENCE.md:421-422` says
+    the same; and `review-accessibility.md:245-246` prescribes the markup that was built, down to
+    `<a class="skip-link" href="#main">` first in the DOM followed by `<main id="main">`.
+
+    What is true is narrower and is still the finding. Every one of those references describes the
+    skip-link as something that already exists, in order to say what the skip control is not. No
+    story's acceptance criteria require building one, so no story would have failed for its absence:
+    before Story 2-13 the string `skip-link` appeared nowhere in this repository outside planning
+    artifacts, and `<main>` carried no `id`, so the target did not exist to be linked to either.
+
+    Story 2-13 shipped it: `components/atoms/SkipLink/` plus `id='main'` and `tabIndex={-1}` on the
+    landmark in `app/page.tsx`, asserted in `tests/e2e/front-door.pw.ts`. That closes A-6 on `/` and
+    on `/` only. **The other four surfaces still have no skip-link and no `<main>` at all**, which is
+    Story 2-26's work and is why this story deliberately did not add one there.
+
+    What is filed is the process finding rather than the code: an accessibility requirement that
+    every story assumed someone else owned survived to the thirteenth story of the epic. Story 2-26
+    is the Hub's accessibility pass and is the natural place to sweep the rest of the A-numbers for
+    the same shape before it starts.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-44
+  summary: >-
+    Neither skip has a visual row in any design document, so both were styled from the general rules
+    rather than from a specification. `review-rubric.md:40` already booked this for the skip control;
+    the skip-link is the same hole and is not even named there.
+  evidence: |-
+    `review-rubric.md:40` reads, of the skip control: "behaviour is specified (above the fold, moves
+    focus not scroll, distinct from the a11y skip-link) with no visual row, though it is load-bearing
+    for FR-2's one-interaction requirement and appears styled in the mock. *Fix:* add a row, or state
+    that it inherits the Button spec." That finding is still open, and the A-6 link is in a worse
+    position: `DESIGN.md` and `EXPERIENCE.md` do not mention it as a component at all.
+
+    Both were therefore built from the rules that do exist rather than from a row: mono uppercase
+    signage at `--t-2xs` with `--tr-meta`, a hairline underline in `--token-border-interactive` that
+    hover recolours rather than adds, `:focus-visible` painted instantly in `--token-focus` at
+    `--focus-offset` (`EXPERIENCE.md:645`, `:716-720`), and `--tap` as the floor on both axes
+    (`:727-730`). Every one of those is a real rule from a real document, and none of them is a
+    decision about what these two controls should look like.
+
+    The consequence is that a reviewer has nothing to compare the shipped controls against, and the
+    next story that touches either has nothing to preserve. Closing it is a `DESIGN.md` edit, which
+    is a planning artifact under a frozen approval and not a thing a story may amend on its own.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-45
+  summary: >-
+    PRD open question Q7 still reads open at `prd.md:814` while `EXPERIENCE.md:172` states that it is
+    closed, and Story 2-13 has now implemented the closed answer. Two planning artifacts disagree
+    about a decision the code has already made.
+  evidence: |-
+    `prd.md:814` reads: "**Does the Hub's narrative survive the reduced-motion path intact?** FR-2
+    requires the Suite Directory to be reachable regardless; whether the narrative gets a static
+    fallback or is simply skipped is undecided."
+
+    `EXPERIENCE.md:172-178` answers it: "**Q7 is closed: there is one non-3D front door, not two.**
+    `prefers-reduced-motion: reduce` and the slow-connection path receive the **same** artefact, a
+    typographic hero. No static poster frame of the 3D scene is produced." Three reasons are given,
+    the first being that a still of a 3D scene reads as a broken 3D scene.
+
+    Story 2-13 implemented the closed answer: the poster frame is deleted, all four triggers reach
+    one flat front door, and `tests/e2e/front-door.pw.ts` measures it. So the repository now agrees
+    with `EXPERIENCE.md` and disagrees with the PRD's open-questions list.
+
+    Filed rather than fixed for the reason every other planning-artifact drift in this ledger is: the
+    PRD is under a frozen approval and a story does not edit one as a side effect of implementing it.
+    The closure is a one-line strike-through in the shape `prd.md:809` and `:813` already use for the
+    two questions that closed on 2026-08-15.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-46
+  summary: >-
+    A-14 is claimed by Story 2-13 and by Story 2-29, and Story 2-13 ran first. The canvas is now
+    `aria-hidden` and outside the tab order; whichever story reaches it second will find the work
+    done and must not undo it.
+  evidence: |-
+    A-14 requires the decorative canvas to be removed from the accessibility tree and from the tab
+    order. Before this story `components/atoms/Scene/Scene.tsx` set neither, so the claim was made in
+    the plan and held nowhere.
+
+    Story 2-13 closed it, because the non-3D path is the other half of the same question and one
+    story could not honestly assert "no canvas on the flat path" while leaving the canvas on the
+    default path unlabelled. The treatment is on both the wrapper and the element:
+    `@react-three/fiber` spreads unknown props onto its own `<div>` rather than onto the `<canvas>`,
+    so `aria-hidden` on `<Canvas>` covers the subtree, and `onCreated` sets `aria-hidden` and
+    `tabIndex = -1` on `gl.domElement` itself. `tests/e2e/front-door.pw.ts` asserts both, plus twelve
+    Tab presses that never land on it.
+
+    Story 2-29 redesigns `HomeLayout` and names A-14 in its own criteria. It should verify rather
+    than re-implement, and it must not drop either half: the element-level `tabIndex` is a guard
+    against a future library version or a drei helper adding one, not a repair of something broken
+    today.
+
+    **Corrected 2026-09-07 after review: this entry describes two of A-14's three clauses.**
+    `EXPERIENCE.md:773` and `epics.md:2591` read "aria-hidden, not focusable, **and its content is
+    stated in prose**". The third is not shipped and is filed separately as DW-52.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-47
+  summary: >-
+    Two of the four non-3D triggers can only be read from script, so those visitors get one layout
+    shift when the hero collapses after hydration. Narrowed from three by the Operator ruling of
+    2026-09-07, which moved `Save-Data` to the server. The two that remain are a slow `effectiveType`
+    and an absent WebGL context, and neither exists outside the browser.
+  evidence: |-
+    The spec requires that the undecided state render the default path's geometry and that every
+    trigger which can be answered before the document paints is. Two can.
+
+    `prefers-reduced-motion` is a media query, so `HomeLayout.scss` carries the flat shape under
+    `@media (prefers-reduced-motion: reduce)` as well as under the `.home-container--flat` modifier:
+    that visitor's first paint is already flat, without a line of script.
+
+    `Save-Data` is an HTTP request header, so `app/page.tsx` reads it with `next/headers` and hands
+    `HomeLayout` a verdict the hook takes as its starting state. That visitor's first *markup* is
+    already flat: no gem container and no skip control are in the document at all.
+    `tests/e2e/front-door.pw.ts` asserts exactly that on the served bytes with hydration blocked,
+    counting both elements as well as reading the modifier class, and asserts the opposite counts on
+    every other door, where the served markup is the default path's and is corrected later. **This
+    is the half of this entry that closed.** It cost `/` its static rendering, which DW-50 records.
+
+    A slow `effectiveType` and an absent WebGL context remain. `navigator.connection.effectiveType`
+    is carried by no request header and answered by no media query, and WebGL capability is knowable
+    only by asking for a context. Those two paint the default geometry, hydrate, and then collapse
+    once. Measured 2026-09-07 in `mcr.microsoft.com/playwright:v1.62.1-noble` at a 1024 viewport:
+    800.00 served, 520.70 settled, one downward step of 279.30 and no upward one, sampled on every
+    animation frame. Both facts are asserted rather than tolerated, and the same sampler asserts
+    zero collapses on the three doors that are answered before paint, which is what makes those
+    readings measurements.
+
+    Two closures exist for the remainder and both are somebody else's. A blocking inline script in
+    `app/layout.tsx` could probe WebGL before first paint and stamp the root element, which is the
+    theme-flash pattern; it costs a synchronous WebGL context creation on every page load and adds an
+    inline script to a document this epic keeps deliberately thin. Or `prefers-reduced-data` reaches
+    Chromium stable, which would answer the slow-connection case in CSS for free. Neither is Story
+    2-13's to decide, and the residual shift is a shrink of a hero on a path that is otherwise
+    strictly cheaper, so it is recorded with its numbers rather than papered over.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-48
+  summary: >-
+    `gsap.set('.home-gem', { opacity: 1 })` in `HomeLayout`'s reduced-motion branch is now
+    unreachable, because reduced motion is one of the triggers that renders no `.home-gem` at all. It
+    was the line DW-41 records as the gem's only reveal for that visitor.
+  evidence: |-
+    `components/organisms/HomeLayout/HomeLayout.tsx:21` sets the gem to full opacity when
+    `useReduceMotion()` answers true. Since Story 2-13, `useReduceMotion()` answering true also means
+    `useNarrativePath()` answers `'flat'`, which means neither `.home-gem` nor `GemComponent` renders.
+    The line still runs, against a selector that matches the element only in the frame between the
+    first commit and the deciding effect, and it has no observable effect in any of them.
+
+    It is left in place rather than deleted because this story's spec fixes the entrance as Story 2-12
+    left it, and because deleting it is only safe while the coupling above holds: a future story that
+    let a reduced-motion visitor onto the narrative path would need that line back and would not know
+    it. The browser case that covered it (`tests/e2e/narrative.pw.ts`, "is at its final state
+    immediately under reduced motion") was rewritten by this story to read `.home-role` instead, which
+    is the panel opacity the same branch really does set, and to assert that no `.home-gem` exists on
+    that path.
+
+    Story 2-29 rebuilds this component and is the natural owner. DW-41 and DW-42 are the two related
+    entries on the same four lines.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-49
+  summary: >-
+    The `FINGERPRINTS` parse out of `ops/asset-budget.mjs` now has a third copy, in
+    `tests/e2e/front-door.pw.ts`. DW-40 books the fix; this is the second file to pay for it and
+    raises the price of leaving it.
+  evidence: |-
+    DW-40 records that `ops/asset-budget.mjs` cannot be imported from a Playwright spec, because the
+    tool is an ES module using `import.meta` and Playwright transpiles a spec to CommonJS, so
+    `tests/e2e/narrative.pw.ts` reads the table out of the file as text with a regex. Story 2-13
+    needed the same table to prove that no non-3D trigger fetches the gem chunk, and copied a
+    narrowed form of that parse: `@react-three/postprocessing` only, which is the one library
+    `GemNarrative` imports and nothing else in the repository does.
+
+    Both copies now depend on the tool's exact literal formatting, and a reflow of that array would
+    fail two specs with messages about a parse. The remedy DW-40 already names, a small `.ts` module
+    both the tool and the specs import, is now worth more: three readers rather than two.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-50
+  summary: >-
+    `/` is no longer prerendered. Reading the `Save-Data` header opts the route out of static
+    rendering, which is the price of the 2026-09-07 ruling and was paid deliberately. Nothing gates
+    on it, but `ops/asset-budget.mjs` weighs prerendered documents, so the homepage's document figure
+    is now unmeasurable by the tool, and the origin serves the route per request.
+  evidence: |-
+    `headers()` is a dynamic API: a route that calls it is server-rendered on demand. `corepack pnpm
+    build` now prints `ƒ /` where it printed `○ /`, and `.next/server/app` holds seven documents
+    rather than eight. Verified 2026-09-07 that nothing pins the mode: no `export const dynamic`
+    anywhere under `app/`, no test reads `.next/server/app` outside its own fixtures
+    (`ops/__tests__/asset-budget.test.ts` writes the documents it reads), the CI job names are
+    untouched, and `corepack pnpm build`, the full vitest suite and the whole Playwright suite in the
+    pinned container are green.
+
+    Two consequences are real and neither is a defect. A third, the `Vary` header this route ought
+    to carry now that it varies, is DW-51.
+
+    **The record loses a row it used to be able to take.** `ops/asset-budget.mjs` reads
+    `.next/server/app/*.html` as ground truth for what a route references, so `/` now has no row in
+    § Every route and the "8 prerendered documents" figures elsewhere in `ops/asset-budget.md` read
+    7. The tool still runs, because it refuses only an empty set. Re-measuring the homepage's
+    payload now needs a request against a running server rather than a file on disk, which is a
+    change to the tool rather than to the record, and `tests/e2e/narrative.pw.ts` already fetches the
+    served document that way for its own scan.
+
+    **The origin renders `/` per request.** The Anchor is served by `next start` in Docker on a
+    two-core box that also compiles during deploys (`ops/known-violations.md`), and Cloudflare sits
+    in front (AD-26). A dynamically rendered route is returned with no-store by default, so the CDN
+    stops absorbing homepage traffic that a static file used to satisfy. The page has no data
+    fetching in it, so the cost is React SSR on the box rather than anything remote. Worth an
+    Operator eye against `ops/capacity-threshold.md` before Epic 3, and worth knowing if `/` ever
+    reads slow in production.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-51
+  summary: >-
+    `/` now varies on the `Save-Data` request header and the response does not say so. `Vary:
+    Save-Data` is declared in `next.config.js` and never reaches the wire, because Next overwrites
+    that header with its own RSC list on every App Router response. What forbids a shared cache from
+    mis-serving the two documents today is the `no-store, private` a dynamic route is answered with,
+    which is a weaker promise than the one the rule is written in.
+  evidence: |-
+    Measured 2026-09-07 against `.next/standalone/server.js` on the built tree. A custom header
+    declared in `next.config.js` for `source: '/'` does reach the response: a probe key added beside
+    the `Vary` arrived intact. The `Vary` itself did not. The response carries
+    `Vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch,
+    Accept-Encoding`, which is Next's own value written after the custom headers are applied, so the
+    declaration is replaced rather than merged.
+
+    The declaration is kept anyway. It is the correct statement of what the route does, it costs
+    nothing, and it takes effect the day Next merges rather than replaces. Writing Next's four RSC
+    tokens into the config beside `Save-Data` would work today and would hardcode framework
+    internals into a file that outlives them, which is a worse trade.
+
+    The exposure is currently zero and is worth stating precisely. AD-26 puts Cloudflare in front of
+    this origin, and Next answers a dynamically rendered route with `Cache-Control: no-store,
+    must-revalidate, no-cache, max-age=0, private`, so no shared cache may store the document at
+    all, with or without a `Vary`. The hazard arrives if anyone makes `/` cacheable again: PPR, an
+    `s-maxage` rule at the CDN, or a future story that moves the header read somewhere static.
+    `tests/e2e/front-door.pw.ts` therefore asserts the guarantee rather than the header, requiring
+    that `/` either declares `Vary: Save-Data` or forbids shared storage, and it fails the day
+    neither is true.
+
+    Two closures. A `middleware.ts` can set response headers after the render, which is a new
+    top-level source file and a per-request hop for one header, and it is a change with its own
+    scope. Or the edge does it: `docker/Caddyfile` is already incomplete against
+    `ops/routing-inventory.md` and is being rebuilt in Epic 4, which is the natural place for a
+    `Vary` on one route.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-52
+  summary: >-
+    A-14 has three clauses and this story shipped two. The canvas is `aria-hidden` and out of the tab
+    order; its content is nowhere stated in prose, nothing asserts that it is, and the story's own
+    matrix scoped the row to the two clauses it met.
+  evidence: |-
+    `EXPERIENCE.md:773` reads "The 3D canvas is `aria-hidden` and not focusable, being decorative
+    with its content stated in prose", and `epics.md:2591` repeats it as an acceptance criterion:
+    "**Then** it is `aria-hidden`, not focusable, and its content is stated in prose."
+
+    Story 2-13 closed the first two in `components/atoms/Scene/Scene.tsx` and asserted both in
+    `tests/e2e/front-door.pw.ts`. The third is a content question rather than a markup one: nothing
+    on `/` describes what the narrative shows. The premise block above the Directory is about the
+    estate rather than about the scene, and the `alt`-less canvas leaves a reader who cannot see it
+    with no account of what they are missing.
+
+    It is filed rather than done because the prose does not exist to ship: no design document writes
+    a description of the scene, `review-rubric.md` records that the narrative has no visual row of
+    its own, and inventing one in an implementation story would be writing product copy under a spec
+    that forbids invented facts. Story 2-29 rebuilds the hero and Story 2-26 is the Hub's
+    accessibility pass; either can carry it, and whichever does needs a sentence from the Operator
+    or a decision that a decorative canvas needs no prose, which would be an `EXPERIENCE.md` change.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
+  id: DW-53
+  summary: >-
+    The cross-surface total in `ops/hit-target-floor.md` is read by no test. Story 2-13's spec said
+    the record and the spec file are held equal in both directions, and that is true of the
+    per-surface table only: the sentence stating the total could have been left at 53 while every
+    number around it moved to 17, with the whole suite green.
+  evidence: |-
+    `ops/__tests__/hit-target-floor.test.ts` parses two tables out of the record, the exemption
+    ledger and the surfaces swept, and holds each against the literal in
+    `tests/e2e/hit-target-floor.pw.ts`. The prose line "**54 elements measured across five
+    surfaces**" is not in either table, and no other test reads the record's prose. Verified
+    2026-09-07 by reading the suite: `recordSurfaces` takes `section(markdown, 'The surfaces swept')`
+    and `table(..., 'Surface')`, and nothing else in the file touches that section's text.
+
+    Story 2-13 moved the total from 53 to 54 by hand and correctly, so nothing is wrong in the
+    record today. What is wrong is the belief, stated in the story's spec, that the total is held
+    equal by a test. It is a derived figure, it is the one a reader quotes, and it drifts silently.
+
+    The fix is small and belongs with the suite that already parses the table: sum the `Measured`
+    column and compare it against the number in that sentence, with the same both-directions message
+    the other comparisons carry. It was not done here because that suite is Story 2-8's instrument
+    and this story's boundaries name the two numbers rather than the agreement between them.
+  status: open

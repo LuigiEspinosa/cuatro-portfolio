@@ -81,9 +81,17 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * `measured: 0` on `/celeste` is a measurement rather than an omission: `celeste.scss:8-10` sets
  * `display: none` on the header, so all seven of its candidates are removed by the visibility
  * rule and none is left to measure.
+ *
+ * **`/` moved from 16 to 17 with Story 2-13, and only by one.** That story adds two controls and
+ * this sweep can see exactly one of them. The A-6 skip-link renders on every path, positioned
+ * above the viewport rather than clipped, so it is a real box this floor measures and passes. The
+ * skip control renders on the default path only, and this project runs `reducedMotion: 'reduce'`
+ * (`playwright.config.ts:79`), which is the non-3D path where it does not render at all:
+ * `tests/e2e/front-door.pw.ts` measures that one, on a `no-preference` context, because nothing
+ * here can.
  */
 const SURFACES = [
-  { route: '/', status: 200, entrance: true, found: 16, skipped: 0, measured: 16 },
+  { route: '/', status: 200, entrance: true, found: 17, skipped: 0, measured: 17 },
   { route: '/work', status: 200, entrance: false, found: 11, skipped: 0, measured: 11 },
   { route: '/projects', status: 200, entrance: false, found: 18, skipped: 0, measured: 18 },
   { route: '/celeste', status: 200, entrance: false, found: 7, skipped: 7, measured: 0 },

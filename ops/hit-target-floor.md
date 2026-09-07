@@ -95,13 +95,21 @@ one commit.
 
 | Surface | Status | Candidates found | Skipped | Measured |
 |---|---|---|---|---|
-| `/` | 200 | 16 | 0 | 16 |
+| `/` | 200 | 17 | 0 | 17 |
 | `/work` | 200 | 11 | 0 | 11 |
 | `/projects` | 200 | 18 | 0 | 18 |
 | `/celeste` | 200 | 7 | 7 | 0 |
 | `/a-route-that-does-not-exist` | 404 | 8 | 0 | 8 |
 
-**53 elements measured across five surfaces.**
+**54 elements measured across five surfaces.**
+
+**Re-measured 2026-09-07** after Story 2-13 built the non-3D front door. `/` went from 16 to 17 and
+the other four did not move. The one new element is the A-6 skip-link, which renders on every path
+and is positioned above the viewport rather than clipped to a pixel, so it keeps a real box this
+floor can measure and clears it on both axes. The story's other control, the skip control, renders
+on the default path only, and this sweep runs the `reducedMotion: 'reduce'` context
+(`playwright.config.ts:79`), which is the non-3D path: it is measured in
+`tests/e2e/front-door.pw.ts` instead, on a context that has not asked for reduced motion.
 
 **The route set itself is derived from `app/`, not from this table.** **Decision.** A standing case
 walks `app/` for `page.tsx`, `route.ts` and `not-found.tsx`, in the shape
