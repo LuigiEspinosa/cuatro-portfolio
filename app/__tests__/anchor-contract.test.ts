@@ -233,7 +233,12 @@ const WEIGHT_ROLE = '--w-black';
  * one role, so a file added here that consumes nothing is a hole rather than an entry. Story 2-22
  * deletes the alias layer, at which point this partition and `WEIGHT_CALL_SITES` collapse into one.
  */
-const TOKEN_NATIVE_STYLESHEETS = ['components/organisms/SuiteDirectory/SuiteDirectory.scss'] as const;
+const TOKEN_NATIVE_STYLESHEETS = [
+  'components/molecules/PlateMark/PlateMark.scss',
+  'components/organisms/Premise/Premise.scss',
+  'components/organisms/SiteFooter/SiteFooter.scss',
+  'components/organisms/SuiteDirectory/SuiteDirectory.scss',
+] as const;
 
 /** The one file that carries the alias layer. */
 const ALIAS_LAYER = 'app/app.scss';

@@ -12,7 +12,7 @@ import './SuiteDirectory.scss';
  *
  * **A server component, and that is load-bearing rather than incidental.** A client component that
  * value-imported the Registry would ship all fourteen entries to a visitor who is shown six, which
- * is what `lib/__tests__/registry.test.ts:189-235` refuses. Rendering on the server satisfies that
+ * is what `lib/__tests__/registry.test.ts:621-668` refuses. Rendering on the server satisfies that
  * by construction rather than by a mock, and the directory has no state to justify a boundary:
  * hover and focus are CSS, and the orchestrated entrance belongs to Story 2-12.
  *

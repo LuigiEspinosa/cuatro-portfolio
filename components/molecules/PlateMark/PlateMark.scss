@@ -1,0 +1,55 @@
+// The Plate mark, Section variant (Story 2-11).
+//
+// Token-native, like `SuiteDirectory.scss` beside it and for the same reason: this file is new
+// rather than migrated, so there is no old alias name for it to keep and the alias layer in
+// `app/app.scss` is not in its path at all. `app/__tests__/anchor-contract.test.ts` carries the
+// list of files allowed to name contract roles directly, and this one is on it.
+//
+// **It declares no custom property of its own.** All sixteen of the Hub's live in `app/app.scss`,
+// which is what makes the collision argument against the contract's eighty-nine checkable in one
+// place. That is asserted rather than remembered.
+//
+// Every value is transcribed from `DESIGN.md` § Components, Plate mark, and nothing is decided
+// here. The tracking is named by its token rather than written out: `epics.md` and the reference
+// mockup disagree with `DESIGN.md` on the figure, and `DESIGN.md` wins any value, so the one place
+// the number lives is the contract.
+
+.plate-mark {
+  display: flex;
+  // **Wrapping, so the trailing cell drops rather than overflowing.** The two cells share one
+  // baseline where they fit on one line, which is the common case and the treatment
+  // `DESIGN.md:687-688` describes; where they do not, the trailing cell takes a second line. That is
+  // deliberate: at 360 the mark has 320px of content width, and a longer domain than the one the
+  // committed Registry carries would otherwise paint past the edge, which is A-5 outright.
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2xs) var(--s-md);
+  padding-block-end: var(--s-xs);
+  // The rule beneath the label, running the content width of its container and never the padded
+  // width, so successive separators align down the page (`RESTYLE-SPEC.md:312-313`). A hairline,
+  // because it divides and marks nothing actionable (`:302`).
+  border-block-end: var(--stroke-hair) solid var(--token-border);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  // Always, and set on the container so both cells inherit it. `DESIGN.md:490` binds this to every
+  // count, plate mark and metric. The mark carries no digit today; the rule is here so the day one
+  // arrives it does not shift the characters beside it.
+  font-variant-numeric: tabular-nums;
+  color: var(--token-text-secondary);
+}
+
+// **`min-inline-size: 0` is load-bearing and is the same finding `SuiteDirectory.scss:267-269`
+// records.** Each cell is a flex item, so its automatic minimum is its own min-content width, and a
+// hostname is one unbroken token: left at `auto` the cell refuses to shrink, wrapping never gets
+// the chance to break it, and the mark paints past the viewport at 360. `overflow-wrap` is what
+// gives the break somewhere to happen once the cell can shrink. Neither does anything on the
+// committed Registry's own domain, and both hold for the day the Hub moves to a longer one.
+.plate-mark__label,
+.plate-mark__domain {
+  min-inline-size: 0;
+  overflow-wrap: break-word;
+}

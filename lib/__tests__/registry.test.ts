@@ -5,6 +5,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   DEMO_VALUES,
+  ESTATE_FRAMEWORKS,
+  ESTATE_LANGUAGES,
   HUB_ORIGIN,
   IDENTITY_VALUES,
   REGISTRY_STATUSES,
@@ -12,12 +14,15 @@ import {
   REQUIRED_FIELDS,
   applications,
   groupByFamily,
+  hubEntries,
+  hubEntry,
   isCurrentOrigin,
   orderByStatus,
   renderedApplications,
   selectRendered,
   type RegistryEntry,
 } from '../registry';
+import { capitalise, pluralise, spellOut } from '../words';
 
 /**
  * The Hub's read of the published Registry (Story 2.7).
@@ -328,6 +333,322 @@ describe('You are here is a property of the origin, never of an id', () => {
     // that stopped matching the origin it was built from.
     expect(literal.test(`url: '${HUB_ORIGIN}/work'`), 'the scan no longer fires on a hard-coded origin').toBe(true);
     expect(literal.test("url: '/work'"), 'the scan fires on a relative url').toBe(false);
+  });
+});
+
+describe('which entry the Hub is, is the same origin comparison read once (Story 2-11)', () => {
+  it('answers the entry the directory marks, over the committed Registry', () => {
+    // The Plate mark on the premise block and the `You are here` mark on the row below it state the
+    // same fact, so they are the same rule read twice rather than two rules that agree today.
+    const marked = applications.filter((application) => isCurrentOrigin(application));
+    expect(marked.length, 'no committed entry serves the declared origin, so this case is vacuous').toBe(1);
+    expect(hubEntry()?.id).toBe(marked[0].id);
+  });
+
+  it('moves with the origin instead of staying on one entry', () => {
+    const elsewhere = applications.find(
+      (application) => application.live !== undefined && !isCurrentOrigin(application)
+    );
+    expect(elsewhere, 'every committed entry with a hostname is the Hub, so this case is vacuous').toBeDefined();
+    expect(hubEntry(elsewhere?.live)?.id).toBe(elsewhere?.id);
+  });
+
+  it('answers nothing for an origin the Registry does not serve, rather than the first entry', () => {
+    // The failure worth naming: a lookup that fell back to `applications[0]` would put a plausible
+    // name and a plausible domain on the mark on the day the Hub moved, and nothing would look
+    // wrong. Absent is the honest answer, and the block draws no mark for it.
+    expect(hubEntry('https://nothing-here.example')).toBeUndefined();
+  });
+
+  it('answers nothing for a value URL refuses, rather than throwing', () => {
+    expect(hubEntry('not-a-url')).toBeUndefined();
+  });
+
+  it('reads the whole Registry and not the rendered subset', () => {
+    // The application serving the page a reader is on is not a question about what the filter
+    // shows. An entry flipped to a held-back status is still the thing they are looking at, and a
+    // lookup over `renderedApplications` would silently stop finding it.
+    const held = entry({ id: 'the-hub', status: 'In progress', live: HUB_ORIGIN });
+    expect(selectRendered([held]), 'the fixture renders, so this case is not about a held-back entry').toEqual([]);
+    expect(hubEntry(HUB_ORIGIN, [held])?.id).toBe('the-hub');
+  });
+
+  it('takes its list, so it can be exercised against a Registry the committed file is not', () => {
+    const moved = entry({ id: 'moved', status: 'Live', live: 'https://elsewhere.example' });
+    expect(hubEntry('https://elsewhere.example', [moved])?.id).toBe('moved');
+    expect(hubEntry(HUB_ORIGIN, [moved])).toBeUndefined();
+  });
+
+  it('returns nothing for an empty Registry rather than throwing', () => {
+    expect(hubEntry(HUB_ORIGIN, [])).toBeUndefined();
+  });
+
+  it('collects every match, because the Directory marks every one of them', () => {
+    // `SuiteDirectoryRow` calls `isCurrentOrigin` per row, so two entries under one origin already
+    // render two `You are here` marks. The plural form is what makes that state inspectable rather
+    // than something only the rendered page knows about.
+    const twice = [
+      entry({ id: 'first', status: 'Live', live: HUB_ORIGIN }),
+      entry({ id: 'second', status: 'Live', live: `${HUB_ORIGIN}/elsewhere` }),
+      entry({ id: 'other', status: 'Live', live: 'https://other.example' }),
+    ];
+    expect(hubEntries(HUB_ORIGIN, twice).map((application) => application.id)).toEqual(['first', 'second']);
+  });
+
+  it('answers nothing when two entries claim one origin, rather than picking the first', () => {
+    // **The failure this refuses.** A `find` would put one application's name and domain on the
+    // plate mark while the Directory below marked two rows `You are here`: a page contradicting
+    // itself, with every gate green because each half still agreed with itself. Answering nothing
+    // is visible, because `Premise` then draws no mark at all.
+    const twice = [
+      entry({ id: 'first', status: 'Live', live: HUB_ORIGIN }),
+      entry({ id: 'second', status: 'Live', live: `${HUB_ORIGIN}/elsewhere` }),
+    ];
+    expect(hubEntries(HUB_ORIGIN, twice)).toHaveLength(2);
+    expect(hubEntry(HUB_ORIGIN, twice)).toBeUndefined();
+
+    // And the same list with the ambiguity removed resolves, so the case above is about the
+    // duplication and not about the fixture.
+    expect(hubEntry(HUB_ORIGIN, twice.slice(0, 1))?.id).toBe('first');
+  });
+
+  it('finds exactly one entry serving the declared origin in the committed Registry', () => {
+    // The premise of the mark on the page. Nothing in `contracts/registry.schema.json` makes `live`
+    // unique, so this is the check that the shipped file is in the state the mark needs.
+    expect(hubEntries().map((application) => application.id)).toEqual(['cuatro-portfolio']);
+  });
+
+  it('agrees with the set the Directory marks, over the committed Registry', () => {
+    expect(hubEntries().map((application) => application.id)).toEqual(
+      applications.filter((application) => isCurrentOrigin(application)).map((application) => application.id)
+    );
+  });
+});
+
+describe('the band and the footer name only things the estate actually runs (Story 2-11)', () => {
+  /** Every `tech` value the Registry declares, across every entry. */
+  const TECH = applications.flatMap((application) => application.tech);
+
+  /**
+   * The one framework a Registry entry spells longer than the band does, and the value it hides in.
+   *
+   * **A named pair rather than a loosened rule.** Plain containment would resolve a framework
+   * against any stack value that merely spells its name inside a different product, so `React`
+   * would resolve against an entry declaring `Preact` and the band could name a framework nothing
+   * in the estate is built with. Equality everywhere plus this one pair is the narrow form: the
+   * exception is visible, and the case below proves it is still earned.
+   */
+  const CONTAINED = [{ framework: 'Svelte', within: 'SvelteKit' }] as const;
+
+  /** Whether `name` is one of `corpus`, or reaches it through its one declared container. */
+  const resolves = (name: string, corpus: readonly string[]): boolean =>
+    corpus.includes(name) ||
+    CONTAINED.some((pair) => pair.framework === name && corpus.includes(pair.within));
+
+  /** The strict form, for the languages, which declare themselves verbatim and take no exception. */
+  const isSomeTech = (name: string, corpus: readonly string[] = TECH): boolean => corpus.includes(name);
+
+  it('reads a Registry with a stack to compare against, so every case below measures something', () => {
+    expect(TECH.length, 'no committed entry declares any tech, so both scans below are vacuous').toBeGreaterThan(0);
+  });
+
+  it('states the two counts the plan states, so neither list can quietly grow or shrink', () => {
+    // `DESIGN.md:208` is the claim these lists exist to make. A seventh framework or a sixth
+    // language is a change to what the estate is, not a line to add: it moves the footer figure and
+    // the band's rhythm at once, and it fails here first.
+    expect(ESTATE_FRAMEWORKS.length, 'the framework band no longer draws the declared six').toBe(6);
+    expect(ESTATE_LANGUAGES.length, 'the footer line no longer counts the declared five').toBe(5);
+  });
+
+  it('holds no name twice in either list, which no resolution check could catch', () => {
+    // **A duplicate resolves exactly as well as the original**, so every case below would pass over
+    // one. It would draw the same name twice in the band and, in the language list, add one to a
+    // figure the footer states: the estate credited with a language it does not have, from a line
+    // nobody would look at twice.
+    expect(new Set(ESTATE_FRAMEWORKS).size, 'the framework band names something twice').toBe(
+      ESTATE_FRAMEWORKS.length
+    );
+    expect(new Set(ESTATE_LANGUAGES).size, 'the footer counts a language twice').toBe(ESTATE_LANGUAGES.length);
+    // The uniqueness check, on a planted control, so an equal pair of sizes is a measurement.
+    expect(new Set([...ESTATE_LANGUAGES, ESTATE_LANGUAGES[0]]).size).toBe(ESTATE_LANGUAGES.length);
+  });
+
+  it('resolves every framework the band draws to some entry in the Registry', () => {
+    const invented = ESTATE_FRAMEWORKS.filter((framework) => !resolves(framework, TECH));
+    expect(
+      invented,
+      `the band names a framework no application in the Registry is built with, which is an invented ` +
+        `fact on the one ornament in the system:\n${invented.join('\n')}`
+    ).toEqual([]);
+  });
+
+  it('resolves every language the footer counts to some entry in the Registry', () => {
+    const invented = ESTATE_LANGUAGES.filter((language) => !isSomeTech(language));
+    expect(
+      invented,
+      `the footer counts a language no application in the Registry declares:\n${invented.join('\n')}`
+    ).toEqual([]);
+  });
+
+  it('resolves by equality, so a stack value that merely spells a name inside it is not a match', () => {
+    // The reason the exception is a pair and not a looser rule. Under plain containment an entry
+    // declaring `Preact` would resolve `React`, and the band would name a framework the estate does
+    // not use while every check above stayed green.
+    expect(resolves('React', ['Preact']), 'a longer stack value resolves a framework it merely contains').toBe(false);
+    expect(resolves('React', ['React']), 'the resolver does not fire on an exact tech value').toBe(true);
+  });
+
+  it('resolves the one named exception, and only through the value it names', () => {
+    expect(resolves('Svelte', ['SvelteKit']), 'the declared exception no longer resolves').toBe(true);
+    expect(resolves('Vue', ['VueKit']), 'the exception applies to a framework it was not declared for').toBe(false);
+  });
+
+  it('and that exception is still earned by the Registry rather than left over', () => {
+    // Stated rather than assumed. If the entry that spells it longer ever declared the framework
+    // verbatim, the pair would be dead weight and a later reader should delete it; if the framework
+    // stopped being reachable through it, the pair would be hiding a name that resolves to nothing.
+    for (const pair of CONTAINED) {
+      expect(
+        isSomeTech(pair.framework),
+        `${pair.framework} is now a verbatim tech value, so its containment exception is dead weight`
+      ).toBe(false);
+      expect(
+        isSomeTech(pair.within),
+        `no entry declares ${pair.within}, so the exception for ${pair.framework} resolves nothing`
+      ).toBe(true);
+    }
+  });
+
+  it('and both scans fire, so an empty result is a measurement rather than a broken matcher', () => {
+    // The other direction. A predicate that had stopped matching would report every declared name
+    // as resolving and every list as clean, which looks exactly like a correct one.
+    expect(resolves('Fortran', TECH), 'the framework scan resolves a name no entry carries').toBe(false);
+    expect(isSomeTech('Fortran'), 'the language scan resolves a name no entry carries').toBe(false);
+    expect(resolves(TECH[0], TECH), 'the framework scan does not fire on a real tech value').toBe(true);
+    expect(isSomeTech(TECH[0]), 'the language scan does not fire on a real tech value').toBe(true);
+  });
+
+  it('does not claim the band restates what the Directory renders, because it does not', () => {
+    // **The claim an earlier pass made in `Premise.tsx` and had to withdraw.** The band was
+    // described as a decorative restatement of names already visible on the rows below, which would
+    // have been a second argument for hiding it. Measured here instead of asserted in prose: some
+    // of the band resolves only against entries the FR-35 filter holds back, so the band is not a
+    // restatement and the `aria-hidden` decision rests on FR-4 alone.
+    const rendered = renderedApplications.flatMap((application) => application.tech);
+    const notOnThePage = ESTATE_FRAMEWORKS.filter((framework) => !resolves(framework, rendered));
+    expect(
+      notOnThePage.length,
+      'every framework the band names is now on a rendered row, so the band really is a restatement ' +
+        'today. That is a fact about this Registry and not about the design: the comment in ' +
+        'Premise.tsx must not start claiming it, because the next status flip takes it away'
+    ).toBeGreaterThan(0);
+    // And each of those still resolves against the estate as a whole, which is the rule that matters.
+    for (const framework of notOnThePage) {
+      expect(resolves(framework, TECH), `${framework} resolves against no entry at all`).toBe(true);
+    }
+  });
+});
+
+describe('a count on the page is a length, never a word somebody typed (Story 2-11)', () => {
+  /**
+   * The footer's first figure, composed exactly as `SiteFooter` composes it, noun included.
+   *
+   * **The noun is part of the composition and not decoration on it.** Both halves are decided by a
+   * length nobody types, so a figure tested without its noun leaves `One applications` reachable
+   * with every case green, which is what it was before this took the noun in.
+   */
+  const applicationFigure = (entries: readonly RegistryEntry[]): string => {
+    const count = selectRendered(entries).length;
+    return `${capitalise(spellOut(count))} ${pluralise(count, 'application')}`;
+  };
+
+  /** The premise's opening, composed exactly as `Premise` composes it. */
+  const projectFigure = (entries: readonly RegistryEntry[]): string => {
+    const count = entries.length;
+    return `${capitalise(spellOut(count))} ${pluralise(count, 'personal project')}`;
+  };
+
+  /** Just the words, for the cases that are about the number rather than about the noun. */
+  const applicationWord = (entries: readonly RegistryEntry[]): string => applicationFigure(entries).split(' ')[0];
+  const projectWord = (entries: readonly RegistryEntry[]): string => projectFigure(entries).split(' ')[0];
+
+  /** `howMany` rendered entries and nothing else, so a word can be pinned without pinning the file. */
+  const running = (howMany: number): RegistryEntry[] =>
+    Array.from({ length: howMany }, (_, at) =>
+      entry({ id: `running-${at}`, status: 'Live', live: `https://running-${at}.cuatro.dev` })
+    );
+
+  it('spells the footer figure from the rendered length, and a seventh entry moves the word', () => {
+    // The story's own acceptance criterion, over a fixture rather than over the committed file: the
+    // day a seventh application ships, the line follows it with no edit anywhere.
+    expect(applicationWord(running(6))).toBe('Six');
+    expect(applicationWord(running(7))).toBe('Seven');
+  });
+
+  it('reverts the word when the fixture reverts', () => {
+    const six = running(6);
+    const seventh = entry({ id: 'seventh', status: 'Live', live: 'https://seventh.cuatro.dev' });
+    expect(applicationWord([...six, seventh])).toBe('Seven');
+    expect(applicationWord(six)).toBe('Six');
+  });
+
+  it('moves on a status flip alone, with no second edit', () => {
+    // The rule is `selectRendered` and nothing else, so an entry that becomes `Live` changes the
+    // first word of the footer line without anybody touching the copy.
+    const six = running(6);
+    const pending = entry({ id: 'pending' });
+    expect(applicationWord([...six, pending])).toBe('Six');
+    expect(applicationWord([...six, { ...pending, status: 'Live', live: 'https://pending.cuatro.dev' }])).toBe('Seven');
+  });
+
+  it('spells the premise opening from the whole Registry, at fourteen entries and at fifteen', () => {
+    expect(projectWord(running(14))).toBe('Fourteen');
+    expect(projectWord(running(15))).toBe('Fifteen');
+  });
+
+  it('reads two different lengths for the two lines, which are two different rules', () => {
+    // The premise counts everything the Registry holds and the footer counts what a Visitor is
+    // shown. A single count wired into both would agree with itself and be wrong on one of them.
+    const mixed = [...running(2), entry({ id: 'held' })];
+    expect(projectWord(mixed)).toBe('Three');
+    expect(applicationWord(mixed)).toBe('Two');
+  });
+
+  it('states the committed counts as words, with no digit reaching either line', () => {
+    for (const word of [projectWord(applications), applicationWord(applications), spellOut(ESTATE_LANGUAGES.length)]) {
+      expect(word, `${word} reaches a line of copy as digits`).not.toMatch(/\d/);
+    }
+  });
+
+  it('agrees with its own noun at a count of one, on both lines', () => {
+    // **The state the derivation made reachable and nobody could see.** A Registry rendering one
+    // entry produced `One applications` and `One personal projects became one suite`, because the
+    // count and the noun are decided by the same length and nothing in the copy draws attention to
+    // either. Exercised through the composition rather than through `pluralise` alone: a helper that
+    // is correct and unwired passes every case in `lib/__tests__/words.test.ts`.
+    const alone = [entry({ id: 'only', status: 'Live', live: 'https://only.cuatro.dev' })];
+    expect(applicationFigure(alone)).toBe('One application');
+    expect(projectFigure(alone)).toBe('One personal project');
+  });
+
+  it('goes back to the plural on the entry after it, so the singular is a rule and not a constant', () => {
+    expect(applicationFigure(running(2))).toBe('Two applications');
+    expect(projectFigure(running(2))).toBe('Two personal projects');
+  });
+
+  it('keeps the plural at zero, which is where a threshold instead of an equality would go wrong', () => {
+    // Not reachable from a healthy Registry, and it is the arm an off-by-one in the rule lands on.
+    expect(applicationFigure([entry({ id: 'held' })])).toBe('Zero applications');
+    expect(projectFigure([])).toBe('Zero personal projects');
+  });
+
+  it('counts the two lines separately at one, because they are still two rules', () => {
+    // One rendered entry beside one held back: the premise counts both and the footer counts one,
+    // so the same page carries a plural and a singular at the same time. A single count wired into
+    // both would read the same on each and be wrong on one.
+    const mixed = [...running(1), entry({ id: 'held' })];
+    expect(projectFigure(mixed)).toBe('Two personal projects');
+    expect(applicationFigure(mixed)).toBe('One application');
   });
 });
 

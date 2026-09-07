@@ -2385,3 +2385,174 @@ status: done
     `ops/__tests__/hit-target-floor.test.ts` parses as text, and Story 2-10's boundaries put that
     file off limits. A story that owns the harness can lift all four helpers in one change.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  summary: >-
+    `epics.md:2508` specifies the plate mark's tracking one step wider than `DESIGN.md:686` does,
+    and the reference mockup follows `epics.md` on its plate marks while following `DESIGN.md` on
+    its own nav and count rows. Story 2-11 implemented the token and filed the drift rather than
+    correcting either document.
+  evidence: |-
+    `DESIGN.md:686` specifies the plate mark in mono at `--t-3xs` with `--tr-label` tracking, and
+    `contracts/tokens.css:77` declares `--tr-label` at `0.14em`. `epics.md:2508` writes the same
+    requirement with the figure spelled out one step wider, and
+    `mockups/key-screens.html:117` renders `.plate` at that wider figure while `:104`, `:145`,
+    `:148` and `:168` all set the narrower one on the nav, the directory count, the family label
+    and the status mark. So the mockup disagrees with itself, and the only file that is
+    self-consistent is `DESIGN.md`, which is also the file that wins any value by its own
+    declaration at `:187-188`.
+
+    The component names the token and writes no figure, so the shipped mark follows `DESIGN.md`
+    and `tests/e2e/premise.pw.ts` reads the token off the running page rather than restating
+    either number. That resolves the implementation and leaves the documents disagreeing. Filed
+    rather than fixed because `epics.md` is a planning artifact under a frozen approval and the
+    design documents are a spine: a value in one is changed deliberately, through a sprint change,
+    and not as a side effect of a story that was implementing it.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  summary: >-
+    `EXPERIENCE.md:276` writes the premise opening as `Fifteen personal projects`, and
+    `contracts/registry.json` holds fourteen entries. The shipped premise derives its number, so
+    the page is right and the canonical copy is one ahead of the Registry.
+  evidence: |-
+    `EXPERIENCE.md:271-279` is the canonical FR-4 copy and opens `Fifteen personal projects became
+    one suite`. `contracts/registry.json` holds fourteen applications, which
+    `lib/registry.ts` exposes as `applications` and which the premise block spells through
+    `lib/words.ts`. The rendered page therefore reads `Fourteen`, and no test compares it against
+    the document, because the whole point of deriving it is that the number is the Registry's.
+
+    The figure is not arbitrary: `ops/estate.md` carries a fifteen-row disposition table, and an
+    earlier entry in this ledger records that two live Vercel hostnames appear in neither that
+    table nor the Registry, so the estate record and the Registry already disagree about how many
+    applications exist and by how much. Correcting `EXPERIENCE.md` to `Fourteen` by hand would
+    write a second number that goes stale the day Story 2-4 reconciles that record, which is the
+    failure the derivation exists to prevent. The honest closure is either to reconcile the count
+    once across `ops/estate.md`, the Registry and `EXPERIENCE.md`, or to rewrite the canonical
+    copy so it names no number and points at the derivation instead. Story 2-4 owns the
+    reconciliation; this is filed as a sprint-change item rather than a silent correction.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  summary: >-
+    `GlitchText.tsx:72` puts `aria-label` on a plain `<div>`, which is the one ARIA attribute that
+    role prohibits, and hides the `<h1>` inside it. The home route therefore ships a page heading
+    that is in nobody's accessibility tree, and it is the only audit failing Lighthouse there.
+  evidence: |-
+    Measured 2026-09-06 in `mcr.microsoft.com/playwright:v1.62.1-noble` against `pnpm build` plus
+    `pnpm start`, by `lighthouse --only-categories=accessibility` on `/` and `/work`. The home route
+    scores **0.96**, above the 0.95 floor `.lighthouserc.js` asserts, and `color-contrast` passes
+    outright. One audit fails: `aria-prohibited-attr`, on the single node
+    `main > div.home-container > div.home-panel > div.glitch-text`, snippet
+    `<div class="glitch-text glitch" aria-label="Luigi Espinosa">`. The same audit passes on `/work`,
+    so it is the component and not the chrome.
+
+    The defect is not cosmetic. A bare `<div>` has the `generic` role, which prohibits an accessible
+    name, so the `aria-label` is discarded rather than applied; and `GlitchText.tsx:73` marks the
+    `<h1>` it wraps `aria-hidden='true'`, because the animation rewrites its characters. The two
+    together mean the home route has no page heading in the accessibility tree at all. The fix is
+    small, moving the label onto an element whose role admits one, or giving the wrapper
+    `role='heading'` with its level, but it is a change to the hero and this story's boundaries do
+    not reach it.
+
+    Pre-existing, and not caused by Story 2-11: the premise block, the plate mark and the footer add
+    no ARIA attribute other than `aria-hidden` on the framework band, which is a global attribute no
+    role prohibits, and the band is correctly skipped by the contrast audit.
+
+    One observation alongside it, recorded with its uncertainty rather than as a finding. The same
+    run scored `/work` at **0.94**, under the same 0.95 floor, on a single run in a container rather
+    than on the `ubuntu-latest` runner `lighthouse.yml` uses, and against `numberOfRuns: 3`, whose
+    assertion is taken over the median. That is one reading in a different environment, so it is
+    not evidence that the gate is red on `main`; it is a reason to look at `/work`'s accessibility
+    score deliberately. Story 2-26, the Hub's focus standard and manual accessibility pass, is the
+    natural owner of both.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  summary: >-
+    `SiteFooter` is mounted in `app/page.tsx`, so the component named for the site ships on the home
+    route only. Every other route still ends without a footer, and the next story to touch the region
+    will either move it into the layout or mount it a second time.
+  evidence: |-
+    Story 2-11 scoped the footer to the homepage deliberately: FR-1 is a claim about the homepage's
+    primary scroll, and putting a footer under `/work`, `/celeste` and the 404 in the same change
+    would have reached past the story's boundaries into Stories 2-15 and 2-17. So this is a
+    consequence of the scope rather than a defect in it.
+
+    It is filed because nothing in the tree says so where the next reader will look. `SiteFooter.tsx`
+    explains what it omits (no `<nav>`, no links, both deferred by name) but not where it is mounted
+    or why that is not `app/layout.tsx`. Story 2-17 requires `/celeste` to be reachable from the
+    footer and only from the footer, and Story 2-15 reshapes the nav; whichever lands first has to
+    decide the mount point, and the placement cases in `app/__tests__/page.test.tsx` and
+    `tests/e2e/premise.pw.ts` both pin the fragment shape that a move would change. Recording the
+    decision now costs one docblock; rediscovering it costs a story.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  summary: >-
+    `tests/e2e/premise.pw.ts`'s `outsideViewport` sweeps `document.querySelectorAll('*')`, so any
+    overflow anywhere on the home route fails the premise suite, duplicating the A-5 sweep
+    `tests/e2e/hit-target-floor.pw.ts` already runs for `/` and attributing the failure to the wrong
+    story.
+  evidence: |-
+    The premise suite needs to know that the block it adds puts nothing outside the viewport at 360.
+    It establishes that with a document-wide rect sweep, which is a strictly larger claim: an
+    overflow introduced later by Story 2-31 or 2-33 in `WorkItem` or `WorkHero`, the two components
+    `ops/known-violations.md` records as owning 28 of KV-5's 36 overflowing elements, would turn this
+    file red while naming the premise.
+
+    The narrow fix is to scope the sweep to `.premise`, `.plate-mark` and `.site-footer`, leaving the
+    route-wide claim to the file that owns it. That was not done here because the same four helpers
+    (`goTo`, `plantStyle`, `durationMs`, `EDGE_SLACK`) are now duplicated across four spec files and
+    an earlier entry in this ledger already books lifting them to a story that owns the harness; the
+    scoping and the extraction are one change, and `hit-target-floor.pw.ts` is off limits to Story
+    2-11 for the reason recorded there.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  summary: >-
+    `ESTATE_FRAMEWORKS` and `ESTATE_LANGUAGES` cite `DESIGN.md:208`, `EXPERIENCE.md:79` and the
+    reference mockup for their names, order and counts, and nothing holds the constants against those
+    documents. Only the Registry side is asserted.
+  evidence: |-
+    `lib/__tests__/registry.test.ts` proves every declared name resolves to some entry's `tech`, that
+    the lists hold no duplicate, and that the counts are six and five. That closes the invented-fact
+    hole, which is the one `EXPERIENCE.md:299-300` cares about: nothing in the band names software
+    the estate does not run.
+
+    The other direction is open. If `DESIGN.md:208` were amended to seven frontend frameworks, or
+    `EXPERIENCE.md:79` reordered, the constants would keep their current values and every suite would
+    stay green, because the assertion compares the rendered output to the same constant the component
+    renders. The story asserts the order case against itself and cannot fail on a reordering.
+
+    The shape that would close it is the agreement suite `ops/__tests__/hit-target-floor.test.ts` and
+    `ops/__tests__/status-mark-axes.test.ts` already establish: parse the list out of the document as
+    text and hold it equal to the exported constant in both directions. It is deferred rather than
+    built because those two suites hold `ops/` records, which are written to be parsed, whereas
+    `DESIGN.md:208` is a sentence of prose inside a design spine, and a parser over prose is a
+    maintenance liability that fails on a rewording rather than on a change of fact. Choosing between
+    a fragile parser and a stated non-goal is a decision, not an oversight.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  summary: >-
+    The Plate mark's `label` is documented as section identity above a section head, and its only
+    caller passes the Hub application's own name above a block that deliberately renders no heading.
+    The component's contract and its one usage do not describe the same thing.
+  evidence: |-
+    `DESIGN.md:695-699` defines the Section variant as "section identity above a section head", and
+    `PlateMarkProps.label` repeats it. `Premise.tsx` passes `hub.name`, which is `Cuatro Ecosystem`,
+    the site's own identity, over a premise block whose Never list forbids a heading because
+    `HomeLayout` already renders the page's.
+
+    The usage is not invented: `mockups/key-screens.html:261` renders exactly this mark, identity and
+    bare domain, over exactly this block on the non-3D path, so the design intends it. What is
+    unresolved is whether "section identity" is the right name for a slot the design fills with site
+    identity, and whether the mark belongs to the premise block at all or to the hero above it once
+    Story 2-13 builds the non-3D front door and Story 2-12 supplies the narrative ordinal the
+    mockup's other plate mark carries (`04 / 04`, `:237`).
+
+    Story 2-31 owns the component next: it adds the Annotated and Side-ruled variants and retires
+    `HudLabel` into it. That is the point at which the prop's contract is worth restating against
+    every real call site rather than against one.
+  status: open

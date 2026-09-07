@@ -3,7 +3,7 @@ import Home from '../page';
 import { renderedApplications } from '@/lib/registry';
 
 /**
- * The home route (Story 2-9).
+ * The home route (Stories 2-9 and 2-11).
  *
  * **This is the story's payload and nothing pinned it.** The directory's own file proves what the
  * component draws, and `tests/e2e/suite-directory.pw.ts` proves how it behaves in a browser, but
@@ -31,13 +31,43 @@ describe('the home route', () => {
     expect(within(main as HTMLElement).getByRole('heading', { level: 2, name: 'The Suite' })).toBeInTheDocument();
   });
 
-  it('puts the directory after the hero, so the fold is the hero and the payload follows it', () => {
+  it('puts the premise between the hero and the directory, so the claim precedes its evidence', () => {
+    // Story 2-11 added the middle row. FR-4 requires the premise to be encountered before or with
+    // the Directory, and the mount order is the whole of that: a block rendered after it would
+    // satisfy every case in the component's own file and still be read second.
     const { container } = render(<Home />);
     const children = [...(container.querySelector('main')?.children ?? [])];
     expect(children.map((child) => child.getAttribute('data-testid') ?? child.className)).toEqual([
       'home-layout',
+      'premise',
       'suite-directory',
     ]);
+  });
+
+  it('follows the directory with footer content and nothing else', () => {
+    // FR-1: nothing follows the Directory except footer content. Until Story 2-11 there was no
+    // footer anywhere in the tree for that to be true of, and Stories 2-12 and 2-17 both assume
+    // one exists.
+    //
+    // **Asserted as an exact list rather than as a position, which is what makes it the FR-1
+    // claim.** An earlier version read only "the footer follows the Directory", and a `<div>`
+    // planted between `</main>` and the footer, or an `<aside>` planted after it, satisfied that
+    // while being exactly the thing FR-1 forbids. The region between the Directory and the footer
+    // is what Stories 2-12 and 2-17 edit next, so this is the guard those changes meet.
+    const { container } = render(<Home />);
+    expect([...container.children].map((child) => child.tagName)).toEqual(['MAIN', 'FOOTER']);
+
+    const footer = container.querySelector('footer.site-footer');
+    expect(footer, 'the home route renders no footer').not.toBeNull();
+    // A footer is not main content, so it sits outside the landmark rather than at the end of it.
+    expect(footer?.closest('main'), 'the footer is rendered inside main').toBeNull();
+
+    const directory = container.querySelector('.suite-directory');
+    expect(directory, 'the home route renders no Suite Directory, so this case measures nothing').not.toBeNull();
+    expect(
+      (directory?.compareDocumentPosition(footer as Node) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING,
+      'the footer does not follow the Suite Directory in the document'
+    ).toBeGreaterThan(0);
   });
 
   it('gives /#suite a target that resolves', () => {

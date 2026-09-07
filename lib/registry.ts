@@ -144,6 +144,95 @@ export function isCurrentOrigin(entry: RegistryEntry, origin: string = HUB_ORIGI
 }
 
 /**
+ * Every entry serving `origin`. Normally one, and the plural form exists because it can be more.
+ *
+ * The Suite Directory marks `You are here` on **every** row `isCurrentOrigin` matches, so two
+ * entries declaring one origin is a state the Registry admits and the page already renders: two
+ * marked rows. Nothing in `contracts/registry.schema.json` makes `live` unique, and nothing would
+ * notice, so the set is exposed rather than collapsed and `lib/__tests__/registry.test.ts` pins the
+ * committed Registry at exactly one.
+ *
+ * **`applications` rather than `renderedApplications`.** The Hub is `Live` today, and an entry
+ * flipped to a status the filter holds back would still be the application serving the page the
+ * reader is on. Which entry the reader is looking at is not a question about what renders.
+ *
+ * Both parameters carry defaults for the reason `selectRendered` takes its list at all: a rule that
+ * takes its input can be exercised against a state the committed file is not in.
+ */
+export function hubEntries(
+  origin: string = HUB_ORIGIN,
+  entries: readonly RegistryEntry[] = applications
+): readonly RegistryEntry[] {
+  return entries.filter((entry) => isCurrentOrigin(entry, origin));
+}
+
+/**
+ * The one entry serving `origin`, or `undefined` when the Registry holds none **or more than one**.
+ *
+ * The Plate mark above the Suite Directory names the Hub and the domain it is served from, and both
+ * halves come from here rather than from two literals. It is `isCurrentOrigin` run over the whole
+ * Registry rather than a second opinion about which entry is the Hub, so the mark on the premise
+ * block and the `You are here` mark on the row below it can never disagree: move `HUB_ORIGIN` and
+ * both move together, with no other edit.
+ *
+ * **Ambiguity is refused rather than resolved by position, and that is the whole reason this is not
+ * a `find`.** Taking the first match would put one application's name and domain on the mark while
+ * the Directory below marked two rows `You are here`, which is a page contradicting itself with
+ * every gate green. Answering nothing is the visible failure: `Premise` draws no mark at all when
+ * this is `undefined`, because an identity the Registry does not unambiguously carry is one the
+ * block would have to invent. `hubEntries` above is where a caller that wants to see the ambiguity
+ * looks at it.
+ */
+export function hubEntry(
+  origin: string = HUB_ORIGIN,
+  entries: readonly RegistryEntry[] = applications
+): RegistryEntry | undefined {
+  const serving = hubEntries(origin, entries);
+  return serving.length === 1 ? serving[0] : undefined;
+}
+
+/**
+ * The six frontend frameworks the estate is built across, in the order the framework band draws
+ * them (Story 2-11, FR-4).
+ *
+ * **A declared editorial classification, and the Registry is the referent for it.** `DESIGN.md:208`
+ * states the shape of the claim, six frontend frameworks against five backend languages;
+ * `EXPERIENCE.md:79` lists the six in scope; `mockups/key-screens.html:240` renders them in this
+ * order. None of those is machine-readable and none of them is a second source of truth: every name
+ * here is held against some entry's `tech` by `lib/__tests__/registry.test.ts`, so a name that names
+ * nothing the estate actually runs fails there rather than shipping as ornament made of an invented
+ * fact, which `EXPERIENCE.md:299-300` forbids outright.
+ *
+ * **One name resolves through a longer one, and it is named as the single exception it is.**
+ * `digital-library` declares the meta-framework it is built with rather than the framework
+ * underneath it, so that one name resolves by containment and every other by equality. The test
+ * holds the exception as a pair rather than loosening the rule for all six, because plain
+ * containment would let a stack value that merely spells a name inside a different product resolve
+ * it, and a band naming a framework nothing is built with is the invented fact this list exists to
+ * prevent.
+ *
+ * **Each name is distinct, and that is asserted too.** A repeated name would draw twice in the band
+ * and, in the sibling list below, inflate a figure the footer states, while every resolution check
+ * went on passing because a duplicate resolves exactly as well as the original.
+ *
+ * The band is ornament and carries no state (`DESIGN.md:684`). It is not a legend, nothing on the
+ * page keys off it, and FR-4 requires the premise beside it to carry without it.
+ */
+export const ESTATE_FRAMEWORKS = ['Next.js', 'Svelte', 'Vue', 'Angular', 'LiveView', 'React'] as const;
+
+/**
+ * The five backend languages, on exactly the same terms as `ESTATE_FRAMEWORKS` above.
+ *
+ * `DESIGN.md:208` is the source of the count and `EXPERIENCE.md:295` is what consumes it: the
+ * footer line states how many there are, spelled from this list's own length rather than typed. Each
+ * name is a `tech` value some entry declares verbatim, which the same test holds, so a sixth name
+ * appearing here without an application behind it fails rather than inflating the line. So does a
+ * repeat of a name already here, which no resolution check could catch: the footer states this
+ * list's length, so a duplicate is a language the estate is credited with twice.
+ */
+export const ESTATE_LANGUAGES = ['TypeScript', 'Elixir', 'Python', 'Go', 'Solidity'] as const;
+
+/**
  * Rendered entries in reading order: every `Live` before every `Complete`, file order within each.
  *
  * The rank comes from `RENDERED_STATUSES`, so the order is the same fact that decides what renders

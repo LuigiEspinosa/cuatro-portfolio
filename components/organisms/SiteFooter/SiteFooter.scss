@@ -1,0 +1,39 @@
+// The site footer (Story 2-11).
+//
+// Token-native, on the same footing as the two stylesheets this story adds beside it, and
+// declaring no custom property of its own. `app/__tests__/anchor-contract.test.ts` holds both.
+//
+// The treatment is the reference mockup's fine print: mono at the smallest step on the scale, in
+// secondary text, not uppercased. It is a sentence rather than a label, so the structural-uppercase
+// rule at `DESIGN.md:500` does not reach it and the line reads as it is written.
+//
+// **That decision settles the tracking too, and the two have to agree.** `DESIGN.md:487-488` gives
+// mono labels `+0.09em` to `+0.14em` and caps body tracking at `+0.05em`. A line argued to be a
+// sentence cannot then take a value from the label band: the mono face here is the fine-print
+// register, not a label treatment, so the line is tracked as body. The reference mockup sets a
+// figure between the two bands (`mockups/key-screens.html:203`) that belongs to neither and is not a
+// token, and `DESIGN.md` wins any value.
+
+.site-footer {
+  padding-block-end: var(--s-2xl);
+  padding-inline: var(--page-pad);
+}
+
+.site-footer__line {
+  margin: 0;
+  padding-block-start: var(--s-xl);
+  // **The rule is on the line and not on the `<footer>`, and that is deliberate.** A border on the
+  // padded element would run the viewport width, and a separator runs the content width of its
+  // container so successive separators align down the page (`RESTYLE-SPEC.md:312-313`). Drawn here,
+  // it lines up with the Directory's own rules above it.
+  border-block-start: var(--stroke-hair) solid var(--token-border);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-body);
+  // `DESIGN.md:490` binds this to every count, metric and plate mark. The line carries no digit
+  // today, both its figures being spelled; the rule is set on the element so the day one arrives it
+  // does not shift the characters beside it.
+  font-variant-numeric: tabular-nums;
+  color: var(--token-text-secondary);
+}

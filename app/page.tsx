@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import HomeLayout from '@/components/organisms/HomeLayout/HomeLayout';
+import { Premise } from '@/components/organisms/Premise/Premise';
+import { SiteFooter } from '@/components/organisms/SiteFooter/SiteFooter';
 import { SuiteDirectory } from '@/components/organisms/SuiteDirectory/SuiteDirectory';
 
 export const metadata: Metadata = {
@@ -18,12 +20,18 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main>
-      <HomeLayout />
-      {/* The hero is one viewport tall and the directory follows it, which is what gives `/#suite`
-          a target that resolves. There is no footer component anywhere in the tree, so nothing
-          follows this. */}
-      <SuiteDirectory />
-    </main>
+    <>
+      <main>
+        <HomeLayout />
+        {/* The hero is one viewport tall and the directory follows it, which is what gives
+            `/#suite` a target that resolves. The premise sits between them, so the claim is
+            encountered before the evidence for it rather than after (FR-4). */}
+        <Premise />
+        <SuiteDirectory />
+      </main>
+      {/* Outside `<main>`, because a footer is not part of the document's main content. Nothing
+          follows the Directory except this, which is what FR-1 asks. */}
+      <SiteFooter />
+    </>
   );
 }

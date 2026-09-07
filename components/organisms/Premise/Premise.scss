@@ -1,0 +1,84 @@
+// The premise block and the framework band (Story 2-11).
+//
+// Token-native, on the same footing as `SuiteDirectory.scss`: a rebuild with no old alias name to
+// keep, so it names contract roles directly and `app/app.scss` is not in its path.
+// `app/__tests__/anchor-contract.test.ts` carries the list of files allowed to do that.
+//
+// **It declares no custom property of its own**, which is what keeps every one of the Hub's
+// sixteen in one file and the collision argument checkable in one place. Asserted, not remembered.
+//
+// Values are transcribed from `DESIGN.md` § Components and § Typography, not decided here.
+
+.premise {
+  padding-block: var(--s-2xl) var(--s-xl);
+  // The block pads itself, exactly as the Directory beneath it does. It is deliberately not inside
+  // `.container`, whose `min(80%, 1920px)` leaves 288px of content at a 360px viewport.
+  padding-inline: var(--page-pad);
+}
+
+// ── The premise ───────────────────────────────────────────────────────────────
+//
+// The lede role: `--t-base` at `--w-light`, `--lh-lede`, capped at the measure. The weight gap
+// against the display line above it is 500 units, which is what `DESIGN.md:483` asks of a lede.
+
+.premise__lede {
+  margin: 0;
+  margin-block-start: var(--s-md);
+  // Capped by the measure and never wider (`DESIGN.md:489`). A maximum, so it still shrinks with
+  // the container at 360 and cannot itself be a source of overflow.
+  max-inline-size: var(--measure);
+  font-size: var(--t-base);
+  font-weight: var(--w-light);
+  line-height: var(--lh-lede);
+  letter-spacing: var(--tr-body);
+  color: var(--token-text-secondary);
+}
+
+// ── The framework band ────────────────────────────────────────────────────────
+//
+// The only ornament in the system, and it is made of real facts. Bricolage at the narrow end of
+// its width axis, bold, uppercase, at the smallest step on the scale, bounded above and below by
+// hairlines (`DESIGN.md:682-684`). Decorative rhythm: it carries no state and is not a legend, so
+// nothing here is a focus, hover or current treatment.
+//
+// **It wraps rather than scrolls.** `flex-wrap` is what holds A-5 at 360: the names take as many
+// lines as they need and the band's box never grows past its container.
+//
+// `DESIGN.md` states no tracking for the band, so the nearest declared token is named rather than
+// a figure invented for it. Small uppercase type needs positive tracking, and `--tr-meta` is the
+// lower of the two the contract publishes for that job.
+
+.premise__band {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2xs) var(--s-md);
+  margin: 0;
+  margin-block-start: var(--s-lg);
+  padding-block: var(--s-xs);
+  // Above and below, at the content width of the block rather than the viewport
+  // (`RESTYLE-SPEC.md:312-313`). Hairlines, because they divide and mark nothing actionable.
+  border-block-start: var(--stroke-hair) solid var(--token-border);
+  border-block-end: var(--stroke-hair) solid var(--token-border);
+  font-family: var(--f-display);
+  font-size: var(--t-3xs);
+  font-weight: var(--w-bold);
+  // The narrow end of the published display face's width axis, through the CSS property that
+  // selects it rather than through `font-variation-settings`, which would bypass font matching.
+  // The subset keeps a live range, so this is a selection and not a synthesis.
+  font-stretch: 75%;
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+}
+
+// The alternation, which is the whole of the band's rhythm. Odd positions take secondary text and
+// even positions the muted accent, which computes to 2.74:1 and is ornament only, never text that
+// means anything (`DESIGN.md:702`). That is why the band is `aria-hidden` in the markup: half of it
+// is deliberately sub-contrast, and everything it names is on a row of the Directory below.
+.premise__framework {
+  color: var(--token-text-secondary);
+}
+
+.premise__framework:nth-child(even) {
+  color: var(--token-accent-muted);
+}
