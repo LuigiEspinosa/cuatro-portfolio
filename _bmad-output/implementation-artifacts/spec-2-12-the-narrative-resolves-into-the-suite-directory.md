@@ -186,6 +186,79 @@ independence proved with the narrative's chunk aborted mid-flight.
       story deliberately leaves (2-27, 2-28, 2-29, 2-31, 2-33), the `gsap`/`lenis`-on-every-route
       defect, and anything the run surfaces that these boundaries refuse.
 
+Added during execution, beyond the list above:
+
+- [x] **Three lines the task list did not name, and the story turns on them.** With the narrative's
+      chunk aborted the page died outright: `next/dynamic` resolves through `React.lazy`, the rejected
+      import reached Next's default error boundary, and the premise, Directory and footer all
+      disappeared, which is the opposite of the acceptance criterion. The loader now catches the
+      rejection and resolves to a component that draws nothing. Not a spinner, not a `loading:`
+      option, not a `<Suspense>` fallback.
+- [x] **The preload row is asserted on the distinct set.** The `/` document emits its two font
+      preloads twice, four link elements for two URLs, and also carries two `as=style` preloads and one
+      `as=script` at `fetchpriority=low`. The case pins exactly two distinct faces, nothing at high
+      priority, and no preload pointing at a narrative chunk. The duplication is filed rather than
+      quietly absorbed into the assertion.
+- [x] **The scroll-work row is a source sweep, not a browser read.** Lenis registers a native `scroll`
+      listener and so does ScrollTrigger, both from `node_modules`, so counting listeners in the
+      browser cannot answer whether the Hub does scroll work. The sweep reads the Hub's own source
+      instead, with both matchers shown firing and shown not firing on `lenis.on('scroll', ...)`.
+
+Applied after the adversarial review, all patch-level. No finding rooted in the frozen intent and none
+required a design change, so the spec did not loop back:
+
+- [x] **Three findings were demonstrated by mutation, and two were matrix rows with no covering test,
+      which means this story's own acceptance audit was failing quietly.** The reduced-motion branch
+      had become the gem's only reveal (`HomeLayout.scss` now starts it at `opacity: 0`, and the
+      timeline never runs for those visitors), while every gem case opened a `no-preference` context:
+      deleting one `gsap.set` left a permanently blank hero, fallback image included, with the suite
+      green, and `toBeVisible()` would not have caught it because `opacity: 0` still counts as visible.
+      Nothing asserted the narrative ever renders: the discrimination control proves only that the
+      chunk was **requested**, and a chunk is fetched before it is evaluated, so a module throwing on
+      evaluation passed everything. And both no-spinner checks read a settled DOM, so adding a
+      `loading:` option passed jsdom, whose mock discarded the options object, and passed e2e, which
+      waited four seconds before its single sweep. All three now have cases that were watched failing.
+- [x] **A payload miss on the payload story.** `webglAvailable` started `null` and the `null` branch
+      rendered the narrative, so devices with no WebGL downloaded the whole thing before the probe
+      answered. Three branches now, and the import cannot fire until the probe says `true`.
+- [x] **Two silent-failure holes in the new loader.** The catch swallowed every failure with no signal,
+      so a real regression and an offline visitor were indistinguishable while the suite asserted
+      `pageerror` was empty; it logs first now. And a module resolving without the export would have
+      thrown element-type-invalid and taken the route down, which is the exact failure the catch
+      exists to prevent; resolution is guarded.
+- [x] **An independence case that could pass while the narrative loaded.** The route handler let a
+      request through when it could not classify it, and the assertion was only that something was
+      blocked. It now keeps a `leaked` ledger and every case asserts it empty.
+- [x] **Roughly twenty seconds per project of `waitForTimeout`, replaced with polling and init-script
+      recorders.** The gem's first-frame opacity was read after `goto` and asserted below 1, which on a
+      loaded runner fails for a timing reason while blaming the stylesheet. File runtime fell from 1.1
+      minutes to 48 seconds.
+- [x] **A prohibition wider than the story.** The `IntersectionObserver` sweep spanned four source
+      roots and would have failed any later story adding a legitimate observer, with a message about
+      scroll work. Scoped to what this story owns. The scroll sweep stays repo-wide because
+      `EXPERIENCE.md:696` is a standing rule, and its case is renamed to what it actually measures.
+- [x] **The hydration question the repair raised, checked rather than assumed.** A corrected
+      `useReduceMotion` returns `true` on the client's first render where the server rendered `false`,
+      which the bug had been masking. All four consumers read it only inside effects and dependency
+      arrays and none branches on it in render output, so there is no mismatch; the constraint is now
+      recorded in a docblock so a future consumer learns it before breaking it. A `matchMedia`
+      existence guard was added alongside.
+- [x] Smaller corrections: a docblock citing line numbers already stale in the same commit, now
+      anchored on symbols; a three-way disagreement about `HomeLayout.scss:126` versus `:127`, checked
+      and resolved (`:126` is the colour transition, `:127` the opacity initial state); the record's
+      prose claiming `/work` and `/projects` carried almost all of 307,632 undeferred bytes when the
+      table gives them 244,888; every other section of that record still badged `Verbatim` for a build
+      that no longer exists, now dated and amended; ten ledger entries with no ids, now DW-31 to DW-42,
+      one of which named no owning story; a dead default export; a preload control baking in the clean
+      count; two URL-resolution forms that disagreed under `assetPrefix`; `vi.fn` written as the
+      factory rather than called; a comment asserting a React mechanic that does not exist; and the
+      typo `screenshort`, retyped from the file it replaced.
+- [x] Two findings filed rather than fixed: `HomeLayout.test.tsx` mocks `useGsapContext` with a
+      function that never invokes its callback, so no jsdom case can observe the entrance at all, which
+      is why the reduced-motion branch went unpinned in the first place (DW-41); and `opacity: 0` has
+      no scripting-disabled floor, the shape `filter: brightness(0)` also had, shared by four sibling
+      panels, so the fix belongs to the route rather than to this line (DW-42).
+
 **Acceptance Criteria:**
 
 - Given `corepack pnpm test --run`, `corepack pnpm typecheck` and `corepack pnpm build`, when they run,
@@ -241,3 +314,69 @@ is the defect. The entrance keeps its shape and stops depending on the narrative
   unrelated reason is the failure mode `hit-target-floor.pw.ts:1323` already found once.
 - Confirm the reduced-motion path shows no burst of entrance before settling, which is the symptom the
   media-query repair removes and which no automated case can see directly.
+
+## Suggested Review Order
+
+**The boundary, which is the whole story**
+
+- Start here. One dynamic import, and nothing above it reaches `three` or R3F at module scope.
+  [`GemComponent.tsx:16`](../../components/molecules/GemComponent/GemComponent.tsx#L16)
+
+- The narrative's own module, which is what moved rather than what changed.
+  [`GemNarrative.tsx:32`](../../components/molecules/GemComponent/GemNarrative.tsx#L32)
+
+- Three branches, so a device with no WebGL never pays for the narrative at all.
+  [`GemComponent.tsx:57`](../../components/molecules/GemComponent/GemComponent.tsx#L57)
+
+- A rejected import draws nothing instead of replacing the route with an error page.
+  [`GemComponent.tsx:22`](../../components/molecules/GemComponent/GemComponent.tsx#L22)
+
+**The measurement, which is why the claim is believable**
+
+- The deferral read off the scripts the browser actually fetches, never off a chunk name.
+  [`narrative.pw.ts:304`](../../tests/e2e/narrative.pw.ts#L304)
+
+- Payload independence proved by taking the narrative away, not by reading the import graph.
+  [`narrative.pw.ts:564`](../../tests/e2e/narrative.pw.ts#L564)
+
+- The half that stops a partly-blocked run counting as a clean one.
+  [`narrative.pw.ts:573`](../../tests/e2e/narrative.pw.ts#L573)
+
+- 6,459 deferred bytes became 118,809, and `/` stopped carrying WebGL at all.
+  [`asset-budget.md:34`](../../ops/asset-budget.md#L34)
+
+**What the review proved was missing, by breaking the code and watching the suite pass**
+
+- The narrative mounting a real canvas, which every other case here would have missed.
+  [`narrative.pw.ts:477`](../../tests/e2e/narrative.pw.ts#L477)
+
+- The one line standing between a reduced-motion visitor and a permanently blank hero.
+  [`HomeLayout.tsx:21`](../../components/organisms/HomeLayout/HomeLayout.tsx#L21)
+
+- Read in the default context, because every gem case before this opted out of the preference.
+  [`narrative.pw.ts:868`](../../tests/e2e/narrative.pw.ts#L868)
+
+- A spinner is now caught while it flashes, not looked for after it has gone.
+  [`narrative.pw.ts:742`](../../tests/e2e/narrative.pw.ts#L742)
+
+**The entrance, and the bug underneath it**
+
+- The gem reveals on opacity, and the stylesheet line that made the old tween a reveal.
+  [`HomeLayout.scss:184`](../../components/organisms/HomeLayout/HomeLayout.scss#L184)
+
+- Every recorded frame checked, rather than three chosen moments.
+  [`narrative.pw.ts:821`](../../tests/e2e/narrative.pw.ts#L821)
+
+- Only opacity and transform, and nothing loops.
+  [`narrative.pw.ts:931`](../../tests/e2e/narrative.pw.ts#L931)
+
+- The media query that was never valid, so the answer was always no.
+  [`useReduceMotion.ts:11`](../../hooks/useReduceMotion.ts#L11)
+
+**Peripherals**
+
+- FR-1's three consequences, including every route still rendering.
+  [`narrative.pw.ts:1079`](../../tests/e2e/narrative.pw.ts#L1079)
+
+- Named for what it measures after the review found the title claimed more.
+  [`narrative.pw.ts:1141`](../../tests/e2e/narrative.pw.ts#L1141)
