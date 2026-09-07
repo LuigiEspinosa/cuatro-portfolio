@@ -2558,6 +2558,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-31
   summary: >-
     `glitch-text.scss:15` runs an infinite loop on the home route, animating `text-shadow` and
     `clip-path`. Story 2-12 repaired the homepage entrance and left this one, which is on the same
@@ -2577,6 +2578,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-32
   summary: >-
     `ScanlineOverlay.scss:39` runs an infinite grain animation. Story 2-28 owns it and Story 2-12
     left it untouched.
@@ -2592,14 +2594,16 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-33
   summary: >-
     `HomeLayout.scss` still transitions `opacity` on hover for the dim-siblings effect and `color` on
     two link rules, all three on the route Story 2-12 repaired. `epics.md:3322-3326` gives the
     dim-siblings retirement to Story 2-29 by name.
   evidence: |-
     `components/organisms/HomeLayout/HomeLayout.scss:80-82` sets `opacity: 0.2` on every unhovered
-    panel while any panel is hovered, driven by the `transition: opacity 0.4s ease` at `:40`. `:127`
-    and `:159` each set `transition: color 0.2s ease` on a link.
+    panel while any panel is hovered, driven by the `transition: opacity 0.4s ease` at `:40`. `:126`
+    and `:159` each set `transition: color 0.2s ease` on a link. (`:127` is the `.nav-link` opacity
+    initial state, which is a different line and a conformant one.)
 
     `opacity` is an allowed property, so the dim-siblings rule is not a property breach; it is a
     retirement `epics.md:3322-3326` already books to Story 2-29, which is also the story that makes
@@ -2610,6 +2614,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-34
   summary: >-
     `WorkItem.tsx:41-55` animates `height` on every accordion open and close, which is a layout
     property on the main thread. Story 2-31 owns the component.
@@ -2627,6 +2632,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-35
   summary: >-
     `WorkTimeline.tsx:19-29` adds a scroll-triggered fade-up on `/work`, which is a second
     orchestrated entrance on a route that already has one. Story 2-33 owns it, together with
@@ -2644,13 +2650,14 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-36
   summary: >-
     `app/providers.tsx:4-6` imports `lenis`, `gsap` and `ScrollTrigger` at module scope and the root
     layout renders `Providers`, so 56,582 gzipped bytes of narrative library ship on every route,
     including `/celeste` and the 404, which have no motion of their own to drive.
   evidence: |-
     Re-measured 2026-09-07 by `node ops/asset-budget.mjs` against `.next/BUILD_ID`
-    `4t7MWb-CjvVVQ3SnWvKDb`: `08pj4xkz~kajd.js` (gsap, 26,971 gzipped), `0r_9pnds9g3a0.js`
+    `rxNy6yw47ecyqZzmT1Jzp`: `08pj4xkz~kajd.js` (gsap, 26,971 gzipped), `0r_9pnds9g3a0.js`
     (gsap/ScrollTrigger, 17,542) and `0nwet2hiefxan.js` (lenis, 12,069) are each referenced by all
     seven prerendered documents. The figure and the shape are unchanged from the 2026-08-29 reading.
 
@@ -2664,6 +2671,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-37
   summary: >-
     A dynamically imported chunk that fails to arrive takes the whole route down through Next's
     default error boundary. Story 2-12 caught it for the homepage's gem and left the identical shape
@@ -2676,19 +2684,28 @@ status: done
     the route rather than the component. A visitor whose connection dropped one request got an error
     page instead of the Directory.
 
-    `components/molecules/GemComponent/GemComponent.tsx:16-30` now resolves the failed import to a
+    `components/molecules/GemComponent/GemComponent.tsx:16-38` now resolves the failed import to a
     component that draws nothing, which is what makes the page independent of the payload rather
     than merely deferring it, and `tests/e2e/narrative.pw.ts` holds it there.
 
     `components/molecules/TorusCanvas/TorusCanvas.tsx:8` and
-    `components/molecules/TorusKnotCanvas/TorusKnotCanvas.tsx:8` wrap `Scene` the same way and have no
-    such catch, so `/work` and `/projects` still fail whole-route on a dropped chunk. Nothing tests
-    it, because Story 2-12's boundaries put both routes out of scope and its aborting test visits `/`
-    only. The fix is three lines each, and it belongs with whichever story closes those two
-    boundaries.
+    `components/molecules/TorusKnotCanvas/TorusKnotCanvas.tsx:8` wrap `Scene` the same way and have
+    no such catch, so `/work` and `/projects` still fail whole-route on a dropped chunk. Nothing
+    tests it, because Story 2-12's boundaries put both routes out of scope and its aborting test
+    visits `/` only. The fix is three lines each.
+
+    **Owners, which no other entry in this cluster leaves unnamed.** `TorusCanvas` is rendered by
+    `WorkHero.tsx:71` on `/work`, and **Story 2-33** redesigns `WorkHero` and `WorkTimeline`, so it
+    is the story with that file open. `TorusKnotCanvas` is rendered by `ProjectsHero.tsx:70` on
+    `/projects`, and **Story 2-14** redirects that route to `/#suite`, which retires the surface
+    rather than the component: if 2-14 leaves `ProjectsHero` mounted anywhere the defect outlives
+    the redirect and needs an owner of its own. Whichever lands first should take both, because the
+    change is identical and a route that shows an error page instead of its content after one
+    dropped request is the most user-visible item in this cluster.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-38
   summary: >-
     The homepage still pulls narrative bytes shortly after hydration, because Next prefetches the
     `/work` and `/projects` route bundles behind the two `<Link>`s in the hero nav. The deferral is
@@ -2712,6 +2729,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-39
   summary: >-
     The `/` document emits its two font preloads twice, four `<link rel=preload as=font>` elements
     for two files, because `app/layout.tsx` declares them and Next re-emits them for the route.
@@ -2733,6 +2751,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-40
   summary: >-
     A Playwright spec cannot import `ops/asset-budget.mjs`, so `tests/e2e/narrative.pw.ts` parses the
     `FINGERPRINTS` table out of the file as text. Two consumers now read one table by two different
@@ -2756,4 +2775,55 @@ status: done
     the tool's `main` default argument, which is the only thing making it unloadable from CommonJS.
     The first is better and is a change to a file `ops/__tests__/asset-budget.test.ts` pins as
     literals, so it lands with that suite.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-41
+  summary: >-
+    `HomeLayout.test.tsx` mocks `useGsapContext` with a function that never invokes its callback, so
+    no jsdom case in the repository can observe the homepage entrance at all. That is why the
+    reduced-motion branch, which is now the gem's only reveal for that visitor, went unpinned until a
+    review caught it.
+  evidence: |-
+    `components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx:23-27` replaces `useGsapContext`
+    with `(_fn: () => void) => ({ current: document.createElement('div') })`. The callback holding
+    the whole timeline is received and dropped, so every assertion in that file is about markup and
+    none is about motion. The `gsap` mock above it at `:4-19` is consequently never exercised either.
+
+    The cost is not hypothetical. Story 2-12 moved `.home-gem` from `filter: brightness(0)` to
+    `opacity: 0`, which makes `gsap.set('.home-gem', { opacity: 1 })` in the reduced-motion branch
+    the only thing that ever reveals the gem for a `prefers-reduced-motion` visitor, on the WebGL
+    path and on the static fallback alike. Deleting that one line leaves a permanently blank hero,
+    and the entire jsdom suite stays green. It is now covered in the browser
+    (`tests/e2e/narrative.pw.ts`, `is at its final state immediately under reduced motion`, verified
+    failing against the deletion on 2026-09-07), which is the right place for it, but the jsdom mock
+    remains a hole that reads like coverage.
+
+    The narrow fix is a mock that invokes the callback, which needs the `gsap` mock to record the
+    calls so a case can assert on them. Filed rather than done because Story 2-12's boundaries name
+    `HomeLayout.tsx`, its stylesheet and two test files, and rewriting a fifth file's mocking
+    strategy is a change with its own failure modes. Story 2-29 redesigns `HomeLayout` and is the
+    natural owner.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
+  id: DW-42
+  summary: >-
+    `.home-gem` is hidden by `opacity: 0` with no floor for a visitor whose scripting never runs, so
+    the gem is invisible with JavaScript disabled or broken. Not a regression, the same shape
+    `filter: brightness(0)` had, but Story 2-12 is the story that touched the line.
+  evidence: |-
+    `components/organisms/HomeLayout/HomeLayout.scss:190` declares `opacity: 0` and nothing in CSS
+    ever undoes it: both the timeline and the reduced-motion `gsap.set` are JavaScript. A visitor
+    with scripting off, or one whose bundle fails before hydration, sees an empty hero panel. The
+    same was true of `filter: brightness(0)` before this story, so the disposition is unchanged and
+    the risk is not new.
+
+    Three of the four other panels on this route have the identical shape (`:52`, `:90`, `:127` and
+    `:160` all open at `opacity: 0`), so a fix belongs to the route rather than to the gem: a
+    `<noscript>` rule, or an `html.no-js` class set by an inline script, would lift all five at once.
+    Recorded here because a reader comparing `HomeLayout.scss` before and after Story 2-12 will see
+    that line change and should be able to find out that the question was asked and deliberately not
+    answered. Story 2-29 rebuilds this stylesheet and is where the decision belongs; Story 2-13,
+    which builds the non-3D front door, is the other candidate.
   status: open
