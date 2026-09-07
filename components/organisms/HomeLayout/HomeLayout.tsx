@@ -18,16 +18,23 @@ const HomeLayout = () => {
 
     if (reduceMotion) {
       gsap.set(finalState, { opacity: 1, y: 0 });
-      gsap.set('.home-gem', { filter: 'brightness(1)' });
+      gsap.set('.home-gem', { opacity: 1 });
       return;
     }
 
     const tl = gsap.timeline();
 
-    tl.to('.home-gem', { filter: 'brightness(1.4)', duration: 0.4, ease: 'power2.out' }, 0.5);
-    tl.to('.home-gem', { filter: 'brightness(1)', duration: 0.4, ease: 'power2.in' }, 0.9);
+    // The gem's reveal. It was two `filter: brightness()` tweens until Story 2-12, against
+    // `HomeLayout.scss`'s `filter: brightness(0)`; `EXPERIENCE.md:685-699` allows `transform` and
+    // `opacity` only. The stylesheet's initial state moved with it, so this is still the reveal
+    // rather than a flourish on top of one. It is also the only shape that survives the narrative
+    // being deferred: a brightness pulse scheduled here fires against a container that may still
+    // be empty, while opacity on a transparent container is a no-op the visitor never sees.
+    tl.to('.home-gem', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.5);
 
-    tl.to('.home-role', { opacity: 1, duration: 0.5, repeat: 4, yoyo: true }, 1.3);
+    // One tween, no `repeat` and no `yoyo`: `EXPERIENCE.md:693-694` allows one orchestrated
+    // entrance per page load and no loop inside it.
+    tl.to('.home-role', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 1.3);
 
     tl.to('.home-panel--sys', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 1.6);
 
