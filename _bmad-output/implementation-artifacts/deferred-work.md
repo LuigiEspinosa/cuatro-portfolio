@@ -3354,3 +3354,51 @@ status: done
     count in the last row is the one figure a reader uses to tell a nine-file run from an eleven-file
     one. Adding the new row costs three readings of the same tree, per the method the section states.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
+  id: DW-60
+  summary: >-
+    `README.md` § Routing describes five routes, one of them by a filename that does not exist, and
+    omits three routes the Hub actually serves.
+  evidence: |-
+    Found 2026-09-07 during Story 2-14's review, in the table this story edited one row of.
+
+    `README.md:93` names `public/pdf/remmendation-letter.pdf`. The file on disk is
+    `public/pdf/recommendation-letter.pdf` and `next.config.js` redirects to that spelling, so the
+    row documents a path nothing serves. The typo predates this story by every commit that touched
+    the table.
+
+    The table also omits `/celeste`, `/api/health` and the 404, all three of which
+    `tests/e2e/anchor-aliases.pw.ts:130` and `tests/e2e/hit-target-floor.pw.ts` sweep as real
+    surfaces. A reader taking § Routing as the route list gets five of eight.
+
+    Not corrected here because Story 2-14 owns one row of that table and touching the rest would
+    put an unreviewed route inventory inside a redirect's diff. **Owner: Story 2-15**, which
+    reshapes the nav to two destinations and is the next story whose subject is which routes the
+    Hub presents. **Trigger: the next edit to § Routing**, since a table wrong in three rows is
+    cheaper to correct while already open than to keep filing.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
+  id: DW-61
+  summary: >-
+    `tests/e2e/projects-redirect.pw.ts`'s NFR-9 sweep reads a hand-copied surface list, so a Hub
+    surface added to `SURFACES` and not to it escapes the one-rendering assertion silently.
+  evidence: |-
+    Found 2026-09-07 during Story 2-14's review.
+
+    The `SWEPT` list in `tests/e2e/projects-redirect.pw.ts` names the four surfaces by hand.
+    `tests/e2e/hit-target-floor.pw.ts` holds the authoritative `SURFACES` table, and its own
+    `routesOnDisk(app/)` walk fails a route that exists and is unregistered, so a new surface
+    cannot escape the floor sweep. It can escape this one: a fifth surface rendering a second
+    `<SuiteDirectory />` would leave `elsewhere` empty and `total` at 1, which is what passing
+    looks like, and NFR-9 is exactly the invariant that count exists to hold.
+
+    The floor sweep's own guard is the shape to copy: derive the list, or assert the hand-written
+    one equals the derived one. `SURFACES` is not exported today and the two specs do not import
+    each other, so this is a small refactor rather than a line.
+
+    **Owner: unassigned**, because no planned story adds a Hub surface. **Trigger: the next story
+    that adds a route under `app/` serving Hub markup**, at which point the gap is live rather
+    than theoretical, and DW-22's note on the duplicated `goTo` guard is the same seam.
+  status: open
