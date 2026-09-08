@@ -67,9 +67,15 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  *
  * `/cv` and `/recommendation` answer 308 to a PDF, so they are requested rather than navigated to:
  * a browser answers a PDF redirect by starting a download rather than a navigation. Same treatment
- * and same reason as `tests/e2e/hit-target-floor.pw.ts:93-101`.
+ * and same reason as the `SURFACES` and `NON_HUB_ROUTES` split in
+ * `tests/e2e/hit-target-floor.pw.ts`.
+ *
+ * **`/projects` left the navigable list on 2026-09-07.** Story 2-14 answers it with a 301 to
+ * `/#suite`, and Playwright follows a redirect, so a route left here would have navigated to `/`
+ * and measured the homepage twice under a second name. Its status and `Location` are asserted in
+ * `tests/e2e/projects-redirect.pw.ts` instead, without following.
  */
-const NAVIGABLE_ROUTES = ['/', '/work', '/projects', '/celeste', NOT_FOUND] as const;
+const NAVIGABLE_ROUTES = ['/', '/work', '/celeste', NOT_FOUND] as const;
 const REQUESTED_ROUTES = ['/cv', '/recommendation'] as const;
 
 /** How long any single condition here is given before it is called a failure. */
@@ -562,9 +568,12 @@ test.describe('the narrative still runs', () => {
     //
     // **Measured as a difference between two loads rather than as an absence on one.** `/` is not
     // free of narrative requests on either path: the App Router prefetches the route bundles behind
-    // the hero's two `<Link>`s, and `/work` and `/projects` still carry `three` and `three-stdlib`
-    // eagerly, so a flat "no narrative chunk is requested" assertion fails on something this story
-    // does not own. That prefetch is filed in `_bmad-output/implementation-artifacts/deferred-work.md`.
+    // the hero's two `<Link>`s, and `/work` still carries `three` eagerly, so a flat "no narrative
+    // chunk is requested" assertion fails on something this story does not own. The second link
+    // pointed at `/projects`, which carried `three-stdlib` through `TorusKnotCanvas` until Story
+    // 2-14 deleted the route on 2026-09-07; it now prefetches a redirect, and repointing the chrome
+    // at `/#suite` is Story 2-15's job. That prefetch is filed in
+    // `_bmad-output/implementation-artifacts/deferred-work.md`.
     // What the gate controls is the difference between the two paths, so that is what is read.
     const withWebgl = await narrativeChunksOn(browser, request, []);
     const withoutWebgl = await narrativeChunksOn(browser, request, [NO_WEBGL]);

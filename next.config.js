@@ -37,6 +37,25 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // **`statusCode: 301` rather than `permanent: true`, deliberately, and this row is meant to
+      // differ in shape from the two below it (Story 2-14).**
+      //
+      // Next's `permanent: true` emits **308**, which is what `/cv` and `/recommendation` answer
+      // and what `tests/e2e/narrative.pw.ts` records for them. Story 2-14's acceptance criterion
+      // says 301, on the Operator ruling of 2026-09-07, so the status is written out. Next refuses
+      // `permanent` alongside `statusCode`, which is why this row carries one key where the others
+      // carry the other. It is not an inconsistency to tidy up.
+      //
+      // `/projects` used to render a second `<SuiteDirectory />` over the same Registry, which is
+      // two renderings of one dataset (NFR-9). The page is gone and the URL is not: it is live at
+      // v2.5.3 and NFR-2 forbids answering 404 to a link, a bookmark or a search result that still
+      // points at it. The fragment is the Directory heading's own id on `/`
+      // (`SuiteDirectory.tsx:137`), and the browser resolves it without ever sending it here.
+      {
+        source: '/projects',
+        destination: '/#suite',
+        statusCode: 301,
+      },
       {
         source: '/recommendation',
         destination: '/pdf/recommendation-letter.pdf',

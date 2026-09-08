@@ -97,11 +97,10 @@ one commit.
 |---|---|---|---|---|
 | `/` | 200 | 17 | 0 | 17 |
 | `/work` | 200 | 11 | 0 | 11 |
-| `/projects` | 200 | 18 | 0 | 18 |
 | `/celeste` | 200 | 7 | 7 | 0 |
 | `/a-route-that-does-not-exist` | 404 | 8 | 0 | 8 |
 
-**54 elements measured across five surfaces.**
+**36 elements measured across four surfaces.**
 
 **Re-measured 2026-09-07** after Story 2-13 built the non-3D front door. `/` went from 16 to 17 and
 the other four did not move. The one new element is the A-6 skip-link, which renders on every path
@@ -110,6 +109,28 @@ floor can measure and clears it on both axes. The story's other control, the ski
 on the default path only, and this sweep runs the `reducedMotion: 'reduce'` context
 (`playwright.config.ts:79`), which is the non-3D path: it is measured in
 `tests/e2e/front-door.pw.ts` instead, on a context that has not asked for reduced motion.
+
+**Re-measured 2026-09-07** after Story 2-14 redirected `/projects` to `/#suite` and deleted the page
+behind it. That surface left the table rather than moving a number: `app/projects/page.tsx` is off
+disk, so the derived route walk no longer produces the route and a row left here would fail as a
+phantom. **The other four did not move**, and that is a reading rather than an assumption: the four
+rows below are pinned, not bounded, so the sweep passing in
+`mcr.microsoft.com/playwright:v1.62.1-noble` on 2026-09-07 is what says each surface yielded exactly
+these numbers. A count that had moved would have failed and printed its own `found`, `skipped` and
+`measured` per route, which is the reading § Maintaining this file describes taking; nothing here
+was computed from the Registry.
+
+The eighteen elements the deleted route measured were one logo link, six chrome nav links and the
+eleven Suite Directory links its second rendering of the directory produced. None of them existed
+anywhere else, which is why two ledger rows lost a route in the same commit and the sweep's total
+fell from 54 to 36 rather than by the seven chrome elements alone.
+
+**`/projects` is in neither this table nor the non-Hub list, and that is deliberate.** A browser
+asked for it now gets a 301 to `/#suite` and lands on `/`, which is a Hub surface this sweep already
+measures. Playwright follows redirects, so a row that merely kept the route would have gone green
+while measuring `/` twice, and the non-Hub list refuses anything answering `text/html`. The redirect
+is asserted on its own in `tests/e2e/projects-redirect.pw.ts`, where the status and the `Location`
+header are read without following.
 
 **The route set itself is derived from `app/`, not from this table.** **Decision.** A standing case
 walks `app/` for `page.tsx`, `route.ts` and `not-found.tsx`, in the shape
@@ -156,14 +177,14 @@ the other.
 
 **`Covers` is an expectation, not a note.** It is the exact number of measured elements the row
 accounts for across the routes it lists, and it is what stops a selector exempting more than it was
-written for: a seventh `nav.navbar a` at 40 x 22 would make that row cover nineteen and fail, rather
+written for: a seventh `nav.navbar a` at 40 x 22 would make that row cover thirteen and fail, rather
 than inherit an exemption written for six links. The run also fails if a row matches nothing **on
-one of its routes**, so a row covering three surfaces cannot go half stale in silence.
+one of its routes**, so a row covering two surfaces cannot go half stale in silence.
 
 | Id | Selector | Source | Routes | Covers | Measured (2026-09-06) | Closed by |
 |---|---|---|---|---|---|---|
-| `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/projects`, `/a-route-that-does-not-exist` | 3 | 184.00 x 20.00 | Story 2-32 |
-| `chrome-nav` | `nav.navbar a` | `components/atoms/Navbar/Navbar.tsx:6,7,8,9,12,19` | `/work`, `/projects`, `/a-route-that-does-not-exist` | 18 | 38.41 x 22.00 to 98.13 x 22.00 | Story 2-15 |
+| `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/a-route-that-does-not-exist` | 2 | 184.00 x 20.00 | Story 2-32 |
+| `chrome-nav` | `nav.navbar a` | `components/atoms/Navbar/Navbar.tsx:6,7,8,9,12,19` | `/work`, `/a-route-that-does-not-exist` | 12 | 38.41 x 22.00 to 98.13 x 22.00 | Story 2-15 |
 | `error-back` | `a.error-page__back` | `components/organisms/ErrorPage/Error404.tsx:50` | `/a-route-that-does-not-exist` | 1 | 108.58 x 38.19 | Story 2-30 |
 | `home-nav` | `a.nav-link` | `components/organisms/HomeLayout/HomeLayout.tsx:64,67` | `/` | 2 | 320.00 x 23.00 | Story 2-32 |
 | `home-contact` | `.contact-container a` | `components/molecules/ContactContainer/ContactContainer.tsx:5,8,15` | `/` | 3 | 58.00 x 23.00 to 84.00 x 23.00 | Story 2-32 |
@@ -187,6 +208,13 @@ grid with the Suite Directory. **Observed 2026-09-06** in the pinned container: 
 live and source links measure at or above the floor on both axes, so the sweep reports no unlisted
 element under it on either surface the directory renders on. This is the ledger shrinking in the
 direction it is only allowed to move.
+
+**`chrome-logo` and `chrome-nav` each lost a route on 2026-09-07**, with no row deleted and no
+selector narrowed. **Observed 2026-09-07.** Story 2-14 redirected `/projects`, so the two chrome
+rows now list `/work` and the 404 only, and `covers` fell from 3 to 2 and from 18 to 12: one logo
+link and six nav links per route, on one route fewer. Both authored controls are untouched and both
+are still under the floor, so this is the same breach measured on one surface fewer rather than a
+partial repair. Neither closing story moved.
 
 **Per-element detail behind the ranges**, **observed 2026-09-06**, so a later reader can see how
 far under the floor each one is without running anything:
@@ -212,22 +240,32 @@ A standing case asserts that at least one measured element clears the floor and 
 not. Without it, a floor misread as an enormous number would put every element under it, and the
 sweep would still be green because everything under the floor is on the ledger today. Story 2-9
 added 22 more elements that clear the floor, which strengthens the same case rather than replacing
-it: the buttons are on a route the directory does not render on.
+it: the buttons are on a route the directory does not render on. **Eleven of those 22 left with
+Story 2-14** on 2026-09-07, the second rendering of the directory going with the route, and the
+buttons keep the case load-bearing on their own as they did before Story 2-9.
 
 ## The tolerated breach
 
-**27 of the 53 measured elements are under the floor.** Behind those 27 rendered instances are
+**20 of the 36 measured elements are under the floor.** Behind those 20 rendered instances are
 **13 authored controls**: one logo link, six chrome nav links, one back link, two home nav links
-and three home contact links. **Observed 2026-09-06**, after Story 2-9.
+and three home contact links. **Observed 2026-09-07**, after Story 2-14. The authored count did not
+move and the rendered one did: the seven chrome controls are now rendered on two surfaces rather
+than three.
 
 **Re-measured 2026-09-06**, and the earlier reading is kept rather than overwritten: it was 39 of
 43 behind 15 controls, the extra two being the card links `.project-card__links a` rendered six
 times each on `/projects`. Story 2-9 deleted the component and its ledger row together, so both the
 authored count and the rendered count fell.
 
-The 26 elements that clear the floor are the four `.work-item__header` buttons and the 22 Suite
-Directory links, eleven on each of the two surfaces the directory renders on. **Observed
-2026-09-06.**
+The 16 elements that clear the floor are the four `.work-item__header` buttons, the eleven Suite
+Directory links on `/`, and the A-6 skip link Story 2-13 added. **Observed 2026-09-07.**
+
+**The two figures above were one out before this re-measurement, and that is filed rather than
+back-dated.** **Observed 2026-09-07.** They read 27 of 53 and 26 respectively while the surfaces
+table summed to 54: Story 2-13 moved `/` from 16 to 17 and updated the table and the total, and
+these two derived sentences were not carried with it. Nothing reads them, which is DW-53's subject,
+and the drift is recorded in `deferred-work.md` so a later reader can tell a correction from a
+re-measurement.
 
 Those 13 are a live breach of AD-19 and are recorded as **KV-4** in
 `ops/known-violations.md`, with the ruling that tolerates them and the three stories that retire
@@ -409,8 +447,14 @@ None of the 36 elements is interactive, so none of them fails this sweep. All of
 as **KV-5** in `ops/known-violations.md`, with the Operator ruling of 2026-09-06 that tolerates the
 breach and the stories that retire it; the measurements and the two shapes the overflow takes are
 in the `deferred-work.md` entry that KV-5 cites. Story 2-9 landed the stylesheet half
-(`epics.md:2423-2427`); Stories 2-31 and 2-33 own the 28 on `/work` and Story 2-14 the 8 on
-`/projects`, by redirecting the route that renders them, and KV-5 stays `Open` until they do.
+(`epics.md:2423-2427`); Stories 2-31 and 2-33 own the 28 on `/work` and Story 2-14 owned the 8 on
+`/projects`, and KV-5 stays `Open` until the other two land.
+
+**Eight of the 36 ceased to exist on 2026-09-07.** Story 2-14 redirected `/projects` to `/#suite`
+and deleted `ProjectsHero` with the route, so the elements are gone rather than repaired: there is
+no surface left on which to measure them and no stylesheet rule left to correct. **28 remain**, all
+of them on `/work`, and the census tables above are the pre-2-14 readings and are kept as such. The
+count that would be produced by re-running that census today is 28.
 
 ## Failing loudly rather than vacuously
 

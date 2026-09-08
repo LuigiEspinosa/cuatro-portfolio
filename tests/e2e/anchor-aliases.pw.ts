@@ -119,12 +119,19 @@ const tabled = (rows: readonly { at: string }[]): Map<string, number> => {
 const sortedEntries = (counted: Map<string, number>): [string, number][] =>
   [...counted].sort(([a], [b]) => a.localeCompare(b));
 
-/** Every route the Hub serves. NFR-2 binds every migration step, so all seven are swept. */
-const ROUTES = ['/', '/cv', '/work', '/projects', '/recommendation', '/celeste', '/api/health'] as const;
+/**
+ * Every route the Hub serves. NFR-2 binds every migration step, so all six are swept.
+ *
+ * **Seven until 2026-09-07.** Story 2-14 replaced `/projects` with a 301 to `/#suite`, so the
+ * route no longer answers a document of its own: left in this list it would land on `/`, fail the
+ * redirect pin at the end of this file, which names exactly the two PDF routes, and duplicate what
+ * `tests/e2e/projects-redirect.pw.ts` asserts far more precisely.
+ */
+const ROUTES = ['/', '/cv', '/work', '/recommendation', '/celeste', '/api/health'] as const;
 
 /**
  * A path the Hub does not route, which renders `app/not-found.tsx` through the same root layout
- * and the same `Body`. Two of the twelve `--accent-dim` call sites and one `--monument-bold`
+ * and the same `Body`. Two of the eleven `--accent-dim` call sites and one `--monument-bold`
  * call site live only here.
  */
 const NOT_FOUND = '/a-route-that-does-not-exist';
@@ -342,16 +349,18 @@ interface CallSite {
 }
 
 /**
- * All twelve, counted 2026-09-06 by `git grep -o -- "var(--accent-dim)" -- components`.
+ * All eleven, counted 2026-09-07 by `git grep -o -- "var(--accent-dim)" -- components`.
  *
- * Two are boundaries and ten are ornament, which is what makes a single global alias unable
+ * Two are boundaries and nine are ornament, which is what makes a single global alias unable
  * to pass this case.
  *
- * **Fifteen at Story 1-18, twelve now.** Story 2-9 deleted `ProjectCard.scss` whole when the Suite
- * Directory replaced the card grid, taking two boundary rows (the card's top and left edges) and
- * one ornament row (its tech-chip fill) with it. The counts below moved in the same commit,
- * because a table pinned at fifteen against a tree holding twelve fails as a missing call site,
- * which is the opposite of what happened.
+ * **Fifteen at Story 1-18, twelve after Story 2-9, eleven now.** Story 2-9 deleted
+ * `ProjectCard.scss` whole when the Suite Directory replaced the card grid, taking two boundary
+ * rows (the card's top and left edges) and one ornament row (its tech-chip fill) with it. Story
+ * 2-14 deleted `ProjectsHero.scss` with the route it styled on 2026-09-07, taking the ornament row
+ * for its section divider. The counts below moved in the same commit each time, because a table
+ * pinned above what the tree holds fails as a missing call site, which is the opposite of what
+ * happened.
  */
 const CALL_SITES: readonly CallSite[] = [
   // A static rule beside a non-interactive label. Nothing repaints it.
@@ -406,23 +415,27 @@ const CALL_SITES: readonly CallSite[] = [
     verdict: 'ornament',
   },
 
-  // A static section divider.
-  { at: 'ProjectsHero.scss:8', route: '/projects', selector: '.projects-hero', property: 'border-bottom-color', verdict: 'ornament' },
+  // A static section divider. The `ProjectsHero.scss:8` twin of this row left with Story 2-14.
   { at: 'WorkHero.scss:8', route: '/work', selector: '.work-hero', property: 'border-bottom-color', verdict: 'ornament' },
 ];
 
-const CALL_SITE_COUNT = 12;
+const CALL_SITE_COUNT = 11;
 const BOUNDARY_COUNT = 2;
 
-/** The four `--monument-bold` call sites, each on the route that renders it. */
+/**
+ * The `--monument-bold` call sites, each on the route that renders it.
+ *
+ * **Four until 2026-09-07.** `ProjectsHero.scss:19` was the third of the three that set family
+ * alone before Story 1-18 added the weight beside it, and Story 2-14 deleted the file with the
+ * route. The remaining three keep the argument unchanged.
+ */
 const WEIGHT_SITES = [
   { at: 'glitch-text.scss:5', route: '/', selector: '.glitch-text__inner' },
   { at: 'error-page.scss:24', route: NOT_FOUND, selector: '.error-page__code' },
-  { at: 'ProjectsHero.scss:19', route: '/projects', selector: '.projects-hero__heading' },
   { at: 'WorkHero.scss:19', route: '/work', selector: '.work-hero__heading' },
 ] as const;
 
-const WEIGHT_SITE_COUNT = 4;
+const WEIGHT_SITE_COUNT = 3;
 
 /** The weight `--monument-bold` maps onto, per `DESIGN.md` § The mapping. */
 const WEIGHT_ROLE = '--w-black';
@@ -530,14 +543,14 @@ test('parses a real alias layer, so every case below measures something', () => 
   // could be satisfied by one value and would prove nothing.
   expect(CONTRACT.get(ORNAMENT), `${ORNAMENT} and ${BOUNDARY} are declared the same`).not.toBe(CONTRACT.get(BOUNDARY));
 
-  // The call-site table, pinned on both counts. Ten ornament and two boundary is what makes a
+  // The call-site table, pinned on both counts. Nine ornament and two boundary is what makes a
   // single global alias unable to pass, and a table that lost a row would simply loop less.
-  expect(CALL_SITES.length, 'the --accent-dim table no longer carries twelve call sites').toBe(CALL_SITE_COUNT);
+  expect(CALL_SITES.length, 'the --accent-dim table no longer carries eleven call sites').toBe(CALL_SITE_COUNT);
   expect(CALL_SITES.filter((site) => site.verdict === 'boundary').length, 'the two boundary sites moved').toBe(
     BOUNDARY_COUNT
   );
   expect(new Set(CALL_SITES.map((site) => site.at)).size, 'two rows name the same call site').toBe(CALL_SITE_COUNT);
-  expect(WEIGHT_SITES.length, 'the --monument-bold table no longer carries four call sites').toBe(WEIGHT_SITE_COUNT);
+  expect(WEIGHT_SITES.length, 'the --monument-bold table no longer carries three call sites').toBe(WEIGHT_SITE_COUNT);
 
   // **Both tables against the stylesheets on disk**, which is what makes the counts above a
   // measurement rather than a restatement. Compared per file so a failure names where the new call
@@ -575,14 +588,14 @@ test('parses a real alias layer, so every case below measures something', () => 
 
   expect(
     sortedEntries(callSitesOf('--accent-dim')),
-    `the --accent-dim call sites on disk are not the twelve this file tables. A call site missing ` +
+    `the --accent-dim call sites on disk are not the eleven this file tables. A call site missing ` +
       `from the table silently takes the :root ornament role, and if it is a boundary it falls below ` +
       `the 3:1 floor AD-19 asserts with every case here green`
   ).toEqual(sortedEntries(tabled(CALL_SITES)));
 
   expect(
     sortedEntries(callSitesOf('--monument-bold')),
-    `the --monument-bold call sites on disk are not the four this file tables. A fifth one loses the ` +
+    `the --monument-bold call sites on disk are not the three this file tables. A fourth one loses the ` +
       `weight that lived in the family name and renders at 400, which is the exact trap this story exists to close`
   ).toEqual(sortedEntries(tabled(WEIGHT_SITES)));
 
@@ -901,7 +914,8 @@ test('the body ground and body copy where the base rule paints are the token rol
   //
   // The surface that does show the base rule is the 404. `Container.tsx` sets `<body id={route}>`
   // from the stripped, hyphenated pathname, and an unrouted path's id matches none of
-  // `body#work, body#projects` (`app/app.scss`), `body[id='']` (`HomeLayout.scss`) or `#celeste`
+  // `body#work` (`app/app.scss`, which listed `body#projects` beside it until Story 2-14),
+  // `body[id='']` (`HomeLayout.scss`) or `#celeste`
   // (`celeste.scss`), so nothing overrides `background: var(--black-color)` there.
   // `error-page.scss:7` paints its own `#0a000f` on the error container, not on `body`.
   await goTo(page, NOT_FOUND, 404);
@@ -943,7 +957,7 @@ test('the body ground and body copy where the base rule paints are the token rol
 test('every route the Hub serves still answers 2xx', async ({ page }) => {
   // NFR-2 binds every migration step, so this is measured rather than assumed.
   //
-  // **`page.request` and not `page.goto`.** Two of the seven, `/cv` and `/recommendation`, are
+  // **`page.request` and not `page.goto`.** Two of the six, `/cv` and `/recommendation`, are
   // permanent redirects to a PDF (`next.config.js`), so a browser asked for either starts a
   // download rather than a navigation and `page.goto` rejects with "Download is starting". The
   // request context follows the redirect and reports the status the visitor ends on, which is
@@ -964,8 +978,14 @@ test('every route the Hub serves still answers 2xx', async ({ page }) => {
   expect(landedOn.size, 'no route was visited').toBe(ROUTES.length);
   expect(failures, `a route stopped answering:\n${failures.join('\n')}`).toEqual([]);
 
-  // The two that redirect, and the five that do not, pinned as a pair so a redirect quietly added
+  // The two that redirect, and the four that do not, pinned as a pair so a redirect quietly added
   // or removed shows up here rather than as a puzzling download three stories later.
+  //
+  // **This pin deliberately did not widen when Story 2-14 added a third redirect.** Operator ruling
+  // of 2026-09-07: `/projects` answers a 301 that lands on `/`, which is a Hub document rather than
+  // a PDF, so it would fail the `/pdf/` assertion below and say nothing this file is about. It left
+  // `ROUTES` instead, and `tests/e2e/projects-redirect.pw.ts` asserts the status code and the
+  // `Location` header without following either.
   const redirected = [...landedOn].filter(([route, landing]) => route !== landing).map(([route]) => route);
   expect(redirected.sort(), 'the set of routes that redirect away from the Hub has changed').toEqual([
     '/cv',

@@ -354,7 +354,9 @@ and `epics.md:1838-1846`.
 
 `WorkHero.scss:19`, `ProjectsHero.scss:19` and `error-page.scss:24` set the family alone, so
 their computed `font-weight` is `400` today and would still be `400` after an alias silently
-dropped bold. The weight lives in the family name, declared by the `@font-face` block. Only
+dropped bold. (`ProjectsHero.scss` left the tree on **2026-09-07**, deleted by Story 2-14 with the
+`/projects` route it styled, so two of the three named here survive. The 2026-08-24 reading is left
+as it was taken.) The weight lives in the family name, declared by the `@font-face` block. Only
 `glitch-text.scss:7` sets `font-weight: 700` itself.
 
 Story 1.18's own acceptance criteria already close that hole, and the order matters: `epics.md:1842-1843`

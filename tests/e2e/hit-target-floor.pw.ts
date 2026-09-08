@@ -42,9 +42,10 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * the document's scroll width still reports as though nothing overflowed, while 28 elements on
  * `/work` really do sit past the right edge. Comparing each measured element's edges to the
  * viewport is what detects that. The remaining half of KV-5 is the component one, `WorkItem.scss`
- * and `WorkHero.scss` on `/work` booked to Stories 2-31 and 2-33, and `ProjectsHero.scss` on
- * `/projects` booked to Story 2-14, which redirects that route away rather than repairing it. The
- * entry stays `Open` until all three land.
+ * and `WorkHero.scss` on `/work`, 28 elements booked to Stories 2-31 and 2-33. The eight that were
+ * booked to Story 2-14 are gone: that story redirected `/projects` on 2026-09-07 and deleted the
+ * hero that rendered them, rather than repairing it. The entry stays `Open` until the other two
+ * land.
  *
  * **No screenshot is taken.** This file writes no snapshot directory, so `keeps exactly one
  * committed baseline` in `tests/e2e/rendered-output.pw.ts` stays true. Same precedent as
@@ -89,11 +90,18 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * (`playwright.config.ts:79`), which is the non-3D path where it does not render at all:
  * `tests/e2e/front-door.pw.ts` measures that one, on a `no-preference` context, because nothing
  * here can.
+ *
+ * **`/projects` left this table with Story 2-14 and belongs in neither list.** That story replaced
+ * the page with a 301 to `/#suite`, so `app/projects/page.tsx` is off disk and the walk below
+ * would report the route as `phantom` if it were left here. It is not a `NON_HUB_ROUTE` either:
+ * that list is for routes that answer something other than Hub markup, and this one lands on `/`,
+ * which the case at the end of this file would reject for answering `text/html`. Playwright
+ * follows redirects, so a row left in `SURFACES` would have gone green while measuring `/` twice.
+ * The redirect itself is asserted in `tests/e2e/projects-redirect.pw.ts`.
  */
 const SURFACES = [
   { route: '/', status: 200, entrance: true, found: 17, skipped: 0, measured: 17 },
   { route: '/work', status: 200, entrance: false, found: 11, skipped: 0, measured: 11 },
-  { route: '/projects', status: 200, entrance: false, found: 18, skipped: 0, measured: 18 },
   { route: '/celeste', status: 200, entrance: false, found: 7, skipped: 7, measured: 0 },
   { route: NOT_FOUND, status: 404, entrance: false, found: 8, skipped: 0, measured: 8 },
 ] as const;
@@ -174,7 +182,7 @@ const SOURCE_SHAPE = /^[\w./-]+\.tsx:\d+(,\d+)*$/;
  *
  * `covers` is an expectation and is the reason a selector cannot exempt more than it was written
  * for. It is the exact number of measured elements the row accounts for **across the whole run**,
- * summed over the routes it lists. A seventh `nav.navbar a` would make the row cover nineteen and
+ * summed over the routes it lists. A seventh `nav.navbar a` would make the row cover thirteen and
  * fail here rather than inherit an exemption written for six links.
  *
  * `closedBy` is the story whose own acceptance criteria name this floor, so the repair lands
@@ -207,8 +215,8 @@ const EXEMPTIONS: readonly Exemption[] = [
     id: 'chrome-logo',
     selector: '.logo a',
     source: 'components/atoms/Logo/Logo.tsx:7',
-    routes: ['/work', '/projects', '/a-route-that-does-not-exist'],
-    covers: 3,
+    routes: ['/work', '/a-route-that-does-not-exist'],
+    covers: 2,
     measured: '184.00 x 20.00',
     closedBy: 'Story 2-32',
   },
@@ -216,8 +224,8 @@ const EXEMPTIONS: readonly Exemption[] = [
     id: 'chrome-nav',
     selector: 'nav.navbar a',
     source: 'components/atoms/Navbar/Navbar.tsx:6,7,8,9,12,19',
-    routes: ['/work', '/projects', '/a-route-that-does-not-exist'],
-    covers: 18,
+    routes: ['/work', '/a-route-that-does-not-exist'],
+    covers: 12,
     measured: '38.41 x 22.00 to 98.13 x 22.00',
     closedBy: 'Story 2-15',
   },
@@ -1195,7 +1203,10 @@ test.describe('the hit-target floor', () => {
 
   test('fails a row that has stopped matching on one of the routes it lists', () => {
     // Driven through the pure verdict, because arranging a real page where a shipped surface has
-    // vanished from one route means deleting a component. The row shape is the real one.
+    // vanished from one route means deleting a component. The row shape is the real one and every
+    // value in it is invented: the id, the selector, the source file, the closing story and, since
+    // Story 2-14 redirected it, the second route as well. `judge` never navigates, so a route
+    // string here is a label rather than a request.
     const ghost: Exemption = {
       id: 'a-surface-on-two-routes',
       selector: '.a-class-nothing-renders a',

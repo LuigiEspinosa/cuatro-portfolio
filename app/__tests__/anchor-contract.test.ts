@@ -30,7 +30,7 @@ import { dirname, join, relative, resolve } from 'node:path';
  *     in every scanned file under every shipped source root, `app/`, `components/`, `hooks/` and
  *     `content/`, and the count of files read is asserted so the scan cannot pass over an empty
  *     selection. `app/app.scss` must reference exactly the pinned set of roles the mapping names,
- *     the four `--monument-bold` call sites exactly `--w-black`, and every other scanned file
+ *     the `--monument-bold` call sites exactly `--w-black`, and every other scanned file
  *     none, so a component stylesheet reaching for a role and an alias silently retargeted both
  *     fail.
  *  4. **There is no second authored copy.** The Anchor is the publisher, not a Satellite
@@ -202,17 +202,21 @@ const ALIAS_ROLES = [...new Set(MAPPING.flatMap(([, roles]) => roles))];
 const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height', '--confillia-normal', '--confillia-bold'] as const;
 
 /**
- * The four `--monument-bold` call sites, the only component stylesheets this story edits.
+ * The `--monument-bold` call sites, the only component stylesheets Story 1-18 edits.
  *
  * A family alias cannot carry the weight that lived in the family name `MonumentExtended-Bold`,
  * so each of these sets `font-weight` alongside `font-family` by hand. That makes each of them a
  * second, named consumer of the contract, which is why the scan below allows exactly one role
- * from exactly these four paths rather than allowing none from anywhere but `app/app.scss`.
+ * from exactly these paths rather than allowing none from anywhere but `app/app.scss`.
+ *
+ * **Four until 2026-09-07, three now.** Story 2-14 redirected `/projects` and deleted
+ * `ProjectsHero` with the route, taking `ProjectsHero.scss` and its hand-set weight off disk. The
+ * list shrank rather than the rule changing: a path named here that is not scanned fails below as
+ * "was not among the scanned files", which is the direction this list is allowed to move in.
  */
 const WEIGHT_CALL_SITES = [
   'components/molecules/GlitchText/glitch-text.scss',
   'components/organisms/ErrorPage/error-page.scss',
-  'components/organisms/ProjectsHero/ProjectsHero.scss',
   'components/organisms/WorkHero/WorkHero.scss',
 ] as const;
 
@@ -777,7 +781,7 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
         `retargeted to a different role, or dropped, changes what the whole site paints from one line.`
     ).toEqual([...ALIAS_ROLES].sort());
 
-    // Claim two: the four `--monument-bold` call sites reference exactly `--w-black`, which is
+    // Claim two: the `--monument-bold` call sites reference exactly `--w-black`, which is
     // the weight a family alias cannot carry, and nothing else.
     for (const site of WEIGHT_CALL_SITES) {
       expect(

@@ -3146,3 +3146,107 @@ status: done
     the other comparisons carry. It was not done here because that suite is Story 2-8's instrument
     and this story's boundaries name the two numbers rather than the agreement between them.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
+  id: DW-54
+  summary: >-
+    Two more derived sentences in `ops/hit-target-floor.md` had already drifted one out before this
+    story touched them, in the same way and for the same reason as DW-53's total. They read 27 of 53
+    and 26 against a surfaces table summing to 54.
+  evidence: |-
+    § The tolerated breach opened "**27 of the 53 measured elements are under the floor**" and, two
+    paragraphs down, "The 26 elements that clear the floor are the four `.work-item__header` buttons
+    and the 22 Suite Directory links". Both were correct on 2026-09-06. Story 2-13 then moved `/`
+    from 16 to 17 candidates and updated the table and the total, and these two sentences were not
+    carried with it: at `97bfc6b` the table summed to 54 while they described 53.
+
+    Verified 2026-09-07 by summing the record's own `Measured` column at that commit and comparing.
+    Story 2-14 re-measured rather than back-dated: both sentences now carry the post-2-14 figures
+    (20 of 36, and 16 clearing) with their own date, and the drift is recorded here so a later
+    reader can tell the correction from the re-measurement.
+
+    **This is DW-53's shape and not DW-53.** That entry is about the one-line total; these are two
+    further derived figures in a different section, and neither is read by any test either. Closing
+    DW-53 as written, by summing the `Measured` column and comparing it against the sentence, would
+    not catch these. The cheapest honest fix is to derive all three in the same case, which is the
+    Story 2-8 instrument's to change and not this story's.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
+  id: DW-55
+  summary: >-
+    Both chrome links to `/projects` were deliberately left pointing at the redirect. Every visitor
+    who uses the nav or the homepage panel now pays an extra round trip, and the App Router
+    prefetches a 301 rather than a route bundle.
+  evidence: |-
+    `components/atoms/Navbar/Navbar.tsx:7` renders `<Link href='/projects'>Projects</Link>` and
+    `components/organisms/HomeLayout/HomeLayout.tsx:145` renders the homepage panel's
+    `<Link href='/projects' className='nav-link'>`. Operator ruling of 2026-09-07: repointing the
+    chrome is Story 2-15's job, so Story 2-14 left both untouched and both tests green
+    (`Navbar.test.tsx:31-33` and `HomeLayout.test.tsx:104-107` pin the `href`).
+
+    Nothing is broken. The redirect is what keeps them working, which is the whole reason the URL
+    survived. What is deferred is the cost and the accuracy: a nav item labelled "Projects" that
+    lands on the homepage's Suite Directory is a label the destination no longer matches, and the
+    prefetch that used to warm `/projects`'s bundle now warms a redirect.
+
+    Story 2-15 owns the chrome nav by title and already owns `chrome-nav` in
+    `ops/hit-target-floor.md`'s exemption ledger, so the repoint and the hit-target repair land
+    together. Whichever story takes it moves both call sites, both unit assertions, and the
+    `ENTRANCE_SELECTOR` note in `tests/e2e/hit-target-floor.pw.ts` that already anticipates the
+    `.nav-link` rename.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
+  id: DW-56
+  summary: >-
+    `next.config.js` matches a redirect `source` case-insensitively, so `/Projects` and `/PROJECTS`
+    now answer 301 where they answered 404 before this story. The story's own I/O matrix predicted
+    the opposite.
+  evidence: |-
+    The matrix row read "`/Projects` ... is not a route and 404s", with the note "Next matches
+    `source` case-sensitively; assert what it does rather than assuming". Measured 2026-09-07
+    against a local production build (`pnpm build && pnpm start --port 3100`) with an HTTP client
+    that follows nothing: `/projects`, `/Projects` and `/PROJECTS` all answer `301` with
+    `Location: /#suite`. `/projectsX` answers 404, so the source is anchored and only its case
+    folding is loose. Next compiles `redirects()` sources with case sensitivity off by default;
+    the App Router's own file-based matching is case-sensitive, which is why `/Projects` reached
+    `app/not-found.tsx` before.
+
+    Asserted as observed in `tests/e2e/projects-redirect.pw.ts` rather than left unstated, under a
+    case whose title says it is Next behaviour rather than this rule's. It is filed rather than
+    fixed because the change is in the forgiving direction, no requirement in the plan states a
+    case rule for URLs, and none of the paths NFR-2's acceptance criterion names is affected.
+
+    Closing it, if the estate decides a URL should be case-sensitive, means either a `has`
+    condition or moving the redirect out of `next.config.js` into middleware, both of which are a
+    routing decision rather than an implementation detail. `ops/routing-inventory.md` is where such
+    a rule would be recorded.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
+  id: DW-57
+  summary: >-
+    Two records outside this story's scope now describe a route that no longer exists: KV-5's title
+    still counts thirty-six elements where its own entry records twenty-eight, and
+    `ops/asset-budget.md` carries `/projects` rows and a pending action naming `TorusKnotCanvas`.
+  evidence: |-
+    `ops/known-violations.md:66` and `:367` both title KV-5 "Thirty-six elements sit past the right
+    edge at 360px", and the entry's own cells were re-measured to 28 by Story 2-14 on 2026-09-07.
+    The title was left alone deliberately: that file's rule is that the index row is derived from
+    the entry heading, so the two must move together, and a retitled entry breaks every inbound
+    citation to it, including two in this file. Renaming it is a decision about the register rather
+    than a consequence of this story.
+
+    `ops/asset-budget.md` is untouched for the same reason and is a larger case. Its fingerprint
+    tables, its per-route weight tables (`:418`, `:439`) and its 2026-09-07 finding at `:681` all
+    name `/projects`, and Operator action 6 at `:710` says `EXPERIENCE.md` Rule 1 "still fails on
+    `/work` and `/projects` (`TorusCanvas.tsx:8`, `TorusKnotCanvas.tsx:8`)". Half of that is now
+    arithmetically closed: `TorusKnotCanvas.tsx` and `TorusKnot.tsx` were deleted with the route, so
+    only `TorusCanvas.tsx` on `/work` and `app/providers.tsx` remain. Every one of those rows is a
+    dated observation of a build, and the honest correction is a re-run of `ops/asset-budget.mjs`
+    against the new tree with a dated paragraph, not an edit of the readings. Story 2-14's frozen
+    boundaries name `ops/hit-target-floor.md`, `ops/known-violations.md`,
+    `ops/anchor-token-adoption.md`, `ops/status-mark-axes.md` and `ops/rendered-output-harness.md`,
+    and not this one.
+  status: open

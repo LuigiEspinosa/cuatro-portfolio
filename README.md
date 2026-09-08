@@ -88,7 +88,7 @@ Copy `.env.example` and fill in values. Variables prefixed `NEXT_PUBLIC_` are in
 | ----------------- | ------------------------------------------------ |
 | `/`               | Home - GSAP layout + 3D gem                      |
 | `/work`           | Experience Timeline                              |
-| `/projects`       | Case studies grid                                |
+| `/projects`       | 301 to `/#suite` (Story 2-14)                    |
 | `/cv`             | Redirect to `public/pdf/cv.pdf`                  |
 | `/recommendation` | Redirect to `public/pdf/remmendation-letter.pdf` |
 

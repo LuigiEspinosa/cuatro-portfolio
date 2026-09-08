@@ -5,13 +5,15 @@ import { Body } from '../Container';
  * `Body` writes the current route onto `<body id>`, and four rules across three stylesheets
  * key on that id:
  *
- *  1. `app/app.scss` -- `body#work, body#projects`, the grid ground
+ *  1. `app/app.scss` -- `body#work`, the grid ground
  *  2. `components/organisms/HomeLayout/HomeLayout.scss` -- `body[id='']`, the home ground
  *  3. `components/organisms/Celeste/celeste.scss:1` -- `#celeste`, the whole `/celeste` surface
  *  4. `components/organisms/Celeste/celeste.scss:8` -- `#celeste header`, added by Story 2-1
  *
  * Five until 2026-09-06: Story 2-9 deleted `body[id=''] { overflow: hidden }` from `app/app.scss`,
- * which was the single reason a section below the homepage hero could not be scrolled to.
+ * which was the single reason a section below the homepage hero could not be scrolled to. Rule 1
+ * read `body#work, body#projects` until 2026-09-07, when Story 2-14 redirected `/projects` and no
+ * request could produce that id again.
  *
  * The header suppression on `/celeste` now depends on this value, and nothing tested it. A
  * silent change to the derivation, a leading slash left on or the attribute dropped when the

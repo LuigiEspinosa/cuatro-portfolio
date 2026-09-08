@@ -1097,7 +1097,8 @@ test('the Hub renders the token roles its alias layer maps its own names onto', 
 
   // `--black-color` is read on a probe rather than on `body`, because **the base `body`
   // background is not visible on `/work`**, the one URL this file visits:
-  // `body#work` and `body#projects` override it (`app/app.scss:53-55`), `body[id='']` overrides
+  // `body#work` overrides it (`app/app.scss`, which listed `body#projects` beside it until Story
+  // 2-14 redirected that route), `body[id='']` overrides
   // it for `/` (`components/organisms/HomeLayout/HomeLayout.scss:1-2`) and `#celeste` overrides
   // it for `/celeste` (`components/organisms/Celeste/celeste.scss:1-2`).
   //

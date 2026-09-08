@@ -761,10 +761,12 @@ describe('the Registry stays out of the browser bundle', () => {
   /**
    * Why this is a test and not a comment.
    *
-   * `ProjectsHero` takes its count as a prop precisely so a client component never imports this
+   * `ProjectsHero` took its count as a prop precisely so a client component never imported this
    * module: doing so would ship all fourteen entries to the browser to render one number, against
    * the non-3D budget Story 2.2 measures. Nothing enforced that, so the invariant lived on the
-   * memory of whoever read the comment. This is the enforcement.
+   * memory of whoever read the comment. This is the enforcement, and it outlives its example:
+   * Story 2-14 deleted that component on 2026-09-07 with the `/projects` route, and the rule binds
+   * every client component under `components/` either way.
    *
    * A statement written as `import type` is exempt and must be: TypeScript erases it, so
    * `ProjectCard` can take a `RegistryEntry` prop while shipping no Registry. The distinction is

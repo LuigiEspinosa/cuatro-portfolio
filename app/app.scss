@@ -109,8 +109,10 @@ body {
   min-height: 100vh;
 }
 
-body#work,
-body#projects {
+// `body#projects` left this list with Story 2-14. `Container.tsx:12-16` derives the id from
+// `usePathname()`, and `/projects` now answers a 301 rather than rendering, so no request can
+// match it again.
+body#work {
   background-color: #0a000f;
   background-image:
     linear-gradient(rgba(140, 90, 210, 0.06) 1px, transparent 1px),

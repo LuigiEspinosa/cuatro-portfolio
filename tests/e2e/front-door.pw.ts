@@ -73,9 +73,11 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
  *
  * `@react-three/postprocessing` is imported by `GemNarrative` and by nothing else in this
  * repository, so its mark in a fetched script is the gem's boundary and not the App Router
- * prefetching `/work` and `/projects`, both of which still carry `three` eagerly. That prefetch is
- * why this is a fingerprint scan rather than a flat "no narrative chunk was requested": neither
- * path is free of `three`, and only one of them fetches the gem.
+ * prefetching `/work`, which still carries `three` eagerly. That prefetch is why this is a
+ * fingerprint scan rather than a flat "no narrative chunk was requested": neither path is free of
+ * `three`, and only one of them fetches the gem. The hero's second `<Link>` pointed at
+ * `/projects`, which carried `three-stdlib` the same way until Story 2-14 deleted that route on
+ * 2026-09-07; it now prefetches a redirect until Story 2-15 repoints the chrome.
  *
  * Read as text rather than imported, for the reason DW-40 records: the tool is an ES module using
  * `import.meta`, which Playwright's CommonJS loader refuses. That entry books the third copy of

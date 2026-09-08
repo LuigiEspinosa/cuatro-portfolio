@@ -30,7 +30,13 @@ import { test, expect, type Browser, type Locator, type Page } from '@playwright
  * firing on the same page with the absorbing rule turned off.
  */
 
-/** The homepage, where the directory sits below the hero. `/projects` renders the same component. */
+/**
+ * The homepage, where the directory sits below the hero, and the only route that renders it.
+ *
+ * `/projects` rendered the same component until 2026-09-07, when Story 2-14 replaced it with a 301
+ * to `/#suite`. That the Hub now renders the Directory exactly once is asserted in
+ * `tests/e2e/projects-redirect.pw.ts`.
+ */
 const ROUTE = '/';
 
 /** The fragment `/#suite` resolves to, which the directory heading carries. */

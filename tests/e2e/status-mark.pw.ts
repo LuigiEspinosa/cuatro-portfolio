@@ -59,17 +59,19 @@ import { resolve } from 'node:path';
 const REPO_ROOT = resolve(__dirname, '..', '..');
 
 /**
- * Both routes that render a Status mark.
+ * The one route that renders a Status mark.
  *
- * `app/page.tsx` puts the directory below the hero and `app/projects/page.tsx` renders the same
- * component outside `Container`, which is a different width budget. Measuring only the homepage
- * would leave `ops/known-violations.md`'s "not in breach" sentence route-blind on the one route
- * KV-5 already records as overflowing, and the axes are cheap enough to read on both. The axis
- * cases stay on the homepage, the stylesheet being global; the A-5 cases, which are about width,
- * run on each.
+ * **Two until 2026-09-07, and the second was not a formality when it existed.** `app/projects/page.tsx`
+ * rendered the same component outside `Container`, which is a different width budget, and it was the
+ * one route KV-5 recorded as already putting elements past the right edge, so an overflow claim
+ * measured only on the homepage was weakest exactly where it mattered. Story 2-14 redirected that
+ * route to `/#suite` and deleted the page, so `/` is the only surface the directory renders on and
+ * the `ROUTES` list it justified is gone rather than kept at one member.
+ *
+ * The axis cases were always on the homepage, the stylesheet being global and `data-status` its only
+ * seam. The A-5 cases, which are about width, now run there too because there is nowhere else.
  */
 const ROUTE = '/';
-const ROUTES = ['/', '/projects'] as const;
 
 /**
  * Sub-pixel slack, matching `hit-target-floor.pw.ts:252` and `suite-directory.pw.ts:57`.
@@ -708,10 +710,11 @@ test.describe("A-5's other half: the Status never truncates", () => {
    * invisible to a sweep over interactive elements because the mark is not one
    * (`EXPERIENCE.md:351`).
    *
-   * **Called from one case per route rather than looped, so the titles stay literal.**
-   * `ops/__tests__/status-mark-axes.test.ts` reads them out of this file as text and holds
-   * `ops/status-mark-axes.md` equal to them; a title built from a template literal parses as its
-   * source and never matches what the runner reports.
+   * **Called from a case with a literal title rather than from a loop.**
+   * `ops/__tests__/status-mark-axes.test.ts` reads the titles out of this file as text and holds
+   * `ops/status-mark-axes.md` equal to them, in order; a title built from a template literal parses
+   * as its source and never matches what the runner reports. It took a route argument when there
+   * were two routes, and it keeps one: the failure messages name the surface they measured.
    */
   const expectNoTruncation = async (page: Page, route: string): Promise<void> => {
     await goTo(page, route);
@@ -745,15 +748,7 @@ test.describe("A-5's other half: the Status never truncates", () => {
   };
 
   test('at 360 on the homepage, where the row has least room', async ({ page }) => {
-    await expectNoTruncation(page, ROUTES[0]);
-  });
-
-  test('at 360 on /projects, which renders the same component outside Container', async ({ page }) => {
-    // The second route is not a formality. `/projects` renders `<SuiteDirectory />` on a different
-    // width budget, and `ops/known-violations.md` already records it as the route putting eight
-    // elements past the right edge, invisible to `scrollWidth` because `ProjectsHero.scss:9` clips
-    // them. An overflow claim measured only on the homepage is weakest exactly where it matters.
-    await expectNoTruncation(page, ROUTES[1]);
+    await expectNoTruncation(page, ROUTE);
   });
 
   test('and the same measurement fires against a mark clamped too narrow to hold its value', async ({ page }) => {
