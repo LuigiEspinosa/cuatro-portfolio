@@ -33,6 +33,7 @@ const RECORD_REL = 'ops/hit-target-floor.md';
 const SPEC_REL = 'tests/e2e/hit-target-floor.pw.ts';
 const BOARD_REL = '_bmad-output/implementation-artifacts/sprint-status.yaml';
 const LIGHTHOUSE_REL = '.lighthouserc.js';
+const NEXT_CONFIG_REL = 'next.config.js';
 const HARNESS_RECORD_REL = 'ops/rendered-output-harness.md';
 const VIOLATIONS_REL = 'ops/known-violations.md';
 
@@ -649,6 +650,38 @@ describe('the assertion is sourced and scoped the way the record says', () => {
       `${LIGHTHOUSE_REL} no longer asserts accessibility at 0.95 with severity error. AD-19 keeps ` +
         `that gate alongside this one, and AD-21 forbids weakening either`
     ).toContain("'categories:accessibility': ['error', { minScore: 0.95 }]");
+  });
+
+  it('collects no URL that next.config.js redirects away', () => {
+    // **A gate audits what it reaches, not what it was pointed at.** LHCI follows a redirect and
+    // reports the result under the label it was given, so a collect URL naming a redirected route
+    // produces a report that reads as three surfaces while measuring two, and the accessibility
+    // score above is then asserted twice on one page. Story 2-14 removed `/projects` from the list
+    // when it redirected that route; this is what notices the next time the two drift.
+    // Scoped to `redirects()`. `next.config.js` also declares a `headers()` source, and reading
+    // every `source:` in the file counts `/` as redirected and fails this case on a correct config,
+    // which is how the scoping was found rather than argued.
+    const block = /async redirects\(\) \{\n([\s\S]*?)\n {2}\},/.exec(read(NEXT_CONFIG_REL));
+    expect(block, `${NEXT_CONFIG_REL} has no redirects() block, or it has been reflowed`).toBeTruthy();
+    const sources = [...(block?.[1] ?? '').matchAll(/source: '([^']+)'/g)].map((match) => match[1]);
+    const urls = [...read(LIGHTHOUSE_REL).matchAll(/'(https?:\/\/[^']+)'/g)].map((match) => match[1]);
+
+    // Both parsers fire on a control before their agreement is read as good news.
+    expect(sources, `${NEXT_CONFIG_REL} declares no redirect source, so the parser has stopped matching`).toContain(
+      '/projects'
+    );
+    expect(urls.length, `${LIGHTHOUSE_REL} declares no collect URL, so the parser has stopped matching`).toBeGreaterThan(
+      0
+    );
+
+    const audited = urls.map((url) => new URL(url).pathname.replace(/\/$/, '') || '/');
+    const redirected = audited.filter((pathname) => sources.includes(pathname));
+    expect(
+      redirected,
+      `${LIGHTHOUSE_REL} collects a route ${NEXT_CONFIG_REL} redirects: ${redirected.join(', ')}. LHCI ` +
+        `follows it and audits the destination under the label it was given, so the report names a ` +
+        `surface it never measured`
+    ).toEqual([]);
   });
 
   it('is named by the harness record, under what the harness asserts', () => {

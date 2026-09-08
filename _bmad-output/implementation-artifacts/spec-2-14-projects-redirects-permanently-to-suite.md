@@ -89,7 +89,7 @@ that surface moves in the same commit, because half of them are parsed as text b
 |----------|--------------|---------------------------|----------------|
 | The inbound link | `GET /projects`, redirects not followed | Status is exactly `301`, `Location` is `/#suite` | The story's payload. `maxRedirects: 0` is required, or the assertion reads the landing instead |
 | The visitor | A browser opening `/projects` | Lands on `/`, the Directory heading is present and `#suite` resolves | The fragment never reaches the server; it is the browser that scrolls |
-| Query and case | `/projects?ref=x`, `/Projects` | The first redirects and keeps nothing it was not given; the second is not a route and 404s | Next matches `source` case-sensitively; assert what it does rather than assuming |
+| Query and case | `/projects?ref=x`, `/Projects` | The first redirects and keeps nothing it was not given; the second redirects too, `source` being matched case-insensitively | Amended by Operator ruling of 2026-09-07, the original clause predicting a 404. `/projectsX` is the control: the source is anchored and only its case folding is loose |
 | One rendering | Every Hub surface, swept | Exactly one surface renders `.suite-directory`, and it is `/` | This is NFR-9. `Premise` and `SiteFooter` render derived counts, not entries, and are out of scope |
 | The two PDF routes | `GET /cv`, `GET /recommendation` | Unchanged: 308, landing on a `.pdf` | `anchor-aliases.pw.ts:969-976` pins that set at exactly two and stays as written |
 | The floor sweep | `pnpm test:e2e` | Four surfaces swept, none of them `/projects`, and the ledger arithmetic still holds | `covered <= measured` (`hit-target-floor.test.ts:485-489`) and `skipped + measured === found` per row |
@@ -166,32 +166,34 @@ that surface moves in the same commit, because half of them are parsed as text b
 
 **Execution:**
 
-- [ ] `next.config.js`: add the `/projects -> /#suite` row with `statusCode: 301`, and a comment stating
+- [x] `next.config.js`: add the `/projects -> /#suite` row with `statusCode: 301`, and a comment stating
       why it is not `permanent: true`.
-- [ ] Delete `app/projects/`, `components/organisms/ProjectsHero/`,
+- [x] Delete `app/projects/`, `components/organisms/ProjectsHero/`,
       `components/molecules/TorusKnotCanvas/`, `components/atoms/TorusKnot/`, and the `body#projects`
       half of the selector at `app/app.scss:112`.
-- [ ] `.lighthouserc.js`: drop the `/projects` collect URL, leaving the accessibility assertion
+- [x] `.lighthouserc.js`: drop the `/projects` collect URL, leaving the accessibility assertion
       unweakened.
-- [ ] `tests/e2e/hit-target-floor.pw.ts` and `ops/hit-target-floor.md`: delete the `/projects` surface
+- [x] `tests/e2e/hit-target-floor.pw.ts` and `ops/hit-target-floor.md`: delete the `/projects` surface
       row, drop the route from both exemption rows, move `covers` to 2 and 12, and update every derived
       sentence to the figures the run prints. Add a dated re-measurement paragraph; edit no historical
       one.
-- [ ] `app/__tests__/anchor-contract.test.ts` and `tests/e2e/anchor-aliases.pw.ts`: remove the three
+- [x] `app/__tests__/anchor-contract.test.ts` and `tests/e2e/anchor-aliases.pw.ts`: remove the three
       `ProjectsHero` entries, move `CALL_SITE_COUNT` to 11 and `WEIGHT_SITE_COUNT` to 3, and drop
       `/projects` from `ROUTES`, leaving the redirect pin exactly as written.
-- [ ] `tests/e2e/status-mark.pw.ts` and `ops/status-mark-axes.md`: delete the `/projects` case, retire
+- [x] `tests/e2e/status-mark.pw.ts` and `ops/status-mark-axes.md`: delete the `/projects` case, retire
       `ROUTES`, rewrite the docblock that justified two routes, and delete the matching record row.
-- [ ] `tests/e2e/narrative.pw.ts`: drop `/projects` from `NAVIGABLE_ROUTES` and correct the chunk comment
+- [x] `tests/e2e/narrative.pw.ts`: drop `/projects` from `NAVIGABLE_ROUTES` and correct the chunk comment
       at `:565`.
-- [ ] `tests/e2e/projects-redirect.pw.ts`: **new.** Every browser row of the matrix, each with a control
+- [x] `tests/e2e/projects-redirect.pw.ts`: **new.** Every browser row of the matrix, each with a control
       watched failing: the 301 and its `Location`, the fragment, query and case, the landing, and the
       single rendering of `.suite-directory` across the swept surfaces.
-- [ ] `ops/known-violations.md`, `ops/anchor-token-adoption.md`, `ops/rendered-output-harness.md`,
+- [x] `ops/known-violations.md`, `ops/anchor-token-adoption.md`, `ops/rendered-output-harness.md`,
       `README.md`, `tests/e2e/suite-directory.pw.ts:33`, `app/__tests__/page.test.tsx:16`,
       `tests/e2e/hit-target-floor.pw.ts:45-47`, `Container.test.tsx:8`: bring the prose in line, keeping
       KV-5's four pinned literals byte-identical.
-- [ ] `_bmad-output/implementation-artifacts/deferred-work.md`: file the pre-existing 53/54 and 26/27
+- [x] `ops/__tests__/hit-target-floor.test.ts`: assert `.lighthouserc.js` collects no URL that
+      `next.config.js` redirects, which is the half of the Lighthouse matrix row nothing covered.
+- [x] `_bmad-output/implementation-artifacts/deferred-work.md`: file the pre-existing 53/54 and 26/27
       drift in `ops/hit-target-floor.md`, the chrome links still pointing at a redirect until Story 2-15,
       and anything the run surfaces.
 
@@ -208,6 +210,30 @@ that surface moves in the same commit, because half of them are parsed as text b
   surviving hit is a dated historical record, not a live reference.
 - Given `git status --porcelain -- tests/e2e/*-snapshots`, when it is read after a full run, then it is
   empty.
+
+## Spec Change Log
+
+**2026-09-07, during step 3. The matrix predicted a 404 for `/Projects` and the runtime answers 301.**
+The frozen row asserted that `next.config.js` matches `source` case-sensitively, which it does not: Next
+compiles a redirect source with case sensitivity off and exposes no option to change it. Before this
+story `/Projects` reached `app/not-found.tsx`, the App Router's own file matching being case-sensitive,
+so this is a real behaviour change on a path NFR-2's list does not name, in the forgiving direction.
+
+Amended, by Operator ruling, to state the observed behaviour rather than the assumed one. The
+alternative, a `middleware.ts` running on every request to restore a 404 nobody asked for, was declined:
+it is a new top-level file this spec's Ask First list gates, and it buys nothing. The implementation had
+already pinned the observed behaviour with a control, and filed DW-56.
+
+**KEEP:** the `/projectsX` control. Without it the case reads as a claim that the redirect swallows
+anything beginning with the source, and the finding would be about prefixes rather than about case.
+
+**2026-09-07, during step 3. The Lighthouse matrix row was half uncovered.** `hit-target-floor.test.ts`
+already pinned the `>=0.95` assertion, so the "unweakened" half was held, but nothing asserted that the
+collect list names no redirected route, which is the half that makes the report honest. A case was added
+rather than the row softened. Its first draft read every `source:` in `next.config.js`, counted the
+`headers()` source, and reported `/` as redirected: the scoping to the `redirects()` block was found by
+watching that failure rather than argued. The clean version was then watched failing with the
+`/projects` URL planted back into `.lighthouserc.js`.
 
 ## Verification
 
