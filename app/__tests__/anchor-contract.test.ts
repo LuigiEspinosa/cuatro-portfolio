@@ -238,8 +238,17 @@ const WEIGHT_ROLE = '--w-black';
  * deletes the alias layer, at which point this partition and `WEIGHT_CALL_SITES` collapse into one.
  */
 const TOKEN_NATIVE_STYLESHEETS = [
+  // The two chrome stylesheets Story 2-15 brought onto the contract. They are the first entries
+  // here that are **not** Epic 2 rebuilds: both keep their 2023 lowercase names and their old
+  // declarations, and each names a role because this story gave it one thing to do that the alias
+  // layer carries no name for. `navbar.scss` reaches the hit-target floor through `--tap` and
+  // marks the current route with `--stroke-emphasis` in `--token-accent`; `header.scss` goes
+  // sticky at `--z-sticky` on an opaque `--token-bg` ground. Story 2-32 rebuilds both, at which
+  // point they become rebuilds like the rest of this list.
+  'components/atoms/Navbar/navbar.scss',
   'components/atoms/SkipControl/SkipControl.scss',
   'components/atoms/SkipLink/SkipLink.scss',
+  'components/molecules/Header/header.scss',
   'components/molecules/PlateMark/PlateMark.scss',
   'components/organisms/Premise/Premise.scss',
   'components/organisms/SiteFooter/SiteFooter.scss',

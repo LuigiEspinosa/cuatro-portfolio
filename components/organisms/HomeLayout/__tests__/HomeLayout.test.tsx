@@ -101,10 +101,14 @@ describe('HomeLayout', () => {
     expect(link).toHaveAttribute('href', '/work');
   });
 
-  it('renders the projects link with correct href', () => {
+  it('renders the suite link with correct href', () => {
+    // Repointed and relabelled by Story 2-15. `/projects` is a 301 to `/#suite`, so this panel used
+    // to spend a round trip on a redirect the App Router resolves client-side, dropping the
+    // fragment and landing the visitor at the top of the page (DW-55, DW-58). Pointing it at the
+    // fragment directly makes the click a same-route navigation that never reaches the redirect.
     render(<HomeLayout />);
-    const link = screen.getByRole('link', { name: /personal projects/i });
-    expect(link).toHaveAttribute('href', '/projects');
+    const link = screen.getByRole('link', { name: /suite directory/i });
+    expect(link).toHaveAttribute('href', '/#suite');
   });
 
   it('renders the gem component', () => {

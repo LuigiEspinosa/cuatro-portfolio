@@ -12,7 +12,10 @@ export const Header = () => {
   return path !== '/' ? (
     <header className='header-container container'>
       <Logo />
-      <Navbar />
+      {/* The pathname is handed down rather than read again inside `Navbar` (Story 2-15). It is
+          already read here to decide whether this header renders at all, and `Navbar` needs the
+          same answer to mark the current destination with `aria-current`. */}
+      <Navbar pathname={path} />
     </header>
   ) : null;
 };

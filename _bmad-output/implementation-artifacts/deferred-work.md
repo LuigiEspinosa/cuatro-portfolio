@@ -3195,7 +3195,26 @@ status: done
     together. Whichever story takes it moves both call sites, both unit assertions, and the
     `ENTRANCE_SELECTOR` note in `tests/e2e/hit-target-floor.pw.ts` that already anticipates the
     `.nav-link` rename.
-  status: open
+
+    Closed 2026-09-08 by Story 2-15. Both call sites now point at `/#suite`: the header link is
+    `Suite` and the homepage panel's is `Suite Directory`, and `git grep -n "'/projects'" --
+    components app` returns nothing. **Neither the extra round trip to the 301 nor the prefetch of
+    it survives**, and the label matches its destination on both.
+
+    **The class of cost is not gone from the header, and saying so here would be a claim this
+    entry cannot make.** The `CV` destination the same story added points at `/cv`, which is itself
+    a 308, so `next/link` prefetches a redirect on both chrome surfaces exactly as the `/projects`
+    link did. That is filed as its own entry, DW-64, with Story 2-16 as the owner, rather than
+    being folded into this closure: this entry is about `/projects`, and a redirect that is about
+    to become a page is a different disposition from one that is permanent by design.
+
+    **One line of the prediction above was wrong and is corrected rather than quietly dropped.**
+    That story did **not** rename `.nav-link`: the class is `HomeLayout`'s, its ledger row is
+    `closedBy: 'Story 2-32'`, and the header's links carry no class at all. The
+    `ENTRANCE_SELECTOR` docblock in `tests/e2e/hit-target-floor.pw.ts` and the matching row in
+    `ops/hit-target-floor.md` § Failing loudly both carried the same prediction and both now carry
+    the correction, so a later reader does not go looking for a rename that never happened.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-56
@@ -3320,7 +3339,18 @@ status: done
     expectation in that case flips from `''` to `'#suite'`, which the case says in its own failure
     message, and this entry closes. This is the same journey DW-55 records paying an extra round
     trip for; DW-55 is the cost and this is the behaviour, and one repoint closes both.
-  status: open
+
+    Closed 2026-09-08 by Story 2-15, which repointed both links. **Re-measured** in the pinned
+    container at 360 x 800 by the same method: both clicks now land on `/` with `hash` `#suite`,
+    `window.scrollY` above zero, and the Directory heading in the viewport. The case in
+    `tests/e2e/projects-redirect.pw.ts` was rewritten around the new behaviour rather than having
+    one expectation edited: its premise is now that neither chrome link points at `/projects` at
+    all, because a link left on the redirect would make every reading after it a reading of the
+    redirect rather than of the repoint. The 2026-09-07 measurement is kept in that case's docblock
+    and its control is the same page asked for without the fragment, which still puts the heading
+    below the fold. The redirect itself is untouched and every other case over it is unchanged,
+    which is the half NFR-2 cares about.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-59
@@ -3377,7 +3407,22 @@ status: done
     reshapes the nav to two destinations and is the next story whose subject is which routes the
     Hub presents. **Trigger: the next edit to § Routing**, since a table wrong in three rows is
     cheaper to correct while already open than to keep filing.
-  status: open
+
+    Closed 2026-09-08 by Story 2-15, in the four corrections this entry names. The filename now
+    reads `recommendation-letter.pdf`, and `/celeste`, `/api/health` and the 404 have rows.
+
+    **Three edits landed beside them and are listed rather than folded into "four".** The two
+    redirect rows now say `308` and name the served path `/pdf/cv.pdf` rather than the on-disk
+    `public/pdf/cv.pdf`, which is the same class of error as the typo this entry opened for: a path
+    nothing serves. And the closing sentence about how the other routes are reached was corrected
+    before it shipped, because it said "the footer" and `SiteFooter` renders no destinations at all
+    until Story 2-17. **Nothing
+    mechanical reads this table**, which is why it was wrong for so long and is worth saying here:
+    the real routing table for the estate's edge is `ops/routing-inventory.md`, the Hub's own
+    per-URL rules are `next.config.js`, and the set of routes a machine checks is derived from
+    `app/` by `routesOnDisk` in `tests/e2e/hit-target-floor.pw.ts`. This row remains prose that a
+    person keeps true.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-61
@@ -3401,4 +3446,280 @@ status: done
     **Owner: unassigned**, because no planned story adds a Hub surface. **Trigger: the next story
     that adds a route under `app/` serving Hub markup**, at which point the gap is live rather
     than theoretical, and DW-22's note on the duplicated `goTo` guard is the same seam.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
+  id: DW-62
+  summary: >-
+    The header is now sticky and still 140px tall, so it permanently occupies 17.5% of a 360x800
+    viewport on `/work` and the 404. The height is a fixed literal Story 2-32 owns.
+  evidence: |-
+    `components/molecules/Header/header.scss` carries `height: 140px` from 2023 and Story 2-15's
+    frozen boundaries leave it there: making it content-driven is part of Story 2-32's redesign of
+    `Navbar`, `Header`, `Logo` and `ContactContainer` (`epics.md:3566-3567`). Until this story the
+    cost was paid once, at the top of the document, and scrolled away. It is now paid on every
+    frame: 140 of 800 is **17.5%** of AD-19's pinned viewport, permanently, on the two surfaces
+    that render chrome. The box really renders at 140.00, measured below, so the declared figure
+    and the paid one are the same number.
+
+    Nothing is broken and nothing regressed against a requirement. `EXPERIENCE.md:411-414` asks for
+    a sticky header that does not hide, precisely so the `Suite` link survives a scroll, and this
+    is what that costs at the height the header currently is. The two numbers that make it worth
+    filing are the height and the viewport, and neither is asserted anywhere: the sticky position,
+    the layer and the opaque ground are asserted in `tests/e2e/chrome-nav.pw.ts`, and the height is
+    not, because pinning a literal this story is not allowed to change would be a gate against the
+    story that fixes it.
+
+    **What the header actually needs was reasoned, and the reasoning was wrong.** An earlier draft
+    of this entry, and the review that read it, both had the content at roughly 110px against a
+    108px content box and therefore overflowing by a couple of pixels: a 66px logo raster on one
+    wrapped flex line and a 44px `--tap` row on the next, over 32px of top padding.
+
+    **Measured 2026-09-08** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800 by
+    `getBoundingClientRect()`, as a standing case in `tests/e2e/chrome-nav.pw.ts`: the box renders
+    **140.00** tall on both chrome surfaces, the lowest nav link ends at **125.95**, and the box's
+    own `scrollHeight - clientHeight` is **0**. There is no overflow and there was none. The error
+    was the logo's flex line, which is about 50px rather than 66: `.logo a` is a plain inline box
+    measuring 184.00 x 20.00 and the 66px image inside it paints past that box without growing it,
+    which is exactly the defect the `chrome-logo` row in `ops/hit-target-floor.md` records. Reading
+    the image's height as the line's height is the same mistake that row exists to name.
+
+    **`height: 140px` became `min-block-size: 140px` in the same story, and it is a guard rather
+    than a repair.** The rendered baseline is byte-identical either way, measured on the same
+    build: the diff against the pre-story baseline is 2980 pixels with either declaration. What a
+    minimum buys is that the ground can never be shorter than what it is meant to cover, and what
+    fills this box is a raster logo, a wrapping flex row and two labels in a fallback face until
+    the web font loads. The standing case asserts the lowest link ends inside the box on both
+    surfaces, so the claim is measured on every run rather than argued in a comment.
+
+    **What the logo image does is a different question and is not this entry's.** It is 66px inside
+    a 20px box, so it paints past its own line and past the ground's bottom edge. That is the
+    breach KV-4 records for `.logo a` and Story 2-32 closes; this entry is about the 140.
+
+    What is still deferred is the number itself: 140 is a bet on the logo raster, not a
+    measurement, and `header.scss` now spends it twice, once as the minimum and once as the
+    `scroll-padding-block-start` that keeps a fragment target from landing behind the sticky
+    header. Those two are one Sass variable rather than two literals for that reason.
+
+    **Owner: Story 2-32**, by title and by the boundary that put the height there. **Trigger: that
+    story's rebuild of the header box**, at which point the height becomes content-driven and this
+    entry closes on a re-measurement rather than on an edit. If Story 2-32 is descoped past Epic 2,
+    the fallback trigger is any complaint about vertical room on a small viewport, which is the
+    person the 17.5% costs.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
+  id: DW-63
+  summary: >-
+    The sticky header's opaque ground is only as wide as `.container`, so page content scrolls
+    visibly through the gutters either side of it on `/work` and the 404.
+  evidence: |-
+    Found 2026-09-08 while implementing Story 2-15. The header element is
+    `<header className='header-container container'>` (`Header.tsx:13`), and `container.scss:2-4`
+    sets `width: min(80%, 1920px)` with `margin: 0 auto`. The `background-color: var(--token-bg)`
+    this story added therefore paints an 80%-wide band, leaving **10% of the viewport bare on each
+    side**: 36px each at 360 wide. The header's own content, the logo and the two links, sits
+    inside the band and is never painted over, so the legibility half of
+    `EXPERIENCE.md:522-523` is met. What shows through the gutters is `body`'s ground and, on
+    `/work`, its 56px grid image scrolling past.
+
+    Filed rather than fixed because every way to close it is a change this story is not allowed to
+    make. Full-bleed on the header means either editing `container.scss`, which Story 2-15's
+    boundaries name as untouched, or adding an inset-inline negative margin or a pseudo-element to
+    a component Story 2-32 is about to rebuild. The honest fix is that rebuild: a header that is
+    its own full-width band with an inner `.container` for its content, which is the shape
+    `RESTYLE-SPEC.md` gives every other chrome surface.
+
+    **Owner: Story 2-32**, which redesigns `Header` and `Container` together. **Trigger: that
+    story's first look at the header box**, or, earlier, any visual review of `/work` scrolled past
+    the hero, which is where it is visible.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
+  id: DW-64
+  summary: >-
+    The header's `CV` link points at `/cv`, which is a 308, so `next/link` prefetches a redirect on
+    both chrome surfaces. This is the cost DW-55 recorded for `/projects`, reintroduced on a
+    different route by the story that closed it.
+  evidence: |-
+    `components/atoms/Navbar/Navbar.tsx` renders `<Link href='/cv'>` and `next.config.js:75-79`
+    answers `/cv` with a 308 to `/pdf/cv.pdf`. `next/link` prefetches a route in the viewport by
+    default, so on `/work` and on the 404 the router warms a redirect rather than a route bundle,
+    which is word for word what DW-55 recorded about the `/projects` link.
+
+    **It is deliberate and the spec ruled on it.** Story 2-15's frozen boundaries say the header
+    names the route the design assigns (`EXPERIENCE.md:95`), not the PDF behind it, and forbid
+    touching the redirect: `tests/e2e/anchor-aliases.pw.ts:989-996` pins the redirect set at
+    exactly `/cv` and `/recommendation`. Pointing the label at `/pdf/cv.pdf` would remove the
+    prefetch and would have to be moved back the day the page lands, and would also stop the header
+    naming a route at all.
+
+    **It is a smaller cost than DW-55's, and the difference is worth stating.** `/projects` was a
+    301 to a fragment on a page the router then had to resolve itself; `/cv` is a 308 to a static
+    asset, and what a prefetch of it warms is a redirect response the browser may cache. No visitor
+    pays a second navigation for it unless they click, and `tests/e2e/chrome-nav.pw.ts` measures
+    what a click actually reaches.
+
+    **Owner: Story 2-16**, which builds `/cv` as a real page around the existing `WorkTimeline` and
+    is what removes the redirect this link points through. **Trigger: that story replacing the
+    308 with a route**, after which the prefetch warms a bundle and this entry closes on the same
+    reading DW-55 closed on. If Story 2-16 is descoped past Epic 2, the fallback is any measurement
+    of chrome navigation cost, since this is one of two links in the header.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
+  id: DW-65
+  summary: >-
+    `ops/hit-target-floor.md:106` says the A-6 skip link "renders on every path". It renders on `/`
+    only, and the recounted per-surface numbers leave no room for it anywhere else.
+  evidence: |-
+    Found 2026-09-08 while re-measuring the surfaces for Story 2-15. `app/page.tsx:64` mounts
+    `<SkipLink />` and no other route does, so the element exists on the home route and nowhere
+    else. The counts agree: `/work` measures 7, which is one logo link, two nav links and four
+    `.work-item__header` buttons, and the 404 measures 4, which is one logo link, two nav links and
+    one back link. Neither leaves room for a skip link, and `/`'s 17 is the only count that ever
+    moved when Story 2-13 added it.
+
+    The sentence is inside the **2026-09-07 re-measurement paragraph** that story wrote, and that
+    file's § Maintaining this file forbids editing a dated historical paragraph: "add the new row
+    with its own date and method and keep the old one" and "Deletion is not used here". So closing
+    this means a new dated correction beside it, not a word changed in it, which is a different act
+    from the re-measurement Story 2-15 was making and is why it is filed rather than done.
+
+    Nothing reads the sentence and no count rests on it. What it costs is a reader who takes it at
+    face value and then cannot reconcile `/work`'s 7 with the elements they can name, which is
+    exactly the arithmetic this record exists to let a reader do without running anything.
+
+    **Owner: whichever story next re-measures § The surfaces swept**, since that story is already
+    writing a dated paragraph in the same section and the correction belongs beside it. On today's
+    board that is Story 2-30 or Story 2-32, both of which delete a ledger row and move a count.
+    **Trigger: the next dated paragraph added to that section.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
+  id: DW-66
+  summary: >-
+    KV-5's title still counts thirty-six overflowing elements where its own entry records
+    twenty-eight, and its index row still names Story 2-14 as a closing story although that story
+    reads `done` on the board.
+  evidence: |-
+    `ops/known-violations.md:66` and the entry heading at `:375` both read "Thirty-six elements sit
+    past the right edge at 360px", while `ops/hit-target-floor.md:494-499` records that eight of
+    them ceased to exist on 2026-09-07 when Story 2-14 deleted `ProjectsHero` with the route, and
+    that 28 remain, all on `/work`. The same index row names "Stories 2-31, 2-33 and 2-14" as what
+    retires KV-5, and `sprint-status.yaml:160` has `2-14-projects-redirects-permanently-to-suite:
+    done`.
+
+    **This is the half of DW-57 that was left open, seen from the row above it.** That entry filed
+    the title and gave it an owner; what it did not note is that the closing-story list has the
+    same problem, and that `ops/__tests__/hit-target-floor.test.ts:771` pins that list as a literal
+    in both the index row and the entry, so correcting it is an edit in three places rather than
+    one. Story 2-15 rewrote the KV-4 row immediately above it and did not touch KV-5, which is the
+    right call under its own boundaries: "Do not delete or weaken any exemption row other than
+    `chrome-nav`", and KV-5 is a different violation with different owners.
+
+    Note that a `done` story in a closing list is not the same defect for KV-5 as it would be for
+    KV-4: `ops/__tests__/hit-target-floor.test.ts` refuses a **ledger row** closed by a story that
+    reads `done`, and KV-5 has no ledger rows. So this is a register that reads oddly rather than a
+    gate that is wrong, and nothing fails today.
+
+    **Owner: whichever of Stories 2-31 and 2-33 lands second**, which is what DW-57 already
+    assigns, and the trigger is the same: KV-5's retirement, when the last of the 28 goes and the
+    title, the index row and the closing list all have to move anyway. **Fallback trigger: KV-5
+    staying open past Epic 2**, at which point the count and the story list should be corrected
+    rather than left.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
+  id: DW-67
+  summary: >-
+    The A-5 right-edge census in `ops/hit-target-floor.md` was not re-read after the nav's box
+    changed on three swept surfaces. Nothing is in breach; the per-surface breakdown is simply a
+    pre-2-15 reading.
+  evidence: |-
+    Story 2-15 changed what every chrome anchor measures, from a 22px line box to a `--tap` box
+    with `padding-inline`, on `/work`, `/celeste` and the 404, and made the header sticky with a
+    ground. The standing A-5 assertion in `tests/e2e/hit-target-floor.pw.ts` passed on 2026-09-08
+    in the pinned container, so **no interactive element's edge sits outside the viewport** and no
+    new breach exists.
+
+    What was not re-run is the wider census under § The overflow this assertion does not cover,
+    which counts elements **of any kind** past either edge, interactive or not, and is what KV-5's
+    per-surface figures come from. Its tables are dated 2026-09-06 and its `/work` figure of 28 was
+    last reasoned about on 2026-09-07. The nav is inside `.container`, whose width is
+    `min(80%, 1920px)`, so a wider link cannot reach the viewport edge, and the count is very
+    unlikely to have moved. "Unlikely" is not a measurement, which is the whole reason this record
+    separates the two.
+
+    Re-running it costs a browser pass over `body, body *` on each surface with the method § The
+    overflow this assertion does not cover states, plus a dated paragraph. Story 2-15 did not spend
+    it because its own boundaries book the A-5 half to Stories 2-31 and 2-33 and because a census
+    taken while verifying a nav is not the deliberate re-measurement that section describes, which
+    is the same reasoning DW-59 records for the timing table.
+
+    **Owner: whichever of Stories 2-31 and 2-33 lands first**, since both exist to remove elements
+    from that census and neither can claim a figure without re-reading it. **Trigger: the next time
+    KV-5's per-surface breakdown is read for a decision**, or either of those stories starting.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
+  id: DW-68
+  summary: >-
+    The stale-row control in `tests/e2e/hit-target-floor.pw.ts` now hosts on `home-nav`, which
+    Story 2-32 closes. When the ledger empties by design, the control has no real row left to plant
+    into and no answer is written down for what happens to it.
+  evidence: |-
+    The case "fails a listed element that now clears the floor, naming the row to delete" proves
+    the ledger can only shrink, and it does that by planting a compliant link into a surface a real
+    row lists. It hosted in `nav.navbar` against `chrome-nav` until 2026-09-08, when Story 2-15
+    repaired that surface and deleted the row; it now hosts in `nav.home-panel--nav` against
+    `home-nav`. Four rows remain: `chrome-logo`, `error-back`, `home-nav` and `home-contact`, closed
+    by Stories 2-30 and 2-32 between them. **When those two land the ledger is empty**, which is the
+    outcome the whole instrument is built to reach, and this control has nowhere to go.
+
+    Three resolutions and they are not equivalent. The control becomes synthetic, driving `judge`
+    with an invented row the way "fails a row that has stopped matching on one of the routes it
+    lists" already does, which keeps the predicate covered and gives up the claim that a real row
+    goes stale. Or it moves to the last row standing and is deleted with it, which leaves the final
+    repair with no demonstration on the commit that most needs one. Or `EXEMPTIONS` is allowed to
+    be empty and the case is deleted along with `expect(EXEMPTIONS.length).toBeGreaterThan(0)` in
+    "the ledger is well formed", which is a decision about whether the instrument outlives the
+    breaches it was built for.
+
+    This is a real fork and it is not Story 2-15's to take: that story moved the host by one row
+    under its own frozen boundaries and nothing more.
+
+    **Owner: whichever of Stories 2-30 and 2-32 lands second**, because that is the commit on which
+    the ledger empties and the case cannot be left as it stands. **Trigger: the last ledger row
+    being deleted**, which is also when KV-4 retires, so the two are one act.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
+  id: DW-69
+  summary: >-
+    On a current-route header link, `navbar.scss`'s hover underline paints a second rule at a
+    different colour and offset from the accent border the current-route mark draws. Unreachable
+    today, because no shipped surface marks a current route.
+  evidence: |-
+    `components/atoms/Navbar/navbar.scss` keeps the 2023 `a:hover { text-decoration: underline }`,
+    which Story 2-15's boundaries hold as Story 2-32's ("hover keeps its current behaviour"). The
+    current-route mark that story added is `border-block-end: var(--stroke-emphasis) solid
+    var(--token-accent)` on the inner `.navbar__label` span. Hovering the current destination
+    therefore paints both: a `currentcolor` text decoration at the browser's own offset and
+    thickness, and a 2px accent border under the span, at two different vertical positions.
+
+    `RESTYLE-SPEC.md:200-201` says the opposite of what this does: the existing underline recolours
+    on hover, and never appears on hover and never changes width, because both are layout changes
+    that reflow the line. `DESIGN.md:599` gives the same row. So this is a known divergence rather
+    than an oversight, and it is the shape of the whole component until it is rebuilt.
+
+    **It is unreachable on the shipped Hub**, which is why it is filed rather than fixed. `Suite` is
+    current only on `/`, where `Header.tsx:12` renders no header, and `CV` is current only on
+    `/cv`, which answers a 308 until Story 2-16. The first surface on which a person could hover a
+    marked link is the one Story 2-16 builds, and `tests/e2e/chrome-nav.pw.ts` already asserts the
+    mark's width, colour and placement so the accent half is held while the hover half is not.
+
+    **Owner: Story 2-32**, which rebuilds this component token-native and owns hover by the ruling
+    Story 2-15 worked under. **Trigger: Story 2-16 shipping `/cv` as a page**, which is the first
+    moment the collision is reachable by a person, whichever of the two lands first.
   status: open

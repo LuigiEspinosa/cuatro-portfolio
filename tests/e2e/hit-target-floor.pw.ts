@@ -22,12 +22,12 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *  1. An element under the floor that no row lists **fails**. A new or regressed control cannot
  *     arrive quietly.
  *  2. An element a row lists that now **clears** the floor also fails, as a stale row. Stories
- *     2-15, 2-30 and 2-32 must delete their row in the commit that repairs the surface, so
- *     the ledger can only shrink and nothing has to remember to widen a scope later. Story 2-9
- *     already has.
+ *     2-30 and 2-32 must delete their row in the commit that repairs the surface, so
+ *     the ledger can only shrink and nothing has to remember to widen a scope later. Stories 2-9
+ *     and 2-15 already have.
  *  3. A row that stops matching **on any one of the routes it lists** fails, so a row covering
  *     three surfaces cannot go half stale in silence.
- *  4. A row **covers an exact number of elements**, so a seventh nav link at 40 x 22 cannot be
+ *  4. A row **covers an exact number of elements**, so a third home nav link at 320 x 23 cannot be
  *     exempted for free by an existing selector. The route set itself is derived from `app/`
  *     rather than hand-listed, so a route added by a later story cannot go unswept either.
  *
@@ -75,12 +75,12 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  *
  * **The three counts are pinned rather than bounded**, and they are the same numbers
  * `ops/hit-target-floor.md` publishes under "The surfaces swept"; the two are held equal by
- * `ops/__tests__/hit-target-floor.test.ts`. A bounded "at least one" guard would let a seventh
+ * `ops/__tests__/hit-target-floor.test.ts`. A bounded "at least one" guard would let a third
  * chrome link, or a control that stopped rendering, pass without a number moving. A story that
  * changes what a surface renders moves the number here, in the record, and nowhere else.
  *
  * `measured: 0` on `/celeste` is a measurement rather than an omission: `celeste.scss:8-10` sets
- * `display: none` on the header, so all seven of its candidates are removed by the visibility
+ * `display: none` on the header, so all three of its candidates are removed by the visibility
  * rule and none is left to measure.
  *
  * **`/` moved from 16 to 17 with Story 2-13, and only by one.** That story adds two controls and
@@ -98,12 +98,18 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * which the case at the end of this file would reject for answering `text/html`. Playwright
  * follows redirects, so a row left in `SURFACES` would have gone green while measuring `/` twice.
  * The redirect itself is asserted in `tests/e2e/projects-redirect.pw.ts`.
+ *
+ * **The three surfaces that carry chrome each fell by four with Story 2-15**, on 2026-09-08. That
+ * story replaced the header's five inline links plus a `mailto:`, six anchors in all, with two, so
+ * `/work` went from 11 to 7,
+ * `/celeste` from 7 to 3 and the 404 from 8 to 4. `/` did not move: `Header.tsx:12` renders no
+ * header there, and the homepage panel's second link was repointed rather than removed.
  */
 const SURFACES = [
   { route: '/', status: 200, entrance: true, found: 17, skipped: 0, measured: 17 },
-  { route: '/work', status: 200, entrance: false, found: 11, skipped: 0, measured: 11 },
-  { route: '/celeste', status: 200, entrance: false, found: 7, skipped: 7, measured: 0 },
-  { route: NOT_FOUND, status: 404, entrance: false, found: 8, skipped: 0, measured: 8 },
+  { route: '/work', status: 200, entrance: false, found: 7, skipped: 0, measured: 7 },
+  { route: '/celeste', status: 200, entrance: false, found: 3, skipped: 3, measured: 0 },
+  { route: NOT_FOUND, status: 404, entrance: false, found: 4, skipped: 0, measured: 4 },
 ] as const;
 
 /**
@@ -121,9 +127,14 @@ const NON_HUB_ROUTES = ['/cv', '/recommendation', '/api/health'] as const;
  *
  * `HomeLayout.tsx:34,39` tweens these from `opacity: 0` at roughly t=2.0s and t=2.2s. A surface
  * that declares `entrance: true` must match at least one of these nodes, or the wait is a wait on
- * an empty NodeList, which `Array.every` answers `true` for immediately. Story 2-15 renames
- * `.nav-link`, and this is what makes that rename fail here rather than quietly turn the settle
- * into a no-op.
+ * an empty NodeList, which `Array.every` answers `true` for immediately.
+ *
+ * **This docblock predicted that Story 2-15 renames `.nav-link`, and that prediction was wrong.**
+ * Corrected 2026-09-08. `.nav-link` is `HomeLayout`'s class, on the homepage panel, and its ledger
+ * row `home-nav` is `closedBy: 'Story 2-32'`; Story 2-15 reshaped the chrome nav in
+ * `Navbar.tsx`, which carries no class at all on its links and is not matched here. It repointed
+ * the panel's second link and relabelled it, which moves neither the class nor this selector. The
+ * guard below is still the thing that would catch the rename whenever Story 2-32 makes it.
  */
 const ENTRANCE_SELECTOR = '.nav-link, .contact-container a';
 
@@ -182,8 +193,8 @@ const SOURCE_SHAPE = /^[\w./-]+\.tsx:\d+(,\d+)*$/;
  *
  * `covers` is an expectation and is the reason a selector cannot exempt more than it was written
  * for. It is the exact number of measured elements the row accounts for **across the whole run**,
- * summed over the routes it lists. A seventh `nav.navbar a` would make the row cover thirteen and
- * fail here rather than inherit an exemption written for six links.
+ * summed over the routes it lists. A third `a.nav-link` on the homepage panel would make that row
+ * cover three and fail here rather than inherit an exemption written for two links.
  *
  * `closedBy` is the story whose own acceptance criteria name this floor, so the repair lands
  * where it was planned rather than here. Story 2-8 ships the instrument only.
@@ -202,13 +213,15 @@ interface Exemption {
  * The ledger. Held equal to the table in `ops/hit-target-floor.md` in both directions by
  * `ops/__tests__/hit-target-floor.test.ts`, so neither file is the only reader of the other.
  *
- * **Six rows at Story 2-8, five now.** The chrome logo was not on that story's own list of four
+ * **Six rows at Story 2-8, four now.** The chrome logo was not on that story's own list of four
  * and was found by measuring: its `<a>` is a plain inline box, so its rect is the text line box
  * while the 66px-tall image inside it paints past the bottom. Story 2-32 names `Logo` in its title
  * and is what closes it. The home surface is carried as two rows because it is authored in two
  * files at two different sizes. Story 2-9 deleted `directory-links` in the commit that replaced
- * the card grid with the Suite Directory, whose two links meet the floor on both axes; the ledger
- * can only shrink, so nothing had to remember to widen a scope afterwards.
+ * the card grid with the Suite Directory, whose two links meet the floor on both axes, and Story
+ * 2-15 deleted `chrome-nav` on 2026-09-08 in the commit that rebuilt the header's links to `--tap`
+ * on both axes; the ledger can only shrink, so nothing had to remember to widen a scope
+ * afterwards.
  */
 const EXEMPTIONS: readonly Exemption[] = [
   {
@@ -221,15 +234,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     closedBy: 'Story 2-32',
   },
   {
-    id: 'chrome-nav',
-    selector: 'nav.navbar a',
-    source: 'components/atoms/Navbar/Navbar.tsx:6,7,8,9,12,19',
-    routes: ['/work', '/a-route-that-does-not-exist'],
-    covers: 12,
-    measured: '38.41 x 22.00 to 98.13 x 22.00',
-    closedBy: 'Story 2-15',
-  },
-  {
     id: 'error-back',
     selector: 'a.error-page__back',
     source: 'components/organisms/ErrorPage/Error404.tsx:50',
@@ -240,8 +244,12 @@ const EXEMPTIONS: readonly Exemption[] = [
   },
   {
     id: 'home-nav',
+    // Corrected 2026-09-08 by Story 2-15, which edited the second of these two lines. The citation
+    // read `:64,67` from Story 2-8 onwards and was 78 lines stale by the time anything checked it:
+    // `ops/__tests__/hit-target-floor.test.ts` holds the *file* to disk and nothing holds the line
+    // numbers, so this is a citation a reader has to keep true.
     selector: 'a.nav-link',
-    source: 'components/organisms/HomeLayout/HomeLayout.tsx:64,67',
+    source: 'components/organisms/HomeLayout/HomeLayout.tsx:142,150',
     routes: ['/'],
     covers: 2,
     measured: '320.00 x 23.00',
@@ -974,7 +982,7 @@ test.describe('the hit-target floor', () => {
     expect(
       stale,
       `an exemption lists an element that now clears the floor. The row is what forces the ledger ` +
-        `to shrink as Stories 2-15, 2-30 and 2-32 land, so it is deleted rather than ` +
+        `to shrink as Stories 2-30 and 2-32 land, so it is deleted rather than ` +
         `kept:\n${stale.join('\n')}`
     ).toEqual([]);
 
@@ -1151,30 +1159,41 @@ test.describe('the hit-target floor', () => {
   });
 
   test('fails a listed element that now clears the floor, naming the row to delete', async ({ page }) => {
-    // The direction that makes the ledger shrink. This is what Stories 2-9, 2-15, 2-30 and 2-32
-    // will hit on the commit that repairs their surface, and it is why they cannot leave a row
-    // behind. Planted by injecting a compliant link into the real chrome nav, so a real row
-    // rather than a synthetic one goes stale.
-    await goTo(page, '/work');
-    await settle(page, { route: '/work', entrance: false });
+    // The direction that makes the ledger shrink. This is what Stories 2-30 and 2-32 will hit on
+    // the commit that repairs their surface, and what Stories 2-9 and 2-15 already did. It is why
+    // none of them can leave a row behind.
+    // Planted by injecting a compliant link into a surface a real row lists, so a real row rather
+    // than a synthetic one goes stale.
+    //
+    // **The host moved from `nav.navbar` to the homepage panel on 2026-09-08**, because Story 2-15
+    // repaired the chrome nav and deleted `chrome-nav` with it. `home-nav` is the natural
+    // replacement: it is a live row on `/`, its two links stay in the ledger for Story 2-32, and a
+    // third link planted beside them makes `covers: 2` read 3, which is the arithmetic half this
+    // case asserts at the end. The predicate is unchanged; only the row it is demonstrated on is.
+    await goTo(page, '/');
+    await settle(page, { route: '/', entrance: true });
     const floor = await floorFrom(page);
 
     const planted = await page.evaluate(() => {
-      const host = document.querySelector('nav.navbar');
-      // Thrown rather than skipped. A missing plant target would leave this case asserting that
+      const host = document.querySelector('nav.home-panel--nav');
+      // Reported rather than skipped. A missing plant target would leave this case asserting that
       // nothing was reported, which reads as the predicate failing rather than as the fixture
-      // being gone, and Story 2-15 reshapes exactly this element.
+      // being gone, and Story 2-32 reshapes exactly this element.
       if (!host) return false;
       const link = document.createElement('a');
       link.href = '#repaired';
       link.id = 'planted-repaired-nav-link';
+      link.className = 'nav-link';
       link.textContent = 'Suite';
-      // Taken out of flow deliberately. `.navbar` is a wrapping flex row with the default
-      // `align-items: stretch`, so an in-flow 80px child would stretch its siblings to 80 as well
-      // and this control would be reporting a layout side effect rather than the predicate.
+      // Taken out of flow deliberately. The panel is a flex column whose links are 320px wide, so
+      // an in-flow child would reflow its siblings and this control would be reporting a layout
+      // side effect rather than the predicate. `opacity` is set because the entrance tweens
+      // `.nav-link` from 0 and a node appended after the timeline has run never receives it, which
+      // the visibility rule would answer as `zero area` only if the box were also empty; a
+      // transparent box is still measured, and the explicit value keeps that from being luck.
       link.setAttribute(
         'style',
-        'position:absolute;top:0;left:0;display:inline-flex;align-items:center;width:80px;height:80px;'
+        'position:absolute;top:0;left:0;display:inline-flex;align-items:center;width:80px;height:80px;opacity:1;'
       );
       host.appendChild(link);
       return true;
@@ -1182,23 +1201,23 @@ test.describe('the hit-target floor', () => {
 
     expect(
       planted,
-      'no nav.navbar exists on /work, so the stale-row control had nothing to plant into. The ' +
+      'no nav.home-panel--nav exists on /, so the stale-row control had nothing to plant into. The ' +
         'fixture is gone, not the predicate.'
     ).toBe(true);
 
     const { measured } = await measureSurface(page);
-    const verdict = judge('/work', measured, floor, RENDERED_VIEWPORT.width);
+    const verdict = judge('/', measured, floor, RENDERED_VIEWPORT.width);
 
     expect(verdict.stale, 'a repaired listed element was not reported as a stale row').toHaveLength(1);
     expect(verdict.stale[0]).toContain('a#planted-repaired-nav-link');
-    expect(verdict.stale[0], 'the message does not name the row to delete').toContain('"chrome-nav"');
+    expect(verdict.stale[0], 'the message does not name the row to delete').toContain('"home-nav"');
     expect(verdict.stale[0], 'the message does not point at the record').toContain('ops/hit-target-floor.md');
     expect(verdict.under, 'the repaired element was also reported as an unlisted breach').toEqual([]);
 
     // The same plant is also a row covering more than it says it covers, which is the arithmetic
     // half of the same defect and the reason `covers` exists.
-    const drift = ledgerDrift(verdict.hits, [EXEMPTIONS.find((row) => row.id === 'chrome-nav')!]);
-    expect(drift.some((line) => /covers 7 measured elements/.test(line))).toBe(true);
+    const drift = ledgerDrift(verdict.hits, [EXEMPTIONS.find((row) => row.id === 'home-nav')!]);
+    expect(drift.some((line) => /covers 3 measured elements/.test(line))).toBe(true);
   });
 
   test('fails a row that has stopped matching on one of the routes it lists', () => {

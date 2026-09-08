@@ -1,8 +1,80 @@
+// The site header (Story 2-15 makes it sticky; Story 2-32 redesigns it).
+//
+// **This file names contract roles directly**, which is why it is listed in
+// `TOKEN_NATIVE_STYLESHEETS` in `app/__tests__/anchor-contract.test.ts`. It declares no custom
+// property of its own and adds no alias call site. The one local name below is a Sass variable,
+// resolved at compile time and absent from the stylesheet the browser reads, so the Hub's sixteen
+// custom properties are still all in `app/app.scss`.
+
+// **The header's declared block size, used twice.** It is the 2023 literal and it is Story 2-32's
+// to make content-driven (`epics.md:3566-3567`); a fixed height is a bet on the logo raster and on
+// the label metrics inside it, and changing it here would restyle the chrome on three surfaces in
+// a story about where the header points. It is a variable rather than two literals because the
+// scroll padding below has to be the same number: a sticky header occupies the top of the
+// scrollport, so the offset a fragment target is scrolled to is the header's own height, and the
+// two drifting apart is a bug nothing would report. Story 2-32 moves them as a pair.
+$header-block-size: 140px;
+
 .header-container {
-  height: 140px;
+  // **A minimum rather than a height**, changed by Story 2-15 with the number left alone. The
+  // ground below is painted on this box, so the box has to hold the links rather than merely
+  // declare a size: a nav row ending past its bottom edge would be legible over nothing at the one
+  // place the ground exists to prevent it.
+  //
+  // **It is a guard, not a repair, and that was measured rather than argued.** Observed 2026-09-08
+  // in the pinned container at 360 x 800: the box renders 140.00 tall on both chrome surfaces, the
+  // lowest nav link ends at 125.95, and the box's own scroll overflow is 0. The rendered baseline
+  // is byte-identical to the one `height: 140px` produced. What a minimum buys is that the ground
+  // can never be shorter than what it covers, and what fills this box is a raster logo, a wrapping
+  // flex row and two labels in a fallback face until the web font loads, none of which the number
+  // knows about. `tests/e2e/chrome-nav.pw.ts` asserts the lowest link ends inside the box on every
+  // run, so the claim is a measurement rather than this comment.
+  //
+  // DW-62 carries the number itself and the 17.5% of a 360 x 800 viewport it costs.
+  min-block-size: $header-block-size;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   padding: 2rem 0 0;
+
+  // **Sticky, and it does not hide, shrink or change on scroll** (`EXPERIENCE.md:411-414`). A
+  // header that disappears costs Marcus the `Suite` link at the exact moment he wants it, and the
+  // header carries the only route back to the payload from `/work` and the 404.
+  //
+  // This works because `app/app.scss:97-100` sets `overflow-x: clip` rather than `hidden` on
+  // `html` and `body`. The two clip identically; what `clip` does not do is make the element a
+  // scroll container, which is what breaks a descendant's `position: sticky` silently
+  // (`DESIGN.md:558-559`). A swap back would leave this rule in place and stop it working, which
+  // is why `tests/e2e/suite-directory.pw.ts` asserts the computed value on both elements.
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-sticky);
+
+  // **Opaque, and from a token.** Sticky chrome with no ground, or an alpha one, lets the page
+  // paint through the links as it scrolls under them; `EXPERIENCE.md:522-523` requires the header
+  // to sit on the paper role rather than rely on a scrim beneath it, and alpha grounds are barred
+  // outright at `DESIGN.md:1281-1283`.
+  background-color: var(--token-bg);
+}
+
+// **Sticky chrome occludes the top of the scrollport, so the scrollport is told about it.**
+// Without this, a fragment target, and any element the browser scrolls to the top edge when focus
+// moves to it, lands behind the header on every surface that renders one. `scroll-padding` is read
+// off the scroll container, and for viewport scrolling that is the root element rather than
+// `body`, so it is declared here on `html` and not on `.header-container`.
+//
+// **Scoped with `:has()` rather than applied to every route.** `Header.tsx:12` renders nothing on
+// `/`, which is the one surface whose fragments the Hub actually uses: `/#suite` and the A-6
+// skip-link's `#main` both target it, and a 140px offset there would be a gap under no chrome at
+// all. The selector keys on the header being in the document rather than on a route id, so it
+// follows `Header`'s own condition instead of restating it.
+//
+// It is the same value as the minimum above and the same value as the rendered box: measured
+// 2026-09-08, the header is 140.00 tall on both surfaces that render it. Story 2-32 makes the
+// height content-driven, at which point this stops being one number and has to be derived from the
+// rendered box rather than declared, which is what the shared variable makes visible.
+html:has(.header-container) {
+  scroll-padding-block-start: $header-block-size;
 }

@@ -370,45 +370,100 @@ test.describe('the /projects redirect', () => {
     ).toEqual(['/work answered 200, expected 404']);
   });
 
-  test('a chrome link reaches the homepage but not the Directory, which Story 2-15 owns', async ({ page }) => {
-    // **The journey most visitors actually take, and it behaves differently from every case above.**
-    // `Navbar.tsx:7` and `HomeLayout.tsx:145` still point at `/projects`; repointing them is Story
-    // 2-15's job under the Operator ruling of 2026-09-07, so this story measures what the link does
-    // rather than changing it.
+  test('neither chrome link touches this redirect any more, and both land on the Directory', async ({
+    page,
+  }) => {
+    // **The journey most visitors actually take, and it used to behave differently from every case
+    // above.** `Navbar.tsx` and `HomeLayout.tsx` both pointed at `/projects` until Story 2-15, on
+    // the Operator ruling of 2026-09-07 that repointing them belonged to that story, so Story 2-14
+    // measured what the links did rather than changing them.
     //
-    // **Measured 2026-09-07, in the pinned container: the fragment does not survive.** A chrome
-    // click is an App Router client-side navigation, and the router resolves the redirect itself
-    // rather than handing the browser a `Location` to apply. The visitor lands on `/` with an empty
-    // hash at `scrollY` 0, with the Directory heading roughly 886px below a 800px viewport, so a
-    // nav click lands at the top of the homepage and not on the Directory.
+    // **What was measured 2026-09-07, in the pinned container: the fragment did not survive.** A
+    // chrome click is an App Router client-side navigation, and the router resolved the redirect
+    // itself rather than handing the browser a `Location` to apply. The visitor landed on `/` with
+    // an empty hash at `scrollY` 0, with the Directory heading roughly 886px below an 800px
+    // viewport. That is the reading DW-55 and DW-58 recorded and it is what this case now flips:
+    // pointing both links at `/#suite` makes the click a fragment navigation that never reaches
+    // this rule at all.
     //
-    // Nothing here is broken: NFR-2 is met, the destination is right, and the Directory is one
-    // scroll away. What is not met is FR-2's "lands on the Directory", on this path only. It is
-    // filed as **DW-58** with Story 2-15 named as the owner, because the fix is to repoint the two
-    // links at `/#suite`, which those two files are that story's to change.
-    await page.goto('/work', { waitUntil: 'load' });
+    // **Re-measured 2026-09-08**, after Story 2-15. Both links now carry the fragment through and
+    // the heading is in view on arrival. The redirect keeps working for everything that still asks
+    // for the old URL, which is every case above; what it no longer serves is the site's own
+    // chrome, which was paying a round trip to be told where it already knew to go.
+    const journeys = [
+      { from: '/work', selector: 'nav.navbar a', what: "the header's Suite link" },
+      { from: LANDING, selector: 'a.nav-link', what: "the homepage panel's Suite Directory link" },
+    ] as const;
 
-    const link = page.locator(`nav.navbar a[href='${SOURCE}']`);
-    await expect(link, `/work renders no chrome link to ${SOURCE}, so this case measures nothing`).toHaveCount(1);
+    for (const journey of journeys) {
+      await page.goto(journey.from, { waitUntil: 'load' });
 
-    await link.click();
-    await page.waitForLoadState('load');
-    await expect(page.locator(DIRECTORY), 'the chrome link did not reach a page rendering the Directory').toHaveCount(
-      1
-    );
+      // **The premise, asserted before the click.** A chrome link left pointing at the redirect
+      // would make every reading below a reading of the redirect's behaviour rather than of the
+      // repoint, and the two are indistinguishable from the landed URL alone.
+      await expect(
+        page.locator(`${journey.selector}[href='${SOURCE}']`),
+        `${journey.from} still renders ${journey.what} pointing at ${SOURCE}, so this case is ` +
+          `measuring the redirect rather than the repoint`
+      ).toHaveCount(0);
 
-    const landed = new URL(page.url());
-    expect(landed.pathname, `the chrome link landed on ${landed.pathname} rather than on ${LANDING}`).toBe(LANDING);
-    expect(
-      landed.hash,
-      'the client-side navigation now carries the fragment through. That is better than the ' +
-        'behaviour DW-58 records, so this expectation is the thing to update, and DW-58 is the ' +
-        'thing to close'
-    ).toBe('');
+      const link = page.locator(`${journey.selector}[href='${DESTINATION}']`);
+      await expect(
+        link,
+        `${journey.from} renders no chrome link to ${DESTINATION}, so this case measures nothing`
+      ).toHaveCount(1);
 
-    // The consequence, measured rather than inferred from the empty hash: the heading is below the
-    // fold and the page has not scrolled to it.
-    const arrival = await page.evaluate((id) => {
+      await link.click();
+
+      // **Waited on the URL, not on `load` and not on the Directory.** A chrome click is a
+      // client-side navigation, so no load event fires; and the second journey starts on the route
+      // that already renders the Directory, so waiting for that element resolves before the router
+      // has done anything. **Measured 2026-09-08**: the hash below read empty without this, which
+      // is exactly the answer DW-58 recorded for a different reason, and reading a race as that
+      // finding is how a closed entry gets reopened for nothing.
+      await expect
+        .poll(() => page.url().replace(/^https?:\/\/[^/]+/, ''), {
+          message: `${journey.what} never reached ${DESTINATION}`,
+          timeout: 10_000,
+        })
+        .toBe(DESTINATION);
+
+      await expect(
+        page.locator(DIRECTORY),
+        `${journey.what} did not reach a page rendering the Directory`
+      ).toHaveCount(1);
+
+      const landed = new URL(page.url());
+      expect(landed.pathname, `${journey.what} landed on ${landed.pathname} rather than on ${LANDING}`).toBe(
+        LANDING
+      );
+      expect(
+        landed.hash,
+        `${journey.what} lost the fragment. It is written into the href rather than resolved out of ` +
+          `a redirect now, so this is the router dropping it rather than the behaviour DW-58 recorded`
+      ).toBe(`#${HEADING_ID}`);
+
+      // The consequence, measured rather than inferred from the hash: the page scrolled and the
+      // heading is on screen. This is the same reading DW-58 took, and it is the half FR-2 asks
+      // for that the redirect could not deliver on this path.
+      const heading = page.locator(`#${HEADING_ID}`);
+      await expect(heading, `nothing on ${LANDING} carries the id ${HEADING_ID}`).toHaveCount(1);
+      await expect(heading, `${journey.what} did not bring the Directory heading into view`).toBeInViewport();
+
+      const arrival = await page.evaluate(() => Math.round(window.scrollY));
+      expect(
+        arrival,
+        `${journey.what} left the page at scrollY 0, so it landed at the top of the document rather ` +
+          `than on the Directory`
+      ).toBeGreaterThan(0);
+    }
+
+    // **The control, and it is the same page with the fragment left off.** Without it, a heading in
+    // view reads as "this page is short" rather than as the fragment having been applied: the same
+    // measurement over the same document has to produce the failing answer when nothing asked for
+    // `#suite`. This is the 2026-09-07 reading of the old behaviour, taken here on the same build.
+    await page.goto(LANDING, { waitUntil: 'load' });
+    const unanchored = await page.evaluate((id) => {
       const node = document.getElementById(id);
       return {
         scrollY: Math.round(window.scrollY),
@@ -417,23 +472,20 @@ test.describe('the /projects redirect', () => {
       };
     }, HEADING_ID);
 
-    expect(arrival.top, `nothing on ${LANDING} carries the id ${HEADING_ID}`).not.toBeNull();
-    expect(arrival.scrollY, 'the page scrolled, so the landing is not the top of the document').toBe(0);
+    expect(unanchored.scrollY, `${LANDING} does not open at the top of the document`).toBe(0);
     expect(
-      (arrival.top ?? 0) > arrival.viewport,
-      `the Directory heading is at ${arrival.top} in a ${arrival.viewport}px viewport, so it is in ` +
-        `view after all and DW-58 overstates the gap`
+      (unanchored.top ?? 0) > unanchored.viewport,
+      `the Directory heading is at ${unanchored.top} in a ${unanchored.viewport}px viewport with no ` +
+        `fragment asked for, so it is above the fold anyway and the readings above prove nothing`
     ).toBe(true);
 
-    // **The control**, and it is the document-request path from the case above, run here so the two
-    // readings sit side by side on the same build. Same destination, same Directory, and the hash
-    // that the click did not produce. Without it, an empty hash reads as "this browser drops
-    // fragments" rather than as a difference between two kinds of navigation.
+    // And the document-request path still behaves as it did, so the repoint took nothing away from
+    // the visitors who arrive on the old URL.
     await page.goto(SOURCE, { waitUntil: 'load' });
     expect(
       new URL(page.url()).hash,
-      'the document-request path also lost the fragment, so the reading above is about the browser ' +
-        'rather than about the client-side router'
+      'the document-request path lost the fragment, which is a regression in the redirect rather ' +
+        'than in the chrome'
     ).toBe(`#${HEADING_ID}`);
   });
 });

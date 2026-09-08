@@ -84,13 +84,27 @@ Copy `.env.example` and fill in values. Variables prefixed `NEXT_PUBLIC_` are in
 
 ## Routing
 
-| Route             | Description                                      |
-| ----------------- | ------------------------------------------------ |
-| `/`               | Home - GSAP layout + 3D gem                      |
-| `/work`           | Experience Timeline                              |
-| `/projects`       | 301 to `/#suite` (Story 2-14)                    |
-| `/cv`             | Redirect to `public/pdf/cv.pdf`                  |
-| `/recommendation` | Redirect to `public/pdf/remmendation-letter.pdf` |
+| Route             | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `/`               | Home - GSAP layout + 3D gem                       |
+| `/work`           | Experience Timeline                               |
+| `/celeste`        | Standalone page, rendered with no header          |
+| `/projects`       | 301 to `/#suite` (Story 2-14)                     |
+| `/cv`             | 308 to `/pdf/cv.pdf` until Story 2-16 builds the page |
+| `/recommendation` | 308 to `/pdf/recommendation-letter.pdf`           |
+| `/api/health`     | JSON health endpoint                              |
+| Anything else     | `app/not-found.tsx`, 404                          |
+
+Four corrections landed here with Story 2-15 (DW-60): the `recommendation-letter.pdf` filename was
+spelled `remmendation-letter.pdf`, which is a path nothing serves, and `/celeste`, `/api/health`
+and the 404 were all absent while the rendered-output suite sweeps them as real surfaces. The
+served paths are `/pdf/...`; `public/` is the directory they are served from and is not part of
+any URL.
+
+The header presents two of these routes, `/#suite` and `/cv`. **Every other route is reached only
+by an inbound link or by typing it**: `SiteFooter` renders no destinations at all today, which
+`components/organisms/SiteFooter/__tests__/SiteFooter.test.tsx:35-46` asserts three ways, and
+Story 2-17 is what gives it the `/recommendation` and `/celeste` links the design assigns.
 
 ## Animation Architecture
 

@@ -382,8 +382,13 @@ describe('the record and the exemption ledger agree in both directions', () => {
   it('parses a real table and a real literal, so the comparison below is not over nothing', () => {
     expect(fromRecord.length, `${RECORD_REL} exempts nothing`).toBeGreaterThan(0);
     expect(fromSpec.length, `${SPEC_REL} exempts nothing`).toBeGreaterThan(0);
-    expect(fromRecord.map((row) => row.id)).toContain('chrome-nav');
-    expect(fromSpec.map((row) => row.id)).toContain('chrome-nav');
+    // **A row that is really in both files, so an empty parse cannot read as agreement.** It was
+    // `chrome-nav` until 2026-09-08, when Story 2-15 rebuilt the header's links against the floor
+    // and deleted that row from both files. `chrome-logo` replaces it rather than the assertion
+    // being dropped: it is the other chrome row, it lists the same two routes, and it is
+    // `closedBy: 'Story 2-32'`, so it outlives every row the remaining stories close first.
+    expect(fromRecord.map((row) => row.id)).toContain('chrome-logo');
+    expect(fromSpec.map((row) => row.id)).toContain('chrome-logo');
     for (const row of fromSpec) {
       expect(Number.isInteger(row.covers), `"${row.id}" parsed a non-integer covers`).toBe(true);
       expect(row.covers, `"${row.id}" covers nothing`).toBeGreaterThan(0);
@@ -762,7 +767,12 @@ describe('the assertion is sourced and scoped the way the record says', () => {
     const kv4 = indexRow('KV-4');
     expect(kv4, 'the KV-4 index row does not name AD-19').toContain('AD-19');
     expect(kv4, 'the KV-4 index row is not Open').toContain('**Open**');
-    expect(kv4, 'the KV-4 index row names no closing stories').toContain('Stories 2-15, 2-30 and 2-32');
+    // **Two stories since 2026-09-08.** Story 2-15 rebuilt the chrome nav against the floor and
+    // deleted `chrome-nav` from the ledger, so it closes nothing here any more and left this list.
+    // The literal narrows with the register rather than being loosened to a pattern: this pin is
+    // the fourth of the four things `ops/known-violations.md` § Maintaining the ledger this entry
+    // counts says a repair has to move, and a pattern would stop noticing when one of them did not.
+    expect(kv4, 'the KV-4 index row names no closing stories').toContain('Stories 2-30 and 2-32');
     expect(kv4, 'the KV-4 index row claims a retirement date').toContain('_not retired_');
 
     const kv5 = indexRow('KV-5');
@@ -779,7 +789,7 @@ describe('the assertion is sourced and scoped the way the record says', () => {
       return violations.slice(at, violations.indexOf('\n---', at));
     };
     expect(entryOf('KV-4'), "the KV-4 entry does not name the index row's closing stories").toContain(
-      'Stories 2-15, 2-30 and 2-32'
+      'Stories 2-30 and 2-32'
     );
     expect(entryOf('KV-5'), "the KV-5 entry does not name the index row's closing stories").toContain(
       'Stories 2-31, 2-33 and 2-14'
