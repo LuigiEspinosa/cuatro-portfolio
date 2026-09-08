@@ -3220,8 +3220,23 @@ status: done
 
     Closing it, if the estate decides a URL should be case-sensitive, means either a `has`
     condition or moving the redirect out of `next.config.js` into middleware, both of which are a
-    routing decision rather than an implementation detail. `ops/routing-inventory.md` is where such
-    a rule would be recorded.
+    routing decision rather than an implementation detail.
+
+    **There is nowhere in `ops/` to record such a rule today, and that is part of the finding.**
+    `ops/routing-inventory.md` is the estate's edge table: hostnames, DNS, Caddy, compose projects
+    and containers. It carries no per-URL disposition for the Hub and was not touched by this
+    story, so pointing a reader at it would send them somewhere the answer is not. The two places
+    that do carry per-URL behaviour are `next.config.js`, which is the rule, and `README.md`
+    § Routing, which is the human-readable table Story 2-14 updated. Neither states a case policy,
+    and neither is an `ops/` record with a Nature column.
+
+    **Owner: whichever story next takes a routing decision for the Hub**, which on today's board is
+    Story 2-25 (relocating `list-wheel` onto a `cuatro.dev` subdomain), the only remaining Epic 2
+    story whose subject is a URL. **Trigger: any of three.** A second redirect being added, at which
+    point one loose match becomes a pattern; a case variant showing up in Umami once Story 2-24
+    lands visitor instrumentation, which would make this measurable rather than theoretical; or a
+    decision that the Hub states a case policy at all, which needs an Operator sentence because no
+    requirement in the plan carries one.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
@@ -3249,4 +3264,93 @@ status: done
     boundaries name `ops/hit-target-floor.md`, `ops/known-violations.md`,
     `ops/anchor-token-adoption.md`, `ops/status-mark-axes.md` and `ops/rendered-output-harness.md`,
     and not this one.
+
+    **Owner and trigger, per half, because they are two different closures.**
+
+    KV-5's title is owned by **whichever of Stories 2-31 and 2-33 lands second**, and the trigger is
+    the KV-5 retirement itself: the last of the 28 elements on `/work` going means setting `Status`
+    to `Retired` and filling `Retired on`, which is an edit to the index row and the entry heading
+    anyway. A count in a title that is about to become zero is not worth a commit of its own before
+    then. If either story is descoped and KV-5 stays open past Epic 2, the title should be corrected
+    to twenty-eight at that point rather than left, and that is the fallback trigger.
+
+    `ops/asset-budget.md` is owned by **Story 2-29**, which redesigns `HomeLayout` and is the next
+    story on the board whose subject is the hero the budget's route figures are dominated by; the
+    trigger is that story's own re-run of `ops/asset-budget.mjs`, which it needs for its own before
+    and after. Failing that, any story that reads a route weight out of that file and finds a
+    `/projects` row is the trigger, because that reader is the person the staleness costs. The
+    `TorusKnotCanvas` half of Operator action 6 is closed by arithmetic already and can be struck in
+    the same pass without a measurement.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
+  id: DW-58
+  summary: >-
+    A chrome click on either `/projects` link lands on the top of the homepage, not on the Suite
+    Directory. The App Router resolves the redirect client-side and drops the fragment, so the
+    journey most visitors take does not get FR-2's in-page anchor that the redirect pays for.
+  evidence: |-
+    **Measured 2026-09-07** in `mcr.microsoft.com/playwright:v1.62.1-noble` at the pinned 360 x 800,
+    by clicking `nav.navbar a[href='/projects']` from `/work` and the homepage panel's
+    `a.nav-link[href='/projects']` from `/`, and reading the landed URL and the scroll position.
+    Both give the same answer: `pathname` is `/`, `hash` is empty, `window.scrollY` is 0, and
+    `#suite` sits at roughly **886px** in an 800px viewport, so the Directory is below the fold and
+    nothing scrolled to it.
+
+    The document-request path is different and is correct: `page.goto('/projects')` lands with
+    `hash` `#suite` and the heading in view, which `tests/e2e/suite-directory.pw.ts` also asserts
+    for `/#suite` directly. So this is a property of the client-side navigation, not of the
+    redirect or of the browser, and the two readings are asserted side by side on the same build in
+    `tests/e2e/projects-redirect.pw.ts` under "a chrome link reaches the homepage but not the
+    Directory, which Story 2-15 owns". A `<Link>` navigation asks the router for the destination
+    and the router applies its own resolution rather than handing the browser a `Location` to act
+    on, and a fragment is only ever applied by a browser.
+
+    Nothing is broken. NFR-2 is met, the destination is right, and the Directory is one scroll away.
+    What is not met, **on this path only**, is FR-2's "lands on the Directory". Story 2-14 could not
+    fix it: its frozen boundaries carry an Operator ruling of 2026-09-07 that
+    `components/atoms/Navbar/Navbar.tsx:7` and
+    `components/organisms/HomeLayout/HomeLayout.tsx:145` are Story 2-15's to change, and both are
+    pinned by `Navbar.test.tsx:31-33` and `HomeLayout.test.tsx:104-107`.
+
+    **Owner: Story 2-15**, which reshapes the nav to two destinations and already owns both call
+    sites and the `chrome-nav` row in `ops/hit-target-floor.md`. **Trigger: that story's repoint.**
+    The fix is to point both links at `/#suite` rather than at `/projects`, after which the click is
+    a same-route fragment navigation and never touches the redirect at all. When it lands, the hash
+    expectation in that case flips from `''` to `'#suite'`, which the case says in its own failure
+    message, and this entry closes. This is the same journey DW-55 records paying an extra round
+    trip for; DW-55 is the cost and this is the behaviour, and one repoint closes both.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
+  id: DW-59
+  summary: >-
+    The figures table in `ops/hit-target-floor.md` § Running it states three counts this story moved:
+    53 measured elements, eighteen `status-mark` cases, and ten spec files at 89 tests. Every row is
+    a dated historical reading, and that file forbids editing one.
+  evidence: |-
+    The rows, as they stand: "**Cases in this file** | 16 | Observed 2026-09-06, after Story 2-9
+    added the A-4 independently-addressable case. The sweep now measures 53 elements rather than 43,
+    on the same five surfaces"; and "**Whole `pnpm test:e2e`, ten spec files, 89 tests** | 2.0 min",
+    dated 2026-09-06 "after Story 2-10 added `tests/e2e/status-mark.pw.ts` and its eighteen cases".
+
+    All three moved on 2026-09-07. The sweep measures **36** elements on **four** surfaces;
+    `status-mark.pw.ts` lost its `/projects` truncation case and runs **seventeen**; and the suite
+    is **fourteen** spec files at **186** tests, `tests/e2e/projects-redirect.pw.ts` having been
+    added along with the files and cases Stories 2-12 and 2-13 brought. Counted 2026-09-07 off the
+    run reporter's own headline in the pinned container and off `tests/e2e/*.pw.ts` on disk.
+
+    It is filed rather than corrected because § Maintaining this file says, in its own words, "When
+    a figure is re-measured, add the new row with its own date and method and keep the old one" and
+    "Deletion is not used here". Rewriting a 2026-09-06 row to carry 2026-09-07 numbers is exactly
+    the back-dating that rule exists to prevent, and appending a fresh timing row is a measurement
+    this story did not take: the walls quoted there are `docker run` and Playwright headline figures
+    gathered deliberately, several readings apart, to separate cost from host load, and a single run
+    taken while verifying a redirect is not that.
+
+    **Owner: whichever story next times a full `pnpm test:e2e` run deliberately**, which the record
+    itself frames as a periodic act rather than a per-story one. **Trigger: the next time that
+    section is read for a cost comparison**, or the next story that adds a spec file, since the file
+    count in the last row is the one figure a reader uses to tell a nine-file run from an eleven-file
+    one. Adding the new row costs three readings of the same tree, per the method the section states.
   status: open

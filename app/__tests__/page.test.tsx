@@ -12,9 +12,9 @@ import { renderedApplications } from '@/lib/registry';
  * 2-14's redirect would then point at.
  *
  * `HomeLayout` is mocked because it mounts a WebGL canvas and a GSAP timeline, neither of which
- * jsdom has a renderer for. Its own file covers what it draws. `app/projects/page.test.tsx` mocked
- * `ProjectsHero` for the same reason until 2026-09-07, when Story 2-14 landed the redirect this
- * docblock anticipates and deleted the route with it.
+ * jsdom has a renderer for. Its own file covers what it draws. `app/projects/__tests__/page.test.tsx`
+ * mocked `ProjectsHero` for the same reason until 2026-09-07, when Story 2-14 landed the redirect
+ * this docblock anticipates and deleted the route with it.
  *
  * `@/lib/registry` is **not** mocked, here or anywhere: the directory renders from the real
  * Registry, which is what makes the count below a fact about the route rather than about a fixture.

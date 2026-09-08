@@ -101,6 +101,32 @@ const answerFor = async (request: APIRequestContext, path: string): Promise<Answ
   return { status: response.status(), location: response.headers()['location'] ?? '' };
 };
 
+/**
+ * Follow a redirect chain by hand, one hop at a time, recording every hop and its status.
+ *
+ * Written out rather than delegated to a client that follows, because the statuses in the middle of
+ * a chain are the subject: a client that follows reports only where it stopped. It halts on the
+ * first non-3xx, or on a `Location` carrying a fragment, which is a client-side instruction no
+ * further request can be made from.
+ *
+ * The bound is a guard against a redirect loop, which would otherwise hang the case until the
+ * suite timeout and report nothing about why.
+ */
+const walk = async (request: APIRequestContext, from: string): Promise<string[]> => {
+  const hops: string[] = [];
+  let at = from;
+
+  for (let step = 0; step < 4; step += 1) {
+    const answer = await answerFor(request, at);
+    hops.push(`${at} -> ${answer.status} ${answer.location || '(no Location)'}`);
+    if (answer.status < 300 || answer.status >= 400) break;
+    if (answer.location === '' || answer.location.includes('#')) break;
+    at = answer.location;
+  }
+
+  return hops;
+};
+
 /** How many `.suite-directory` elements a route renders, after navigating to it. */
 const directoriesOn = async (page: Page, route: string, expected: number): Promise<number> => {
   const response = await page.goto(route, { waitUntil: 'load' });
@@ -108,6 +134,20 @@ const directoriesOn = async (page: Page, route: string, expected: number): Promi
   expect(response?.status(), `${route} did not answer ${expected}`).toBe(expected);
   return page.locator(DIRECTORY).count();
 };
+
+/**
+ * The NFR-9 verdict over a set of per-surface counts: which surfaces other than the landing render
+ * one, and how many renderings the whole run saw.
+ *
+ * A pure function over the counts rather than two expressions inline, so the control below can feed
+ * a planted reading through **these** computations instead of asserting something adjacent to them.
+ */
+const verdictOver = (counts: ReadonlyMap<string, number>): { elsewhere: string[]; total: number } => ({
+  elsewhere: [...counts]
+    .filter(([route, count]) => route !== LANDING && count > 0)
+    .map(([route, count]) => `${route} renders ${count}`),
+  total: [...counts.values()].reduce((sum, count) => sum + count, 0),
+});
 
 test.describe('the /projects redirect', () => {
   test('answers exactly 301 and names /#suite, read without following it', async ({ request }) => {
@@ -145,9 +185,10 @@ test.describe('the /projects redirect', () => {
   test('a visitor lands on the Directory rather than on the top of the page', async ({ page }) => {
     // The fragment is applied by the browser, which is the point: it never reaches the server, so
     // no assertion about it can be made against a response. It is made against the landed page.
-    const requested: string[] = [];
-    page.on('request', (request) => requested.push(request.url()));
-
+    //
+    // **This is the document-request path**, which is what an inbound link, a bookmark or a search
+    // result takes. The in-app path a chrome `<Link>` takes is a different navigation and behaves
+    // differently; it has its own case below.
     const response = await page.goto(SOURCE, { waitUntil: 'load' });
     expect(response, `navigating to ${SOURCE} produced no response`).toBeTruthy();
     expect(response?.status(), `${SOURCE} did not land on a 200`).toBe(200);
@@ -157,13 +198,6 @@ test.describe('the /projects redirect', () => {
     expect(landed.hash, 'the browser dropped the fragment, so the visitor arrives at the top of the page').toBe(
       `#${HEADING_ID}`
     );
-
-    // The fragment is a client-side instruction and the network must never carry it. A request URL
-    // holding a `#` would mean the redirect was answered by asking the server for the fragment.
-    expect(
-      requested.filter((url) => url.includes('#')),
-      'a request went out carrying the fragment, which is not a thing a server is ever asked for'
-    ).toEqual([]);
 
     // The fragment resolves to something. An id nothing carries scrolls nowhere and fails silently,
     // which is the failure mode a URL check alone cannot see.
@@ -182,6 +216,29 @@ test.describe('the /projects redirect', () => {
     // clean result above is a measurement rather than a locator that matches anything.
     await page.evaluate((id) => document.getElementById(id)?.removeAttribute('id'), HEADING_ID);
     await expect(page.locator(`#${HEADING_ID}`), 'the fragment check does not fire on a removed id').toHaveCount(0);
+  });
+
+  test('the trailing-slash form reaches the same destination, in two hops', async ({ request }) => {
+    // `/projects/` is a common inbound form: a trailing slash is what a CMS, a mail client or a
+    // hand-typed URL often produces, and nothing above covered it. **Measured 2026-09-07** rather
+    // than predicted, by walking the chain one hop at a time with nothing followed.
+    //
+    // The first hop is Next's own trailing-slash normalisation, which is a **308** because
+    // `trailingSlash` is left at its default; the second is this story's row. So the two statuses
+    // in the chain are deliberately different numbers, and neither is the other's doing.
+    expect(await walk(request, `${SOURCE}/`), 'the trailing-slash form no longer reaches /#suite in two hops').toEqual([
+      '/projects/ -> 308 /projects',
+      '/projects -> 301 /#suite',
+    ]);
+
+    // **The control**, and the reason the 308 above is attributed to Next rather than to this
+    // story: the same walker over a route this story never touched produces the same first hop and
+    // then stops on a rendered page. It also shows the walker terminating on a non-3xx, so an empty
+    // or one-line result above would be a walker that stopped early rather than a shorter chain.
+    expect(await walk(request, '/work/'), 'the walker no longer follows a chain to a rendered page').toEqual([
+      '/work/ -> 308 /work',
+      '/work -> 200 (no Location)',
+    ]);
   });
 
   test('forwards the query it was given, adds nothing, and keeps the fragment', async ({ request }) => {
@@ -241,18 +298,24 @@ test.describe('the /projects redirect', () => {
     expect(renderings.size, 'no surface was visited, so this count is over nothing').toBe(SWEPT.length);
     expect(renderings.get(LANDING), `${LANDING} does not render the Suite Directory`).toBe(1);
 
-    const total = [...renderings.values()].reduce((sum, count) => sum + count, 0);
-    const elsewhere = [...renderings].filter(([route, count]) => route !== LANDING && count > 0);
+    const clean = verdictOver(renderings);
     expect(
-      elsewhere.map(([route, count]) => `${route} renders ${count}`),
+      clean.elsewhere,
       'a second surface renders the Suite Directory, which is the NFR-9 defect Story 2-14 removes'
     ).toEqual([]);
-    expect(total, 'the Hub renders the Suite Directory more than once').toBe(1);
+    expect(clean.total, 'the Hub renders the Suite Directory more than once').toBe(1);
 
-    // **The control.** Plant a second directory into a swept surface through the browser and the
-    // same count reports two. Without it, a selector that had stopped matching would report one
-    // rendering on the home route and zero everywhere else, which is exactly what passing looks
-    // like. Injected into the live page, so nothing is left in the tree.
+    // **The control, and it drives the same two computations rather than a third reading.** Plant a
+    // second directory into a swept surface through the browser, re-measure that surface, and put
+    // the reading back through `verdictOver`. Both halves then report the breach: `elsewhere` names
+    // `/work` and `total` reads 2 against the 1 above.
+    //
+    // Counting the planted node on its own page would prove only that the locator matches something
+    // planted. It would leave the two predicates this case actually asserts never having been
+    // watched producing anything, and a selector that had stopped matching reports one rendering on
+    // the home route and zero everywhere else, which is exactly what passing looks like.
+    //
+    // Injected into the live page, so nothing is left in the tree.
     await page.goto('/work', { waitUntil: 'load' });
     await expect(page.locator(DIRECTORY), '/work already renders a directory before anything is planted').toHaveCount(
       0
@@ -262,28 +325,115 @@ test.describe('the /projects redirect', () => {
       planted.className = selector.slice(1);
       document.body.append(planted);
     }, DIRECTORY);
+
+    const planted = await page.locator(DIRECTORY).count();
+    expect(planted, 'the count does not react to a second directory planted on a swept surface').toBe(1);
+
+    const breached = verdictOver(new Map(renderings).set('/work', planted));
     expect(
-      await page.locator(DIRECTORY).count(),
-      'the count does not react to a second directory planted on a swept surface'
-    ).toBe(1);
+      breached.elsewhere,
+      'the second-surface check reports nothing against a surface that really does render one'
+    ).toEqual(['/work renders 1']);
+    expect(breached.total, 'the run-wide total does not move when a second rendering is planted').toBe(2);
   });
 
   test('leaves every other route answering exactly what it answered before', async ({ request }) => {
     // NFR-2, stated as this story's own claim rather than inherited from another file. The status
     // is read without following, so a route that started redirecting would be visible here instead
     // of hiding behind its landing's 200.
-    const drift: string[] = [];
+    const driftAgainst = async (expected: readonly { route: string; status: number }[]): Promise<string[]> => {
+      const found: string[] = [];
+      for (const { route, status } of expected) {
+        const answer = await answerFor(request, route);
+        if (answer.status !== status) found.push(`${route} answered ${answer.status}, expected ${status}`);
+      }
+      return found;
+    };
 
-    for (const { route, status } of UNTOUCHED) {
-      const answer = await answerFor(request, route);
-      if (answer.status !== status) drift.push(`${route} answered ${answer.status}, expected ${status}`);
-    }
-
+    const drift = await driftAgainst(UNTOUCHED);
     expect(drift, `a route this story must not touch has moved:\n${drift.join('\n')}`).toEqual([]);
 
-    // The control: the comparison really does report a difference, shown against the one route this
-    // story did change. `/projects` answered 200 at `97bfc6b` and answers 301 now.
-    const moved = await answerFor(request, SOURCE);
-    expect(moved.status, 'the reader that found no drift above cannot see a status that moved').not.toBe(200);
+    // **The control runs the same comparison over the same routes, with one expectation
+    // deliberately wrong.** `/work` really answers 200, so asking it for a 404 is exactly the shape
+    // a route that had moved would take, and the loop has to produce a line naming both numbers.
+    //
+    // Reading some other route instead would show that `answerFor` can see a status; it would not
+    // show this comparison producing a drift line, and an empty result above would then be
+    // indistinguishable from a loop that never compared anything.
+    const planted = await driftAgainst(
+      UNTOUCHED.map((row) => (row.route === '/work' ? { ...row, status: 404 } : row))
+    );
+    expect(
+      planted,
+      'the comparison reports no drift against an expectation that is deliberately wrong, so the ' +
+        'clean result above is not a measurement'
+    ).toEqual(['/work answered 200, expected 404']);
+  });
+
+  test('a chrome link reaches the homepage but not the Directory, which Story 2-15 owns', async ({ page }) => {
+    // **The journey most visitors actually take, and it behaves differently from every case above.**
+    // `Navbar.tsx:7` and `HomeLayout.tsx:145` still point at `/projects`; repointing them is Story
+    // 2-15's job under the Operator ruling of 2026-09-07, so this story measures what the link does
+    // rather than changing it.
+    //
+    // **Measured 2026-09-07, in the pinned container: the fragment does not survive.** A chrome
+    // click is an App Router client-side navigation, and the router resolves the redirect itself
+    // rather than handing the browser a `Location` to apply. The visitor lands on `/` with an empty
+    // hash at `scrollY` 0, with the Directory heading roughly 886px below a 800px viewport, so a
+    // nav click lands at the top of the homepage and not on the Directory.
+    //
+    // Nothing here is broken: NFR-2 is met, the destination is right, and the Directory is one
+    // scroll away. What is not met is FR-2's "lands on the Directory", on this path only. It is
+    // filed as **DW-58** with Story 2-15 named as the owner, because the fix is to repoint the two
+    // links at `/#suite`, which those two files are that story's to change.
+    await page.goto('/work', { waitUntil: 'load' });
+
+    const link = page.locator(`nav.navbar a[href='${SOURCE}']`);
+    await expect(link, `/work renders no chrome link to ${SOURCE}, so this case measures nothing`).toHaveCount(1);
+
+    await link.click();
+    await page.waitForLoadState('load');
+    await expect(page.locator(DIRECTORY), 'the chrome link did not reach a page rendering the Directory').toHaveCount(
+      1
+    );
+
+    const landed = new URL(page.url());
+    expect(landed.pathname, `the chrome link landed on ${landed.pathname} rather than on ${LANDING}`).toBe(LANDING);
+    expect(
+      landed.hash,
+      'the client-side navigation now carries the fragment through. That is better than the ' +
+        'behaviour DW-58 records, so this expectation is the thing to update, and DW-58 is the ' +
+        'thing to close'
+    ).toBe('');
+
+    // The consequence, measured rather than inferred from the empty hash: the heading is below the
+    // fold and the page has not scrolled to it.
+    const arrival = await page.evaluate((id) => {
+      const node = document.getElementById(id);
+      return {
+        scrollY: Math.round(window.scrollY),
+        top: node ? Math.round(node.getBoundingClientRect().top) : null,
+        viewport: window.innerHeight,
+      };
+    }, HEADING_ID);
+
+    expect(arrival.top, `nothing on ${LANDING} carries the id ${HEADING_ID}`).not.toBeNull();
+    expect(arrival.scrollY, 'the page scrolled, so the landing is not the top of the document').toBe(0);
+    expect(
+      (arrival.top ?? 0) > arrival.viewport,
+      `the Directory heading is at ${arrival.top} in a ${arrival.viewport}px viewport, so it is in ` +
+        `view after all and DW-58 overstates the gap`
+    ).toBe(true);
+
+    // **The control**, and it is the document-request path from the case above, run here so the two
+    // readings sit side by side on the same build. Same destination, same Directory, and the hash
+    // that the click did not produce. Without it, an empty hash reads as "this browser drops
+    // fragments" rather than as a difference between two kinds of navigation.
+    await page.goto(SOURCE, { waitUntil: 'load' });
+    expect(
+      new URL(page.url()).hash,
+      'the document-request path also lost the fragment, so the reading above is about the browser ' +
+        'rather than about the client-side router'
+    ).toBe(`#${HEADING_ID}`);
   });
 });

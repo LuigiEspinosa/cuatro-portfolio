@@ -2,7 +2,7 @@
 title: 'Story 2.14: `/projects` redirects permanently to `/#suite`'
 type: 'refactor'
 created: '2026-09-07'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: '97bfc6bb0c388d72265d2b81fc8643c23ce61abe'
 review_loop_iteration: 0
 context:

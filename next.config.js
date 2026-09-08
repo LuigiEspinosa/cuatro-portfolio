@@ -46,6 +46,17 @@ const nextConfig = {
       // `permanent` alongside `statusCode`, which is why this row carries one key where the others
       // carry the other. It is not an inconsistency to tidy up.
       //
+      // **The cost of a permanent redirect, stated rather than left to be discovered.** A 301 is
+      // cacheable by default and browsers cache it aggressively and for a long time, with no
+      // expiry the origin gets to set from here. Once a visitor has followed this row, deleting or
+      // repointing it does not reach that visitor: their browser goes on resolving `/projects` to
+      // `/#suite` locally without asking. So this row is effectively one-way for anyone who has
+      // used it, and a later story that wants `/projects` back has to assume a population that
+      // never sees the change. That is the real argument for choosing it deliberately, and it
+      // applies to `permanent: true` and its 308 in exactly the same way; what differs between 301
+      // and 308 is only whether a non-GET method may be rewritten to GET, which no client does to
+      // this route.
+      //
       // `/projects` used to render a second `<SuiteDirectory />` over the same Registry, which is
       // two renderings of one dataset (NFR-9). The page is gone and the URL is not: it is live at
       // v2.5.3 and NFR-2 forbids answering 404 to a link, a bookmark or a search result that still

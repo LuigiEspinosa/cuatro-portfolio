@@ -658,27 +658,59 @@ describe('the assertion is sourced and scoped the way the record says', () => {
     // produces a report that reads as three surfaces while measuring two, and the accessibility
     // score above is then asserted twice on one page. Story 2-14 removed `/projects` from the list
     // when it redirected that route; this is what notices the next time the two drift.
-    // Scoped to `redirects()`. `next.config.js` also declares a `headers()` source, and reading
-    // every `source:` in the file counts `/` as redirected and fails this case on a correct config,
-    // which is how the scoping was found rather than argued.
-    const block = /async redirects\(\) \{\n([\s\S]*?)\n {2}\},/.exec(read(NEXT_CONFIG_REL));
-    expect(block, `${NEXT_CONFIG_REL} has no redirects() block, or it has been reflowed`).toBeTruthy();
-    const sources = [...(block?.[1] ?? '').matchAll(/source: '([^']+)'/g)].map((match) => match[1]);
-    const urls = [...read(LIGHTHOUSE_REL).matchAll(/'(https?:\/\/[^']+)'/g)].map((match) => match[1]);
+    // **Both sides are scoped to the block that carries the values, and symmetrically so.**
+    // `next.config.js` also declares a `headers()` source, and reading every `source:` in the file
+    // counts `/` as redirected and fails this case on a correct config, which is how the scoping was
+    // found rather than argued. `.lighthouserc.js` has the mirror hazard: a quoted URL can appear in
+    // a comment or in an `upload` target, and a reader that took any single-quoted `http` string
+    // would then be comparing against something LHCI never collects.
+    const redirectBlock = /async redirects\(\) \{\n([\s\S]*?)\n {2}\},/.exec(read(NEXT_CONFIG_REL))?.[1];
+    expect(redirectBlock, `${NEXT_CONFIG_REL} has no redirects() block, or it has been reflowed`).toBeDefined();
 
-    // Both parsers fire on a control before their agreement is read as good news.
-    expect(sources, `${NEXT_CONFIG_REL} declares no redirect source, so the parser has stopped matching`).toContain(
-      '/projects'
-    );
-    expect(urls.length, `${LIGHTHOUSE_REL} declares no collect URL, so the parser has stopped matching`).toBeGreaterThan(
-      0
-    );
+    const collectBlock = /collect: \{[\s\S]*?\burl: \[([\s\S]*?)\]/.exec(read(LIGHTHOUSE_REL))?.[1];
+    expect(collectBlock, `${LIGHTHOUSE_REL} has no collect.url array, or it has been reflowed`).toBeDefined();
 
-    const audited = urls.map((url) => new URL(url).pathname.replace(/\/$/, '') || '/');
-    const redirected = audited.filter((pathname) => sources.includes(pathname));
+    const sources = [...(redirectBlock ?? '').matchAll(/source: '([^']+)'/g)].map((match) => match[1]);
+    const urls = [...(collectBlock ?? '').matchAll(/'(https?:\/\/[^']+)'/g)].map((match) => match[1]);
+
+    // **The controls are on the parse rather than on this story's row.** Pinning `/projects` here
+    // would make a later story that legitimately retires this redirect fail a case about something
+    // else entirely. What has to hold is that each block parsed to something, and that the count it
+    // parsed matches a count derived without the same dependencies: the capture is non-greedy, so a
+    // reflow or a truncated block would otherwise present itself as "nothing is redirected", which
+    // passes.
+    const declaredSources = (redirectBlock ?? '').split('\n').filter((line) => line.trim().startsWith('source:')).length;
+    const declaredUrls = ((collectBlock ?? '').match(/https?:\/\//g) ?? []).length;
+
+    expect(sources.length, `${NEXT_CONFIG_REL}: the redirects() block declares no source`).toBeGreaterThan(0);
     expect(
-      redirected,
-      `${LIGHTHOUSE_REL} collects a route ${NEXT_CONFIG_REL} redirects: ${redirected.join(', ')}. LHCI ` +
+      sources.length,
+      `${NEXT_CONFIG_REL}: the redirects() block parsed to ${sources.length} sources and declares ` +
+        `${declaredSources}. The capture stops at the first "  }," so this is a reflow or a truncated block`
+    ).toBe(declaredSources);
+
+    expect(urls.length, `${LIGHTHOUSE_REL}: collect.url is empty, so nothing is audited`).toBeGreaterThan(0);
+    expect(
+      urls.length,
+      `${LIGHTHOUSE_REL}: collect.url parsed to ${urls.length} URLs and declares ${declaredUrls}. The ` +
+        `capture stops at the first "]", so this is a reflow or a truncated array`
+    ).toBe(declaredUrls);
+
+    // **Compared case-insensitively.** Story 2-14 measured that Next compiles a redirect `source`
+    // with case folding on, so `/Projects` takes the `/projects` row. A collect URL differing from a
+    // source only in case is therefore redirected too, and a case-sensitive comparison would not see
+    // it. Filed as DW-56.
+    const fold = (pathname: string): string => (pathname.replace(/\/$/, '') || '/').toLowerCase();
+    expect(fold('/Projects'), 'the fold no longer folds case, so a cased collect URL would be missed').toBe(
+      fold('/projects')
+    );
+    expect(fold('/work/'), 'the fold no longer normalises a trailing slash').toBe('/work');
+
+    const redirected = new Set(sources.map(fold));
+    const collected = urls.filter((url) => redirected.has(fold(new URL(url).pathname)));
+    expect(
+      collected,
+      `${LIGHTHOUSE_REL} collects a route ${NEXT_CONFIG_REL} redirects: ${collected.join(', ')}. LHCI ` +
         `follows it and audits the destination under the label it was given, so the report names a ` +
         `surface it never measured`
     ).toEqual([]);

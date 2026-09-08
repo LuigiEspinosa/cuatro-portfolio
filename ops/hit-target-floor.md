@@ -443,18 +443,28 @@ already made from the other direction on `/projects`.
 `/` scrolls to **2442px** tall against an 800px viewport, so the Suite Directory below the hero is
 reachable. Under the rule Story 2-9 removed, `body` was clamped to one viewport and it was not.
 
-None of the 36 elements is interactive, so none of them fails this sweep. All of them are recorded
-as **KV-5** in `ops/known-violations.md`, with the Operator ruling of 2026-09-06 that tolerates the
-breach and the stories that retire it; the measurements and the two shapes the overflow takes are
-in the `deferred-work.md` entry that KV-5 cites. Story 2-9 landed the stylesheet half
-(`epics.md:2423-2427`); Stories 2-31 and 2-33 own the 28 on `/work` and Story 2-14 owned the 8 on
-`/projects`, and KV-5 stays `Open` until the other two land.
+None of the 36 overflowing elements is interactive, so none of them fails this sweep. All of them
+are recorded as **KV-5** in `ops/known-violations.md`, with the Operator ruling of 2026-09-06 that
+tolerates the breach and the stories that retire it; the measurements and the two shapes the
+overflow takes are in the `deferred-work.md` entry that KV-5 cites. Story 2-9 landed the stylesheet
+half (`epics.md:2423-2427`); Stories 2-31 and 2-33 own the 28 on `/work` and Story 2-14 owned the 8
+on `/projects`, and KV-5 stays `Open` until the other two land.
 
-**Eight of the 36 ceased to exist on 2026-09-07.** Story 2-14 redirected `/projects` to `/#suite`
-and deleted `ProjectsHero` with the route, so the elements are gone rather than repaired: there is
-no surface left on which to measure them and no stylesheet rule left to correct. **28 remain**, all
-of them on `/work`, and the census tables above are the pre-2-14 readings and are kept as such. The
-count that would be produced by re-running that census today is 28.
+**Eight of those 36 overflowing elements ceased to exist on 2026-09-07.** Story 2-14 redirected
+`/projects` to `/#suite` and deleted `ProjectsHero` with the route, so the elements are gone rather
+than repaired: there is no surface left on which to measure them and no stylesheet rule left to
+correct. **28 overflowing elements remain**, all of them on `/work`, and the census tables above are
+the pre-2-14 readings and are kept as such. The count that would be produced by re-running that
+census today is 28.
+
+**This section's 36 is not § The surfaces swept's 36, and the collision is an accident of timing.**
+That one is the number of interactive elements the floor **measures**, across four surfaces, and it
+fell from 54 to 36 when `/projects` left. This one was the number of elements of any kind sitting
+**outside the viewport**, across two surfaces, and it fell from 36 to 28 in the same commit. The two
+were 54 and 36 before Story 2-14 and are 36 and 28 after it, so a reader skimming for "36" between
+2026-09-07 and whenever either number next moves can land on either. Where this file needs the
+overflow figure it now says "overflowing elements"; where it needs the measured one it says
+"measured".
 
 ## Failing loudly rather than vacuously
 
@@ -467,7 +477,7 @@ fail is not known to work.
 | An unlisted element under the floor | Fails naming the route, a stable selector, the element's text and the measured box, and the floor it was compared against | **Observed 2026-09-06.** "fails on an unlisted element under the floor, naming the route, the selector and the box", which plants a 10 x 10 link |
 | A plain inline element padded to look compliant | Fails on the height axis while the width axis clears the floor, so the failure is the padding rather than the size | **Observed 2026-09-06.** "fails on an element that reaches the floor only through vertical padding on a plain inline element" |
 | A listed element that now clears the floor | Fails as a stale row, naming the row id and both files that carry it | **Observed 2026-09-06.** "fails a listed element that now clears the floor, naming the row to delete", which injects a compliant link into the real chrome nav. It is taken out of flow deliberately: `.navbar` is a wrapping flex row with the default `align-items: stretch`, so an in-flow 80px child stretches its siblings and the control would be reporting a layout side effect |
-| A row that matches nothing **on one of the routes it lists** | Fails naming the row **and the route**, its selector, its source and its closing story. A row covering three surfaces cannot go half stale | **Observed 2026-09-06.** "fails a row that has stopped matching on one of the routes it lists", driven through the pure verdict with a two-route row that matches on one of them |
+| A row that matches nothing **on one of the routes it lists** | Fails naming the row **and the route**, its selector, its source and its closing story. A row covering more than one surface cannot go half stale, and since Story 2-14 the widest row covers two | **Observed 2026-09-06.** "fails a row that has stopped matching on one of the routes it lists", driven through the pure verdict with a two-route row that matches on one of them |
 | A row covering more elements than it says | Fails naming the row and both counts. This is what stops an existing selector exempting a newly added control for free | **Observed 2026-09-06.** The same case, plus the stale-row case, which plants a seventh chrome link and asserts the row reports covering seven |
 | A row matching an element that is not under the floor | Fails on the arithmetic as well as on the element, which is what wires the per-row `under` tally to something | **Observed 2026-09-06.** Same case |
 | A route `app/` serves that nothing sweeps | Fails naming the unregistered route. The route set is walked off the filesystem rather than restated | **Observed 2026-09-06.** "every route app/ serves is registered as a swept surface or as a non-Hub route" |
