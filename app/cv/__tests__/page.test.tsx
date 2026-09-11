@@ -154,6 +154,12 @@ describe('the /cv route', () => {
     //
     // Asserted on server output rather than in a browser, because a browser fast enough to hydrate
     // before the first paint would hide the defect rather than report it.
+    //
+    // **Seen once, in the medium the defect actually shows in.** Measured 2026-09-10 in
+    // `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800 with `javaScriptEnabled: false`:
+    // `/cv` answers 200 and the four panels measure 1468.25, 0, 0 and 0, the open one carrying 1132
+    // characters of readable text, with `document.documentElement.scrollWidth` at 360. That was a
+    // one-time reading and is not in this tree; this case is the standing one.
     const markup = renderToStaticMarkup(<CvPage />);
     const document_ = new DOMParser().parseFromString(markup, 'text/html');
 

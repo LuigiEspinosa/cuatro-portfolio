@@ -29,27 +29,31 @@ no job, and Story 2-34 is where a gate belongs.
 Some of this file is printed by a tool and some of it is written by hand, and telling them apart is
 the difference between a figure a reader can re-derive and one they have to take on trust. So:
 
-**Two builds, and every verbatim block belongs to exactly one of them.** Story 2-2 measured build
+**Three builds, and every verbatim block belongs to exactly one of them.** Story 2-2 measured build
 `uXKXS8QHdHPNgUPIdvcnq` on 2026-08-29. Story 2-12 re-ran the tool against build
 `rxNy6yw47ecyqZzmT1Jzp` on 2026-09-07 after moving the homepage's narrative behind one dynamic
-boundary, and re-measured the sections that moved. Nothing is deleted, per § Maintaining this file,
-so the column below says which build each block is verbatim from. A block marked 2026-08-29 with no
-2026-09-07 counterpart was not re-measured and may have moved: `node ops/asset-budget.mjs` against a
-current build is the only thing that answers that.
+boundary, and re-measured the sections that moved. Story 2-16 re-ran it against build
+`j9mEYXnBoBIDjtwWiDn1X` on 2026-09-10 after turning `/cv` from a redirect into a page, and
+re-measured § Every route and the findings list, which are the two blocks a new route moves. Nothing
+is deleted, per § Maintaining this file, so the column below says which build each block is verbatim
+from. A block marked with an older date and no newer counterpart was not re-measured and may have
+moved: `node ops/asset-budget.mjs` against a current build is the only thing that answers that.
 
 | Section | Where it comes from |
 |---|---|
 | § The build this reading was taken from, its first table | **Verbatim**, `node ops/asset-budget.mjs`. **2026-08-29** |
 | § The build this reading was taken from, its second table | **Verbatim**. **2026-09-07** |
-| § The narrative bundle, its 2026-09-07 table | **Verbatim**. **2026-09-07** |
+| § The build this reading was taken from, its third table | **Verbatim**. **2026-09-10** |
+| § The narrative bundle, its 2026-09-07 table | **Verbatim**. **2026-09-07**, not re-measured on 2026-09-10 |
 | § The narrative bundle, its 2026-08-29 table | **Verbatim**. **2026-08-29**, superseded and kept |
 | § The narrative assets, its table and the orphan paragraph | **Verbatim**. **2026-08-29**, not re-measured |
-| § The non-3D path, both readings and every table under them | **Verbatim**. **2026-08-29**, with a dated 2026-09-07 amendment beside them |
+| § The non-3D path, both readings and every table under them | **Verbatim**. **2026-08-29**, with dated 2026-09-07 and 2026-09-10 amendments beside them |
 | § Every route, its 2026-08-29 table | **Verbatim**. **2026-08-29**, superseded and kept |
-| § Every route, its 2026-09-07 table | **Verbatim**. **2026-09-07** |
+| § Every route, its 2026-09-07 table | **Verbatim**. **2026-09-07**, superseded and kept |
+| § Every route, its 2026-09-10 table | **Verbatim**. **2026-09-10** |
 | § The faces the built CSS declares, its table and its resolution list | **Verbatim**. **2026-08-29**, and unchanged on 2026-09-07 |
 | § Method, including the fingerprint proof table | **Verbatim**. **2026-08-29** |
-| § Findings, both dated lists | **Verbatim**, each from its own run |
+| § Findings, all three dated lists | **Verbatim**, each from its own run |
 | The preamble, § What in this file is measured, § What this reads against the budget's own rules, § Stated limits, § What this closes, § Pending Operator actions, and every paragraph headed by a bold sentence | **Editorial.** Written here, around the tool's output |
 
 **How to check it.** Run `corepack pnpm build` and then `node ops/asset-budget.mjs`, and diff the
@@ -112,6 +116,29 @@ file is measured was read from this one.
 | Prerendered documents | 8 | **Observed** |
 | Chunks written | 21 `.js`, 11 `.css` | **Observed** |
 | Bytes in `.next/static/chunks` | 2,054,063 on disk, 625,713 gzipped | **Observed** |
+
+**The third build, taken during Story 2-16.** § Every route's 2026-09-10 reading was read from this
+one, and nothing else in this file was re-taken on it.
+
+| Property | Value | Nature |
+|---|---|---|
+| `.next/BUILD_ID` | `j9mEYXnBoBIDjtwWiDn1X` | **Observed** |
+| Build written | 2026-09-11T04:29:45Z | **Observed**, mtime of `.next/BUILD_ID` |
+| Commit | `09e07f02bf95ff02e9660b8cb3b0ae9400706df0` | **Observed**, `git rev-parse HEAD` |
+| Measured inputs dirty | none | **Observed**, `git status --porcelain -- app components contracts packages public next.config.js package.json` |
+| Prerendered documents | 6 | **Observed** |
+| Chunks written | 21 `.js`, 13 `.css` | **Observed** |
+| Bytes in `.next/static/chunks` | 2,043,232 on disk, 623,121 gzipped | **Observed** |
+
+**Six prerendered documents where the two builds above have eight, and two separate things moved.**
+Story 2-14 redirected `/projects` and deleted the page, which is one. The other is `/`: it is
+`ƒ (Dynamic)` in this build's route list and writes no prerendered HTML, so the tool, which reads
+`.next/server/app/*.html`, no longer sees it. `app/page.tsx` has read the `Save-Data` request header
+since Story 2-13 and both readings above still carried a `/` row, so what changed is the build
+rather than the route. **This is not Story 2-16's** and is not investigated here; that story added a
+document rather than removing one, and `/cv` appears in the reading below. The consequence for this
+record is that `/` has no row in the 2026-09-10 table and the 2026-09-07 one is where its figures
+still live.
 
 ## The narrative bundle
 
@@ -329,6 +356,19 @@ would silently change the subject of the section rather than update it. The two 
 the gap between them, which is what this section exists to explain, hold in the same shape on either
 route.
 
+**Amended 2026-09-10 by Story 2-16: the route this section measures has changed again, and the
+figures below have still not been re-taken.** **Observed**, `node ops/asset-budget.mjs` against
+build `j9mEYXnBoBIDjtwWiDn1X`. That story removed the `/cv` redirect and built the page, so the
+count in the paragraph above reads differently in both halves: **5 of the 6** prerendered documents
+are non-3D and **2** of those can be loaded, `/cv` and `/celeste`, with one redirect left rather
+than two. The tool now measures `/cv` as the heaviest loadable non-3D route, at **290,543** gzipped
+against the 140,000 budget, **150,543 over, 107.5 percent**. That is the third different route this
+section has been pointed at and it is over by roughly the margin the other two were, which is the
+finding rather than a coincidence: the ceiling is missed by the narrative bundle every route
+carries, not by anything on the page. `/` left the prerendered set entirely in this build, for the
+reason § The build this reading was taken from gives. **Every table under this heading is still the
+2026-08-29 reading of `/celeste`** and is kept as such, for the reason the paragraph above gives.
+
 ### Reading one: what the document puts on the wire
 
 Every `<script src>` and every `<link>` whose `rel` carries `stylesheet`, `preload` or
@@ -407,6 +447,37 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 `zlib.gzipSync({level: 9})` on every unit run so the two records cannot drift apart silently.
 
 ## Every route
+
+### The 2026-09-10 reading, after Story 2-16
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `j9mEYXnBoBIDjtwWiDn1X`.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,586 | 524,984 | yes | yes | **Observed** |
+| `/cv` | 22,366 | 290,543 | no | yes | **Observed** |
+| `/celeste` | 14,566 | 283,978 | no | yes | **Observed** |
+| `/recommendation` | 14,494 | 283,744 | no | **no**: 308 to `/pdf/recommendation-letter.pdf` | **Observed** |
+| `/_not-found` | 13,297 | 283,660 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,686 | 188,790 | no | **no**: Next's own document | **Observed** |
+
+**One column moved and one row is new.** **Derived.** `/cv` flips from **no** to **yes** in the
+`Served` column: it answered a 308 to `/pdf/cv.pdf` in both readings below and Story 2-16 removed
+that redirect, so its document is one a visitor can now load. Its own weight grew from 14,556 to
+22,366 bytes, which is the intro block plus the four accordion entries the page now renders, and its
+wire total from 283,718 to 290,543, which is those bytes plus the stylesheet the intro block adds.
+**It is now the heaviest non-3D route a visitor can load**, `/` having left the prerendered set for
+the reason § The build this reading was taken from gives.
+
+`/work` moved by 83 document bytes and 207 on the wire, which is Story 2-16's one-line change to
+`WorkItem`: the open entry no longer ships `style="height:0;overflow:hidden"`, and the surrounding
+chunk hashing accounts for the rest. `/celeste`, `/recommendation`, `/_not-found` and
+`/_global-error` are each within a few hundred bytes of the 2026-09-07 reading and none of them is
+this story's.
+
+The redirect is `next.config.js`, and the tool reads it from `.next/routes-manifest.json` rather
+than from that file, so the column answers what the build does rather than what the source says.
+That is what makes the `/cv` flip a measurement of the removal rather than a restatement of it.
 
 ### The 2026-09-07 reading, after Story 2-12
 
@@ -625,6 +696,38 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-10 run, after Story 2-16
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `j9mEYXnBoBIDjtwWiDn1X`. Only § Every route
+and the two amendments dated 2026-09-10 above were re-filed from this run; every other section in
+this file is still the reading its own heading names.
+
+- The narrative bundle is 419,833 bytes gzipped across 9 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 30,167 below the top.
+- 125,381 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0bq5wyrhev5.1.js`,
+  `0d3ymyos8iowp.js`, `05e6tciymra6v.js` is referenced by no prerendered document. The other 294,452
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 290,543 against 140,000, 150,543 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,936 against 140,000, 36,064 of margin. That
+  decomposition has no line for the 248,535 of JavaScript or the 32,561 of preloads the document
+  actually carries.
+- 9 of the 13 families the built CSS declares are reached by no `font-family` rule, and their
+  962,952 bytes on disk (692,644 gzipped, all formats) are emitted and served regardless: Confillia,
+  GeneralSans-Bold, GeneralSans-Light, GeneralSans-Medium, GeneralSans-Regular,
+  GeneralSans-Semibold, MonumentExtended-Bold, MonumentExtended-Light, MonumentExtended-Regular.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Story 2-16 moved one of these findings and none of the rest.** **Derived.** The non-3D line names
+`/cv` because that route can now be loaded and is the heaviest of the two that can; the route it
+named before is absent from this build's prerendered set for the reason § The build this reading was
+taken from gives. The narrative bundle, the deferred share, the unreached faces and the unreachable
+`public/assets/home/` bytes are the same findings the run below reports, within the noise of a
+rebuild: none of them is about a page and this story added one.
 
 ### The 2026-09-07 run, after Story 2-12
 

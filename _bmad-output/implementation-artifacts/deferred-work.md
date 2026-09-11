@@ -3830,12 +3830,14 @@ status: done
     A printed `/cv` carries one company's detail. The accordion's closed panels stay collapsed in
     the print medium, and a CV is the one surface in the estate a person prints.
   evidence: |-
-    Observed 2026-09-10 by reading `app/scss/_print.scss` against the rendered markup.
-    `WorkItem` writes `height: 0; overflow: hidden` on every closed panel and GSAP keeps it there,
-    and the print stylesheet says nothing about `.work-item__content`: it hides the header and the
-    canvas, forces the ground white, and adds `break-inside: avoid` to `.work-item`. So `@media
-    print` inherits the screen's collapsed state and three of the four companies print as a heading
-    with nothing under it.
+    **Measured 2026-09-10** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by
+    `emulateMedia({ media: 'print' })` and reading each panel's box: the four
+    `.work-item__content` elements measure **1501.97, 0, 0 and 0**, and the header computes
+    `display: none`. `WorkItem` writes `height: 0; overflow: hidden` on every closed panel and GSAP
+    keeps it there, and `app/scss/_print.scss` says nothing about `.work-item__content`: it hides the
+    header and the canvas, forces the ground white, and adds `break-inside: avoid` to `.work-item`.
+    So `@media print` inherits the screen's collapsed state and three of the four companies print as
+    a heading with nothing under it.
 
     This is pre-existing on `/work` and it was not worth much there. It is worth something on `/cv`,
     which is the page whose whole reason for existing is that someone wants the history, and which

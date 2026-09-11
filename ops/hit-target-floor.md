@@ -313,11 +313,17 @@ now holds on the 404 without leaving that surface.
 
 ## The tolerated breach
 
-**8 of the 28 measured elements are under the floor.** Behind those 8 rendered instances are
+**9 of the 37 measured elements are under the floor.** Behind those 9 rendered instances are
 **7 authored controls**: one logo link, one back link, two home nav links and three home contact
-links. **Observed 2026-09-08**, after Story 2-15. Both counts moved this time and the reason is a
-repair rather than a route: the six chrome nav links met the floor and their row was deleted, so
-six authored controls left the census along with the twelve instances they rendered as.
+links. **Observed 2026-09-10**, after Story 2-16. Only the rendered count moved and the reason is a
+route rather than a regression: `/cv` became a page and renders the same header, so the logo link is
+measured on a third surface. The two controls that page authors itself, the intro block's links, are
+built to `--tap` on both axes and are in the twenty-eight that clear it.
+
+**Re-measured 2026-09-08**, and that reading is kept rather than overwritten: it was 8 of 28 behind
+the same 7 controls. Both counts moved that time and the reason was a repair rather than a route:
+the six chrome nav links met the floor and their row was deleted, so six authored controls left the
+census along with the twelve instances they rendered as.
 
 **Re-measured 2026-09-07**, and that reading is kept rather than overwritten: it was 20 of 36
 behind 13 controls, the six extra being the chrome nav links rendered on two surfaces each. The
@@ -329,10 +335,11 @@ being rendered on two surfaces rather than three after Story 2-14.
 times each on `/projects`. Story 2-9 deleted the component and its ledger row together, so both the
 authored count and the rendered count fell.
 
-The 20 elements that clear the floor are the four `.work-item__header` buttons, the eleven Suite
-Directory links on `/`, the A-6 skip link Story 2-13 added, and the four chrome nav links Story
-2-15 rebuilt, two on each of `/work` and the 404. **Observed 2026-09-08.** The 2026-09-07 reading
-of the same figure was 16 and is what the sentence above it re-measures.
+The 28 elements that clear the floor are the eight `.work-item__header` buttons, four on each of
+`/work` and `/cv`, the eleven Suite Directory links on `/`, the A-6 skip link Story 2-13 added, the
+six chrome nav links Story 2-15 rebuilt, two on each of `/work`, `/cv` and the 404, and the two
+intro links Story 2-16 authored on `/cv`. **Observed 2026-09-10.** The 2026-09-08 reading of the
+same figure was 20, over four buttons and four nav links, and the 2026-09-07 one was 16.
 
 **The two figures above were one out before this re-measurement, and that is filed rather than
 back-dated.** **Observed 2026-09-07.** They read 27 of 53 and 26 respectively while the surfaces
@@ -566,6 +573,13 @@ skimming for "28" lands on both. Neither is derived from the other and both are 
 computed, so the disambiguating words are the only thing separating them and this file uses them
 without exception.
 
+**The collision ended on 2026-09-10 and the words stay.** Story 2-16 moved the measured figure from
+28 to 37, so the two numbers are apart again and "28" now means the overflow census and nothing
+else. That is the accident going the other way rather than a rule changing: the two figures are
+still read rather than computed, still count different things over different surface sets, and the
+next story that moves either can put them back on the same number without noticing. The
+disambiguating words are what make that harmless, so they are kept.
+
 **`overflow-x: clip` acquired a second consumer on 2026-09-08, and it is not an A-5 one.**
 **Decision**, recorded here because this section is where the argument for `clip` over `hidden`
 lives. Story 2-15 made the header `position: sticky`, which works only because `app/app.scss:97-100`
@@ -655,6 +669,7 @@ separately at 28 s on a cold runner.
 | Cases in this file | 16 | **Observed 2026-09-06**, after Story 2-9 added the A-4 independently-addressable case. The sweep now measures 53 elements rather than 43, on the same five surfaces |
 | This file inside a whole `pnpm test:e2e` run | **24.6 s** across its fifteen cases, of which the sweep case was **13.7 s** | **Observed 2026-09-06** in the pinned container on the Windows development host, by summing the per-case durations Playwright's list reporter printed. The sweep is five navigations, five hydration waits and 43 elements measured at two round trips each |
 | This file run alone | Playwright total **49.7 s**, of which its fifteen cases were **26.6 s** and the sweep **14.6 s** | **Observed 2026-09-06**, by `pnpm exec playwright test hit-target-floor` in the same container. The gap between the total and the cases is the `pnpm build` the `webServer` performs before the first test, which a whole-suite run pays once for eight spec files rather than for one |
+| Whole `pnpm test:e2e`, sixteen spec files, 203 tests | **4.2 min**, Playwright's own headline, with a `docker run` wall of **255.3 s** | **Observed 2026-09-10**, same host, after Story 2-16 added `tests/e2e/cv.pw.ts` and its eight cases and made `/cv` a fifth swept surface. This file's sixteen cases came to **12.5 s** of that and the new one's eight to **5.2 s**, summed from the list reporter's per-case durations. The suite has grown from ten spec files to sixteen since the row below, so this figure is not a comparison with it; it is recorded so a later reader can tell a change in cost from a change in weather |
 | Whole `pnpm test:e2e`, ten spec files, 89 tests | **2.0 min**, Playwright's own headline for the run | **Observed 2026-09-06**, same host, after Story 2-10 added `tests/e2e/status-mark.pw.ts` and its eighteen cases. **The `docker run` wall was not timed on this run**, so it is left blank rather than carried over from the row below, which would present a nine-file figure as a ten-file one. An earlier reading of the same file at fifteen cases was 2.2 min, so the spread here is host load rather than the three cases added by review |
 | Whole `pnpm test:e2e`, nine spec files, 71 tests | **1.7 min** and **3.7 min** on two runs of the same tree, with `docker run` walls of **108.8 s** and **229.1 s** | **Observed 2026-09-06**, same host, after Story 2-9 added `tests/e2e/suite-directory.pw.ts` and one case here. The spread is host load, which is the point of recording more than one reading. The row below is the eight-file reading and is kept rather than overwritten |
 | Whole `pnpm test:e2e`, eight spec files, 60 tests | **1 m 41.3 s** by `time` around the command, **1.7 min** as Playwright's own headline for the same run. The `docker run` wall around it was **105.2 s** | **Observed 2026-09-06**, same host. The command covers `pnpm build && pnpm start` plus all sixty tests; the extra four seconds of docker wall are `corepack enable` and `pnpm install --frozen-lockfile` against the warm named volumes. **The image pull is in none of these**: `ops/rendered-output-harness.md` records it separately at 28 s on a cold runner, and that is the figure the `rendered-output` job pays on top |
