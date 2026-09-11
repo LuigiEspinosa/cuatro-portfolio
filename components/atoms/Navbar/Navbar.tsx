@@ -10,18 +10,21 @@ import './navbar.scss';
  * and every further link competes with both. The five inline links plus a `mailto:` this replaced,
  * six anchors in all, were precisely the AI-nav tell `EXPERIENCE.md:126` names. `/work` survives
  * as a route and is
- * deliberately not here (`EXPERIENCE.md:96`); Story 2-16 absorbs it as a section inside `/cv`.
+ * deliberately not here (`EXPERIENCE.md:96`); Story 2-16 absorbed it as a section inside `/cv` on
+ * 2026-09-10, mounting the same `WorkTimeline` there and leaving `/work` rendering standalone.
  *
  * **Prominence is an IA fact rather than a visual one.** No document gives the primary and the
  * secondary destination different treatments in the header, so both take one treatment and the
  * accent underline is reserved for the current route.
  *
- * **`CV` names the route, not the PDF.** `/cv` answers a 308 to `/pdf/cv.pdf` until Story 2-16
- * builds the page (`next.config.js:75-79`), and pointing the label at the PDF instead would be a
- * link that keeps working and then has to be moved back. The header names the route the design
- * assigns (`EXPERIENCE.md:95`) and the redirect is left exactly as it is:
- * `tests/e2e/anchor-aliases.pw.ts:989-996` pins the redirect set at exactly `/cv` and
- * `/recommendation`.
+ * **`CV` names the route, not the PDF, and that decision is what made this file cost nothing on
+ * 2026-09-10.** `/cv` answered a 308 to `/pdf/cv.pdf` when this component was written, so the label
+ * pointed at a redirect; Story 2-16 removed it and built the page, and not one line here moved.
+ * Pointing the label at the PDF instead would have been a link that worked and then had to be moved
+ * back, and the header would have named a file rather than the route the design assigns
+ * (`EXPERIENCE.md:95`). The `aria-current` comparison below has had a surface to match since that
+ * story landed, which is what closes DW-64: the prefetch now warms a route bundle rather than a
+ * redirect.
  *
  * **The logo is not one of the two.** It is a sibling of this element in `Header.tsx:14`, not a
  * nav link, so "exactly two destinations" is two `nav.navbar a` while `<header>` still holds three

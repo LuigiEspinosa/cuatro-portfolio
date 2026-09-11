@@ -250,6 +250,9 @@ const TOKEN_NATIVE_STYLESHEETS = [
   'components/atoms/SkipLink/SkipLink.scss',
   'components/molecules/Header/header.scss',
   'components/molecules/PlateMark/PlateMark.scss',
+  // The `/cv` intro block, added by Story 2-16. A rebuild like the rest of this list: the route was
+  // a redirect until that story, so there is no 2023 stylesheet behind it and no alias name to keep.
+  'components/organisms/CvIntro/CvIntro.scss',
   'components/organisms/Premise/Premise.scss',
   'components/organisms/SiteFooter/SiteFooter.scss',
   'components/organisms/SuiteDirectory/SuiteDirectory.scss',

@@ -1122,7 +1122,7 @@ origin: spec-deferred 60453c2584eb
 location: tests/e2e/rendered-output.pw.ts:21
 source_spec: `spec-1-17-anchor-migration-step-1-add-the-contract-change-nothing.md`
 severity: medium
-reason: components/atoms/Container/Container.tsx:13-15 sets <body id={route}> from the stripped, hyphenated pathname, so /cv and /recommendation produce body#cv and body#recommendation and the 404 produces an id derived from whatever path was requested. None of the three matches body#work/body#projects (app/app.scss:53-55), body[id=''] (HomeLayout.scss:1-2) or #celeste (celeste.scss:1-2), so the base rule body { background: var(--black-color) } is what paints there. tests/e2e/rendered-output.pw.ts pins ROUTE = '/work' and every browser assertion in this story visits /work only, so nothing renders those three surfaces at all. This is pre-existing: Story 1-10 chose one route and one viewport deliberately and ops/rendered-output-harness.md states the limit. It is recorded because Story 1-18 redefines --black-color as a token reference, which is exactly the value those three surfaces paint, so the story most likely to move them is the next one.
+reason: components/atoms/Container/Container.tsx:13-15 sets <body id={route}> from the stripped, hyphenated pathname, so /cv and /recommendation produce body#cv and body#recommendation and the 404 produces an id derived from whatever path was requested. None of the three matches body#work/body#projects (app/app.scss:53-55), body[id=''] (HomeLayout.scss:1-2) or #celeste (celeste.scss:1-2), so the base rule body { background: var(--black-color) } is what paints there. tests/e2e/rendered-output.pw.ts pins ROUTE = '/work' and every browser assertion in this story visits /work only, so nothing renders those three surfaces at all. This is pre-existing: Story 1-10 chose one route and one viewport deliberately and ops/rendered-output-harness.md states the limit. It is recorded because Story 1-18 redefines --black-color as a token reference, which is exactly the value those three surfaces paint, so the story most likely to move them is the next one. Re-scoped 2026-09-10 by spec-2-16-cv-built-around-the-existing-worktimeline.md. Two of the three claims here have since been settled and the entry narrows to one surface rather than closing. /recommendation never renders at all: it is still a 308 to a PDF, so there is no Hub page there for a test to visit and the base rule paints nothing on it, which Story 1-18 established by navigating. The 404 has been visited since 2026-09-06: tests/e2e/anchor-aliases.pw.ts reads the real body ground and copy on it, and tests/e2e/hit-target-floor.pw.ts sweeps it as a surface. /cv is now a page and tests/e2e/cv.pw.ts reads its base body ground against a probe, with /work as the control, so what remains open is only the screenshot half: no baseline captures the 404 or /cv, and ops/rendered-output-harness.md still states that limit. The owner is whichever story widens the pixel baseline past one route, which is not on the board today.
 status: open
 
 ### DW-7: Follow-up review still recommended for 1-17-anchor-migration-step-1-add-the-contract-change-nothing after the damping cap was spent
@@ -3565,7 +3565,15 @@ status: done
     308 with a route**, after which the prefetch warms a bundle and this entry closes on the same
     reading DW-55 closed on. If Story 2-16 is descoped past Epic 2, the fallback is any measurement
     of chrome navigation cost, since this is one of two links in the header.
-  status: open
+
+    Closed 2026-09-10 by `spec-2-16-cv-built-around-the-existing-worktimeline.md`, on its own stated
+    trigger. That story deleted the `/cv` row from `next.config.js` and built the page: `pnpm build`
+    lists `/cv` as a static route rather than a redirect, and `tests/e2e/cv.pw.ts` reads the route
+    without following, getting a 200 `text/html` with no `Location`. `Navbar.tsx` is unchanged, which
+    is the half this entry was really about: the label named the route rather than the PDF, so what
+    the prefetch warms changed under it with no edit. `/pdf/cv.pdf` is still served at its own URL
+    and is linked from the page, so nothing that held the old URL lost the file.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-65
@@ -3722,4 +3730,123 @@ status: done
     **Owner: Story 2-32**, which rebuilds this component token-native and owns hover by the ruling
     Story 2-15 worked under. **Trigger: Story 2-16 shipping `/cv` as a page**, which is the first
     moment the collision is reachable by a person, whichever of the two lands first.
+
+    **The trigger fired on 2026-09-10 and the entry stays open.** Story 2-16 built `/cv`, so hovering
+    the `CV` destination on that surface now paints both rules at once: this is reachable by a person
+    rather than hypothetical. It is still Story 2-32's, whose boundaries own hover on this component,
+    and Story 2-16's forbid restyling the chrome. What changed is the severity, not the owner: the
+    accent half of the mark is asserted on the real surface by `tests/e2e/cv.pw.ts` and the hover
+    half is asserted nowhere, so a rebuild that dropped the collision would not be noticed by a gate.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
+  id: DW-70
+  summary: >-
+    `.lighthouserc.js` audits `/` and `/work`. `/cv` is a third real page and is behind no
+    accessibility, best-practices or SEO gate at all.
+  evidence: |-
+    `.lighthouserc.js:9` collects `http://localhost:3000` and `http://localhost:3000/work` and
+    asserts accessibility at 0.95, best practices and SEO at 0.9, each with severity `error`. Story
+    2-16 turned `/cv` from a 308 into a page, so the estate now serves three documents a visitor can
+    load and two of them are audited.
+
+    **Ruled out for Story 2-16 on 2026-09-10, deliberately.** The Lighthouse job runs on push to
+    `main` only, and the Anchor merges to `main` per epic, so a URL added now would fire for the
+    first time at the epic merge with nothing measured behind it. That is the same risk
+    `.lighthouserc.js:5-8` declined when Story 2-14 removed `/projects` from the list and added no
+    replacement: putting an unaudited surface behind a blocking gate turns an epic merge into a
+    debugging session. Adding it wants a local `lhci` reading first, which is a different piece of
+    work from building the page.
+
+    What is covered in the meantime: `tests/e2e/cv.pw.ts` asserts the hit-target floor, the focus
+    ring and the heading outline on this surface, and `tests/e2e/hit-target-floor.pw.ts` sweeps it.
+    None of those is a Lighthouse score, and the gap is the categories nothing else reads, colour
+    contrast among them.
+
+    **Owner: whichever story next edits `.lighthouserc.js`**, or Story 2-26, the manual accessibility
+    pass, which is where a local reading of a new surface would be taken anyway. **Trigger: a local
+    `lhci autorun` against `/cv` clearing the three thresholds**, after which the URL and the reading
+    land in one commit.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
+  id: DW-71
+  summary: >-
+    `/cv` is the only Hub surface with a `<main>` landmark. `/work`, `/celeste` and the 404 render
+    none, and the header has been sticky at 140px since Story 2-15, so there is no way past the
+    chrome on any of them.
+  evidence: |-
+    `app/cv/page.tsx` wraps its content in `<main>` and `app/page.tsx` has one; `app/work/page.tsx`,
+    `app/celeste/page.tsx` and `app/not-found.tsx` do not. A-6's skip link is mounted by
+    `app/page.tsx:64` and by no other route (DW-65), so on those three surfaces an assistive-tech
+    visitor has neither a landmark to jump to nor a link to jump with, and the first thing after the
+    logo is 140px of sticky chrome.
+
+    Story 2-16 added the landmark on the surface it was writing from scratch, where it is one
+    element. Doing the same to the other three is a chrome change: it decides whether the landmark
+    wraps `Container` or sits inside it, and whether the skip link becomes universal, both of which
+    are `Header` and `Container` questions.
+
+    **Owner: Story 2-32**, which redesigns `Header`, `Logo`, `ContactContainer` and `Container`
+    together. **Trigger: that story's first look at the header box**, which is the same trigger
+    DW-63 carries for the band around it.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
+  id: DW-72
+  summary: >-
+    KV-5's A-5 census counts 28 overflowing elements on `/work`. The same components render on `/cv`
+    since 2026-09-10, so the census has a second surface and has not been re-read on it.
+  evidence: |-
+    `ops/hit-target-floor.md` § "The overflow this assertion does not cover, measured" records 28
+    elements past the right edge at 360, all on `/work`, the furthest being
+    `span.work-item__icon` at 490.67. They come from `WorkItem.scss`: `&__sub` sets
+    `white-space: nowrap` and `flex-shrink: 0` on a row inside a 256px content area. Story 2-16
+    mounts the identical `WorkTimeline` on `/cv`, so the same overflow is very likely rendered
+    there too.
+
+    **Nothing is in breach that was not already.** The standing A-5 assertion measures interactive
+    elements, and it passed on 2026-09-10 in `mcr.microsoft.com/playwright:v1.62.1-noble` with `/cv`
+    swept as a surface: no interactive element's edge sits outside the viewport on it. What has not
+    been re-run is the wider census, which counts elements of any kind and is where KV-5's
+    per-surface figures come from. "Very likely" is not a measurement, which is the whole reason
+    that record separates the two.
+
+    This is the same shape as DW-67, which recorded that the census was not re-read after Story
+    2-15 changed the nav's box, and it compounds it: the number KV-5's title carries is already
+    wrong by DW-66's reading, and a second surface makes the arithmetic wrong in a second way.
+    Re-running costs a browser pass over `body, body *` on each surface with the method that section
+    states, plus a dated paragraph.
+
+    **Owner: whichever of Stories 2-31 and 2-33 lands first**, which is what DW-67 already assigns:
+    both exist to remove elements from this census and neither can claim a figure without re-reading
+    it, and 2-31 owns `WorkItem`, which is the component that produces every one of the 28.
+    **Trigger: the next time KV-5's per-surface breakdown is read for a decision.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
+  id: DW-73
+  summary: >-
+    A printed `/cv` carries one company's detail. The accordion's closed panels stay collapsed in
+    the print medium, and a CV is the one surface in the estate a person prints.
+  evidence: |-
+    Observed 2026-09-10 by reading `app/scss/_print.scss` against the rendered markup.
+    `WorkItem` writes `height: 0; overflow: hidden` on every closed panel and GSAP keeps it there,
+    and the print stylesheet says nothing about `.work-item__content`: it hides the header and the
+    canvas, forces the ground white, and adds `break-inside: avoid` to `.work-item`. So `@media
+    print` inherits the screen's collapsed state and three of the four companies print as a heading
+    with nothing under it.
+
+    This is pre-existing on `/work` and it was not worth much there. It is worth something on `/cv`,
+    which is the page whose whole reason for existing is that someone wants the history, and which
+    carries a `Download PDF` link precisely because a printable artefact is the expected output. The
+    two are not the same document: the PDF is authored and this is the page.
+
+    **Not Story 2-16's.** Expanding the panels for print means either a `@media print` rule that
+    overrides an inline style GSAP owns, which needs `!important` against a moving target, or moving
+    the accordion off an animated `height`, which is DW-34's fix and Story 2-31's rebuild.
+
+    **Owner: Story 2-31**, which rebuilds `WorkItem` and already owns the height animation DW-34
+    records. **Trigger: that rebuild choosing its open-state mechanism**, since a
+    `grid-template-rows` or transform reveal makes the print rule a one-liner rather than a fight.
   status: open

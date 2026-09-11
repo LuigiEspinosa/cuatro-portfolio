@@ -38,13 +38,18 @@ const nextConfig = {
   async redirects() {
     return [
       // **`statusCode: 301` rather than `permanent: true`, deliberately, and this row is meant to
-      // differ in shape from the two below it (Story 2-14).**
+      // differ in shape from the one below it (Story 2-14).**
       //
-      // Next's `permanent: true` emits **308**, which is what `/cv` and `/recommendation` answer
-      // and what `tests/e2e/narrative.pw.ts` records for them. Story 2-14's acceptance criterion
+      // Next's `permanent: true` emits **308**, which is what `/recommendation` answers and what
+      // `tests/e2e/narrative.pw.ts` records for it. Story 2-14's acceptance criterion
       // says 301, on the Operator ruling of 2026-09-07, so the status is written out. Next refuses
-      // `permanent` alongside `statusCode`, which is why this row carries one key where the others
-      // carry the other. It is not an inconsistency to tidy up.
+      // `permanent` alongside `statusCode`, which is why this row carries one key where the other
+      // carries the other. It is not an inconsistency to tidy up.
+      //
+      // **One permanent redirect, not two, since 2026-09-10.** Story 2-16 built the page `/cv`'s
+      // 308 to `/pdf/cv.pdf` stood in for, so that row is gone and the route answers 200. The file
+      // is neither moved nor renamed: `public/pdf/cv.pdf` is still served at its own URL and the
+      // page links it, because people hold that URL and NFR-2 forbids breaking one.
       //
       // **The cost of a permanent redirect, stated rather than left to be discovered.** A 301 is
       // cacheable by default and browsers cache it aggressively and for a long time, with no
@@ -70,11 +75,6 @@ const nextConfig = {
       {
         source: '/recommendation',
         destination: '/pdf/recommendation-letter.pdf',
-        permanent: true,
-      },
-      {
-        source: '/cv',
-        destination: '/pdf/cv.pdf',
         permanent: true,
       },
     ];

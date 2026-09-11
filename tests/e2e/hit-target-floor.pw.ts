@@ -104,10 +104,16 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * `/work` went from 11 to 7,
  * `/celeste` from 7 to 3 and the 404 from 8 to 4. `/` did not move: `Header.tsx:12` renders no
  * header there, and the homepage panel's second link was repointed rather than removed.
+ *
+ * **`/cv` became a surface on 2026-09-10.** Story 2-16 removed the 308 that answered it and built
+ * the page, so the route left `NON_HUB_ROUTES` below and arrived here. It carries `/work`'s seven,
+ * the same chrome and the same four accordion triggers, plus the intro block's two links, which is
+ * nine. `PlateMark` adds none: nothing in it is interactive, by its own docblock.
  */
 const SURFACES = [
   { route: '/', status: 200, entrance: true, found: 17, skipped: 0, measured: 17 },
   { route: '/work', status: 200, entrance: false, found: 7, skipped: 0, measured: 7 },
+  { route: '/cv', status: 200, entrance: false, found: 9, skipped: 0, measured: 9 },
   { route: '/celeste', status: 200, entrance: false, found: 3, skipped: 3, measured: 0 },
   { route: NOT_FOUND, status: 404, entrance: false, found: 4, skipped: 0, measured: 4 },
 ] as const;
@@ -115,12 +121,16 @@ const SURFACES = [
 /**
  * The routes the Hub serves that render no Hub markup at all.
  *
- * They are excluded by measurement rather than by omission: two are permanent redirects to a PDF
+ * They are excluded by measurement rather than by omission: one is a permanent redirect to a PDF
  * (`next.config.js`), which a browser answers by starting a download rather than a navigation,
- * and the third is a JSON endpoint. `page.request` follows the redirect and reports where the
+ * and the other is a JSON endpoint. `page.request` follows the redirect and reports where the
  * visitor lands, which is what the case at the end of this file pins.
+ *
+ * **Three until 2026-09-10.** Story 2-16 built `/cv`, so it answers `text/html` and belongs in
+ * `SURFACES` above, where its interactive elements are swept. Leaving it here would have failed the
+ * case at the end of this file, which refuses a non-Hub route answering HTML.
  */
-const NON_HUB_ROUTES = ['/cv', '/recommendation', '/api/health'] as const;
+const NON_HUB_ROUTES = ['/recommendation', '/api/health'] as const;
 
 /**
  * The entrance the home surface animates, and the selector the settle waits on.
@@ -226,10 +236,14 @@ interface Exemption {
 const EXEMPTIONS: readonly Exemption[] = [
   {
     id: 'chrome-logo',
+    // Three routes since 2026-09-10, not two. Story 2-16 built `/cv`, which renders the same
+    // header, so this selector matches a third element and `covers` moves with it. The row is
+    // unchanged in every other respect: no control was repaired and none was added, the same
+    // authored link is simply rendered on one more surface.
     selector: '.logo a',
     source: 'components/atoms/Logo/Logo.tsx:7',
-    routes: ['/work', '/a-route-that-does-not-exist'],
-    covers: 2,
+    routes: ['/work', '/cv', '/a-route-that-does-not-exist'],
+    covers: 3,
     measured: '184.00 x 20.00',
     closedBy: 'Story 2-32',
   },
@@ -1608,11 +1622,12 @@ test.describe('the hit-target floor', () => {
   test('the routes that render no Hub markup are excluded by measurement, not by omission', async ({
     page,
   }) => {
-    // `/cv` and `/recommendation` are permanent redirects to a PDF, so a browser asked for either
-    // starts a download rather than a navigation and there is no document to sweep. `/api/health`
-    // answers JSON. All three are named here so a later reader can tell an excluded route from a
+    // `/recommendation` is a permanent redirect to a PDF, so a browser asked for it starts a
+    // download rather than a navigation and there is no document to sweep. `/api/health`
+    // answers JSON. Both are named here so a later reader can tell an excluded route from a
     // forgotten one, and so a route that quietly starts rendering markup shows up as a failure
-    // here rather than as a gap in the sweep.
+    // here rather than as a gap in the sweep. **`/cv` was the third until 2026-09-10**, when Story
+    // 2-16 built the page and moved it into `SURFACES`, where it is swept rather than excused.
     const landings: string[] = [];
 
     for (const route of NON_HUB_ROUTES) {
@@ -1629,6 +1644,6 @@ test.describe('the hit-target floor', () => {
     }
 
     expect(landings).toHaveLength(NON_HUB_ROUTES.length);
-    expect(landings.filter((line) => line.includes('/pdf/')).length, 'the two PDF redirects have changed').toBe(2);
+    expect(landings.filter((line) => line.includes('/pdf/')).length, 'the one PDF redirect has changed').toBe(1);
   });
 });

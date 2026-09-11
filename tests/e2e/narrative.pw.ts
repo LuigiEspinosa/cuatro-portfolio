@@ -65,18 +65,21 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
 /**
  * The routes FR-1's third consequence names, plus the two this story must not move.
  *
- * `/cv` and `/recommendation` answer 308 to a PDF, so they are requested rather than navigated to:
- * a browser answers a PDF redirect by starting a download rather than a navigation. Same treatment
- * and same reason as the `SURFACES` and `NON_HUB_ROUTES` split in
- * `tests/e2e/hit-target-floor.pw.ts`.
+ * `/recommendation` answers 308 to a PDF, so it is requested rather than navigated to: a browser
+ * answers a PDF redirect by starting a download rather than a navigation. Same treatment and same
+ * reason as the `SURFACES` and `NON_HUB_ROUTES` split in `tests/e2e/hit-target-floor.pw.ts`.
  *
  * **`/projects` left the navigable list on 2026-09-07.** Story 2-14 answers it with a 301 to
  * `/#suite`, and Playwright follows a redirect, so a route left here would have navigated to `/`
  * and measured the homepage twice under a second name. Its status and `Location` are asserted in
  * `tests/e2e/projects-redirect.pw.ts` instead, without following.
+ *
+ * **`/cv` moved the other way on 2026-09-10.** Story 2-16 removed its redirect and built the page,
+ * so it answers a document a browser can navigate to and it joins the navigable list, where the
+ * loop below asserts 200 and rendered text rather than merely that a request resolves.
  */
-const NAVIGABLE_ROUTES = ['/', '/work', '/celeste', NOT_FOUND] as const;
-const REQUESTED_ROUTES = ['/cv', '/recommendation'] as const;
+const NAVIGABLE_ROUTES = ['/', '/work', '/cv', '/celeste', NOT_FOUND] as const;
+const REQUESTED_ROUTES = ['/recommendation'] as const;
 
 /** How long any single condition here is given before it is called a failure. */
 const SETTLE_TIMEOUT = 15_000;

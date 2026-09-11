@@ -287,6 +287,12 @@ drift.
 > all. The 404 surface is the only place the base rule paints. The corrected table is in
 > § "Two corrections to step 1's record". The rest of this section stands.
 
+> **Amended 2026-09-10 by Story 2-16.** `/cv` renders now. That story removed the 308 and built the
+> page behind it, so `body#cv` is a real id that still matches none of the three overriding rules,
+> and the base `body` rule paints on **two** surfaces: the 404 and `/cv`. The original row below was
+> right about `/cv` for the wrong reason and wrong about `/recommendation`, which still never
+> renders. Both correction blocks are kept as written: what changed is the world, not the reading.
+
 **Observed 2026-08-26.** Story 1-17's spec expected `body` to compute
 `background-color: rgb(0, 0, 0)` on `/work` as its did-nothing-change probe. It does not, because
 `body { background: var(--black-color) }` (`app/app.scss:41`) is overridden at higher specificity
@@ -626,6 +632,19 @@ ground and body copy are read. The corrected table:
 `tests/e2e/anchor-aliases.pw.ts` pins the redirect pair as part of its route sweep, so a redirect
 quietly added or removed shows up as a named failure rather than as a puzzling download three
 stories later.
+
+**Amended 2026-09-10 by Story 2-16: the pair is now a single redirect, and the base rule paints on
+two surfaces rather than one.** That story removed the `/cv` row from `next.config.js` and built the
+page, so the route answers a 200 document whose `body#cv` matches none of the three overriding
+rules. The mechanism that pinned the pair did its job: the redirect set in
+`tests/e2e/anchor-aliases.pw.ts` had to be narrowed in the same commit as the config, and
+`tests/e2e/contract-anchor.pw.ts`'s comment about the one surface had to be amended with it. The
+2026-08-26 table above is kept as it was taken; the row that has moved since is `/cv`:
+
+| Route | `body` id | What paints the ground | Nature |
+|---|---|---|---|
+| `/cv` | `cv` | **Nothing overrides**, so `background: var(--black-color)` paints, which is `--token-bg` | **Observed 2026-09-10**, by navigation. `tests/e2e/cv.pw.ts` asserts it, and asserts the `/work` override beside it as the control |
+| `/recommendation` | never rendered | **308 to a PDF.** Unchanged | **Observed 2026-09-10** |
 
 ### What is asserted, and by which gate
 

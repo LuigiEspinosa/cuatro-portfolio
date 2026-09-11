@@ -1103,19 +1103,26 @@ test('the Hub renders the token roles its alias layer maps its own names onto', 
   // it for `/celeste` (`components/organisms/Celeste/celeste.scss:1-2`).
   //
   // **Corrected by Story 1-18.** This comment used to say the base rule is visible on `/cv` and
-  // `/recommendation`, whose `body#cv` and `body#recommendation` match none of those rules. Those
-  // two routes never render: `next.config.js` redirects both, permanently, to a PDF, so a browser
-  // asked for either starts a download. The claim came from
+  // `/recommendation`, whose `body#cv` and `body#recommendation` match none of those rules. Neither
+  // route rendered: `next.config.js` redirected both, permanently, to a PDF, so a browser asked for
+  // either started a download. The claim came from
   // `ops/anchor-token-adoption.md` § "A second finding", which reached it by reading stylesheets
-  // and said so, and Story 1-18 falsified it by navigating. **The one surface where the base rule
-  // paints is the 404**, which `app/not-found.tsx` renders through the same root layout and the
-  // same `Body`, and whose stripped id matches none of the three rules above.
+  // and said so, and Story 1-18 falsified it by navigating. **The 404 was then the one surface
+  // where the base rule paints**, which `app/not-found.tsx` renders through the same root layout
+  // and the same `Body`, and whose stripped id matches none of the three rules above.
   //
-  // That surface is not visited here and is not captured by the screenshot baseline, so this probe
-  // is not a convenience: it is the only place in **this file** where the value it paints is
-  // observed at all. `tests/e2e/anchor-aliases.pw.ts` reads the real `body` on the 404 surface,
-  // and the probe is kept rather than replaced because the two answer different questions: a probe
-  // on `/work` is what fails if the alias stops resolving anywhere.
+  // **Amended 2026-09-10 by Story 2-16, and the amendment is to the count rather than to the
+  // method.** That story built `/cv` as a real page and removed its redirect, so `body#cv` now
+  // renders and still matches none of the three rules: the base rule paints on **two** surfaces,
+  // the 404 and `/cv`. `/recommendation` is unchanged and still never renders. What would have gone
+  // stale is the word "one"; nothing below moves.
+  //
+  // Neither of those two surfaces is visited here and neither is captured by the screenshot
+  // baseline, so this probe is not a convenience: it is the only place in **this file** where the
+  // value it paints is observed at all. `tests/e2e/anchor-aliases.pw.ts` reads the real `body` on
+  // the 404 surface and `tests/e2e/cv.pw.ts` reads it on `/cv`, and the probe is kept rather than
+  // replaced because the three answer different questions: a probe on `/work` is what fails if the
+  // alias stops resolving anywhere.
   const used = await page.evaluate(() => {
     const probe = document.createElement('div');
     probe.style.cssText =

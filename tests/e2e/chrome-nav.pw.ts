@@ -32,19 +32,32 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * the equality discriminate. The ground is controlled twice more, against a resolved `transparent`
  * and against an alpha channel, because a translucent ground would still equal its own probe.
  *
- * **`aria-current` has no live instance on the shipped Hub, and both reasons are deliberate**
- * (Operator ruling of 2026-09-08). `Suite` is current only on `/`, where `Header.tsx:12` renders no
- * header at all, and `CV` is current only on `/cv`, which answers a 308 to a PDF until Story 2-16
- * builds the page. So the attribute is asserted absent here on the two surfaces that do render the
- * header, watched against a planted mark, and asserted present at the unit level in
- * `components/atoms/Navbar/__tests__/Navbar.test.tsx`, which drives the pathname directly. The
- * first live instance arrives with Story 2-16 and needs nothing here to change.
+ * **`aria-current` had no live instance on the shipped Hub until 2026-09-10, and now it has one.**
+ * `Suite` is current only on `/`, where `Header.tsx:12` renders no header at all, and `CV` is
+ * current only on `/cv`, which answered a 308 to a PDF until Story 2-16 built the page. This file
+ * goes on asserting the attribute **absent** on the two surfaces that are neither destination,
+ * watched against a planted mark, because that is the claim those two surfaces support and it is
+ * the one a third link marking itself would break. The live instance is asserted where it lives, in
+ * `tests/e2e/cv.pw.ts`, and the mechanism is asserted at the unit level in
+ * `components/atoms/Navbar/__tests__/Navbar.test.tsx`, which drives the pathname directly. Story
+ * 2-16 changed nothing here except this paragraph and the `CV` click below.
  */
 
 /** A path the Hub does not route, which renders `app/not-found.tsx`. Same as the floor sweep's. */
 const NOT_FOUND = '/a-route-that-does-not-exist';
 
-/** The two surfaces that render the header, with the status each answers. */
+/**
+ * The two surfaces that render the header **and are neither destination**, with the status each
+ * answers.
+ *
+ * **Three surfaces render the header since 2026-09-10 and this list stays at two, deliberately.**
+ * Story 2-16 built `/cv`, which is the header's second destination, so on that surface one link
+ * carries `aria-current` and the accent rule under its label. Every loop below assumes the opposite:
+ * "marks no destination as the current page" is written about a surface that is neither, and the
+ * geometry cases measure two links that take one treatment. Adding `/cv` here would turn the first
+ * into a false claim and would say nothing the third surface does not already have asserted in
+ * `tests/e2e/cv.pw.ts`, which is where that surface's own header reading lives.
+ */
 const CHROME_SURFACES = [
   { route: '/work', status: 200 },
   { route: NOT_FOUND, status: 404 },
@@ -59,8 +72,8 @@ const DESTINATIONS = [
 /** The Directory heading's own id, which is what makes `/#suite` resolve. */
 const HEADING_ID = 'suite';
 
-/** Where `next.config.js:75-79` sends `/cv` until Story 2-16 builds the page behind it. */
-const CV_PDF = '/pdf/cv.pdf';
+/** The header's second destination, a route since Story 2-16 removed the 308 that stood for it. */
+const CV_ROUTE = '/cv';
 
 /**
  * Navigate, and refuse to read anything off a page that did not answer the status expected.
@@ -194,8 +207,10 @@ test.describe('the chrome nav', () => {
       ).toEqual(DESTINATIONS.map((destination) => ({ ...destination, target: '' })));
 
       // `/work` is a route and is deliberately not a header destination (`EXPERIENCE.md:96`), and
-      // `CV` names the route rather than the PDF the 308 lands on. Both are covered by the
-      // equality above; they are restated here because a reader of a failure needs the reason.
+      // `CV` names the route rather than the PDF beside it. Both are covered by the equality above;
+      // they are restated here because a reader of a failure needs the reason. The PDF assertion
+      // outlived the redirect: `/pdf/cv.pdf` is now linked from the `/cv` page rather than reached
+      // through a 308, and a header label pointed at it would still be a label naming a file.
       const hrefs = (await destinationsOn(page)).map((destination) => destination.href);
       expect(hrefs, `${surface.route} puts /work back in the header`).not.toContain('/work');
       expect(hrefs.join(' '), `${surface.route} points a header label at a PDF`).not.toMatch(/\.pdf/);
@@ -714,69 +729,69 @@ test.describe('the chrome nav', () => {
     ).toBe(true);
   });
 
-  test('the CV destination reaches the PDF its redirect names, clicked rather than requested', async ({
-    page,
-  }) => {
-    // **The first in-app link to `/cv` in the repository, and nothing else clicks it.** Every other
-    // check in this story reads the `href` off the DOM or asks the server for `/cv` directly, and
-    // both pass for a link the router swallows. This one is a real click, because `/cv` is not a
-    // page: `next.config.js:75-79` answers it with a 308 to a static PDF, so a `<Link>` click is a
-    // client-side navigation into a config redirect whose destination the App Router does not
-    // serve. That is the same class of behaviour DW-58 exists to record, on the destination
-    // `EXPERIENCE.md:120` calls the likely next click after an opinion has formed.
+  test('the CV destination reaches the page it names and starts no download', async ({ page }) => {
+    // **This case measured the opposite until 2026-09-10, and it is rewritten rather than deleted.**
+    // `/cv` was a 308 to `/pdf/cv.pdf`, so clicking `CV` from `/work` was a client-side navigation
+    // into a config redirect whose destination the App Router does not serve, and what the visitor
+    // got was a file. Story 2-16 built the page, so the control is now the other way round: the
+    // click lands on a document and nothing downloads.
     //
-    // `tests/e2e/hit-target-floor.pw.ts` excludes `/cv` from its sweep on the grounds that a
-    // browser asked for it starts a download rather than a navigation. That claim was made about
-    // `page.request.get`; this is the first time anything in the repository has put a real browser
-    // through the link, so the mechanism is measured and logged rather than assumed, and the
-    // assertion is on **where the visitor ends up**, which is the same answer either way.
+    // Reading the `href` off the DOM, as the first case in this file does, passes for a link the
+    // router swallows. This is a real click, on the destination `EXPERIENCE.md:120` calls the likely
+    // next one after an opinion has formed.
     await goTo(page, '/work');
 
     const downloads: Download[] = [];
     page.on('download', (download) => downloads.push(download));
 
-    await page.locator("nav.navbar a[href='/cv']").click();
+    await page.locator(`nav.navbar a[href='${CV_ROUTE}']`).click();
 
+    // **Polled on the URL, not waited on `load`.** A chrome click is an App Router client-side
+    // navigation and fires no load event, so a wait resolves against the document already open and
+    // every read after it races the router.
     await expect
-      .poll(
-        () => [...downloads.map((download) => new URL(download.url()).pathname), new URL(page.url()).pathname],
-        {
-          message:
-            'clicking CV from /work reached neither the PDF nor any new URL. A click the router ' +
-            'swallows leaves the visitor on the surface they started from, and every other check ' +
-            'in this file would still pass',
-          timeout: 15_000,
-        }
-      )
-      .toContain(CV_PDF);
+      .poll(() => new URL(page.url()).pathname, {
+        message:
+          'clicking CV from /work reached no new URL. A click the router swallows leaves the ' +
+          'visitor on the surface they started from, and every other check in this file would ' +
+          'still pass',
+        timeout: 15_000,
+      })
+      .toBe(CV_ROUTE);
 
-    const mechanism = downloads.length > 0 ? 'a download' : 'a navigation';
-    // Logged rather than asserted, on the idiom `tests/e2e/front-door.pw.ts` sets. Which of the two
-    // Chromium chooses for `application/pdf` is a browser decision this story does not own; that
-    // the visitor arrives is what it does own.
-    console.log(`chrome-nav: clicking CV from /work reached ${CV_PDF} by ${mechanism}`);
-
-    for (const download of downloads) {
-      expect(download.suggestedFilename(), 'the CV download is not the file the redirect names').toBe(
-        'cv.pdf'
-      );
-    }
-
-    // **The control.** The other destination, clicked the same way from the same surface, reaches
-    // `/` and starts no download at all. Without it, a run in which every click produced a
-    // download, or in which the poll matched a URL that was already `/pdf/cv.pdf`, would read
-    // exactly like this one.
-    await goTo(page, '/work');
-    const before = downloads.length;
-    await page.locator("nav.navbar a[href='/#suite']").click();
-    await expect
-      .poll(() => page.url().replace(/^https?:\/\/[^/]+/, ''), { timeout: 10_000 })
-      .toBe(`/#${HEADING_ID}`);
     expect(
-      downloads.length,
-      'clicking Suite also started a download, so the reading above is about clicking rather than ' +
-        'about this destination'
-    ).toBe(before);
+      downloads.map((download) => download.url()),
+      'clicking CV started a download, which is what it did while /cv was a 308 to a PDF'
+    ).toEqual([]);
+
+    // A URL is not a rendering. The page has to be there, and it has to be the one whose heading
+    // this story built rather than a shell the router pushed a path onto.
+    await expect(
+      page.getByRole('heading', { level: 1 }),
+      'the CV destination landed on a document carrying no h1, so the route answered nothing'
+    ).toHaveCount(1);
+
+    // **The control, and it is the mechanism that used to fire here.** The `download` listener has
+    // to be capable of reporting one, or "no download" above is a claim about a listener that never
+    // works. `/pdf/cv.pdf` is still served at its own URL, which is the other half of what Story
+    // 2-16 had to keep true, so asking for it directly is both the control and the check that the
+    // file the page links did not move.
+    await page.evaluate((href) => {
+      const planted = document.createElement('a');
+      planted.id = 'planted-pdf-download';
+      planted.href = href;
+      planted.setAttribute('download', '');
+      planted.textContent = 'planted';
+      document.body.append(planted);
+    }, '/pdf/cv.pdf');
+
+    const started = page.waitForEvent('download', { timeout: 15_000 });
+    await page.locator('a#planted-pdf-download').click();
+    const download = await started;
+    expect(
+      download.suggestedFilename(),
+      'the planted control reached a different file, so the PDF the page links has moved'
+    ).toBe('cv.pdf');
   });
 
   test('the home route still renders no header at all, which is a different mechanism', async ({ page }) => {

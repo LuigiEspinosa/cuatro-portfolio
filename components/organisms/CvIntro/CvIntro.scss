@@ -1,0 +1,128 @@
+// The block above the work timeline on `/cv` (Story 2-16).
+//
+// Token-native, on the same footing as `Premise.scss` and `SuiteDirectory.scss`: a new file with no
+// old alias name to keep, so it names contract roles directly and `app/app.scss` is not in its
+// path. `app/__tests__/anchor-contract.test.ts` carries the list of files allowed to do that and
+// this one is on it, which is also what makes a role named here a deliberate act rather than a leak.
+//
+// **It declares no custom property of its own**, which is what keeps every one of the Hub's sixteen
+// in one file and the collision argument checkable in one place. Asserted, not remembered.
+//
+// Values are transcribed from `DESIGN.md` § Typography and `RESTYLE-SPEC.md` § 1b, not decided
+// here. Nothing below restyles `WorkItem` or `WorkTimeline`, which are Stories 2-31 and 2-33.
+
+.cv-intro {
+  // The block pads itself in the block axis only. It sits inside `.container`, exactly as the
+  // timeline beneath it does on `/work`, so the inline gutter is already paid for once and paying
+  // it twice would narrow a 256px content area further.
+  padding-block: var(--s-2xl) var(--s-xl);
+}
+
+// ── The name ──────────────────────────────────────────────────────────────────
+//
+// The one display line on this page (`DESIGN.md:476`). `WorkHero` owns that line on `/work` and is
+// deliberately not mounted here, so there is exactly one `<h1>` per document across both routes.
+
+.cv-intro__name {
+  margin: 0;
+  margin-block-start: var(--s-md);
+  font-family: var(--f-display);
+  font-size: var(--t-display);
+  font-weight: var(--w-black);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tr-display);
+  // Uppercase is structural here rather than emphatic (`DESIGN.md:500`), and the clamp's floor is
+  // 36px against a 256px content area, so the two words wrap onto two lines at 360. The break is
+  // what keeps them inside it; a long single word would otherwise paint past the edge, which is
+  // A-5 outright rather than a typographic preference.
+  text-transform: uppercase;
+  overflow-wrap: break-word;
+  color: var(--token-text);
+}
+
+// ── The lede ──────────────────────────────────────────────────────────────────
+//
+// The lede role: `--t-base` at `--w-light`, `--lh-lede`, capped at the measure, exactly as
+// `Premise.scss:24-35` sets it. The weight gap against the display line above is 500 units, which
+// is what `DESIGN.md:483` asks of a lede.
+
+.cv-intro__lede {
+  margin: 0;
+  margin-block-start: var(--s-md);
+  // A maximum, so it still shrinks with the container at 360 and cannot itself be a source of
+  // overflow (`DESIGN.md:489`).
+  max-inline-size: var(--measure);
+  font-size: var(--t-base);
+  font-weight: var(--w-light);
+  line-height: var(--lh-lede);
+  letter-spacing: var(--tr-body);
+  color: var(--token-text-secondary);
+}
+
+// ── The two destinations ──────────────────────────────────────────────────────
+//
+// Unboxed links, `RESTYLE-SPEC.md:183-209`. No filled control, no CTA button and no accent fill:
+// `DESIGN.md:678-680` reserves the accent for the rule and the mark, and a page whose payload is a
+// timeline has no primary action to dress up.
+//
+// **`min-block-size` with `inline-flex`, never `padding-block` on a plain inline element.** Vertical
+// padding there paints outward without growing the hit area, which is the single easiest way to miss
+// the AD-19 floor while appearing to meet it (`EXPERIENCE.md:727-730`, `RESTYLE-SPEC.md:194-197`).
+// `min-inline-size` carries the other axis. Both are measured in a real browser by
+// `tests/e2e/cv.pw.ts` and `tests/e2e/hit-target-floor.pw.ts`, never read off this file.
+
+.cv-intro__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // A 44px box on a line of 25px prose has no shared baseline to sit on: an `inline-flex` box takes
+  // the baseline of its first item, and centring that item would hang the label above the sentence.
+  // Aligning the box's middle instead keeps the label with the words around it.
+  vertical-align: middle;
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+  padding-inline: var(--s-2xs);
+  text-decoration: none;
+  color: var(--token-text);
+}
+
+.cv-intro__link--primary {
+  // The Download link is its own block, so it is not on a line with anything the `--tap` box could
+  // overlap and needs no `--s-lg` neighbour gap (`RESTYLE-SPEC.md:206`).
+  margin-block-start: var(--s-lg);
+  font-size: var(--t-base);
+}
+
+// **The rule is drawn on the inner span, not on the `--tap` box.** A border on the box sits at the
+// bottom of the padding that gets the box to the floor, which floats it away from the text
+// (`RESTYLE-SPEC.md:198-199`). Same shape as `navbar.scss:58-60` and `SuiteDirectory.scss:267-285`.
+.cv-intro__link--primary .cv-intro__rule {
+  border-block-end: var(--stroke-emphasis) solid var(--token-accent);
+}
+
+// The in-prose kind, which is a hairline rather than the emphasis stroke: inside a paragraph a 2px
+// rule reads as a heading underline rather than as a link (`RESTYLE-SPEC.md:192`).
+.cv-intro__link--prose .cv-intro__rule {
+  border-block-end: var(--stroke-hair) solid var(--token-accent);
+}
+
+// One signal, and it is a recolour. The underline never appears on hover and never changes width:
+// both are layout changes and both reflow the line (`RESTYLE-SPEC.md:200-201`).
+.cv-intro__link:hover .cv-intro__rule {
+  border-block-end-color: var(--token-accent-hover);
+}
+
+// The standard ring (`RESTYLE-SPEC.md:202`, § 4). An outline rather than a border, so it costs no
+// layout and appears in one frame rather than over a duration, and it is not the hover colour.
+.cv-intro__link:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-hair);
+}
+
+// `min-inline-size: 0` is the same finding `SuiteDirectory.scss:261-266` records: the span is a flex
+// item of the `inline-flex` link above, so its automatic minimum is its min-content width and a
+// label the container cannot fit would refuse to shrink rather than wrap.
+.cv-intro__rule {
+  min-inline-size: 0;
+}

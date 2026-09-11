@@ -90,7 +90,7 @@ Copy `.env.example` and fill in values. Variables prefixed `NEXT_PUBLIC_` are in
 | `/work`           | Experience Timeline                               |
 | `/celeste`        | Standalone page, rendered with no header          |
 | `/projects`       | 301 to `/#suite` (Story 2-14)                     |
-| `/cv`             | 308 to `/pdf/cv.pdf` until Story 2-16 builds the page |
+| `/cv`             | CV: intro block plus the Experience Timeline (Story 2-16) |
 | `/recommendation` | 308 to `/pdf/recommendation-letter.pdf`           |
 | `/api/health`     | JSON health endpoint                              |
 | Anything else     | `app/not-found.tsx`, 404                          |
@@ -100,6 +100,11 @@ spelled `remmendation-letter.pdf`, which is a path nothing serves, and `/celeste
 and the 404 were all absent while the rendered-output suite sweeps them as real surfaces. The
 served paths are `/pdf/...`; `public/` is the directory they are served from and is not part of
 any URL.
+
+`/cv` answered a 308 to `/pdf/cv.pdf` until 2026-09-10, which shadowed the route file behind it, so
+the page had never rendered. Story 2-16 removed the redirect and built the page: it mounts the same
+`WorkTimeline` `/work` does, above it an intro block, and it links `/pdf/cv.pdf`, which is still
+served at its own URL for anyone holding it. `/work` goes on rendering the timeline standalone.
 
 The header presents two of these routes, `/#suite` and `/cv`. **Every other route is reached only
 by an inbound link or by typing it**: `SiteFooter` renders no destinations at all today, which

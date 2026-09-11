@@ -53,13 +53,18 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
 /**
  * Every surface that renders Hub markup, which is the set NFR-9 is asserted over.
  *
- * The same four `SURFACES` in `tests/e2e/hit-target-floor.pw.ts` carries, minus its per-surface
- * counts, which are that file's subject rather than this one's. `/projects` is deliberately absent:
- * it is no longer a surface, which is the whole of this story.
+ * The same `SURFACES` in `tests/e2e/hit-target-floor.pw.ts` carries, minus its per-surface counts,
+ * which are that file's subject rather than this one's. `/projects` is deliberately absent: it is
+ * no longer a surface, which is the whole of this story.
+ *
+ * **Five since 2026-09-10.** Story 2-16 built `/cv`, which had been a 308 to a PDF, so it renders
+ * Hub markup and is swept here for the same reason the other four are: NFR-9 is a claim about every
+ * surface, and a route left out of this list could grow a second Directory unwatched.
  */
 const SWEPT = [
   { route: LANDING, status: 200 },
   { route: '/work', status: 200 },
+  { route: '/cv', status: 200 },
   { route: '/celeste', status: 200 },
   { route: NOT_FOUND, status: 404 },
 ] as const;
@@ -69,15 +74,19 @@ const SWEPT = [
  * `97bfc6b`, read without following anything.
  *
  * NFR-2 is the reason the URL was redirected rather than deleted, and a story that keeps one URL
- * working by breaking six others has not met it. `/cv` and `/recommendation` answer **308**, which
- * is what `permanent: true` emits and is exactly why this story's own row could not use it.
+ * working by breaking six others has not met it. `/recommendation` answers **308**, which is what
+ * `permanent: true` emits and is exactly why this story's own row could not use it.
+ *
+ * **`/cv` answered 308 here until 2026-09-10 and answers 200 now.** Story 2-16 removed that
+ * redirect and built the page behind it, which is a deliberate change to a route rather than drift,
+ * so the expectation moves with it. Every other row is what it was at `97bfc6b`.
  */
 const UNTOUCHED = [
   { route: LANDING, status: 200 },
   { route: '/work', status: 200 },
   { route: '/celeste', status: 200 },
   { route: '/api/health', status: 200 },
-  { route: '/cv', status: 308 },
+  { route: '/cv', status: 200 },
   { route: '/recommendation', status: 308 },
   { route: NOT_FOUND, status: 404 },
 ] as const;
@@ -168,12 +177,23 @@ test.describe('the /projects redirect', () => {
     ).toBe('');
 
     // **The control for the status literal.** `301` has to be the answer to this row and not the
-    // answer to every redirect the Hub serves, or the assertion above measures nothing. `/cv` uses
-    // `permanent: true` and answers 308 through the same reader, on the same build.
-    const cv = await answerFor(request, '/cv');
-    expect(cv.status, '/cv no longer answers the 308 that permanent: true emits').toBe(308);
-    expect(cv.location, '/cv no longer redirects to its PDF').toBe('/pdf/cv.pdf');
-    expect(cv.status, 'the two redirect rows answer the same status, so 301 says nothing').not.toBe(answer.status);
+    // answer to every redirect the Hub serves, or the assertion above measures nothing.
+    // `/recommendation` uses `permanent: true` and answers 308 through the same reader, on the same
+    // build.
+    //
+    // **It was `/cv` until 2026-09-10**, when Story 2-16 removed that redirect and built the page.
+    // The control moves to the surviving 308 rather than being dropped: what it demonstrates is
+    // that this reader distinguishes two statuses, and it needs a route that still answers the
+    // other one to do it.
+    const permanent = await answerFor(request, '/recommendation');
+    expect(permanent.status, '/recommendation no longer answers the 308 that permanent: true emits').toBe(308);
+    expect(permanent.location, '/recommendation no longer redirects to its PDF').toBe(
+      '/pdf/recommendation-letter.pdf'
+    );
+    expect(
+      permanent.status,
+      'the two redirect rows answer the same status, so 301 says nothing'
+    ).not.toBe(answer.status);
 
     // And the control for `Location` itself: a route that does not redirect carries none, so an
     // empty header and a matching one are distinguishable.

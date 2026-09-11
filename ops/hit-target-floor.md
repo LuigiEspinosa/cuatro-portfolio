@@ -97,10 +97,11 @@ one commit.
 |---|---|---|---|---|
 | `/` | 200 | 17 | 0 | 17 |
 | `/work` | 200 | 7 | 0 | 7 |
+| `/cv` | 200 | 9 | 0 | 9 |
 | `/celeste` | 200 | 3 | 3 | 0 |
 | `/a-route-that-does-not-exist` | 404 | 4 | 0 | 4 |
 
-**28 elements measured across four surfaces.**
+**37 elements measured across five surfaces.**
 
 **Re-measured 2026-09-07** after Story 2-13 built the non-3D front door. `/` went from 16 to 17 and
 the other four did not move. The one new element is the A-6 skip-link, which renders on every path
@@ -141,6 +142,24 @@ its own `found`, `skipped` and `measured` per route, which is the reading § Mai
 prescribes. The pins were written from what the reshaped header renders and then confirmed by that
 run; nothing here was computed from the Registry or from the markup after the fact.
 
+**Re-measured 2026-09-10 after Story 2-16 built `/cv`.** That route answered a 308 to `/pdf/cv.pdf`
+and was one of the three non-Hub routes below; the story removed the redirect and built the page
+behind it, so the route left that list and arrived here as a fifth surface. **The other four did not
+move.** `/cv` yields nine: the chrome logo, the two nav links and the four accordion triggers `/work`
+also yields, plus the two links the intro block adds. `PlateMark` contributes none, nothing in it
+being interactive by its own docblock, and the page carries no button, no CTA and no skeleton. The
+whole-run total goes from 28 across four surfaces to 37 across five, and seven of the nine are
+renderings of controls that already existed rather than new authored ones: the logo, the nav and the
+accordion are the same components mounted on one more route. Only the intro block's two links are
+authored here, and both are built to `--tap` on both axes, so the exemption ledger gains no row and
+`chrome-logo` simply covers one element more.
+
+**How this fifth row was established.** The rows are pinned, not bounded, so the sweep passing in
+`mcr.microsoft.com/playwright:v1.62.1-noble` on 2026-09-10 is what says `/cv` yielded exactly these
+numbers: the pins were written from what the new page renders and then confirmed by that run, which
+would have failed and printed its own `found`, `skipped` and `measured` per route had any of the
+three been wrong. Nothing here was computed from the Registry or from the markup after the fact.
+
 **`/projects` is in neither this table nor the non-Hub list, and that is deliberate.** A browser
 asked for it now gets a 301 to `/#suite` and lands on `/`, which is a Hub surface this sweep already
 measures. Playwright follows redirects, so a row that merely kept the route would have gone green
@@ -169,6 +188,13 @@ visitor lands. `/cv` lands on `/pdf/cv.pdf` and `/recommendation` on
 `/pdf/recommendation-letter.pdf`, both `application/pdf`; `/api/health` answers
 `application/json`. A standing case asserts all three, so a route that quietly starts rendering
 HTML fails there rather than leaving a hole in the sweep.
+
+**Two since 2026-09-10, and the reduction is the point of that case.** Story 2-16 built `/cv`, so
+it answers `text/html` and is a swept surface in the table above. Left in the non-Hub list it would
+have failed the standing case rather than passing quietly, which is exactly the hole that case
+exists to close. `/recommendation` still lands on `/pdf/recommendation-letter.pdf` and
+`/api/health` still answers `application/json`; only the count of PDF landings moved, from two
+to one.
 
 ## The floor
 
@@ -200,10 +226,17 @@ one of its routes**, so a row covering two surfaces cannot go half stale in sile
 
 | Id | Selector | Source | Routes | Covers | Measured (2026-09-06) | Closed by |
 |---|---|---|---|---|---|---|
-| `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/a-route-that-does-not-exist` | 2 | 184.00 x 20.00 | Story 2-32 |
+| `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/cv`, `/a-route-that-does-not-exist` | 3 | 184.00 x 20.00 | Story 2-32 |
 | `error-back` | `a.error-page__back` | `components/organisms/ErrorPage/Error404.tsx:50` | `/a-route-that-does-not-exist` | 1 | 108.58 x 38.19 | Story 2-30 |
 | `home-nav` | `a.nav-link` | `components/organisms/HomeLayout/HomeLayout.tsx:142,150` | `/` | 2 | 320.00 x 23.00 | Story 2-32 |
 | `home-contact` | `.contact-container a` | `components/molecules/ContactContainer/ContactContainer.tsx:5,8,15` | `/` | 3 | 58.00 x 23.00 to 84.00 x 23.00 | Story 2-32 |
+
+**`chrome-logo` gained a route on 2026-09-10 and gained no breach.** Story 2-16 built `/cv`, which
+renders the same header, so the same authored link is measured on a third surface and `Covers` moves
+from 2 to 3. No control was repaired, none was added and the recorded box is untouched: this is the
+one direction the ledger is allowed to grow in, a surface arriving rather than a breach. The
+alternative would have been the sweep reporting the `/cv` logo as an element under the floor that
+no row lists, which is what a row narrower than the tree looks like.
 
 **`home-nav`'s `source` was corrected on 2026-09-08 and its measurement was not.** It cited
 `HomeLayout.tsx:64,67` from Story 2-8 onwards, which was 78 lines stale: Story 2-15 edited the
@@ -506,6 +539,17 @@ than repaired: there is no surface left on which to measure them and no styleshe
 correct. **28 overflowing elements remain**, all of them on `/work`, and the census tables above are
 the pre-2-14 readings and are kept as such. The count that would be produced by re-running that
 census today is 28.
+
+**The census has a second surface since 2026-09-10 and has not been re-read on it.** Story 2-16
+mounted the same `WorkTimeline` on `/cv`, and every one of the 28 comes from `WorkItem.scss`, whose
+`&__sub` sets `white-space: nowrap` and `flex-shrink: 0` inside a 256px content area. So the same
+overflow is very likely rendered on that route too. **No new breach exists**: the standing A-5
+assertion measures interactive elements, and it passed in
+`mcr.microsoft.com/playwright:v1.62.1-noble` on 2026-09-10 with `/cv` swept as a surface, so no
+interactive element's edge sits outside the viewport there. What has not been run is the wider
+census, which counts elements of any kind, and "very likely" is not a measurement, which is the
+whole reason this section separates the two. Filed as **DW-72**, with the same owner DW-67 already
+carries: whichever of Stories 2-31 and 2-33 lands first.
 
 **This section's 36 is not § The surfaces swept's 36, and the collision is an accident of timing.**
 That one is the number of interactive elements the floor **measures**, across four surfaces, and it

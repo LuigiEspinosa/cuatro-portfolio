@@ -905,17 +905,22 @@ test('the display face still clamps --monument-regular up, which is a preconditi
 test('the body ground and body copy where the base rule paints are the token roles, and neither is pure', async ({
   page,
 }) => {
-  // **Not `/cv`, and the reason is a finding this story made by rendering rather than by reading.**
-  // Story 1-17 concluded from the stylesheets that `/cv` and `/recommendation` were the two routes
-  // where the base `body` rule paints, and said so while recording that it had not rendered them
-  // (`ops/anchor-token-adoption.md` § "A second finding"). They never render at all:
-  // `next.config.js` redirects both, permanently, to a PDF under `/pdf/`, so a browser asked for
-  // `/cv` starts a download and paints no Hub page.
+  // **The 404, and it stopped being the only choice on 2026-09-10.** Story 1-17 concluded from the
+  // stylesheets that `/cv` and `/recommendation` were the two routes where the base `body` rule
+  // paints, and said so while recording that it had not rendered them
+  // (`ops/anchor-token-adoption.md` § "A second finding"). Story 1-18 falsified that by navigating:
+  // `next.config.js` redirected both, permanently, to a PDF under `/pdf/`, so a browser asked for
+  // either started a download and painted no Hub page, and the 404 was the one surface left.
   //
-  // The surface that does show the base rule is the 404. `Container.tsx` sets `<body id={route}>`
-  // from the stripped, hyphenated pathname, and an unrouted path's id matches none of
-  // `body#work` (`app/app.scss`, which listed `body#projects` beside it until Story 2-14),
-  // `body[id='']` (`HomeLayout.scss`) or `#celeste`
+  // **Story 2-16 built `/cv`**, which removes that redirect, so `body#cv` is now a second surface
+  // where nothing overrides the base rule. The reading stays on the 404 deliberately: it is the
+  // surface every earlier reading in this file was taken on, and moving it would change what the
+  // comparison below is a re-measurement of. `tests/e2e/cv.pw.ts` is where the new surface's ground
+  // is asserted.
+  //
+  // `Container.tsx` sets `<body id={route}>` from the stripped, hyphenated pathname, and an
+  // unrouted path's id matches none of `body#work` (`app/app.scss`, which listed `body#projects`
+  // beside it until Story 2-14), `body[id='']` (`HomeLayout.scss`) or `#celeste`
   // (`celeste.scss`), so nothing overrides `background: var(--black-color)` there.
   // `error-page.scss:7` paints its own `#0a000f` on the error container, not on `body`.
   await goTo(page, NOT_FOUND, 404);
@@ -957,12 +962,13 @@ test('the body ground and body copy where the base rule paints are the token rol
 test('every route the Hub serves still answers 2xx', async ({ page }) => {
   // NFR-2 binds every migration step, so this is measured rather than assumed.
   //
-  // **`page.request` and not `page.goto`.** Two of the six, `/cv` and `/recommendation`, are
-  // permanent redirects to a PDF (`next.config.js`), so a browser asked for either starts a
-  // download rather than a navigation and `page.goto` rejects with "Download is starting". The
-  // request context follows the redirect and reports the status the visitor ends on, which is
-  // what NFR-2 is about. That the two redirect at all is pinned below rather than absorbed,
-  // because it is the fact that moved this story's body-ground read onto the 404 surface.
+  // **`page.request` and not `page.goto`.** One of the six, `/recommendation`, is a permanent
+  // redirect to a PDF (`next.config.js`), so a browser asked for it starts a download rather than
+  // a navigation and `page.goto` rejects with "Download is starting". The request context follows
+  // the redirect and reports the status the visitor ends on, which is what NFR-2 is about. That it
+  // redirects at all is pinned below rather than absorbed, because it is the fact that moved this
+  // story's body-ground read onto the 404 surface. **`/cv` joined it there until 2026-09-10**, when
+  // Story 2-16 built the page behind that redirect; the method is unchanged and only the set moved.
   const failures: string[] = [];
   const landedOn = new Map<string, string>();
 
@@ -978,7 +984,7 @@ test('every route the Hub serves still answers 2xx', async ({ page }) => {
   expect(landedOn.size, 'no route was visited').toBe(ROUTES.length);
   expect(failures, `a route stopped answering:\n${failures.join('\n')}`).toEqual([]);
 
-  // The two that redirect, and the four that do not, pinned as a pair so a redirect quietly added
+  // The one that redirects, and the five that do not, pinned as a pair so a redirect quietly added
   // or removed shows up here rather than as a puzzling download three stories later.
   //
   // **This pin deliberately did not widen when Story 2-14 added a third redirect.** Operator ruling
@@ -986,9 +992,12 @@ test('every route the Hub serves still answers 2xx', async ({ page }) => {
   // a PDF, so it would fail the `/pdf/` assertion below and say nothing this file is about. It left
   // `ROUTES` instead, and `tests/e2e/projects-redirect.pw.ts` asserts the status code and the
   // `Location` header without following either.
+  //
+  // **It narrowed on 2026-09-10.** Story 2-16 built `/cv` as a page, so the route answers its own
+  // document and lands where it was asked. It stays in `ROUTES` and simply stops appearing here,
+  // which is the direction this pin is allowed to move in: a redirect added back would fail.
   const redirected = [...landedOn].filter(([route, landing]) => route !== landing).map(([route]) => route);
   expect(redirected.sort(), 'the set of routes that redirect away from the Hub has changed').toEqual([
-    '/cv',
     '/recommendation',
   ]);
   for (const route of redirected) {

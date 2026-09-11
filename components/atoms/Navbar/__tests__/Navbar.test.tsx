@@ -8,12 +8,12 @@ import { Navbar } from '../Navbar';
  * renders the real component against a real pathname and reads the real attribute. There is no
  * `usePathname` stub, and nothing here asserts a value it supplied to the assertion itself.
  *
- * **`aria-current` has no live instance on the shipped Hub, and both reasons are deliberate.**
- * `Suite` is current only on `/`, where `Header.tsx:12` renders no header at all, and `CV` is
- * current only on `/cv`, which answers a 308 to a PDF until Story 2-16 builds the page. So the
- * mechanism is asserted here at the unit level and again as a planted browser control in
- * `tests/e2e/chrome-nav.pw.ts`, and the first live instance arrives with Story 2-16 needing
- * nothing here to change.
+ * **`aria-current` had no live instance on the shipped Hub until 2026-09-10.** `Suite` is current
+ * only on `/`, where `Header.tsx:12` renders no header at all, and `CV` is current only on `/cv`,
+ * which answered a 308 to a PDF until Story 2-16 built the page. So the mechanism was asserted here
+ * at the unit level and again as a planted browser control in `tests/e2e/chrome-nav.pw.ts`, and the
+ * first live instance arrived needing nothing here to change: `tests/e2e/cv.pw.ts` reads it on the
+ * real surface, and every case below is what it was.
  */
 
 //  mock Next.js router so tests run outside the App Router context.
@@ -50,8 +50,9 @@ describe('Navbar', () => {
   });
 
   it('points CV at the route and never at the PDF behind the redirect', () => {
-    // `/cv` answers a 308 to `/pdf/cv.pdf` until Story 2-16 (`next.config.js:75-79`). Naming the
-    // PDF here would be a link that works today and has to be moved back the day the page lands.
+    // `/cv` answered a 308 to `/pdf/cv.pdf` until Story 2-16 built the page on 2026-09-10. Naming
+    // the PDF here would have been a link that worked and then had to be moved back the day the
+    // page landed, and it would still be a header label pointing at a file rather than a route.
     render(<Navbar pathname='/work' />);
 
     const cv = screen.getByRole('link', { name: 'CV' });
