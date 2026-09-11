@@ -37,19 +37,25 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      // **`statusCode: 301` rather than `permanent: true`, deliberately, and this row is meant to
-      // differ in shape from the one below it (Story 2-14).**
+      // **`statusCode: 301` rather than `permanent: true`, deliberately (Story 2-14).**
       //
-      // Next's `permanent: true` emits **308**, which is what `/recommendation` answers and what
-      // `tests/e2e/narrative.pw.ts` records for it. Story 2-14's acceptance criterion
-      // says 301, on the Operator ruling of 2026-09-07, so the status is written out. Next refuses
-      // `permanent` alongside `statusCode`, which is why this row carries one key where the other
-      // carries the other. It is not an inconsistency to tidy up.
+      // Next's `permanent: true` emits **308**. Story 2-14's acceptance criterion says 301, on the
+      // Operator ruling of 2026-09-07, so the status is written out. Next refuses `permanent`
+      // alongside `statusCode`, which is why this row carries the one key and not the other. The
+      // contrast is still measurable on this build: `/cv/` answers 308 to `/cv` from Next's own
+      // trailing-slash row (`node_modules/next/dist/lib/load-custom-routes.js`, `permanent: true`),
+      // installed because this file sets neither `trailingSlash` nor `skipTrailingSlashRedirect`,
+      // and `tests/e2e/projects-redirect.pw.ts` reads both statuses through one reader.
       //
-      // **One permanent redirect, not two, since 2026-09-10.** Story 2-16 built the page `/cv`'s
-      // 308 to `/pdf/cv.pdf` stood in for, so that row is gone and the route answers 200. The file
-      // is neither moved nor renamed: `public/pdf/cv.pdf` is still served at its own URL and the
-      // page links it, because people hold that URL and NFR-2 forbids breaking one.
+      // **No `permanent: true` row of this file's own since 2026-09-11.** The 301 below is permanent
+      // too, by status; what is gone is the key and the 308 it emits. Two rows used to sit below
+      // this one, each `permanent: true` and each standing in for a page that had never rendered.
+      // Story 2-16 built `/cv` on 2026-09-10 and removed its row. Story 2-17 retired
+      // `/recommendation` outright on 2026-09-11, on the Operator ruling of the same day: the route
+      // was never a page, its stub had never rendered behind the redirect, and nothing linked it,
+      // so it answers 404 now rather than keeping a placeholder on disk. Neither file is moved or
+      // renamed: `public/pdf/cv.pdf` and `public/pdf/recommendation-letter.pdf` are still served at
+      // their own URLs, because people hold those URLs and NFR-2 forbids breaking one.
       //
       // **The cost of a permanent redirect, stated rather than left to be discovered.** A 301 is
       // cacheable by default and browsers cache it aggressively and for a long time, with no
@@ -71,11 +77,6 @@ const nextConfig = {
         source: '/projects',
         destination: '/#suite',
         statusCode: 301,
-      },
-      {
-        source: '/recommendation',
-        destination: '/pdf/recommendation-letter.pdf',
-        permanent: true,
       },
     ];
   },

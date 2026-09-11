@@ -349,12 +349,20 @@ been in it. `tests/e2e/front-door.pw.ts` asserts the absence on all four trigger
 `EXPERIENCE.md:945` fixes the number that binds: **140 KB gzipped**, "what Daniela gets on a slow
 connection".
 
-A route is non-3D here when no chunk it references carries the WebGL stack. 5 of the 8 prerendered
-documents qualify, and 1 of those can actually be loaded: 2 are answered by a redirect (`/cv`,
-`/recommendation`) and 2 are Next's own document (`/_global-error`, `/_not-found`), all read from
-`.next/routes-manifest.json` rather than asserted here. The § Every route table below carries the
-same column for every route. The heaviest route a visitor can load is `/celeste`, and a ceiling has
-to hold for the worst case rather than the average, so that is the one measured.
+A route is non-3D here when no chunk it references carries the WebGL stack. 4 of the 5 prerendered
+documents qualify, and 2 of those can actually be loaded: 0 are answered by a redirect and 2 are
+Next's own document (`/_global-error`, `/_not-found`), all read from `.next/routes-manifest.json`
+rather than asserted here. The § Every route table below carries the same column for every route.
+The heaviest route a visitor can load is `/cv`, and a ceiling has to hold for the worst case rather
+than the average, so that is the one measured.
+
+**This lede is the 2026-09-11 reading, corrected in passing by Story 2-17.** It read "5 of the 8
+prerendered documents qualify, and 1 of those can actually be loaded: 2 are answered by a redirect
+(`/cv`, `/recommendation`)" from 2026-08-29, and it was wrong about `/cv` from 2026-09-10, when
+Story 2-16 built that page, and wrong about `/recommendation` from 2026-09-11, when Story 2-17
+retired it. The tables under this heading are still the readings their own dates name; only the
+lede moved, because a lede that contradicts the table beneath it is not a historical reading, it is
+an error.
 
 **Amended 2026-09-07 by Story 2-12: the route this section measures has changed, and the figures
 below have not been re-taken on it.** **Observed**, `node ops/asset-budget.mjs` against build
@@ -459,6 +467,42 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 `zlib.gzipSync({level: 9})` on every unit run so the two records cannot drift apart silently.
 
 ## Every route
+
+### The 2026-09-11 reading, after Story 2-17
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `k5AIUPv2f6fm-_ENAZc0_`, taken on the
+story's working tree at `c782d79` plus its own files, before the commit that carries them: the
+tool's own dirty-inputs row named thirteen paths and every one of them is this story's.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 22,098 | 525,295 | yes | yes | **Observed** |
+| `/cv` | 22,895 | 290,864 | no | yes | **Observed** |
+| `/celeste` | 15,187 | 284,316 | no | yes | **Observed** |
+| `/_not-found` | 15,620 | 284,206 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,686 | 188,788 | no | **no**: Next's own document | **Observed** |
+
+**One row is gone and no column moved.** **Derived.** `/recommendation` is absent from the
+prerendered set: Story 2-17 deleted its redirect row and the stub behind it, so there is no document
+to weigh and no redirect for the `Served` column to report, and the prerendered set is five where it
+was six. `.next/routes-manifest.json` carries one redirect, `/projects`, whose source is not a
+document, so the `Served` column reads **yes** for every route a visitor can request and **no** only
+for Next's own two. The `/_not-found` document is what `/recommendation` answers now, and it is the
+row that grew most: 13,297 to 15,620 bytes, which is the second exit, the wrapper around both and
+the docblock-free markup the header's list renders, on a route that had one link.
+
+**The other rows grew by a few hundred bytes each over one story, and the growth is stated rather
+than attributed.** `/work` grew 512 document bytes, `/cv` 512 and `/celeste` 621 against the
+2026-09-10 reading. `/celeste` carries one new tag, the `robots` meta, which is 39 bytes of the 621;
+`Navbar.tsx` is unchanged in markup and neither `/work` nor `/cv` renders a line this story wrote,
+so the rest is the build writing the shared graph differently and is not something one reading can
+pin to a file. **The CSS chunk count went 13 to 14.** Which chunk is new cannot be read off one
+build either. What can be read is that `_not-found.html` references six stylesheets and one of them
+is `06.b3.34agec_.css`, 463 bytes, the only chunk in the build carrying a `.navbar` rule
+(**observed 2026-09-11** by grepping the chunk directory), which is consistent with `Error404.tsx`
+importing `DESTINATIONS` from `Navbar.tsx` and that module carrying `navbar.scss` as a side effect.
+Nothing new is fetched on any route by that reference: the 404 renders the header and had that
+stylesheet on the page already through the layout.
 
 ### The 2026-09-10 reading, after Story 2-16
 
@@ -729,6 +773,39 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-11 run, after Story 2-17
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `k5AIUPv2f6fm-_ENAZc0_`. Only § Every route,
+the lede of § The non-3D path and this section were re-filed from this run; every other section in
+this file is still the reading its own heading names.
+
+- The narrative bundle is 419,736 bytes gzipped across 9 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 30,264 below the top.
+- 125,381 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0bq5wyrhev5.1.js`,
+  `0d3ymyos8iowp.js`, `05e6tciymra6v.js` is referenced by no prerendered document. The other 294,355
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 290,864 against 140,000, 150,864 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 104,105 against 140,000, 35,895 of margin. That
+  decomposition has no line for the 248,647 of JavaScript or the 32,601 of preloads the document
+  actually carries.
+- 9 of the 13 families the built CSS declares are reached by no `font-family` rule, and their
+  962,952 bytes on disk (692,644 gzipped, all formats) are emitted and served regardless: Confillia,
+  GeneralSans-Bold, GeneralSans-Light, GeneralSans-Medium, GeneralSans-Regular,
+  GeneralSans-Semibold, MonumentExtended-Bold, MonumentExtended-Light, MonumentExtended-Regular.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Story 2-17 moved none of these findings.** **Derived.** The non-3D line still names `/cv`, 309
+bytes heavier on the wire than on 2026-09-10 and still the heaviest of the routes that can be
+loaded; the narrative bundle, the deferred share, the unreached faces and the unreachable
+`public/assets/home/` bytes are the same findings the run below reports, within the noise of a
+rebuild. What this story changed is the set the tool weighs, not what it finds: `/recommendation`
+is gone from the prerendered documents, so the tool's own count of routes answered by a redirect
+reads zero for the first time.
 
 ### The 2026-09-10 run, after Story 2-16
 

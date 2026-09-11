@@ -209,25 +209,29 @@ const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height', '--confillia-norma
  * second, named consumer of the contract, which is why the scan below allows exactly one role
  * from exactly these paths rather than allowing none from anywhere but `app/app.scss`.
  *
- * **Four until 2026-09-07, three now.** Story 2-14 redirected `/projects` and deleted
- * `ProjectsHero` with the route, taking `ProjectsHero.scss` and its hand-set weight off disk. The
- * list shrank rather than the rule changing: a path named here that is not scanned fails below as
- * "was not among the scanned files", which is the direction this list is allowed to move in.
+ * **Four until 2026-09-07, three until 2026-09-11, two now.** Story 2-14 redirected `/projects`
+ * and deleted `ProjectsHero` with the route, taking `ProjectsHero.scss` and its hand-set weight off
+ * disk. The list shrank rather than the rule changing: a path named here that is not scanned
+ * fails below as "was not among the scanned files", which is the direction this list is allowed
+ * to move in. Story 2-17 then moved `error-page.scss` to `TOKEN_NATIVE_STYLESHEETS` below rather
+ * than off disk: it still sets `--w-black` by hand at its `--monument-bold` call site, and it now
+ * also names `--tap`, which claim two refuses from a file listed here. The `--monument-bold` call
+ * site itself is unchanged, and `tests/e2e/anchor-aliases.pw.ts` goes on reading it at
+ * `error-page.scss:24`.
  */
 const WEIGHT_CALL_SITES = [
   'components/molecules/GlitchText/glitch-text.scss',
-  'components/organisms/ErrorPage/error-page.scss',
   'components/organisms/WorkHero/WorkHero.scss',
 ] as const;
 
-/** The one role those four are allowed to name, per `DESIGN.md` § The mapping. */
+/** The one role those call sites are allowed to name, per `DESIGN.md` § The mapping. */
 const WEIGHT_ROLE = '--w-black';
 
 /**
  * The stylesheets that consume contract roles **directly**, rather than through an alias.
  *
  * A different partition from `WEIGHT_CALL_SITES` above, and deliberately not an extension of it.
- * Those four are migrated cybercore files that name exactly `--w-black`, because the weight that
+ * Those are migrated cybercore files that name exactly `--w-black`, because the weight that
  * lived in the family name `MonumentExtended-Bold` is the one thing a family alias cannot carry;
  * anything else they named would be a component reaching past the alias layer mid-migration. The
  * files here are Epic 2 rebuilds with no old name to keep, so they name whatever roles they need
@@ -253,6 +257,14 @@ const TOKEN_NATIVE_STYLESHEETS = [
   // The `/cv` intro block, added by Story 2-16. A rebuild like the rest of this list: the route was
   // a redirect until that story, so there is no 2023 stylesheet behind it and no alias name to keep.
   'components/organisms/CvIntro/CvIntro.scss',
+  // The 404, moved here from `WEIGHT_CALL_SITES` by Story 2-17 on the `navbar.scss` precedent
+  // above: a 2023 file that keeps its name and its declarations, and names one more role because
+  // the story gave it one thing to do the alias layer carries no name for. Its two exits reach the
+  // hit-target floor through `--tap`, beside the `--w-black` it has set by hand since Story 1-18.
+  // Claim two below allows a weight call site exactly `--w-black`, so a second role is what moves
+  // a file between the two lists. Story 2-30 rebuilds it, at which point it becomes a rebuild like
+  // the rest.
+  'components/organisms/ErrorPage/error-page.scss',
   'components/organisms/Premise/Premise.scss',
   'components/organisms/SiteFooter/SiteFooter.scss',
   'components/organisms/SuiteDirectory/SuiteDirectory.scss',

@@ -120,14 +120,18 @@ const sortedEntries = (counted: Map<string, number>): [string, number][] =>
   [...counted].sort(([a], [b]) => a.localeCompare(b));
 
 /**
- * Every route the Hub serves. NFR-2 binds every migration step, so all six are swept.
+ * Every route the Hub serves. NFR-2 binds every migration step, so all five are swept.
  *
  * **Seven until 2026-09-07.** Story 2-14 replaced `/projects` with a 301 to `/#suite`, so the
  * route no longer answers a document of its own: left in this list it would land on `/`, fail the
- * redirect pin at the end of this file, which names exactly the two PDF routes, and duplicate what
+ * redirect pin at the end of this file, which named exactly the PDF routes, and duplicate what
  * `tests/e2e/projects-redirect.pw.ts` asserts far more precisely.
+ *
+ * **Six until 2026-09-11.** Story 2-17 retired `/recommendation`, the last route in this list that
+ * redirected: it answers 404 now, which the sweep below refuses, and its retirement is asserted in
+ * `tests/e2e/secondary-surfaces.pw.ts`. The redirect pin at the end of this file reads empty.
  */
-const ROUTES = ['/', '/cv', '/work', '/recommendation', '/celeste', '/api/health'] as const;
+const ROUTES = ['/', '/cv', '/work', '/celeste', '/api/health'] as const;
 
 /**
  * A path the Hub does not route, which renders `app/not-found.tsx` through the same root layout
@@ -392,7 +396,9 @@ const CALL_SITES: readonly CallSite[] = [
   // A fill.
   { at: 'WorkItem.scss:144', route: '/work', selector: '.work-item__tech li', property: 'background-color', verdict: 'ornament' },
 
-  // `error-page.scss:66-69` repaints `border-left-color` on hover.
+  // `error-page.scss:76-79` repaints `border-left-color` on hover. Two elements carry the class
+  // since Story 2-17 gave the 404 the header's two exits; the harness reads the first, and both
+  // take the same rule.
   { at: 'error-page.scss:59', route: NOT_FOUND, selector: '.error-page__back', property: 'border-left-color', verdict: 'boundary' },
 
   // The link's hover repaints its `color`, never this rule.
@@ -913,10 +919,11 @@ test('the body ground and body copy where the base rule paints are the token rol
   // either started a download and painted no Hub page, and the 404 was the one surface left.
   //
   // **Story 2-16 built `/cv`**, which removes that redirect, so `body#cv` is now a second surface
-  // where nothing overrides the base rule. The reading stays on the 404 deliberately: it is the
-  // surface every earlier reading in this file was taken on, and moving it would change what the
-  // comparison below is a re-measurement of. `tests/e2e/cv.pw.ts` is where the new surface's ground
-  // is asserted.
+  // where nothing overrides the base rule. **Story 2-17 retired `/recommendation`** on 2026-09-11,
+  // so that route is the 404 document now rather than a third surface. The reading stays on the
+  // 404 deliberately: it is the surface every earlier reading in this file was taken on, and
+  // moving it would change what the comparison below is a re-measurement of. `tests/e2e/cv.pw.ts`
+  // is where the other surface's ground is asserted.
   //
   // `Container.tsx` sets `<body id={route}>` from the stripped, hyphenated pathname, and an
   // unrouted path's id matches none of `body#work` (`app/app.scss`, which listed `body#projects`
@@ -962,13 +969,14 @@ test('the body ground and body copy where the base rule paints are the token rol
 test('every route the Hub serves still answers 2xx', async ({ page }) => {
   // NFR-2 binds every migration step, so this is measured rather than assumed.
   //
-  // **`page.request` and not `page.goto`.** One of the six, `/recommendation`, is a permanent
-  // redirect to a PDF (`next.config.js`), so a browser asked for it starts a download rather than
-  // a navigation and `page.goto` rejects with "Download is starting". The request context follows
-  // the redirect and reports the status the visitor ends on, which is what NFR-2 is about. That it
-  // redirects at all is pinned below rather than absorbed, because it is the fact that moved this
-  // story's body-ground read onto the 404 surface. **`/cv` joined it there until 2026-09-10**, when
-  // Story 2-16 built the page behind that redirect; the method is unchanged and only the set moved.
+  // **`page.request` and not `page.goto`.** Until 2026-09-11 one of the routes, `/recommendation`,
+  // was a permanent redirect to a PDF (`next.config.js`), so a browser asked for it started a
+  // download rather than a navigation and `page.goto` rejected with "Download is starting". The
+  // request context follows a redirect and reports the status the visitor ends on, which is what
+  // NFR-2 is about. Whether anything redirects is pinned below rather than absorbed, because a
+  // redirect is the fact that moved this story's body-ground read onto the 404 surface. **`/cv`
+  // redirected until 2026-09-10**, when Story 2-16 built the page behind it, and `/recommendation`
+  // until Story 2-17 retired the route; the method is unchanged and only the set moved, to empty.
   const failures: string[] = [];
   const landedOn = new Map<string, string>();
 
@@ -984,25 +992,24 @@ test('every route the Hub serves still answers 2xx', async ({ page }) => {
   expect(landedOn.size, 'no route was visited').toBe(ROUTES.length);
   expect(failures, `a route stopped answering:\n${failures.join('\n')}`).toEqual([]);
 
-  // The one that redirects, and the five that do not, pinned as a pair so a redirect quietly added
-  // or removed shows up here rather than as a puzzling download three stories later.
+  // The set of routes that redirect, pinned so a redirect quietly added or removed shows up here
+  // rather than as a puzzling download three stories later.
   //
   // **This pin deliberately did not widen when Story 2-14 added a third redirect.** Operator ruling
   // of 2026-09-07: `/projects` answers a 301 that lands on `/`, which is a Hub document rather than
-  // a PDF, so it would fail the `/pdf/` assertion below and say nothing this file is about. It left
-  // `ROUTES` instead, and `tests/e2e/projects-redirect.pw.ts` asserts the status code and the
-  // `Location` header without following either.
+  // a PDF, so it would have failed the `/pdf/` assertion this pin used to carry and said nothing
+  // this file is about. It left `ROUTES` instead, and `tests/e2e/projects-redirect.pw.ts` asserts
+  // the status code and the `Location` header without following either.
   //
-  // **It narrowed on 2026-09-10.** Story 2-16 built `/cv` as a page, so the route answers its own
-  // document and lands where it was asked. It stays in `ROUTES` and simply stops appearing here,
-  // which is the direction this pin is allowed to move in: a redirect added back would fail.
+  // **It narrowed on 2026-09-10 and emptied on 2026-09-11.** Story 2-16 built `/cv` as a page, so
+  // the route answers its own document and lands where it was asked; it stays in `ROUTES` and
+  // stopped appearing here. Story 2-17 retired `/recommendation`, the last route that landed on a
+  // PDF, and it left `ROUTES` because it answers 404 now. The pin reads `[]` and stays: it is the
+  // direction this pin is allowed to move in, and a redirect added back would fail it. The loop
+  // that asserted each redirected route landed under `/pdf/` went with the last member rather than
+  // being left iterating nothing.
   const redirected = [...landedOn].filter(([route, landing]) => route !== landing).map(([route]) => route);
-  expect(redirected.sort(), 'the set of routes that redirect away from the Hub has changed').toEqual([
-    '/recommendation',
-  ]);
-  for (const route of redirected) {
-    expect(landedOn.get(route), `${route} no longer lands on a PDF`).toMatch(/^\/pdf\/.+\.pdf$/);
-  }
+  expect(redirected.sort(), 'the set of routes that redirect away from the Hub has changed').toEqual([]);
 
   // The viewport the whole file reads at, asserted rather than assumed from the config.
   expect(page.viewportSize()).toEqual({ ...RENDERED_VIEWPORT });

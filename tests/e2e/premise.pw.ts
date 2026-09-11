@@ -31,8 +31,11 @@ import { RENDERED_VIEWPORT } from './harness';
  * Separate from `tests/e2e/hit-target-floor.pw.ts` for the reason `tests/e2e/suite-directory.pw.ts`
  * gives at its `:10-15`: that file's `EXEMPTIONS` and `SURFACES` literals are parsed as text by
  * `ops/__tests__/hit-target-floor.test.ts`, and an unrelated subject inside a file another suite
- * reads structurally is a hazard rather than a saving. This story adds nothing interactive, so that
- * file's count for `/` does not move and is left alone.
+ * reads structurally is a hazard rather than a saving. Story 2-11 added nothing interactive, so that
+ * file's count for `/` did not move with it. **Story 2-17 later gave the footer one link**, to
+ * `/celeste`, which moved that count by one; the sweep at the end of this file narrowed to the
+ * premise block on the same day, and the footer's link has its own reading in
+ * `tests/e2e/secondary-surfaces.pw.ts`.
  */
 
 /** The homepage, the one route that renders the premise block and the footer. */
@@ -889,25 +892,36 @@ test.describe('the band disappears in a medium with no ornament, and the line do
   });
 });
 
-test.describe('nothing this story adds is interactive', () => {
-  test('adds no control to the home route, so the swept count for it does not move', async ({ page }) => {
-    // `tests/e2e/hit-target-floor.pw.ts:86` pins an exact number of interactive elements for `/`.
-    // That number is held there; this is the local claim behind it, so a control arriving in one of
-    // these three components fails naming the component rather than naming a count.
+/**
+ * What the interactive sweep below walks: the premise block and everything in it.
+ *
+ * **`.site-footer, .site-footer *` was part of this until 2026-09-11.** Story 2-17 gave the footer
+ * its one link, to `/celeste`, so the footer is no longer a surface this story's "nothing
+ * interactive" claim can be made about. That link is asserted by name in
+ * `tests/e2e/secondary-surfaces.pw.ts` and counted in `tests/e2e/hit-target-floor.pw.ts`; what
+ * stays here is the premise block's own claim. Declared once so the sweep and its control cannot
+ * walk different subtrees.
+ */
+const SWEPT = '.premise, .premise *';
+
+test.describe('nothing this story adds to the premise block is interactive', () => {
+  test('adds no control to the home route from the premise block', async ({ page }) => {
+    // `tests/e2e/hit-target-floor.pw.ts` pins an exact number of interactive elements for `/`.
+    // That number is held there; this is the local claim behind it, so a control arriving in the
+    // premise block fails naming the component rather than naming a count.
     await goTo(page, ROUTE);
 
-    const found = await page.evaluate(() =>
-      [...document.querySelectorAll('.premise, .premise *, .site-footer, .site-footer *')]
-        .filter((node) =>
-          node.matches('a[href], button, input, select, textarea, summary, [role], [tabindex], [contenteditable="true"]')
-        )
-        .map((node) => `${node.tagName.toLowerCase()}.${(node as HTMLElement).className}`)
+    const found = await page.evaluate(
+      (swept) =>
+        [...document.querySelectorAll(swept)]
+          .filter((node) =>
+            node.matches('a[href], button, input, select, textarea, summary, [role], [tabindex], [contenteditable="true"]')
+          )
+          .map((node) => `${node.tagName.toLowerCase()}.${(node as HTMLElement).className}`),
+      SWEPT
     );
 
-    expect(
-      found,
-      `the premise block or the footer renders something interactive:\n${found.join('\n')}`
-    ).toEqual([]);
+    expect(found, `the premise block renders something interactive:\n${found.join('\n')}`).toEqual([]);
   });
 
   test('and that sweep fires, measured against a control planted into the block', async ({ page }) => {
@@ -924,10 +938,11 @@ test.describe('nothing this story adds is interactive', () => {
     expect(planted, 'no band was found to plant a control into').toBe(true);
 
     const found = await page.evaluate(
-      () =>
-        [...document.querySelectorAll('.premise, .premise *, .site-footer, .site-footer *')].filter((node) =>
+      (swept) =>
+        [...document.querySelectorAll(swept)].filter((node) =>
           node.matches('a[href], button, input, select, textarea, summary, [role], [tabindex], [contenteditable="true"]')
-        ).length
+        ).length,
+      SWEPT
     );
     expect(found, 'a planted link was not seen, so the sweep above reports nothing for the wrong reason').toBe(1);
   });

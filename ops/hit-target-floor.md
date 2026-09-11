@@ -95,13 +95,13 @@ one commit.
 
 | Surface | Status | Candidates found | Skipped | Measured |
 |---|---|---|---|---|
-| `/` | 200 | 17 | 0 | 17 |
+| `/` | 200 | 18 | 0 | 18 |
 | `/work` | 200 | 7 | 0 | 7 |
 | `/cv` | 200 | 9 | 0 | 9 |
 | `/celeste` | 200 | 3 | 3 | 0 |
-| `/a-route-that-does-not-exist` | 404 | 4 | 0 | 4 |
+| `/a-route-that-does-not-exist` | 404 | 5 | 0 | 5 |
 
-**37 elements measured across five surfaces.**
+**39 elements measured across five surfaces.**
 
 **Re-measured 2026-09-07** after Story 2-13 built the non-3D front door. `/` went from 16 to 17 and
 the other four did not move. The one new element is the A-6 skip-link, which renders on every path
@@ -160,6 +160,22 @@ numbers: the pins were written from what the new page renders and then confirmed
 would have failed and printed its own `found`, `skipped` and `measured` per route had any of the
 three been wrong. Nothing here was computed from the Registry or from the markup after the fact.
 
+**Re-measured 2026-09-11 after Story 2-17 gave the footer its link and the 404 its two exits.** `/`
+went from 17 to 18 and the 404 from 4 to 5; `/work`, `/cv` and `/celeste` did not move. **The
+numbers were read off the sweep's own failure output**, the reading § Maintaining this file
+prescribes: the run in `mcr.microsoft.com/playwright:v1.62.1-noble` against the old pins failed
+naming both surfaces and printed `/: found 18, skipped 0, measured 18` and
+`/a-route-that-does-not-exist: found 5, skipped 0, measured 5`, with the other three rows printed
+unchanged, and the pins were then moved to what it printed and confirmed by the run that followed.
+The one new element on `/` is the footer's link to `/celeste`, inside `<nav aria-label="Footer">`,
+built to `--tap` on both axes. The 404 lost its one `← Go home` and gained the header's two
+destinations, `Suite` and `CV`, mapped from the same `DESTINATIONS` the header renders and each
+built to `--tap` on both axes, which is one more candidate than before and the reason `error-back`
+left the ledger below. `/celeste` is unchanged at three found and three skipped: it renders no
+footer and gained no exit, and its three hidden candidates are still the header's. The whole-run
+total goes from 37 across five surfaces to 39, and all three new elements clear the floor, so the
+exemption ledger shrinks by a row rather than gaining one.
+
 **`/projects` is in neither this table nor the non-Hub list, and that is deliberate.** A browser
 asked for it now gets a 301 to `/#suite` and lands on `/`, which is a Hub surface this sweep already
 measures. Playwright follows redirects, so a row that merely kept the route would have gone green
@@ -196,6 +212,17 @@ passing quietly. The 2026-09-06 reading of the same three was `/cv` landing on `
 answering `application/json`; the only figure that moved is the number of PDF landings, from two to
 one.
 
+**One route since 2026-09-11, and it renders no Hub markup because it is JSON.** Story 2-17 retired
+`/recommendation` outright on the Operator ruling of that day: the redirect row and the stub behind
+it are both gone, so `app/recommendation/page.tsx` is off disk, the derived route walk no longer
+produces the route, and a row left in `NON_HUB_ROUTES` would have failed as a phantom. **Observed
+2026-09-11** against `pnpm start`: `/recommendation` answers 404, `text/html`, with no `Location`,
+and the document is `Error404` with its two exits, which is the surface the table above already
+sweeps under `/a-route-that-does-not-exist`. `/pdf/recommendation-letter.pdf` still answers 200,
+`application/pdf`, at its own URL. The standing case keeps its content-type clause, which still
+admits a PDF, and lost the `toBe(1)` count of PDF landings with the member that produced it, so the
+number of PDF landings went from one to zero and nothing asserts on it any more.
+
 ## The floor
 
 | Value | Number | Nature |
@@ -227,7 +254,6 @@ one of its routes**, so a row covering two surfaces cannot go half stale in sile
 | Id | Selector | Source | Routes | Covers | Measured (2026-09-06) | Closed by |
 |---|---|---|---|---|---|---|
 | `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/cv`, `/a-route-that-does-not-exist` | 3 | 184.00 x 20.00 | Story 2-32 |
-| `error-back` | `a.error-page__back` | `components/organisms/ErrorPage/Error404.tsx:50` | `/a-route-that-does-not-exist` | 1 | 108.58 x 38.19 | Story 2-30 |
 | `home-nav` | `a.nav-link` | `components/organisms/HomeLayout/HomeLayout.tsx:142,150` | `/` | 2 | 320.00 x 23.00 | Story 2-32 |
 | `home-contact` | `.contact-container a` | `components/molecules/ContactContainer/ContactContainer.tsx:5,8,15` | `/` | 3 | 58.00 x 23.00 to 84.00 x 23.00 | Story 2-32 |
 
@@ -251,8 +277,9 @@ resolved and after the home entrance had settled. `EXPERIENCE.md:731-732` says t
 single easiest one to miss while appearing to meet it, and reading a stylesheet is exactly how it
 gets missed.
 
-**Six rows at Story 2-8, five after Story 2-9, four now, where that story's code map named four.**
-**Observed 2026-09-06**, and re-read **2026-09-08** after Story 2-15 deleted `chrome-nav`.
+**Six rows at Story 2-8, five after Story 2-9, four after Story 2-15, three now, where that story's
+code map named four.** **Observed 2026-09-06**, re-read **2026-09-08** after Story 2-15 deleted
+`chrome-nav`, and re-read **2026-09-11** after Story 2-17 deleted `error-back`.
 `chrome-logo` was not on that list and was found by sweeping: `Logo.tsx:7` is a plain
 inline `<a>` wrapping a 184 x 66 image, so the element's own box is the 20px text line box while
 the image paints past the bottom of it. That is the same class of defect the ledger exists to
@@ -281,18 +308,33 @@ stale in the direction that forces its own deletion. `chrome-logo` is untouched 
 is a sibling of the nav rather than one of its links, and it is Story 2-32's. This is the second
 time the ledger has shrunk and the first time a row named in KV-4's closing list has gone.
 
+**`error-back` was deleted by Story 2-17 on 2026-09-11**, in the commit that replaced the 404's
+single `← Go home` with the header's own two destinations, imported from `Navbar.tsx` rather than
+retyped, so `RESTYLE-SPEC.md:472` ("never more exits than the header, never fewer") is structural.
+Both exits keep the `error-page__back` class, because `error-page.scss`, `app/app.scss:82-85` and
+the entrance tween all key on it, and `error-page.scss` now sets `min-block-size` and
+`min-inline-size` to `--tap` on that class. **Observed 2026-09-11** in the pinned container: both
+exits measure at or above `--tap` on both axes, so the sweep reports no unlisted element under the
+floor on the 404 and the row went stale in the direction that forces its own deletion. The row was
+booked to Story 2-30, which still owns everything else on that surface; the floor was met early
+because two links written today under it would have been a new KV-4 breach, which that register has
+no shape for. This is the third time the ledger has shrunk, and KV-4's closing list narrows to
+Story 2-32 alone.
+
 **Per-element detail behind the ranges**, **observed 2026-09-06**, so a later reader can see how
 far under the floor each one is without running anything. **The six `nav.navbar a` rows left this
 table on 2026-09-08 with the `chrome-nav` row they detailed**: they were the breakdown behind a
 range this file no longer carries, and the elements they measured no longer exist. Their sizes are
 not lost, because the deleted ledger row and the paragraph above both record the range, and the
 one that read `38.41 x 22.00`, the narrowest chrome link and the only element in the whole census
-failing on both axes, is named in KV-4 as well.
+failing on both axes, is named in KV-4 as well. **The `a.error-page__back` row left on 2026-09-11
+with the `error-back` row it detailed**: the element it measured, at `108.58 x 38.19` and the
+nearest miss in the census at 5.81px short, no longer exists, and the two exits that carry the same
+class now clear the floor. The size is kept in the `error-back` paragraph above and in KV-4.
 
 | Element | Measured | Which axis fails |
 |---|---|---|
 | `.logo a` | 184.00 x 20.00 | Height |
-| `a.error-page__back` | 108.58 x 38.19 | Height. The nearest miss, 5.81px short |
 | `a.nav-link`, both home links | 320.00 x 23.00 | Height |
 | `.contact-container a`, "Github" | 68.00 x 23.00 | Height |
 | `.contact-container a`, "LinkedIn" | 84.00 x 23.00 | Height |
@@ -309,16 +351,29 @@ Story 2-14** on 2026-09-07, the second rendering of the directory going with the
 buttons keep the case load-bearing on their own as they did before Story 2-9. **Story 2-15 added
 four on 2026-09-08**, two nav links on each of `/work` and the 404, and they are the first controls
 on a route the buttons do not render on that clear the floor, so the standing case's other half
-now holds on the 404 without leaving that surface.
+now holds on the 404 without leaving that surface. **Story 2-17 added three on 2026-09-11**, the
+footer link on `/` and the two exits on the 404, and took the back link out of the other half, so
+the 404 now measures four elements clearing the floor and one under it, the logo, where it measured
+two and two. Both halves of the case still hold on each of `/`, `/work`, `/cv` and the 404 on their
+own.
 
 ## The tolerated breach
 
-**9 of the 37 measured elements are under the floor.** Behind those 9 rendered instances are
-**7 authored controls**: one logo link, one back link, two home nav links and three home contact
-links. **Observed 2026-09-10**, after Story 2-16. Only the rendered count moved and the reason is a
-route rather than a regression: `/cv` became a page and renders the same header, so the logo link is
-measured on a third surface. The two controls that page authors itself, the intro block's links, are
-built to `--tap` on both axes and are in the twenty-eight that clear it.
+**8 of the 39 measured elements are under the floor.** Behind those 8 rendered instances are
+**6 authored controls**: one logo link, two home nav links and three home contact links.
+**Observed 2026-09-11**, after Story 2-17. Both counts moved and the reason is a repair: the 404's
+back link, the nearest miss in the census at 5.81px short, was replaced by the header's two
+destinations built to `--tap` on both axes, so one authored control and its one rendered instance
+left the breach, and the three elements this story authored, the footer link on `/` and the two
+exits on the 404, are in the thirty-one that clear the floor. The logo is still rendered on three
+surfaces and the home pair and the three contact links on one.
+
+**Re-measured 2026-09-10**, and that reading is kept rather than overwritten: it was 9 of 37 behind
+7 controls, one logo link, one back link, two home nav links and three home contact links. Only the
+rendered count moved that time and the reason was a route rather than a regression: `/cv` became a
+page and renders the same header, so the logo link was measured on a third surface. The two
+controls that page authors itself, the intro block's links, are built to `--tap` on both axes and
+were in the twenty-eight that cleared it.
 
 **Re-measured 2026-09-08**, and that reading is kept rather than overwritten: it was 8 of 28 behind
 the same 7 controls. Both counts moved that time and the reason was a repair rather than a route:
@@ -335,11 +390,12 @@ being rendered on two surfaces rather than three after Story 2-14.
 times each on `/projects`. Story 2-9 deleted the component and its ledger row together, so both the
 authored count and the rendered count fell.
 
-The 28 elements that clear the floor are the eight `.work-item__header` buttons, four on each of
+The 31 elements that clear the floor are the eight `.work-item__header` buttons, four on each of
 `/work` and `/cv`, the eleven Suite Directory links on `/`, the A-6 skip link Story 2-13 added, the
-six chrome nav links Story 2-15 rebuilt, two on each of `/work`, `/cv` and the 404, and the two
-intro links Story 2-16 authored on `/cv`. **Observed 2026-09-10.** The 2026-09-08 reading of the
-same figure was 20, over four buttons and four nav links, and the 2026-09-07 one was 16.
+six chrome nav links Story 2-15 rebuilt, two on each of `/work`, `/cv` and the 404, the two intro
+links Story 2-16 authored on `/cv`, and the three Story 2-17 authored: the footer link on `/` and
+the two 404 exits. **Observed 2026-09-11.** The 2026-09-10 reading of the same figure was 28, the
+2026-09-08 one was 20, over four buttons and four nav links, and the 2026-09-07 one was 16.
 
 **The two figures above were one out before this re-measurement, and that is filed rather than
 back-dated.** **Observed 2026-09-07.** They read 27 of 53 and 26 respectively while the surfaces
@@ -348,10 +404,11 @@ these two derived sentences were not carried with it. Nothing reads them, which 
 and the drift is recorded in `deferred-work.md` so a later reader can tell a correction from a
 re-measurement.
 
-Those 7 are a live breach of AD-19 and are recorded as **KV-4** in
-`ops/known-violations.md`, with the ruling that tolerates them and the two stories that retire
+Those 6 are a live breach of AD-19 and are recorded as **KV-4** in
+`ops/known-violations.md`, with the ruling that tolerates them and the one story that retires
 it. **Three stories until 2026-09-08**, when Story 2-15 closed its own row and left that entry's
-list. The A-5 half is **KV-5** in the same file: Story 2-9 repaired its stylesheet half, and the
+list, and **two until 2026-09-11**, when Story 2-17 deleted `error-back` and Story 2-30 left it
+with nothing there to close. The A-5 half is **KV-5** in the same file: Story 2-9 repaired its stylesheet half, and the
 component half, 28 elements owned by `WorkItem.scss` and `WorkHero.scss`, keeps that entry `Open`.
 This file describes the instrument; that file is the register of what the estate is knowingly
 running in breach.
@@ -669,6 +726,7 @@ separately at 28 s on a cold runner.
 | Cases in this file | 16 | **Observed 2026-09-06**, after Story 2-9 added the A-4 independently-addressable case. The sweep now measures 53 elements rather than 43, on the same five surfaces |
 | This file inside a whole `pnpm test:e2e` run | **24.6 s** across its fifteen cases, of which the sweep case was **13.7 s** | **Observed 2026-09-06** in the pinned container on the Windows development host, by summing the per-case durations Playwright's list reporter printed. The sweep is five navigations, five hydration waits and 43 elements measured at two round trips each |
 | This file run alone | Playwright total **49.7 s**, of which its fifteen cases were **26.6 s** and the sweep **14.6 s** | **Observed 2026-09-06**, by `pnpm exec playwright test hit-target-floor` in the same container. The gap between the total and the cases is the `pnpm build` the `webServer` performs before the first test, which a whole-suite run pays once for eight spec files rather than for one |
+| Whole `pnpm test:e2e`, seventeen spec files, 217 tests | **3.0 min**, Playwright's own headline. The `docker run` wall was not timed on this run and is left blank rather than carried over | **Observed 2026-09-11**, same host, after Story 2-17 added `tests/e2e/secondary-surfaces.pw.ts`, gave `/` and the 404 one candidate each, and retired `/recommendation`. **The arithmetic against the row below does not close on that row's own figure, and the reason is measured rather than guessed**: `playwright test --list` on the tree at `0ad2e4e`, the commit before this story, reports **206** tests in sixteen files, so the 203 below was read before Story 2-16's review pass added three cases to `tests/e2e/cv.pw.ts`. This story's net is plus eleven: twelve cases in the new file, seven at first and five more from its own review pass, less the one-member loop `tests/e2e/narrative.pw.ts` lost with `/recommendation`. Four runs were made on this story's tree. The first, against the old pins, failed this file's sweep naming both surfaces and printed the counts the table above now carries, and failed the new file's unfloored control, which had stretched to the row height inside a flex nav and was replanted into the footer; the second passed at 212 in **4.7 min**; the third, after the review pass, failed the new file's surface-list read on the CRLF checkout the container reads as the host wrote it, which that case now normalises as `ops/__tests__/hit-target-floor.test.ts:57` does; the fourth is this row. The suite has grown from sixteen files to seventeen since the row below, so that figure is not a comparison either |
 | Whole `pnpm test:e2e`, sixteen spec files, 203 tests | **4.2 min**, Playwright's own headline, with a `docker run` wall of **255.3 s** | **Observed 2026-09-10**, same host, after Story 2-16 added `tests/e2e/cv.pw.ts` and its eight cases and made `/cv` a fifth swept surface. This file's sixteen cases came to **12.5 s** of that and the new one's eight to **5.2 s**, summed from the list reporter's per-case durations. **This file gained a surface and got faster, which looks wrong and is not**: the row below records fifteen cases at 24.6 s on 2026-09-06, when the sweep visited five surfaces including `/projects` and measured **53** elements at two round trips each. It visits five again today, `/cv` having replaced `/projects`, and measures **37**, which is 32 fewer round trips; the sweep case itself was **3.9 s** here against **13.7 s** there. Host load accounts for the rest and is the reason this table records more than one reading. The suite has also grown from ten spec files to sixteen since the whole-run row below, so that figure is not a comparison either |
 | Whole `pnpm test:e2e`, ten spec files, 89 tests | **2.0 min**, Playwright's own headline for the run | **Observed 2026-09-06**, same host, after Story 2-10 added `tests/e2e/status-mark.pw.ts` and its eighteen cases. **The `docker run` wall was not timed on this run**, so it is left blank rather than carried over from the row below, which would present a nine-file figure as a ten-file one. An earlier reading of the same file at fifteen cases was 2.2 min, so the spread here is host load rather than the three cases added by review |
 | Whole `pnpm test:e2e`, nine spec files, 71 tests | **1.7 min** and **3.7 min** on two runs of the same tree, with `docker run` walls of **108.8 s** and **229.1 s** | **Observed 2026-09-06**, same host, after Story 2-9 added `tests/e2e/suite-directory.pw.ts` and one case here. The spread is host load, which is the point of recording more than one reading. The row below is the eight-file reading and is kept rather than overwritten |

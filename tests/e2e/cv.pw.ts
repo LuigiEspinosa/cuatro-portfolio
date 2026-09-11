@@ -198,13 +198,18 @@ test.describe('/cv answers a document', () => {
     expect(response.headers()['location'] ?? '', `${ROUTE} still redirects`).toBe('');
     expect(response.headers()['content-type'] ?? '', `${ROUTE} does not answer HTML`).toMatch(/^text\/html/);
 
-    // **The control, and it is the redirect that survives.** `/recommendation` is still
-    // `permanent: true`, so the same reader on the same build has to report a 308 and a `Location`.
-    // Without it, a reader that had stopped seeing redirects at all would look exactly like this.
-    const surviving = await request.get('/recommendation', { maxRedirects: 0 });
-    expect(surviving.status(), '/recommendation no longer answers the 308 permanent: true emits').toBe(308);
-    expect(surviving.headers()['location'] ?? '', '/recommendation no longer names its PDF').toBe(
-      '/pdf/recommendation-letter.pdf'
+    // **The control, and it is the redirect that survives.** `/cv/` answers 308 to `/cv` from
+    // Next's own trailing-slash row (`load-custom-routes.js`, `permanent: true`, installed because
+    // `next.config.js` sets neither `trailingSlash` nor `skipTrailingSlashRedirect`), so the same
+    // reader on the same build has to report a 308 and a `Location`. Without it, a reader that had
+    // stopped seeing redirects at all would look exactly like this.
+    //
+    // **It was `/recommendation` until 2026-09-11**, the last `permanent: true` row in
+    // `next.config.js`, which Story 2-17 retired outright. The framework's row is what remains.
+    const surviving = await request.get('/cv/', { maxRedirects: 0 });
+    expect(surviving.status(), '/cv/ no longer answers the 308 Next emits for a trailing slash').toBe(308);
+    expect(surviving.headers()['location'] ?? '', '/cv/ no longer redirects to its slashless form').toBe(
+      '/cv'
     );
 
     // And the file the removed redirect used to serve is still served, because people hold that URL.

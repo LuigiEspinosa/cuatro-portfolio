@@ -1117,6 +1117,11 @@ test('the Hub renders the token roles its alias layer maps its own names onto', 
   // the 404 and `/cv`. `/recommendation` is unchanged and still never renders. What would have gone
   // stale is the word "one"; nothing below moves.
   //
+  // **Amended 2026-09-11 by Story 2-17, and the count holds at two.** That story retired
+  // `/recommendation` outright: the redirect and the stub are both gone, so a request for it is
+  // the 404 document, whose stripped id is the requested path and matches none of the three rules
+  // either. It is not a third surface, it is the second one under another URL. Nothing below moves.
+  //
   // Neither of those two surfaces is visited here and neither is captured by the screenshot
   // baseline, so this probe is not a convenience: it is the only place in **this file** where the
   // value it paints is observed at all. `tests/e2e/anchor-aliases.pw.ts` reads the real `body` on

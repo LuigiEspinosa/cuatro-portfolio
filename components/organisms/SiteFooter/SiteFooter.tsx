@@ -1,12 +1,14 @@
+import Link from 'next/link';
 import { ESTATE_LANGUAGES, renderedApplications } from '@/lib/registry';
 import { capitalise, pluralise, spellOut } from '@/lib/words';
 import './SiteFooter.scss';
 
 /**
- * The site footer (Story 2-11).
+ * The site footer (Story 2-11, footer navigation added by Story 2-17).
  *
- * One line and nothing else. FR-1 says nothing follows the Suite Directory except footer content,
- * and until now there was no footer anywhere in the tree for that to be true of.
+ * One line and one row of links, which is the shape `EXPERIENCE.md:1024` allows a footer and
+ * nothing more. FR-1 says nothing follows the Suite Directory except footer content, and until
+ * Story 2-11 there was no footer anywhere in the tree for that to be true of.
  *
  * **A server component**, for the same reason the Directory above it is one: a client component
  * that value-imported the Registry would ship every entry to the browser to render one figure,
@@ -17,10 +19,21 @@ import './SiteFooter.scss';
  * without a maintainer remembering: flip an entry's status in the Registry and the first word
  * follows it in the same change, with no edit to this file.
  *
- * **No `<nav>` and no links.** Footer navigation belongs to Stories 2-15 and 2-17, and the narrative
- * handoff above it to Story 2-12. This ships the line and stops, so
- * `tests/e2e/hit-target-floor.pw.ts`'s per-surface counts do not move: nothing added here is
- * interactive, and a count that moved would mean a control arrived by accident.
+ * **One `<nav>`, one link, and it is the only way onto `/celeste`.** `EXPERIENCE.md:115-123` puts
+ * that route in the footer and nowhere else: the header carries its two destinations
+ * (`Navbar.tsx`) and every further link anywhere competes with reaching the Directory. The
+ * `aria-label` is what tells this landmark apart from `nav.navbar` for assistive tech, and it is
+ * a landmark at all because one link in a footer is still footer navigation. `/recommendation`
+ * was to sit beside it until Story 2-17 retired that route on the Operator ruling of 2026-09-11.
+ *
+ * **The link is the Secondary kind** (`RESTYLE-SPEC.md:191`): the line it joins is fine print in
+ * secondary text, and a Primary underline here would out-weigh the Directory above it. The rule is
+ * drawn on the inner span rather than on the hit-target box, or it floats away from the text by
+ * the height of the padding that gets the box to the floor (`RESTYLE-SPEC.md:198-199`); the token
+ * names live in `SiteFooter.scss`, which is listed as token-native, and not here.
+ *
+ * **This moves `/`'s per-surface count in `tests/e2e/hit-target-floor.pw.ts` by exactly one**, and
+ * that count is pinned so a second control arriving here by accident fails naming a number.
  */
 
 /**
@@ -58,6 +71,11 @@ export function SiteFooter() {
   return (
     <footer className='site-footer'>
       <p className='site-footer__line'>{line}</p>
+      <nav className='site-footer__nav' aria-label='Footer'>
+        <Link href='/celeste' className='site-footer__link'>
+          <span className='site-footer__label'>Celeste</span>
+        </Link>
+      </nav>
     </footer>
   );
 }

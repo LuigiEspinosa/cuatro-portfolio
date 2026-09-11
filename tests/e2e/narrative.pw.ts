@@ -63,11 +63,7 @@ const HEADING_ID = 'suite';
 const NOT_FOUND = '/a-route-that-does-not-exist';
 
 /**
- * The routes FR-1's third consequence names, plus the two this story must not move.
- *
- * `/recommendation` answers 308 to a PDF, so it is requested rather than navigated to: a browser
- * answers a PDF redirect by starting a download rather than a navigation. Same treatment and same
- * reason as the `SURFACES` and `NON_HUB_ROUTES` split in `tests/e2e/hit-target-floor.pw.ts`.
+ * The routes FR-1's third consequence names, plus the ones this story must not move.
  *
  * **`/projects` left the navigable list on 2026-09-07.** Story 2-14 answers it with a 301 to
  * `/#suite`, and Playwright follows a redirect, so a route left here would have navigated to `/`
@@ -77,9 +73,14 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * **`/cv` moved the other way on 2026-09-10.** Story 2-16 removed its redirect and built the page,
  * so it answers a document a browser can navigate to and it joins the navigable list, where the
  * loop below asserts 200 and rendered text rather than merely that a request resolves.
+ *
+ * **A second list, `REQUESTED_ROUTES`, sat beside this one until 2026-09-11.** It held
+ * `/recommendation`, which answered 308 to a PDF and so was requested rather than navigated to,
+ * since a browser answers a PDF redirect by starting a download. Story 2-17 retired that route, so
+ * the list would have iterated nothing and was deleted with its loop rather than left as `[]`.
+ * `tests/e2e/secondary-surfaces.pw.ts` asserts the 404 it answers now.
  */
 const NAVIGABLE_ROUTES = ['/', '/work', '/cv', '/celeste', NOT_FOUND] as const;
-const REQUESTED_ROUTES = ['/recommendation'] as const;
 
 /** How long any single condition here is given before it is called a failure. */
 const SETTLE_TIMEOUT = 15_000;
@@ -1196,13 +1197,6 @@ test.describe("FR-1's three consequences", () => {
       // these surfaces has in common.
       const rendered = await page.evaluate(() => document.body.innerText.trim().length);
       expect(rendered, `${route} answered but rendered no text`).toBeGreaterThan(0);
-    });
-  }
-
-  for (const route of REQUESTED_ROUTES) {
-    test(`${route} still resolves to its document`, async ({ request, baseURL }) => {
-      const response = await request.get(new URL(route, baseURL).href);
-      expect(response.ok(), `${route} answered ${response.status()} after following its redirect`).toBe(true);
     });
   }
 });

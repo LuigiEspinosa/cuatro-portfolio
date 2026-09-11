@@ -767,12 +767,16 @@ describe('the assertion is sourced and scoped the way the record says', () => {
     const kv4 = indexRow('KV-4');
     expect(kv4, 'the KV-4 index row does not name AD-19').toContain('AD-19');
     expect(kv4, 'the KV-4 index row is not Open').toContain('**Open**');
-    // **Two stories since 2026-09-08.** Story 2-15 rebuilt the chrome nav against the floor and
-    // deleted `chrome-nav` from the ledger, so it closes nothing here any more and left this list.
-    // The literal narrows with the register rather than being loosened to a pattern: this pin is
-    // the fourth of the four things `ops/known-violations.md` § Maintaining the ledger this entry
-    // counts says a repair has to move, and a pattern would stop noticing when one of them did not.
-    expect(kv4, 'the KV-4 index row names no closing stories').toContain('Stories 2-30 and 2-32');
+    // **Two stories since 2026-09-08, one since 2026-09-11.** Story 2-15 rebuilt the chrome nav
+    // against the floor and deleted `chrome-nav` from the ledger, so it closed nothing here any
+    // more and left this list. Story 2-17 then built the 404's two exits to the floor and deleted
+    // `error-back`, the row Story 2-30 was named for, so 2-30 left the list with nothing there to
+    // close and 2-32 is what remains. The literal narrows with the register rather than being
+    // loosened to a pattern: this pin is the fourth of the four things `ops/known-violations.md`
+    // § Maintaining the ledger this entry counts says a repair has to move, and a pattern would
+    // stop noticing when one of them did not.
+    expect(kv4, 'the KV-4 index row names no closing story').toContain('Story 2-32');
+    expect(kv4, 'the KV-4 index row still names Story 2-30, whose row Story 2-17 deleted').not.toContain('2-30');
     expect(kv4, 'the KV-4 index row claims a retirement date').toContain('_not retired_');
 
     const kv5 = indexRow('KV-5');
@@ -788,9 +792,7 @@ describe('the assertion is sourced and scoped the way the record says', () => {
       expect(at, `${VIOLATIONS_REL} carries no ${id} entry`).toBeGreaterThan(-1);
       return violations.slice(at, violations.indexOf('\n---', at));
     };
-    expect(entryOf('KV-4'), "the KV-4 entry does not name the index row's closing stories").toContain(
-      'Stories 2-30 and 2-32'
-    );
+    expect(entryOf('KV-4'), "the KV-4 entry does not name the index row's closing story").toContain('Story 2-32');
     expect(entryOf('KV-5'), "the KV-5 entry does not name the index row's closing stories").toContain(
       'Stories 2-31, 2-33 and 2-14'
     );

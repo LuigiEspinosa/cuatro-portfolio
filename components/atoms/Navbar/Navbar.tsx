@@ -54,7 +54,13 @@ interface Destination {
   readonly route: string;
 }
 
-const DESTINATIONS: readonly Destination[] = [
+/**
+ * The two, exported because `Error404.tsx` renders this same list as the 404's exits (Story 2-17),
+ * so an edit here moves both surfaces at once and the error surface can carry neither more exits
+ * than the header nor fewer. `Error404.test.tsx` and `tests/e2e/secondary-surfaces.pw.ts` compare
+ * the 404 against this export rather than against a copy of it.
+ */
+export const DESTINATIONS: readonly Destination[] = [
   { href: '/#suite', label: 'Suite', route: '/' },
   { href: '/cv', label: 'CV', route: '/cv' },
 ];

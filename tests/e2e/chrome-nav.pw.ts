@@ -5,10 +5,12 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * The header, reshaped to two destinations and made sticky (Story 2-15).
  *
  * `EXPERIENCE.md:115-123` closes PRD Q8 with two header destinations and no more: `#suite`
- * primary, `/cv` secondary, `/work` folded into `/cv` as a section, `/recommendation` and
- * `/celeste` in the footer. `EXPERIENCE.md:126` names the shape this replaced, five inline links
- * plus a CTA, as the AI-nav tell, and SM-1 measures reaching the Suite Directory, which every
- * further header link competes with.
+ * primary, `/cv` secondary, `/work` folded into `/cv` as a section, `/celeste` in the footer
+ * (`/recommendation` was to join it there until Story 2-17 retired that route on 2026-09-11).
+ * `EXPERIENCE.md:126` names the shape this replaced, five inline links plus a CTA, as the AI-nav
+ * tell, and SM-1 measures reaching the Suite Directory, which every further header link competes
+ * with. The footer's own `<nav aria-label='Footer'>` is not this file's: every selector here is
+ * `nav.navbar a`, so nothing below sees it.
  *
  * **What this file adds that `tests/e2e/hit-target-floor.pw.ts` does not.** That sweep measures
  * every interactive element on every surface against `--tap` and is what deleted the `chrome-nav`

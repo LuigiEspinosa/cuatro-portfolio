@@ -21,10 +21,9 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *
  *  1. An element under the floor that no row lists **fails**. A new or regressed control cannot
  *     arrive quietly.
- *  2. An element a row lists that now **clears** the floor also fails, as a stale row. Stories
- *     2-30 and 2-32 must delete their row in the commit that repairs the surface, so
- *     the ledger can only shrink and nothing has to remember to widen a scope later. Stories 2-9
- *     and 2-15 already have.
+ *  2. An element a row lists that now **clears** the floor also fails, as a stale row. Story 2-32
+ *     must delete its rows in the commit that repairs the surface, so the ledger can only shrink
+ *     and nothing has to remember to widen a scope later. Stories 2-9, 2-15 and 2-17 already have.
  *  3. A row that stops matching **on any one of the routes it lists** fails, so a row covering
  *     three surfaces cannot go half stale in silence.
  *  4. A row **covers an exact number of elements**, so a third home nav link at 320 x 23 cannot be
@@ -109,28 +108,35 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * the page, so the route left `NON_HUB_ROUTES` below and arrived here. It carries `/work`'s seven,
  * the same chrome and the same four accordion triggers, plus the intro block's two links, which is
  * nine. `PlateMark` adds none: nothing in it is interactive, by its own docblock.
+ *
+ * **`/` and the 404 each moved by one with Story 2-17**, on 2026-09-11. The footer gained its one
+ * link, to `/celeste`, so `/` went from 17 to 18; the 404's single back link became the header's
+ * two destinations, so that surface went from 4 to 5. Both readings were taken off this sweep's
+ * own failure output in the pinned container before the pins were moved. `/celeste` did not move:
+ * it renders no footer and gained no exit, which `tests/e2e/secondary-surfaces.pw.ts` asserts.
  */
 const SURFACES = [
-  { route: '/', status: 200, entrance: true, found: 17, skipped: 0, measured: 17 },
+  { route: '/', status: 200, entrance: true, found: 18, skipped: 0, measured: 18 },
   { route: '/work', status: 200, entrance: false, found: 7, skipped: 0, measured: 7 },
   { route: '/cv', status: 200, entrance: false, found: 9, skipped: 0, measured: 9 },
   { route: '/celeste', status: 200, entrance: false, found: 3, skipped: 3, measured: 0 },
-  { route: NOT_FOUND, status: 404, entrance: false, found: 4, skipped: 0, measured: 4 },
+  { route: NOT_FOUND, status: 404, entrance: false, found: 5, skipped: 0, measured: 5 },
 ] as const;
 
 /**
  * The routes the Hub serves that render no Hub markup at all.
  *
- * They are excluded by measurement rather than by omission: one is a permanent redirect to a PDF
- * (`next.config.js`), which a browser answers by starting a download rather than a navigation,
- * and the other is a JSON endpoint. `page.request` follows the redirect and reports where the
- * visitor lands, which is what the case at the end of this file pins.
+ * They are excluded by measurement rather than by omission: the one left is a JSON endpoint, and
+ * the case at the end of this file pins what it answers.
  *
- * **Three until 2026-09-10.** Story 2-16 built `/cv`, so it answers `text/html` and belongs in
- * `SURFACES` above, where its interactive elements are swept. Leaving it here would have failed the
- * case at the end of this file, which refuses a non-Hub route answering HTML.
+ * **Three until 2026-09-10, two until 2026-09-11.** Story 2-16 built `/cv`, so it answers
+ * `text/html` and belongs in `SURFACES` above, where its interactive elements are swept. Story 2-17
+ * retired `/recommendation`, which was a permanent redirect to a PDF that a browser answered by
+ * starting a download: `app/recommendation/page.tsx` is off disk, so `routesOnDisk` no longer
+ * produces the route and a row left here would fail as a phantom. It answers 404 now, which is the
+ * surface `SURFACES` already sweeps under `NOT_FOUND`.
  */
-const NON_HUB_ROUTES = ['/recommendation', '/api/health'] as const;
+const NON_HUB_ROUTES = ['/api/health'] as const;
 
 /**
  * The entrance the home surface animates, and the selector the settle waits on.
@@ -223,15 +229,16 @@ interface Exemption {
  * The ledger. Held equal to the table in `ops/hit-target-floor.md` in both directions by
  * `ops/__tests__/hit-target-floor.test.ts`, so neither file is the only reader of the other.
  *
- * **Six rows at Story 2-8, four now.** The chrome logo was not on that story's own list of four
+ * **Six rows at Story 2-8, three now.** The chrome logo was not on that story's own list of four
  * and was found by measuring: its `<a>` is a plain inline box, so its rect is the text line box
  * while the 66px-tall image inside it paints past the bottom. Story 2-32 names `Logo` in its title
  * and is what closes it. The home surface is carried as two rows because it is authored in two
  * files at two different sizes. Story 2-9 deleted `directory-links` in the commit that replaced
- * the card grid with the Suite Directory, whose two links meet the floor on both axes, and Story
+ * the card grid with the Suite Directory, whose two links meet the floor on both axes, Story
  * 2-15 deleted `chrome-nav` on 2026-09-08 in the commit that rebuilt the header's links to `--tap`
- * on both axes; the ledger can only shrink, so nothing had to remember to widen a scope
- * afterwards.
+ * on both axes, and Story 2-17 deleted `error-back` on 2026-09-11 in the commit that replaced the
+ * 404's single back link with the header's two destinations, each built to `--tap`; the ledger
+ * can only shrink, so nothing had to remember to widen a scope afterwards.
  */
 const EXEMPTIONS: readonly Exemption[] = [
   {
@@ -246,15 +253,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     covers: 3,
     measured: '184.00 x 20.00',
     closedBy: 'Story 2-32',
-  },
-  {
-    id: 'error-back',
-    selector: 'a.error-page__back',
-    source: 'components/organisms/ErrorPage/Error404.tsx:50',
-    routes: ['/a-route-that-does-not-exist'],
-    covers: 1,
-    measured: '108.58 x 38.19',
-    closedBy: 'Story 2-30',
   },
   {
     id: 'home-nav',
@@ -1622,12 +1620,13 @@ test.describe('the hit-target floor', () => {
   test('the routes that render no Hub markup are excluded by measurement, not by omission', async ({
     page,
   }) => {
-    // `/recommendation` is a permanent redirect to a PDF, so a browser asked for it starts a
-    // download rather than a navigation and there is no document to sweep. `/api/health`
-    // answers JSON. Both are named here so a later reader can tell an excluded route from a
-    // forgotten one, and so a route that quietly starts rendering markup shows up as a failure
-    // here rather than as a gap in the sweep. **`/cv` was the third until 2026-09-10**, when Story
-    // 2-16 built the page and moved it into `SURFACES`, where it is swept rather than excused.
+    // `/api/health` answers JSON. It is named here so a later reader can tell an excluded route
+    // from a forgotten one, and so a route that quietly starts rendering markup shows up as a
+    // failure here rather than as a gap in the sweep. **`/cv` was a third until 2026-09-10**, when
+    // Story 2-16 built the page and moved it into `SURFACES`, where it is swept rather than
+    // excused, and **`/recommendation` a second until 2026-09-11**, when Story 2-17 retired it. The
+    // `toBe(1)` count of PDF landings went with that member; the content-type case stays, and it
+    // still admits a PDF so a later redirect to one is excused by measurement rather than refused.
     const landings: string[] = [];
 
     for (const route of NON_HUB_ROUTES) {
@@ -1644,6 +1643,5 @@ test.describe('the hit-target floor', () => {
     }
 
     expect(landings).toHaveLength(NON_HUB_ROUTES.length);
-    expect(landings.filter((line) => line.includes('/pdf/')).length, 'the one PDF redirect has changed').toBe(1);
   });
 });

@@ -293,6 +293,13 @@ drift.
 > right about `/cv` for the wrong reason and wrong about `/recommendation`, which still never
 > renders. Both correction blocks are kept as written: what changed is the world, not the reading.
 
+> **Amended 2026-09-11 by Story 2-17.** `/recommendation` is retired: the redirect row and the stub
+> behind it are both gone, so a request for it is the 404 document, whose stripped id is the
+> requested path and matches none of the three overriding rules either. The count of surfaces the
+> base rule paints on holds at **two**, because the retired URL is the 404 under another name rather
+> than a third surface. The `/cv`, `/recommendation` row below is now half a row about a route that
+> no longer exists; it is kept as written, and `body#recommendation` is an id nothing can produce.
+
 **Observed 2026-08-26.** Story 1-17's spec expected `body` to compute
 `background-color: rgb(0, 0, 0)` on `/work` as its did-nothing-change probe. It does not, because
 `body { background: var(--black-color) }` (`app/app.scss:41`) is overridden at higher specificity
@@ -646,6 +653,20 @@ rules. The mechanism that pinned the pair did its job: the redirect set in
 | `/cv` | `cv` | **Nothing overrides**, so `background: var(--black-color)` paints, which is `--token-bg` | **Observed 2026-09-10**, by navigation. `tests/e2e/cv.pw.ts` asserts it, and asserts the `/work` override beside it as the control |
 | `/recommendation` | never rendered | **308 to a PDF.** Unchanged | **Observed 2026-09-10** |
 
+**Amended 2026-09-11 by Story 2-17: the redirect set is empty, and the base rule still paints on
+two surfaces.** That story retired `/recommendation` outright on the Operator ruling of that day,
+deleting the last `permanent: true` row from `next.config.js` and the stub behind it, so no route
+the Hub serves redirects to a PDF any more and the redirect pin in `tests/e2e/anchor-aliases.pw.ts`
+reads `[]`. The loop that asserted each redirected route landed under `/pdf/` was deleted with the
+last member rather than left iterating nothing; the pin itself stays, because it still catches a
+redirect arriving. `tests/e2e/contract-anchor.pw.ts`'s comment about the two surfaces took a third
+amendment in the same commit. The row that has moved since the 2026-09-10 table is
+`/recommendation`:
+
+| Route | `body` id | What paints the ground | Nature |
+|---|---|---|---|
+| `/recommendation` | the requested path, stripped: it is the 404 document | **Nothing overrides**, for the same reason as any unrouted path. Not a third surface: the same surface under another URL | **Observed 2026-09-11**, against `pnpm start`: 404, `text/html`, no `Location`. `tests/e2e/secondary-surfaces.pw.ts` asserts it, with `/cv/`'s framework 308 as the reader's control |
+
 ### What is asserted, and by which gate
 
 | Obligation | Gate | Nature |
@@ -690,7 +711,7 @@ family the contract is free to retune under a MINOR bump. Nothing else in that f
 | A `font-weight` line is removed from one of the call sites | That site computes `400` and the weight assertion fails naming it. This is the exact regression those lines exist to prevent |
 | `contracts/fonts.css` republishes the display face with a lower bound at or below 500 | The clamp `--monument-regular` relies on stops happening, and `.error-page__title` and `.work-item__company` quietly stop being bold. `tests/e2e/anchor-aliases.pw.ts` parses the published range and asserts its lower bound is above the heaviest weight those call sites request, so this fails as a named precondition rather than as a silent lightening on routes no screenshot covers. The third site named here until 2026-09-06 was the card heading, deleted with its component by Story 2-9 |
 | `--accent-glow`, `--hero-height` or either Confillia name is aliased or deleted | The literals case fails naming the property, and whichever open question holds it (O-11, O-6, UX-DR12) has been closed without being recorded |
-| `next.config.js` stops redirecting `/cv` or `/recommendation`, or stops redirecting `/projects` | The route sweep's redirect pin in `tests/e2e/anchor-aliases.pw.ts` fails for the first two, and the corrected body-ground table above is stale: those two routes would become surfaces the base rule paints. **Three routes redirect since 2026-09-07**, Story 2-14 having added `/projects` as a 301 to `/#suite`. That row is deliberately outside the pin above, which names exactly the two that land on a PDF: `/projects` lands on a Hub document instead, and `tests/e2e/projects-redirect.pw.ts` asserts its status and `Location` without following either |
+| `next.config.js` stops redirecting `/cv` or `/recommendation`, or stops redirecting `/projects` | The route sweep's redirect pin in `tests/e2e/anchor-aliases.pw.ts` fails for the first two, and the corrected body-ground table above is stale: those two routes would become surfaces the base rule paints. **Three routes redirect since 2026-09-07**, Story 2-14 having added `/projects` as a 301 to `/#suite`. That row is deliberately outside the pin above, which names exactly the two that land on a PDF: `/projects` lands on a Hub document instead, and `tests/e2e/projects-redirect.pw.ts` asserts its status and `Location` without following either. **Both of the first two have happened, deliberately, and this row said what it would cost.** Story 2-16 stopped redirecting `/cv` on 2026-09-10 and built the page; Story 2-17 stopped redirecting `/recommendation` on 2026-09-11 and retired the route. The pin failed each time in the commit that changed the config and was narrowed with it, to one member and then to `[]`, and the body-ground table was amended each time rather than left stale. **One route redirects since 2026-09-11**, `/projects`, and the pin now reads empty: the direction it is allowed to move in, and a redirect added back fails it |
 | The contract retunes a role's value under a MINOR bump | **The blocking `rendered-output` job fails, and that is new as of this story.** Every assertion is still read from the role rather than restated, so none of those fail. The committed baseline PNG is the exception: a baseline is a restated pixel value, and step 2 is what coupled it to the contract. Before this commit the Hub painted cybercore literals and a retune moved nothing in the frame; after it, `--c-ink`, `--c-accent`, `--c-line-strong`, `--c-accent-quiet` and `--f-display` all reach `/work`, against a `maxDiffPixelRatio` of 0.001, which is 288 of 288,000 pixels. A retune is then case 1 of `ops/rendered-output-harness.md` § `When regenerating is legitimate` and the baseline is regenerated deliberately by the story that takes the bump. The `rgb(...)` column and the contrast table above go stale at the same moment and are re-measured by the method each states |
 
 ### Pending Operator actions, step 2

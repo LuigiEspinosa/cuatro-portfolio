@@ -1,6 +1,6 @@
-// The site footer (Story 2-11).
+// The site footer (Story 2-11, footer navigation added by Story 2-17).
 //
-// Token-native, on the same footing as the two stylesheets this story adds beside it, and
+// Token-native, on the same footing as the two stylesheets Story 2-11 added beside it, and
 // declaring no custom property of its own. `app/__tests__/anchor-contract.test.ts` holds both.
 //
 // The treatment is the reference mockup's fine print: mono at the smallest step on the scale, in
@@ -36,4 +36,58 @@
   // does not shift the characters beside it.
   font-variant-numeric: tabular-nums;
   color: var(--token-text-secondary);
+}
+
+// ── Footer navigation (Story 2-17) ────────────────────────────────────────────
+//
+// One link, the Secondary kind (`RESTYLE-SPEC.md:191`): secondary text, a hairline in the
+// interactive border role drawn on the inner span, a recolour on hover, the standard ring on focus.
+// It sits in the same register as the line above it, mono at the smallest step, because a Primary
+// underline in this corner would out-weigh the Directory it follows.
+//
+// `.site-footer__nav` carries no rule. The `<nav>` is a plain block holding one link, and one link
+// needs no row, no wrap and no gap; `SiteFooter.test.tsx` and `tests/e2e/secondary-surfaces.pw.ts`
+// both refuse a second by name, so a rule for two would be configuration for a case that does not
+// exist. The day a second arrives, `RESTYLE-SPEC.md:206` says what the row takes.
+
+.site-footer__link {
+  // `min-block-size` with `inline-flex`, never `padding-block` on a plain inline element: vertical
+  // padding there paints outward without growing the hit area (`EXPERIENCE.md:727-730`,
+  // `RESTYLE-SPEC.md:194-197`). `min-inline-size` carries the other axis. Both are measured in a
+  // real browser by `tests/e2e/secondary-surfaces.pw.ts` and `tests/e2e/hit-target-floor.pw.ts`,
+  // never read off this file.
+  display: inline-flex;
+  align-items: center;
+  // Start-aligned rather than centred, so the label sits on the line's own left edge rather than
+  // floating inside a box wider than it is. No inline padding for the same reason.
+  justify-content: flex-start;
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+  font-family: var(--f-mono);
+  font-size: var(--t-3xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-body);
+  text-decoration: none;
+  color: var(--token-text-secondary);
+}
+
+// The rule is drawn on the inner span, not on the hit-target box, or it floats away from the text
+// by the height of the padding (`RESTYLE-SPEC.md:198-199`). Same shape as `navbar.scss:58-60` and
+// `CvIntro.scss:110-118`.
+.site-footer__label {
+  border-block-end: var(--stroke-hair) solid var(--token-border-interactive);
+}
+
+// One signal, and it is a recolour. The underline never appears on hover and never changes width:
+// both are layout changes and both reflow the line (`RESTYLE-SPEC.md:200-201`).
+.site-footer__link:hover .site-footer__label {
+  border-block-end-color: var(--token-accent-hover);
+}
+
+// The standard ring (`RESTYLE-SPEC.md:202`, § 4). An outline rather than a border, so it costs no
+// layout and appears in one frame rather than over a duration, and it is not the hover colour.
+.site-footer__link:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-hair);
 }
