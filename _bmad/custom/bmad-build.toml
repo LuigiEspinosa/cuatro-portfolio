@@ -1,0 +1,85 @@
+# Team override for bmad-build. Written 2026-09-11 so every Build run uses
+# Ponytail, the ECC skills, Graphify and context-mode.
+#
+# Merges over .claude/skills/bmad-build/customize.toml: lists append to the
+# shipped list, strings replace the shipped value, [[workflow.review_layers]]
+# merge by id (the three shipped layers stay; the two below are added).
+# Verify the merge with:
+#   uv run _bmad/scripts/resolve_customization.py --skill .claude/skills/bmad-build --key workflow
+#
+# What each tool is on this machine, and the record of the decision:
+#   Ponytail      plugin ponytail@ponytail. Its rules text arrives through the
+#                 plugin's SessionStart, SubagentStart and UserPromptSubmit
+#                 hooks, and Constitution rule 5 states the same ladder. The
+#                 `ponytail-review` skill is a review layer below.
+#   ECC           workflow-quality module only, installed to ~/.claude/skills/
+#                 with no rules, commands, agents or hooks. Build uses
+#                 `verification-loop` (review layer) and `agent-self-evaluation`
+#                 (on_complete). The other ECC skills are on demand.
+#   Graphify      CLI 0.9.58 plus ~/.claude/skills/graphify. The graph lives in
+#                 graphify-out/ (gitignored) and is refreshed on activation.
+#   context-mode  plugin context-mode@context-mode. Its hooks route Bash, Read,
+#                 Grep, WebFetch and Agent output through its sandbox in every
+#                 session, so Build inherits it; the activation step only makes
+#                 that visible.
+#
+# Constitution rule order still holds: a tool recommendation never outranks
+# this repository's AGENTS.md. Where an ECC skill's generic commands differ from
+# the verified ones (corepack, --run, no lint gate), the layer text below says so.
+
+[workflow]
+
+activation_steps_prepend = [
+  """Graphify: run `graphify update .` from the repository root. It is incremental and AST only (no LLM), and it also builds the graph from nothing. Report its one-line node and edge count. If `graphify` is not on PATH, say so in one line and continue without the graph; it is an aid to investigation, not a gate.""",
+  """context-mode: if the `mcp__plugin_context-mode_context-mode__ctx_*` tools are available, route long command output, large file reads and web fetches through them for the whole run, as the routing injected at session start instructs. If they are absent, say so in one line and continue; do not install or repair anything mid-run.""",
+]
+
+persistent_facts = [
+  """Ponytail is on for this run. Apply its ladder before adding any file, dependency, abstraction, helper, config or feature: does it need to exist, is it already in this codebase, does the standard library do it, does the platform do it, does an installed dependency do it, is it one line. Only then write the smallest thing that works. Correctness, validation, error handling, accessibility and security are never what gets cut.""",
+  """Graphify is the first stop for structural questions. In step 2 (Investigate codebase) query the graph before reading files: `graphify query "<question>"` for how something is wired, `graphify affected "<symbol>"` for what a change reaches, `graphify path "A" "B"` for the chain between two symbols, `graphify explain "X"` for one node. Cite the `src=` locations it returns in the Code Map, then read only the files it named. If the graph has nothing on a topic, fall back to reading.""",
+  """ECC skills are installed at user level (~/.claude/skills/, workflow-quality module). Build runs `verification-loop` as a review layer and `agent-self-evaluation` on completion; any other ECC skill is on demand only. When an ECC skill's generic commands differ from this repository's verified ones in AGENTS.md, the verified ones win.""",
+]
+
+implementation_handoff = """
+Launch a subagent with no prior conversation context, with this prompt:
+
+> Read {spec_file} fully and implement it: the spec is the sole source of truth. Load every file listed in its frontmatter `context:` before you start.
+>
+> Before changing a symbol that has callers outside the spec's `context:` list, run `graphify affected "<symbol>"` from the repository root and read what it names. If `graphify` is unavailable, say so once and continue.
+>
+> When done, report what you changed, how you verified it, and anything left incomplete or risky.
+"""
+
+on_complete = """
+Invoke the `agent-self-evaluation` skill on this Build run: score the completed spec and implementation on its five axes with concrete evidence per criterion, and append the scorecard with its ranked improvements to the completion summary. Do not re-run any verification for it.
+"""
+
+[[workflow.review_layers]]
+id = "ponytail-review"
+name = "Ponytail Review"
+instruction = """
+Launch a context-free subagent with this prompt:
+
+Invoke the `ponytail-review` skill and apply it to the diff below exactly as that skill specifies: one line per finding in its `L<line>: <tag> <what>. <replacement>.` format (or `<file>:L<line>: ...` across files), tags `delete:`, `stdlib:`, `native:`, `yagni:` and `shrink:` only, ending with `net: -<N> lines possible.` or `Lean already. Ship.` Over-engineering only; correctness, security and performance belong to the other layers.
+
+Review content:
+
+{diff_output}
+
+If the skill is unavailable, report that exact failure and stop. Return only the review result.
+"""
+
+[[workflow.review_layers]]
+id = "ecc-verification-loop"
+name = "ECC Verification Loop"
+instruction = """
+Launch a context-free subagent with this prompt:
+
+Invoke the `verification-loop` skill and run its phases against the current worktree, substituting this repository's verified commands for the skill's generic ones: build `corepack pnpm build`, types `corepack pnpm typecheck`, tests `corepack pnpm test --run` (never without `--run`; the full suite takes about two minutes, run all of it). There is no lint gate in this repository, so report Lint as `N/A (no lint command, see AGENTS.md)` rather than FAIL. Skip the coverage threshold and report the test totals instead. For the diff phase use the diff below, not `git diff HEAD~1`. Produce the skill's VERIFICATION REPORT with real command output excerpts. Never report a PASS you did not observe.
+
+Diff under review:
+
+{diff_output}
+
+If the skill is unavailable, report that exact failure and stop. Return only the verification report.
+"""
