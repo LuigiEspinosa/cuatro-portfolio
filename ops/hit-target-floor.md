@@ -182,19 +182,19 @@ route" guard it would have been the one route where a broken selector looked exa
 correct skip. **Seven candidates until 2026-09-08**, when Story 2-15 reshaped the header the rule
 hides; the argument is unchanged and only the count moved.
 
-**Three routes render no Hub markup and are excluded by measurement, not by omission.**
-**Observed 2026-09-06** by `page.request.get`, which follows the redirect and reports where a
-visitor lands. `/cv` lands on `/pdf/cv.pdf` and `/recommendation` on
-`/pdf/recommendation-letter.pdf`, both `application/pdf`; `/api/health` answers
-`application/json`. A standing case asserts all three, so a route that quietly starts rendering
-HTML fails there rather than leaving a hole in the sweep.
+**Two routes render no Hub markup and are excluded by measurement, not by omission.**
+**Observed 2026-09-10** by `page.request.get`, which follows the redirect and reports where a
+visitor lands. `/recommendation` lands on `/pdf/recommendation-letter.pdf`, `application/pdf`, and
+`/api/health` answers `application/json`. A standing case asserts both, so a route that quietly
+starts rendering HTML fails there rather than leaving a hole in the sweep.
 
-**Two since 2026-09-10, and the reduction is the point of that case.** Story 2-16 built `/cv`, so
-it answers `text/html` and is a swept surface in the table above. Left in the non-Hub list it would
-have failed the standing case rather than passing quietly, which is exactly the hole that case
-exists to close. `/recommendation` still lands on `/pdf/recommendation-letter.pdf` and
-`/api/health` still answers `application/json`; only the count of PDF landings moved, from two
-to one.
+**Three until 2026-09-10**, when Story 2-16 built `/cv` and it moved into the table above. The
+argument is unchanged and only the count moved: left in this list it would have failed the standing
+case for answering `text/html`, which is exactly the hole that case exists to close, rather than
+passing quietly. The 2026-09-06 reading of the same three was `/cv` landing on `/pdf/cv.pdf` and
+`/recommendation` on `/pdf/recommendation-letter.pdf`, both `application/pdf`, with `/api/health`
+answering `application/json`; the only figure that moved is the number of PDF landings, from two to
+one.
 
 ## The floor
 
@@ -669,7 +669,7 @@ separately at 28 s on a cold runner.
 | Cases in this file | 16 | **Observed 2026-09-06**, after Story 2-9 added the A-4 independently-addressable case. The sweep now measures 53 elements rather than 43, on the same five surfaces |
 | This file inside a whole `pnpm test:e2e` run | **24.6 s** across its fifteen cases, of which the sweep case was **13.7 s** | **Observed 2026-09-06** in the pinned container on the Windows development host, by summing the per-case durations Playwright's list reporter printed. The sweep is five navigations, five hydration waits and 43 elements measured at two round trips each |
 | This file run alone | Playwright total **49.7 s**, of which its fifteen cases were **26.6 s** and the sweep **14.6 s** | **Observed 2026-09-06**, by `pnpm exec playwright test hit-target-floor` in the same container. The gap between the total and the cases is the `pnpm build` the `webServer` performs before the first test, which a whole-suite run pays once for eight spec files rather than for one |
-| Whole `pnpm test:e2e`, sixteen spec files, 203 tests | **4.2 min**, Playwright's own headline, with a `docker run` wall of **255.3 s** | **Observed 2026-09-10**, same host, after Story 2-16 added `tests/e2e/cv.pw.ts` and its eight cases and made `/cv` a fifth swept surface. This file's sixteen cases came to **12.5 s** of that and the new one's eight to **5.2 s**, summed from the list reporter's per-case durations. The suite has grown from ten spec files to sixteen since the row below, so this figure is not a comparison with it; it is recorded so a later reader can tell a change in cost from a change in weather |
+| Whole `pnpm test:e2e`, sixteen spec files, 203 tests | **4.2 min**, Playwright's own headline, with a `docker run` wall of **255.3 s** | **Observed 2026-09-10**, same host, after Story 2-16 added `tests/e2e/cv.pw.ts` and its eight cases and made `/cv` a fifth swept surface. This file's sixteen cases came to **12.5 s** of that and the new one's eight to **5.2 s**, summed from the list reporter's per-case durations. **This file gained a surface and got faster, which looks wrong and is not**: the row below records fifteen cases at 24.6 s on 2026-09-06, when the sweep visited five surfaces including `/projects` and measured **53** elements at two round trips each. It visits five again today, `/cv` having replaced `/projects`, and measures **37**, which is 32 fewer round trips; the sweep case itself was **3.9 s** here against **13.7 s** there. Host load accounts for the rest and is the reason this table records more than one reading. The suite has also grown from ten spec files to sixteen since the whole-run row below, so that figure is not a comparison either |
 | Whole `pnpm test:e2e`, ten spec files, 89 tests | **2.0 min**, Playwright's own headline for the run | **Observed 2026-09-06**, same host, after Story 2-10 added `tests/e2e/status-mark.pw.ts` and its eighteen cases. **The `docker run` wall was not timed on this run**, so it is left blank rather than carried over from the row below, which would present a nine-file figure as a ten-file one. An earlier reading of the same file at fifteen cases was 2.2 min, so the spread here is host load rather than the three cases added by review |
 | Whole `pnpm test:e2e`, nine spec files, 71 tests | **1.7 min** and **3.7 min** on two runs of the same tree, with `docker run` walls of **108.8 s** and **229.1 s** | **Observed 2026-09-06**, same host, after Story 2-9 added `tests/e2e/suite-directory.pw.ts` and one case here. The spread is host load, which is the point of recording more than one reading. The row below is the eight-file reading and is kept rather than overwritten |
 | Whole `pnpm test:e2e`, eight spec files, 60 tests | **1 m 41.3 s** by `time` around the command, **1.7 min** as Playwright's own headline for the same run. The `docker run` wall around it was **105.2 s** | **Observed 2026-09-06**, same host. The command covers `pnpm build && pnpm start` plus all sixty tests; the extra four seconds of docker wall are `corepack enable` and `pnpm install --frozen-lockfile` against the warm named volumes. **The image pull is in none of these**: `ops/rendered-output-harness.md` records it separately at 28 s on a cold runner, and that is the figure the `rendered-output` job pays on top |

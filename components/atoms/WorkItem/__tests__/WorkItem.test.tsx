@@ -3,7 +3,7 @@ import { WorkItem } from '../WorkItem';
 import { work } from '@/content/work';
 
 /**
- * The accordion entry, at the two points nothing in the repository asserted (Story 2-16).
+ * The accordion entry, at the three points nothing in the repository asserted (Story 2-16).
  *
  * `components/organisms/WorkTimeline/__tests__/WorkTimeline.test.tsx` covers which entry is open
  * and what a click does. It hard-mocks `useReduceMotion` to `false` at `:26` and mocks gsap
@@ -12,8 +12,15 @@ import { work } from '@/content/work';
  * trigger's `aria-controls` against a panel that exists, so a typo in either half of
  * `${entry.id}-content` was invisible to every gate.
  *
- * Both are asserted here because `/cv` mounts this component on a second route (Story 2-16), which
- * doubles the number of surfaces a defect in either would ship on.
+ * The third is the collapsed style being **frozen at the first render**. `app/cv/__tests__/page.test.tsx`
+ * reads the markup that ships, which is the half a reader notices; what nothing held is that the
+ * prop must not move afterwards. Unfreezing it leaves the server output correct and every other case
+ * in this file, in that one and in `WorkTimeline.test.tsx` green, while the accordion stops
+ * animating on a real page: React clears any style key that leaves the prop, so it would wipe the
+ * inline box GSAP owns and each tween would then run from the value it was tweening to.
+ *
+ * All three are asserted here because `/cv` mounts this component on a second route, which doubles
+ * the number of surfaces a defect in any of them would ship on.
  *
  * **The hook is driven rather than pinned.** `reduceMotion` below is a value each case sets before
  * it renders, so both branches are reachable from one file and neither reading is supplied by the
@@ -35,9 +42,9 @@ vi.mock('@/hooks/useReduceMotion', () => ({ useReduceMotion: () => reduceMotion.
 const { gsapMock } = vi.hoisted(() => ({
   gsapMock: {
     // The parameters are declared rather than inferred, so `mock.calls` is typed as a pair and the
-    // reader below can name `vars.duration` instead of casting an empty tuple.
-    to: vi.fn((_target: unknown, _vars: { duration?: unknown }) => ({ kill: vi.fn() })),
-    set: vi.fn(),
+    // readers below can name the target and the vars instead of indexing an empty tuple.
+    to: vi.fn((_target: unknown, _vars: Record<string, unknown>) => ({ kill: vi.fn() })),
+    set: vi.fn((_target: unknown, _vars: Record<string, unknown>) => undefined),
     context: vi.fn(),
     registerPlugin: vi.fn(),
   },
@@ -67,6 +74,34 @@ const dangling = (): string[] =>
   [...document.querySelectorAll('[aria-controls]')]
     .map((node) => node.getAttribute('aria-controls') ?? '')
     .filter((id) => id === '' || document.getElementById(id) === null);
+
+/**
+ * The `style` attribute React left on a node, or `null` where it wrote none.
+ *
+ * Read off the attribute rather than off `node.style`, because the two answer differently for the
+ * case that matters: React clearing every key it owns leaves the attribute present and empty, which
+ * `node.style.height` reports as `''` exactly as an absent attribute does.
+ */
+const styleAttribute = (node: Element | null): string | null => node?.getAttribute('style') ?? null;
+
+/** The panel the entry under test renders, looked up the way `aria-controls` addresses it. */
+const panelOf = (id: string): HTMLElement | null => document.getElementById(`${id}-content`);
+
+/** The id the unfrozen counterpart renders under, so the same reader can be pointed at it. */
+const UNFROZEN_ID = 'planted-unfrozen-panel';
+
+/**
+ * The shape `WorkItem` would have with the freeze removed: the collapsed style follows `isOpen` on
+ * every render rather than being decided once.
+ *
+ * A counterpart rather than a second component to maintain. It exists so the readings below are
+ * watched producing the other answer inside this file, on every run, instead of once by whoever
+ * wrote them: an assertion that React writes nothing is indistinguishable from a reader that never
+ * finds a node.
+ */
+const Unfrozen = ({ collapsed }: { collapsed: boolean }) => (
+  <div id={UNFROZEN_ID} style={collapsed ? { height: 0, overflow: 'hidden' } : undefined} />
+);
 
 /**
  * The `duration` of every `gsap.to` call one transition produces, driven end to end.
@@ -172,5 +207,106 @@ describe('the reduced-motion branch reaches the tween', () => {
     gsapMock.to.mockClear();
     render(<WorkItem entry={ENTRY} isOpen onToggle={noop} />);
     expect(gsapMock.to, 'the entry animates on arrival rather than on a toggle').not.toHaveBeenCalled();
+  });
+});
+
+describe('the collapsed style is decided once, and GSAP owns the panel box after that', () => {
+  it('writes nothing for an entry open on arrival, and still nothing when it closes', () => {
+    // The close branch reads `el.offsetHeight` to know what to tween from. React setting
+    // `height: 0px` on this render, one commit before the effect runs, makes that read zero and the
+    // tween a 0-to-0 no-op. The panel therefore has to carry no React-written style at all.
+    cleanup();
+    const { rerender } = render(<WorkItem entry={ENTRY} isOpen onToggle={noop} />);
+
+    expect(
+      styleAttribute(panelOf(ENTRY.id)),
+      'the entry that is open on arrival ships collapsed, which is the flash this story removed'
+    ).toBeNull();
+
+    rerender(<WorkItem entry={ENTRY} isOpen={false} onToggle={noop} />);
+
+    expect(
+      styleAttribute(panelOf(ENTRY.id)),
+      'React wrote the collapsed style when the entry closed, so the close tween measures a panel ' +
+        'React has already set to zero and the accordion stops animating'
+    ).toBeNull();
+  });
+
+  it('keeps the collapsed style it wrote at mount when the entry opens', () => {
+    // The other direction, and the other tween. The open branch reads `el.scrollHeight` while the
+    // panel is still collapsed. React clearing the style on this render leaves the panel at its
+    // natural height, so the tween runs from the height it is tweening to.
+    cleanup();
+    const { rerender } = render(<WorkItem entry={ENTRY} isOpen={false} onToggle={noop} />);
+
+    const atMount = styleAttribute(panelOf(ENTRY.id));
+    expect(atMount, 'a closed entry ships with no collapsed style').toContain('height: 0');
+
+    rerender(<WorkItem entry={ENTRY} isOpen onToggle={noop} />);
+
+    expect(
+      styleAttribute(panelOf(ENTRY.id)),
+      'React changed the panel style when the entry opened, so the open tween measures a panel that ' +
+        'is already at its target height'
+    ).toBe(atMount);
+  });
+
+  it('and both readings fire against the unfrozen shape, which is what the freeze avoids', () => {
+    // **The counterpart, driven through the same reader.** Without it, "React wrote nothing" above
+    // is indistinguishable from a lookup that found no node, and the claim that a prop following
+    // `isOpen` would clobber GSAP is an argument rather than a measurement.
+    cleanup();
+    const node = () => document.getElementById(UNFROZEN_ID);
+
+    const opening = render(<Unfrozen collapsed={false} />);
+    expect(styleAttribute(node()), 'the unfrozen counterpart started out carrying a style').toBeNull();
+    opening.rerender(<Unfrozen collapsed />);
+    expect(
+      styleAttribute(node()),
+      'the unfrozen shape writes nothing on close either, so the first reading above is not about ' +
+        'the freeze'
+    ).toContain('height: 0');
+
+    cleanup();
+
+    const closing = render(<Unfrozen collapsed />);
+    expect(styleAttribute(node()), 'the unfrozen counterpart rendered no collapsed style').toContain('height: 0');
+
+    // A direct write standing in for GSAP's, which is what the next render has to be seen clearing.
+    node()?.setAttribute('style', 'height: 123px; overflow: hidden;');
+    closing.rerender(<Unfrozen collapsed={false} />);
+    expect(
+      styleAttribute(node()) ?? '',
+      "the unfrozen shape leaves a directly written height alone, so React's diff is not the " +
+        'mechanism the freeze exists for'
+    ).not.toContain('123px');
+  });
+
+  it('leaves GSAP as the only writer of the panel box', () => {
+    // The companion claim. "React wrote nothing" is only good news if something else did, and what
+    // the two cases above cannot see is whether the panel is being animated at all.
+    cleanup();
+    const { rerender } = render(<WorkItem entry={ENTRY} isOpen onToggle={noop} />);
+    gsapMock.set.mockClear();
+    gsapMock.to.mockClear();
+
+    rerender(<WorkItem entry={ENTRY} isOpen={false} onToggle={noop} />);
+
+    const target = panelOf(ENTRY.id);
+    expect(target, 'the panel is not in the document, so the calls below were handed something else').not.toBeNull();
+
+    expect(gsapMock.set, 'the close branch set nothing up before tweening').toHaveBeenCalledTimes(1);
+    expect(gsapMock.set.mock.calls[0][0], 'GSAP was handed something other than the panel').toBe(target);
+    expect(gsapMock.set.mock.calls[0][1], 'the close branch did not clip the panel before tweening it').toMatchObject(
+      { overflow: 'hidden' }
+    );
+
+    expect(gsapMock.to, 'the close branch ran no tween').toHaveBeenCalledTimes(1);
+    expect(gsapMock.to.mock.calls[0][0], 'the tween was handed something other than the panel').toBe(target);
+    expect(gsapMock.to.mock.calls[0][1], 'the close tween does not collapse the panel').toMatchObject({ height: 0 });
+
+    // And React wrote nothing over it, so on a real page every byte of that box came from the two
+    // calls above rather than from a render that happened to agree with them.
+    expect(styleAttribute(target), 'React wrote the box GSAP was handed').toBeNull();
   });
 });

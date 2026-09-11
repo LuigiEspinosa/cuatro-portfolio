@@ -3852,3 +3852,115 @@ status: done
     records. **Trigger: that rebuild choosing its open-state mechanism**, since a
     `grid-template-rows` or transform reveal makes the print rule a one-liner rather than a fight.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
+  id: DW-74
+  summary: >-
+    `/CV` and `/Cv` served the PDF until 2026-09-10 and answer 404 now. A config redirect matched
+    them case-insensitively; the App Router file route that replaced it does not.
+  evidence: |-
+    **Measured 2026-09-10** against `pnpm start` on the build at `09e07f02`:
+
+    | Path | Answer |
+    |---|---|
+    | `/cv` | 200 |
+    | `/CV` | **404** |
+    | `/Cv` | **404** |
+    | `/work` | 200 |
+    | `/WORK` | **404** |
+    | `/recommendation` | 308 to `/pdf/recommendation-letter.pdf` |
+    | `/RECOMMENDATION` | **308** to `/pdf/recommendation-letter.pdf` |
+
+    The two mechanisms disagree and both readings are in that table. Next compiles a `redirects()`
+    `source` with case folding on, which is what DW-56 records Story 2-14 measuring for `/projects`
+    and what `/RECOMMENDATION` still demonstrates. App Router file routes are matched
+    case-sensitively, which `/WORK` demonstrates and which predates this story. So removing the
+    `/cv` redirect row did not merely change what `/cv` answers: it took away an answer the
+    uppercase variants had, and it did so silently, because nothing in the repository requests a
+    cased path.
+
+    **How much this is worth is not obvious and is not decided here.** NFR-2 is about links,
+    bookmarks and search results that still point at a URL, and a `/CV` in the wild is possible: a
+    hand-typed address, a link written in prose, a CMS that upper-cases. Against that, `/WORK` has
+    answered 404 for the life of the route and nobody has reported it.
+
+    **A config redirect cannot fix it**, which is the reason this is filed rather than done. Adding
+    `{ source: '/CV', destination: '/cv' }` folds case too, so it would catch `/cv` itself and
+    redirect the real route to itself. What it needs is `middleware.ts` matching the cased forms and
+    rewriting or redirecting them, which is a new file, a new mechanism on the request path, and a
+    decision about whether every route gets the treatment or only this one.
+
+    **Owner: unassigned.** It is not Story 2-17's, which is the next on the board and is about the
+    footer. **Trigger: either a report of a cased URL failing, or the first story that adds
+    `middleware.ts` for any reason**, at which point the marginal cost of covering the cased routes
+    is a few lines rather than a new mechanism. If the answer is that it does not matter, the honest
+    close is to say so here and note that `/WORK` and `/CELESTE` have the same shape.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
+  id: DW-75
+  summary: >-
+    A browser that followed the `/cv` 308 before 2026-09-10 cached it permanently and keeps landing
+    on `/pdf/cv.pdf`. That population may never see the page this story built.
+  evidence: |-
+    `next.config.js` answered `/cv` with `permanent: true`, which Next emits as a **308**, from
+    before Story 2-15 until Story 2-16 removed the row. A 308 is cacheable by default and browsers
+    cache it aggressively and for a long time, with no expiry the origin gets to set. Once a visitor
+    has followed it, deleting the row does not reach them: their browser goes on resolving `/cv` to
+    `/pdf/cv.pdf` locally without asking.
+
+    **The cost was written down before it was paid.** `next.config.js:49-58` reasons about exactly
+    this for `/projects`, and says in terms that it "applies to `permanent: true` and its 308 in
+    exactly the same way". This entry is that paragraph landing on the route it was written beside.
+
+    **Who is affected is small and is not measurable from here.** The header has pointed at `/cv`
+    only since Story 2-15 on 2026-09-08, and `cuatro.dev` serves from `main`, which the Anchor
+    merges per epic, so the shipped header may never have carried the link at all. Anyone who
+    reached the old URL did so by typing it or by following a link off the site. The estate's own
+    measurement is first-party Umami (NFR-8), which cannot see a request a browser answers from its
+    own cache, so the size of the population is not knowable from the origin.
+
+    **Nothing this story could do would fix it**, which is why it is filed. A cache-busting query, a
+    different path, or a `Cache-Control` header on a response the browser is not making are all
+    either useless against a locally cached 308 or a change to the URL people hold, which is the
+    thing NFR-2 protects. What closes it is time, or a person clearing site data.
+
+    **Owner: unassigned**, and it may retire unfixed. **Trigger: a report of `/cv` still downloading
+    a file**, or the first Umami reading after the epic merge showing `/cv` pageviews far below the
+    header's other destination, which would be the only evidence the origin can produce.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
+  id: DW-76
+  summary: >-
+    With scripting off, the three closed entries on `/cv` render a company heading with no content
+    and no way to open it. Pre-existing to `WorkItem`, newly consequential on a CV.
+  evidence: |-
+    **Measured 2026-09-10** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800 with
+    `javaScriptEnabled: false`: the four `.work-item__content` panels on `/cv` measure **1468.25, 0,
+    0 and 0**, and the open one carries 1132 characters of readable text.
+    `tests/e2e/cv.pw.ts` now asserts exactly that as a standing case, so the reading is not a
+    one-off.
+
+    **The open entry is right and the other three are the gap.** Story 2-16 stopped `WorkItem`
+    writing `height: 0` into the panel that ships open, which is what made the first company legible
+    without JavaScript at all. The three that ship closed still carry it, correctly, and the control
+    that would open them is a `<button>` whose handler never runs. So the page degrades to one
+    company of four rather than to none, which is better than it was and is not the whole document.
+
+    **The honest framing is that this is `WorkItem`'s, not `/cv`'s.** `/work` behaves identically
+    and has since 2023, and `tests/e2e/cv.pw.ts` reads that route as the control for exactly this
+    reason. What changed is the consequence: a CV is the surface a person is most likely to open
+    with a content blocker, print, or hand to a system that does not run scripts, and three quarters
+    of it is not there.
+
+    Two shapes would fix it and both are rebuilds. A `<details>`/`<summary>` accordion is open-able
+    with no JavaScript at all and is the platform's own answer to this widget. A CSS-only disclosure
+    keeps the current markup and moves the state onto `:checked` or `:target`. Either is a change to
+    what the component *is*, and both interact with DW-34's finding that the open state should stop
+    being an animated `height`.
+
+    **Owner: Story 2-31**, which rebuilds `WorkItem` token-native and already owns the open-state
+    mechanism through DW-34 and DW-73. **Trigger: that rebuild choosing its open-state mechanism**,
+    which is the one moment the no-script and the print behaviour are both cheap to get right.
+  status: open

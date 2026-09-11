@@ -43,7 +43,20 @@ const CV_LINK = "nav.navbar a[href='/cv']";
 /** The other destination, which is current on `/` and never here. */
 const SUITE_LINK = "nav.navbar a[href='/#suite']";
 
-/** What counts as an interactive element. The same set `tests/e2e/hit-target-floor.pw.ts` sweeps. */
+/**
+ * What this file measures, which is **a deliberate subset** of what the sweep matches.
+ *
+ * `tests/e2e/hit-target-floor.pw.ts:150-175` lists twenty-four selectors: these seven plus
+ * `area[href]`, `[contenteditable="true"]` and fifteen WAI-ARIA widget roles. That file is the
+ * universal instrument and `/cv` is one of its `SURFACES` since Story 2-16, so the exhaustive sweep
+ * of this surface, including any role a later story introduces, happens there and fails there.
+ *
+ * What is left here is the seven element types this page actually renders, so a failure names the
+ * page rather than a sweep and so the reader below can label a box by what it is. Restating the
+ * full list would be a second copy of a set that only one file is allowed to own: a role added
+ * there and forgotten here would read as this page having no such control, which is exactly the
+ * silent hole the pinned per-surface counts in that file exist to catch.
+ */
 const INTERACTIVE = 'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
 /**
@@ -412,6 +425,137 @@ test.describe('the timeline is reachable on this surface', () => {
     await goTo(page, ROUTE);
     expect(await page.locator('.work-hero').count(), '/cv renders the hero, so both routes claim one h1').toBe(0);
   });
+
+  test('gives each of the two routes exactly one h1 and skips no level below it', async ({ page }) => {
+    // **A-7 on both routes, which is how the acceptance criterion is written.** `/cv` is the surface
+    // this story built and `/work` is the one it reused a component from, and the hazard runs both
+    // ways: an `<h1>` added here would give the estate two documents claiming the same heading, and
+    // a heading added above `WorkItem`'s `<h2>` would skip a level on whichever route it landed on.
+    // `app/cv/__tests__/page.test.tsx` reads this in jsdom for `/cv`; nothing read it for `/work`.
+    const firstHeading: Record<string, string> = {};
+
+    for (const route of [ROUTE, WORK]) {
+      await goTo(page, route);
+      const headings = await page
+        .locator('h1, h2, h3, h4, h5, h6')
+        .evaluateAll((nodes: Element[]) =>
+          nodes.map((node) => ({
+            level: Number(node.tagName.slice(1)),
+            text: (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
+          }))
+        );
+
+      const levels = headings.map((heading) => heading.level);
+      firstHeading[route] = headings.find((heading) => heading.level === 1)?.text ?? '';
+      expect(levels.length, `${route} renders no heading at all, so the checks below read nothing`).toBeGreaterThan(0);
+      expect(
+        levels.filter((level) => level === 1).length,
+        `${route} does not carry exactly one h1: it renders levels ${levels.join(', ')}`
+      ).toBe(1);
+      expect(levels[0], `${route} opens its outline below level one`).toBe(1);
+
+      const skips = levels
+        .slice(1)
+        .map((level, index) => ({ from: levels[index], to: level }))
+        .filter((step) => step.to - step.from > 1)
+        .map((step) => `h${step.from} to h${step.to}`);
+      expect(skips, `${route} skips a heading level: ${skips.join(', ')}`).toEqual([]);
+    }
+
+    // **The control**, and it is the predicate rather than a second page. A skip has to be reported
+    // when one is present, or an empty list above is a loop that never compared anything.
+    const planted = [1, 3, 2]
+      .slice(1)
+      .map((level, index) => ({ from: [1, 3, 2][index], to: level }))
+      .filter((step) => step.to - step.from > 1)
+      .map((step) => `h${step.from} to h${step.to}`);
+    expect(planted, 'the skip scan does not fire on an outline that jumps h1 to h3').toEqual(['h1 to h3']);
+
+    // **And the two routes really are different documents, so this was two readings and not one.**
+    // Compared on the `<h1>`'s text rather than on the outline: both routes legitimately render the
+    // same *levels*, one `h1` and an `h2` per company, so an outline comparison is equal on a
+    // correct pair and was a failing control the first time this case ran. What must differ is
+    // whose heading it is, which is also the claim `WorkHero` being absent here rests on.
+    for (const route of [ROUTE, WORK]) {
+      expect(firstHeading[route], `${route} renders an h1 with no text in it`).not.toBe('');
+    }
+    expect(
+      firstHeading[ROUTE],
+      `/cv and /work head their documents identically, so one of the two navigations did not land ` +
+        `or both routes now render the same hero`
+    ).not.toBe(firstHeading[WORK]);
+  });
+});
+
+test.describe('with scripting off, which is the medium the collapsed-height defect shows in', () => {
+  // **The one place a browser can see the flash.** `WorkItem`'s mount effect sets the open panel to
+  // `height: auto`, so with JavaScript on, a browser fast enough to hydrate before the first paint
+  // hides the defect rather than reporting it, and the panel measures correctly either way. With
+  // scripting off nothing runs, and what the document shipped is what a visitor gets and keeps.
+  //
+  // `app/cv/__tests__/page.test.tsx` asserts the same thing on `renderToStaticMarkup` output. That
+  // reads the string; this reads the boxes a browser lays out from it, which is the claim the
+  // acceptance criterion is written about.
+  test.use({ javaScriptEnabled: false });
+
+  test('serves the open entry already open, and leaves the page inside the viewport', async ({ page }) => {
+    await goTo(page, ROUTE);
+
+    const panels = page.locator('.work-item__content');
+    const count = await panels.count();
+    expect(count, '/cv rendered no panel with scripting off').toBeGreaterThan(0);
+
+    const heights = await panels.evaluateAll((nodes: Element[]) =>
+      nodes.map((node) => node.getBoundingClientRect().height)
+    );
+
+    expect(
+      heights[0],
+      'the entry that is open on arrival has no height with scripting off, so its detail is ' +
+        'unreachable: nothing can expand it and the markup shipped it collapsed'
+    ).toBeGreaterThan(0);
+
+    // The detail is really there rather than the box merely being tall.
+    const detail = (await panels.first().innerText()).trim();
+    expect(detail.length, 'the open panel has a box and no text in it').toBeGreaterThan(200);
+
+    // **The control, and it is the other three panels.** They are closed, they measure zero, and
+    // nothing on this page can open them, which is the reading DW-73 is filed on. Without it,
+    // "taller than zero" above is a statement about every panel rather than about the open one.
+    expect(
+      heights.slice(1).filter((height) => height > 0),
+      'a closed panel has height with scripting off, so the reading above is not about the open entry'
+    ).toEqual([]);
+
+    // A-5 holds on this path too: nothing that only runs with scripting on is what keeps the
+    // document inside the viewport.
+    const width = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      inner: window.innerWidth,
+    }));
+    expect(width.scroll, `/cv scrolls horizontally with scripting off: ${JSON.stringify(width)}`).toBeLessThanOrEqual(
+      width.inner
+    );
+  });
+
+  test('and the same reading reports a collapsed panel, so it is measuring the markup', async ({ page }) => {
+    // **The counterpart.** With scripting off there is nothing to plant a defect with, so the
+    // control is the surface that still ships every panel collapsed: `/work` renders the identical
+    // component, and its first entry is open for the same reason. If both routes read the same, the
+    // measurement above is about `WorkItem` and not about a page that happens to work.
+    await goTo(page, WORK);
+
+    const heights = await page
+      .locator('.work-item__content')
+      .evaluateAll((nodes: Element[]) => nodes.map((node) => node.getBoundingClientRect().height));
+
+    expect(heights.length, '/work rendered no panel with scripting off').toBeGreaterThan(0);
+    expect(heights[0], '/work ships its open entry collapsed, so the fix reached only one route').toBeGreaterThan(0);
+    expect(
+      heights.slice(1).filter((height) => height > 0),
+      '/work leaves a closed panel open, so a zero on /cv is not the collapsed style being read'
+    ).toEqual([]);
+  });
 });
 
 test.describe('every control on /cv is a real target', () => {
@@ -450,6 +594,29 @@ test.describe('every control on /cv is a real target', () => {
       nodes.map((node) => node.getAttribute('href'))
     );
     expect(intro.sort(), 'the intro block no longer carries its two destinations').toEqual(['/#suite', CV_PDF]);
+
+    // **The in-prose link carries no inline padding, and still clears the floor.** The full stop
+    // after it is the next text node, so padding on the box paints a gap and the sentence reads
+    // "the suite ." What holds the horizontal axis there is `min-inline-size`, which is why the
+    // padding could be dropped rather than traded against the floor. Both facts, together, because
+    // either alone is satisfied by the other being wrong.
+    const proseBox = await page.locator('.cv-intro__link--prose').evaluate((node) => {
+      const computed = window.getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return {
+        start: computed.paddingInlineStart,
+        end: computed.paddingInlineEnd,
+        width: rect.width,
+        height: rect.height,
+      };
+    });
+    expect(proseBox.start, 'the in-prose link pads its leading edge, which detaches it from the sentence').toBe('0px');
+    expect(proseBox.end, 'the in-prose link pads its trailing edge, so the full stop after it floats').toBe('0px');
+    expect(
+      Math.min(proseBox.width, proseBox.height),
+      'the in-prose link is under the floor once its padding is gone, so min-inline-size is not what ' +
+        'was holding that axis'
+    ).toBeGreaterThanOrEqual(floor);
 
     // **The control, and it is this page's own regression.** A link planted into the intro block
     // with the two size floors taken back off measures its line box, which is what every one of

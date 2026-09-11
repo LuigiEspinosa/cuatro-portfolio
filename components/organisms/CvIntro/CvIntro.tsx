@@ -48,16 +48,31 @@ const EMPLOYERS_PLURAL = 'companies';
 const PROJECTS = 'personal project';
 
 /**
- * The lede, split at the link.
+ * The verb that follows that count, in both numbers.
  *
- * Two fragments rather than one string because the destination sits inside the sentence:
- * `RESTYLE-SPEC.md:192` gives the in-prose link its own treatment precisely so a box does not break
- * the line it is in. Neither fragment carries a number; both counts are derived above them.
+ * **Separate from the copy for the same reason the noun is.** A count nobody typed sitting beside a
+ * verb somebody did is the defect `Premise.tsx:55` was split out for: a Registry holding one entry
+ * would have read `The one personal project are in the suite`, and nothing in the sentence draws
+ * attention to the word that disagrees. `pluralise` is a rule about number rather than about nouns,
+ * so it serves this without a second helper.
  */
-const LEDE_OPENING = ', most recent first, with what each one covered. The ';
-const LEDE_CLOSING = ' are in ';
+const PROJECTS_VERB = 'is';
+const PROJECTS_VERB_PLURAL = 'are';
+
+/**
+ * The middle of the lede, which is the only part of it that is neither a count nor a link.
+ *
+ * Split here because the destination sits inside the sentence: `RESTYLE-SPEC.md:192` gives the
+ * in-prose link its own treatment precisely so a box does not break the line it is in. It carries
+ * no number and no verb that follows one.
+ */
+const LEDE_MIDDLE = ', most recent first, with what each one covered. The ';
 
 export function CvIntro() {
+  /** The two lengths the copy agrees with, read once so the sentence below reads as a sentence. */
+  const employers = work.length;
+  const projects = renderedApplications.length;
+
   return (
     <section className='cv-intro'>
       <PlateMark label='Curriculum Vitae' domain='cuatro.dev/cv' />
@@ -65,10 +80,9 @@ export function CvIntro() {
       <h1 className='cv-intro__name'>Luigi Espinosa</h1>
 
       <p className='cv-intro__lede'>
-        {`${capitalise(spellOut(work.length))} ${pluralise(work.length, EMPLOYERS, EMPLOYERS_PLURAL)}`}
-        {LEDE_OPENING}
-        {`${spellOut(renderedApplications.length)} ${pluralise(renderedApplications.length, PROJECTS)}`}
-        {LEDE_CLOSING}
+        {`${capitalise(spellOut(employers))} ${pluralise(employers, EMPLOYERS, EMPLOYERS_PLURAL)}${LEDE_MIDDLE}`}
+        {`${spellOut(projects)} ${pluralise(projects, PROJECTS)} `}
+        {`${pluralise(projects, PROJECTS_VERB, PROJECTS_VERB_PLURAL)} in `}
         <Link className='cv-intro__link cv-intro__link--prose' href='/#suite'>
           <span className='cv-intro__rule'>the suite</span>
         </Link>
@@ -77,8 +91,13 @@ export function CvIntro() {
 
       {/* The affordance the redirect used to be. It is a document rather than a route, so it is an
           `<a>` and not a `<Link>`: the App Router has nothing to prefetch for a static file, and a
-          client-side navigation into one is what DW-64 recorded on the header's own link. */}
-      <a className='cv-intro__link cv-intro__link--primary' href='/pdf/cv.pdf'>
+          client-side navigation into one is what DW-64 recorded on the header's own link.
+
+          **`download` is what makes the label true.** Chrome renders a same-origin PDF inline
+          without it, so a control saying `Download PDF` would open a viewer instead. The attribute
+          is valueless rather than naming a filename: the served name is already `cv.pdf` and a
+          second spelling here is a second thing to keep in step with `public/pdf/`. */}
+      <a className='cv-intro__link cv-intro__link--primary' href='/pdf/cv.pdf' download>
         <span className='cv-intro__rule'>Download PDF</span>
       </a>
     </section>

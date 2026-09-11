@@ -130,6 +130,11 @@ one, and nothing else in this file was re-taken on it.
 | Chunks written | 21 `.js`, 13 `.css` | **Observed** |
 | Bytes in `.next/static/chunks` | 2,043,232 on disk, 623,121 gzipped | **Observed** |
 
+**The build timestamp is UTC and this file's dates are not, exactly as for the first build above.**
+04:29 UTC on 2026-09-11 is the evening of 2026-09-10 on the authoring host, which is the date every
+2026-09-10 heading and finding in this file carries. One is the tool's reading of the build and the
+other is this record's authoring date; they are a few hours apart rather than a day.
+
 **Six prerendered documents where the two builds above have eight, and two separate things moved.**
 Story 2-14 redirected `/projects` and deleted the page, which is one. The other is `/`: it is
 `ƒ (Dynamic)` in this build's route list and writes no prerendered HTML, so the tool, which reads
@@ -469,11 +474,32 @@ wire total from 283,718 to 290,543, which is those bytes plus the stylesheet the
 **It is now the heaviest non-3D route a visitor can load**, `/` having left the prerendered set for
 the reason § The build this reading was taken from gives.
 
-`/work` moved by 83 document bytes and 207 on the wire, which is Story 2-16's one-line change to
-`WorkItem`: the open entry no longer ships `style="height:0;overflow:hidden"`, and the surrounding
-chunk hashing accounts for the rest. `/celeste`, `/recommendation`, `/_not-found` and
-`/_global-error` are each within a few hundred bytes of the 2026-09-07 reading and none of them is
-this story's.
+**Every other row's delta spans four stories, not this one, and the arithmetic says so.** **Stated
+rather than attributed**, because the reading below it was taken at commit `c887cb03` during Story
+2-12, and Stories 2-13, 2-14, 2-15 and 2-16 have landed since. No reading was taken in between, so
+nothing here can say which of the four moved a byte.
+
+`/work` **grew** by 83 document bytes, from 21,503 to 21,586, and by 207 on the wire. **Story
+2-16's own contribution to that route runs the other way and is 32 bytes**: the open entry no longer
+ships `style="height:0;overflow:hidden"`, which is a 32-character attribute, and `work.html` in this
+build carries it three times where it carried it four. **Observed 2026-09-10** by counting the
+literal in `.next/server/app/work.html`. So this story took 32 bytes off and the document is 83
+bytes larger, which leaves **115 bytes of growth belonging to the three stories in between**, Story
+2-15's header reshape among them. An earlier draft of this paragraph credited the whole 83 to the
+`WorkItem` line and had the direction backwards; the figure is a growth and one line that deletes an
+attribute cannot produce one.
+
+`/celeste`, `/recommendation`, `/_not-found` and `/_global-error` are each within a few hundred
+bytes of the 2026-09-07 reading, over the same four-story span, and none of them renders anything
+this story wrote.
+
+**The CSS chunk count went 11 to 13 over that same span, and one of the two is this story's.**
+`components/organisms/CvIntro/CvIntro.scss` compiles to `0f8qu~zeozghz.css`, 1,336 bytes, which is
+the only chunk in the build carrying a `.cv-intro` rule, and `cv.html` references one stylesheet
+more than `work.html` does. **Observed 2026-09-10** by grepping the chunk directory. The other is
+not this story's and is not attributed: Next chunks CSS per entry rather than per source file, so
+the count does not map one-to-one onto stylesheets added, and Story 2-13 alone added two source
+files after the reading below was taken.
 
 The redirect is `next.config.js`, and the tool reads it from `.next/routes-manifest.json` rather
 than from that file, so the column answers what the build does rather than what the source says.

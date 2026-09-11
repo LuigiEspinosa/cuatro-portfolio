@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import CvPage, { metadata } from '../page';
 import { work } from '@/content/work';
+import { renderedApplications } from '@/lib/registry';
+import { capitalise, spellOut } from '@/lib/words';
 
 /**
  * The `/cv` route (Story 2-16).
@@ -115,17 +117,39 @@ describe('the /cv route', () => {
     expect(hrefs, '/cv no longer offers the PDF the redirect used to hand a visitor').toContain('/pdf/cv.pdf');
     expect(hrefs, '/cv carries no way back to the Suite Directory').toContain('/#suite');
     expect(hrefs, '/cv links the route it is').not.toContain('/cv');
+
+    // **`download`, because the label says so.** Chrome renders a same-origin PDF inline without it,
+    // so a control reading `Download PDF` would open a viewer and the word would be a lie. The
+    // in-prose link must not carry it: it goes to a route, and a `download` there would offer the
+    // homepage as a file.
+    const pdf = container.querySelector('a[href="/pdf/cv.pdf"]');
+    const prose = container.querySelector('a[href="/#suite"]');
+    expect(pdf?.hasAttribute('download'), 'the Download link does not ask the browser to download').toBe(true);
+    expect(prose?.hasAttribute('download'), 'the in-prose route link is marked as a download').toBe(false);
   });
 
   it('states no number it did not derive, and names no company the content does not', () => {
     // `EXPERIENCE.md:299-300`: a count is never typed. Both counts in the lede are lengths, so the
     // text below has to carry the words for them and would change on its own if either source did.
+    //
+    // **The expected words are derived here too**, the way `Premise.test.tsx:45-46` derives its
+    // opening. A literal `Four` would be this file typing the count the component is forbidden to
+    // type, and it would redden on the commit that adds a job to `content/work.ts`, which this
+    // story's boundaries forbid it from editing and a later one will not.
     const { container } = render(<CvPage />);
     const lede = container.querySelector('.cv-intro__lede')?.textContent ?? '';
 
     expect(lede.length, '/cv renders no lede, so this scan is over an empty string').toBeGreaterThan(20);
     expect(lede, 'the lede prints a digit, which is what a typed count looks like').not.toMatch(/\d/);
-    expect(lede, "the lede does not spell the number of companies content/work.ts holds").toContain('Four');
+    expect(
+      lede.startsWith(`${capitalise(spellOut(work.length))} `),
+      `the lede opens "${lede.slice(0, 48)}", which does not spell the ${work.length} companies ` +
+        `content/work.ts holds`
+    ).toBe(true);
+    expect(
+      lede,
+      `the lede does not spell the ${renderedApplications.length} entries the Registry renders`
+    ).toContain(spellOut(renderedApplications.length));
 
     for (const entry of work) {
       expect(
@@ -135,15 +159,75 @@ describe('the /cv route', () => {
     }
   });
 
-  it('renders no Education and no Contact section, stubbed, empty or commented out', () => {
+  it('agrees between each count and the words that follow it', () => {
+    // Read off the rendered line rather than composed, so a plural rule wired into this file and
+    // not into the block fails here. `Four company` and `The one personal project are in the suite`
+    // are the two shapes this refuses, and the second is the one a Registry of one would produce.
     const { container } = render(<CvPage />);
-    const text = container.textContent ?? '';
+    const words = (container.querySelector('.cv-intro__lede')?.textContent ?? '').split(/\s+/);
 
-    expect(text, '/cv rendered nothing, so the two scans below pass over an empty page').toContain(
-      'Curriculum Vitae'
+    expect(words.length, '/cv renders no lede, so there are no words to compare').toBeGreaterThan(8);
+
+    const noun = words[1].replace(/[^\w]/g, '');
+    expect(
+      noun.endsWith('ies'),
+      `"${noun}" does not agree with a count of ${work.length}`
+    ).toBe(work.length !== 1);
+
+    // The Registry's clause is `The <count> <noun> <verb> in the suite`, and both its ends are found
+    // in the sentence rather than counted off: the noun is two words today and a test that assumed
+    // one would be pinning the copy it is meant to be reading.
+    const at = words.indexOf(spellOut(renderedApplications.length));
+    expect(at, 'the Registry count is not in the lede, so nothing after it is its clause').toBeGreaterThan(0);
+
+    const inAt = words.findIndex((word, index) => index > at && word === 'in');
+    expect(inAt, 'the Registry clause does not reach its preposition, so its verb has no position').toBeGreaterThan(
+      at + 1
     );
-    expect(text, '/cv renders an Education section this story does not own').not.toMatch(/education/i);
-    expect(text, '/cv renders a Contact section this story does not own').not.toMatch(/contact/i);
+
+    const projectNoun = words.slice(at + 1, inAt - 1).join(' ').replace(/[^\w ]/g, '');
+    const verb = words[inAt - 1].replace(/[^\w]/g, '');
+
+    expect(projectNoun, 'the Registry count is followed by no noun at all').not.toBe('');
+    expect(
+      projectNoun.endsWith('s'),
+      `"${projectNoun}" does not agree with a count of ${renderedApplications.length}`
+    ).toBe(renderedApplications.length !== 1);
+    expect(
+      verb,
+      `"${verb}" does not agree with a count of ${renderedApplications.length}`
+    ).toBe(renderedApplications.length === 1 ? 'is' : 'are');
+  });
+
+  it('renders no Education and no Contact section, stubbed, empty or commented out', () => {
+    // **Scoped to headings, which is what a section is.** Scanning the whole page text would put
+    // `content/work.ts` in this assertion's way: a highlight mentioning a contact centre or an
+    // education client would redden the suite for a page that renders neither section, and that
+    // file belongs to other stories. A section arrives as a heading or it is not a section.
+    const { container } = render(<CvPage />);
+
+    const headings = [...container.querySelectorAll('h1, h2, h3, h4, h5, h6')].map(
+      (node) => node.textContent ?? ''
+    );
+
+    expect(headings.length, '/cv rendered no heading at all, so the two scans below pass over nothing').toBeGreaterThan(
+      0
+    );
+    expect(
+      headings.filter((heading) => /education/i.test(heading)),
+      '/cv heads an Education section this story does not own'
+    ).toEqual([]);
+    expect(
+      headings.filter((heading) => /contact/i.test(heading)),
+      '/cv heads a Contact section this story does not own'
+    ).toEqual([]);
+
+    // The scan, on a planted control, so an empty result is a measurement rather than a selector
+    // that stopped matching headings.
+    expect(
+      [...headings, 'Education'].filter((heading) => /education/i.test(heading)),
+      'the scan no longer fires on a heading that names one'
+    ).toEqual(['Education']);
   });
 
   it('leaves the open entry uncollapsed in the server output', () => {

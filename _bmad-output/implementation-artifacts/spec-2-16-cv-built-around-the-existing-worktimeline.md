@@ -2,7 +2,7 @@
 title: 'Story 2.16: `/cv` built around the existing `WorkTimeline`'
 type: 'feature'
 created: '2026-09-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: 'cfd5f51057192c9a5e684ef630482947def0b598'
 review_loop_iteration: 0
 context:
@@ -146,8 +146,14 @@ the repository makes today.
   surface, so if `chrome-logo` (`:228-235`, `covers: 2`) now also matches on `/cv`, its `covers` becomes 3
   and the drift check at `:782-789` enforces it. `:872-878` keeps `pinnedMeasured` at or above the ledger sum.
 - `ops/hit-target-floor.md:96-103` the surfaces table and the `28 elements` total, `:166-171` "three routes
-  render no Hub markup", `:201-206` the ledger table, `:614-616` the run-record rows (a new spec file makes
-  eleven), `:618-635` the rule that these move together.
+  render no Hub markup", `:201-206` the ledger table, `:614-616` the run-record rows, `:618-635` the rule
+  that these move together.
+  **Corrected 2026-09-10 during implementation: a new spec file makes sixteen, not eleven.** `tests/e2e`
+  holds fifteen `*.pw.ts` files at `cfd5f51`, counted on disk. The `eleven` in this line came from the
+  run-record row it points at, which is a dated 2026-09-06 reading taken when the suite held ten, and the
+  suite has grown by five files since without that table being re-run. The row written for this story says
+  sixteen, which is what the run printed. The rule at `:637-639` is what makes the two consistent: a
+  re-measurement is a new dated row beside the old one rather than an edit to it.
 - `ops/known-violations.md:65,287,311,322-329`: the KV-4 census, which counts controls per surface.
 
 **Chrome, which gains a third header surface**
@@ -182,49 +188,49 @@ the repository makes today.
 
 **Execution:**
 
-- [ ] `next.config.js`: delete the `/cv` row and correct the docblock at `:40-47` so it describes one
+- [x] `next.config.js`: delete the `/cv` row and correct the docblock at `:40-47` so it describes one
       permanent redirect, not two.
-- [ ] `components/organisms/CvIntro/CvIntro.tsx` and `CvIntro.scss`: **new.** A server component on
+- [x] `components/organisms/CvIntro/CvIntro.tsx` and `CvIntro.scss`: **new.** A server component on
       `Premise`'s shape: `<PlateMark label='Curriculum Vitae' domain='cuatro.dev/cv' />`, then
       `<h1>Luigi Espinosa</h1>`, then one lede whose only number is derived, carrying an in-prose link to
       `/#suite`, then a `Download PDF` link to `/pdf/cv.pdf`. Both links built to `--tap` on both axes with
       `inline-flex` and `padding-inline`, underline on an inner span, per `RESTYLE-SPEC.md:188-206`.
-- [ ] `app/cv/page.tsx`: mount `Container`, `CvIntro` and `WorkTimeline`; fix the title so the layout
+- [x] `app/cv/page.tsx`: mount `Container`, `CvIntro` and `WorkTimeline`; fix the title so the layout
       template is applied once; add the relative `openGraph.url`. Wrap the content in `<main>` and say in a
       comment why (a sticky 140px header, no skip link on this surface).
-- [ ] `components/atoms/WorkItem/WorkItem.tsx:89`: render the panel's collapsed inline style only when the
+- [x] `components/atoms/WorkItem/WorkItem.tsx:89`: render the panel's collapsed inline style only when the
       entry is closed, so the open entry is not collapsed in server output. `isOpen` is deterministic on
       both sides, so this adds no hydration branch. Comment why the mount-time `gsap.set` at `:27-33` is
       not enough on its own.
-- [ ] `app/__tests__/anchor-contract.test.ts`: add `CvIntro.scss` to `TOKEN_NATIVE_STYLESHEETS`, keeping the
+- [x] `app/__tests__/anchor-contract.test.ts`: add `CvIntro.scss` to `TOKEN_NATIVE_STYLESHEETS`, keeping the
       list's ordering convention and its comment style.
-- [ ] `components/atoms/WorkItem/__tests__/WorkItem.test.tsx`: **new.** `aria-controls` resolving to a real
+- [x] `components/atoms/WorkItem/__tests__/WorkItem.test.tsx`: **new.** `aria-controls` resolving to a real
       panel id, and the reduced-motion branch asserted through `gsap.to`'s arguments on both open and close,
       each watched failing against a planted counterpart.
-- [ ] `app/cv/__tests__/page.test.tsx`: **new.** One `<h1>`, no `<h3>`, no Education or Contact text, the
+- [x] `app/cv/__tests__/page.test.tsx`: **new.** One `<h1>`, no `<h3>`, no Education or Contact text, the
       timeline present once, and the open panel carrying no `height: 0` in `renderToStaticMarkup` output.
-- [ ] `tests/e2e/cv.pw.ts`: **new, no screenshot.** `/cv` answers 200 as a document; `CV` clicked from
+- [x] `tests/e2e/cv.pw.ts`: **new, no screenshot.** `/cv` answers 200 as a document; `CV` clicked from
       `/work` lands there and starts no download; `aria-current` and the accent underline on the real
       surface; the accordion's first entry open with its panel taller than zero; every interactive element
       at or above `--tap`; `/work` still renders the same timeline. Each predicate watched failing on a
       browser-planted control.
-- [ ] `tests/e2e/hit-target-floor.pw.ts` and `ops/hit-target-floor.md`: move `/cv` out of `NON_HUB_ROUTES`
+- [x] `tests/e2e/hit-target-floor.pw.ts` and `ops/hit-target-floor.md`: move `/cv` out of `NON_HUB_ROUTES`
       into `SURFACES` with the figures the run prints, fix the `/pdf/` count at `:1632`, follow
       `chrome-logo`'s `covers` if it now matches on `/cv`, and add a dated re-measurement paragraph without
       editing a historical one.
-- [ ] `tests/e2e/anchor-aliases.pw.ts`, `projects-redirect.pw.ts`, `narrative.pw.ts`: reclassify `/cv` in
+- [x] `tests/e2e/anchor-aliases.pw.ts`, `projects-redirect.pw.ts`, `narrative.pw.ts`: reclassify `/cv` in
       each inventory, and repoint the 301 control at `/recommendation` so it still discriminates.
-- [ ] `tests/e2e/chrome-nav.pw.ts`: retire `CV_PDF` and rewrite `:717-780` as a click that lands on `/cv`
+- [x] `tests/e2e/chrome-nav.pw.ts`: retire `CV_PDF` and rewrite `:717-780` as a click that lands on `/cv`
       and downloads nothing; correct the `:35-41` docblock now that the live instance exists. Leave
       `CHROME_SURFACES` at two entries and say why in its comment: every loop over it assumes the surface is
       not a destination, which `/cv` is.
-- [ ] `tests/e2e/contract-anchor.pw.ts` and `ops/anchor-token-adoption.md`: amend the "only the 404" claim
+- [x] `tests/e2e/contract-anchor.pw.ts` and `ops/anchor-token-adoption.md`: amend the "only the 404" claim
       about the base `body` rule, which `/cv` now falsifies.
-- [ ] `README.md`, `ops/rendered-output-harness.md`, `ops/known-violations.md`, `ops/asset-budget.md`
+- [x] `README.md`, `ops/rendered-output-harness.md`, `ops/known-violations.md`, `ops/asset-budget.md`
       (regenerated): bring the routing table, the capability row, the KV-4 census and the budget rows in
       line, keeping every literal the ops tests pin byte-identical.
-- [ ] `components/atoms/Navbar/Navbar.tsx` and its test: correct the comments that describe `/cv` as a 308.
-- [ ] `deferred-work.md`: close DW-64 on its stated trigger, re-scope DW-6, note DW-69 as reachable, file
+- [x] `components/atoms/Navbar/Navbar.tsx` and its test: correct the comments that describe `/cv` as a 308.
+- [x] `deferred-work.md`: close DW-64 on its stated trigger, re-scope DW-6, note DW-69 as reachable, file
       Lighthouse coverage for `/cv` and anything the run surfaces.
 
 **Acceptance Criteria:**

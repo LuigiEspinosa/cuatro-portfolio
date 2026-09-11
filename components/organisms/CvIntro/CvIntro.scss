@@ -81,7 +81,6 @@
   vertical-align: middle;
   min-block-size: var(--tap);
   min-inline-size: var(--tap);
-  padding-inline: var(--s-2xs);
   text-decoration: none;
   color: var(--token-text);
 }
@@ -91,6 +90,18 @@
   // overlap and needs no `--s-lg` neighbour gap (`RESTYLE-SPEC.md:206`).
   margin-block-start: var(--s-lg);
   font-size: var(--t-base);
+  // `RESTYLE-SPEC.md:196` asks for `padding-inline` where the label is narrower than the floor.
+  // `Download PDF` is not, and the padding is here anyway so the box is not exactly its own text:
+  // a control the width of its glyphs has no margin for error on the horizontal axis.
+  padding-inline: var(--s-2xs);
+}
+
+// **The in-prose link takes no inline padding, and that is not an omission.** It sits inside a
+// sentence and the full stop after it is the next text node, so padding on the box paints a gap and
+// the line reads "the suite ." The floor still holds on that axis: `min-inline-size: var(--tap)`
+// above is what carries it, and the label is wider than the floor in any case.
+.cv-intro__link--prose {
+  padding-inline: 0;
 }
 
 // **The rule is drawn on the inner span, not on the `--tap` box.** A border on the box sits at the
