@@ -2,7 +2,7 @@
 title: 'Story 2.16: `/cv` built around the existing `WorkTimeline`'
 type: 'feature'
 created: '2026-09-10'
-status: 'in-review'
+status: 'done'
 baseline_commit: 'cfd5f51057192c9a5e684ef630482947def0b598'
 review_loop_iteration: 0
 context:
@@ -295,3 +295,71 @@ any figure written into the record, the run is right and the record follows it.
   ring that appears instantly and is not the hover colour.
 - Print-preview `/cv` and note, without fixing, what the collapsed entries do: the accordion's closed panels
   do not open for print, which is a real observation for the deferred-work ledger and not this story's.
+
+## Suggested Review Order
+
+**The route stops being a redirect, which the rest follows from**
+
+- Start here. The row whose deletion turns a shadowed stub into the served document.
+  [`next.config.js:49`](../../next.config.js#L49)
+
+- Three components, no props, no state: the whole page.
+  [`page.tsx:46`](../../app/cv/page.tsx#L46)
+
+- A landmark this route has and the other three do not, with the reason and the deferral.
+  [`page.tsx:41`](../../app/cv/page.tsx#L41)
+
+**The one line in a component this story was told to reuse**
+
+- The style prop React must never diff away, because GSAP owns that box.
+  [`WorkItem.tsx:128`](../../components/atoms/WorkItem/WorkItem.tsx#L128)
+
+- A frozen state initializer rather than a ref read during render.
+  [`WorkItem.tsx:52`](../../components/atoms/WorkItem/WorkItem.tsx#L52)
+
+- The guard the review found missing: the unfrozen shape, kept in the file as the control.
+  [`WorkItem.test.tsx:102`](../../components/atoms/WorkItem/__tests__/WorkItem.test.tsx#L102)
+
+- Both readings fired against that counterpart, so the clean ones are measurements.
+  [`WorkItem.test.tsx:254`](../../components/atoms/WorkItem/__tests__/WorkItem.test.tsx#L254)
+
+**The intro block, where every number is read rather than typed**
+
+- Reuse, not redesign: a shipped mark, non-interactive, so it moves no floor count.
+  [`CvIntro.tsx:78`](../../components/organisms/CvIntro/CvIntro.tsx#L78)
+
+- The affordance the redirect used to be, and the attribute that makes the label true.
+  [`CvIntro.tsx:100`](../../components/organisms/CvIntro/CvIntro.tsx#L100)
+
+- Padding that reaches the floor on a block link and paints a gap inside a sentence.
+  [`CvIntro.scss:103`](../../components/organisms/CvIntro/CvIntro.scss#L103)
+
+**The gates that classified `/cv` as a redirect**
+
+- A fifth swept surface at nine elements, the figure the run printed rather than the plan's.
+  [`hit-target-floor.pw.ts:116`](../../tests/e2e/hit-target-floor.pw.ts#L116)
+
+- The 301 control repointed at the redirect that survives, so it still discriminates.
+  [`projects-redirect.pw.ts:188`](../../tests/e2e/projects-redirect.pw.ts#L188)
+
+- The click that used to arrive as a download, rewritten to land on a page.
+  [`chrome-nav.pw.ts:732`](../../tests/e2e/chrome-nav.pw.ts#L732)
+
+**What the run found that the plan did not**
+
+- The defect's own medium, made a standing case instead of a comment recording one reading.
+  [`cv.pw.ts:499`](../../tests/e2e/cv.pw.ts#L499)
+
+- A-7 on both routes, which is what the criterion said and one route is not.
+  [`cv.pw.ts:432`](../../tests/e2e/cv.pw.ts#L432)
+
+- Uppercase paths lost an answer: the config matcher was case-insensitive, the file route is not.
+  [`deferred-work.md:3857`](deferred-work.md#L3857)
+
+**Peripherals**
+
+- Why one reading was replaced rather than kept, in a file whose rule is to keep them.
+  [`asset-budget.md:141`](../../ops/asset-budget.md#L141)
+
+- The lead sentence a reader skims, corrected rather than only amended beneath.
+  [`hit-target-floor.md:185`](../../ops/hit-target-floor.md#L185)
