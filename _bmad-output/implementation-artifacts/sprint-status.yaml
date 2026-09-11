@@ -159,7 +159,7 @@ development_status:
   2-13-the-non-3d-front-door-and-the-skip-control: done
   2-14-projects-redirects-permanently-to-suite: done
   2-15-nav-reshape-to-two-destinations: done
-  2-16-cv-built-around-the-existing-worktimeline: review
+  2-16-cv-built-around-the-existing-worktimeline: done
   2-17-secondary-surface-states: backlog
   # 2-18 DELETED 2026-08-15 (restyle scope change). Absorbed by 2-31.
   # 2-19 REPLACED 2026-08-15 by 2-34, a blocking CI gate.
