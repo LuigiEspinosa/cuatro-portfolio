@@ -1122,7 +1122,7 @@ origin: spec-deferred 60453c2584eb
 location: tests/e2e/rendered-output.pw.ts:21
 source_spec: `spec-1-17-anchor-migration-step-1-add-the-contract-change-nothing.md`
 severity: medium
-reason: components/atoms/Container/Container.tsx:13-15 sets <body id={route}> from the stripped, hyphenated pathname, so /cv and /recommendation produce body#cv and body#recommendation and the 404 produces an id derived from whatever path was requested. None of the three matches body#work/body#projects (app/app.scss:53-55), body[id=''] (HomeLayout.scss:1-2) or #celeste (celeste.scss:1-2), so the base rule body { background: var(--black-color) } is what paints there. tests/e2e/rendered-output.pw.ts pins ROUTE = '/work' and every browser assertion in this story visits /work only, so nothing renders those three surfaces at all. This is pre-existing: Story 1-10 chose one route and one viewport deliberately and ops/rendered-output-harness.md states the limit. It is recorded because Story 1-18 redefines --black-color as a token reference, which is exactly the value those three surfaces paint, so the story most likely to move them is the next one. Re-scoped 2026-09-10 by spec-2-16-cv-built-around-the-existing-worktimeline.md. Two of the three claims here have since been settled and the entry narrows to one surface rather than closing. /recommendation never renders at all: it is still a 308 to a PDF, so there is no Hub page there for a test to visit and the base rule paints nothing on it, which Story 1-18 established by navigating. The 404 has been visited since 2026-09-06: tests/e2e/anchor-aliases.pw.ts reads the real body ground and copy on it, and tests/e2e/hit-target-floor.pw.ts sweeps it as a surface. /cv is now a page and tests/e2e/cv.pw.ts reads its base body ground against a probe, with /work as the control, so what remains open is only the screenshot half: no baseline captures the 404 or /cv, and ops/rendered-output-harness.md still states that limit. The owner is whichever story widens the pixel baseline past one route, which is not on the board today.
+reason: components/atoms/Container/Container.tsx:13-15 sets <body id={route}> from the stripped, hyphenated pathname, so /cv and /recommendation produce body#cv and body#recommendation and the 404 produces an id derived from whatever path was requested. None of the three matches body#work/body#projects (app/app.scss:53-55), body[id=''] (HomeLayout.scss:1-2) or #celeste (celeste.scss:1-2), so the base rule body { background: var(--black-color) } is what paints there. tests/e2e/rendered-output.pw.ts pins ROUTE = '/work' and every browser assertion in this story visits /work only, so nothing renders those three surfaces at all. This is pre-existing: Story 1-10 chose one route and one viewport deliberately and ops/rendered-output-harness.md states the limit. It is recorded because Story 1-18 redefines --black-color as a token reference, which is exactly the value those three surfaces paint, so the story most likely to move them is the next one. Re-scoped 2026-09-10 by spec-2-16-cv-built-around-the-existing-worktimeline.md. Two of the three claims here have since been settled and the entry narrows to one surface rather than closing. /recommendation never renders at all: it is still a 308 to a PDF, so there is no Hub page there for a test to visit and the base rule paints nothing on it, which Story 1-18 established by navigating. The 404 has been visited since 2026-09-06: tests/e2e/anchor-aliases.pw.ts reads the real body ground and copy on it, and tests/e2e/hit-target-floor.pw.ts sweeps it as a surface. /cv is now a page and tests/e2e/cv.pw.ts reads its base body ground against a probe, with /work as the control, so what remains open is only the screenshot half: no baseline captures the 404 or /cv, and ops/rendered-output-harness.md still states that limit. The owner is whichever story widens the pixel baseline past one route, which is not on the board today. Re-scoped 2026-09-11 by spec-2-17-secondary-surface-states.md. /recommendation is retired: Story 2-17 deleted the redirect row and the stub, so a request for it is the 404 document under another URL, which tests/e2e/secondary-surfaces.pw.ts asserts. This entry's title is kept verbatim by this ledger's convention, so it goes on naming three surfaces, one of which no longer exists. What stays open is unchanged: the screenshot half for the 404 and /cv, and the owner is still whichever story widens the pixel baseline.
 status: open
 
 ### DW-7: Follow-up review still recommended for 1-17-anchor-migration-step-1-add-the-contract-change-nothing after the damping cap was spent
@@ -3963,4 +3963,115 @@ status: done
     **Owner: Story 2-31**, which rebuilds `WorkItem` token-native and already owns the open-state
     mechanism through DW-34 and DW-73. **Trigger: that rebuild choosing its open-state mechanism**,
     which is the one moment the no-script and the print behaviour are both cheap to get right.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
+  id: DW-77
+  summary: >-
+    The 404's entrance tween runs under `prefers-reduced-motion: reduce`. `useGsapContext` reads no
+    preference, and `Error404.tsx` is the one caller that does not guard its tweens itself.
+  evidence: |-
+    `components/organisms/ErrorPage/Error404.tsx:32-53` runs three `gsap.from` tweens on mount, on
+    the numeral, the message and the exits, with `opacity: 0` and a translate on two of them.
+    `hooks/useGsapContext.ts` wraps `gsap.context` in an effect and reads nothing about motion.
+    The other callers in the tree sit behind a guard of their own: `HomeLayout.tsx:55-57` writes the
+    final state on mount when `useReduceMotion` answers true, and `WorkTimeline` keeps its entrance
+    tweens behind `if (!reduceMotion)`. The 404 has neither, so a visitor who has asked for reduced
+    motion gets the numeral rising, the message fading and both exits sliding up, over 0.4 to 0.6
+    seconds each, on the one surface that also carries a `ScanlineOverlay`.
+
+    **Observed 2026-09-11** by reading the three files against each other while Story 2-17 gave
+    the surface its two exits. The browser suite runs `reducedMotion: 'reduce'`
+    (`playwright.config.ts:79`), so every run of `tests/e2e/hit-target-floor.pw.ts` and
+    `tests/e2e/secondary-surfaces.pw.ts` measures the exits mid-tween, which is harmless to a box
+    measurement, a translate changing no size, and is exactly why nothing has failed on it.
+
+    **Not fixed here.** Story 2-17's boundaries book the 404's title, numeral, `HudLabel`,
+    `ScanlineOverlay` and everything but two size lines and an exits wrapper to Story 2-30
+    (`EXPERIENCE.md:540-542`), and the tween targets `.error-page__back`, so both exits fade in
+    together and the fix is a guard on the tween rather than on the link. The cheapest shape is
+    the `HomeLayout.tsx` one, reading `useReduceMotion` and writing the final state; the cleaner
+    one is `useGsapContext` taking the preference once for every caller, which is a hook change
+    three components share.
+
+    **Owner: Story 2-30**, which redesigns `Error404` token-native and owns its motion. **Trigger:
+    that story's first edit to the entrance**, at which point the guard is one line beside the
+    tween it already has to rewrite.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
+  id: DW-78
+  summary: >-
+    The 404 carries `<meta name="robots" content="noindex">` on every response, and it is Next's
+    rather than the Hub's. The story's matrix predicted the 404 would carry none.
+  evidence: |-
+    **Measured 2026-09-11** against `pnpm start` on the build at this story's tree, by reading the
+    served document: `/`, `/work` and `/cv` carry no `robots` meta, `/celeste` carries the
+    `noindex` `app/celeste/page.tsx` declares, and `/a-route-that-does-not-exist` and the retired
+    `/recommendation` both carry `<meta name="robots" content="noindex"/>` while
+    `app/not-found.tsx` declares no `robots` at all. The tag comes from Next's not-found boundary,
+    `node_modules/next/dist/client/components/http-access-fallback/error-boundary.js:81-84`, which
+    renders it for every not-found response.
+
+    **The story's I/O matrix said otherwise.** Its `No exit` row reads "The other four surfaces
+    carry no `robots` meta", and one of the four does. `tests/e2e/secondary-surfaces.pw.ts` was
+    written to the measurement rather than to the row: the three routed pages other than
+    `/celeste` are asserted to carry none, and the 404 is asserted to carry exactly the one the
+    framework injects, so a Next release that stops injecting it, or a second directive arriving
+    on that surface, is a named failure rather than a silent drift either way.
+
+    **Nothing here is a defect.** A 404 that declines indexing is the right answer and it is the
+    framework giving it. It is filed because the record and the spec both said the surface was
+    bare, and because the behaviour is the framework's and not the repository's: the day the Hub
+    wants a `robots` policy of its own, this tag is one it did not write and cannot remove by
+    editing `app/not-found.tsx`.
+
+    **Owner: unassigned.** **Trigger: the first story that adds a `robots.txt`, a sitemap or a
+    `robots` directive anywhere but `/celeste`**, at which point the framework's own tag on the
+    404 is part of the policy being written down.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
+  id: DW-79
+  summary: >-
+    The planning artifacts still place `/recommendation`: `EXPERIENCE.md:97,122` say "Linked from
+    `/cv` + footer" and the Story 2.17 criterion at `epics.md:2710-2714` allows it unlinked but never
+    retired. The retirement ruling of 2026-09-11 has no dated correction there.
+  evidence: |-
+    Story 2-17 retired the route outright on the Operator ruling of 2026-09-11 (the redirect row and
+    the stub are gone, the PDF stays at its own URL). That ruling is recorded in the spec's Design
+    Notes, in `next.config.js`'s docblock and in `README.md`, and nowhere in the planning artifacts:
+    `EXPERIENCE.md:97` reads "`/recommendation` Survives. Linked from /cv. Footer.", `:122` reads
+    "Linked from `/cv` + footer", and the epic's own criterion offers the two states "loaded with an
+    attributed quote" or "not linked at all", of which the shipped state is a third.
+    `chrome-nav.pw.ts`, `Navbar.tsx` and `SiteFooter.tsx` cite `EXPERIENCE.md:115-123` as the
+    placement authority, so the authority and the tree now disagree.
+
+    **Found 2026-09-11** by the review layers on this story's diff. Planning artifacts are not
+    edited from a story (`AGENTS.md`, and the precedent Story 2-8 set for its two KV departures at
+    `sprint-status.yaml`'s 2-8 note): the correction is a sprint change proposal the Epic 2
+    retrospective picks up, in the shape of `sprint-change-proposal-2026-08-15.md`.
+
+    **Owner: the Epic 2 retrospective.** **Trigger: that retrospective's action items**, where the
+    2-8 departures are already queued for the same treatment.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
+  id: DW-80
+  summary: >-
+    `error-page.scss:72` reads `border-left-color 0.2 ease`: the unitless duration makes the whole
+    `transition` shorthand invalid, so neither the border nor the colour on the 404's exits
+    transitions on hover.
+  evidence: |-
+    `components/organisms/ErrorPage/error-page.scss:71-73` declares
+    `transition: border-left-color 0.2 ease, color 0.2s ease;`. A `<time>` without a unit is invalid
+    CSS outside `0`, and a single invalid component invalidates the whole `transition` declaration,
+    so the hover at `:76-79` repaints in one frame. **Found 2026-09-11** by two review layers on
+    Story 2-17's diff, which added `min-block-size` and `min-inline-size` two lines above it and did
+    not touch the line: it is 2023 text in a block the story's boundaries book to Story 2-30, and
+    fixing it would start an animation on a surface whose motion that story owns (DW-77 is the
+    reduced-motion half of the same block).
+
+    **Owner: Story 2-30**, which redesigns `Error404` token-native and rewrites this block.
+    **Trigger: that story's first edit to `.error-page__back`.**
   status: open
