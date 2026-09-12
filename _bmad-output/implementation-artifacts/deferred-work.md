@@ -4312,3 +4312,45 @@ status: done
     images (AD-8) and can set the pinning rule for all four files at once.** **Trigger: the
     first edit to any `uses:` line in `.github/workflows/`, or Story 3-3.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-24-hub-visitor-instrumentation.md`
+  id: DW-88
+  summary: >-
+    SM-1 cannot be read per front door: `suite-reach` carries no data, so a low reach share
+    cannot say whether the narrative or the flat hero is the one swallowing visitors, which is
+    the diagnosis SM-1 exists for.
+  evidence: |-
+    `components/organisms/SuiteDirectory/SuiteReach.tsx` calls `window.umami.track('suite-reach')`
+    with no data, by the story's own Ask First: carrying the narrative path means reading
+    `HomeLayout`'s flat modifier (`.home-container--flat`) or `useNarrativePath`'s answer from a
+    component that deliberately knows neither, and Story 2-29 rewrites that hero. The seam is one
+    `data` argument on the `track` call and one `event_data` join in the SM-1 query in
+    `ops/visitor-instrumentation.md` § How each metric is read. Stated as a limit there.
+
+    **Owner: the first story that needs the split, after 2-29 lands the hero it would read.**
+    **Trigger: the first monthly reading whose SM-1 share is under the 60% target, or Story
+    2-29's close, whichever comes first.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-24-hub-visitor-instrumentation.md`
+  id: DW-89
+  summary: >-
+    The three events undercount, at a rate nothing measures: an ad blocker drops the tracker and
+    every event with it, and a middle click or a context-menu open on a Directory link fires no
+    `click`, so the tracker sends nothing for the visitor most likely to open links that way.
+  evidence: |-
+    The deployed `analytics.cuatro.dev/script.js` (fetched 2026-09-12) listens for `click` in the
+    capture phase and resolves `closest('[data-umami-event]')`; a middle click is `auxclick` and
+    "open link in new tab" from the context menu dispatches no event at all, so `live-open` and
+    `source-open` miss both. A blocked script is no page view and no event, and there is no
+    server-side count of `/` requests to compare against: the Anchor's site blocks in
+    `docker/Caddyfile` declare no `log` directive (what the shared Caddyfile on the box adds was not
+    read), and Cloudflare's analytics are a third view with its own bot filter. So every share in
+    `ops/visitor-instrumentation.md` is a share of the sessions the tracker saw. An `auxclick`
+    handler is an event beyond the three, Ask First of the story; a server-side denominator is a
+    different instrument. Both are stated limits in that record.
+
+    **Owner: unassigned.** **Trigger: the first reading where SM-3 (the Marcus signal) reads
+    implausibly low against the Operator's own knowledge of who visited, or a story that adds a
+    server-side request count for any other reason.**
+  status: open

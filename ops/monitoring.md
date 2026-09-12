@@ -335,6 +335,10 @@ figure any later story reports from Umami describes the period from this date on
 earlier. This is recorded as a deliberate drop, not a silent loss, and the Operator chose it
 knowing the alternative was to keep a box nobody could reach.
 
+**2026-09-12, Story 2.24.** The three custom events (`suite-reach`, `live-open`, `source-open`),
+how SM-1 to SM-3 are read from them and their readings are in `ops/visitor-instrumentation.md`,
+which cites this paragraph as the baseline.
+
 **`cuatro-finance` and `cs-tournament` are not monitored because it is not established that
 they serve anything.** Their Statuses in `ops/estate.md` are the unresolved assumption text
 `[ASSUMPTION: built, not deployed]` and `[ASSUMPTION: Live on Vercel]`, neither of which is a

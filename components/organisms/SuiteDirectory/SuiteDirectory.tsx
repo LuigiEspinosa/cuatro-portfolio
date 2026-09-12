@@ -5,6 +5,7 @@ import {
   renderedApplications,
   type RegistryEntry,
 } from '@/lib/registry';
+import { SuiteReach } from './SuiteReach';
 import './SuiteDirectory.scss';
 
 /**
@@ -15,6 +16,13 @@ import './SuiteDirectory.scss';
  * is what `lib/__tests__/registry.test.ts:621-668` refuses. Rendering on the server satisfies that
  * by construction rather than by a mock, and the directory has no state to justify a boundary:
  * hover and focus are CSS, and the orchestrated entrance belongs to Story 2-12.
+ *
+ * **Story 2-24 instrumented it without giving it a boundary of its own.** The two link events are
+ * two attributes on the anchors below: the deployed tracker fires a custom event on any click inside
+ * `[data-umami-event]` and reads `data-umami-event-*` as the event's data, so no handler runs here
+ * and the Directory stays on the server. The one event with no click to hang on, reach, is
+ * `SuiteReach`, a client component that renders nothing, imports no Registry value and is handed
+ * the heading's id; it is the last child of the section and the only client file in this folder.
  *
  * **Every decision here is a rule over data.** What renders is `selectRendered` (Story 2-7),
  * unchanged. The order, the `You are here` mark and the family grouping are the three exported
@@ -27,6 +35,14 @@ import './SuiteDirectory.scss';
 
 /** The fragment `/#suite` resolves to. The heading carries it, because focus moves to the heading. */
 const HEADING_ID = 'suite';
+
+/**
+ * The two link events, SM-2's and SM-3's numerators (Story 2-24, FR-34). Each carries `app`, the
+ * entry's id, so both metrics read per application. `SuiteReach.tsx` exports the third name, and
+ * `ops/visitor-instrumentation.md` is the record the three are held equal to.
+ */
+export const LIVE_EVENT = 'live-open';
+export const SOURCE_EVENT = 'source-open';
 
 /** Already the product's own separator in the footer line at `EXPERIENCE.md:295`. */
 const TECH_SEPARATOR = ' · ';
@@ -107,7 +123,14 @@ export function SuiteDirectoryRow({ entry }: { entry: RegistryEntry }) {
             no `live` renders no slot at all, never a placeholder or a disabled control. */}
         {here && <span className='suite-directory__here'>You are here</span>}
         {!here && live !== '' && (
-          <a className='suite-directory__live' href={live} target='_blank' rel='noopener noreferrer'>
+          <a
+            className='suite-directory__live'
+            href={live}
+            target='_blank'
+            rel='noopener noreferrer'
+            data-umami-event={LIVE_EVENT}
+            data-umami-event-app={entry.id}
+          >
             <span className='suite-directory__rule'>{bareDomain(live)}</span>
           </a>
         )}
@@ -118,6 +141,8 @@ export function SuiteDirectoryRow({ entry }: { entry: RegistryEntry }) {
           target='_blank'
           rel='noopener noreferrer'
           aria-label={`Source: ${entry.name}`}
+          data-umami-event={SOURCE_EVENT}
+          data-umami-event-app={entry.id}
         >
           <span className='suite-directory__rule'>Source</span>
         </a>
@@ -163,6 +188,10 @@ export function SuiteDirectory() {
           )
         )}
       </ul>
+
+      {/* Renders nothing. Last as a reading choice, the instrument after the thing it measures; its
+          effect runs after React commits the whole tree, so the order guarantees nothing. */}
+      <SuiteReach target={HEADING_ID} />
     </section>
   );
 }

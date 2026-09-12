@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
-import { SuiteDirectory, SuiteDirectoryRow } from '../SuiteDirectory';
+import { LIVE_EVENT, SOURCE_EVENT, SuiteDirectory, SuiteDirectoryRow } from '../SuiteDirectory';
+import { REACH_EVENT } from '../SuiteReach';
 import {
   HUB_ORIGIN,
   REGISTRY_STATUSES,
@@ -240,6 +241,106 @@ describe('the Suite Directory', () => {
     const { container } = render(<SuiteDirectory />);
     expect(container.querySelectorAll('.suite-directory__family')).toHaveLength(1);
     expect(container.querySelectorAll('article')).toHaveLength(0);
+  });
+});
+
+describe('the visitor events the rows carry (Story 2-24)', () => {
+  /**
+   * The deployed tracker fires a custom event on any click inside `[data-umami-event]` and reads
+   * every `data-umami-event-<key>` as that event's data, so the two link events are two attributes
+   * and no handler. What is asserted is exactly that shape: the event name on the anchor, the
+   * entry's id as `app`, and nothing else on the row carrying the attribute, because an ancestor
+   * with it would make every click inside the row an event.
+   */
+  it('names three distinct events, each under the tracker limit', () => {
+    // Distinct by construction: three names that collapsed to two would make two metrics one.
+    // Umami truncates an event name at 50 characters, so a longer one would be counted under a
+    // name the record does not state.
+    const names = [REACH_EVENT, LIVE_EVENT, SOURCE_EVENT];
+    expect(new Set(names).size).toBe(3);
+    for (const name of names) {
+      expect(name.length, `${name} is over the 50-character event name limit`).toBeLessThanOrEqual(50);
+      expect(name, `${name} is empty`).not.toBe('');
+    }
+  });
+
+  it('carries the live event and the entry id on every live link', () => {
+    const { container } = render(<SuiteDirectory />);
+    let seen = 0;
+    for (const [index, row] of rows(container).entries()) {
+      const application = drawn()[index];
+      const live = row.querySelector<HTMLAnchorElement>('.suite-directory__live');
+      if (live === null) continue;
+      expect(live, `${application.id}'s live link fires no event`).toHaveAttribute('data-umami-event', LIVE_EVENT);
+      expect(live, `${application.id}'s live link names another app`).toHaveAttribute(
+        'data-umami-event-app',
+        application.id
+      );
+      seen += 1;
+    }
+    expect(seen, 'no live link was drawn, so the case above compares nothing').toBeGreaterThan(0);
+  });
+
+  it('carries the source event and the entry id on every Source link', () => {
+    const { container } = render(<SuiteDirectory />);
+    for (const [index, row] of rows(container).entries()) {
+      const application = drawn()[index];
+      const source = within(row).getByRole('link', { name: `Source: ${application.name}` });
+      expect(source, `${application.id}'s Source link fires no event`).toHaveAttribute('data-umami-event', SOURCE_EVENT);
+      expect(source).toHaveAttribute('data-umami-event-app', application.id);
+    }
+  });
+
+  it('gives the You are here row the source event only', () => {
+    // No live anchor, so nothing on the row says `live-open`; the Source link keeps its own.
+    const { container } = render(<SuiteDirectory />);
+    const hub = renderedApplications.find((application) => isCurrentOrigin(application));
+    const row = rows(container).find((candidate) => nameOf(candidate) === hub?.name) as HTMLElement;
+    expect(row, "the Hub's own entry is not rendered").toBeDefined();
+    expect(row.querySelectorAll(`[data-umami-event="${LIVE_EVENT}"]`)).toHaveLength(0);
+    expect(row.querySelectorAll(`[data-umami-event="${SOURCE_EVENT}"]`)).toHaveLength(1);
+  });
+
+  it('puts the attribute on the two anchors and on nothing else', () => {
+    // The tracker resolves `closest('[data-umami-event]')` from the click target, so a row, a
+    // list or the section carrying it would turn every click inside into an event. Every carrier
+    // is one of the two anchors, and the count is the anchors' count exactly.
+    const { container } = render(<SuiteDirectory />);
+    const carriers = [...container.querySelectorAll('[data-umami-event]')];
+    const anchors = container.querySelectorAll('a.suite-directory__live, a.suite-directory__source');
+    expect(carriers.length, 'no element carries the attribute').toBeGreaterThan(0);
+    expect(carriers).toHaveLength(anchors.length);
+    for (const carrier of carriers) {
+      expect(carrier.tagName, `${carrier.className} carries an event and is not an anchor`).toBe('A');
+      expect(carrier, `${carrier.className} carries an event with no app`).toHaveAttribute('data-umami-event-app');
+    }
+  });
+
+  it('mounts the reach component on its own heading', () => {
+    // jsdom has no `IntersectionObserver`, so on every other case the reach effect exits before it
+    // looks anything up and nothing here would notice the mount removed or pointed at another id.
+    // A fake observer that records its targets, and a tracker already present, are enough to see
+    // the one element it watches.
+    const targets: Element[] = [];
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        observe(target: Element) {
+          targets.push(target);
+        }
+        disconnect() {}
+      }
+    );
+    window.umami = { track: vi.fn() };
+    try {
+      render(<SuiteDirectory />);
+      expect(targets, 'the reach component observed nothing, so it is not mounted or finds no heading').toEqual([
+        screen.getByRole('heading', { level: 2, name: 'The Suite' }),
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+      delete window.umami;
+    }
   });
 });
 
