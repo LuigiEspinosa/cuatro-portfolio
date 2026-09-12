@@ -744,7 +744,9 @@ in this file's own stated limits, so nothing had to be rewritten for it. O-6 is 
 section: the two sites were rendered and screenshotted in the pinned container on 2026-09-12, at 360
 and at 1024, with the nav and contact links in the display family at 75% width, and O-6 closes on
 the Operator's confirmation at this story's review, which is Story 2-20's fourth acceptance
-criterion and is to be recorded here with its date when given. UX-DR12 is this commit. The two rows
+criterion and is to be recorded here with its date when given. **Given 2026-09-12**: the Operator
+read the three container screenshots (`/` at 1024 and at 360, the 404 at 360) at the story's review
+and confirmed both sites read acceptably. **O-6 is closed.** UX-DR12 is this commit. The two rows
 that remain, `--accent-glow` and `--hero-height`, are the two literals both suites now pin.
 
 **§ Stated limits of step 2, two rows closed.** "The retired display face is still preloaded, and

@@ -243,6 +243,8 @@ and DW-39 in the records.
 - **2026-09-12, review pass.** O-6 is not closed by any record this story writes. The two sites were
   rendered and screenshotted in the container on 2026-09-12; the records say the item closes on the
   Operator's confirmation at this story's review and is recorded there with its date when given.
+  Given 2026-09-12 at review, on the three container screenshots; recorded in
+  `ops/anchor-token-adoption.md` § Step 5. O-6 is closed.
 
 ## Design Notes
 
