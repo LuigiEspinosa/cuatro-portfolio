@@ -1217,6 +1217,7 @@ location: C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker
 source_spec: `spec-1-19-cs-tracker-adopts-the-token-contract.md`
 severity: medium
 reason: Observed 2026-08-27. `cs-tracker` has no `.github` directory; `mix precommit` is its only gate, and every case in `test/cs_tracker_web/token_contract_test.exs` asserts against the text of `assets/css/app.css` rather than against a compiled or rendered stylesheet. `ops/cs-tracker-adoption-probe.mjs` is deliberately not a CI job, because it needs a browser and a checkout of the other repository and neither is on a runner. So a route-A regression that leaves the source text untouched, which is exactly the shape a Tailwind or daisyUI bump takes, ships with everything green. This is the standing shape of the verification rather than a defect this story introduced, and it is the reason both probes' re-run is handed to the Operator. It is recorded here because the estate now has two adopted applications and one un-gated hand-run check between them, which is a growing exposure rather than a fixed one.
+note: Narrowed, not closed, 2026-09-12 by `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. The scheduled job now reads `cs-tracker`'s vendored `tokens.css` header off the remote daily and holds it to the Registry's `token_contract`, so a re-vendor that forgets the declaration is caught off the box. What stays open is the half above it, the rendered output: the job reads one header line over HTTPS and compiles nothing, so a Tailwind or daisyUI bump that leaves the source text untouched still ships green in `cs-tracker`, and the hand-run probe remains the only instrument for it.
 status: open
 
 ### DW-15: `contracts/tailwind.css` maps the spacing scale onto named keys, which silently redefines Tailwind's `max-w-sm` through `max-w-2xl` from container widths to spacing values in every consumer.
@@ -1719,9 +1720,18 @@ status: done
     Recorded as stated limit 1 of `ops/registry-inputs.md` and in `ops/registry-schema.md`'s stated
     limits. DW-26's own closing argument was that "a tightening that survives only if the next author
     reads one `ops/` file is a tightening that will not happen", which applies to this one too.
+  note: >-
+    Narrowed, not closed, 2026-09-12 by
+    `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. FR-32's scheduled link check
+    now exists (`.github/workflows/registry-verification.yml`, `ops/registry-verification.md`) and
+    holds every `source` and `live` to the network daily, so a URL that stops resolving is no longer
+    invisible. What stays open is the equality this entry is about: nothing reads
+    `ops/registry-inputs.md` against the Registry, so a `tech` value corrected in one file and not the
+    other is still invisible, and the job cannot see it either.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-83
   summary: >-
     The `token_contract` value Story 2-5 authored on the `cs-tracker` entry is held equal to nothing,
     so `ops/contract-adoption.md`'s runbook step 5 is the only thing keeping the Registry's adopted
@@ -1742,7 +1752,16 @@ status: done
     pinned by the blocking `test` job, while the Registry's declaration does not, and the gate still
     exits 0. That is exactly the drift AD-16 and AD-18 exist to catch, and AD-18's scheduled job is
     Story 2.23.
-  status: open
+
+    Id assigned and closed 2026-09-12 by
+    `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. The case is
+    `ops/__tests__/registry-verification.test.ts` § the Registry and the adoption record agree,
+    which reads the committed Registry and holds `cs-tracker`'s `token_contract` equal to
+    `recordedAdoptedVersion(record, 'cs-tracker')`, failing naming both values when either moves
+    alone; a second case in the same block holds every entry that declares a `token_contract` to a
+    recorded adopter row at that version. The scheduled job then holds the field to the vendored
+    header on every run.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   summary: >-
@@ -4189,4 +4208,100 @@ status: done
 
     **Owner: whichever of Story 2-29 and the next `contracts/fonts.css` MINOR lands first.**
     **Trigger: the first edit to `packages/fonts/faces.json`, or to `HomeLayout.scss:119-160`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
+  id: DW-84
+  summary: >-
+    The scheduled Registry verification's per-run record, its job summary and log, expires at 90
+    days, and the job writes nothing durable by design, so the historical form AD-18 asks for is
+    one hand-taken reading a month or nothing.
+  evidence: |-
+    `.github/workflows/registry-verification.yml` runs `ops/registry-verification.mjs`, which prints
+    one line per check and appends the same rows to `$GITHUB_STEP_SUMMARY`. GitHub retains logs and
+    summaries for 90 days in a public repository; the job uploads no artifact (7-day retention says
+    nothing durable either), commits nothing and opens nothing, because a daily bot commit would
+    deploy on every push to `main` (`deploy.yml:3-5`), compile on the two-core box and breach the
+    automation policy's spirit (AD-16). So the durable record is § Readings in
+    `ops/registry-verification.md`, one row a month taken by the Operator from a run's summary, and
+    a month nobody took a reading is a month with no record at all. Stated as a limit in that
+    record and filed here because a ceiling that survives only in one `ops/` file is the shape DW-26
+    argued does not survive.
+
+    **Owner: unassigned.** The cheap closer is a workflow step that appends the run's table to a
+    committed file on a branch that never deploys, which is a new decision against the
+    no-bot-commit rule and is not this story's. **Trigger: the first month whose reading is missed,
+    or the first time a red run older than 90 days is needed and gone.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
+  id: DW-85
+  summary: >-
+    GitHub disables a public repository's `schedule` triggers after 60 days without a commit, so
+    the Registry verification stops silently in exactly the quiet estate it exists for, and nothing
+    checks that it is still checking.
+  evidence: |-
+    Documented GitHub behaviour for scheduled workflows in public repositories: after 60 days
+    without a push to any branch the schedule is disabled and a mail is sent once. The clock counts
+    every branch, so ordinary work on `dev` resets it; what trips it is 60 days with no push
+    anywhere, which is the quiet estate this job exists for, not the gap between epic merges. A
+    disabled schedule and a Registry with nothing wrong are indistinguishable from inside the
+    estate, the same shape `ops/monitoring.md` § The watcher is itself a single point of failure
+    records for UptimeRobot. The mitigation the story names, an UptimeRobot HEARTBEAT monitor on
+    alert contact 8726805 pinged by the job after a fully passing run, is an Ask First of the story
+    and undecided at filing: the free plan may refuse the monitor type as it refused
+    `sslExpirationReminder`. Recorded as a stated limit in `ops/registry-verification.md` and as
+    Pending Operator action 5 there.
+
+    **Owner: the Operator, through that pending action.** If the heartbeat lands, this entry closes
+    with the monitor id and the script gains the ping; if it is refused, the fallback is a
+    `workflow_dispatch` run on AD-22's refresh schedule, which re-enables a disabled schedule, and
+    this entry stays open naming that. **Trigger: the ruling on the heartbeat, or the first 60 days
+    without a push to any branch.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
+  id: DW-86
+  summary: >-
+    `REGISTRY_VERIFICATION_TOKEN` is a fine-grained PAT with an expiry, and when it expires every
+    `source exists` check in the Registry verification fails on one run, which reads as fourteen
+    deleted repositories before it reads as an expired secret.
+  evidence: |-
+    The job authenticates `GET api.github.com/repos/<owner>/<repo>` and the `contents` read with a
+    fine-grained PAT carrying Contents read on `cs-tracker`, `cs-tournament`, `StreamVault` and
+    `Mutuo`. A fine-grained token carries an expiry chosen at minting; an expired or revoked token
+    answers 401 on every authenticated call, so a single run reports fourteen `source exists`
+    failures and one `token_contract` unreadable at once, and the anonymous half stays green. The
+    script names the secret in each of those failures, and `ops/registry-verification.md` § Stated
+    limits tells the reader that fourteen at once is the token first. Nothing in the repository
+    knows the expiry date: it lives in the Operator's GitHub settings and in the record's Pending
+    Operator action 1, which the Operator fills at minting.
+
+    **Owner: the Operator, through Pending Operator actions 1 and 6 of that record.** The closer is
+    the rotation before expiry and a `workflow_dispatch` run after it. **Trigger: the expiry date
+    written into action 1, less the lead the Operator chooses; or the first run whose every
+    `source exists` line is red.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
+  id: DW-87
+  summary: >-
+    Every workflow in `.github/workflows/` pins `actions/checkout` and `actions/setup-node` by
+    major tag (`@v7`) rather than by commit SHA, and none restricts the default `GITHUB_TOKEN`
+    with a `permissions:` block, so a moved tag runs foreign code with whatever scope the
+    repository's default token carries.
+  evidence: |-
+    Surfaced by the 2-23 review's edge-case layer against the new
+    `.github/workflows/registry-verification.yml`, which copies the estate's shape: `ci.yml`,
+    `deploy.yml` and `lighthouse.yml` all use `actions/checkout@v7` and `actions/setup-node@v7`
+    by tag and declare no `permissions:`. A major tag is mutable; pinning to a full SHA with the
+    tag in a comment, and declaring `permissions: contents: read` on jobs that only read, are the
+    two standard hardenings. Not this story's: the 2-23 spec's frozen block says no
+    `permissions:` on its job and its suite pins that absence, and a change of pinning style is
+    an estate-wide decision across four workflows, not one file. The registry-verification job
+    never uses the default token, so its exposure is the two actions only.
+
+    **Owner: unassigned; the natural home is Epic 3, which rewrites `deploy.yml` for GHCR
+    images (AD-8) and can set the pinning rule for all four files at once.** **Trigger: the
+    first edit to any `uses:` line in `.github/workflows/`, or Story 3-3.**
   status: open

@@ -79,6 +79,17 @@ read off the local checkout at `8adb8e2`, which is Story 1-19's closing commit p
 Pending Operator action 1 lands, the drift check's target exists on this host and not on GitHub,
 and this file says so rather than implying otherwise.
 
+**The folder is on the remote `main` since 2026-08-27**, the push `ops/cs-tracker-token-adoption.md`
+action 1 records (`3f37cce`, `8adb8e2`, `6807f7a` to `origin/main`, then `32a466a`), which carried
+Story 1-19's vendored folder. **Observed 2026-09-12** that it is there now, by
+`gh api repos/LuigiEspinosa/cs-tracker/contents/assets/css/cuatro-contracts/tokens.css?ref=main`
+with `Accept: application/vnd.github.raw`, whose second line reads `Contract v1.0.0`; corroborated by
+`gh api repos/LuigiEspinosa/cs-tracker` (`default_branch` `main`, `private` true, `pushed_at`
+`2026-08-27T22:39:15Z`, which is the last push to any branch and not a statement about `main` on its
+own). The paragraph above described the state earlier on 2026-08-27 and is left as written; Pending
+Operator action 1 is dated below. The drift check's target therefore exists on GitHub, which is where
+Story 2.23's job reads it.
+
 **The `cs-tracker` row is held to the vendored header by the hand-run detector.**
 `ops/cs-tracker-adoption-probe.mjs` carries a case, added after the rehearsal below, that parses
 this table's `cs-tracker` row through `ops/contract-adoption.mjs` and holds its Adopted version
@@ -102,6 +113,15 @@ record and its probe pin as a decision. The detector is reporting a real change 
 is what it is for; whether Story 1-19's record, its probe pin and `cs-tracker/AGENTS.md:36-39` follow
 the commit is Pending Operator action 7 below, and this story edits none of them.
 
+**Story 2.23's job exists from 2026-09-12**, `.github/workflows/registry-verification.yml` running
+`ops/registry-verification.mjs`, recorded in `ops/registry-verification.md`. It reads this table's
+`File read` cell for every Registry entry that declares a `token_contract`, joined on the last segment
+of the entry's `source`, fetches that path off the adopter's default branch through the GitHub API,
+and holds the `Contract vX.Y.Z` header equal to the declaration, failing by name when the repository
+is unreadable, the path is gone, the header is absent or the versions differ. **The probe above
+remains the local instrument** (DW-14): it reads the checkout beside this repository and compares
+every file by hash, which the job, reading one file over HTTPS, does not. Both stay. **Decision.**
+
 ## The exact target of the Epic 2 drift check
 
 Story 2.23 (`epics.md:2885-2896`) has one scheduled job read `Contract vX.Y.Z` out of each
@@ -116,7 +136,7 @@ search:
 | Path | `assets/css/cuatro-contracts/tokens.css` | **Decision.** AD-14's fixed folder name under `assets/css/`, `ops/cs-tracker-token-adoption.md:76` |
 | Line | 2 | **Observed 2026-08-27**, the second line of the file at `8adb8e2` |
 | Pattern | `Contract v(\d+\.\d+\.\d+)` | **Decision.** The generator refuses anything but exact `X.Y.Z` (`packages/tokens/build.mjs:68-77`), so the capture is always three dot-separated integers |
-| Compared against | `token_contract` on the `cs-tracker` entry of `contracts/registry.json`, which Story 2.5 sets to `1.0.0`, the value recorded here (`epics.md:2223-2224`) | **Observed 2026-09-03.** The field now exists and carries `1.0.0`, authored by Story 2-5. It said "the field does not exist yet" until then. **Nothing holds the two equal**: no test reads the Registry's value, and the schema constrains it only to `^\d+\.\d+\.\d+$`, so step 5 below is the only thing keeping them in step |
+| Compared against | `token_contract` on the `cs-tracker` entry of `contracts/registry.json`, which Story 2.5 sets to `1.0.0`, the value recorded here (`epics.md:2223-2224`) | **Observed 2026-09-03.** The field now exists and carries `1.0.0`, authored by Story 2-5. It said "the field does not exist yet" until then. **Nothing holds the two equal**: no test reads the Registry's value, and the schema constrains it only to `^\d+\.\d+\.\d+$`, so step 5 below is the only thing keeping them in step. **Amended 2026-09-12**: `ops/__tests__/registry-verification.test.ts` now holds the Registry's value equal to this file's `cs-tracker` row under the blocking `test` job, failing naming both, and Story 2.23's job holds it to the vendored header on every run |
 | When the folder is renamed or moved | The check **fails** rather than skipping (`epics.md:2893-2896`) | **Decision.** AD-16: a Satellite that renames the folder breaks the check rather than the styling |
 | The served surface it may also read | `https://cuatro.dev/contracts/tokens.css` | **Observed 2026-08-27T21:54:08Z** by `Invoke-WebRequest`: `200`, `content-type: text/css; charset=UTF-8`, `last-modified: Thu, 27 Aug 2026 19:06:39 GMT`, `etag: W/"1851-1a0449dfa18"`, `server: cloudflare`, line 2 of the body `Contract v1.0.0 · dark only · anchor hue 288` |
 
@@ -425,6 +445,15 @@ about the job. **Not walkable today**: the job is Story 2.23's. Until it exists,
 file's `cs-tracker` row to the vendored header, failing naming both values. The ledger row for the
 event records that the detector was run and what it said.
 
+**Walkable from 2026-09-12.** Story 2.23's job exists: `.github/workflows/registry-verification.yml`
+runs `ops/registry-verification.mjs` daily from `main`, on `workflow_dispatch`, and on every push
+that touches `contracts/registry.json`, so the Registry edit in step 5 is itself the run that
+confirms step 6. The three readings above are what to look for in that run's `token_contract` line:
+green after both commits, red naming both versions in the window between them, and a green line
+across a moved header with an unmoved field is a finding about the job. The hand-run probe stays as
+the local instrument (DW-14), and the ledger row names the run URL beside what the probe said.
+`ops/registry-verification.md` records the job. This paragraph said "Not walkable today" until then.
+
 ## The rehearsal
 
 The runbook was walked once on a throwaway `v1.0.1` on scratch branches named
@@ -731,7 +760,7 @@ table and the verbatim transcript are in **`ops/cs-tracker-accessibility-pass.md
 | **Test-file counts are path counts on the remote default branch** | They count test-shaped paths, support files included, not test cases. Only `cuatro-portfolio` and `cs-tracker` carry a test-case count, from suites run on this host | **Decision**, disclosed in the table |
 | **`cs-tracker`'s adoption is not on the remote** | The remote `main` was last pushed 2026-08-13 and carries no vendored folder. The adopted version was read off the local checkout at `8adb8e2` | **Observed 2026-08-27.** Pending Operator action 1 |
 | **Three repositories have a `dev` branch that was not inspected** | `cuatro-finance`, `StreamVault` and `poketracker-go` hold only `LICENSE` on `main`. The policy is about the default branch, where an unattended merge would land, and that is what was observed | **Decision** |
-| **Steps 5 and 6 of the runbook cannot be walked** | The Registry `token_contract` field is Story 2.5's and the scheduled check is Story 2.23's; neither exists. The rehearsal marks both not walkable with the reason rather than pretending | **Decision** |
+| ~~**Steps 5 and 6 of the runbook cannot be walked**~~ **Closed 2026-09-12.** | Struck rather than deleted. It read: the Registry `token_contract` field is Story 2.5's and the scheduled check is Story 2.23's; neither exists. Story 2-5 authored the field on 2026-09-03 and Story 2.23 landed the job on 2026-09-12; both steps carry a dated "walkable from" paragraph above. Neither has yet been walked on a real release | **Decision**, discharged by the two stories |
 | **The notification in the rehearsal was a dry run** | The ledger row was written on the scratch branch and no work item was opened in `cs-tracker`'s tracker, because a rehearsal that opens a real story asks a consumer to migrate to a version that does not exist | **Decision** |
 | **The published header stayed `1.0.0` throughout** | The bump lived on scratch branches only. Every file under `contracts/` hashes to its pre-walk value, both trees are clean and both scratch branches are gone, as the teardown check in the rehearsal shows | **Observed**, in the rehearsal |
 | **The AD-19 pass is one host, one Chromium, one viewport, one day** | AD-19 asks for the pass once by hand after adoption and that is what was made. Story 8.1's restyle is the next time it must be run | **Decision.** Pending Operator action 4 |
@@ -745,8 +774,8 @@ This file hands the Operator work Story 1-20 may not do, in the shape `ops/token
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Push `cs-tracker`'s `main`**, at `ae34619` today (`8adb8e2`, this story's two `AGENTS.md` commits `6807f7a` and `ae34619`, and the Operator's `32a466a`, four commits past the remote's 2026-08-13 push), so the drift check's target exists on the remote | Operator | The same act as `ops/cs-tracker-token-adoption.md` action 1. Until it happens the adopted-versions table describes a checkout on one host | _not done_ |
-| 2 | **Set `token_contract` to `1.0.0` on the `cs-tracker` Registry entry in Story 2.5, and point Story 2.23's check at the target named here** | Operator, through those stories | Both stories name this record as their source. The target is repository, branch, path, line and pattern, above | _not done_ |
+| 1 | **Push `cs-tracker`'s `main`**, at `ae34619` today (`8adb8e2`, this story's two `AGENTS.md` commits `6807f7a` and `ae34619`, and the Operator's `32a466a`, four commits past the remote's 2026-08-13 push), so the drift check's target exists on the remote | Operator | The same act as `ops/cs-tracker-token-adoption.md` action 1. Until it happens the adopted-versions table describes a checkout on one host | **2026-08-27.** The push `ops/cs-tracker-token-adoption.md` action 1 records (`3f37cce`, `8adb8e2`, `6807f7a`, then `32a466a`, to `origin/main`). **Observed 2026-09-12** by Story 2.23 that the folder is on `main` now, by the contents call under § The adopted versions; `pushed_at` `2026-08-27T22:39:15Z` corroborates the day. Dated here by that story, which read the target off the remote |
+| 2 | **Set `token_contract` to `1.0.0` on the `cs-tracker` Registry entry in Story 2.5, and point Story 2.23's check at the target named here** | Operator, through those stories | Both stories name this record as their source. The target is repository, branch, path, line and pattern, above | **2026-09-12.** The field was set by Story 2-5 on 2026-09-03 (the amended row above); Story 2.23's `ops/registry-verification.mjs` reads the path off this file's `cs-tracker` row and the branch off the REST API's `default_branch`, and `ops/__tests__/registry-verification.test.ts` holds the field equal to the row |
 | 3 | **Decide the disposition of the 74 hit-target findings and the 38 transition findings** | Operator | They are Story 8.1's restyle under `RESTYLE-SPEC.md` § Family A (AD-20: a step carries nothing else), 18 of the 74 being daisyUI's defaults and 56 the application's own markup. The two causes behind the 38 transition findings are not geometry and may deserve an earlier decision: Tailwind v4's `transition-colors` transitions `outline-color` at 150 ms on every link that uses it, and the application's own `transition-all` on the three quick-link cards names `all`, so the ring's colour animates in on those controls; 29 more controls name `all` over `0s` and are excluded because they never animate. `EXPERIENCE.md`'s S-2 rule says never transitioned. The pass record names each | _not done_ |
 | 4 | **Re-run `node ops/cs-tracker-accessibility-probe.mjs` after Story 8.1, after any Tailwind or daisyUI bump reaching `cs-tracker`, and on AD-22's refresh schedule**, and add this probe to that scope beside the two sibling probes | Operator | The probe needs a Postgres, a seeded database, a running `mix phx.server` and a Chromium, and the pass record says how to get all four in six commands. Nothing in CI can run it | _not done_ |
 | 5 | **Re-gather the policy table on AD-22's schedule and whenever a repository gains a workflow or a dependency-automation configuration** | Operator | The script that gathered it is described in § The estate, observed, and takes about ninety seconds. A row that changes is a decision to record before the setting lands | _not done_ |

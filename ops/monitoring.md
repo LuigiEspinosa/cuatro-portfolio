@@ -587,6 +587,17 @@ probably fine" into an observation on a known date. A genuine second channel, or
 dead-man's-switch that alerts when the monitor stops reporting, is a decision for a later
 story rather than something to bolt on here.
 
+**Reopened 2026-09-12 by Story 2.23**, whose scheduled Registry verification
+(`ops/registry-verification.md`) has the same shape of blind spot twice over: GitHub disables a
+public repository's `schedule` after 60 days without a commit, and a schedule that never fires
+looks, from inside the estate, like a Registry with nothing wrong. The candidate mitigation is an
+UptimeRobot HEARTBEAT monitor on alert contact 8726805, pinged by the job after a fully passing
+run, which would be the estate's first dead-man's switch. It is an Ask First of that story and is
+**not decided here**: the free plan may refuse the monitor type as it refused
+`sslExpirationReminder` above. The outcome, landed or refused, is recorded in that record's Pending
+Operator action 5 and in a dated note beneath this one; until then the 60-day disable stands as a
+stated limit there with no mitigation.
+
 ## The certificate rule
 
 **There are two rules, and they are independent.** The age rule catches a renewal that has
@@ -991,7 +1002,7 @@ than being waived.
 | Story 1-10 | Installs Playwright and adds a CI job, which is enabling automation |
 | Story 1-11 | Publishes `contracts/tokens.css` from a generator, with the CI work that follows |
 | Story 1-14 | Adds the blocking contract-boundary CI check |
-| Story 2-23 | Scheduled Registry verification, external to the box. `epics.md:2722` names Story 1.2 as a dependency |
+| Story 2-23 | Scheduled Registry verification, external to the box. `epics.md:2879` (was `:2722`; the story's heading is `:2872`) names Story 1.2 as a dependency. **Read 2026-09-12** by the story before it added `.github/workflows/registry-verification.yml`: the line read `satisfied as of 2026-08-17`, cited in `ops/registry-verification.md` |
 | Epic 2, epic level | `epics.md:856` records Epic 2 as blocked by AD-17a, which gates the automation Story 2.8 adds |
 
 **This list is indicative, not exhaustive.** It is accurate as of 2026-08-16 and it will go

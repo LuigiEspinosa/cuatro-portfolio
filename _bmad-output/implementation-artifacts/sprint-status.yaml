@@ -167,7 +167,7 @@ development_status:
   # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
   2-20-migration-step-5-swap-the-type: review
   2-22-migration-step-7-delete-the-aliases: backlog
-  2-23-scheduled-registry-verification-external-to-the-box: backlog
+  2-23-scheduled-registry-verification-external-to-the-box: review
   2-24-hub-visitor-instrumentation: backlog
   2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog

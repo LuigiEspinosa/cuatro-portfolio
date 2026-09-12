@@ -1180,6 +1180,7 @@ async function probe() {
     // to the folder: every other pin on the version is a literal in a test.
     // This is the hand-run stand-in for step 6's declaration-against-header
     // comparison until Story 2.23's scheduled job exists.
+    // That job exists from 2026-09-12 (`ops/registry-verification.mjs`); this case stays as the local instrument (DW-14).
     const recordText = readOrNull(join(REPO_ROOT, ...RECORD_REL.split('/')));
     const vendoredTokensCss = readOrNull(join(vendoredDir, 'tokens.css'));
     const readOr = (text, read) => {

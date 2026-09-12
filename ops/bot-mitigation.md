@@ -52,6 +52,20 @@ plan's five custom rules are used and one is deliberately held in reserve.
 monitoring gate. A filter that can silently challenge the probes would close the gate and blind
 it in the same change.
 
+**A second automated reader passes these rules from 2026-09-12, and by name rather than by a
+skip.** Story 2.23's scheduled Registry verification (`ops/registry-verification.md`) fetches every
+`live` URL from a GitHub-hosted runner with the user agent
+`cuatro-registry-verification/1 (+https://cuatro.dev/contracts/registry.json)`. It is not on rule
+1's list, it is not empty for rule 3, and rule 2 does not skip it, so it is challenged by nothing
+today: the four `live` hostnames behind these rules, `cuatro.dev`, `tracker.cuatro.dev`,
+`cs-tracker.cuatro.dev` and `library.cuatro.dev`, answered 200, 307, 302 and 302. The other two
+`live` URLs, `inclusivcup.vercel.app` and `luigiespinosa.github.io`, are not Cloudflare hostnames
+and these rules never see them. **Observed 2026-09-12** from the authoring host with that agent. Recorded so that an edit to any of the four rules is checked against this
+agent before it lands: a rule that challenges it turns every `live` check red on the next scheduled
+run, which is the same shape of self-inflicted blindness rule 2 exists to prevent. The agent is
+deliberately not added to rule 2's skip, for the reason under Rule order is load-bearing: a skip
+keyed on client-supplied text is a bypass, and this reader needs no bypass.
+
 ### Rule order is load-bearing, and the first ordering was wrong
 
 **Found and corrected during this story's own review, 2026-08-17.** The skip rule was

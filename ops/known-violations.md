@@ -238,6 +238,18 @@ not chosen. There are two remedies and this entry picks neither: publish the rep
 that it stays private and accept a permanently unresolving `source` for that entry, as
 `StreamVault` already does.
 
+**Noted 2026-09-12 by Story 2.23: the four repositories now have a parsed copy that a job reads.**
+`ops/registry-verification.md` § Sources tolerated to answer 404 anonymously carries one row per
+repository named here, and `ops/registry-verification.mjs`, the scheduled Registry verification,
+parses that table on every run: an anonymous 404 on a repository in it is `PASS ... tolerated by
+KV-2`, and on any other repository a failure. Two consequences. A "publish it" ruling under pending
+action 5 also strikes that repository's row there (Ruling cell prefixed `Struck YYYY-MM-DD`), and the
+job says so itself the first time the repository answers 2xx anonymously; a "stays private" ruling
+changes the row's Ruling text and nothing else. And the copy is held to this entry by nothing
+mechanical: a repository added here without a row there fails the job as a public repository gone
+private, and a row there without a ruling here tolerates a breach nobody recorded, so the two are
+edited together by hand. The unit suite pins the four rows as they stand today.
+
 ---
 
 ## KV-3: Two applications serve on `cuatro.dev` from outside the Registry
