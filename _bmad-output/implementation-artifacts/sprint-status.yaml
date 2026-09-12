@@ -165,7 +165,7 @@ development_status:
   # 2-19 REPLACED 2026-08-15 by 2-34, a blocking CI gate.
   # 2-21 DELETED 2026-08-15. A rewritten stylesheet has no call sites to rename.
   # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
-  2-20-migration-step-5-swap-the-type: review
+  2-20-migration-step-5-swap-the-type: done
   2-22-migration-step-7-delete-the-aliases: backlog
   2-23-scheduled-registry-verification-external-to-the-box: review
   2-24-hub-visitor-instrumentation: backlog
