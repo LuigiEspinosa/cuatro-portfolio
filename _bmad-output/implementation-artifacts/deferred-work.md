@@ -4258,6 +4258,13 @@ status: done
     `workflow_dispatch` run on AD-22's refresh schedule, which re-enables a disabled schedule, and
     this entry stays open naming that. **Trigger: the ruling on the heartbeat, or the first 60 days
     without a push to any branch.**
+
+    **Ruled 2026-09-12: yes, and refused by the plan.** Three `create-monitor` attempts with
+    `type: HEARTBEAT` (full configuration, contact only, bare type) each answered `You are not
+    allowed to use some settings with your current plan`; nothing was created. No ping is wired.
+    The fallback stands: a `workflow_dispatch` run on AD-22's refresh schedule. Reopens if the
+    account moves to a tier that offers the type. Recorded in `ops/registry-verification.md`
+    action 5 and § Stated limits, and in `ops/monitoring.md` beneath the reopened note.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`

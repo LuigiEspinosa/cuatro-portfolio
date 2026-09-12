@@ -360,6 +360,12 @@ GitHub-hosted `ubuntu-24.04` runner. Both runs, the alert-path date, the first S
 checked, 16 resolved, 80%) and actions 1 to 4 and 7 are in `ops/registry-verification.md`. Still
 open: action 5 (the heartbeat) and action 6 (rotate before 2026-12-11).
 
+**2026-09-12, the heartbeat ruled.** The Operator said yes; the free plan refused the HEARTBEAT
+type on three `create-monitor` attempts, nothing was created, no ping is wired, and the refusal is
+recorded in the record's action 5 and § Stated limits, in `ops/monitoring.md`, and on DW-85, which
+stays open naming the `workflow_dispatch` fallback. Action 6 (rotate before 2026-12-11) is the one
+open item. The Operator moved the story to `done` on the board the same day.
+
 ## Suggested Review Order
 
 **The job, off the box**

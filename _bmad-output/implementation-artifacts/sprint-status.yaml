@@ -167,7 +167,10 @@ development_status:
   # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
   2-20-migration-step-5-swap-the-type: done
   2-22-migration-step-7-delete-the-aliases: backlog
-  2-23-scheduled-registry-verification-external-to-the-box: review
+  # 2-23 closed 2026-09-12. Job live at d91fe09, runs 34721281941 (exit 2, mail proven) and
+  # 34722748245 (35 of 35 on a GitHub-hosted runner), secret set, first SM-4 reading 80%.
+  # Heartbeat refused by the UptimeRobot free plan (DW-85 open); PAT rotates before 2026-12-11.
+  2-23-scheduled-registry-verification-external-to-the-box: done
   2-24-hub-visitor-instrumentation: backlog
   2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog

@@ -598,6 +598,17 @@ run, which would be the estate's first dead-man's switch. It is an Ask First of 
 Operator action 5 and in a dated note beneath this one; until then the 60-day disable stands as a
 stated limit there with no mitigation.
 
+**Refused 2026-09-12.** The Operator ruled yes the same day, and the free plan refused the
+HEARTBEAT type: `create-monitor` through the UptimeRobot MCP answered `You are not allowed to use
+some settings with your current plan` three times, with a daily interval and 24 h grace on contact
+8726805, with the contact alone, and with the bare type and nothing else; `list-monitors` confirms
+no monitor was created. **Observed 2026-09-12.** So the estate still has no dead-man's switch, on
+the same plan-gate that took the certificate-age reminder, and this section's argument stands
+unchanged: the quarterly re-test is the mitigation, and for the Registry job the fallback is a
+`workflow_dispatch` run on AD-22's refresh schedule, which re-enables a disabled schedule (DW-85).
+A paid tier would open the type; whether it is worth buying is a decision against NFR-4's ceiling
+for a later story, not this one.
+
 ## The certificate rule
 
 **There are two rules, and they are independent.** The age rule catches a renewal that has
