@@ -151,14 +151,14 @@ taken from a green run's summary or from the last run of the month where none wa
 checked** counts `source resolves` and `live` rows; **Resolved** counts those that passed without a
 KV-2 tolerance; **Share** is the second over the first.
 
-**No reading has been taken.** The table is created empty rather than omitted, so that an absent
-reading is visibly absent. The first row comes from the first green run, Pending Operator action 4,
-and **replaces** the `_none recorded_` placeholder row rather than sitting beside it; the suite holds
-the two apart.
+The table was created empty on 2026-09-12 with a `_none recorded_` placeholder, so that an absent
+reading would be visibly absent; the first row replaced the placeholder the same day, from the
+first green run (Pending Operator action 4). A later month's row is added beneath, never beside a
+placeholder; the suite holds the two shapes apart.
 
 | Month (ISO 8601) | Links checked | Resolved | Share | Run URL | Taken by |
 |---|---|---|---|---|---|
-| _none recorded_ | | | | | |
+| 2026-09 | 20 | 16 | 80% | [34722748245](https://github.com/LuigiEspinosa/cuatro-portfolio/actions/runs/34722748245) | The story's agent, from the run's log, on 2026-09-12. The four not counted as resolved are KV-2's tolerated 404s (`cs-tracker`, `cs-tournament`, `StreamVault`, `Mutuo`); every `live` resolved |
 
 ## Stated limits
 
@@ -187,10 +187,10 @@ and adding a secret are console acts, and pushing is the Operator's.
 | 1 | **Mint the fine-grained PAT**: resource owner `LuigiEspinosa`, repository access limited to `cs-tracker`, `cs-tournament`, `StreamVault` and `Mutuo`, permission Contents read-only, and write its expiry date into this cell | Operator | Read-only on four repositories is the least the `token_contract` and authenticated `source exists` checks need. Public repositories answer the authenticated call with any valid token | **2026-09-12.** Fine-grained, the four repositories, Contents read-only, **expires 2026-12-11** (action 6 falls due before then). Minted twice the same day: the first token was pasted onto a command line in the story's session and revoked as exposed; the second replaced it and is the one in the secret |
 | 2 | **Add the repository secret `REGISTRY_VERIFICATION_TOKEN`** carrying it, in this repository's Actions secrets | Operator | Byte-exact, as `AGENTS.md` prescribes: `cmd /c "gh secret set REGISTRY_VERIFICATION_TOKEN < token.txt"`, then delete `token.txt`. Never from a PowerShell pipe, which appends CRLF, and `<` is not redirection in PowerShell. Nothing in the repository ever prints it | **2026-09-12T22:25:31Z.** Set by `gh secret set` reading the value over stdin from the gitignored `.env`, no trailing newline, the value printed nowhere; `gh secret list` shows the name and that timestamp |
 | 3 | **Confirm the failure mail arrived** from the first `push` run on `dev`, the one before action 2, and date § Alert path "last verified" | Operator | The run exits 2 naming the secret. This is the deliberately induced failure `ops/monitoring.md` asks for, on this path | **2026-09-12.** Run 34721281941 at 21:54:50Z; the mail confirmed by the Operator at about 22:00Z. § Alert path is dated |
-| 4 | **Take the first SM-4 reading** from the first green run into § Readings | Operator | 20 links checked, 16 resolved and 4 tolerated is what the Registry as committed should read | _not done_ |
+| 4 | **Take the first SM-4 reading** from the first green run into § Readings | Operator | 20 links checked, 16 resolved and 4 tolerated is what the Registry as committed should read | **2026-09-12.** Read off run 34722748245: 20, 16, 80%, exactly the expected figures. The row replaced the placeholder |
 | 5 | **Rule on the heartbeat**: create an UptimeRobot HEARTBEAT monitor on alert contact 8726805, or record that the free plan refused it | Operator | Ask First of the story. If it lands, the script gains a ping of `$REGISTRY_VERIFICATION_HEARTBEAT_URL` after a fully passing run, the URL is a second secret on the workflow's script step, and the same change moves the suite, which today pins `HEARTBEAT` absent from the workflow and `env:` appearing exactly once; if it does not, the 60-day disable stands as a stated limit with no mitigation, and `ops/monitoring.md` § The watcher is itself a single point of failure carries the outcome | _not done_ |
 | 6 | **Rotate the PAT before its expiry**, replace the secret, and re-run by `workflow_dispatch` | Operator | The expiry date is in action 1. An expired token is fourteen `source exists` failures on one run | _not done_ |
-| 7 | **Record the observed runs** below: the first `push` run (exit 2), the run after the secret (green), both run URLs, and the "Set up job" runner lines | Operator, with the story's review | Until then § Observed runs says so | _not done_ |
+| 7 | **Record the observed runs** below: the first `push` run (exit 2), the run after the secret (green), both run URLs, and the "Set up job" runner lines | Operator, with the story's review | Until then § Observed runs says so | **2026-09-12.** Runs 34721281941 (exit 2) and 34722748245 (35 of 35), both with their runner lines, in § Observed runs |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a source is made public or ruled private,
@@ -210,3 +210,4 @@ passed and the table in its job summary.
 | # | Run | Trigger | Outcome | Nature |
 |---|---|---|---|---|
 | 1 | [34721281941](https://github.com/LuigiEspinosa/cuatro-portfolio/actions/runs/34721281941), `dev` at `d91fe09`, 2026-09-12T21:54:50Z | `push`, the commit that added the workflow | Failure, exit 2, one line on stderr: `REGISTRY_VERIFICATION_TOKEN is not set, so nothing was fetched. Add the repository secret (ops/registry-verification.md).` The step before it, `test "$RUNNER_ENVIRONMENT" = github-hosted`, passed. Nothing was fetched | **Observed 2026-09-12** by `gh run view 34721281941 --log`. Set up job: `Current runner version: '2.337.0'`, `Runner Image Provisioner` version `20260828.587`, `Runner Image` `ubuntu-24.04` version `20260907.300.1`, `Included Software: .../ubuntu24/20260907.300/...`. A GitHub-hosted image by name and version, which is AD-18's confirmation; the VPS runs no runner and its address is `177.7.52.248` (`ops/monitoring.md`). This is the deliberate failure of Pending Operator action 3 |
+| 2 | [34722748245](https://github.com/LuigiEspinosa/cuatro-portfolio/actions/runs/34722748245), `dev` at `8e80290`, 2026-09-12T22:26:12Z | `push`, the commit that recorded run 1, after the secret was set at 22:25:31Z | Success, exit 0, `# 35 of 35 checks passed`: 14 `source exists` (all `default branch main`, `Lumen` and `tcg-tracker` `archived`), 14 `source resolves` (10 by 200, 4 `answered 404 anonymously, tolerated by KV-2`), 6 `live` (`cuatro.dev` 200, `tracker` 307, `cs-tracker` 302, `library` 302, `inclusivcup.vercel.app` 200, `list-wheel` 200), 1 `token_contract` (`the Registry declares 1.0.0 and LuigiEspinosa/cs-tracker:assets/css/cuatro-contracts/tokens.css@main reads Contract v1.0.0`). The table is in the run's job summary | **Observed 2026-09-12** by `gh run view 34722748245 --log`. Same runner image and version as run 1 (`ubuntu-24.04`, `20260907.300.1`, runner `2.337.0`). The first § Readings row is taken from this run |

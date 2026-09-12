@@ -244,7 +244,7 @@ readings table and the Operator actions.
       rules table recording the job's user agent.
 - [x] `deferred-work.md`: assign an id to `:1724-1745` and close it naming the case; note on DW-14; file
       the 90-day retention ceiling, the 60-day disable (if no heartbeat) and the PAT expiry as new entries.
-- [ ] Observed runs, in the record: the first push run on `dev` before the secret (exit 2, mail received,
+- [x] Observed runs, in the record: the first push run on `dev` before the secret (exit 2, mail received,
       dated), the run after the secret (green), the "Set up job" runner lines and both run URLs.
 
 **Acceptance Criteria:**
@@ -350,6 +350,15 @@ both run URLs and the runner lines into `ops/registry-verification.md` § Observ
 § Readings row. The heartbeat is an Ask First still undecided (Pending Operator action 5, DW-85).
 One review finding was deferred rather than fixed: DW-87, the estate's workflows pin actions by tag
 and restrict no token permissions.
+
+**2026-09-12, after the push.** The two runs happened as specified and the second acceptance
+criterion is met: run 34721281941 (push of `d91fe09`, before the secret) exited 2 naming
+`REGISTRY_VERIFICATION_TOKEN` and the Operator confirmed the failure mail; the PAT was minted
+(twice: the first was pasted onto a command line in this session and revoked as exposed), the secret
+set over stdin at 22:25:31Z, and run 34722748245 (push of `8e80290`) passed 35 of 35 on a
+GitHub-hosted `ubuntu-24.04` runner. Both runs, the alert-path date, the first SM-4 reading (20
+checked, 16 resolved, 80%) and actions 1 to 4 and 7 are in `ops/registry-verification.md`. Still
+open: action 5 (the heartbeat) and action 6 (rotate before 2026-12-11).
 
 ## Suggested Review Order
 
