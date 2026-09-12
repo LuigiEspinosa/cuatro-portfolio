@@ -264,7 +264,10 @@ const EXEMPTIONS: readonly Exemption[] = [
     source: 'components/organisms/HomeLayout/HomeLayout.tsx:142,150',
     routes: ['/'],
     covers: 2,
-    measured: '320.00 x 23.00',
+    // Re-read 2026-09-12 by Story 2-20, which moved both home rows onto the display face at 75%
+    // width: the line box grew from 23.00 to 32.00 with the contract's metric overrides, and the
+    // contact widths narrowed with the face. Still under the floor on height, still Story 2-32's.
+    measured: '320.00 x 32.00',
     closedBy: 'Story 2-32',
   },
   {
@@ -273,7 +276,7 @@ const EXEMPTIONS: readonly Exemption[] = [
     source: 'components/molecules/ContactContainer/ContactContainer.tsx:5,8,15',
     routes: ['/'],
     covers: 3,
-    measured: '58.00 x 23.00 to 84.00 x 23.00',
+    measured: '57.00 x 32.00 to 81.00 x 32.00',
     closedBy: 'Story 2-32',
   },
 ];

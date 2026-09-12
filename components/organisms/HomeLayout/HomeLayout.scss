@@ -118,6 +118,7 @@ body[id=''] {
 // Navigation
 .nav-link {
   font-family: var(--confillia-normal);
+  font-stretch: 75%;
   font-size: clamp(1.5rem, 2.5vw, 2.5rem);
   color: var(--light-gray-color);
   text-decoration: none;
@@ -149,6 +150,7 @@ body[id=''] {
 .home-panel--contact {
   .contact-container a {
     font-family: var(--confillia-normal);
+    font-stretch: 75%;
     font-size: clamp(1.5rem, 2.5vw, 2.5rem);
     color: var(--light-gray-color);
     text-decoration: none;

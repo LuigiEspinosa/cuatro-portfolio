@@ -724,6 +724,80 @@ family the contract is free to retune under a MINOR bump. Nothing else in that f
 | 8 | **Record the first real CI run of the `rendered-output` job with the new spec and the new baseline**, from the Actions run summary | Operator | The nine new browser checks and the regenerated baseline have only ever run in a container on a Windows development host. Same open item as action 3, which is in this file's § "Pending Operator actions", the step 1 list, which sits below this section rather than above it, and `ops/rendered-output-harness.md` action 1 | _not done_ |
 | 9 | **Decide who fixes the tech chip label at 2.56:1**, and whether it waits for UX-DR10 | Operator | Unlike action 6, this one is **caused by this commit** rather than inherited: `--accent-dim` lost its `0.22` alpha to two opaque roles, so the label at `ProjectCard.scss:66` and `WorkItem.scss:144` fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor. The measurement and its method are in § "The contrast direction of each colour change". No fix was available inside this story: the mapping is to be followed rather than invented, and a third scoped value or a label colour means inventing one or editing a component stylesheet. The cheapest real fix is a chip fill of `--token-bg-raised` with the border keeping `--accent-dim`, which is a UX-DR10 shaped decision and not this step's to take. It is also below the `.lighthouserc.js` floor on `/work`, which that config asserts at 0.95 severity error, so a Lighthouse run is where it surfaces next. **Narrowed 2026-09-07**: the surviving chip is `WorkItem.scss:144` alone and `/projects` left the collect list with the route, so `/work` is the only audited surface the pair reaches | _not done_ |
 
+### Step 5, the type swap, closes six rows across four of the sections above
+
+**2026-09-12, Story 2-20.** Every record above is left as written; this section says which rows
+stopped being true on this date and what replaced each: two in § The four properties deliberately
+left alone, two in § Stated limits of step 2, one in § What would invalidate the step 2 record and
+one in § What would invalidate this record. The mechanism is the one step 2 set for
+`--monument-bold`, a family alias with the axis the family name used to carry set by hand beside it,
+applied to the width axis rather than the weight one.
+
+**§ The four properties deliberately left alone, two rows closed.** `--confillia-normal` is
+`var(--f-display)` in `app/app.scss` and `font-stretch: 75%` sits directly under `font-family` at
+its two call sites, `HomeLayout.scss:120-121` and `:152-153` (the row above cites `:117` and
+`:148`, stale by three lines since step 2 and not corrected in a record dated 2026-08-26). No
+`font-weight` line at either: the published `700 800` range clamps the inherited 400 to 700, the
+same clamp `DISPLAY_REGULAR_SITES` in `tests/e2e/anchor-aliases.pw.ts` asserts as a precondition for
+`--monument-regular`. `--confillia-bold` is deleted, not retargeted: it had zero call sites, counted
+in this file's own stated limits, so nothing had to be rewritten for it. O-6 is not closed by this
+section: the two sites were rendered and screenshotted in the pinned container on 2026-09-12, at 360
+and at 1024, with the nav and contact links in the display family at 75% width, and O-6 closes on
+the Operator's confirmation at this story's review, which is Story 2-20's fourth acceptance
+criterion and is to be recorded here with its date when given. UX-DR12 is this commit. The two rows
+that remain, `--accent-glow` and `--hero-height`, are the two literals both suites now pin.
+
+**§ Stated limits of step 2, two rows closed.** "The retired display face is still preloaded, and
+the adopted one is not": both preloads are deleted from `app/layout.tsx` and nothing replaced them.
+`GlitchText.tsx:37-42` gates `SplitText` on `document.fonts.ready`, so the width guarantee the
+preload comment claimed was never the preload's to give, and a preload of a contract face would put
+`contracts/` in a scanned source, which `app/__tests__/anchor-contract.test.ts` refuses. The
+reasoning and the measured cost are in `ops/asset-budget.md` § What this reads against the budget's
+own rules, Rule 4. "Eight local `@font-face` declarations are now resolved by nothing": all ten are
+gone, `app/scss/_fonts.scss` and its `@forward` with them, and the thirty-nine binaries under
+`public/fonts/` with those, the four Italic and six `.eot` files no block ever named included. The
+inventory that row said the retiring story inherits is the inventory this story retired, and
+`ops/asset-budget.md` § The faces the built CSS declares carries the after figure: three families,
+zero unreached.
+
+**§ What would invalidate the step 2 record, one row closed.** "`--accent-glow`, `--hero-height` or
+either Confillia name is aliased or deleted: the literals case fails naming the property, and
+whichever open question holds it has been closed without being recorded." Both Confillia names
+moved, the literals case failed exactly as the row said it would, in both suites, and the question
+is recorded here rather than closed in silence. The row narrows to the two names that remain.
+
+**§ What would invalidate this record, one row stale.** "`contracts/fonts.css` gains or loses a face,
+or `app/scss/_fonts.scss` does: both halves pin the counts, three published and ten local." There is
+no local count to pin. The unit case that held the two lists apart by family name is deleted, and
+its slot is the retired-family guard: no source under `app/`, `components/`, `hooks/`, `content/` or
+`lib/` names `Confillia`, `MonumentExtended`, `GeneralSans`, a root-relative or `public/fonts/`
+path, or, in a stylesheet, a `@font-face` at all, comments stripped first, with the matcher shown
+firing on the partial's own shape and not firing on the contract naming its own `./fonts/` folder.
+The three published faces are still pinned in both halves.
+
+**Two things this section does not close, filed rather than fixed.** `app/app.scss:49-56` still
+says four `--monument-bold` call sites and three `--monument-regular` ones, and `AGENTS.md:87-90`
+still says four and cites the two aliases at `:56-57` where they now sit at `:57-58`: the counts
+went stale with Stories 2-9 and 2-14, not with this one, the citation drifted with this story's
+Confillia comment, and both are filed in `deferred-work.md` as DW-81. And the single-quote assertion
+in `tests/e2e/contract-anchor.pw.ts`, which this file's § Two corrections to step 1's record says
+holds the quote normalisation from being inert, had exactly the two Confillia literals to fire on;
+it is deleted with the normaliser and its planted control, because nothing `app/app.scss` authors on
+`:root` is single-quoted any more and a helper kept alive by its own fixture measures nothing.
+
+**What is asserted, and by which gate.** `tests/e2e/type-swap.pw.ts` measures the swap on the real
+routes: the two Confillia sites compute the display family at `font-stretch: 75%`; on all five
+surfaces the built CSS declares exactly the contract's three faces and nothing is fetched under
+`/fonts/`, and the old binary's URL answers 404; every element that reaches the display face, on
+`/`, `/work` and the 404, holds its height within 1% across an aborted-then-allowed woff2 swap,
+against a planted control that points at the same woff2 with the four override descriptors stripped
+and does not; and one string measures two widths at the two display aliases, which is the weight
+`getComputedStyle().fontWeight` cannot see, and two widths at `font-stretch` 75% and 100%, which is
+the width axis `getComputedStyle().fontStretch` cannot see. `tests/e2e/narrative.pw.ts` goes on
+pinning that the `/` document preloads no font. `tests/e2e/anchor-aliases.pw.ts` holds the
+`--confillia-normal` call sites on disk to two, each with its `font-stretch: 75%` line, the way it
+holds `--monument-bold` to its weight lines. `ops/rendered-output-harness.md` carries the row.
+
 ## What Story 1-20 will record here
 
 `epics.md` closes Epic 1 with Story 1-20, "Record the adopted contract version and the automation

@@ -21,17 +21,18 @@
 // `contracts/fonts.css` would resolve against wherever the browser fetched the stylesheet
 // from rather than against the contract folder.
 //
-// Position matters as well as form. Dart Sass emits module CSS in source order, so these two
-// loads sit above the forwards below to keep the contract's `@font-face` blocks ahead of the
-// Anchor's own. Order between them is tokens then fonts, matching AD-14's file order and
-// `contracts/tailwind.css`.
+// Order between the two loads is tokens then fonts, matching AD-14's file order and
+// `contracts/tailwind.css`. Until Story 2-20 a second forward sat below them, `./fonts`,
+// carrying the Hub's own ten `@font-face` blocks, and Dart Sass emitting module CSS in source
+// order meant the contract loads had to precede it so the published faces were emitted first.
+// That partial is gone with the binaries it named, so the contract's three faces are the only
+// `@font-face` blocks in the build and nothing here depends on sitting above `./print`.
 //
-// Nothing in this repository consumes any of these names yet, and that is the point: this
-// story adds the contract and changes no pixel. Story 1-18 redefines the Hub's sixteen
-// existing custom properties in `app/app.scss` as references to the token roles, and that is
-// the commit that changes how `cuatro.dev` looks.
+// The names are consumed. Story 1-18 redefined the Hub's custom properties in `app/app.scss`
+// as references to the token roles, which is the commit that changed how `cuatro.dev` looks,
+// and the Epic 2 rebuilds name roles directly. `app/__tests__/anchor-contract.test.ts` holds the
+// partition of who may name what.
 @use '../../contracts/tokens';
 @use '../../contracts/fonts';
 
-@forward './fonts';
 @forward './print';

@@ -262,8 +262,10 @@ ${samples}
   for (const file of FACE_FILES) {
     // The URL is asserted, not merely the status of whatever was fetched. A
     // face request that went to `/fonts/<file>.woff2` at the document root
-    // would mean the relative `url()` had resolved against the wrong location,
-    // and on this server that path exists for other files.
+    // would mean the relative `url()` had resolved against the wrong location.
+    // Until Story 2-20 that path existed on this server for the Hub's own
+    // binaries; it answers 404 now, which is a second reason the URL is what
+    // is asserted.
     const url = `${origin}${SERVED_AT}fonts/${file}`;
     expect(
       requested.get(url),

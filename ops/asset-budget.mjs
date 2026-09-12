@@ -711,9 +711,11 @@ export function resolveFontReachability(css) {
 /**
  * Where a `url()` inside a built `@font-face` could live on disk, most likely
  * first. A relative url in the built CSS is relative to the chunk that declares
- * it; a rooted one is served from `public/`; and the SCSS sources point at
- * `public/fonts/`, so a face served from there rather than hashed into the build
- * must not read as absent.
+ * it; a rooted one is served from `public/`; and until Story 2-20 the SCSS
+ * sources pointed at `public/fonts/`, so a face served from there rather than
+ * hashed into the build must not read as absent. That last candidate stays now
+ * the directory is gone: a face put back there is what the reachability table
+ * should weigh, not report as missing.
  *
  * An empty list means the url fetches no file of this build's (a `data:` URI or
  * an off-origin stylesheet), which is not a missing file.
@@ -1600,11 +1602,11 @@ export function render(model) {
     }
 
     prose(
-      `Of the whole total, ${group(route.fontGzip)} is font faces preloaded unconditionally at`,
-      `\`app/layout.tsx:40-53\`, and ${group(route.polyfillGzip)} is a \`noModule\` script that no browser with`,
-      'module support fetches. Both are counted: the document puts them on the wire without asking anything,',
-      `and a total that quietly dropped either could not be checked by a reader. A modern browser's figure is`,
-      `${group(non3d.measured - route.polyfillGzip)}.`
+      `Of the whole total, ${group(route.fontGzip)} is font faces the document preloads, and`,
+      `${group(route.polyfillGzip)} is a \`noModule\` script that no browser with module support fetches.`,
+      'Both lines are counted at whatever they read, zero included: a document puts a preload and a polyfill',
+      'on the wire without asking anything, and a total that quietly dropped either could not be checked by',
+      `a reader. A modern browser's figure is ${group(non3d.measured - route.polyfillGzip)}.`
     );
 
     if (largest) {
@@ -1690,7 +1692,8 @@ export function render(model) {
     'through a `var()` chain followed to a fixed point, matched case-insensitively and with a `!important`',
     'stripped. Declared and reached are different claims: a face no rule names is never fetched, however',
     'faithfully it is built and served. Every format each family declares is weighed, not only its woff2,',
-    'because the legacy blocks declare woff and ttf beside it and this build emits all of them.'
+    'because a block may declare several and the build emits every one it names: the ten legacy blocks',
+    'declared woff and ttf beside woff2 until Story 2-20 deleted them, and the contract declares woff2 alone.'
   );
   const familyBytes = model.fonts.families.reduce((total, entry) => total + entry.bytes, 0);
   const familyGzip = model.fonts.families.reduce((total, entry) => total + entry.gzip, 0);

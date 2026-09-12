@@ -251,11 +251,28 @@ written for: a third `a.nav-link` at 320 x 23 would make that row cover three an
 than inherit an exemption written for two links. The run also fails if a row matches nothing **on
 one of its routes**, so a row covering two surfaces cannot go half stale in silence.
 
-| Id | Selector | Source | Routes | Covers | Measured (2026-09-06) | Closed by |
+| Id | Selector | Source | Routes | Covers | Measured | Closed by |
 |---|---|---|---|---|---|---|
 | `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/cv`, `/a-route-that-does-not-exist` | 3 | 184.00 x 20.00 | Story 2-32 |
-| `home-nav` | `a.nav-link` | `components/organisms/HomeLayout/HomeLayout.tsx:142,150` | `/` | 2 | 320.00 x 23.00 | Story 2-32 |
-| `home-contact` | `.contact-container a` | `components/molecules/ContactContainer/ContactContainer.tsx:5,8,15` | `/` | 3 | 58.00 x 23.00 to 84.00 x 23.00 | Story 2-32 |
+| `home-nav` | `a.nav-link` | `components/organisms/HomeLayout/HomeLayout.tsx:142,150` | `/` | 2 | 320.00 x 32.00 | Story 2-32 |
+| `home-contact` | `.contact-container a` | `components/molecules/ContactContainer/ContactContainer.tsx:5,8,15` | `/` | 3 | 57.00 x 32.00 to 81.00 x 32.00 | Story 2-32 |
+
+**The `Measured` column carried the date 2026-09-06 in its header until 2026-09-12**, when the two
+home rows were re-read; `chrome-logo` is still the 2026-09-06 reading and the two home rows are
+dated in the paragraph below.
+
+**Both home rows were re-measured on 2026-09-12 by Story 2-20, and grew taller without leaving the
+floor.** **Observed 2026-09-12** in the pinned container at 360 x 800, by `getBoundingClientRect()`
+after `document.fonts.ready` with the display face loaded, printed by `tests/e2e/type-swap.pw.ts`'s
+swap comparison and copied here. That story retargeted `--confillia-normal` onto the display role
+with `font-stretch: 75%` set by hand at both call sites, so the five links render in Bricolage
+Grotesque rather than the retired Confillia Normal. The line box moved from 23.00 to 32.00 on all
+five, which is the contract's `ascent-override`, `descent-override` and `line-gap-override` at 24px,
+and the three contact widths narrowed with the face: Github 68.00 to 66.00, LinkedIn 84.00 to 81.00,
+Email 58.00 to 57.00. The nav links are still the panel's full 320.00. Every one of the five is
+still under `--tap` on height by 12px where it was under by 21px, so no row leaves and no `covers`
+moves: this is the same breach on a different face, and Story 2-32 still owns it. The 2026-09-06
+boxes are kept in the per-element table's history paragraph below rather than deleted.
 
 **`chrome-logo` gained a route on 2026-09-10 and gained no breach.** Story 2-16 built `/cv`, which
 renders the same header, so the same authored link is measured on a third surface and `Covers` moves
@@ -335,11 +352,16 @@ class now clear the floor. The size is kept in the `error-back` paragraph above 
 | Element | Measured | Which axis fails |
 |---|---|---|
 | `.logo a` | 184.00 x 20.00 | Height |
-| `a.nav-link`, both home links | 320.00 x 23.00 | Height |
-| `.contact-container a`, "Github" | 68.00 x 23.00 | Height |
-| `.contact-container a`, "LinkedIn" | 84.00 x 23.00 | Height |
-| `.contact-container a`, "Email" | 58.00 x 23.00 | Height |
+| `a.nav-link`, both home links | 320.00 x 32.00 | Height |
+| `.contact-container a`, "Github" | 66.00 x 32.00 | Height |
+| `.contact-container a`, "LinkedIn" | 81.00 x 32.00 | Height |
+| `.contact-container a`, "Email" | 57.00 x 32.00 | Height |
 | `button.work-item__header`, all four | 216.00 x 88.80 | **None.** These clear the floor, which is what keeps the comparison from being a check that always fails |
+
+**The four home rows above are the 2026-09-12 reading.** Until Story 2-20 they read
+`320.00 x 23.00`, `68.00 x 23.00`, `84.00 x 23.00` and `58.00 x 23.00`, **observed 2026-09-06** in
+Confillia Normal at 24px; the re-measurement and its cause are in the ledger paragraph above. The
+`.logo a` and `.work-item__header` rows are still the 2026-09-06 reading.
 
 **The four `.work-item__header` buttons are load-bearing for the whole assertion.** **Decision.**
 A standing case asserts that at least one measured element clears the floor and at least one does

@@ -107,7 +107,7 @@ const REDUCED = declarationsIn(REDUCED_MATCH ? REDUCED_MATCH[1] : '');
 const FLAT_NAMES = [...source.matchAll(/(--[A-Za-z0-9_-]+)\s*:/g)].map((found) => found[1]);
 
 /**
- * Every custom property `app/app.scss` declares, which is all sixteen the Hub has.
+ * Every custom property `app/app.scss` declares, which is all fifteen the Hub has.
  *
  * The `//` strip is guarded on the preceding character, exactly as
  * `app/__tests__/anchor-contract.test.ts` guards it, so a `url(https://...)` or a
@@ -120,21 +120,22 @@ const HUB_DECLARED = declarationsIn(
 
 /**
  * The four pre-change values this story probes, named here and **valued from `app/app.scss`**
- * rather than restated. Sass normalises the single quotes that file authors to double quotes on
- * the way out, which is why the comparison normalises quotes and why that is an observation
- * about the pipeline rather than an unexplained literal. **Observed 2026-08-26**, and the same
- * pair is recorded at `ops/rendered-output-harness.md:317-318`.
+ * rather than restated. Until Story 1-18 they were single-quoted family literals and Sass
+ * normalised the quotes to double on the way out, so the comparison carried a quote normaliser
+ * (**observed 2026-08-26**, recorded at `ops/rendered-output-harness.md:317-318`). All four are
+ * `var()` references now, compared through the role each names, and since Story 2-20 retired the
+ * two Confillia literals nothing `app/app.scss` authors on `:root` is single-quoted at all, so the
+ * normaliser and its planted control are gone rather than kept firing on a fixture.
  */
 const PRE_CHANGE_NAMES = ['--white-color', '--black-color', '--accent', '--monument-bold'] as const;
-
-const normaliseQuotes = (value: string): string => value.replace(/'/g, '"');
 
 /**
  * The token role a Hub property is aliased onto, or `null` while it is authored as a literal.
  *
  * Added by Story 1-18, the alias layer. Before it, every one of the Hub's sixteen was a literal
- * and the comparison below was against the text `app/app.scss` authors. Twelve of them are now
- * `var()` references, and the computed value of a custom property is its token stream **after**
+ * and the comparison below was against the text `app/app.scss` authors. Twelve of them became
+ * `var()` references then, thirteen of fifteen since Story 2-20 retargeted `--confillia-normal`
+ * and deleted `--confillia-bold`, and the computed value of a custom property is its token stream **after**
  * substitution, so what `:root` answers for an aliased name is the role's value and never the
  * string `var(--token-text)`. The comparison therefore reads the role in the same page instead.
  */
@@ -592,10 +593,10 @@ test('the token contract declares a real list of names', () => {
   expect(expandVars('var(--token-bg)')).toBe(DECLARED.get(roleTarget?.[1] ?? ''));
   expect(expandVars('var(--token-bg)'), '--token-bg still carries a var() after substitution').not.toMatch(/var\(/);
 
-  // The Hub's own sixteen, read from `app/app.scss` so the pre-change expectations below are
+  // The Hub's own fifteen, read from `app/app.scss` so the pre-change expectations below are
   // not literals restated here. `app/__tests__/anchor-contract.test.ts` holds the count and the
-  // no-collision claim; this is the part this file depends on.
-  expect(HUB_DECLARED.size, 'app/app.scss no longer declares sixteen custom properties').toBe(16);
+  // no-collision claim; this is the part this file depends on. Sixteen until Story 2-20.
+  expect(HUB_DECLARED.size, 'app/app.scss no longer declares fifteen custom properties').toBe(15);
   for (const name of PRE_CHANGE_NAMES) {
     expect([...HUB_DECLARED.keys()], `app/app.scss no longer declares ${name}`).toContain(name);
     expect([...DECLARED.keys()], `${name} is now declared by the contract as well as by the Hub`).not.toContain(name);
@@ -612,16 +613,6 @@ test('the token contract declares a real list of names', () => {
       role
     );
   }
-
-  // The quote normalisation is not inert. Before Story 1-18 this was measured on the four names
-  // above, which were single-quoted family literals; they are `var()` references now, so it is
-  // measured over everything `app/app.scss` declares. `--confillia-normal` and `--confillia-bold`
-  // are the two that story deliberately left as single-quoted literals, pending O-6 and UX-DR12.
-  expect(
-    [...HUB_DECLARED.values()].some((value) => normaliseQuotes(value) !== value),
-    'nothing in app/app.scss is single-quoted, so the quote normalisation is untested'
-  ).toBe(true);
-  expect(normaliseQuotes("'Confillia Normal'"), 'the quote normaliser no longer fires').toBe('"Confillia Normal"');
 
   // The font half of the contract, on the same rule as the counts above: **pinned** at three,
   // not bounded. Every face assertion in this file loops over `CONTRACT_FAMILIES`, so a contract
@@ -1151,7 +1142,7 @@ test('the Hub renders the token roles its alias layer maps its own names onto', 
   expect(used.background, 'pure black is retired from the system').not.toBe('rgb(0, 0, 0)');
   expect(used.color, 'pure white is retired from the system').not.toBe('rgb(255, 255, 255)');
 
-  // None of the Hub's sixteen is a contract name, which is why the render can be identical by
+  // None of the Hub's fifteen is a contract name, which is why the render can be identical by
   // construction rather than by luck. `app/__tests__/anchor-contract.test.ts` is the
   // authoritative check with both counts pinned; this asserts the same thing where the values
   // were just read, so neither half can drift alone.

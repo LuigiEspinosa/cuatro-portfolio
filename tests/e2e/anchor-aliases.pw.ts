@@ -6,7 +6,7 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
 /**
  * The alias layer, measured in a real browser (Story 1-18, Anchor migration step 2).
  *
- * `app/app.scss` redefines twelve of the Hub's sixteen custom properties as `var()` references
+ * `app/app.scss` redefines thirteen of the Hub's fifteen custom properties as `var()` references
  * to token roles, and the fifteen component stylesheets go on reading the old names. That is a
  * claim about what the Hub *resolves*, and almost none of it is visible to a screenshot:
  *
@@ -143,15 +143,21 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
 /** Wide enough for the `min-width: 768px` half of `HomeLayout.scss`, which the 360 project is not. */
 const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
 
-/** The Hub declares sixteen custom properties: twelve aliased onto roles, four left as literals. */
-const HUB_PROPERTY_COUNT = 16;
-const ALIASED_COUNT = 12;
-const LITERAL_COUNT = 4;
+/**
+ * The Hub declares fifteen custom properties: thirteen aliased onto roles, two left as literals.
+ *
+ * **Sixteen, twelve and four until 2026-09-12.** Story 2-20 retargeted `--confillia-normal` onto
+ * the display role and deleted `--confillia-bold`, which had zero call sites. The same three
+ * counts moved in `app/__tests__/anchor-contract.test.ts` in the same commit.
+ */
+const HUB_PROPERTY_COUNT = 15;
+const ALIASED_COUNT = 13;
+const LITERAL_COUNT = 2;
 
-/** The four this story must not move, and the open question or reason that holds each. */
-const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height', '--confillia-normal', '--confillia-bold'] as const;
+/** The two this story must not move, and the open question or reason that holds each. */
+const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height'] as const;
 
-/** Exactly one of the four is a colour, so exactly one takes the colour route below. */
+/** Exactly one of the two is a colour, so exactly one takes the colour route below. */
 const LITERAL_COLOUR_COUNT = 1;
 
 /** The two roles `--accent-dim` resolves to, one per call site. */
@@ -174,7 +180,7 @@ const declarationsIn = (block: string): Map<string, string> => {
   return found;
 };
 
-/** The Hub's sixteen, as `app/app.scss` authors them. */
+/** The Hub's fifteen, as `app/app.scss` authors them. */
 const HUB = declarationsIn(/:root\s*\{([^}]*)\}/.exec(withoutComments(APP_SCSS))?.[1] ?? '');
 
 /** Every custom property `contracts/tokens.css` puts on `:root` outside a media query. */
@@ -192,7 +198,7 @@ const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
 /** The token role a Hub property is aliased onto, or `null` while it is authored as a literal. */
 const aliasRole = (name: string): string | null => IS_VAR_REFERENCE.exec(HUB.get(name) ?? '')?.[1] ?? null;
 
-/** The twelve aliased properties, derived from the file rather than restated. */
+/** The thirteen aliased properties, derived from the file rather than restated. */
 const ALIASES = [...HUB.keys()].filter((name) => aliasRole(name) !== null);
 
 const normaliseQuotes = (value: string): string => value.replace(/'/g, '"');
@@ -401,20 +407,23 @@ const CALL_SITES: readonly CallSite[] = [
   // take the same rule.
   { at: 'error-page.scss:59', route: NOT_FOUND, selector: '.error-page__back', property: 'border-left-color', verdict: 'boundary' },
 
-  // The link's hover repaints its `color`, never this rule.
-  { at: 'HomeLayout.scss:121', route: '/', selector: '.nav-link', property: 'border-left-color', verdict: 'ornament' },
+  // The link's hover repaints its `color`, never this rule. The three HomeLayout citations were
+  // re-read on 2026-09-12 by Story 2-20, which added a `font-stretch` line above each of the first
+  // two: they had read `:121`, `:154` and `:234`, three lines stale already, and nothing holds
+  // them but a reader editing the file.
+  { at: 'HomeLayout.scss:125', route: '/', selector: '.nav-link', property: 'border-left-color', verdict: 'ornament' },
   {
-    at: 'HomeLayout.scss:154',
+    at: 'HomeLayout.scss:159',
     route: '/',
     selector: '.home-panel--contact .contact-container a',
     property: 'border-right-color',
     verdict: 'ornament',
-    // Below 768 the same element takes `border-right: none` at `HomeLayout.scss:233`, which
+    // Below 768 the same element takes `border-right: none` at `HomeLayout.scss:238`, which
     // resets the colour to `currentcolor`. This row is the desktop rule and is read where it wins.
     wide: true,
   },
   {
-    at: 'HomeLayout.scss:234',
+    at: 'HomeLayout.scss:239',
     route: '/',
     selector: '.home-panel--contact .contact-container a',
     property: 'border-left-color',
@@ -522,21 +531,21 @@ const inWideContext = async <T>(browser: Browser, read: (page: Page) => Promise<
 };
 
 test('parses a real alias layer, so every case below measures something', () => {
-  expect(HUB.size, 'app/app.scss no longer declares sixteen custom properties on :root').toBe(HUB_PROPERTY_COUNT);
+  expect(HUB.size, 'app/app.scss no longer declares fifteen custom properties on :root').toBe(HUB_PROPERTY_COUNT);
   expect(CONTRACT.size, 'no :root block was parsed out of contracts/tokens.css').toBeGreaterThan(0);
   for (const known of ['--token-bg', '--token-text', ORNAMENT, BOUNDARY, WEIGHT_ROLE, '--f-display', '--page-pad']) {
     expect([...CONTRACT.keys()], `contracts/tokens.css no longer declares ${known}`).toContain(known);
   }
 
-  // The partition is pinned in both halves. Twelve aliased and four literal, and the four named,
-  // so an alias quietly written over one of them fails here rather than passing as twelve of
-  // sixteen.
-  expect(ALIASES.length, 'app/app.scss no longer aliases exactly twelve properties onto token roles').toBe(
+  // The partition is pinned in both halves. Thirteen aliased and two literal, and the two named,
+  // so an alias quietly written over one of them fails here rather than passing as thirteen of
+  // fifteen.
+  expect(ALIASES.length, 'app/app.scss no longer aliases exactly thirteen properties onto token roles').toBe(
     ALIASED_COUNT
   );
   expect(
     [...HUB.keys()].filter((name) => aliasRole(name) === null).sort(),
-    'the four properties Story 1-18 must not move are not the four still authored as literals'
+    'the two properties the alias layer must not move are not the two still authored as literals'
   ).toEqual([...LITERAL_PROPERTIES].sort());
   for (const name of ALIASES) {
     expect(
@@ -610,6 +619,18 @@ test('parses a real alias layer, so every case below measures something', () => 
     'the --monument-regular call sites on disk are not the two whose clamp this file checks'
   ).toEqual(sortedEntries(tabled(DISPLAY_REGULAR_SITES)));
 
+  // The same trap on the width axis, since Story 2-20 retargeted `--confillia-normal` onto the
+  // display family: the alias carries the family and not the narrow width the old face had, so
+  // each call site sets `font-stretch: 75%` by hand on the line after `font-family`. A third site
+  // without that line renders at 100% width and nothing else says so.
+  expect(sortedEntries(callSitesOf('--confillia-normal')), 'a --confillia-normal call site is outside HomeLayout.scss').toEqual([
+    ['HomeLayout.scss', 2],
+  ]);
+  expect(
+    (COMPONENT_STYLESHEETS.get('HomeLayout.scss') ?? '').match(/font-family:\s*var\(--confillia-normal\);\r?\n\s*font-stretch:\s*75%;/g)?.length ?? 0,
+    'a --confillia-normal call site does not set font-stretch: 75% on the line after font-family, so it renders at full width'
+  ).toBe(2);
+
   // The parsers, on planted controls, before any empty or agreeing result is read as good news.
   expect(aliasRole('--white-color'), '--white-color is no longer aliased onto a role').toBe('--token-text');
   expect(IS_VAR_REFERENCE.test('var(--token-bg)')).toBe(true);
@@ -653,19 +674,22 @@ test('every aliased Hub property resolves to exactly the token role it names', a
   ).not.toBe(await rootCustomPropertyValue(page, '--token-bg'));
 });
 
-test('the four properties this story must not move still hold their authored literals', async ({ page }) => {
+test('the two properties the alias layer must not move still hold their authored literals', async ({ page }) => {
   await goTo(page, '/');
 
   expect(LITERAL_PROPERTIES.length, 'the list of untouched properties is empty').toBe(LITERAL_COUNT);
 
-  // Two comparison routes, because one of the four is a colour and the build rewrites colours on
+  // Two comparison routes, because one of the two is a colour and the build rewrites colours on
   // the way to the browser. `--accent-glow` is authored `rgba(139, 92, 246, 0.4)` and arrives as
-  // `#8b5cf666`, which is the same colour and a different string.
+  // `#8b5cf666`, which is the same colour and a different string. The text route read the two
+  // single-quoted Confillia literals until Story 2-20 retargeted one and deleted the other; it
+  // reads `--hero-height` now, and stays because a literal that is not a colour still needs a
+  // route that compares it.
   const isColour = await page.evaluate(
     (values: string[]) => values.map((value) => CSS.supports('color', value)),
     LITERAL_PROPERTIES.map((name) => HUB.get(name) ?? '')
   );
-  expect(isColour.filter(Boolean).length, 'the colour route is no longer exercised by exactly one of the four').toBe(
+  expect(isColour.filter(Boolean).length, 'the colour route is no longer exercised by exactly one of the two').toBe(
     LITERAL_COLOUR_COUNT
   );
   expect(isColour.filter((taken) => !taken).length, 'the text route is no longer exercised').toBe(
@@ -679,8 +703,7 @@ test('the four properties this story must not move still hold their authored lit
     expect(
       IS_VAR_REFERENCE.test(authored),
       `app/app.scss authors ${name} as "${authored}", a var() reference. O-11 holds --accent-glow, ` +
-        `O-6 and UX-DR12 hold the two Confillia names, and the contract carries no viewport height ` +
-        `for --hero-height.`
+        `and the contract carries no viewport height for --hero-height.`
     ).toBe(false);
 
     const read = await rootCustomPropertyValue(page, name);

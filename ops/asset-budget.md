@@ -468,6 +468,39 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-12 reading, after Story 2-20
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `SWgIhyUw5RIK9pXx1sbr7`, taken on the
+story's working tree at `118423b` plus its own files, before the commit that carries them: the
+tool's own dirty-inputs row named forty-five paths, thirty-nine of them the deleted `public/fonts/`
+binaries, one the deleted `app/scss/_fonts.scss`, and five modified sources, and every one of them is
+this story's. This is the second build of the day: the first, `VjZTbSCHSQ0bd6u8DlMd8`, was read
+before the tool's two preload sentences were reworded and differed from this one by one to two
+bytes on three routes (`/cv` 258,868, `/celeste` 252,317, `/_not-found` 252,204), which is the
+rebuild variance § Stated limits records and not a change in what was measured.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 20,976 | 493,301 | yes | yes | **Observed** |
+| `/cv` | 21,773 | 258,870 | no | yes | **Observed** |
+| `/celeste` | 14,065 | 252,315 | no | yes | **Observed** |
+| `/_not-found` | 14,498 | 252,203 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,763 | no | **no**: Next's own document | **Observed** |
+
+**Every row that renders the layout fell by the two preloads and a little more.** **Derived.**
+Against the 2026-09-11 reading, `/work` is 31,994 gzipped bytes lighter on the wire, `/cv` 31,994,
+`/celeste` 32,001 and `/_not-found` 32,003. The two font preloads came to 31,239 gzipped on every
+reading since 2026-08-29, and each of those four documents is exactly 1,122 bytes smaller, which is
+the four `<link rel=preload>` elements Next emitted for two files (DW-39) leaving the markup; the
+remaining 755 to 764 gzipped bytes per route is the document's own share of that and is stated
+rather than attributed further. `/_global-error` fell 25 on the wire and 108 in the document: Next's
+global error boundary replaces the root layout, so it never carried the preloads, and that movement
+is the build writing the shared graph differently. The non-3D line still names `/cv`, now 118,870
+over budget, 84.9 percent, where it was 150,864 over, 107.8 percent, on 2026-09-11. **The preload
+row of § Reading one reads 1,362 and lists three stylesheets**, where it read 32,601 and led with two
+font binaries; the itemised table this file carries in that section is still the 2026-08-29 one and
+is left as the reading its heading names.
+
 ### The 2026-09-11 reading, after Story 2-17
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `k5AIUPv2f6fm-_ENAZc0_`, taken on the
@@ -660,6 +693,28 @@ document preloads them, except `MonumentExtended-Bold.woff2`, which the layout p
 the § Reading one table therefore counts. **Derived.** They are a standing cost of what the origin
 serves, not of what a visitor fetches.
 
+**The ten are gone, and the table above is the 2026-08-29 reading kept as taken.** **Observed
+2026-09-12**, `node ops/asset-budget.mjs` against build `SWgIhyUw5RIK9pXx1sbr7`, verbatim:
+
+| Family | Formats | Bytes on disk, all formats | Bytes gzipped, all formats | Reached | Nature |
+|---|---|---|---|---|---|
+| Bricolage Grotesque | woff2 | 58,992 | 59,030 | yes | **Observed** |
+| Geist | woff2 | 24,124 | 24,152 | yes | **Observed** |
+| Geist Mono | woff2 | 11,284 | 11,307 | yes | **Observed** |
+| **Total** |  | **94,400** | **94,489** |  | **Observed** |
+| Of that, reached by no rule |  | 0 | 0 |  | **Derived** |
+
+0 of the 3 families the built CSS declares are reached by no rule. Story 2-20 deleted
+`app/scss/_fonts.scss` with its ten blocks, the `@forward` that loaded it and the thirty-nine
+binaries under `public/fonts/`, and retargeted `--confillia-normal` onto the display role with
+`font-stretch: 75%` set by hand at its two call sites, so `font-family: var(--confillia-normal)` now
+resolves to `Bricolage Grotesque`, `Archivo`, `system-ui`, `sans-serif` and the declared set is the
+contract's three. The 962,952 bytes on disk and 692,644 gzipped the 2026-08-29 reading found
+standing are 0 and 0, and `.next/static/media` holds three woff2 files. The resolver's list gained
+`var(--f-display)` and `var(--f-mono)` since the 2026-08-29 reading, which are the Epic 2 rebuilds
+naming roles directly, and lost nothing it is not supposed to have lost. Pending Operator action 4
+is completed by this paragraph.
+
 ## What this reads against the budget's own rules
 
 § Asset Budget carries five rules. Two of them this measurement bears on directly, and one of those
@@ -688,6 +743,17 @@ Pending Operator action 6 stays open on that basis rather than closing on the ho
 non-3D path needs." The two preloaded faces cost 31,239 gzipped bytes on a route that is already
 143,945 over budget, and at least 19,936 of those are a family no rule can reach. That is a finding
 about the preloads, recorded above, and Story 2-2 changes neither of them.
+
+**Amended 2026-09-12 by Story 2-20: Rule 4 holds on the font side, and holds by deletion.** Both
+preloads are gone from `app/layout.tsx` and nothing replaced them, so the document preloads no font
+at all and the § Reading one preload row is three stylesheets at 1,362 gzipped. A preload of a
+contract face was considered and refused: `GlitchText.tsx:37-42` gates `SplitText` on
+`document.fonts.ready`, so the old preload bought latency rather than the correctness its comment
+claimed, and a contract preload would be an optimisation with no measurement behind it that also
+puts `contracts/` in a scanned source (`app/__tests__/anchor-contract.test.ts`). If the display face
+is ever observed arriving late, it is one line and one measurement. `tests/e2e/narrative.pw.ts`
+pins the distinct preloaded-face count on `/` at zero, against a preload planted into the head.
+Pending Operator action 2 is completed by this paragraph.
 
 **Rules 2, 3 and 5 are outside what this measurement can say.** Rule 2 is about Suite Directory
 interactive, which is a browser measurement; Rule 3 is satisfied and its figures are in
@@ -773,6 +839,37 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-12 run, after Story 2-20
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `SWgIhyUw5RIK9pXx1sbr7`. § Every route, the
+faces table under § The faces the built CSS declares, the Rule 4 amendment and this section were
+re-filed from this run; every other section in this file is still the reading its own heading names.
+
+- The narrative bundle is 419,736 bytes gzipped across 9 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 30,264 below the top.
+- 125,381 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0bq5wyrhev5.1.js`,
+  `0d3ymyos8iowp.js`, `05e6tciymra6v.js` is referenced by no prerendered document. The other 294,355
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 258,870 against 140,000, 118,870 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,350 against 140,000, 36,650 of margin. That
+  decomposition has no line for the 248,647 of JavaScript or the 1,362 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**One finding is gone and the tool prints nothing in its place.** **Derived.** Every run since
+2026-08-29 carried a fifth bullet, "9 of the 13 families the built CSS declares are reached by no
+`font-family` rule", with 962,952 bytes on disk behind it. The tool emits that bullet only when a
+family is unreached, and this build declares three and reaches all three, so the list above is four
+bullets where the run below is five. The preload figure moved with it: 1,362 where the run below
+reads 32,601, which is the two font preloads leaving and the three stylesheet preloads staying. The
+narrative bundle, the deferred share and the unreachable `public/assets/home/` bytes are the same
+findings as on 2026-09-11 to the byte, and `/cv` is still the heaviest route a visitor can load,
+31,994 lighter and still over budget by 118,870.
 
 ### The 2026-09-11 run, after Story 2-17
 
@@ -886,7 +983,7 @@ measurement that covers everything.
 |---|---|---|
 | Attribution is at chunk granularity, and a mixed chunk is counted whole to the narrative | Turbopack minifies to numeric module ids and emits no module paths, so nothing inside a chunk can be weighed separately. `01l6rdvnhwq_7.js` carries `postprocessing`, `gsap/SplitText` and the Hub's own `/` page code, and all 110,487 of its gzipped bytes are attributed to the narrative. The direction is knowable and it is the safe one: the narrative cannot be smaller than the chunks that carry no shell code at all | **Decision**, recorded rather than corrected |
 | Gzip level 9 is not what the origin sends | `next.config.js` sets no `compress` key, so Next's default applies and the standalone server compresses at Node's `Z_DEFAULT_COMPRESSION`, not at 9. Measured on this build, `/celeste` is 283,945 at level 9 and 284,578 at the default, a 633 byte difference, and `/` is 625,823 against 627,245. Cloudflare sits in front of the origin (AD-26) and may re-compress again. Level 9 is used because it is what `ops/font-contract.md` uses, so the two records compare, and because it is the most favourable gzip reading: a budget that fails at level 9 fails harder in production | **Observed 2026-08-29**, by gzipping each route's payload at both levels |
-| Declared is not fetched | Every font figure here is the weight of a face the build serves, not of a face a browser downloaded. A browser fetches a face only when a glyph in its `unicode-range` is actually rendered, so reading two's 94,489 is a ceiling on the contract faces rather than an observation of a transfer. The nine unreached families are the opposite case and the claim there is stronger: no rule names them, so no glyph can trigger them | **Decision** |
+| Declared is not fetched | Every font figure here is the weight of a face the build serves, not of a face a browser downloaded. A browser fetches a face only when a glyph in its `unicode-range` is actually rendered, so reading two's 94,489 is a ceiling on the contract faces rather than an observation of a transfer. The nine unreached families are the opposite case and the claim there is stronger: no rule names them, so no glyph can trigger them. **Amended 2026-09-12:** the nine no longer exist. Story 2-20 deleted them, and the ceiling claim is now the whole of what this row says | **Decision**, amended |
 | Reachability reads `font-family` declarations only | A family named through the `font` shorthand, or set from JavaScript, or declared only inside a media query or under a theme selector, would read as unreachable. None occurs today: the built CSS holds zero `font:` shorthands and zero `font-family` inside a `@media` block, and nothing under `app/` or `components/`, tests excluded, carries a `fontFamily` or a `font:` shorthand. The seven declarations listed above are the whole set. A future one would need this method widened rather than trusted | **Observed 2026-08-29**, by regex across the eleven built `.css` chunks and every `.ts`, `.tsx`, `.scss` and `.css` under `app/` and `components/` |
 | The whole reading is one build, and two builds from one commit are not byte-identical | Three builds were taken from commit `9662d03` during this story. `/celeste` read 283,949, then 283,942, then 283,945, and the narrative total 418,743, then 418,757 twice. Chunk file names changed completely between the first and the second and not at all between the second and the third, so a rebuild may or may not move them and neither outcome is a defect. The determinism this file asserts is of the tool against one build, not of the build against itself, and every figure and chunk name printed here is good for `BUILD_ID` `uXKXS8QHdHPNgUPIdvcnq` only | **Observed 2026-08-29** |
 | The tool re-reads everything on every call, and its cost grows with the build | It walks `app/` and `components/` once per asset and once per orphan check, and gzips each chunk once for the build table and again for each document that references it. On this build that is a second or two and nobody notices. On a build with many more routes it would be quadratic in the wrong place. It is a reading run by hand, not a gate on a runner, so the cost is recorded rather than optimised | **Decision.** Story 2-2 scope |
@@ -916,9 +1013,9 @@ than left in prose, in the shape `ops/font-contract.md` and `ops/rendered-output
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
 | 1 | **Replace the stale wording in `EXPERIENCE.md:946-947` and `:961-964` with a pointer to this file** | Operator | `:946-947` still reads "Unmeasured" for both lines. `:961-964` still says the weight is "Open, and worth measuring before Epic 2" and that the estimate is "inference from published sizes, not a measurement of your build". All four statements are now false, and a reader who reaches `EXPERIENCE.md` first will re-open a closed question | _not done_ |
-| 2 | **Decide what to do about the two preloads at `app/layout.tsx:40-53`** | Operator | `MonumentExtended-Bold` is reached by no rule, and both preloads point at `/fonts/` while the faces load from `/_next/static/media/`, so 31,239 gzipped bytes are fetched at high priority and at least 19,936 of them are used by nothing. Changing `app/layout.tsx` is outside Story 2-2's boundaries | _not done_ |
+| 2 | **Decide what to do about the two preloads at `app/layout.tsx:40-53`** | Operator | `MonumentExtended-Bold` is reached by no rule, and both preloads point at `/fonts/` while the faces load from `/_next/static/media/`, so 31,239 gzipped bytes are fetched at high priority and at least 19,936 of them are used by nothing. Changing `app/layout.tsx` is outside Story 2-2's boundaries. **Decided by Story 2-20's spec, Boundaries & Constraints**: both deleted, nothing added, reasoning under § What this reads against the budget's own rules, Rule 4 | 2026-09-12 |
 | 3 | **Decide the disposition of the four orphaned assets and two orphaned components** | Operator | 1,215,179 bytes under `public/assets/home/` and two `.tsx` files are reachable from nothing. Deleting a published asset is a reversibility question, not a cleanup | _not done_ |
-| 4 | **Re-run `node ops/asset-budget.mjs` when Story 2-20 retires the legacy faces, and add a row** | Operator | 962,952 bytes on disk, 692,644 gzipped across nine unreached families and three formats each, are the largest single thing this reading found that a named story already plans to remove. The figure after it lands is what tells whether it worked | _not done_ |
+| 4 | **Re-run `node ops/asset-budget.mjs` when Story 2-20 retires the legacy faces, and add a row** | Operator | 962,952 bytes on disk, 692,644 gzipped across nine unreached families and three formats each, are the largest single thing this reading found that a named story already plans to remove. The figure after it lands is what tells whether it worked. **It worked**: the 2026-09-12 table under § The faces the built CSS declares reads three families, 94,400 on disk, 0 unreached | 2026-09-12 |
 | 5 | **Re-run it again once the non-3D front door lands (Story 2-13)** | Operator | The 140 KB budget is 102.8 percent breached today, and 245,605 of the 283,945 is JavaScript on a route with no 3D on it. Whether that story moves the number is the question this record exists to make answerable | _not done_ |
 | 6 | **Rule on whether `EXPERIENCE.md` Rule 1 is repaired or retired** | Operator | § What this reads against the budget's own rules shows it does not hold. Either the narrative is genuinely deferred, which is a change to three components and `app/providers.tsx`, or the rule is rewritten to describe what the Hub does. Both are decisions this story may not take. **Narrowed 2026-09-07 by Story 2-12**: one of the three components is done and the rule now holds on `/`. It still fails on `/work` and `/projects` (`TorusCanvas.tsx:8`, `TorusKnotCanvas.tsx:8`) and on every route through `app/providers.tsx`, so the decision is unchanged in kind and smaller in size | _not done_ |
 

@@ -1146,8 +1146,18 @@ origin: spec-deferred 295c0abf8f2c
 location: app/layout.tsx:41-45
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: medium
-reason: app/layout.tsx:41-45 preloads /fonts/MonumentExtended-Bold.woff2 with as='font', and app/scss/_fonts.scss:92-95 still declares its @font-face. After this commit no rule resolves that family: the four --monument-bold call sites resolve to --f-display, which is Bricolage Grotesque, and contracts/fonts.css:16-22 publishes that face with font-display: swap and nothing preloads it. app/layout.tsx:39 states the preload's own purpose, "Preload display fonts so SplitText measures correct widths on first paint", and .glitch-text__inner is both a SplitText consumer and one of the four sites this story moved onto the display face. Nothing in the story observes the document head: every new assertion reads resolved CSS, and the one pixel baseline is /work, which renders no GlitchText. It is caused by this commit and it is outside this commit's stated edit boundary: the intent limits source edits to app/app.scss and the four font-weight lines, and app/layout.tsx is neither, so it belongs to the stor
-status: open
+reason: |-
+  app/layout.tsx:41-45 preloads /fonts/MonumentExtended-Bold.woff2 with as='font', and app/scss/_fonts.scss:92-95 still declares its @font-face. After this commit no rule resolves that family: the four --monument-bold call sites resolve to --f-display, which is Bricolage Grotesque, and contracts/fonts.css:16-22 publishes that face with font-display: swap and nothing preloads it. app/layout.tsx:39 states the preload's own purpose, "Preload display fonts so SplitText measures correct widths on first paint", and .glitch-text__inner is both a SplitText consumer and one of the four sites this story moved onto the display face. Nothing in the story observes the document head: every new assertion reads resolved CSS, and the one pixel baseline is /work, which renders no GlitchText. It is caused by this commit and it is outside this commit's stated edit boundary: the intent limits source edits to app/app.scss and the four font-weight lines, and app/layout.tsx is neither, so it belongs to the story that retires the local faces. (The filing tool truncated that last sentence at "stor"; the completion is what DW-11 and ops/anchor-token-adoption.md say in the same breath.)
+
+  Closed 2026-09-12 by Story 2-20, which is that story: both preloads are deleted from
+  `app/layout.tsx` and nothing replaced them. `GlitchText.tsx:37-42` gates `SplitText` on
+  `document.fonts.ready`, so the first-paint width guarantee the preload's comment claimed was
+  never the preload's to give, and a preload of a contract face would put `contracts/` in a
+  scanned source, which `app/__tests__/anchor-contract.test.ts` refuses. `tests/e2e/narrative.pw.ts`
+  pins the distinct preloaded-face count on `/` at zero, against a preload planted into the head.
+  The measured cost that left the wire, 31,239 gzipped bytes per route, is in
+  `ops/asset-budget.md`, the 2026-09-12 reading, with Pending Operator action 2 completed there.
+status: done
 
 ### DW-10: The tech chip label fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor, because --accent-dim lost its alpha to two opaque token roles and the label now reads against the chip fill rather than aga
 origin: spec-deferred bc3c95f49531
@@ -1162,16 +1172,36 @@ origin: spec-deferred 268fa6aabf8d
 location: app/scss/_fonts.scss:20-95
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: low
-reason: app/scss/_fonts.scss:20,30,40,50,60,72,82,92 declare GeneralSans-Light, GeneralSans-Regular, GeneralSans-Medium, GeneralSans-Semibold, GeneralSans-Bold, MonumentExtended-Light, MonumentExtended-Regular and MonumentExtended-Bold. --font-regular and --font-bold were the last consumers of the GeneralSans five and --monument-regular and --monument-bold of the Monument three; all four are now aliases onto --f-body and --f-display. Observed 2026-08-26 by git grep over app, components, hooks, content and contracts, which returns only the declarations themselves and the one preload at app/layout.tsx:42. Not fixed here because app/scss/_fonts.scss is neither app/app.scss nor one of the four font-weight lines. Recorded in ops/anchor-token-adoption.md, "Stated limits of step 2".
-status: open
+reason: |-
+  app/scss/_fonts.scss:20,30,40,50,60,72,82,92 declare GeneralSans-Light, GeneralSans-Regular, GeneralSans-Medium, GeneralSans-Semibold, GeneralSans-Bold, MonumentExtended-Light, MonumentExtended-Regular and MonumentExtended-Bold. --font-regular and --font-bold were the last consumers of the GeneralSans five and --monument-regular and --monument-bold of the Monument three; all four are now aliases onto --f-body and --f-display. Observed 2026-08-26 by git grep over app, components, hooks, content and contracts, which returns only the declarations themselves and the one preload at app/layout.tsx:42. Not fixed here because app/scss/_fonts.scss is neither app/app.scss nor one of the four font-weight lines. Recorded in ops/anchor-token-adoption.md, "Stated limits of step 2".
+
+  Closed 2026-09-12 by Story 2-20: all ten local `@font-face` blocks are gone,
+  `app/scss/_fonts.scss` and its `@forward` in `app/scss/_index.scss` with them, and the
+  thirty-nine binaries under `public/fonts/` with those, the four Italic and six `.eot` files no
+  block ever named included. The one face a rule still reached, Confillia Normal at
+  `--confillia-normal`, is retargeted onto the display role with `font-stretch: 75%` set by hand
+  at `HomeLayout.scss:121` and `:153`, and `--confillia-bold`, at zero call sites, is deleted. The
+  unit case that held the local and published family lists apart is replaced by a retired-family
+  guard over every scanned source, comments stripped, that also refuses a `@font-face` in any
+  stylesheet, and `node ops/asset-budget.mjs` reads three families declared, zero unreached, where
+  it read thirteen and nine.
+status: done
 
 ### DW-12: The comment carrying the two @use lines that load the contract still states that nothing in the repository consumes any of these names, which is the claim this commit falsified.
 origin: spec-deferred dd454bb484eb
 location: app/scss/_index.scss:29-32
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: low
-reason: app/scss/_index.scss:29-32 reads "Nothing in this repository consumes any of these names yet, and that is the point: this story adds the contract and changes no pixel", written by Story 1-17. The alias layer in app/app.scss is now a consumer of ten roles and the four font-weight call sites of one more. The comment goes on to name Story 1-18 as the commit that will change it, so it is stale rather than misleading to a careful reader, but it sits directly on the two loads it explains. Not fixed here: app/scss/_index.scss is neither app/app.scss nor one of the four font-weight lines, and this story's contract admits no third source file. Recorded in ops/anchor-token-adoption.md, "Stated limits of step 2".
-status: open
+reason: |-
+  app/scss/_index.scss:29-32 reads "Nothing in this repository consumes any of these names yet, and that is the point: this story adds the contract and changes no pixel", written by Story 1-17. The alias layer in app/app.scss is now a consumer of ten roles and the four font-weight call sites of one more. The comment goes on to name Story 1-18 as the commit that will change it, so it is stale rather than misleading to a careful reader, but it sits directly on the two loads it explains. Not fixed here: app/scss/_index.scss is neither app/app.scss nor one of the four font-weight lines, and this story's contract admits no third source file. Recorded in ops/anchor-token-adoption.md, "Stated limits of step 2".
+
+  Closed 2026-09-12 by Story 2-20 in passing: the docblock at `app/scss/_index.scss:24-34` is
+  rewritten. It no longer claims nothing consumes the names, it says the alias layer and the Epic 2
+  rebuilds do and points at the unit suite that partitions who may name what, and the position
+  paragraph that said the contract loads had to sit above the local forward now records that the
+  forward is gone with the local faces and that nothing depends on the loads sitting above
+  `./print`.
+status: done
 
 ### DW-13: Follow-up review still recommended for 1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r after the damping cap was spent
 origin: review-budget-followup
@@ -2748,7 +2778,15 @@ status: done
     `ops/asset-budget.md` already has both preloads under review: at least one of the two faces
     (`MonumentExtended-Bold`) is reached by no rule at all, so the cheapest resolution may be to
     remove one of them rather than to deduplicate it.
-  status: open
+
+    Closed 2026-09-12 by Story 2-20, by the cheaper resolution than the one suggested: both
+    preloads are deleted from `app/layout.tsx` and nothing replaced them, so there are zero
+    `<link rel=preload as=font>` elements on `/` rather than four, and no contract preload was
+    added because that would have brought the duplicate emission back as six elements for three
+    files. `tests/e2e/narrative.pw.ts` pins the distinct preloaded-face count on `/` at zero
+    against a preload planted into the head, which is the one read the document needs. Pending
+    Operator action 2 is completed in `ops/asset-budget.md` on the same date.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-40
@@ -4074,4 +4112,81 @@ status: done
 
     **Owner: Story 2-30**, which redesigns `Error404` token-native and rewrites this block.
     **Trigger: that story's first edit to `.error-page__back`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
+  id: DW-81
+  summary: >-
+    `app/app.scss:49-56` says `--monument-bold` has four call sites and `--monument-regular` three,
+    and `AGENTS.md:87-90` says four, where both suites count two and two since Stories 2-9, 2-14
+    and 2-17. The prose is stale by three stories and sits on the alias it describes.
+  evidence: |-
+    `app/app.scss:49-56` reads "font-weight is set by hand beside font-family at the four
+    --monument-bold call sites in this same commit. --monument-regular needs no hand edit: its
+    three call sites ask for a weight below the 700 800 range", and the two aliases it explains
+    sit at `:57-58`. `AGENTS.md:87-90` reads "any new `--monument-bold` call site must set
+    `font-weight: var(--w-black)` by hand beside `font-family`, as the four existing sites do",
+    and `:88` cites those aliases at `app/app.scss:56-57`: that line-number drift is Story 2-20's
+    own, whose Confillia comment above the block grew by two lines, and it is filed here rather
+    than fixed because the `AGENTS.md` lines are outside that story's edit boundary. **Counted
+    2026-09-12** by
+    `tests/e2e/anchor-aliases.pw.ts`, which holds the on-disk counts equal to its tables:
+    `WEIGHT_SITES` has three rows (`glitch-text.scss:5`, `error-page.scss:24`, `WorkHero.scss:19`)
+    and `DISPLAY_REGULAR_SITES` two (`WorkItem.scss:52`, `error-page.scss:40`); the unit suite's
+    `WEIGHT_CALL_SITES` has two, because `error-page.scss` moved to the token-native list with
+    Story 2-17. Story 2-9 deleted `ProjectCard.scss` (one `--monument-regular` site), Story 2-14
+    deleted `ProjectsHero.scss` (one `--monument-bold` site), and neither touched the two comments.
+
+    **Not fixed by Story 2-20**, whose boundaries name both locations as stale since 2-9 and 2-17
+    and not this story's to edit: the `app/app.scss` comment is deliberately written without naming
+    a role, because the consumer scan reads that file whole, so a rewrite is a sentence to get
+    right rather than a number to swap, and `AGENTS.md` is the project instruction file, refreshed
+    by its own workflow. Filed rather than left: `AGENTS.md` is the first thing an agent reads and
+    a wrong count there is what a new call site would be checked against.
+
+    **Owner: Story 2-22**, which deletes the alias layer and with it the `app/app.scss` comment;
+    the `AGENTS.md` lines, count and citation both, go in the same change or in the next
+    `bmad-project-context` refresh, whichever lands first. **Trigger: the first edit to
+    `app/app.scss:49-58`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
+  id: DW-82
+  summary: >-
+    The three contact links on `/` move 18 to 20 percent in width across the font swap, because
+    the contract's `size-adjust` is fitted at 100 percent width and the fallback face has no
+    width axis to narrow to the `font-stretch: 75%` the call site asks for. The line box holds;
+    the advance width does not.
+  evidence: |-
+    **Observed 2026-09-12** in the pinned container by `tests/e2e/type-swap.pw.ts`, which loads
+    `/` with every woff2 aborted and then allowed and prints both boxes. Heights held at 0.00
+    percent on all five hero links. Widths: `.contact-container a[0]` 81.05 to 66.00 (18.57
+    percent), `[1]` 100.73 to 81.00 (19.59 percent), `[2]` 70.52 to 57.00 (19.17 percent). The two
+    `a.nav-link` elements read 320.00 both ways because they are the panel's full width, so the
+    same shift is happening inside a box that does not move. `.error-page__title`, which reaches
+    the display face at 100 percent width on the 404, moved 2.46 percent on the same run, which is
+    the order `ops/font-contract.md` records for arbitrary text.
+
+    The cause is structural, not a tuning error. `contracts/fonts.css` publishes one `@font-face`
+    for Bricolage Grotesque with `font-stretch: 75% 100%` and one `size-adjust: 92.271%`, fitted
+    against the fallback at the default width (`packages/fonts/measure.mjs`). A fallback face has
+    no width axis, so at `font-stretch: 75%` it renders at 100 percent and the loaded face renders
+    at 75 percent, and no single scalar covers both. The spec's own Design Notes anticipated this
+    ("heights, not widths, across the swap") and the width is printed rather than asserted, so
+    nothing is red. What a visitor sees is the three contact labels narrowing by roughly a fifth
+    when the face arrives, right-aligned at desktop and left-aligned below 768, which is a
+    reflow of text and not of layout.
+
+    Two shapes of fix, neither inside Story 2-20's boundaries (any edit under `contracts/` or
+    `packages/fonts/` is Ask First). Either the contract publishes a second `@font-face` block for
+    the narrow instance, `font-stretch: 75%` alone with its own `size-adjust` fitted at that width,
+    which is a MINOR bump and a `packages/fonts` change; or the two hero sites take the display
+    face at its default width and give up the condensed look, which is a design call on a surface
+    Story 2-29 (the hero panels) and Story 2-32 (the home rows in the hit-target ledger) own.
+    `Premise.scss:68` sets the same `font-stretch: 75%` on the framework band and
+    `SuiteDirectory.scss:48,130` set `85%` on the directory's meta lines, so the same shift exists
+    there at smaller sizes and a smaller narrowing, and was never measured.
+
+    **Owner: whichever of Story 2-29 and the next `contracts/fonts.css` MINOR lands first.**
+    **Trigger: the first edit to `packages/fonts/faces.json`, or to `HomeLayout.scss:119-160`.**
   status: open

@@ -12,7 +12,7 @@
 //
 // The mapping is epics.md:1821-1836 and DESIGN.md section "The mapping", whose value-by-value
 // half for the cybercore properties is rebaseline-2026-08-15.md section O-10. Follow the table,
-// do not invent a row. Four properties are deliberately left as literals, each with its reason
+// do not invent a row. Two properties are deliberately left as literals, each with its reason
 // written beside it rather than left to read as an oversight.
 
 :root {
@@ -40,10 +40,11 @@
   --font-regular: var(--f-body);
   --font-bold: var(--f-body);
 
-  // Confillia. Neither retargeted nor deleted: both belong to the type swap (UX-DR12,
-  // epics.md:2786-2790) and the retarget is gated on O-6, which is open.
-  --confillia-normal: 'Confillia Normal';
-  --confillia-bold: 'Confillia';
+  // Confillia, retired by the type swap (Story 2-20, UX-DR12). The alias carries the family only:
+  // the narrow width Confillia Normal had is a font-stretch line set by hand beside font-family
+  // at each of its two call sites, because a family alias cannot carry width any more than it
+  // can carry weight. --confillia-bold had zero call sites and is deleted rather than retargeted.
+  --confillia-normal: var(--f-display);
 
   // Monument Extended, retired. The old names bake weight into the family name, which a family
   // alias cannot carry, so font-weight is set by hand beside font-family at the four

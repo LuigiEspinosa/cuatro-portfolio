@@ -831,19 +831,23 @@ test.describe("the / document's preload set", () => {
     ...new Set(links.filter((link) => link.as === 'font').map((link) => link.href)),
   ];
 
-  test('preloads two font faces, nothing narrative, and nothing at high priority', async ({ page, request }) => {
+  test('preloads no font face, nothing narrative, and nothing at high priority', async ({ page, request }) => {
     await goTo(page, ROUTE);
     const links = await preloads(page);
 
     expect(links.length, 'the / document preloads nothing at all, so this case measures nothing').toBeGreaterThan(0);
 
-    // The document emits the layout's two font preloads twice, so the claim is about the distinct
-    // set of faces rather than about the number of link elements. A browser fetches a URL once.
+    // **Two distinct faces until 2026-09-12, zero since.** `app/layout.tsx` preloaded two local
+    // binaries, and Next emitted each link twice, which is why this read is over the distinct set
+    // rather than the element count. Story 2-20 deleted both preloads with the faces they named
+    // and replaced them with nothing: `GlitchText.tsx` gates `SplitText` on `document.fonts.ready`,
+    // so a preload bought latency, not correctness, and a preload of a contract face would put
+    // `contracts/` in a scanned source. The read stays, so a preload put back fails here naming it.
     const fonts = distinctFonts(links);
     expect(
       fonts.length,
-      `the / document preloads ${fonts.length} font faces rather than two:\n${fonts.join('\n')}`
-    ).toBe(2);
+      `the / document preloads ${fonts.length} font faces rather than none:\n${fonts.join('\n')}`
+    ).toBe(0);
 
     const high = links.filter((link) => link.priority === 'high');
     expect(

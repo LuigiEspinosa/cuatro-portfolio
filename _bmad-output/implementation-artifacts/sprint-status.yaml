@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-11-2026
+last_updated: 09-12-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -165,7 +165,7 @@ development_status:
   # 2-19 REPLACED 2026-08-15 by 2-34, a blocking CI gate.
   # 2-21 DELETED 2026-08-15. A rewritten stylesheet has no call sites to rename.
   # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
-  2-20-migration-step-5-swap-the-type: backlog
+  2-20-migration-step-5-swap-the-type: review
   2-22-migration-step-7-delete-the-aliases: backlog
   2-23-scheduled-registry-verification-external-to-the-box: backlog
   2-24-hub-visitor-instrumentation: backlog

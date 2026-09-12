@@ -21,7 +21,7 @@ import { dirname, join, relative, resolve } from 'node:path';
  *     A runtime `@import` would fetch the contract from a URL Next never emits and would break
  *     the relative `url("./fonts/<file>.woff2")` resolution. The `@use` assertion is what holds
  *     that shut; the no-extension assertion below is a convention check and says so.
- *  2. **No name collides.** All sixteen of the Hub's custom properties are declared in
+ *  2. **No name collides.** All fifteen of the Hub's custom properties are declared in
  *     `app/app.scss`, none of the eighty-nine contract names is among them, and both counts are
  *     pinned so the intersection cannot be empty because a list was.
  *  3. **The contract is consumed by the alias layer and by nothing else.** Story 1-17 asserted
@@ -49,17 +49,34 @@ const INDEX_SCSS = resolve(REPO_ROOT, 'app/scss/_index.scss');
 const APP_SCSS = resolve(REPO_ROOT, 'app/app.scss');
 const TOKENS_CSS = resolve(REPO_ROOT, 'contracts/tokens.css');
 const FONTS_CSS = resolve(REPO_ROOT, 'contracts/fonts.css');
-const LOCAL_FONTS_SCSS = resolve(REPO_ROOT, 'app/scss/_fonts.scss');
+
+/** Three published `@font-face` blocks, and since Story 2-20 no local ones. Pinned so an empty list cannot pass. */
+const CONTRACT_FACE_COUNT = 3;
 
 /**
- * Ten local `@font-face` blocks, three published ones. Pinned so an empty list cannot pass.
+ * The families and the path Story 2-20 retired, and the rule that declared them, asserted absent
+ * from every scanned source once its comments are stripped.
  *
- * **Ten, not nine.** `app/scss/_fonts.scss:19-121` declares five General Sans weights, three
- * Monument Extended weights and two Confillia faces. Observed 2026-08-26 by counting the
- * `@font-face` openers; the earlier prose said nine.
+ * Ten local `@font-face` blocks in `app/scss/_fonts.scss` named five General Sans weights, three
+ * Monument Extended weights and two Confillia faces, all served from `public/fonts/`. That partial,
+ * the directory and the two preloads in `app/layout.tsx` are gone, and this is what keeps them
+ * gone: a `@font-face` declared in any stylesheet, a `font-family` naming an old face, or a
+ * preload of a `/fonts/` path fails here naming the file and the string.
+ *
+ * Three of the matchers are plain substrings, because the old names carried a weight suffix
+ * (`MonumentExtended-Bold`) that a bounded match would stop at. The path is anchored: it fires on a
+ * root-relative `/fonts/`, the preload's shape, and on `public/fonts/`, the partial's, and not on
+ * `./fonts/<file>`, which is how `contracts/fonts.css` names its own folder and how a comment
+ * about it reads, nor on `/contracts/fonts/`. `@font-face` is refused in a `.scss` or `.css` only:
+ * there it is a face the build emits, and in a `.tsx` it is a string in a template or a fixture.
  */
-const LOCAL_FACE_COUNT = 10;
-const CONTRACT_FACE_COUNT = 3;
+const RETIRED: readonly { name: string; matches: RegExp; stylesheetsOnly?: true }[] = [
+  { name: 'Confillia', matches: /Confillia/ },
+  { name: 'MonumentExtended', matches: /MonumentExtended/ },
+  { name: 'GeneralSans', matches: /GeneralSans/ },
+  { name: '/fonts/', matches: /(?<![\w./-])\/fonts\/|\bpublic\/fonts\// },
+  { name: '@font-face', matches: /@font-face/, stylesheetsOnly: true },
+];
 
 /** The family name of every `@font-face` block in `source`, unquoted, in source order. */
 const familiesIn = (source: string): string[] =>
@@ -143,8 +160,13 @@ const MINIMUM_SCSS_FILES = 19;
 const DECLARED_COUNT = 89;
 const REDUCED_COUNT = 4;
 
-/** The Hub's own custom properties, all sixteen of them, all in one file. */
-const HUB_PROPERTY_COUNT = 16;
+/**
+ * The Hub's own custom properties, all fifteen of them, all in one file.
+ *
+ * **Sixteen until 2026-09-12.** Story 2-20 deleted `--confillia-bold`, which had zero call sites,
+ * with the local face it named. Both suites moved in the same commit.
+ */
+const HUB_PROPERTY_COUNT = 15;
 
 /**
  * **The mapping, property by property**, which is the whole content of Story 1-18's first
@@ -175,13 +197,18 @@ const MAPPING: ReadonlyArray<readonly [property: string, roles: readonly string[
   ['--font-bold', ['--f-body']],
   ['--monument-regular', ['--f-display']],
   ['--monument-bold', ['--f-display']],
+  // Story 2-20's row, the type swap. Family only: the narrow width the old face had is a
+  // `font-stretch` line set by hand at each of its two call sites, which is the same shape as
+  // the hand-set weight at the `--monument-bold` sites, and no weight line at either, because
+  // the published `700 800` range clamps the inherited 400 up to 700.
+  ['--confillia-normal', ['--f-display']],
   ['--font-mono', ['--f-mono']],
 ];
 
 /** The role the alias layer declares a property as on `:root`, which is the first of its row. */
 const ROLE_ON_ROOT = new Map(MAPPING.map(([property, roles]) => [property, roles[0]]));
 
-/** The twelve Hub properties the alias layer redefines as `var()` references, from the map. */
+/** The thirteen Hub properties the alias layer redefines as `var()` references, from the map. */
 const ALIASED_PROPERTIES = MAPPING.map(([property]) => property);
 
 /**
@@ -193,13 +220,14 @@ const ALIASED_PROPERTIES = MAPPING.map(([property]) => property);
 const ALIAS_ROLES = [...new Set(MAPPING.flatMap(([, roles]) => roles))];
 
 /**
- * The four the alias layer deliberately leaves authored as literals.
+ * The two the alias layer deliberately leaves authored as literals.
  *
- * Not an oversight, and each is held by something open: `--accent-glow` by O-11, `--hero-height`
- * by being a layout constant the contract carries no role for, and the two Confillia names by the
- * type swap (UX-DR12) and O-6.
+ * Not an oversight, and each is held by something: `--accent-glow` by O-11, which is open, and
+ * `--hero-height` by being a layout constant the contract carries no role for. **Four until
+ * 2026-09-12**: the two Confillia names were held by the type swap (UX-DR12) and O-6, and Story
+ * 2-20 is that swap. `--confillia-normal` moved into `MAPPING` and `--confillia-bold` was deleted.
  */
-const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height', '--confillia-normal', '--confillia-bold'] as const;
+const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height'] as const;
 
 /**
  * The `--monument-bold` call sites, the only component stylesheets Story 1-18 edits.
@@ -281,7 +309,8 @@ const ALIAS_LAYER = 'app/app.scss';
 const KNOWN_TRACKED = [
   'app/app.scss',
   'components/atoms/Container/Container.tsx',
-  'public/fonts/ConfilliaBold-Regular.woff',
+  // `public/fonts/ConfilliaBold-Regular.woff` until Story 2-20 deleted the directory, on 2026-09-12.
+  'public/logo.png',
 ] as const;
 
 /** The three basenames a vendored copy would arrive under (AD-14). */
@@ -344,7 +373,7 @@ const withoutComments = (source: string): string =>
  * A custom property **declaration**, anchored on the character that can open one.
  *
  * `--name:` on its own is not enough: a BEM modifier carrying a pseudo-class, `.btn--primary:hover`,
- * is `--name:` too. Reading that as a declaration would inflate the Hub's pinned count of sixteen
+ * is `--name:` too. Reading that as a declaration would inflate the Hub's pinned count of fifteen
  * and fail the collision argument for a reason unrelated to the contract. Anchoring on `;`, `{` or
  * a line start is what separates the two. The same expression is used by every place in this file
  * that counts declarations, so the three cannot drift apart.
@@ -393,7 +422,7 @@ const CONTRACT = atCollection('could not parse contracts/tokens.css:', () => {
 
 const TOKEN_NAMES = [...new Set([...CONTRACT.base.keys(), ...CONTRACT.reduced.keys()])];
 
-/** Every `--name` `app/app.scss` declares. All sixteen of the Hub's own live in that one file. */
+/** Every `--name` `app/app.scss` declares. All fifteen of the Hub's own live in that one file. */
 const HUB_NAMES = atCollection('could not parse app/app.scss:', () => {
   const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
   return [...new Set([...source.matchAll(DECLARATION)].map((found) => found[1]))];
@@ -401,8 +430,9 @@ const HUB_NAMES = atCollection('could not parse app/app.scss:', () => {
 
 /**
  * A Sass load, as it is written in the source: the rule, the quoted path, and where it sits.
- * `@forward` is collected too, because the contract loads' position relative to
- * `@forward './fonts'` decides emission order and therefore `@font-face` precedence.
+ * `@forward` is collected too, so a local partial forwarded above the contract loads is visible
+ * to the order case below. Until Story 2-20 one of them carried the Hub's own `@font-face` blocks
+ * and the contract loads' position relative to it decided `@font-face` precedence.
  */
 interface Load {
   rule: '@use' | '@import' | '@forward';
@@ -588,7 +618,7 @@ describe('the token contract is wired into the Anchor stylesheet graph', () => {
     }
   });
 
-  it('loads tokens before fonts, and both before the local font faces', () => {
+  it('loads tokens before fonts', () => {
     const loads = loadsIn(INDEX_SOURCE);
     const at = (target: string): number => {
       const found = loads.find((load) => resolvedTarget(load) === target);
@@ -596,54 +626,70 @@ describe('the token contract is wired into the Anchor stylesheet graph', () => {
       return found.at;
     };
 
-    // Claim three, on its own, and falsifiable on its own: AD-14's file order.
+    // Claim three, on its own, and falsifiable on its own: AD-14's file order. Claim four, the
+    // contract loads sitting above `@forward './fonts'`, left with that partial on 2026-09-12:
+    // Story 2-20 deleted the Hub's ten local `@font-face` blocks, so there is no second emitter
+    // of a `@font-face` for the contract's three to precede. The guard below is what replaced it.
     expect(at(TOKENS_CSS), 'contracts/fonts.css is loaded before contracts/tokens.css').toBeLessThan(at(FONTS_CSS));
-
-    // Claim four: position against the local forwards. Dart Sass emits module CSS in source
-    // order, so a contract load moved below `@forward './fonts'` would put the contract's three
-    // `@font-face` blocks after the Anchor's ten. Nothing else in the repository notices.
-    const localFonts = loads.find((load) => load.rule === '@forward' && load.path === './fonts');
-    expect(localFonts, `app/scss/_index.scss no longer forwards './fonts'`).toBeTruthy();
-    expect(
-      at(FONTS_CSS),
-      `the contract loads sit below @forward './fonts', so the contract's @font-face blocks are ` +
-        `emitted after the Anchor's own`
-    ).toBeLessThan(localFonts?.at ?? -1);
   });
 
-  it('shares no @font-face family with the local faces, which is what makes the order above safe', () => {
-    // The order pinned above only matters if two blocks could compete, and two blocks compete
-    // only when they name the same family. That premise is stated in the story's Code Map and
-    // in `ops/anchor-token-adoption.md` and was asserted nowhere: if a local face ever took a
-    // contract family name, emission order would silently decide which one wins and the order
-    // case above would be pinning a spelling rather than a behaviour.
-    const local = familiesIn(readFileSync(LOCAL_FONTS_SCSS, 'utf8'));
-    const published = familiesIn(readFileSync(FONTS_CSS, 'utf8'));
+  it('names no retired family, no /fonts/ path and no @font-face from any scanned source, which is what keeps the swap done', () => {
+    // Until Story 2-20 this slot held the case that the ten local faces shared no family name
+    // with the three published ones, so emission order could not silently decide a winner. There
+    // are no local faces now, and what has to stay true instead is that nothing brings one back:
+    // a `@font-face` declared in a stylesheet, a `font-family` naming an old face by its literal,
+    // or a preload of a `/fonts/` path would each reintroduce a binary the build no longer ships,
+    // and none of them is visible to the token scan or the family scan below. The same `SCANNED`
+    // set the consumer partition walks and pins non-empty; the one sentinel here is the partial.
+    const scanned = SCANNED.flatMap((directory) => scannedUnder(directory)).sort();
+    expect(scanned, 'the partial Story 2-20 deleted is back on disk').not.toContain('app/scss/_fonts.scss');
 
-    expect(local.length, 'app/scss/_fonts.scss declares no @font-face, so this case measures nothing').toBe(
-      LOCAL_FACE_COUNT
-    );
-    expect(published.length, 'contracts/fonts.css no longer declares three @font-face blocks').toBe(
-      CONTRACT_FACE_COUNT
-    );
+    // Comments stripped first, by the same stripper every other case here uses, so a comment about
+    // the contract's `./fonts/` folder or about the retired face is prose and not a reference.
+    const namesRetired = (file: string, contents: string): string[] =>
+      RETIRED.filter(
+        (retired) =>
+          (!retired.stylesheetsOnly || /\.s?css$/.test(file)) && retired.matches.test(withoutComments(contents))
+      ).map((retired) => retired.name);
 
-    const shared = local.filter((family) => published.includes(family));
+    const references: string[] = [];
+    for (const file of scanned) {
+      for (const retired of namesRetired(file, readFileSync(resolve(REPO_ROOT, file), 'utf8'))) {
+        references.push(`${file} names ${retired}`);
+      }
+    }
     expect(
-      shared,
-      `a local @font-face and a published one declare the same family, so which one wins is decided by ` +
-        `emission order:\n${shared.join('\n')}`
+      references,
+      `a scanned source names a family, a path or a rule Story 2-20 retired, which brings a local binary back ` +
+        `into the build:\n${references.join('\n')}`
     ).toEqual([]);
 
-    // The intersection, on a planted control through the same comparison.
-    expect([...local, published[0]].filter((family) => published.includes(family))).toEqual([published[0]]);
+    // The matcher, live, before its zero result is read as good news. One positive in the shape
+    // the deleted partial had, and one negative carrying every shape that must not fire: the
+    // family in a comment, the contract's own `./fonts/` folder, the served `/contracts/fonts/`
+    // path, `@font-face` outside a stylesheet, and the lowercase alias name.
+    expect(
+      namesRetired('control.scss', `@font-face { src: url('../../public/fonts/GeneralSans-Light.woff2'); }`)
+    ).toEqual(['GeneralSans', '/fonts/', '@font-face']);
+    expect(
+      namesRetired(
+        'control.tsx',
+        `// Confillia\nconst x = './fonts/a.woff2 /contracts/fonts/b.woff2 @font-face var(--confillia-normal)';`
+      )
+    ).toEqual([]);
+
+    // The `_index.scss` half stated on its own, so a `@forward './fonts'` put back fails naming
+    // itself rather than as a count.
+    const forwards = loadsIn(INDEX_SOURCE).filter((load) => load.rule === '@forward');
+    expect(forwards.map((load) => load.path), `app/scss/_index.scss forwards './fonts' again`).not.toContain('./fonts');
   });
 });
 
 describe('no contract name collides with a name the Hub already declares', () => {
-  it('found all sixteen of the Hub own custom properties in app/app.scss', () => {
+  it('found all fifteen of the Hub own custom properties in app/app.scss', () => {
     // The "identical by construction" argument rests on this count. If the Hub declared a
-    // seventeenth somewhere else, the intersection below would be empty for the wrong reason.
-    expect(HUB_NAMES.length, 'app/app.scss no longer declares exactly sixteen custom properties').toBe(
+    // sixteenth somewhere else, the intersection below would be empty for the wrong reason.
+    expect(HUB_NAMES.length, 'app/app.scss no longer declares exactly fifteen custom properties').toBe(
       HUB_PROPERTY_COUNT
     );
     for (const name of ['--white-color', '--black-color', '--accent', '--monument-bold']) {
@@ -858,12 +904,12 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     ).toBe(false);
   });
 
-  it('aliases each of the twelve onto the role the mapping assigns it, and leaves the other four as literals', () => {
-    // The mapping is a whitelist in both directions, **row by row**. Twelve properties become
-    // `var()` references to a named role; the other four stay literals because something open
-    // holds each of them, and aliasing one anyway is a silent departure from the plan that no
-    // rendered check would see as a defect. Read off `app/app.scss` rather than off the browser,
-    // because what is being asserted is what the file authors.
+  it('aliases each of the thirteen onto the role the mapping assigns it, and leaves the other two as literals', () => {
+    // The mapping is a whitelist in both directions, **row by row**. Thirteen properties become
+    // `var()` references to a named role; the other two stay literals because something holds
+    // each of them, and aliasing one anyway is a silent departure from the plan that no rendered
+    // check would see as a defect. Read off `app/app.scss` rather than off the browser, because
+    // what is being asserted is what the file authors.
     const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
     const root = /:root\s*\{([^}]*)\}/.exec(source);
     expect(root, 'no :root block was parsed out of app/app.scss, so this case measures nothing').not.toBeNull();
@@ -881,12 +927,12 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
 
     const declared = declarationsIn(root?.[1] ?? '');
 
-    expect(declared.size, 'app/app.scss no longer declares sixteen custom properties on :root').toBe(
+    expect(declared.size, 'app/app.scss no longer declares fifteen custom properties on :root').toBe(
       HUB_PROPERTY_COUNT
     );
     expect(
       [...declared.keys()].sort(),
-      'the aliased and literal lists do not partition the Hub sixteen'
+      'the aliased and literal lists do not partition the Hub fifteen'
     ).toEqual([...ALIASED_PROPERTIES, ...LITERAL_PROPERTIES].sort());
 
     const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
@@ -896,7 +942,7 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     expect(IS_VAR_REFERENCE.test('rgba(139, 92, 246, 0.4)')).toBe(false);
 
     // **Row by row, not against the set.** `toContain` over `ALIAS_ROLES` would pass on any
-    // permutation of the twelve across the ten roles, and swapping `--light-gray-color` with
+    // permutation of the thirteen across the ten roles, and swapping `--light-gray-color` with
     // `--gray-color` is a permutation that turns secondary text into a border colour with every
     // gate green.
     const wrong: string[] = [];
@@ -911,7 +957,7 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     }
     expect(
       wrong,
-      `an alias names a role the mapping does not assign it. A permutation of the twelve across ` +
+      `an alias names a role the mapping does not assign it. A permutation of the thirteen across ` +
         `the ten roles leaves every set-level check green and repaints the whole site:\n${wrong.join('\n')}`
     ).toEqual([]);
 
@@ -1000,8 +1046,8 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
       expect(
         IS_VAR_REFERENCE.test(value),
         `app/app.scss authors ${name} as "${value}", a var() reference. It is held by an open ` +
-          `question (O-11 for --accent-glow, O-6 and UX-DR12 for the two Confillia names) or, for ` +
-          `--hero-height, by the contract carrying no viewport height at all.`
+          `question (O-11 for --accent-glow) or, for --hero-height, by the contract carrying no ` +
+          `viewport height at all.`
       ).toBe(false);
       for (const role of TOKEN_NAMES) {
         expect(
@@ -1116,6 +1162,13 @@ describe('the Anchor holds no second authored copy of the contract', () => {
     // The same predicate the assertion uses, on a planted control. Duplicating the expression
     // here instead would let a change to the real filter leave the control green.
     expect(['public/css/tokens.css', 'public/logo.png'].filter(isContractCopy)).toEqual(['public/css/tokens.css']);
+
+    // And no binary under the directory Story 2-20 deleted, so a face committed back there fails
+    // naming its path rather than passing as a file the retired-family scan never opens.
+    expect(
+      tracked.filter((path) => path.startsWith('public/fonts/')),
+      'a file is tracked under public/fonts/, which Story 2-20 deleted whole'
+    ).toEqual([]);
   });
 
   it('has no cuatro-contracts directory anywhere in the repository', () => {
