@@ -1,16 +1,17 @@
 import { render } from '@testing-library/react';
-import { REACH_EVENT, SuiteReach, TRACKER_POLL_LIMIT, TRACKER_POLL_MS } from '../SuiteReach';
+import { REACH_EVENT, ROOT_MARGIN, SuiteReach, TRACKER_POLL_LIMIT, TRACKER_POLL_MS } from '../SuiteReach';
 
 /**
  * The `suite-reach` event (Story 2-24, FR-34).
  *
  * **jsdom has no `IntersectionObserver` and lays nothing out, so the observer is a fake the test
- * drives and the heading's rect is a stub.** What is proved here is the component's own logic: it
- * observes at once when the tracker is already there and waits for it otherwise, counts a heading
- * in view and a heading already scrolled past, catches a jump past the heading on the next scroll,
+ * drives.** What is proved here is the component's own logic: it observes at once when the tracker
+ * is already there and waits for it otherwise, asks for the root extended upward so a jump past the
+ * heading is a crossing it can see, counts a heading in view and a heading already scrolled past,
  * sends once and remembers that in `sessionStorage`, stops polling at the bound, survives a storage
- * or a tracker that throws, and leaves no timer, observer or listener behind on unmount. Whether a
- * real browser's observer fires on a real scroll is `tests/e2e/visitor-instrumentation.pw.ts`.
+ * or a tracker that throws, and leaves no timer or observer behind on unmount. Whether a real
+ * browser's observer fires on a real scroll, and on a real jump, is
+ * `tests/e2e/visitor-instrumentation.pw.ts`.
  *
  * Fake timers throughout, because the poll is the one thing here that takes time, and 20 s of real
  * waiting per case would be a suite nobody runs.
@@ -23,7 +24,10 @@ class FakeObserver {
   readonly targets: Element[] = [];
   disconnected = false;
 
-  constructor(private readonly callback: IntersectionObserverCallback) {
+  constructor(
+    private readonly callback: IntersectionObserverCallback,
+    readonly options?: IntersectionObserverInit
+  ) {
     observers.push(this);
   }
 
@@ -58,12 +62,6 @@ const installTracker = (): void => {
 /** One poll tick. */
 const tick = (): void => {
   vi.advanceTimersByTime(TRACKER_POLL_MS);
-};
-
-/** The heading's rect as a scroll would find it, then the scroll itself. */
-const scrollTo = (bottom: number): void => {
-  vi.spyOn(heading(), 'getBoundingClientRect').mockReturnValue({ bottom } as DOMRect);
-  window.dispatchEvent(new Event('scroll'));
 };
 
 const mount = () => render(<SuiteReach target={HEADING_ID} />);
@@ -109,35 +107,32 @@ describe('SuiteReach', () => {
     expect(observer.disconnected, 'the observer keeps watching after the send').toBe(true);
   });
 
+  it('asks for the root extended upward and only upward, so a jump past the heading is a crossing', () => {
+    // Against the bare viewport a heading that jumped from below to above between two frames is
+    // "not intersecting" on both sides and the observer never notifies (`EXPERIENCE.md:696` allows
+    // no scroll listener to catch it). With the top edge a hundred thousand pixels up, "above" is
+    // inside the root, and the jump is a crossing into it. The bottom edge stays the viewport's:
+    // a margin there would count a heading the visitor has not reached.
+    installTracker();
+    mount();
+    expect(observers[0].options?.rootMargin).toBe(ROOT_MARGIN);
+    expect(ROOT_MARGIN).toMatch(/^[1-9][0-9]*px 0px 0px 0px$/);
+
+    // The crossing, as a browser reports it under that root: intersecting, rect above the viewport.
+    observers[0].notify({ isIntersecting: true, bottom: -10 });
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith(REACH_EVENT);
+  });
+
   it('counts a heading already scrolled past, which is bottom below zero and not intersecting', () => {
     // A visitor who flicked past the heading before the tracker loaded reached the suite. The
-    // observer reports that as "not intersecting" with the rect above the viewport.
+    // frozen arm: a notification "not intersecting" with the rect above the viewport still counts,
+    // whatever root the browser measured it against.
     installTracker();
     mount();
     observers[0].notify({ isIntersecting: false, bottom: -10 });
     expect(track).toHaveBeenCalledTimes(1);
     expect(track).toHaveBeenCalledWith(REACH_EVENT);
-  });
-
-  it('catches a jump past the heading on the next scroll, once, and not a scroll that leaves it below', () => {
-    // End, Ctrl+End or a scrollbar drag can move the heading from below the viewport to above it
-    // between two frames, with no intersection in between, so the observer never notifies. The
-    // scroll listener reads the rect and answers it; after the send it is gone.
-    installTracker();
-    mount();
-    const [observer] = observers;
-
-    scrollTo(400);
-    expect(track, 'a scroll that left the heading below the viewport sent an event').not.toHaveBeenCalled();
-
-    scrollTo(-10);
-    expect(track).toHaveBeenCalledTimes(1);
-    expect(track).toHaveBeenCalledWith(REACH_EVENT);
-    expect(observer.disconnected, 'the scroll path sent without disconnecting the observer').toBe(true);
-    expect(sessionStorage.getItem(REACH_EVENT), 'the scroll path sent without setting the flag').not.toBeNull();
-
-    scrollTo(-20);
-    expect(track, 'a second scroll after the send sent again, so the listener was not removed').toHaveBeenCalledTimes(1);
   });
 
   it('waits for the tracker, then observes, so the initial notification covers a heading already in view', () => {
@@ -193,8 +188,6 @@ describe('SuiteReach', () => {
     expect(observers, 'a session that already sent reach observed the heading again').toHaveLength(0);
     expect(track).not.toHaveBeenCalled();
     expect(vi.getTimerCount(), 'a flagged session still polls for the tracker').toBe(0);
-    scrollTo(-10);
-    expect(track, 'a flagged session listens to scroll').not.toHaveBeenCalled();
   });
 
   it('gives up after the poll limit and never observes, so a blocked tracker costs 80 ticks and silence', () => {
@@ -230,7 +223,6 @@ describe('SuiteReach', () => {
     installTracker();
     mount();
     expect(vi.getTimerCount(), 'the effect started polling with nothing to observe with').toBe(0);
-    scrollTo(-10);
     expect(track).not.toHaveBeenCalled();
   });
 
@@ -261,14 +253,12 @@ describe('SuiteReach', () => {
     expect(observers, 'an unmounted component went on to observe').toHaveLength(0);
   });
 
-  it('disconnects the observer and drops the scroll listener on unmount after the tracker arrived', () => {
+  it('disconnects the observer on unmount after the tracker arrived', () => {
     installTracker();
     const { unmount } = mount();
     expect(observers[0].disconnected).toBe(false);
     unmount();
     expect(observers[0].disconnected, 'the observer survives the component').toBe(true);
-    scrollTo(-10);
-    expect(track, 'the scroll listener survives the component').not.toHaveBeenCalled();
   });
 
   it('observes nothing when the heading is not in the document', () => {

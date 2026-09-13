@@ -10,8 +10,9 @@ import { RENDERED_VIEWPORT } from './harness';
  * design, and a production website id must never be fed from `localhost`). What this file proves is
  * the component's contract with whatever `window.umami` turns up: nothing before the heading is
  * reached, exactly one `track` after, none again on a reload in the same context, one again in a
- * fresh one, and one when the tracker arrives after the heading is already in view. The real
- * instrument is the verification session in `ops/visitor-instrumentation.md`, after the merge.
+ * fresh one, one when the tracker arrives after the heading is already in view, and one when the
+ * page jumps past the heading in a single step. The real instrument is the verification session in
+ * `ops/visitor-instrumentation.md`, after the merge.
  *
  * **Both front doors, because the story's acceptance criterion names both.** The non-3D path
  * reaches the Directory in zero interactions and the default path through the narrative, and the
@@ -285,6 +286,38 @@ for (const door of DOORS) {
 
         await page.addScriptTag({ content: TRACKER_STUB });
         expect(await hasTracker(page), 'the late stub did not install').toBe(true);
+        await expectOneReach(page, door);
+      } finally {
+        await context.close();
+      }
+    });
+
+    test('sends one when the page jumps past the heading in a single step', async ({ browser }) => {
+      // End, Ctrl+End or a scrollbar drag moves the heading from below the viewport to above it
+      // between two frames, and against the bare viewport that is "not intersecting" on both sides,
+      // so an observer would never notify. `EXPERIENCE.md:696` allows no scroll listener to catch
+      // it; the component extends the observer's root upward instead, and this is the jump seen
+      // becoming a crossing in a real browser. One `scrollTo` to the end of the document is the
+      // step, and the heading is asserted above the viewport afterwards so the case measures a
+      // jump and not a scroll that stopped on it.
+      const context = await openDoor(browser, door, [TRACKER_STUB]);
+      try {
+        const page = await context.newPage();
+        await goTo(page);
+        await settled(page, door);
+        expect(await hasTracker(page), 'the stub is not installed, so nothing here can record').toBe(true);
+        await expect(page.locator(`#${HEADING_ID}`)).not.toBeInViewport();
+        await page.waitForTimeout(SILENCE_MS);
+        expect(await calls(page), `${door.name}: an event was sent before the jump`).toEqual([]);
+
+        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        await expect
+          .poll(() => page.locator(`#${HEADING_ID}`).evaluate((element) => element.getBoundingClientRect().bottom), {
+            timeout: SETTLE_TIMEOUT,
+            message: `${door.name}: the jump left the heading in or below the viewport, so this measures no jump`,
+          })
+          .toBeLessThan(0);
+
         await expectOneReach(page, door);
       } finally {
         await context.close();

@@ -249,6 +249,17 @@ bytes, 200)**
   before; the heading, with the `bottom < 0` arm; the record parsed by a standing case under the
   blocking `test` job.
 
+**2026-09-12, after the push, CI run 34726869361 on `0188d4e`.** `rendered-output` failed one
+pre-existing case, `tests/e2e/narrative.pw.ts:1268`, which sweeps the Hub source for a raw
+`addEventListener('scroll')`: `EXPERIENCE.md:696` reads "Scroll work uses `IntersectionObserver`.
+Never a raw `scroll` listener." The review pass's scroll listener broke a project rule the Code Map
+had not surfaced. The Operator chose the spec's Ask First item over accepting the gap: the observer's
+root is extended upward by `ROOT_MARGIN = '100000px 0px 0px 0px'`, so a heading above the viewport
+is inside the root and a jump from below to above is a crossing the observer notifies. The listener
+is gone; the frozen definition of reach and the `bottom < 0` arm stand as written. Seen in a real
+browser: with the margin dropped, the new jump case fails on both doors while the ordinary scroll
+case passes. KEEP: no scroll listener anywhere under `app`, `components`, `hooks` or `lib`.
+
 ## Design Notes
 
 **Why the attributes and not a client handler.** The tracker already owns a capture-phase click
@@ -350,24 +361,38 @@ Add when a reading needs the split; the seam is one `data` argument.
 - `corepack pnpm test:e2e tests/e2e/visitor-instrumentation.pw.ts`: `6 passed (1.0m)`, three cases
   on each door, run on this host.
 
+**Observed 2026-09-12, after the push and the root-margin fix, by the orchestrating session:**
+
+- CI run 34726869361 on `0188d4e`: five jobs green, `rendered-output` red on
+  `narrative.pw.ts:1268` alone, `228 passed`, the six new cases among them.
+- `corepack pnpm vitest --run components/organisms/SuiteDirectory ops/__tests__/visitor-instrumentation.test.ts`:
+  `3 passed (3)`, `69 passed (69)`. `corepack pnpm typecheck`: exit 0. With `{ rootMargin:
+  ROOT_MARGIN }` planted as `{}`: `1 failed | 13 passed (14)`, the root-margin case alone.
+- `corepack pnpm test:e2e tests/e2e/visitor-instrumentation.pw.ts tests/e2e/narrative.pw.ts --grep
+  "suite-reach|raw scroll listener"`: `11 passed (1.2m)`, the three sweep cases and four cases per
+  door, the jump case new. The same margin planted as `{}`: `2 failed`, the jump case on both doors,
+  `2 passed`, the ordinary scroll case on both.
+- `corepack pnpm test --run` over the fix: `Test Files  53 passed (53)`, `Tests  1297 passed
+  (1297)`, `Duration  103.67s`.
+
 ## Suggested Review Order
 
 **The reach event, the one that needs script**
 
 - Start here: the tracker is a `track` function, checked once at mount, then polled and only then observed.
-  [`SuiteReach.tsx:58`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L58)
+  [`SuiteReach.tsx:69`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L69)
 
-- One `send()` for both paths: disconnects, drops the listener, tracks and remembers, each inside `try`.
-  [`SuiteReach.tsx:72`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L72)
+- The root extended upward, so a jump past the heading is a crossing; no scroll listener, by `EXPERIENCE.md:696`.
+  [`SuiteReach.tsx:54`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L54)
+
+- One `send()`: disconnects, tracks and remembers, each inside `try`.
+  [`SuiteReach.tsx:82`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L82)
 
 - The observer's callback: in view, or already above (`bottom < 0`), on its initial notification.
-  [`SuiteReach.tsx:96`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L96)
-
-- The scroll listener beside it: a jump past the heading between frames never intersects.
-  [`SuiteReach.tsx:87`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L87)
+  [`SuiteReach.tsx:101`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L101)
 
 - The bounded poll, collapsed to one clearing branch; 80 ticks after the immediate check.
-  [`SuiteReach.tsx:103`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L103)
+  [`SuiteReach.tsx:110`](../../components/organisms/SuiteDirectory/SuiteReach.tsx#L110)
 
 - Mounted last in the section as a reading choice; the effect runs after commit either way.
   [`SuiteDirectory.tsx:194`](../../components/organisms/SuiteDirectory/SuiteDirectory.tsx#L194)
@@ -408,11 +433,11 @@ Add when a reading needs the split; the seam is one `data` argument.
 
 **The suites**
 
-- The reach component on a driven fake observer: the jump caught on the next scroll, once.
-  [`SuiteReach.test.tsx:122`](../../components/organisms/SuiteDirectory/__tests__/SuiteReach.test.tsx#L122)
+- The reach component on a driven fake observer: the root margin pinned, upward and only upward.
+  [`SuiteReach.test.tsx:110`](../../components/organisms/SuiteDirectory/__tests__/SuiteReach.test.tsx#L110)
 
 - The tracker arriving late, and the initial notification covering a heading already in view.
-  [`SuiteReach.test.tsx:143`](../../components/organisms/SuiteDirectory/__tests__/SuiteReach.test.tsx#L143)
+  [`SuiteReach.test.tsx:138`](../../components/organisms/SuiteDirectory/__tests__/SuiteReach.test.tsx#L138)
 
 - The attribute on the two anchors and on nothing else, so no row is ever a target.
   [`SuiteDirectory.test.tsx:304`](../../components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx#L304)
@@ -421,10 +446,13 @@ Add when a reading needs the split; the seam is one `data` argument.
   [`SuiteDirectory.test.tsx:319`](../../components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx#L319)
 
 - The browser: each context asserted on its own door before anything is read.
-  [`visitor-instrumentation.pw.ts:118`](../../tests/e2e/visitor-instrumentation.pw.ts#L118)
+  [`visitor-instrumentation.pw.ts:119`](../../tests/e2e/visitor-instrumentation.pw.ts#L119)
 
 - The late stub, with the time it took measured against the poll bound.
-  [`visitor-instrumentation.pw.ts:266`](../../tests/e2e/visitor-instrumentation.pw.ts#L266)
+  [`visitor-instrumentation.pw.ts:267`](../../tests/e2e/visitor-instrumentation.pw.ts#L267)
+
+- The jump seen becoming a crossing in a real browser; fails on both doors with the margin dropped.
+  [`visitor-instrumentation.pw.ts:295`](../../tests/e2e/visitor-instrumentation.pw.ts#L295)
 
 - The record held to the exports: the table, the rendered attributes, and every SQL block.
   [`visitor-instrumentation.test.ts:113`](../../ops/__tests__/visitor-instrumentation.test.ts#L113)

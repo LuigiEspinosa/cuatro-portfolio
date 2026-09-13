@@ -18,11 +18,15 @@ import { useEffect } from 'react';
  * rather than the section, because `/#suite`, the skip control and the nav link all resolve to it,
  * and a section would count a one-pixel sliver.
  *
- * **A `scroll` listener sits beside the observer, for the crossing the observer cannot see.** An
- * `IntersectionObserver` notifies on a change of intersection, and a jump past the heading between
- * two frames (End, Ctrl+End, a fast scrollbar drag) takes it from "below, not intersecting" to
- * "above, not intersecting" with no intersection in between, so after the initial notification the
- * `bottom < 0` arm would never run. The next scroll event reads the rect and answers it.
+ * **The root reaches far above the viewport, so "above" is a state the observer can see.** An
+ * observer notifies on a change of intersection, and a jump past the heading between two frames
+ * (End, Ctrl+End, a fast scrollbar drag) takes it from below the viewport to above it with no
+ * intersection in between: against the bare viewport that is "not intersecting" both before and
+ * after, and nothing fires. `ROOT_MARGIN` extends the root's top edge a hundred thousand pixels up,
+ * so the heading intersects from the moment its top passes the viewport's bottom edge until it is
+ * that far above, and the jump is a crossing. `EXPERIENCE.md:696` allows scroll work through an
+ * observer and never through a raw `scroll` listener, and `tests/e2e/narrative.pw.ts` sweeps the
+ * source for one; Operator ruling of 2026-09-12 chose the margin over accepting the gap.
  *
  * **The send waits for the tracker rather than assuming it.** `app/layout.tsx` injects the script
  * `afterInteractive`, so this effect usually runs before `window.umami` exists. It checks once at
@@ -41,6 +45,13 @@ export const REACH_EVENT = 'suite-reach';
 /** How often the tracker is looked for after the immediate check, and how many times: 80 ticks is 20 s. */
 export const TRACKER_POLL_MS = 250;
 export const TRACKER_POLL_LIMIT = 80;
+
+/**
+ * The observer's root, extended upward. Far larger than any document the Hub serves, so a heading
+ * scrolled past stays "intersecting" rather than leaving the root at the top. Top only: the bottom
+ * edge stays the viewport's, which is what makes the heading's arrival the event.
+ */
+export const ROOT_MARGIN = '100000px 0px 0px 0px';
 
 /**
  * The tracker's global, declared here because `lib.dom.d.ts` does not carry it. Same reason and
@@ -67,11 +78,9 @@ export function SuiteReach({ target }: { target: string }) {
     }
 
     let observer: IntersectionObserver | undefined;
-    let heading: HTMLElement | null = null;
 
     const send = () => {
       observer?.disconnect();
-      window.removeEventListener('scroll', onScroll);
       try {
         window.umami?.track(REACH_EVENT);
       } catch {
@@ -84,20 +93,18 @@ export function SuiteReach({ target }: { target: string }) {
       }
     };
 
-    const onScroll = () => {
-      if (heading !== null && heading.getBoundingClientRect().bottom < 0) send();
-    };
-
     const observe = () => {
       // The Directory is in the server HTML on `/`, so the heading is in the document before this
       // runs. Nothing retries a missing heading, because nothing later would put one there.
-      heading = document.getElementById(target);
+      const heading = document.getElementById(target);
       if (heading === null) return;
-      observer = new IntersectionObserver((entries) => {
-        if (entries.some((entry) => entry.isIntersecting || entry.boundingClientRect.bottom < 0)) send();
-      });
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting || entry.boundingClientRect.bottom < 0)) send();
+        },
+        { rootMargin: ROOT_MARGIN }
+      );
       observer.observe(heading);
-      window.addEventListener('scroll', onScroll, { passive: true });
     };
 
     let poll: ReturnType<typeof setInterval> | undefined;
@@ -116,7 +123,6 @@ export function SuiteReach({ target }: { target: string }) {
     return () => {
       clearInterval(poll);
       observer?.disconnect();
-      window.removeEventListener('scroll', onScroll);
     };
   }, [target]);
 
