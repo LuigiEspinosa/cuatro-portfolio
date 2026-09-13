@@ -666,6 +666,18 @@ the edge at 19:12Z: `/`, `/index.html`, `/no/such/path` 200 with `Cache-Control:
 so revalidation costs the full 11,619 bytes; the origin's own 304 was seen in the local proof.
 Recorded in `ops/routing-inventory.md` § What Story 2-25 changed.
 
+**Observed 2026-09-13, after the merge to `main`, by the orchestrating session.** On the
+Operator's instruction, `dev` `f5c4da7` merged into `main` as `cuatro-portfolio#75`, merge commit
+`1e93787` at 19:26:43Z, fourteen checks green (Lighthouse among them). Deploy run 34777712895
+success: gate `cuatro-portfolio is in placements`, `anchor-app` recreated by 19:27:21Z,
+`/api/health` `{"status":"ok"}`. `https://cuatro.dev/contracts/registry.json` serves
+`contract_version 1.1.0` with `list-wheel` at `live: https://wheel.cuatro.dev` and `tech: Angular,
+TypeScript, Docker, Caddy`; the Hub's Directory row links `https://wheel.cuatro.dev` with
+`data-umami-event="live-open"` and `luigiespinosa.github.io` appears nowhere on `/`. The
+`registry-verification` push run on `main`, 34777712896, success. `ops/capacity-gate.yml` on
+`main` lists `list-wheel`, so DW-91 closed the day it was filed. The Ask First item on this merge
+is discharged by that instruction.
+
 **Matrix Test Audit.** Rows with a standing test that ran green in the runs above: first placement
 (`capacity-gate.test.ts`, the open-gate new-id cases on `cs-tournament`, the same code path the
 Deploy run took), redeploy after the placement lands (the five-id pin and the incumbent path),

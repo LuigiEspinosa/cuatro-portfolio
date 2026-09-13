@@ -4464,7 +4464,13 @@ status: done
     edit.** If a re-block lands first, the Operator either merges early or waits, as the spec's
     matrix says. **Trigger: `status: blocked` or a crossed `baseline` reaching `main` before the
     `placements` entry does.**
-  status: open
+
+    Closed 2026-09-13 by Story 2-25 itself, the same day it was filed: the Operator merged `dev`
+    into `main` (`cuatro-portfolio#75`, merge commit `1e93787` at 19:26:43Z), so
+    `ops/capacity-gate.yml` on `main` lists `list-wheel` and its deploy passes as an incumbent
+    from that commit on. The window existed for 1 h 55 min (17:31:32Z to 19:26:43Z) and no
+    re-block landed in it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-92
