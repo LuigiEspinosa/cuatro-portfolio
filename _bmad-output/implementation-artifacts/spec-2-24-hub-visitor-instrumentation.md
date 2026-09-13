@@ -198,10 +198,10 @@ bytes, 200)**
       exported names; the parser seen firing on a planted table.
 - [x] `ops/monitoring.md:333`: a dated line after the baseline paragraph pointing at the record.
 - [x] `deferred-work.md`: file the ceilings that are not this story's to close (DW-88, DW-89).
-- [ ] After the merge: the three events from an ordinary browser on cuatro.dev, the `psql` counts,
+- [x] After the merge: the three events from an ordinary browser on cuatro.dev, the `psql` counts,
       the build's First Load JS for `/` before and after, all into the record's § Verification
-      session and this spec's Verification. The build figure is taken (below); the rest waits on the
-      merge.
+      session and this spec's Verification. Done 2026-09-13 after PR #74 merged; the dashboard
+      confirmation stays the Operator's (record action 3, last clause).
 
 **Acceptance Criteria:**
 
@@ -259,6 +259,17 @@ is inside the root and a jump from below to above is a crossing the observer not
 is gone; the frozen definition of reach and the `bottom < 0` arm stand as written. Seen in a real
 browser: with the margin dropped, the new jump case fails on both doors while the ordinary scroll
 case passes. KEEP: no scroll listener anywhere under `app`, `components`, `hooks` or `lib`.
+
+**2026-09-13, after the merge.** PR #74 merged `dev` into `main` at `5fc4663` (00:34:03Z), Deploy
+run 34728299598 succeeded, and the third acceptance criterion was met on the real instrument: one
+session in the Operator's own Chrome (the Claude extension, reconnected on the Operator's word)
+produced one `suite-reach`, one `live-open` and one `source-open`, both clicks carrying `app =
+cuatro-tracker`, and a reload of the same tab added a page view and no second reach, all read from
+`website_event` and `event_data` on the box. The box also answered the schema read the first
+session was refused: the deployed Umami is **3.3.0**, not the v2 the record had assumed; every
+column the queries name exists, and the three queries returned rows. Both corrections are in the
+record. Still the Operator's: the dashboard confirmation (action 3, last clause), `umami.disabled`
+in their own browser (action 4), and the first reading after October (action 5).
 
 ## Design Notes
 
@@ -374,6 +385,25 @@ Add when a reading needs the split; the seam is one `data` argument.
   `2 passed`, the ordinary scroll case on both.
 - `corepack pnpm test --run` over the fix: `Test Files  53 passed (53)`, `Tests  1297 passed
   (1297)`, `Duration  103.67s`.
+- CI run 34727850756 on `efebd2c`: all six jobs green, `231 passed` in `rendered-output`. PR #74
+  merged at `5fc4663`, 2026-09-13T00:34:03Z, all checks green.
+
+**Observed 2026-09-13, after the merge, by the orchestrating session:**
+
+- Deploy run 34728299598 succeeded. `GET https://cuatro.dev/` answered 200 with five `live-open`
+  and six `source-open` attributes, the tracker preload and the `afterInteractive` script with the
+  website id; `/contracts/registry.json` 200, 7,541 bytes; `/projects` 301 to `/#suite`.
+- The schema on the box, over `wsl -d Ubuntu-22.04 ssh deploy@177.7.52.248` and `docker exec
+  cuatro-portfolio-anchor-db-1 psql -U umami -d umami`: Umami 3.3.0; `website_event` and
+  `event_data` carry every column the record's queries name; 62 page views across 49 visits and
+  no `event_type = 2` row before the session.
+- The session, in the Operator's Chrome through the Claude extension, 00:39:09Z to 00:40:20Z:
+  five `POST /api/send`, all 200. On the box afterwards: `suite-reach 1`, `live-open 1`,
+  `source-open 1`, each in one visit; `event_data` `app = cuatro-tracker` on both clicks; the
+  reload's page view followed by no reach. The record's three queries: `10 | 1 | 10.0`,
+  `1 | 1 | 100.0`, `1 | 1 | 100.0`, `cuatro-tracker | 1`.
+- Not performed by an agent, by the record's rule: the dashboard confirmation (action 3, last
+  clause) and `umami.disabled` in the Operator's browser (action 4).
 
 ## Suggested Review Order
 
