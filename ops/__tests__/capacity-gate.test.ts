@@ -123,10 +123,10 @@ describe('the committed gate file', () => {
       const threshold = figureIn(gate.threshold, 'threshold');
       expect(threshold).toBeGreaterThan(0);
       expect(figureIn(gate.baseline, 'baseline')).toBeLessThan(threshold);
-      expect(evaluate(gate, 'list-wheel').allowed).toBe(true);
+      expect(evaluate(gate, 'cs-tournament').allowed).toBe(true);
     } else {
       expect(gate.status).toBe('blocked');
-      expect(evaluate(gate, 'list-wheel').allowed).toBe(false);
+      expect(evaluate(gate, 'cs-tournament').allowed).toBe(false);
     }
 
     // True in both states, because NFR-2 is never traded against the gate.
@@ -155,14 +155,29 @@ describe('the committed gate file', () => {
     expect(figureIn(gate.baseline, 'baseline')).toBeLessThanOrEqual(figureIn(gate.reading, 'reading'));
   });
 
-  it('lists the four applications running on the box', () => {
+  it('lists the five applications running on the box', () => {
     const gate = parseGate(committed);
     expect(gate.placements.map((entry) => entry.id)).toEqual([
       'cuatro-portfolio',
       'cs-tracker',
       'cuatro-tracker',
       'digital-library',
+      'list-wheel',
     ]);
+  });
+
+  // Story 2-25 placed `list-wheel` and moved its Registry `live` onto the box
+  // in the same change, so the two files name one hostname. Held equal, not
+  // merely overlapping: `list-wheel.cuatro.dev` contains `wheel.cuatro.dev`, so
+  // a substring check would have stayed green on the wrong host.
+  it('notes the host the Registry says list-wheel is live on', () => {
+    const registry = JSON.parse(readFileSync(resolve(process.cwd(), 'contracts/registry.json'), 'utf8')) as {
+      applications: { id: string; live?: string }[];
+    };
+    const live = registry.applications.find((entry) => entry.id === 'list-wheel')?.live;
+    if (live === undefined) throw new Error('contracts/registry.json has no live URL for list-wheel');
+    const placement = parseGate(committed).placements.find((entry) => entry.id === 'list-wheel');
+    expect(placement?.note).toBe(`serving ${new URL(live).host}`);
   });
 
   it('names the overflow path AD-9 decided', () => {
@@ -226,13 +241,15 @@ describe('evaluate', () => {
   // committed gate, which was refused before Story 1-6 and passes after it.
   // Stated as an implication rather than as a fact about today, so a later
   // re-block reads as the Operator acting on `ops/capacity-threshold.md` rather
-  // than as this test catching a defect.
+  // than as this test catching a defect. The probe is `cs-tournament`, the
+  // other intended addition that record charges for, since Story 2-25 placed
+  // `list-wheel` and an incumbent's message names no threshold.
   it('names the threshold it was opened against, whenever the committed gate is open', () => {
     const gate = parseGate(committed);
     if (gate.status !== 'open') return;
-    const result = evaluate(gate, 'list-wheel');
+    const result = evaluate(gate, 'cs-tournament');
     expect(result.allowed).toBe(true);
-    expect(result.message).toContain('list-wheel');
+    expect(result.message).toContain('cs-tournament');
     expect(result.message).toContain(gate.threshold);
     expect(load15(result.message)).toBe(figureIn(gate.threshold, 'threshold'));
   });
@@ -258,11 +275,11 @@ describe('the command line, as the deploy workflow runs it', () => {
   // the documented re-block procedure does not turn this red.
   it('agrees with the committed gate about whether a new id may be placed', () => {
     const gate = parseGate(committed);
-    const run = runChecker('list-wheel');
+    const run = runChecker('cs-tournament');
 
     if (gate.status === 'open') {
       expect(run.status).toBe(0);
-      expect(run.stdout).toContain('list-wheel');
+      expect(run.stdout).toContain('cs-tournament');
       // The figure the process printed, parsed back out of its own stdout and
       // compared against the file. `toContain('load15')` would have stayed green
       // with the number dropped.
