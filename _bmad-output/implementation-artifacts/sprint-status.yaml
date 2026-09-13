@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-12-2026
+last_updated: 09-13-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -177,7 +177,7 @@ development_status:
   # umami.disabled in their own browser, the first reading after October
   # (ops/visitor-instrumentation.md actions 3 to 5). Move to done after reading the spec.
   2-24-hub-visitor-instrumentation: done
-  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
+  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: in-progress
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
   # Hub components rebuilt token-native (FR-37), added 2026-08-15.
   # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
