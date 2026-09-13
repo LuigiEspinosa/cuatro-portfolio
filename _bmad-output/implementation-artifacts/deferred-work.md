@@ -2452,7 +2452,13 @@ status: done
     deliberately does not cover, with no owner, rather than booking it to a story that does not
     exist. Story 2-26, the Hub's focus standard and manual accessibility pass, is the natural place
     to decide whether the estate makes a claim there at all.
-  status: open
+
+    Closed 2026-09-13 by Story 2-26, with the decision it asked for: the estate makes no claim
+    under `forced-colors` or a user stylesheet, because no requirement names the medium and a
+    claim nobody asked for is a gate nobody agreed to. Recorded in `ops/hub-accessibility-pass.md`
+    § Decisions, which is where the question restarts the day a requirement names it, and the
+    `ops/status-mark-axes.md` cell that booked it here now points there.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
   summary: >-
@@ -2557,7 +2563,17 @@ status: done
     not evidence that the gate is red on `main`; it is a reason to look at `/work`'s accessibility
     score deliberately. Story 2-26, the Hub's focus standard and manual accessibility pass, is the
     natural owner of both.
-  status: open
+
+    Closed 2026-09-13 by Story 2-26. `GlitchText.tsx` now gives the wrapper `role='heading'` with
+    `aria-level` derived from its tag (`h1` 1, `h2` 2; `p` and `span` get neither), the label and
+    the inner `aria-hidden` untouched, so the home route carries a level-1 heading in the
+    accessibility tree and `aria-prohibited-attr` passes: Lighthouse 12.6.1 scores `/` at 1.00 on
+    accessibility over three runs. The `/work` observation is superseded by the same reading, 1.00
+    on all three runs, taken the way the gate takes it; the environments differ and the earlier
+    0.94 is left as the reading it was. Both are in `ops/hub-accessibility-pass.md` § Lighthouse
+    readings. The 404 carries the same defect on `.error-page__code`, a `<p>` with an `aria-label`,
+    which Lighthouse cannot audit on a 404 and which is finding F-12 there, Story 2-30's.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   summary: >-
@@ -2956,6 +2972,18 @@ status: done
     every story assumed someone else owned survived to the thirteenth story of the epic. Story 2-26
     is the Hub's accessibility pass and is the natural place to sweep the rest of the A-numbers for
     the same shape before it starts.
+
+    Corrected 2026-09-13 by Story 2-26, which stays open. The paragraph above that calls the other
+    four surfaces' skip-link and `<main>` "Story 2-26's work" was wrong about the owner: the
+    Operator's condition for doing it in that story was one change in the shared layout, and
+    `<main id='main' tabIndex={-1}>` is not one, because a layout-level `<main>` would wrap the
+    footer `/` keeps outside it by design (`app/page.tsx:79-81`, pinned at `page.test.tsx:89`). It
+    is four per-page edits plus four `SURFACES` pins in `tests/e2e/hit-target-floor.pw.ts` and the
+    `/celeste` no-control case in `tests/e2e/secondary-surfaces.pw.ts`, which is the chrome change
+    `app/cv/page.tsx:41-45` already booked to Story 2-32. That story owns it; this entry records
+    the finding until it lands (`ops/hub-accessibility-pass.md`, F-13). The A-number sweep this
+    entry asked for was made: A-1, the traversal, A-11, A-12 and A-16 are asserted on every route
+    by `tests/e2e/accessibility-floor.pw.ts`, and the record lists what stays manual.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
@@ -3219,7 +3247,13 @@ status: done
     that forbids invented facts. Story 2-29 rebuilds the hero and Story 2-26 is the Hub's
     accessibility pass; either can carry it, and whichever does needs a sentence from the Operator
     or a decision that a decorative canvas needs no prose, which would be an `EXPERIENCE.md` change.
-  status: open
+
+    Closed 2026-09-13 by Story 2-26, by the second of the two routes above: the Operator ruled the
+    canvas decorative and the third clause withdrawn, and `EXPERIENCE.md:773` carries the dated
+    amendment in place. `ScanlineOverlay.tsx:8` is the precedent, a decorative layer whose whole
+    accessibility is `aria-hidden`. The two met clauses stay asserted in `tests/e2e/front-door.pw.ts`
+    and nothing in the tree changes. Recorded in `ops/hub-accessibility-pass.md` § Decisions.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-53
@@ -3873,7 +3907,15 @@ status: done
     pass, which is where a local reading of a new surface would be taken anyway. **Trigger: a local
     `lhci autorun` against `/cv` clearing the three thresholds**, after which the URL and the reading
     land in one commit.
-  status: open
+
+    Closed 2026-09-13 by Story 2-26, on the trigger. `lhci collect` then `lhci assert` (never
+    `autorun`, whose upload target is public storage) with `@lhci/cli` 0.15.1 and Lighthouse 12.6.1
+    against `corepack pnpm build` and `corepack pnpm start`, three runs per URL: `/cv` at
+    accessibility 0.96, best practices 1.00 and SEO 1.00 on every run, which clears 0.95 / 0.9 /
+    0.9. The URL is in `.lighthouserc.js` and the readings for all three surfaces are in
+    `ops/hub-accessibility-pass.md` § Lighthouse readings. The one failing audit on `/cv`,
+    `color-contrast` on the timeline highlights at 3.49:1, is finding F-5 there, Story 2-31's.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-71
@@ -4565,4 +4607,59 @@ status: done
 
     **Owner: the Operator's ruling, Epic 4's rebuild at the latest.** **Trigger: the ruling, or
     the first story that rewrites either SSH step.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
+  id: DW-95
+  summary: >-
+    F-11 of `RESTYLE-SPEC.md:657` is unmet on the Hub: `:root` declares no `color-scheme`, and no
+    `::selection` rule sets both `background` and `color`. Nothing owns it.
+  evidence: |-
+    Observed 2026-09-13 by `git grep -n "color-scheme\|::selection" -- app components contracts`,
+    which returns one comment (`SuiteDirectory.scss`, which mentions the rule as F-8's named
+    exemption) and no declaration. `RESTYLE-SPEC.md:657` names F-11 as a check every application
+    meets: `color-scheme: dark` on `:root`, and `::selection` with an accent ground and
+    `--token-bg` text, the one permitted accent fill. The Hub renders a browser-default selection
+    and tells the user agent nothing about its colour scheme, so form controls and scrollbars take
+    the light default on a dark page.
+
+    Filed rather than done because Story 2-26's boundaries name F-11 as filed, not swept, and
+    because where it lands is a real question: `color-scheme` on `:root` is one line in
+    `app/app.scss`, but `RESTYLE-SPEC.md` § 4's own logic says a rule every Satellite copies by
+    hand belongs beside the focus rule, and `::selection`'s accent fill needs the exemption Story
+    2-34's F-8 grep is required to carry (`SuiteDirectory.scss` already argues the same for the
+    dot). Recorded as finding F-15 in `ops/hub-accessibility-pass.md`.
+
+    **Owner: unassigned.** **Trigger: the Operator's ruling on which story carries it**, Story
+    2-34 being the one whose gate has to know about the `::selection` fill either way.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
+  id: DW-96
+  summary: >-
+    `DESIGN.md` disagrees with itself about the tech array's size and with the contract about the
+    number of z-levels. The shipped Hub follows the component section and the contract; the two
+    stale lines are a design-document correction nobody owns.
+  evidence: |-
+    Observed 2026-09-13 by reading. First, `DESIGN.md:468` places "Metadata, tech arrays, footer"
+    at `--t-2xs` in the scale table, and `:660` places the Registry Entry's "tech array in mono
+    `--t-3xs` uppercase" in the component section; `SuiteDirectory.scss` follows `:660`, and the
+    paragraph floor in `tests/e2e/accessibility-floor.pw.ts` excepts `.suite-directory__tech` by
+    name on that citation. Second, `DESIGN.md:565-568` and `:1295` say six named z-levels and
+    `epics.md:669` repeats "six", while `contracts/tokens.css:129-135` declares seven (`--z-base`,
+    `--z-raised`, `--z-dropdown`, `--z-sticky`, `--z-modal`, `--z-toast`, `--z-tooltip`); the
+    sweep derives the set from the contract and never types the count.
+
+    Neither is a defect in the Hub, and Story 2-26 corrected neither: `DESIGN.md` is a spine, a
+    value in it is changed deliberately, and choosing which of two lines is right is the design
+    owner's call. Recorded as findings F-14 and F-17 in `ops/hub-accessibility-pass.md`, and as
+    pending Operator action 2 there. Related: the paragraph floor met four `<p>` labels the design
+    places at `--t-3xs` (the count, the tech array, the Status mark, the Family label), which the
+    story's matrix had written as "every `p` at least `--t-2xs`" on a census that saw one; the
+    exception is a Decision in the same record and is flagged in the story's completion report as
+    the one narrowing of the matrix's wording.
+
+    **Owner: unassigned, the design owner.** **Trigger: the ruling**, after which one line in each
+    pair is corrected and, if the tech array moves to `--t-2xs`, `SuiteDirectory.scss:152` and the
+    exception move with it in one change.
   status: open
