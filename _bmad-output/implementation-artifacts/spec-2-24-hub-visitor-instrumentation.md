@@ -271,6 +271,11 @@ column the queries name exists, and the three queries returned rows. Both correc
 record. Still the Operator's: the dashboard confirmation (action 3, last clause), `umami.disabled`
 in their own browser (action 4), and the first reading after October (action 5).
 
+**2026-09-13, the dashboard.** The Operator reset the lost Umami admin password (the hash made off
+the box, `ops/routing-inventory.md` § credentials records how), signed in, and saw the three events
+in the website's Events view. Action 3 is closed; actions 4 and 5 remain, both the Operator's by
+design.
+
 ## Design Notes
 
 **Why the attributes and not a client handler.** The tracker already owns a capture-phase click
