@@ -64,6 +64,7 @@ edit, and this row is the copy.
 | KV-3 | Two applications serve on `cuatro.dev` from outside the Registry | AD-6 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
 | KV-4 | Six controls ship under the 44x44 hit-target floor | AD-19 (A-4), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Story 2-32 | _not retired_ |
 | KV-5 | Thirty-six elements sit past the right edge at 360px, clipped rather than absent | AD-19 (A-5), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Stories 2-31, 2-33 and 2-14 | _not retired_ |
+| KV-6 | Seven z-index literals, seventeen depth tells and one synthesised weight ship in the Hub's built CSS | UX-DR44, UX-DR45 (`epics.md:665-676`), the hallmark floor `epics.md:3053-3061` | **Open**, tolerated deliberately | 2026-09-13 | Stories 2-27, 2-28, 2-29, 2-30, 2-31 and 2-33 | _not retired_ |
 
 ---
 
@@ -456,7 +457,7 @@ two halves did not have to land together after all, and the stylesheet half land
 | The stylesheet | `app/app.scss`, plus the mobile override in `HomeLayout.scss` | **Story 2-9** (`epics.md:2423-2427`) | **Landed 2026-09-06** |
 | The hero grid columns, which measure 300 inside a 216 content box because a grid item's `min-width: auto` refuses to shrink below min-content | `WorkHero.scss:1-9`, with `.container` at `width: min(80%, 1920px)` (`container.scss:2-4`) feeding it | **Story 2-33** | Open |
 | The same shape in `ProjectsHero.scss:1-9`, which was the other 8 of the 36 | `ProjectsHero.scss:1-9`, same containing block | **Story 2-14**, which redirects `/projects` to `/#suite`. Nothing renders `ProjectsHero` on any route now and the eight elements ceased to exist rather than being repaired: the component, its stylesheet and the page that mounted it were deleted in the same commit as the redirect. **Assigned 2026-09-06**, having been left unowned: Story 2-9 replaced the card grid beneath the hero and its frozen boundaries forbade touching the hero, Story 2-33 is scoped to `WorkHero` by its own title, and an entry cannot retire while eight of its elements belong to nobody | **Closed 2026-09-07** |
-| `.work-item__sub`'s `white-space: nowrap` in a `flex: 1` column, which pushes `.work-item__meta` to 372.38 and the icon to 490.67 | `WorkItem.scss:64` | **Story 2-31** | Open |
+| `.work-item__sub`'s `white-space: nowrap` in a `flex: 1` column, which pushes `.work-item__meta` to 372.38 and the icon to 490.67 | `WorkItem.scss:59` | **Story 2-31** | Open |
 
 Whoever closes the last of those should widen the Story 2-8 sweep's A-5 arm past interactive
 elements once the overflow is gone, and retire this entry.
@@ -465,6 +466,64 @@ elements once the overflow is gone, and retire this entry.
 `_bmad-output/implementation-artifacts/deferred-work.md`**, filed by Story 2-8 under its own spec.
 That entry is the evidence; this one is the ruling. It is cited rather than duplicated, so there is
 one place to change when a figure is re-measured.
+
+---
+
+## KV-6: Seven z-index literals, seventeen depth tells and one synthesised weight ship in the Hub's built CSS
+
+**The counts in this heading are read off the built stylesheets and the rendered routes, and the
+index row moves with them in the same change**, which is what this file's own rule requires of a
+derived row. Seven `z-index` literals (`20`, `5`, `3`, `10`, and `2` three times), seventeen depth
+tells (`text-shadow` seven times, `linear-gradient(` six, `radial-gradient(` once,
+`repeating-linear-gradient(` once) and one selector whose weight the browser synthesises
+(`.work-item__initiative`, rendered on two routes). The count is in the heading rather than beside
+it for the reason KV-4 gives: a register whose entries are titled by their subject alone tells a
+reader nothing about scale, and it is the one part of a heading this file allows to move without
+treating it as a rename.
+
+**Scope: what the Hub's build ships and what its routes render.** This entry is about the text of
+`.next/static/chunks/*.css` and the computed `font-weight` of visible text on the five routes the
+Hub serves as HTML. It makes no claim about the Satellites, whose builds this repository cannot
+read.
+
+**This entry exists because something now sweeps for these.** Until 2026-09-13 the breach was
+real and invisible: `epics.md:3053-3061` treats the hallmark anti-patterns as a conformance floor
+and UX-DR44 calls an ad-hoc `z-index` a defect, and nothing in the repository read the built CSS
+for either. Story 2-26 installed the instrument and this is the first reading it produced.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **UX-DR44** (`epics.md:665-669`): no shadows at all, no gradients anywhere, six named z-levels only and an ad-hoc `z-index` is a defect. **UX-DR45** (`:670-676`): no synthesised bold. Both are treated as a conformance floor by Story 2-26's own criteria at `epics.md:3053-3061` and `:3050-3051` | **Decision.** `epics.md`. The contract declares seven levels, not six (`contracts/tokens.css:129-135`); the sweep derives the set from the contract and the miscount is recorded as a finding in `ops/hub-accessibility-pass.md`, not repeated here |
+| What is in breach | **Seven z-index literals** in four files: `HomeLayout.scss` `20`, `5` and `3`; `ScanlineOverlay.scss` `10`, which equals `--z-raised` by value and resolves to nothing; `WorkHero.scss` `2` twice; `error-page.scss` `2`. **Seventeen depth tells** in five files: the seven `text-shadow` steps of `glitch-text.scss`'s glitch loop; the cybercore grid as two `linear-gradient` images on each of `app/app.scss`'s `body#work`, `HomeLayout.scss`'s `body[id='']` and `error-page.scss`'s `.error-page`; `ScanlineOverlay.scss`'s `radial-gradient` vignette and `repeating-linear-gradient` scanlines. **One synthesised weight**: `WorkItem.scss` asks Geist Mono for `600` on `.work-item__initiative` and the face publishes `400` | **Observed 2026-09-13** in `mcr.microsoft.com/playwright:v1.62.1-noble`, by reading the built stylesheets as text and every visible text's computed `font-weight` against `contracts/fonts.css`. Every occurrence is a row in `ops/hub-accessibility-pass.md` § The exemption ledger |
+| Not in breach | Every `z-index` written as `var(--z-*)`: `header.scss` at `--z-sticky`, `SkipLink.scss` at `--z-tooltip`, `SkipControl.scss` at `--z-raised`. No `box-shadow` and no `conic-gradient(` anywhere. Every other visible text on the five routes computes a weight inside its family's published range, or is set in a family the contract does not publish and is listed as a finding rather than judged | **Observed 2026-09-13**, same run. Recorded because a register of breaches that listed every declaration would say nothing |
+| Where it is tracked mechanically | `ops/hub-accessibility-pass.md` § The exemption ledger, and `EXEMPTIONS` in `tests/e2e/accessibility-floor.pw.ts`, held equal in both directions by `ops/__tests__/hub-accessibility-pass.test.ts`. The sweep tallies every occurrence per value, property, function or selector and holds the sum of the rows' counts equal to it, so an unlisted tell, a stale row and a count that moved each fail naming what moved | **Decision.** This entry is the register; those two are the ledger the build enforces. A row deleted from the ledger without a line changed here is the one drift this file cannot see, which is why the files are listed above individually rather than as a count |
+| Status | **Open and tolerated** | **Decision.** Recording a breach is not fixing it. Story 2-26's boundaries forbid any restyle, z-index re-levelling or gradient removal in the eight stylesheets Stories 2-27 to 2-34 rebuild, because a repair made here would land outside the story that planned it |
+| Ruled by | **The Operator**, at Story 2-26's planning | **Decision.** Asked how the sweeps should be asserted against a Hub already in breach, the Operator ruled for the Story 2-8 mechanism again: the sweep is universal and the known breaches are carried in one dated exemption ledger that can only shrink, with one register entry, rather than the sweep being scoped to what already passes. This register's admission test (`:24-36`) takes an Operator act or a sentence in the breached decision, and UX-DR44 carries no sentence tolerating a literal, so the act is cited and no sentence is invented for it |
+| Ruled on | **2026-09-13** | **Decision.** The date of that planning checkpoint, which is also the date this entry was written and the date the breach was first measured. The three coincide here and are still different facts |
+| Where the repairs are booked | **By ownership of the file, not by a criterion naming the tell.** Story 2-27 rebuilds `GlitchText` (`glitch-text.scss`), Story 2-28 `ScanlineOverlay` (`ScanlineOverlay.scss`), Story 2-29 `HomeLayout` (`HomeLayout.scss`), Story 2-30 `Error404` (`error-page.scss`), Story 2-31 `WorkItem` (`WorkItem.scss`), Story 2-33 `WorkHero` (`WorkHero.scss`) and, by ownership of the `/work` surface, `app/app.scss`'s `body#work` block. **Not established**: no acceptance criterion in `epics.md` names a `z-index`, a shadow or a gradient for any of the six; each is booked because its story rebuilds the file token-native and a token-native rebuild has no literal to keep | **Observed 2026-09-13**, by reading `epics.md:3069` onwards |
+| Opened | **2026-09-13** | **Decision.** The date this entry was written, by Story 2-26, which is also the date the breach was first measured rather than inferred |
+| Retired by | **Stories 2-27, 2-28, 2-29, 2-30, 2-31 and 2-33**, each deleting its rows in the commit that rebuilds its file | **Decision.** The sweep makes that unavoidable: a row whose tell the built CSS no longer carries fails as stale, so a story cannot repair a file and leave the exemption behind. Story 2-9, Story 2-15 and Story 2-17 are KV-4's demonstrations that the mechanism works; this entry copies it |
+| Retired on | _not retired_ | Filled when the ledger is empty. Verify by reading the ledger, not a stylesheet: the sweep reads what ships, and `ScanlineOverlay.scss`'s `10` is the case where a stylesheet reads as compliant and the build does not |
+
+### Maintaining the ledger this entry counts
+
+Not an Operator action, so it is not in the table at the foot of this file: this is work the
+closing stories already own. It is written here instead, beside the count it keeps true.
+
+**A repair moves four things and a change to fewer than four is a defect:**
+
+1. the row in `ops/hub-accessibility-pass.md` § The exemption ledger,
+2. the entry in `EXEMPTIONS` in `tests/e2e/accessibility-floor.pw.ts`,
+3. the file named in the "What is in breach" cell above, and
+4. **the KV-6 index row at the top of this file**, whose counts and closing stories
+   `ops/__tests__/hub-accessibility-pass.test.ts` holds against the ledger's own rows.
+
+The first two are held equal by that suite, and the suite reads the closing stories off the ledger
+and holds both this entry and the index row to naming every one of them and no other; the third
+is prose and is the reason the files are listed individually above rather than as a bare number.
+
+**The last story to land retires the entry**: fill `Retired on`, set `Status` to `Retired`, and
+bring the index row into line.
 
 ---
 
