@@ -77,11 +77,6 @@
       border-left-color: var(--accent);
       color: var(--accent);
     }
-
-    &:focus-visible {
-      outline: 1px solid var(--accent);
-      outline-offset: 4px;
-    }
   }
 
   // The two exits on one line (Story 2-17). Two boxes at the floor take `var(--s-lg)` of gap so

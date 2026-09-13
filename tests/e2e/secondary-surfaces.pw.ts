@@ -477,7 +477,9 @@ test.describe('the footer link', () => {
 
     // **The control for the ring.** Take the rule off through the browser, reach the link the same
     // way, and the read has to report no ring, or `outlineStyle` is answering `solid` for something
-    // other than the declaration in `SiteFooter.scss`.
+    // other than the global `:focus-visible` declaration in `app/app.scss`, where Story 2-26 moved
+    // it from `SiteFooter.scss`. The planted rule is scoped and `!important`, which is why the
+    // global rule has to stay at specificity (0,1,0).
     await goTo(page, '/');
     await page.addStyleTag({ content: '.site-footer__link:focus-visible { outline: none !important; }' });
     expect(await tabTo(page, link), 'the footer link left the keyboard order').toBe(true);

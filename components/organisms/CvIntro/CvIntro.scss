@@ -123,13 +123,8 @@
   border-block-end-color: var(--token-accent-hover);
 }
 
-// The standard ring (`RESTYLE-SPEC.md:202`, § 4). An outline rather than a border, so it costs no
-// layout and appears in one frame rather than over a duration, and it is not the hover colour.
-.cv-intro__link:focus-visible {
-  outline: var(--stroke-focus) solid var(--token-focus);
-  outline-offset: var(--focus-offset);
-  border-radius: var(--r-hair);
-}
+// The standard ring (`RESTYLE-SPEC.md:202`, § 4) is the global `:focus-visible` rule in
+// `app/app.scss` since Story 2-26, and this file paints none of its own.
 
 // `min-inline-size: 0` is the same finding `SuiteDirectory.scss:261-266` records: the span is a flex
 // item of the `inline-flex` link above, so its automatic minimum is its min-content width and a

@@ -83,7 +83,7 @@ interface DisplaySite {
   readonly count: number;
 }
 
-/** The two Confillia call sites, `HomeLayout.scss:120` and `:152`, and how many elements each renders. */
+/** The two Confillia call sites, `HomeLayout.scss:120` and `:147`, and how many elements each renders. */
 const CONFILLIA_SITES: readonly DisplaySite[] = [
   { selector: 'a.nav-link', count: 2 },
   { selector: '.contact-container a', count: 3 },

@@ -296,13 +296,6 @@
   border-block-end-color: var(--token-accent-hover);
 }
 
-.suite-directory__live:focus-visible,
-.suite-directory__source:focus-visible {
-  outline: var(--stroke-focus) solid var(--token-focus);
-  outline-offset: var(--focus-offset);
-  border-radius: var(--r-hair);
-}
-
 // ── Family group ──────────────────────────────────────────────────────────────
 //
 // The one containment layer in the whole directory, and the only place a box is drawn around

@@ -131,11 +131,6 @@ body[id=''] {
   &:hover {
     color: var(--accent);
   }
-
-  &:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: 4px;
-  }
 }
 
 .home-nav-jp {
@@ -164,11 +159,6 @@ body[id=''] {
 
     &:hover {
       color: var(--accent);
-    }
-
-    &:focus-visible {
-      outline: 1px solid var(--accent);
-      outline-offset: 4px;
     }
   }
 }

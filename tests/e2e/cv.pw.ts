@@ -723,7 +723,9 @@ test.describe('every control on /cv is a real target', () => {
 
     // **The control.** Take the rule off through the browser, reach the same link the same way, and
     // the read has to report no ring, or `outlineStyle` is answering `solid` for something other
-    // than the declaration in `CvIntro.scss` and the readings above are about a browser default.
+    // than the global `:focus-visible` declaration in `app/app.scss` (Story 2-26 moved it there
+    // from `CvIntro.scss`) and the readings above are about a browser default. The planted rule is
+    // scoped and `!important`, which is why the global rule has to stay at specificity (0,1,0).
     await goTo(page, ROUTE);
     await page.addStyleTag({ content: '.cv-intro__link:focus-visible { outline: none !important; }' });
     expect(await tabTo(page, links.first()), 'the first intro link left the keyboard order').toBe(true);

@@ -187,7 +187,15 @@ development_status:
   # their own browser on 2026-09-13, the one check no agent could drive, and moved the story to
   # done. Still open, not blocking: the DW-92 ruling on the Cloudflare beacon.
   2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: done
-  2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
+  # 2-26 built 2026-09-13: one global :focus-visible rule replaces nine, accessibility-floor sweeps
+  # the ring, the DOM order, the built CSS, the type floor and autoplay on every route (11 cases,
+  # green in the pinned image), KV-6 opened with 13 ledger rows, /cv joined the Lighthouse gate on
+  # a local 0.96 / 1.00 / 1.00, GlitchText's heading entered the accessibility tree, the footer
+  # line moved to --t-2xs. Waiting on the Operator: the greyscale and keyboard confirmations in
+  # ops/hub-accessibility-pass.md (two tables at "not yet performed"; the agreement suite fails
+  # the build if this key reads done while either does). Also open for the Operator: DW-95 (F-11)
+  # and DW-96 (two DESIGN.md lines), and the paragraph-floor exception the completion report flags.
+  2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: review
   # Hub components rebuilt token-native (FR-37), added 2026-08-15.
   # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
   # 2-20 is a blocking predecessor of all of them (the type layer precedes any redesign).

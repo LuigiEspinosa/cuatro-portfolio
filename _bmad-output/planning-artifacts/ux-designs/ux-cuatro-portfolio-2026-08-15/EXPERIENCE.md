@@ -770,7 +770,7 @@ Not optional (project constraint). Behavioural floor here; contrast is in
 | A-11 | Body text ≥14px; nothing below 11px | n/a |
 | A-12 | Prose respects user font-size; `rem` throughout, never `px` for type | n/a |
 | A-13 | `lang` set; page title distinguishes the route | n/a |
-| A-14 | The 3D canvas is `aria-hidden` and not focusable, being decorative with its content stated in prose | FR-4 |
+| A-14 | The 3D canvas is `aria-hidden` and not focusable, being decorative. *(Amended 2026-09-13 by Operator ruling, Story 2-26: the third clause, "with its content stated in prose", is withdrawn. A decorative canvas needs no prose, the way `ScanlineOverlay` needs none; the narrative has no visual row in any design document, so no sentence exists to state and none is invented. DW-52 closes on this line.)* | FR-4 |
 | A-15 | Switcher trigger carries `aria-expanded`; the panel is labelled; `Escape` restores focus | FR-13 |
 | A-16 | Nothing autoplays with sound; nothing auto-advances | n/a |
 
