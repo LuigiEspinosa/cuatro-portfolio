@@ -81,7 +81,10 @@ records looked at one tree and asked two questions. Neither answers the other's.
 
 **The `list-wheel` `live` change of 2026-09-13 is confirmed by the `registry-verification` push
 run**, the job `ops/registry-verification.md` § When a live URL stops resolving says records its
-run URL beside the entry here. Verification push run: recorded after the push.
+run URL beside the entry here. **Observed 2026-09-13T18:03:41Z**: run 34773443302,
+`https://github.com/LuigiEspinosa/cuatro-portfolio/actions/runs/34773443302`, on the push of
+`2-25-relocate-list-wheel` at `8a68f59`, `PASS  list-wheel live: https://wheel.cuatro.dev answered
+200`, `35 of 35 checks passed`.
 
 Every `source` is `https://github.com/LuigiEspinosa/<RepositoryName>`, spelled with the
 repository's **actual** capitalisation: `.../Lumen`, `.../StreamVault`, `.../MaiCoin`,
