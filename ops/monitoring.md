@@ -27,12 +27,12 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | Decision | Value | Nature of the figure |
 |---|---|---|
 | Monitoring service | **UptimeRobot** | **Observed 2026-08-16.** Account `luigi@cuatro.dev`, user id 3714284, registered 2026-08-16T09:23:21Z |
-| Alert channel | **Email to `luigi@cuatro.dev`** | **Observed and proven 2026-08-16.** Alert contact id 8726805, type Email, status Active, attached to all five monitors. The Operator confirmed alerts arriving |
+| Alert channel | **Email to `luigi@cuatro.dev`** | **Observed and proven 2026-08-16.** Alert contact id 8726805, type Email, status Active, attached to all five monitors. The Operator confirmed alerts arriving. **Observed 2026-09-13:** attached to all seven active monitors, 803983277 (`wheel.cuatro.dev`) among them |
 | Telegram | **Dropped 2026-08-16** | Decided against, not deferred. Email is a channel the Operator demonstrably reads, which is all the acceptance asks for |
 | Where the probe runs | External to the VPS, on UptimeRobot's own infrastructure | Decided, and required by AD-17a. See below |
 | Recurring cost | **$0 per month** | **Observed 2026-08-16.** Free tier: no active subscription, no payment processor, 50 monitor limit, 5 minute minimum interval |
-| Probe interval | **5 minutes**, every host, uniform | **Observed.** 300 seconds on all five monitors. This is also the free tier's floor, so the decided number and the available number coincide |
-| Certificate validity rule | Chain validates and issuer is the expected one, asserted per host | **Rule 1. Configured 2026-08-16** as `checkSSLErrors` on all five monitors. Free tier |
+| Probe interval | **5 minutes**, every host, uniform | **Observed.** 300 seconds on all five monitors. This is also the free tier's floor, so the decided number and the available number coincide. **Observed 2026-09-13:** 300 seconds on all seven active monitors, 803983277 created with it |
+| Certificate validity rule | Chain validates and issuer is the expected one, asserted per host | **Rule 1. Configured 2026-08-16** as `checkSSLErrors` on all five monitors. Free tier. **2026-09-13:** `checkSSLErrors` true on 803983277 too, so all seven active monitors |
 | Certificate age rule | Age greater than two thirds of nominal lifetime, plus a 48 hour grace | **Rule 2. NOT configured. Blocked by the free plan**, see The certificate rule |
 | Down threshold | 2 consecutive failed probes, so roughly 10 minutes to first alert | **Decided, not configured.** The free tier exposes no confirmation-count setting |
 | TLS mode | **Full (strict)**, pinned explicitly, never Flexible | **Applied 2026-08-17T17:12:16Z.** Automatic SSL/TLS was already `custom`, so it is not managing the mode and cannot drift it |
@@ -40,7 +40,7 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | **Origin certificate expiry** | **2041-08-13T17:15:00Z** | **Observed from the issued certificate.** Nothing renews it. See the review below |
 | Origin certificate review | **2041-02-13**, six months before expiry | **Decided 2026-08-17.** A fifteen year horizon is not a reason to leave it unwritten |
 
-### The monitors as they actually exist, updated 2026-08-17
+### The monitors as they actually exist, updated 2026-08-17, one row added 2026-09-13
 
 | id | Monitor | Type | Assertion | Status when created | Status 2026-08-17 |
 |---|---|---|---|---|---|
@@ -51,6 +51,15 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | 803750025 | `library.cuatro.dev` | HTTP | status code | UP | UP |
 | 803756083 | `www.cuatro.dev (301 to apex)` | HTTP | status code **301**, redirects **not** followed | **UP** | **UP** |
 | 803750027 | **RETIRED 2026-08-17**, paused | Keyword | alerted when `"status":"ok"` was **present**. Inverted | **DOWN** | **paused** |
+| 803983277 | `wheel.cuatro.dev` | HTTP | status code | **UP**, created 2026-09-13T17:38:14Z | did not exist. **UP** 2026-09-13 |
+
+**Row 803983277 added 2026-09-13 by Story 2-25**, which relocated `list-wheel` onto
+`wheel.cuatro.dev`. Created through the UptimeRobot API with the settings this record fixes for
+every monitor: `https://wheel.cuatro.dev`, HTTP, interval 300 s, timeout 30 s, `checkSSLErrors`
+true, `followRedirections` true, success `2xx` and `3xx`, SSL and domain reminders off, alert
+contact 8726805. First check UP. **Observed 2026-09-13 afterwards:** all seven active monitors
+UP (803749849, 803750016, 803750023, 803750025, 803756083, 803756371, 803983277); 803750027
+paused as before.
 
 **The two `cuatro.dev` monitors came up DOWN immediately** on 2026-08-16, which was correct and
 was the first machine-generated error signal this estate has ever had. That downtime counts
@@ -139,7 +148,7 @@ than living only in one person's browser session.
 | Field | Value | Nature |
 |---|---|---|
 | UptimeRobot account owner | `luigi@cuatro.dev`, user id 3714284 | **Observed 2026-08-16.** Registered 2026-08-16T09:23:21Z |
-| Alert contact | id 8726805, type Email, status Active, `luigi@cuatro.dev` | **Observed 2026-08-16.** Attached to all five monitors |
+| Alert contact | id 8726805, type Email, status Active, `luigi@cuatro.dev` | **Observed 2026-08-16.** Attached to all five monitors. **Observed 2026-09-13.** Attached to all seven active monitors, 803983277 included |
 | Alert path last verified | **2026-08-16**, by real `cuatro.dev` down alerts the Operator confirmed receiving | Re-verify per the cadence under Re-testing the alert path |
 | Integration credentials | **None.** The alert contact is an email address, not a bot or a webhook | No token exists, so none can leak. If a webhook channel is ever added, its token lives in the UptimeRobot console and never in this repository |
 
@@ -201,6 +210,7 @@ The monitored set is **every live `cuatro.dev` subdomain**.
 | `cs-tracker.cuatro.dev` | `/` | HTTP 200 | **Decided.** Another repository, so no health endpoint is assumed |
 | `tracker.cuatro.dev` | `/` | HTTP 200 | **Decided.** Another repository, same reason |
 | `library.cuatro.dev` | `/` | HTTP 200 | **Decided.** Another repository, same reason |
+| `wheel.cuatro.dev` | `/` | HTTP 200 | **Decided 2026-09-13.** Another repository, so no health endpoint is assumed. Added by Story 2-25, monitor 803983277 |
 
 **The keyword assertion was decided from source and has now been observed passing.** It is
 read off `app/api/health/route.ts`, which returns `{"status":"ok", version, uptime}`. On
@@ -313,10 +323,14 @@ The open question that closed with it, whether it should redirect, be monitored 
 withdrawn, was settled by the Operator on 2026-08-16: keep both, apex canonical, `www`
 redirects.
 
-**`list-wheel` is not monitored today.** Its Status is `Live`, but it serves from GitHub Pages
-rather than from a `cuatro.dev` subdomain, so it is neither our host nor our certificate and
-there is nothing here for a certificate-age rule to watch. Story 2-25 relocates it to the VPS,
-at which point the add rule above applies.
+**`list-wheel` was not monitored until 2026-09-13.** Its Status was `Live`, but it served from
+GitHub Pages rather than from a `cuatro.dev` subdomain, so it was neither our host nor our
+certificate and there was nothing here for a certificate-age rule to watch. **Story 2-25
+relocated it onto `wheel.cuatro.dev` on 2026-09-13, and the add rule above was followed:**
+monitor 803983277 was created at 17:38:14Z in the same session as the DNS record (17:37:10Z),
+its row is in the probe table above, and it inherits the certificate rules below (`checkSSLErrors`
+on; the edge issuer it presents is in the dated observation under Observed state). First check
+UP. The GitHub Pages URL it left is not a host of ours and is not monitored.
 
 **`analytics.cuatro.dev` is on the box but is not in the probe table.** It is the self-hosted
 Umami instance: infrastructure that supports the estate rather than an application the
@@ -351,6 +365,35 @@ question for the Capacity Gate and not silently a monitoring gap.
 **Applications with Status `In progress` are not monitored.** `StreamVault`, `MaiCoin`,
 `poketracker-go` and `Mutuo` are early scaffolding, are not `Live`, and serve nothing to
 probe. FR-31 scopes external monitoring to applications with Status `Live`.
+
+### Observed state, 2026-09-13 at 17:38Z, `wheel.cuatro.dev` added
+
+**Gathered by Story 2-25 immediately after the DNS record was created**, from the authoring
+host outside the VPS, through Cloudflare (`CF-RAY a3a8ec031b44437d-MIA`, `Server: cloudflare`),
+computed against **2026-09-13T17:38:00Z**. Truncation toward zero, as the rounding convention
+below states.
+
+**Scope of this check: `wheel.cuatro.dev` only, on 2026-09-13.** The six incumbent hostnames
+were re-probed over loopback on the box before and after the Caddy reload (codes unchanged,
+recorded in `ops/routing-inventory.md`) but were **not** re-read through the edge in this
+session, so their rows in the 2026-08-17 table beneath stand as that date's reading and are not
+carried forward into this one.
+
+| Hostname | HTTP status | Certificate issuer | notBefore (UTC) | notAfter (UTC) | Nominal lifetime | Age | Days remaining | Alert threshold (rule, not configured) | Age rule firing |
+|---|---|---|---|---|---|---|---|---|---|
+| `wheel.cuatro.dev` | **200** | `C=US, O=Google Trust Services, CN=WE1` | 2026-08-21T00:18:46Z | 2026-11-19T01:16:34Z | 90 days | 23 | 66 | 28 | no |
+
+**The add rule was followed in the same change.** Monitor 803983277 was created at 17:38:14Z,
+one minute after the DNS record (17:37:10Z), the probe table above carries the hostname's row,
+and the monitor inherits the certificate rules below: Rule 1 as `checkSSLErrors`, and Rule 2 as
+the unconfigured threshold this table states. The issuer is the one Rule 1 expects, Google
+Trust Services at the edge, read from the wire rather than copied from the table beneath.
+
+**The certificate is a newer one than the 2026-08-17 table records.** Its `notBefore` is
+2026-08-21, four days after that gathering, and its `notAfter` is 2026-11-19 rather than
+2026-09-20, which is consistent with the Universal SSL rollover the paragraph under that table
+expected. Only this hostname was read, so the rollover is observed for it and not asserted
+for the other six.
 
 ### Observed state, 2026-08-17 at 18:18Z, after the proxy cutover
 
@@ -765,7 +808,7 @@ depends on it:
 
 | Question | Answer | Nature |
 |---|---|---|
-| What terminates TLS for all six hostnames | One shared **Caddy 2.11.4**, container `cs-tracker-caddy-1` | **Observed 2026-08-17** by reading the running container |
+| What terminates TLS for all six hostnames, seven from 2026-09-13 | One shared **Caddy 2.11.4**, container `cs-tracker-caddy-1` | **Observed 2026-08-17** by reading the running container. **2026-09-13:** the same container's loaded config lists `wheel.cuatro.dev` after the reload at 17:36:54Z, seven site blocks, so it terminates TLS for seven |
 | Challenge type | **HTTP-01** | **Observed.** Certificate storage is under `acme-v02.api.letsencrypt.org-directory`, and no DNS challenge provider is configured |
 | Does it renew at a fraction of lifetime | **Yes.** Caddy renews when less than one third of lifetime remains | Caddy's documented behaviour, and it is now confirmed to be the software actually running |
 | Does anything else issue certificates in the estate | **No** | **Observed.** The Traefik that presented the default certificate was on the address the estate has left |
@@ -898,10 +941,11 @@ CloudFlare Origin SSL Certificate Authority.
 **How the gate came to be met, both halves.** The uptime half was met on 2026-08-16: the
 account exists, monitors run off the box at five minute intervals, certificate chain validation
 is on, the cost is observed at $0, and the alert path was proven by real alerts the Operator
-confirmed receiving. **Six active monitors now cover the six live hostnames**, the `www` monitor
-having been added by Story 1.21; a seventh is paused, the retired inverted keyword monitor.
-Several statements earlier in this file still say "five monitors" and describe the 2026-08-16
-state correctly for that date.
+confirmed receiving. **Seven active monitors now cover the seven live hostnames** (2026-09-13),
+the `www` monitor having been added by Story 1.21 and the `wheel.cuatro.dev` monitor, 803983277,
+by Story 2-25; an eighth is paused, the retired inverted keyword monitor. Several statements
+earlier in this file still say "five monitors" or "six hostnames" and describe the 2026-08-16
+and 2026-08-17 state correctly for those dates.
 
 **The certificate-age half was the part that stayed open, and it closed by dissolution rather
 than by configuration.** AD-17a names uptime and certificate-age monitoring together. The age

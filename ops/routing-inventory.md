@@ -14,7 +14,7 @@ kind of fact (NFR-9). Dates and times are ISO 8601 UTC.
 2. [Two gathering passes, deliberately kept apart](#two-gathering-passes-deliberately-kept-apart)
 3. [This pass was read-only, and here is the evidence](#this-pass-was-read-only-and-here-is-the-evidence)
 4. [The box](#the-box)
-5. [The whole zone, all 25 records](#the-whole-zone-all-25-records)
+5. [The whole zone, all 26 records](#the-whole-zone-all-26-records)
 6. [Zone settings and rules at the edge](#zone-settings-and-rules-at-the-edge)
 7. [Every hostname in the zone](#every-hostname-in-the-zone)
 8. [Observed from outside, 2026-08-24](#observed-from-outside-2026-08-24)
@@ -34,8 +34,10 @@ kind of fact (NFR-9). Dates and times are ISO 8601 UTC.
 17. [Where the deploy goes](#where-the-deploy-goes)
 18. [The address the estate left](#the-address-the-estate-left)
 19. [What Story 1.21 changed](#what-story-121-changed)
-20. [Story 1.7 close-out, 2026-08-24](#story-17-close-out-2026-08-24)
-21. [How to re-gather this record](#how-to-re-gather-this-record)
+20. [What Story 2-25 changed](#what-story-2-25-changed), the placement of `list-wheel` on
+    `wheel.cuatro.dev`, with the loopback codes before and after the Caddy reload
+21. [Story 1.7 close-out, 2026-08-24](#story-17-close-out-2026-08-24)
+22. [How to re-gather this record](#how-to-re-gather-this-record)
 
 ## What would invalidate this record
 
@@ -45,13 +47,22 @@ rather than to trust what is written above.
 
 | Event | What it invalidates |
 |---|---|
-| A deploy to `main`, or any `docker compose up` in any of the four project directories | Container ids, image ids, uptimes, and possibly the network aliases and the declared-against-running comparison |
+| A deploy to `main`, or any `docker compose up` in any of the five project directories (four until 2026-09-13) | Container ids, image ids, uptimes, and possibly the network aliases and the declared-against-running comparison |
 | Any edit to `/home/deploy/cs-tracker/Caddyfile`, or a `caddy reload` | The site blocks, the running-config comparison, and every hostname-to-container row |
 | A reboot of the box | The `DOCKER-USER` chain, unless `cf-origin-firewall.service` starts cleanly. Also every uptime figure |
-| Any DNS write in the `cuatro.dev` zone | The 25-record table, the hostname table and the AD-3 mapping |
+| Any DNS write in the `cuatro.dev` zone | The zone record table, the hostname table and the AD-3 mapping |
 | Any change to Cloudflare zone settings, rulesets or Universal SSL | The edge behaviour section, and possibly the observed status codes |
 | Story 1.8 landing its backup fix | The whole of "Backup coverage, per project" |
 | Epic 3 landing AD-8, or Epic 4 replacing Caddy with Traefik | The ingress, image and deploy sections in their entirety |
+
+**Four of these rows tripped on 2026-09-13, all by Story 2-25**: a `docker compose up` in a
+fifth project directory, `/home/deploy/list-wheel`; an append to the shared Caddyfile and a
+`caddy reload`; one DNS write, the `wheel.cuatro.dev` `A` record; and one edit to the zone's
+custom ruleset, two rule expressions widened. The story re-read exactly what it touched, and
+each newer reading sits beside the 2026-08-24 one under its own section with its date, per the
+rule under "Two gathering passes". The whole set of changes is under
+[What Story 2-25 changed](#what-story-2-25-changed). **Nothing else in this file was
+re-gathered on 2026-09-13**: every figure without that date is still the 2026-08-24 reading.
 
 **Review by 2026-11-19**, the notAfter of the Cloudflare edge certificate recorded below,
 which is the nearest dated fact in this file that expires on its own. **A decision**, taken
@@ -151,20 +162,29 @@ One address serves the whole estate. **Observed 2026-08-24T10:15:09Z over SSH**,
 the week.** Both are consistent with the Anchor's stack settling and the Wednesday
 `docker builder prune` running. Neither is near a limit.
 
-## The whole zone, all 25 records
+## The whole zone, all 26 records
 
 **Observed 2026-08-24 by `GET /zones/{id}/dns_records`** on zone `cuatro.dev`
 (id `e90c26d4127883f3b0a56d5932c500f5`, account `cd0752bce97437c466e4786a20ea6618`) with the
 zone-scoped token. `count=25, total_count=25`, so **all 25 were read**.
 
+**Re-read 2026-09-13 by Story 2-25, after its one write.** 26 records: seven `A`, three `AAAA`,
+every `A` and `AAAA` proxied. The one addition since 2026-08-24 is `wheel.cuatro.dev`, `A`
+`177.7.52.248`, proxied, TTL auto, record id `78b65a274cd071446893928b554e3c18`, created
+2026-09-13T17:37:10Z with the comment `list-wheel, Story 2-25, 2026-09-13`. It resolves to the
+edge (`172.67.181.184`, `2606:4700:3037::ac43:b5b8`, `2606:4700:3035::6815:2ba5`). The table
+below is the 2026-08-24 enumeration with that row added and dated; every other row is unchanged.
+
 **What that does and does not close.** It establishes that the enumeration on 2026-08-24 is
 complete: the API reported 25 records and returned 25. It says nothing about which record the
-2026-08-16 dashboard reading missed, because the zone held 26 records that day and holds 25
-now, and `n8n.cuatro.dev` was deleted in between. **The identity of the record that went unread
-on 2026-08-16 is now unrecoverable**, and no later reading can recover it. The gap is therefore
-closed as unanswerable rather than answered, and nobody should carry it as open work.
+2026-08-16 dashboard reading missed, because the zone held 26 records that day and held 25 on
+2026-08-24, and `n8n.cuatro.dev` was deleted in between. **The identity of the record that went
+unread on 2026-08-16 is now unrecoverable**, and no later reading can recover it. The gap is
+therefore closed as unanswerable rather than answered, and nobody should carry it as open work.
+The 26 of 2026-09-13 is a different 26: the same 25 plus `wheel`.
 
-Six A, three AAAA, three CNAME, five MX, four NS, four TXT.
+Six A, three AAAA, three CNAME, five MX, four NS, four TXT on 2026-08-24. **Seven A from
+2026-09-13**; the other five counts are unchanged.
 
 | Record | Type | Content | Proxied | TTL |
 |---|---|---|---|---|
@@ -174,6 +194,7 @@ Six A, three AAAA, three CNAME, five MX, four NS, four TXT.
 | `cs-tracker.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
 | `tracker.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
 | `library.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
+| `wheel.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto. **Added 2026-09-13T17:37:10Z** by Story 2-25 |
 | `cs-tracker.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
 | `tracker.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
 | `library.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
@@ -304,6 +325,7 @@ not what a client resolves: a client resolving a proxied name gets Cloudflare an
 | `cs-tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, both proxied | **Cloudflare edge** | Cloudflare Origin CA | `cs-tracker` (Phoenix / Elixir) | `cs-tracker-app-1`, alias `app` | 4000 |
 | `tracker.cuatro.dev` | `177.7.52.248` | A + AAAA, both proxied | **Cloudflare edge** | Cloudflare Origin CA | `cuatro-tracker` | `cuatro-tracker-app-1`, alias `cuatro-app` | 3000 |
 | `library.cuatro.dev` | `177.7.52.248` | A + AAAA, both proxied | **Cloudflare edge** | Cloudflare Origin CA | `digital-library`, split by path | `digital-library-api-1` (alias `library-api`) for `/api/*` and `/files/*`; `digital-library-web-1` (alias `library-web`) for everything else | 4000, 3000 |
+| `wheel.cuatro.dev` | `177.7.52.248` | A, proxied | **Cloudflare edge** | Cloudflare Origin CA | `list-wheel`, static files behind the container's own Caddy. **Row added 2026-09-13** by Story 2-25 | `list-wheel-list-wheel-1`, alias `list-wheel` | 80 |
 | `covidmap.cuatro.dev` | **not this box.** `216.198.79.65` observed | CNAME, DNS-only | **Vercel** | n/a, TLS is not terminated on any box of ours | A Vercel deployment | **unknown.** Not on this box and no console access | **unknown** |
 | `future-vizion.cuatro.dev` | **not this box** | CNAME, DNS-only | **Vercel** | n/a | A Vercel deployment | **unknown** | **unknown** |
 | `_domainconnect.cuatro.dev` | **not this box** | CNAME, proxied | **unknown.** Squarespace scaffolding, not probed as an application | n/a | Nothing of ours | **unknown** | **unknown** |
@@ -319,8 +341,10 @@ not observable for them.
 origin, satisfying AD-17b on paper while any client with IPv6 walked around the bot rules.
 
 **The apex, `www` and `analytics` still have no `AAAA` record** while the three Satellites on
-the same box do. Already in the deferred-work ledger and still open. Whether the v6 path
-serves at all is unverified for the same reason everywhere in this file: see
+the same box do. Already in the deferred-work ledger and still open. **`wheel` joined that group
+on 2026-09-13**: Story 2-25 created its `A` only, matching the Anchor's three rather than the
+Satellites, so the group without an `AAAA` is four from that date. Whether the v6 path serves at
+all is unverified for the same reason everywhere in this file: see
 [The IPv6 caveat, stated once](#the-ipv6-caveat-stated-once).
 
 ## Observed from outside, 2026-08-24
@@ -438,7 +462,8 @@ carries.
 ## AD-3: hostname against application id
 
 AD-3 (`ARCHITECTURE-SPINE.md:98`) makes the public hostname a **declared** value per Registry
-entry, never derived from the id: three live hostnames already diverge from their ids. This
+entry, never derived from the id: three live hostnames already diverged from their ids on
+2026-08-24, and `wheel.cuatro.dev` against `list-wheel` made it four on 2026-09-13. This
 table is the mapping. Epic 2 authors Registry `live` values from it; Epic 4 authors router
 definitions from it.
 
@@ -450,6 +475,7 @@ definitions from it.
 | `cs-tracker.cuatro.dev` | `cs-tracker` | **Observed.** `PHX_HOST=cs-tracker.cuatro.dev` in `/home/deploy/cs-tracker/.env` drives both the Caddy site label and the Phoenix host | The id diverges from the hostname's leading label only by coincidence here |
 | `tracker.cuatro.dev` | `cuatro-tracker` | **Observed.** Hostname and id differ, which is exactly the divergence AD-3 exists for | none |
 | `library.cuatro.dev` | `digital-library` | **Observed.** Hostname and id differ | Two containers serve one hostname, split by path |
+| `wheel.cuatro.dev` | `list-wheel` | **Observed 2026-09-13.** The site block proxies `list-wheel:80`, the compose service named for the id (AD-3), and the Registry `live` is declared as `https://wheel.cuatro.dev` | Hostname and id differ. **Row added 2026-09-13** by Story 2-25, the first hostname placed since this table was gathered |
 | `covidmap.cuatro.dev` | **unknown** | **Observed absence** | Live, in the zone, in no planning artifact. Story 2-4 owns it |
 | `future-vizion.cuatro.dev` | **unknown** | **Observed absence** | Same |
 | `_domainconnect.cuatro.dev` | **none** | **Observed** | Vendor scaffolding, not an application |
@@ -463,10 +489,11 @@ maps to nothing the Registry will contain. Either Umami gets an Estate row, or t
 in writing that infrastructure hostnames sit outside the Registry. That is a Registry decision
 and belongs to Story 2-4, so it is appended to the ledger rather than decided here.
 
-**Eleven hostnames, five with an id, six without, and only three of those six are gaps.**
-`_domainconnect` and the two TXT names are not serving hostnames and AD-3 does not reach them.
-`covidmap` and `future-vizion` breach AD-6 and were already in the ledger from 2026-08-16.
-`analytics` is the one this pass found.
+**Eleven hostnames, five with an id, six without, and only three of those six are gaps** on
+2026-08-24. **Twelve hostnames and six with an id from 2026-09-13**, with `wheel.cuatro.dev`;
+the six without and the three gaps are unchanged. `_domainconnect` and the two TXT names are
+not serving hostnames and AD-3 does not reach them. `covidmap` and `future-vizion` breach AD-6
+and were already in the ledger from 2026-08-16. `analytics` is the one this pass found.
 
 ### The reverse pass: every application id against a hostname
 
@@ -484,7 +511,7 @@ All fifteen ids from `ops/estate.md:83-99`, each against a zone hostname or an e
 | `cs-tracker` | `cs-tracker.cuatro.dev` | **Observed** | A + AAAA, both proxied |
 | `cuatro-tracker` | `tracker.cuatro.dev` | **Observed** | A + AAAA, both proxied. Id and hostname differ, which is what AD-3 exists for |
 | `digital-library` | `library.cuatro.dev` | **Observed** | A + AAAA, both proxied |
-| `list-wheel` | **none in this zone** | **Observed absence** | `ops/estate.md:95` records it `Live` on GitHub Pages and relocating to the VPS. Its `live` value is not a `cuatro.dev` hostname today, and no record in this zone points at GitHub Pages. Epic 2 must take the value from that story, not from this zone |
+| `list-wheel` | **none in this zone** on 2026-08-24. **`wheel.cuatro.dev` from 2026-09-13** | **Observed absence**, then **Observed 2026-09-13** | On 2026-08-24 `ops/estate.md:95` recorded it `Live` on GitHub Pages and relocating to the VPS, its `live` value was not a `cuatro.dev` hostname, and no record in this zone pointed at GitHub Pages. Story 2-25 is the relocation: `A`, proxied, no `AAAA`, the site block and the container are in the sections that follow, and the Registry `live` value is `https://wheel.cuatro.dev`. The reading is dated on the row rather than overwritten, per this file's rule |
 | `cs-tournament` | **none in this zone** | **Observed absence** | `ops/estate.md:92` carries `[ASSUMPTION: Live on Vercel]`. Two Vercel CNAMEs exist in this zone (`covidmap`, `future-vizion`) and **neither is evidence that either is `cs-tournament`**. Story 2-4 resolves it |
 | `cuatro-finance` | **none** | **Observed absence** | `[ASSUMPTION: built, not deployed]`. No hostname, correctly |
 | `Lumen` | **none** | **Observed absence** | `Archived`, empty shell. Correct absence |
@@ -496,10 +523,11 @@ All fifteen ids from `ops/estate.md:83-99`, each against a zone hostname or an e
 | `poketracker-go` | **none today** | **Observed absence** | `In progress`. `pokemon.cuatro.dev` and `api.pokemon.cuatro.dev` appear in Certificate Transparency from 2025-11-07 and in **no** record in this zone on 2026-08-24. Retired names, already in the ledger |
 | `Mutuo` | **none** | **Observed absence** | `In progress`, early scaffolding. Correct absence |
 
-**Exactly four ids have a hostname in this zone that resolves**, and the apex is a fifth
-hostname on one of them. **Epic 2 must not author a `live` value for any other id from this
-file.** Where an id needs one (`list-wheel`, `cs-tournament`), the value comes from Story 2-4 or
-from the relocation story, and this record says explicitly that it does not hold it.
+**Exactly four ids had a hostname in this zone that resolved on 2026-08-24, and exactly five
+from 2026-09-13**, `list-wheel` being the fifth; the apex is a further hostname on one of them.
+**Epic 2 must not author a `live` value for any other id from this file.** Where an id still
+needs one (`cs-tournament`), the value comes from Story 2-4, and this record says explicitly
+that it does not hold it.
 
 **The two directions disagree in exactly three places, and each is already tracked.**
 `analytics.cuatro.dev` serves and has no id. `covidmap.cuatro.dev` and
@@ -526,8 +554,9 @@ from the relocation story, and this record says explicitly that it does not hold
 ### The site blocks, as installed
 
 Read from `/home/deploy/cs-tracker/Caddyfile` on 2026-08-24. Six site blocks, one per live
-hostname. Comments and the file's ACME-contact preamble are omitted; the directives are
-verbatim.
+hostname; **seven from 2026-09-13T17:36:54Z**, when Story 2-25 appended the `wheel.cuatro.dev`
+block, the last one below, after the Anchor's three and reloaded. Comments and the file's
+ACME-contact preamble are omitted; the directives are verbatim.
 
 ```
 {$PHX_HOST} {
@@ -592,7 +621,25 @@ analytics.cuatro.dev {
 	}
 	reverse_proxy anchor-umami:3000
 }
+
+wheel.cuatro.dev {
+	tls /data/origin-ca/origin.pem /data/origin-ca/origin.key
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+	reverse_proxy list-wheel:80
+}
 ```
+
+**The `wheel.cuatro.dev` block was appended 2026-09-13T17:36:54Z by Story 2-25**, under a
+`# --- list-wheel: wheel.cuatro.dev. Story 2-25. ---` comment and three comment lines in the
+shape of the Anchor's marker, and it is the same block the `list-wheel` repository carries as a
+trailing comment in its `docker/Caddyfile`. `caddy validate` answered `Valid configuration`
+before the reload. It proxies the compose alias `list-wheel`, port 80: the container runs its own
+`caddy:2` serving static files, so TLS, the Origin CA certificate and the three headers live
+here and nowhere in that image.
 
 **`cs-tracker`'s site label is a variable, not a literal.** `{$PHX_HOST}` resolves from
 `/home/deploy/cs-tracker/.env`, where `PHX_HOST=cs-tracker.cuatro.dev`. **Observed 2026-08-24.**
@@ -600,7 +647,8 @@ Epic 4 must carry that indirection across or resolve it deliberately: the file a
 tell a reader which hostname the first block serves.
 
 **`cs-tracker` is the only hostname whose block sends no security headers.** The other five
-each carry `X-Content-Type-Options`, `X-Frame-Options` and `Referrer-Policy`. This is an
+(six from 2026-09-13, `wheel` among them) each carry `X-Content-Type-Options`, `X-Frame-Options`
+and `Referrer-Policy`. This is an
 observed inconsistency, not a defect this story fixes, and it is appended to the ledger.
 
 **No host in the estate sends `Strict-Transport-Security`.** Already in the ledger, unchanged.
@@ -621,17 +669,20 @@ comparison was made directly. **Observed 2026-08-24.**
 | Byte comparison | **Differs at byte 67.** The admin API emits `handle` before `match`; the adapter emits `match` before `handle` |
 | Canonical comparison, `json.load` on both and `==` | **EQUAL.** The two documents are the same config with different key order |
 | Host set in the loaded config | `analytics.cuatro.dev`, `cs-tracker.cuatro.dev`, `cuatro.dev`, `library.cuatro.dev`, `tracker.cuatro.dev`, `www.cuatro.dev` |
+| Host set in the loaded config, **re-read 2026-09-13** after Story 2-25's reload | The six above and `wheel.cuatro.dev`. Only the presence of the new host was read; the adapt-against-running comparison was not re-run |
 | Caddy version | `v2.11.4 h1:XKxkMTgNSizEvKG6QHue6cAsFOteU2qA61w2tKkCWi0=` |
 
-**So the running config is the file on disk, and the six site blocks above are what serves.**
-The `{$PHX_HOST}` indirection is resolved in the loaded config to the literal
+**So the running config is the file on disk, and the six site blocks above were what served on
+2026-08-24, seven from 2026-09-13.** The `{$PHX_HOST}` indirection is resolved in the loaded config to the literal
 `cs-tracker.cuatro.dev`, which is worth knowing: the admin API shows the resolved hostname while
 the file does not.
 
 **What the ` M` actually means.** `git diff Caddyfile` in that checkout is **70 insertions and
-0 deletions**: the `tls` line on the `{$PHX_HOST}` block plus the five appended site blocks for
-`tracker`, `library`, the apex, `www` and `analytics`. The committed version at HEAD is the
-upstream `cs-tracker` file, which knows nothing about the other three projects. **The working
+0 deletions** on 2026-08-24: the `tls` line on the `{$PHX_HOST}` block plus the five appended
+site blocks for `tracker`, `library`, the apex, `www` and `analytics`. From 2026-09-13 the diff
+is larger by the `wheel.cuatro.dev` block and its comment lines, an append and so still purely
+additive; the new insertion count was not read. The committed version at HEAD is the upstream
+`cs-tracker` file, which knows nothing about the other projects. **The working
 tree is correct and `HEAD` is stale, not the other way round.** That is exactly why a
 `git reset --hard` in that directory would take the estate off the air, and it is why the
 diff being purely additive matters: there is nothing on disk that Caddy has not loaded.
@@ -704,8 +755,9 @@ the `DOCKER-USER` rule counts.
 ### The IPv6 caveat, stated once
 
 **This caveat is stated here and cross-referenced everywhere else in this file, rather than
-repeated.** It applies to the `AAAA` gap on the apex, `www` and `analytics`, to the v6
-`DOCKER-USER` chain, and to the corresponding operator action in the close-out.
+repeated.** It applies to the `AAAA` gap on the apex, `www` and `analytics` (and `wheel` from
+2026-09-13), to the v6 `DOCKER-USER` chain, and to the corresponding operator action in the
+close-out.
 
 **No session so far, including both segments of this pass, has had IPv6 egress.** The
 consequence is precise, and the two halves must not be run together:
@@ -895,7 +947,10 @@ on loopback. **No service of ours runs outside Docker.**
 
 Four compose projects, sixteen containers, fourteen running. **Observed 2026-08-24 with
 `docker compose ls --all`, `docker ps -a` and `docker inspect`.** This is the half Story 1-21
-did not gather.
+did not gather. **Five projects from 2026-09-13T17:31:32Z**, when Story 2-25 placed
+`list-wheel-list-wheel-1`: fourteen containers were running immediately before that run, read
+the same day, so fifteen after it. The four subsections below are the 2026-08-24 reading; the
+fifth is dated 2026-09-13.
 
 | Project | Config files | Own network |
 |---|---|---|
@@ -903,6 +958,7 @@ did not gather.
 | `cuatro-tracker` | `/home/deploy/cuatro-tracker/docker-compose.yml` plus `docker-compose.override.yml` | `cuatro-tracker_default` (`172.19.0.0/16`) |
 | `digital-library` | `/home/deploy/digital-library/docker-compose.yml` plus `docker-compose.override.yml` | `digital-library_default` (`172.20.0.0/16`) |
 | `cuatro-portfolio` | `/home/deploy/cuatro-portfolio/docker-compose.yml` | `cuatro-portfolio_default` (`172.21.0.0/16`) |
+| `list-wheel` | `/home/deploy/list-wheel/docker-compose.yml`. **Added 2026-09-13** by Story 2-25 | **none declared.** Its one service joins `cs-tracker_default` only, declared `external: true`, and `docker inspect` on 2026-09-13 showed that one network |
 
 ### `cs-tracker`, services `db`, `migrate`, `app`, `caddy`
 
@@ -1003,6 +1059,39 @@ read.** `cat /home/deploy/cuatro-portfolio/docker-compose.yml` and
 reconstructed from running containers when the declaration was one `cat` away. See
 [Declared against running, per project](#declared-against-running-per-project).
 
+### `list-wheel`, services `list-wheel`
+
+**Placed 2026-09-13T17:31:32Z by Story 2-25**, the first project added to the box since this
+record was gathered. **Observed 2026-09-13T17:32:05Z** by the placing session with `docker ps`,
+`docker stats --no-stream` and `docker inspect`, thirty-one seconds after the container started.
+
+| Container | Image | Runs | Restart | Health | Ports | Aliases | Volumes |
+|---|---|---|---|---|---|---|---|
+| `list-wheel-list-wheel-1` | `list-wheel-list-wheel:latest` (**built on the box**, 88.7 MB) | `caddy:2`'s own command, serving `/srv` on `:80` from the image's `docker/Caddyfile`. The exact command line was not read | `unless-stopped` | yes, `(healthy)` at 17:32:05Z | `80/tcp` exposed, plus the Caddy image's `443/tcp`, `2019/tcp` and `443/udp`, **none published** | `cs-tracker_default`: `list-wheel-list-wheel-1` **and** `list-wheel` at `172.18.0.10` | none declared |
+
+**The one service is named for the id, `list-wheel`, and so is its alias** (AD-3). That is the
+name the `wheel.cuatro.dev` site block proxies, and it collided with nothing in the alias table
+below on 2026-09-13, which is the point of the naming: see the live `app` collision under
+[The shared network](#the-shared-network-and-a-name-collision-that-is-still-live).
+
+**What is in the image, and what it costs.** The build ran on the box inside the deploy's SSH
+step, 17:31:05Z to 17:31:32Z: `npm ci` 18.6 s, `npm run build` 6.3 s, image
+`list-wheel-list-wheel:latest` 88.7 MB. In the local proof build of the same commit, `/srv`
+held exactly `index.html`, `favicon.ico` and three hashed assets, `main-3S57BQZJ.js`,
+`polyfills-5CFQRCPP.js` and `styles-VFKBVUT4.css`, nothing that needs a runtime; the box's image
+served the same three names through the edge at 17:37Z. At 17:32:05Z `docker stats` read 0.00%
+CPU and 10.4 MiB RSS.
+`uptime` read load 0.43, 0.23, 0.14 against 0.09, 0.09, 0.09 before the run at 16:19Z; the 0.43
+is the build's one-minute tail. From the ingress, `docker exec cs-tracker-caddy-1 wget
+http://list-wheel:80/` answered 200 with 11,619 bytes. Its image id was not read, so the
+identity table below is still the 2026-08-24 set.
+
+**It holds nothing.** No volume, no bind mount, no `.env`, no build secret: the project directory
+is an HTTPS clone of a public repository, and a rebuild recreates it with one `git clone` and
+one `docker compose up --build`. The deploy is a second build on the serving box by the same
+mechanism as the Anchor's, which is what widens KV-1: see
+[Where the deploy goes](#where-the-deploy-goes).
+
 ### Image identity, so the rebuild is reproducible
 
 **Every service in the estate is pinned to a floating tag**, and this file opens by saying
@@ -1070,7 +1159,9 @@ application images on the serving two-core box**, and the built set is seven ima
 `cuatro-tracker-migrate`, `digital-library-api` and `digital-library-web`. Only `caddy:2`,
 `postgres:16`, `postgres:16-alpine`, `redis:7-alpine`,
 `ghcr.io/umami-software/umami:postgresql-latest` and `linuxserver/qbittorrent:latest` are
-pulled. This is the corrected form of what the ledger records against KV-1's scope.
+pulled. This is the corrected form of what the ledger records against KV-1's scope. **Five
+projects and eight built images from 2026-09-13**, `list-wheel-list-wheel` being the eighth,
+placed by Story 2-25: see [Where the deploy goes](#where-the-deploy-goes).
 
 ### Declared against running, per project
 
@@ -1115,8 +1206,9 @@ is missing. **Observed 2026-08-24.**
 
 ### The shared network, and a name collision that is still live
 
-Only `cs-tracker` publishes ports. The other three projects join `cs-tracker_default` under
-stable aliases, and the shared Caddyfile reverse-proxies those aliases by name.
+Only `cs-tracker` publishes ports. The other three projects, four from 2026-09-13, join
+`cs-tracker_default` under stable aliases, and the shared Caddyfile reverse-proxies those
+aliases by name.
 
 | Alias on `cs-tracker_default` | Resolves to | Reached by |
 |---|---|---|
@@ -1127,6 +1219,7 @@ stable aliases, and the shared Caddyfile reverse-proxies those aliases by name.
 | `library-web` | `digital-library-web-1` | `library.cuatro.dev` for everything else |
 | `anchor-app` | `cuatro-portfolio-anchor-app-1` | `cuatro.dev` |
 | `anchor-umami` | `cuatro-portfolio-anchor-umami-1` | `analytics.cuatro.dev` |
+| `list-wheel` | `list-wheel-list-wheel-1` (`172.18.0.10`). **Added 2026-09-13** by Story 2-25 | `wheel.cuatro.dev` proxies `list-wheel:80` |
 | `api`, `web`, `db`, `migrate` | the obvious containers | nothing routes to these |
 
 **The `app` collision is still live on 2026-08-24.** Compose gives a service its own name as a
@@ -1136,7 +1229,9 @@ steers to it cannot connect. **Observed unchanged in `docker inspect` network al
 days after Story 1-21 first recorded it. Already in the ledger; the closure belongs in the
 `cuatro-tracker` repository.
 
-**This is why every service in the Anchor's compose file is named `anchor-*`.**
+**This is why every service in the Anchor's compose file is named `anchor-*`**, and why
+`list-wheel`'s one service is named `list-wheel` rather than `app` or `web` (AD-3): on
+2026-09-13 that alias took a first lease, not a second.
 
 ## Volumes, sizes, and the one unbounded path
 
@@ -1409,18 +1504,18 @@ This set is what a rebuild has to recreate from nothing, and it is the reason St
 
 | What | Where | In any repository? |
 |---|---|---|
-| The six site blocks that route the whole estate | `/home/deploy/cs-tracker/Caddyfile` | **Partially.** The Anchor's three blocks are mirrored in `docker/Caddyfile` and nothing compares the two. The `cs-tracker`, `tracker` and `library` blocks are box-only |
+| The six site blocks that route the whole estate, seven from 2026-09-13 | `/home/deploy/cs-tracker/Caddyfile` | **Partially.** The Anchor's three blocks are mirrored in `docker/Caddyfile` and nothing compares the two. The `wheel.cuatro.dev` block is mirrored the same way from 2026-09-13, as a trailing comment in the `list-wheel` repository's `docker/Caddyfile`, and nothing compares those two either. The `cs-tracker`, `tracker` and `library` blocks are box-only |
 | `PHX_HOST=cs-tracker.cuatro.dev`, which the `cs-tracker` site label resolves from | `/home/deploy/cs-tracker/.env` | No |
 | `cuatro-tracker`'s ingress override | `/home/deploy/cuatro-tracker/docker-compose.override.yml` | No, gitignored by design at `.gitignore:23` |
 | `digital-library`'s ingress override | `/home/deploy/digital-library/docker-compose.override.yml` | No. **Untracked and not gitignored**, so it is protected by convention only |
 | The Origin CA certificate and private key | `cs-tracker_caddy_data` volume at `/data/origin-ca/`, plus copies at `/home/deploy/origin-ca/origin.pem`, `origin.key`, `origin.csr` | No, and correctly so. **Backed up nowhere.** Already in the ledger |
 | The origin firewall | `/usr/local/sbin/cf-origin-firewall.sh` and `cf-origin-firewall.service` | No |
-| Per-project secrets | `/home/deploy/cs-tracker/.env` (4255 bytes), `/home/deploy/cuatro-tracker/.env` (686), `/home/deploy/digital-library/.env` (1347), `/home/deploy/cuatro-portfolio/.env.production` (322). All mode `0600`, owner `deploy` | No, and correctly so |
+| Per-project secrets | `/home/deploy/cs-tracker/.env` (4255 bytes), `/home/deploy/cuatro-tracker/.env` (686), `/home/deploy/digital-library/.env` (1347), `/home/deploy/cuatro-portfolio/.env.production` (322). All mode `0600`, owner `deploy`. `/home/deploy/list-wheel` holds none: no `.env` and no build secret (2026-09-13) | No, and correctly so |
 | Redeploy and backup scripts | `~/cuatro-redeploy.sh`, `~/library-redeploy.sh`, `~/cuatro-backup.sh`, `~/library-backup.sh` | No |
 | The `deploy` crontab, two backup jobs | `crontab -l` as `deploy` | No |
 | Operator notes | `~/README.md`, `~/README.md.bak-library`, `~/README.md.bak-ops1` | No |
 | Story 1-5's sampler and timer | `capacity-sampler.service` and `.timer` | The sampler script is in this repository at `ops/capacity-sampler.sh`; the installed unit files are not |
-| Caddyfile backups | `Caddyfile.bak-ops1`, `Caddyfile.bak-library-`, `Caddyfile.bak-1-3`, `Caddyfile.bak-1-21` | No. **Four, not the three previously recorded** |
+| Caddyfile backups | `Caddyfile.bak-ops1`, `Caddyfile.bak-library-`, `Caddyfile.bak-1-3`, `Caddyfile.bak-1-21`, and from 2026-09-13 `Caddyfile.bak-2-25` (3,663 bytes, `cmp` identical to the file before Story 2-25's append) | No. **Four, not the three previously recorded**; five from 2026-09-13 |
 
 ### The variable names each project needs
 
@@ -1461,10 +1556,11 @@ Already in the ledger.
 
 | Directory | HEAD | Working tree |
 |---|---|---|
-| `/home/deploy/cs-tracker` | `3b29ace` | ` M Caddyfile`, four untracked `Caddyfile.bak-*` |
+| `/home/deploy/cs-tracker` | `3b29ace` | ` M Caddyfile`, four untracked `Caddyfile.bak-*`; five untracked from 2026-09-13, with `Caddyfile.bak-2-25`. `HEAD` was not re-read that day |
 | `/home/deploy/cuatro-tracker` | `5d49da7` | clean |
 | `/home/deploy/digital-library` | `46d6e5f` | `?? docker-compose.override.yml` |
 | `/home/deploy/cuatro-portfolio` | `54d3a0d` | ` M docker-compose.yml`, ` M docker/Dockerfile`, `?? .dockerignore` |
+| `/home/deploy/list-wheel` | `11f15cb` | not read. **Row added 2026-09-13** by Story 2-25: cloned over HTTPS at 17:02Z at `e589ef3`, reset to `11f15cb` (the merge of `LuigiEspinosa/list-wheel#2`) by the first deploy at 17:31Z |
 
 ### Live credentials, tracked here so none is forgotten
 
@@ -1479,6 +1575,7 @@ Already in the ledger.
 | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` in `/home/deploy/digital-library/.env` | Outbound mail from the box | **Newly recorded 2026-08-24**, by name. The estate sends mail and no planning artifact says so |
 | Umami admin password | `analytics.cuatro.dev` | Set by the Operator on 2026-08-17. The agent-written `.umami-admin` file was shredded from the box the same day. **Reset by the Operator on 2026-09-13** after the value was lost: Umami 3.3.0 stores a bcrypt hash (`src/lib/password.ts`, 10 rounds) and the standalone image carries no `bcryptjs` a shell can load, so the hash was made off the box (`uv run --with bcrypt python`, `getpass`, only the `$2b$10$` hash printed) and written with `update "user" set password = ... where username = 'admin'` over `psql`. The one account is still `admin`. Sessions already signed in survive a password change, since Umami signs its tokens with `UMAMI_APP_SECRET` |
 | `deploy` SSH key, GitHub `SSH_PRIVATE_KEY` | Shell on `177.7.52.248`, passwordless sudo | In use by `deploy.yml`. `SERVER_HOST` repointed 2026-08-17 |
+| `list-wheel` deploy key, ed25519, comment `github-actions-deploy@list-wheel`, fingerprint `SHA256:w24gXBJVlcbMOKWYk1Qr7LsFXD7TbPEumAkVYoreldI` | The same shell on `177.7.52.248`, the same `deploy` account, from `LuigiEspinosa/list-wheel`'s `deploy.yml` | **Created 2026-09-13 by Story 2-25 on an Operator ruling**, one key per consumer. Public half appended to `/home/deploy/.ssh/authorized_keys` at 17:29Z, now three keys (`luigi@cuatro.dev`, `github-actions-deploy@cuatro-portfolio`, this one), backup `authorized_keys.bak-2-25` with the previous two. Private half set as `SSH_PRIVATE_KEY` on that repository at 17:24:59Z and kept on the workstation at the path the gitignored `.env` names as `LIST_WHEEL_DEPLOY_KEY_FILE`; no value is recorded anywhere. `SERVER_HOST` and `SERVER_USER` on the same repository, set 17:02:09Z and 17:02:10Z, hold the two public facts in the box table above |
 | `github_deploy`, `cuatro_tracker_deploy` | Read on one GitHub repository each | In use by the sibling stacks. Neither can clone `cuatro-portfolio`, which is why that repository is cloned over HTTPS |
 | Cloudflare Origin CA private key | The origin's TLS identity for every hostname, valid to 2041-08-13 | On the box in two places and **nowhere else**. Losing it takes every hostname down with no ACME fallback. Already in the ledger |
 
@@ -1512,6 +1609,17 @@ by reading that project's compose `build:` stanza rather than by a digest test t
 Docker version makes meaningless. KV-1 is scoped to this repository's deploy workflow; the
 estate-wide shape of the breach is wider than KV-1 records, and that is appended to the ledger
 rather than added to the register, because promoting an entry needs an Operator ruling.
+
+**Five projects from 2026-09-13.** Story 2-25 placed `list-wheel` by the same mechanism, on an
+Operator ruling of 2026-09-13 that chose the mirror over a registry image: `list-wheel`'s own
+`deploy.yml` checks out this repository's `ops/` at `main`, runs `node
+ops/capacity-gate.mjs list-wheel` as a blocking step, then `docker compose up --build -d
+--remove-orphans` over SSH in `/home/deploy/list-wheel`. The first run, 34771823648, passed the
+gate at 17:31:05Z (`status is open against a threshold of load15 0.60 ... list-wheel may be
+placed`) and built on the box in 27 s: `npm ci` 18.6 s, `npm run build` 6.3 s,
+`list-wheel-list-wheel:latest` 88.7 MB, the eighth locally-built image. The story widens KV-1 to
+name that second workflow; Story 4.3 retires that half. The gate now has two callers, and this
+was its first real placement.
 
 **The disk cost of that breach is visible and is recorded above**: 6.028 GB of build cache and
 a 1.3 GB dangling image, held down only by a weekly `docker builder prune`.
@@ -1578,6 +1686,78 @@ the Anchor's stack was attached to the shared network with services named `app`,
 from the network at 07:46Z, every service was renamed `anchor-*`, and the reason is pinned in
 `docker-compose.yml`. Sampled checks of the three Satellites returned their normal status codes
 throughout, but **this record does not claim the impact was zero**.
+
+## What Story 2-25 changed
+
+Named explicitly, as Story 1.21's changes are, because everything else in this file is the
+2026-08-24 reading. The story relocated `list-wheel` from GitHub Pages onto `wheel.cuatro.dev`
+on 2026-09-13, the first genuinely new placement on the box since this record was gathered and
+the first real passage through the Capacity Gate. Every figure here is the placing session's
+observation on that day; times are UTC.
+
+| Change | Where | When (UTC) |
+|---|---|---|
+| Cloned `list-wheel` over HTTPS, at `e589ef3` | `/home/deploy/list-wheel` | 2026-09-13T17:02Z |
+| Wrote the three deploy secrets, `SERVER_HOST`, `SERVER_USER` and `SSH_PRIVATE_KEY`, the last a new ed25519 key made for this consumer | GitHub repository `LuigiEspinosa/list-wheel` | 2026-09-13T17:02:09Z, 17:02:10Z and 17:24:59Z |
+| Appended that key's public half, `github-actions-deploy@list-wheel`, as the third authorized key | `/home/deploy/.ssh/authorized_keys`, backup `authorized_keys.bak-2-25` | 2026-09-13T17:29Z |
+| Placed the container: Deploy run 34771823648, gate step passing at 17:31:05Z, then `git reset --hard origin/main` to `11f15cb` and `docker compose up --build -d --remove-orphans` over SSH | `/home/deploy/list-wheel`, container `list-wheel-list-wheel-1` on `cs-tracker_default` at `172.18.0.10`, no published port | 2026-09-13T17:30:59Z to 17:31:32Z |
+| Widened WAF rules R1 and R3 to include `"wheel.cuatro.dev"`, two `PATCH` calls on ruleset `57602610aea04496a2f8ed13ec584b6c`, now version 4; R2 and R4 and the order unchanged | Cloudflare zone `cuatro.dev` | 2026-09-13T17:31:31Z |
+| Appended the `wheel.cuatro.dev` site block, `caddy validate`, `caddy reload` | `/home/deploy/cs-tracker/Caddyfile`, backup `Caddyfile.bak-2-25` | 2026-09-13T17:36:54Z |
+| Created `A wheel.cuatro.dev 177.7.52.248`, proxied, TTL auto, id `78b65a274cd071446893928b554e3c18` | Cloudflare zone `cuatro.dev` | 2026-09-13T17:37:10Z |
+| Added the `wheel.cuatro.dev` monitor, id 803983277, HTTP, interval 300 s, first check UP | UptimeRobot | 2026-09-13T17:38:14Z |
+
+**The order is the point, not an accident.** The WAF rules named the hostname before any DNS
+record existed, so no hostname was ever live unfiltered (AD-17b). The site block was validated,
+reloaded and proved over loopback before the record existed, and the six incumbents were probed
+before and after the reload. Only then did the record, the monitor and this section land.
+
+**The six incumbent hostnames, over loopback, before and after the reload.** Probed on the box
+with `--resolve` to `127.0.0.1` and `-k`, which bypasses the edge, so these are origin codes
+rather than the from-outside baseline `ops/bot-mitigation.md:100` records. The two runs were
+identical:
+
+| Hostname | Before the append | After the reload |
+|---|---|---|
+| `cuatro.dev` | 200 | 200 |
+| `www.cuatro.dev` | 301 | 301 |
+| `analytics.cuatro.dev` | 200 | 200 |
+| `cs-tracker.cuatro.dev` | 302 | 302 |
+| `tracker.cuatro.dev` | 307 | 307 |
+| `library.cuatro.dev` | 302 | 302 |
+
+`analytics` reads 200 here and 403 from outside because the managed challenge is at the edge,
+and a loopback request never meets it. That is one more direct observation that the challenge
+is Cloudflare's and not the origin's.
+
+**The new hostname, over loopback.** Before the block: `200` with 0 bytes, Caddy's empty answer
+for an unmatched host, which is why the block had to precede the record. After the reload:
+`HTTP/2 200`, 11,619 bytes, `referrer-policy: strict-origin-when-cross-origin`,
+`x-content-type-options: nosniff`, `x-frame-options: DENY`, `server: Caddy`,
+`<title>Cuatro Wheel</title>`, `<base href="/">`, a reference to `main-3S57BQZJ.js`; and
+`/no/such/path` `200` with the same 11,619 bytes, which is `try_files` in the container's own
+Caddyfile doing what Pages' byte-identical `404.html` did.
+
+**Through Cloudflare, 17:37Z to 17:38Z, from off the box.** Browser user agent 200; `GPTBot`
+403; empty user agent 403 with `cf-mitigated: challenge`; `UptimeRobot/2.0` 200;
+`cuatro-registry-verification/1 (+https://cuatro.dev/contracts/registry.json)` 200; `Googlebot`
+200. The 200 carried `Content-Type: text/html; charset=utf-8`, the three origin headers intact,
+`Server: cloudflare`, `CF-RAY a3a8ec031b44437d-MIA`, 11,619 bytes. Assets `main-3S57BQZJ.js`
+200 at 165,968 bytes, `polyfills-5CFQRCPP.js` 200 at 34,585, `styles-VFKBVUT4.css` 200 at
+1,615. The edge certificate presented was the one recorded under
+[The Cloudflare edge certificate rolled over](#the-cloudflare-edge-certificate-rolled-over),
+`C=US, O=Google Trust Services, CN=WE1`, notBefore 2026-08-21T00:18:46Z, notAfter
+2026-11-19T01:16:34Z, so the review-by date at the top of this file stands. All seven active
+monitors were UP afterwards; 803750027 stayed paused as before.
+
+**What the story did not do on the box.** By its standing rules and the placing session's
+account: no container other than `list-wheel-list-wheel-1` was started and none was restarted,
+the only Caddy action being a `caddy reload` inside `cs-tracker-caddy-1`, and no `git` command
+ran in `/home/deploy/cs-tracker`. Container uptimes were not re-read to prove that, which is the
+check the 2026-08-24 pass used; the identical incumbent codes above are the evidence this story
+has. No `AAAA` was created for `wheel`, by the same Ask-first rule that leaves the Anchor's three
+without one. The box read Docker 29.6.2, Compose v5.3.1, 78 GB free and 5.6 GB available on the
+day, and at 17:32:05Z `uptime` read 0.43, 0.23, 0.14, the 0.43 being the build's one-minute tail
+against 0.09, 0.09, 0.09 at 16:19Z. Nothing else in this file was re-gathered.
 
 ## Story 1.7 close-out, 2026-08-24
 
@@ -1710,7 +1890,7 @@ because it reads as current state. Everything from it that is still true is carr
 
 - Its Part 1 record set, corrected and completed. All 25 records now, against its 25 of 26. Its
   "one record was not read" note is closed as unanswerable rather than answered: see
-  [The whole zone, all 25 records](#the-whole-zone-all-25-records).
+  [The whole zone, all 26 records](#the-whole-zone-all-26-records).
 - **Its Part 2 command set, carried forward and updated**, as
   [How to re-gather this record](#how-to-re-gather-this-record). The checklist held runnable
   commands and this record named them only in prose, which would have made the method
@@ -1793,7 +1973,8 @@ return 403 with this token. **Record them as unknown rather than dropping them.*
 
 ```powershell
 $names = 'cuatro.dev','www.cuatro.dev','analytics.cuatro.dev','cs-tracker.cuatro.dev',
-         'tracker.cuatro.dev','library.cuatro.dev','covidmap.cuatro.dev','future-vizion.cuatro.dev'
+         'tracker.cuatro.dev','library.cuatro.dev','wheel.cuatro.dev',
+         'covidmap.cuatro.dev','future-vizion.cuatro.dev'
 foreach ($n in $names) {
   curl.exe -sS -o NUL -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0' `
     --max-time 20 -w "$n %{http_code} %{remote_ip}`n" "https://$n/"
@@ -1801,7 +1982,7 @@ foreach ($n in $names) {
 ```
 
 Expect `200, 301, 403, 302, 307, 302` for the six `cuatro.dev` hostnames, which is the baseline
-`ops/bot-mitigation.md:100` records. **The two Cloudflare addresses alternate between runs and
+`ops/bot-mitigation.md:100` records, and `200` for `wheel.cuatro.dev`, placed 2026-09-13. **The two Cloudflare addresses alternate between runs and
 are not a per-hostname property.** For the certificate, in one consistent form:
 
 ```bash
@@ -1854,7 +2035,7 @@ what the checklist-era method would have assumed. Read the project's compose `bu
 instead:
 
 ```bash
-for d in cs-tracker cuatro-tracker digital-library cuatro-portfolio; do
+for d in cs-tracker cuatro-tracker digital-library cuatro-portfolio list-wheel; do
   echo "== $d"; grep -nE '^  [a-z-]+:|^    (image|build|profiles):|^      (context|dockerfile):' \
     /home/deploy/$d/docker-compose.yml
 done
@@ -1863,9 +2044,10 @@ done
 ### 5. Declared against running
 
 ```bash
-for d in cs-tracker cuatro-tracker digital-library; do
+for d in cs-tracker cuatro-tracker digital-library list-wheel; do
   (cd /home/deploy/$d && docker compose config --services && docker compose config --volumes)
 done
+# list-wheel has no env file and no build secret, so the bare command is the right one there.
 # The Anchor needs its env file. The bare command fails, and that failure is itself a finding.
 (cd /home/deploy/cuatro-portfolio && docker compose config --services)
 (cd /home/deploy/cuatro-portfolio && docker compose --env-file .env.production config --services)
@@ -1954,7 +2136,7 @@ done
 ```bash
 systemctl list-timers --all --no-pager
 ls -la /etc/cron.d; cat /etc/cron.d/*
-for d in cs-tracker cuatro-tracker digital-library cuatro-portfolio; do
+for d in cs-tracker cuatro-tracker digital-library cuatro-portfolio list-wheel; do
   echo "== $d"; (cd /home/deploy/$d && git rev-parse --short HEAD && git status --porcelain)
 done
 ```

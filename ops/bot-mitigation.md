@@ -43,10 +43,21 @@ plan's five custom rules are used and one is deliberately held in reserve.
 
 | # | Action | Applies to | What it does |
 |---|---|---|---|
-| 1 | **block** | all six hostnames | Blocks AI training and agent crawlers by user agent: `GPTBot`, `ChatGPT-User`, `ClaudeBot`, `Claude-User`, `CCBot`, `Bytespider`, `PerplexityBot`, `Perplexity-User`, `meta-externalagent`, `cohere-ai`, `Diffbot`, `ImagesiftBot`, `Omgilibot`, `YouBot`, `AI2Bot`, `Timpibot`, `Scrapy` |
+| 1 | **block** | all six hostnames; seven from 2026-09-13, `wheel.cuatro.dev` added | Blocks AI training and agent crawlers by user agent: `GPTBot`, `ChatGPT-User`, `ClaudeBot`, `Claude-User`, `CCBot`, `Bytespider`, `PerplexityBot`, `Perplexity-User`, `meta-externalagent`, `cohere-ai`, `Diffbot`, `ImagesiftBot`, `Omgilibot`, `YouBot`, `AI2Bot`, `Timpibot`, `Scrapy` |
 | 2 | **skip** | every hostname except `analytics` | Skips the rules below when the user agent contains `UptimeRobot`. The estate's only error signal can never be challenged by the estate's own rules |
-| 3 | **managed challenge** | the five application hostnames, `www` included | Challenges requests with an empty user agent that are not verified bots |
+| 3 | **managed challenge** | the five application hostnames, `www` included; six from 2026-09-13, `wheel.cuatro.dev` added | Challenges requests with an empty user agent that are not verified bots |
 | 4 | **managed challenge** | `analytics.cuatro.dev` | Challenges everything except `/api/` and `/script.js`, so the dashboard is not browsable by automation while the tracker and collector stay open |
+
+**Edited 2026-09-13 by Story 2-25, before the hostname existed in DNS.** Rules 1 and 3 each
+gained `"wheel.cuatro.dev"` in their `http.host in {...}` list, by a `PATCH` on the rule carrying
+its own action and description, at 17:31:31Z; the `A` record was created at 17:37:10Z, so the
+hostname was never live unfiltered (AD-17b). **Observed 2026-09-13** by reading the ruleset back
+after the two calls: version 4, `last_updated` 17:31:31Z, rule 1 `http.host in {"cuatro.dev"
+"www.cuatro.dev" "analytics.cuatro.dev" "cs-tracker.cuatro.dev" "tracker.cuatro.dev"
+"library.cuatro.dev" "wheel.cuatro.dev"}`, rule 3 `http.host in {"cuatro.dev" "www.cuatro.dev"
+"cs-tracker.cuatro.dev" "tracker.cuatro.dev" "library.cuatro.dev" "wheel.cuatro.dev"}`. Rule 2
+is `http.host ne "analytics.cuatro.dev"`, a negation rather than a list, so it covers the new
+hostname with no edit; rule 4 is unchanged; the order is unchanged.
 
 **Rule 2 exists because of AD-17a, not as a convenience.** This is the story that closes the
 monitoring gate. A filter that can silently challenge the probes would close the gate and blind
@@ -65,6 +76,12 @@ agent before it lands: a rule that challenges it turns every `live` check red on
 run, which is the same shape of self-inflicted blindness rule 2 exists to prevent. The agent is
 deliberately not added to rule 2's skip, for the reason under Rule order is load-bearing: a skip
 keyed on client-supplied text is a bypass, and this reader needs no bypass.
+
+**Observed 2026-09-13, Story 2-25.** The rule edit above was checked against this agent before
+the Registry entry's `live` was changed: `https://wheel.cuatro.dev/` answered **200** to it
+through Cloudflare at 17:37Z to 17:38Z. `list-wheel`'s `live` moves from `luigiespinosa.github.io` to
+`https://wheel.cuatro.dev`, so **five** `live` hostnames sit behind these rules from that date,
+and `inclusivcup.vercel.app` is the one `live` URL they never see.
 
 ### Rule order is load-bearing, and the first ordering was wrong
 
@@ -86,7 +103,7 @@ Two changes closed it, and both were verified by request:
 is an authentication bypass wearing a whitelist's clothing.** It should be ordered after
 anything that must not be skippable, and scoped as narrowly as the thing it protects. The
 residual risk is stated rather than hidden: an attacker can still avoid rules 3 and 4 on the
-five application hostnames by claiming to be UptimeRobot, which buys them nothing that a normal
+application hostnames (five, six from 2026-09-13) by claiming to be UptimeRobot, which buys them nothing that a normal
 browser user agent would not also buy, since those rules challenge empty agents and the
 analytics host only.
 
@@ -126,6 +143,24 @@ should receive an interstitial and pass. **This has not been verified in a real 
 this session**, because Playwright is not installed until Story 1-10 and no acceptance
 criterion here may claim a rendered-output result. It is listed under Pending Operator actions
 rather than asserted.
+
+### Verified, not assumed: `wheel.cuatro.dev`, 2026-09-13
+
+**Observed 2026-09-13T17:37Z to 17:38Z**, from the authoring host through Cloudflare, immediately
+after the `A` record was created at 17:37:10Z and against ruleset version 4 (`last_updated`
+17:31:31Z, the edit above). Each row is a request actually made, not a property inferred from the
+configuration. The table above is not re-dated: it records the six incumbents on 2026-08-17 and
+this one records the seventh hostname on the day it went live.
+
+| Test | Result | What it proves |
+|---|---|---|
+| `wheel.cuatro.dev`, normal browser user agent | **200**, `cf-ray` present, 11,619 bytes, the three origin headers intact | Proxied and serving the application through the edge |
+| `wheel.cuatro.dev` as `GPTBot` | **403** | Rule 1's block fires on the new hostname |
+| `wheel.cuatro.dev`, empty user agent | **403**, `cf-mitigated: challenge` | Rule 3's managed challenge fires on the new hostname |
+| `wheel.cuatro.dev` as `Googlebot` | **200** | Search crawlers are not blocked, the AI crawler policy holds |
+| `wheel.cuatro.dev` as `UptimeRobot/2.0` | **200** | Rule 2's negation covers the new hostname with no edit, so the probe is never challenged |
+| `wheel.cuatro.dev` as `cuatro-registry-verification/1 (+https://cuatro.dev/contracts/registry.json)` | **200** | The Registry's live check is not challenged, so the rule edit does not redden it |
+| All seven active UptimeRobot monitors after the record and the rules | **UP** (803983277 first check UP at 17:38:14Z) | No alarm was caused by this change |
 
 ## The filter is bypassable, and this is the most important line in this file
 
@@ -176,7 +211,8 @@ limitation Story 1.21 recorded. **The rules are present and the path is unverifi
 are different claims. Closing it needs one `curl` from a vantage point with IPv6.
 
 **Recovering from this firewall, written down because it will be needed under time pressure.**
-A Cloudflare edge outage now takes all six hostnames down with no DNS-level escape: turning a
+A Cloudflare edge outage now takes all seven hostnames down (six until 2026-09-13,
+`wheel.cuatro.dev` since) with no DNS-level escape: turning a
 record back to DNS-only makes the origin present an untrusted Origin CA certificate, and the
 firewall drops the traffic anyway. Recovery is over SSH on port 22, which is unaffected:
 
@@ -262,8 +298,18 @@ change what an origin serves without anybody editing the origin.
 
 ```
 AD-17b status: satisfied as of 2026-08-17
-Rules live on: cuatro.dev, www.cuatro.dev, analytics.cuatro.dev, cs-tracker.cuatro.dev, tracker.cuatro.dev, library.cuatro.dev
+Rules live on: cuatro.dev, www.cuatro.dev, analytics.cuatro.dev, cs-tracker.cuatro.dev, tracker.cuatro.dev, library.cuatro.dev, wheel.cuatro.dev
 ```
+
+**`wheel.cuatro.dev` joined the line on 2026-09-13, Story 2-25, and the status date does not
+move.** The gate closed on 2026-08-17 and has not reopened: the new hostname was added to rules 1
+and 3 at 17:31:31Z, before its `A` record existed at 17:37:10Z, so there was no interval in which
+a live subdomain sat in front of no filter. Rule 2 covers it by negation and rule 4 is `analytics`
+only. Each rule was then proven to fire on the hostname by a request, in the dated
+`wheel.cuatro.dev` table under Verified, not assumed. The direct-to-origin path is unchanged:
+**observed 2026-09-13**, the `list-wheel` container publishes no port and `cs-tracker-caddy-1`
+is still the box's only port publisher, so the hostname is reached only through the ports the
+`DOCKER-USER` rules already cover. Seven hostnames are behind the rules from that date.
 
 **Why this reads `satisfied`, and what that claim is actually resting on.** Rules are live on
 every live hostname, and each was proven to fire by a request rather than inferred from the
