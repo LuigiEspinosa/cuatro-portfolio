@@ -4493,6 +4493,13 @@ status: done
     Not changed here: a zone setting is outside a story that placed one application, and turning it
     off is a measurement decision the Operator owns.
 
+    A measured cost, added 2026-09-13T19:12Z after the review patch deployed: because the edge
+    rewrites the HTML to inject the beacon, it drops the origin's `ETag` on the shell, so
+    `wheel.cuatro.dev`'s `Cache-Control: no-cache` shell revalidates with a full 200 (11,619 bytes)
+    on every visit instead of the 304 the origin answers over loopback. The same applies to every
+    HTML response the edge rewrites on the other hostnames. Small, but it is the beacon's, not the
+    application's (`ops/routing-inventory.md` § What Story 2-25 changed).
+
     **Owner: the Operator, one ruling.** Either record it as tolerated in `ops/bot-mitigation.md`
     (or a new edge record) with the reason, or turn Web Analytics off in the Cloudflare dashboard
     and record the date. **Trigger: the ruling; no code depends on it.**

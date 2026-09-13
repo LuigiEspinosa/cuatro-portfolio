@@ -1710,12 +1710,20 @@ observation on that day; times are UTC.
 | Added the `wheel.cuatro.dev` monitor, id 803983277, HTTP, interval 300 s, first check UP | UptimeRobot | 2026-09-13T17:38:14Z |
 | Pushed the Registry `live`, which fired `registry-verification` run 34773443302: `PASS  list-wheel live: https://wheel.cuatro.dev answered 200`, 35 of 35 | `contracts/registry.json` on `2-25-relocate-list-wheel` | 2026-09-13T18:03:25Z |
 | Replaced the Pages build with the redirect page, `gh-pages` `52698eb` on `b9ee2b8`; Pages built at that commit | `LuigiEspinosa/list-wheel`, branch `gh-pages` | 2026-09-13T18:25:47Z |
+| Redeployed with the review patch, `LuigiEspinosa/list-wheel#3` merged as `00f5957`: Deploy run 34776876533, gate line at 19:10:38Z (still the new-id branch of the check, DW-91), `npm ci` from the layer cache, `npm run build` 6.8 s, container recreated | `/home/deploy/list-wheel` | 2026-09-13T19:10:26Z to 19:10:47Z |
 
 **The one status difference the relocation introduced.** An unknown path on `wheel.cuatro.dev`
 answers 200 with `index.html` (`try_files` in the container's Caddyfile), where Pages answered
 404 with the same body, its custom-404 status. Recorded here as the one status the move changed;
 `Cache-Control: no-cache` on the shell was added after review, so a browser revalidates
-`index.html` on every load.
+`index.html` on every load. **Observed 2026-09-13T19:12Z** through the edge, after the redeploy:
+`/`, `/index.html` and `/no/such/path` answer 200 with `Cache-Control: no-cache`; the hashed
+bundles answer 200 with `Cache-Control: max-age=14400`, which is the edge's own browser TTL for
+static extensions (the origin sends none). The shell's `ETag` does not survive the edge, so a
+conditional request answers 200 with the full 11,619 bytes rather than the 304 the origin gives
+over loopback: the edge rewrites the HTML to inject its Web Analytics beacon (DW-92) and drops
+the validator with it. The shell is still fresh on every load; the cost of the missing 304 is one
+11 kB transfer per visit, and it belongs to the DW-92 ruling.
 
 **Rollback.** The old build is `gh-pages` `b9ee2b8`: `git revert 52698eb` on that branch restores
 it and Pages rebuilds within a minute. The Registry `live` and `tech` revert is one commit in

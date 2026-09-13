@@ -656,6 +656,16 @@ state comes from here; times are UTC.
   response over loopback; absent from every `ops/` record. It predates this story and touches
   NFR-8's letter. Filed as DW-92; the Operator rules.
 
+**Observed 2026-09-13, after the review patch, by the orchestrating session.** `list-wheel#3`
+merged by the Operator at 19:10:26Z as `00f5957`; Deploy run 34776876533 success, gate stdout at
+19:10:38Z the new-id line again (the `placements` entry is on this branch, not on `main`: DW-91),
+`npm ci` from the layer cache, `npm run build` 6.8 s, container recreated by 19:10:47Z. Through
+the edge at 19:12Z: `/`, `/index.html`, `/no/such/path` 200 with `Cache-Control: no-cache`;
+`main-3S57BQZJ.js` and `styles-VFKBVUT4.css` 200 with the edge's `max-age=14400`. A conditional
+`GET /` answers 200, not 304: the edge strips the shell's `ETag` when it injects the DW-92 beacon,
+so revalidation costs the full 11,619 bytes; the origin's own 304 was seen in the local proof.
+Recorded in `ops/routing-inventory.md` § What Story 2-25 changed.
+
 **Matrix Test Audit.** Rows with a standing test that ran green in the runs above: first placement
 (`capacity-gate.test.ts`, the open-gate new-id cases on `cs-tournament`, the same code path the
 Deploy run took), redeploy after the placement lands (the five-id pin and the incumbent path),
