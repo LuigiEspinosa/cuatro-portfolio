@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import type { SpawnSyncReturns } from 'node:child_process';
 import { parseGate, evaluate, main, load15, GateError, GATE_PATH, THRESHOLD_RECORD } from '../capacity-gate.mjs';
+import { applications } from '@/lib/registry';
 
 // Resolved from the repository root, which is where Vitest runs. Not from
 // `import.meta.url`: under Vitest that is a vite URL rather than a `file:` one,
@@ -167,17 +168,23 @@ describe('the committed gate file', () => {
   });
 
   // Story 2-25 placed `list-wheel` and moved its Registry `live` onto the box
-  // in the same change, so the two files name one hostname. Held equal, not
-  // merely overlapping: `list-wheel.cuatro.dev` contains `wheel.cuatro.dev`, so
-  // a substring check would have stayed green on the wrong host.
-  it('notes the host the Registry says list-wheel is live on', () => {
-    const registry = JSON.parse(readFileSync(resolve(process.cwd(), 'contracts/registry.json'), 'utf8')) as {
-      applications: { id: string; live?: string }[];
-    };
-    const live = registry.applications.find((entry) => entry.id === 'list-wheel')?.live;
-    if (live === undefined) throw new Error('contracts/registry.json has no live URL for list-wheel');
-    const placement = parseGate(committed).placements.find((entry) => entry.id === 'list-wheel');
-    expect(placement?.note).toBe(`serving ${new URL(live).host}`);
+  // in the same change, so the two files name one hostname, and the review
+  // generalised the check over every placement that has a Registry `live`.
+  // Anchored at the end of the note, not a substring: `list-wheel.cuatro.dev`
+  // contains `wheel.cuatro.dev`, so `toContain` would have stayed green on the
+  // wrong host, while the anchor still lets `the Anchor, serving cuatro.dev`
+  // carry its prefix.
+  it("ends every placement's note with the host its Registry entry is live on", () => {
+    const placements = parseGate(committed).placements.filter((entry) =>
+      applications.some((application) => application.id === entry.id && application.live !== undefined)
+    );
+    expect(placements.length).toBeGreaterThan(0);
+    for (const placement of placements) {
+      const live = applications.find((application) => application.id === placement.id)?.live;
+      if (live === undefined) throw new Error(`contracts/registry.json has no live URL for ${placement.id}`);
+      const host = new URL(live).host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      expect(placement.note, placement.id).toMatch(new RegExp(`serving ${host}$`));
+    }
   });
 
   it('names the overflow path AD-9 decided', () => {
@@ -523,12 +530,13 @@ describe('the gate fails closed', () => {
 //
 // It is decided in `evaluate` rather than refused in `parseGate`, on purpose. A
 // parse refusal rejects the file, and a rejected file says no to every id
-// including an incumbent. `.github/workflows/deploy.yml` is the only caller and
-// it names `cuatro-portfolio`, an incumbent, so at the one live call site a
-// parse-level version of this rule could never refuse a new id (none passes
-// through it) and could only ever stop the Anchor deploying, which is exactly
-// the trade AD-9 forbids. Decided here, NFR-2 is untouched and a contradictory
-// gate still cannot place anything new.
+// including an incumbent. Two callers since 2026-09-13: `.github/workflows/deploy.yml`
+// here names `cuatro-portfolio`, and the `list-wheel` repository's names
+// `list-wheel`, both incumbents, so at either live call site a parse-level
+// version of this rule could never refuse a new id (none passes through it)
+// and could only ever stop an incumbent deploying, which is exactly the trade
+// AD-9 forbids. Decided here, NFR-2 is untouched and a contradictory gate
+// still cannot place anything new.
 describe('a gate that reads open while its own baseline has reached its own threshold', () => {
   const CROSSED = withLine(OPENED, 'baseline', 'baseline: idle band load15 0.60, containers 3.0% of 2 vCPU');
   const PASSED = withLine(OPENED, 'baseline', 'baseline: idle band load15 0.91');
