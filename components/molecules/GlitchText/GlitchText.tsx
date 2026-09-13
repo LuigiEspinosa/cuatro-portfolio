@@ -20,6 +20,17 @@ interface GlitchTextProps {
   delay?: number;
 }
 
+/**
+ * The heading level a tag carries, so the wrapper can announce it (Story 2-26).
+ *
+ * The inner element is `aria-hidden` because the entrance rewrites its characters, and the label
+ * that stands in for it sits on a plain `<div>`, whose `generic` role prohibits a name: Lighthouse
+ * reported it as `aria-prohibited-attr` and the home route shipped a page heading in nobody's
+ * accessibility tree (DW filed by Story 2-11). `role='heading'` with the level derived from `Tag`
+ * is what makes the label land. `p` and `span` carry no level and get neither attribute.
+ */
+const HEADING_LEVEL: Partial<Record<TextTag, number>> = { h1: 1, h2: 2, h3: 3, h4: 4, h5: 5, h6: 6 };
+
 const GlitchText = ({ text, tag: Tag = 'h1', delay = 0 }: GlitchTextProps) => {
   const reduceMotion = useReduceMotion();
 
@@ -68,8 +79,15 @@ const GlitchText = ({ text, tag: Tag = 'h1', delay = 0 }: GlitchTextProps) => {
     });
   }, [reduceMotion, delay]);
 
+  const level = HEADING_LEVEL[Tag];
+
   return (
-    <div ref={wrapperRef} className='glitch-text' aria-label={text}>
+    <div
+      ref={wrapperRef}
+      className='glitch-text'
+      aria-label={text}
+      {...(level === undefined ? {} : { role: 'heading', 'aria-level': level })}
+    >
       <Tag className='glitch-text__inner' aria-hidden='true'>
         {text}
       </Tag>
