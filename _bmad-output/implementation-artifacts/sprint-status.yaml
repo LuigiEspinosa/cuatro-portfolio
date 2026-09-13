@@ -176,7 +176,7 @@ development_status:
   # no second reach on reload, counted on the box). Open for the Operator: the dashboard look,
   # umami.disabled in their own browser, the first reading after October
   # (ops/visitor-instrumentation.md actions 3 to 5). Move to done after reading the spec.
-  2-24-hub-visitor-instrumentation: review
+  2-24-hub-visitor-instrumentation: done
   2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
   # Hub components rebuilt token-native (FR-37), added 2026-08-15.
