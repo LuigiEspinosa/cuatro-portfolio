@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-12-2026
+last_updated: 09-13-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -171,11 +171,20 @@ development_status:
   # 34722748245 (35 of 35 on a GitHub-hosted runner), secret set, first SM-4 reading 80%.
   # Heartbeat refused by the UptimeRobot free plan (DW-85 open); PAT rotates before 2026-12-11.
   2-23-scheduled-registry-verification-external-to-the-box: done
-  # 2-24 built 2026-09-12. Three Umami events on dev; the real-session check on cuatro.dev, the
-  # schema read on the box and the first reading wait on the epic's merge to main
-  # (ops/visitor-instrumentation.md, Pending Operator actions 1 to 5).
-  2-24-hub-visitor-instrumentation: review
-  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
+  # 2-24 built 2026-09-12, live 2026-09-13: PR #74 merged Epic 2 so far into main at 5fc4663 and
+  # the real-session check passed on cuatro.dev (one suite-reach, one live-open, one source-open,
+  # no second reach on reload, counted on the box). Open for the Operator: the dashboard look,
+  # umami.disabled in their own browser, the first reading after October
+  # (ops/visitor-instrumentation.md actions 3 to 5). Move to done after reading the spec.
+  2-24-hub-visitor-instrumentation: done
+  # 2-25 built and placed 2026-09-13: wheel.cuatro.dev serves list-wheel from the box behind the
+  # gate (list-wheel Deploy run 34771823648), the WAF, DNS, Caddy block, monitor 803983277 and
+  # the gh-pages redirect are live, the Registry live and tech moved, run 34773443302 confirmed.
+  # The review patch (list-wheel PR #3, Cache-Control: no-cache on the shell) merged and was
+  # verified on the host at 19:12Z. Waits on: the dev to main merge that publishes the Registry
+  # (closes DW-91), one spin in a browser by the Operator, and the DW-92 ruling on the Cloudflare
+  # beacon. Move to done after those.
+  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: review
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
   # Hub components rebuilt token-native (FR-37), added 2026-08-15.
   # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.

@@ -195,6 +195,8 @@ found them. Append only. Each entry names the spec that surfaced it.
     box does have an IPv6 address (`2a02:4780:75:9155::1`) and the shared Caddy binds
     `[::]:443`, so the path very likely works. Close this from a vantage point with
     IPv6, by verifying a Satellite over IPv6 first and then adding the three records.
+    **2026-09-13:** `wheel.cuatro.dev` joined the group, `A` only, placed by Story 2-25
+    mirroring the Anchor's three by its own Ask First rule, so the close is four records.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   summary: >-
@@ -526,6 +528,18 @@ found them. Append only. Each entry names the spec that surfaced it.
     weaker than AD-9 reads until Epic 2 or Epic 4 gives it a call site at a real
     placement.
 
+    **Half-closed 2026-09-13 by Story 2-25, and the entry stays open on the other half.**
+    `list-wheel` now calls the checker: `LuigiEspinosa/list-wheel`'s
+    `.github/workflows/deploy.yml:43-44` checks this repository out at `main` (sparse `ops`)
+    and runs `node cuatro-portfolio/ops/capacity-gate.mjs list-wheel` as a blocking step
+    before its SSH step, and the run that placed the container
+    (`https://github.com/LuigiEspinosa/list-wheel/actions/runs/34771823648`, 17:31Z) went
+    through it with stdout `status is open against a threshold of load15 0.60 ... list-wheel
+    may be placed`, the first new id the gate has ever admitted at a real placement. Quoted in
+    `ops/capacity-threshold.md` § What this record does not claim. The three Satellites still
+    deploy from their own repositories and never call the checker, so every id Epic 4 places
+    is still outside its reach, and that is the half this entry now waits on.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
   summary: >-
     `status: open` means yes to every id, and nothing ever compares `reading` against
@@ -829,6 +843,17 @@ found them. Append only. Each entry names the spec that surfaced it.
     to the register here because that file's own admission test requires an Operator
     ruling that a breach is tolerated, and no story has taken that ruling for the
     Satellites. Epic 3 is where AD-8 is closed and is the natural forcing point.
+
+    **Amended 2026-09-13 by Story 2-25: five projects out of five, and KV-1 now covers two
+    of them.** `list-wheel` was placed on the box that day as a fifth compose project, built
+    there by `docker compose up --build -d --remove-orphans` from
+    `LuigiEspinosa/list-wheel`'s `.github/workflows/deploy.yml:71`, the Anchor's shape
+    mirrored deliberately (image `list-wheel-list-wheel:latest`, 88.7 MB, locally built,
+    no registry prefix). Unlike the four above, this one arrived with the ruling the
+    register's admission test asks for: the Operator chose the on-box build over a GHCR
+    image on 2026-09-13, so KV-1's scope paragraph and table were widened to carry it as a
+    second half, retired by Story 4-3. The three Satellites are where they were, observed
+    building and ruled on by nobody, and this entry stays open on them.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
   summary: >-
@@ -1820,7 +1845,16 @@ status: done
     Operator decision, on the ground that those values are `ops/registry-inputs.md`'s and changing
     one is a change to that record. The cheap repair is one array in the Registry and one row in that
     record, in one change, with stated limit 8 there updated.
-  status: open
+
+    Closed 2026-09-13 by Story 2-25, which was editing the line anyway: relocating `list-wheel`
+    onto `wheel.cuatro.dev` replaced `GitHub Pages` in the array with `Docker` and `Caddy`, and
+    re-shipping a value known to be false while rewriting the array would have been a choice, so
+    `RxJS` left with it. The entry in `contracts/registry.json` reads `Angular`, `TypeScript`,
+    `Docker`, `Caddy`, and the `tech` row in `ops/registry-inputs.md` moves in the same change,
+    with a note that the last two are a deployment decision rather than a manifest reading. The
+    `src/` observation above was not re-taken: the served bundle is `ng build` of the same `main`
+    `e589ef3` the 2026-09-03 reading was made against.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
   summary: >-
@@ -2369,7 +2403,15 @@ status: done
     plus first path segment for non-apex URLs, say) is an editorial decision rather than an
     implementation one. Story 2-25 relocates `list-wheel` onto a `cuatro.dev` subdomain, which
     dissolves the case; if that story moves out, this wants deciding on its own.
-  status: open
+
+    Closed 2026-09-13 by Story 2-25, the way the paragraph above said it would close. The
+    entry's `live` is `https://wheel.cuatro.dev`, DNS `A wheel.cuatro.dev 177.7.52.248` proxied
+    (record `78b65a274cd071446893928b554e3c18`, 17:37:10Z), answering 200 through Cloudflare, so
+    `bareDomain` renders `wheel.cuatro.dev`: a host that names the application, in the shape
+    `EXPERIENCE.md:289` gives as its example, shared with nothing. The copy rule is untouched and
+    `SuiteDirectory.tsx` was not edited; the case dissolved because no rendered entry lives on a
+    shared host any more. It reopens the day one does.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
   summary: >-
@@ -3313,6 +3355,13 @@ status: done
     lands visitor instrumentation, which would make this measurable rather than theoretical; or a
     decision that the Hub states a case policy at all, which needs an Operator sentence because no
     requirement in the plan carries one.
+
+    **Re-owned 2026-09-13.** Story 2-25 landed and took no routing decision for the Hub: its URL
+    work was a Satellite's hostname (`wheel.cuatro.dev`, a Cloudflare record and a site block in
+    the shared Caddyfile on the box) and one `live` value in the Registry, and it edited neither
+    `next.config.js` nor `README.md` § Routing. Naming it the owner was a guess at the board, not
+    at the subject. **Owner: whichever story next takes a routing decision for the Hub**, which
+    by the reading above is no remaining Epic 2 story; the trigger list above stands.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
@@ -4353,4 +4402,161 @@ status: done
     **Owner: unassigned.** **Trigger: the first reading where SM-3 (the Marcus signal) reads
     implausibly low against the Operator's own knowledge of who visited, or a story that adds a
     server-side request count for any other reason.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
+  id: DW-90
+  summary: >-
+    `list-wheel` deploys to the serving box on every push to its `main` with no test suite run
+    anywhere in CI: the repository has a Karma suite and no workflow that runs it, and the one
+    workflow Story 2-25 added is the deploy.
+  evidence: |-
+    `LuigiEspinosa/list-wheel` had no `.github/` at all before 2026-09-13 (observed in the
+    checkout at `main` `e589ef3`). Story 2-25 added `.github/workflows/deploy.yml` and nothing
+    else, by its own Ask First: a test or CI job there was outside the story. `karma.conf.js:25-31`
+    configures `ChromeHeadlessNoSandbox` and `npm test` needs Chrome, so a suite exists and runs
+    on a developer's machine only. From 2026-09-13 a merge to that repository's `main` therefore
+    builds on the two-core box and replaces the container serving `wheel.cuatro.dev` with no gate
+    between the push and the placement except the Capacity Gate, which checks the box's headroom
+    and nothing about the application. The three rules `ops/__tests__/capacity-gate.test.ts:337-361`
+    holds the Anchor's workflow to (the gate step before the SSH step, no `continue-on-error`, no
+    `if:`) have no counterpart in `list-wheel`, so a later edit there that moved or softened the
+    step would fail nothing; the spec's Design Notes skip that test deliberately, because there is
+    no CI to run it under.
+
+    This is also the condition the dependency automation policy in `AGENTS.md` names: no automated
+    dependency merge may be enabled in an estate repository without a real test suite running on
+    every push to the default branch, and `list-wheel` now deploys on that branch while meeting
+    none of it. `ops/contract-adoption.md` carries the per-repository state.
+
+    **Owner: unassigned.** The cheap closer is one workflow in that repository running `npm ci`
+    and `npm test` against a Chrome the runner provides, plus the wiring test for the deploy
+    workflow, which is a decision about that repository and not this one. **Trigger: the first CI
+    job added to `list-wheel` for any reason, or the first edit to its `deploy.yml`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
+  id: DW-91
+  summary: >-
+    `list-wheel`'s `placements` entry lives on `dev` until Epic 2 merges, and its deploy reads
+    the gate from `main`, so in that window a re-block refuses `list-wheel` as a new id rather
+    than passing it as the incumbent it now is.
+  evidence: |-
+    `LuigiEspinosa/list-wheel`'s `.github/workflows/deploy.yml:19-24` checks this repository out
+    at `ref: main`, because that is the published gate, and `:44` runs
+    `node cuatro-portfolio/ops/capacity-gate.mjs list-wheel` against the copy it finds there. The
+    placement on 2026-09-13 passed on the open branch of the check (`status is open against a
+    threshold of load15 0.60 ... list-wheel may be placed`, run 34771823648), and Story 2-25 then
+    wrote `list-wheel` into `placements` in `ops/capacity-gate.yml` on `dev`. The estate merges
+    `dev` to `main` per epic, so until Epic 2 merges the gate on `main` does not list it.
+
+    What that costs, precisely. A redeploy of `list-wheel` in that window passes only while the
+    gate is open. If `status` were set to `blocked` on `main`, or a re-measured `baseline` at or
+    above the threshold were written there, the checker would refuse `list-wheel` as a new id,
+    which is the I/O matrix row Story 2-25 recorded as a stated limit. The container already on
+    the box keeps serving throughout, since a refused deploy runs no SSH step, so NFR-2 is not at
+    risk; what is missing is the continuity AD-9 promises an incumbent, which for `list-wheel` does
+    not exist until the entry reaches `main`. The Anchor has no such window because its
+    `deploy.yml` reads the gate from the commit it is deploying, and `cuatro-portfolio` is in
+    `placements` by construction.
+
+    **Owner: the merge of `dev` into `main` at the close of Epic 2, which closes this without an
+    edit.** If a re-block lands first, the Operator either merges early or waits, as the spec's
+    matrix says. **Trigger: `status: blocked` or a crossed `baseline` reaching `main` before the
+    `placements` entry does.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
+  id: DW-92
+  summary: >-
+    The Cloudflare edge injects its Web Analytics beacon into every proxied `cuatro.dev` hostname's
+    HTML for browser requests, a third-party measurement script no record names and NFR-8 does not
+    admit.
+  evidence: |-
+    Observed 2026-09-13 during Story 2-25's browser check of `wheel.cuatro.dev`: the page loaded
+    `https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495`
+    (200) and posted to `https://wheel.cuatro.dev/cdn-cgi/rum` (204). Re-read with `curl` sending a
+    browser `Accept: text/html,...` header: the HTML of `wheel.cuatro.dev`, `cuatro.dev`,
+    `tracker.cuatro.dev` and `library.cuatro.dev` each carry one `<script defer
+    src="https://static.cloudflareinsights.com/beacon.min.js/...">` tag; with `curl`'s default
+    `Accept: */*` none does, which is why every earlier probe in `ops/` missed it. The origin
+    response over loopback on the box carries no such tag, so the injection is the edge's, zone-wide,
+    from Cloudflare's Web Analytics automatic setup, and it predates this story: `cuatro.dev` has
+    been proxied since 2026-08-17.
+
+    NFR-8 (`prd.md:637`) reads "No third-party analytics or tracking is introduced anywhere in the
+    Ecosystem", and AGENTS.md's policy line says measurement is first-party self-hosted Umami only.
+    Cloudflare's beacon is cookieless and Cloudflare's own, and the Operator may rule it inside the
+    line or outside it; what is certain is that it is unrecorded, that `ops/bot-mitigation.md` and
+    `ops/routing-inventory.md` describe the edge's rules and DNS in detail without it, and that it
+    now runs on a fifth hostname because of this story's placement, not because of any decision.
+    Not changed here: a zone setting is outside a story that placed one application, and turning it
+    off is a measurement decision the Operator owns.
+
+    A measured cost, added 2026-09-13T19:12Z after the review patch deployed: because the edge
+    rewrites the HTML to inject the beacon, it drops the origin's `ETag` on the shell, so
+    `wheel.cuatro.dev`'s `Cache-Control: no-cache` shell revalidates with a full 200 (11,619 bytes)
+    on every visit instead of the 304 the origin answers over loopback. The same applies to every
+    HTML response the edge rewrites on the other hostnames. Small, but it is the beacon's, not the
+    application's (`ops/routing-inventory.md` § What Story 2-25 changed).
+
+    **Owner: the Operator, one ruling.** Either record it as tolerated in `ops/bot-mitigation.md`
+    (or a new edge record) with the reason, or turn Web Analytics off in the Cloudflare dashboard
+    and record the date. **Trigger: the ruling; no code depends on it.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
+  id: DW-93
+  summary: >-
+    The deploy workflow's trigger and concurrency policy is now duplicated: `list-wheel`'s
+    `deploy.yml` mirrors the Anchor's, so the concurrency hazard already filed against the Anchor
+    exists in two repositories, and neither workflow has `paths-ignore` for a docs-only push or
+    `workflow_dispatch` for a redeploy without a commit.
+  evidence: |-
+    Story 2-25 wrote `LuigiEspinosa/list-wheel`'s `.github/workflows/deploy.yml` as a mirror of
+    this repository's, by Operator ruling on 2026-09-13 (the spec's Design Notes, "Why the build
+    is on the box and not in CI"). The mirror carries the trigger `push: [main]` and the SSH
+    script's `git reset --hard origin/main` unchanged, and no `concurrency` group. The entry in
+    this file sourced from `spec-1-4-the-capacity-gate-exists-and-fails-closed.md`, whose summary
+    begins "`deploy.yml` has no `concurrency` group, so two pushes to `main` can race the same
+    `git reset --hard` on the box", therefore describes two workflows since 2026-09-13, not one:
+    overlapping runs in either repository can leave its box checkout at a commit whose gate check
+    never ran. Two further omissions are shared. Neither workflow has `paths-ignore`, so a push
+    that touches only `README.md` or `CHANGELOG.md` compiles on the two-core box (KV-1) for
+    nothing; and neither has `workflow_dispatch`, so a redeploy after a box-side change (a
+    Caddyfile reload, a pruned image) needs an empty commit to `main`. Observed 2026-09-13 at
+    review by reading both files.
+
+    **Owner: whichever story next touches either workflow, Epic 3's deploy rewrite at the
+    latest, and it fixes both together.** The two files are one shape by decision, so a
+    `concurrency` group, `paths-ignore` and `workflow_dispatch` added to one and not the other
+    would be the drift the mirror exists to avoid. **Trigger: the first edit to either
+    `deploy.yml`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
+  id: DW-94
+  summary: >-
+    Both deploy keys in `/home/deploy/.ssh/authorized_keys` are unrestricted, so a leaked
+    repository secret is a shell with passwordless sudo on the box rather than a deploy of one
+    application.
+  evidence: |-
+    Observed 2026-09-13 at review. `/home/deploy/.ssh/authorized_keys` holds three keys since
+    Story 2-25 (`ops/routing-inventory.md` § What Story 2-25 changed): the Operator's
+    `luigi@cuatro.dev`, `github-actions-deploy@cuatro-portfolio` and
+    `github-actions-deploy@list-wheel`. The two deploy keys carry no `restrict` option and no
+    `command=` option, and the `deploy` account has passwordless sudo
+    (`ops/routing-inventory.md`, the live-credentials table). Each key's private half is a
+    GitHub Actions secret (`SSH_PRIVATE_KEY` on its repository), and a repository secret leaks
+    through a workflow edit, a compromised action, or a log. With the keys as they are, that leak
+    is an interactive root-equivalent shell; with a forced command per key (`command="..."` and
+    `restrict` in `authorized_keys`, the command being the deploy script each workflow runs), the
+    same leak can run one deploy and nothing else. The cheap hardening is that forced command,
+    one line per key on the box, plus each workflow's SSH step reduced to invoking it.
+
+    Not done in the story: it changes how both deploys run, the Anchor's included, and needs one
+    decision for both rather than a `list-wheel`-only shape that would be a second register.
+
+    **Owner: the Operator's ruling, Epic 4's rebuild at the latest.** **Trigger: the ruling, or
+    the first story that rewrites either SSH step.**
   status: open

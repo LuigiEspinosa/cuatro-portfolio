@@ -65,9 +65,11 @@ is the thing a capacity line has to sit above.
 ### Step 2. Charge the two intended additions, from observed per-container figures
 
 SM-C4 makes VPS load average win every conflict with any other metric, and the estate already
-intends two additions: `list-wheel` (Satellite, Angular, `Live` on GitHub Pages and relocating to
-the VPS) and `cs-tournament` (arriving from external hosting), both recorded in `ops/estate.md`.
-Headroom is reserved for those two, not for today's four applications alone.
+intends two additions: `list-wheel` (Satellite, Angular, `Live` on GitHub Pages when this was
+derived, **placed on the box 2026-09-13** by Story 2-25 as `wheel.cuatro.dev`, the first id to
+pass through the gate as a new placement) and `cs-tournament` (arriving from external hosting),
+both recorded in `ops/estate.md`. Headroom is reserved for those two, not for the four
+applications the week measured alone.
 
 The closest observed analogue on the box for an arriving web application with its own datastore is
 the Anchor itself, which is exactly that shape:
@@ -100,6 +102,32 @@ only observed analogue for a static server on this box agrees: `cs-tracker-caddy
 one core mean, 2.4% peak. Charging it near zero would reserve nothing, so it is charged as a whole
 application of the Anchor's weight instead. Reserving headroom for an application that turns out not
 to need it costs a slightly lower threshold. Reserving none for one that does costs the box.
+
+**Observed 2026-09-13, the footprint after placement**, by Story 2-25 over SSH to the box at
+17:32:05Z, 31 s after `list-wheel-list-wheel-1` started. One reading, not a week: the sampler
+that produced the figures above was not running, so what follows is a point and not a mean or a
+peak, and it is recorded as that.
+
+| Reading | Value | Nature |
+|---|---|---|
+| Container CPU, `docker stats --no-stream` | 0.00% | **Observed**, one sample |
+| Container RSS | 10.4 MiB | **Observed**, one sample |
+| Image | `list-wheel-list-wheel:latest`, 88.7 MB | **Observed** |
+| Container state | `Up 31 seconds (healthy)` | **Observed** |
+| The build, on the box | 27 s in the SSH step: `npm ci` 18.6 s, `npm run build` 6.3 s | **Observed**, from the Deploy run's log, 17:31:05Z to 17:31:32Z |
+| `uptime` before the run, 16:19Z | load 0.09, 0.09, 0.09 | **Observed** |
+| `uptime` after the build, 17:32:05Z | load 0.43, 0.23, 0.14 | **Observed.** The 0.43 is the build's one-minute tail; load15 read 0.14 |
+
+**The charge stands.** Step 2 charged `list-wheel` at 1.3% of one core, and the one reading is
+0.00%, as the `cs-tracker-caddy-1` analogue said it would be. The re-block table below redoes
+Step 2 for an addition that arrives **heavier** than its charge, not lighter, so nothing here is
+re-derived and the over-charge is kept as the deliberate reserve it was. What the reading adds
+that the week could not is the build itself: the first `docker compose up --build` this record has
+a figure for on the serving box, 27 s of compile after which load15 read 0.14 against 0.09 an hour
+and a quarter earlier. The two readings bracket the build rather than isolate it, so 0.05 is a
+ceiling on its load15 cost and not a measurement of it; either way the box sat under a quarter of
+the threshold with the build inside the window, which is the cost KV-1 tolerates
+(`ops/known-violations.md`, the `list-wheel` rows).
 
 **`cs-tournament` is charged at its analogue and not below it.** Its Status in `ops/estate.md` is
 still the unresolved `[ASSUMPTION: Live on Vercel]`, resolved by Story 2-4, so its real footprint is
@@ -234,11 +262,12 @@ readable and is saying something specific, so it is answered where a placement i
 `placements` check. The consequence is that the Anchor keeps deploying from a gate that is at the
 same moment refusing new placement, which is exactly what AD-9 asks for.
 
-Had point 5 been a refusal to read, it would have inverted its own purpose. `deploy.yml` is the only
-caller of this checker and it names `cuatro-portfolio`, an incumbent, so at the one live call site a
-parse-level version could never have refused a new id, because no new id passes through it, and
-could only ever have stopped the Anchor deploying. The single practical effect would have been the
-one AD-9 forbids.
+Had point 5 been a refusal to read, it would have inverted its own purpose. When this was decided
+`deploy.yml` was the only caller of this checker and it names `cuatro-portfolio`, an incumbent, so
+at the one live call site a parse-level version could never have refused a new id, because no new
+id passed through it, and could only ever have stopped the Anchor deploying. The single practical
+effect would have been the one AD-9 forbids. The second caller that arrived on 2026-09-13 (below)
+is the first to put a new id through the check, and it changes none of this.
 
 Every one of those refusals is demonstrated by a test that stays in the suite, in the pattern AD-21
 requires, and the exit-1 ones by a subprocess running the real checker.
@@ -266,18 +295,32 @@ The named limits. Each is a real bound on what the number above can be trusted f
   `status: open` with a baseline at or above its threshold refuses `list-wheel` while
   `cuatro-portfolio` still deploys. That is deliberate and it is the whole reason the check does not
   live in the parser: a parse-level refusal rejects the file, a rejected file says no to every id,
-  and the only caller names an incumbent, so the rule would have spent itself entirely on the one
-  outcome AD-9 rules out while never reaching a new id at all. What is left is the right shape: a
+  and the only caller at the time named an incumbent, so the rule would have spent itself entirely
+  on the one outcome AD-9 rules out while never reaching a new id at all. What is left is the right shape: a
   gate contradicting its own numbers cannot place anything new, continuity is untouched, and the way
   out is one edit, either `status: blocked` or a re-derived threshold, both of which the re-block
   table already names. Tests pin both halves, the refusal and the incumbent still passing, so
   neither becomes an accident.
-- **The gate binds only the Anchor's own deploy workflow.** That workflow is the only caller and it
-  names `cuatro-portfolio`, which is in `placements` by construction. The three Satellites deploy
-  from their own repositories and never call the checker, so `list-wheel` and every id placed in
-  Epic 4 do not pass through it today. This is recorded in
-  `_bmad-output/implementation-artifacts/deferred-work.md` as a gap in reach, and opening the gate
-  neither widens nor narrows it.
+- **The gate binds the two deploy workflows that call it, and no other.** Until 2026-09-13 the
+  Anchor's own `deploy.yml` was the only caller, and it names `cuatro-portfolio`, which is in
+  `placements` by construction, so no new id had ever passed through the check. **Since 2026-09-13
+  there is a second caller and the placement went through it (Observed).** `LuigiEspinosa/list-wheel`'s
+  `.github/workflows/deploy.yml:43-44` checks this repository out at `main` (sparse `ops`) and runs
+  `node cuatro-portfolio/ops/capacity-gate.mjs list-wheel` as a blocking step, no `continue-on-error`
+  and no `if:`, before its SSH step. The run that placed the container is
+  `https://github.com/LuigiEspinosa/list-wheel/actions/runs/34771823648`, created 17:30:59Z,
+  conclusion success, and the gate step's stdout at 17:31:05Z was:
+
+  `capacity gate: status is open against a threshold of load15 0.60 on 2 vCPU, derived in
+  ops/capacity-threshold.md from the week to 2026-08-25T00:33:34Z, list-wheel may be placed`
+
+  which is point 2 above, exercised for the first time on a real placement rather than a fixture.
+  Story 2-25 writes `list-wheel` into `placements` in the same change as this paragraph, so once
+  that reaches `main` its next run takes point 1; until then it passes on point 2 alone, which is
+  the window `deferred-work.md` DW-91 records. The three Satellites still deploy from their own repositories and never call the
+  checker, so every id placed in Epic 4 does not pass through it today. This is recorded in
+  `_bmad-output/implementation-artifacts/deferred-work.md` as a gap in reach, half-closed on
+  2026-09-13 with that entry saying which half.
 - **The week measured what the estate did, not what the box can hold.** No artificial load was
   generated. Load average is the box and per-container CPU is the attribution; neither says anything
   about behaviour under traffic the box did not receive.
@@ -303,7 +346,7 @@ one:
 | Condition | Response |
 |---|---|
 | A later measurement puts the baseline at or above load15 0.60 | Set `status: blocked`, invoke the overflow path, and record the Operator decision on the recurring charge (NFR-4). New placement is refused as soon as the crossed baseline is written in, whether or not the status has been moved yet, so this row fails closed on its own. Incumbents keep deploying throughout |
-| **Elapsed time: 2027-02-25** (**Decided**, six months from derivation) | Re-read this record against the estate as it is then. If the four applications, the two intended additions or the box have changed, run another measurement week and re-derive. If nothing has changed, move this date on by six months and say so here, so a standing threshold is a decision that was re-taken rather than one nobody revisited |
+| **Elapsed time: 2027-02-25** (**Decided**, six months from derivation) | Re-read this record against the estate as it is then. If the four applications, the two intended additions or the box have changed, run another measurement week and re-derive. If nothing has changed, move this date on by six months and say so here, so a standing threshold is a decision that was re-taken rather than one nobody revisited. **Re-read 2026-09-13 by Story 2-25, and the date stands.** `list-wheel`'s placement is one of the two changes this row names, and it is a change the derivation anticipated rather than one it missed: Step 2 charged it before it arrived, and its observed footprint (above) is under that charge. No re-derivation is owed and none is done; the review falls due on the date written |
 | An addition arrives materially heavier than the Anchor-shaped pair charged in Step 2 | Redo Step 2 against its observed figures, rewrite `threshold`, and re-check Step 5 before leaving the gate open |
 | The box's core count changes | Every figure here is load15 on 2 vCPU. Redo the whole derivation; a load average does not port between boxes of different width |
 | The estate intends a third addition beyond `list-wheel` and `cs-tournament` | Charge it in Step 2 and rewrite the threshold, rather than spending the volatility margin on it |
@@ -327,6 +370,7 @@ at February 2027 in any case, since Let's Encrypt certificate lifetimes fall tha
 | 2 | Move `status` to `open`, the measured baseline being below the threshold | Baseline load15 0.08 against a threshold of 0.60 | **2026-08-25** |
 | 3 | Confirm `cs-tournament`'s real footprint once Story 2-4 resolves its Status | Step 2 charges it from an analogue. If it lands heavier, Step 2 is redone | _not done_ |
 | 4 | **Review this derivation on 2027-02-25** | Six months from derivation. Re-derive if the estate or the box has changed, and otherwise move the date on rather than leaving it passed | _not done_ |
+| 5 | Check `list-wheel`'s real footprint against its Step 2 charge once it is placed | Charged at 1.3% of one core as an Anchor-shaped pair. Observed 2026-09-13 at 17:32:05Z, one sample: 0.00% CPU, 10.4 MiB RSS, `(healthy)`; the build 27 s and load15 0.14 after it. Under the charge, so Step 2 is not redone. The first pass through the gate as a new id is quoted under "What this record does not claim" | **2026-09-13** |
 
 **Maintaining this file.** When an action is performed, replace the cell with the ISO 8601 UTC
 completion date and leave the row in place. Deletion is not used: which part of the derivation was

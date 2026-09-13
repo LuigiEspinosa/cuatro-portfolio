@@ -143,6 +143,18 @@ Status reads `Archived`, that is the decided disposition: two are archived in fa
 because no repository of that name exists under this owner and no conforming Registry entry
 could be authored for it. The reasoning is under Counts above.
 
+**Amended 2026-09-13 by Story 2-25.** The `list-wheel` row read `Live`: on GitHub Pages,
+relocating to `wheel.cuatro.dev`, which does not resolve yet. The hostname resolves and serves
+since 2026-09-13: the container `list-wheel-list-wheel-1` was placed on the box through the
+Capacity Gate (AD-9) at 17:31:32Z, the shared Caddy gained its site block at 17:36:54Z, the
+proxied `A` record was created at 17:37:10Z, `https://wheel.cuatro.dev/` answered 200 through
+Cloudflare at 17:37Z, and UptimeRobot monitor 803983277 read UP from its first check at
+17:38:14Z. The values are in `ops/routing-inventory.md` § What Story 2-25 changed, and the
+Registry's `live` moved in the same story (`ops/registry-inputs.md`). GitHub Pages served the
+application until that date; its URL became a redirect page to the new hostname as the
+story's last step, after the new hostname was verified serving (`gh-pages` `52698eb`,
+2026-09-13T18:25:47Z), so the old link never dies (PRD section 5.3).
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |
@@ -154,7 +166,7 @@ could be authored for it. The reasoning is under Counts above.
 | `cs-tournament` | Merge into the Anchor, and migrate off external PaaS | `Live`: `inclusivcup.vercel.app` | n/a today, see note below | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
 | `digital-library` | Satellite: Svelte/Fastify | `Live`: `library.cuatro.dev` | n/a | Rendered |
-| `list-wheel` | Satellite: Angular | `Live`: on GitHub Pages, relocating to `wheel.cuatro.dev`, which does not resolve yet | n/a | Rendered; see PRD section 5.3. **The Registry's `live` stays the GitHub Pages URL until Story 2-25 routes the subdomain**: `ops/registry-inputs.md` |
+| `list-wheel` | Satellite: Angular | `Live`: `wheel.cuatro.dev` since 2026-09-13. On GitHub Pages until that date; the old URL became a redirect page to the new hostname as the story's last step (`gh-pages` `52698eb`, 2026-09-13T18:25:47Z) | n/a | Rendered; see PRD section 5.3. **The Registry's `live` is `https://wheel.cuatro.dev` from Story 2-25**: `ops/registry-inputs.md` |
 | `StreamVault` | Satellite: Python/Vue | `In progress`: early scaffolding | n/a | In Registry, not rendered until Live |
 | `MaiCoin` | Satellite: Solidity/Web3 | `In progress`: early scaffolding | n/a | Not rendered; declared non-participating in identity (FR-24) |
 | `poketracker-go` | Satellite: Go | `In progress`: early scaffolding | n/a | Not rendered; Tracker Family |

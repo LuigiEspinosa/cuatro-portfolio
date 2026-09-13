@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import type { SpawnSyncReturns } from 'node:child_process';
 import { parseGate, evaluate, main, load15, GateError, GATE_PATH, THRESHOLD_RECORD } from '../capacity-gate.mjs';
+import { applications } from '@/lib/registry';
 
 // Resolved from the repository root, which is where Vitest runs. Not from
 // `import.meta.url`: under Vitest that is a vite URL rather than a `file:` one,
@@ -123,10 +124,10 @@ describe('the committed gate file', () => {
       const threshold = figureIn(gate.threshold, 'threshold');
       expect(threshold).toBeGreaterThan(0);
       expect(figureIn(gate.baseline, 'baseline')).toBeLessThan(threshold);
-      expect(evaluate(gate, 'list-wheel').allowed).toBe(true);
+      expect(evaluate(gate, 'cs-tournament').allowed).toBe(true);
     } else {
       expect(gate.status).toBe('blocked');
-      expect(evaluate(gate, 'list-wheel').allowed).toBe(false);
+      expect(evaluate(gate, 'cs-tournament').allowed).toBe(false);
     }
 
     // True in both states, because NFR-2 is never traded against the gate.
@@ -155,14 +156,35 @@ describe('the committed gate file', () => {
     expect(figureIn(gate.baseline, 'baseline')).toBeLessThanOrEqual(figureIn(gate.reading, 'reading'));
   });
 
-  it('lists the four applications running on the box', () => {
+  it('lists the five applications running on the box', () => {
     const gate = parseGate(committed);
     expect(gate.placements.map((entry) => entry.id)).toEqual([
       'cuatro-portfolio',
       'cs-tracker',
       'cuatro-tracker',
       'digital-library',
+      'list-wheel',
     ]);
+  });
+
+  // Story 2-25 placed `list-wheel` and moved its Registry `live` onto the box
+  // in the same change, so the two files name one hostname, and the review
+  // generalised the check over every placement that has a Registry `live`.
+  // Anchored at the end of the note, not a substring: `list-wheel.cuatro.dev`
+  // contains `wheel.cuatro.dev`, so `toContain` would have stayed green on the
+  // wrong host, while the anchor still lets `the Anchor, serving cuatro.dev`
+  // carry its prefix.
+  it("ends every placement's note with the host its Registry entry is live on", () => {
+    const placements = parseGate(committed).placements.filter((entry) =>
+      applications.some((application) => application.id === entry.id && application.live !== undefined)
+    );
+    expect(placements.length).toBeGreaterThan(0);
+    for (const placement of placements) {
+      const live = applications.find((application) => application.id === placement.id)?.live;
+      if (live === undefined) throw new Error(`contracts/registry.json has no live URL for ${placement.id}`);
+      const host = new URL(live).host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      expect(placement.note, placement.id).toMatch(new RegExp(`serving ${host}$`));
+    }
   });
 
   it('names the overflow path AD-9 decided', () => {
@@ -226,13 +248,15 @@ describe('evaluate', () => {
   // committed gate, which was refused before Story 1-6 and passes after it.
   // Stated as an implication rather than as a fact about today, so a later
   // re-block reads as the Operator acting on `ops/capacity-threshold.md` rather
-  // than as this test catching a defect.
+  // than as this test catching a defect. The probe is `cs-tournament`, the
+  // other intended addition that record charges for, since Story 2-25 placed
+  // `list-wheel` and an incumbent's message names no threshold.
   it('names the threshold it was opened against, whenever the committed gate is open', () => {
     const gate = parseGate(committed);
     if (gate.status !== 'open') return;
-    const result = evaluate(gate, 'list-wheel');
+    const result = evaluate(gate, 'cs-tournament');
     expect(result.allowed).toBe(true);
-    expect(result.message).toContain('list-wheel');
+    expect(result.message).toContain('cs-tournament');
     expect(result.message).toContain(gate.threshold);
     expect(load15(result.message)).toBe(figureIn(gate.threshold, 'threshold'));
   });
@@ -258,11 +282,11 @@ describe('the command line, as the deploy workflow runs it', () => {
   // the documented re-block procedure does not turn this red.
   it('agrees with the committed gate about whether a new id may be placed', () => {
     const gate = parseGate(committed);
-    const run = runChecker('list-wheel');
+    const run = runChecker('cs-tournament');
 
     if (gate.status === 'open') {
       expect(run.status).toBe(0);
-      expect(run.stdout).toContain('list-wheel');
+      expect(run.stdout).toContain('cs-tournament');
       // The figure the process printed, parsed back out of its own stdout and
       // compared against the file. `toContain('load15')` would have stayed green
       // with the number dropped.
@@ -506,12 +530,13 @@ describe('the gate fails closed', () => {
 //
 // It is decided in `evaluate` rather than refused in `parseGate`, on purpose. A
 // parse refusal rejects the file, and a rejected file says no to every id
-// including an incumbent. `.github/workflows/deploy.yml` is the only caller and
-// it names `cuatro-portfolio`, an incumbent, so at the one live call site a
-// parse-level version of this rule could never refuse a new id (none passes
-// through it) and could only ever stop the Anchor deploying, which is exactly
-// the trade AD-9 forbids. Decided here, NFR-2 is untouched and a contradictory
-// gate still cannot place anything new.
+// including an incumbent. Two callers since 2026-09-13: `.github/workflows/deploy.yml`
+// here names `cuatro-portfolio`, and the `list-wheel` repository's names
+// `list-wheel`, both incumbents, so at either live call site a parse-level
+// version of this rule could never refuse a new id (none passes through it)
+// and could only ever stop an incumbent deploying, which is exactly the trade
+// AD-9 forbids. Decided here, NFR-2 is untouched and a contradictory gate
+// still cannot place anything new.
 describe('a gate that reads open while its own baseline has reached its own threshold', () => {
   const CROSSED = withLine(OPENED, 'baseline', 'baseline: idle band load15 0.60, containers 3.0% of 2 vCPU');
   const PASSED = withLine(OPENED, 'baseline', 'baseline: idle band load15 0.91');

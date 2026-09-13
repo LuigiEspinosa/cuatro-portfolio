@@ -65,11 +65,11 @@
       "name": "List Wheel",
       "description": "Turns any list into a wheel and picks one entry at random.",
       "status": "Live",
-      "tech": ["Angular", "TypeScript", "RxJS", "GitHub Pages"],
+      "tech": ["Angular", "TypeScript", "Docker", "Caddy"],
       "source": "https://github.com/LuigiEspinosa/list-wheel",
       "demo": "open",
       "identity": "none",
-      "live": "https://luigiespinosa.github.io/list-wheel/"
+      "live": "https://wheel.cuatro.dev"
     },
     {
       "id": "cuatro-finance",

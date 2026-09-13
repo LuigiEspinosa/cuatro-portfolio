@@ -59,7 +59,7 @@ edit, and this row is the copy.
 
 | Id | Violation | Rule breached | Status | Opened | Retired by | Retired on |
 |---|---|---|---|---|---|---|
-| KV-1 | The serving box compiles | AD-8 | **Open**, tolerated deliberately | 2026-08-18 | Story 3-4 (Epic 3) | _not retired_ |
+| KV-1 | The serving box compiles | AD-8 | **Open**, tolerated deliberately | 2026-08-18 | Story 3-4 (Epic 3) for the Anchor's half; Story 4-3 (Epic 4) for the `list-wheel` half, since 2026-09-13 | _not retired_ |
 | KV-2 | Four Registry `source` links resolve for nobody but the Operator | FR-10, SM-4 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
 | KV-3 | Two applications serve on `cuatro.dev` from outside the Registry | AD-6 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
 | KV-4 | Six controls ship under the 44x44 hit-target floor | AD-19 (A-4), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Story 2-32 | _not retired_ |
@@ -69,26 +69,40 @@ edit, and this row is the copy.
 
 ## KV-1: The serving box compiles
 
-**Scope: the Anchor's own deploy workflow, and nothing else.** AD-8 binds every deployed
-application, and the three Satellites (`cs-tracker`, `cuatro-tracker`, `digital-library`) deploy
-from their own repositories with their own workflows, which this repository cannot read. This
-entry records the breach in `.github/workflows/deploy.yml` in `cuatro-portfolio`. Whether any
-Satellite also compiles on the box is unestablished, and is claimed neither way here.
+**Scope: two deploy workflows, the Anchor's own and `list-wheel`'s, and nothing else.** AD-8
+binds every deployed application, and the three Satellites (`cs-tracker`, `cuatro-tracker`,
+`digital-library`) deploy from their own repositories with their own workflows, which this
+repository cannot read. This entry records the breach in `.github/workflows/deploy.yml` in
+`cuatro-portfolio` and, **since 2026-09-13**, in `.github/workflows/deploy.yml` in
+`LuigiEspinosa/list-wheel`, which Story 2-25 authored as a mirror of the Anchor's and which the
+Operator ruled tolerated on the same terms that day. That the three Satellites also build on the
+box is observed (`_bmad-output/implementation-artifacts/deferred-work.md`, the Story 1-7 entry
+of 2026-08-24, "four projects out of four") and not ruled, so it is not admitted here: the
+discriminator is the ruling, and no story has taken it for them.
+
+**Why the second half is in this entry and not a KV-6.** It is the same rule, the same line, the
+same box and the same closer shape: one compose `up --build` over SSH on a merge to `main`. A
+second entry would have said everything this one says with a different id, and the two halves
+retire separately in any case, each on its own row below.
 
 | Field | Value | Nature |
 |---|---|---|
 | Rule breached | **AD-8**, "Build in CI, push to GHCR; the box never compiles" | **Decision.** `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md:124-128`. AD-8 names the current `deploy.yml` a standing violation of itself until Epic 3 |
 | Offending line | `docker compose --env-file .env.production up --build -d --remove-orphans` | **Observed 2026-08-18 at `6caac0b`**, by reading the file. `.github/workflows/deploy.yml:56`, inside the `appleboy/ssh-action` step that begins at `:45`. `--build` is the whole of the breach |
+| Offending line, the `list-wheel` half | `docker compose up --build -d --remove-orphans`, run in `/home/deploy/list-wheel` | **Observed 2026-09-13 at `4155be6`** (merged to that repository's `main` as `11f15cb`), by reading the file. `.github/workflows/deploy.yml:71` in `LuigiEspinosa/list-wheel`, inside the `appleboy/ssh-action` step that begins at `:60`; fired by `push: [main]` at `:3-5`; the Capacity Gate step at `:43-44` runs before it, blocking, with no `continue-on-error` and no `if:`, and reads the gate from this repository's `main` by sparse checkout (`:19-24`). Same `--build`, same breach. The workflow's own comment at `:56-59` names this entry and its closer. **The first run through it**, `https://github.com/LuigiEspinosa/list-wheel/actions/runs/34771823648` at 17:31Z, compiled on the box for 27 s (`npm ci` 18.6 s, `npm run build` 6.3 s), and `uptime` read `0.43, 0.23, 0.14` at 17:32:05Z against `0.09, 0.09, 0.09` before the run: the one-minute figure is the build's tail. That is a timed build on the serving box of the kind the row two below says no story had scheduled, taken incidentally by a placement rather than deliberately, outside any measurement window, and it is recorded in `ops/capacity-threshold.md` beside the charge Step 2 made for this application |
 | What makes it fire | `push: [main]` | **Observed.** `.github/workflows/deploy.yml:4-5`. Every merge to `main` starts a deploy, and a deploy that reaches the box compiles. It does not always reach the box: the Capacity Gate at `:30-31` runs first, is blocking, and carries no `continue-on-error` and no skip condition, so a merge it refuses never gets as far as the SSH step |
-| Where it compiles | The box at `177.7.52.248`, 2 vCPU | **Observed 2026-08-17** by SSH during Story 1-21 and **re-confirmed 2026-08-24** by Story 1-7, recorded in `ops/routing-inventory.md` under the heading **"The box"** (`:129-148` as of 2026-08-24). Since Story 1-21 repointed `SERVER_HOST` that day, this is the machine serving all six live hostnames |
+| Where it compiles | The box at `177.7.52.248`, 2 vCPU | **Observed 2026-08-17** by SSH during Story 1-21 and **re-confirmed 2026-08-24** by Story 1-7, recorded in `ops/routing-inventory.md` under the heading **"The box"** (`:129-148` as of 2026-08-24). Since Story 1-21 repointed `SERVER_HOST` that day, this is the machine serving all six live hostnames; **seven from 2026-09-13**, when Story 2-25 placed `list-wheel` there |
 | The risk, as research stated it | Compiling on a serving two-core box is **the estate's top unmeasured risk** | **Decision, carried from research into AD-8's `Prevents` line** and restated as forced change C-8 at `ARCHITECTURE-SPINE.md:435`. **It stays unmeasured after the measurement week closes.** The week measures serving, and both mitigations below exist precisely to keep a build out of its readings. What would measure the build cost is a timed build run on the box deliberately, outside the window, and no story has scheduled one |
 | Also tracked as | Forced change **C-8** | **Decision.** `epics.md:1449`, in Story 1-9's acceptance criteria, is what names `ops/known-violations.md` as where C-8 is tracked. `epics.md:725` books C-8 to Epic 1 as a tracked item but names no file |
 | Status | **Open and tolerated** | **Decision.** Whose decision and when is the `Ruled by` and `Ruled on` pair below, not this cell. Recording a violation is not fixing it |
 | Ruled by | **AD-8 itself**, not a separate Operator act | **Decision.** AD-8's closing sentence at `ARCHITECTURE-SPINE.md:128` says the current `deploy.yml` "is a standing violation of this rule until then", which is the architecture tolerating the breach in advance. No separate Operator ruling was sought or given, and this register does not invent one |
 | Ruled on | **2026-08-15**, the date of the architecture carrying the ruling | **Decision.** The architecture folder is `architecture-cuatro-portfolio-2026-08-15`. The date the ruling was written down in this file is a different fact and is the `Opened` cell below |
-| Opened | **2026-08-18** | **Decision.** The date this entry was written, by Story 1-9 |
-| Retired by | **Story 3-4**, deploy by pulling a tag with `docker-rollout` | **Decision.** `epics.md:3923-3930`, which names itself as closing C-8 and the item Story 1-9 opened. It depends on Story 3-3, which is what first puts an image in GHCR |
-| Retired on | _not retired_ | Filled by Story 3-4 with an ISO 8601 UTC date. `epics.md:3962-3965` makes that an acceptance criterion of that story, and forbids deleting this entry instead |
+| Ruled by, the `list-wheel` half | **The Operator**, on 2026-09-13, recorded in `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md` under Design Notes, "Why the build is on the box and not in CI", and in that spec's Spec Change Log | **Decision.** AD-8's own sentence tolerates the Anchor's `deploy.yml` and nothing else, so the second workflow needed a ruling of its own. Asked whether `list-wheel` should build in CI and push to GHCR, which would have met AD-8 for that one application, or mirror the Anchor's shape and widen this breach, the Operator chose the mirror: one small, rare compile (`list-wheel` changed three times in 2026) rather than a second deploy shape the estate would carry until Epic 4 rewrote it. The spec's Design Notes paragraph is the durable record of the ruling; no separate clarification artifact exists |
+| Ruled on, the `list-wheel` half | **2026-09-13** | **Decision.** The date of that ruling, which is also the date the workflow was written, merged and first run, and the date this half was written down here. The four coincide and are still different facts |
+| Opened | **2026-08-18** | **Decision.** The date this entry was written, by Story 1-9. The `list-wheel` half was added on 2026-09-13 by Story 2-25 and the entry keeps its original date |
+| Retired by | **Story 3-4**, deploy by pulling a tag with `docker-rollout` | **Decision.** `epics.md:3923-3930`, which names itself as closing C-8 and the item Story 1-9 opened. It depends on Story 3-3, which is what first puts an image in GHCR. This closes the Anchor's half only |
+| Retired by, the `list-wheel` half | **Story 4-3**, which moves `list-wheel` onto the rebuilt proxy | **Decision.** `epics.md:4213-4218`: it depends on Story 4-2 and on Story 2-25, and addendum §G names `list-wheel` the natural first candidate for the new topology because it verifies static serving with no runtime in the way. Story 3-4 cannot close this half: its GHCR path is built for this repository's applications, and `list-wheel` deploys from its own. The half retires when that repository's deploy no longer runs `--build` on the box, whichever story lands the image, and Story 4-3 is the one booked for it |
+| Retired on | _not retired_ | Filled by Story 3-4 with an ISO 8601 UTC date. `epics.md:3962-3965` makes that an acceptance criterion of that story, and forbids deleting this entry instead. **Since 2026-09-13 the entry has two halves and retires when the later of them does**: Story 4-3 writes its own date beside Story 3-4's for the `list-wheel` half, and the `Status` cell moves to `Retired` only when both are filled |
 
 ### Why it is tolerated rather than fixed now
 
@@ -104,6 +118,14 @@ deletes, and the second version would be the one that ships.
 The cost of waiting is a compile on the serving box on each merge to `main`. The Operator's
 standing policy is that `main` is merged only when an epic completes, so that cost is paid a
 handful of times per epic rather than per commit. That is the trade, and it is taken knowingly.
+
+**The `list-wheel` half, added 2026-09-13, is tolerated for a different reason.** The Turborepo
+argument above does not apply to it: `list-wheel` is a separate repository and always will be.
+What applied was the choice between opening a second deploy shape (CI build, GHCR image, a pull
+on the box) for one static application, and mirroring the Anchor's shape so the estate carries
+one deploy mechanism until Epic 4 rewrites it. The Operator chose the mirror. The compile it adds
+is one `ng build` on a merge to that repository's `main`, which is rare, and its first run is
+timed in the table above. It retires with Story 4-3, not with Story 3-4.
 
 **Today the compile is the smaller half of what a merge to `main` would cost, and that is the
 part a reader of this entry alone would miss.** `ops/routing-inventory.md`, under the heading
@@ -455,7 +477,7 @@ than left in prose, in the shape `ops/capacity-measurement.md:341-350` uses.
 |---|---|---|---|---|
 | 1 | **Choose a measurement-week mitigation**, option 1 or option 2 under KV-1 | Operator | Neither is chosen here. Option 1 costs nothing under the standing merge policy. Not choosing is in effect option 1 held by habit rather than by decision, which is the state this row exists to end | _not done_ |
 | 2 | **Rule on the `deploy.yml` hazards in `deferred-work.md`**: no `concurrency` group, CI not blocking the deploy, the self-serve `placements` log | Operator | Whether each is a violation admitted here or stays deferred work. Story 1-9 was scoped to KV-1 only and did not ask | _not done_ |
-| 3 | **Retire KV-1 and date it** | Story 3-4 | An acceptance criterion of that story (`epics.md:3962-3965`). Fill `Retired on`, set `Status` to `Retired`, then bring the index row into line | _not done_ |
+| 3 | **Retire KV-1 and date it** | Story 3-4 | An acceptance criterion of that story (`epics.md:3962-3965`). Fill `Retired on`, set `Status` to `Retired`, then bring the index row into line. **Since 2026-09-13 the entry has a `list-wheel` half that Story 4-3 retires**, so whichever of the two lands second is the one that sets `Status`; the first fills its own date and leaves the entry `Open`. No new action is added for the second half: the ruling that tolerates it is taken, and its closer is booked | _not done_ |
 | 4 | **Mark the measurement-week section expired** | Story 1-5 close-out | Due on or after 2026-08-24T21:00Z. The rest of KV-1 stays open | _not done_ |
 | 5 | **Rule on each of `cs-tracker`, `cs-tournament` and `Mutuo`**: publish it, or record that it stays private (KV-2) | Operator | Three separate calls, not one. Each turns on that repository's contents. A "stays private" ruling retires nothing on its own: it moves that entry into the same category as `StreamVault`, and KV-2 retires when all three have been ruled either way | _not done_ |
 | 6 | **Retire `covidmap.cuatro.dev` and `future-vizion.cuatro.dev`** (KV-3) | Operator | Delete both Cloudflare CNAMEs and the `_vercel` TXT record. The two repositories stay public and unarchived; only the hostnames go. Verify by DNS lookup, not by loading the page | _not done_ |

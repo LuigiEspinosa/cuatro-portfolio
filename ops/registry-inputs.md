@@ -8,7 +8,9 @@ method or the reason behind each one. **Since 2026-09-03 it also carries the per
 Written during Story `2-4-confirm-the-assumed-statuses-hostnames-and-tech-values` on
 **2026-09-02** (ISO 8601 UTC), at baseline commit `d3be1562e9fe04a8a594bc8ca44dd185c68aebf7`.
 **Amended 2026-09-03 by Story 2-5** with the transcription record, and again the same day by
-**Story 2-6** with the description evidence and a narrowing of stated limit 6.
+**Story 2-6** with the description evidence and a narrowing of stated limit 6. **Amended
+2026-09-13 by Story 2-25**, which moved `list-wheel`'s `live` and `tech` when `wheel.cuatro.dev`
+began serving: the live row, the tech row, the hostname section and stated limit 4 carry the date.
 
 **This file is a record, not Registry data**, and nothing here is a published contract surface.
 The Registry is `contracts/registry.json`, hand authored under AD-4 and validated by the
@@ -67,7 +69,7 @@ records looked at one tree and asked two questions. Neither answers the other's.
 | `cs-tracker` | `Live` | `https://cs-tracker.cuatro.dev` | **no**, private | **Observed 2026-09-02.** 200, redirecting to Steam's OpenID form. Private repository: **KV-2** |
 | `digital-library` | `Live` | `https://library.cuatro.dev` | yes | **Observed 2026-09-02.** 200, redirecting to `/login` |
 | `cs-tournament` | `Live` | `https://inclusivcup.vercel.app` | **no**, private | **Observed 2026-09-02**, confirmed by Operator ruling. Resolves the `[ASSUMPTION: Live on Vercel]`. Private repository: **KV-2** |
-| `list-wheel` | `Live` | `https://luigiespinosa.github.io/list-wheel/` | yes | **Observed 2026-09-02.** GitHub Pages, `gh-pages` branch, no custom domain. See the hostname section below: this value changes at Story 2.25 |
+| `list-wheel` | `Live` | `https://wheel.cuatro.dev` | yes | **Observed 2026-09-13.** 200 through Cloudflare with a browser UA at 17:37Z, the three origin headers intact, `CF-RAY` present, 11,619 bytes; 200 to the verification agent the same minute. Was `https://luigiespinosa.github.io/list-wheel/` (**Observed 2026-09-02**: GitHub Pages, `gh-pages` branch, no custom domain) until Story 2-25 routed the subdomain. See the hostname section below |
 | `cuatro-finance` | `In progress` | none | yes | **Operator ruling 2026-09-02**, on evidence. Resolves the `[ASSUMPTION: built, not deployed]`. `finance.cuatro.dev` is NXDOMAIN |
 | `StreamVault` | `In progress` | none | **no**, private | **Decision**, carried from PRD section 5.1. Deliberately private and not a candidate for repair: **KV-2** |
 | `MaiCoin` | `In progress` | none | yes | **Decision**, carried from PRD section 5.1 |
@@ -77,12 +79,21 @@ records looked at one tree and asked two questions. Neither answers the other's.
 | `tcg-tracker` | `Archived` | none | yes | **Observed 2026-09-02.** Archived on GitHub, public. Carries `absorbed_into: cuatro-tracker` |
 | `connect-four-react` | `Archived` | none | yes | **Decision.** The disposition is Archived; **the repository is not archived yet**, observed 2026-09-02. Carries `absorbed_into: cuatro-portfolio` |
 
+**The `list-wheel` `live` change of 2026-09-13 is confirmed by the `registry-verification` push
+run**, the job `ops/registry-verification.md` § When a live URL stops resolving says records its
+run URL beside the entry here. **Observed 2026-09-13T18:03:41Z**: run 34773443302,
+`https://github.com/LuigiEspinosa/cuatro-portfolio/actions/runs/34773443302`, on the push of
+`2-25-relocate-list-wheel` at `8a68f59`, `PASS  list-wheel live: https://wheel.cuatro.dev answered
+200`, `35 of 35 checks passed`.
+
 Every `source` is `https://github.com/LuigiEspinosa/<RepositoryName>`, spelled with the
 repository's **actual** capitalisation: `.../Lumen`, `.../StreamVault`, `.../MaiCoin`,
 `.../Mutuo`, and lowercase for the other ten. **Do not build it from the `id`**, because for
 those four the id and the repository name cannot be the same string: see the stated limits.
 A hostname is never derived from an id either (AD-3), which is why `live` is stated in full above
-and why `cs-tournament` and `list-wheel` do not sit on `cuatro.dev` at all.
+and why `cs-tournament` does not sit on `cuatro.dev` at all. `list-wheel` did not either until
+Story 2-25 routed `wheel.cuatro.dev` on 2026-09-13, and that hostname was declared by Operator
+ruling on 2026-09-02 rather than derived from the id, which is the same rule at work.
 
 **Four `source` links do not resolve for an anonymous Visitor**, breaching FR-10 and SM-4. They
 are recorded as **KV-2** in `ops/known-violations.md` with the ruling that they are tolerated
@@ -98,7 +109,7 @@ with no exception. `StreamVault` is named there as permanently private and exclu
 | `cs-tracker` | `Elixir · Phoenix · LiveView · PostgreSQL · Oban · Docker` | `none` | `none` |
 | `digital-library` | `SvelteKit · Fastify · SQLite · Redis · BullMQ · Docker` | `none` | `none` |
 | `cs-tournament` | `Next.js · React · TypeScript · Supabase · PostgreSQL · Vercel` | `none` | `none` |
-| `list-wheel` | `Angular · TypeScript · RxJS · GitHub Pages` | `open` | `none` |
+| `list-wheel` | `Angular · TypeScript · Docker · Caddy` | `open` | `none` |
 | `cuatro-finance` | `Next.js · React · TypeScript · Prisma · PostgreSQL · Docker` | `not-deployed` | `none` |
 | `StreamVault` | `Python · FastAPI · Nuxt · SQLite · Docker · Caddy` | `not-deployed` | `none` |
 | `MaiCoin` | `Solidity · Hardhat · TypeScript · ethers.js · OpenZeppelin` | `not-deployed` | **`wallet`** |
@@ -127,7 +138,19 @@ with no exception. `StreamVault` is named there as permanently private and exclu
 | `cs-tracker` | `mix.exs` | working copy at `c:\CuatroEcosystem\cs-tracker-workspace\cs-tracker`, **not the remote** |
 | `cuatro-portfolio` | this repository | working tree |
 
-**Three of the fourteen are not in the table above, and none of them is an omission.**
+**`list-wheel`'s array moved on 2026-09-13, and two of its four values are a Decision rather than
+a manifest reading.** Story 2-25 changed it from `Angular · TypeScript · RxJS · GitHub Pages` to
+`Angular · TypeScript · Docker · Caddy` when the application was relocated onto the box. `Docker`
+and `Caddy` are deployment values: a two-stage `Dockerfile` whose serving stage is `caddy:2`, a
+`docker-compose.yml`, and the shared Caddy on the box in front of it. No manifest names them, and
+the `package.json` row above still holds for the two that a manifest does name, `Angular` and
+`TypeScript`, read on `main` at `e589ef3`. That is exactly what the Anchor's own array already does
+with its `Docker · Caddy` above: how an application is served is a Decision, marked as one, and not
+a claim that `package.json` lists it. `GitHub Pages` left because nothing serves from it any more.
+`RxJS` left because nothing under `src/` imports it, which
+`_bmad-output/implementation-artifacts/deferred-work.md` filed as an FR-9 defect on 2026-09-03 (the
+`list-wheel` `RxJS` entry, `:1798-1817` at the story's baseline `e2d4fa1`, closed by the same
+story): re-shipping a value known to be false while editing that line would have been a choice.
 `digital-library` is a **Decision**, not an observation: its array is the six values
 `epics.md:2167` fixes, which the epic settled rather than this story, and the section below says
 why that array was the one most worth fixing. `Lumen` and `tcg-tracker` are **Decisions** too,
@@ -231,6 +254,19 @@ Operator ruled otherwise on 2026-09-02, on the ground that SM-4 requires every R
 resolve and the hostname will not resolve for two epics. **A reviewer checking Story 2-5 against
 its epic will find the mismatch, and this paragraph is the answer**: the epic's intent, that the
 Registry ends up pointing at the chosen hostname, is met one story later than its wording says.
+
+**Resolved 2026-09-13 by Story 2-25.** `wheel.cuatro.dev` is routed and serving. The container
+`list-wheel-list-wheel-1` was placed on the box through the Capacity Gate at 17:31:32Z, the shared
+Caddy's site block for the hostname was validated and reloaded at 17:36:54Z, the proxied `A` record
+was created at 17:37:10Z, and `https://wheel.cuatro.dev/` answered 200 through Cloudflare at 17:37Z,
+**observed** from this host with a browser UA and with the verification agent. `live` moved to
+`https://wheel.cuatro.dev` in the same change, the row in the status table above, so the intent of
+`epics.md:2155-2156` is met one story later than its wording says, exactly as the paragraph above
+anticipated. The `ops/routing-inventory.md:487` gap (a hostname declared and not yet routed) closes
+in the same story, and that record's `## What Story 2-25 changed` section carries every value with
+its UTC time; open item O-5 was the choice of hostname and was already closed here on 2026-09-02. The three
+paragraphs above are left as written: they describe why the value was not authored earlier, and
+that reasoning still holds.
 
 ## What changes in the first public Suite Directory: nothing
 
@@ -391,7 +427,11 @@ can reach today. `main` is a `bun` and Drizzle rewrite skeleton and does not car
    names no stack and no code exists.
 4. **`Mutuo` and `list-wheel` have no `dev` branch.** `Mutuo` carries `main` and `old`,
    `list-wheel` carries `main` and `gh-pages`. Their arrays come from `main`, which for `Mutuo`
-   is a skeleton rather than the application its `old` branch holds.
+   is a skeleton rather than the application its `old` branch holds. Story 2-25 (2026-09-13)
+   stopped `gh-pages` serving `list-wheel` at all: its last step, after the Registry push run
+   was green, replaced the build there with a redirect page to `wheel.cuatro.dev` (`gh-pages`
+   `52698eb`, 2026-09-13T18:25:47Z), so from then on there is nothing on that branch a manifest
+   could be read from and `main` is the only source for the array.
 5. **Twelve of the fourteen were read through the GitHub API; two were read from a local
    checkout.** `cuatro-portfolio` is this working tree, and `cs-tracker`'s `mix.exs` was read from
    a working copy at an absolute path on one machine, which no other reader can reproduce and
