@@ -3,9 +3,12 @@
 // Token-native, on the same footing as the two stylesheets Story 2-11 added beside it, and
 // declaring no custom property of its own. `app/__tests__/anchor-contract.test.ts` holds both.
 //
-// The treatment is the reference mockup's fine print: mono at the smallest step on the scale, in
-// secondary text, not uppercased. It is a sentence rather than a label, so the structural-uppercase
-// rule at `DESIGN.md:500` does not reach it and the line reads as it is written.
+// The treatment is the reference mockup's fine print: mono, in secondary text, not uppercased, at
+// the step `DESIGN.md:468` places the footer on, `--t-2xs`. It is a sentence rather than a label,
+// so the structural-uppercase rule at `DESIGN.md:500` does not reach it and the line reads as it is
+// written; and for the same reason it cannot take the smallest step, which `DESIGN.md:467` reserves
+// for labels and never prose. It shipped at that smaller step from Story 2-11 until Story 2-26
+// moved it, on 2026-09-13, because `DESIGN.md` wins any value.
 //
 // **That decision settles the tracking too, and the two have to agree.** `DESIGN.md:487-488` gives
 // mono labels `+0.09em` to `+0.14em` and caps body tracking at `+0.05em`. A line argued to be a
@@ -28,7 +31,7 @@
   // it lines up with the Directory's own rules above it.
   border-block-start: var(--stroke-hair) solid var(--token-border);
   font-family: var(--f-mono);
-  font-size: var(--t-3xs);
+  font-size: var(--t-2xs);
   line-height: var(--lh-label);
   letter-spacing: var(--tr-body);
   // `DESIGN.md:490` binds this to every count, metric and plate mark. The line carries no digit
