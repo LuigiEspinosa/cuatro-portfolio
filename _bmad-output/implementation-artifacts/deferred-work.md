@@ -195,6 +195,8 @@ found them. Append only. Each entry names the spec that surfaced it.
     box does have an IPv6 address (`2a02:4780:75:9155::1`) and the shared Caddy binds
     `[::]:443`, so the path very likely works. Close this from a vantage point with
     IPv6, by verifying a Satellite over IPv6 first and then adding the three records.
+    **2026-09-13:** `wheel.cuatro.dev` joined the group, `A` only, placed by Story 2-25
+    mirroring the Anchor's three by its own Ask First rule, so the close is four records.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
   summary: >-
@@ -4463,6 +4465,7 @@ status: done
     matrix says. **Trigger: `status: blocked` or a crossed `baseline` reaching `main` before the
     `placements` entry does.**
   status: open
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-92
   summary: >-
@@ -4493,4 +4496,60 @@ status: done
     **Owner: the Operator, one ruling.** Either record it as tolerated in `ops/bot-mitigation.md`
     (or a new edge record) with the reason, or turn Web Analytics off in the Cloudflare dashboard
     and record the date. **Trigger: the ruling; no code depends on it.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
+  id: DW-93
+  summary: >-
+    The deploy workflow's trigger and concurrency policy is now duplicated: `list-wheel`'s
+    `deploy.yml` mirrors the Anchor's, so the concurrency hazard already filed against the Anchor
+    exists in two repositories, and neither workflow has `paths-ignore` for a docs-only push or
+    `workflow_dispatch` for a redeploy without a commit.
+  evidence: |-
+    Story 2-25 wrote `LuigiEspinosa/list-wheel`'s `.github/workflows/deploy.yml` as a mirror of
+    this repository's, by Operator ruling on 2026-09-13 (the spec's Design Notes, "Why the build
+    is on the box and not in CI"). The mirror carries the trigger `push: [main]` and the SSH
+    script's `git reset --hard origin/main` unchanged, and no `concurrency` group. The entry in
+    this file sourced from `spec-1-4-the-capacity-gate-exists-and-fails-closed.md`, whose summary
+    begins "`deploy.yml` has no `concurrency` group, so two pushes to `main` can race the same
+    `git reset --hard` on the box", therefore describes two workflows since 2026-09-13, not one:
+    overlapping runs in either repository can leave its box checkout at a commit whose gate check
+    never ran. Two further omissions are shared. Neither workflow has `paths-ignore`, so a push
+    that touches only `README.md` or `CHANGELOG.md` compiles on the two-core box (KV-1) for
+    nothing; and neither has `workflow_dispatch`, so a redeploy after a box-side change (a
+    Caddyfile reload, a pruned image) needs an empty commit to `main`. Observed 2026-09-13 at
+    review by reading both files.
+
+    **Owner: whichever story next touches either workflow, Epic 3's deploy rewrite at the
+    latest, and it fixes both together.** The two files are one shape by decision, so a
+    `concurrency` group, `paths-ignore` and `workflow_dispatch` added to one and not the other
+    would be the drift the mirror exists to avoid. **Trigger: the first edit to either
+    `deploy.yml`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
+  id: DW-94
+  summary: >-
+    Both deploy keys in `/home/deploy/.ssh/authorized_keys` are unrestricted, so a leaked
+    repository secret is a shell with passwordless sudo on the box rather than a deploy of one
+    application.
+  evidence: |-
+    Observed 2026-09-13 at review. `/home/deploy/.ssh/authorized_keys` holds three keys since
+    Story 2-25 (`ops/routing-inventory.md` § What Story 2-25 changed): the Operator's
+    `luigi@cuatro.dev`, `github-actions-deploy@cuatro-portfolio` and
+    `github-actions-deploy@list-wheel`. The two deploy keys carry no `restrict` option and no
+    `command=` option, and the `deploy` account has passwordless sudo
+    (`ops/routing-inventory.md`, the live-credentials table). Each key's private half is a
+    GitHub Actions secret (`SSH_PRIVATE_KEY` on its repository), and a repository secret leaks
+    through a workflow edit, a compromised action, or a log. With the keys as they are, that leak
+    is an interactive root-equivalent shell; with a forced command per key (`command="..."` and
+    `restrict` in `authorized_keys`, the command being the deploy script each workflow runs), the
+    same leak can run one deploy and nothing else. The cheap hardening is that forced command,
+    one line per key on the box, plus each workflow's SSH step reduced to invoking it.
+
+    Not done in the story: it changes how both deploys run, the Anchor's included, and needs one
+    decision for both rather than a `list-wheel`-only shape that would be a second register.
+
+    **Owner: the Operator's ruling, Epic 4's rebuild at the latest.** **Trigger: the ruling, or
+    the first story that rewrites either SSH step.**
   status: open

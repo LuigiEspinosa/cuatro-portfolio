@@ -151,9 +151,9 @@ proxied `A` record was created at 17:37:10Z, `https://wheel.cuatro.dev/` answere
 Cloudflare at 17:37Z, and UptimeRobot monitor 803983277 read UP from its first check at
 17:38:14Z. The values are in `ops/routing-inventory.md` § What Story 2-25 changed, and the
 Registry's `live` moved in the same story (`ops/registry-inputs.md`). GitHub Pages served the
-application until that date; its URL becomes a redirect page to the new hostname as the
-story's last step, after the new hostname is verified serving, so the old link never dies
-(PRD section 5.3).
+application until that date; its URL became a redirect page to the new hostname as the
+story's last step, after the new hostname was verified serving (`gh-pages` `52698eb`,
+2026-09-13T18:25:47Z), so the old link never dies (PRD section 5.3).
 
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
@@ -166,7 +166,7 @@ story's last step, after the new hostname is verified serving, so the old link n
 | `cs-tournament` | Merge into the Anchor, and migrate off external PaaS | `Live`: `inclusivcup.vercel.app` | n/a today, see note below | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
 | `digital-library` | Satellite: Svelte/Fastify | `Live`: `library.cuatro.dev` | n/a | Rendered |
-| `list-wheel` | Satellite: Angular | `Live`: `wheel.cuatro.dev` since 2026-09-13. On GitHub Pages until that date; the old URL becomes a redirect page to the new hostname as the story's last step | n/a | Rendered; see PRD section 5.3. **The Registry's `live` is `https://wheel.cuatro.dev` from Story 2-25**: `ops/registry-inputs.md` |
+| `list-wheel` | Satellite: Angular | `Live`: `wheel.cuatro.dev` since 2026-09-13. On GitHub Pages until that date; the old URL became a redirect page to the new hostname as the story's last step (`gh-pages` `52698eb`, 2026-09-13T18:25:47Z) | n/a | Rendered; see PRD section 5.3. **The Registry's `live` is `https://wheel.cuatro.dev` from Story 2-25**: `ops/registry-inputs.md` |
 | `StreamVault` | Satellite: Python/Vue | `In progress`: early scaffolding | n/a | In Registry, not rendered until Live |
 | `MaiCoin` | Satellite: Solidity/Web3 | `In progress`: early scaffolding | n/a | Not rendered; declared non-participating in identity (FR-24) |
 | `poketracker-go` | Satellite: Go | `In progress`: early scaffolding | n/a | Not rendered; Tracker Family |

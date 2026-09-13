@@ -428,10 +428,10 @@ can reach today. `main` is a `bun` and Drizzle rewrite skeleton and does not car
 4. **`Mutuo` and `list-wheel` have no `dev` branch.** `Mutuo` carries `main` and `old`,
    `list-wheel` carries `main` and `gh-pages`. Their arrays come from `main`, which for `Mutuo`
    is a skeleton rather than the application its `old` branch holds. Story 2-25 (2026-09-13)
-   stops `gh-pages` serving `list-wheel` at all: its last step, after the Registry push run is
-   green, replaces the build there with a redirect page to `wheel.cuatro.dev`, so from then on
-   there is nothing on that branch a manifest could be read from and `main` is the only source
-   for the array.
+   stopped `gh-pages` serving `list-wheel` at all: its last step, after the Registry push run
+   was green, replaced the build there with a redirect page to `wheel.cuatro.dev` (`gh-pages`
+   `52698eb`, 2026-09-13T18:25:47Z), so from then on there is nothing on that branch a manifest
+   could be read from and `main` is the only source for the array.
 5. **Twelve of the fourteen were read through the GitHub API; two were read from a local
    checkout.** `cuatro-portfolio` is this working tree, and `cs-tracker`'s `mix.exs` was read from
    a working copy at an absolute path on one machine, which no other reader can reproduce and

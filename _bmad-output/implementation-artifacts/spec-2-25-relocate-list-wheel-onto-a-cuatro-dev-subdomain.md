@@ -2,7 +2,7 @@
 title: 'Story 2.25: Relocate `list-wheel` onto a `cuatro.dev` subdomain'
 type: 'feature'
 created: '2026-09-13'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: 'e2d4fa16844682483740e8a3e41d93423996b0e4'
 review_loop_iteration: 0
 context:
@@ -366,9 +366,11 @@ the widened `expression`, then read the ruleset back.
       `docker build -t list-wheel:local .` and `docker run --rm -p 8080:80 list-wheel:local` prove the
       image before the PR; otherwise the first build on the box is the proof and the spec says so.
 - [x] `list-wheel` secrets: `gh secret set SERVER_HOST` (`177.7.52.248`) and `SERVER_USER`
-      (`deploy`), both public facts in `ops/routing-inventory.md`; `SSH_PRIVATE_KEY` from the file
-      the Operator names in `.env` as `DEPLOY_SSH_PRIVATE_KEY_FILE`, via `cmd /c "gh secret set
-      SSH_PRIVATE_KEY --repo LuigiEspinosa/list-wheel < <file>"`. Confirm before each.
+      (`deploy`), both public facts in `ops/routing-inventory.md`; `SSH_PRIVATE_KEY` from the new
+      ed25519 key the Spec Change Log entry of 2026-09-13 records (the Anchor's key could not be
+      reused; the gitignored `.env` names the file as `LIST_WHEEL_DEPLOY_KEY_FILE`), via `cmd /c
+      "gh secret set SSH_PRIVATE_KEY --repo LuigiEspinosa/list-wheel < <file>"`. Confirmed before
+      each.
 - [x] the box: `git clone https://github.com/LuigiEspinosa/list-wheel.git /home/deploy/list-wheel`
       (confirm first). Nothing else until the merge.
 - [x] `list-wheel` PR merge: confirm, merge, watch the Deploy run: gate stdout quoted, SSH step
@@ -445,10 +447,32 @@ generated at 17:24Z through `cmd /c ssh-keygen -N ""` (the 2026-08-27 procedure)
 comment `github-actions-deploy@list-wheel`, fingerprint `SHA256:w24gXBJVlcbMOKWYk1Qr7LsFXD7TbPEumAkVYoreldI`,
 appended to `/home/deploy/.ssh/authorized_keys` on the box (now three keys, backup
 `authorized_keys.bak-2-25`); the private half set as `SSH_PRIVATE_KEY` on `LuigiEspinosa/list-wheel`
-over byte-exact stdin. On a second Operator instruction the key file was kept rather than deleted, in
-`C:\Users\NumCuatro\.ssh\list_wheel_deploy`, and the gitignored `.env` names it as
-`LIST_WHEEL_DEPLOY_KEY_FILE`, so the secret can be re-set without a new key. One key per consumer,
-so `authorized_keys` names each. KEEP: the frozen line stands for everything else in the story.
+over byte-exact stdin. On a second Operator instruction the key file was kept rather than deleted,
+and the gitignored `.env` names its location as `LIST_WHEEL_DEPLOY_KEY_FILE`, so the secret can be
+re-set without a new key. One key per consumer, so `authorized_keys` names each. KEEP: the frozen
+line stands for everything else in the story.
+
+**2026-09-13, review pass.** Applied: the container's Caddyfile in `list-wheel` sends
+`Cache-Control: no-cache` on the shell, so a browser revalidates `index.html` and picks up a new
+bundle hash on the next deploy; `.dockerignore` trimmed; the `gh-pages` line-ending finding
+dissolved on inspection (the CR bytes were in the working file only: `git add` under
+`core.autocrlf=true` stored both blobs as LF, `git cat-file -p origin/gh-pages:index.html` has no
+CR byte and neither does the served page, so no second commit exists); `ops/__tests__/capacity-gate.test.ts`'s
+note case generalised over
+every placement whose Registry entry has a `live`, anchored at the end of the note, reading the
+typed `applications` array; the record corrections in `ops/estate.md`, `ops/registry-inputs.md`,
+`ops/routing-inventory.md`, `ops/known-violations.md`, `ops/monitoring.md` and `deferred-work.md`
+(tense on the `gh-pages` flip, the Story 2-25 table rows, the KV-1 hostname count and citation,
+the unmonitored old URL, the no-`AAAA` group, the two placeholder times above, the key task line
+and the key path); DW-93 (the deploy trigger and concurrency policy now duplicated in two
+repositories) and DW-94 (both deploy keys unrestricted in `authorized_keys`) filed. Rejected:
+shrinking the comments in the `list-wheel` files, because the Anchor's register was mirrored on
+purpose and a second register is a second shape; a soft-404 handler for missing assets, because
+bundle hashes are unique per build and the shell is now revalidated, so a stale reference
+resolves on the next load; the verification-gap headline that `list-wheel` deploys with no test
+in CI, because DW-90 already files it. KEEP: the placement order (the block before the record, the
+record before the Registry push, the push before the flip); the gate read from `main`; `try_files`
+as the Pages-equivalent fallback.
 
 ## Design Notes
 
@@ -472,6 +496,11 @@ canonical link and a plain anchor for a client that follows neither.
 
 **Skipped: a test in `list-wheel` for the three gate-wiring rules.** The repository has no CI to run
 it under; DW-90 files that. Add it when a CI job exists there.
+
+**Rollback.** The old build is `gh-pages` `b9ee2b8`: `git revert 52698eb` on that branch restores
+it and Pages rebuilds within a minute. The Registry `live` and `tech` revert is one commit here. The
+box keeps serving through both. The site block and the DNS record can stay, since an unreachable
+container behind a Caddy block answers 502 for that hostname only.
 
 ## Verification
 
@@ -512,7 +541,7 @@ state comes from here; times are UTC.
   `styles-VFKBVUT4.css` identical to `gh-pages`; `/srv` holds exactly `index.html`, `favicon.ico`
   and those three, nothing that needs a runtime (AC 2 confirmed from the build); `GET /` and
   `GET /no/such/route` both 200 with the 11,619-byte `index.html`; `caddy validate` exit 0. PR
-  `LuigiEspinosa/list-wheel#2` opened 17:0xZ, merged by the Operator at 17:30:56Z as `11f15cb`.
+  `LuigiEspinosa/list-wheel#2` opened 16:50:34Z, merged by the Operator at 17:30:56Z as `11f15cb`.
 - **Secrets on `list-wheel`.** `SERVER_HOST` 17:02:09Z, `SERVER_USER` 17:02:10Z, `SSH_PRIVATE_KEY`
   17:24:59Z (the new key of the Spec Change Log). `/home/deploy/.ssh/authorized_keys` on the box:
   three keys (`luigi@cuatro.dev`, `github-actions-deploy@cuatro-portfolio`,
@@ -589,6 +618,15 @@ state comes from here; times are UTC.
   and `contract-adoption.test.ts` `2 passed (2)`, `85 passed (85)`. CI run 34773443362 on `8a68f59`:
   six jobs green (`contract-purity`, `tokens-contract`, `rendered-output`, `registry-schema`,
   `fonts-contract`, `test`).
+- **The refusal (AC 1, second clause), observed 2026-09-13 by the orchestrating session.** Against
+  a copy of the committed gate with `status: blocked` and nothing else changed, in a temporary
+  directory beside a copy of the checker (the `runAgainst` shape): `node capacity-gate.mjs
+  cs-tournament` exit 1, on stderr `capacity gate: REFUSED` / `ops/capacity-gate.yml has status:
+  blocked, and placements does not list "cs-tournament".` / `Unproven capacity fails closed
+  (AD-9)...` / `Ids that pass today: cuatro-portfolio, cs-tracker, cuatro-tracker, digital-library,
+  list-wheel`; against the same blocked copy `node capacity-gate.mjs list-wheel` exit 0, on stdout
+  `capacity gate: list-wheel is in placements, the deploy may proceed`. So a re-block refuses the
+  next new id and keeps admitting the placed one, which is the AD-9 shape the AC asks to see run.
 - **The Registry push run (AC 5).** Pushing the branch at 18:03Z fired `registry-verification` run
   34773443302 (`push`, no branch filter): success, `PASS  list-wheel live: https://wheel.cuatro.dev
   answered 200`, the other five `live` codes unchanged (200, 307, 302, 302, 200), `# 35 of 35 checks
@@ -596,12 +634,14 @@ state comes from here; times are UTC.
   and as run 3 in `ops/registry-verification.md` § Observed runs.
 - **The `gh-pages` flip (AC 4, second half).** With the Operator's go: `gh-pages` `52698eb` on
   `b9ee2b8`, `docs: redirect the GitHub Pages URL to wheel.cuatro.dev`, three files (`index.html`,
-  byte-identical `404.html`, `.nojekyll`), pushed 18:1xZ; Pages build `built` at that commit.
+  byte-identical `404.html`, `.nojekyll`), committed 18:25:47Z; Pages build `built` at that commit.
   `https://luigiespinosa.github.io/list-wheel/?q=1` 200, `text/html`, `Cache-Control: max-age=600`,
   five occurrences of `wheel.cuatro.dev` (meta refresh, canonical, anchor href and text, script);
   `/list-wheel/some/deep/path` 404 status with the same redirect body (Pages' custom-404
   semantics, the status it already gave with the app body); `/list-wheel/main-3S57BQZJ.js` 404.
-  The page's blob carries CRLF line endings from the writing shell; harmless to a browser, left.
+  The working file the page was written from carried CR bytes; `git add` under `core.autocrlf=true`
+  stored both blobs as LF (verified after review: `git cat-file -p origin/gh-pages:index.html` and
+  the served page carry none).
 - **The browser (manual check).** Chrome through the extension: `https://luigiespinosa.github.io/list-wheel/?from=pages#top`
   landed on `https://wheel.cuatro.dev/?from=pages#top` within 3 s (query and hash carried); the
   wheel renders, title `Cuatro Wheel`, the Rubik face loaded (`fonts.gstatic.com/s/rubik/v31/...woff2`

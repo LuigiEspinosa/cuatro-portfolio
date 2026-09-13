@@ -59,7 +59,9 @@ every monitor: `https://wheel.cuatro.dev`, HTTP, interval 300 s, timeout 30 s, `
 true, `followRedirections` true, success `2xx` and `3xx`, SSL and domain reminders off, alert
 contact 8726805. First check UP. **Observed 2026-09-13 afterwards:** all seven active monitors
 UP (803749849, 803750016, 803750023, 803750025, 803756083, 803756371, 803983277); 803750027
-paused as before.
+paused as before. The old Pages URL, `https://luigiespinosa.github.io/list-wheel/`, is not
+monitored: PRD §5.3's "old link never dies" now rests on GitHub Pages continuing to serve the
+redirect page on `gh-pages`, an accepted dependency with no cost and no renewal.
 
 **The two `cuatro.dev` monitors came up DOWN immediately** on 2026-08-16, which was correct and
 was the first machine-generated error signal this estate has ever had. That downtime counts

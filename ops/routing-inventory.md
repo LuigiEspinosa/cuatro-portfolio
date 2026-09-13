@@ -194,7 +194,7 @@ Six A, three AAAA, three CNAME, five MX, four NS, four TXT on 2026-08-24. **Seve
 | `cs-tracker.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
 | `tracker.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
 | `library.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
-| `wheel.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto. **Added 2026-09-13T17:37:10Z** by Story 2-25 |
+| `wheel.cuatro.dev` | A | `177.7.52.248` | **proxied** | auto |
 | `cs-tracker.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
 | `tracker.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
 | `library.cuatro.dev` | AAAA | `2a02:4780:75:9155::1` | **proxied** | auto |
@@ -214,6 +214,9 @@ Six A, three AAAA, three CNAME, five MX, four NS, four TXT on 2026-08-24. **Seve
 | `cuatro.dev` | TXT | `protonmail-verification=9e0a4441...` | n/a | auto |
 | `google._domainkey.cuatro.dev` | TXT | `v=DKIM1; k=rsa; p=MIIBIjANBg...` | n/a | auto |
 | `_vercel.cuatro.dev` | TXT | `vc-domain-verify=future-vizion.cuatro.dev,8f5cf281917fc876bd43,dc` | n/a | 600 |
+
+The `wheel.cuatro.dev` row was **added 2026-09-13T17:37:10Z** by Story 2-25, id
+`78b65a274cd071446893928b554e3c18`; every other row is the 2026-08-24 reading.
 
 **Every `cuatro.dev` A and AAAA record is proxied and points at `177.7.52.248`.** That is the
 complete inversion of the 2026-08-16 state, where only `www` and `_domainconnect` were proxied
@@ -1575,7 +1578,7 @@ Already in the ledger.
 | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` in `/home/deploy/digital-library/.env` | Outbound mail from the box | **Newly recorded 2026-08-24**, by name. The estate sends mail and no planning artifact says so |
 | Umami admin password | `analytics.cuatro.dev` | Set by the Operator on 2026-08-17. The agent-written `.umami-admin` file was shredded from the box the same day. **Reset by the Operator on 2026-09-13** after the value was lost: Umami 3.3.0 stores a bcrypt hash (`src/lib/password.ts`, 10 rounds) and the standalone image carries no `bcryptjs` a shell can load, so the hash was made off the box (`uv run --with bcrypt python`, `getpass`, only the `$2b$10$` hash printed) and written with `update "user" set password = ... where username = 'admin'` over `psql`. The one account is still `admin`. Sessions already signed in survive a password change, since Umami signs its tokens with `UMAMI_APP_SECRET` |
 | `deploy` SSH key, GitHub `SSH_PRIVATE_KEY` | Shell on `177.7.52.248`, passwordless sudo | In use by `deploy.yml`. `SERVER_HOST` repointed 2026-08-17 |
-| `list-wheel` deploy key, ed25519, comment `github-actions-deploy@list-wheel`, fingerprint `SHA256:w24gXBJVlcbMOKWYk1Qr7LsFXD7TbPEumAkVYoreldI` | The same shell on `177.7.52.248`, the same `deploy` account, from `LuigiEspinosa/list-wheel`'s `deploy.yml` | **Created 2026-09-13 by Story 2-25 on an Operator ruling**, one key per consumer. Public half appended to `/home/deploy/.ssh/authorized_keys` at 17:29Z, now three keys (`luigi@cuatro.dev`, `github-actions-deploy@cuatro-portfolio`, this one), backup `authorized_keys.bak-2-25` with the previous two. Private half set as `SSH_PRIVATE_KEY` on that repository at 17:24:59Z and kept on the workstation at the path the gitignored `.env` names as `LIST_WHEEL_DEPLOY_KEY_FILE`; no value is recorded anywhere. `SERVER_HOST` and `SERVER_USER` on the same repository, set 17:02:09Z and 17:02:10Z, hold the two public facts in the box table above |
+| `list-wheel` deploy key, ed25519, comment `github-actions-deploy@list-wheel`, fingerprint `SHA256:w24gXBJVlcbMOKWYk1Qr7LsFXD7TbPEumAkVYoreldI` | The same shell on `177.7.52.248`, the same `deploy` account, from `LuigiEspinosa/list-wheel`'s `deploy.yml` | **Created 2026-09-13 by Story 2-25 on an Operator ruling**, one key per consumer. Public half appended to `/home/deploy/.ssh/authorized_keys` at 17:29Z, now three keys (`luigi@cuatro.dev`, `github-actions-deploy@cuatro-portfolio`, this one), backup `authorized_keys.bak-2-25` with the previous two. Private half set as `SSH_PRIVATE_KEY` on that repository at 17:24:59Z and kept on the workstation at the path the gitignored `.env` names as `LIST_WHEEL_DEPLOY_KEY_FILE`; no value is recorded anywhere. `SERVER_HOST` and `SERVER_USER` on the same repository, set 17:02:09Z and 17:02:10Z, hold the two public facts in the box table above. **Observed 2026-09-13 at review:** the key carries no `restrict` and no `command=` option in `authorized_keys`, the same as the Anchor's deploy key, so it opens a shell with passwordless sudo rather than a deploy of one application. DW-94 files the hardening decision (a forced command per key) |
 | `github_deploy`, `cuatro_tracker_deploy` | Read on one GitHub repository each | In use by the sibling stacks. Neither can clone `cuatro-portfolio`, which is why that repository is cloned over HTTPS |
 | Cloudflare Origin CA private key | The origin's TLS identity for every hostname, valid to 2041-08-13 | On the box in two places and **nowhere else**. Losing it takes every hostname down with no ACME fallback. Already in the ledger |
 
@@ -1705,6 +1708,19 @@ observation on that day; times are UTC.
 | Appended the `wheel.cuatro.dev` site block, `caddy validate`, `caddy reload` | `/home/deploy/cs-tracker/Caddyfile`, backup `Caddyfile.bak-2-25` | 2026-09-13T17:36:54Z |
 | Created `A wheel.cuatro.dev 177.7.52.248`, proxied, TTL auto, id `78b65a274cd071446893928b554e3c18` | Cloudflare zone `cuatro.dev` | 2026-09-13T17:37:10Z |
 | Added the `wheel.cuatro.dev` monitor, id 803983277, HTTP, interval 300 s, first check UP | UptimeRobot | 2026-09-13T17:38:14Z |
+| Pushed the Registry `live`, which fired `registry-verification` run 34773443302: `PASS  list-wheel live: https://wheel.cuatro.dev answered 200`, 35 of 35 | `contracts/registry.json` on `2-25-relocate-list-wheel` | 2026-09-13T18:03:25Z |
+| Replaced the Pages build with the redirect page, `gh-pages` `52698eb` on `b9ee2b8`; Pages built at that commit | `LuigiEspinosa/list-wheel`, branch `gh-pages` | 2026-09-13T18:25:47Z |
+
+**The one status difference the relocation introduced.** An unknown path on `wheel.cuatro.dev`
+answers 200 with `index.html` (`try_files` in the container's Caddyfile), where Pages answered
+404 with the same body, its custom-404 status. Recorded here as the one status the move changed;
+`Cache-Control: no-cache` on the shell was added after review, so a browser revalidates
+`index.html` on every load.
+
+**Rollback.** The old build is `gh-pages` `b9ee2b8`: `git revert 52698eb` on that branch restores
+it and Pages rebuilds within a minute. The Registry `live` and `tech` revert is one commit in
+this repository. The box keeps serving through both. The site block and the DNS record can stay,
+since an unreachable container behind a Caddy block answers 502 for that hostname only.
 
 **The order is the point, not an accident.** The WAF rules named the hostname before any DNS
 record existed, so no hostname was ever live unfiltered (AD-17b). The site block was validated,
