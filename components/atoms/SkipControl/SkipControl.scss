@@ -5,8 +5,9 @@
 //
 // Neither `DESIGN.md` nor `EXPERIENCE.md` gives this control a visual row either
 // (`review-rubric.md:40`), so it is built from the same rules the skip-link beside it is: mono
-// uppercase signage on a hairline, hover recolouring an underline that is already drawn,
-// `:focus-visible` painted instantly on `--token-focus`, and `--tap` as the size floor.
+// uppercase signage on a hairline, hover recolouring an underline that is already drawn, the
+// global `:focus-visible` ring `app/app.scss` paints on every element since Story 2-26, and
+// `--tap` as the size floor.
 
 .skip-control {
   // `min-block-size` with `inline-flex`, never `padding-block` on a plain inline element
@@ -39,12 +40,6 @@
 .skip-control:hover {
   color: var(--token-text);
   border-block-end-color: var(--token-accent-hover);
-}
-
-.skip-control:focus-visible {
-  outline: var(--stroke-focus) solid var(--token-focus);
-  outline-offset: var(--focus-offset);
-  border-radius: var(--r-hair);
 }
 
 // **Two placements, because the hero has two layouts and both have to keep this above the fold.**

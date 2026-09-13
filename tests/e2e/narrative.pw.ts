@@ -930,7 +930,7 @@ test.describe("the gem's reveal", () => {
     ).toBeLessThan(1);
     expect(samples.at(-1)?.opacity, 'the gem never reaches full opacity').toBe(1);
 
-    // `filter: brightness(0)` at `HomeLayout.scss:190` is what the reveal used to undo. Read on
+    // `filter: brightness(0)` at `HomeLayout.scss:180` is what the reveal used to undo. Read on
     // every frame rather than at three chosen moments, because a filter that appears mid-entrance
     // and is gone by the end is the same breach as one that stays.
     const filtered = [...new Set(samples.map((sample) => sample.filter))].filter((value) => value !== 'none');

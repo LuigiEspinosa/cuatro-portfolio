@@ -41,9 +41,10 @@
 // ── Footer navigation (Story 2-17) ────────────────────────────────────────────
 //
 // One link, the Secondary kind (`RESTYLE-SPEC.md:191`): secondary text, a hairline in the
-// interactive border role drawn on the inner span, a recolour on hover, the standard ring on focus.
-// It sits in the same register as the line above it, mono at the smallest step, because a Primary
-// underline in this corner would out-weigh the Directory it follows.
+// interactive border role drawn on the inner span, a recolour on hover, and on focus the global
+// ring `app/app.scss` paints on every element since Story 2-26. It sits in the same mono register
+// as the line above it, at the smallest step, because a Primary underline in this corner would
+// out-weigh the Directory it follows.
 //
 // `.site-footer__nav` carries no rule. The `<nav>` is a plain block holding one link, and one link
 // needs no row, no wrap and no gap; `SiteFooter.test.tsx` and `tests/e2e/secondary-surfaces.pw.ts`
@@ -82,12 +83,4 @@
 // both are layout changes and both reflow the line (`RESTYLE-SPEC.md:200-201`).
 .site-footer__link:hover .site-footer__label {
   border-block-end-color: var(--token-accent-hover);
-}
-
-// The standard ring (`RESTYLE-SPEC.md:202`, § 4). An outline rather than a border, so it costs no
-// layout and appears in one frame rather than over a duration, and it is not the hover colour.
-.site-footer__link:focus-visible {
-  outline: var(--stroke-focus) solid var(--token-focus);
-  outline-offset: var(--focus-offset);
-  border-radius: var(--r-hair);
 }

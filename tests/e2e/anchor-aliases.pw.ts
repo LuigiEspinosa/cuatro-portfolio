@@ -377,7 +377,8 @@ const CALL_SITES: readonly CallSite[] = [
   { at: 'hud-label.scss:8', route: '/work', selector: '.hud-label--left', property: 'border-left-color', verdict: 'ornament' },
   { at: 'hud-label.scss:14', route: '/', selector: '.hud-label--right', property: 'border-right-color', verdict: 'ornament' },
 
-  // A separator between rows. The control inside carries its own hover background and focus outline.
+  // A separator between rows. The control inside carries its own hover background, and the global
+  // focus ring `app/app.scss` paints since Story 2-26.
   { at: 'WorkItem.scss:2', route: '/work', selector: '.work-item', property: 'border-bottom-color', verdict: 'ornament' },
   // `WorkItem.scss:16-18` repaints this to `var(--accent)` at `[data-open='true']`, and it is the
   // only indicator of open or closed. Read on a **closed** item, because the first entry in the
@@ -392,7 +393,7 @@ const CALL_SITES: readonly CallSite[] = [
   },
   // A decorative `//` list marker, duplicated by nothing.
   {
-    at: 'WorkItem.scss:126',
+    at: 'WorkItem.scss:116',
     route: '/work',
     selector: '.work-item__highlights li',
     pseudo: '::before',
@@ -400,7 +401,7 @@ const CALL_SITES: readonly CallSite[] = [
     verdict: 'ornament',
   },
   // A fill.
-  { at: 'WorkItem.scss:144', route: '/work', selector: '.work-item__tech li', property: 'background-color', verdict: 'ornament' },
+  { at: 'WorkItem.scss:139', route: '/work', selector: '.work-item__tech li', property: 'background-color', verdict: 'ornament' },
 
   // `error-page.scss:76-79` repaints `border-left-color` on hover. Two elements carry the class
   // since Story 2-17 gave the 404 the header's two exits; the harness reads the first, and both
@@ -413,17 +414,17 @@ const CALL_SITES: readonly CallSite[] = [
   // them but a reader editing the file.
   { at: 'HomeLayout.scss:125', route: '/', selector: '.nav-link', property: 'border-left-color', verdict: 'ornament' },
   {
-    at: 'HomeLayout.scss:159',
+    at: 'HomeLayout.scss:154',
     route: '/',
     selector: '.home-panel--contact .contact-container a',
     property: 'border-right-color',
     verdict: 'ornament',
-    // Below 768 the same element takes `border-right: none` at `HomeLayout.scss:238`, which
+    // Below 768 the same element takes `border-right: none` at `HomeLayout.scss:228`, which
     // resets the colour to `currentcolor`. This row is the desktop rule and is read where it wins.
     wide: true,
   },
   {
-    at: 'HomeLayout.scss:239',
+    at: 'HomeLayout.scss:229',
     route: '/',
     selector: '.home-panel--contact .contact-container a',
     property: 'border-left-color',
@@ -474,7 +475,7 @@ const WEIGHT_ROLE = '--w-black';
  * and these are not among them.
  */
 const DISPLAY_REGULAR_SITES = [
-  { at: 'WorkItem.scss:52', route: '/work', selector: '.work-item__company', requests: 500 },
+  { at: 'WorkItem.scss:47', route: '/work', selector: '.work-item__company', requests: 500 },
   // No `font-weight` of its own, so it asks for the initial 400.
   { at: 'error-page.scss:40', route: NOT_FOUND, selector: '.error-page__title', requests: 400 },
 ] as const;

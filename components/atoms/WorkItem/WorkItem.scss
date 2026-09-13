@@ -34,11 +34,6 @@
     &:hover {
       background: rgba(91, 33, 182, 0.06);
     }
-
-    &:focus-visible {
-      outline: 1px solid var(--accent);
-      outline-offset: -2px;
-    }
   }
 
   &__meta {

@@ -220,6 +220,18 @@ const ALIASED_PROPERTIES = MAPPING.map(([property]) => property);
 const ALIAS_ROLES = [...new Set(MAPPING.flatMap(([, roles]) => roles))];
 
 /**
+ * The four roles the global focus rule names, `RESTYLE-SPEC.md:326-341` § 4 verbatim.
+ *
+ * Story 2-26 moved the ring out of nine per-component blocks into one `:focus-visible` rule in
+ * `app/app.scss`, which is the first rule in that file to consume the contract for something other
+ * than an alias. Pinned as a separate list rather than folded into `MAPPING`, because these are not
+ * aliases: nothing in the Hub reads them through an old name, and a row in the map would claim a
+ * property the alias layer never declares. Claim one below asserts the union, so a fifth role
+ * arriving in that file, or one of these four leaving it, is loud.
+ */
+const FOCUS_ROLES = ['--stroke-focus', '--token-focus', '--focus-offset', '--r-hair'] as const;
+
+/**
  * The two the alias layer deliberately leaves authored as literals.
  *
  * Not an oversight, and each is held by something: `--accent-glow` by O-11, which is open, and
@@ -839,17 +851,23 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     // The pinned lists are checked against the contract before they are compared against the
     // sources. A role renamed in `contracts/tokens.css` would otherwise make every list below
     // agree on a name the contract no longer declares, and a MAJOR bump is meant to be loud.
-    for (const role of [...ALIAS_ROLES, WEIGHT_ROLE]) {
+    for (const role of [...ALIAS_ROLES, ...FOCUS_ROLES, WEIGHT_ROLE]) {
       expect(TOKEN_NAMES, `${role} is in the pinned mapping but the contract no longer declares it`).toContain(role);
     }
 
-    // Claim one: the alias layer references exactly the roles the mapping names. An alias
-    // silently retargeted to some other role fails here, and so does one dropped altogether.
+    // Claim one: the alias layer references exactly the roles the mapping names, plus the four
+    // the global focus rule names since Story 2-26. An alias silently retargeted to some other
+    // role fails here, and so does one dropped altogether; so does a ring rule that names a fifth
+    // role, or loses one of its four. The two lists are disjoint, and that is asserted too, so a
+    // role cannot be counted as both an alias target and a focus role.
+    expect(FOCUS_ROLES.filter((role) => ALIAS_ROLES.includes(role)), 'a focus role is also an alias target').toEqual([]);
     expect(
       referencesBy.get(ALIAS_LAYER) ?? [],
-      `${ALIAS_LAYER} does not reference exactly the roles epics.md:1821-1836 maps onto. An alias ` +
-        `retargeted to a different role, or dropped, changes what the whole site paints from one line.`
-    ).toEqual([...ALIAS_ROLES].sort());
+      `${ALIAS_LAYER} does not reference exactly the roles epics.md:1821-1836 maps onto plus the ` +
+        `four RESTYLE-SPEC.md § 4 names for the ring. An alias retargeted to a different role, or ` +
+        `dropped, changes what the whole site paints from one line; a fifth role in the ring rule, ` +
+        `or one of its four missing, changes what every focused element paints.`
+    ).toEqual([...ALIAS_ROLES, ...FOCUS_ROLES].sort());
 
     // Claim two: the `--monument-bold` call sites reference exactly `--w-black`, which is
     // the weight a family alias cannot carry, and nothing else.

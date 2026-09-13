@@ -771,7 +771,7 @@ test.describe("A-5's other half: the Status never truncates", () => {
     // well as the attribute is the only way to measure the other three.
     //
     // **Into every mark, not the first one.** `groupByFamily` nests the `tracker-family` members
-    // inside `.suite-directory__family`, which `SuiteDirectory.scss:312-316` insets with
+    // inside `.suite-directory__family`, which `SuiteDirectory.scss:305-309` insets with
     // `padding-inline: var(--s-md)` and a hairline on each side, so a nested mark has strictly less
     // room than a top-level one. `document.querySelector` returns a top-level mark, the Hub's own
     // entry being first in file order, so planting into it measures the roomiest position and calls

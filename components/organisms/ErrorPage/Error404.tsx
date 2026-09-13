@@ -24,7 +24,7 @@ import './error-page.scss';
  * **Everything else on this surface is Story 2-30's.** The title, the numeral, the `HudLabel`, the
  * `ScanlineOverlay`, the cybercore literals in `error-page.scss` and the focus ring are all booked
  * there (`EXPERIENCE.md:540-542`). This story adds the two exits and gets them to the hit-target
- * floor, which is why the `error-page__back` class survives on both: `error-page.scss:52-85` styles
+ * floor, which is why the `error-page__back` class survives on both: `error-page.scss:52-80` styles
  * it, `app/app.scss:82-85` scopes a boundary role on it, and the entrance tween below targets it,
  * so both exits fade in together. The name is 2023 legacy Story 2-30 retires with the rest.
  */

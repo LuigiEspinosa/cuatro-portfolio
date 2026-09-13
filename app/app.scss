@@ -91,6 +91,23 @@
   box-sizing: border-box;
 }
 
+// The focus standard, `RESTYLE-SPEC.md:326-341` § 4 verbatim, and the one rule in the Hub that
+// paints a ring (Story 2-26, Operator ruling of 2026-09-13). It replaced nine per-component rules
+// in eight stylesheets, three of which painted the ring in the hover colour at 1px, so a keyboard
+// visitor could not tell focus from hover. Global on purpose: `:focus-visible`, never `:focus`, so
+// a mouse click paints nothing; never transitioned, so the ring is at full strength the frame
+// focus lands; never removed; and at specificity (0,1,0), so a planted `!important` control in a
+// spec can still take it off to prove the reading is of this rule. The reset above does not touch
+// `outline`, so nothing has to reinstate it. `tests/e2e/accessibility-floor.pw.ts` reads the ring
+// on every interactive element on every route, and the four roles named below are the only
+// contract names this file is allowed to reference beyond the alias mapping
+// (`app/__tests__/anchor-contract.test.ts`, `FOCUS_ROLES`).
+:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-hair);
+}
+
 // `clip`, not `hidden`, and on both elements (`DESIGN.md:558-559`). The two clip identically; what
 // `clip` does not do is make the element a scroll container, which is why `hidden` breaks
 // descendant `position: sticky`. Widths are `100%` with container padding, never `100vw`, which

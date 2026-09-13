@@ -11,8 +11,8 @@
 // `review-rubric.md:40` names the gap for the skip control; this one is not mentioned as a
 // component at all, which is a wider gap and is filed in `deferred-work.md` as DW-44. Both are
 // therefore built from the rules that do exist: mono uppercase signage on a hairline, hover
-// recolouring an existing underline rather than adding one, `:focus-visible` painted instantly on
-// `--token-focus`, and `--tap` as the size floor.
+// recolouring an existing underline rather than adding one, the global `:focus-visible` ring
+// `app/app.scss` paints on every element since Story 2-26, and `--tap` as the size floor.
 
 .skip-link {
   position: fixed;
@@ -66,13 +66,8 @@
 // **The reveal is on `:focus`, not on `:focus-visible`.** Focus moved by script, which is how a
 // visitor arrives here after a route change, does not always match `:focus-visible` in Chromium,
 // and a focused control parked above the viewport is worse than no control at all. The ring stays
-// on `:focus-visible`, which is `EXPERIENCE.md:716`.
+// on `:focus-visible`, which is `EXPERIENCE.md:716`, and it is the global rule in `app/app.scss`
+// rather than one written here: this file paints no ring of its own since Story 2-26.
 .skip-link:focus {
   transform: translateY(0);
-}
-
-.skip-link:focus-visible {
-  outline: var(--stroke-focus) solid var(--token-focus);
-  outline-offset: var(--focus-offset);
-  border-radius: var(--r-hair);
 }
