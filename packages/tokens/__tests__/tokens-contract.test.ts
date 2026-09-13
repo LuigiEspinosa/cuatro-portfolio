@@ -888,6 +888,11 @@ describe('what the contract must never carry', () => {
       'contracts/fonts/bricolage-grotesque-latin.woff2',
       'contracts/fonts/geist-latin.woff2',
       'contracts/fonts/geist-mono-latin.woff2',
+      // The two hand-authored files this generator does not write. Story 2-3
+      // added them: `contracts/` is the published surface, and from that story
+      // it is the token contract's nine plus the Registry pair (AD-4).
+      'contracts/registry.json',
+      'contracts/registry.schema.json',
       'contracts/tailwind.css',
       'contracts/tokens.css',
     ]);

@@ -9,7 +9,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Work | Luigi Espinosa',
     description: 'Work experience and career timeline.',
-    url: 'https://cuatro.dev/work',
+    // Relative, so `metadataBase` in `app/layout.tsx` resolves it against the one declared origin.
+    url: '/work',
   },
 };
 

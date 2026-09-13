@@ -31,12 +31,16 @@ export const RENDERED_VIEWPORT = { width: 360, height: 800 } as const;
  * A note Story 1.18 inherits rather than rediscovers: assert both `font-family` and
  * `font-weight` at the `--monument-bold` call sites, and set the weight before reading it.
  * Three of the four sites (`WorkHero.scss:19`, `ProjectsHero.scss:19`, `error-page.scss:24`)
- * set family alone today, so their computed `font-weight` is `400` both before and after an
- * alias that silently drops bold. The weight lives in the family name, declared by the
- * `@font-face` block at `app/scss/_fonts.scss:91-99`; only `glitch-text.scss:7` sets
- * `font-weight: 700` itself. Story 1.18's own criteria fix that first, by setting the weight
+ * set family alone at the time this was written, so their computed `font-weight` was `400`
+ * both before and after an alias that silently drops bold. The weight lives in the family name,
+ * declared by the `@font-face` block at `app/scss/_fonts.scss:91-99`; only `glitch-text.scss:7`
+ * sets `font-weight: 700` itself. Story 1.18's own criteria fix that first, by setting the weight
  * by hand at all four sites in the same commit (`epics.md:1842-1843`) before asserting it
  * (`:1844`). Read without that step, the weight assertion is green and meaningless.
+ *
+ * **Three call sites since 2026-09-07.** Story 2-14 redirected `/projects` and deleted
+ * `ProjectsHero.scss` with the route it styled. The note above is the 2026-08-24 reading and is
+ * kept as it was taken; `tests/e2e/anchor-aliases.pw.ts` carries the current table.
  */
 
 interface ScreenshotOptions {

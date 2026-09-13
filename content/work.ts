@@ -15,7 +15,7 @@ export const work: WorkEntry[] = [
     id: 'publicis-global-delivery',
     company: 'Publicis Global Delivery',
     role: 'Senior Frontend Engineer',
-    period: 'Oct. 2023 - Dev. 2025',
+    period: 'Oct. 2023 - Dec. 2025',
     location: 'Remote',
     initiative: 'Automation Initiatives Lead',
     description:

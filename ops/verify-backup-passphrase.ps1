@@ -57,8 +57,15 @@ Write-Host "Read $($plain.Length) characters. Expected 48."
 
 # The passphrase reaches gpg on stdin, so it appears in no argument list and no
 # history file. wsl runs gpg because the Windows side has none.
+#
+# `tr -d '\r'` is load-bearing, not tidying. Piping a string from PowerShell into
+# a native command appends CRLF, and `gpg --passphrase-fd 0` strips the trailing
+# newline but NOT the carriage return, so gpg receives a passphrase one character
+# longer than the one that encrypted the archive and reports a failure that reads
+# exactly like a wrong password manager entry. That false negative cost a real
+# investigation on 2026-08-27. Verified with `od -c`: the pipe delivers \r\n.
 $wslEnc = '/mnt/' + $enc.Substring(0,1).ToLower() + $enc.Substring(2).Replace('\','/')
-$plain | wsl -d Ubuntu-22.04 bash -c "gpg --batch --yes --passphrase-fd 0 --decrypt --output /tmp/pm-verify.tar.gz '$wslEnc' 2>/dev/null && echo 'DECRYPT: ok' && tar -tzf /tmp/pm-verify.tar.gz && rm -f /tmp/pm-verify.tar.gz || echo 'DECRYPT: FAILED'"
+$plain | wsl -d Ubuntu-22.04 bash -c "tr -d '\r' | gpg --batch --yes --passphrase-fd 0 --decrypt --output /tmp/pm-verify.tar.gz '$wslEnc' 2>/dev/null && echo 'DECRYPT: ok' && tar -tzf /tmp/pm-verify.tar.gz && rm -f /tmp/pm-verify.tar.gz || echo 'DECRYPT: FAILED'"
 
 Remove-Item $enc -Force -ErrorAction SilentlyContinue
 $plain = $null

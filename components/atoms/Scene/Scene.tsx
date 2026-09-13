@@ -32,8 +32,22 @@ export function Scene({ children, className, cameraZ = 4 }: SceneProps) {
       camera={{ position: [0, 0, cameraZ], fov: 45 }}
       gl={{ toneMapping: ACESFilmicToneMapping, antialias: true }}
       dpr={[1, 2]}
+      // A-14 (Story 2-13). The scene is decoration: it carries no information a reader loses by not
+      // having it, and there is nothing inside it to operate. `@react-three/fiber` spreads unknown
+      // props onto its own wrapper `<div>` rather than onto the `<canvas>`, so this removes the
+      // whole subtree from the accessibility tree; the canvas element itself is treated below,
+      // where a real reference to it exists.
+      aria-hidden='true'
       onCreated={({ gl }: { gl: WebGLRenderer }) => {
         const canvas = gl.domElement;
+
+        // The other half of A-14, on the element rather than on its wrapper. A `<canvas>` is not a
+        // tab stop by default, so this is a guard rather than a repair: it is written where a
+        // future `tabIndex` from the library, or a drei helper that adds one, would otherwise put
+        // the scene in a keyboard reader's path with nothing to do there. `aria-hidden` is set here
+        // as well, so the claim holds on the canvas whatever the wrapper is doing.
+        canvas.setAttribute('aria-hidden', 'true');
+        canvas.tabIndex = -1;
 
         const onContextLost = (e: Event) => {
           // Prevent the browser from permanently disabling the context after loss.

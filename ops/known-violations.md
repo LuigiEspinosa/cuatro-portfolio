@@ -60,6 +60,10 @@ edit, and this row is the copy.
 | Id | Violation | Rule breached | Status | Opened | Retired by | Retired on |
 |---|---|---|---|---|---|---|
 | KV-1 | The serving box compiles | AD-8 | **Open**, tolerated deliberately | 2026-08-18 | Story 3-4 (Epic 3) | _not retired_ |
+| KV-2 | Four Registry `source` links resolve for nobody but the Operator | FR-10, SM-4 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
+| KV-3 | Two applications serve on `cuatro.dev` from outside the Registry | AD-6 | **Open**, tolerated deliberately | 2026-09-02 | unassigned | _not retired_ |
+| KV-4 | Six controls ship under the 44x44 hit-target floor | AD-19 (A-4), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Story 2-32 | _not retired_ |
+| KV-5 | Thirty-six elements sit past the right edge at 360px, clipped rather than absent | AD-19 (A-5), FR-3 | **Open**, tolerated deliberately | 2026-09-06 | Stories 2-31, 2-33 and 2-14 | _not retired_ |
 
 ---
 
@@ -164,13 +168,14 @@ Operator sets, not one a register imposes.
 
 The story that opened this item was written on 2026-08-16, when the workflow step read "Deploy
 to Hetzner" and `SERVER_HOST` still pointed at the box being decommissioned. **Story 1-21
-closed that half on 2026-08-17.** The record below is what is true on 2026-08-18.
+closed that half on 2026-08-17.** The record below was written against 2026-08-18 and each row now
+carries its own date, because the third half moved later than the other two.
 
-| Half | State on 2026-08-18 | Owner |
+| Half | State, dated per row | Owner |
 |---|---|---|
 | The deploy step name | **Resolved 2026-08-17.** The step at `.github/workflows/deploy.yml:45` is named **"Deploy over SSH to SERVER_HOST"**. It names no provider, because the workflow cannot verify which provider the secret resolves to | Story 1-21, closed |
 | `SERVER_HOST` | **Resolved 2026-08-17.** Repointed to `177.7.52.248`, the box the rest of the estate serves from. `ops/routing-inventory.md` carries it under the heading **"Where the deploy goes"**, in the two rows `SERVER_HOST before 2026-08-17` and `SERVER_HOST after` (`:1489-1490` as of 2026-08-24) | Story 1-21, closed |
-| The `tech` array value | **Open.** `content/projects.ts:30` still lists `'Hetzner VPS'` in `digital-library`'s `tech` array. This is the **one surviving stale Hetzner claim** in the estate's source | **FR-9, in Epic 2.** `epics.md:109-114` narrows FR-9 to exactly this one value. Not this story's to correct, and not a file this story touches |
+| The `tech` array value | **Open on 2026-08-18. Committed fixed on `dev` 2026-09-04, and it lands when Epic 2 merges to `main`.** Story 2.7 deleted `content/projects.ts` whole and repointed the Hub at `contracts/registry.json`, so the file carrying `'Hetzner VPS'` no longer exists. The stale value was never copied across: the Registry's `digital-library` entry lists `SvelteKit`, `Fastify`, `SQLite`, `Redis`, `BullMQ` and `Docker`, and no entry in it names Hetzner. This was the last stale Hetzner claim in the estate's source | Story 2.7. It was retired rather than corrected, which is what `ops/registry-inputs.md:152-156` says should happen to it. Serving still shows the old page until the epic merges, so this is not closed on a deploy the way the two rows above are |
 
 **The hazard of deploying into the decommissioned box is closed.** Until 2026-08-17 a merge to
 `main` would have deployed into a box that was down, and done it with `--build` on a machine
@@ -185,6 +190,262 @@ the target was corrected, which is the right trade and still a cost worth naming
 
 ---
 
+## KV-2: Four Registry `source` links resolve for nobody but the Operator
+
+**Four links, three of them repairable.** The count in the heading is the breach; the count in
+the repair below is three, because `StreamVault` is ruled permanently private. Both numbers are
+correct and they are not the same number.
+
+**Scope: repository visibility, and nothing else.** This entry is about whether an anonymous reader
+can open the `source` link the Registry will carry. It makes no claim about what those repositories
+contain, whether they are maintained, or whether their applications run.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **FR-10**, the drill-through path, and **SM-4**, every Registry link resolves | **Decision.** FR-10 requires every entry without exception to carry a `source` resolving to a repository, `Archived` entries and the Hub's own included. `epics.md:2208-2211` states it as Story 2-5's acceptance. A private repository returns 404 to an anonymous reader, so the link exists and does not resolve |
+| Offending repositories | `cs-tracker`, `cs-tournament`, `Mutuo` | **Observed 2026-09-02** by `gh repo list LuigiEspinosa --json name,visibility,isArchived`. All three read `PRIVATE`. Their applications are `Live`, `Live` and `In progress` respectively, so this is not a question about archived code |
+| Excluded from repair, not from the breach | `StreamVault` | **Decision.** It is also `PRIVATE`, observed in the same call, and it is deliberately so: a personal tool the Operator does not intend to publish. It still carries a `source` the Registry requires and that source still will not resolve. Naming it here is the honest form; omitting it would make this entry read as a complete list of unresolving links when it is not. **It is not a candidate for the repair below** |
+| What the Registry will carry | A `source` per entry regardless | **Decision.** AD-5 makes `source` required with no exception, so Story 2-5 authors these four links knowing three are repairable and one is not. The alternative, omitting the field, is forbidden by the schema Story 2-3 shipped and would fail the blocking `registry-schema` job |
+| Why it is not repaired here | Making a repository public is a GitHub console action with consequences this story cannot weigh | **Decision.** Story 2-4 confirms values; it performs no console action and takes no view on whether any of these three should be published. `cs-tournament` and `Mutuo` may carry credentials, client material or third-party integration keys, and `ops/contract-adoption.md:182` already records that the four private repositories cannot carry a required status check on the current GitHub plan. Publishing one is the Operator's call on its contents, not a Registry chore |
+| Status | **Open and tolerated** | **Decision.** Recording the breach is not repairing it |
+| Ruled by | **The Operator**, during Story 2-4's planning checkpoint | **Decision.** Asked whether to make the three public or record the breach, the Operator chose to record it. No separate architectural sentence tolerates this one, unlike KV-1, so the ruling is an Operator act and is cited as one |
+| Ruled on | **2026-09-02** | **Decision.** The date of that checkpoint, which is also the date this entry was written. The two coincide here and are still different facts |
+| Opened | **2026-09-02** | **Decision.** Written by Story 2-4 |
+| Retired by | **`unassigned`** | **Decision.** No story is scheduled to change any repository's visibility. `ops/known-violations.md` admits an entry on `unassigned` precisely so a tolerated breach nobody has scheduled a fix for is written down rather than kept out. It becomes a standing question for the Operator, carried in the pending table below |
+| Retired on | _not retired_ | Filled when **all three** repairable repositories have been ruled either way, each either public or recorded as permanently private, which is what pending action 5 tracks. A single ruling retires nothing on its own. `StreamVault` is already in the second category and is not one of the three |
+
+### What a reader should not conclude from this entry
+
+**This is not a statement that the Registry is broken.** SM-4 is a success measure over published
+links. This entry exists so that Story 2-5 authors those four `source` values knowing what they do,
+rather than discovering it when someone clicks one.
+
+**Amended 2026-09-03: the breach is committed, and becomes live when Epic 2 merges.** This section
+read "the Registry is `applications: []` until Story 2-5, so nothing is currently failing it".
+Story 2-5 has run: fourteen entries are authored on `dev`, four carrying a `source` that returns 404
+for an anonymous Visitor.
+
+**The distinction matters and is the reason this paragraph is worded carefully.** The estate merges
+to `main` at the end of each epic, and `cuatro.dev` deploys from `main` on every push, so nothing
+Story 2-5 wrote is served yet. SM-4 is a success measure over **published** links, so it is not
+breached today. It will be, without any further edit, the moment Epic 2 merges. The ruling and the
+remedy are both unchanged; what changed is that the cost is now committed rather than hypothetical,
+and the last moment to reverse it is that merge. Recorded rather than rewritten, because this section
+was explicitly written to be revisited at this point.
+
+**Nor is it a statement that these three should be public.** The breach is recorded; the remedy is
+not chosen. There are two remedies and this entry picks neither: publish the repository, or rule
+that it stays private and accept a permanently unresolving `source` for that entry, as
+`StreamVault` already does.
+
+**Noted 2026-09-12 by Story 2.23: the four repositories now have a parsed copy that a job reads.**
+`ops/registry-verification.md` § Sources tolerated to answer 404 anonymously carries one row per
+repository named here, and `ops/registry-verification.mjs`, the scheduled Registry verification,
+parses that table on every run: an anonymous 404 on a repository in it is `PASS ... tolerated by
+KV-2`, and on any other repository a failure. Two consequences. A "publish it" ruling under pending
+action 5 also strikes that repository's row there (Ruling cell prefixed `Struck YYYY-MM-DD`), and the
+job says so itself the first time the repository answers 2xx anonymously; a "stays private" ruling
+changes the row's Ruling text and nothing else. And the copy is held to this entry by nothing
+mechanical: a repository added here without a row there fails the job as a public repository gone
+private, and a row there without a ruling here tolerates a breach nobody recorded, so the two are
+edited together by hand. The unit suite pins the four rows as they stand today.
+
+---
+
+## KV-3: Two applications serve on `cuatro.dev` from outside the Registry
+
+**Scope: the two hostnames named below.** `analytics.cuatro.dev` is not in scope: it serves
+self-hosted Umami, which is infrastructure this estate runs rather than an application the Registry
+describes, and Story 2-4 ruled it out on that ground. `ad-analysis.cuatro.dev` is not in scope
+either: it is **NXDOMAIN, observed 2026-09-02**, so nothing serves and there is no breach to record.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-6**, Registry membership is by application, not by repository | **Decision.** `ARCHITECTURE-SPINE.md:112`. AD-6's operative clause is that no application is ever dropped by omission. Two applications serving on the estate's own domain, in no Estate row and in no planning artifact, are dropped by exactly that |
+| Offending hostnames | `covidmap.cuatro.dev`, `future-vizion.cuatro.dev` | **Observed 2026-09-02** by HTTPS request: both return 200. Both resolve to Vercel and neither is served by the box. Recorded first by Story 1-7 at `ops/routing-inventory.md:453-454` as observed absences, and handed to Story 2-4 at `:1605` as an AD-6 membership decision |
+| Their repositories | `LuigiEspinosa/covidmap` (Vue, default branch `master`) and `LuigiEspinosa/future-vizion` (HTML) | **Observed 2026-09-02** by `gh repo list LuigiEspinosa --limit 100 --json name,visibility,isArchived,primaryLanguage,pushedAt,homepageUrl`, and the default branch separately by `gh api repos/LuigiEspinosa/<id>`. Both public, neither archived, last pushed 2026-04-13 and 2026-04-11. **The shorter three-field call cited elsewhere in this file returns none of the language, push-date or default-branch values**, and is not what gathered them |
+| The ruling | **Excluded from the Estate and from the Registry; the two subdomains are retired** | **Decision**, taken by the Operator at Story 2-4's planning checkpoint. They predate the Ecosystem, appear in no PRD section, architecture invariant or epic, and adding them would expand the Estate's scope by a decision Story 2-4 was not chartered to take |
+| Why exclusion needs a retirement to be honest | There is no `status` that admits them without rendering them | **Decision.** Both really are live, so the only truthful `status` is `Live`. **FR-35 renders `Live` and `Complete`** (`contracts/registry.schema.json:59`, `epics.md:86`), so `Complete` would render them too, and the only values that hold an entry back are `In progress` and `Archived`, each of which would be false. No truthful value keeps them out. Retiring the subdomains removes the fact that creates the breach, which is the one resolution AD-6 does not treat as omission |
+| What retirement means concretely | Delete the two Cloudflare CNAME records, and the `_vercel` TXT record that verifies `future-vizion` | **Decision.** `ops/routing-inventory.md:180-181` carries both CNAMEs and `:195` the TXT record. The repositories are not archived, deleted or made private by this: only their `cuatro.dev` hostnames go. `future-vizion` also has a GitHub Pages CNAME set to the same hostname (**observed 2026-09-02** by `gh api repos/LuigiEspinosa/future-vizion/pages`), which is currently shadowed by the Vercel DNS record and should be cleared in the same pass, or Pages will re-serve the name |
+| Status | **Open and tolerated** | **Decision.** The ruling is taken; the DNS change is not made. Until it is, both hostnames serve and the breach is live |
+| Ruled by | **The Operator**, during Story 2-4's planning checkpoint | **Decision.** Story 1-7 declined to take it, correctly: `ops/routing-inventory.md:1605` records that this is "a Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration" |
+| Ruled on | **2026-09-02** | **Decision.** The date of that checkpoint |
+| Opened | **2026-09-02** | **Decision.** Written by Story 2-4. The breach itself is older: it was observable on 2026-08-16, when Story 1-7 first found both hostnames in the zone |
+| Retired by | **`unassigned`** | **Decision.** No story owns the DNS change. Epic 4 rebuilds the estate's routing wholesale and would incidentally settle it, but no acceptance criterion there names these two hostnames, so booking it to Epic 4 would be inventing a commitment. It is carried as an Operator action below instead |
+| Retired on | _not retired_ | Filled when both hostnames stop resolving. Verify with a DNS lookup, not by loading the page: a cached certificate or a browser's HSTS state can outlive the record |
+
+### The count consequence, stated because its absence is the surprising part
+
+**This ruling is what holds the Estate's counts steady against these two applications**, and that
+is worth saying plainly because a reader who finds two live applications excluded may expect the
+numbers to have moved. Neither was ever counted in either figure and this ruling does not add
+them, so neither figure moves **on account of KV-3**. Had the Operator ruled the other way, both
+would have gained two, and the sentence beginning "The 11 repositories at this waypoint are"
+would have had to move with them, which `ops/contract-adoption.mjs` parses and two tables in
+`ops/contract-adoption.md` are held equal to.
+
+**The application count did fall on 2026-09-02, for an unrelated reason, and this entry is not
+it.** It went from 15 to 14 when `apple-music-workspace` was ruled out of the Estate, having no
+repository at all. That is recorded under Counts in `ops/estate.md`. The repository count at the
+waypoint is unchanged at 11. A reader who arrives here looking for why the count moved is in the
+wrong entry.
+
+**Citations into `ops/estate.md` name their sentence, not a line number**, because this change
+inserted roughly forty lines above the parsed sentence and moved it. `ops/known-violations.md`
+already prescribes exactly that repair for drifting citations.
+
+---
+
+## KV-4: Six controls ship under the 44x44 hit-target floor
+
+**The count in this heading moved on 2026-09-08 and again on 2026-09-11, and the index row moved
+with it in the same change each time**, which is what this file's own rule requires of a derived
+row. It read thirteen from 2026-09-06 until Story 2-15 repaired the six chrome nav links and
+deleted their ledger row, and seven from then until Story 2-17 replaced the 404's back link with
+two exits built to the floor and deleted `error-back`. The count is in the heading rather than
+beside it because a register whose entries are titled by their subject alone tells a reader
+nothing about scale, and it is the one part of a heading this file allows to move without treating
+it as a rename.
+
+**Scope: what the Hub renders, measured.** This entry is about controls that exist and are too
+small, on the surfaces the Hub serves as HTML. It makes no claim about surfaces Epic 2 has
+not built yet, and none about the Satellites, whose own controls this repository cannot measure.
+
+**This entry exists because something now measures the floor.** Until 2026-09-06 the breach was
+real and invisible: `ops/rendered-output-harness.md` recorded the floor as deliberately unasserted,
+nothing in the repository measured a hit target, and `--tap` shipped in the contract with zero
+consumers. Story 2-8 installed the instrument and this is the first reading it produced.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-19**, the accessibility floor, booked as **A-4** at `EXPERIENCE.md:763` and binding on **FR-3**. Its pointer half is stated at `EXPERIENCE.md:727-732`: a minimum target of 44x44px **on the interactive element itself**, as `min-height: var(--tap)` plus `display: inline-flex`, and never as vertical padding on a plain inline element | **Decision.** `ARCHITECTURE-SPINE.md`, AD-19. `epics.md:2334-2342` is where Story 2-8 is required to assert it rather than claim it |
+| What is in breach | **Six authored controls**, rendering as **8 of the 39 elements the sweep measures**: one logo link, two home nav links and three home contact links | **Observed 2026-09-11** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by `getBoundingClientRect()` after fonts resolved. Every size is in `ops/hit-target-floor.md` under "The exemption ledger", per element. **Fifteen controls and 39 of 43 elements when this entry was opened**: Story 2-9 deleted the two `.project-card__links` controls, rendered six times each on `/projects`, along with the component that carried them. **Thirteen controls and 27 of 54 after that**, until Story 2-14 redirected `/projects` on 2026-09-07: no authored control was repaired or removed, and the seven chrome controls were simply rendered on two surfaces rather than three, which read **20 of 36**. **Seven controls and 8 of 28 from 2026-09-08**: Story 2-15 rebuilt the six chrome nav links to `--tap` on both axes and deleted `chrome-nav` in the same commit, so that is the first movement in this cell that is a repair rather than a deletion or a route. **Seven controls and 9 of 37 from 2026-09-10**: Story 2-16 built `/cv`, which renders the same header, so the logo link is rendered on a third surface. The authored count was unchanged and that was a route rather than a regression, which is why the heading above did not move then. **Six controls and 8 of 39 since 2026-09-11**: Story 2-17 replaced the 404's back link with the header's two destinations built to `--tap` on both axes and deleted `error-back` in the same commit, the second movement in this cell that is a repair. The sweep measures two elements more, the footer link on `/` and the second exit on the 404, and both clear the floor |
+| The shape of the breach | **Height, everywhere.** All six clear the floor on width and fail on height, at 20.00 to 23.00px tall | **Observed 2026-09-08**, same method, and re-read **2026-09-11**. The nearest miss was `a.error-page__back` at 108.58 x 38.19, 5.81px short, until Story 2-17 replaced it; the nearest miss now is the home pair and the contact links at 23.00, 21px short, and the upper bound of the range fell with it. **Until 2026-09-08 one of the thirteen failed on both axes**, the chrome `Blog` link at 38.41 x 22.00, and it is the one control in the whole census that ever has; Story 2-15 removed the link rather than widening it, the header now carrying two destinations and neither of them a blog that has no route on disk. The 17.00px lower bound in the opening reading was the two card links, which are gone |
+| Not in breach | The `button.work-item__header` controls at 216.00 x 88.80, the eleven Suite Directory links on `/`, the A-6 skip link Story 2-13 added, the chrome nav links Story 2-15 rebuilt, the two intro links Story 2-16 authored on `/cv`, the footer link to `/celeste` and the two 404 exits Story 2-17 authored. Twenty-two directory links until 2026-09-07, eleven on each of the two surfaces the directory rendered on, until Story 2-14 left it rendering on one. **Four accordion triggers and four nav links until 2026-09-10, eight and six since**: Story 2-16 mounted the same timeline and the same header on `/cv`, so both are rendered on one more surface | **Observed 2026-09-11.** Recorded because a register of breaches that listed every control would say nothing, and because the sweep asserts at least one measured element clears the floor so the comparison discriminates. The directory's links are the first controls in the Hub authored against the floor rather than exempted from it, and the chrome nav links are the first that were **moved** from one side of this cell to the other; the 404 exits are the second, and the first to be moved by a story other than the one the ledger row named |
+| Where it is tracked mechanically | `ops/hit-target-floor.md` § The exemption ledger, and `EXEMPTIONS` in `tests/e2e/hit-target-floor.pw.ts`, held equal in both directions by `ops/__tests__/hit-target-floor.test.ts` | **Decision.** This entry is the register; those two are the ledger the build enforces. A row deleted from the ledger without a line changed here is the one drift this file cannot see, which is why the surfaces are listed above individually rather than as a count |
+| Status | **Open and tolerated** | **Decision.** Recording a breach is not fixing it. Story 2-8's boundaries forbid changing any component or stylesheet, because a repair made here would land outside the story that planned it and outside that story's own criteria |
+| Ruled by | **The Operator**, at Story 2-8's planning | **Decision.** Asked how the floor should be asserted against a Hub already in breach, the Operator ruled that the sweep is universal and the known breaches are carried in a dated exemption ledger that can only shrink, rather than the sweep being scoped to what already passes. That ruling is what tolerates these fifteen. This register's admission test (`:24-36`) takes an Operator act or a sentence in the breached decision, and AD-19 carries no such sentence, so the act is cited and no sentence is invented for it |
+| Ruled on | **2026-09-06** | **Decision.** The date of that planning checkpoint, which is also the date this entry was written and the date the breach was first measured. The three coincide here and are still different facts |
+| Where the repairs are booked | **None of the three remaining ledger rows is booked by an acceptance criterion that names this floor; all three are booked by ownership only** | **Observed 2026-09-06**, by reading `epics.md`, re-read **2026-09-08**, and re-read **2026-09-11**. Verified: `:3441-3442` requires the 404 exits at 44x44 on both axes measured in a browser (Story 2-30), and **that row landed early**: Story 2-17 built the exits to the floor on 2026-09-11 because writing two new links under it would have been a new breach this register has no shape for, so Story 2-30's criterion arrives at a surface already meeting it, as Story 2-32's nav criterion did. Two other such rows **had landed** before it: `:2399-2401` for the directory's two links, closed by Story 2-9, and `:2655-2658` for the chrome nav links, closed by Story 2-15 on 2026-09-08. **Not established**: no acceptance criterion in `epics.md` names the floor for the chrome **logo**, the **home nav links** or the **contact links**. Story 2-32 names `Logo` and `ContactContainer` in its title (`:3559`) and its floor criterion at `:3576-3584` is written about the **nav links**, which Story 2-15 has now repaired; the home nav links live in `HomeLayout.tsx`, whose redesign is Story 2-29, which names no floor criterion at all. Those three rows are booked to Story 2-32 by Story 2-8's own frozen boundaries, not by a criterion in the epic |
+| Opened | **2026-09-06** | **Decision.** The date this entry was written, by Story 2-8, which is also the date the breach was first measured rather than inferred |
+| Retired by | **Story 2-32**, deleting its three ledger rows in the commit that repairs their surfaces. **Stories 2-9, 2-15 and 2-17 have deleted theirs**, on 2026-09-06, 2026-09-08 and 2026-09-11; Story 2-30 was named here until the last of those, and left the list because Story 2-17 deleted `error-back` ahead of it | **Decision.** The sweep makes that unavoidable: a listed element that starts clearing the floor fails as a stale row, so a story cannot repair a surface and leave the exemption behind. Story 2-9 is the demonstration that the mechanism works rather than merely being described, Story 2-15 is the demonstration that it works on a story that had to hit it, `chrome-nav` being the row its own acceptance criteria named, and Story 2-17 is the demonstration that it works on a story the row did not name: the sweep would have failed `error-back` as stale the moment the exits met the floor, whichever story built them. The three rows with no criterion of their own are the ones most likely to be missed, and they are the reason the row above says so plainly rather than claiming uniform coverage |
+| Retired on | _not retired_ | Filled when the ledger is empty. Verify by reading the ledger, not by reading a stylesheet: this is the floor `EXPERIENCE.md:731-732` says is the single easiest one to miss while appearing to be met |
+
+### The one surface nobody had counted
+
+**`Logo.tsx:7` was not on the list of surfaces this breach was expected to have.** **Observed
+2026-09-06**, by sweeping rather than by reading. Story 2-8's own code map named four surfaces, and
+the sweep found five. The logo link is a plain inline `<a>` around a 184 x 66 image, so the
+element's own box is the 20px text line box while the image paints past the bottom of it. A finger
+lands on the image and activates the link, so the effective target is larger than the measured one,
+and AD-19 is nonetheless about the element itself.
+
+This is the argument for a universal sweep rather than a list of surfaces someone remembered, and
+it is recorded here rather than only in `ops/hit-target-floor.md` because it changed what this
+entry counted when it opened: fifteen controls, not the fourteen a reader of the plan would have
+expected. Seven remained after Story 2-15 repaired the six nav links beside it on 2026-09-08 and
+left it exactly as it was, which is what its own `closedBy` cell predicted, and six remain after
+Story 2-17 repaired the 404's exits on 2026-09-11: the logo is still one of them, rendered on that
+surface too.
+
+### What a reader should not conclude from this entry
+
+**This is not a statement that the floor is unenforced.** It is enforced from 2026-09-06, on every
+route, and a new or regressed control that is too small fails the build on arrival. What is
+tolerated is a closed list of surfaces that were already in breach when the instrument was
+installed, each with a story that closes it.
+
+**Nor is it the whole of AD-19.** `.lighthouserc.js:15` still asserts accessibility at 0.95 with
+severity error and was not touched by Story 2-8 (**observed 2026-09-06** by
+`git diff --stat 9f71fba -- .lighthouserc.js`, which was empty). Contrast, focus order and the
+manual pass are separate instruments with separate owners, and `ops/hit-target-floor.md` § What
+this deliberately does not assert lists what the sweep leaves to them. A-4's **independently
+addressable** clause was among them, because it is a statement about two boxes rather than one and
+nothing on the shipped Hub put two targets on one line at 360 wide. Story 2-9's directory does,
+and the clause is asserted from 2026-09-06 in the same spec file.
+
+### Maintaining the ledger this entry counts
+
+Not an Operator action, so it is not in the table at the foot of this file: that table hands the
+Operator decisions this register is not entitled to take, and this is work the closing stories
+already own. It is written here instead, beside the count it keeps true.
+
+**A repair moves four things and a change to fewer than four is a defect:**
+
+1. the row in `ops/hit-target-floor.md` § The exemption ledger,
+2. the entry in `EXEMPTIONS` in `tests/e2e/hit-target-floor.pw.ts`,
+3. the surface named in the "What is in breach" cell above, and
+4. **the KV-4 index row at the top of this file**, whose count and closing stories
+   `ops/__tests__/hit-target-floor.test.ts` pins as literals.
+
+The first two are held equal by that suite; the third and fourth are prose and are the reason the
+surfaces are listed individually above rather than as a bare number. The per-surface counts in
+`ops/hit-target-floor.md` § The surfaces swept move with them, since deleting a control changes what
+the sweep measures.
+
+**The last story to land retires the entry**: fill `Retired on`, set `Status` to `Retired`, and
+bring the index row into line.
+
+---
+
+## KV-5: Thirty-six elements sit past the right edge at 360px, clipped rather than absent
+
+**Scope: horizontal overflow at AD-19's width, measured on elements.** This entry is about A-5's
+no-horizontal-scroll half. The Status half of A-5 is not in scope and is not in breach either:
+Story 2-10 asserted it on 2026-09-06 in `tests/e2e/status-mark.pw.ts`, and every rendered mark fits
+its own box at 360 with no clipping, no ellipsis and no wrap. The count, the boxes and the routes
+that reading covers are in `ops/status-mark-axes.md`, and are deliberately not restated here: a
+number copied into this entry is a number that rots the day an entry is added to the Registry.
+
+**Why this is a violation and not deferred work.** This register's discriminator (`:38-45`) is the
+ruling, not the severity. An Operator ruling exists, dated, tolerating the breach; a named story
+closes it; and the condition is measured rather than suspected. That is the admission test, and it
+is met. It would have sat in `deferred-work.md` only if nobody had ruled on it.
+
+| Field | Value | Nature |
+|---|---|---|
+| Rule breached | **AD-19**, booked as **A-5** at `EXPERIENCE.md:764` and binding on **FR-3**: no horizontal scroll at 360px. **`DESIGN.md:558-559`** states the mechanism it requires: `html, body { overflow-x: clip }` globally, `clip` rather than `hidden` because `hidden` breaks sticky positioning, and widths `100%` with container padding, never `100vw` | **Decision.** `ARCHITECTURE-SPINE.md`, AD-19 |
+| Offending lines | **Repaired 2026-09-06 by Story 2-9.** `app/app.scss` shipped `width: 100vw` with `overflow-x: hidden` on `body` and `overflow: hidden` on the home route, two rules broken in one block. It now ships `width: 100%`, `min-height` in place of `height: 100vh`, and `html, body { overflow-x: clip }`, with the home-route rule removed. `HomeLayout.scss` lost the `@media (max-width: 767px) { overflow: auto }` that overrode it, which would otherwise have set `overflow-x` back to `auto` on the home route at exactly the width A-5 is measured at | **Observed 2026-09-06 at `9f71fba`** by reading the file, and **re-read 2026-09-06** after the repair |
+| What still breaches it | **The component half, on `/work` alone.** 28 elements sit outside the viewport at 360, clipped rather than absent, and the stylesheet no longer has anything to do with why | **Observed 2026-09-06** in the pinned container, after the repair, as 36 across two routes. **Narrowed 2026-09-07** by Story 2-14, which redirected `/projects` and deleted the hero that rendered eight of them, so the elements ceased to exist rather than being repaired. The census is in `ops/hit-target-floor.md` § The overflow this assertion does not cover. **Not re-read on 2026-09-10, when Story 2-16 mounted the same `WorkTimeline` on `/cv`**: every one of the 28 comes from `WorkItem.scss`, so the same overflow is very likely rendered on a second surface and "very likely" is not a measurement. The standing A-5 assertion passed on that date with `/cv` swept, so no **interactive** element's edge is outside the viewport there and no new breach is asserted. Filed as **DW-72** |
+| What is actually outside the viewport | **28 elements**, all on `/work`, furthest `span.work-item__icon` at **490.67** against a 360 viewport. `/`, `/celeste` and the 404 are clean, `/` included after the Suite Directory landed on it | **Observed 2026-09-06** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by comparing **every element's right edge** against `window.innerWidth`. **Re-measured 2026-09-06** after Story 2-9, both edges this time: the count was unchanged at **36** and no element sat past the left edge on any route, so 36 was the number rather than a floor on it. **Reduced to 28 on 2026-09-07 by arithmetic rather than by measurement**: Story 2-14 deleted the `/projects` route whose eight elements, furthest `div.projects-hero__text` at **372.00**, made up the rest. There is no surface left to re-measure them on |
+| Why it is invisible without measuring | On `/work` there is no clipping ancestor and the root reading is **360**, now that `overflow-x: clip` propagates to the viewport; `document.body.scrollWidth` still reports **491** there, which is a second box rather than a second answer. On `/projects`, while it existed, the eight sat 12px past the edge while `document.scrollingElement.scrollWidth` read **360**, because the hero's own `overflow: hidden` (`ProjectsHero.scss:9`) clipped them | **Observed 2026-09-06**, same method, before and after the repair. A `scrollWidth` check would have been green on `/projects` while the condition it exists to detect was present, which is why Story 2-8 asserts A-5 on element edges. That argument is kept although the route is gone: it is the reason the instrument is shaped the way it is |
+| Not caught by the Story 2-8 sweep | None of the 28 is interactive, and that sweep measures interactive elements | **Decision**, recorded rather than widened. `ops/hit-target-floor.md` § What this deliberately does not assert carries it, so a green A-5 is not read as "nothing on the Hub overflows at 360" |
+| Status | **Open and tolerated**, on the component half only | **Decision.** Recording a breach is not repairing it, and repairing half of one does not retire the entry. The stylesheet half is closed and the entry says where |
+| Ruled by | **The Operator**, at Story 2-8's planning: `app/app.scss` is recorded, not repaired, in that story | **Decision.** The ruling is quoted in that story's frozen boundaries as a Never clause, dated. Story 2-8 ships the instrument and changes no stylesheet |
+| Ruled on | **2026-09-06** | **Decision.** The date of that checkpoint, which is also the date the overflow was first measured |
+| Opened | **2026-09-06** | **Decision.** Written by Story 2-8 |
+| Retired by | **Stories 2-31, 2-33 and 2-14**, which between them own every one of the 36 elements this entry was opened over: 2-31 and 2-33 the 28 on `/work`, and 2-14 the 8 on `/projects`, by redirecting the route that rendered them. **Story 2-14 landed on 2026-09-07** and its eight are gone; 2-31 and 2-33 are what the entry now waits on | **Decision.** Story 2-9 landed the stylesheet half on 2026-09-06 (`epics.md:2423-2427`: "`clip` replaces `hidden`, because `hidden` breaks sticky positioning" and "widths are `100%` with container padding, never `100vw`"), and its own frozen boundaries forbade touching `WorkItem.scss` or `WorkHero.scss`. **The `/projects` eight were unowned until 2026-09-06** and are recorded that way in the table below rather than silently folded into 2-33, whose title scopes it to `WorkHero`: an entry whose closing stories do not cover its own census can never close. Story 2-22 is booked into the same block, deleting the alias layer above it |
+| Retired on | _not retired_ | Half the condition is now met: `app/app.scss` no longer sets `100vw` or `overflow-x: hidden`. Fill this when no element sits outside the viewport at 360. Verify by measuring elements, not by reading `scrollWidth`, for the reason two rows above |
+
+### The two halves, and what happened when the first one landed
+
+**Replacing `hidden` with `clip` on a tree that still overflows was expected to be worse than the
+state that shipped before it.** **Decision, 2026-09-06.** The reasoning was that it would turn a
+clipped page into one with real horizontal scroll, which A-5 forbids outright.
+
+**That reading was wrong, and it was measured rather than argued.** **Observed 2026-09-06** in the
+pinned container, on all five surfaces: `overflow-x: clip` clips exactly as `hidden` did, and what
+it additionally does not do is make the element a scroll container. `document.scrollingElement.scrollWidth`
+reads 360 against a 360 viewport on every route, `/work` included, where it read 491 before. So the
+two halves did not have to land together after all, and the stylesheet half landed alone.
+
+| Half | Where | Owner | State |
+|---|---|---|---|
+| The stylesheet | `app/app.scss`, plus the mobile override in `HomeLayout.scss` | **Story 2-9** (`epics.md:2423-2427`) | **Landed 2026-09-06** |
+| The hero grid columns, which measure 300 inside a 216 content box because a grid item's `min-width: auto` refuses to shrink below min-content | `WorkHero.scss:1-9`, with `.container` at `width: min(80%, 1920px)` (`container.scss:2-4`) feeding it | **Story 2-33** | Open |
+| The same shape in `ProjectsHero.scss:1-9`, which was the other 8 of the 36 | `ProjectsHero.scss:1-9`, same containing block | **Story 2-14**, which redirects `/projects` to `/#suite`. Nothing renders `ProjectsHero` on any route now and the eight elements ceased to exist rather than being repaired: the component, its stylesheet and the page that mounted it were deleted in the same commit as the redirect. **Assigned 2026-09-06**, having been left unowned: Story 2-9 replaced the card grid beneath the hero and its frozen boundaries forbade touching the hero, Story 2-33 is scoped to `WorkHero` by its own title, and an entry cannot retire while eight of its elements belong to nobody | **Closed 2026-09-07** |
+| `.work-item__sub`'s `white-space: nowrap` in a `flex: 1` column, which pushes `.work-item__meta` to 372.38 and the icon to 490.67 | `WorkItem.scss:64` | **Story 2-31** | Open |
+
+Whoever closes the last of those should widen the Story 2-8 sweep's A-5 arm past interactive
+elements once the overflow is gone, and retire this entry.
+
+**The measurements, the per-route breakdown and the reasoning are in
+`_bmad-output/implementation-artifacts/deferred-work.md`**, filed by Story 2-8 under its own spec.
+That entry is the evidence; this one is the ruling. It is cited rather than duplicated, so there is
+one place to change when a figure is re-measured.
+
+---
+
 ## Pending Operator actions
 
 This file hands the Operator decisions it is not entitled to take. They are tracked here rather
@@ -196,6 +457,11 @@ than left in prose, in the shape `ops/capacity-measurement.md:341-350` uses.
 | 2 | **Rule on the `deploy.yml` hazards in `deferred-work.md`**: no `concurrency` group, CI not blocking the deploy, the self-serve `placements` log | Operator | Whether each is a violation admitted here or stays deferred work. Story 1-9 was scoped to KV-1 only and did not ask | _not done_ |
 | 3 | **Retire KV-1 and date it** | Story 3-4 | An acceptance criterion of that story (`epics.md:3962-3965`). Fill `Retired on`, set `Status` to `Retired`, then bring the index row into line | _not done_ |
 | 4 | **Mark the measurement-week section expired** | Story 1-5 close-out | Due on or after 2026-08-24T21:00Z. The rest of KV-1 stays open | _not done_ |
+| 5 | **Rule on each of `cs-tracker`, `cs-tournament` and `Mutuo`**: publish it, or record that it stays private (KV-2) | Operator | Three separate calls, not one. Each turns on that repository's contents. A "stays private" ruling retires nothing on its own: it moves that entry into the same category as `StreamVault`, and KV-2 retires when all three have been ruled either way | _not done_ |
+| 6 | **Retire `covidmap.cuatro.dev` and `future-vizion.cuatro.dev`** (KV-3) | Operator | Delete both Cloudflare CNAMEs and the `_vercel` TXT record. The two repositories stay public and unarchived; only the hostnames go. Verify by DNS lookup, not by loading the page | _not done_ |
+| 7 | **Clear the GitHub Pages CNAME on `future-vizion`** | Operator | In the same pass as action 6. Pages holds `future-vizion.cuatro.dev` as its custom domain, shadowed today by the Vercel DNS record. Removing only the Cloudflare record leaves Pages ready to re-serve the name | _not done_ |
+| 8 | **Rule on `Logo.tsx:7`, which no story listed as under the floor** | Operator | Story 2-32 names `Logo` in its title and is booked as the closer, so this is recorded rather than asked as a blocker. It is raised because the logo link is the one surface the plan did not know about, and because its effective target (a 184 x 66 image) is larger than its measured box, which is a reasonable thing to rule is not worth repairing | _not done_ |
+| 9 | **Rule on whether the three ledger rows with no acceptance criterion of their own need one** (KV-4) | Operator | `chrome-logo`, `home-nav` and `home-contact` are booked to Story 2-32 by Story 2-8's boundaries rather than by any criterion in `epics.md`, and the home nav links are authored in `HomeLayout.tsx`, whose redesign is Story 2-29. Either 2-32's criteria widen to name them or 2-29 takes the home pair. Left as a question rather than answered, because moving a story's acceptance criteria is not a register's call | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the
 ISO 8601 UTC completion date and leave the row in place. Deletion is not used, here or anywhere

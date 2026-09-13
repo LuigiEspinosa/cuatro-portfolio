@@ -1,0 +1,65 @@
+// The skip control, FR-2's one interaction from a cold arrival (Story 2-13).
+//
+// Token-native, on the same footing as `Premise.scss` and `SuiteDirectory.scss`, and it declares no
+// custom property of its own. `app/__tests__/anchor-contract.test.ts` holds both claims.
+//
+// Neither `DESIGN.md` nor `EXPERIENCE.md` gives this control a visual row either
+// (`review-rubric.md:40`), so it is built from the same rules the skip-link beside it is: mono
+// uppercase signage on a hairline, hover recolouring an underline that is already drawn,
+// `:focus-visible` painted instantly on `--token-focus`, and `--tap` as the size floor.
+
+.skip-control {
+  // `min-block-size` with `inline-flex`, never `padding-block` on a plain inline element
+  // (`EXPERIENCE.md:727-730`). Both axes, because the label is set at the smallest step on the
+  // scale and the floor applies to width as well.
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+  padding-inline: var(--s-md);
+
+  // Above `.home-gem`, which is at `z-index: 3` and spans the whole hero on the default path. This
+  // control only ever renders on that path, so it is the one thing here that has to clear it.
+  z-index: var(--z-raised);
+
+  color: var(--token-text-secondary);
+  border-block-end: var(--stroke-hair) solid var(--token-border-interactive);
+
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+// One signal, and it is a recolour. The underline never appears on hover and never changes width:
+// both are layout changes and both reflow the line.
+.skip-control:hover {
+  color: var(--token-text);
+  border-block-end-color: var(--token-accent-hover);
+}
+
+.skip-control:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-hair);
+}
+
+// **Two placements, because the hero has two layouts and both have to keep this above the fold.**
+//
+// Below 768 the hero is a flex column in reading order, so the control is a static item at the top
+// of it: first in the DOM, first in the stack, and unambiguously inside the first viewport. At 768
+// and wider the hero is a grid pinned to one viewport with every panel absolutely positioned, so
+// the control is positioned too, centred against the bottom edge of that viewport where nothing
+// else sits. Anchored to the container rather than to the fold, which is the same thing there:
+// `.home-container` is exactly `100dvh` on the path this control renders on.
+@media (min-width: 768px) {
+  .skip-control {
+    position: absolute;
+    inset-block-end: 4%;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+  }
+}

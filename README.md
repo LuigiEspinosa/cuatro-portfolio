@@ -84,13 +84,39 @@ Copy `.env.example` and fill in values. Variables prefixed `NEXT_PUBLIC_` are in
 
 ## Routing
 
-| Route             | Description                                      |
-| ----------------- | ------------------------------------------------ |
-| `/`               | Home - GSAP layout + 3D gem                      |
-| `/work`           | Experience Timeline                              |
-| `/projects`       | Case studies grid                                |
-| `/cv`             | Redirect to `public/pdf/cv.pdf`                  |
-| `/recommendation` | Redirect to `public/pdf/remmendation-letter.pdf` |
+| Route             | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `/`               | Home - GSAP layout + 3D gem                       |
+| `/work`           | Experience Timeline                               |
+| `/celeste`        | Standalone page, rendered with no header, `noindex`, linked from the footer alone (Story 2-17) |
+| `/projects`       | 301 to `/#suite` (Story 2-14)                     |
+| `/cv`             | CV: intro block plus the Experience Timeline (Story 2-16) |
+| `/api/health`     | JSON health endpoint                              |
+| Anything else     | `app/not-found.tsx`, 404, with the header's two exits (Story 2-17) |
+
+Four corrections landed here with Story 2-15 (DW-60): the `recommendation-letter.pdf` filename was
+spelled `remmendation-letter.pdf`, which is a path nothing serves, and `/celeste`, `/api/health`
+and the 404 were all absent while the rendered-output suite sweeps them as real surfaces. The
+served paths are `/pdf/...`; `public/` is the directory they are served from and is not part of
+any URL.
+
+`/cv` answered a 308 to `/pdf/cv.pdf` until 2026-09-10, which shadowed the route file behind it, so
+the page had never rendered. Story 2-16 removed the redirect and built the page: it mounts the same
+`WorkTimeline` `/work` does, above it an intro block, and it links `/pdf/cv.pdf`, which is still
+served at its own URL for anyone holding it. `/work` goes on rendering the timeline standalone.
+
+`/recommendation` answered a 308 to `/pdf/recommendation-letter.pdf` until 2026-09-11, shadowing a
+stub that had never rendered, and nothing linked it. Story 2-17 retired the route outright on the
+Operator ruling of that day, so it answers 404 like any other unrouted path. The PDF is neither
+moved nor renamed: `/pdf/recommendation-letter.pdf` is still served at its own URL for anyone holding
+it. The one redirect `next.config.js` still declares is `/projects`; the 308 a trailing slash
+answers, as in `/cv/` to `/cv`, is Next's own.
+
+The header presents two of these routes, `/#suite` and `/cv`. `SiteFooter` presents one more,
+`/celeste`, inside `<nav aria-label="Footer">`, and it is the only way onto that route: Story 2-17
+gave the footer the link the design assigns it, and `/celeste` declares `robots: { index: false }`.
+The 404 offers the header's two destinations as its exits, mapped from the same list the header
+renders. **Every other route is reached only by an inbound link or by typing it.**
 
 ## Animation Architecture
 
@@ -113,7 +139,6 @@ flowchart TD
     subgraph components["Animated components"]
         HL[HomeLayout]
         WT[WorkTimeline]
-        PC[ProjectCard]
     end
 
     RM[useReducedMotion] -->|gates all animations| components

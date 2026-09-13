@@ -1598,12 +1598,108 @@ perform it.
 
 | Action | Why an agent cannot do it |
 |---|---|
-| Read the Cloudflare account audit log, then revoke `tracker-mac` and `cuatro-tracker` | The only token in the estate is **zone-scoped**. **Observed 2026-08-24:** `GET /accounts/{id}/audit_logs` returns HTTP 403 `Authentication error` (code 10000) and `GET /user/tokens` returns HTTP 403 `Unauthorized to access requested resource` (code 9109). Reading the log needs an account-scoped token and revoking needs `User > API Tokens > Edit`, neither of which the agent holds, and **never revoke, rotate or create a credential** is a standing boundary. Already tracked as `ops/bot-mitigation.md` Pending Operator action 5 |
-| Confirm `analytics.cuatro.dev` passes the managed challenge in a real browser | Playwright arrives in Story 1-10 and no acceptance criterion may claim a rendered-output result before it. Already `ops/bot-mitigation.md` action 3 |
-| Confirm the Hostinger weekly whole-box snapshot exists | It is claimed in a script comment and appears nowhere on the box. Confirming it needs the Hostinger console, which the agent cannot reach |
-| Verify IPv6 serving and the v6 `DOCKER-USER` path | One `curl` from a vantage point with IPv6 closes it. See [The IPv6 caveat, stated once](#the-ipv6-caveat-stated-once) for what is and is not claimed |
+| Read the Cloudflare account audit log, then revoke `tracker-mac` and `cuatro-tracker` | The only token in the estate is **zone-scoped**. **Observed 2026-08-24:** `GET /accounts/{id}/audit_logs` returns HTTP 403 `Authentication error` (code 10000) and `GET /user/tokens` returns HTTP 403 `Unauthorized to access requested resource` (code 9109). Reading the log needs an account-scoped token and revoking needs `User > API Tokens > Edit`, neither of which the agent holds, and **never revoke, rotate or create a credential** is a standing boundary. Already tracked as `ops/bot-mitigation.md` Pending Operator action 5. **Operator decision 2026-08-27: not revoking for now**, see "Decisions taken on this story's operator actions" below |
+| Confirm `analytics.cuatro.dev` passes the managed challenge in a real browser | Playwright arrives in Story 1-10 and no acceptance criterion may claim a rendered-output result before it. Already `ops/bot-mitigation.md` action 3. **Re-tested 2026-08-27 now that Playwright exists: a headed Chromium did not clear the challenge.** See "The challenge does not clear for an automated browser" in `ops/bot-mitigation.md`. One load in an ordinary browser is still owed |
+| Confirm the Hostinger weekly whole-box snapshot exists | It is claimed in a script comment and appears nowhere on the box. Confirming it needs the Hostinger console, which the agent cannot reach. **Answered 2026-08-27: it exists.** See "The Hostinger whole-box snapshot, confirmed" below |
+| Verify IPv6 serving and the v6 `DOCKER-USER` path | One `curl` from a vantage point with IPv6 closes it. See [The IPv6 caveat, stated once](#the-ipv6-caveat-stated-once) for what is and is not claimed. **Half answered 2026-08-27: v6 serving confirmed for all three Satellites.** The direct-to-origin DROP test is still owed. See "IPv6 serving, confirmed" below |
 | Decide whether `analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows | A Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration |
 | Read the zone's legacy Page Rules, and the `http_request_dynamic_redirect`, `http_request_transform`, `http_response_headers_transform` and `http_config_settings` ruleset phases | The zone-scoped token returns HTTP 403 code 9109 on `pagerules` and `request is not authorized` on each phase entrypoint. **Observed 2026-08-24.** The zone-level `GET /rulesets` listing shows no redirect or transform ruleset, and the `www` 301 is settled independently by a direct origin probe, so nothing depends on this. It is listed so the unknown is a known one |
+
+### The Hostinger whole-box snapshot, confirmed
+
+**Observed 2026-08-27** by the Operator, from the Hostinger hPanel VPS backups page. The snapshot
+`/home/deploy/cuatro-backup.sh` claims to complement is real, which had been an unverified comment
+in a script since before this record existed.
+
+| Item | Value | Nature |
+|---|---|---|
+| Cadence | **Weekly**, automatic (`Respaldos automáticos, cada semana`) | **Observed** |
+| Snapshots retained | **Two** | **Observed.** Only two rows are listed |
+| Most recent | 2026-08-24 01:45, 16.07 GB | **Observed** |
+| Previous | 2026-08-17 02:08, 20.21 GB | **Observed** |
+| Location | United States | **Observed.** The box itself is a Hostinger VPS; the snapshot is held by the same vendor |
+| System | Ubuntu 24.04 LTS, whole box | **Observed** |
+| Stated restore time | 36 minutes | **Observed**, as quoted by the console |
+| Restore procedure | The `Restablecer` button per snapshot in hPanel, VPS, Backups | **Observed** |
+
+**This is a real safety net and it is narrower than "we have backups" implies.** Four things a
+later reader needs, none of which the console states as a caveat:
+
+- **Two snapshots is roughly fourteen days of history.** A corruption noticed on day fifteen has
+  no clean snapshot to go back to. Every fault older than the oldest snapshot is unrecoverable
+  from this mechanism.
+- **It is not independent of the thing it protects.** The box is a Hostinger VPS and the snapshot
+  is held by Hostinger, in the same account. It survives disk failure and a bad deploy; it does not
+  survive account loss, billing suspension, or vendor failure. `digital-library`'s Cloudflare R2
+  copy is the only backup in the estate held by a different vendor from the box.
+- **It restores the whole box, not a file.** Recovering one deleted row or one corrupted volume
+  means restoring everything to that point and losing every change since. That is why
+  `ops/backup-digital-library.md`'s per-application path is not made redundant by this.
+- **Nobody has ever restored from it.** The 36 minutes is the vendor's figure, and the snapshot is
+  an assumption about recoverability until a restore is actually performed once.
+
+**The size moved from 20.21 GB to 16.07 GB between the two snapshots**, a drop of about 4 GB in a
+week. Not investigated here. It is consistent with log rotation or an image prune and it is also
+what a deleted volume would look like, so it is recorded rather than explained.
+
+### IPv6 serving, confirmed
+
+**Observed 2026-08-27** by the Operator, from a mobile connection with WiFi disabled, verified as
+genuinely IPv6 by `test-ipv6.com` scoring **10/10** before the hostnames were tried.
+
+**All three Satellite hostnames carrying an `AAAA` load over IPv6**: `cs-tracker.cuatro.dev`,
+`tracker.cuatro.dev` and `library.cuatro.dev`. The v6 path through Cloudflare to the origin works,
+which had never been observed from any session because none has had IPv6 egress.
+
+**This unblocks adding `AAAA` records for the apex, `www` and `analytics`**, which the AD-3 table
+notes as the asymmetry a visitor on an IPv6-only network would notice.
+
+**The security-relevant half is now also confirmed.** Serving over v6 through Cloudflare says
+nothing about the v6 `DOCKER-USER` DROP rule, because those requests arrive by the path the rule
+permits. The test that matters is a **direct** request to the origin's v6 address, bypassing the
+edge entirely.
+
+**Observed 2026-08-27**, same mobile IPv6 connection: `http://[2a02:4780:75:9155::1]` was
+**refused**. The v6 DROP path works.
+
+**What that closes.** The origin is not reachable over IPv6 by anything that skips Cloudflare, so
+the `AAAA` records cannot be used to route around the WAF rules, the AI-crawler block or the
+managed challenge. Before this reading the v6 rules were present and the path was unverified, which
+`ops/bot-mitigation.md` was careful to call different claims. They are now the same claim. Both
+address families are confirmed closed to direct origin access: v4 by the probes recorded on
+2026-08-17, v6 here.
+
+**This is the last of Story 1.7's six operator actions to be resolved**, and it is the only one
+that closed by observation rather than by decision.
+
+### Decisions taken on this story's operator actions
+
+**2026-08-27.** Three of the six actions above are now settled as decisions rather than as work.
+Recorded here because a decision not to act is a state a later reader needs, and an action left at
+`_not done_` forever is indistinguishable from one nobody looked at.
+
+**The two Cloudflare API tokens stay, for now.** The Operator's decision is not to revoke
+`tracker-mac` or `cuatro-tracker` at this time. What that accepts, stated plainly rather than left
+implied: both remain live credentials of unknown scope, the audit log establishing what they are
+used for has still not been read, and this pass found `CLOUDFLARE_API_TOKEN` declared in
+`/home/deploy/cuatro-tracker/.env`, which falsifies the earlier claim that the box holds no
+Cloudflare credential. Its consumer is the profiled `caddy` service in that project, which never
+starts on this box, and which of the two tokens it holds was not determined because the value was
+deliberately not read. **This is a deferral, not a clearance.** The same applies to
+`HETZNER_DNS_API_TOKEN` in `/home/deploy/digital-library/.env`, a live DNS credential for a
+provider the estate left on 2026-08-17.
+
+**The Registry membership question moves to Story 2-4, where it already belonged.** Whether
+`analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows, or
+whether infrastructure hostnames are declared outside the Registry entirely, is an AD-6 membership
+decision. A routing enumeration has no mandate to take it and this record should not hold it open
+as though it were owed here. The AD-3 table above already names all three as gaps rather than as
+correct absences, which is the part this story does own.
+
+**The IPv6 verification stays open and stays the Operator's.** Confirmed again 2026-08-27: the
+workstation driving this work has **no IPv6 egress**, so the v6 `DOCKER-USER` DROP path against
+`2a02:4780:75:9155::1` is unverifiable from here as it has been in every session. The v6 rules are
+present and the path is unverified, and those remain different claims.
 
 ### What the retired gathering checklist held that is still true
 

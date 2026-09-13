@@ -20,15 +20,36 @@ dotted. They are the same stories.
 
 ## What the harness asserts
 
-`tests/e2e/harness.ts` exposes exactly three capabilities. Stories 1.12, 1.17, 1.18 and 1.19
+`tests/e2e/harness.ts` exposes exactly three capabilities. Stories 1-12, 1-17, 1-18, 1-19 and 2-8
 import that file rather than reaching for Playwright directly, so the viewport, the browser and
-the failure behaviour are settled in one place.
+the failure behaviour are settled in one place. Story 2-8 imports two of the three,
+`RENDERED_VIEWPORT` and `rootCustomPropertyValue`, and edited none of them.
+
+**Story ids in this paragraph and in the rows Story 2-8 added are hyphenated**, per the rule at the
+head of `ops/known-violations.md`. The dotted forms elsewhere in this file are older text and were
+left as written rather than rewritten by a story that was not editing them.
 
 | Capability | Helper | What it answers | Nature |
 |---|---|---|---|
 | Route screenshot | `expectRouteScreenshot` | Did this route's render change beyond the stated tolerance | **Decision.** Scope set by Story 1-10 |
 | Computed property on a selector | `computedStyleValue` | What value does a named CSS property resolve to on a named selector, in a real browser | **Decision.** Same |
 | Custom property on `:root` | `rootCustomPropertyValue` | What value does a named custom property resolve to on `:root` | **Decision.** Same |
+
+**What the specs built on those three capabilities assert.** This table is the coverage answer, and
+it lives here rather than under the heading below saying what is not covered: a reader scanning for
+whether something is asserted reads the heading before the cell.
+
+| Assertion | Spec file | What it answers | Nature |
+|---|---|---|---|
+| The 44x44 hit-target floor, and A-5's no-horizontal-scroll half | `tests/e2e/hit-target-floor.pw.ts` | Does every interactive element on every Hub surface measure at least `--tap` on both axes, or appear in a dated exemption ledger that can only shrink; and does any measured element's edge sit outside the viewport at 360 wide. The floor is read off `--tap` on `:root` rather than written, and the route set is derived from `app/` rather than hand-listed. The ledger, the probe output and the stated limits are in `ops/hit-target-floor.md` | **Decision.** Story 2-8, **2026-09-06**. This supersedes the row that used to sit under "what it deliberately does not assert" claiming the floor needed a Suite Directory. **That reason was wrong about its own blocker**: a sweep over every interactive element needs no Directory to measure, and scoping it to compliant surfaces is what would have made it vacuous |
+| The Status mark's three structural axes, and A-5's Status clause | `tests/e2e/status-mark.pw.ts` | Does each of the four Status values differ from its neighbour on a structural property rather than on hue: a 4 by 4 painted dot, a dashed border, a dropped border. **`Live` and `Complete` are asserted identical in border treatment**, so a border-only assertion is demonstrably insufficient, which is what AD-19 forbids. Greyscale is measured in the print medium, where `app/scss/_print.scss` forces `#000` and hue is gone at source, rather than through a `filter` that `getComputedStyle` cannot see. Also: no mark expresses its value with `opacity`, no Status truncates or wraps at 360, and the mark carries no tooltip, popover, role, tab position or hover state. The measured values, the greyscale distances and the stated limits are in `ops/status-mark-axes.md` | **Decision.** Story 2-10, **2026-09-06**. This supersedes the row that used to sit under "what it deliberately does not assert" saying the axes needed a Suite Directory: Story 2-9 built one, and this is the different instrument that row said the axes would need. Which values emit a dot stays in `components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx`, because a browser only ever sees `Live` dots: `Complete` renders under the FR-35 filter and no entry carries it, and `In progress` and `Archived` the filter holds back |
+| The Suite Directory's row geometry and its hover | `tests/e2e/suite-directory.pw.ts` | Does a long unbroken token planted in a description or a live link stay inside the viewport **and** inside its own box, at 360 and one pixel past the 760px breakpoint; and does hover recolour the underline and change nothing else. Two measurements, because a cell spanning a flexible grid track contributes nothing to track sizing, so its overflow never moves an element rect and is invisible to the A-5 sweep above | **Decision.** Story 2-9, **2026-09-06**. Kept out of `hit-target-floor.pw.ts` because that file's literals are parsed as text by `ops/__tests__/hit-target-floor.test.ts` |
+| The alias layer, per call site | `tests/e2e/anchor-aliases.pw.ts` | Does each of the twelve `--accent-dim` call sites resolve to the role its use earns, and do the four `--monument-bold` sites carry the weight a family alias cannot. Fifteen call sites until Story 2-9 deleted `ProjectCard.scss` with the component it styled | **Decision.** Story 1-18, count amended 2026-09-06 by Story 2-9 |
+| The header suppression on `/celeste` | `tests/e2e/celeste-header.pw.ts` | Is the header rendered and hidden by a stylesheet rather than mutated by an effect, and is that a different mechanism from the home route rendering no header at all | **Decision.** Story 2-1 |
+| The chrome nav's two destinations, and the sticky header | `tests/e2e/chrome-nav.pw.ts` | Does the header carry exactly `Suite` to `/#suite` and `CV` to `/cv`, in that order, with no external link and no `mailto:`; does each link measure at least `--tap` on both axes and sit `--s-lg` from its neighbour, which is A-4's independently-addressable clause on the second surface in the Hub to put two targets on one line at 360; does `aria-current` mark the current route and nothing else, with the accent rule drawn on the inner span rather than on the tap box; is the header `position: sticky` at `--z-sticky` on an opaque token ground and still at the top of the viewport when the page is scrolled past it, **on both surfaces that render it**, `/work` and the 404 being two different render paths and stickiness being breakable by an ancestor on either; does the root element reserve `scroll-padding-block-start` for it where there is a header and not where there is none; and do both destinations reach what they name when clicked, `Suite` landing on `/` with `#suite` applied and the Directory heading in view, `CV` landing on `/cv` and starting no download, with the file the removed 308 used to serve reached by a planted control so the listener that reports "no download" is shown able to report one | **Decision.** Story 2-15, **2026-09-08**. The floor is re-measured here on the nav alone so a failure names the header rather than a surface; the universal sweep that deleted the `chrome-nav` exemption is the row above. No screenshot is taken, so no second snapshot directory is written. **The `CV` clause was rewritten in place on 2026-09-10 by Story 2-16** rather than corrected at the end of this cell: until then it read "`CV` reaching `/pdf/cv.pdf` through the 308 that stands in for the page until Story 2-16", and a reader scanning this column for what is covered reads the clause, not a note after it. The case is rewritten, not deleted, and what it measures is now the opposite. That file also keeps its two-surface list deliberately, both of them surfaces that are neither destination; the third, `/cv`, has its own row below |
+| The `/cv` page and what it reuses | `tests/e2e/cv.pw.ts` | Does `/cv` answer a 200 `text/html` document with no `Location` where it answered a 308 to a PDF, while `/pdf/cv.pdf` stays served at its own URL; does `body#cv` match no override so the base `body` rule paints, controlled against `/work`, which does override it; does the header mark `CV` and only `CV` as the current page with the accent rule on the inner span, which is the first live `aria-current` in the repository; does a click on `CV` from `/work` land here, download nothing and keep the mark through a client-side navigation; is the accordion's first entry open with a panel taller than zero while the other three measure zero, and does every trigger's `aria-controls` resolve; does every interactive element measure at least `--tap` on both axes with the ledger's one exemption named rather than the floor loosened; and do both intro links take the standard focus ring, reached by tabbing because `:focus-visible` does not match a scripted focus | **Decision.** Story 2-16, **2026-09-10**. The universal sweep that added `/cv` as a surface is two rows up; this file is the page's own reading, so a failure names the page rather than a sweep. No screenshot is taken, so no second snapshot directory is written |
+| The secondary surfaces, and A-13 on every surface | `tests/e2e/secondary-surfaces.pw.ts` | Is this file's surface list equal to the one `hit-target-floor.pw.ts` derives from `app/`, read as text with the same regex the ops suite uses; does `/recommendation` answer the 404 document, `text/html` with no `Location`, rendered by `Error404` with the two exits, while `/pdf/recommendation-letter.pdf` stays served and `/cv/` still answers Next's own trailing-slash 308, which is the reader's control; does the home footer carry exactly one link, to `/celeste`, inside `<nav aria-label='Footer'>`, at or above `--tap` on both axes, taking the Secondary treatment (`--stroke-hair` in `--token-border-interactive` on the inner span and `0px` on the box, `--token-text-secondary`, a recolour to `--token-accent-hover` on hover with no change of width, the standard ring in `--stroke-focus` and `--token-focus` reached by tabbing), and does no anchor on any surface resolve to the `/celeste` pathname other than that one, with the absolute trailing-slash form planted as a control; does `/celeste` render zero visible controls, carry `<meta name="robots" content="noindex">` and still hide the header, with no routed page other than it carrying a `robots` meta and the 404 carrying exactly the one Next's own not-found boundary injects; do the 404's exits read `Suite` to `/#suite` and `CV` to `/cv`, equal to `nav.navbar a` on the same page, each at or above `--tap` on both axes, `--s-lg` apart on their separating axis with the gap-removal control, none marked `aria-current`, and do the two clicks land, `Suite` on `/` with `#suite` applied and the Directory heading in view, `CV` on `/cv` with its own `<h1>`; does every one of the five surfaces set `lang="en"` on its root element and a `<title>` no other surface shares, with `/recommendation` carrying the 404's rather than a sixth; and does the 404's `og:title` equal its document title rather than the retired route's | **Decision.** Story 2-17, **2026-09-11**, widened the same day by its review pass. The universal sweep that counts the footer link and both exits is three rows up; this file is where each is named, so a failure names the control rather than a count. No screenshot is taken, so no second snapshot directory is written. **The 404's `noindex` was a finding**: the story's matrix predicted no `robots` meta on any surface but `/celeste`, and the pinned container showed Next injecting one into every not-found response, so it is pinned as the framework's rather than asserted absent (DW-78) |
+| The type swap, on the Hub's own routes | `tests/e2e/type-swap.pw.ts` | Do the two Confillia call sites on `/` (`a.nav-link`, two elements, and `.contact-container a`, three) compute the display family first and `font-stretch: 75%`, with `--confillia-normal` on `:root` reading the `--f-display` stack, controlled by a rule that widens one element back to `100%`; on every one of the five surfaces `hit-target-floor.pw.ts` pins, are the `@font-face` families in the document exactly the contract's three, grouping rules walked, with nothing fetched under `/fonts/`, and does the old preloaded binary's URL answer 404, controlled once by a `@font-face` planted inside `@supports`, a planted fetch and a served contract face answering 200; does every element that reaches the display face, on `/` (the two Confillia sites and `.glitch-text__inner`), `/work` (`.work-hero__heading`, four `.work-item__company`) and the 404 (`.error-page__code`, `.error-page__title`), hold its height within 1% across the swap, measured with every woff2 aborted and then allowed on the same route with the element set held equal across the two passes, every aborted pass taken before any allowed one so a face the browser cached never reaches a fallback pass, and `/work` settled on its on-demand canvas mount first because that mount widens the hero's grid column at 360, the protocol `contract-fonts.pw.ts` runs against a scratch page, with widths, rendered line counts and height per line printed and not asserted, and does a family planted from the display face's own `src` with the four metric overrides stripped breach on every one of those routes; and does one string measure two widths at `var(--monument-regular)` and at `var(--monument-bold)` with `--w-black`, and two widths at `font-stretch` 75% and 100%, each pair controlled by a twin span at the second setting measuring the same width | **Decision.** Story 2-20, **2026-09-12**. The alias-layer row above goes on reading the weight sites and the `--monument-regular` clamp, and `narrative.pw.ts` goes on pinning that `/` preloads no font; this file is where the width axis and the swap itself are measured, so a failure names the face rather than an alias. No screenshot is taken, so no second snapshot directory is written. The `/work` baseline is untouched: no rule on that route ever reached a local face |
 
 `tests/e2e/rendered-output.pw.ts` runs one test per capability against `/work`, nine tests that
 prove the loud-failure behaviour below, and a guard that the run exercised all three
@@ -58,8 +79,6 @@ harness that covers everything.
 
 | Not asserted | Why not | Owner |
 |---|---|---|
-| The 44x44 hit-target floor | Needs a Suite Directory that does not exist | **Decision.** Story 2.8 |
-| The Status mark's three structural axes | Same | **Decision.** Story 2.10 |
 | Any `--token-*` name, and anything under `contracts/` other than the font faces | Story 1-10 shipped the instrument, not the contract. Story 1-12 added the second spec file, `tests/e2e/contract-fonts.pw.ts`, which asserts that `contracts/fonts.css` resolves from a folder vendored at an arbitrary depth and that the font swap moves no sample block beyond a recorded tolerance. No `--token-*` role is asserted in a browser yet | **Decision.** Stories 1.11 through 1.14, amended 2026-08-25 by Story 1-12 |
 | Colour contrast ratios | No token roles to compute them against yet | **Decision.** Epic 1 token stories |
 | Any route other than `/work` | One route is enough to establish the instrument. Adding routes is cheap once the instrument exists | **Decision.** Story 1-10 scope |
@@ -121,6 +140,44 @@ version drift the pinning exists to prevent.
 | Harness run, cold `.next`, six-test file | **27.8 s wall** for `pnpm build`, `pnpm start` and all six tests | **Observed 2026-08-24**, by emptying the container's `.next` volume and timing one `docker run` of `pnpm test:e2e`. Playwright reported 24.1 s of that as test time. Measured before the file grew to thirteen tests, and kept rather than overwritten |
 | Harness run, warm `.next`, six-test file | **24.3 s wall**, 21.5 s reported as test time | **Observed 2026-08-24**, same method without emptying the volume |
 | Harness run, thirteen-test file | **22.7 s** reported as test time | **Observed 2026-08-24**, by running the full file in the pinned container after the review pass added the seven further failure-path tests. Nine of the thirteen tests never take a screenshot, so the count grew faster than the clock |
+| Whole `pnpm test:e2e` run, nine spec files, **71 tests** | Two readings on the same tree: **1.7 min** headline with a **108.8 s** docker wall, and **3.7 min** headline with a **229.1 s** wall | **Observed 2026-09-06** on the same host, after Story 2-9 added `tests/e2e/suite-directory.pw.ts` (ten cases) and one case to `hit-target-floor.pw.ts`. **The two readings are the same command on the same tree minutes apart**, and the spread is host load rather than anything in the code, which is why nothing asserts on any of these. Eleven more tests than the row below for a cost still dominated by the one `pnpm build` its `webServer` performs. Kept beside that row rather than replacing it |
+| Whole `pnpm test:e2e` run, eight spec files, **60 tests** | **1 m 41.3 s** measured by `time` around the command; **1.7 min** as Playwright's own headline for the same run. The `docker run` wall around it was **105.2 s** | **Observed 2026-09-06** on the Windows development host, after Story 2-8 added `tests/e2e/hit-target-floor.pw.ts`. **Read what each figure covers**: the command is `pnpm build && pnpm start` plus all sixty tests, Playwright's headline starts when the run does and so includes that build, and the docker wall adds four seconds of `corepack enable` and `pnpm install --frozen-lockfile` against the warm named volumes. The image pull is in none of them; it is the 28 s row in the CI table below. **This is the figure the CI job actually pays**, because `.github/workflows/ci.yml:276-277` runs the whole directory rather than one file; every row above describes one spec file inside that run and is kept rather than overwritten |
+| Of that run, the hit-target spec alone | **24.6 s** across its fifteen cases, of which the sweep case was **13.7 s** | **Observed 2026-09-06**, same run, by summing the per-case durations the list reporter printed. Five navigations, five hydration waits and 43 elements measured at two round trips each. `ops/hit-target-floor.md` carries the breakdown and the same numbers |
+
+### The CI figures, measured on a runner
+
+**Observed 2026-08-25** from Actions run `32801557172`, the first execution of this job on a
+GitHub runner. These are the figures C-7 asked for; the local rows above are kept beside them
+rather than overwritten, because they were measured by a different method on a different machine.
+
+| Step | Wall | Nature |
+|---|---|---|
+| Whole job | **69 s**, 02:28:58Z to 02:30:07Z | **Observed** |
+| `Initialize containers`, which is the image pull | **28 s** | **Observed.** The provisioning cost C-7 names, paid on a cold runner |
+| `actions/checkout@v4` | 1 s | **Observed** |
+| `pnpm/action-setup@v4` | 1 s | **Observed** |
+| `pnpm install --frozen-lockfile` | **6 s** | **Observed.** Against 4 m 33 s on the Windows development host below, which is the bind-mount penalty rather than a real install cost |
+| `Rendered-output harness`, the thirteen tests | **28 s** | **Observed.** Against 22.7 s of reported test time locally, so the runner is close to the development host once provisioned |
+
+**The image pull and the harness cost the same**, 28 s each, so roughly half this job is
+provisioning that no amount of test tuning will remove. That is the number C-7 wanted written down.
+
+**`actions/checkout@v4` and `pnpm/action-setup@v4` both behaved correctly inside the pinned
+container job**, which had never been exercised in this repository before this run. Both completed
+in about a second with no warnings. That closes the second thing the first run existed to answer.
+
+**These timings also predate every spec file added after 2026-08-25.** The 28 s row measures the
+thirteen tests in `rendered-output.pw.ts`, which was the whole of `tests/e2e` on the day it was
+taken. The job has always run the directory (`ci.yml:276-277`), and the directory now holds eight
+spec files and 58 tests, so the CI figure for the step is stale in scale rather than in method. The
+local 2026-09-06 row above is the closest measurement of the current shape, and no re-run on a
+runner has been made. Whoever next reads an Actions summary for this job should add a CI row beside
+it rather than editing this one.
+
+**These timings predate the Node 22 pin** recorded in Operator action 2 below. They describe the
+job as it ran on the image's own Node v24.18.1. The pin changes the runtime, not the image, so the
+image-pull figure is unaffected; the install and harness figures could move slightly and have not
+been re-measured.
 
 **What these numbers do not include.** `pnpm install --frozen-lockfile` inside the container took
 **4 m 33 s** on this host (**observed 2026-08-24**), but that figure is dominated by pnpm writing
@@ -131,11 +188,32 @@ omission.
 ## Regenerating the baseline
 
 The committed baseline is `tests/e2e/rendered-output.pw.ts-snapshots/work-360x800-chromium-linux.png`.
-Its sha256 is `4203eccab7a108cb2b9c9f0fd04106f85595145474c89c9c7c55139bb18d278f` (**Observed
-2026-08-26**, by `Get-FileHash ... -Algorithm SHA256`). Story 1-18 regenerated it once, under case
-1 below, replacing `27f22bb6ff78c62e019cc8f222665436b7a20c2445a90677bead375c7d763f97`. The
-2026-08-24 observations further down this section were made against that earlier file and are
-dated as such; this line is the current value.
+Its sha256 is `03df32bb790bae482ea3b878d0d715542ec2d05a44d3a30df14992ad86417270` (**Observed
+2026-09-08**, by `Get-FileHash ... -Algorithm SHA256`). It has been regenerated twice, both times
+under case 1 below, and each earlier value is kept so a reader can tell which file an older dated
+observation was made against:
+
+| sha256 | Regenerated by | On | What changed on `/work` |
+|---|---|---|---|
+| `27f22bb6ff78c62e019cc8f222665436b7a20c2445a90677bead375c7d763f97` | Story 1-10, the original capture | 2026-08-24 | n/a |
+| `4203eccab7a108cb2b9c9f0fd04106f85595145474c89c9c7c55139bb18d278f` | Story 1-18 | 2026-08-26 | The alias layer retargeted `--monument-bold` onto the published display family |
+| `03df32bb790bae482ea3b878d0d715542ec2d05a44d3a30df14992ad86417270` | Story 2-15 | 2026-09-08 | The header carries two destinations instead of five inline links plus a `mailto:`, each built to `--tap` on both axes, on a sticky opaque token ground. **2980 pixels differed**, which the run printed before the baseline was refreshed |
+
+The 2026-08-24 observations further down this section were made against the first file and are
+dated as such; the table above is where the current value lives.
+
+**What 2980 differing pixels is, in the units the gate is set in.** **Observed 2026-09-08.** The
+capture is 360 x 800 at `deviceScaleFactor: 1`, which is **288000 pixels**, so 2980 is a true ratio
+of **0.0103**. `MAX_DIFF_PIXEL_RATIO` is 0.001, which `playwright.config.ts` hands to Playwright as
+`maxDiffPixelRatio` and Playwright turns into an allowance of **288 pixels**; the render therefore
+exceeded the gate by a factor of **ten**.
+
+**The runner's own message said `ratio 0.02`, and that is not a second measurement.** Playwright
+computes the figure it prints as `Math.ceil(count / (width * height) * 100) / 100`
+(`playwright-core@1.62.1`, `lib/coreBundle.js:7563`), so any ratio between 0.01 and 0.02 prints as
+0.02. It rounds **up** to two decimals rather than to nearest, which is the right behaviour for a
+number a reader is about to compare against a threshold and the wrong number to copy into a record
+as an observation. The count is the reading; the printed ratio is a presentation of it.
 
 **It must be generated inside `mcr.microsoft.com/playwright:v1.62.1-noble`.** **Decision.**
 Playwright names a snapshot per platform, so a baseline made on the Windows host would be
@@ -301,7 +379,9 @@ and `epics.md:1838-1846`.
 
 `WorkHero.scss:19`, `ProjectsHero.scss:19` and `error-page.scss:24` set the family alone, so
 their computed `font-weight` is `400` today and would still be `400` after an alias silently
-dropped bold. The weight lives in the family name, declared by the `@font-face` block. Only
+dropped bold. (`ProjectsHero.scss` left the tree on **2026-09-07**, deleted by Story 2-14 with the
+`/projects` route it styled, so two of the three named here survive. The 2026-08-24 reading is left
+as it was taken.) The weight lives in the family name, declared by the `@font-face` block. Only
 `glitch-text.scss:7` sets `font-weight: 700` itself.
 
 Story 1.18's own acceptance criteria already close that hole, and the order matters: `epics.md:1842-1843`
@@ -368,8 +448,8 @@ use.
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Record the first real CI timing of the `rendered-output` job**: image pull, install, and the harness step, from the Actions run summary | Operator | The provisioning figures above are a local host's, and say so. The CI figure is the one C-7 actually asks for, and it cannot be observed until this job runs on a runner. Replace the "Pull wall time on this host" row with a CI row when it is, keeping the local row and its method rather than overwriting it | _not done_ |
-| 2 | **Confirm the container job's Node version is acceptable**, or pin it | Operator | The `test` job pins Node 22 through `setup-node`. The `rendered-output` job takes the image's Node, observed as v24.18.1, because that is the runtime the pinned browsers were built against. Two Node versions in one workflow is a deliberate consequence of pinning the image, and it is recorded rather than hidden | _not done_ |
+| 1 | **Record the first real CI timing of the `rendered-output` job**: image pull, install, and the harness step, from the Actions run summary | Operator | The provisioning figures above are a local host's, and say so. The CI figure is the one C-7 actually asks for, and it cannot be observed until this job runs on a runner. Replace the "Pull wall time on this host" row with a CI row when it is, keeping the local row and its method rather than overwriting it | **2026-08-25.** Run `32801557172`, recorded in "The CI figures, measured on a runner" above. The local rows were kept beside them. The same run also confirmed `actions/checkout@v4` and `pnpm/action-setup@v4` behave inside the pinned container |
+| 2 | **Confirm the container job's Node version is acceptable**, or pin it | Operator | The `test` job pins Node 22 through `setup-node`. The `rendered-output` job takes the image's Node, observed as v24.18.1, because that is the runtime the pinned browsers were built against. Two Node versions in one workflow is a deliberate consequence of pinning the image, and it is recorded rather than hidden | **2026-08-27. Ruling: pinned to Node 22.** A `setup-node` step was added to the job, so every job in the workflow now runs one Node major. The reasoning against leaving it: two Node majors means a browser check can pass on one runtime and fail on the other, and catching real rendered output is what this job is for, so a runtime difference between it and the `test` job undermines the signal rather than adding coverage. The argument for leaving it, that the browsers were built against the image's Node, applies to the browser binaries and not to the Node that runs Playwright's test process. The image tag still governs the browser and the fonts, so the committed baseline PNG is unaffected |
 | 3 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Three lines in that block are false as of this story. `AGENTS.md:52-53` says CI "runs typecheck and tests only"; `:55-57` says "Playwright is not installed" and "until then no acceptance criterion may claim a rendered-output or browser check". A later agent reading that will refuse to write the browser assertions Stories 1.12 and 1.17 through 1.19 now depend on. The block is machine-managed and this story is forbidden from hand-editing it, and `sprint-status.yaml:95-97` already carries the same reminder for other reasons | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the
@@ -382,3 +462,20 @@ all four is a defect: the `@playwright/test` pin in `package.json`, the `contain
 `.github/workflows/ci.yml`, the committed baseline PNG, and the figures in this file. The pin is
 exact (`"1.62.1"`, no caret, unlike every neighbouring range) precisely so that this stays a
 deliberate act rather than something a lockfile refresh can do quietly.
+
+## The actions moved off Node 20, 2026-08-31
+
+**Changed 2026-08-31.** The timings above were taken on `actions/checkout@v4` and
+`pnpm/action-setup@v4`, and the paragraph recording that both behaved correctly inside the pinned
+container was about those versions. The job now runs `checkout@v7`, `action-setup@v6`,
+`setup-node@v7` and `upload-artifact@v7`, because all three of the originals target Node.js 20, which
+is deprecated. The 1 s figures are left as they were taken rather than restated: they are observed
+values with a date, and no re-measurement has been made on the new versions.
+
+**One input was added, and it is what keeps the install timing meaningful.** From `setup-node` v5 the
+action caches automatically whenever `package.json` carries a `packageManager` field, and this
+repository's carries `pnpm@10.31.0`. This job deliberately omits `cache: pnpm` so that the **6 s**
+install above measures a cold one, and that omission would have silently stopped meaning anything.
+`package-manager-cache: false` is now written into the job, so the recorded figure still describes
+what the job does. Anyone re-measuring the install should check that line is still there first: a
+warm cache would move the number without moving anything this file says.

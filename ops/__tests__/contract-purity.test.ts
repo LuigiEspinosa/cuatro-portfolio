@@ -996,9 +996,17 @@ describe('the CI wiring', () => {
     // states as a fact that the job carries exactly three steps.
     const actions = [...instructionsOf(JOB).matchAll(/^\s*- uses: (.+)$/gm)].map((match) => match[1].trim());
     expect(actions, `the ${JOB} job gained or lost an action step`).toEqual([
-      'actions/checkout@v4',
-      'actions/setup-node@v4',
+      'actions/checkout@v7',
+      'actions/setup-node@v7',
     ]);
+    // From v5, `setup-node` caches automatically whenever `package.json` carries
+    // a `packageManager` field, and this repository's does. This job has no
+    // `pnpm/action-setup` step, so the automatic path would look for a pnpm that
+    // was never installed, and `ops/contract-purity.md` states as a fact that
+    // the job uses no cache.
+    expect(instructionsOf(JOB), 'setup-node will cache off packageManager unless this is here').toMatch(
+      /^\s+package-manager-cache: false$/m
+    );
   });
 
   it('carries the ceiling the record states', () => {
@@ -1007,23 +1015,33 @@ describe('the CI wiring', () => {
     );
   });
 
-  it('sits between the two jobs it was placed between, and adds no other job', () => {
+  it('sits among the six jobs the file carries, and adds no other', () => {
+    // This set and the identical one in `ops/__tests__/registry-schema.test.ts`
+    // are the fourth committed assertion the contents of `ci.yml` are pinned by,
+    // and adding a job fails both. That is deliberate: each of the two suites
+    // reads the file for its own gate, and neither may be the only reader.
     expect(
       jobNames,
       'the order is a reader convenience rather than a rule, since jobs run in parallel. The set is not: a job' +
         ' added or removed here changes what holds AD-1 and what this suite has been told to expect'
-    ).toEqual(['test', 'tokens-contract', 'fonts-contract', JOB, 'rendered-output']);
+    ).toEqual(['test', 'tokens-contract', 'fonts-contract', JOB, 'registry-schema', 'rendered-output']);
   });
 
-  it('leaves the four existing jobs carrying the steps they carried', () => {
-    // Not a byte comparison against the baseline commit, which the story
-    // verified once by hand. This is the standing half: the four jobs still do
-    // the four things they exist to do, so a later edit to this file that
-    // guts one of them is caught here rather than in production.
+  it('leaves the five jobs beside it carrying the steps they carried', () => {
+    // Not a byte comparison against a baseline commit, which each story that
+    // touches `ci.yml` verifies once by hand. This is the standing half: every
+    // job in the file still does the thing it exists to do, so a later edit
+    // that guts one of them is caught here rather than in production.
+    //
+    // It was four jobs until Story 2-3 added `registry-schema`, the Registry's
+    // own blocking gate (AD-4). That job's command and steps are asserted in
+    // `ops/__tests__/registry-schema.test.ts`, beside the module it runs, so
+    // only its presence is checked here.
     expect(instructionsOf('test')).toContain('pnpm test --run');
     expect(instructionsOf('test')).toContain('pnpm typecheck');
     expect(instructionsOf('tokens-contract')).toContain('pnpm tokens:build');
     expect(instructionsOf('fonts-contract')).toContain('pnpm fonts:build');
+    expect(instructionsOf('registry-schema')).toContain('node ops/registry-schema.mjs');
     expect(instructionsOf('rendered-output')).toContain('pnpm test:e2e');
   });
 });

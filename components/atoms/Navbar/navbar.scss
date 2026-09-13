@@ -1,8 +1,40 @@
+// The header's two destinations (Story 2-15).
+//
+// **This file names contract roles directly**, which is why it is listed in
+// `TOKEN_NATIVE_STYLESHEETS` in `app/__tests__/anchor-contract.test.ts`. It declares no custom
+// property of its own, and it adds no alias call site, so `tests/e2e/anchor-aliases.pw.ts` does
+// not move.
+//
+// **What is deliberately left alone here.** `color: #fff` below, the sans-serif family, the
+// `1.2em` size and the hover underline are all Story 2-32's, which redesigns this component
+// token-native (`epics.md:3566-3567`). This story reshapes what the header points at and gets each
+// link to the hit-target floor; it does not restyle it.
+
 .navbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+
+  // Two `--tap` boxes on one line take `var(--s-lg)` of gap so they cannot overlap and become one
+  // target by touch (`RESTYLE-SPEC.md:206`). This replaces the `margin-right: 1rem` on every link
+  // but the last, which was a sibling gap written before either box existed.
+  gap: var(--s-lg);
 
   a {
+    // `min-block-size` with `inline-flex`, never `padding-block` on a plain inline element:
+    // vertical padding there paints outward without growing the hit area, which is the single
+    // easiest way to miss this floor while appearing to meet it (`EXPERIENCE.md:727-730`).
+    // `min-inline-size` carries the other axis, because `CV` is two characters and measures under
+    // the floor on width. Both axes are measured in a real browser by
+    // `tests/e2e/hit-target-floor.pw.ts` and `tests/e2e/chrome-nav.pw.ts`, never read off this
+    // file.
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: var(--tap);
+    min-inline-size: var(--tap);
+    padding-inline: var(--s-md);
+
     font-family: sans-serif;
     font-size: 1.2em;
     font-weight: 300;
@@ -12,9 +44,17 @@
     &:hover {
       text-decoration: underline;
     }
-
-    &:not(:last-child) {
-      margin-right: 1rem;
-    }
   }
+}
+
+// The current route's mark, and it is drawn on the inner span rather than on the `--tap` box
+// (`RESTYLE-SPEC.md:198-199`): a rule on the box sits at the bottom of the padding instead of
+// under the text. `--stroke-emphasis` in `--token-accent` is the Emphasis row `DESIGN.md:597`
+// gives the active link underline and the current-nav mark, so it reads identically wherever it
+// appears.
+//
+// The `aria-current` attribute is what this keys on rather than a modifier class, so the mark
+// cannot be painted on a link that does not announce itself as the current page.
+.navbar a[aria-current='page'] .navbar__label {
+  border-block-end: var(--stroke-emphasis) solid var(--token-accent);
 }

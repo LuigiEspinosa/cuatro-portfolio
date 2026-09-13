@@ -335,6 +335,10 @@ figure any later story reports from Umami describes the period from this date on
 earlier. This is recorded as a deliberate drop, not a silent loss, and the Operator chose it
 knowing the alternative was to keep a box nobody could reach.
 
+**2026-09-12, Story 2.24.** The three custom events (`suite-reach`, `live-open`, `source-open`),
+how SM-1 to SM-3 are read from them and their readings are in `ops/visitor-instrumentation.md`,
+which cites this paragraph as the baseline.
+
 **`cuatro-finance` and `cs-tournament` are not monitored because it is not established that
 they serve anything.** Their Statuses in `ops/estate.md` are the unresolved assumption text
 `[ASSUMPTION: built, not deployed]` and `[ASSUMPTION: Live on Vercel]`, neither of which is a
@@ -586,6 +590,28 @@ quarterly re-test above is the cheap partial mitigation: it converts "the alert 
 probably fine" into an observation on a known date. A genuine second channel, or a
 dead-man's-switch that alerts when the monitor stops reporting, is a decision for a later
 story rather than something to bolt on here.
+
+**Reopened 2026-09-12 by Story 2.23**, whose scheduled Registry verification
+(`ops/registry-verification.md`) has the same shape of blind spot twice over: GitHub disables a
+public repository's `schedule` after 60 days without a commit, and a schedule that never fires
+looks, from inside the estate, like a Registry with nothing wrong. The candidate mitigation is an
+UptimeRobot HEARTBEAT monitor on alert contact 8726805, pinged by the job after a fully passing
+run, which would be the estate's first dead-man's switch. It is an Ask First of that story and is
+**not decided here**: the free plan may refuse the monitor type as it refused
+`sslExpirationReminder` above. The outcome, landed or refused, is recorded in that record's Pending
+Operator action 5 and in a dated note beneath this one; until then the 60-day disable stands as a
+stated limit there with no mitigation.
+
+**Refused 2026-09-12.** The Operator ruled yes the same day, and the free plan refused the
+HEARTBEAT type: `create-monitor` through the UptimeRobot MCP answered `You are not allowed to use
+some settings with your current plan` three times, with a daily interval and 24 h grace on contact
+8726805, with the contact alone, and with the bare type and nothing else; `list-monitors` confirms
+no monitor was created. **Observed 2026-09-12.** So the estate still has no dead-man's switch, on
+the same plan-gate that took the certificate-age reminder, and this section's argument stands
+unchanged: the quarterly re-test is the mitigation, and for the Registry job the fallback is a
+`workflow_dispatch` run on AD-22's refresh schedule, which re-enables a disabled schedule (DW-85).
+A paid tier would open the type; whether it is worth buying is a decision against NFR-4's ceiling
+for a later story, not this one.
 
 ## The certificate rule
 
@@ -991,7 +1017,7 @@ than being waived.
 | Story 1-10 | Installs Playwright and adds a CI job, which is enabling automation |
 | Story 1-11 | Publishes `contracts/tokens.css` from a generator, with the CI work that follows |
 | Story 1-14 | Adds the blocking contract-boundary CI check |
-| Story 2-23 | Scheduled Registry verification, external to the box. `epics.md:2722` names Story 1.2 as a dependency |
+| Story 2-23 | Scheduled Registry verification, external to the box. `epics.md:2879` (was `:2722`; the story's heading is `:2872`) names Story 1.2 as a dependency. **Read 2026-09-12** by the story before it added `.github/workflows/registry-verification.yml`: the line read `satisfied as of 2026-08-17`, cited in `ops/registry-verification.md` |
 | Epic 2, epic level | `epics.md:856` records Epic 2 as blocked by AD-17a, which gates the automation Story 2.8 adds |
 
 **This list is indicative, not exhaustive.** It is accurate as of 2026-08-16 and it will go

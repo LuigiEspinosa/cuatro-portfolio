@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 08-18-2026
+last_updated: 09-12-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -81,28 +81,37 @@ development_status:
   # work is complete at ec682a3 and the spec is finalized at status: done.
   # followup_review_recommended: true is unspent.
   1-6-write-the-capacity-gate-threshold-and-open-the-gate: done
-  # 1-7 parked by hand 2026-08-24. Its dev session was killed by the 90 minute
-  # session wall at phase dev-verify, so the orchestrator recorded no result and
-  # never advanced this row. The work is complete and committed (55e281e, b4aeee7,
-  # f9e7bde) and the spec is finalized at awaiting-operator with seven
-  # operator_actions. There is no park record under .bmad-loop/operator/, so
-  # `bmad-loop confirm` cannot see it: close this row by hand once those actions
-  # are done. The spec also carries followup_review_recommended: true, unspent.
-  1-7-enumerate-the-deployed-routing-table-on-the-box: awaiting-operator
-  # 1-8 parked by hand 2026-08-25, same session-wall cause as 1-6 and 1-7. Work is
-  # complete at 708e638 and 33a7d78. Operator actions 1 and 3 to 7 were completed
-  # 2026-08-25: bucket cuatro-backups, config at /etc/cuatro/library-backup.env,
-  # lifecycle rule expire-digital-library-30d, first offsite run verified. Still
-  # owed: action 2 (read the R2 free tier from the console) and the password
-  # manager half of action 7, which named limit 5 depends on entirely.
-  1-8-an-offsite-backup-path-for-digital-library: awaiting-operator
+  # 1-7 closed by hand 2026-08-27. Work committed at 55e281e, b4aeee7, f9e7bde.
+  # All seven operator_actions are resolved: the analytics managed challenge passes
+  # in a real browser and correctly refuses automation; the Hostinger weekly
+  # whole-box snapshot exists and is recorded with its four caveats; IPv6 serving
+  # and the v6 DOCKER-USER DROP path are both verified from a mobile v6 connection.
+  # Three were settled as decisions rather than work: the two Cloudflare tokens and
+  # the Hetzner DNS token stay for now (a deferral, not a clearance), and the
+  # Registry membership question for analytics, covidmap and future-vizion moves to
+  # Story 2-4 where AD-6 puts it. The Page Rules read stays a known unknown that
+  # nothing depends on. followup_review_recommended: true is still unspent.
+  1-7-enumerate-the-deployed-routing-table-on-the-box: done
+  # 1-8 closed by hand 2026-08-27. Work committed at 708e638 and 33a7d78. All eight
+  # operator_actions are done: bucket cuatro-backups, config at
+  # /etc/cuatro/library-backup.env owned root:deploy 0640, lifecycle rule
+  # expire-digital-library-30d, first offsite run 2026-08-25 with
+  # roundtrip=sha256-match and restore=verified, the R2 free tier re-read and
+  # unchanged, and on 2026-08-27 the password manager's copy of the passphrase was
+  # proven to decrypt a real nightly object from a machine that is not the box.
+  # Named limit 5 is closed. The estate also has a confirmed Hostinger weekly
+  # whole-box snapshot, recorded in ops/routing-inventory.md with its four caveats.
+  1-8-an-offsite-backup-path-for-digital-library: done
   1-9-record-the-build-on-the-box-violation-as-a-tracked-item: done
-  # 1-10 parked by hand 2026-08-25, same session-wall cause. Work is complete at
-  # cc03c0c, 915bf5e and 064c087. The branch was pushed 2026-08-25 and CI run
-  # 32801557172 passed with rendered-output: success, so the first-run and
-  # action-behaviour questions are answered. Still owed: the decision on the
-  # container job taking image Node v24.18.1 while the test job pins Node 22.
-  1-10-install-playwright-and-establish-the-rendered-output-harness: awaiting-operator
+  # 1-10 closed by hand 2026-08-27. Work committed at cc03c0c, 915bf5e and 064c087.
+  # All four operator_actions are done: CI run 32801557172 recorded its measured
+  # timings (28 s image pull, 6 s install, 28 s harness, 69 s job) in
+  # ops/rendered-output-harness.md beside the local rows; that run confirmed
+  # actions/checkout@v4 and pnpm/action-setup@v4 behave inside the pinned container;
+  # the container job is now pinned to Node 22 with the ruling recorded; and the
+  # bmad:context block in AGENTS.md was refreshed, which also closed the same
+  # outstanding item for stories 1-12, 1-13 and 1-16.
+  1-10-install-playwright-and-establish-the-rendered-output-harness: done
   1-11-publish-contracts-tokens-css-from-packages-tokens: done
   # 1-12 closed by hand 2026-08-25. Its session was killed when the driving
   # process exited, so the orchestrator recorded no result. Work is complete at
@@ -119,39 +128,53 @@ development_status:
   1-16-serve-contracts-at-https-cuatro-dev-contracts: awaiting-operator
   1-17-anchor-migration-step-1-add-the-contract-change-nothing: done
   1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: done
-  1-19-cs-tracker-adopts-the-token-contract: backlog
-  1-20-record-the-adopted-contract-version-and-the-automation-polic: backlog
-  epic-1-retrospective: optional
+  1-19-cs-tracker-adopts-the-token-contract: awaiting-operator
+  1-20-record-the-adopted-contract-version-and-the-automation-polic: done
+  epic-1-retrospective: done
   # REMINDER: run /bmad-project-context (refresh) before starting epic-2.
   # Epic 1 installs Playwright (1-10), enumerates the real Caddy routing table (1-7),
   # and starts the token migration, so three lines in the AGENTS.md block go stale here.
 
-  epic-2: backlog
-  2-1-the-pre-existing-repository-defects: backlog
-  2-2-measure-the-narrative-bundle-against-the-asset-budget: backlog
-  2-3-the-registry-schema-and-its-blocking-ci-gate: backlog
-  2-4-confirm-the-assumed-statuses-hostnames-and-tech-values: backlog
-  2-5-author-contracts-registry-json: backlog
-  2-6-the-editorial-voice-pass: backlog
-  2-7-retire-content-projects-ts-the-hub-imports-the-published-reg: backlog
-  2-8-assert-the-44-44-hit-target-floor: backlog
-  2-9-the-suite-directory: backlog
-  2-10-assert-the-status-mark-s-three-structural-axes: backlog
-  2-11-the-premise-block-and-the-framework-band: backlog
-  2-12-the-narrative-resolves-into-the-suite-directory: backlog
-  2-13-the-non-3d-front-door-and-the-skip-control: backlog
-  2-14-projects-redirects-permanently-to-suite: backlog
-  2-15-nav-reshape-to-two-destinations: backlog
-  2-16-cv-built-around-the-existing-worktimeline: backlog
-  2-17-secondary-surface-states: backlog
+  epic-2: in-progress
+  2-1-the-pre-existing-repository-defects: done
+  2-2-measure-the-narrative-bundle-against-the-asset-budget: done
+  2-3-the-registry-schema-and-its-blocking-ci-gate: done
+  2-4-confirm-the-assumed-statuses-hostnames-and-tech-values: done
+  2-5-author-contracts-registry-json: done
+  2-6-the-editorial-voice-pass: done
+  2-7-retire-content-projects-ts-the-hub-imports-the-published-reg: done
+  # 2-8 closed 2026-09-06. Merged by PR #73 at 2431886, all six CI jobs green,
+  # rendered-output included, which is the first run of the new sweep on a real
+  # runner. Two departures from the literal acceptance criteria stand, both by
+  # Operator ruling of 2026-09-06 and both argued in ops/hit-target-floor.md:
+  # the floor is asserted as 44x44 or covered by a dated ledger row (KV-4), and
+  # A-5 is scoped to interactive elements because /work overflows (KV-5). Neither
+  # is reflected in epics.md yet; that is filed in deferred-work.md and is a
+  # sprint change proposal the retro should pick up.
+  2-8-assert-the-44-44-hit-target-floor: done
+  2-9-the-suite-directory: done
+  2-10-assert-the-status-mark-s-three-structural-axes: done
+  2-11-the-premise-block-and-the-framework-band: done
+  2-12-the-narrative-resolves-into-the-suite-directory: done
+  2-13-the-non-3d-front-door-and-the-skip-control: done
+  2-14-projects-redirects-permanently-to-suite: done
+  2-15-nav-reshape-to-two-destinations: done
+  2-16-cv-built-around-the-existing-worktimeline: done
+  2-17-secondary-surface-states: done
   # 2-18 DELETED 2026-08-15 (restyle scope change). Absorbed by 2-31.
   # 2-19 REPLACED 2026-08-15 by 2-34, a blocking CI gate.
   # 2-21 DELETED 2026-08-15. A rewritten stylesheet has no call sites to rename.
   # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
-  2-20-migration-step-5-swap-the-type: backlog
+  2-20-migration-step-5-swap-the-type: done
   2-22-migration-step-7-delete-the-aliases: backlog
-  2-23-scheduled-registry-verification-external-to-the-box: backlog
-  2-24-hub-visitor-instrumentation: backlog
+  # 2-23 closed 2026-09-12. Job live at d91fe09, runs 34721281941 (exit 2, mail proven) and
+  # 34722748245 (35 of 35 on a GitHub-hosted runner), secret set, first SM-4 reading 80%.
+  # Heartbeat refused by the UptimeRobot free plan (DW-85 open); PAT rotates before 2026-12-11.
+  2-23-scheduled-registry-verification-external-to-the-box: done
+  # 2-24 built 2026-09-12. Three Umami events on dev; the real-session check on cuatro.dev, the
+  # schema read on the box and the first reading wait on the epic's merge to main
+  # (ops/visitor-instrumentation.md, Pending Operator actions 1 to 5).
+  2-24-hub-visitor-instrumentation: review
   2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: backlog
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
   # Hub components rebuilt token-native (FR-37), added 2026-08-15.
@@ -237,3 +260,119 @@ development_status:
   8-5-cuatro-tracker-visual-restyle: backlog
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
+action_items:
+  - id: 'epic-1-retro-item-1-settle-the-shape-of-the-contracts-tailwi'
+    epic: 1
+    action: 'Settle the shape of the contracts/tailwind.css spacing-key fix (rename
+      to --spacing-s-*, restate the container scale, or drop the named keys) and ship
+      it under AD-16. DW-15.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-2-add-the-dw-19-gate-a-node-test-under-ops'
+    epic: 1
+    action: 'Add the DW-19 gate: a Node test under ops/__tests__/ compiling the published
+      adapter and pinning what max-w-sm through max-w-2xl resolve to. Polarity follows
+      the item above.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-3-decide-what-happens-to-the-five-stories'
+    epic: 1
+    action:
+      'Decide what happens to the five stories carrying an unrecorded followup_review_recommended:
+      true (1-1, 1-8, 1-10, 1-16, 1-19): run the reviews or file DW entries.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-4-respell-fr-17-as-1-2-at-epics-md-753-sto'
+    epic: 1
+    action: 'Respell FR-17 as 1 / 2 at epics.md:753. Story 2.34 in Epic 2 is what
+      enforces it.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-5-correct-epics-md-967-from-twenty-stories'
+    epic: 1
+    action: 'Correct epics.md:967 from Twenty stories to twenty-one.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-6-audit-every-deploy-secret-against-the-cu'
+    epic: 1
+    action: 'Audit every deploy secret against the current box, not just SERVER_HOST.
+      Story 1-21 updated one of three and the pipeline was dead twelve days.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-7-land-dw-20-a-failure-conditioned-step-in'
+    epic: 1
+    action: 'Land DW-20: a failure-conditioned step in deploy.yml that reaches the
+      Operator on the channel ops/monitoring.md establishes.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-8-run-bmad-loop-sweep-migrate-on-deferred'
+    epic: 1
+    action: 'Run bmad-loop-sweep --migrate on deferred-work.md so all 74 entries carry
+      a status field, and mark the entries already resolved in fact.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-9-advance-the-frontmatter-of-spec-1-7-spec'
+    epic: 1
+    action: 'Advance the frontmatter of spec-1-7, spec-1-8 and spec-1-10 from awaiting-operator
+      to done, matching the board.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-10-extract-the-shared-probe-scaffold-into-o'
+    epic: 1
+    action:
+      "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
+      and daisyui-route-probe.mjs, keeping the daisyUI copy's comments."
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-11-close-stories-1-16-and-1-19-by-completin'
+    epic: 1
+    action: 'Close stories 1-16 and 1-19 by completing their remaining operator actions
+      in .bmad-loop/operator/*.json.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-12-process-act-on-the-oversized-spec-warnin'
+    epic: 1
+    action: 'Process: act on the oversized spec warning by splitting the story, instead
+      of carrying it. It fired on 15 of 21 stories in epic 1.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-13-process-put-the-story-key-in-every-commi'
+    epic: 1
+    action: "Process: put the story key in every commit subject including hand-driven
+      work. All eleven feat: commits in epic 1's first half carry none."
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"
+  - id: 'epic-1-retro-item-14-process-when-a-story-moves-a-host-treat'
+    epic: 1
+    action: 'Process: when a story moves a host, treat the credentials that describe
+      it as a set rather than a single field.'
+    owner: 'Cuatro'
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-1-retro-2026-08-29.md"

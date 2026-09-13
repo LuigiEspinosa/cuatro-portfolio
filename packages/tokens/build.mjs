@@ -1,8 +1,13 @@
 // Generates `contracts/tokens.css`, the published token contract.
 //
 // AD-1: this generator lives in `packages/` and is never published. Nothing it
-// writes into `contracts/` is executable, and nothing under `contracts/` is
-// hand-edited: this file is the only thing that writes it.
+// writes into `contracts/` is executable, and it is the only thing that writes
+// the three stylesheets there. It is no longer the only thing that writes the
+// folder: Story 2-3 added `contracts/registry.json` and
+// `contracts/registry.schema.json`, which are hand-authored (AD-4) and which
+// this generator neither writes nor reads. It names the files it writes and
+// never cleans the directory, so both survive a rebuild and the
+// `tokens-contract` drift job stays green.
 //
 // The property set, every value, the section order and the reduced-motion block
 // come from `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md`

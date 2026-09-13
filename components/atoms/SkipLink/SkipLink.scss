@@ -1,0 +1,78 @@
+// The accessibility skip-link, A-6 (Story 2-13).
+//
+// Token-native, on the same footing as `Premise.scss` and `SuiteDirectory.scss`: a new component
+// with no old alias name to keep, so it names contract roles directly and `app/app.scss` is not in
+// its path. `app/__tests__/anchor-contract.test.ts` carries the list of files allowed to do that.
+//
+// **It declares no custom property of its own**, which is what keeps every one of the Hub's sixteen
+// in one file and the collision argument checkable in one place. Asserted, not remembered.
+//
+// **Neither this control nor the skip control has a visual row in any design document.**
+// `review-rubric.md:40` names the gap for the skip control; this one is not mentioned as a
+// component at all, which is a wider gap and is filed in `deferred-work.md` as DW-44. Both are
+// therefore built from the rules that do exist: mono uppercase signage on a hairline, hover
+// recolouring an existing underline rather than adding one, `:focus-visible` painted instantly on
+// `--token-focus`, and `--tap` as the size floor.
+
+.skip-link {
+  position: fixed;
+
+  // **Off-screen on the block axis, by its own height, and never clipped to 1px.** The conventional
+  // `clip-path` skip-link is invisible to a person and fully visible to
+  // `tests/e2e/hit-target-floor.pw.ts`, whose visibility rule at `:509-517` removes only
+  // `aria-hidden`, `hidden`, boxless, zero-area and `visibility: hidden` candidates: a clipped link
+  // is measured at 1x1 and fails AD-19. The same file also fails an element whose left or right
+  // edge is outside the viewport, which is A-5, so this is moved above the viewport rather than
+  // beside it. What is left is a real box the floor measures and passes, which is the outcome the
+  // floor exists to produce.
+  //
+  // The hide is `translateY(-100%)` rather than a fixed negative offset, so it is exactly as tall
+  // as the box it is hiding. A fixed offset is a bet on the label's height: text zoom, a fallback
+  // face while the mono font loads, or a longer string in a later story leaves the bottom edge of
+  // the box showing at the top of every page, permanently, on a control nobody has focused.
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  transform: translateY(-100%);
+
+  // Above everything, including the sticky header the other four surfaces carry. A skip-link that
+  // reveals itself behind the chrome is a skip-link nobody can see.
+  z-index: var(--z-tooltip);
+
+  // `min-block-size` with `inline-flex`, never `padding-block` on a plain inline element: vertical
+  // padding there paints outward without growing the hit area (`EXPERIENCE.md:727-730`).
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+  padding-inline: var(--s-md);
+
+  background-color: var(--token-bg-raised);
+  color: var(--token-text);
+  border-block-end: var(--stroke-hair) solid var(--token-border-interactive);
+
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+// One signal, and it is a recolour of an underline that is already drawn.
+.skip-link:hover {
+  border-block-end-color: var(--token-accent-hover);
+}
+
+// **The reveal is on `:focus`, not on `:focus-visible`.** Focus moved by script, which is how a
+// visitor arrives here after a route change, does not always match `:focus-visible` in Chromium,
+// and a focused control parked above the viewport is worse than no control at all. The ring stays
+// on `:focus-visible`, which is `EXPERIENCE.md:716`.
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.skip-link:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-hair);
+}

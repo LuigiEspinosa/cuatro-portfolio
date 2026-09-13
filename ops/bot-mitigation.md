@@ -52,6 +52,20 @@ plan's five custom rules are used and one is deliberately held in reserve.
 monitoring gate. A filter that can silently challenge the probes would close the gate and blind
 it in the same change.
 
+**A second automated reader passes these rules from 2026-09-12, and by name rather than by a
+skip.** Story 2.23's scheduled Registry verification (`ops/registry-verification.md`) fetches every
+`live` URL from a GitHub-hosted runner with the user agent
+`cuatro-registry-verification/1 (+https://cuatro.dev/contracts/registry.json)`. It is not on rule
+1's list, it is not empty for rule 3, and rule 2 does not skip it, so it is challenged by nothing
+today: the four `live` hostnames behind these rules, `cuatro.dev`, `tracker.cuatro.dev`,
+`cs-tracker.cuatro.dev` and `library.cuatro.dev`, answered 200, 307, 302 and 302. The other two
+`live` URLs, `inclusivcup.vercel.app` and `luigiespinosa.github.io`, are not Cloudflare hostnames
+and these rules never see them. **Observed 2026-09-12** from the authoring host with that agent. Recorded so that an edit to any of the four rules is checked against this
+agent before it lands: a rule that challenges it turns every `live` check red on the next scheduled
+run, which is the same shape of self-inflicted blindness rule 2 exists to prevent. The agent is
+deliberately not added to rule 2's skip, for the reason under Rule order is load-bearing: a skip
+keyed on client-supplied text is a bypass, and this reader needs no bypass.
+
 ### Rule order is load-bearing, and the first ordering was wrong
 
 **Found and corrected during this story's own review, 2026-08-17.** The skip rule was
@@ -288,13 +302,81 @@ either as the gate being open, rather than testing for the positive form.
 **Treat `partially-satisfied` as not satisfied** for any gating decision. It exists to say
 which part is open, not to authorise proceeding.
 
+## The challenge does not clear for an automated browser
+
+**Observed 2026-08-27**, Pending Operator action 3. Story 1-10 installed Playwright, which is what
+made this testable at all: the action was written when no agent here could drive a browser.
+
+**Method.** Headed Chromium through Playwright, not headless, navigating to
+`https://analytics.cuatro.dev/` and waiting fifteen seconds for the interstitial to resolve. Headed
+deliberately: a managed challenge is entitled to treat a headless signature as a bot, so a headless
+result would prove nothing either way.
+
+**Result: the challenge never cleared.** The hostname answered `307`, then `403` with
+`cf-mitigated: challenge`. The challenge platform ran a full orchestration cycle, then the document
+answered `403 cf-mitigated: challenge` a second time and ran a second cycle. The page left in front
+of the browser was titled `Just a moment...` reading *"Verifying you are human. This may take a few
+seconds."* It never became Umami.
+
+**What this does and does not prove.**
+
+- **It proves the interstitial is not trivially passed**, and that two full challenge cycles can
+  complete without admitting the client. Whatever is being scored, this client failed it twice.
+- **It does not prove a human cannot get in.** Playwright-driven Chromium carries automation
+  signatures, `navigator.webdriver` among them, that an ordinary browser does not. A managed
+  challenge refusing an automation-controlled browser is the feature working, not failing.
+
+**Answered 2026-08-27 by the Operator: the site loads normally in an ordinary browser.** So the
+two readings resolve in the reassuring direction. The managed challenge admits a human and refuses
+an automation-controlled browser, which is the rule working as designed rather than a
+misconfiguration. **Rule 4 does not need relaxing**, and this action is closed.
+
+**The useful residue is a testing constraint, not a defect.** No agent in this repository can reach
+`analytics.cuatro.dev` through a browser, now or later, because the thing that stops it is the
+automation signature itself and not a setting anyone intends to change. Any future acceptance
+criterion that needs a rendered result from that hostname has to be written as an Operator action.
+
+## Umami is still collecting, verified against the database
+
+**Observed 2026-08-27.** Story 1-7 filed a deferred entry noting that nobody had confirmed Umami
+kept **receiving** events after the managed challenge went live on 2026-08-17. Collection and
+dashboard access are different paths, and rule 4 exempts `/api/` and `/script.js` precisely so
+collection is unaffected, but that was a design claim rather than an observation.
+
+**It is now an observation, and it did not need the dashboard.** Counting rows in `website_event`
+directly, from `cuatro-portfolio-anchor-db-1`:
+
+| Reading | Value |
+|---|---|
+| Total events | 37 |
+| First event | `2026-08-17 12:08:05+00` |
+| Latest event | `2026-08-27 19:13:42+00` |
+
+Per day: 3, 5, 4, 0, 6, 4, 2, 2, 4, 2, 5 across 2026-08-17 to 2026-08-27. **Events on nine of the
+eleven days, including today**, so the exemption works and the filter has not silently cut
+collection off. The two zero days (2026-08-20 and one other) are consistent with a personal site
+that some days nobody visits, not with a break: collection resumed by itself either side of them.
+
+**Why this was worth checking rather than assuming.** All Umami history before 2026-08-17 was
+discarded, `analytics.cuatro.dev` is deliberately unmonitored, and SM-1 through SM-3 depend on this
+instance. A collection failure would have been silent and would have had no baseline against which
+the gap looked anomalous. The volume is low enough that it is worth saying plainly: 37 events over
+eleven days is a real signal but a thin one, and any metric built on it should say so.
+
+**The query is the cheap repeat**, and needs no Umami credentials:
+
+```
+docker exec cuatro-portfolio-anchor-db-1 psql -U umami -d umami -t \
+  -c 'select date(created_at) d, count(*) from website_event group by d order by d;'
+```
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
 | 1 | Apply the `DOCKER-USER` rules and the `cf-origin-firewall.service` unit | The action that closed the bypass and made AD-17b real | **2026-08-17T18:14Z** |
 | 2 | Turn off Scrape Shield email obfuscation | Verified afterwards: the `cdn-cgi` script is gone from the Anchor's HTML and the Umami script and website id are intact | **2026-08-17T18:17Z** |
-| 3 | Confirm `analytics.cuatro.dev` loads in a real browser | The managed challenge cannot be solved by a command-line client, and Playwright is not installed until Story 1-10, so no agent here can assert a rendered result. **Open the dashboard once and confirm the interstitial passes.** If it does not, rule 4 is the one to relax | _not done_ |
+| 3 | Confirm `analytics.cuatro.dev` loads in a real browser | The managed challenge cannot be solved by a command-line client, and Playwright is not installed until Story 1-10, so no agent here can assert a rendered result. **Open the dashboard once and confirm the interstitial passes.** If it does not, rule 4 is the one to relax | **2026-08-27.** The Operator confirmed the site loads normally in an ordinary browser. A headed Chromium under Playwright did **not** pass, so the challenge admits humans and refuses automation, which is the rule working. Rule 4 needs no relaxing. See "The challenge does not clear for an automated browser" |
 | 4 | Grant Zone > Bot Management > Edit and set the native AI categories | Allow Search, block Agent and Training. Stronger than rule 2's user-agent list because it does not rely on self-declaration. **Worth doing before 2026-09-15**, when the legacy toggle is retired | _not done_ |
 | 5 | Read the Cloudflare audit log, then revoke `tracker-mac` and `cuatro-tracker` | The token available to this story is zone-scoped and returned `Unauthorized` on `user/tokens`, so it cannot list or revoke tokens. **Read the log first**, per the epic: a token doing something other than ACME must not be revoked by assumption | _not done_ |
 | 6 | Re-fetch Cloudflare's IP ranges into `cf-origin-firewall.sh` when they change | The script hardcodes the list fetched 2026-08-17 and nothing refreshes it. A new Cloudflare range would be dropped and those hostnames would fail | _standing_ |

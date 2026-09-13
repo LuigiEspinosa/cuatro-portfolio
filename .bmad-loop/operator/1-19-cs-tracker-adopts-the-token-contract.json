@@ -1,0 +1,14 @@
+{
+  "actions": [
+    "Push the cs-tracker adoption commits 3f37cce, 8adb8e2 to origin/main and deploy them to cs-tracker.cuatro.dev by the runbook in that repository at docs/deployment.md, confirming the hostname serves through the deploy (NFR-2).",
+    "After the deploy, read the twelve --token-* roles, the three --f-* families and the ten --t-* sizes off :root on https://cuatro.dev and on https://cs-tracker.cuatro.dev in one browser, and append that deployed-origin table beside the local one in ops/cs-tracker-token-adoption.md, since acceptance criterion 5 asks for both origins and nothing here is deployed.",
+    "Look at both applications side by side on their own screens and confirm the family resemblance the measurement supports, watching in particular the --depth: 0 change, which removes daisyUI shadow and gradient overlay from every button, input and menu, and any surface the fixture never rendered.",
+    "Evaluate seam S-8 during that same pass: if LiveView DOM patching visibly interrupts one of the surviving transitions, apply phx-update=\"ignore\" to the affected container. The surviving transitions are enumerated in ops/cs-tracker-token-adoption.md.",
+    "Decide whether --color-secondary should keep repeating the --token-bg-raised-2 ground, which is pending action 3 of ops/cs-tracker-token-adoption.md, before any surface in cs-tracker uses a secondary fill.",
+    "Add ops/cs-tracker-adoption-probe.mjs and ops/daisyui-route-probe.mjs to AD-22 refresh scope together, and re-run both on any Tailwind or daisyUI bump reaching cs-tracker and on any contract MINOR, since no CI job runs either."
+  ],
+  "parked_at": "2026-08-27",
+  "run_id": "20260827-144105-4860",
+  "spec_file": "_bmad-output/implementation-artifacts/spec-1-19-cs-tracker-adopts-the-token-contract.md",
+  "story_key": "1-19-cs-tracker-adopts-the-token-contract"
+}

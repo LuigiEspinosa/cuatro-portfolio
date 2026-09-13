@@ -1,0 +1,68 @@
+name: Registry verification
+
+# AD-18 says one scheduled job checks, for every Registry entry, that `source`
+# resolves, that `live` resolves and that the vendored token version matches
+# `token_contract`, and that any failure notifies the Operator; AD-16 says the
+# same job is what keeps a Satellite's declaration honest. This file is that
+# job. It is its own workflow rather than a job in `ci.yml`, because two suites
+# pin that file's six-job set and its `on:` block verbatim, and because a
+# schedule is a different trigger from a push.
+#
+# `schedule` fires only from the default branch, which is `main`, which this
+# repository reaches once per epic. `push` on the four paths below is what lets
+# the job run on `dev` before the merge, and what lets a later story edit
+# `contracts/registry.json` and read the answer in the same push. Nothing here
+# edits, commits or opens anything: a failed run is a red run and a mail, and a
+# green run is a job summary (`ops/registry-verification.md`).
+#
+# It installs nothing and uses no pnpm cache, the `contract-purity` shape: the
+# script imports only `node:` builtins and two sibling modules, so the Registry
+# is still verified on a run where an install would have failed. No
+# `continue-on-error`, no `|| true`, no `if:` and no `permissions:` (AD-21):
+# there is one environment and no staging, and the default token is not used.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/registry-verification.yml'
+      - 'ops/registry-verification.mjs'
+      - 'ops/registry-verification.md'
+      - 'contracts/registry.json'
+
+jobs:
+  registry-verification:
+    runs-on: ubuntu-latest
+
+    # Checkout, `setup-node` and at most four requests per entry (eight with
+    # retries) with a 15 s ceiling each. A hung network becomes a failure with a
+    # cause rather than a job that runs until the platform kills it.
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # `package-manager-cache: false` for the same reason `ci.yml` gives on its
+      # two node-only jobs: from v5 `setup-node` caches off the `packageManager`
+      # field in `package.json`, and this job has no pnpm for it to find.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      # AD-18: the job runs external to the VPS, verified by confirming the
+      # execution environment rather than assumed from where it was configured.
+      # A self-hosted runner registered on the box later fails here, before the
+      # script runs, rather than satisfying the rule by accident.
+      - name: Runner is GitHub-hosted
+        run: test "$RUNNER_ENVIRONMENT" = github-hosted
+
+      # The only `env:` in the file, on the only step that reads it. The secret
+      # is a fine-grained PAT with Contents read on the private repositories the
+      # Registry names; absent, the script exits 2 naming it and fetches nothing.
+      - name: Registry verification
+        run: node ops/registry-verification.mjs
+        env:
+          REGISTRY_VERIFICATION_TOKEN: ${{ secrets.REGISTRY_VERIFICATION_TOKEN }}

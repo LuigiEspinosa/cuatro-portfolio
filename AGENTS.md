@@ -1,114 +1,179 @@
 <!-- bmad:context -->
-<!-- Verified 2026-08-15 against 3a71afb. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-08-28 against c490f33. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## cuatro-portfolio
 
-The live portfolio at cuatro.dev, shipping at v2.5.3. Next.js 16 / React 19 / TypeScript,
-Sass (no Tailwind), pnpm, Vitest, deployed by Docker Compose to one Hetzner box. It is
-becoming the Anchor of the Cuatro Ecosystem, a Turborepo of four apps publishing the
-contracts seven Satellites consume, but that structure arrives in Epic 3; today this is
-one app. Planning artifacts live in `_bmad-output/planning-artifacts/`.
+The Anchor of the Cuatro Ecosystem: the portfolio at cuatro.dev, plus the design token
+contract in `contracts/` that is published at `https://cuatro.dev/contracts/` and rendered by
+a second application, `cs-tracker`. Next.js 16 / React 19 / TypeScript, Sass, pnpm, Vitest,
+Playwright, deployed by Docker Compose over SSH to one Hostinger KVM 2 box. Planning
+artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually runs is in
+`ops/`.
 
 ## Policy
 
-- Every CI gate is blocking. Never downgrade a gate to a warning, skip one, or mark a
-  check `continue-on-error` to get a story green. There is one environment and no
-  staging, so CI is the only gate before production (AD-21).
-- cuatro.dev deploys from `main` on every push. Every change leaves a working system
-  (AD-20, NFR-2).
-- Commit messages are a subject line only: no body, no `Co-Authored-By` trailer.
-- Never use an em-dash, an en-dash, a double-dash standing in for a dash, or an emoji in
-  any prose, comment, commit subject, or documentation written here. Use a comma, a
-  colon, parentheses, or two sentences. CLI flags and CSS custom properties are not
-  prose and keep their dashes.
+- Every CI gate is blocking. Never downgrade a gate to a warning, skip one, or mark a check
+  `continue-on-error` to get a story green. There is one environment and no staging, so CI is
+  the only gate before production (AD-21).
+- cuatro.dev deploys from `main` on every push. Every change leaves a working system (AD-20,
+  NFR-2).
 - Never add third-party analytics, a tag manager, or a session recorder. Measurement is
   first-party self-hosted Umami only (NFR-8).
+- Commit messages are a subject line only: no body, no `Co-Authored-By` trailer.
+- Never use an em-dash, an en-dash, a double-dash standing in for a dash, or an emoji in any
+  prose, comment, commit subject, or documentation written here. Use a comma, a colon,
+  parentheses, or two sentences. CLI flags and CSS custom properties keep their dashes.
 
 ## Where things are
 
-- Architecture invariants AD-1 through AD-23:
+- Architecture invariants AD-1 to AD-23:
   `_bmad-output/planning-artifacts/architecture/architecture-cuatro-portfolio-2026-08-15/ARCHITECTURE-SPINE.md`.
   Every story in `epics.md` names its governing AD. Read that AD before starting.
-- Token contract, and the restyle specification the Hub's components are rebuilt against:
+- **`ops/` holds 22 records that are the operational source of truth, not the planning
+  artifacts.** Answer an operational question from there before inferring it from code:
+  `routing-inventory.md` (the real routing table), `estate.md` (every application and its
+  disposition), `known-violations.md` (what is knowingly in breach, and what closes it),
+  `capacity-threshold.md`, `contract-serving.md`, `cs-tracker-token-adoption.md`,
+  `rendered-output-harness.md`, `monitoring.md`, `backup-digital-library.md`,
+  `bot-mitigation.md`, `asset-budget.md` (what the build actually ships, weighed),
+  `registry-schema.md` (the App Registry's shape and its blocking gate),
+  `registry-inputs.md` (the confirmed field values Story 2.5 transcribes into that Registry).
+- Token contract, and the restyle specification Epic 2 rebuilds the Hub against:
   `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md` and
-  `RESTYLE-SPEC.md` in the same folder.
-- **The seven-step SCSS migration no longer holds in full.** The restyle scope change rebuilds
-  the Hub's components token-native instead of migrating the existing stylesheets, so stories
-  `2-18`, `2-19` and `2-21` were deleted. Steps 1 and 2 survive as Epic 1 stories `1-18` and
-  `1-19`, and FR-18 is measured on them. Before acting on any migration-step wording in
-  `DESIGN.md`, check `_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md`
-  § 7.3 for what actually remains.
+  `RESTYLE-SPEC.md` beside it.
+- The seven-step SCSS migration in `DESIGN.md` no longer holds in full: steps 1 and 2 shipped
+  as stories `1-17` and `1-18`, and `2-18`, `2-19` and `2-21` were deleted. Before acting on
+  any migration-step wording, read
+  `_bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md` § 7.3.
 
 ## Running and verifying
 
 - `pnpm` is not on PATH on this host. Prefix every command with `corepack`, as in
-  `corepack pnpm build` or `corepack pnpm typecheck`.
-- `corepack pnpm test` starts Vitest in watch mode and never exits. Always pass `--run`.
-  The full suite is 38 tests in roughly 45 seconds, so run all of it.
-- There is no lint gate and no working lint command: the script is misspelled `linkg`,
-  and `next lint` was removed in Next 16, so `corepack pnpm linkg` fails too. Do not put
-  lint in an acceptance criterion, and do not add an `eslint` invocation to CI, until a
-  story lands a flat `eslint.config.mjs`.
-- CI (`.github/workflows/ci.yml`) runs typecheck and tests only. Lighthouse CI runs
-  separately on `main` and PRs and asserts accessibility at 0.95 or above, so an a11y
-  regression fails the build even though no unit test covers it.
-- Playwright is not installed. `@playwright/test` appears only as a transitive lockfile
-  entry, not in `package.json`. Story 1-10 installs it. Until then no acceptance
-  criterion may claim a rendered-output or browser check.
+  `corepack pnpm build`.
+- `corepack pnpm test` starts Vitest in watch mode and never exits. Always pass `--run`. The
+  full suite is 890 tests across 34 files in roughly 85 to 120 seconds depending on load, so
+  run all of it. Measured 2026-08-29; it was 738 in 32 files at the end of Epic 1, so treat
+  this figure as a rough expectation and not as a number to assert on.
+- There is no lint gate and no working lint command: the script is misspelled `linkg`, and
+  `next lint` was removed in Next 16, so `corepack pnpm linkg` fails too. Do not put lint in
+  an acceptance criterion, and do not add an `eslint` invocation to CI, until a story lands a
+  flat `eslint.config.mjs`.
+- Lighthouse CI runs outside `ci.yml` and asserts accessibility at 0.95, best practices and
+  SEO at 0.9, so a regression no unit test covers still fails the build. Performance is
+  commented out in `.lighthouserc.js`.
+- Run the rendered-output job with `corepack pnpm test:e2e`. Regenerate its baselines with
+  `corepack pnpm test:e2e:update` inside `mcr.microsoft.com/playwright:v1.62.1-noble` only,
+  never on this host: glyph rasterization is not portable and a locally regenerated snapshot
+  fails CI.
+- `corepack pnpm build` runs `packages/contracts-serve/publish.mjs` first, which copies
+  `contracts/` into the generated, never committed `public/contracts/`. Editing
+  `public/contracts/` changes nothing.
 
 ## Conventions that differ from defaults
 
-- `--token-*` (semantic) and Tailwind's `--color-*` are separate namespaces. The same
-  name must **never** appear on both sides of a `var()`. A self-reference survives only
-  by cascade accident and dies when a bundler flattens it (AD-14).
+- `--token-*` (semantic) and Tailwind's `--color-*` are separate namespaces. The same name
+  must never appear on both sides of a `var()`. A self-reference survives only by cascade
+  accident and dies when a bundler flattens it (AD-14).
 - Creating or editing `contracts/`? It is the published surface: no `.ts`, `.js`, `.tsx`,
-  `.jsx`, `.mjs`, or `.cjs` under it, ever, because CI fails on any of them. Generators
-  and schema tooling go in `packages/`, which is never published (AD-1).
-- A consumer's vendored contract folder is named `cuatro-contracts/` exactly. A scheduled
-  job locates tokens by that fixed path across seven repositories (AD-14, AD-16).
-- Registry data is hand-authored `contracts/registry.json`, schema-validated in CI. From
-  Epic 2 onward, editing `content/projects.ts` to change registry data is the wrong file
-  (AD-4, C-6).
-- Name a new component stylesheet for its component in PascalCase, beside the component,
-  as in `WorkTimeline.scss`. The lowercase names (`navbar.scss`, `error-page.scss`) are
-  2023 legacy; do not copy them, and do not rename them in an unrelated story.
+  `.jsx`, `.mjs`, or `.cjs` under it, ever. Generators and schema tooling go in `packages/`,
+  which is never published (AD-1). `contracts/registry.json` and
+  `contracts/registry.schema.json` are the only hand-authored files there (AD-4); everything
+  else is generated, so editing it by hand is a change the next `tokens:build` throws away.
+- A consumer's vendored contract folder is named `cuatro-contracts/` exactly. A scheduled job
+  locates tokens by that fixed path across seven repositories (AD-14, AD-16).
+- Name a new component stylesheet for its component in PascalCase, beside the component, as
+  in `WorkTimeline.scss`. The lowercase names (`navbar.scss`, `error-page.scss`) are 2023
+  legacy; do not copy them, and do not rename them in an unrelated story.
+- `--monument-bold` and `--monument-regular` are family-only aliases onto `var(--f-display)`
+  (`app/app.scss:56-57`). A family alias cannot carry weight, so any new `--monument-bold`
+  call site must set `font-weight: var(--w-black)` by hand beside `font-family`, as the four
+  existing sites do. Omitting it silently drops bold.
 
 ## Known pitfalls
 
-- `.github/workflows/deploy.yml` runs `docker compose --env-file .env.production up
-  --build -d` over SSH, so the serving two-core box compiles. This is a **known** standing
-  violation of AD-8, tracked in story 1-9 and retired in Epic 3. Do not fix it out of
-  sequence, because the replacement needs GHCR images that do not exist yet.
-- Treat `docker/Caddyfile` as incomplete, not authoritative. It routes only `cuatro.dev`
-  and `analytics.cuatro.dev`, yet `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and
-  `library.cuatro.dev` all resolve. Story 1-7 enumerates the real table. Do not infer
-  routing from the file.
-- Font tokens bake weight into the family name (`--monument-bold: 'MonumentExtended-Bold'`
-  at `app/app.scss:29`). Aliasing one to a family-only token silently drops bold. Live
-  `--monument-bold` call sites: `glitch-text.scss:5`, `error-page.scss:24`,
-  `ProjectsHero.scss:19`, `WorkHero.scss:19`.
-- `--confillia-normal` has two live call sites (`HomeLayout.scss:117`,
-  `HomeLayout.scss:148`). Retarget it, do not delete it. `--confillia-bold` and
-  `--font-bold` have zero call sites and are safe to delete.
-- `--accent-glow` is declared at `app/app.scss:11` with **zero call sites**. It arrived with
-  the cybercore rebrand and is dead today. Do not assume it is load-bearing.
-- The cybercore rebrand hardcoded a violet palette. **O-10 is decided: the contract palette
-  wins**, and the value-by-value mapping lives in
-  `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/rebaseline-2026-08-15.md`
-  § O-10. Follow that table; do not invent a mapping.
-- `--accent-dim` has **15 call sites and is doing two different jobs**: ornament in some, a
-  readable boundary in others. It resolves **per call site**, not with one global alias. A
-  blanket alias to `--token-accent-muted` silently drops its boundary uses below the 3:1 floor.
-- **O-12 is closed.** All three surfaces were decided by the restyle UX pass, so do not treat
-  them as held. GlitchText's `rgba(255, 0, 80, …)` / `rgba(0, 255, 255, …)` aberration pair is
-  **dropped, not excepted**. ScanlineOverlay's `rgba(0, 0, 0, …)` resolves to the new
-  **`--token-scrim`** role, which exists precisely so a darkening layer never reaches for pure
-  black. The decorative numeral at `error-page.scss:28` is specified in **both** branches, so
-  the story cannot stall on it. Dispositions are in `RESTYLE-SPEC.md` and `DESIGN.md`; follow
-  them rather than inventing a role.
-- One open defect, with its own story. Do not fix it opportunistically and pad an
-  unrelated diff: `Dev. 2025` should read `Dec.` (`content/work.ts:18`).
-- `Celeste.tsx` hides the header by mutating the DOM in an effect. Known; leave unless the
-  story is about it.
+- `contracts/tailwind.css` names its spacing keys (`--spacing-sm` through `--spacing-2xl`),
+  which shadows Tailwind's container scale in every consumer: `max-w-md` compiles to
+  `max-width: var(--s-md)`, 16px, not 28rem. Verified against tailwindcss 4.3.3. Use
+  `max-w-measure` or an explicit value, not `max-w-sm` through `max-w-2xl`. Filed as DW-15.
+- `cs-tracker` has no CI at all, and `mix precommit` builds no image, so a change to how it
+  builds is not built the way production builds it until the deploy runs. Its token contract
+  test asserts against the text of `assets/css/app.css` rather than rendered output, so a
+  regression that leaves the source text untouched ships green. Re-run
+  `ops/cs-tracker-adoption-probe.mjs` by hand after touching either side. Filed as DW-14.
+- **Piping a string from PowerShell into a native command or `wsl` appends CRLF.** Anything
+  that treats `\r` as data then breaks in ways that read as a wrong value rather than an
+  encoding fault: an OpenSSH private key becomes unparseable, a bash heredoc gets `\r` on
+  every line, and `gpg --passphrase-fd 0` strips the `\n` but keeps the `\r`, so a correct
+  passphrase fails. All three happened on 2026-08-27. Use `cmd /c "prog < file"` for
+  byte-exact stdin, or strip it on the far side with `tr -d '\r'`.
+- Nothing monitors whether a deploy succeeds. Deploys go over SSH from
+  `.github/workflows/deploy.yml` as the `deploy` user, and that pipeline was broken for
+  twelve days unnoticed, because nothing merges to `main` often enough to expose it. If a
+  change is green in CI but absent from the site, check the Deploy workflow before debugging
+  code. Diagnosis and repair commands are in `ops/contract-serving.md`.
+- `deploy.yml` runs `docker compose up --build -d` over SSH, so the serving two-core box
+  compiles. This is a recorded standing violation of AD-8, not an oversight: it is in
+  `ops/known-violations.md` and closes in Epic 3. Do not fix it out of sequence, because the
+  replacement needs GHCR images that do not exist yet.
+- `docker/Caddyfile` routes only `cuatro.dev`, `www.cuatro.dev` and `analytics.cuatro.dev`,
+  yet `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and `library.cuatro.dev` all resolve.
+  Treat it as incomplete rather than authoritative, and read `ops/routing-inventory.md` for
+  the real table.
+- Adding an application to `deploy.yml` trips the Capacity Gate (AD-9), which refuses any id
+  not in `placements` in `ops/capacity-gate.yml`. The gate is open on a measured threshold
+  (load15 0.60). Read `ops/capacity-threshold.md` before editing `threshold` or `status`.
+- `Body` writes the route onto `<body id>` (`Container.tsx:12-16`), and five rules across three
+  stylesheets key on that id, `#celeste header` among them. A route that needs different chrome
+  takes a rule on that id, never an effect that mutates another component's node: Story 2-1
+  removed the one that did, because a mutation outlives a cleanup that never runs.
+- Three committed listings pin the contents of `contracts/` path by path, so a file added there
+  fails all three at once and none of the failures says "a file was added":
+  `packages/tokens/__tests__/tokens-contract.test.ts`,
+  `packages/fonts/__tests__/fonts-contract.test.ts` and
+  `ops/__tests__/cs-tracker-adoption-probe.test.ts`. The last one also drives the vendored-copy
+  comparison, whose source side is the token contract's nine paths only
+  (`TOKEN_CONTRACT_PATHS`), because a Satellite fetches the Registry over HTTPS and never
+  vendors it (AD-4, AD-14). `cs-tracker`'s own Elixir suite pins the same nine and cannot see
+  this repository, so a tenth token-contract file is a two-repository change.
+- The same shape holds for `.github/workflows/ci.yml`: **two** suites pin its job names as an
+  exact set, so adding or removing a job fails both, and neither failure says "a job was added".
+  They are `ops/__tests__/contract-purity.test.ts` and `ops/__tests__/registry-schema.test.ts`,
+  each of which reads the file for its own gate. Update both, and give the new job its own
+  wiring cases beside the module it runs rather than adding them to one of those two.
+- On the 404, `usePathname()` answers `/_not-found` during the prerender and the requested path
+  on the client, so `<body id>` differs across hydration and settles on whichever side ran last.
+  Assert on markup both sides render identically (`.error-page`), never on that id. A chrome
+  regression on one side only shows up as a timing-dependent browser test, not a clean failure.
 
 <!-- /bmad:context -->
+
+## Dependency automation policy
+
+Stated here because this is where it binds (NFR-10, FR-19, AD-16). Kept outside the managed
+block above so a context refresh does not replace it.
+
+- **No automated dependency merge is enabled in any estate repository without a real test
+  suite**, and a real test suite is one that exists, exercises the application's own code
+  rather than tooling or scaffolding, and runs on a CI service on every push to the default
+  branch. That establishes that the suite runs; it does not gate a merge on its own.
+- **Enabling automation needs a fourth condition, separate from having a suite:** the suite's
+  run is a required status check on the default branch, through branch protection or a
+  ruleset, so a merge nobody is watching cannot land while the run is red. Observed on
+  2026-08-27, that holds nowhere in the estate (this repository's `main` protection names no
+  check), and it cannot hold in the four private repositories on the current GitHub plan. The
+  definitions, the observed state of all eleven repositories and the method are in
+  `ops/contract-adoption.md`.
+- **None is enabled here.** No Dependabot or Renovate configuration anywhere in the
+  repository (fifteen file locations under the root, `.github/` and `.gitlab/`, plus a
+  `renovate` key in `package.json`, all listed in `ops/contract-adoption.mjs`),
+  `allow_auto_merge` off, automated security fixes off, zero bot-authored pull requests.
+- **Enabling one is a recorded decision that lands in one commit with the configuration.**
+  `ops/__tests__/contract-adoption.test.ts` holds the record's Anchor cell and the
+  configuration present in the repository equal in both directions: a cell reading `none`
+  with a configuration present fails naming the path, and a cell naming a configuration that
+  is absent fails the same way. So the record's policy row (date, the required check that
+  makes the merge safe, the reason) and the configuration file are one change, never two.
+  The test holds the configuration files and the `package.json` key; `allow_auto_merge`,
+  security fixes, bot-authored pull requests and a workflow step that merges are observed by
+  the `gh api` sweep the record describes, not by the test. That commit also moves the two
+  literal pins in the same suite that state today's `none` cell and empty present list.

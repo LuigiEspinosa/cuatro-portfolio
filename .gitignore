@@ -208,3 +208,7 @@ capacity-week/
 # location: `contracts/` at the repository root is it, and a committed second
 # copy here is the drift that rule forbids. Generated output, never committed.
 /public/contracts/
+
+# Graphify knowledge graph, rebuilt from the tree by `graphify update .` (see
+# `_bmad/custom/bmad-build.toml`). Derived output, never committed.
+/graphify-out/

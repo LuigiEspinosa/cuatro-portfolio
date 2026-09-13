@@ -787,6 +787,11 @@ describe('the published surface', () => {
       'contracts/fonts/bricolage-grotesque-latin.woff2',
       'contracts/fonts/geist-latin.woff2',
       'contracts/fonts/geist-mono-latin.woff2',
+      // The two hand-authored files no generator writes. Story 2-3 added them:
+      // the published surface is the token contract's nine plus the Registry
+      // pair (AD-4), and this listing is one of the three that pin it.
+      'contracts/registry.json',
+      'contracts/registry.schema.json',
       'contracts/tailwind.css',
       'contracts/tokens.css',
     ]);

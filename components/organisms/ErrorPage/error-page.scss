@@ -58,6 +58,16 @@
     text-decoration: none;
     border-left: 1px solid var(--accent-dim);
     padding: 0.6rem 1rem;
+    // The hit-target floor on both axes (Story 2-17). `min-block-size` with the `inline-flex`
+    // above, never `padding-block` on a plain inline element, which paints outward without
+    // growing the hit area (`EXPERIENCE.md:727-730`); `min-inline-size` carries the other axis,
+    // because `CV` is two characters. Naming `--tap` is what moved this file from
+    // `WEIGHT_CALL_SITES` to `TOKEN_NATIVE_STYLESHEETS` in `app/__tests__/anchor-contract.test.ts`,
+    // on the `navbar.scss` precedent. Everything else in this block is 2023 and Story 2-30's,
+    // which is also why these two lines sit after the padding rather than the block being
+    // reordered: `tests/e2e/anchor-aliases.pw.ts` cites `:24`, `:40` and `:59` by line.
+    min-block-size: var(--tap);
+    min-inline-size: var(--tap);
     transition:
       border-left-color 0.2 ease,
       color 0.2s ease;
@@ -72,5 +82,16 @@
       outline: 1px solid var(--accent);
       outline-offset: 4px;
     }
+  }
+
+  // The two exits on one line (Story 2-17). Two boxes at the floor take `var(--s-lg)` of gap so
+  // they cannot overlap and become one target by touch (`RESTYLE-SPEC.md:206`), the same gap
+  // `navbar.scss:21` puts between the header's rendering of the same two destinations. Wrapping
+  // is allowed so a narrower viewport stacks them rather than pushing one past the edge.
+  &__exits {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--s-lg);
   }
 }

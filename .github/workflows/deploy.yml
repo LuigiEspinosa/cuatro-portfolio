@@ -10,11 +10,16 @@ jobs:
     steps:
       # The checkout and the node setup exist only for the Capacity Gate below.
       # The deploy itself runs over SSH and needs neither.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      # `package-manager-cache: false` because this job installs no dependencies
+      # and has no pnpm. From v5, `setup-node` caches automatically whenever
+      # `package.json` carries a `packageManager` field, and this repository's
+      # does, so the automatic path would look for a pnpm that is not here.
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
+          package-manager-cache: false
 
       # The Capacity Gate (AD-9) runs before the deploy rather than after,
       # because a check that reports on a placement already made is a record and
