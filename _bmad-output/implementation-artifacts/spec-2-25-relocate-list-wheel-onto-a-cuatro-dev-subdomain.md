@@ -2,7 +2,7 @@
 title: 'Story 2.25: Relocate `list-wheel` onto a `cuatro.dev` subdomain'
 type: 'feature'
 created: '2026-09-13'
-status: 'in-review'
+status: 'done'
 baseline_commit: 'e2d4fa16844682483740e8a3e41d93423996b0e4'
 review_loop_iteration: 0
 context:
@@ -668,3 +668,91 @@ matched, so neither branch ran), loopback probe before DNS, browser UA, `GPTBot`
 `UptimeRobot`, verification agent, unknown path (local Docker proof and loopback), old URL after
 the flip, old URL sub-path. The audit is stated rather than satisfied by a test for those rows;
 the record that carries them is `ops/routing-inventory.md` § What Story 2-25 changed.
+
+## Suggested Review Order
+
+**The placement, the estate's first new id through the gate**
+
+- Start here: the second caller of the gate, reading the published gate at `main` and naming a new id.
+  [`deploy.yml:21`](../../../../Development/list-wheel-workspace/list-wheel/.github/workflows/deploy.yml#L21)
+
+- The gate step, blocking, before the SSH step: the shape the Anchor's own suite pins for its workflow.
+  [`deploy.yml:43`](../../../../Development/list-wheel-workspace/list-wheel/.github/workflows/deploy.yml#L43)
+
+- The build on the box, a knowing second AD-8 breach, chosen over GHCR on 2026-09-13.
+  [`deploy.yml:71`](../../../../Development/list-wheel-workspace/list-wheel/.github/workflows/deploy.yml#L71)
+
+- The placement logged after the fact, the order AC 1 states.
+  [`capacity-gate.yml:81`](../../ops/capacity-gate.yml#L81)
+
+- Two readers now, named in the file that is a contract rather than prose.
+  [`capacity-gate.yml:5`](../../ops/capacity-gate.yml#L5)
+
+**The image and the container**
+
+- Node builds, Caddy serves, nothing else in the served image; egress for font inlining stated.
+  [`Dockerfile:13`](../../../../Development/list-wheel-workspace/list-wheel/Dockerfile#L13)
+
+- The container's own `:80` server, not the public block; `try_files` keeps Pages' custom-404 behaviour.
+  [`Caddyfile:24`](../../../../Development/list-wheel-workspace/list-wheel/docker/Caddyfile#L24)
+
+- After review: the shell revalidated on every visit, inside `route` so the fallback gets it too.
+  [`Caddyfile:29`](../../../../Development/list-wheel-workspace/list-wheel/docker/Caddyfile#L29)
+
+- Service and alias are the Registry id; no port, no TLS, a real healthcheck, the external network.
+  [`docker-compose.yml:23`](../../../../Development/list-wheel-workspace/list-wheel/docker-compose.yml#L23)
+
+**The hostname**
+
+- The Host-matched router, verbatim in the estate's shape, as appended to the shared Caddyfile.
+  [`routing-inventory.md:628`](../../ops/routing-inventory.md#L628)
+
+- What was done, where and when, in the order that kept every step serving.
+  [`routing-inventory.md:1693`](../../ops/routing-inventory.md#L1693)
+
+- The one status the move changed, and the rollback.
+  [`routing-inventory.md:1714`](../../ops/routing-inventory.md#L1714)
+
+- WAF rules widened before the record existed, then proved by request.
+  [`bot-mitigation.md:147`](../../ops/bot-mitigation.md#L147)
+
+- The monitor added in the same change, per the record's own rule.
+  [`monitoring.md:215`](../../ops/monitoring.md#L215)
+
+**The Registry**
+
+- The two values: `live` on the suite's domain, `tech` honest about what serves it.
+  [`registry.json:68`](../../contracts/registry.json#L68)
+
+- The 2.23 job confirming the new `live`, on the push, before any merge.
+  [`registry-verification.md:214`](../../ops/registry-verification.md#L214)
+
+- The hostname section resolved, one story later than the epic's wording.
+  [`registry-inputs.md:258`](../../ops/registry-inputs.md#L258)
+
+**What the story admits**
+
+- KV-1 widened: the second offending line, the ruling and its closer.
+  [`known-violations.md:100`](../../ops/known-violations.md#L100)
+
+- The measured cost of the build and the container, against the charge the threshold reserved.
+  [`capacity-threshold.md:117`](../../ops/capacity-threshold.md#L117)
+
+- DW-90 to DW-94: no CI in `list-wheel`, the `placements` window, the edge beacon, duplicated deploy policy, unrestricted keys.
+  [`deferred-work.md:4408`](deferred-work.md#L4408)
+
+**The suite**
+
+- Every placement's note held to the host its Registry entry is live on, anchored at the end.
+  [`capacity-gate.test.ts:177`](../../ops/__tests__/capacity-gate.test.ts#L177)
+
+- Five ids on the box.
+  [`capacity-gate.test.ts:159`](../../ops/__tests__/capacity-gate.test.ts#L159)
+
+**Peripherals**
+
+- The estate record's row and its dated amendment.
+  [`estate.md:146`](../../ops/estate.md#L146)
+
+- The redirect that keeps the old link alive, on the generated branch.
+  [`list-wheel gh-pages 52698eb`](https://github.com/LuigiEspinosa/list-wheel/commit/52698eb)

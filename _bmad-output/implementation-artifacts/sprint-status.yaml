@@ -177,7 +177,13 @@ development_status:
   # umami.disabled in their own browser, the first reading after October
   # (ops/visitor-instrumentation.md actions 3 to 5). Move to done after reading the spec.
   2-24-hub-visitor-instrumentation: done
-  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: in-progress
+  # 2-25 built and placed 2026-09-13: wheel.cuatro.dev serves list-wheel from the box behind the
+  # gate (list-wheel Deploy run 34771823648), the WAF, DNS, Caddy block, monitor 803983277 and
+  # the gh-pages redirect are live, the Registry live and tech moved, run 34773443302 confirmed.
+  # Waits on: list-wheel PR #3 (the Cache-Control review patch) merging and its header verified,
+  # the dev to main merge that publishes the Registry (closes DW-91), one spin in a browser by
+  # the Operator, and the DW-92 ruling on the Cloudflare beacon. Move to done after those.
+  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: review
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
   # Hub components rebuilt token-native (FR-37), added 2026-08-15.
   # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
