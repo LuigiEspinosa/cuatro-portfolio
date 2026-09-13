@@ -331,79 +331,79 @@ the widened `expression`, then read the ruleset back.
 
 **Execution** (in this order; every task in the `list-wheel` repository is prefixed):
 
-- [ ] `list-wheel:docker/Caddyfile`: new, the container's own server, `:80 { root * /srv;
+- [x] `list-wheel:docker/Caddyfile`: new, the container's own server, `:80 { root * /srv;
       file_server; try_files {path} /index.html }` with a header comment saying this is not the
       `wheel.cuatro.dev` site block, which is in the shared Caddyfile on the box and reproduced in a
       trailing comment here for the record, so the image is self-describing and the record has a
       source.
-- [ ] `list-wheel:Dockerfile`: new, `FROM node:22-slim AS build`, `WORKDIR /app`, `COPY
+- [x] `list-wheel:Dockerfile`: new, `FROM node:22-slim AS build`, `WORKDIR /app`, `COPY
       package.json package-lock.json ./`, `RUN npm ci`, `COPY . .`, `RUN npm run build`; `FROM
       caddy:2`, `COPY docker/Caddyfile /etc/caddy/Caddyfile`, `COPY --from=build
       /app/dist/list-wheel/browser /srv`. Comments in the Anchor's register: why the build needs
       egress (font inlining), why `caddy:2` (the ingress image, floating major like the estate).
-- [ ] `list-wheel:.dockerignore`: new, from `.gitignore:4,32` plus `.git`, `.vscode`,
+- [x] `list-wheel:.dockerignore`: new, from `.gitignore:4,32` plus `.git`, `.vscode`,
       `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `*.md` except `README.md`.
-- [ ] `list-wheel:docker-compose.yml`: new, `name: list-wheel`; service `list-wheel` with
+- [x] `list-wheel:docker-compose.yml`: new, `name: list-wheel`; service `list-wheel` with
       `build: { context: ., dockerfile: Dockerfile }`, `networks: cs-tracker_default: aliases:
       [list-wheel]`, healthcheck `['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1/ || exit 1']`
       at 15 s / 5 s / 5 / 30 s (busybox `wget` is in `caddy:2`; the server binds every interface,
       so loopback is right here and the Anchor's `HOSTNAME` note explains why it is not there),
       `restart: unless-stopped`; `networks: cs-tracker_default: external: true`. No `ports`, no
       `container_name`.
-- [ ] `list-wheel:.github/workflows/deploy.yml`: new, the Anchor's `deploy.yml` with: checkout of
+- [x] `list-wheel:.github/workflows/deploy.yml`: new, the Anchor's `deploy.yml` with: checkout of
       `LuigiEspinosa/cuatro-portfolio` at `main` into `cuatro-portfolio` (sparse `ops`), the gate
       step `node cuatro-portfolio/ops/capacity-gate.mjs list-wheel` before `appleboy/ssh-action@v1`
       with no `continue-on-error` and no `if:`, and the script `cd ~/list-wheel`, `git fetch origin
       main`, `git reset --hard origin/main`, `docker compose up --build -d --remove-orphans`.
-- [ ] `list-wheel:package.json`, `package-lock.json`: `npm uninstall angular-cli-ghpages`; delete
+- [x] `list-wheel:package.json`, `package-lock.json`: `npm uninstall angular-cli-ghpages`; delete
       the `deploy` script, since the workflow is the deploy now, and a script that republishes to Pages
       would undo the redirect.
-- [ ] `list-wheel:README.md:7,81`, `CHANGELOG.md`: the live URL, the deployment row (Docker, the
+- [x] `list-wheel:README.md:7,81`, `CHANGELOG.md`: the live URL, the deployment row (Docker, the
       shared Caddy on cuatro.dev's box, the workflow), and a `## [2026-09-13]` entry (Changed: hosting;
       Removed: the script and the dependency; the old URL redirects).
-- [ ] `list-wheel`: branch `2-25-relocate-onto-wheel-cuatro-dev`, one commit per coherent change,
+- [x] `list-wheel`: branch `2-25-relocate-onto-wheel-cuatro-dev`, one commit per coherent change,
       PR to `main` titled `2-25: relocate onto wheel.cuatro.dev`. If the local Docker daemon is up,
       `docker build -t list-wheel:local .` and `docker run --rm -p 8080:80 list-wheel:local` prove the
       image before the PR; otherwise the first build on the box is the proof and the spec says so.
-- [ ] `list-wheel` secrets: `gh secret set SERVER_HOST` (`177.7.52.248`) and `SERVER_USER`
+- [x] `list-wheel` secrets: `gh secret set SERVER_HOST` (`177.7.52.248`) and `SERVER_USER`
       (`deploy`), both public facts in `ops/routing-inventory.md`; `SSH_PRIVATE_KEY` from the file
       the Operator names in `.env` as `DEPLOY_SSH_PRIVATE_KEY_FILE`, via `cmd /c "gh secret set
       SSH_PRIVATE_KEY --repo LuigiEspinosa/list-wheel < <file>"`. Confirm before each.
-- [ ] the box: `git clone https://github.com/LuigiEspinosa/list-wheel.git /home/deploy/list-wheel`
+- [x] the box: `git clone https://github.com/LuigiEspinosa/list-wheel.git /home/deploy/list-wheel`
       (confirm first). Nothing else until the merge.
-- [ ] `list-wheel` PR merge: confirm, merge, watch the Deploy run: gate stdout quoted, SSH step
+- [x] `list-wheel` PR merge: confirm, merge, watch the Deploy run: gate stdout quoted, SSH step
       green, `docker ps` shows `list-wheel-list-wheel-1` `(healthy)`, `uptime` and `docker stats
       --no-stream list-wheel-list-wheel-1` recorded for `ops/capacity-threshold.md`.
-- [ ] Cloudflare R1 and R3: confirm, `PATCH` each rule's expression to include
+- [x] Cloudflare R1 and R3: confirm, `PATCH` each rule's expression to include
       `"wheel.cuatro.dev"`, read the ruleset back and quote both expressions.
-- [ ] the box: `cp Caddyfile Caddyfile.bak-2-25` in `/home/deploy/cs-tracker`; probe the six
+- [x] the box: `cp Caddyfile Caddyfile.bak-2-25` in `/home/deploy/cs-tracker`; probe the six
       hostnames over loopback with `--resolve` and record the codes; append the block; `caddy
       validate`; `caddy reload`; re-probe the six and diff; probe `wheel.cuatro.dev` over loopback:
       200, title, headers. Confirm before the append.
-- [ ] Cloudflare DNS: confirm, create `A wheel 177.7.52.248 proxied`; from this host probe
+- [x] Cloudflare DNS: confirm, create `A wheel 177.7.52.248 proxied`; from this host probe
       `https://wheel.cuatro.dev/` with a browser UA, `GPTBot`, an empty UA, `UptimeRobot` and the
       verification agent string; record the codes.
-- [ ] UptimeRobot: confirm, create the HTTP monitor for `https://wheel.cuatro.dev` with the
+- [x] UptimeRobot: confirm, create the HTTP monitor for `https://wheel.cuatro.dev` with the
       record's settings; record its id and first status.
-- [ ] `contracts/registry.json:68,72`: `tech` to `["Angular", "TypeScript", "Docker", "Caddy"]`,
+- [x] `contracts/registry.json:68,72`: `tech` to `["Angular", "TypeScript", "Docker", "Caddy"]`,
       `live` to `https://wheel.cuatro.dev`.
-- [ ] `ops/capacity-gate.yml`: append `  - id: list-wheel` / `    observed: 2026-09-13` /
+- [x] `ops/capacity-gate.yml`: append `  - id: list-wheel` / `    observed: 2026-09-13` /
       `    note: serving wheel.cuatro.dev`; header comment: two readers now, naming the second.
-- [ ] `ops/__tests__/capacity-gate.test.ts`: five ids and the title; probe id `cs-tournament` at
+- [x] `ops/__tests__/capacity-gate.test.ts`: five ids and the title; probe id `cs-tournament` at
       `:126, 129, 233, 261`; one new case under `parseGate(committed)`: the `list-wheel` entry's
       `note` names the host of the Registry entry's `live` (read `contracts/registry.json`), seen
       failing with the note planted as `serving list-wheel.cuatro.dev`.
-- [ ] `ops/routing-inventory.md`, `ops/estate.md`, `ops/registry-inputs.md`, `ops/monitoring.md`,
+- [x] `ops/routing-inventory.md`, `ops/estate.md`, `ops/registry-inputs.md`, `ops/monitoring.md`,
       `ops/bot-mitigation.md`, `ops/known-violations.md`, `ops/capacity-threshold.md`,
       `ops/registry-verification.md`, `ops/contract-adoption.md`: every line the Code Map names,
       dated, with the observed values from the tasks above; the `## What Story 2-25 changed` table
       with UTC times.
-- [ ] `deferred-work.md`: the five entries the Code Map names, DW-90 and DW-91.
-- [ ] `corepack pnpm test --run`, `corepack pnpm typecheck`, `node ops/capacity-gate.mjs
+- [x] `deferred-work.md`: the five entries the Code Map names, DW-90 and DW-91.
+- [x] `corepack pnpm test --run`, `corepack pnpm typecheck`, `node ops/capacity-gate.mjs
       list-wheel` (now "is in placements"), then commit on a branch off `dev`, push, and watch the
       `registry-verification` push run: green, the `list-wheel live resolves` line quoted; record
       the run URL in `ops/registry-inputs.md` beside the entry in a second commit. PR to `dev`.
-- [ ] `list-wheel:gh-pages`: confirm, then replace the tree with `index.html`, an identical
+- [x] `list-wheel:gh-pages`: confirm, then replace the tree with `index.html`, an identical
       `404.html` (the redirect page of the matrix) and `.nojekyll`; push; probe the old URL for 200
       and the `meta refresh`; open it once in a browser and land on `wheel.cuatro.dev`.
 - [ ] This spec's Verification and the sprint board (`review`), and the proposal to merge `dev` into
@@ -574,3 +574,57 @@ state comes from here; times are UTC.
   803756083, 803756371, 803983277); 803750027 paused as before.
 - **Not yet done at this point:** the `cuatro-portfolio` changes, the Registry push and its
   verification run, the `gh-pages` flip, the browser visit.
+
+**Observed 2026-09-13, after the placement, by the orchestrating session.**
+
+- **This repository.** Branch `2-25-relocate-list-wheel` off `dev` `e2d4fa1`: `f0eeda1` (Registry,
+  gate, suite), `da9c743` (nine records), `8a68f59` (ledger, spec, board), `6b61196` (the push run
+  recorded). Build session's suite run over the first three: `corepack pnpm test --run` `Test Files
+  53 passed (53)`, `Tests 1298 passed (1298)`, 100.37 s; `corepack pnpm typecheck` exit 0; `node
+  ops/capacity-gate.mjs list-wheel` `capacity gate: list-wheel is in placements, the deploy may
+  proceed`; `node ops/capacity-gate.mjs cs-tournament` the open-gate line naming `load15 0.60`.
+  Planted control: the placement note as `serving list-wheel.cuatro.dev` failed exactly `notes the
+  host the Registry says list-wheel is live on` (`expected 'serving wheel.cuatro.dev'`), then 81
+  passed again with the note restored. After `6b61196`: `ops/__tests__/registry-verification.test.ts`
+  and `contract-adoption.test.ts` `2 passed (2)`, `85 passed (85)`. CI run 34773443362 on `8a68f59`:
+  six jobs green (`contract-purity`, `tokens-contract`, `rendered-output`, `registry-schema`,
+  `fonts-contract`, `test`).
+- **The Registry push run (AC 5).** Pushing the branch at 18:03Z fired `registry-verification` run
+  34773443302 (`push`, no branch filter): success, `PASS  list-wheel live: https://wheel.cuatro.dev
+  answered 200`, the other five `live` codes unchanged (200, 307, 302, 302, 200), `# 35 of 35 checks
+  passed`, runner `2.337.0` on `ubuntu-24.04`. Recorded in `ops/registry-inputs.md` beside the entry
+  and as run 3 in `ops/registry-verification.md` § Observed runs.
+- **The `gh-pages` flip (AC 4, second half).** With the Operator's go: `gh-pages` `52698eb` on
+  `b9ee2b8`, `docs: redirect the GitHub Pages URL to wheel.cuatro.dev`, three files (`index.html`,
+  byte-identical `404.html`, `.nojekyll`), pushed 18:1xZ; Pages build `built` at that commit.
+  `https://luigiespinosa.github.io/list-wheel/?q=1` 200, `text/html`, `Cache-Control: max-age=600`,
+  five occurrences of `wheel.cuatro.dev` (meta refresh, canonical, anchor href and text, script);
+  `/list-wheel/some/deep/path` 404 status with the same redirect body (Pages' custom-404
+  semantics, the status it already gave with the app body); `/list-wheel/main-3S57BQZJ.js` 404.
+  The page's blob carries CRLF line endings from the writing shell; harmless to a browser, left.
+- **The browser (manual check).** Chrome through the extension: `https://luigiespinosa.github.io/list-wheel/?from=pages#top`
+  landed on `https://wheel.cuatro.dev/?from=pages#top` within 3 s (query and hash carried); the
+  wheel renders, title `Cuatro Wheel`, the Rubik face loaded (`fonts.gstatic.com/s/rubik/v31/...woff2`
+  200), `main-3S57BQZJ.js`, `polyfills-5CFQRCPP.js`, `styles-VFKBVUT4.css` 200; no console message
+  of any level on a reload with tracking on. **Not performed:** a spin, which needs a `.txt` through
+  the File System Access picker, a native dialog the extension cannot drive; one click for the
+  Operator.
+- **Found, not this story's:** for browser requests (`Accept: text/html`), the Cloudflare edge
+  injects `<script defer src="https://static.cloudflareinsights.com/beacon.min.js/...">` and the
+  page posts to `/cdn-cgi/rum`: Cloudflare Web Analytics, zone-wide. Seen on `cuatro.dev`,
+  `tracker.cuatro.dev`, `library.cuatro.dev` and now `wheel.cuatro.dev`; absent from the origin
+  response over loopback; absent from every `ops/` record. It predates this story and touches
+  NFR-8's letter. Filed as DW-92; the Operator rules.
+
+**Matrix Test Audit.** Rows with a standing test that ran green in the runs above: first placement
+(`capacity-gate.test.ts`, the open-gate new-id cases on `cs-tournament`, the same code path the
+Deploy run took), redeploy after the placement lands (the five-id pin and the incumbent path),
+redeploy under a re-blocked gate (`BLOCKED` fixture cases refusing `list-wheel`), registry push run
+(`registry-verification.test.ts` plants every committed `live` at 200, and the real run 34773443302).
+Rows that are operations on systems no unit test can reach, each verified once by the observation
+named beside it and by nothing standing: Caddy validate fails and reload changes an incumbent (the
+restore path in the append script, exercised by inspection only: validate passed and the six codes
+matched, so neither branch ran), loopback probe before DNS, browser UA, `GPTBot`, empty UA,
+`UptimeRobot`, verification agent, unknown path (local Docker proof and loopback), old URL after
+the flip, old URL sub-path. The audit is stated rather than satisfied by a test for those rows;
+the record that carries them is `ops/routing-inventory.md` § What Story 2-25 changed.

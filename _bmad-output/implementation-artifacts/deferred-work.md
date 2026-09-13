@@ -4463,3 +4463,34 @@ status: done
     matrix says. **Trigger: `status: blocked` or a crossed `baseline` reaching `main` before the
     `placements` entry does.**
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
+  id: DW-92
+  summary: >-
+    The Cloudflare edge injects its Web Analytics beacon into every proxied `cuatro.dev` hostname's
+    HTML for browser requests, a third-party measurement script no record names and NFR-8 does not
+    admit.
+  evidence: |-
+    Observed 2026-09-13 during Story 2-25's browser check of `wheel.cuatro.dev`: the page loaded
+    `https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495`
+    (200) and posted to `https://wheel.cuatro.dev/cdn-cgi/rum` (204). Re-read with `curl` sending a
+    browser `Accept: text/html,...` header: the HTML of `wheel.cuatro.dev`, `cuatro.dev`,
+    `tracker.cuatro.dev` and `library.cuatro.dev` each carry one `<script defer
+    src="https://static.cloudflareinsights.com/beacon.min.js/...">` tag; with `curl`'s default
+    `Accept: */*` none does, which is why every earlier probe in `ops/` missed it. The origin
+    response over loopback on the box carries no such tag, so the injection is the edge's, zone-wide,
+    from Cloudflare's Web Analytics automatic setup, and it predates this story: `cuatro.dev` has
+    been proxied since 2026-08-17.
+
+    NFR-8 (`prd.md:637`) reads "No third-party analytics or tracking is introduced anywhere in the
+    Ecosystem", and AGENTS.md's policy line says measurement is first-party self-hosted Umami only.
+    Cloudflare's beacon is cookieless and Cloudflare's own, and the Operator may rule it inside the
+    line or outside it; what is certain is that it is unrecorded, that `ops/bot-mitigation.md` and
+    `ops/routing-inventory.md` describe the edge's rules and DNS in detail without it, and that it
+    now runs on a fifth hostname because of this story's placement, not because of any decision.
+    Not changed here: a zone setting is outside a story that placed one application, and turning it
+    off is a measurement decision the Operator owns.
+
+    **Owner: the Operator, one ruling.** Either record it as tolerated in `ops/bot-mitigation.md`
+    (or a new edge record) with the reason, or turn Web Analytics off in the Cloudflare dashboard
+    and record the date. **Trigger: the ruling; no code depends on it.**
+  status: open
