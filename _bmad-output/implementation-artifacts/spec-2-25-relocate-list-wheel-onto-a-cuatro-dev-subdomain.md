@@ -646,9 +646,10 @@ state comes from here; times are UTC.
   landed on `https://wheel.cuatro.dev/?from=pages#top` within 3 s (query and hash carried); the
   wheel renders, title `Cuatro Wheel`, the Rubik face loaded (`fonts.gstatic.com/s/rubik/v31/...woff2`
   200), `main-3S57BQZJ.js`, `polyfills-5CFQRCPP.js`, `styles-VFKBVUT4.css` 200; no console message
-  of any level on a reload with tracking on. **Not performed:** a spin, which needs a `.txt` through
-  the File System Access picker, a native dialog the extension cannot drive; one click for the
-  Operator.
+  of any level on a reload with tracking on. **Not performed by an agent:** a spin, which needs a
+  `.txt` through the File System Access picker, a native dialog the extension cannot drive. **The
+  Operator performed it on 2026-09-13** in their own browser on `wheel.cuatro.dev` and reported it
+  working, which closes the manual check and the story on the board.
 - **Found, not this story's:** for browser requests (`Accept: text/html`), the Cloudflare edge
   injects `<script defer src="https://static.cloudflareinsights.com/beacon.min.js/...">` and the
   page posts to `/cdn-cgi/rum`: Cloudflare Web Analytics, zone-wide. Seen on `cuatro.dev`,

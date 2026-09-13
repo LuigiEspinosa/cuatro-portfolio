@@ -183,9 +183,10 @@ development_status:
   # The review patch (list-wheel PR #3, Cache-Control: no-cache on the shell) merged and was
   # verified on the host at 19:12Z. PR #75 merged dev into main at 1e93787 (19:26:43Z): the
   # published Registry carries live https://wheel.cuatro.dev, the Hub renders it, the gate on
-  # main lists list-wheel (DW-91 closed). Waits on: one spin in a browser by the Operator, and
-  # the DW-92 ruling on the Cloudflare beacon. Move to done after those.
-  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: review
+  # main lists list-wheel (DW-91 closed). The Operator spun the wheel on wheel.cuatro.dev in
+  # their own browser on 2026-09-13, the one check no agent could drive, and moved the story to
+  # done. Still open, not blocking: the DW-92 ruling on the Cloudflare beacon.
+  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: done
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
   # Hub components rebuilt token-native (FR-37), added 2026-08-15.
   # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
