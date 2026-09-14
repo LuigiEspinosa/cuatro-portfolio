@@ -46,8 +46,10 @@
 // One link, the Secondary kind (`RESTYLE-SPEC.md:191`): secondary text, a hairline in the
 // interactive border role drawn on the inner span, a recolour on hover, and on focus the global
 // ring `app/app.scss` paints on every element since Story 2-26. It sits in the same mono register
-// as the line above it, at the smallest step, because a Primary underline in this corner would
-// out-weigh the Directory it follows.
+// as the line above it but one step smaller: the line is a sentence and takes `--t-2xs`, the step
+// `DESIGN.md:468` places the footer on, while this is a one-word label and keeps `--t-3xs`, the
+// labels-only step `DESIGN.md:467` reserves. A Primary underline in this corner would out-weigh
+// the Directory it follows.
 //
 // `.site-footer__nav` carries no rule. The `<nav>` is a plain block holding one link, and one link
 // needs no row, no wrap and no gap; `SiteFooter.test.tsx` and `tests/e2e/secondary-surfaces.pw.ts`

@@ -375,7 +375,7 @@ test.describe('the chrome nav', () => {
   }) => {
     // **Both surfaces, because they are two render paths.** `/work` is `app/work/page.tsx` and the
     // 404 is `app/not-found.tsx`, and `position: sticky` is broken by any ancestor that becomes a
-    // scroll container. That is the whole reason `app/app.scss:97-100` sets `overflow-x: clip`
+    // scroll container. That is the whole reason `app/app.scss:115-118` sets `overflow-x: clip`
     // rather than `hidden`, and a rule of that kind arriving on one route's own tree would leave
     // the other green.
     const header = page.locator('header.header-container');

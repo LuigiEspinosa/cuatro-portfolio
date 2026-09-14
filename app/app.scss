@@ -93,8 +93,8 @@
 
 // The focus standard, `RESTYLE-SPEC.md:326-341` § 4 verbatim, and the one rule in the Hub that
 // paints a ring (Story 2-26, Operator ruling of 2026-09-13). It replaced nine per-component rules
-// in eight stylesheets, three of which painted the ring in the hover colour at 1px, so a keyboard
-// visitor could not tell focus from hover. Global on purpose: `:focus-visible`, never `:focus`, so
+// in eight stylesheets, four of which (three files, three at a 4px offset and one inset at -2px)
+// painted it in the hover colour at 1px. Global on purpose: `:focus-visible`, never `:focus`, so
 // a mouse click paints nothing; never transitioned, so the ring is at full strength the frame
 // focus lands; never removed; and at specificity (0,1,0), so a planted `!important` control in a
 // spec can still take it off to prove the reading is of this rule. The reset above does not touch

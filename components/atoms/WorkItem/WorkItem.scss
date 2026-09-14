@@ -30,7 +30,7 @@
     text-align: left;
     gap: 1rem;
     transition: background 0.2s ease;
-
+    // The ring is the global `:focus-visible` in `app/app.scss` since Story 2-26, not an inset one here.
     &:hover {
       background: rgba(91, 33, 182, 0.06);
     }
