@@ -2,7 +2,7 @@
 title: "Story 2.28: Redesign `ScanlineOverlay` as the scrim layer, consuming `--token-scrim`"
 type: 'feature'
 created: '2026-09-14'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '1addf8cda10c92d3bea0ba7eb8a54fc6922860f6'
 review_loop_iteration: 0
 context:
@@ -185,6 +185,9 @@ the `/work` baseline in the pinned image as the deliberate render change it is; 
 - `tests/e2e/rendered-output.pw.ts-snapshots/work-360x800-chromium-linux.png`: regenerated in the
   pinned image by `pnpm run test:e2e:update` (`ops/rendered-output-harness.md:247-256`, the docker
   block), after a plain `pnpm test:e2e` against the old file has printed the differing-pixel count.
+  *(As run, 2026-09-14: the plain run passed and the update wrote nothing, the change being under the
+  per-pixel threshold on every pixel; the file was written by `--update-snapshots=all` on the
+  Operator's ruling. See the Spec Change Log.)*
 - `ops/rendered-output-harness.md:198-206`: the current sha256 line, "regenerated twice" to three
   times, a fourth table row (sha256, Story 2-28, 2026-09-14, what changed on `/work`: the hero's
   raster and grain left with the overlay, N pixels differed, printed before the update).
@@ -219,28 +222,30 @@ the `/work` baseline in the pinned image as the deliberate render change it is; 
 
 **Execution** (in this order):
 
-- [ ] On `dev` at `1addf8c` before branching: `corepack pnpm build && node ops/asset-budget.mjs` and
+- [x] On `dev` at `1addf8c` before branching: `corepack pnpm build && node ops/asset-budget.mjs` and
       the gzipped size of every `.next/static/chunks/*.css`, saved to the scratchpad as the before
       reading; confirm it reproduces the Story 2-27 after figures.
-- [ ] Branch `story/2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token` off `dev`.
-- [ ] `ScanlineOverlay.scss`, `ScanlineOverlay.tsx`, `__tests__/ScanlineOverlay.test.tsx`: the rewrite
+- [x] Branch `story/2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token` off `dev`.
+- [x] `ScanlineOverlay.scss`, `ScanlineOverlay.tsx`, `__tests__/ScanlineOverlay.test.tsx`: the rewrite
       as the Code Map states; run the test file and see the stylesheet read fail first against the old
       file.
-- [ ] `WorkHero.tsx`, `Error404.tsx`: the import and the element out; the 404 docblock clause.
-- [ ] `app/__tests__/anchor-contract.test.ts`: run the file with the path left out and see claim four
+- [x] `WorkHero.tsx`, `Error404.tsx`: the import and the element out; the 404 docblock clause.
+- [x] `app/__tests__/anchor-contract.test.ts`: run the file with the path left out and see claim four
       fail naming `ScanlineOverlay.scss`; then add the entry.
-- [ ] `tests/e2e/accessibility-floor.pw.ts`, `ops/hub-accessibility-pass.md`,
+- [x] `tests/e2e/accessibility-floor.pw.ts`, `ops/hub-accessibility-pass.md`,
       `ops/__tests__/hub-accessibility-pass.test.ts`, `ops/known-violations.md`: the three rows, the
       four things, the pin, the annotations; `corepack pnpm test --run ops/__tests__/hub-accessibility-pass.test.ts`
       green.
-- [ ] `playwright.config.ts:75-78`, `GlitchText.scss:5-6`: the two comments.
-- [ ] Branch build: `corepack pnpm build && node ops/asset-budget.mjs` and the `.css` sizes again;
+- [x] `playwright.config.ts:75-78`, `GlitchText.scss:5-6`: the two comments.
+- [x] Branch build: `corepack pnpm build && node ops/asset-budget.mjs` and the `.css` sizes again;
       `ops/asset-budget.md`: the dated reading and run, the Derived delta.
-- [ ] Container, three runs in order: `pnpm test:e2e` (the old baseline fails with its pixel count,
+- [x] Container, three runs in order: `pnpm test:e2e` (the old baseline fails with its pixel count,
       the KV-6 tally passes with the rows gone), `pnpm run test:e2e:update` (the new baseline),
       `pnpm test:e2e` (green, no filter). `ops/rendered-output-harness.md`: the sha256 row.
-- [ ] `deferred-work.md`: close DW-32, amend `:3274`, file DW-101.
-- [ ] `corepack pnpm test --run`, `corepack pnpm typecheck`; commit on the branch (no push and no remote
+      *(Ticked for what was run, not for the first parenthesis: the old baseline passed and the update
+      wrote nothing; a fourth run forced the file on the Operator's ruling. Spec Change Log.)*
+- [x] `deferred-work.md`: close DW-32, amend `:3274`, file DW-101.
+- [x] `corepack pnpm test --run`, `corepack pnpm typecheck`; commit on the branch (no push and no remote
       operation from the implementation step; the push and the PR to `dev` follow the review);
       `sprint-status.yaml`: the rename, `review`, the comment block.
 
@@ -261,6 +266,19 @@ the `/work` baseline in the pinned image as the deliberate render change it is; 
   passes, `anchor-contract` claim four having been seen failing first.
 
 ## Spec Change Log
+
+- **2026-09-14, step 3, the third acceptance criterion.** Written as "the harness fails against the
+  old baseline naming a pixel count above 288, then the update run writes the new file". Measured in
+  the pinned image: the plain run passed 253 of 253 and `pnpm run test:e2e:update` wrote nothing,
+  because the raster's removal moves 80,831 of the hero's pixels by less than Playwright's per-pixel
+  threshold on every one of them, so the comparator counts no differing pixel and `maxDiffPixelRatio`
+  never applies. The criterion assumed the comparator would notice a change the eye barely does. The
+  Operator ruled the same day to force the regeneration with `--update-snapshots=all`, so the
+  committed reference depicts what ships; the measurement, the ruling and the one recorded exception
+  to the harness record's update rule are in `ops/rendered-output-harness.md` § Regenerating the
+  baseline, and the criterion is read as met by ruling rather than by the mechanism it named. KEEP:
+  the before-and-after measurement (pixels touched, largest YIQ distance against the threshold) is
+  the shape a later story's baseline change should record when the comparator disagrees with the eye.
 
 ## Design Notes
 
@@ -303,10 +321,110 @@ and the old baseline return together, and the records carry no runtime.
   `.css` chunk carrying `.scanline-overlay` present before and absent after.
 - The docker block at `ops/rendered-output-harness.md:247-256`, three times: `pnpm test:e2e` fails
   only on the old baseline with its pixel count; `pnpm run test:e2e:update` writes the new PNG;
-  `pnpm test:e2e` green with no filter.
+  `pnpm test:e2e` green with no filter. *(As run: the first passed and the second wrote nothing;
+  `pnpm exec playwright test --update-snapshots=all rendered-output` wrote the PNG on the Operator's
+  ruling, then `pnpm test:e2e` was green, 253 of 253, twice: the implementer's run and the
+  coordinator's independent one on the final tree.)*
 
 **Manual checks:**
 
 - `git diff --stat` names no file outside the Code Map.
 - The regenerated PNG, opened beside the old one: the change is confined to the hero's raster and
   grain.
+
+## Suggested Review Order
+
+**The layer itself**
+
+- Five declarations on one selector: the whole rebuild, the roles read from the contract.
+  [`ScanlineOverlay.scss:8`](../../components/atoms/ScanlineOverlay/ScanlineOverlay.scss#L8)
+
+- One `aria-hidden` div, no prop: a scrim that varies is a scrim whose guarantee varies.
+  [`ScanlineOverlay.tsx:16`](../../components/atoms/ScanlineOverlay/ScanlineOverlay.tsx#L16)
+
+- The placement contract Story 2-29 inherits: covers the positioned box, text over moving imagery only.
+  [`ScanlineOverlay.tsx:10`](../../components/atoms/ScanlineOverlay/ScanlineOverlay.tsx#L10)
+
+**Why both call sites leave**
+
+- The hero separates the display line from the canvas, so no overlay sits over its text now.
+  [`WorkHero.tsx:54`](../../components/organisms/WorkHero/WorkHero.tsx#L54)
+
+- Nothing moves behind the 404's text; the dated docblock clause says why the layer left with this story.
+  [`Error404.tsx:25`](../../components/organisms/ErrorPage/Error404.tsx#L25)
+
+- Why no consumer is the honest state until 2-29, and why the sampling verification is carried.
+  [`spec: Design Notes`](spec-2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token.md#L285)
+
+**The baseline, and what the comparator could not see**
+
+- The measurement, the Operator's ruling, and the one recorded exception to the update rule.
+  [`rendered-output-harness.md:225`](../../ops/rendered-output-harness.md#L225)
+
+- The fourth sha256 row: 80,831 pixels differ, none over the per-pixel threshold.
+  [`rendered-output-harness.md:220`](../../ops/rendered-output-harness.md#L220)
+
+- The tolerance section's claims, amended in place where this story falsified them.
+  [`rendered-output-harness.md:106`](../../ops/rendered-output-harness.md#L106)
+
+- The blind spot named under what the harness deliberately does not assert, booked as DW-102.
+  [`rendered-output-harness.md:97`](../../ops/rendered-output-harness.md#L97)
+
+- The tool that reproduces the figures: pixelmatch's YIQ distance recomputed over `sharp` output.
+  [`baseline-diff.mjs:92`](../../ops/baseline-diff.mjs#L92)
+
+**KV-6: three rows out, the four things moved**
+
+- The ledger without `z-scanline` and the two gradient rows; the decision it rested on, dated as history.
+  [`hub-accessibility-pass.md:241`](../../ops/hub-accessibility-pass.md#L241)
+
+- The `EXEMPTIONS` literal, the same three rows gone, held equal to the record in both directions.
+  [`accessibility-floor.pw.ts:222`](../../tests/e2e/accessibility-floor.pw.ts#L222)
+
+- The index row: six and six, `2-28` out of Retired by.
+  [`known-violations.md:67`](../../ops/known-violations.md#L67)
+
+- The "What is in breach" cell, three files each, the `until` sentences in the cell's existing shape.
+  [`known-violations.md:512`](../../ops/known-violations.md#L512)
+
+- The "really in both files" pin moved to the row that outlives the rest.
+  [`hub-accessibility-pass.test.ts:276`](../../ops/__tests__/hub-accessibility-pass.test.ts#L276)
+
+- F-7 closed on the compiled-equality shape the test now takes.
+  [`hub-accessibility-pass.md:296`](../../ops/hub-accessibility-pass.md#L296)
+
+**Weight**
+
+- The chunk that left whole, 509 gzipped bytes, most of it a data URI that gzips poorly.
+  [`asset-budget.md:503`](../../ops/asset-budget.md#L503)
+
+- Where those bytes were being fetched: every served document, through the not-found boundary.
+  [`asset-budget.md:517`](../../ops/asset-budget.md#L517)
+
+**Tests and pins**
+
+- One `toBe` on the compiled stylesheet subsumes every refused-token list; a Sass fault fails here.
+  [`ScanlineOverlay.test.tsx:34`](../../components/atoms/ScanlineOverlay/__tests__/ScanlineOverlay.test.tsx#L34)
+
+- The retired prop, held by a directive `typecheck` consumes.
+  [`ScanlineOverlay.test.tsx:27`](../../components/atoms/ScanlineOverlay/__tests__/ScanlineOverlay.test.tsx#L27)
+
+- The two surfaces held scrim-free, so a call site returning is a red test rather than a green gate.
+  [`Error404.test.tsx:84`](../../components/organisms/ErrorPage/__tests__/Error404.test.tsx#L84)
+
+- The hero's twin.
+  [`WorkHero.test.tsx:45`](../../components/organisms/WorkHero/__tests__/WorkHero.test.tsx#L45)
+
+- The stylesheet joins the token-native partition; claim four was seen failing first without it.
+  [`anchor-contract.test.ts:296`](../../app/__tests__/anchor-contract.test.ts#L296)
+
+**Records and the board**
+
+- DW-32 closed, DW-101 (the sampling verification, to 2-29) and DW-102 (the comparator blind spot) filed.
+  [`deferred-work.md:2709`](deferred-work.md#L2709)
+
+- The renamed key, `review`, and the comment block naming what waits on nobody.
+  [`sprint-status.yaml:215`](sprint-status.yaml#L215)
+
+- Two dated comments: the reduced-motion context no longer stops a grain; the other repeating animation is gone.
+  [`playwright.config.ts:77`](../../playwright.config.ts#L77)
