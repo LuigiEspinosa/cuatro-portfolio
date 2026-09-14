@@ -1,5 +1,5 @@
 import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
-import { RENDERED_VIEWPORT } from './harness';
+import { RENDERED_VIEWPORT, hydrated } from './harness';
 
 /**
  * The `suite-reach` mechanism in a browser (Story 2-24).
@@ -112,22 +112,22 @@ const goTo = async (page: Page): Promise<void> => {
 };
 
 /**
- * Hydrated and decided, and decided the way the door says. `front-door.pw.ts:311-331` is the
- * reasoning for the first half; the second half is what stops a runner without WebGL from running
- * the default door's cases on the flat path and calling them green.
+ * Hydrated and decided, and decided the way the door says. `hydrated` in `tests/e2e/harness.ts`
+ * is the first half and carries its reasoning (React's own `__reactFiber$` mark on the container,
+ * since Story 2-27 took the inline opacity it used to read off the page); the second half is what
+ * stops a runner without WebGL from running the default door's cases on the flat path and calling
+ * them green.
  */
 const settled = async (page: Page, door: FrontDoor): Promise<void> => {
   await expect
     .poll(
-      () =>
-        page.evaluate(() => {
-          const glitch = document.querySelector<HTMLElement>('.glitch-text__inner');
-          const hydrated = glitch !== null && glitch.style.opacity !== '';
-          const decided =
+      async () =>
+        (await hydrated(page)) &&
+        (await page.evaluate(
+          () =>
             document.querySelector('.home-container--flat') !== null ||
-            document.querySelector('#gem-canvas canvas') !== null;
-          return hydrated && decided;
-        }),
+            document.querySelector('#gem-canvas canvas') !== null
+        )),
       {
         timeout: SETTLE_TIMEOUT,
         message: `${door.name}: the page never reached a hydrated, decided state`,

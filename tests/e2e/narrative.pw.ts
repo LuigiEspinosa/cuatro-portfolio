@@ -840,9 +840,13 @@ test.describe("the / document's preload set", () => {
     // **Two distinct faces until 2026-09-12, zero since.** `app/layout.tsx` preloaded two local
     // binaries, and Next emitted each link twice, which is why this read is over the distinct set
     // rather than the element count. Story 2-20 deleted both preloads with the faces they named
-    // and replaced them with nothing: `GlitchText.tsx` gates `SplitText` on `document.fonts.ready`,
-    // so a preload bought latency, not correctness, and a preload of a contract face would put
-    // `contracts/` in a scanned source. The read stays, so a preload put back fails here naming it.
+    // and replaced them with nothing: `GlitchText.tsx` then gated `SplitText` on
+    // `document.fonts.ready`, so a preload bought latency, not correctness, and a preload of a
+    // contract face would put `contracts/` in a scanned source. Story 2-27 removed that gate on
+    // 2026-09-14: the entrance now runs at `--delay` on whichever face is present, and
+    // `font-display: swap` swaps Bricolage in when it arrives, so the refusal's first premise is
+    // gone and its second stands; whether a preload is worth that trade is DW-99, deferred. The
+    // read stays, so a preload put back fails here naming it.
     const fonts = distinctFonts(links);
     expect(
       fonts.length,

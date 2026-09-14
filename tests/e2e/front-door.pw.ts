@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, hydrated, rootCustomPropertyValue } from './harness';
 
 /**
  * The non-3D front door and the two skips, measured in a browser (Story 2-13).
@@ -302,24 +302,19 @@ const goTo = async (page: Page, route: string = ROUTE): Promise<void> => {
  * no-shift comparison on that door then read two pre-hydration states and would have passed with
  * the client bundle blocked entirely.
  *
- * The signal is `GlitchText`'s inline opacity. Its `useGsapContext` callback writes one on mount on
- * every path, `0` where the entrance will run and `1` where reduced motion stops it, and the server
- * writes no inline style at all, so its presence means React hydrated. It is the application's own
- * artifact rather than a library's class name, and it is the earliest one that exists on all four
- * doors.
+ * The hydration signal is `hydrated` in `tests/e2e/harness.ts`, React's own mark on the hero's
+ * container, and the reasoning for it is there.
  */
 const settled = async (page: Page): Promise<void> => {
   await expect
     .poll(
-      () =>
-        page.evaluate(() => {
-          const glitch = document.querySelector<HTMLElement>('.glitch-text__inner');
-          const hydrated = glitch !== null && glitch.style.opacity !== '';
-          const decided =
+      async () =>
+        (await hydrated(page)) &&
+        (await page.evaluate(
+          () =>
             document.querySelector('.home-container--flat') !== null ||
-            document.querySelector('#gem-canvas canvas') !== null;
-          return hydrated && decided;
-        }),
+            document.querySelector('#gem-canvas canvas') !== null
+        )),
       {
         timeout: SETTLE_TIMEOUT,
         message:
@@ -971,11 +966,14 @@ test.describe('resolving the path does not move the page', () => {
     // the skip control is in the served markup rather than added a frame later.
     //
     // **Measured at the wider viewport, and only there.** Below 768 this hero's height is its
-    // content's, and `GlitchText` re-splits the display line into per-character inline blocks once
-    // the fonts resolve, which can rewrap it. That reflow predates this story and belongs to the
-    // component that does it; measuring here at 360 would attribute it to the decision. At 768 and
-    // wider the panels are absolutely positioned and the container is the lock itself, so what is
-    // compared is exactly what this story changes.
+    // content's. When this was written `GlitchText` re-split the display line into per-character
+    // inline blocks once the fonts resolved, which could rewrap it; that reflow predated this story
+    // and belonged to the component that did it, so measuring at 360 would have attributed it to the
+    // decision. Story 2-27 removed the split on 2026-09-14 (the spans are inline and in the served
+    // markup), so that reason no longer holds; widening this case to 360 is Story 2-29's, which
+    // owns the hero's geometry, and is filed in `deferred-work.md`. At 768 and wider the panels are
+    // absolutely positioned and the container is the lock itself, so what is compared is exactly
+    // what this story changes.
     const served = await servedHeroHeight(browser, DEFAULT_PATH, WIDE_VIEWPORT);
     const settledHeight = await settledHeroHeight(browser, DEFAULT_PATH, WIDE_VIEWPORT);
     console.log(`front-door: default path served ${served.toFixed(2)}, settled ${settledHeight.toFixed(2)}`);
@@ -1031,8 +1029,9 @@ test.describe('the running page settles at one height', () => {
       // The matrix asks for this recorded from the running page rather than argued from the
       // effect's position, and a two-point comparison cannot see a collapse that happened and was
       // undone. Measured at the wider viewport for the reason the default-path case states: below
-      // 768 `GlitchText` rewraps the display line when the fonts resolve, which is a real movement
-      // this story does not own.
+      // 768 `GlitchText` rewrapped the display line when the fonts resolved, a real movement this
+      // story did not own, until Story 2-27 removed the split on 2026-09-14; the scope is left as
+      // it was and is Story 2-29's to widen.
       const samples = await heightsOn(browser, door, WIDE_VIEWPORT);
       const { drops, rises } = heightSteps(samples);
 

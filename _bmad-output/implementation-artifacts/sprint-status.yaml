@@ -198,10 +198,20 @@ development_status:
   # the story to done. Still open, not blocking: DW-95 (F-11), DW-96 (two DESIGN.md lines), and
   # the clip-skip-link ledger row booked to 2-32 by ownership alone.
   2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: done
-  # Hub components rebuilt token-native (FR-37), added 2026-08-15.
-  # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
-  # 2-20 is a blocking predecessor of all of them (the type layer precedes any redesign).
-  2-27-redesign-glitchtext-token-native: backlog
+  # Hub components rebuilt token-native (FR-37), added 2026-08-15. The restyle pass landed the same
+  # day and RESTYLE-SPEC.md is final, so the block on these eight is lifted (sprint-change proposal
+  # 2026-08-15 § 2, corrected here 2026-09-14). 2-20 was the blocking predecessor of all of them
+  # (the type layer precedes any redesign) and is done.
+  # 2-27 built 2026-09-14: GlitchText is a real h1 whose words are server-rendered inline spans
+  # fading in on one CSS keyframe inside --dur-major, set from the display roles; GSAP, SplitText,
+  # the glyph pool, the six-second loop and the aria wrapper are gone. display-entrance.pw.ts reads
+  # the roles, the stagger, the reduced-motion door, the bundle-blocked document and the tree, each
+  # seen failing on its planted fixture; shadow-glitch-loop left the ledger (KV-6 reads eight depth
+  # tells), the gsap/SplitText fingerprint left the budget tool, and the weight is measured in
+  # ops/asset-budget.md (87 gzipped bytes of CSS, 3,399 of JavaScript). Waits on the Operator: the
+  # screen-reader read of / (pending action 4 in ops/hub-accessibility-pass.md), the one check no
+  # agent can drive, recorded there before this moves to done.
+  2-27-redesign-glitchtext-token-native: review
   2-28-redesign-scanlineoverlay-token-native-and-add-token-scrim: backlog
   2-29-redesign-homelayout-token-native: backlog
   2-30-redesign-error404-token-native: backlog

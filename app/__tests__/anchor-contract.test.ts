@@ -249,20 +249,20 @@ const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height'] as const;
  * second, named consumer of the contract, which is why the scan below allows exactly one role
  * from exactly these paths rather than allowing none from anywhere but `app/app.scss`.
  *
- * **Four until 2026-09-07, three until 2026-09-11, two now.** Story 2-14 redirected `/projects`
- * and deleted `ProjectsHero` with the route, taking `ProjectsHero.scss` and its hand-set weight off
- * disk. The list shrank rather than the rule changing: a path named here that is not scanned
- * fails below as "was not among the scanned files", which is the direction this list is allowed
- * to move in. Story 2-17 then moved `error-page.scss` to `TOKEN_NATIVE_STYLESHEETS` below rather
- * than off disk: it still sets `--w-black` by hand at its `--monument-bold` call site, and it now
- * also names `--tap`, which claim two refuses from a file listed here. The `--monument-bold` call
- * site itself is unchanged, and `tests/e2e/anchor-aliases.pw.ts` goes on reading it at
- * `error-page.scss:24`.
+ * **Four until 2026-09-07, three until 2026-09-11, two until 2026-09-14, one now.** Story 2-14
+ * redirected `/projects` and deleted `ProjectsHero` with the route, taking `ProjectsHero.scss` and
+ * its hand-set weight off disk. The list shrank rather than the rule changing: a path named here
+ * that is not scanned fails below as "was not among the scanned files", which is the direction
+ * this list is allowed to move in. Story 2-17 then moved `error-page.scss` to
+ * `TOKEN_NATIVE_STYLESHEETS` below rather than off disk: it still sets `--w-black` by hand at its
+ * `--monument-bold` call site, and it now also names `--tap`, which claim two refuses from a file
+ * listed here. The `--monument-bold` call site itself is unchanged, and
+ * `tests/e2e/anchor-aliases.pw.ts` goes on reading it at `error-page.scss:24`. Story 2-27 then
+ * rebuilt `GlitchText` token-native: `glitch-text.scss` left disk with its alias call site, and
+ * `GlitchText.scss` beside the component names the display roles directly, so it is a
+ * `TOKEN_NATIVE_STYLESHEETS` entry and not a weight site at all.
  */
-const WEIGHT_CALL_SITES = [
-  'components/molecules/GlitchText/glitch-text.scss',
-  'components/organisms/WorkHero/WorkHero.scss',
-] as const;
+const WEIGHT_CALL_SITES = ['components/organisms/WorkHero/WorkHero.scss'] as const;
 
 /** The one role those call sites are allowed to name, per `DESIGN.md` § The mapping. */
 const WEIGHT_ROLE = '--w-black';
@@ -292,6 +292,10 @@ const TOKEN_NATIVE_STYLESHEETS = [
   'components/atoms/Navbar/navbar.scss',
   'components/atoms/SkipControl/SkipControl.scss',
   'components/atoms/SkipLink/SkipLink.scss',
+  // The display entrance, rebuilt by Story 2-27. A rebuild like the rest: the 2023 `glitch-text.scss`
+  // and its `--monument-bold` call site left disk with the loop, and this file sets the display
+  // roles (family, weight, size, line-height, tracking, colour) and the three motion roles directly.
+  'components/molecules/GlitchText/GlitchText.scss',
   'components/molecules/Header/header.scss',
   'components/molecules/PlateMark/PlateMark.scss',
   // The `/cv` intro block, added by Story 2-16. A rebuild like the rest of this list: the route was

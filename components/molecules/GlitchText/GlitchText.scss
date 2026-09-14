@@ -1,0 +1,58 @@
+// The display entrance (Story 2-27, `DESIGN.md:730-737`, `EXPERIENCE.md:447-469`): a heading that
+// arrives, not a heading that malfunctions. Type from the contract's display roles, the entrance on
+// `opacity` alone through one keyframe, staggered by DOM index and fitted inside one `--dur-major`.
+// No shadow, no clip, no offset, no second hue and no loop: the six-second loop this file replaced
+// was one of the estate's two repeating animations, the other being `ScanlineOverlay.scss`'s
+// grain, which Story 2-28 retires, and it is deleted, not tokenised.
+.glitch-text {
+  font-family: var(--f-display);
+  font-size: var(--t-display);
+  font-weight: var(--w-black);
+  // The `wdth 100` axis of the published display face, through the CSS property that selects it
+  // rather than through `font-variation-settings` (the `SuiteDirectory.scss:46-48` idiom).
+  font-stretch: 100%;
+  line-height: var(--lh-display);
+  letter-spacing: var(--tr-display);
+  text-transform: uppercase;
+  color: var(--token-text);
+}
+
+.glitch-text__char {
+  // Inline, never `inline-block`: `opacity` animates on an inline box, only a translate needs a
+  // block, and one line box is what lets the line break at the space and reads to assistive
+  // technology as one text run rather than a box per letter.
+  animation: glitch-text-arrive var(--dur-minor) var(--ease-entrance) both;
+  // `--delay` is the prop `HomeLayout.tsx:110` passes, carried as a time; `--i` is the DOM index,
+  // inline on each span; `--count` is inline on the heading. The gap between one character's start
+  // and the next is `(major - minor) / (count - 1)`, so the last character finishes exactly one
+  // `--dur-major` after the first starts, the divisor floored at one so a one-character heading
+  // divides by one rather than by zero. Written out here rather than as a custom property of its
+  // own, because `app/__tests__/anchor-contract.test.ts` holds every declared `--name` to
+  // `app/app.scss`. Without `--count` the delay is invalid at computed-value time and falls to
+  // `0s`, so every character fades together: a worse entrance, never an invisible one. `both`
+  // holds the `from` state through the delay, so a character is absent until its turn and present
+  // after it, once.
+  animation-delay: calc(var(--delay, 0s) + var(--i) * (var(--dur-major) - var(--dur-minor)) / max(var(--count) - 1, 1));
+}
+
+// `opacity` keyframes in the display entrance are Story 2-34's allowed pattern (`epics.md:3738`):
+// the alpha check scopes to colour functions, never to the `opacity` property.
+@keyframes glitch-text-arrive {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+// Present at full opacity at first paint, and nothing else about the component changes. Stated
+// rather than relied on: the token contract collapses the durations to 1ms under the same query,
+// but a 1ms run still waits out `--delay`, and a visitor who asked for stillness would get a second
+// of blank heading.
+@media (prefers-reduced-motion: reduce) {
+  .glitch-text__char {
+    animation: none;
+  }
+}

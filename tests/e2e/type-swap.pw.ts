@@ -94,9 +94,10 @@ const CONFILLIA_STRETCH = '75%';
 
 /**
  * Every element that reaches the display face, per surface, and how many of each the surface
- * renders. The three `--monument-bold` sites, the two `--monument-regular` sites and the two
- * Confillia sites, which is the whole set `tests/e2e/anchor-aliases.pw.ts` tables. `/cv` and
- * `/celeste` reach no display face and are not here.
+ * renders. The two `--monument-bold` sites, the two `--monument-regular` sites and the two
+ * Confillia sites, which is the whole set `tests/e2e/anchor-aliases.pw.ts` tables, plus the display
+ * entrance on `/`, which reaches the face through `--f-display` directly since Story 2-27. `/cv`
+ * and `/celeste` reach no display face and are not here.
  *
  * The count is pinned so the swap cannot be measured over an empty selection: a renamed class
  * fails here naming itself rather than shortening the loop below to nothing.
@@ -111,10 +112,11 @@ const DISPLAY_ELEMENTS: readonly {
   {
     route: '/',
     status: 200,
-    // `.glitch-text__inner` is the element the deleted preload's comment named. Under the
-    // harness's reduced motion `GlitchText.tsx:30-33` sets it visible and never splits it, so
-    // its box is a line box like the others.
-    selectors: [...CONFILLIA_SITES, { selector: '.glitch-text__inner', count: 1 }],
+    // `.glitch-text` is the heading itself since Story 2-27 (the `.glitch-text__inner` the
+    // deleted preload's comment named was its wrapped `<h1>`, and the wrapper is gone). Its
+    // characters are inline spans in one line box, present at full opacity under the harness's
+    // reduced motion, so its box is a line box like the others.
+    selectors: [...CONFILLIA_SITES, { selector: '.glitch-text', count: 1 }],
   },
   {
     route: '/work',

@@ -35,8 +35,9 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *     range except what the ledger carries; no stylesheet sets `font-size` or `font` in `px`; and
  *     no `:focus-visible` rule outside `app/app.scss` declares an `outline`.
  *  5. **One level-1 heading per document, A-7** (`EXPERIENCE.md:766`), read off the accessibility
- *     tree rather than the markup, so the home route's `GlitchText` wrapper counts and its hidden
- *     `<h1>` does not.
+ *     tree rather than the markup. Until Story 2-27 that was what told the home route's
+ *     `GlitchText` wrapper, which carried the role, from its hidden `<h1>`; the heading is a real
+ *     `<h1>` named by its own text now, and the tree is still the honest place to count.
  *  6. **Autoplay, A-16** (`EXPERIENCE.md:775`). No `video`, `audio`, `marquee`, refresh meta or
  *     `[autoplay]` on any route.
  *
@@ -242,14 +243,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     closedBy: 'Story 2-30',
   },
   {
-    id: 'shadow-glitch-loop',
-    check: 'depth',
-    match: 'text-shadow',
-    count: 7,
-    source: 'components/molecules/GlitchText/glitch-text.scss:26-68',
-    closedBy: 'Story 2-27',
-  },
-  {
     id: 'gradient-work-ground',
     check: 'depth',
     match: 'linear-gradient',
@@ -371,7 +364,7 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
           while (current && current !== document.documentElement) {
             let part = current.tagName.toLowerCase();
             if (current.id) part += `#${current.id}`;
-            const classes = [...current.classList].filter((name) => name !== 'glitch').join('.');
+            const classes = [...current.classList].join('.');
             if (classes) part += `.${classes}`;
             const parent: Element | null = current.parentElement;
             if (parent) {
@@ -1522,10 +1515,11 @@ test.describe('the accessibility floor', () => {
   });
 
   test('every route carries exactly one accessible level-1 heading, and the home route names it', async ({ page }) => {
-    // A-7, read off the accessibility tree: on `/` the `GlitchText` wrapper is the heading and its
-    // `aria-hidden` `<h1>` is not, which no markup count can tell apart. A route off the rule is a
-    // ledger row, so the 404, which renders its numeral and title as paragraphs, is carried by
-    // `heading-404` until Story 2-30 rebuilds it.
+    // A-7, read off the accessibility tree. Until Story 2-27 that was what told the `GlitchText`
+    // wrapper, which carried the role on `/`, from its `aria-hidden` `<h1>`, which no markup count
+    // could tell apart; the heading is a real `<h1>` named by its own text now, and the tree is
+    // still where the name is read. A route off the rule is a ledger row, so the 404, which renders
+    // its numeral and title as paragraphs, is carried by `heading-404` until Story 2-30 rebuilds it.
     const hits = new Map<string, number>();
     const unclaimed: string[] = [];
     const readings: string[] = [];

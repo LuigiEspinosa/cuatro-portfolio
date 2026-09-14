@@ -15,7 +15,8 @@ const REDUCE_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
  *
  * `matchMedia` is absent in a bare jsdom and in some embedded webviews. Calling it there throws
  * inside a `useState` initializer, which is not a caught render error but a component that never
- * mounts, and this hook has four consumers across every route.
+ * mounts, and this hook has three consumers across every route (four until 2026-09-14, when Story
+ * 2-27 rebuilt `GlitchText` with no script in it).
  */
 const canAsk = (): boolean => typeof window !== 'undefined' && typeof window.matchMedia === 'function';
 
@@ -23,10 +24,11 @@ const canAsk = (): boolean => typeof window !== 'undefined' && typeof window.mat
  * **Repairing the initial read does not create a hydration mismatch, checked rather than assumed.**
  * The server always renders `false` and, for a reduced-motion visitor, the client's first render
  * now returns `true`, which React would report if either value reached the markup. It does not:
- * verified 2026-09-07 across all four consumers (`HomeLayout.tsx:14`, `GlitchText.tsx:24`,
- * `WorkHero.tsx:23`, `WorkItem.tsx:18`), each of which reads the value only inside a
- * `useGsapContext` or `useEffect` callback and its dependency array. Nothing branches on it in
- * render output. A consumer that starts to must guard its own first paint.
+ * verified 2026-09-07 across all four consumers of the day (`HomeLayout.tsx:27`, `WorkHero.tsx:23`,
+ * `WorkItem.tsx:18`, and `GlitchText.tsx`, which stopped calling this hook on 2026-09-14 when Story
+ * 2-27 moved its entrance into CSS), each of which reads the value only inside a `useGsapContext`
+ * or `useEffect` callback and its dependency array. Nothing branches on it in render output. A
+ * consumer that starts to must guard its own first paint.
  */
 export function useReduceMotion(): boolean {
   const [reduceMotion, setReduceMotion] = useState(

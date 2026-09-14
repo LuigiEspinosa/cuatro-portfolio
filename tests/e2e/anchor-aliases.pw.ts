@@ -441,17 +441,19 @@ const BOUNDARY_COUNT = 2;
 /**
  * The `--monument-bold` call sites, each on the route that renders it.
  *
- * **Four until 2026-09-07.** `ProjectsHero.scss:19` was the third of the three that set family
- * alone before Story 1-18 added the weight beside it, and Story 2-14 deleted the file with the
- * route. The remaining three keep the argument unchanged.
+ * **Four until 2026-09-07, three until 2026-09-14.** `ProjectsHero.scss:19` was the third of the
+ * three that set family alone before Story 1-18 added the weight beside it, and Story 2-14 deleted
+ * the file with the route. `glitch-text.scss:5` was the one of the four that set its own weight,
+ * and Story 2-27 deleted the file with the loop: `GlitchText.scss` names the display roles directly
+ * and reaches no alias, so it is read by `tests/e2e/display-entrance.pw.ts` and not here. The
+ * remaining two keep the argument unchanged.
  */
 const WEIGHT_SITES = [
-  { at: 'glitch-text.scss:5', route: '/', selector: '.glitch-text__inner' },
   { at: 'error-page.scss:24', route: NOT_FOUND, selector: '.error-page__code' },
   { at: 'WorkHero.scss:19', route: '/work', selector: '.work-hero__heading' },
 ] as const;
 
-const WEIGHT_SITE_COUNT = 3;
+const WEIGHT_SITE_COUNT = 2;
 
 /** The weight `--monument-bold` maps onto, per `DESIGN.md` § The mapping. */
 const WEIGHT_ROLE = '--w-black';
@@ -566,7 +568,7 @@ test('parses a real alias layer, so every case below measures something', () => 
     BOUNDARY_COUNT
   );
   expect(new Set(CALL_SITES.map((site) => site.at)).size, 'two rows name the same call site').toBe(CALL_SITE_COUNT);
-  expect(WEIGHT_SITES.length, 'the --monument-bold table no longer carries three call sites').toBe(WEIGHT_SITE_COUNT);
+  expect(WEIGHT_SITES.length, 'the --monument-bold table no longer carries two call sites').toBe(WEIGHT_SITE_COUNT);
 
   // **Both tables against the stylesheets on disk**, which is what makes the counts above a
   // measurement rather than a restatement. Compared per file so a failure names where the new call
@@ -611,7 +613,7 @@ test('parses a real alias layer, so every case below measures something', () => 
 
   expect(
     sortedEntries(callSitesOf('--monument-bold')),
-    `the --monument-bold call sites on disk are not the three this file tables. A fourth one loses the ` +
+    `the --monument-bold call sites on disk are not the two this file tables. A third one loses the ` +
       `weight that lived in the family name and renders at 400, which is the exact trap this story exists to close`
   ).toEqual(sortedEntries(tabled(WEIGHT_SITES)));
 
@@ -818,7 +820,7 @@ test('the pseudo-element read is a real read, not the element beside it', async 
   ).rejects.toThrow(/--not-declared-anywhere/);
 });
 
-test('the four --monument-bold call sites compute as the display family at its heaviest weight', async ({ page }) => {
+test('the --monument-bold call sites compute as the display family at its heaviest weight', async ({ page }) => {
   // **The order matters and it is the reason this case exists.** Three of the four set the family
   // alone before this story, so their computed `font-weight` was `400` and would still have been
   // `400` after an alias silently dropped the bold that lived in the family name. Story 1-18 set
@@ -856,7 +858,7 @@ test('the four --monument-bold call sites compute as the display family at its h
     }
   }
 
-  expect(read, 'fewer than four --monument-bold call sites were read').toBe(WEIGHT_SITE_COUNT);
+  expect(read, 'fewer than two --monument-bold call sites were read').toBe(WEIGHT_SITE_COUNT);
   expect(
     wrong,
     `the alias trap is open at a --monument-bold call site. A family alias carries the family and ` +

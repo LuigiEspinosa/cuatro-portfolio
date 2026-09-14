@@ -468,6 +468,77 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-14 reading, after Story 2-27
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `M-B5DMR-kefOZdZvPSJTN`, written
+2026-09-14T02:31:47Z, taken on the story's working tree at `9ea3e6c` plus its own files, before the
+commit that carries them: the tool's own dirty-inputs row named five paths (`GlitchText.scss` added,
+`glitch-text.scss` deleted, `GlitchText.tsx`, its test and `app/__tests__/anchor-contract.test.ts`
+modified) and every one of them is this story's. The before reading is the same command against
+build `sKfqE5wMhvYJLoYujExp_` (written 2026-09-14T02:09:26Z at `9ea3e6c`, no measured input dirty),
+and it was reproduced to the byte by a second build of `9ea3e6c` in a detached worktree
+(`mJ9UNGASZ8DuD0zGCHIBK`) so the per-chunk listing below could be taken on both sides.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 20,976 | 493,296 | yes | yes | **Observed** |
+| `/cv` | 21,773 | 258,821 | no | yes | **Observed** |
+| `/celeste` | 14,065 | 252,342 | no | yes | **Observed** |
+| `/_not-found` | 14,498 | 252,229 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,765 | no | **no**: Next's own document | **Observed** |
+
+**The whole build, before and after, and the one chunk that left.** **Observed 2026-09-14**, the
+tool's own build table on each side, and every `.next/static/chunks/*.css` and `*.js` weighed with
+`zlib.gzipSync` at level 9 (the tool's method) on both builds.
+
+| Figure | Before, `dev` at `9ea3e6c` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 21 `.js`, 14 `.css` | 21 `.js`, 14 `.css` | none | **Observed** |
+| Bytes in `.next/static/chunks` | 2,041,116 on disk, 623,059 gzipped | 2,033,059 on disk, 619,573 gzipped | **8,057 on disk, 3,486 gzipped lighter** | **Observed**, tool's build table; **Derived** delta |
+| Every `.css` chunk together | 27,196 on disk, 9,282 gzipped | 26,889 on disk, 9,195 gzipped | **307 on disk, 87 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The chunk carrying `.glitch-text` | `0pyhus-guac9o.css`, 1,514 on disk, 617 gzipped, carrying `glitch-loop` and seven `text-shadow` | `0oduorbtnamoz.css`, 1,207 on disk, 530 gzipped, carrying one `@keyframes glitch-text-arrive` | 307 on disk, 87 gzipped lighter: the whole `.css` movement is this one chunk, and the other thirteen are byte-identical | **Observed** |
+| Every `.js` chunk together | 2,013,920 on disk, 613,777 gzipped | 2,006,170 on disk, 610,378 gzipped | **7,750 on disk, 3,399 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The `/`-only client chunk | `0gd8341o2awlf.js`, 16,683 on disk, 6,898 gzipped, carrying `SplitText called before fonts loaded` and the component | `05m6od7kzs7s6.js`, 8,933 on disk, 3,499 gzipped, carrying the component and no `SplitText` mark | 7,750 on disk, 3,399 gzipped lighter: the whole `.js` movement is this one chunk, and the other twenty are byte-identical | **Observed** |
+| Narrative chunks the fingerprints hit | 9, 1,368,922 on disk, 420,134 gzipped | 8, 1,352,239 on disk, 413,236 gzipped | 16,683 on disk, 6,898 gzipped lighter: the tool attributes a whole chunk, and the chunk that carried `SplitText` is gone rather than shrunk | **Observed**, the tool's narrative table; **Derived** delta |
+| `gsap/SplitText` fingerprint | hits `0gd8341o2awlf.js` (1) | **no chunk**: the tool stopped with "no chunk in this build carries the fingerprint for gsap/SplitText" until the row left `FINGERPRINTS` | | **Observed**, the tool's own refusal, then its fingerprint table with nine rows |
+
+**What the CSS number says, and what it does not.** **Derived.** The loop was 71 lines of source and
+its deletion is 87 gzipped bytes, because eight keyframes of near-identical declarations compress
+to almost nothing; the honest figure is the one measured, not the one the source suggests. The
+story's own additions (the display roles, one two-stop keyframe, the reduced-motion rule) sit in the
+same chunk, so 530 gzipped is the whole cost of the rewritten stylesheet and 87 is the net.
+
+**What the JavaScript number says.** **Derived.** `SplitText` and the component that imported it
+shared one chunk that only `/` loads, and `/` is `ƒ (Dynamic)` since Story 2-13 reads `Save-Data`,
+so the tool's per-route table never saw it on either side (it reads prerendered documents, and
+`/` writes none; the 2026-08-29 table attributed the 15,078-byte `SplitText` chunk to `/` because
+`/` was prerendered then). The per-chunk listing is what attributes it: the one chunk that changed
+lost 7,750 bytes on disk and 3,399 gzipped, which is `SplitText` plus the GSAP scramble, the
+`fonts.ready` gate and the `useReduceMotion` subscription the component no longer carries, and no
+other chunk moved by a byte. `gsap` itself is still on every route (`08pj4xkz~kajd.js`, 26,971
+gzipped, unchanged): `HomeLayout`, `WorkHero`, `WorkItem` and the 404 still tween.
+
+**Against the 2026-08-29 reading.** **Derived.** That build carried 20 `.js` and 11 `.css` at
+2,025,358 on disk and 618,713 gzipped (§ The build this reading was taken from), with the
+`SplitText` chunk at 15,078 on disk and 6,162 gzipped attributed to `/` (§ The narrative bundle,
+the 2026-08-29 table) and the narrative bundle at 426,441 gzipped. Today's after build is 7,701
+bytes heavier on disk and 860 gzipped heavier than that one across the whole directory, over
+seven stories that added `/cv`, the Suite Directory, the skip controls, the premise block and
+three stylesheets, and the narrative bundle is 13,205 gzipped lighter, of which the `SplitText`
+chunk is 6,162 by that reading's figure and 6,898 by today's. § Reading one's "Stylesheets" line,
+3,063 gzipped on `/celeste` on 2026-08-29, reads 4,150 on `/cv` on both sides of this story, which
+is a different route and not a comparison.
+
+**Against the 2026-09-12 reading.** **Derived.** `/work` reads 493,296 against 493,301, `/cv`
+258,821 against 258,870, `/celeste` 252,342 against 252,315, `/_not-found` 252,229 against 252,203
+and `/_global-error` 188,765 against 188,763: every served route within 50 bytes on the wire, the
+rebuild variance § Stated limits records plus Story 2-26's focus rule landing in between, and none
+of it this story's, whose only route is the one the tool cannot see. The narrative bundle reads
+413,236 across 8 chunks against 419,736 across 9; the deferred share reads 118,881 against 125,381,
+the `SplitText` chunk having been counted as deferred on that reading because no prerendered
+document referenced it. The non-3D line still names `/cv`, 118,821 over budget, 84.9 percent,
+where it was 118,870 over.
+
 ### The 2026-09-12 reading, after Story 2-20
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `SWgIhyUw5RIK9pXx1sbr7`, taken on the
@@ -816,8 +887,18 @@ found no `three` would print a narrative total of zero and read like a passing b
 | postprocessing | `KawaseBlurPass` | yes | `01l6rdvnhwq_7.js` (1) | **Observed** |
 | gsap | `GSAP target ` | no | `08pj4xkz~kajd.js` (1) | **Observed** |
 | gsap/ScrollTrigger | `scrollerProxy` | no | `0r_9pnds9g3a0.js` (1) | **Observed** |
-| gsap/SplitText | `SplitText called before fonts loaded` | no | `01l6rdvnhwq_7.js` (1) | **Observed** |
+| gsap/SplitText | `SplitText called before fonts loaded` | no | `01l6rdvnhwq_7.js` (1) | **Observed**. **Row deleted from `FINGERPRINTS` on 2026-09-14**, see below |
 | lenis | `lenisVersion` | no | `0nwet2hiefxan.js` (1) | **Observed** |
+
+**The `gsap/SplitText` row left `FINGERPRINTS` on 2026-09-14, with Story 2-27.** **Decision**, with
+its reason: `GlitchText` was the library's only importer, and the story rebuilt it as
+server-rendered spans over one CSS keyframe, so no chunk in the build carries the mark any more. A
+mark that matches nothing stops the run rather than reporting the library absent (`proveFingerprints`),
+which is exactly what happened on the first run against the story's build: "no chunk in this build
+carries the fingerprint for gsap/SplitText ... Fix the table, do not widen it". The row is deleted
+rather than loosened, the pin in `ops/__tests__/asset-budget.test.ts` moved with it in the same
+commit, and the table above is kept as the 2026-08-29 reading it is. Nine fingerprints since; the
+chunk it used to hit is measured in § Every route's 2026-09-14 reading.
 
 Two hits for `three` is not a mixed fingerprint. `0g0oqlx4fsym~.js` carries the library and
 `0n9mb1l0dkz1g.js` carries its namespace re-export barrel, which exists only because `three` is
@@ -839,6 +920,32 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-14 run, after Story 2-27
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `M-B5DMR-kefOZdZvPSJTN`. § Every route's
+2026-09-14 reading, the fingerprint note under § Method and this section were filed from this run;
+every other section in this file is still the reading its own heading names.
+
+- The narrative bundle is 413,236 bytes gzipped across 8 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 36,764 below the top.
+- 118,881 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0d3ymyos8iowp.js`,
+  `05e6tciymra6v.js` is referenced by no prerendered document. The other 294,355 is on a document at
+  first paint, so the `next/dynamic` boundaries defer far less than their shape suggests.
+- The non-3D path is over budget as measured: 258,821 against 140,000, 118,821 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,328 against 140,000, 36,672 of margin. That
+  decomposition has no line for the 248,647 of JavaScript or the 1,335 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Eight narrative chunks where every run since 2026-08-29 read nine or ten.** **Derived.** The chunk
+that carried `gsap/SplitText` is gone with its importer, and the tool's deferred list is one name
+shorter for the same reason: that chunk was "referenced by no prerendered document" only because
+`/`, the one route that loaded it, is dynamic and writes none. Everything else in this list is the
+2026-09-12 run to within the rebuild variance.
 
 ### The 2026-09-12 run, after Story 2-20
 
