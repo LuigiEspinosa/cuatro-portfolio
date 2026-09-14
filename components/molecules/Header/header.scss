@@ -43,7 +43,7 @@ $header-block-size: 140px;
   // header that disappears costs Marcus the `Suite` link at the exact moment he wants it, and the
   // header carries the only route back to the payload from `/work` and the 404.
   //
-  // This works because `app/app.scss:97-100` sets `overflow-x: clip` rather than `hidden` on
+  // This works because `app/app.scss:115-118` sets `overflow-x: clip` rather than `hidden` on
   // `html` and `body`. The two clip identically; what `clip` does not do is make the element a
   // scroll container, which is what breaks a descendant's `position: sticky` silently
   // (`DESIGN.md:558-559`). A swap back would leave this rule in place and stop it working, which

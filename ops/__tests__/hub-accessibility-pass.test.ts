@@ -6,8 +6,8 @@ import { section, table, unticked } from '../contract-adoption.mjs';
 
 /**
  * The Story 2-26 record, `ops/hub-accessibility-pass.md`, held equal to the ledger the sweep
- * enforces, `EXEMPTIONS` in `tests/e2e/accessibility-floor.pw.ts`, and to the board, the register
- * and the harness record around it.
+ * enforces, `EXEMPTIONS` in `tests/e2e/accessibility-floor.pw.ts`, and to the board, the register,
+ * the Lighthouse gate and the harness record around it.
  *
  * **Both directions, because either file alone would rot.** A row in the record with no entry in
  * the ledger is a breach someone believes is tracked and is not; an entry in the ledger with no
@@ -22,7 +22,8 @@ import { section, table, unticked } from '../contract-adoption.mjs';
  *
  * This suite never opens a browser. What a ring computes to is the Playwright suite's question;
  * this one is about whether the written descriptions of the ledger say the same thing, whether
- * every row is answerable, and whether the story can close while a human half is outstanding.
+ * every row is answerable and cites the line that carries its tell, and whether the story can
+ * close while a human half is outstanding.
  */
 
 const REPO_ROOT = process.cwd();
@@ -34,15 +35,10 @@ const BOARD_REL = '_bmad-output/implementation-artifacts/sprint-status.yaml';
 const HARNESS_RECORD_REL = 'ops/rendered-output-harness.md';
 const VIOLATIONS_REL = 'ops/known-violations.md';
 const TOKENS_REL = 'contracts/tokens.css';
+const LIGHTHOUSE_REL = '.lighthouserc.js';
 
 /** Read a tracked file, line endings normalised to `\n` (`ops/__tests__/hit-target-floor.test.ts:40-61`). */
-const read = (relative: string): string => {
-  try {
-    return readFileSync(resolve(REPO_ROOT, relative), 'utf8').replace(/\r\n/g, '\n');
-  } catch (error) {
-    throw new Error(`${HERE}: ${relative} could not be read: ${error instanceof Error ? error.message : String(error)}`);
-  }
-};
+const read = (relative: string): string => readFileSync(resolve(REPO_ROOT, relative), 'utf8').replace(/\r\n/g, '\n');
 
 const record = read(RECORD_REL);
 const spec = read(SPEC_REL);
@@ -57,6 +53,10 @@ const sourceShape = (source: string): RegExp => {
 };
 
 const SOURCE_SHAPE = sourceShape(spec);
+
+/** The five kinds of row, and the text the cited source lines have to carry for each. */
+const CHECKS = ['z-index', 'depth', 'weight', 'clip', 'heading'] as const;
+type Check = (typeof CHECKS)[number];
 
 /** One ledger row, in whichever of the two files it was read from. */
 interface Row {
@@ -148,6 +148,42 @@ const disagreements = (fromRecord: readonly Row[], fromSpec: readonly Row[]): st
   return found;
 };
 
+/**
+ * The text a row's cited source lines have to carry, per kind: the literal `z-index: <match>`,
+ * the depth property or function as named, a `font-weight`, the declaration that clips
+ * (`clip-path`, `overflow`, or the `inset` that parks an element on the document's edge), and for
+ * a heading row the element standing where the heading should be.
+ */
+const tellFor = (row: Row): RegExp => {
+  const literal = row.match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  switch (row.check as Check) {
+    case 'z-index':
+      return new RegExp(`z-index:\\s*${literal}\\b`);
+    case 'depth':
+      return new RegExp(`(?<![\\w-])${literal}\\s*[:(]`);
+    case 'weight':
+      return /font-weight\s*:/;
+    case 'clip':
+      return /clip-path\s*:|overflow(?:-[xy])?\s*:|inset(?:-[a-z-]+)?\s*:/;
+    case 'heading':
+      return /<p\b|<h[1-6]\b/;
+    default:
+      throw new Error(`${HERE}: "${row.id}" carries a check kind (${row.check}) with no tell`);
+  }
+};
+
+/** The cited lines of a `source`, `path:from-to` or `path:a,b`, joined, off the file on disk. */
+const citedLines = (source: string): string => {
+  const [path, spec] = source.split(':');
+  const lines = read(path).split('\n');
+  const wanted = new Set<number>();
+  for (const part of spec.split(',')) {
+    const [from, to] = part.split('-').map(Number);
+    for (let line = from; line <= (to ?? from); line += 1) wanted.add(line);
+  }
+  return [...wanted].map((line) => lines[line - 1] ?? '').join('\n');
+};
+
 /** One planted table row per id, all six cells filled the way the record fills them. */
 const plantedRows = (ids: readonly string[]): string[][] =>
   ids.map((id) => [`\`${id}\``, '`z-index`', '`20`', '1', '`components/x/X.scss:1`', 'Story 2-29']);
@@ -198,6 +234,34 @@ const operatorTable = (markdown: string, heading: string) => {
 
 const OPERATOR_SECTIONS = ["The Operator's greyscale confirmation", "The Operator's keyboard confirmation"] as const;
 const FIELDS = ['Checked by', 'Checked on', 'Result'] as const;
+const OUTSTANDING = '_not yet performed_';
+
+/** A check is answered when its `Checked on` cell is an ISO 8601 date and nothing else; any other text is outstanding. */
+const answered = (cell: string): boolean => /^\*{0,2}\d{4}-\d{2}-\d{2}\*{0,2}$/.test(cell.trim());
+
+/** A count spelled out, the way the register's headings and index rows carry them. */
+const spelled = (count: number): string => {
+  const small = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+  if (count < 20) return small[count];
+  if (count < 100) return count % 10 === 0 ? tens[Math.floor(count / 10)] : `${tens[Math.floor(count / 10)]}-${small[count % 10]}`;
+  throw new Error(`${HERE}: ${count} is more than this register's headings spell out`);
+};
+
+/** The register's KV-6 entry, from its heading to the `---` that closes it, which has to exist. */
+const entryOf = (id: string): string => {
+  const at = violations.indexOf(`## ${id}:`);
+  expect(at, `${VIOLATIONS_REL} carries no ${id} entry`).toBeGreaterThan(-1);
+  const end = violations.indexOf('\n---', at);
+  expect(end, `${VIOLATIONS_REL}'s ${id} entry is not closed by a "---" rule, so its end cannot be found`).toBeGreaterThan(at);
+  return violations.slice(at, end);
+};
+
+const indexRow = (id: string): string => {
+  const row = violations.split('\n').find((line) => line.trim().startsWith(`| ${id} |`));
+  expect(row, `${VIOLATIONS_REL} has no ${id} index row`).toBeDefined();
+  return row ?? '';
+};
 
 describe('the record and the exemption ledger agree in both directions', () => {
   const fromRecord = recordRows(record);
@@ -213,7 +277,7 @@ describe('the record and the exemption ledger agree in both directions', () => {
     for (const row of fromSpec) {
       expect(Number.isInteger(row.count), `"${row.id}" parsed a non-integer count`).toBe(true);
       expect(row.count, `"${row.id}" counts nothing`).toBeGreaterThan(0);
-      expect(['z-index', 'depth', 'weight'], `"${row.id}" carries a check kind the sweep has no tally for`).toContain(row.check);
+      expect(CHECKS as readonly string[], `"${row.id}" carries a check kind the sweep has no tally for`).toContain(row.check);
     }
   });
 
@@ -263,6 +327,7 @@ describe('the record and the exemption ledger agree in both directions', () => {
     expect(() => specRows(literal().replace('    count: 1,\n', ''))).toThrow(/carries no "count" field/);
     const reflowed = literal(['z-one', 'z-two']).replace('  },\n  {', '    },\n    {');
     expect(() => specRows(reflowed)).toThrow(/is a reflow rather than a missing row/);
+    expect(() => sourceShape('const OTHER = /x/;')).toThrow(/no "const SOURCE_SHAPE/);
   });
 });
 
@@ -288,16 +353,32 @@ describe('every ledger row is answerable', () => {
     expect([...statuses.keys()].some((key) => key.startsWith('2-99-'))).toBe(false);
   });
 
-  it('names a source file that exists, in the one shape the spec states', () => {
+  it('cites a source whose lines carry the tell, in the one shape the spec states', () => {
     for (const row of fromRecord) {
       expect(row.source, `"${row.id}" does not match the SOURCE_SHAPE the spec states`).toMatch(SOURCE_SHAPE);
-      expect(() => read(row.source.split(':')[0]), `"${row.id}" points at ${row.source.split(':')[0]}, which is not in the tree`).not.toThrow();
+      const lines = citedLines(row.source);
+      expect(lines.trim(), `"${row.id}" cites ${row.source}, which is past the end of the file`).not.toBe('');
+      expect(
+        lines,
+        `"${row.id}" cites ${row.source} and those lines carry no ${row.check} tell (${tellFor(row)}). A reflow left the citation ` +
+          `pointing at something else:\n${lines}`
+      ).toMatch(tellFor(row));
     }
-    expect(SOURCE_SHAPE.test('components/atoms/Logo/Logo.tsx:7')).toBe(true);
-    expect(SOURCE_SHAPE.test('app/app.scss:118-121')).toBe(true);
-    expect(SOURCE_SHAPE.test('components/organisms/WorkHero/WorkHero.scss:15,40')).toBe(true);
-    expect(SOURCE_SHAPE.test('components/atoms/Logo/Logo.tsx')).toBe(false);
-    expect(() => sourceShape('const OTHER = /x/;')).toThrow(/no "const SOURCE_SHAPE/);
+    // The tells, on planted lines, so a citation cannot pass by pointing at nothing in particular.
+    const planted = (check: string, match: string): Row => ({ id: 'x', check, match, count: 1, source: 'x.scss:1', closedBy: 'Story 9-99' });
+    expect(tellFor(planted('z-index', '20')).test('  z-index: 20;')).toBe(true);
+    expect(tellFor(planted('z-index', '2')).test('  z-index: 20;')).toBe(false);
+    expect(tellFor(planted('depth', 'linear-gradient')).test('    linear-gradient(red, blue),')).toBe(true);
+    expect(tellFor(planted('depth', 'linear-gradient')).test('    repeating-linear-gradient(red, blue),')).toBe(false);
+    expect(tellFor(planted('depth', 'text-shadow')).test('    text-shadow: none;')).toBe(true);
+    expect(tellFor(planted('weight', '.x')).test('    font-weight: 600;')).toBe(true);
+    expect(tellFor(planted('clip', '.x')).test('    clip-path: polygon(0 0);')).toBe(true);
+    expect(tellFor(planted('clip', '.x')).test('  inset-block-start: 0;')).toBe(true);
+    expect(tellFor(planted('clip', '.x')).test('  color: red;')).toBe(false);
+    expect(tellFor(planted('heading', '/x')).test("        <p className='error-page__code'>")).toBe(true);
+    expect(() => tellFor(planted('smell', '.x'))).toThrow(/no tell/);
+    expect(citedLines('contracts/tokens.css:129-130')).toContain('--z-base');
+    expect(citedLines('contracts/tokens.css:129,135')).toContain('--z-tooltip');
   });
 });
 
@@ -332,10 +413,11 @@ describe('the thresholds are read off the contract, never typed', () => {
   });
 
   it('derives the z-level names from the contract rather than a count', () => {
-    expect(spec, `${SPEC_REL} no longer parses contracts/tokens.css for the --z-* names`).toContain("--z-[a-z0-9-]+");
-    const layers = [...read(TOKENS_REL).matchAll(/^\s*(--z-[a-z0-9-]+)\s*:/gm)].map((match) => match[1]);
+    expect(spec, `${SPEC_REL} no longer parses contracts/tokens.css for the --z-* names`).toContain('--z-[a-z0-9-]+');
+    const source = read(TOKENS_REL).replace(/\/\*[\s\S]*?\*\//g, '');
+    const layers = [...source.matchAll(/(?:^|[;{])\s*(--z-[a-z0-9-]+)\s*:/gm)].map((match) => match[1]);
     expect(layers.length, `${TOKENS_REL} declares no --z-* name`).toBeGreaterThan(0);
-    expect(record, `${RECORD_REL} does not record the seven layer names`).toContain(layers.join('`, `'));
+    expect(record, `${RECORD_REL} does not record the layer names the contract declares`).toContain(layers.join('`, `'));
   });
 
   it('takes no screenshot and derives its routes from app/', () => {
@@ -358,21 +440,28 @@ describe("the Operator's two confirmations are recorded honestly", () => {
       expect(operator.cell('Method'), `${RECORD_REL} states no method under "${heading}"`).not.toBe('');
     });
 
-    it(`${heading}: is either wholly answered or wholly outstanding, never half of each`, () => {
-      const outstanding = FIELDS.map((field) => operator.cell(field).includes('_not yet performed_'));
-      expect(
-        new Set(outstanding).size,
-        `${RECORD_REL} answers some of the cells under "${heading}" and leaves others at "not yet performed"`
-      ).toBe(1);
+    it(`${heading}: is either answered on an ISO date with every cell filled, or outstanding in every cell`, () => {
+      if (answered(operator.cell('Checked on'))) {
+        for (const field of FIELDS) {
+          expect(operator.cell(field), `${RECORD_REL}: "${heading}" is dated and its "${field}" cell still reads outstanding`).not.toContain(OUTSTANDING);
+        }
+      } else {
+        for (const field of FIELDS) {
+          expect(
+            operator.cell(field),
+            `${RECORD_REL}: "${heading}" carries no ISO date in "Checked on", so it is outstanding, and its "${field}" cell reads ` +
+              `"${operator.cell(field)}" rather than "${OUTSTANDING}". A variant placeholder cannot count as done, and a ` +
+              `half-filled table cannot be told later from a check that was performed`
+          ).toBe(OUTSTANDING);
+        }
+      }
     });
   }
 
   it('is not marked done on the board while either confirmation is outstanding', () => {
     const key = [...statuses.keys()].find((candidate) => candidate.startsWith('2-26-'));
     expect(key, `${BOARD_REL} no longer carries a 2-26 story key`).toBeDefined();
-    const pending = OPERATOR_SECTIONS.filter((heading) =>
-      FIELDS.some((field) => operatorTable(record, heading).cell(field).includes('_not yet performed_'))
-    );
+    const pending = OPERATOR_SECTIONS.filter((heading) => !answered(operatorTable(record, heading).cell('Checked on')));
     if (pending.length > 0) {
       expect(
         statuses.get(key ?? ''),
@@ -383,7 +472,12 @@ describe("the Operator's two confirmations are recorded honestly", () => {
     }
   });
 
-  it('fails a half-filled table and a done board on planted controls', () => {
+  it('reads a dated table as answered, a placeholder table as outstanding, and a variant placeholder as neither', () => {
+    expect(answered('**2026-09-20**')).toBe(true);
+    expect(answered('2026-09-20')).toBe(true);
+    for (const cell of [OUTSTANDING, '_pending_', 'soon', '2026-09', '', 'on 2026-09-20']) {
+      expect(answered(cell), `"${cell}" was read as answered`).toBe(false);
+    }
     const planted = (cells: [string, string, string]): string =>
       [
         '# A record',
@@ -398,11 +492,14 @@ describe("the Operator's two confirmations are recorded honestly", () => {
         `| Result | ${cells[2]} |`,
         '',
       ].join('\n');
-    const outstandingOf = (markdown: string): boolean[] =>
-      FIELDS.map((field) => operatorTable(markdown, OPERATOR_SECTIONS[0]).cell(field).includes('_not yet performed_'));
-    expect(new Set(outstandingOf(planted(['_not yet performed_', '_not yet performed_', '_not yet performed_']))).size).toBe(1);
-    expect(new Set(outstandingOf(planted(['The Operator', '2026-09-20', 'Pass']))).size).toBe(1);
-    expect(new Set(outstandingOf(planted(['The Operator', '_not yet performed_', '_not yet performed_']))).size).toBe(2);
+    const planted_ = (cells: [string, string, string]) => operatorTable(planted(cells), OPERATOR_SECTIONS[0]);
+    expect(answered(planted_([OUTSTANDING, OUTSTANDING, OUTSTANDING]).cell('Checked on'))).toBe(false);
+    expect(answered(planted_(['The Operator', '**2026-09-20**', 'Pass']).cell('Checked on'))).toBe(true);
+    // A variant placeholder reads as outstanding, and then its cells are not the one placeholder,
+    // which is the shape the case above refuses.
+    const variant = planted_(['The Operator', '_pending_', OUTSTANDING]);
+    expect(answered(variant.cell('Checked on'))).toBe(false);
+    expect(FIELDS.every((field) => variant.cell(field) === OUTSTANDING)).toBe(false);
     expect(() => operatorTable('# nothing\n', OPERATOR_SECTIONS[0])).toThrow(/no "## The Operator's greyscale confirmation" section/);
     // And the board parser sees a done story, so the guard above is not vacuous.
     expect(statuses.get('2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain')).toBe('done');
@@ -434,46 +531,105 @@ describe('the four manual checks and the readings are recorded', () => {
       expect(row[0]).toMatch(/^F-\d+$/);
       expect(row[3], `${row[0]} names no owner`).not.toBe('');
     }
-    const lighthouse = table(section(record, 'Lighthouse readings'), 'URL');
-    expect(lighthouse.rows.map((row) => unticked(row[0]))).toEqual(['/', '/work', '/cv']);
+  });
+
+  it('records a Lighthouse reading for exactly the URLs the gate collects, in both directions', () => {
+    // The parse `ops/__tests__/hit-target-floor.test.ts:675-679` uses, with its own reflow guard,
+    // mapped to pathnames.
+    const gatedSurfaces = (config: string): string[] => {
+      const collectBlock = /collect: \{[\s\S]*?\burl: \[([\s\S]*?)\]/.exec(config)?.[1];
+      if (collectBlock === undefined) throw new Error(`${LIGHTHOUSE_REL} has no collect.url array, or it has been reflowed`);
+      const urls = [...collectBlock.matchAll(/'(https?:\/\/[^']+)'/g)].map((match) => match[1]);
+      const declared = (collectBlock.match(/https?:\/\//g) ?? []).length;
+      if (urls.length === 0) throw new Error(`${LIGHTHOUSE_REL}: collect.url is empty, so nothing is audited`);
+      if (urls.length !== declared) throw new Error(`${LIGHTHOUSE_REL}: collect.url parsed to ${urls.length} URLs and declares ${declared}`);
+      return urls.map((url) => new URL(url).pathname.replace(/\/$/, '') || '/').sort();
+    };
+    const recordedSurfaces = (markdown: string): string[] =>
+      table(section(markdown, 'Lighthouse readings'), 'URL')
+        .rows.map((row) => unticked(row[0]))
+        .sort();
+    const differences = (recorded: readonly string[], gated: readonly string[]): string[] => [
+      ...recorded.filter((route) => !gated.includes(route)).map((route) => `${route} has a reading in ${RECORD_REL} and is not in ${LIGHTHOUSE_REL} collect.url`),
+      ...gated.filter((route) => !recorded.includes(route)).map((route) => `${route} is in ${LIGHTHOUSE_REL} collect.url and has no reading in ${RECORD_REL}`),
+    ];
+
+    const gated = gatedSurfaces(read(LIGHTHOUSE_REL));
+    expect(gated, 'the gate no longer collects the home route').toContain('/');
+    expect(
+      differences(recordedSurfaces(record), gated),
+      `${RECORD_REL} § Lighthouse readings and ${LIGHTHOUSE_REL} collect.url name different surfaces. A URL that joins or ` +
+        `leaves the gate moves the table in the same commit`
+    ).toEqual([]);
+    for (const row of table(section(record, 'Lighthouse readings'), 'URL').rows) {
+      for (const [index, category] of ['accessibility', 'best practices', 'SEO'].entries()) {
+        expect(row[index + 1], `${unticked(row[0])} records no ${category} score`).toMatch(/\d\.\d\d/);
+      }
+    }
+
+    // The comparison, on planted inputs, in both directions, and the parse refusing what it cannot read.
+    const config = (urls: string[]): string => `module.exports = { ci: { collect: { url: [${urls.map((url) => `'${url}'`).join(', ')}], numberOfRuns: 3 } } };`;
+    expect(gatedSurfaces(config(['http://localhost:3000', 'http://localhost:3000/work/']))).toEqual(['/', '/work']);
+    expect(differences(['/', '/cv', '/work'], ['/', '/work'])).toEqual([`/cv has a reading in ${RECORD_REL} and is not in ${LIGHTHOUSE_REL} collect.url`]);
+    expect(differences(['/', '/work'], ['/', '/cv', '/work'])).toEqual([`/cv is in ${LIGHTHOUSE_REL} collect.url and has no reading in ${RECORD_REL}`]);
+    expect(differences(['/', '/work'], ['/', '/work'])).toEqual([]);
+    expect(() => gatedSurfaces('module.exports = {};')).toThrow(/no collect.url array/);
+    expect(() => gatedSurfaces(config([]))).toThrow(/collect.url is empty/);
+    expect(() => gatedSurfaces("module.exports = { ci: { collect: { url: ['http://a', \"http://b\"] } } };")).toThrow(/parsed to 1 URLs and declares 2/);
   });
 });
 
 describe('the register, the harness record and the story ids', () => {
-  const indexRow = (id: string): string => {
-    const row = violations.split('\n').find((line) => line.trim().startsWith(`| ${id} |`));
-    expect(row, `${VIOLATIONS_REL} has no ${id} index row`).toBeDefined();
-    return row ?? '';
-  };
-  const entryOf = (id: string): string => {
-    const at = violations.indexOf(`## ${id}:`);
-    expect(at, `${VIOLATIONS_REL} carries no ${id} entry`).toBeGreaterThan(-1);
-    return violations.slice(at, violations.indexOf('\n---', at));
-  };
+  const fromRecord = recordRows(record);
 
-  it('registers KV-6 with the index row and the entry naming the same closers', () => {
+  it('registers KV-6 with the index row and the entry naming the same closers and carrying the ledger counts, spelled out', () => {
     const kv6 = indexRow('KV-6');
     expect(kv6, 'the KV-6 index row does not name the rules it breaches').toContain('UX-DR44');
     expect(kv6, 'the KV-6 index row is not Open').toContain('**Open**');
     expect(kv6, 'the KV-6 index row claims a retirement date').toContain('_not retired_');
     const entry = entryOf('KV-6');
     expect(entry.length, 'the KV-6 entry sliced to nothing').toBeGreaterThan(500);
+    const heading = entry.split('\n')[0];
+
     // The closers are read off the ledger rather than restated: every story the rows name is in
     // both the index row and the entry, and no story the rows do not name is in the index row.
-    const closers = [...new Set(recordRows(record).map((row) => row.closedBy.replace('Story ', '')))].sort();
+    const closers = [...new Set(fromRecord.map((row) => row.closedBy.replace('Story ', '')))].sort();
     expect(closers.length).toBeGreaterThan(0);
     for (const closer of closers) {
       expect(kv6, `the KV-6 index row does not name Story ${closer}, which a ledger row is closed by`).toContain(closer);
       expect(entry, `the KV-6 entry does not name Story ${closer}, which a ledger row is closed by`).toContain(closer);
     }
-    const namedInIndex = [...kv6.matchAll(/\b2-(\d+)\b/g)].map((match) => `2-${match[1]}`).filter((id) => id !== '2-26');
-    expect([...new Set(namedInIndex)].sort(), 'the KV-6 index row names a closer no ledger row is closed by').toEqual(closers);
+    const retiredBy = /\| KV-6 \|(?:[^|]*\|){4}([^|]*)\|/.exec(kv6)?.[1] ?? '';
+    expect(retiredBy.trim(), 'the KV-6 index row has no "Retired by" cell').not.toBe('');
+    const namedInIndex = [...new Set([...retiredBy.matchAll(/\b(\d+-\d+)\b/g)].map((match) => match[1]))].sort();
+    expect(namedInIndex, 'the KV-6 index row names a closer no ledger row is closed by, or misses one').toEqual(closers);
+
+    // The counts in the heading and the index row are the ledger's sums per check, spelled out, so
+    // a row deleted without the heading moving fails here rather than reading as a stale count.
+    const sums = new Map<Check, number>(CHECKS.map((check) => [check, fromRecord.filter((row) => row.check === check).reduce((total, row) => total + row.count, 0)]));
+    const phrases: [Check, RegExp][] = [
+      ['z-index', new RegExp(`\\b${spelled(sums.get('z-index') ?? 0)} z-index literals?\\b`, 'i')],
+      ['depth', new RegExp(`\\b${spelled(sums.get('depth') ?? 0)} depth tells?\\b`, 'i')],
+      ['clip', new RegExp(`\\b${spelled(sums.get('clip') ?? 0)} clipped rings?\\b`, 'i')],
+      ['weight', new RegExp(`\\b${spelled(sums.get('weight') ?? 0)} synthesised weights?\\b`, 'i')],
+      ['heading', new RegExp(`\\b${spelled(sums.get('heading') ?? 0)} routes? with no level-1 heading\\b`, 'i')],
+    ];
+    for (const [check, phrase] of phrases) {
+      expect(heading, `the KV-6 heading does not carry the ledger's ${check} sum (${sums.get(check)}) spelled out: ${heading}`).toMatch(phrase);
+      expect(kv6, `the KV-6 index row does not carry the ledger's ${check} sum (${sums.get(check)}) spelled out`).toMatch(phrase);
+    }
+    expect(spelled(7)).toBe('seven');
+    expect(spelled(15)).toBe('fifteen');
+    expect(spelled(21)).toBe('twenty-one');
+    expect(spelled(30)).toBe('thirty');
+    expect(new RegExp(`\\b${spelled(15)} depth tells?\\b`, 'i').test('Seventeen depth tells'), 'a wrong spelled count passed the phrase').toBe(false);
+
     expect(entry, 'the KV-6 entry does not say where the ledger is tracked mechanically').toContain(SPEC_REL);
     expect(entry).toContain(RECORD_REL);
     expect(entry).toContain(HERE);
   });
 
-  it('is named by the harness record, under what the harness asserts, once', () => {
+  it('is named by the harness record in exactly one row per assertion, all under what the harness asserts', () => {
     const harness = read(HARNESS_RECORD_REL);
     expect(harness, `${HARNESS_RECORD_REL} does not point at ${RECORD_REL}`).toContain(RECORD_REL);
     expect(harness, `${HARNESS_RECORD_REL} does not name the new spec file`).toContain(SPEC_REL);
@@ -483,7 +639,7 @@ describe('the register, the harness record and the story ids', () => {
     expect(notYet).toBeGreaterThan(-1);
     const marker = `| \`${SPEC_REL}\` |`;
     const rows = harness.split('\n').filter((line) => line.includes(marker));
-    expect(rows.length, `${HARNESS_RECORD_REL} carries ${rows.length} rows for ${SPEC_REL}, and five assertions want five`).toBe(5);
+    expect(rows.length, `${HARNESS_RECORD_REL} carries ${rows.length} rows for ${SPEC_REL}, and six assertions want six`).toBe(6);
     for (const line of rows) {
       const at = harness.indexOf(line);
       expect(at > asserts && at < notYet, `${HARNESS_RECORD_REL} keeps a ${SPEC_REL} row under "what it deliberately does not assert"`).toBe(true);
@@ -504,14 +660,5 @@ describe('the register, the harness record and the story ids', () => {
       expect(dotted, `${where} writes a story id dotted, which a search for the hyphenated form misses`).toEqual([]);
     }
     expect([...'closed by Story 2.15 and Story 2-30'.matchAll(/\bStory \d+\.\d+/g)].map((m) => m[0])).toEqual(['Story 2.15']);
-  });
-});
-
-describe(`${HERE} reads the real files`, () => {
-  it('found the record, the spec, the board and the register', () => {
-    expect(record.length).toBeGreaterThan(1000);
-    expect(spec).toContain('const EXEMPTIONS');
-    expect(board).toContain('development_status:');
-    expect(violations).toContain('## KV-6:');
   });
 });

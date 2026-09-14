@@ -393,7 +393,7 @@ const CALL_SITES: readonly CallSite[] = [
   },
   // A decorative `//` list marker, duplicated by nothing.
   {
-    at: 'WorkItem.scss:116',
+    at: 'WorkItem.scss:121',
     route: '/work',
     selector: '.work-item__highlights li',
     pseudo: '::before',

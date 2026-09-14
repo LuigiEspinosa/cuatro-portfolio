@@ -661,7 +661,7 @@ disambiguating words are what make that harmless, so they are kept.
 
 **`overflow-x: clip` acquired a second consumer on 2026-09-08, and it is not an A-5 one.**
 **Decision**, recorded here because this section is where the argument for `clip` over `hidden`
-lives. Story 2-15 made the header `position: sticky`, which works only because `app/app.scss:97-100`
+lives. Story 2-15 made the header `position: sticky`, which works only because `app/app.scss:115-118`
 clips rather than hides: the two clip identically and `hidden` additionally makes the element a
 scroll container, which breaks a descendant's stickiness with nothing failing anywhere. Until that
 story the argument for `clip` was entirely about not clamping the document's scroll height, which

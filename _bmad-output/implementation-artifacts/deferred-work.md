@@ -2973,7 +2973,7 @@ status: done
     is the Hub's accessibility pass and is the natural place to sweep the rest of the A-numbers for
     the same shape before it starts.
 
-    Corrected 2026-09-13 by Story 2-26, which stays open. The paragraph above that calls the other
+    Corrected 2026-09-13 by Story 2-26; this entry stays open. The paragraph above that calls the other
     four surfaces' skip-link and `<main>` "Story 2-26's work" was wrong about the owner: the
     Operator's condition for doing it in that story was one change in the shared layout, and
     `<main id='main' tabIndex={-1}>` is not one, because a layout-level `<main>` would wrap the
@@ -3253,6 +3253,12 @@ status: done
     amendment in place. `ScanlineOverlay.tsx:8` is the precedent, a decorative layer whose whole
     accessibility is `aria-hidden`. The two met clauses stay asserted in `tests/e2e/front-door.pw.ts`
     and nothing in the tree changes. Recorded in `ops/hub-accessibility-pass.md` § Decisions.
+
+    The withdrawn clause survives in four places that story did not edit, its Never boundary
+    allowing one `EXPERIENCE.md` line only: `EXPERIENCE.md:527-528`, `epics.md:644`,
+    `epics.md:2591` and `epics.md:3328`, the last of them Story 2-29's own acceptance criterion,
+    so that story would inherit "content stated in prose" unknowingly. Named here so it does not;
+    the deferred entry that carries the four corrections is filed separately.
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
@@ -4662,4 +4668,27 @@ status: done
     **Owner: unassigned, the design owner.** **Trigger: the ruling**, after which one line in each
     pair is corrected and, if the tech array moves to `--t-2xs`, `SuiteDirectory.scss:152` and the
     exception move with it in one change.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
+  id: DW-97
+  summary: >-
+    The A-14 clause the Operator withdrew on 2026-09-13 ("its content stated in prose") survives in
+    four planning lines the amendment did not reach, one of them Story 2-29's own acceptance
+    criterion, so that story inherits a requirement that no longer exists.
+  evidence: |-
+    Observed 2026-09-13 by the review pass of Story 2-26. The ruling landed as one dated amendment
+    at `EXPERIENCE.md:773`, the only planning-document edit the story's boundaries allowed. The
+    same clause still reads unamended at `EXPERIENCE.md:527-528` ("It is decorative and its content
+    is stated in prose"), `epics.md:644` (the A-list summary, "its content stated in prose"),
+    `epics.md:2591` (Story 2.13's criterion, "and its content is stated in prose") and
+    `epics.md:3328` (Story 2.29's criterion, "**Given** the 3D canvas is decorative and its content
+    is stated in prose (A-14)"). The first three are stale restatements; the fourth is live: Story
+    2-29 rebuilds the hero and would read that Given as a requirement to write prose the ruling says
+    is not owed. The Decision in `ops/hub-accessibility-pass.md` and the DW-52 closure name the four
+    places so a reader of either finds them; none was edited.
+
+    **Owner: Story 2-29**, which reaches `epics.md:3328` when it opens and can carry the other three
+    lines in the same dated amendment. **Trigger: Story 2-29's planning**, before its criteria are
+    frozen.
   status: open
