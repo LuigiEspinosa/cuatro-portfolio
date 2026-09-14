@@ -529,6 +529,14 @@ kept as the Story 1-18 record of what was repaired; `WEIGHT_CALL_SITES` in
 `app/__tests__/anchor-contract.test.ts` and `WEIGHT_SITES` in `tests/e2e/anchor-aliases.pw.ts` are
 the current lists, and both fell to three in the same commit.
 
+**Two rows since 2026-09-14.** Story 2-27 deleted `components/molecules/GlitchText/glitch-text.scss`
+with the loop it carried and wrote `GlitchText.scss` beside the component, which names `--f-display`
+and `--w-black` directly and reaches no alias, so the one row above that was never the trap is gone
+too. `WEIGHT_SITES` in `tests/e2e/anchor-aliases.pw.ts` fell to two (`error-page.scss:24`,
+`WorkHero.scss:19`); `WEIGHT_CALL_SITES` in `app/__tests__/anchor-contract.test.ts` fell to one,
+because `error-page.scss` had already moved to that suite's `TOKEN_NATIVE_STYLESHEETS` with Story
+2-17 and `GlitchText.scss` joined it there. The table is kept as taken.
+
 **The order is the point, for the three that were trapped.**
 `ops/rendered-output-harness.md` § "The finding Story 1-18 inherits" records that a `font-weight`
 read against a tree where the weight was not set is green and meaningless, because those three

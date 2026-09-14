@@ -69,6 +69,11 @@ export const NARRATIVE_ESTIMATE_BYTES = [300 * KB, 450 * KB];
  *
  * Every mark is checked against every chunk on every run, and a mark that
  * matches nothing stops the run. See `proveFingerprints`.
+ *
+ * Ten rows until 2026-09-14, nine since: `gsap/SplitText` (mark `SplitText
+ * called before fonts loaded`) left with Story 2-27, which rebuilt `GlitchText`,
+ * its only importer, as server-rendered spans over one CSS keyframe. The row is
+ * deleted rather than kept, because a mark that matches nothing stops the run.
  */
 export const FINGERPRINTS = [
   { library: 'three', mark: 'WebGLRenderer', webgl: true },
@@ -79,7 +84,6 @@ export const FINGERPRINTS = [
   { library: 'postprocessing', mark: 'KawaseBlurPass', webgl: true },
   { library: 'gsap', mark: 'GSAP target ', webgl: false },
   { library: 'gsap/ScrollTrigger', mark: 'scrollerProxy', webgl: false },
-  { library: 'gsap/SplitText', mark: 'SplitText called before fonts loaded', webgl: false },
   { library: 'lenis', mark: 'lenisVersion', webgl: false },
 ];
 

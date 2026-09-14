@@ -2573,6 +2573,13 @@ status: done
     0.94 is left as the reading it was. Both are in `ops/hub-accessibility-pass.md` § Lighthouse
     readings. The 404 carries the same defect on `.error-page__code`, a `<p>` with an `aria-label`,
     which Lighthouse cannot audit on a 404 and which is finding F-12 there, Story 2-30's.
+
+    2026-09-14: the interim wrapper role is gone. Story 2-27 rebuilt `GlitchText` as a real `<h1>`
+    whose accessible name is its own text content, with no `aria-label`, `aria-hidden`, `role` or
+    `aria-level` on any node, which is the shape `EXPERIENCE.md:452-453` asked for and the fix
+    above stood in for. `tests/e2e/display-entrance.pw.ts` reads the tree as one level-1 heading
+    named `Luigi Espinosa` with nothing generic named; the screen-reader read is the Operator's,
+    pending action 4 in `ops/hub-accessibility-pass.md`.
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
@@ -2682,7 +2689,21 @@ status: done
     real breach, and both belong to the story that owns the component. The `prefers-reduced-motion`
     guard at `:17-19` is present and correct, so a visitor who asks for stillness gets it; the
     breach is for everyone else.
-  status: open
+
+    Closed 2026-09-14 by Story 2-27, which is that story: `glitch-text.scss` is deleted with the
+    loop, and `GlitchText.scss` beside the component carries one `@keyframes` on `opacity` alone,
+    one iteration per character, staggered by DOM index inside `--dur-major`, with `animation:
+    none` under `prefers-reduced-motion: reduce`. `tests/e2e/display-entrance.pw.ts` reads every
+    span's `animation-iteration-count` as `1` and the heading's `text-shadow`, `clip-path` and
+    `transform` as `none` on the running page, and was seen failing against a planted `infinite`
+    and a planted `text-shadow` in the source before each was removed; the instrument limit this
+    entry named (a CSS animation writes no inline declaration for `narrative.pw.ts`'s sweep to
+    see) is why that spec reads computed style rather than inline style. The seven `text-shadow`
+    steps left the built CSS with it: the `shadow-glitch-loop` ledger row is deleted in
+    `ops/hub-accessibility-pass.md` and `tests/e2e/accessibility-floor.pw.ts`, and KV-6 reads
+    eight depth tells. The measured weight, 87 gzipped bytes of CSS and 3,399 of JavaScript with
+    `gsap/SplitText`, is in `ops/asset-budget.md`, the 2026-09-14 reading.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-32
@@ -4264,6 +4285,13 @@ status: done
     the `AGENTS.md` lines, count and citation both, go in the same change or in the next
     `bmad-project-context` refresh, whichever lands first. **Trigger: the first edit to
     `app/app.scss:49-58`.**
+
+    **Counted again 2026-09-14** by Story 2-27, which deleted `glitch-text.scss` with its
+    `--monument-bold` call site: `WEIGHT_SITES` in `tests/e2e/anchor-aliases.pw.ts` has two rows
+    (`error-page.scss:24`, `WorkHero.scss:19`) and `WEIGHT_CALL_SITES` in the unit suite one
+    (`WorkHero.scss`), so `app/app.scss:49-56`'s "four" and `AGENTS.md`'s "four existing sites"
+    are now stale by four stories. Neither comment was edited, for the reasons above; the owner
+    and the trigger stand.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
@@ -4691,4 +4719,33 @@ status: done
     **Owner: Story 2-29**, which reaches `epics.md:3328` when it opens and can carry the other three
     lines in the same dated amendment. **Trigger: Story 2-29's planning**, before its criteria are
     frozen.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
+  id: DW-98
+  summary: >-
+    `tests/e2e/front-door.pw.ts` measures the no-shift claims at the wide viewport only, for a
+    reason that no longer exists: the below-768 rewrap `GlitchText`'s font-gated split caused
+    left with Story 2-27, and the narrow viewport is now measurable.
+  evidence: |-
+    Observed 2026-09-14 by reading. `front-door.pw.ts`'s default-path no-shift case (its comment
+    at the `and the default path does not move either` test) and the every-frame case under
+    `the running page settles at one height` both state that they measure at `WIDE_VIEWPORT`
+    because below 768 `GlitchText` re-split the display line into per-character inline blocks
+    once the fonts resolved, which could rewrap it, and that reflow belonged to the component
+    rather than to the decision being measured. Story 2-27 rebuilt the component as inline spans in
+    the served markup with no split and no font gate, so at 360 the hero's height is its content's
+    from first paint and nothing in the heading moves it afterwards. Both comments were reworded
+    as history in that story; the scope was left at the wide viewport.
+
+    Not widened by Story 2-27, whose spec names the widening as a question for the Operator and
+    books it here otherwise: the two cases are Story 2-13's instrument for the hero's geometry,
+    the narrow viewport is the one `HomeLayout.scss` stacks the panels on, and a 360 measurement
+    that finds movement would be finding the hero's, which is Story 2-29's file. The measurement
+    is cheap once that story owns the answer: the same two cases with `RENDERED_VIEWPORT` beside
+    `WIDE_VIEWPORT`, and `SETTLING_SLACK` re-read against what the stacked hero actually does.
+
+    **Owner: Story 2-29**, which rebuilds `HomeLayout` and owns the hero's height at every width.
+    **Trigger: that story's first edit to `HomeLayout.scss`'s below-768 block**, or the Operator
+    saying otherwise.
   status: open

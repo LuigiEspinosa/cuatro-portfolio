@@ -112,17 +112,20 @@ const goTo = async (page: Page): Promise<void> => {
 };
 
 /**
- * Hydrated and decided, and decided the way the door says. `front-door.pw.ts:311-331` is the
- * reasoning for the first half; the second half is what stops a runner without WebGL from running
- * the default door's cases on the flat path and calling them green.
+ * Hydrated and decided, and decided the way the door says. `front-door.pw.ts:296-331` is the
+ * reasoning for the first half (React's own `__reactFiber$` mark on the container, since Story
+ * 2-27 took the inline opacity it used to read off the page); the second half is what stops a
+ * runner without WebGL from running the default door's cases on the flat path and calling them
+ * green.
  */
 const settled = async (page: Page, door: FrontDoor): Promise<void> => {
   await expect
     .poll(
       () =>
         page.evaluate(() => {
-          const glitch = document.querySelector<HTMLElement>('.glitch-text__inner');
-          const hydrated = glitch !== null && glitch.style.opacity !== '';
+          const container = document.querySelector('.home-container');
+          const hydrated =
+            container !== null && Object.getOwnPropertyNames(container).some((name) => name.startsWith('__reactFiber$'));
           const decided =
             document.querySelector('.home-container--flat') !== null ||
             document.querySelector('#gem-canvas canvas') !== null;

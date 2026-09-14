@@ -780,7 +780,9 @@ describe('classifying a chunk by fingerprint', () => {
   it('keeps the fingerprint table exactly as the record states it', () => {
     // The record publishes these marks and the proof that each discriminates.
     // Adding, removing or loosening one moves a published figure, so it moves
-    // this list in the same commit or it does not land.
+    // this list in the same commit or it does not land. Ten rows until
+    // 2026-09-14: Story 2-27 dropped the `gsap/SplitText` import with the
+    // component that carried it, and the row left in the same commit.
     expect(FINGERPRINTS.map((entry) => [entry.library, entry.mark, entry.webgl])).toEqual([
       ['three', 'WebGLRenderer', true],
       ['@react-three/fiber', 'react-three-fiber', true],
@@ -790,7 +792,6 @@ describe('classifying a chunk by fingerprint', () => {
       ['postprocessing', 'KawaseBlurPass', true],
       ['gsap', 'GSAP target ', false],
       ['gsap/ScrollTrigger', 'scrollerProxy', false],
-      ['gsap/SplitText', 'SplitText called before fonts loaded', false],
       ['lenis', 'lenisVersion', false],
     ]);
     expect(SHELL_MARKS.map((entry) => entry.mark)).toEqual(['react-dom', 'flightRouterState', 'core-js']);
