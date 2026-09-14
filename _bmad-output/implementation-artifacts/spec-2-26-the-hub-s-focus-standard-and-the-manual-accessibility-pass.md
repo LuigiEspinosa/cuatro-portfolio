@@ -2,7 +2,7 @@
 title: "Story 2.26: The Hub's focus standard and the manual accessibility pass"
 type: 'feature'
 created: '2026-09-13'
-status: 'review'
+status: 'in-review'
 baseline_commit: '3435ec3d6ea977bbfce974173351d238cbca243f'
 review_loop_iteration: 0
 context:
@@ -108,7 +108,7 @@ re-booked to its chrome owner.
 | Built CSS z-index | Every `.next/static/chunks/*.css` (`ops/asset-budget.mjs:970-982`) | Every `z-index:<number>` occurrence is claimed by a ledger row with `check: 'z-index'`, tallied by value; `var(--z-*)` never counted; the seven names come from `contracts/tokens.css:129-135` | Unlisted value, stale row or count mismatch fails naming value, ledger sum and observed count |
 | Built CSS shadow and gradient | Same files | Every `box-shadow:`, `text-shadow:`, `linear-gradient(`, `radial-gradient(`, `repeating-linear-gradient(`, `conic-gradient(` occurrence claimed by a row, tallied by function or property | Same |
 | Empty build | No `.css` under `.next/static/chunks` | Throws before any tally, never passes vacuously (`asset-budget.mjs:993-998`) | The thrown message names the directory |
-| Type floor, rendered | Every visible element with a direct non-whitespace text node, outside `aria-hidden` subtrees, every route | Computed `font-size` at least `--t-3xs`; every `p` at least `--t-2xs`; the pinned prose selectors at least `--t-sm`; `font-style` never `italic`; computed `font-weight` never above the family's published range (`contracts/fonts.css`), families outside the contract skipped and listed | Finding per element; a synthesised weight is a ledger row with `check: 'weight'` tallied by selector across routes |
+| Type floor, rendered | Every visible element with a direct non-whitespace text node, outside `aria-hidden` subtrees, every route | Computed `font-size` at least `--t-3xs`; every `p` at least `--t-2xs` except the four labels `DESIGN.md` places at `--t-3xs` by name, pinned by selector with their `DESIGN.md` line (Operator ruling 2026-09-13, see the Spec Change Log); the pinned prose selectors at least `--t-sm`; `font-style` never `italic`; computed `font-weight` never above the family's published range (`contracts/fonts.css`), families outside the contract skipped and listed | Finding per element; a synthesised weight is a ledger row with `check: 'weight'` tallied by selector across routes |
 | Type source | `app/**/*.scss`, `components/**/*.scss` | No `font-size` whose value carries `px` | Fails naming path and line |
 | Autoplay | Every route | No `video`, `audio`, `marquee`, `meta[http-equiv="refresh"]`, no `[autoplay]` | Fails naming the element |
 | Ledger drift | Record table and `EXEMPTIONS` differ | Agreement suite names the direction and the row; `closedBy` must be on the board and not `done`; `source` must exist on disk | |
@@ -356,7 +356,8 @@ nothing enumerates `ops/*.md`).
 - [x] `ops/status-mark-axes.md:234, 237`: point both cells at the record's Decision and the spec.
 - [x] `EXPERIENCE.md:773`: the dated amendment (Operator ruling 2026-09-13, Story 2-26: decorative,
       no prose; the third clause withdrawn).
-- [x] Local Lighthouse: `corepack pnpm build`, `corepack pnpm start`, `npx @lhci/cli autorun` with
+- [x] Local Lighthouse: `corepack pnpm build`, `corepack pnpm start`, `npx @lhci/cli@0.15.1 collect`
+      then `npx @lhci/cli@0.15.1 assert` (never `autorun`: `upload.target` is public storage) with
       `/cv` in the array; record all three readings and the versions; keep `/cv` in
       `.lighthouserc.js:21` only if it clears, and rewrite the comment `:9-20`.
 - [x] Container run: the re-run block of `ops/status-mark-axes.md:65-73` narrowed to
@@ -416,7 +417,9 @@ nothing enumerates `ops/*.md`).
   classification. This narrows the frozen wording and is recorded as a Decision in
   `ops/hub-accessibility-pass.md`, filed with the one place `DESIGN.md` disagrees with itself
   about the tech array (DW-96, F-14), and flagged in the completion report for the Operator to
-  renegotiate or confirm. The frozen text is left as written.
+  renegotiate or confirm. **Confirmed by the Operator on 2026-09-13**, option 1 of the two put to
+  them (the exception, not a retag of the four `<p>`), after the PR had merged; the frozen row now
+  carries the exception in its own words.
 - **2026-09-13, build.** The census predicted eight synthesised weights and the container run read
   two: the timeline carries an initiative line on one entry, rendered on `/work` and `/cv`. The
   ledger carries the run's count, as the boundaries require.
@@ -428,6 +431,19 @@ nothing enumerates `ops/*.md`).
   before the greyscale render, the dot removed from the three that do not carry one, because only
   `Live` reaches the shipped page and a render showing one value cannot confirm four are tellable
   apart. The accent share is counted before the plant, on the page as shipped.
+- **2026-09-13, review.** The Intent's "three of those paint `1px solid var(--accent)`" reads as
+  three files, and that is what it counts: four blocks in three files painted the hover token,
+  `HomeLayout.scss` twice and `error-page.scss` once at a `4px` offset, `WorkItem.scss` once inset at
+  `-2px`. The frozen text is left as written; `app/app.scss`'s comment and the record's § The focus
+  standard say four blocks in three files.
+- **2026-09-13, review.** The review pass added what the first run could not see: the sweep now
+  reads whether an ancestor's `clip-path` or `overflow` box, or the document's edge, sits within the
+  ring's reach of every Tab stop, and six stops on `/` paint a fragment (a fifth ledger kind, `clip`,
+  five rows to Story 2-29 and one to Story 2-32 by ownership, flagged for the Operator); reads the
+  two skip targets after Enter; counts the accessibility tree's level-1 headings per route, which
+  found the 404 with none (a `heading` row, Story 2-30's); and reads generated `::before` and
+  `::after` text. The Lighthouse table is held to `.lighthouserc.js`'s `collect.url`, every ledger
+  row's cited lines to carrying its tell, and KV-6's heading and index row to the ledger's sums.
 - **2026-09-13, build.** Lighthouse was run as `lhci collect` then `lhci assert`, not `autorun`,
   because `.lighthouserc.js` uploads to public temporary storage and a local reading has no
   business there.
@@ -486,7 +502,8 @@ The record and the register entry are documentation and carry no runtime.
   spec green; the ledger counts and the findings in the record are this run's output.
 - `node ops/hub-accessibility-probe.mjs --base-url http://127.0.0.1:3100 --out <dir>`: expected two
   PNGs and a transcript naming the share at both viewports.
-- `npx @lhci/cli autorun` against `corepack pnpm start`: expected `/` with no `aria-prohibited-attr`
+- `npx @lhci/cli@0.15.1 collect` then `npx @lhci/cli@0.15.1 assert` against `corepack pnpm start`
+  (never `autorun`, whose `upload.target` is public storage): expected `/` with no `aria-prohibited-attr`
   failure, three scores per route recorded.
 
 **Manual checks:**

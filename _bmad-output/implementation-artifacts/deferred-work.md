@@ -2973,7 +2973,7 @@ status: done
     is the Hub's accessibility pass and is the natural place to sweep the rest of the A-numbers for
     the same shape before it starts.
 
-    Corrected 2026-09-13 by Story 2-26, which stays open. The paragraph above that calls the other
+    Corrected 2026-09-13 by Story 2-26; this entry stays open. The paragraph above that calls the other
     four surfaces' skip-link and `<main>` "Story 2-26's work" was wrong about the owner: the
     Operator's condition for doing it in that story was one change in the shared layout, and
     `<main id='main' tabIndex={-1}>` is not one, because a layout-level `<main>` would wrap the
@@ -3253,6 +3253,12 @@ status: done
     amendment in place. `ScanlineOverlay.tsx:8` is the precedent, a decorative layer whose whole
     accessibility is `aria-hidden`. The two met clauses stay asserted in `tests/e2e/front-door.pw.ts`
     and nothing in the tree changes. Recorded in `ops/hub-accessibility-pass.md` § Decisions.
+
+    The withdrawn clause survives in four places that story did not edit, its Never boundary
+    allowing one `EXPERIENCE.md` line only: `EXPERIENCE.md:527-528`, `epics.md:644`,
+    `epics.md:2591` and `epics.md:3328`, the last of them Story 2-29's own acceptance criterion,
+    so that story would inherit "content stated in prose" unknowingly. Named here so it does not;
+    the deferred entry that carries the four corrections is filed separately.
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
