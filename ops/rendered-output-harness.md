@@ -94,6 +94,7 @@ harness that covers everything.
 | That `--font-mono` renders for a visitor the way it renders here | **Closed by Story 1-18, and the reason it was open is gone.** Until 2026-08-26 this read `--font-mono: 'Courier New', monospace` (`app/app.scss:31`), which has no Courier New in the Linux image, so `.work-hero__meta` (`WorkHero.scss:27`) was baselined against a fallback face no real visitor sees. `app/app.scss:59` now reads `--font-mono: var(--f-mono)`, which is `"Geist Mono", ui-monospace, SFMono-Regular, monospace`, and `contracts/fonts.css` serves that face to the container and to a visitor alike, so the baselined text is representative for the first time | **Observed 2026-08-24**, superseded **2026-08-26** by Story 1-18 |
 | That the `@font-face` src still resolves | `computedStyleValue` returns the resolved declaration, not the face that rasterized. Until 2026-08-26 it would still have answered `MonumentExtended-Bold` if `app/scss/_fonts.scss:91-99` broke and Chromium fell back; since Story 1-18 the same hole exists one family over, against the contract's `Bricolage Grotesque`. Only the screenshot covers rasterization, and only for `.work-hero__heading`. The other three `--monument-bold` call sites live on routes the harness does not capture | **Observed 2026-08-24**, restated against the adopted face **2026-08-26** |
 | Accessibility | **Superseded in place by Story 2-26 on 2026-09-13.** Until then this row read "unchanged and untouched": `.lighthouserc.js` asserted accessibility at 0.95 on two URLs and nothing in `tests/e2e` asserted the behavioural floor. Now the five rows above assert A-1, the DOM-order traversal, A-11, A-12 and A-16 on every route, `tests/e2e/hit-target-floor.pw.ts` asserts A-4 and A-5, `tests/e2e/status-mark.pw.ts` A-3, `tests/e2e/front-door.pw.ts` A-6 and A-14's two markup clauses, and `tests/e2e/secondary-surfaces.pw.ts` A-13. `.lighthouserc.js` still asserts accessibility at 0.95 with severity error, on three URLs since `/cv` joined on a local reading, and `.github/workflows/lighthouse.yml` still runs it. What no machine asserts is the two human confirmations, greyscale and one keyboard traversal, recorded in `ops/hub-accessibility-pass.md` and outstanding until the Operator performs them | **Observed 2026-08-24** by `git diff --stat 4f4c751`; superseded **2026-09-13** by Story 2-26 |
+| A render change that stays under the per-pixel `threshold` on every pixel it touches | It counts as zero differing pixels, whatever its extent, because `maxDiffPixelRatio` counts only pixels `threshold` has already called different. The case on record: Story 2-28 removed the hero's `light` raster and grain from `/work`, 80,831 of 288,000 pixels changed, the largest YIQ distance among them was 662.5 against the 1,408.6 the default 0.2 allows, the plain run passed and the update run wrote nothing (§ Regenerating the baseline). A faint overlay returning to `/work` would pass this gate the same way; the two unit assertions Story 2-28 added to `Error404.test.tsx` and `WorkHero.test.tsx` are what would catch it, and `node ops/baseline-diff.mjs` is what states the number | **Observed 2026-09-14** by Story 2-28. The `threshold` question is DW-102's, unassigned, trigger the next baseline change the comparator measures as none |
 
 ## The tolerance
 
@@ -102,13 +103,20 @@ at its default, so `maxDiffPixelRatio` is the only knob and it is written down h
 `maxDiffPixelRatio` is then set so the shift probe's measured ratio clears it by at least five
 times. If the smallest shift Story 1.17 would care about does not clear it by a wide margin,
 the tolerance is wrong and gets lowered, rather than the probe being made louder.
+*(Amended 2026-09-14 by Story 2-28: "the only knob" overstated it. `maxDiffPixelRatio` counts
+only the pixels `threshold` has already called different, so `threshold` decides first on every
+pixel and the ratio bounds what is left. On that day `threshold` decided the outcome alone on
+80,831 pixels, 28 percent of the frame, for a change a person sees, the hero's raster and grain
+leaving `/work`, and the ratio saw zero of them. The decision to leave `threshold` at its default
+stands; the claim that the ratio alone bounds what a human would see does not. § Regenerating the
+baseline carries the measurement.)*
 
 | Value | Number | Nature |
 |---|---|---|
 | Viewport | 360 x 800, `deviceScaleFactor: 1` | **Decision.** `playwright.config.ts`, exported as `RENDERED_VIEWPORT` so a spec cannot re-declare it and drift from the baseline |
 | Total pixels in the frame | 288,000 | **Derived** from the viewport |
 | Pixels actually compared | 201,600 | **Derived**: 288,000 less the 86,400 the torus mask covers. The ratio below is Playwright's, computed over the whole frame, so the tolerance is looser over the compared region than the raw number suggests. It is recorded here rather than corrected, because changing the denominator would put this file at odds with every number Playwright prints |
-| Per-pixel `threshold` | Playwright default (0.2, YIQ colour space) | **Decision.** Left alone deliberately, so there is one number to reason about rather than two |
+| Per-pixel `threshold` | Playwright default (0.2, YIQ colour space) | **Decision.** Left alone deliberately, so there is one number to reason about rather than two. *(Amended 2026-09-14 by Story 2-28: there are two numbers, and this one acts first. A change that stays under it on every pixel it touches, however many, reaches the ratio as zero; 80,831 such pixels on that day. The default stays, and the blind spot is a row under § What it deliberately does not assert yet)* |
 | `maxDiffPixelRatio` | **0.001** | **Decision.** Equivalent to 288 differing pixels out of 288,000 |
 | Shift probe measured ratio | **0.007274** (2,095 pixels of 288,000) | **Observed 2026-08-24**, by adding `transform: translateX(1px)` to `.work-hero__heading` and running the harness in the pinned container. Playwright's own report rounds this to "ratio 0.01"; 0.007274 is 2095 divided by 288000 |
 | Margin | **7.27 times** the tolerance | **Derived**: 2,095 divided by 288 |
@@ -117,6 +125,10 @@ the tolerance is wrong and gets lowered, rather than the probe being made louder
 container image, so an unchanged render is essentially byte-identical and the honest floor would
 be zero. 0.001 is deliberately a little above that floor: it absorbs a handful of stray pixels
 from a font-rasterization or compositing detail without absorbing anything a human would see.
+*(Amended 2026-09-14 by Story 2-28: true of the ratio's own allowance of 288 pixels, and not a
+claim about the comparison as a whole, because the per-pixel `threshold` runs first and can hand
+the ratio zero for a change spread thin across a region a person does see. The 80,831-pixel case
+under § Regenerating the baseline is the one on record.)*
 The 7.27 times margin is what makes that claim checkable rather than asserted. If a future
 change to `/work` makes an unchanged render produce more than a few dozen differing pixels, the
 answer is to find out why, not to raise this number.
@@ -214,7 +226,7 @@ dated as such; the table above is where the current value lives.
 was forced.** **Observed 2026-09-14**, in `mcr.microsoft.com/playwright:v1.62.1-noble`, three runs
 in the order the story's spec set. The story deleted the `ScanlineOverlay` raster from the hero (the
 `light` scanlines at 35 percent over `rgba(0, 0, 0, 0.12)` lines and the `feTurbulence` grain at 20
-percent, both over the `#0a000f` ground), which is case 1 above. A plain `pnpm test:e2e` against
+percent, both over the `#0a000f` ground), which is case 1 below. A plain `pnpm test:e2e` against
 the file at `03df32bb…` then **passed, 253 of 253**, and `pnpm run test:e2e:update` **wrote
 nothing** (251 passed, the two update-mode skips), because bare `--update-snapshots` is the
 `changed` mode described below and a capture that matches is not rewritten. The difference is real
@@ -225,8 +237,16 @@ in the container (x 52 to 308, y 140 to 677.7), and **on 0 of them** by more tha
 `threshold` of 0.2 Playwright compares at, the largest YIQ distance being 662.5 against the 1,408.6
 that threshold allows. So `maxDiffPixelRatio` never came into it: the comparator counted no
 differing pixel, which is why the run was green and the update run had nothing to write. Measured
-with `sharp` decoding both PNGs to raw RGBA and pixelmatch's YIQ distance recomputed per pixel, on
-the authoring host, against captures made in the image. **Decision.** **The Operator ruled on
+on the authoring host against captures made in the image, by
+`node ops/baseline-diff.mjs 03df32bb.png tests/e2e/rendered-output.pw.ts-snapshots/work-360x800-chromium-linux.png`
+(the previous file kept aside under its own hash, the forced file in place), which printed:
+
+```
+{"size":"360x800","total":288000,"differing":80831,"differingRatio":0.2807,"differingBox":{"x":[52,307],"y":[140,676]},"threshold":0.2,"thresholdDelta":1408.6,"over":0,"overRatio":0,"overBox":null,"largestDelta":662.5}
+```
+
+The script's header states what it recomputes and where Playwright's comparator defines it.
+**Decision.** **The Operator ruled on
 2026-09-14 to force the update**, run in the same image as
 `pnpm exec playwright test --update-snapshots=all rendered-output` (the two tests that stand aside
 from an update run skip themselves in that mode too, 11 passed and 2 skipped), followed by a plain
@@ -308,7 +328,12 @@ and `reuseExistingServer` is `false` for the same reason.
 **When regenerating is legitimate.** **Decision.** Exactly three cases:
 
 1. A story deliberately changed how `/work` renders, and the new render is the intended one. The
-   regenerated PNG is part of that story's diff and is reviewed as a change, not as noise.
+   regenerated PNG is part of that story's diff and is reviewed as a change, not as noise. When
+   this case applies and `pnpm test:e2e:update` declines to write, because the change stays under
+   the per-pixel threshold and `changed` mode rewrites only a mismatch, the run is
+   `pnpm exec playwright test --update-snapshots=all rendered-output` in the same image, by
+   Operator ruling, recorded the way the 2026-09-14 paragraph above records it (added 2026-09-14
+   by Story 2-28).
 2. The pinned Playwright version moved. The `package.json` pin, the image tag in
    `.github/workflows/ci.yml` and the baseline are one change, made together.
 3. The route, viewport or mask in `tests/e2e/rendered-output.pw.ts` changed on purpose.
@@ -318,7 +343,9 @@ finding, not a baseline to refresh. Regenerating to get a build green is the fai
 whole file exists to make visible, and it is why the baseline is never written as a side effect:
 `playwright.config.ts` sets `updateSnapshots: 'none'`, so a missing or mismatched baseline fails
 the run and writes nothing. Updating is the explicit `pnpm test:e2e:update` invocation and
-nothing else.
+nothing else (one recorded exception, taken by Operator ruling on 2026-09-14 when that invocation
+declined to write a change it could not measure: the forced `--update-snapshots=all` run under
+§ Regenerating the baseline, and case 1 above says when it applies).
 
 **Observed 2026-08-24**, by renaming the committed PNG aside and running the harness: the run
 failed with `A snapshot doesn't exist at /w/tests/e2e/rendered-output.pw.ts-snapshots/work-360x800-chromium-linux.png.`

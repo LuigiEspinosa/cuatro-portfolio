@@ -41,4 +41,11 @@ describe('WorkHero', () => {
     const { getByTestId } = render(<WorkHero />);
     expect(getByTestId('torus-canvas')).toBeInTheDocument();
   });
+
+  it('renders no scrim layer', () => {
+    // The layer is a scrim for text over moving imagery and this hero has none, the display line
+    // sitting beside the canvas rather than over it (Story 2-28), so a call site returning here is a
+    // regression with every other gate green.
+    expect(render(<WorkHero />).container.querySelector('.scanline-overlay')).toBeNull();
+  });
 });

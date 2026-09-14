@@ -5,12 +5,7 @@ import './ScanlineOverlay.scss';
  * both read in `ScanlineOverlay.scss`, between moving imagery and the text over it
  * (`DESIGN.md:739-748`). It is decorative by absence, so `aria-hidden` is the whole of its
  * accessibility, and the stylesheet gives it `pointer-events: none` so it never takes a click meant
- * for what is beneath or beside it.
- *
- * **No prop.** The layer has exactly one state (`EXPERIENCE.md:477-479`): a scrim that varies is a
- * scrim whose contrast guarantee varies, and the guarantee is the only reason the role exists. It
- * is present at its one value or absent, never faint; the shipped `light` / `full` intensity is
- * retired with the raster.
+ * for what is beneath or beside it. No prop: the layer has one state, see the stylesheet heading.
  *
  * **Placement.** It covers the positioned box it is placed in, so the parent is the imagery's box,
  * and it belongs only where text overlays moving imagery: never a card ground, a section ground, a

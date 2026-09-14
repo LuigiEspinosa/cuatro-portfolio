@@ -79,6 +79,9 @@ describe('the 404 renders the header’s exits and nothing else', () => {
 
     expect(exits, 'the 404 does not render exactly the header’s destinations, in its order').toEqual(HEADER);
     expect(marked, 'an exit on the 404 announces itself as the current page').toBe(0);
+    // The layer is a scrim for text over moving imagery and this surface has none (Story 2-28,
+    // `epics.md:3252`), so a call site returning here is a regression with every other gate green.
+    expect(markup, 'the 404 renders a .scanline-overlay').not.toContain('scanline-overlay');
   });
 
   it('keeps both exits inside the wrapper the stylesheet lays out, each carrying the tween’s class', () => {

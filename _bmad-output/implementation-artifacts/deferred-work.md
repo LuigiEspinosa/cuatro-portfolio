@@ -2722,11 +2722,13 @@ status: done
 
     Closed 2026-09-14 by Story 2-28, which is that story: the grain, its `feTurbulence` data URI,
     the `grain-shift` keyframes and the loop are deleted with the raster, not tokenised, and
-    `ScanlineOverlay.scss` is five declarations on one element, `var(--token-scrim)` at
+    `ScanlineOverlay.scss` is five declarations on one selector, `var(--token-scrim)` at
     `var(--z-raised)` with `pointer-events: none`, carrying no `animation`, `@keyframes`, `url(`,
     `opacity` or gradient. `components/atoms/ScanlineOverlay/__tests__/ScanlineOverlay.test.tsx`
-    reads the stylesheet as source and refuses each of those tokens, comments included, and was
-    seen failing against the old file before the rewrite. The estate's two repeating animations
+    compiles the stylesheet with `sass` and holds the compressed output equal to exactly those five
+    declarations on that one selector, so any of those tokens, a second rule or a sixth declaration
+    fails as a different string; it was seen failing against the old file before the rewrite. The
+    estate's two repeating animations
     are both gone: `glitch-text.scss`'s with DW-31 and this one with this entry. The two call sites
     left with it (`WorkHero.tsx`, `Error404.tsx`), so no surface consumes the layer until Story 2-29
     places it across the home canvas; the three KV-6 rows it carried are deleted in
@@ -3286,7 +3288,7 @@ status: done
 
     Closed 2026-09-13 by Story 2-26, by the second of the two routes above: the Operator ruled the
     canvas decorative and the third clause withdrawn, and `EXPERIENCE.md:773` carries the dated
-    amendment in place. `ScanlineOverlay.tsx:8` (`:21` since 2026-09-14, when Story 2-28 rebuilt the
+    amendment in place. `ScanlineOverlay.tsx:8` (`:16` since 2026-09-14, when Story 2-28 rebuilt the
     component as the scrim layer; the element is still `aria-hidden` and nothing else) is the
     precedent, a decorative layer whose whole accessibility is `aria-hidden`. The two met clauses
     stay asserted in `tests/e2e/front-door.pw.ts`
@@ -4172,7 +4174,8 @@ status: done
     final state on mount when `useReduceMotion` answers true, and `WorkTimeline` keeps its entrance
     tweens behind `if (!reduceMotion)`. The 404 has neither, so a visitor who has asked for reduced
     motion gets the numeral rising, the message fading and both exits sliding up, over 0.4 to 0.6
-    seconds each, on the one surface that also carries a `ScanlineOverlay`.
+    seconds each, on the one surface that also carried a `ScanlineOverlay` (until Story 2-28 took
+    it out on 2026-09-14; the tweens are unchanged).
 
     **Observed 2026-09-11** by reading the three files against each other while Story 2-17 gave
     the surface its two exits. The browser suite runs `reducedMotion: 'reduce'`
@@ -4866,4 +4869,52 @@ status: done
     the pinned image at 360 x 800, sample the ground beneath each of the five roles where it sits
     over the scrim, and compute the ratio from the sampled sRGB, recording each beside the table's
     figure.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token.md`
+  id: DW-102
+  summary: >-
+    A faint overlay returning to `/work` or the 404 passes every gate but two unit assertions: the
+    rendered-output comparator cannot see a change under its per-pixel threshold, the KV-6 depth
+    sweep does not count a `url()` grain or a flat low-alpha layer, and `AGENTS.md`'s baseline
+    line does not cover an update run that declines to write.
+  evidence: |-
+    Observed 2026-09-14 by Story 2-28, in `mcr.microsoft.com/playwright:v1.62.1-noble`, when the
+    hero's `light` raster and grain left `/work` and nothing failed.
+
+    **The comparator.** `tests/e2e/rendered-output.pw.ts` compares `/work` at 360 x 800 through
+    Playwright's pixelmatch at the default per-pixel `threshold` of 0.2, and `maxDiffPixelRatio`
+    counts only the pixels that threshold has already called different. The raster's removal
+    changed 80,831 of 288,000 pixels, the largest YIQ distance among them 662.5 against the 1,408.6
+    the threshold allows, so the comparator counted zero, the plain run passed against the old
+    baseline and `pnpm test:e2e:update` wrote nothing; the Operator ruled the update forced
+    (`ops/rendered-output-harness.md` § Regenerating the baseline, and the amendments under § The
+    tolerance). `node ops/baseline-diff.mjs <a.png> <b.png>` is what states the number. A change
+    spread thin across a region is invisible to the ratio however many pixels it touches, and a
+    scrim at `--c-scrim`'s 0.88 alpha over a near-black ground is exactly that shape.
+
+    **The sweep.** `tests/e2e/accessibility-floor.pw.ts` counts `z-index` literals, `box-shadow`,
+    `text-shadow` and the four gradient functions in the built CSS and nothing else; a `url()`
+    grain and a flat low-alpha `background-color` are neither, which F-7's own note in
+    `ops/hub-accessibility-pass.md` recorded on 2026-09-13 ("neither a shadow nor a gradient, so the
+    depth sweep does not count it").
+
+    **The pitfall line.** `AGENTS.md:64-66` says to regenerate the baselines with
+    `corepack pnpm test:e2e:update` inside the pinned image only, and that invocation is
+    `--update-snapshots` in `changed` mode, which declines to write a capture that matches. The
+    line is right about where and wrong about when, and the managed block is not a story's to edit.
+
+    What catches the return today: the two assertions Story 2-28 added, `Error404.test.tsx`
+    (no `.scanline-overlay` in the 404's markup) and `WorkHero.test.tsx` (none in the hero's), and
+    the component test's exact equality on the compiled stylesheet, which refuses a `url(` or an
+    `opacity` there. A new call site elsewhere, or a second component painting the same thing,
+    passes all three.
+
+    **Owners and triggers.** The `url(` and low-alpha tell for the sweep: **Story 2-34** (the
+    colour-literal gate, which is where a tell on the built CSS belongs), with **Story 2-33** as the
+    surface (the hero's rebuild); trigger, 2-34's first edit to the sweep or 2-33's first edit to
+    `WorkHero.scss`. The `threshold` question, whether the comparator keeps the default or takes a
+    second, tighter comparison for the compared region: **unassigned**; trigger, the next baseline
+    change the comparator measures as none. The `AGENTS.md` line: the next `bmad-project-context`
+    refresh, which owns the managed block; trigger, that refresh.
   status: open
