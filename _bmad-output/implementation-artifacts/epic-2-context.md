@@ -143,18 +143,19 @@ value, present or absent, never faint.
 
 ## Cross-Story Dependencies
 
-The Registry chain is strictly serial: schema and gate, Operator confirmation, authoring,
-editorial pass, retiring the TypeScript module, then the Directory. `/projects` is repointed at
-the JSON before it is redirected away, so it never spends a commit broken.
+The Registry chain is serial from authoring onward: the schema gate and the Operator confirmation
+are independent of each other, then authoring, the editorial pass, retiring the TypeScript module,
+then the Directory. `/projects` is repointed at the JSON before it is redirected away, so it never
+spends a commit broken.
 
-Epic 1 gates this epic three times: bot mitigation before the Directory ships, the capacity
-threshold before the `list-wheel` placement, and the routing inventory supplying the hostnames the
-Registry declares. Instrumentation needs the Umami database to survive Epic 1's host
-consolidation. Relocating `list-wheel` and restyling it are separate shipped steps in different
-epics.
+Epic 1's three prerequisite gates all bind here: external monitoring before the scheduled Registry
+verification, bot mitigation before the Directory ships, and the capacity threshold before the
+`list-wheel` placement. The routing inventory supplies the hostnames the Registry declares, and
+instrumentation needs the Umami database to survive Epic 1's host consolidation. Relocating
+`list-wheel` and restyling it are separate shipped steps in different epics.
 
 The type swap blocks all seven component redesigns, the conformance gate depends on all of them,
-and the alias deletion on the last. The scrim redesign precedes the home surface, which carries
-the z-level trap: a sticky header above the scrim computes against the imagery, verified by
-sampling the rendered ground rather than reading z-index values. Epic 8 is blocked on this epic,
-which produces the vocabulary it copies.
+and the alias deletion on the last. The scrim redesign precedes the home surface, which carries the
+z-level trap: a sticky header above the scrim computes against the imagery, verified by sampling
+the rendered ground rather than reading z-index values. Epic 8 is blocked on this epic, which
+produces the vocabulary it copies.
