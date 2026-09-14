@@ -2,7 +2,7 @@
 title: "Story 2.27: Redesign `GlitchText` token-native"
 type: 'feature'
 created: '2026-09-13'
-status: 'in-review'
+status: 'done'
 baseline_commit: '9ea3e6c777f12ebe3815124b3da383f33d923143'
 review_loop_iteration: 0
 context:
@@ -436,3 +436,117 @@ review step; nothing above was taken on trust):
   `/`, `lhci assert` green). Re-run: `corepack pnpm test --run` 55 files, 1334 tests, all passed,
   89 s; `corepack pnpm typecheck` exit 0; `display-entrance front-door visitor-instrumentation
   anchor-aliases accessibility-floor` on this host 77 passed, 2.4 min.
+- **Re-verified by the orchestrator on `d1f0461`**: `corepack pnpm test --run` 55 files, 1334
+  tests, all passed, 88.31 s; `corepack pnpm typecheck` exit 0; the same five specs on this host
+  77 passed, 2.3 min, the outline read printing `h1 "Luigi Espinosa", h2 "The Suite"` and six
+  `h3`. Not re-run after the patches: the pinned image (the patch commit changes tests and prose,
+  no rendered output; CI runs the image on the pull request).
+
+## Suggested Review Order
+
+**The component, a heading that arrives**
+
+- The entry point: a real heading, one span per grapheme, `--count` and `--delay` inline, nothing ARIA.
+  [`GlitchText.tsx:41`](../../components/molecules/GlitchText/GlitchText.tsx#L41)
+
+- The split guarded on `Intl.Segmenter`; the server always has it, an old Firefox falls to code points.
+  [`GlitchText.tsx:22`](../../components/molecules/GlitchText/GlitchText.tsx#L22)
+
+- The display roles, `font-stretch: 100%` carrying `wdth 100` the way `SuiteDirectory.scss` does.
+  [`GlitchText.scss:7`](../../components/molecules/GlitchText/GlitchText.scss#L7)
+
+- The stagger: `(major - minor) / max(count - 1, 1)`, so the last character ends one `--dur-major` in.
+  [`GlitchText.scss:35`](../../components/molecules/GlitchText/GlitchText.scss#L35)
+
+- One two-stop keyframe on `opacity`, Story 2-34's allowed pattern named beside it.
+  [`GlitchText.scss:40`](../../components/molecules/GlitchText/GlitchText.scss#L40)
+
+- Reduced motion: `animation: none`, stated because 1ms durations would still wait out `--delay`.
+  [`GlitchText.scss:54`](../../components/molecules/GlitchText/GlitchText.scss#L54)
+
+- The one call site, untouched: `delay={1.0}` now rides `--delay` on the CSS clock (DW-100).
+  [`HomeLayout.tsx:110`](../../components/organisms/HomeLayout/HomeLayout.tsx#L110)
+
+**The hydration signal the old side effect used to give**
+
+- React's `__reactFiber$` mark on `.home-container`, once, with why a library mark was chosen.
+  [`harness.ts:179`](../../tests/e2e/harness.ts#L179)
+
+- The two `settled` polls read it instead of an inline opacity nothing writes any more.
+  [`front-door.pw.ts:308`](../../tests/e2e/front-door.pw.ts#L308)
+  [`visitor-instrumentation.pw.ts:121`](../../tests/e2e/visitor-instrumentation.pw.ts#L121)
+
+**The rendered assertions**
+
+- The entrance: per-span `animation-*` against `:root`, delays in DOM order, the 0.42s window.
+  [`display-entrance.pw.ts:306`](../../tests/e2e/display-entrance.pw.ts#L306)
+
+- The roles computed on the heading against a probe, never typed.
+  [`display-entrance.pw.ts:267`](../../tests/e2e/display-entrance.pw.ts#L267)
+
+- Reduced motion: `animation-name: none` at first evaluation, every other read identical.
+  [`display-entrance.pw.ts:361`](../../tests/e2e/display-entrance.pw.ts#L361)
+
+- The client bundle aborted: the served words, the mark absent, full opacity after the window.
+  [`display-entrance.pw.ts:383`](../../tests/e2e/display-entrance.pw.ts#L383)
+
+- The tree: one level-1 heading named by the text, the outline with no skipped level, a planted label.
+  [`display-entrance.pw.ts:435`](../../tests/e2e/display-entrance.pw.ts#L435)
+
+- Planted markup on the shipped stylesheet: one character, fourteen, and a missing `--count`.
+  [`display-entrance.pw.ts:401`](../../tests/e2e/display-entrance.pw.ts#L401)
+
+**The ledger and the register, four things moved**
+
+- `shadow-glitch-loop` gone from `EXEMPTIONS`; the tally now refuses any `text-shadow` in the build.
+  [`accessibility-floor.pw.ts:196`](../../tests/e2e/accessibility-floor.pw.ts#L196)
+
+- The record's ledger without the row; F-8 annotated closed, never deleted.
+  [`hub-accessibility-pass.md:209`](../../ops/hub-accessibility-pass.md#L209)
+
+- KV-6's heading and index row at eight depth tells, `2-27` out of Retired by, the cell's arithmetic fixed.
+  [`known-violations.md:472`](../../ops/known-violations.md#L472)
+  [`known-violations.md:67`](../../ops/known-violations.md#L67)
+
+- The Operator's pending action: the screen-reader read of `/`, with its method.
+  [`hub-accessibility-pass.md:493`](../../ops/hub-accessibility-pass.md#L493)
+
+**The weight, measured**
+
+- The `gsap/SplitText` fingerprint gone: a mark that matches nothing stops the run.
+  [`asset-budget.mjs:78`](../../ops/asset-budget.mjs#L78)
+
+- Before and after per chunk: 87 gzipped bytes of CSS, 3,399 of JavaScript, one chunk each side.
+  [`asset-budget.md:471`](../../ops/asset-budget.md#L471)
+
+- The fingerprint table kept as the 2026-08-29 reading, the deletion dated beside it.
+  [`asset-budget.md:893`](../../ops/asset-budget.md#L893)
+
+**The alias pins that named the old file**
+
+- The stylesheet moves to the token-native list; claim two no longer holds it to `--w-black` alone.
+  [`anchor-contract.test.ts:298`](../../app/__tests__/anchor-contract.test.ts#L298)
+
+- `WEIGHT_SITES` at two rows, the on-disk call sites compared against it.
+  [`anchor-aliases.pw.ts:451`](../../tests/e2e/anchor-aliases.pw.ts#L451)
+
+- The swap measures `.glitch-text` at count one, the inner element being gone.
+  [`type-swap.pw.ts:119`](../../tests/e2e/type-swap.pw.ts#L119)
+
+**Peripherals**
+
+- The unit suite: markup, tree, graphemes, the Segmenter fallback, the source scans.
+  [`GlitchText.test.tsx:24`](../../components/molecules/GlitchText/__tests__/GlitchText.test.tsx#L24)
+
+- The hook's consumer count, dated.
+  [`useReduceMotion.ts:18`](../../hooks/useReduceMotion.ts#L18)
+
+- O-13's `GlitchText` half closed in the design's own open-items table.
+  [`EXPERIENCE.md:1058`](../planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/EXPERIENCE.md#L1058)
+
+- DW-31 closed; DW-98 (front-door widening), DW-99 (preload premise), DW-100 (the clock) filed.
+  [`deferred-work.md:2675`](deferred-work.md#L2675)
+  [`deferred-work.md:4725`](deferred-work.md#L4725)
+
+- The board at `review`, naming the screen-reader read it waits on.
+  [`sprint-status.yaml:214`](sprint-status.yaml#L214)
