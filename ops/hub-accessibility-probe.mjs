@@ -7,25 +7,27 @@
 // so this file produces the renders the Operator looks at, and beside them the
 // one figure `epics.md:3058-3059` asks for that no Playwright case can gate:
 // the share of the rendered homepage's viewport that is accent, which
-// `RESTYLE-SPEC.md:654` (F-8) says has no defined denominator and is therefore
-// Observed here with one stated rather than asserted.
+// `RESTYLE-SPEC.md:654` (RESTYLE-SPEC F-8) says has no defined denominator and
+// is therefore Observed here with one stated rather than asserted.
 //
 // What it does, against a RUNNING production server, at 360x800 and 1280x800:
 //   * opens `/` on a context that has asked for reduced motion, so the render is
 //     the flat front door and the same on every run (the 3D door's canvas is
-//     animated and never renders the same frame twice);
+//     animated and never renders the same frame twice), and refuses to go on if
+//     the entrance selector matches nothing, since an empty `every` settles at once;
 //   * reads `--token-accent`, `--token-accent-hover` and `--token-accent-muted`
-//     off the page and rasterises each to sRGB through a canvas;
+//     off the page and rasterises each to sRGB through a canvas, with two
+//     sentinels so an unparsed value is refused rather than read as the last one;
 //   * screenshots the viewport at scroll top, decodes the PNG with `sharp`, and
 //     counts the pixels within `ACCENT_DISTANCE` of any of the three, over the
 //     viewport's pixel count as the denominator;
 //   * then plants the four Status values across the Directory's marks, one of
-//     each in turn with the dot removed from the three that do not carry one
-//     (only `Live` reaches the shipped page, `ops/status-mark-axes.md:254-259`),
-//     applies `html { filter: grayscale(1) }` and writes a full-page desaturated
-//     PNG to the `--out` directory, which is what the Operator's greyscale
-//     confirmation is read on. The share is counted before the plant, on the
-//     page as shipped.
+//     each in turn with the dot removed from the three that do not carry one and
+//     given to a planted `Live` (only `Live` reaches the shipped page,
+//     `ops/status-mark-axes.md:254-259`), applies `html { filter: grayscale(1) }`
+//     and writes a full-page desaturated PNG to the `--out` directory, which is
+//     what the Operator's greyscale confirmation is read on. The share is
+//     counted before the plant, on the page as shipped.
 //
 // **Nothing here is a gate.** It needs a browser and a server and neither is
 // asserted on in CI; `tests/e2e/accessibility-floor.pw.ts` is the gate. The pure
@@ -37,12 +39,13 @@
 //   --out       where the two PNGs are written (required)
 //
 // Exit codes: 0 the transcript was printed; 2 a defect in this file; 3 nothing
-// could be observed (no server, no browser, no output directory).
+// could be observed (no server, no browser, no output directory, bad arguments).
 
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs as parseNodeArgs } from 'node:util';
 
 const require_ = createRequire(import.meta.url);
 
@@ -60,6 +63,9 @@ export const ACCENT_TOKENS = ['--token-accent', '--token-accent-hover', '--token
 /** The Status taxonomy, planted across the Directory's marks before the greyscale render (`contracts/registry.schema.json`). */
 export const STATUS_VALUES = ['Live', 'Complete', 'In progress', 'Archived'];
 
+/** The entrance the reduced-motion door settles at opacity 1, same selector as `tests/e2e/accessibility-floor.pw.ts`. */
+export const ENTRANCE_SELECTOR = '.nav-link, .contact-container a';
+
 /**
  * The RGB distance within which a pixel counts as accent, in 0 to 255 units,
  * Euclidean over the three channels. Stated rather than tuned: antialiased
@@ -72,42 +78,24 @@ export const ACCENT_DISTANCE = 32;
 
 export class BlockedError extends Error {}
 
-function say(message) {
-  process.stdout.write(`${message}\n`);
-}
-
 /**
  * The two arguments, parsed off `argv` (without `node` and the script). Throws
  * naming the flag on anything it does not understand, so a typo is never a
- * default silently taken.
+ * default silently taken; the base URL has to be a bare http(s) origin, since
+ * `/` is appended to it.
  */
 export function parseArgs(argv) {
-  const out = { baseUrl: DEFAULT_BASE_URL, out: null };
-  const list = Array.isArray(argv) ? argv : [];
-  for (let index = 0; index < list.length; index += 1) {
-    const flag = list[index];
-    const value = list[index + 1];
-    if (flag === '--base-url' || flag === '--out') {
-      if (value === undefined || value.startsWith('--')) throw new Error(`${flag} needs a value`);
-      out[flag === '--base-url' ? 'baseUrl' : 'out'] = value;
-      index += 1;
-      continue;
-    }
-    throw new Error(`unknown argument ${flag}; the flags are --base-url and --out`);
-  }
-  if (out.out === null) throw new Error('--out <dir> is required: the two renders have to land somewhere');
-  const url = (() => {
-    try {
-      return new URL(out.baseUrl);
-    } catch {
-      return null;
-    }
-  })();
+  const { values } = parseNodeArgs({
+    args: Array.isArray(argv) ? argv : [],
+    options: { 'base-url': { type: 'string', default: DEFAULT_BASE_URL }, out: { type: 'string' } },
+    strict: true,
+  });
+  if (values.out === undefined) throw new Error('--out <dir> is required: the two renders have to land somewhere');
+  const url = URL.canParse(values['base-url']) ? new URL(values['base-url']) : null;
   if (url === null || (url.protocol !== 'http:' && url.protocol !== 'https:') || url.pathname !== '/' || url.search !== '' || url.hash !== '') {
-    throw new Error(`--base-url ${out.baseUrl} is not a bare http(s) origin`);
+    throw new Error(`--base-url ${values['base-url']} is not a bare http(s) origin`);
   }
-  out.baseUrl = out.baseUrl.replace(/\/$/, '');
-  return out;
+  return { baseUrl: values['base-url'].replace(/\/$/, ''), out: values.out };
 }
 
 /**
@@ -142,23 +130,26 @@ export function accentShare(raw, width, height, targets, distance = ACCENT_DISTA
   return { accent, total, share: total === 0 ? 0 : accent / total };
 }
 
-/** `r,g,b,a` off the page's canvas into an `[r, g, b]` triple. */
+/**
+ * `r,g,b,a` off the page's canvas into an `[r, g, b]` triple: exactly four
+ * integer channels in 0 to 255, the alpha fully opaque, or it is refused. An
+ * empty channel would otherwise coerce to 0 and read as black.
+ */
 export function tripleOf(rasterised) {
-  const parts = String(rasterised ?? '')
-    .split(',')
-    .map((part) => Number(part.trim()));
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
-    throw new Error(`"${rasterised}" is not an r,g,b,a reading`);
+  const parts = String(rasterised ?? '').split(',');
+  const channels = parts.map((part) => (/^\s*\d+\s*$/.test(part) ? Number(part) : Number.NaN));
+  if (channels.length !== 4 || channels.some((part) => !Number.isInteger(part) || part < 0 || part > 255) || channels[3] !== 255) {
+    throw new Error(`"${rasterised}" is not an opaque r,g,b,a reading`);
   }
-  return parts.slice(0, 3);
+  return channels.slice(0, 3);
 }
 
 async function probe({ baseUrl, out }) {
-  say('# Hub accessibility probe, Story 2-26, AD-19');
-  say(`# started ${new Date().toISOString()}`);
-  say(`# base url: ${baseUrl}`);
-  say(`# out:      ${resolve(out)}`);
-  say(`# accent distance: ${ACCENT_DISTANCE} (Euclidean RGB, 0 to 255)`);
+  console.log('# Hub accessibility probe, Story 2-26, AD-19');
+  console.log(`# started ${new Date().toISOString()}`);
+  console.log(`# base url: ${baseUrl}`);
+  console.log(`# out:      ${resolve(out)}`);
+  console.log(`# accent distance: ${ACCENT_DISTANCE} (Euclidean RGB, 0 to 255)`);
   try {
     mkdirSync(out, { recursive: true });
   } catch (error) {
@@ -185,7 +176,7 @@ async function probe({ baseUrl, out }) {
     } catch (error) {
       throw new BlockedError(`no Chromium could be launched. Run corepack pnpm exec playwright install chromium. ${error instanceof Error ? error.message : String(error)}`);
     }
-    say(`# chromium: ${browser.version()}`);
+    console.log(`# chromium: ${browser.version()}`);
 
     for (const viewport of VIEWPORTS) {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, colorScheme: 'light', reducedMotion: 'reduce' });
@@ -200,9 +191,13 @@ async function probe({ baseUrl, out }) {
       await page.evaluate(async () => {
         await document.fonts.ready;
       });
+      // The settle waits on the entrance's opacity; over an empty NodeList `every` is true at
+      // once, so a renamed class would read as settled before hydration.
+      const animated = await page.locator(ENTRANCE_SELECTOR).count();
+      if (animated === 0) throw new Error(`"${ENTRANCE_SELECTOR}" matches nothing on ${baseUrl}/, so the settle would wait on nothing`);
       await page.waitForFunction(
-        () => [...document.querySelectorAll('.nav-link, .contact-container a')].every((node) => window.getComputedStyle(node).opacity === '1'),
-        undefined,
+        (selector) => [...document.querySelectorAll(selector)].every((node) => window.getComputedStyle(node).opacity === '1'),
+        ENTRANCE_SELECTOR,
         { timeout: 15_000 }
       );
 
@@ -213,24 +208,31 @@ async function probe({ baseUrl, out }) {
         const context2d = canvas.getContext('2d');
         if (!context2d) throw new Error('no 2d context');
         context2d.globalCompositeOperation = 'copy';
+        // Two sentinels, not one (`tests/e2e/anchor-aliases.pw.ts:293-336`): a value that is
+        // another spelling of a single sentinel would read as refused.
+        const SENTINELS = ['#123456', '#654321'];
         return tokens.map((token) => {
           const probeNode = document.createElement('div');
           probeNode.style.color = `var(${token})`;
           document.body.append(probeNode);
           const colour = window.getComputedStyle(probeNode).color;
           probeNode.remove();
-          context2d.fillStyle = '#123456';
+          const refused = SENTINELS.every((sentinel) => {
+            context2d.fillStyle = sentinel;
+            context2d.fillStyle = colour;
+            return context2d.fillStyle === sentinel;
+          });
+          if (refused) throw new Error(`the canvas could not parse ${token} as "${colour}"`);
           context2d.fillStyle = colour;
-          if (context2d.fillStyle === '#123456') throw new Error(`the canvas could not parse ${token} as ${colour}`);
           context2d.fillRect(0, 0, 1, 1);
           const [r, g, b, a] = context2d.getImageData(0, 0, 1, 1).data;
           return `${r},${g},${b},${a}`;
         });
       }, ACCENT_TOKENS);
       const targets = rasterised.map(tripleOf);
-      say('');
-      say(`# viewport ${viewport.width}x${viewport.height}, scroll top, reduced-motion door`);
-      ACCENT_TOKENS.forEach((token, index) => say(`  ${token} = rgb(${targets[index].join(', ')})`));
+      console.log('');
+      console.log(`# viewport ${viewport.width}x${viewport.height}, scroll top, reduced-motion door`);
+      ACCENT_TOKENS.forEach((token, index) => console.log(`  ${token} = rgb(${targets[index].join(', ')})`));
 
       const png = await page.screenshot({ type: 'png' });
       // `ensureAlpha`, because a screenshot with no transparency decodes to three channels and the
@@ -238,38 +240,46 @@ async function probe({ baseUrl, out }) {
       const decoded = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
       if (decoded.info.channels !== 4) throw new Error(`the screenshot decoded to ${decoded.info.channels} channels, not RGBA`);
       const share = accentShare(decoded.data, decoded.info.width, decoded.info.height, targets);
-      say(
+      console.log(
         `  accent share = ${share.accent} of ${share.total} viewport pixels (${decoded.info.width}x${decoded.info.height}) = ` +
           `${(share.share * 100).toFixed(2)}%`
       );
 
       // The greyscale render is what O-9's human check is read on, and only `Live` reaches the
       // shipped page (`ops/status-mark-axes.md:254-259`). So the four values are planted across the
-      // rendered marks the way Story 2-10's check planted them, one of each in turn, the dot removed
-      // from the three that do not carry one, so what is read is the taxonomy as it would ship.
+      // rendered marks the way Story 2-10's check planted them, one of each in turn, the dot
+      // removed from the three that do not carry one and given to a planted `Live`, so what is
+      // read is the taxonomy as it would ship.
       const plantedMarks = await page.evaluate((values) => {
         const marks = [...document.querySelectorAll('.suite-directory__status')];
+        if (marks.length === 0) throw new Error('the Directory renders no Status mark, so nothing can be planted');
         marks.forEach((mark, index) => {
           const value = values[index % values.length];
           mark.setAttribute('data-status', value);
           const dot = mark.querySelector('.suite-directory__dot');
           if (value !== 'Live' && dot) dot.remove();
+          if (value === 'Live' && !dot) {
+            const planted = document.createElement('span');
+            planted.className = 'suite-directory__dot';
+            planted.setAttribute('aria-hidden', 'true');
+            mark.prepend(planted);
+          }
           mark.lastChild.textContent = value;
         });
         return marks.map((mark) => mark.getAttribute('data-status'));
       }, STATUS_VALUES);
-      say(`  status values planted across the ${plantedMarks.length} marks, in order: ${plantedMarks.join(', ')}`);
+      console.log(`  status values planted across the ${plantedMarks.length} marks, in order: ${plantedMarks.join(', ')}`);
       await page.addStyleTag({ content: 'html { filter: grayscale(1); }' });
       const file = join(out, `home-greyscale-${viewport.width}x${viewport.height}.png`);
       writeFileSync(file, await page.screenshot({ type: 'png', fullPage: true }));
-      say(`  greyscale render written to ${file}`);
+      console.log(`  greyscale render written to ${file}`);
       await context.close();
     }
   } finally {
     if (browser !== null) await browser.close().catch(() => undefined);
   }
-  say('');
-  say(`# finished ${new Date().toISOString()}`);
+  console.log('');
+  console.log(`# finished ${new Date().toISOString()}`);
 }
 
 function thisFile() {
@@ -313,7 +323,7 @@ if (invokedDirectly) {
       (error) => {
         const blocked = error instanceof BlockedError;
         const text = blocked ? error.message : error instanceof Error ? error.stack : String(error);
-        say(`# ${blocked ? 'BLOCKED' : 'PROBE DEFECT'}: ${text}`);
+        console.log(`# ${blocked ? 'BLOCKED' : 'PROBE DEFECT'}: ${text}`);
         process.stderr.write(`hub-accessibility-probe: ${text}\n`);
         process.exitCode = blocked ? 3 : 2;
       }
