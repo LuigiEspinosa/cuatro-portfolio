@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-13-2026
+last_updated: 09-14-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -187,15 +187,17 @@ development_status:
   # their own browser on 2026-09-13, the one check no agent could drive, and moved the story to
   # done. Still open, not blocking: the DW-92 ruling on the Cloudflare beacon.
   2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: done
-  # 2-26 built 2026-09-13: one global :focus-visible rule replaces nine, accessibility-floor sweeps
-  # the ring, the DOM order, the built CSS, the type floor and autoplay on every route (11 cases,
-  # green in the pinned image), KV-6 opened with 13 ledger rows, /cv joined the Lighthouse gate on
-  # a local 0.96 / 1.00 / 1.00, GlitchText's heading entered the accessibility tree, the footer
-  # line moved to --t-2xs. Waiting on the Operator: the greyscale and keyboard confirmations in
-  # ops/hub-accessibility-pass.md (two tables at "not yet performed"; the agreement suite fails
-  # the build if this key reads done while either does). Also open for the Operator: DW-95 (F-11)
-  # and DW-96 (two DESIGN.md lines), and the paragraph-floor exception the completion report flags.
-  2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: review
+  # 2-26 built 2026-09-13 (PR #76) and review-patched the same day (PR #77): one global
+  # :focus-visible rule replaces nine, accessibility-floor sweeps the ring (whole, not only
+  # computed), the DOM order, the landmarks after Enter, the headings, the built CSS, the type
+  # floor and autoplay on every route (14 cases, green in the pinned image), KV-6 opened with the
+  # ledger's rows, /cv joined the Lighthouse gate on a local 0.96 / 1.00 / 1.00, GlitchText's
+  # heading entered the accessibility tree, the footer line moved to --t-2xs. The Operator read the
+  # greyscale renders and made one keyboard traversal in their own browser on 2026-09-14, the two
+  # checks no agent could drive, both recorded as Pass in ops/hub-accessibility-pass.md, and moved
+  # the story to done. Still open, not blocking: DW-95 (F-11), DW-96 (two DESIGN.md lines), and
+  # the clip-skip-link ledger row booked to 2-32 by ownership alone.
+  2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: done
   # Hub components rebuilt token-native (FR-37), added 2026-08-15.
   # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
   # 2-20 is a blocking predecessor of all of them (the type layer precedes any redesign).

@@ -80,9 +80,9 @@ is the confirmation, and it is recorded because a check that leaves no record ca
 | Field | Value |
 |---|---|
 | Method | Read the two PNGs `node ops/hub-accessibility-probe.mjs --base-url http://127.0.0.1:3100 --out <dir>` writes, `home-greyscale-360x800.png` and `home-greyscale-1280x800.png`, or render `/` in a browser with `html { filter: grayscale(1) }` applied and the four values planted across the marks as `ops/status-mark-axes.md:249` describes. With no legend to hand, confirm the four Status values are tellable apart: `Live` by the dot, `Complete` by the solid border, `In progress` by the dashed border, `Archived` by no border |
-| Checked by | _not yet performed_ |
-| Checked on | _not yet performed_ |
-| Result | _not yet performed_ |
+| Checked by | The Operator |
+| Checked on | 2026-09-14 |
+| Result | **Pass.** Read on the two PNGs the probe wrote at 2026-09-14T00:54Z against the production build served on this host at `acb0c55`, the six marks planted `Live`, `Complete`, `In progress`, `Archived`, `Live`, `Complete`. All four Status values tellable apart in greyscale with no legend, at both widths |
 
 ## The Operator's keyboard confirmation
 
@@ -91,9 +91,9 @@ The human half of check 1.
 | Field | Value |
 |---|---|
 | Method | Open `/` in your own browser at any width with the mouse untouched. Press Tab from the top of the document until focus leaves it, counting the stops: the skip-link first, then the two nav links, the three contact links, the eleven Directory links and the footer link. Every stop shows the ring, at full strength the moment it lands. **Expect a fragment, not a whole ring, on six of them today**: the skip-link shows its bottom and right sides only, and the two nav links and three contact links show one or two sides, because their panels clip the ring (§ The focus standard, Story 2-29's and Story 2-32's). The Directory links and the footer link show it whole. Then press Tab until the skip-link holds focus again and press Enter: focus lands on the main landmark and its bottom edge rings across the page. Then click the same elements with the mouse: no ring appears on any of them |
-| Checked by | _not yet performed_ |
-| Checked on | _not yet performed_ |
-| Result | _not yet performed_ |
+| Checked by | The Operator |
+| Checked on | 2026-09-14 |
+| Result | **Pass.** One keyboard-only traversal of `/` in the Operator's own browser against the production build served on this host at `acb0c55`, mouse untouched: every stop ringed the moment it landed, the six recorded fragments as described and no seventh, the main landmark ringed after Enter on the skip-link, and a mouse click on the same elements painted nothing |
 
 ## The focus standard
 
