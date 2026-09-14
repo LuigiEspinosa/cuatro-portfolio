@@ -2,7 +2,7 @@
 title: "Story 2.26: The Hub's focus standard and the manual accessibility pass"
 type: 'feature'
 created: '2026-09-13'
-status: 'in-review'
+status: 'done'
 baseline_commit: '3435ec3d6ea977bbfce974173351d238cbca243f'
 review_loop_iteration: 0
 context:
@@ -512,3 +512,74 @@ The record and the register entry are documentation and carry no runtime.
   `html`), the four Status values still tellable apart with no legend; one keyboard-only traversal
   of `/` with the mouse untouched, every stop ringed, clicking the same stops rings nothing. Each
   result and its date go into the record's two tables; the board moves to `done` after both.
+
+## Suggested Review Order
+
+**The focus standard, one rule instead of nine**
+
+- The entry point: § 4 verbatim on the tokens, at (0,1,0), the only ring the Hub paints now.
+  [`app.scss:105`](../../app/app.scss#L105)
+- The pin that had to move: `app.scss` may name the four ring roles and nothing else new.
+  [`anchor-contract.test.ts:232`](../../app/__tests__/anchor-contract.test.ts#L232)
+- The one deletion with a wrinkle: the trigger's ring was inset, now it paints outside (F-19, 2-31).
+  [`WorkItem.scss:33`](../../components/atoms/WorkItem/WorkItem.scss#L33)
+- The reveal on `:focus` survives; only the ring left this file.
+  [`SkipLink.scss:71`](../../components/atoms/SkipLink/SkipLink.scss#L71)
+
+**The sweep, and what it found**
+
+- The ledger: five kinds of row, every one a board story that is not `done`.
+  [`accessibility-floor.pw.ts:195`](../../tests/e2e/accessibility-floor.pw.ts#L195)
+- One stop read whole: outline quartet, `:focus-visible`, transition pairing, ground, and clipping.
+  [`accessibility-floor.pw.ts:719`](../../tests/e2e/accessibility-floor.pw.ts#L719)
+- The ring case: every tabbable on every route, in DOM order, three grounds, nothing under the mouse.
+  [`accessibility-floor.pw.ts:1216`](../../tests/e2e/accessibility-floor.pw.ts#L1216)
+- Where the skips put focus: `main#main` and `h2#suite` ring on Enter, `main` clipped by the edge.
+  [`accessibility-floor.pw.ts:1454`](../../tests/e2e/accessibility-floor.pw.ts#L1454)
+- The built-CSS tally: text, not computed style, so the literal `10` that equals `--z-raised` is caught.
+  [`accessibility-floor.pw.ts:926`](../../tests/e2e/accessibility-floor.pw.ts#L926)
+- The type verdict: contract floors through probes, prose and labels by `DESIGN.md`'s classification.
+  [`accessibility-floor.pw.ts:1098`](../../tests/e2e/accessibility-floor.pw.ts#L1098)
+- The four `<p>` labels the frozen row excepts, each pinned to its `DESIGN.md` line.
+  [`accessibility-floor.pw.ts:152`](../../tests/e2e/accessibility-floor.pw.ts#L152)
+- Every predicate seen firing: the ring off, a clipped ring, a positive tabindex, fabricated CSS.
+  [`accessibility-floor.pw.ts:1674`](../../tests/e2e/accessibility-floor.pw.ts#L1674)
+
+**The record, the register and what holds them equal**
+
+- The headline: what passed, the six fragments, the two synthesised weights, the 404's missing `h1`.
+  [`hub-accessibility-pass.md:21`](../../ops/hub-accessibility-pass.md#L21)
+- The two tables the Operator fills; the build refuses `done` while either reads `_not yet performed_`.
+  [`hub-accessibility-pass.md:75`](../../ops/hub-accessibility-pass.md#L75)
+- The ledger as the record states it, held equal to `EXEMPTIONS` both ways.
+  [`hub-accessibility-pass.md:209`](../../ops/hub-accessibility-pass.md#L209)
+- The Decisions: `forced-colors`, the canvas prose, the footer token, the landmark ring, the skip-link owner.
+  [`hub-accessibility-pass.md:366`](../../ops/hub-accessibility-pass.md#L366)
+- KV-6: the counts in the heading are derived from the ledger by the suite, not typed.
+  [`known-violations.md:472`](../../ops/known-violations.md#L472)
+- The agreement suite: record to spec, closers on the board, cited lines carry their tell, Lighthouse URLs.
+  [`hub-accessibility-pass.test.ts:266`](../../ops/__tests__/hub-accessibility-pass.test.ts#L266)
+
+**The parked items**
+
+- GlitchText's wrapper announces the heading its hidden `h1` is; level follows the tag.
+  [`GlitchText.tsx:82`](../../components/molecules/GlitchText/GlitchText.tsx#L82)
+- The footer line at `DESIGN.md:468`'s step, one token up from "labels only".
+  [`SiteFooter.scss:34`](../../components/organisms/SiteFooter/SiteFooter.scss#L34)
+- `/cv` behind the Lighthouse gate on a local 0.96 / 1.00 / 1.00, collect then assert, never autorun.
+  [`.lighthouserc.js:20`](../../.lighthouserc.js#L20)
+- A-14's third clause withdrawn, the one planning edit allowed; DW-97 names the four lines it missed.
+  [`EXPERIENCE.md:773`](../planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/EXPERIENCE.md#L773)
+
+**Peripherals**
+
+- The probe behind the two eyeball checks: greyscale renders with all four Status values planted, the accent share.
+  [`hub-accessibility-probe.mjs:109`](../../ops/hub-accessibility-probe.mjs#L109)
+- The harness record's new rows, the A-1 row first.
+  [`rendered-output-harness.md:52`](../../ops/rendered-output-harness.md#L52)
+- The `forced-colors` cell now points at the Decision.
+  [`status-mark-axes.md:234`](../../ops/status-mark-axes.md#L234)
+- DW-95 to DW-97 filed; the 2-10, 2-11, DW-52 and DW-70 entries closed; DW-43 corrected.
+  [`deferred-work.md:4619`](deferred-work.md#L4619)
+- The board at `review`, naming what waits on the Operator.
+  [`sprint-status.yaml:198`](sprint-status.yaml#L198)
