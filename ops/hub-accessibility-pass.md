@@ -24,24 +24,27 @@ without a method is a claim. **Story ids are written hyphenated**, as `Story 2-2
 |---|---|---|
 | The focus rule | One global `:focus-visible` rule in `app/app.scss`, `RESTYLE-SPEC.md:326-341` § 4 verbatim on `--stroke-focus`, `--token-focus`, `--focus-offset` and `--r-hair`, replacing nine per-component blocks in eight stylesheets | **Decision.** Operator ruling of 2026-09-13 at this story's planning. The nine are deleted, not overridden |
 | Routes swept | 5: `/`, `/work`, `/cv`, `/celeste` and `/a-route-that-does-not-exist` (the 404), derived from `app/` rather than listed | **Decision.** `routesOnDisk` in `tests/e2e/accessibility-floor.pw.ts`, less `/api/health` |
-| Tab stops read | **39**: `/` 18, `/work` 7, `/cv` 9, the 404 5, `/celeste` 0 | **Observed 2026-09-13** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by tagging every visible tabbable in DOM order and pressing Tab once per tabbable from `body` |
-| Every stop paints the ring | `2px solid lab(79.9388 18.6867 -44.8585) at 3px`, `:focus-visible` true, `transition-property` `all` over `0s` on every stop, which never animates | **Observed 2026-09-13**, same run. The `lab()` string is Chromium's computed form of `--token-focus`; rasterised through a canvas it is `rgb(198, 189, 255)` |
+| Tab stops read | **39**: `/` 18, `/work` 7, `/cv` 9, the 404 5, `/celeste` 0; none inside an `aria-hidden` subtree, none disabled or inert | **Observed 2026-09-13** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by tagging every tabbable in DOM order and pressing Tab once per tabbable from `body` |
+| Every stop computes the ring | `2px solid lab(79.9388 18.6867 -44.8585) at 3px`, `:focus-visible` true, `transition-property` `all` over `0s` on every stop, which never animates | **Observed 2026-09-13**, same run. The `lab()` string is Chromium's computed form of `--token-focus`; rasterised through a canvas it is `rgb(198, 189, 255)`. Computed, not painted whole: the next row is what a visitor sees |
+| Six stops paint a fragment of it | **33 of 39 stops paint the ring whole. Six do not**, all on `/`: the two home nav links and the three contact links sit flush inside panels whose `clip-path` is bounded by the panel's own border box, so the ring paints on one or two sides only; the skip-link is parked at the viewport's top-left corner, so its top and left sides are past the edge when it is revealed | **Observed 2026-09-13** in the review re-run, by reading every stop's box against each ancestor's `clip-path` and `overflow` box and against the document's edge, within the ring's reach of 5px (offset plus stroke). Carried as the six `clip` rows of the ledger, Story 2-29's and Story 2-32's |
+| The two skip targets ring on Enter | `main#main` after Enter on the skip-link and `h2#suite` after Enter on the skip control both match `:focus-visible` and compute `2px solid` at `3px`; the landmark's ring is clipped by the document's edge on its top, left and right, the heading's paints whole | **Observed 2026-09-13** in the review re-run. See § Decisions |
 | Traversal in DOM order | Every route's stops equal its DOM-ordered visible tabbables; the extra Tab leaves the document; no `tabindex` computes above zero | **Observed 2026-09-13**, same run |
 | The ring against its ground | `--token-bg` **11.73:1** on a shipped element; `--token-bg-raised` **11.24:1** and `--token-bg-raised-2` **10.47:1** on planted controls; the cybercore literal `#0a000f` **11.89:1** on `/`, `/work` and the 404's exits | **Observed 2026-09-13**, same run, WCAG 2.1 relative luminance on canvas-rasterised sRGB. The 3:1 non-text floor holds everywhere the ring can land |
 | The mouse paints nothing | 38 elements hovered (every tabbable but the parked skip-link), `outline-style` `none` under the pointer on each; one prevented click per route on a link and, where one exists, on a button, `:focus-visible` false and `outline-style` `none` after it | **Observed 2026-09-13**, same run |
 | Focus and hover are different tokens | `--token-focus` `rgb(198, 189, 255)`, `--token-accent-hover` `rgb(173, 161, 255)`, `--token-accent` `rgb(143, 126, 240)`, pairwise different on every route | **Observed 2026-09-13**, same run, rasterised |
 | z-index literals in the built CSS | **7**: `20`, `5`, `3`, `10`, and `2` three times, over 14 built stylesheets, all carried by ledger rows below; seven `--z-*` names read off the contract | **Observed 2026-09-13**, same run, by reading `.next/static/chunks/*.css` as text |
 | Depth tells in the built CSS | `text-shadow` **7**, `linear-gradient(` **6**, `radial-gradient(` **1**, `repeating-linear-gradient(` **1**, `box-shadow` **0**, `conic-gradient(` **0**, all carried by rows below | **Observed 2026-09-13**, same run |
-| Text elements read | **290** across the five routes, none under `--t-3xs`, no paragraph under `--t-2xs` outside the four labels `DESIGN.md` places there, no prose under `--t-sm`, nothing italic | **Observed 2026-09-13**, same run |
+| Text reads | **318** across the five routes, 28 of them generated `::before` text (the timeline's `//` highlight markers), none under `--t-3xs`, no paragraph under `--t-2xs` outside the four labels `DESIGN.md` places there, no prose under `--t-sm`, nothing italic | **Observed 2026-09-13** in the review re-run, which added the pseudo-elements; the first run read 290 elements and no generated text |
+| Level-1 headings per route | `/` one, named `Luigi Espinosa`, off the accessibility tree; `/work`, `/cv` and `/celeste` one each; **the 404 none** | **Observed 2026-09-13** in the review re-run by `getByRole('heading', { level: 1 })`. The 404 is the ledger's `heading-404` row, Story 2-30's |
 | Synthesised weights | **2**: `.work-item__initiative` on `/work` and `/cv`, `font-weight: 600` on Geist Mono, whose published range is `400` | **Observed 2026-09-13**, same run; ledger row `weight-work-initiative` |
 | Families outside the contract | **23** elements, skipped rather than judged on weight, all three shapes booked below: `sans-serif` on the header's labels, `system-ui` on `/celeste`'s heading, and the user agent's button face on the timeline's role and period spans | **Observed 2026-09-13**, same run |
 | `font-size` in `px` under `app/` and `components/` | **none** | **Observed 2026-09-13**, by the spec's scan of every `.scss`, comments stripped |
 | Autoplay | **nothing**: no `video`, `audio`, `marquee`, refresh meta or `[autoplay]` on any route | **Observed 2026-09-13**, same run |
-| Accent share of the homepage viewport | **0.17%** at 360 x 800, **0.05%** at 1280 x 800, scroll top, reduced-motion door | **Observed 2026-09-13** by `ops/hub-accessibility-probe.mjs`. Not a gate (F-8, `RESTYLE-SPEC.md:654`) |
+| Accent share of the homepage viewport | **0.17%** at 360 x 800, **0.05%** at 1280 x 800, scroll top, reduced-motion door | **Observed 2026-09-13** by `ops/hub-accessibility-probe.mjs`. Not a gate (RESTYLE-SPEC F-8, `RESTYLE-SPEC.md:654`) |
 | Lighthouse | `/` 1.00 / 1.00 / 1.00, `/work` 1.00 / 1.00 / 1.00, `/cv` 0.96 / 1.00 / 1.00 (accessibility / best practices / SEO) | **Observed 2026-09-13** locally, Lighthouse 12.6.1, three runs per URL. `/cv` joined `.lighthouserc.js` |
 | Fixed | Four things: the focus rule, `.site-footer__line` to `--t-2xs`, `GlitchText`'s wrapper as a heading, `/cv` in the Lighthouse gate | **Decision.** AD-19, AD-20: everything else is a ledger row or a finding |
-| The spec in the pinned image | 11 cases, all green, **25.8 s** Playwright headline for the file alone, the sweep case **4.3 s** | **Observed 2026-09-13** |
-| The whole suite in the pinned image | 22 spec files, **242 tests**, all green, **3.9 min** Playwright headline; no snapshot directory written by this file | **Observed 2026-09-13**, `pnpm test:e2e` in the same image, then `git status --porcelain -- tests/e2e/accessibility-floor.pw.ts-snapshots`, which was empty |
+| The spec in the pinned image | 14 cases, all green, **32.4 s** Playwright headline for the file alone, the sweep case **5.6 s**; 11 cases, **25.8 s** and **4.3 s** before the review pass added the clip read, the Enter read and the heading count | **Observed 2026-09-13**, both runs |
+| The whole suite in the pinned image | 22 spec files, **245 tests**, all green, **4.1 min** Playwright headline after the review pass (242 tests, 3.9 min before it); no snapshot directory written by this file | **Observed 2026-09-13**, `pnpm test:e2e` in the same image, both runs, then `git status --porcelain -- tests/e2e/accessibility-floor.pw.ts-snapshots`, which was empty |
 
 ## Environment
 
@@ -64,7 +67,7 @@ two tables that follow this section, and the board cannot reach `done` while eit
 
 | # | Check | Method | Result | Nature |
 |---|---|---|---|---|
-| 1 | Keyboard-only traversal of the homepage | **Machine half.** `tests/e2e/accessibility-floor.pw.ts` tags every visible tabbable on `/` in DOM order, presses Tab from `body` once per tabbable, reads which element holds focus and its ring at each stop, then presses Tab once more. **Human half.** The Operator, in their own browser, with the mouse untouched: the table below | **18 stops on `/` in DOM order** (the skip-link, two nav links, three contact links, eleven Suite Directory links, the footer link), every stop ringed, the nineteenth Tab leaving the document, no positive `tabindex`, and clicking the same stops ringing nothing. The one Satellite `EXPERIENCE.md` names is `cs-tracker`, recorded on 2026-08-27 in `ops/cs-tracker-accessibility-pass.md` | **Observed 2026-09-13** in the pinned image; the human half awaits the Operator |
+| 1 | Keyboard-only traversal of the homepage | **Machine half.** `tests/e2e/accessibility-floor.pw.ts` tags every visible tabbable on `/` in DOM order, presses Tab from `body` once per tabbable, reads which element holds focus and its ring at each stop, then presses Tab once more. **Human half.** The Operator, in their own browser, with the mouse untouched: the table below | **18 stops on `/` in DOM order** (the skip-link, two nav links, three contact links, eleven Suite Directory links, the footer link), every stop ringed, **six of them as a fragment** (the skip-link, the two nav links and the three contact links, § The focus standard), the nineteenth Tab leaving the document, no positive `tabindex`, Enter on the skip-link ringing the landmark it lands on, and clicking the same stops ringing nothing. The one Satellite `EXPERIENCE.md` names is `cs-tracker`, recorded on 2026-08-27 in `ops/cs-tracker-accessibility-pass.md` | **Observed 2026-09-13** in the pinned image; the human half awaits the Operator |
 | 2 | 360px viewport with no horizontal scroll and no truncated Status | `tests/e2e/hit-target-floor.pw.ts` measures every interactive element's edges against the viewport at 360 on every route (A-5's scroll half); `tests/e2e/status-mark.pw.ts` measures every rendered Status mark's box for clipping, ellipsis and wrap (A-5's Status half). Both ran in the same container invocation as the full suite | **No interactive element outside either edge on any route; no Status truncates or wraps.** The 28 non-interactive elements past the right edge on `/work` are KV-5, Stories 2-31 and 2-33, and are deliberately not re-measured here | **Observed 2026-09-13**, the whole `pnpm test:e2e` run in the pinned image |
 | 3 | Greyscale render with the Status taxonomy still readable | **Machine half.** `tests/e2e/status-mark.pw.ts` asserts the three structural axes and reads greyscale in the print medium. **Human half.** `ops/hub-accessibility-probe.mjs` renders `/` at 360 x 800 and 1280 x 800 with one of each of the four values planted across the six marks, the dot removed from the three that do not carry one, and `html { filter: grayscale(1) }` applied; the Operator reads the two PNGs with no legend: the table below | **Two PNGs written** to the `--out` directory on 2026-09-13; the axes assertion is green in the same run as check 2. The 2026-09-06 confirmation in `ops/status-mark-axes.md` stands and is confirmed alongside, not replaced | **Observed 2026-09-13** for the renders; the human half awaits the Operator |
 | 4 | `prefers-reduced-motion` forced and the Suite Directory fully reachable | Every case in `tests/e2e/accessibility-floor.pw.ts` runs on the project's `reducedMotion: 'reduce'` context, which is the forced preference: the traversal on `/` reaches all eleven Directory links by Tab, each ringed, and the prevented click lands on one. `tests/e2e/front-door.pw.ts` asserts the flat door's layout and the skip-link on the same context | **Reachable**: the eleven Directory links are stops 7 to 17 of the 18 on `/`, and `/#suite` resolves to the heading with `tabindex="-1"` (`app/__tests__/page.test.tsx`) | **Observed 2026-09-13** in the pinned image |
@@ -87,7 +90,7 @@ The human half of check 1.
 
 | Field | Value |
 |---|---|
-| Method | Open `/` in your own browser at any width with the mouse untouched. Press Tab from the top of the document until focus leaves it, counting the stops: the skip-link first, then the two nav links, the three contact links, the eleven Directory links and the footer link. Every stop shows the ring, at full strength the moment it lands. Then click the same elements with the mouse: no ring appears on any of them |
+| Method | Open `/` in your own browser at any width with the mouse untouched. Press Tab from the top of the document until focus leaves it, counting the stops: the skip-link first, then the two nav links, the three contact links, the eleven Directory links and the footer link. Every stop shows the ring, at full strength the moment it lands. **Expect a fragment, not a whole ring, on six of them today**: the skip-link shows its bottom and right sides only, and the two nav links and three contact links show one or two sides, because their panels clip the ring (§ The focus standard, Story 2-29's and Story 2-32's). The Directory links and the footer link show it whole. Then press Tab until the skip-link holds focus again and press Enter: focus lands on the main landmark and its bottom edge rings across the page. Then click the same elements with the mouse: no ring appears on any of them |
 | Checked by | _not yet performed_ |
 | Checked on | _not yet performed_ |
 | Result | _not yet performed_ |
@@ -108,9 +111,10 @@ The human half of check 1.
 **Why one global rule.** **Decision**, the Operator's ruling of 2026-09-13. Until this story the
 Hub painted its ring nine times in eight stylesheets. Five were the standard verbatim
 (`SkipLink.scss`, `SkipControl.scss`, `CvIntro.scss`, `SiteFooter.scss`, `SuiteDirectory.scss`)
-and four were `1px solid var(--accent)` at 4px, the hover token, on the home nav links, the home
-contact links, the 404's exits and the timeline's triggers (`HomeLayout.scss`, `error-page.scss`,
-`WorkItem.scss`), so a keyboard visitor on those surfaces could not tell focus from hover (A-1).
+and four, in three files, were `1px solid var(--accent)`, the hover token: three at a `4px` offset,
+on the home nav links and the home contact links (`HomeLayout.scss`, two blocks) and on the 404's
+exits (`error-page.scss`), and one inset at `-2px`, on the timeline's triggers (`WorkItem.scss`),
+so a keyboard visitor on those surfaces could not tell focus from hover (A-1).
 One rule replaces all nine; a component that needs the ring needs nothing, and a component that
 wants to remove it has to write `outline: none`, which the sweep names. The rule stays at
 (0,1,0) on purpose: the two planted controls in `tests/e2e/cv.pw.ts` and
@@ -157,9 +161,50 @@ first accordion trigger where the route has one: focus landed on the clicked ele
 did not match, `outline-style` was `none`, and the pathname was unchanged.
 
 **The skip control.** **Observed 2026-09-13** on a context that has not asked for reduced motion,
-the animated door: `.skip-control` is among the first ten Tab stops and paints the standard ring.
-It does not render on the project's reduced-motion context at all, which is why it has its own
-case.
+the animated door: `.skip-control` is among the first ten Tab stops and paints the standard ring,
+whole. It does not render on the project's reduced-motion context at all, which is why it has its
+own case.
+
+**Six stops paint a fragment of the ring, and computed style cannot see it.** **Observed
+2026-09-13** in the review re-run, and the one serious finding of the review. `getComputedStyle`
+answers the ring's four values whatever an ancestor does to them, so the first run's "every stop
+paints the ring" was green for five stops on `/` where a keyboard visitor sees one or two sides.
+The sweep now walks every ancestor of the focused element and reports any whose `clip-path` is
+not `none`, or whose `overflow` on an axis is not `visible`, with its clipping box within the
+ring's reach of the element's box, the reach being `outline-offset` plus `outline-width`, 5px
+here; and any side where the element's own box is within that reach of the document's edge (the
+viewport's, for a fixed element). What it found:
+
+| Stop | Clipped on | By | Owner |
+|---|---|---|---|
+| `a.skip-link` | top, left | The viewport's edge: the link is parked at `inset-block-start: 0; inset-inline-start: 0` (`SkipLink.scss:33-34`) and revealed in place, so the ring's top and left sides sit past the edge and `overflow-x: clip` on the root clips them | **Story 2-32**, by ownership of the top-of-page chrome, the KV-4 precedent for a row booked by ownership alone. `SkipLink` was built by Story 2-13, which is `done`, and no redesign story names it. **Flagged for the Operator to confirm or reassign** |
+| `a.nav-link`, first | top, left, right | `.home-panel--nav` carries `clip-path: polygon(...)` bounded by its own border box and no padding (`HomeLayout.scss:62`), and the link fills the panel's width | **Story 2-29**, with the panel |
+| `a.nav-link`, second | left, right | The same panel | Story 2-29 |
+| `.contact-container a`, first | top, left | `.home-panel--contact`'s `clip-path` (`HomeLayout.scss:69`), no padding, the link a full-width block | Story 2-29 |
+| `.contact-container a`, second and third | left | The same panel | Story 2-29 |
+
+The other 33 stops paint the ring whole. Each of the six is a `clip` row in the ledger below,
+tallied by the stop's selector, so a repair that pads the panel or moves the clip fails the row
+as stale on the commit that makes it. **The reach is read off the element, never typed**, so a
+contract that widened the offset would widen what counts as clipped.
+
+**The trigger's ring paints outside a full-width button.** **Observed 2026-09-13** in the review
+re-run. `button.work-item__header` is `width: 100%` inside `article.work-item`, whose `::before`
+is the 2px accent bar at the article's left edge; the button's box and the article's are the same
+216px wide at 360, and the ring is drawn 3px outside the button, so its left side paints over the
+bar and its top and bottom sides paint into the rows above and below. Before this story the
+trigger painted an inset ring, `outline-offset: -2px`, inside its own box. The global rule is
+right and the trigger's geometry is Story 2-31's to settle when it rebuilds `WorkItem`
+(`WorkItem.scss:20-32`); nothing here is clipped, so it is a finding (F-19), not a ledger row.
+
+**The two skip targets ring on keyboard activation.** **Observed 2026-09-13** in the review
+re-run. Both targets carry `tabindex="-1"` and are never Tab stops, so the sweep never lands on
+them; a keyboard visitor reaches them through Enter. After Tab to the skip-link and Enter,
+`main#main` holds focus, matches `:focus-visible` and computes `2px solid` at `3px`; on the
+animated door, after Tab to the skip control and Enter, `h2#suite` does the same. The landmark is
+the full width of the document with no page padding, so its ring is clipped by the document's edge
+on the top, left and right and what a visitor sees is its bottom edge, a line across the page under
+the Directory; the heading sits inside the Directory's padding and rings whole. See § Decisions.
 
 ## The exemption ledger
 
@@ -174,15 +219,19 @@ sweep fails as stale on that commit.
 fails, and an entry there with no row here fails the same way. Neither file is the only reader of
 the other.
 
-**One ledger, three kinds of row.** **Decision.** `Check` says which sweep the row belongs to
+**One ledger, five kinds of row.** **Decision.** `Check` says which sweep the row belongs to
 and what `Match` means there: for `z-index` the literal value as written in the built CSS; for
 `depth` the property or gradient function as written; for `weight` a selector whose elements
-compute a `font-weight` above their family's published range. **`Count` is an expectation, not a
-note.** The sweep tallies occurrences per `Match` over the whole build, or per selector over
-every route, and holds the sum of the rows' counts equal to it: a repaired site with its row left
-behind fails as stale, a row whose count drifted fails naming both numbers, and no row can be
-vacuous. Two rows may share a `Match` when two files carry the same value, as the three
-`z-index: 2` do; their counts sum.
+compute a `font-weight` above their family's published range; for `clip` a selector whose
+elements' ring is clipped within its reach by an ancestor or the document's edge; for `heading` a
+route whose accessibility tree carries a number of level-1 headings other than one. **`Count` is
+an expectation, not a note.** The sweep tallies occurrences per `Match` over the whole build, or
+per selector or route over every route, and holds the sum of the rows' counts equal to it: a
+repaired site with its row left behind fails as stale, a row whose count drifted fails naming both
+numbers, and no row can be vacuous. Two rows may share a `Match` when two files carry the same
+value, as the three `z-index: 2` do; their counts sum. **Every row's `Source` cites the lines that
+carry the tell**, and `ops/__tests__/hub-accessibility-pass.test.ts` reads those lines off disk
+and refuses a citation that a reflow has left pointing at something else.
 
 **Every count below was read off the sweep's own output in the pinned image on 2026-09-13**,
 never computed from a census of the source. The census the story's spec made by reading agreed
@@ -204,6 +253,10 @@ timeline carries an initiative line on one entry, not four.
 | `gradient-scanline-vignette` | `depth` | `radial-gradient` | 1 | `components/atoms/ScanlineOverlay/ScanlineOverlay.scss:6` | Story 2-28 |
 | `gradient-scanline-lines` | `depth` | `repeating-linear-gradient` | 1 | `components/atoms/ScanlineOverlay/ScanlineOverlay.scss:12-18` | Story 2-28 |
 | `weight-work-initiative` | `weight` | `.work-item__initiative` | 2 | `components/atoms/WorkItem/WorkItem.scss:85` | Story 2-31 |
+| `clip-home-nav` | `clip` | `a.nav-link` | 2 | `components/organisms/HomeLayout/HomeLayout.scss:62` | Story 2-29 |
+| `clip-home-contact` | `clip` | `.contact-container a` | 3 | `components/organisms/HomeLayout/HomeLayout.scss:69` | Story 2-29 |
+| `clip-skip-link` | `clip` | `a.skip-link` | 1 | `components/atoms/SkipLink/SkipLink.scss:33-34` | Story 2-32 |
+| `heading-404` | `heading` | `/a-route-that-does-not-exist` | 1 | `components/organisms/ErrorPage/Error404.tsx:62-68` | Story 2-30 |
 
 **Why `z-scanline` is a row although `10` equals `--z-raised`.** **Decision.** The sweep reads
 the text of what ships, not computed style: `ScanlineOverlay.scss:4` writes the literal and a
@@ -214,6 +267,19 @@ resolving to a named level, and a literal that coincides with one resolves to no
 `HomeLayout.scss`'s pair is Story 2-29's and `error-page.scss`'s pair is Story 2-30's. The
 declaration sits in `app/app.scss`, which no redesign story names; the surface it paints is the
 one Story 2-33 rebuilds.
+
+**`clip-skip-link` is booked to Story 2-32 by ownership of the top-of-page chrome, and nothing
+else.** **Decision**, flagged in this story's completion report for the Operator to confirm or
+reassign. `SkipLink` was built by Story 2-13, which is `done`; no redesign story names it; the row
+needs a story on the board that is not `done`, and Story 2-32 is the one that rebuilds the header,
+the logo and the contact links that sit at the top of every surface, which is where the link is
+parked. The repair itself is small (an inset of the ring's reach when revealed, or a padding on the
+link's box) and is stated here so whichever story takes the row knows what closes it.
+
+**`heading-404` is the one `heading` row.** The 404 renders its numeral and its title as `<p>`
+(`Error404.tsx:62-68`) and carries no level-1 heading in its accessibility tree; A-7 asks for one
+per document. Story 2-30 rebuilds the surface and owns it, with F-12, the `aria-label` on that
+numeral.
 
 ## The findings
 
@@ -236,9 +302,12 @@ that a later story repairs; the ledger rows above are findings too, and are not 
 | F-12 | `.error-page__code` carries `aria-label` on a `<p>`, whose `paragraph` role prohibits a name, the same defect `GlitchText` had on `/`. Lighthouse refuses to audit a page answering 404, so no gate can see it | `components/organisms/ErrorPage/Error404.tsx:62` | Story 2-30 | **Observed 2026-09-13** by reading, and by `lighthouse` refusing the URL with "Status code: 404" |
 | F-13 | `/work`, `/celeste` and the 404 render no skip-link and no `<main>`; `/cv` has a `<main>` with no id. `<main>` is four per-page edits, not one shared change, because a layout-level landmark would wrap the footer `/` keeps outside it by design (`app/page.tsx:79-81`), and a skip-link on `/celeste` would be the one visible control on a surface asserted to have none | `app/layout.tsx:42-45`, `app/cv/page.tsx:46`, `app/work/page.tsx`, `app/celeste/page.tsx`, `app/not-found.tsx` | Story 2-32 | **Decision**, at this story's planning, re-booking what DW-43 had booked to Story 2-26. See § Decisions |
 | F-14 | `DESIGN.md` places the tech array at `--t-2xs` in its scale table (`:468`) and at `--t-3xs` in the Registry Entry component (`:660`); the shipped `.suite-directory__tech` follows `:660`. The two lines disagree and one of them is wrong | `DESIGN.md:468,660`, `components/organisms/SuiteDirectory/SuiteDirectory.scss:152` | The design owner, filed as DW-96, unassigned | **Observed 2026-09-13** by reading, when the paragraph floor met four labels marked up as `<p>`. See § Decisions |
-| F-15 | F-11 of `RESTYLE-SPEC.md:657` is unmet: `:root` declares no `color-scheme`, and no `::selection` rule sets background and colour | `app/app.scss`, `contracts/tokens.css` | Unassigned, filed as DW-95 | **Observed 2026-09-13** by `git grep -n "color-scheme\|::selection" -- app components contracts`, which returns one comment (`SuiteDirectory.scss:213`, which mentions the rule) and no declaration. Filed, not swept, because the sweep's checks are the ones the story named |
+| F-15 | RESTYLE-SPEC F-11 (`RESTYLE-SPEC.md:657`) is unmet: `:root` declares no `color-scheme`, and no `::selection` rule sets background and colour | `app/app.scss`, `contracts/tokens.css` | Unassigned, filed as DW-95 | **Observed 2026-09-13** by `git grep -n "color-scheme\|::selection" -- app components contracts`, which returns one comment (`SuiteDirectory.scss:213`, which mentions the rule) and no declaration. Filed, not swept, because the sweep's checks are the ones the story named |
 | F-16 | No shipped interactive element sits on `--token-bg-raised` or `--token-bg-raised-2`, so the ring on those grounds is known from planted controls only | Every route | No owner: an observation about what the Hub paints, not a breach of anything | **Observed 2026-09-13** by the sweep's ground walk |
 | F-17 | `DESIGN.md:565-568` and `:1295` say the contract carries six z-levels and `contracts/tokens.css:129-135` declares seven (`--z-base`, `--z-raised`, `--z-dropdown`, `--z-sticky`, `--z-modal`, `--z-toast`, `--z-tooltip`). The sweep derives the set from the contract and never types the count | `DESIGN.md:565-568,1295` | The design owner, filed under DW-96 with F-14 | **Observed 2026-09-13** by reading both files |
+| F-18 | The 404 carries no level-1 heading in its accessibility tree: the numeral and the title are `<p>`, and `HudLabel` renders spans. A-7 asks for one `<h1>` per document | `components/organisms/ErrorPage/Error404.tsx:62-68` | Story 2-30 | **Observed 2026-09-13** in the review re-run by `getByRole('heading', { level: 1 })`, which answered zero. Ledger row `heading-404` |
+| F-19 | The timeline trigger's ring paints outside a full-width button, over the article's `::before` accent bar and into the neighbouring rows, where it painted inset at `-2px` before this story | `components/atoms/WorkItem/WorkItem.scss:20-32`, `:5-14` | Story 2-31 | **Observed 2026-09-13** in the review re-run: the button's box and the article's are both 216px wide at 360 and the bar sits at the article's left edge, 2px wide, under the ring's 3px offset. See § The focus standard |
+| F-20 | The main landmark's ring, when the skip-link puts focus on it, is clipped by the document's edge on its top, left and right: `<main>` is the full width of the document with no page padding, so what a visitor sees is its bottom edge | `app/page.tsx:68` | Story 2-32, with the landmarks it adds to the other surfaces (F-13) | **Observed 2026-09-13** in the review re-run, by the same clip read the sweep makes on every stop. See § Decisions |
 
 ## The accent share
 
@@ -247,7 +316,7 @@ on the authoring host, against `corepack pnpm build` and `corepack pnpm start --
 context that has asked for reduced motion (the flat front door, so the render is the same on
 every run; the animated door's canvas never draws the same frame twice).
 
-**The denominator is stated, because F-8 says the figure has none.** **Decision.** The count is
+**The denominator is stated, because RESTYLE-SPEC F-8 says the figure has none.** **Decision.** The count is
 over every pixel of the viewport screenshot at scroll top, and a pixel counts as accent when its
 RGB is within a Euclidean distance of 32 (in 0 to 255 units) of `--token-accent`,
 `--token-accent-hover` or `--token-accent-muted`, each read off the page and rasterised through a
@@ -262,7 +331,7 @@ the figure is an approximation whose tolerance is written down beside it.
 Both are under the 3% `epics.md:3058` names as design intent. **Not a gate.** **Decision.**
 `RESTYLE-SPEC.md:654` says the 3% has no defined denominator and is not a check; the story asked
 for it measured, and a gate on a number the design owner disowned would be a gate on a guess. The
-binary half of F-8, the fill grep, is Story 2-34's.
+binary half of RESTYLE-SPEC F-8, the fill grep, is Story 2-34's.
 
 The three roles as rasterised: `--token-accent` `rgb(143, 126, 240)`, `--token-accent-hover`
 `rgb(173, 161, 255)`, `--token-accent-muted` `rgb(86, 76, 145)`.
@@ -301,13 +370,14 @@ Each of these is a call this story made rather than a value it measured, with th
 | Decision | Reason |
 |---|---|
 | **`forced-colors`: no claim.** The estate makes no claim about the Status mark, the ring or anything else under `forced-colors` or a user stylesheet | No requirement in the plan names that medium (`ops/status-mark-axes.md:234`, the Story 2-10 entry in `deferred-work.md`). Asked to decide whether the estate claims anything there, the answer is that it does not, and a claim nobody asked for is a gate nobody agreed to. Recorded so the question stops being open; the day a requirement names the medium, this row is where it starts |
-| **The canvas needs no prose.** A-14's third clause, "with its content stated in prose", is withdrawn by the Operator's ruling of 2026-09-13; the canvas is decorative | `EXPERIENCE.md:773` amended in place with the date. `ScanlineOverlay.tsx:8` is the precedent: a decorative layer is `aria-hidden` and that is the whole of its accessibility. The narrative has no visual row in any design document, so no sentence exists to ship and inventing one would be product copy written under a spec that forbids invented facts (DW-52). The two met clauses stay asserted in `tests/e2e/front-door.pw.ts` |
+| **The canvas needs no prose.** A-14's third clause, "with its content stated in prose", is withdrawn by the Operator's ruling of 2026-09-13; the canvas is decorative | `EXPERIENCE.md:773` amended in place with the date. `ScanlineOverlay.tsx:8` is the precedent: a decorative layer is `aria-hidden` and that is the whole of its accessibility. The narrative has no visual row in any design document, so no sentence exists to ship and inventing one would be product copy written under a spec that forbids invented facts (DW-52). The two met clauses stay asserted in `tests/e2e/front-door.pw.ts`. **The withdrawn clause survives in four other places this story does not edit**: `EXPERIENCE.md:527-528`, `epics.md:644`, `epics.md:2591` and `epics.md:3328`, the last of them Story 2-29's own acceptance criterion, so that story would inherit it unknowingly; the coordinator files the deferred entry that names them |
 | **The footer line moves to `--t-2xs`; the footer link does not** | `DESIGN.md` wins any value. `:468` places the footer at `--t-2xs`; `:467` reserves `--t-3xs` for labels and never prose, and `SiteFooter.scss` itself argues the line is a sentence. The link beside it is a label and stays at the smallest step; the story's fix list names one token and this is it |
 | **The paragraph floor excepts four labels by name.** `.suite-directory__count`, `.suite-directory__tech`, `.suite-directory__status` and `.suite-directory__family-name` are `<p>` elements `DESIGN.md` places at `--t-3xs` (`:490`, `:660`, `:637`, `:667`), and the sweep's "every `p` at least `--t-2xs`" does not bind them | The story's matrix wrote the paragraph floor as a tag test on a census that saw one `<p>` under `--t-2xs`, the footer line. The run met four more, every one a label by the design's own classification and every one at the step the design places it. Prose is not derivable from markup, which is why the `--t-sm` floor already takes `DESIGN.md`'s six prose selectors rather than a tag; the paragraph floor takes the same document's four labels as its exception. Each is pinned with the line that places it and asserted to match on some route, so the list cannot rot. **This narrows the matrix's wording and is reported as such** in the story's completion report; the alternative, retagging four elements in Story 2-9's component, is a fix outside the four this story is allowed. F-14 records the one place `DESIGN.md` disagrees with itself about them |
 | **The built CSS is read as text, not computed style, for z-index and depth** | `ScanlineOverlay.scss:4` is the literal `10`, equal to `--z-raised` by value, and a computed read passes it. `ops/asset-budget.mjs` reads the same files for the same reason. The seven `--z-*` names come from the contract, so the documents' "six" is never typed and F-17 is recorded rather than repeated |
 | **The non-home `<main>` and skip-link are Story 2-32's, not this story's.** DW-43's "Story 2-26's work" is corrected | The Operator's condition for doing it here was one change in the shared layout. `<SkipLink />` would be; `<main id='main' tabIndex={-1}>` is not, because a layout-level `<main>` wraps the footer `/` keeps outside it on purpose (`app/page.tsx:79-81`, pinned at `page.test.tsx:89`). So it is four per-page edits plus four `SURFACES` pins in `hit-target-floor.pw.ts` and the `/celeste` no-control case in `secondary-surfaces.pw.ts`, which is the chrome change `app/cv/page.tsx:41-45` already booked to Story 2-32 |
-| **One ledger with a `check` column, one register entry** | The Operator asked for one ledger and one entry. Rows of three kinds fit one table when the row carries its kind and a `Match` whose meaning the record states per kind, and one tally per kind holds the sum of the rows' counts to what was observed in both directions |
-| **The accent share is Observed and not gated** | F-8 disowns the denominator; the story asks for the figure. The probe states a denominator and a tolerance and records the number; a gate on it would be a gate on a number the design owner said is not a check |
+| **One ledger with a `check` column, one register entry** | The Operator asked for one ledger and one entry. Rows of five kinds fit one table when the row carries its kind and a `Match` whose meaning the record states per kind, and one tally per kind holds the sum of the rows' counts to what was observed in both directions |
+| **The `[tabindex="-1"]` targets the two skips move focus to ring on keyboard activation, and stay ringed.** After Enter on the skip-link, `main#main` matches `:focus-visible` and computes the standard ring; after Enter on the skip control, so does `h2#suite`. The story forbids `outline: none` on either | The ring is A-1's visible indicator of where focus went, and after a skip that is the one thing a keyboard visitor needs to see. The landmark's ring is clipped by the document's edge on three sides (F-20), so on `/` it reads as a line under the Directory rather than a box; that is a geometry of the landmark for Story 2-32 to settle with the other landmarks, not a reason to suppress the ring. The heading's ring paints whole. Both are read by a permanent case and the Operator's keyboard method includes the Enter step |
+| **The accent share is Observed and not gated** | RESTYLE-SPEC F-8 disowns the denominator; the story asks for the figure. The probe states a denominator and a tolerance and records the number; a gate on it would be a gate on a number the design owner said is not a check |
 | **`/cv` is in the Lighthouse gate** | The reading cleared the three thresholds, which was DW-70's trigger |
 | **A probe script beside the spec, not a skipped case in CI** | The two eyeball checks need renders a person looks at, and the accent count needs a PNG decoded off CI. A skipped spec would read as a downgraded gate, which `AGENTS.md` forbids; a script that leaves a re-runnable command is what makes the check re-runnable |
 
@@ -319,16 +389,19 @@ through the browser or fabricated in memory, so none is left in the tree.
 
 | Case | Behaviour | Nature |
 |---|---|---|
-| The ring taken off | With `:focus-visible { outline: none !important; transition: outline 200ms !important }` planted on the 404, the sweep names every one of its five stops for the missing ring **and** for the transition, each line carrying the route, the element's path, its text and the five values | **Observed 2026-09-13.** "with the ring taken off, the sweep names every element on the route with the five values" |
-| A positive `tabindex` | An `<a href="#" tabindex="1">` planted on the 404 is named as a positive `tabindex`, and the traversal names Tab number 1 landing on it where DOM order puts the logo | **Observed 2026-09-13.** "a planted positive tabindex fails the traversal, naming it", plus the pure verdict on fabricated sequences: a swapped pair, a stop that never came, an extra Tab that stayed inside, a positive index |
-| Fabricated CSS against a fabricated ledger | The tally names an unlisted value (`z-index=7`, `radial-gradient`), a stale row (`z-one`), a count that moved (`shadow-one` 2 against 1), two rows sharing a match summing their counts, a `var(--z-tooltip)` the fabricated contract does not declare, and `repeating-linear-gradient(` counted as itself and never as `linear-gradient(` | **Observed 2026-09-13.** "the tally names an unlisted value, a stale row and a count that moved, on fabricated CSS" |
+| The ring taken off | With `:focus-visible { outline: none !important; transition: color 1ms, outline 200ms !important }` planted on the 404, the sweep names every one of its five stops for the missing ring **and** for the transition, each line carrying the route, the element's path, its text and the five values; the transition read pairs each property with its own duration by index, so `color, outline` over `0.2s, 0s` is not a transitioned ring and `0s, 0.2s` is | **Observed 2026-09-13.** "with the ring taken off, the sweep names every element on the route with the five values" |
+| A clipped ring | A link planted inside a `clip-path` wrapper on the 404, padded on the left only, is named as clipped on its top, right and bottom by that wrapper and not on its left; a link planted `position: fixed` at the viewport's top-left corner is named as clipped on its top and left by the viewport's edge and on neither far side; a stop with a clipped ring no row claims, a `clip` row nothing matched, and a `clip` row whose count moved are each named | **Observed 2026-09-13.** "a ring clipped by a clip-path ancestor and by the document edge is named, side by side" |
+| A second level-1 heading | A `role="heading" aria-level="1"` planted on `/cv` makes the count two, and a route off the rule with no `heading` row is named | **Observed 2026-09-13.** "every route carries exactly one accessible level-1 heading, and the home route names it" |
+| A positive `tabindex`, an `aria-hidden` focusable, an untagged landing | An `<a href="#" tabindex="1">` planted on the 404 is named as a positive `tabindex`, and the traversal names Tab number 1 landing on it where DOM order puts the logo; a link planted inside an `aria-hidden` subtree stays in the expected order, because Tab reaches it, and is named as a focusable the accessibility tree does not have; a planted disabled button and a link inside an `[inert]` subtree are left out of the expected order; and the extra Tab landing on anything but `body`, nothing or the first stop is named as a landing, an iframe or a focusable scroller, not a departure | **Observed 2026-09-13.** "a planted positive tabindex, an aria-hidden focusable and an untagged landing fail the traversal, naming each", plus the pure verdict on fabricated sequences: a swapped pair, a stop that never came, an extra Tab that stayed inside, an untagged landing, a positive index, a hidden focusable |
+| Fabricated CSS against a fabricated ledger | The tally names an unlisted value (`z-index=7`, `radial-gradient`), a stale row (`z-one`), a count that moved (`shadow-one` 2 against 1), two rows sharing a match summing their counts, a `z-index: var()` naming anything but a contract layer as an unlisted value (`var(--z-tooltip)` against a fabricated contract without it, `var(--depth, 4)`), a `--foo-z-index` custom property never counted, `-webkit-` and `-moz-` prefixes counted as the function they prefix, and `repeating-linear-gradient(` counted as itself and never as `linear-gradient(` | **Observed 2026-09-13.** "the tally names an unlisted value, a stale row and a count that moved, on fabricated CSS" |
 | An empty or absent build | `builtStyles` throws naming the directory on a directory holding no `.css`, and on one that is not there, and reads a nested stylesheet whole | **Observed 2026-09-13.** "an empty or absent build throws naming the directory, never passing over nothing" |
-| Text under the floor | A `<p>` at `calc(var(--t-3xs) - 1px)`, a `<p>` at `calc(var(--t-2xs) - 1px)`, a prose `<p>` at `calc(var(--t-sm) - 1px)`, an italic span, a Geist Mono span at weight `700` and a span in Papyrus are each named for their own defect, the Papyrus one listed as off-contract and never judged on weight; the same plants under `aria-hidden` are never read; the shipped 404 beneath them reads clean | **Observed 2026-09-13.** "a planted text under the floor, an italic and a synthesised weight are named by the type sweep" |
-| The `px` scan | Fires on `font-size: 12px` and on a `px` inside `clamp()`, passes `var(--t-sm)`, `12pt` and a `padding` | **Observed 2026-09-13.** "no stylesheet under app/ or components/ sets font-size in px" |
+| Text under the floor | A `<p>` at `calc(var(--t-3xs) - 1px)`, a `<p>` at `calc(var(--t-2xs) - 1px)`, a prose `<p>` at `calc(var(--t-sm) - 1px)`, an italic span, a Geist Mono span at weight `700`, a span in Papyrus and a `::before` whose generated `//` is set under the floor are each named for their own defect, the Papyrus one listed as off-contract and never judged on weight, a `::after` whose content is a blank string never read; the same plants under `aria-hidden` are never read; the shipped 404 beneath them reads clean; a family published in two `@font-face` blocks merges into one weight range | **Observed 2026-09-13.** "a planted text under the floor, an italic, a synthesised weight and a small pseudo-element are named by the type sweep" |
+| The `px` scan and the one-ring scan | The `px` scan fires on `font-size: 12px`, on a `px` inside `clamp()` and on a `font:` shorthand with a `px` size, passes `var(--t-sm)`, `12pt`, a `font-family` and a `padding`; the ring scan names a nested `&:focus-visible` with an `outline`, a `.y:focus-visible` with an `outline-color`, and a scoped `:focus-visible` in `app/app.scss` itself, passes a `:focus-visible` with no outline and the bare global rule | **Observed 2026-09-13.** "no stylesheet under app/ or components/ sets type in px, and none but app/app.scss paints a ring" |
 | The autoplay selector | Matches a planted `<video autoplay>` and a planted refresh meta | **Observed 2026-09-13.** Inside the type case |
 | The label exception | Each of the four `LABEL_PARAGRAPHS` selectors is asserted to match a visible `<p>` on some route, so an entry cannot outlive the element it excuses | **Observed 2026-09-13.** Inside the type case |
-| The weight ledger | A weight row matching nothing fails as stale, and one whose count moved fails naming both numbers | **Decision.** Inside the type case; the same arithmetic the z-index and depth tally is shown firing on above |
-| The record and the ledger disagreeing | Vitest fails in whichever direction is short, on a field edited in one place, and on a repeated id, driven by fabricated tables | **Observed 2026-09-13.** `ops/__tests__/hub-accessibility-pass.test.ts` |
+| The weight, clip and heading ledgers | A row matching nothing fails as stale, and one whose count moved fails naming both numbers, through one tally shared by the three kinds | **Observed 2026-09-13.** Driven on fabricated hits inside the clipped-ring case, and applied to the real rows inside the type, sweep and heading cases |
+| The four ring roles | `--stroke-focus`, `--token-focus`, `--focus-offset` and `--r-hair` are read off `:root` through the harness before any ring is read, which throws naming an undeclared one; a probe and an element agree on `0px` for an undeclared offset, so the later "resolved to nothing" guard alone would never fire | **Decision.** `ringContract` in the spec file |
+| The record and the ledger disagreeing | Vitest fails in whichever direction is short, on a field edited in one place, and on a repeated id, driven by fabricated tables; every row's cited source lines have to carry the tell, checked on planted lines per kind; the Lighthouse table and `.lighthouserc.js`'s `collect.url` have to name the same surfaces; KV-6's heading and index row have to carry the ledger's sums per kind spelled out; and an Operator table counts as answered only on an ISO date in `Checked on`, a variant placeholder being neither answered nor the one placeholder | **Observed 2026-09-13.** `ops/__tests__/hub-accessibility-pass.test.ts` |
 | The `anchor-contract` pin | With the global rule present and `FOCUS_ROLES` absent, claim one failed naming exactly the four roles the rule adds | **Observed 2026-09-13**, before the pin was added |
 
 ## How to re-run every measurement here
@@ -348,7 +421,8 @@ docker run --rm --ipc=host ^
 
 Drop the trailing `exec playwright test accessibility-floor` for `pnpm test:e2e` and the whole
 suite runs. The sweep prints its readings (stops per route, the ring, the grounds and their
-contrast, the built-CSS tally, the off-contract families, the synthesised weights) whether it
+contrast, the clipped stops side by side, the two skip targets after Enter, the level-1 headings
+per route, the built-CSS tally, the off-contract families, the synthesised weights) whether it
 passes or fails, so a re-run is a re-reading.
 
 The renders and the accent share, against a running production server:
@@ -363,10 +437,13 @@ Lighthouse, against a server on port 3000, collecting and asserting without the 
 
 ```
 corepack pnpm start --port 3000
-npx @lhci/cli collect
-npx @lhci/cli assert
+npx @lhci/cli@0.15.1 collect
+npx @lhci/cli@0.15.1 assert
 ```
 
+The version is pinned to the one the reading was taken at (`@lhci/cli` 0.15.1 driving Lighthouse
+12.6.1), so a re-run compares like with like; `.github/workflows/lighthouse.yml:39`'s own
+`npx @lhci/cli autorun` floats, so the gate on `main` runs whatever is current on the day.
 `lhci collect` writes `.lighthouseci/`, which is run output and is deleted after reading, never
 committed.
 
@@ -376,13 +453,15 @@ committed.
 |---|---|---|
 | **Two grounds were read on planted controls** | No interactive element sits on `--token-bg-raised` or `--token-bg-raised-2` on any route (F-16). The reading answers whether the shipped rule paints a visible ring there; it says nothing about a real control's layout, because there is none | **Observed 2026-09-13**, labelled planted in the run's output |
 | **The ground under a ring is the first painted ancestor colour** | The ring is drawn outside the element's border box, so the element's own background is not under it and the walk starts at the parent. An ancestor painting an image is classified by the first opaque colour beneath the image and the image is named; the grid gradients are at 6% alpha, so the classification is the colour's | **Decision** |
-| **Visibility is the 2-8 rule, which does not see clipping** | A text inside a collapsed accordion panel (`height: 0; overflow: hidden` on the parent) has a box of its own and is read. That is why the type sweep reads 290 elements, the collapsed panels' text among them, and why `weight-work-initiative` counts the initiative line whether its panel is open or not | **Decision**, the rule `ops/hit-target-floor.md` states, kept rather than widened |
+| **Visibility is the 2-8 rule, which does not see clipping** | A text inside a collapsed accordion panel (`height: 0; overflow: hidden` on the parent) has a box of its own and is read. That is why the type sweep reads 318 texts, the collapsed panels' text among them, and why `weight-work-initiative` counts the initiative line whether its panel is open or not | **Decision**, the rule `ops/hit-target-floor.md` states, kept rather than widened |
+| **The clip read is a box test, not a raster** | A `clip-path` is read as clipping to the ancestor's border box whatever its shape, and `overflow` to its padding box; the reach is `outline-offset` plus `outline-width` off the focused element. A polygon that leaves a corner open, or a ring that survives under a translucent clip, is not seen; a clip that the box test misses, an `overflow` on a scroller that could scroll the ring into view, is reported as clipped. `html` and `body` hand their overflow to the viewport and are read as the document's edge, the viewport's for a fixed element. Whether a fragment reads as a ring to a person is the Operator's keyboard confirmation | **Decision** |
+| **Tabbable is what Tab reaches** | A focusable inside an `aria-hidden` subtree is a Tab stop and stays in the expected order, named as its own finding; a `:disabled` control, an `[inert]` subtree and a box-less element are not stops and leave the expectation. A zero-area focusable would still be a stop and is dropped by the 2-8 rule; none ships today | **Decision** |
 | **Hover is read on all but one element** | The skip-link is parked above the viewport by `translateY(-100%)` and a pointer cannot be put over it; the run records it as unreachable and the case refuses any other element in that state | **Observed 2026-09-13** |
 | **One click per route** | On the first link that is not the skip-link and, where the route has one, the first accordion trigger, with navigation prevented at the capture phase. Every element's hover is read; the click is a sample, because a click per element is a navigation per element | **Decision** |
 | **`transition-property` `all` over `0s` is not a transition** | The initial value of the property is `all`; only a duration above zero animates. The check reads both and fires on the pair, the way `ops/cs-tracker-accessibility-probe.mjs` does | **Decision** |
-| **The depth sweep counts six tells and no more** | `box-shadow:`, `text-shadow:`, `linear-gradient(`, `radial-gradient(`, `repeating-linear-gradient(` and `conic-gradient(`, the story's list. `repeating-radial-gradient(` and `repeating-conic-gradient(` are not counted, and neither is an SVG filter (F-7). Widening the list is a change to the story's checks | **Decision** |
+| **The depth sweep counts six tells and no more** | `box-shadow:`, `text-shadow:`, `linear-gradient(`, `radial-gradient(`, `repeating-linear-gradient(` and `conic-gradient(`, the story's list, each admitted with a `-webkit-` or `-moz-` prefix. `repeating-radial-gradient(` and `repeating-conic-gradient(` are not counted, and neither is an SVG filter (F-7). A `z-index: var()` naming anything but a contract layer is an unlisted value. Widening the list is a change to the story's checks | **Decision** |
 | **Line-height, tracking, the measure and uppercase are recorded, not swept** | DR45's rules beyond the size floor, the italic ban and the weight range were not among the checks the story named; F-8 and F-9 are the two departures reading found | **Decision** |
-| **F-8's fill grep and the colour-literal grep are Story 2-34's; F-11 is filed, not swept** | The story's boundaries name both as another story's | **Decision** |
+| **RESTYLE-SPEC F-8's fill grep and the colour-literal grep are Story 2-34's; RESTYLE-SPEC F-11 is filed, not swept** | The story's boundaries name both as another story's | **Decision** |
 | **The accent share is one door at scroll top** | Reduced motion, so the flat hero, at two viewports. The animated door's canvas is a moving picture and its share is a moving number; measuring it would be recording weather | **Decision** |
 | **The probe ran on the authoring host, not in the pinned image** | It writes renders a person looks at and prints a figure nothing gates on. Glyph rasterisation differs across platforms and would move the share by a few pixels either way | **Decision** |
 | **Lighthouse cannot audit the 404** | It refuses a page answering 404 ("Lighthouse was unable to reliably load the page"), so F-12 is by reading and no gate can see that surface | **Observed 2026-09-13** |
