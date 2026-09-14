@@ -270,10 +270,11 @@ describe('the record and the exemption ledger agree in both directions', () => {
   it('parses a real table and a real literal, so the comparison below is not over nothing', () => {
     expect(fromRecord.length, `${RECORD_REL} exempts nothing`).toBeGreaterThan(0);
     expect(fromSpec.length, `${SPEC_REL} exempts nothing`).toBeGreaterThan(0);
-    // A row that is really in both files. `z-scanline` outlives most: Story 2-28 closes it, and it
-    // is the row whose literal equals a token by value, the reason the sweep reads text.
-    expect(fromRecord.map((row) => row.id)).toContain('z-scanline');
-    expect(fromSpec.map((row) => row.id)).toContain('z-scanline');
+    // A row that is really in both files. `z-work-hero` outlives the rest: Story 2-33 closes it,
+    // the last of the redesigns to land. Until 2026-09-14 the pin was `z-scanline`, the row whose
+    // literal equalled a token by value; that reason left with the row when Story 2-28 rewrote it.
+    expect(fromRecord.map((row) => row.id)).toContain('z-work-hero');
+    expect(fromSpec.map((row) => row.id)).toContain('z-work-hero');
     for (const row of fromSpec) {
       expect(Number.isInteger(row.count), `"${row.id}" parsed a non-integer count`).toBe(true);
       expect(row.count, `"${row.id}" counts nothing`).toBeGreaterThan(0);

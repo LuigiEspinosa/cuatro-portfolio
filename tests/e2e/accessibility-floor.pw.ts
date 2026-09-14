@@ -219,14 +219,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     closedBy: 'Story 2-29',
   },
   {
-    id: 'z-scanline',
-    check: 'z-index',
-    match: '10',
-    count: 1,
-    source: 'components/atoms/ScanlineOverlay/ScanlineOverlay.scss:4',
-    closedBy: 'Story 2-28',
-  },
-  {
     id: 'z-work-hero',
     check: 'z-index',
     match: '2',
@@ -265,22 +257,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     count: 2,
     source: 'components/organisms/ErrorPage/error-page.scss:9-10',
     closedBy: 'Story 2-30',
-  },
-  {
-    id: 'gradient-scanline-vignette',
-    check: 'depth',
-    match: 'radial-gradient',
-    count: 1,
-    source: 'components/atoms/ScanlineOverlay/ScanlineOverlay.scss:6',
-    closedBy: 'Story 2-28',
-  },
-  {
-    id: 'gradient-scanline-lines',
-    check: 'depth',
-    match: 'repeating-linear-gradient',
-    count: 1,
-    source: 'components/atoms/ScanlineOverlay/ScanlineOverlay.scss:12-18',
-    closedBy: 'Story 2-28',
   },
   {
     id: 'weight-work-initiative',

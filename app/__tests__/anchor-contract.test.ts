@@ -290,6 +290,10 @@ const TOKEN_NATIVE_STYLESHEETS = [
   // sticky at `--z-sticky` on an opaque `--token-bg` ground. Story 2-32 rebuilds both, at which
   // point they become rebuilds like the rest of this list.
   'components/atoms/Navbar/navbar.scss',
+  // The scrim layer, rebuilt by Story 2-28. A rebuild like the rest: the 2023 raster left disk with
+  // its literals (the `#000` alphas, the two gradients, the grain and the `10` that equalled a level
+  // by value), and this file names the scrim role and the raised layer directly.
+  'components/atoms/ScanlineOverlay/ScanlineOverlay.scss',
   'components/atoms/SkipControl/SkipControl.scss',
   'components/atoms/SkipLink/SkipLink.scss',
   // The display entrance, rebuilt by Story 2-27. A rebuild like the rest: the 2023 `glitch-text.scss`

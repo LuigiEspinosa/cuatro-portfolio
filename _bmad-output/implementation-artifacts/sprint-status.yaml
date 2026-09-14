@@ -212,7 +212,18 @@ development_status:
   # screen-reader read of / (pending action 4 in ops/hub-accessibility-pass.md), the one check no
   # agent can drive, recorded there before this moves to done.
   2-27-redesign-glitchtext-token-native: done
-  2-28-redesign-scanlineoverlay-token-native-and-add-token-scrim: backlog
+  # 2-28 built 2026-09-14 (key renamed the same day per epics.md § 1, the role is consumed, not
+  # added): ScanlineOverlay is the scrim layer, one aria-hidden div at var(--token-scrim) and
+  # var(--z-raised) with pointer-events: none, no prop, no child; the vignette, the raster, the
+  # grain and its loop are deleted, and both call sites (the /work hero, the 404) left because
+  # neither is text over moving imagery, so no surface consumes it until 2-29 places it. The three
+  # KV-6 rows left the ledger (six literals, six depth tells, seen in the pinned image), F-7 and
+  # DW-32 are closed, DW-101 carries the composited-contrast sampling to 2-29. Weight: the raster's
+  # 509 gzipped bytes of CSS left every served route (it rode the not-found boundary), 138 of JS.
+  # The /work baseline did not move: the plain run passed and the update run wrote nothing, because
+  # the raster's removal is under Playwright's per-pixel threshold on every one of the 80,831 pixels
+  # it touched, recorded in ops/rendered-output-harness.md rather than forced with a new PNG.
+  2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token: review
   2-29-redesign-homelayout-token-native: backlog
   2-30-redesign-error404-token-native: backlog
   2-31-redesign-workitem-and-hudlabel-token-native: backlog

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import HudLabel from '@/components/atoms/HudLabel/HudLabel';
 import { DESTINATIONS } from '@/components/atoms/Navbar/Navbar';
-import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import { useGsapContext } from '@/hooks/useGsapContext';
 import { gsap } from 'gsap';
 import './error-page.scss';
@@ -22,8 +21,11 @@ import './error-page.scss';
  * destination, so a mark here would announce a page the visitor is not on.
  *
  * **Everything else on this surface is Story 2-30's.** The title, the numeral, the `HudLabel`, the
- * `ScanlineOverlay`, the cybercore literals in `error-page.scss` and the focus ring are all booked
- * there (`EXPERIENCE.md:540-542`). This story adds the two exits and gets them to the hit-target
+ * cybercore literals in `error-page.scss` and the focus ring are all booked there
+ * (`EXPERIENCE.md:540-542`). The `ScanlineOverlay` was booked there too until it left with Story
+ * 2-28 on 2026-09-14: the layer is a scrim for text over moving imagery, and nothing moves behind
+ * the text here, so the surface carries no scrim rather than a faint one (`EXPERIENCE.md:480-481`,
+ * `epics.md:3252`). This story adds the two exits and gets them to the hit-target
  * floor, which is why the `error-page__back` class survives on both: `error-page.scss:52-80` styles
  * it, `app/app.scss:82-85` scopes a boundary role on it, and the entrance tween below targets it,
  * so both exits fade in together. The name is 2023 legacy Story 2-30 retires with the rest.
@@ -54,8 +56,6 @@ const NotFound = () => {
 
   return (
     <div className='error-page' ref={ref}>
-      <ScanlineOverlay />
-
       <div className='error-page__content'>
         <HudLabel label='// ERR_NOT_FOUND' sub='// SIGNAL_LOST' />
 

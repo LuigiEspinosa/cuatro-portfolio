@@ -7,7 +7,6 @@ import { useGsapContext } from '@/hooks/useGsapContext';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import HudLabel from '@/components/atoms/HudLabel/HudLabel';
 import { TorusCanvas } from '@/components/molecules/TorusCanvas/TorusCanvas';
-import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import { work } from '@/content/work';
 import './WorkHero.scss';
 
@@ -53,8 +52,6 @@ export function WorkHero() {
 
   return (
     <section className='work-hero' ref={heroRef}>
-      <ScanlineOverlay intensity='light' />
-
       <div className='work-hero__text'>
         <HudLabel label='// EXPERIENCE' sub='経験' />
         <h1 className='work-hero__heading'>

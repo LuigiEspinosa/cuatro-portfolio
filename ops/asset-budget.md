@@ -468,6 +468,77 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-14 reading, after Story 2-28
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `HMUMVY1c3c8TaxM8ZpHFr`, written
+2026-09-14T19:17:40Z, taken on the story's working tree at `1addf8c` plus its own files, before the
+commit that carries them: the tool's own dirty-inputs row named seven paths (`ScanlineOverlay.scss`,
+`ScanlineOverlay.tsx` and its test, `WorkHero.tsx`, `Error404.tsx`, `GlitchText.scss` and
+`app/__tests__/anchor-contract.test.ts`, every one modified) and every one of them is this story's.
+The before reading is the same command against build `Y4h-61hDaR4j-d3q4LPv9` (written
+2026-09-14T19:09:11Z at `1addf8c` on `dev`, no measured input dirty), and it was reproduced to the
+byte by a second build of `1addf8c` in a detached worktree (`8YbRjiKlzpAMncj0kOYbS`, 35 chunks at
+2,033,098 on disk and 619,578 gzipped on both) so the per-chunk listing below could be taken on both
+sides. The before build reads 21 `.js` and 14 `.css` at 619,578 gzipped and 9,190 gzipped of `.css`,
+against the Story 2-27 after figures of 619,573 and 9,195: five bytes either way on a rebuild of the
+same commit, the variance § Stated limits records.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 20,340 | 492,588 | yes | yes | **Observed** |
+| `/cv` | 21,456 | 258,219 | no | yes | **Observed** |
+| `/celeste` | 13,748 | 251,741 | no | yes | **Observed** |
+| `/_not-found` | 13,863 | 251,594 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,763 | no | **no**: Next's own document | **Observed** |
+
+**The whole build, before and after, and the one `.css` chunk that left.** **Observed 2026-09-14**,
+the tool's own build table on each side, and every `.next/static/chunks/*.css` and `*.js` weighed
+with `zlib.gzipSync` at level 9 (the tool's method) on both builds.
+
+| Figure | Before, `dev` at `1addf8c` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 21 `.js`, 14 `.css` | 21 `.js`, 13 `.css` | **one `.css` chunk fewer** | **Observed** |
+| Bytes in `.next/static/chunks` | 2,033,098 on disk, 619,578 gzipped | 2,031,505 on disk, 618,931 gzipped | **1,593 on disk, 647 gzipped lighter** | **Observed**, tool's build table; **Derived** delta |
+| Every `.css` chunk together | 26,880 on disk, 9,190 gzipped | 25,859 on disk, 8,681 gzipped | **1,021 on disk, 509 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The chunk carrying `.scanline-overlay` | `0d_8a3hzs285~.css`, 1,021 on disk, 509 gzipped, carrying `.scanline-overlay`, the `feTurbulence` data URI, `grain-shift`, one `radial-gradient(`, one `repeating-linear-gradient(` and `z-index:10` | **no chunk**: no built stylesheet carries `.scanline-overlay`, `feTurbulence` or `grain-shift`, and `radial-gradient(` and `repeating-linear-gradient(` occur zero times across the thirteen | 1,021 on disk, 509 gzipped lighter: the whole `.css` movement is this one chunk, and the other thirteen are byte-identical by name and size | **Observed** |
+| Every `.js` chunk together | 2,006,218 on disk, 610,388 gzipped | 2,005,646 on disk, 610,250 gzipped | **572 on disk, 138 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The `/work` hero chunk | `01e..b9m1c.09.js`, 28,157 on disk, 9,476 gzipped, carrying `work-hero`, the torus and `scanline-overlay` | `09w7g2xf0b.6r.js`, 27,864 on disk, 9,404 gzipped, carrying `work-hero` and the torus and no `scanline-overlay` | 293 on disk, 72 gzipped lighter | **Observed** |
+| The 404 chunk | `0yog-kghohlj1.js`, 2,023 on disk, 831 gzipped, carrying `error-page`, `ERR_NOT_FOUND` and `scanline-overlay` | `0h-snp3t~clk6.js`, 1,744 on disk, 765 gzipped, carrying `error-page` and `ERR_NOT_FOUND` and no `scanline-overlay` | 279 on disk, 66 gzipped lighter: the two chunks above are the whole `.js` movement, and the other nineteen are byte-identical by name and size | **Observed** |
+| Narrative chunks the fingerprints hit | 8, 1,352,239 on disk, 413,236 gzipped | 8, 1,351,946 on disk, 413,164 gzipped | 293 on disk, 72 gzipped lighter: the `/work` hero chunk is one of the eight, the `three-stdlib` fingerprint hitting it on both sides | **Observed**, the tool's narrative table; **Derived** delta |
+
+**What the CSS number says.** **Derived.** The raster was 55 lines of source and its whole stylesheet
+is 509 gzipped bytes, most of it the `feTurbulence` SVG as a data URI, which is text that gzips
+poorly. The rewritten stylesheet is five declarations, and it is in no chunk at all: a component
+stylesheet is bundled only where the component is imported, and after this story nothing imports
+it, so its cost is zero until Story 2-29 places the layer and the chunk that carries `HomeLayout`
+grows by whatever five declarations compress to. The honest figure for the rewrite is therefore
+the 509 the raster cost, not a net of two sizes.
+
+**Where the 509 bytes were being fetched, which the per-route table shows and the source did not.**
+**Derived** from the before build's prerendered documents, read as text. `0d_8a3hzs285~.css` was
+referenced by every served document (`/work` four times, `/cv` three, `/celeste` three, the
+`/_not-found` document four) and only `/_global-error` carried none: the root layout's not-found
+boundary renders `Error404`, `Error404` imported the overlay, so the raster's stylesheet was on the
+wire on `/cv` and `/celeste`, which never rendered it. That is why every served route's document
+bytes and wire bytes move here, not only `/work`'s: `/work` 493,296 to 492,588 (708 lighter: the
+509 of CSS, the 72 of its hero chunk and the document's own references), `/cv` 258,819 to 258,219
+(600), `/celeste` 252,339 to 251,741 (598), `/_not-found` 252,226 to 251,594 (632, the 404 chunk's
+66 among them), and `/_global-error` 188,760 to 188,763, three bytes the other way, the rebuild
+variance on a document that carried none of it.
+
+**What the JavaScript number says.** **Derived.** The component was imported by two files, the
+`/work` hero and the 404, and each's chunk is lighter by the import and the element: 72 and 66
+gzipped. `gsap` itself is still on every route (`08pj4xkz~kajd.js`, 26,971 gzipped, unchanged):
+`HomeLayout`, `WorkHero`, `WorkItem` and the 404 still tween. Nothing else in `.js` moved by a byte.
+
+**Against the Story 2-27 reading.** **Derived.** That reading's after build carried 21 `.js` and 14
+`.css` at 2,033,059 on disk and 619,573 gzipped, with every `.css` chunk together at 26,889 on disk
+and 9,195 gzipped. Today's after build is 1,554 bytes lighter on disk and 642 gzipped lighter than
+that one across the whole directory, and 1,030 on disk and 514 gzipped lighter in `.css`, of which
+this story's chunk is 1,021 and 509 by today's before listing; the remainder is the five-byte
+rebuild variance between that reading's build and today's before build of the same commit. The
+non-3D line still names `/cv`, 118,219 over budget, 84.4 percent, where it was 118,821 over.
+
 ### The 2026-09-14 reading, after Story 2-27
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `M-B5DMR-kefOZdZvPSJTN`, written
@@ -920,6 +991,33 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-14 run, after Story 2-28
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `HMUMVY1c3c8TaxM8ZpHFr`. § Every route's
+2026-09-14 reading after Story 2-28 and this section were filed from this run; every other section
+in this file is still the reading its own heading names.
+
+- The narrative bundle is 413,164 bytes gzipped across 8 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 36,836 below the top.
+- 118,881 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0d3ymyos8iowp.js`,
+  `05e6tciymra6v.js` is referenced by no prerendered document. The other 294,283 is on a document at
+  first paint, so the `next/dynamic` boundaries defer far less than their shape suggests.
+- The non-3D path is over budget as measured: 258,219 against 140,000, 118,219 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,301 against 140,000, 36,699 of margin. That
+  decomposition has no line for the 248,581 of JavaScript or the 826 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Seventy-two gzipped bytes off the narrative bundle, and 509 off every served route's stylesheets.**
+**Derived.** The bundle moved by the `/work` hero chunk alone, which the `three-stdlib` fingerprint
+attributes whole and which lost the overlay's import. The `.css` movement is not in this list because
+the tool's findings are about JavaScript; it is the one-chunk deletion the reading above weighs, and
+it was on the wire on every served route through the not-found boundary. Everything else in this
+list is the Story 2-27 run to within the rebuild variance.
 
 ### The 2026-09-14 run, after Story 2-27
 

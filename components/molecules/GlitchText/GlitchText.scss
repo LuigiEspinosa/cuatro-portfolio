@@ -3,7 +3,7 @@
 // `opacity` alone through one keyframe, staggered by DOM index and fitted inside one `--dur-major`.
 // No shadow, no clip, no offset, no second hue and no loop: the six-second loop this file replaced
 // was one of the estate's two repeating animations, the other being `ScanlineOverlay.scss`'s
-// grain, which Story 2-28 retires, and it is deleted, not tokenised.
+// grain, retired by Story 2-28 on 2026-09-14, and it is deleted, not tokenised.
 .glitch-text {
   font-family: var(--f-display);
   font-size: var(--t-display);

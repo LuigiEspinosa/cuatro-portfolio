@@ -2719,7 +2719,21 @@ status: done
     Same shape as the `glitch-text` entry above: a CSS animation rather than a tween, so it is
     invisible to the inline-declaration sweep `tests/e2e/narrative.pw.ts` runs, and the component is
     outside Story 2-12's boundaries by name.
-  status: open
+
+    Closed 2026-09-14 by Story 2-28, which is that story: the grain, its `feTurbulence` data URI,
+    the `grain-shift` keyframes and the loop are deleted with the raster, not tokenised, and
+    `ScanlineOverlay.scss` is five declarations on one element, `var(--token-scrim)` at
+    `var(--z-raised)` with `pointer-events: none`, carrying no `animation`, `@keyframes`, `url(`,
+    `opacity` or gradient. `components/atoms/ScanlineOverlay/__tests__/ScanlineOverlay.test.tsx`
+    reads the stylesheet as source and refuses each of those tokens, comments included, and was
+    seen failing against the old file before the rewrite. The estate's two repeating animations
+    are both gone: `glitch-text.scss`'s with DW-31 and this one with this entry. The two call sites
+    left with it (`WorkHero.tsx`, `Error404.tsx`), so no surface consumes the layer until Story 2-29
+    places it across the home canvas; the three KV-6 rows it carried are deleted in
+    `ops/hub-accessibility-pass.md` and `tests/e2e/accessibility-floor.pw.ts`, F-7 is annotated
+    closed, and the measured weight is in `ops/asset-budget.md`, the 2026-09-14 reading after
+    Story 2-28.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-33
@@ -2823,7 +2837,8 @@ status: done
     visits `/` only. The fix is three lines each.
 
     **Owners, which no other entry in this cluster leaves unnamed.** `TorusCanvas` is rendered by
-    `WorkHero.tsx:71` on `/work`, and **Story 2-33** redesigns `WorkHero` and `WorkTimeline`, so it
+    `WorkHero.tsx:71` (`:68` since 2026-09-14, when Story 2-28 took the `ScanlineOverlay` out of the
+    hero) on `/work`, and **Story 2-33** redesigns `WorkHero` and `WorkTimeline`, so it
     is the story with that file open. `TorusKnotCanvas` is rendered by `ProjectsHero.tsx:70` on
     `/projects`, and **Story 2-14** redirects that route to `/#suite`, which retires the surface
     rather than the component: if 2-14 leaves `ProjectsHero` mounted anywhere the defect outlives
@@ -3271,8 +3286,10 @@ status: done
 
     Closed 2026-09-13 by Story 2-26, by the second of the two routes above: the Operator ruled the
     canvas decorative and the third clause withdrawn, and `EXPERIENCE.md:773` carries the dated
-    amendment in place. `ScanlineOverlay.tsx:8` is the precedent, a decorative layer whose whole
-    accessibility is `aria-hidden`. The two met clauses stay asserted in `tests/e2e/front-door.pw.ts`
+    amendment in place. `ScanlineOverlay.tsx:8` (`:21` since 2026-09-14, when Story 2-28 rebuilt the
+    component as the scrim layer; the element is still `aria-hidden` and nothing else) is the
+    precedent, a decorative layer whose whole accessibility is `aria-hidden`. The two met clauses
+    stay asserted in `tests/e2e/front-door.pw.ts`
     and nothing in the tree changes. Recorded in `ops/hub-accessibility-pass.md` § Decisions.
 
     The withdrawn clause survives in four places that story did not edit, its Never boundary
@@ -4146,8 +4163,10 @@ status: done
     The 404's entrance tween runs under `prefers-reduced-motion: reduce`. `useGsapContext` reads no
     preference, and `Error404.tsx` is the one caller that does not guard its tweens itself.
   evidence: |-
-    `components/organisms/ErrorPage/Error404.tsx:32-53` runs three `gsap.from` tweens on mount, on
-    the numeral, the message and the exits, with `opacity: 0` and a translate on two of them.
+    `components/organisms/ErrorPage/Error404.tsx:32-53` (`:34-55` since 2026-09-14, when Story 2-28
+    took the `ScanlineOverlay` import and element out and dated the docblock) runs three `gsap.from`
+    tweens on mount, on the numeral, the message and the exits, with `opacity: 0` and a translate on
+    two of them.
     `hooks/useGsapContext.ts` wraps `gsap.context` in an effect and reads nothing about motion.
     The other callers in the tree sit behind a guard of their own: `HomeLayout.tsx:55-57` writes the
     final state on mount when `useReduceMotion` answers true, and `WorkTimeline` keeps its entrance
@@ -4819,4 +4838,32 @@ status: done
 
     **Owner: Story 2-29**, which re-orchestrates the hero's entrance when it rebuilds
     `HomeLayout`. **Trigger: that story's first edit to the timeline.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token.md`
+  id: DW-101
+  summary: >-
+    The scrim's composited-contrast guarantee is verified by sampling the rendered ground beneath
+    text, and no surface composites the layer beneath text until Story 2-29 places it.
+  evidence: |-
+    `epics.md:3254-3261` gives the contrast table for the five roles over `--token-scrim`, worst
+    case over a pure white backdrop (`--token-text` 13.51:1, `--token-focus` 9.02:1,
+    `--token-accent-hover` 6.94:1, `--token-text-secondary` 5.41:1, `--token-accent` 4.77:1), and
+    asks for the guarantee to be verified by screenshotting the composited surface, sampling the
+    rendered ground beneath the text and computing the ratio by hand, never by trusting the table.
+
+    Story 2-28 rebuilt the component as that layer on 2026-09-14 and removed both shipped call
+    sites, because neither was text over moving imagery (`/work`'s hero separates the display line
+    from the canvas, and the 404 has nothing moving). After it the layer has a contract and no
+    consumer, the way `--token-scrim` itself sat in the contract with no consumer since Story 1-11.
+    A probe over an element injected for the measurement would sample the token's arithmetic
+    rather than the site, so the verification is carried rather than performed.
+
+    **Owner: Story 2-29**, which places the layer across the home canvas beneath the corner
+    panels (`epics.md:3286-3361`) and already carries the stack constraint `epics.md:3272` names
+    (an element above the scrim's z-level computes against the imagery, not the scrim). **Trigger:
+    that story's first placement of the layer.** The method: screenshot the composited surface in
+    the pinned image at 360 x 800, sample the ground beneath each of the five roles where it sits
+    over the scrim, and compute the ratio from the sampled sRGB, recording each beside the table's
+    figure.
   status: open

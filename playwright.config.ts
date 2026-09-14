@@ -73,9 +73,9 @@ export default defineConfig({
         deviceScaleFactor: 1,
         colorScheme: 'light',
         // As of Playwright 1.62 `reducedMotion` is a context option rather than a top-level
-        // test option. The Hub's GSAP entrance tweens sit behind `if (!reduceMotion)` and the
-        // ScanlineOverlay grain animation behind a `prefers-reduced-motion` query, so this is
-        // what stops both at source rather than waiting them out.
+        // test option. The Hub's GSAP entrance tweens sit behind `if (!reduceMotion)`, so this is
+        // what stops them at source rather than waiting them out (until 2026-09-14 it also stopped
+        // the ScanlineOverlay grain behind its reduced-motion query; Story 2-28 deleted the grain).
         contextOptions: { reducedMotion: 'reduce' },
       },
     },
