@@ -820,7 +820,7 @@ test('the pseudo-element read is a real read, not the element beside it', async 
   ).rejects.toThrow(/--not-declared-anywhere/);
 });
 
-test('the four --monument-bold call sites compute as the display family at its heaviest weight', async ({ page }) => {
+test('the --monument-bold call sites compute as the display family at its heaviest weight', async ({ page }) => {
   // **The order matters and it is the reason this case exists.** Three of the four set the family
   // alone before this story, so their computed `font-weight` was `400` and would still have been
   // `400` after an alias silently dropped the bold that lived in the family name. Story 1-18 set

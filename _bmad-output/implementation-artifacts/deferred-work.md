@@ -4749,3 +4749,74 @@ status: done
     **Trigger: that story's first edit to `HomeLayout.scss`'s below-768 block**, or the Operator
     saying otherwise.
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
+  id: DW-99
+  summary: >-
+    The display face preload question reopens. The `fonts.ready` gate that made a preload
+    "latency, not correctness" is gone with Story 2-27; the entrance now runs at `--delay` on
+    whichever face is present and swaps under `font-display: swap`, and nothing measures when
+    Bricolage arrives against the one-second delay.
+  evidence: |-
+    Observed 2026-09-14 by reading. Story 2-20 deleted the two `app/layout.tsx` preloads and
+    refused a contract-face preload on two grounds (`ops/asset-budget.md` § What this reads
+    against the budget's own rules, Rule 4, and DW-9's closure): `GlitchText.tsx` gated
+    `SplitText` on `document.fonts.ready`, so the first-paint width guarantee a preload claimed
+    was never the preload's to give; and a preload of a contract face puts `contracts/` in a
+    scanned source, which `app/__tests__/anchor-contract.test.ts` refuses. Story 2-27 rebuilt the
+    component with no gate: the fourteen spans are in the served markup and the CSS animation
+    starts at first style resolution, so a character fades in at `--delay` plus its stagger in
+    whichever face the browser has, and Bricolage Grotesque, published at `font-display: swap`,
+    replaces it when the woff2 lands. On a cold cache that swap can fall inside or after the
+    entrance, and nothing in the repository measures where: `tests/e2e/type-swap.pw.ts` measures
+    the swap's geometry, not its timing, and `tests/e2e/narrative.pw.ts` pins the preloaded-face
+    count on `/` at zero. The first premise of the refusal is therefore gone and the second
+    stands.
+
+    Not measured by Story 2-27, whose boundaries name `app/layout.tsx` for nothing and whose
+    spec pins the entrance's shape, not the face it runs in. A reading would be a `fonts.ready`
+    timestamp against the first span's `animationstart` on a throttled connection, in the pinned
+    image, before any preload is argued for; the `contracts/` scan is the constraint any answer
+    has to satisfy.
+
+    **Owner: unassigned.** **Trigger: any story that touches the `app/layout.tsx` preloads or the
+    type contract.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
+  id: DW-100
+  summary: >-
+    The heading's clock moved. `HomeLayout.tsx`'s GSAP timeline runs from hydration and the
+    heading's CSS `animation-delay` runs from first style resolution, so the `1.0` passed as
+    `delay` no longer sits on the same clock as the `1.3`, `1.6`, `2.0` and `2.2` beside it, and a
+    document with no script shows the heading a second later than it did.
+  evidence: |-
+    Observed 2026-09-14 by reading. `HomeLayout.tsx:61-83` builds one `gsap.timeline()` inside
+    `useGsapContext`, which runs on mount after hydration, and positions the gem at `0.5`, the
+    role line at `1.3`, the system panel at `1.6`, the nav links at `2.0` and the contact links at
+    `2.2` seconds on that timeline's clock. `<GlitchText delay={1.0} />` at `:110` used to hand
+    its `1.0` to a GSAP tween inside the same component's `useGsapContext`, so the heading and the
+    rest of the hero counted from the same moment, hydration. Since Story 2-27 the `1.0` is
+    `--delay` on a CSS animation whose delay counts from the moment the stylesheet first applies
+    to the served spans, which is first paint. The two clocks differ by the hydration time: on a
+    fast load a few hundred milliseconds, on a slow one seconds, and the heading now lands that
+    much earlier relative to the role line than the numbers beside each other say.
+
+    The other face of the same change: with no script at all (a blocked bundle, a reader that
+    runs none), the old component showed the heading at first paint, because its `opacity: 0`
+    was written by script that never ran; the new one holds every span at `opacity: 0` through
+    `--delay` plus its stagger, so a scriptless document is without its heading for the first
+    1.0 to 1.42 seconds. `tests/e2e/display-entrance.pw.ts` asserts the heading arrives on that
+    document; it does not assert when.
+
+    Story 2-27's spec forbade re-sequencing `HomeLayout.tsx:52-84`'s timeline and kept the
+    `delay` prop and its `1.0`, and both are met to the letter: no line of the timeline moved and
+    the number is the same. What moved is what the number is relative to. Recorded rather than
+    fixed because the fix is a re-orchestration, either the heading's delay counted from
+    hydration (an inline `--delay` written by the client boundary, which puts an effect back into
+    the entrance) or the timeline's offsets counted from first paint, and that is the hero's
+    entrance as a whole.
+
+    **Owner: Story 2-29**, which re-orchestrates the hero's entrance when it rebuilds
+    `HomeLayout`. **Trigger: that story's first edit to the timeline.**
+  status: open

@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, hydrated, rootCustomPropertyValue } from './harness';
 
 /**
  * The non-3D front door and the two skips, measured in a browser (Story 2-13).
@@ -302,29 +302,19 @@ const goTo = async (page: Page, route: string = ROUTE): Promise<void> => {
  * no-shift comparison on that door then read two pre-hydration states and would have passed with
  * the client bundle blocked entirely.
  *
- * The signal is React's own mark on the hero's container. React attaches an own property named
- * `__reactFiber$<key>` to every host node it hydrates, and the server writes none, so its presence
- * on `.home-container` means React hydrated. **Until 2026-09-14 the signal was `GlitchText`'s
- * inline opacity**, which its `useGsapContext` callback wrote on mount on every path; Story 2-27
- * moved that entrance into CSS over server-rendered spans, so nothing writes an inline style any
- * more and the application has no artifact of its own that says "hydrated". This is a library
- * mark, stated as such, chosen over adding an effect to the application whose only reader would
- * be a test. Verified in the running page on all four doors on 2026-09-14: absent at `commit` and
- * at `load`, present after hydration, and never present with the client bundle blocked.
+ * The hydration signal is `hydrated` in `tests/e2e/harness.ts`, React's own mark on the hero's
+ * container, and the reasoning for it is there.
  */
 const settled = async (page: Page): Promise<void> => {
   await expect
     .poll(
-      () =>
-        page.evaluate(() => {
-          const container = document.querySelector('.home-container');
-          const hydrated =
-            container !== null && Object.getOwnPropertyNames(container).some((name) => name.startsWith('__reactFiber$'));
-          const decided =
+      async () =>
+        (await hydrated(page)) &&
+        (await page.evaluate(
+          () =>
             document.querySelector('.home-container--flat') !== null ||
-            document.querySelector('#gem-canvas canvas') !== null;
-          return hydrated && decided;
-        }),
+            document.querySelector('#gem-canvas canvas') !== null
+        )),
       {
         timeout: SETTLE_TIMEOUT,
         message:

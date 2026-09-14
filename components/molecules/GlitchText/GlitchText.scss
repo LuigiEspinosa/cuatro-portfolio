@@ -2,10 +2,9 @@
 // arrives, not a heading that malfunctions. Type from the contract's display roles, the entrance on
 // `opacity` alone through one keyframe, staggered by DOM index and fitted inside one `--dur-major`.
 // No shadow, no clip, no offset, no second hue and no loop: the six-second loop this file replaced
-// was the estate's only repeating animation, and it is deleted, not tokenised.
+// was one of the estate's two repeating animations, the other being `ScanlineOverlay.scss`'s
+// grain, which Story 2-28 retires, and it is deleted, not tokenised.
 .glitch-text {
-  // The reset at `app/app.scss:88-91` already zeroes it; stated so the heading's box is its own.
-  margin: 0;
   font-family: var(--f-display);
   font-size: var(--t-display);
   font-weight: var(--w-black);

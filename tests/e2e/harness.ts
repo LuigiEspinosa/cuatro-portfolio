@@ -160,6 +160,30 @@ export async function computedStyleValue(
 }
 
 /**
+ * Whether React has hydrated the hero's container on `/`.
+ *
+ * The signal is React's own mark. React attaches an own property named `__reactFiber$<key>` to
+ * every host node it hydrates, and the server writes none, so its presence on `.home-container`
+ * means React hydrated. The mark lands during React's render phase, before passive effects, so
+ * this says "hydrated" and not "effects ran"; the cases that read it go on to read layout, which
+ * does not depend on an effect having fired.
+ *
+ * **Until 2026-09-14 the signal was `GlitchText`'s inline opacity**, which its `useGsapContext`
+ * callback wrote on mount on every path; Story 2-27 moved that entrance into CSS over
+ * server-rendered spans, so nothing writes an inline style any more and the application has no
+ * artifact of its own that says "hydrated". This is a library mark, stated as such, chosen over
+ * adding an effect to the application whose only reader would be a test. Verified in the running
+ * page on all four front doors on 2026-09-14: absent at `commit` and at `load`, present after
+ * hydration, and never present with the client bundle blocked.
+ */
+export function hydrated(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const container = document.querySelector('.home-container');
+    return container !== null && Object.getOwnPropertyNames(container).some((name) => name.startsWith('__reactFiber$'));
+  });
+}
+
+/**
  * The computed value of the custom property `name` on `:root`.
  *
  * Throws naming the property when it is not declared. This is the case the empty-string

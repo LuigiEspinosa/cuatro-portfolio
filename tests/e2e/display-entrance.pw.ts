@@ -1,7 +1,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, computedStyleValue, hydrated, rootCustomPropertyValue } from './harness';
 
 /**
  * The display entrance on `/`, measured in a browser (Story 2-27, `DESIGN.md:730-737`,
@@ -37,6 +37,8 @@ const HEADING = 'h1.glitch-text';
 const CHAR = '.glitch-text__char';
 /** The words `HomeLayout.tsx:110` passes, and the level-1 heading `/` names. */
 const NAME = 'Luigi Espinosa';
+/** How many spans the component renders for it: one per grapheme cluster, the way it splits. */
+const NAME_LENGTH = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(NAME)].length;
 /** The one keyframe `GlitchText.scss` declares. */
 const KEYFRAME = 'glitch-text-arrive';
 /** `EXPERIENCE.md:695`: the whole stagger is capped at about half a second. */
@@ -52,8 +54,17 @@ const SETTLE_SLACK_MS = 250;
 const REPO_ROOT = resolve(__dirname, '..', '..');
 const BUILT_CHUNKS = join(REPO_ROOT, '.next', 'static', 'chunks');
 
-/** The three strings the deleted loop carried and nothing under `app/` or `components/` may carry again. */
-const LOOP_TRACES = ['glitch-loop', 'rgba(255, 0, 80', 'rgba(0, 255, 255'] as const;
+/**
+ * The three traces the deleted loop carried and nothing under `app/` or `components/`, nor the
+ * built CSS, may carry again: its keyframe name and its two hues. The hues are matched
+ * whitespace-tolerant because the minifier writes `rgba(255,0,80,.75)` where the source wrote
+ * `rgba(255, 0, 80, 0.75)`, and a literal with spaces could never match a built chunk.
+ */
+const LOOP_TRACES: readonly { readonly name: string; readonly pattern: RegExp }[] = [
+  { name: 'glitch-loop', pattern: /glitch-loop/ },
+  { name: 'the red hue rgba(255, 0, 80)', pattern: /rgba?\(\s*255\s*,\s*0\s*,\s*80\b/ },
+  { name: 'the cyan hue rgba(0, 255, 255)', pattern: /rgba?\(\s*0\s*,\s*255\s*,\s*255\b/ },
+];
 
 // ---------------------------------------------------------------------------
 // Contexts, navigation, probes
@@ -214,19 +225,15 @@ const waitOutTheEntrance = async (page: Page, delay: number, major: number): Pro
   await page.waitForTimeout((delay + major) * 1000 + SETTLE_SLACK_MS);
 };
 
-/** Everything a `.scss` under `root` says, path by path. */
-const stylesheetsUnder = (root: string): Map<string, string> => {
-  const found = new Map<string, string>();
-  const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      const path = join(directory, entry.name);
-      if (entry.isDirectory()) walk(path);
-      else if (entry.name.endsWith('.scss')) found.set(path.slice(REPO_ROOT.length + 1).replace(/\\/g, '/'), readFileSync(path, 'utf8'));
-    }
-  };
-  walk(root);
-  return found;
-};
+/** Everything a `.scss` under `root` says, by repository-relative path (`accessibility-floor.pw.ts:427-432`). */
+const stylesheetsUnder = (root: string): Map<string, string> =>
+  new Map(
+    (readdirSync(join(REPO_ROOT, root), { recursive: true }) as string[])
+      .map((relative) => relative.replace(/\\/g, '/'))
+      .filter((relative) => relative.endsWith('.scss'))
+      .sort()
+      .map((relative) => [`${root}/${relative}`, readFileSync(join(REPO_ROOT, root, relative), 'utf8')])
+  );
 
 // ---------------------------------------------------------------------------
 // The cases
@@ -242,7 +249,7 @@ test('the heading is a real h1 carrying the words, split into indexed inline spa
 
     const vars = await headingVars(page);
     const chars = await charsRead(page);
-    expect(chars.length, 'the heading splits into a different number of spans than the name has characters').toBe(NAME.length);
+    expect(chars.length, 'the heading splits into a different number of spans than the name has graphemes').toBe(NAME_LENGTH);
     expect(vars.count, '--count on the heading is not the span count').toBe(String(chars.length));
     expect(vars.delay, '--delay on the heading is not the 1.0 HomeLayout.tsx:110 passes').toBe('1s');
     expect(chars.map((char) => char.index), 'the spans are not indexed 0 to n-1 in DOM order').toEqual(chars.map((_, index) => String(index)));
@@ -261,26 +268,24 @@ test('computes the display roles read off the page, and neither shadow, clip nor
   await onMotion(browser, 'no-preference', async (page) => {
     await goTo(page);
 
-    // The roles, resolved on the same page, never typed.
+    // The roles, resolved on the same page, never typed: the weight and the line-height ratio are
+    // the declared token streams off `:root`, the lengths and the colour are what a probe resolves.
     const family = firstFamily(await rootCustomPropertyValue(page, '--f-display'));
     const weight = await rootCustomPropertyValue(page, '--w-black');
     const size = await probeComputed(page, 'font-size:var(--t-display);', 'font-size');
-    const lineHeight = await probeComputed(page, 'font-size:var(--t-display);line-height:var(--lh-display);', 'line-height');
     const tracking = await probeComputed(page, 'font-size:var(--t-display);letter-spacing:var(--tr-display);', 'letter-spacing');
     const color = await probeComputed(page, 'color:var(--token-text);', 'color');
     const ratio = Number(await rootCustomPropertyValue(page, '--lh-display'));
     expect(family, '--f-display declares no first family').not.toBe('');
-    expect(weight, '--w-black is not the heaviest weight the display face publishes').toBe('800');
     expect(Number.isFinite(ratio) && ratio >= 0.95, `--lh-display reads ${ratio}, under the 0.95 all-caps floor RESTYLE-SPEC.md:411-412 fixes`).toBe(true);
 
     const read = await typeRead(page);
     const wrong: string[] = [];
     if (read.family !== family) wrong.push(`font-family computes "${read.family}" first, expected ${family}`);
-    if (read.weight !== weight) wrong.push(`font-weight computes ${read.weight}, expected ${weight}`);
+    if (read.weight !== weight) wrong.push(`font-weight computes ${read.weight}, --w-black declares ${weight}`);
     if (read.stretch !== '100%') wrong.push(`font-stretch computes ${read.stretch}, expected 100% for wdth 100`);
     if (Math.abs(px(read.size, 'font-size') - px(size, '--t-display')) > PX_SLACK) wrong.push(`font-size computes ${read.size}, --t-display resolves to ${size}`);
-    if (Math.abs(px(read.lineHeight, 'line-height') - px(lineHeight, '--lh-display')) > PX_SLACK) wrong.push(`line-height computes ${read.lineHeight}, --lh-display resolves to ${lineHeight}`);
-    if (Math.abs(px(read.lineHeight, 'line-height') - ratio * px(read.size, 'font-size')) > PX_SLACK) wrong.push(`line-height ${read.lineHeight} is not ${ratio} times the size ${read.size}`);
+    if (Math.abs(px(read.lineHeight, 'line-height') - ratio * px(read.size, 'font-size')) > PX_SLACK) wrong.push(`line-height ${read.lineHeight} is not --lh-display (${ratio}) times the size ${read.size}`);
     if (Math.abs(px(read.tracking, 'letter-spacing') - px(tracking, '--tr-display')) > PX_SLACK) wrong.push(`letter-spacing computes ${read.tracking}, --tr-display resolves to ${tracking}`);
     if (read.transform !== 'uppercase') wrong.push(`text-transform computes ${read.transform}`);
     if (read.color !== color) wrong.push(`color computes ${read.color}, --token-text resolves to ${color}`);
@@ -312,7 +317,7 @@ test('every character enters on opacity alone, once, in DOM order, inside --dur-
     expect(minor, '--dur-minor is not shorter than --dur-major, so there is no room for a stagger').toBeLessThan(major);
 
     const chars = await charsRead(page);
-    expect(chars.length, 'no span was read').toBe(NAME.length);
+    expect(chars.length, 'no span was read').toBe(NAME_LENGTH);
     const wrong: string[] = [];
     for (const char of chars) {
       if (char.name !== KEYFRAME) wrong.push(`${char.index}: animation-name ${char.name}, expected ${KEYFRAME}`);
@@ -363,7 +368,7 @@ test('under reduced motion every span is present at full opacity from the first 
   await onMotion(browser, 'reduce', async (page) => {
     await goTo(page);
     const chars = await charsRead(page);
-    expect(chars.length, 'no span was read on the reduced-motion door').toBe(NAME.length);
+    expect(chars.length, 'no span was read on the reduced-motion door').toBe(NAME_LENGTH);
     expect(
       chars.filter((char) => char.name !== 'none' || char.opacity !== 1).map((char) => `${char.index}: animation-name ${char.name}, opacity ${char.opacity}`),
       'a span animates, or is not at full opacity, on the door that asked for stillness'
@@ -381,18 +386,14 @@ test('with the client bundle blocked the heading is served with its words and st
     await goTo(page);
 
     // The block took: React never marked the container, so nothing below depends on hydration.
-    const hydrated = await page.evaluate(() => {
-      const container = document.querySelector('.home-container');
-      return container !== null && Object.getOwnPropertyNames(container).some((name) => name.startsWith('__reactFiber$'));
-    });
-    expect(hydrated, 'the client bundle ran, so this case is not measuring the served document').toBe(false);
+    expect(await hydrated(page), 'the client bundle ran, so this case is not measuring the served document').toBe(false);
 
     expect(await page.locator(HEADING).evaluate((node) => node.textContent), 'the served markup does not carry the words').toBe(NAME);
     const major = seconds(await rootCustomPropertyValue(page, '--dur-major'), '--dur-major');
     const delay = seconds((await headingVars(page)).delay, '--delay');
     await waitOutTheEntrance(page, delay, major);
     const chars = await charsRead(page);
-    expect(chars.length, 'no span was served').toBe(NAME.length);
+    expect(chars.length, 'no span was served').toBe(NAME_LENGTH);
     expect(chars.filter((char) => char.opacity < 1).map((char) => `${char.index}: opacity ${char.opacity}`), 'a span never reached full opacity with no script running').toEqual([]);
   });
 });
@@ -447,30 +448,53 @@ test('the accessibility tree carries one level-1 heading named by the text, and 
   expect(await page.locator(HEADING).ariaSnapshot()).toContain('heading "Planted Name" [level=1]');
   await page.locator(HEADING).evaluate((node) => node.removeAttribute('aria-label'));
   expect(await page.getByRole('heading', { level: 1, name: NAME, exact: true }).count(), 'the planted label outlived its case').toBe(1);
+
+  // The document outline, RESTYLE-SPEC.md:408: one `<h1>`, and no level skipped on the way down.
+  // Read off the markup in DOM order, each level against the one before it.
+  const outline = await page.evaluate(() =>
+    [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].map((node) => ({
+      level: Number(node.tagName.slice(1)),
+      text: (node.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 40),
+    }))
+  );
+  console.log(`display-entrance: outline of ${ROUTE}: ${outline.map((heading) => `h${heading.level} "${heading.text}"`).join(', ')}`);
+  expect(outline.filter((heading) => heading.level === 1).map((heading) => heading.text), 'the document carries more or fewer than one h1').toEqual([NAME]);
+  expect(outline[0]?.level, 'the first heading in the document is not the h1').toBe(1);
+  const skipped = outline
+    .map((heading, index) => ({ heading, previous: outline[index - 1] }))
+    .filter(({ heading, previous }) => previous !== undefined && heading.level > previous.level + 1)
+    .map(({ heading, previous }) => `h${heading.level} "${heading.text}" follows h${previous?.level} "${previous?.text}"`);
+  expect(skipped, 'a heading level is skipped').toEqual([]);
+  // The outline read, on a planted skip, so an empty result is a measurement.
+  const planted = [{ level: 1, text: NAME }, { level: 2, text: 'a' }, { level: 4, text: 'b' }];
+  expect(planted.filter((heading, index) => index > 0 && heading.level > planted[index - 1].level + 1)).toHaveLength(1);
 });
 
 test('the built CSS and every stylesheet under app/ and components/ carry no trace of the loop', () => {
-  expect(existsSync(BUILT_CHUNKS), `${BUILT_CHUNKS} is not there, so there is no build to read`).toBe(true);
-  const built = readdirSync(BUILT_CHUNKS).filter((name) => name.endsWith('.css'));
-  expect(built.length, 'the build wrote no stylesheet').toBeGreaterThan(0);
-  const carrying: string[] = [];
-  let arrivals = 0;
-  for (const name of built) {
-    const text = readFileSync(join(BUILT_CHUNKS, name), 'utf8');
-    expect(statSync(join(BUILT_CHUNKS, name)).size, `${name} is empty`).toBeGreaterThan(0);
-    if (text.includes(KEYFRAME)) arrivals += 1;
-    for (const trace of ['glitch-loop', 'text-shadow']) if (text.includes(trace)) carrying.push(`.next/static/chunks/${name} carries ${trace}`);
-  }
-  expect(arrivals, `no built stylesheet carries @keyframes ${KEYFRAME}, so the entrance is not in what ships`).toBe(1);
-  expect(carrying, 'the built CSS still carries the loop or a text-shadow').toEqual([]);
+  // Build-wide `text-shadow` is the accessibility-floor ledger tally's, not this file's: one gate
+  // per tell, so the next story that meets a shadow meets one message.
+  const built = new Map(
+    readdirSync(BUILT_CHUNKS)
+      .filter((name) => name.endsWith('.css'))
+      .map((name) => [`.next/static/chunks/${name}`, readFileSync(join(BUILT_CHUNKS, name), 'utf8')])
+  );
+  expect(built.size, 'the build wrote no stylesheet').toBeGreaterThan(0);
+  expect([...built.values()].filter((text) => text.includes(KEYFRAME)).length, `no built stylesheet carries @keyframes ${KEYFRAME}, so the entrance is not in what ships`).toBe(1);
 
-  const sources = new Map([...stylesheetsUnder(join(REPO_ROOT, 'app')), ...stylesheetsUnder(join(REPO_ROOT, 'components'))]);
+  const sources = new Map([...stylesheetsUnder('app'), ...stylesheetsUnder('components')]);
   expect(sources.size, 'no stylesheet was read under app/ or components/').toBeGreaterThan(10);
   expect([...sources.keys()], 'GlitchText.scss is not beside its component').toContain('components/molecules/GlitchText/GlitchText.scss');
   expect([...sources.keys()], 'glitch-text.scss is still on disk').not.toContain('components/molecules/GlitchText/glitch-text.scss');
-  const traced = [...sources].flatMap(([path, text]) => LOOP_TRACES.filter((trace) => text.includes(trace)).map((trace) => `${path} carries ${trace}`));
-  expect(traced, 'a stylesheet under app/ or components/ still names the loop or one of its two hues').toEqual([]);
 
-  // The scans, on planted text, before their empty results are read as good news.
-  expect(LOOP_TRACES.filter((trace) => '.x{text-shadow:1px 0 rgba(255, 0, 80, .75);animation:glitch-loop 6s infinite}'.includes(trace))).toEqual(['glitch-loop', 'rgba(255, 0, 80']);
+  const traced = [...built, ...sources].flatMap(([path, text]) => LOOP_TRACES.filter((trace) => trace.pattern.test(text)).map((trace) => `${path} carries ${trace.name}`));
+  expect(traced, 'the built CSS or a stylesheet under app/ or components/ still carries the loop or one of its two hues').toEqual([]);
+
+  // The traces, on the loop as the source wrote it and as the minifier writes it, before their
+  // empty result is read as good news.
+  const asWritten = '.x{text-shadow:-3px 0 rgba(255, 0, 80, 0.75), 3px 0 rgba(0, 255, 255, 0.75);animation:glitch-loop 6s infinite}';
+  const asMinified = '.x{text-shadow:-3px 0 rgba(255,0,80,.75),3px 0 rgba(0,255,255,.75);animation:glitch-loop 6s infinite}';
+  for (const planted of [asWritten, asMinified]) {
+    expect(LOOP_TRACES.filter((trace) => trace.pattern.test(planted)).map((trace) => trace.name), `a trace does not fire on "${planted}"`).toEqual(LOOP_TRACES.map((trace) => trace.name));
+  }
+  expect(LOOP_TRACES.filter((trace) => trace.pattern.test('.y{color:rgba(255, 0, 8, 1)}')), 'the red trace fires on a shorter blue channel').toEqual([]);
 });

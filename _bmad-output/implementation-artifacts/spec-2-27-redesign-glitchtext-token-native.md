@@ -2,7 +2,7 @@
 title: "Story 2.27: Redesign `GlitchText` token-native"
 type: 'feature'
 created: '2026-09-13'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: '9ea3e6c777f12ebe3815124b3da383f33d923143'
 review_loop_iteration: 0
 context:
@@ -234,33 +234,33 @@ moves in the same commit. The CSS weight it sheds is measured, not assumed.
 
 **Execution** (in this order):
 
-- [ ] On `dev` before branching: `corepack pnpm build && node ops/asset-budget.mjs` and the gzipped
+- [x] On `dev` before branching: `corepack pnpm build && node ops/asset-budget.mjs` and the gzipped
       size of every `.next/static/chunks/*.css`, saved to the scratchpad as the before reading.
-- [ ] `components/molecules/GlitchText/GlitchText.scss` (new) and delete `glitch-text.scss`; rewrite
+- [x] `components/molecules/GlitchText/GlitchText.scss` (new) and delete `glitch-text.scss`; rewrite
       `GlitchText.tsx` as the Code Map states; rewrite `__tests__/GlitchText.test.tsx`.
-- [ ] `hooks/useReduceMotion.ts:18, :26-27`: three consumers, dated.
-- [ ] `app/__tests__/anchor-contract.test.ts`: move the path, the `:252` comment; run the file and
+- [x] `hooks/useReduceMotion.ts:18, :26-27`: three consumers, dated.
+- [x] `app/__tests__/anchor-contract.test.ts`: move the path, the `:252` comment; run the file and
       see claim two fail first with the path left in `WEIGHT_CALL_SITES`.
-- [ ] `tests/e2e/anchor-aliases.pw.ts`, `tests/e2e/type-swap.pw.ts`, `tests/e2e/harness.ts:41`,
+- [x] `tests/e2e/anchor-aliases.pw.ts`, `tests/e2e/type-swap.pw.ts`, `tests/e2e/harness.ts:41`,
       `tests/e2e/narrative.pw.ts:843`: the pins and prose the Code Map lists.
-- [ ] `tests/e2e/front-door.pw.ts` and `tests/e2e/visitor-instrumentation.pw.ts`: the hydration
+- [x] `tests/e2e/front-door.pw.ts` and `tests/e2e/visitor-instrumentation.pw.ts`: the hydration
       signal, verified first in the running page on the four doors (`Save-Data`, reduced motion,
       WebGL blocked, default); the two rewrap comments.
-- [ ] `tests/e2e/accessibility-floor.pw.ts`: the `EXEMPTIONS` row, the `glitch` filter, the two
+- [x] `tests/e2e/accessibility-floor.pw.ts`: the `EXEMPTIONS` row, the `glitch` filter, the two
       comments.
-- [ ] `tests/e2e/display-entrance.pw.ts` (new): the matrix; each assertion seen failing against its
+- [x] `tests/e2e/display-entrance.pw.ts` (new): the matrix; each assertion seen failing against its
       planted fixture, the fixture removed.
-- [ ] `ops/asset-budget.mjs` and `ops/__tests__/asset-budget.test.ts`: the `gsap/SplitText` row.
-- [ ] `ops/hub-accessibility-pass.md`, `ops/known-violations.md`: the four things, the annotations,
+- [x] `ops/asset-budget.mjs` and `ops/__tests__/asset-budget.test.ts`: the `gsap/SplitText` row.
+- [x] `ops/hub-accessibility-pass.md`, `ops/known-violations.md`: the four things, the annotations,
       the pending Operator action; `corepack pnpm test --run ops/__tests__/hub-accessibility-pass.test.ts`
       green.
-- [ ] Branch build: `corepack pnpm build && node ops/asset-budget.mjs` and the `.css` sizes again;
+- [x] Branch build: `corepack pnpm build && node ops/asset-budget.mjs` and the `.css` sizes again;
       `ops/asset-budget.md`: the dated reading, the Derived delta, the fingerprint note.
-- [ ] `ops/anchor-token-adoption.md`, `ops/rendered-output-harness.md`: the dated prose.
-- [ ] Container run: the `docker run --rm --ipc=host ... mcr.microsoft.com/playwright:v1.62.1-noble`
+- [x] `ops/anchor-token-adoption.md`, `ops/rendered-output-harness.md`: the dated prose.
+- [x] Container run: the `docker run --rm --ipc=host ... mcr.microsoft.com/playwright:v1.62.1-noble`
       block of `ops/status-mark-axes.md:65-73` with `display-entrance`, then with no filter.
-- [ ] `deferred-work.md`: close DW-31; annotate the 2-11 entry and DW-81; file the 2-29 entry.
-- [ ] `corepack pnpm test --run`, `corepack pnpm typecheck`; commit on a branch off `dev` (no push
+- [x] `deferred-work.md`: close DW-31; annotate the 2-11 entry and DW-81; file the 2-29 entry.
+- [x] `corepack pnpm test --run`, `corepack pnpm typecheck`; commit on a branch off `dev` (no push
       and no remote operation from the implementation step; the push and the PR to `dev` follow the
       review); `sprint-status.yaml:204` to `review` with a comment block naming the screen-reader
       read, and the stale `:201-203` block corrected (the block was lifted on 2026-08-15,
@@ -317,6 +317,18 @@ design. React attaches an own property named `__reactFiber$<key>` to every host 
 and the server writes none, so its presence on `.home-container` is the fact the two polls were
 after; it is a library mark, stated as such in the comment, chosen over adding an effect to the
 application whose only reader would be a test.
+
+**What moved that the boundaries did not name.** Two things, both recorded in `deferred-work.md`
+rather than fixed here. The clock (DW-100): `HomeLayout.tsx:61-83`'s timeline counts from
+hydration, and the heading's `--delay` now counts from first style resolution, so the `1.0` kept
+at `HomeLayout.tsx:110` is the same number on a different clock from the `1.3`, `1.6`, `2.0` and
+`2.2` beside it, offset by the hydration time; the "no re-sequencing" boundary is met to the
+letter and changed in effect, and the re-orchestration is Story 2-29's with the hero. The JS-less
+first second: the old component wrote `opacity: 0` from script, so a document that ran none showed
+the heading at first paint; the new one holds the spans at `opacity: 0` in CSS through `--delay`
+plus the stagger, so a scriptless document is without its heading for the first 1.0 to 1.42
+seconds, and `display-entrance.pw.ts` asserts that it arrives, not when. The preload question
+reopens with the `fonts.ready` gate gone (DW-99).
 
 **Rollback.** Revert the commit; the loop, the alias site, the fingerprint and the ledger rows
 return together, and the records carry no runtime.
@@ -390,3 +402,37 @@ return together, and the records carry no runtime.
   unit test asserts the level-1 role and the text content there, proves the spans feed the name on
   a one-word text, and leaves the two-word name to the browser, where Chromium and Playwright read
   it whole (`display-entrance.pw.ts`, and the aria snapshot `heading "Luigi Espinosa" [level=1]`).
+
+**Results, 2026-09-14** (the orchestrator's own runs on the committed branch, `aeda04f`, before the
+review step; nothing above was taken on trust):
+
+- `corepack pnpm test --run`: 55 files, 1334 tests, all passed, 87.29 s. `corepack pnpm typecheck`:
+  exit 0.
+- `corepack pnpm exec playwright test display-entrance` on this host: 8 passed in 35.3 s. The spec's
+  own output: `h1.glitch-text` computes Bricolage Grotesque, `800`, `100%`, `36px`, line-height
+  `34.2px`, tracking `-1.8px`, uppercase, `text-shadow` `none`, `clip-path` `none`; fourteen spans
+  with delays `1.0000` to `1.2000` in steps of `0.0154`, `0.4200` s from the first start to the last
+  end; the aria snapshot `heading "Luigi Espinosa" [level=1]`.
+- `front-door`, `visitor-instrumentation`, `type-swap`, `anchor-aliases` and `accessibility-floor`
+  on this host: 74 passed, 1 failed. The one is `type-swap.pw.ts:621`, `.error-page__title` on the
+  404 moving 23.00 to 24.00 across the font swap, an element this story does not touch: the same
+  case fails the same way on `dev` at `9ea3e6c` (run there and back, 5 passed, 1 failed), and
+  Story 2-20's container reading has it at 24.00 on both sides, so it is this host's fallback
+  metrics and not the branch. The container run is the gate, and CI runs it on the pull request.
+- **Review patches applied 2026-09-14**, one commit on top of `aeda04f`: the `Intl.Segmenter`
+  guard with a code-point fallback and its unit case; the stylesheet's "one of two" loop sentence
+  and `margin: 0` gone; the unit test folded, retitled, its ARIA read a walk over every attribute,
+  its escapes explained; `hydrated(page)` in `harness.ts` used by `front-door`,
+  `visitor-instrumentation` and `display-entrance`; `display-entrance` reads `--w-black` off
+  `:root` with no typed weight, counts the name's graphemes once, drops the `text-shadow` count
+  and the `--lh-display` probe, matches the two hues whitespace-tolerant on the built chunks and
+  the sources, walks `readdirSync` recursively, and reads the document outline (one `h1`, no level
+  skipped: `h1`, `h2`, six `h3` on `/`); the `anchor-aliases` title without its number; the
+  `narrative` preload clause said straight; `useReduceMotion.test.ts` at three consumers; the
+  harness record's alias row rewritten in place and a row for the new spec; O-13's `GlitchText`
+  half closed on `EXPERIENCE.md:1058` and named with O-12 item 1 in the record; DW-99 and DW-100
+  filed; Lighthouse re-read with the new markup (`/` 1.00 / 1.00 / 1.00, `/work` 1.00 / 1.00 /
+  1.00, `/cv` 0.96 / 1.00 / 1.00, `aria-prohibited-attr` and `heading-order` 1 on every run of
+  `/`, `lhci assert` green). Re-run: `corepack pnpm test --run` 55 files, 1334 tests, all passed,
+  89 s; `corepack pnpm typecheck` exit 0; `display-entrance front-door visitor-instrumentation
+  anchor-aliases accessibility-floor` on this host 77 passed, 2.4 min.

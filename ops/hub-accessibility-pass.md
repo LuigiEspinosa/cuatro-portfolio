@@ -41,7 +41,7 @@ without a method is a claim. **Story ids are written hyphenated**, as `Story 2-2
 | `font-size` in `px` under `app/` and `components/` | **none** | **Observed 2026-09-13**, by the spec's scan of every `.scss`, comments stripped |
 | Autoplay | **nothing**: no `video`, `audio`, `marquee`, refresh meta or `[autoplay]` on any route | **Observed 2026-09-13**, same run |
 | Accent share of the homepage viewport | **0.17%** at 360 x 800, **0.05%** at 1280 x 800, scroll top, reduced-motion door | **Observed 2026-09-13** by `ops/hub-accessibility-probe.mjs`. Not a gate (RESTYLE-SPEC F-8, `RESTYLE-SPEC.md:654`) |
-| Lighthouse | `/` 1.00 / 1.00 / 1.00, `/work` 1.00 / 1.00 / 1.00, `/cv` 0.96 / 1.00 / 1.00 (accessibility / best practices / SEO) | **Observed 2026-09-13** locally, Lighthouse 12.6.1, three runs per URL. `/cv` joined `.lighthouserc.js` |
+| Lighthouse | `/` 1.00 / 1.00 / 1.00, `/work` 1.00 / 1.00 / 1.00, `/cv` 0.96 / 1.00 / 1.00 (accessibility / best practices / SEO). **Re-read 2026-09-14** with the new heading markup: `/` 1.00 / 1.00 / 1.00, `/work` 1.00 / 1.00 / 1.00, `/cv` 0.96 / 1.00 / 1.00, every run; on `/`, `aria-prohibited-attr` and `heading-order` both pass on all three runs | **Observed 2026-09-13** locally, Lighthouse 12.6.1, three runs per URL. `/cv` joined `.lighthouserc.js`. **Observed 2026-09-14** by Story 2-27, `@lhci/cli` 0.15.1 driving Lighthouse 12.6.1 under headless Chrome 152.0.0.0 against `corepack pnpm build` and `corepack pnpm start --port 3000`, `lhci collect` then `lhci assert`, three runs per URL, every assertion green |
 | Fixed | Four things: the focus rule, `.site-footer__line` to `--t-2xs`, `GlitchText`'s wrapper as a heading, `/cv` in the Lighthouse gate | **Decision.** AD-19, AD-20: everything else is a ledger row or a finding |
 | The spec in the pinned image | 14 cases, all green, **32.4 s** Playwright headline for the file alone, the sweep case **5.6 s**; 11 cases, **25.8 s** and **4.3 s** before the review pass added the clip read, the Enter read and the heading count | **Observed 2026-09-13**, both runs |
 | The whole suite in the pinned image | 22 spec files, **245 tests**, all green, **4.1 min** Playwright headline after the review pass (242 tests, 3.9 min before it); no snapshot directory written by this file. **Re-run 2026-09-14**: 23 spec files, **253 tests**, all green, **5.6 min**, `display-entrance.pw.ts` the eight new cases and the `shadow-glitch-loop` row gone | **Observed 2026-09-13**, `pnpm test:e2e` in the same image, both runs, then `git status --porcelain -- tests/e2e/accessibility-floor.pw.ts-snapshots`, which was empty. **Observed 2026-09-14** by Story 2-27, same command, same image |
@@ -348,6 +348,15 @@ three thresholds, which passed on every URL. Scores per run, in the order the ru
 | `/work` | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 0.82, 0.81, 0.82 | none in the three gated categories |
 | `/cv` | 0.96, 0.96, 0.96 | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 0.95, 0.95, 0.95 | `color-contrast`, F-5 |
 
+**Re-read 2026-09-14 by Story 2-27**, same tool and versions, same command, against the build that
+carries the rebuilt heading: `/` 1.00, 1.00, 1.00 on accessibility, 1.00 on best practices and 1.00
+on SEO on every run (performance 0.91, 0.89, 0.89, not gated); `/work` 1.00 / 1.00 / 1.00 on every
+run (performance 0.79, 0.79, 0.80); `/cv` 0.96, 0.96, 0.96 / 1.00 / 1.00 with `color-contrast` (F-5)
+still its one failing audit (performance 0.98, 0.95, 0.90). On `/`, `aria-prohibited-attr` and
+`heading-order` both score 1 on all three runs, so the real `<h1>` passes the audit the wrapper's
+role had been passing and the outline it heads skips no level. `lhci assert` reported every
+assertion green. **Observed 2026-09-14.**
+
 **What moved.** `/` scored 0.96 on accessibility on 2026-09-06 with `aria-prohibited-attr` its
 one failing audit (the Story 2-11 entry in `deferred-work.md`); it scores 1.00 now and that audit
 passes, because `GlitchText`'s wrapper carries `role='heading'` with `aria-level` derived from
@@ -355,7 +364,11 @@ its tag, so the home route has a level-1 heading in the accessibility tree for t
 **Since 2026-09-14** that wrapper is gone: Story 2-27 rebuilt `GlitchText` as a real `<h1>` whose
 accessible name is its own text content, with no `aria-label`, `aria-hidden`, `role` or
 `aria-level` on any node, and `tests/e2e/display-entrance.pw.ts` reads the tree as one level-1
-heading named `Luigi Espinosa` with nothing generic named.
+heading named `Luigi Espinosa` with nothing generic named. That closes the `GlitchText` half of
+O-13 (`EXPERIENCE.md:1058`, the `aria-label` on a generic role, a pre-existing defect corrected
+rather than one the redesign introduced, per the epic's own criterion; the `Error404` half stays
+with Story 2-30) and O-12 item 1 (`EXPERIENCE.md:1055`, the red and cyan aberration dropped, not
+excepted).
 `/work` was read at 0.94 on 2026-09-06 on a single run in a container; it reads 1.00 on all
 three runs here. **The two environments differ**, so the earlier reading is not contradicted so
 much as superseded by one taken the way the gate takes it.
