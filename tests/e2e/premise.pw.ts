@@ -14,7 +14,7 @@ import { RENDERED_VIEWPORT } from './harness';
  *
  * **Nothing expected is written down.** Every colour, every tracking value and every stroke width is
  * put through a probe element that reads the contract on the running page, for the reason
- * `tests/e2e/suite-directory.pw.ts:184-193` gives: a hand-written literal here drifts from the token
+ * `tests/e2e/suite-directory.pw.ts:174-181` gives: a hand-written literal here drifts from the token
  * it claims to enforce, and a value read from the page cannot disagree with the page. The one
  * literal in this file is `0.16em`, and it appears only inside a planted control, because the whole
  * point of that control is to show the instrument telling the two figures apart.
@@ -86,7 +86,7 @@ const goTo = async (page: Page, route: string): Promise<void> => {
 /**
  * Run `read` against the home route in a second context wider than the pinned viewport.
  *
- * Same shape as `tests/e2e/suite-directory.pw.ts:236-253`, including the reduced-motion and scale
+ * Same shape as `tests/e2e/suite-directory.pw.ts:244-262`, including the reduced-motion and scale
  * options the project sets, so the second context differs from the first in width and in nothing
  * else.
  */
@@ -377,7 +377,7 @@ test.describe('the premise takes the lede role, which is three tokens and a cap'
     // The claim `DESIGN.md:489` makes, measured where it is measurable. At the pinned 360 the block
     // has 320px of content and the cap resolves wider than that, so the cap and its absence produce
     // the same layout there. A second context is the only way to reach it, which is the idiom
-    // `anchor-aliases.pw.ts:133` and `suite-directory.pw.ts:236-253` already set.
+    // `anchor-aliases.pw.ts:133` and `suite-directory.pw.ts:244-262` already set.
     const measured = await atAWiderWidth(browser, async (wide) => {
       await goTo(wide, ROUTE);
 

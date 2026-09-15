@@ -42,8 +42,7 @@ only, since Lenis's documented default leaves touch on native scroll.
 reduce)').matches) return;`, and a `change` listener that destroys the instance if the
 preference flips (the second half of A-17). `hooks/useReduceMotion.ts` already does the
 subscribing and can be read here instead of a second `matchMedia`.
-*Owner:* none. Needs a DW row or a story of its own; it is global, so it fits no component
-restyle.
+*Owner:* built 2026-09-15 by spec-a-17-lenis-scoped-to-reduced-motion.md, on dev.
 
 ### A-2. The 404 entrance ignores reduced motion
 

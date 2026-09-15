@@ -183,10 +183,9 @@ const documentScriptUrls = (html: string, base: string): string[] => {
 };
 
 const goTo = async (page: Page, route: string): Promise<void> => {
-  // Not `networkidle`. The Hub never reaches it: Lenis plus the GSAP ticker keep the page busy
-  // indefinitely, so a wait for network idle times out rather than settling
-  // (`tests/e2e/harness.ts:86-90`). That matters more than usual on a route whose whole subject is
-  // loading.
+  // Not `networkidle`: the GSAP ticker, and Lenis where the context has not asked for reduced
+  // motion (A-17), keep the Hub from ever reaching it (`tests/e2e/harness.ts:92-95`). That matters
+  // more than usual on a route whose whole subject is loading.
   const response = await page.goto(route, { waitUntil: 'load' });
   expect(response, `navigating to ${route} produced no response`).toBeTruthy();
   expect(response?.status(), `${route} did not answer 200`).toBe(200);
@@ -715,8 +714,9 @@ test.describe('the page is whole with the narrative blocked', () => {
       await expect(page.locator('footer.site-footer'), 'the footer is gone with the narrative blocked').toBeVisible();
 
       // `toBeInViewport` retries, which is what handles Lenis taking ownership of the scroll
-      // position a moment after hydration. Same concern as `tests/e2e/suite-directory.pw.ts:326-336`,
-      // without the fixed wait.
+      // position a moment after hydration, a hazard this case meets only because it runs on
+      // `withMotion` (since A-17 the pinned context never constructs Lenis). Same concern as
+      // `tests/e2e/suite-directory.pw.ts:278-289`, without the fixed wait.
       await expect(
         page.locator(`#${HEADING_ID}`),
         `#${HEADING_ID} is off screen after the fragment navigation`
@@ -1218,11 +1218,13 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
   /**
    * Every `.ts` and `.tsx` file under one of the Hub's own source roots, tests excluded.
    *
-   * Read from disk rather than from the browser deliberately. `app/providers.tsx` installs Lenis and
-   * `ScrollTrigger`, both of which register native `scroll` listeners of their own from inside
-   * `node_modules`, so a browser-side count of listeners cannot answer the question the rule asks,
-   * which is whether the Hub's own components do scroll work. `tests/e2e/hit-target-floor.pw.ts`
-   * already reads the tree from a spec file for the same kind of claim.
+   * Read from disk rather than from the browser deliberately. `app/providers.tsx` registers
+   * `ScrollTrigger` and, only when the motion preference is not `reduce` (A-17), constructs Lenis;
+   * both register native `scroll` listeners of their own from inside `node_modules`, so a
+   * browser-side count of listeners cannot answer the question the rule asks, which is whether the
+   * Hub's own components do scroll work, and on the pinned context it would not even see Lenis.
+   * `tests/e2e/hit-target-floor.pw.ts` already reads the tree from a spec file for the same kind of
+   * claim.
    *
    * A missing root is reported rather than thrown on, and the caller is told how many roots existed,
    * so a rename cannot turn this sweep into a pass over nothing.

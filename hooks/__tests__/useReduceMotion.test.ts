@@ -126,8 +126,9 @@ describe('useReduceMotion', () => {
   it('answers false rather than throwing where matchMedia does not exist', () => {
     // A bare jsdom and some embedded webviews have no `matchMedia`. The call sits in a `useState`
     // initializer, so a throw there is a component that never mounts rather than a caught render
-    // error, and this hook is on every route through three consumers (four until 2026-09-14, when
-    // Story 2-27 rebuilt `GlitchText` with no script in it).
+    // error, and this hook is on every route through five consumers, `app/providers.tsx` (since
+    // 2026-09-15, A-17, and wrapping every route) and `hooks/useNarrativePath.ts` among them.
+    // `GlitchText` was one more until 2026-09-14, when Story 2-27 rebuilt it with no script in it.
     Object.defineProperty(window, 'matchMedia', { writable: true, value: undefined });
     const { result } = renderHook(() => useReduceMotion());
     expect(result.current).toBe(false);

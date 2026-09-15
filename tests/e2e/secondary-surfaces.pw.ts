@@ -400,7 +400,7 @@ test.describe('the footer link', () => {
     // `--token-border-interactive` on an inner span, hover to `--token-accent-hover`, the standard
     // ring on focus. `SiteFooter.scss` declares all four and nothing read any of them back in a
     // browser until this case. Every expectation is a probe resolved in the same page, never a
-    // literal, on the shape `tests/e2e/cv.pw.ts:678-731` and `tests/e2e/suite-directory.pw.ts:503`
+    // literal, on the shape `tests/e2e/cv.pw.ts:678-731` and `tests/e2e/suite-directory.pw.ts:547`
     // set.
     await goTo(page, '/');
     await page.evaluate(async () => {
@@ -445,7 +445,7 @@ test.describe('the footer link', () => {
     await link.scrollIntoViewIfNeeded();
     await link.hover();
     // Past the longest duration the contract declares, under reduced motion. Same wait
-    // `tests/e2e/suite-directory.pw.ts:531-535` takes.
+    // `tests/e2e/suite-directory.pw.ts:575-579` takes.
     await page.waitForTimeout(100);
     const hovered = await label.evaluate((node) => ({
       width: window.getComputedStyle(node).borderBottomWidth,

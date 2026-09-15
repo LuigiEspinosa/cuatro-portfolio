@@ -77,6 +77,9 @@ export default defineConfig({
         // what stops them at source rather than waiting them out (until 2026-09-14 it also stopped
         // the ScanlineOverlay grain behind its reduced-motion query; Story 2-28 deleted the grain).
         contextOptions: { reducedMotion: 'reduce' },
+        // Since A-17 `app/providers.tsx` constructs Lenis only when the preference is not
+        // `reduce`, so every test on this context runs on native scroll with no Lenis at all; a
+        // case that needs Lenis mounted overrides this one option in its own `test.use`.
       },
     },
   ],

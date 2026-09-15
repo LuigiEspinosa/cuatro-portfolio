@@ -200,7 +200,7 @@ const plantStyle = (page: Page, css: string): Promise<void> =>
 /**
  * A duration token's value in milliseconds, resolved through a probe rather than written down.
  *
- * Same helper and same reason as `tests/e2e/suite-directory.pw.ts:173-182`: a duration that governs
+ * Same helper and same reason as `tests/e2e/suite-directory.pw.ts:174-191`: a duration that governs
  * the interface comes from the contract, and a hand-written millisecond figure drifts from
  * `--dur-major` the day it moves. `transition-duration` computes to seconds, which is what the
  * probe reads back.
@@ -888,7 +888,7 @@ test.describe('the Status mark is not interactive', () => {
       });
 
     // The settle, read from the contract rather than written here, the same way
-    // `suite-directory.pw.ts:507` reads it. A hard-coded wait is a wait that drifts from
+    // `suite-directory.pw.ts:557` reads it. A hard-coded wait is a wait that drifts from
     // `--dur-major` the day the token moves, and a transition landing after the read would make
     // this case pass on the values it took before hovering.
     const settle = await durationMs(page, '--dur-major');

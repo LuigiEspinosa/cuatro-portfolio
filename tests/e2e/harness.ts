@@ -89,11 +89,13 @@ export async function expectRouteScreenshot(
     );
   }
 
-  // Not `networkidle`. The Hub never reaches it: Lenis plus the GSAP ticker keep the page
-  // busy indefinitely, so a wait for network idle times out rather than settling. What the
-  // baseline actually needs is the web fonts resolved, because a fallback face rendered for
-  // one frame is a different image. Everything after that is handled by `toHaveScreenshot`,
-  // which retries until two consecutive captures agree.
+  // Not `networkidle`. The Hub never reaches it: the GSAP ticker keeps the page busy
+  // indefinitely, so a wait for network idle times out rather than settling. Lenis does the
+  // same where the context has not asked for reduced motion; since A-17 `app/providers.tsx`
+  // constructs it only then, so the pinned context runs without it. What the baseline actually
+  // needs is the web fonts resolved, because a fallback face rendered for one frame is a
+  // different image. Everything after that is handled by `toHaveScreenshot`, which retries
+  // until two consecutive captures agree.
   await page.evaluate(async () => {
     await document.fonts.ready;
   });

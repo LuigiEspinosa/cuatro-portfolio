@@ -4941,3 +4941,39 @@ status: done
     the first contract change that opens a minor for any other reason, so the curve rides with
     it rather than costing a propagation of its own.
   status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-a-17-lenis-scoped-to-reduced-motion.md`
+  id: DW-104
+  summary: >-
+    A-17 (smooth scroll initialised only when the motion preference is not `reduce`, and torn
+    down if it flips) is now built, but it exists as a row nowhere: `EXPERIENCE.md`'s
+    Accessibility Floor stops at A-16 and `review-accessibility.md:343` only proposed it, so the
+    code and eight comments cite a requirement the spine does not carry, and no Satellite can
+    check itself against it.
+  evidence: |-
+    Surfaced 2026-09-15 by the blind-hunter layer in both review loops of the A-17 build.
+    `EXPERIENCE.md:769-775` is the floor table and ends at A-16; `:656` still describes reduced
+    motion as "Non-3D path" only. `review-accessibility.md:343-350` proposed A-17 through A-20 on
+    2026-08-15 as "named requirements the satellites can check", and O-17 books the residual
+    findings of that review to a triage pass before Epic 8 (`EXPERIENCE.md:1063`). A-17 is
+    pre-existing planning debt the build closed in code without closing in the spine.
+
+    **Owner and trigger.** The O-17 triage pass, which is where the accessibility review's
+    residual findings are dispositioned together; trigger, that pass opening. Until then the
+    definition is `review-accessibility.md:343`, which every citation names.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-a-17-lenis-scoped-to-reduced-motion.md`
+  id: DW-105
+  summary: >-
+    Two e2e line citations were already pointing at the wrong code before A-17 and were left
+    alone by it: `tests/e2e/front-door.pw.ts:257` cites `narrative.pw.ts:280-298` for
+    `withMotion`, which sits at `:289-307`, and `tests/e2e/visitor-instrumentation.pw.ts:158`
+    cites `front-door.pw.ts:665-669` for the heading `toBeInViewport`, which sits at `:661-664`.
+  evidence: |-
+    Found 2026-09-15 while re-deriving every citation the A-17 edit shifted in
+    `tests/e2e/suite-directory.pw.ts`; both of these point into files that edit did not shift
+    (`front-door.pw.ts` is net unshifted from baseline), so the drift predates it. Comment-only;
+    no assertion reads them.
+
+    **Owner and trigger.** The next story that edits either citing file; trigger, that edit.
+  status: open

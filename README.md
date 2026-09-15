@@ -120,12 +120,14 @@ renders. **Every other route is reached only by an inbound link or by typing it.
 
 ## Animation Architecture
 
-Lenis owns the scroll position. GSAP owns the animation timeline. ScrollTrigger bridges them.
+Lenis owns the scroll position where the visitor has not asked for reduced motion (A-17); a
+reduced-motion visitor gets native scroll on every route. GSAP owns the animation timeline.
+ScrollTrigger bridges them, and works on native scroll when Lenis is not there.
 
 ```mermaid
 flowchart TD
     subgraph providers["app/providers.tsx (client, app root)"]
-        L[new Lenis]
+        L[new Lenis, unless reduced motion]
         T[gsap.ticker]
         L -->|lenis.on scroll| ST[ScrollTrigger.update]
         T -->|lenis.raf time*1000| L
@@ -141,7 +143,8 @@ flowchart TD
         WT[WorkTimeline]
     end
 
-    RM[useReducedMotion] -->|gates all animations| components
+    RM[useReduceMotion] -->|gates all animations| components
+    RM -->|gates Lenis| providers
     components -->|useGsapContext| hook
     hook -->|ScrollTrigger triggers| providers
 ```

@@ -281,8 +281,8 @@ const onPath = async <T>(
 /**
  * Navigate, refuse to read anything off a page that did not answer 200, and wait for the fonts.
  *
- * Not `networkidle`: the Hub never reaches it, because Lenis and the GSAP ticker keep the page busy
- * indefinitely (`tests/e2e/harness.ts:86-90`).
+ * Not `networkidle`: the GSAP ticker, and Lenis where the context has not asked for reduced motion
+ * (A-17), keep the Hub from ever reaching it (`tests/e2e/harness.ts:92-95`).
  */
 const goTo = async (page: Page, route: string = ROUTE): Promise<void> => {
   const response = await page.goto(route, { waitUntil: 'load' });
@@ -1219,7 +1219,7 @@ test.describe('the skip control', () => {
   test('moves focus to the Directory heading, not merely the scroll position', async ({ browser }) => {
     // `EXPERIENCE.md:723` says moves focus, not only scroll. A control that scrolled alone leaves a
     // keyboard reader at the top of the document, tabbing through the whole hero again to reach
-    // what they just asked to skip to. Same shape as `suite-directory.pw.ts:365-371`, on a click
+    // what they just asked to skip to. Same shape as `suite-directory.pw.ts:317-328`, on a click
     // rather than on hash arrival.
     await onPath(browser, DEFAULT_PATH, async (page) => {
       await goTo(page);

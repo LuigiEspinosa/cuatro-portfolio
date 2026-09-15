@@ -62,6 +62,9 @@ const WIDE_VIEWPORT = { width: 761, height: 900 } as const;
  */
 const EDGE_SLACK = 0.5;
 
+/** How long a poll waits for hydration to settle. Same value as `tests/e2e/narrative.pw.ts:86`. */
+const SETTLE_TIMEOUT = 15_000;
+
 /**
  * A token with no line-breaking opportunity anywhere in it.
  *
@@ -258,6 +261,73 @@ const pastTheBreakpoint = async <T>(browser: Browser, read: (page: Page) => Prom
   }
 };
 
+/**
+ * Navigate to `/#suite` and assert the heading is in view and focused, with Lenis mounted or not.
+ *
+ * Shared by the two runs of the fragment case below. `lenis` says which condition this run is
+ * measuring, and the read checks it: a run that claims to exercise Lenis while the class it writes
+ * onto `<html>` is absent would be the guard that passes while measuring nothing.
+ */
+const landsOnHeading = async (page: Page, { lenis }: { lenis: boolean }): Promise<void> => {
+  const response = await page.goto(`${ROUTE}#${HEADING_ID}`, { waitUntil: 'load' });
+  expect(response?.status(), 'the home route did not answer 200').toBe(200);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+
+  // Where Lenis is expected, wait for the class it writes on construct before opening the window
+  // below, so the window measures what Lenis does once mounted rather than racing hydration.
+  if (lenis) {
+    await expect(page.locator('html'), 'Lenis never mounted on a no-preference context').toHaveClass(/\blenis\b/, {
+      timeout: SETTLE_TIMEOUT,
+    });
+  }
+
+  // Long enough for anything Lenis does to the scroll position to have happened and, on the pinned
+  // run where a poll cannot prove absence, for hydration to have had its chance to construct it. A
+  // snap back would land inside this window, not after it.
+  await page.waitForTimeout(2000);
+
+  const landed = await page.evaluate((id) => {
+    const heading = document.getElementById(id);
+    if (!heading) return null;
+    const box = heading.getBoundingClientRect();
+    return {
+      top: box.top,
+      innerHeight: window.innerHeight,
+      scrollY: window.scrollY,
+      focused: document.activeElement === heading,
+      activeElement: document.activeElement?.tagName ?? 'none',
+      lenis: document.documentElement.classList.contains('lenis'),
+    };
+  }, HEADING_ID);
+
+  expect(landed, `nothing on the home route carries id="${HEADING_ID}"`).not.toBeNull();
+
+  expect(
+    landed?.lenis,
+    lenis ? 'Lenis is gone, so this run measures the native jump twice' : 'Lenis mounted on the pinned reduce context'
+  ).toBe(lenis);
+
+  expect(
+    landed && landed.scrollY > 0,
+    `navigating to #${HEADING_ID} left the page at the top. The heading exists, so ` +
+      (lenis ? `Lenis in app/providers.tsx took the position back after the jump` : `the fragment did not resolve`)
+  ).toBe(true);
+  expect(
+    landed && landed.top >= 0 && landed.top < landed.innerHeight,
+    `the heading is not in view after navigating to #${HEADING_ID}: its top is at ` +
+      `${landed?.top.toFixed(2)} in a ${landed?.innerHeight}px viewport`
+  ).toBe(true);
+  expect(
+    landed?.focused,
+    `the heading is not focused after navigating to #${HEADING_ID}, so a keyboard reader lands ` +
+      `at the top of the document and tabs through the whole hero again. ` +
+      `EXPERIENCE.md:420 moves focus, not only scroll position. Active element was ` +
+      `${landed?.activeElement}`
+  ).toBe(true);
+};
+
 test.describe('the home route can be scrolled to the directory', () => {
   test('carries overflow-x: clip on both elements and a document taller than the viewport', async ({ page }) => {
     // **The story's central claim, and until this case nothing read it.** Story 2-9 repaired the
@@ -329,52 +399,26 @@ test.describe('the home route can be scrolled to the directory', () => {
   test('resolves /#suite to the heading, in view and focused', async ({ page }) => {
     // The fragment is the payload Story 2-14 redirects to and the target Story 2-13's skip control
     // moves focus to, and nothing navigated to it. Two things could break it and neither shows up
-    // anywhere else: the heading could stop being focusable, and `app/providers.tsx` installs Lenis
-    // globally, which owns the scroll position and could refuse or undo a native fragment jump.
-    const response = await page.goto(`${ROUTE}#${HEADING_ID}`, { waitUntil: 'load' });
-    expect(response?.status(), 'the home route did not answer 200').toBe(200);
-    await page.evaluate(async () => {
-      await document.fonts.ready;
+    // anywhere else: the heading could stop being focusable, and `app/providers.tsx` constructs
+    // Lenis, which owns the scroll position and could refuse or undo a native fragment jump.
+    //
+    // This run is on the pinned `reduce` context, where since A-17 Lenis is never constructed, so
+    // it measures the native jump alone. The run below measures the same thing with Lenis mounted.
+    await landsOnHeading(page, { lenis: false });
+  });
+
+  test.describe('on a context that has not asked for reduced motion', () => {
+    // `playwright.config.ts:79` pins `reducedMotion: 'reduce'`, and since A-17 `app/providers.tsx`
+    // constructs Lenis only when that preference is not `reduce`, so the pinned context never
+    // mounts it. This block differs in that one context option and in nothing else, the shape
+    // `tests/e2e/cv.pw.ts:504` uses for scripting.
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('resolves /#suite the same way with Lenis mounted', async ({ page }) => {
+      // The Lenis hazard the case above was written to guard against, on the one context where it
+      // is actually on. Until A-17 the pinned run exercised it too; now it exercises nothing of it.
+      await landsOnHeading(page, { lenis: true });
     });
-
-    // Long enough for hydration to install Lenis and for anything it does to the scroll position
-    // to have happened. A snap back would land inside this window, not after it.
-    await page.waitForTimeout(2000);
-
-    const landed = await page.evaluate((id) => {
-      const heading = document.getElementById(id);
-      if (!heading) return null;
-      const box = heading.getBoundingClientRect();
-      return {
-        top: box.top,
-        bottom: box.bottom,
-        innerHeight: window.innerHeight,
-        scrollY: window.scrollY,
-        focused: document.activeElement === heading,
-        activeElement: document.activeElement?.tagName ?? 'none',
-      };
-    }, HEADING_ID);
-
-    expect(landed, `nothing on the home route carries id="${HEADING_ID}"`).not.toBeNull();
-
-    expect(
-      landed && landed.scrollY > 0,
-      `navigating to #${HEADING_ID} left the page at the top. The heading exists, so either the ` +
-        `fragment did not resolve or the smooth-scroll library in app/providers.tsx took the ` +
-        `position back after the jump`
-    ).toBe(true);
-    expect(
-      landed && landed.top >= 0 && landed.top < landed.innerHeight,
-      `the heading is not in view after navigating to #${HEADING_ID}: its top is at ` +
-        `${landed?.top.toFixed(2)} in a ${landed?.innerHeight}px viewport`
-    ).toBe(true);
-    expect(
-      landed?.focused,
-      `the heading is not focused after navigating to #${HEADING_ID}, so a keyboard reader lands ` +
-        `at the top of the document and tabs through the whole hero again. ` +
-        `EXPERIENCE.md:420 moves focus, not only scroll position. Active element was ` +
-        `${landed?.activeElement}`
-    ).toBe(true);
   });
 });
 
