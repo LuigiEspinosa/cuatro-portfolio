@@ -3325,6 +3325,14 @@ system-wide and silently takes contrast with it
 **Then** the **dim-siblings-on-hover behaviour is retired**, and a panel that is not hovered is
 simply not hovered.
 
+**Given** touch is the primary user (NFR-5), and on a touch device a tap paints `:hover` and leaves
+it painted until the next tap lands elsewhere, so the nav and contact links at
+`HomeLayout.scss:131` and `:160` hold their hover colour after being tapped
+**When** hover is rebuilt
+**Then** every `:hover` rule in this component is gated on **`@media (hover: hover)`**, so a tap
+never leaves a stuck hover state
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-5)*.
+
 **Given** the 3D canvas is decorative and its content is stated in prose (A-14)
 **When** the canvas is rendered
 **Then** it is **`aria-hidden` and not focusable**.
@@ -3452,6 +3460,17 @@ transitioned, on `:focus-visible` only.
 `clamp(3.5rem, 14vw, 7rem)` being both off-scale and 56% above § Typography's `4.5rem` display cap,
 which Story 2.34's gate would reject as a type literal *(review finding LOW-6)*.
 
+**Given** the shipped entrance at `Error404.tsx:34-55` runs three `gsap.from` tweens, two of them
+spatial (`y: 20`, `y: 10`), with no read of the motion preference, and a GSAP duration is a JS
+literal the contract's 1ms collapse cannot reach
+**When** the entrance is rebuilt
+**Then** **either** it reads `useReduceMotion` and runs nothing under `reduce`, as `WorkHero.tsx:25`
+does, **or** it becomes a CSS keyframe on `opacity` alone at `--dur-minor` and `--ease-entrance`
+with `animation: none` under the query, as `GlitchText.scss` does, which takes reduced motion from
+the contract and GSAP off the surface; the second is preferred where it costs no more
+**And** every `:hover` rule on the exits is gated on **`@media (hover: hover)`**
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-2 and A-5)*.
+
 ---
 
 ### Story 2.31: Redesign `WorkItem`, and retire `HudLabel` into the Plate mark
@@ -3538,6 +3557,18 @@ and it **stays out of the accessible name**
 **And** this is recorded as the **single named exception** to "only `transform` and `opacity`
 animate", because a disclosure that jumps is worse than one that eases.
 
+**Given** the shipped close tween at `WorkItem.tsx:90-94` runs `power2.in` over 0.3s, which
+delays visible movement to exactly the frames after the click and reads as lag, and the review
+standard bars an ease-in on any UI element
+**When** the disclosure's tweens are rebuilt
+**Then** the close runs on an **ease-out** whose duration matches **`--dur-exit`** (165ms), and the
+open keeps its ease-out at a duration matching `--dur-major`
+**And** the height tween itself stays, as the single named exception above
+**And** every `:hover` rule on the trigger is gated on **`@media (hover: hover)`**, so a tapped row
+does not hold its hover border
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-4 and A-5. The contract's own
+`--ease-exit` is an ease-in too; that is DW-103, a contract change, and not this story's to make.)*
+
 **Given** `rgba(91, 33, 182, 0.06)` at `WorkItem.scss:35` and `rgba(91, 33, 182, 0.3)` at
 `WorkItem.scss:145` are alpha values used as hairlines *(criteria relocated from deleted Story
 2.18; `ProjectCard.scss`'s three values need nothing, the file being retired by Story 2.14)*
@@ -3595,7 +3626,18 @@ instantly and never transitioned, on `:focus-visible` only
 **Given** an underline that appears on hover is a width change and it reflows the row
 **When** hover is implemented
 **Then** hover **recolours the existing underline** to `--token-accent-hover` and **does not add
-one**, and nothing else moves.
+one**, and nothing else moves
+**And** every `:hover` rule in the chrome is gated on **`@media (hover: hover)`**, so a tapped nav
+link does not hold its hover state after the route changes
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-5)*.
+
+**Given** the sticky header sits on opaque `--token-bg` with nothing on its block-end edge, so
+content scrolling beneath it is cut by an invisible line
+**When** the header is rebuilt
+**Then** it closes beneath with a **`1px solid var(--token-border)` hairline**, which is the depth
+vocabulary `DESIGN.md` § Rules allows (lightness, then a hairline, then a rule), never an alpha
+edge, a shadow or a blur
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-6)*.
 
 **Given** the shipped `Container` uses `min(80%, 1920px)`, which spends 20% of a 360px viewport on
 margin before any padding applies, and is what makes the mobile floor fail
@@ -3685,6 +3727,18 @@ behaviour, so 2.16's work is not redone
 **When** the restyle lands
 **Then** the first entry still opens on load without a collapsed-height flash and the
 `useReduceMotion` hook still drops the GSAP height tween to zero duration.
+
+**Given** `WorkTimeLine.tsx:18-30` batches every row into a `y: 40` fade-up on scroll entry, which
+is the universal scroll-triggered fade-up `EXPERIENCE.md` § Motion bans, and it reads no motion
+preference
+**When** the timeline is restyled
+**Then** the batch is **deleted** and the rows simply exist, the route's one entrance being the
+hero's
+**And** this is ruled a **presentation change**, so the criterion above that preserves 2.16's
+structure, props and behaviour is not breached by it *(ruled 2026-09-15)*
+**And** the torus's scroll binding at `WorkHero.tsx:48` drops `scrub: 1.5` to **`scrub: true`**, so
+scroll-linked motion tracks the scroll rather than trailing it by up to 1.5s
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-3 and A-7)*.
 
 **Given** this is the last redesign in the group
 **When** it closes

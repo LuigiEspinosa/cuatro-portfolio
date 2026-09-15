@@ -4918,3 +4918,26 @@ status: done
     change the comparator measures as none. The `AGENTS.md` line: the next `bmad-project-context`
     refresh, which owns the managed block; trigger, that refresh.
   status: open
+
+- source_spec: `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/review-apple-design-2026-09-15.md`
+  id: DW-103
+  summary: >-
+    The published `--ease-exit` is a pure ease-in, `cubic-bezier(0.7, 0, 0.84, 0)` at
+    `contracts/tokens.css:125`, so every Satellite that adopts the token inherits an exit that
+    delays visible movement to the frames the user watches most; retargeting it is an AD-16
+    contract change for the next minor, not a stylesheet fix.
+  evidence: |-
+    Found 2026-09-15 by the apple-design review (A-4). Apple's § 1 and the review-animations
+    standard both bar an ease-in on a UI element: it starts slow, which reads as lag at exactly
+    the moment after the input. The smallest change is `--ease-exit` retargeted to the
+    `--ease-entrance` curve, `cubic-bezier(0.16, 1, 0.3, 1)`, at the existing `--dur-exit`
+    (165ms). No Hub stylesheet reads `--ease-exit` today (`grep -r "ease-exit" app components`
+    answers nothing), so the Hub carries no defect from it yet; the Satellites' vendored copies
+    do, and that is what makes it a contract change rather than a local one. Story 2-31 books the
+    Hub's one ease-in close (`WorkItem.tsx:90-94`) separately, as a JS literal.
+
+    **Owner and trigger.** The next contract minor under the AD-16 runbook (Story 1.20's
+    propagation procedure), which is where a published value changes and propagates; trigger,
+    the first contract change that opens a minor for any other reason, so the curve rides with
+    it rather than costing a propagation of its own.
+  status: open
