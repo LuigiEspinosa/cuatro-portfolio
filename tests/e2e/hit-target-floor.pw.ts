@@ -141,9 +141,15 @@ const NON_HUB_ROUTES = ['/api/health'] as const;
 /**
  * The entrance the home surface animates, and the selector the settle waits on.
  *
- * `HomeLayout.tsx:34,39` tweens these from `opacity: 0` at roughly t=2.0s and t=2.2s. A surface
- * that declares `entrance: true` must match at least one of these nodes, or the wait is a wait on
- * an empty NodeList, which `Array.every` answers `true` for immediately.
+ * `HomeLayout.scss` animates these from `opacity: 0` at 2000ms and 2200ms, with an 80ms stagger
+ * inside each group. A surface that declares `entrance: true` must match at least one of these
+ * nodes, or the wait is a wait on an empty NodeList, which `Array.every` answers `true` for
+ * immediately.
+ *
+ * **It was a GSAP timeline in `HomeLayout.tsx` until 2026-09-21**, positioned at t=2.0s and t=2.2s
+ * on a clock that started at hydration. Story 2-29 converted it to one `home-enter` keyframe and
+ * five `animation-delay` declarations counted from first paint. The wait below is unchanged and
+ * reads computed `opacity`, which answers the same question whatever writes it.
  *
  * **This docblock predicted that Story 2-15 renames `.nav-link`, and that prediction was wrong.**
  * Corrected 2026-09-08. `.nav-link` is `HomeLayout`'s class, on the homepage panel, and its ledger
@@ -254,31 +260,13 @@ const EXEMPTIONS: readonly Exemption[] = [
     measured: '184.00 x 20.00',
     closedBy: 'Story 2-32',
   },
-  {
-    id: 'home-nav',
-    // Corrected 2026-09-08 by Story 2-15, which edited the second of these two lines. The citation
-    // read `:64,67` from Story 2-8 onwards and was 78 lines stale by the time anything checked it:
-    // `ops/__tests__/hit-target-floor.test.ts` holds the *file* to disk and nothing holds the line
-    // numbers, so this is a citation a reader has to keep true.
-    selector: 'a.nav-link',
-    source: 'components/organisms/HomeLayout/HomeLayout.tsx:142,150',
-    routes: ['/'],
-    covers: 2,
-    // Re-read 2026-09-12 by Story 2-20, which moved both home rows onto the display face at 75%
-    // width: the line box grew from 23.00 to 32.00 with the contract's metric overrides, and the
-    // contact widths narrowed with the face. Still under the floor on height, still Story 2-32's.
-    measured: '320.00 x 32.00',
-    closedBy: 'Story 2-32',
-  },
-  {
-    id: 'home-contact',
-    selector: '.contact-container a',
-    source: 'components/molecules/ContactContainer/ContactContainer.tsx:5,8,15',
-    routes: ['/'],
-    covers: 3,
-    measured: '57.00 x 32.00 to 81.00 x 32.00',
-    closedBy: 'Story 2-32',
-  },
+  // **`home-nav` and `home-contact` left on 2026-09-21 with Story 2-29**, which rebuilt
+  // `HomeLayout.scss` and gave both link groups `min-block-size: var(--tap)` on a flex box, the
+  // `SkipControl.scss:12-21` idiom. The story did not set out to take them: its display step alone
+  // pushed the first nav link to 296.00 x 68.75, which this sweep reported as a stale row, and a
+  // row cannot go half stale, so the floor was set on all five and both rows went in the same
+  // commit. `ops/known-violations.md` KV-4 records the ownership half, which was Pending Operator
+  // action 9's open question.
 ];
 
 /**
@@ -1108,28 +1096,37 @@ test.describe('the hit-target floor', () => {
 
   test('separates an unlisted element from one whose row does not list this route', async ({ page }) => {
     // Both are "under the floor and not exempt here", and reporting them the same way sends a
-    // reader hunting for a row that exists. The planted element matches `a.nav-link`, whose row
-    // lists the home route and not the 404.
-    await goTo(page, NOT_FOUND, 404);
-    await settle(page, { route: NOT_FOUND, entrance: false });
+    // reader hunting for a row that exists. The planted element matches `.logo a`, whose row lists
+    // `/work`, `/cv` and the 404 and not the home route.
+    //
+    // **The pairing moved on 2026-09-21**, from `a.nav-link` planted on the 404 to `.logo a`
+    // planted on `/`, because Story 2-29 repaired both home rows and deleted them, and the row it
+    // demonstrates on has to be one the ledger still carries. `chrome-logo` is the one left, so the
+    // route it does not list is the one this plant goes on, and `Header.tsx:12` returning `null`
+    // there is what makes `/` a surface with no real `.logo` to disturb.
+    await goTo(page, '/');
+    await settle(page, { route: '/', entrance: true });
     const floor = await floorFrom(page);
 
     await page.evaluate(() => {
+      const host = document.createElement('div');
+      host.className = 'logo';
+      host.setAttribute('style', 'position:absolute;top:0;left:0;');
       const planted = document.createElement('a');
       planted.href = '#misrouted';
       planted.id = 'planted-misrouted';
-      planted.className = 'nav-link';
       planted.textContent = 'y';
       planted.setAttribute('style', 'display:inline-flex;width:12px;height:12px;');
-      document.body.appendChild(planted);
+      host.appendChild(planted);
+      document.body.appendChild(host);
     });
 
     const { measured } = await measureSurface(page);
-    const verdict = judge(NOT_FOUND, measured, floor, RENDERED_VIEWPORT.width);
+    const verdict = judge('/', measured, floor, RENDERED_VIEWPORT.width);
 
     expect(verdict.misrouted, 'the misrouted control was not reported as such').toHaveLength(1);
     expect(verdict.misrouted[0]).toContain('a#planted-misrouted');
-    expect(verdict.misrouted[0], 'the message does not name the row that matched').toContain('"home-nav"');
+    expect(verdict.misrouted[0], 'the message does not name the row that matched').toContain('"chrome-logo"');
     expect(verdict.under, 'the misrouted control was also reported as listed by nothing').toEqual([]);
   });
 
@@ -1180,32 +1177,28 @@ test.describe('the hit-target floor', () => {
     // Planted by injecting a compliant link into a surface a real row lists, so a real row rather
     // than a synthetic one goes stale.
     //
-    // **The host moved from `nav.navbar` to the homepage panel on 2026-09-08**, because Story 2-15
-    // repaired the chrome nav and deleted `chrome-nav` with it. `home-nav` is the natural
-    // replacement: it is a live row on `/`, its two links stay in the ledger for Story 2-32, and a
-    // third link planted beside them makes `covers: 2` read 3, which is the arithmetic half this
-    // case asserts at the end. The predicate is unchanged; only the row it is demonstrated on is.
-    await goTo(page, '/');
-    await settle(page, { route: '/', entrance: true });
+    // **The host moved from `nav.navbar` to the homepage panel on 2026-09-08 and to the chrome
+    // logo on 2026-09-21**, each time because the previous host's row was repaired and deleted:
+    // Story 2-15 took `chrome-nav`, Story 2-29 took `home-nav` and `home-contact`. `chrome-logo` is
+    // the one row left, so it is the only real row a plant can go stale against, and the 404 is one
+    // of the three surfaces it lists. The predicate is unchanged; only the row it is demonstrated
+    // on is.
+    await goTo(page, NOT_FOUND, 404);
+    await settle(page, { route: NOT_FOUND, entrance: false });
     const floor = await floorFrom(page);
 
     const planted = await page.evaluate(() => {
-      const host = document.querySelector('nav.home-panel--nav');
+      const host = document.querySelector('.logo');
       // Reported rather than skipped. A missing plant target would leave this case asserting that
       // nothing was reported, which reads as the predicate failing rather than as the fixture
       // being gone, and Story 2-32 reshapes exactly this element.
       if (!host) return false;
       const link = document.createElement('a');
       link.href = '#repaired';
-      link.id = 'planted-repaired-nav-link';
-      link.className = 'nav-link';
-      link.textContent = 'Suite';
-      // Taken out of flow deliberately. The panel is a flex column whose links are 320px wide, so
-      // an in-flow child would reflow its siblings and this control would be reporting a layout
-      // side effect rather than the predicate. `opacity` is set because the entrance tweens
-      // `.nav-link` from 0 and a node appended after the timeline has run never receives it, which
-      // the visibility rule would answer as `zero area` only if the box were also empty; a
-      // transparent box is still measured, and the explicit value keeps that from being luck.
+      link.id = 'planted-repaired-logo-link';
+      link.textContent = 'Home';
+      // Taken out of flow deliberately, or an in-flow child would reflow the header and this
+      // control would be reporting a layout side effect rather than the predicate.
       link.setAttribute(
         'style',
         'position:absolute;top:0;left:0;display:inline-flex;align-items:center;width:80px;height:80px;opacity:1;'
@@ -1216,23 +1209,27 @@ test.describe('the hit-target floor', () => {
 
     expect(
       planted,
-      'no nav.home-panel--nav exists on /, so the stale-row control had nothing to plant into. The ' +
+      `no .logo exists on ${NOT_FOUND}, so the stale-row control had nothing to plant into. The ` +
         'fixture is gone, not the predicate.'
     ).toBe(true);
 
     const { measured } = await measureSurface(page);
-    const verdict = judge('/', measured, floor, RENDERED_VIEWPORT.width);
+    const verdict = judge(NOT_FOUND, measured, floor, RENDERED_VIEWPORT.width);
 
     expect(verdict.stale, 'a repaired listed element was not reported as a stale row').toHaveLength(1);
-    expect(verdict.stale[0]).toContain('a#planted-repaired-nav-link');
-    expect(verdict.stale[0], 'the message does not name the row to delete').toContain('"home-nav"');
+    expect(verdict.stale[0]).toContain('a#planted-repaired-logo-link');
+    expect(verdict.stale[0], 'the message does not name the row to delete').toContain('"chrome-logo"');
     expect(verdict.stale[0], 'the message does not point at the record').toContain('ops/hit-target-floor.md');
     expect(verdict.under, 'the repaired element was also reported as an unlisted breach').toEqual([]);
 
     // The same plant is also a row covering more than it says it covers, which is the arithmetic
-    // half of the same defect and the reason `covers` exists.
-    const drift = ledgerDrift(verdict.hits, [EXEMPTIONS.find((row) => row.id === 'home-nav')!]);
-    expect(drift.some((line) => /covers 3 measured elements/.test(line))).toBe(true);
+    // half of the same defect and the reason `covers` exists. Read against `chrome-logo` narrowed
+    // to this one surface: the real row lists three routes and this verdict measured one, so the
+    // routes and the count are scoped to what was measured and everything else about the row is
+    // the shipped one.
+    const onThisSurface = { ...EXEMPTIONS.find((row) => row.id === 'chrome-logo')!, routes: [NOT_FOUND], covers: 1 };
+    const drift = ledgerDrift(verdict.hits, [onThisSurface]);
+    expect(drift.some((line) => /covers 2 measured elements/.test(line))).toBe(true);
   });
 
   test('fails a row that has stopped matching on one of the routes it lists', () => {

@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-14-2026
+last_updated: 09-21-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -227,7 +227,37 @@ development_status:
   # so the plain run passed, the update run wrote nothing, and the update had to be forced with
   # --update-snapshots=all, recorded as the one exception in ops/rendered-output-harness.md.
   2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token: done
-  2-29-redesign-homelayout-token-native: backlog
+  # 2-29 built 2026-09-21: HomeLayout.scss is rebuilt against the contract alone, with no alias,
+  # no colour literal, no rgba, no gradient, no transition: all and no bare z-index; the #0a000f
+  # ground and its two grid images are gone, the opacity: 0.2 dim-siblings rule with them, every
+  # :hover sits inside @media (hover: hover), and the GSAP timeline is one home-enter keyframe
+  # with five animation-delay literals whose base state is the final state, so a scriptless
+  # document is already finished and the heading's clock and the panels' are one clock.
+  # ScanlineOverlay is placed inside .home-gem, which takes --z-base and is therefore the stacking
+  # context that confines the scrim; the four panels and the skip control clear the gem's whole
+  # subtree at --z-raised, which is the only arrangement the contract affords. The four notch
+  # polygons are byte-identical and the panels gained padding: var(--s-sm), which closed five of
+  # the six clipped rings. Six KV-6 rows left the ledger (three z-index literals, four depth
+  # tells, one clipped ring, seen in the pinned image and in the branch build's CSS) and F-11 is
+  # annotated partly closed, /work and the 404 remaining.
+  # Not planned, measured: setting the hero links at --t-xl took the first nav link past the 44px
+  # floor, the hit-target sweep reported home-nav stale, a row cannot go half stale, so
+  # min-block-size: var(--tap) went on all five links and KV-4's two home rows went with them.
+  # That answers pending Operator action 9 for the home pair and leaves chrome-logo open.
+  # DW-101's composited-contrast sampling is done at 1024 rather than 360, because below 768 no
+  # text overlays imagery: --token-text 17.66:1, --token-focus 11.80:1, --token-accent-hover
+  # 9.07:1, --token-text-secondary 7.07:1, --token-accent 6.24:1, all against a ground sampled at
+  # rgb(5, 4, 9), every one above the table and clear of its own floor, with the layer proved
+  # beneath by repainting it and re-sampling rather than by reading a z-index.
+  # Weight: the component's JS chunk is 225 gzipped bytes lighter with gsap gone from it, the
+  # scrim's CSS arrived in the same component's CSS chunk, and the build is 235 gzipped lighter
+  # overall. DW-33, 41, 42, 46, 48, 97, 98, 100 and 101 are closed; DW-57 and DW-82 are closed on
+  # their halves this story owns. DW-46's premise was re-verified and holds: the planning read
+  # that called it wrong had not read Scene.tsx.
+  # Waits on the Operator: the entrance's feel played at 2x to 5x in the animation inspector, and
+  # the --t-xl reading of the nav and contact type, which is a gap in DESIGN.md rather than a
+  # value it supplied.
+  2-29-redesign-homelayout-token-native: review
   2-30-redesign-error404-token-native: backlog
   2-31-redesign-workitem-and-hudlabel-token-native: backlog
   2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog

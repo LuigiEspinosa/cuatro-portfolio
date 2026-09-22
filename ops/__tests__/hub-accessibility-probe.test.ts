@@ -28,7 +28,10 @@ const image = (pixels: readonly Rgb[]): Buffer => Buffer.from(pixels.flatMap(([r
 
 describe('the accent share', () => {
   const accent: Rgb = [143, 126, 240];
-  const ground: Rgb = [10, 0, 15];
+  // `--token-bg` rasterised to sRGB, which is what `/` paints since Story 2-29 replaced
+  // `HomeLayout.scss`'s `#0a000f` with the role. A synthetic ground either way: what these cases
+  // read is the counter, not the page.
+  const ground: Rgb = [6, 5, 9];
 
   it('counts the pixels within the stated distance of any target over the viewport, and no others', () => {
     const raw = image([accent, ground, ground, ground, ground, [143, 126, 238], ground, [200, 200, 200]]);

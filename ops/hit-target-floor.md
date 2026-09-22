@@ -254,8 +254,26 @@ one of its routes**, so a row covering two surfaces cannot go half stale in sile
 | Id | Selector | Source | Routes | Covers | Measured | Closed by |
 |---|---|---|---|---|---|---|
 | `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/cv`, `/a-route-that-does-not-exist` | 3 | 184.00 x 20.00 | Story 2-32 |
-| `home-nav` | `a.nav-link` | `components/organisms/HomeLayout/HomeLayout.tsx:142,150` | `/` | 2 | 320.00 x 32.00 | Story 2-32 |
-| `home-contact` | `.contact-container a` | `components/molecules/ContactContainer/ContactContainer.tsx:5,8,15` | `/` | 3 | 57.00 x 32.00 to 81.00 x 32.00 | Story 2-32 |
+
+**Both home rows left on 2026-09-21 with Story 2-29, and the sweep is what forced them out.**
+**Observed 2026-09-21** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800. That story
+rebuilt `HomeLayout.scss` token-native and set the two hero link groups in the display face at
+`--t-xl`, which is larger than the `clamp(1.5rem, 2.5vw, 2.5rem)` they had at 360. The first nav
+link wrapped to two lines and measured **296.00 x 68.75**, clearing the floor of 44, and this
+sweep reported `home-nav` as a stale row naming both files. A row cannot go half stale: the other
+nav link and the three contact links were still under. So the floor was set on all five, with
+`min-block-size: var(--tap)` on a flex box, the `SkipControl.scss:12-21` idiom and the shape
+`EXPERIENCE.md:727-730` prescribes, and both rows were deleted in the same commit as the repair.
+The five measured after the repair, in the same image at 360 x 800 with the display face loaded,
+printed by `tests/e2e/type-swap.pw.ts`'s swap comparison: `a.nav-link[0]` **296.00 x 68.75**,
+`a.nav-link[1]` **296.00 x 44.00**, and the three contact links **101.39**, **123.52** and
+**86.33 x 44.00**. Every one clears the floor on both axes, four of them by the `min-block-size`
+and the first by wrapping. No row is kept for them: a deleted row takes its `Measured` cell with
+it, and what holds the claim is the sweep itself, which fails on every run if any of them drops
+back under.
+**The story did not plan this.** Its own acceptance criteria name no hit-target floor; the
+measurement did. `ops/known-violations.md` KV-4 and Pending Operator action 9 record the ownership
+half, which was an open question until this ran.
 
 **The `Measured` column carried the date 2026-09-06 in its header until 2026-09-12**, when the two
 home rows were re-read; `chrome-logo` is still the 2026-09-06 reading and the two home rows are
@@ -294,7 +312,8 @@ resolved and after the home entrance had settled. `EXPERIENCE.md:731-732` says t
 single easiest one to miss while appearing to meet it, and reading a stylesheet is exactly how it
 gets missed.
 
-**Six rows at Story 2-8, five after Story 2-9, four after Story 2-15, three now, where that story's
+**Six rows at Story 2-8, five after Story 2-9, four after Story 2-15, three after Story 2-17 and
+one since Story 2-29, where that story's
 code map named four.** **Observed 2026-09-06**, re-read **2026-09-08** after Story 2-15 deleted
 `chrome-nav`, and re-read **2026-09-11** after Story 2-17 deleted `error-back`.
 `chrome-logo` was not on that list and was found by sweeping: `Logo.tsx:7` is a plain
@@ -679,7 +698,7 @@ fail is not known to work.
 |---|---|---|
 | An unlisted element under the floor | Fails naming the route, a stable selector, the element's text and the measured box, and the floor it was compared against | **Observed 2026-09-06.** "fails on an unlisted element under the floor, naming the route, the selector and the box", which plants a 10 x 10 link |
 | A plain inline element padded to look compliant | Fails on the height axis while the width axis clears the floor, so the failure is the padding rather than the size | **Observed 2026-09-06.** "fails on an element that reaches the floor only through vertical padding on a plain inline element" |
-| A listed element that now clears the floor | Fails as a stale row, naming the row id and both files that carry it | **Observed 2026-09-06** against the chrome nav, and **re-observed 2026-09-08** against the homepage panel. The case injects a compliant link into a surface a real row lists, so a real row goes stale rather than a synthetic one. It hosted in `nav.navbar` until Story 2-15 repaired that surface and deleted `chrome-nav`; the host is now `nav.home-panel--nav` and the row is `home-nav`, which stays in the ledger for Story 2-32. The plant is taken out of flow deliberately, or an in-flow 80px child reflows its siblings and the control reports a layout side effect rather than the predicate |
+| A listed element that now clears the floor | Fails as a stale row, naming the row id and both files that carry it | **Observed 2026-09-06** against the chrome nav, and **re-observed 2026-09-08** against the homepage panel. The case injects a compliant link into a surface a real row lists, so a real row goes stale rather than a synthetic one. It hosted in `nav.navbar` until Story 2-15 repaired that surface and deleted `chrome-nav`, then in `nav.home-panel--nav` against `home-nav` until Story 2-29 repaired that surface on 2026-09-21 and deleted both home rows; the host is now `.logo` on the 404 and the row is `chrome-logo`, the one row left, which stays in the ledger for Story 2-32. The plant is taken out of flow deliberately, or an in-flow 80px child reflows its siblings and the control reports a layout side effect rather than the predicate |
 | A row that matches nothing **on one of the routes it lists** | Fails naming the row **and the route**, its selector, its source and its closing story. A row covering more than one surface cannot go half stale, and since Story 2-14 the widest row covers two | **Observed 2026-09-06.** "fails a row that has stopped matching on one of the routes it lists", driven through the pure verdict with a two-route row that matches on one of them |
 | A row covering more elements than it says | Fails naming the row and both counts. This is what stops an existing selector exempting a newly added control for free | **Observed 2026-09-06.** The same case, plus the stale-row case, which plants a third `a.nav-link` on the homepage panel and asserts the row reports covering three. It planted a seventh chrome link and asserted seven until 2026-09-08, when that row was repaired away |
 | A row matching an element that is not under the floor | Fails on the arithmetic as well as on the element, which is what wires the per-row `under` tally to something | **Observed 2026-09-06.** Same case |

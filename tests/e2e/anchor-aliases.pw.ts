@@ -408,34 +408,17 @@ const CALL_SITES: readonly CallSite[] = [
   // take the same rule.
   { at: 'error-page.scss:59', route: NOT_FOUND, selector: '.error-page__back', property: 'border-left-color', verdict: 'boundary' },
 
-  // The link's hover repaints its `color`, never this rule. The three HomeLayout citations were
-  // re-read on 2026-09-12 by Story 2-20, which added a `font-stretch` line above each of the first
-  // two: they had read `:121`, `:154` and `:234`, three lines stale already, and nothing holds
-  // them but a reader editing the file.
-  { at: 'HomeLayout.scss:125', route: '/', selector: '.nav-link', property: 'border-left-color', verdict: 'ornament' },
-  {
-    at: 'HomeLayout.scss:154',
-    route: '/',
-    selector: '.home-panel--contact .contact-container a',
-    property: 'border-right-color',
-    verdict: 'ornament',
-    // Below 768 the same element takes `border-right: none` at `HomeLayout.scss:228`, which
-    // resets the colour to `currentcolor`. This row is the desktop rule and is read where it wins.
-    wide: true,
-  },
-  {
-    at: 'HomeLayout.scss:229',
-    route: '/',
-    selector: '.home-panel--contact .contact-container a',
-    property: 'border-left-color',
-    verdict: 'ornament',
-  },
+  // **The three HomeLayout rows left on 2026-09-21 with Story 2-29**, which rebuilt that
+  // stylesheet token-native: its two nav rules and its mobile contact rule name `--token-border`
+  // directly now, which is the leading-edge role `DESIGN.md:768` gives them, so the alias is not in
+  // their path at all. They were the only rows here read at the wide viewport, and the last three
+  // `--accent-dim` call sites on `/`.
 
   // A static section divider. The `ProjectsHero.scss:8` twin of this row left with Story 2-14.
   { at: 'WorkHero.scss:8', route: '/work', selector: '.work-hero', property: 'border-bottom-color', verdict: 'ornament' },
 ];
 
-const CALL_SITE_COUNT = 11;
+const CALL_SITE_COUNT = 8;
 const BOUNDARY_COUNT = 2;
 
 /**
@@ -561,9 +544,9 @@ test('parses a real alias layer, so every case below measures something', () => 
   // could be satisfied by one value and would prove nothing.
   expect(CONTRACT.get(ORNAMENT), `${ORNAMENT} and ${BOUNDARY} are declared the same`).not.toBe(CONTRACT.get(BOUNDARY));
 
-  // The call-site table, pinned on both counts. Nine ornament and two boundary is what makes a
+  // The call-site table, pinned on both counts. Six ornament and two boundary is what makes a
   // single global alias unable to pass, and a table that lost a row would simply loop less.
-  expect(CALL_SITES.length, 'the --accent-dim table no longer carries eleven call sites').toBe(CALL_SITE_COUNT);
+  expect(CALL_SITES.length, 'the --accent-dim table no longer carries eight call sites').toBe(CALL_SITE_COUNT);
   expect(CALL_SITES.filter((site) => site.verdict === 'boundary').length, 'the two boundary sites moved').toBe(
     BOUNDARY_COUNT
   );
@@ -622,17 +605,18 @@ test('parses a real alias layer, so every case below measures something', () => 
     'the --monument-regular call sites on disk are not the two whose clamp this file checks'
   ).toEqual(sortedEntries(tabled(DISPLAY_REGULAR_SITES)));
 
-  // The same trap on the width axis, since Story 2-20 retargeted `--confillia-normal` onto the
-  // display family: the alias carries the family and not the narrow width the old face had, so
-  // each call site sets `font-stretch: 75%` by hand on the line after `font-family`. A third site
-  // without that line renders at 100% width and nothing else says so.
-  expect(sortedEntries(callSitesOf('--confillia-normal')), 'a --confillia-normal call site is outside HomeLayout.scss').toEqual([
-    ['HomeLayout.scss', 2],
-  ]);
+  // **Zero call sites since 2026-09-21**, the shape `--hero-height` has had since Story 1-18: a
+  // property the alias layer still declares with nothing left reading it. Story 2-20 retargeted
+  // `--confillia-normal` onto the display family and each of its two call sites set
+  // `font-stretch: 75%` by hand on the line after `font-family`, because a family alias cannot
+  // carry width any more than it can carry weight; Story 2-29 rebuilt `HomeLayout.scss` against the
+  // contract, so the two hero link groups name the display family directly and take the published
+  // face at its default width. Pinned at zero rather than deleted, because a new call site would
+  // arrive without that hand-set width and nothing else would say so.
   expect(
-    (COMPONENT_STYLESHEETS.get('HomeLayout.scss') ?? '').match(/font-family:\s*var\(--confillia-normal\);\r?\n\s*font-stretch:\s*75%;/g)?.length ?? 0,
-    'a --confillia-normal call site does not set font-stretch: 75% on the line after font-family, so it renders at full width'
-  ).toBe(2);
+    sortedEntries(callSitesOf('--confillia-normal')),
+    'a --confillia-normal call site is back, and a family alias carries no width'
+  ).toEqual([]);
 
   // The parsers, on planted controls, before any empty or agreeing result is read as good news.
   expect(aliasRole('--white-color'), '--white-color is no longer aliased onto a role').toBe('--token-text');
@@ -786,8 +770,8 @@ test('--accent-dim resolves to the role its call site earns, at all twelve', asy
   }
 
   // A selector that matched nothing throws out of `computedStyleValue` rather than being skipped,
-  // so this count can only reach twelve by reading twelve real elements.
-  expect(read, 'fewer than twelve call sites were read').toBe(CALL_SITE_COUNT);
+  // so this count can only reach the tabled one by reading that many real elements.
+  expect(read, 'fewer call sites were read than this file tables').toBe(CALL_SITE_COUNT);
   expect(
     wrong,
     `a --accent-dim call site resolves to the wrong role. Ornament and boundary are two different ` +

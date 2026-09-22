@@ -1,15 +1,13 @@
 'use client';
 
-import { gsap } from 'gsap';
 import Link from 'next/link';
 import GemComponent from '@/components/molecules/GemComponent/GemComponent';
 import ContactContainer from '@/components/molecules/ContactContainer/ContactContainer';
 import GlitchText from '@/components/molecules/GlitchText/GlitchText';
 import HudLabel from '@/components/atoms/HudLabel/HudLabel';
+import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import { SkipControl } from '@/components/atoms/SkipControl/SkipControl';
-import { useGsapContext } from '@/hooks/useGsapContext';
 import { useNarrativePath, type ServedNarrativePath } from '@/hooks/useNarrativePath';
-import { useReduceMotion } from '@/hooks/useReduceMotion';
 import './HomeLayout.scss';
 
 interface HomeLayoutProps {
@@ -24,8 +22,6 @@ interface HomeLayoutProps {
 }
 
 const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
-  const reduceMotion = useReduceMotion();
-
   /**
    * The one decision, read rather than re-derived (Story 2-13).
    *
@@ -44,53 +40,23 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
    *
    * **This is the page's only call to the hook.** `GemComponent` reads `path` as a prop rather than
    * calling it again: a second call is a second state machine, a second WebGL probe and a third
-   * `useReduceMotion` subscription, all answering a question that has already been answered.
+   * `useReduceMotion` subscription, all answering a question that has already been answered. This
+   * component reads `useReduceMotion` nowhere else since Story 2-29 moved the entrance into CSS:
+   * the preference reaches the hero through this hook and through the contract's own duration
+   * collapse, and nothing here branches on it in render output.
    */
   const path = useNarrativePath(servedPath);
   const flat = path === 'flat';
 
-  const containerRef = useGsapContext<HTMLDivElement>(() => {
-    const finalState = ['.home-panel--sys', '.home-role', '.nav-link', '.contact-container a'];
-
-    if (reduceMotion) {
-      gsap.set(finalState, { opacity: 1, y: 0 });
-      gsap.set('.home-gem', { opacity: 1 });
-      return;
-    }
-
-    const tl = gsap.timeline();
-
-    // The gem's reveal. It was two `filter: brightness()` tweens until Story 2-12, against
-    // `HomeLayout.scss`'s `filter: brightness(0)`; `EXPERIENCE.md:685-699` allows `transform` and
-    // `opacity` only. The stylesheet's initial state moved with it, so this is still the reveal
-    // rather than a flourish on top of one. It is also the only shape that survives the narrative
-    // being deferred: a brightness pulse scheduled here fires against a container that may still
-    // be empty, while opacity on a transparent container is a no-op the visitor never sees.
-    tl.to('.home-gem', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.5);
-
-    // One tween, no `repeat` and no `yoyo`: `EXPERIENCE.md:693-694` allows one orchestrated
-    // entrance per page load and no loop inside it.
-    tl.to('.home-role', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 1.3);
-
-    tl.to('.home-panel--sys', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 1.6);
-
-    tl.to('.nav-link', { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: 'power2.out' }, 2.0);
-
-    tl.to(
-      '.contact-container a',
-      { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: 'power2.out' },
-      2.2
-    );
-  }, [reduceMotion]);
-
   return (
-    <div className={flat ? 'home-container home-container--flat' : 'home-container'} ref={containerRef}>
+    <div className={flat ? 'home-container home-container--flat' : 'home-container'}>
       {/* FR-2's one interaction, and only on the path that costs one. The flat path reaches the
           Directory by scrolling and no control at all, which is the diagram's zero interactions
           (`EXPERIENCE.md:154-169`). First inside the container, so a keyboard reader meets it
           immediately after the A-6 link rather than after the whole hero, and outside every
-          `.home-panel`, so the hover dimming at `HomeLayout.scss:80-82` and the two-second entrance
-          both leave it alone.
+          `.home-panel`, so the two-and-a-bit-second entrance leaves it alone: the panels carry
+          their own `home-enter` keyframe and this control carries none, which is the whole of why
+          it sits outside them now that the dim-siblings rule it also dodged has been retired.
 
           Rendered while the decision is still undecided, exactly as `.home-gem` is, because below
           768 it is a static item in the hero's column and one that appeared a frame after paint
@@ -124,17 +90,24 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
           `90vw` tall in flow, and an empty one is a hole in the middle of a hero whose whole point
           is that no 3D asset was requested.
 
-          **It cannot arrive after the entrance has run, which is why the timeline above needs no
-          dependency on the path.** `useGsapContext`'s effect fires on mount, when this box is in
-          the DOM: the undecided state renders it, and every trigger that removes it is a resolution
-          away from undecided. The hook's decision is terminal, so `flat` is a one-way door and this
-          element only ever goes away. Were it able to mount later, it would mount at the
-          stylesheet's `opacity: 0` with nothing left to reveal it, and the canvas would draw
-          perfectly and invisibly. Verified rather than assumed, and recorded here rather than
-          guarded against with a dependency that would restart the entrance mid-load. */}
+          **Its arrival cannot be mistimed, because nothing schedules anything against it.** Since
+          Story 2-29 the reveal is a `home-enter` keyframe on this element's own rule rather than a
+          tween positioned on a timeline that ran once at mount, so the box is revealed whenever it
+          is styled, not only if it was in the DOM at hydration. The hook's decision is terminal in
+          any case, so `flat` is a one-way door and this element only ever goes away.
+
+          `aria-hidden` here is A-14's first clause at the wrapper: the canvas is decorative, and
+          `GemComponent` already sets `aria-hidden` and `tabIndex = -1` on the WebGL element itself
+          (Story 2-13), so the subtree is out of the accessibility tree and out of the tab order
+          from two directions. `ScanlineOverlay` is the last child and inside this box on purpose:
+          the box is positioned at the base level and is therefore a stacking context, so the
+          scrim's own raised level is confined to it and the panels above clear the whole subtree.
+          The scrim is `aria-hidden` itself and carries no content, so putting it inside a hidden
+          subtree takes nothing away. */}
       {!flat && (
-        <div className='home-gem'>
+        <div className='home-gem' aria-hidden='true'>
           <GemComponent path={path} />
+          <ScanlineOverlay />
         </div>
       )}
 

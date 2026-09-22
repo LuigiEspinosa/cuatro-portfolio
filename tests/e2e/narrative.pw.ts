@@ -1066,28 +1066,109 @@ test.describe('the entrance touches only opacity and transform, and does not loo
       { probe: selector }
     );
 
+  /**
+   * What the stylesheets declare and what the running hero asks of them.
+   *
+   * **The entrance stopped writing inline styles on 2026-09-21.** Story 2-29 replaced
+   * `HomeLayout.tsx`'s GSAP timeline with one `home-enter` keyframe and five `animation-delay`
+   * declarations, so the inline sweep above now legitimately observes nothing and can no longer be
+   * the thing that proves the entrance ran. It is kept, because a tween returning to this component
+   * is exactly what it catches. What the entrance animates is read here instead: every property any
+   * `@keyframes` block on this route declares, and the iteration count and direction every animated
+   * element in the hero computes, which is where a loop or a yoyo would show up in a CSS entrance.
+   *
+   * The `#gem-canvas` subtree is skipped for the reason the sweep above gives.
+   */
+  const declaredEntrance = (page: Page) =>
+    page.evaluate(() => {
+      const properties = new Set<string>();
+      const walk = (rules: readonly CSSRule[]): void => {
+        for (const rule of rules) {
+          const keyframes = rule as CSSKeyframesRule;
+          if (typeof keyframes.name === 'string' && keyframes.cssRules) {
+            for (const frame of [...keyframes.cssRules] as CSSKeyframeRule[]) {
+              for (let index = 0; index < frame.style.length; index += 1) properties.add(frame.style[index]);
+            }
+            continue;
+          }
+          const group = rule as CSSGroupingRule;
+          if (group.cssRules) walk([...group.cssRules]);
+        }
+      };
+      for (const sheet of [...document.styleSheets]) {
+        // A stylesheet this document cannot read is not one this repository wrote.
+        try {
+          walk([...sheet.cssRules]);
+        } catch {
+          continue;
+        }
+      }
+
+      const animated: string[] = [];
+      const iterations = new Set<string>();
+      const directions = new Set<string>();
+      for (const node of document.querySelectorAll<HTMLElement>('.home-container, .home-container *')) {
+        if (node.closest('#gem-canvas')) continue;
+        const style = getComputedStyle(node);
+        if (style.animationName === 'none' || style.animationName === '') continue;
+        animated.push(style.animationName);
+        iterations.add(style.animationIterationCount);
+        directions.add(style.animationDirection);
+      }
+
+      return {
+        properties: [...properties].sort(),
+        animated: [...new Set(animated)].sort(),
+        iterations: [...iterations].sort(),
+        directions: [...directions].sort(),
+      };
+    });
+
   /** `transform` plus `opacity`, and the spellings a browser may echo back for either. */
   const ALLOWED = new Set(['opacity', 'transform', '-webkit-transform', 'translate', 'rotate', 'scale']);
 
   test('writes no property outside opacity and transform, and no opacity ever goes back down', async ({
     browser,
   }) => {
-    const observed = await withMotion(browser, async (page) => {
+    const { declared, ...observed } = await withMotion(browser, async (page) => {
       await goTo(page, ROUTE);
-      return sweep(page, '.home-role');
+      const fromCss = await declaredEntrance(page);
+      const fromInline = await sweep(page, '.home-role');
+      return { ...fromInline, declared: fromCss };
     });
 
     expect(
-      observed.properties.length,
-      'the entrance wrote no inline property at all over four seconds, so either it did not run ' +
-        'or this sweep is reading the wrong subtree'
+      declared.animated.length,
+      'no element in the hero declares an animation at all, so either the entrance did not run or ' +
+        'this sweep is reading the wrong subtree'
     ).toBeGreaterThan(0);
+    expect(declared.animated, `the hero entrance is not the home-enter keyframe: ${declared.animated.join(', ')}`).toContain(
+      'home-enter'
+    );
+
+    const declaredOffending = declared.properties.filter((property) => !ALLOWED.has(property));
+    expect(
+      declaredOffending,
+      `a @keyframes block on ${ROUTE} animates a property EXPERIENCE.md:685-699 does not allow: ` +
+        `${declaredOffending.join(', ')}. The whole set declared was ${declared.properties.join(', ')}`
+    ).toEqual([]);
+
+    // A loop and a yoyo, read where a CSS entrance would carry them. `EXPERIENCE.md:693-694` allows
+    // one orchestrated entrance per page load and nothing inside it that repeats.
+    expect(
+      declared.iterations,
+      `an animation in the hero repeats: iteration counts ${declared.iterations.join(', ')}`
+    ).toEqual(['1']);
+    expect(
+      declared.directions,
+      `an animation in the hero alternates, which is a yoyo by another name: ${declared.directions.join(', ')}`
+    ).toEqual(['normal']);
 
     const offending = observed.properties.filter((property) => !ALLOWED.has(property));
     expect(
       offending,
-      `the entrance animates a property EXPERIENCE.md:685-699 does not allow: ${offending.join(', ')}. ` +
-        `The whole set observed was ${observed.properties.join(', ')}`
+      `something in the hero writes an inline property EXPERIENCE.md:685-699 does not allow: ` +
+        `${offending.join(', ')}. The whole set observed was ${observed.properties.join(', ')}`
     ).toEqual([]);
 
     // A `yoyo` shows up here and nowhere else: the value walks back down between samples. The role

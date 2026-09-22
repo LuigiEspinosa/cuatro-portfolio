@@ -42,6 +42,9 @@ const ROUTE = '/';
 /** The fragment `/#suite` resolves to, which the directory heading carries. */
 const HEADING_ID = 'suite';
 
+/** Sub-pixel slack on the fragment landing's top edge alone. See `landsOnHeading` below. */
+const LANDING_SLACK = 1;
+
 /**
  * The tightest width at which the three-column layout applies.
  *
@@ -314,8 +317,15 @@ const landsOnHeading = async (page: Page, { lenis }: { lenis: boolean }): Promis
     `navigating to #${HEADING_ID} left the page at the top. The heading exists, so ` +
       (lenis ? `Lenis in app/providers.tsx took the position back after the jump` : `the fragment did not resolve`)
   ).toBe(true);
+  // **Sub-pixel slack on the top edge alone, added 2026-09-21.** A fragment jump lands on the
+  // element's offset position and layout produces fractional ones: after Story 2-29 gave the hero
+  // fractional heights (a display link that wraps measures 68.75) the landing reads **-0.31**, a
+  // third of a pixel above the fold on an 800px viewport. That is a rounding artifact, not a
+  // heading out of view, and it is the same slack `hit-target-floor.pw.ts` takes on an edge
+  // comparison and never on a floor. The lower bound is the only side it applies to; being past
+  // the bottom is still a failure with no slack at all.
   expect(
-    landed && landed.top >= 0 && landed.top < landed.innerHeight,
+    landed && landed.top >= -LANDING_SLACK && landed.top < landed.innerHeight,
     `the heading is not in view after navigating to #${HEADING_ID}: its top is at ` +
       `${landed?.top.toFixed(2)} in a ${landed?.innerHeight}px viewport`
   ).toBe(true);

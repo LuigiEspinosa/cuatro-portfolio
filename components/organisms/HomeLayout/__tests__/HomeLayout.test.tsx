@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { compile } from 'sass';
 import { render, screen } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { NarrativePath, ServedNarrativePath } from '@/hooks/useNarrativePath';
@@ -35,30 +38,16 @@ beforeEach(() => {
   decided.handedToGem = [];
 });
 
-vi.mock('gsap', () => {
-  const gsapMock = {
-    context: vi.fn((_fn: (ctx: unknown) => void) => {
-      _fn({});
-      return { revert: vi.fn() };
-    }),
-    to: vi.fn(),
-    set: vi.fn(),
-    timeline: vi.fn(() => ({
-      to: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-    })),
-    registerPlugin: vi.fn(),
-  };
-  return { gsap: gsapMock, default: gsapMock };
-});
-
-vi.mock('@/hooks/useReduceMotion', () => ({ useReduceMotion: () => false }));
-
-vi.mock('@/hooks/useGsapContext', () => ({
-  useGsapContext: (_fn: () => void) => ({
-    current: document.createElement('div'),
-  }),
-}));
+/**
+ * **The `gsap` and `useGsapContext` mocks left with the timeline (Story 2-29).**
+ *
+ * DW-41 recorded that the `useGsapContext` mock received the callback holding the whole entrance
+ * and dropped it, so no case here could observe the homepage entrance at all and the mock read as
+ * coverage while covering nothing. The entry dissolves rather than being fixed: the entrance is
+ * five `animation-delay` declarations on one `home-enter` keyframe in `HomeLayout.scss`, this
+ * component imports neither `gsap` nor the hook, and what there is to assert about the entrance is
+ * a stylesheet read (below) and a browser read (`tests/e2e/narrative.pw.ts`), not a mock.
+ */
 
 vi.mock('@/components/molecules/GemComponent/GemComponent', () => ({
   default: ({ path }: { path?: NarrativePath }) => {
@@ -119,9 +108,10 @@ describe('HomeLayout', () => {
 
 describe('HomeLayout on the two front doors', () => {
   it('renders the skip control on the default path, outside every panel', () => {
-    // FR-2's one interaction. Outside `.home-panel` deliberately: `HomeLayout.scss:80-82` dims
-    // every panel that is not hovered whenever a sibling is, and the entrance fades the panels in
-    // over two seconds, neither of which may happen to a control that answers a cold arrival.
+    // FR-2's one interaction. Outside `.home-panel` deliberately: the entrance fades the panels
+    // in over two and a bit seconds and a control that answers a cold arrival may not wait for it.
+    // The dim-siblings rule this comment also cited was retired by Story 2-29, so opacity no
+    // longer expresses state on this surface at all and the entrance is the whole of the reason.
     const { container } = render(<HomeLayout />);
     const control = container.querySelector('.skip-control');
     expect(control, 'the default path renders no skip control').not.toBeNull();
@@ -198,5 +188,185 @@ describe('HomeLayout on the two front doors', () => {
     expect(container.querySelector('.home-gem'), 'the undecided state drops the gem box').not.toBeNull();
     expect(container.querySelector('.skip-control'), 'the undecided state drops the skip control').not.toBeNull();
     expect(container.querySelector('.home-container')?.className).not.toContain('home-container--flat');
+  });
+});
+
+describe('the scrim layer, placed inside the canvas box (Story 2-29)', () => {
+  it('renders the scrim as the last child of .home-gem, after the canvas', () => {
+    // The placement **is** the guarantee. `ScanlineOverlay` covers the positioned box it is placed
+    // in, so the parent has to be the imagery's box and not the container: beside the gem it would
+    // cover the panels too, outside it would cover nothing the panels are above. Last child, so it
+    // paints over the canvas inside that box.
+    const { container } = render(<HomeLayout />);
+    const gem = container.querySelector('.home-gem');
+    expect(gem, 'the default path renders no gem box').not.toBeNull();
+
+    const scrim = container.querySelector('.scanline-overlay');
+    expect(scrim, 'no scrim is rendered on the default path').not.toBeNull();
+    expect(scrim?.parentElement, 'the scrim is not inside the gem box, so the panels do not clear it').toBe(gem);
+    expect(gem?.lastElementChild, 'the scrim is not the last child, so the canvas paints over it').toBe(scrim);
+    expect(scrim, 'the scrim is not hidden from the accessibility tree').toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('renders no scrim on the flat front door, because no imagery moves under the text there', () => {
+    // The flat path renders no `.home-gem`, and the layer is its child, so the scrim goes with its
+    // parent and the modifier needs no rule of its own. A scrim with nothing moving beneath it is
+    // the surface treatment `DESIGN.md:414-416` bars.
+    decided.path = 'flat';
+    const { container } = render(<HomeLayout />);
+    expect(container.querySelector('.scanline-overlay'), 'the flat front door paints a scrim').toBeNull();
+  });
+
+  it('serves no scrim in the flat markup either', () => {
+    decided.path = 'flat';
+    expect(renderToStaticMarkup(<HomeLayout servedPath='flat' />)).not.toContain('scanline-overlay');
+  });
+});
+
+describe('the canvas box is out of the accessibility tree (A-14)', () => {
+  it('marks .home-gem aria-hidden and leaves nothing focusable inside it', () => {
+    // A-14's two live clauses, at the wrapper. The element-level half is `GemComponent`'s, which
+    // sets `aria-hidden` and `tabIndex = -1` on `gl.domElement` (Story 2-13, DW-46) and is asserted
+    // in `tests/e2e/front-door.pw.ts`; this is the wrapper half, and neither may be dropped. The
+    // withdrawn third clause ("its content is stated in prose") is deliberately not implemented:
+    // the Operator withdrew it on 2026-09-13 and DW-97 records the planning lines that still carry
+    // it.
+    const { container } = render(<HomeLayout />);
+    const gem = container.querySelector('.home-gem');
+    expect(gem, 'the default path renders no gem box').not.toBeNull();
+    expect(gem, 'the gem box is in the accessibility tree').toHaveAttribute('aria-hidden', 'true');
+    expect(
+      gem?.querySelectorAll('a, button, input, select, textarea, [tabindex], [contenteditable]').length,
+      'a focusable element sits inside an aria-hidden subtree'
+    ).toBe(0);
+  });
+});
+
+describe('HomeLayout.scss is token-native (Story 2-29)', () => {
+  const HERE = resolve(__dirname, '..');
+  const REPO_ROOT = resolve(HERE, '..', '..', '..');
+
+  /**
+   * Every contract role the stylesheet consumes.
+   *
+   * Pinned rather than derived, and read in both directions below: a role dropped from the
+   * stylesheet fails, and a name the stylesheet reaches for that is not listed here fails too, so
+   * an alias (`--accent`, `--light-gray-color`, `--confillia-normal`, `--page-padding`) or a name
+   * the contract does not declare cannot arrive unnoticed.
+   */
+  const ROLES = [
+    '--token-bg',
+    '--token-text',
+    '--token-text-secondary',
+    '--token-border',
+    '--token-accent-hover',
+    '--token-accent-muted',
+    '--f-display',
+    '--f-body',
+    '--t-sm',
+    '--t-md',
+    '--t-xl',
+    '--w-bold',
+    '--lh-heading',
+    '--lh-body',
+    '--lh-label',
+    '--tr-heading',
+    '--tr-body',
+    '--tr-meta',
+    '--s-2xs',
+    '--s-xs',
+    '--s-sm',
+    '--s-lg',
+    '--s-xl',
+    '--s-2xl',
+    '--page-pad',
+    '--tap',
+    '--stroke-hair',
+    '--dur-micro',
+    '--dur-major',
+    '--ease-entrance',
+    '--ease-toggle',
+    '--z-base',
+    '--z-raised',
+  ] as const;
+
+  /** The four notch polygons, as `epics.md:3304-3305` requires them kept. */
+  const POLYGONS = [
+    'polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%)',
+    'polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
+    'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%)',
+    'polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px)',
+  ] as const;
+
+  /**
+   * The compiled stylesheet, which is what ships and carries no comments, so a role or a literal
+   * named in prose is neither counted as a consumer nor missed as one.
+   */
+  const css = compile(resolve(HERE, 'HomeLayout.scss'), { style: 'compressed' }).css;
+
+  it('names only roles the contract declares, and every one it pins', () => {
+    // The contract first, then the source (`ScanlineOverlay.test.tsx:34-41`): a role renamed in the
+    // published contract has to fail here naming the stale pin, rather than the pin and the source
+    // agreeing on a name the contract no longer declares.
+    const tokens = readFileSync(resolve(REPO_ROOT, 'contracts', 'tokens.css'), 'utf8');
+    for (const role of ROLES) {
+      expect(tokens, `${role} is pinned here but the published contract no longer declares it`).toMatch(
+        new RegExp(`^\\s*${role}\\s*:`, 'm')
+      );
+      expect(css, `${role} is pinned here and the compiled stylesheet no longer reads it`).toContain(`var(${role})`);
+    }
+
+    const read = [...new Set([...css.matchAll(/var\((--[\w-]+)\)/g)].map((match) => match[1]))].sort();
+    expect(
+      read.filter((name) => !(ROLES as readonly string[]).includes(name)),
+      'the stylesheet reaches for a name this file does not pin. An alias, or a name the contract does not declare, then ' +
+        'reaches the browser through a value that resolves by accident'
+    ).toEqual([]);
+  });
+
+  it('declares no custom property of its own', () => {
+    // `app/__tests__/anchor-contract.test.ts` holds every declared `--name` in the Hub to
+    // `app/app.scss`, so a `--home-enter-delay` here would fail there. Read here as well, because
+    // that suite names the alias layer and this one names the file.
+    expect([...css.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]), 'the stylesheet declares a custom property').toEqual([]);
+  });
+
+  it('carries no colour literal, no gradient, no transition: all and no bare z-index integer', () => {
+    expect(css, 'a hex colour literal survived the rebuild').not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(css, 'an rgba() literal survived the rebuild').not.toContain('rgba(');
+    expect(css, 'an rgb() literal survived the rebuild').not.toContain('rgb(');
+    expect(css, 'a gradient survived the rebuild').not.toContain('gradient(');
+    expect(css, 'transition: all is barred (EXPERIENCE.md:689-691)').not.toMatch(/transition:\s*all\b/);
+    expect(
+      [...css.matchAll(/z-index:([^;}]+)/g)].map((match) => match[1].trim()),
+      'a bare z-index integer survived the rebuild, so a level resolves to nothing named (UX-DR44)'
+    ).toEqual(['var(--z-raised)', 'var(--z-base)']);
+  });
+
+  it('keeps the four notch polygons', () => {
+    for (const polygon of POLYGONS) {
+      // Verbatim: the compiler preserves the spacing inside the function, so this is the authored
+      // spelling compared against what ships.
+      expect(css, `a notch polygon moved: ${polygon}`).toContain(polygon);
+    }
+    expect([...css.matchAll(/clip-path:/g)], 'the silhouette gained or lost a panel').toHaveLength(4);
+  });
+
+  it('gates every hover rule on @media (hover: hover)', () => {
+    // A tap paints `:hover` on a coarse pointer and leaves it painted until the next tap lands
+    // elsewhere (review A-5), so an ungated rule is a colour that sticks on the primary device.
+    const outside = css.replace(/@media\(hover: hover\)\{(?:[^{}]*\{[^{}]*\})*\}/g, '');
+    expect(outside, 'a :hover rule sits outside @media (hover: hover)').not.toContain(':hover');
+    expect(css, 'no hover rule is gated at all, so the read above passed vacuously').toContain('@media(hover: hover)');
+  });
+
+  it('animates opacity and nothing else, once, with no loop and no state in it', () => {
+    // `EXPERIENCE.md:685-699`: one orchestrated entrance per page load, no loop inside it, and
+    // opacity never expressing state. One keyframe, whose only declaration is the `from`, so the
+    // base state is the final state and a document with no script is already at it (DW-42).
+    expect([...css.matchAll(/@keyframes/g)], 'the stylesheet declares more than one keyframe').toHaveLength(1);
+    expect(css, 'the entrance keyframe was renamed or lost').toContain('@keyframes home-enter{from{opacity:0}}');
+    expect(css, 'an animation repeats').not.toMatch(/animation[^;}]*infinite/);
+    expect(css, 'the dim-siblings rule is back, so opacity expresses state again').not.toMatch(/opacity:0\.\d/);
   });
 });

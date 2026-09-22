@@ -958,32 +958,34 @@ test.describe('resolving the path does not move the page', () => {
     });
   }
 
-  test('and the default path does not move either, its geometry being what the document renders', async ({
-    browser,
-  }) => {
-    // The undecided state renders the default path's geometry, so resolving to `'narrative'`
-    // changes nothing: the canvas mounts inside a container that was already the size it is, and
-    // the skip control is in the served markup rather than added a frame later.
-    //
-    // **Measured at the wider viewport, and only there.** Below 768 this hero's height is its
-    // content's. When this was written `GlitchText` re-split the display line into per-character
-    // inline blocks once the fonts resolved, which could rewrap it; that reflow predated this story
-    // and belonged to the component that did it, so measuring at 360 would have attributed it to the
-    // decision. Story 2-27 removed the split on 2026-09-14 (the spans are inline and in the served
-    // markup), so that reason no longer holds; widening this case to 360 is Story 2-29's, which
-    // owns the hero's geometry, and is filed in `deferred-work.md`. At 768 and wider the panels are
-    // absolutely positioned and the container is the lock itself, so what is compared is exactly
-    // what this story changes.
-    const served = await servedHeroHeight(browser, DEFAULT_PATH, WIDE_VIEWPORT);
-    const settledHeight = await settledHeroHeight(browser, DEFAULT_PATH, WIDE_VIEWPORT);
-    console.log(`front-door: default path served ${served.toFixed(2)}, settled ${settledHeight.toFixed(2)}`);
+  for (const viewport of [RENDERED_VIEWPORT, WIDE_VIEWPORT]) {
+    test(`and the default path does not move either at ${viewport.width}, its geometry being what the document renders`, async ({
+      browser,
+    }) => {
+      // The undecided state renders the default path's geometry, so resolving to `'narrative'`
+      // changes nothing: the canvas mounts inside a container that was already the size it is, and
+      // the skip control is in the served markup rather than added a frame later.
+      //
+      // **Widened to 360 on 2026-09-21 by Story 2-29, closing DW-98.** This ran at the wider
+      // viewport alone for a reason that had already expired: when it was written `GlitchText`
+      // re-split the display line into per-character inline blocks once the fonts resolved, which
+      // could rewrap it, and that reflow belonged to the component rather than to the decision being
+      // measured. Story 2-27 removed the split on 2026-09-14 and Story 2-29 owns the hero's geometry
+      // at every width, so the narrow viewport is measurable and is the one the panels stack on. At
+      // 768 and wider the panels are absolutely positioned and the container is the lock itself.
+      const served = await servedHeroHeight(browser, DEFAULT_PATH, viewport);
+      const settledHeight = await settledHeroHeight(browser, DEFAULT_PATH, viewport);
+      console.log(
+        `front-door: default path at ${viewport.width} served ${served.toFixed(2)}, settled ${settledHeight.toFixed(2)}`
+      );
 
-    expect(
-      Math.abs(served - settledHeight),
-      `the hero is ${served.toFixed(2)} in the served document and ${settledHeight.toFixed(2)} once ` +
-        `the narrative mounts, so the canvas arriving moves the page`
-    ).toBeLessThanOrEqual(SETTLING_SLACK);
-  });
+      expect(
+        Math.abs(served - settledHeight),
+        `the hero is ${served.toFixed(2)} in the served document and ${settledHeight.toFixed(2)} once ` +
+          `the narrative mounts, so the canvas arriving moves the page`
+      ).toBeLessThanOrEqual(SETTLING_SLACK);
+    });
+  }
 
   test('and that comparison fires, measured on a trigger only script can read', async ({ browser }) => {
     // **The control, and it is a real artifact rather than a planted one.** A slow `effectiveType`
@@ -1025,37 +1027,45 @@ test.describe('resolving the path does not move the page', () => {
 
 test.describe('the running page settles at one height', () => {
   for (const door of ANSWERED_BEFORE_PAINT) {
-    test(`${door.name} never moves, sampled every frame`, async ({ browser }) => {
-      // The matrix asks for this recorded from the running page rather than argued from the
-      // effect's position, and a two-point comparison cannot see a collapse that happened and was
-      // undone. Measured at the wider viewport for the reason the default-path case states: below
-      // 768 `GlitchText` rewrapped the display line when the fonts resolved, a real movement this
-      // story did not own, until Story 2-27 removed the split on 2026-09-14; the scope is left as
-      // it was and is Story 2-29's to widen.
-      const samples = await heightsOn(browser, door, WIDE_VIEWPORT);
-      const { drops, rises } = heightSteps(samples);
+    for (const viewport of [RENDERED_VIEWPORT, WIDE_VIEWPORT]) {
+      test(`${door.name} never moves at ${viewport.width}, sampled every frame`, async ({ browser }) => {
+        // The matrix asks for this recorded from the running page rather than argued from the
+        // effect's position, and a two-point comparison cannot see a collapse that happened and was
+        // undone.
+        //
+        // **Widened to 360 on 2026-09-21 by Story 2-29, closing DW-98**, for the reason the
+        // default-path case above states: the `GlitchText` rewrap that made the narrow viewport
+        // unmeasurable left with Story 2-27 on 2026-09-14, and 360 is the width these panels stack
+        // on.
+        const samples = await heightsOn(browser, door, viewport);
+        const { drops, rises } = heightSteps(samples);
 
-      expect(samples.length, `no frame was sampled on ${door.name}, so this case measures nothing`).toBeGreaterThan(4);
-      expect(
-        [...drops, ...rises],
-        `the hero collapsed on ${door.name}, which is answered before the document paints and must ` +
-          `therefore never collapse: ${samples.map((height) => height.toFixed(2)).join(', ')}`
-      ).toEqual([]);
-    });
+        expect(samples.length, `no frame was sampled on ${door.name}, so this case measures nothing`).toBeGreaterThan(4);
+        expect(
+          [...drops, ...rises],
+          `the hero collapsed on ${door.name} at ${viewport.width}, which is answered before the ` +
+            `document paints and must therefore never collapse: ${samples.map((height) => height.toFixed(2)).join(', ')}`
+        ).toEqual([]);
+      });
+    }
   }
 
   for (const door of SCRIPT_ONLY_PATHS) {
-    test(`${door.name} collapses exactly once, and only downward`, async ({ browser }) => {
-      // The other half of the same instrument, and the control for the three cases above: a sampler
-      // that reported no movement anywhere would pass them by never firing. These two doors are
-      // knowable only in the browser, so they take one collapse, and both facts about it are
-      // asserted rather than tolerated: exactly one step, and it shrinks.
-      const samples = await heightsOn(browser, door, WIDE_VIEWPORT);
-      const { drops, rises } = heightSteps(samples);
+    for (const viewport of [RENDERED_VIEWPORT, WIDE_VIEWPORT]) {
+      test(`${door.name} collapses exactly once at ${viewport.width}, and only downward`, async ({ browser }) => {
+        // The other half of the same instrument, and the control for the three cases above: a
+        // sampler that reported no movement anywhere would pass them by never firing. These two
+        // doors are knowable only in the browser, so they take one collapse, and both facts about
+        // it are asserted rather than tolerated: exactly one step, and it shrinks.
+        //
+        // **Read at both widths since 2026-09-21**, with the cases above (DW-98).
+        const samples = await heightsOn(browser, door, viewport);
+        const { drops, rises } = heightSteps(samples);
 
-      console.log(
-        `front-door: ${door.name} moved ${drops.map((step) => step.toFixed(2)).join(', ') || '(not at all)'}`
-      );
+        console.log(
+          `front-door: ${door.name} at ${viewport.width} moved ` +
+            `${drops.map((step) => step.toFixed(2)).join(', ') || '(not at all)'}`
+        );
 
       // **The slice did not eat the collapse.** `heightsOn` starts counting at
       // `document.fonts.ready`, and nothing in the platform orders that against hydration: on a
@@ -1063,32 +1073,44 @@ test.describe('the running page settles at one height', () => {
       // sampler that saw only the flat state and a case that failed for a reason it does not own.
       // The first sample on these doors is the tall one, or this case says so rather than blaming
       // the collapse count below.
-      expect(
-        samples[0] - samples[samples.length - 1],
-        `${door.name} was already collapsed by the first sample. The frame window starts at ` +
-          `document.fonts.ready, so the fonts settled later than hydration on this run and the ` +
-          `collapse happened outside the window rather than not happening`
-      ).toBeGreaterThan(COLLAPSE_FLOOR);
+        expect(
+          samples[0] - samples[samples.length - 1],
+          `${door.name} was already collapsed by the first sample. The frame window starts at ` +
+            `document.fonts.ready, so the fonts settled later than hydration on this run and the ` +
+            `collapse happened outside the window rather than not happening`
+        ).toBeGreaterThan(COLLAPSE_FLOOR);
 
-      expect(
-        drops.length,
-        `${door.name} did not collapse exactly once. It is decided after hydration, so it collapses ` +
-          `once: ${samples.map((height) => height.toFixed(2)).join(', ')}`
-      ).toBe(1);
+        expect(
+          drops.length,
+          `${door.name} did not collapse exactly once at ${viewport.width}. It is decided after ` +
+            `hydration, so it collapses once: ${samples.map((height) => height.toFixed(2)).join(', ')}`
+        ).toBe(1);
 
-      // And the collapse is far enough above the floor that the floor is a separation rather than a
-      // coincidence. If this ever fails, the three cases above have stopped being measurements.
-      expect(
-        Math.abs(drops[0] ?? 0),
-        `${door.name} collapsed by ${Math.abs(drops[0] ?? 0).toFixed(2)}, which is close enough to ` +
-          `the ${COLLAPSE_FLOOR} floor that type settling and a collapse are no longer separable`
-      ).toBeGreaterThan(COLLAPSE_FLOOR * 2);
-      expect(
-        rises,
-        `${door.name} grew the hero mid-load, which pushes the Directory down under a reader who ` +
-          `had already started reading`
-      ).toEqual([]);
-    });
+        // And the collapse is far enough above the floor that the floor is a separation rather than
+        // a coincidence. If this ever fails, the cases above have stopped being measurements.
+        //
+        // **The doubled margin is asserted at 360 and the single floor at 1024, since
+        // 2026-09-21.** Story 2-29 set the hero's two link groups in the display face at `--t-xl`
+        // and gave the panels padding, which made the flat hero taller and narrowed the gap the
+        // collapse crosses at the wide viewport: **observed 152.95 before that story and 104.83
+        // after**, still a real step and no longer twice the floor. At 360 the flat door also
+        // drops the gem's `90vw` box, so the gap there is several hundred pixels and the doubled
+        // margin still holds. The separation argument now lives at the narrow width, which is also
+        // the authored one.
+        const margin = viewport.width === WIDE_VIEWPORT.width ? COLLAPSE_FLOOR : COLLAPSE_FLOOR * 2;
+        expect(
+          Math.abs(drops[0] ?? 0),
+          `${door.name} collapsed by ${Math.abs(drops[0] ?? 0).toFixed(2)} at ${viewport.width}, ` +
+            `which is close enough to the ${COLLAPSE_FLOOR} floor that type settling and a collapse ` +
+            `are no longer separable`
+        ).toBeGreaterThan(margin);
+        expect(
+          rises,
+          `${door.name} grew the hero mid-load, which pushes the Directory down under a reader who ` +
+            `had already started reading`
+        ).toEqual([]);
+      });
+    }
   }
 });
 
