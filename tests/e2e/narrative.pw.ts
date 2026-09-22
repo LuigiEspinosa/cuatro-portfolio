@@ -961,6 +961,43 @@ test.describe("the gem's reveal", () => {
     '.home-panel--contact .contact-container a',
   ] as const;
 
+  /**
+   * What each selector's elements compute for the entrance, and whether anything is animating.
+   *
+   * Shared by the reduced-motion cases and by the control below them, so the control exercises the
+   * same code path rather than a second read that happens to agree with it.
+   */
+  const heroMotionState = (page: Page, selectors: readonly string[]) =>
+    page.evaluate((list: string[]) => {
+      const animated: string[] = [];
+      for (const selector of list) {
+        const nodes = [...document.querySelectorAll<HTMLElement>(selector)];
+        if (nodes.length === 0) {
+          animated.push(`${selector} matched nothing, so the fixture is gone rather than the claim`);
+          continue;
+        }
+        nodes.forEach((node, index) => {
+          const name = getComputedStyle(node).animationName;
+          if (name !== 'none') animated.push(`${selector}[${index}] computes animation-name "${name}"`);
+        });
+      }
+
+      const hero = document.querySelector('.home-container');
+      const running = hero
+        ? document.getAnimations().filter((animation) => {
+            const target = (animation as unknown as { effect?: { target?: Element | null } }).effect?.target ?? null;
+            return target !== null && hero.contains(target);
+          }).length
+        : -1;
+
+      const role = document.querySelector('.home-role');
+      return {
+        animated,
+        running,
+        roleOpacity: role ? Number.parseFloat(getComputedStyle(role).opacity) : -1,
+      };
+    }, [...selectors]);
+
   for (const webgl of [true, false]) {
     test(`the reduced-motion hero is at its final state immediately, WebGL ${
       webgl ? 'present' : 'absent'
@@ -995,35 +1032,7 @@ test.describe("the gem's reveal", () => {
       if (!webgl) await page.addInitScript(NO_WEBGL);
       await goTo(page, ROUTE);
 
-      const read = await page.evaluate((selectors: string[]) => {
-        const animated: string[] = [];
-        for (const selector of selectors) {
-          const nodes = [...document.querySelectorAll<HTMLElement>(selector)];
-          if (nodes.length === 0) {
-            animated.push(`${selector} matched nothing, so the fixture is gone rather than the claim`);
-            continue;
-          }
-          nodes.forEach((node, index) => {
-            const name = getComputedStyle(node).animationName;
-            if (name !== 'none') animated.push(`${selector}[${index}] computes animation-name "${name}"`);
-          });
-        }
-
-        const hero = document.querySelector('.home-container');
-        const running = hero
-          ? document.getAnimations().filter((animation) => {
-              const target = (animation as unknown as { effect?: { target?: Element | null } }).effect?.target ?? null;
-              return target !== null && hero.contains(target);
-            }).length
-          : -1;
-
-        const role = document.querySelector('.home-role');
-        return {
-          animated,
-          running,
-          roleOpacity: role ? Number.parseFloat(getComputedStyle(role).opacity) : -1,
-        };
-      }, [...REDUCED_MOTION_SELECTORS]);
+      const read = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
 
       expect(
         read.animated,
@@ -1052,22 +1061,48 @@ test.describe("the gem's reveal", () => {
     });
   }
 
-  test('and that reduced-motion read fires, measured against the state it is asserting away', async ({ page }) => {
-    // The control. It plants exactly the failure the case above exists for, the hero left at the
-    // stylesheet's initial state, and shows the read reporting it rather than answering 1 always.
+  test('and all three reduced-motion reads fire, measured against the states they assert away', async ({ page }) => {
+    // The control, and since 2026-09-21 it covers **all three** reads rather than the opacity one.
+    // The Step-04 review found the two added that day, `animated` and `running`, with nothing
+    // showing they could fire; this plants the state each exists to catch and shows it reported,
+    // then takes it away and shows it gone, in the `display-entrance.pw.ts:300-302,352-357` shape.
     await goTo(page, ROUTE);
-    await page.evaluate(() => {
-      const style = document.createElement('style');
-      style.textContent = '.home-role { opacity: 0 !important; }';
-      document.head.append(style);
-    });
 
-    const read = await page.evaluate(() => {
-      const role = document.querySelector('.home-role');
-      return role ? Number.parseFloat(getComputedStyle(role).opacity) : -1;
-    });
+    const clean = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect(clean.animated, 'the surface under the plants already carries the entrance').toEqual([]);
+    expect(clean.running, 'the surface under the plants is already animating').toBe(0);
+    expect(clean.roleOpacity, 'the surface under the plants is already dimmed').toBe(1);
 
-    expect(read, 'a hero planted at opacity 0 still read as 1, so the read is a constant').toBe(0);
+    // One: an animation put back on the role line, which is exactly what deleting the
+    // reduced-motion block would leave. Five seconds and no delay, so it is running rather than
+    // waiting, which is what `getAnimations()` is asked about.
+    const unplantMotion = await page.addStyleTag({
+      content: '.home-role { animation: home-enter 5s linear 0s both !important; }',
+    });
+    const animating = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect(
+      animating.animated,
+      'a planted entrance on the role line was not reported by the computed read'
+    ).toEqual(['.home-role[0] computes animation-name "home-enter"']);
+    expect(animating.running, 'a planted running animation was not seen by getAnimations()').toBeGreaterThan(0);
+    await unplantMotion.evaluate((node) => (node as Element).remove());
+
+    const afterMotion = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect([afterMotion.animated.length, afterMotion.running], 'the planted animation outlived its case').toEqual([0, 0]);
+
+    // Two: the hero left at the stylesheet's old initial state, which is the failure this case has
+    // existed for since Story 2-12.
+    const unplantDim = await page.addStyleTag({ content: '.home-role { opacity: 0 !important; }' });
+    expect(
+      (await heroMotionState(page, REDUCED_MOTION_SELECTORS)).roleOpacity,
+      'a hero planted at opacity 0 still read as 1, so the read is a constant'
+    ).toBe(0);
+    await unplantDim.evaluate((node) => (node as Element).remove());
+
+    expect(
+      (await heroMotionState(page, REDUCED_MOTION_SELECTORS)).roleOpacity,
+      'the planted opacity outlived its case'
+    ).toBe(1);
   });
 });
 
@@ -1139,8 +1174,9 @@ test.describe('the entrance touches only opacity and transform, and does not loo
    *
    * The `#gem-canvas` subtree is skipped for the reason the sweep above gives.
    */
-  const declaredEntrance = (page: Page) =>
-    page.evaluate(() => {
+  const declaredEntrance = (page: Page, selectors: readonly string[]) =>
+    page.evaluate((list: string[]) => {
+      const selectors = list;
       const properties = new Set<string>();
       const walk = (rules: readonly CSSRule[]): void => {
         for (const rule of rules) {
@@ -1176,13 +1212,54 @@ test.describe('the entrance touches only opacity and transform, and does not loo
         directions.add(style.animationDirection);
       }
 
+      const sites = (selectors as string[]).map((selector) => ({
+        selector,
+        elements: [...document.querySelectorAll<HTMLElement>(selector)].map((node) => {
+          const style = getComputedStyle(node);
+          return {
+            name: style.animationName,
+            delay: Math.round(Number.parseFloat(style.animationDelay) * 1000),
+            fill: style.animationFillMode,
+          };
+        }),
+      }));
+
       return {
         properties: [...properties].sort(),
         animated: [...new Set(animated)].sort(),
         iterations: [...iterations].sort(),
         directions: [...directions].sort(),
+        sites,
       };
-    });
+    }, [...selectors]);
+
+  /**
+   * The five rules `HomeLayout.scss` animates, each with the delays its elements carry, in the
+   * order the entrance plays them.
+   *
+   * **Nothing read the delays or the fill until 2026-09-21.** The settle in
+   * `hit-target-floor.pw.ts` and `accessibility-floor.pw.ts` waits on `ENTRANCE_SELECTOR`, which is
+   * the two link groups only, so `.home-panel--sys`, `.home-role` and `.home-gem` were observed by
+   * nothing on the default door: dropping a delay, or dropping `both` from any of the five, shipped
+   * green. `both` is not a detail. It is the whole of the no-script guarantee the spec's No-script
+   * row and DW-42 rest on: the keyframe supplies only the `from`, so `backwards` is what holds an
+   * element absent through its delay and `forwards` is what leaves it present afterwards. Without
+   * it the hero flickers to its base state and back. Found by the Step-04 review.
+   *
+   * **Five, not six.** `.home-panel--name` carried a sixth until the same day; the retired timeline
+   * never named it and the 2023 stylesheet gave it no initial state, so it had been painting
+   * immediately and the entrance had started hiding the hero's name for 500ms.
+   *
+   * A selector matching a different number of elements is reported as a fixture failure rather than
+   * skipped, the way `REDUCED_MOTION_SELECTORS` above is read.
+   */
+  const ENTRANCE_SITES = [
+    { selector: '.home-gem', delays: [500] },
+    { selector: '.home-role', delays: [1300] },
+    { selector: '.home-panel--sys', delays: [1600] },
+    { selector: 'a.nav-link', delays: [2000, 2080] },
+    { selector: '.home-panel--contact .contact-container a', delays: [2200, 2280, 2360] },
+  ] as const;
 
   /** `transform` plus `opacity`, and the spellings a browser may echo back for either. */
   const ALLOWED = new Set(['opacity', 'transform', '-webkit-transform', 'translate', 'rotate', 'scale']);
@@ -1192,7 +1269,7 @@ test.describe('the entrance touches only opacity and transform, and does not loo
   }) => {
     const { declared, ...observed } = await withMotion(browser, async (page) => {
       await goTo(page, ROUTE);
-      const fromCss = await declaredEntrance(page);
+      const fromCss = await declaredEntrance(page, ENTRANCE_SITES.map((site) => site.selector));
       const fromInline = await sweep(page, '.home-role');
       return { ...fromInline, declared: fromCss };
     });
@@ -1212,6 +1289,39 @@ test.describe('the entrance touches only opacity and transform, and does not loo
       `a @keyframes block on ${ROUTE} animates a property EXPERIENCE.md:685-699 does not allow: ` +
         `${declaredOffending.join(', ')}. The whole set declared was ${declared.properties.join(', ')}`
     ).toEqual([]);
+
+    // **Every animated rule, with its delay and its fill.** This is the read the Step-04 review
+    // found missing: `both` is the no-script guarantee and three of the five sites were observed by
+    // nothing at all on this door.
+    const offSequence: string[] = [];
+    for (const site of ENTRANCE_SITES) {
+      const read = declared.sites.find((entry) => entry.selector === site.selector);
+      if (!read || read.elements.length !== site.delays.length) {
+        offSequence.push(
+          `${site.selector} matched ${read?.elements.length ?? 0} elements and the table names ${site.delays.length}, ` +
+            `so the fixture moved rather than the entrance`
+        );
+        continue;
+      }
+      read.elements.forEach((element, index) => {
+        if (element.name !== 'home-enter') offSequence.push(`${site.selector}[${index}] animates "${element.name}"`);
+        if (element.delay !== site.delays[index]) {
+          offSequence.push(`${site.selector}[${index}] waits ${element.delay}ms and the table says ${site.delays[index]}ms`);
+        }
+        if (element.fill !== 'both') {
+          offSequence.push(
+            `${site.selector}[${index}] fills "${element.fill}" rather than "both", so the keyframe's from is not held ` +
+              `through the delay and a document with no script flickers`
+          );
+        }
+      });
+    }
+    console.log(
+      `narrative: entrance sites ${declared.sites
+        .map((site) => `${site.selector} [${site.elements.map((element) => `${element.delay}ms ${element.fill}`).join(', ')}]`)
+        .join('; ')}`
+    );
+    expect(offSequence, `the entrance is off the sequence this file tables:\n${offSequence.join('\n')}`).toEqual([]);
 
     // A loop and a yoyo, read where a CSS entrance would carry them. `EXPERIENCE.md:693-694` allows
     // one orchestrated entrance per page load and nothing inside it that repeats.

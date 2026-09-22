@@ -10,8 +10,9 @@
 // `linear-gradient` grid images (§ Rules bars a gradient in a background), the `opacity: 0.2`
 // dim-siblings rule (opacity never expresses state), the two ungated `:hover` blocks (a tap paints
 // `:hover` and leaves it painted, review A-5), the `.home-overlay` and `.home-sys-coords` rules
-// (matched by no markup anywhere in the repository), and the GSAP timeline, which is now four
-// `animation-delay` declarations on one keyframe.
+// (matched by no markup anywhere in the repository), and the GSAP timeline, which is now **five
+// animated rules on one keyframe**, each carrying its delay in the `animation` shorthand, with
+// three further `animation-delay` overrides for the staggers inside the two link groups.
 
 body[id=''] {
   background-color: var(--token-bg);
@@ -67,13 +68,20 @@ body[id=''] {
   // `--z-base`, so `--z-raised` here clears everything inside it; `SkipControl.scss:25` reached
   // for the same role for the same reason, and the contract's next level up is the dropdown level
   // at 100, which a corner panel is not.
+  //
+  // **This shares a level with `.skip-control`, and the tie is resolved by layout rather than by
+  // this line.** Both are `--z-raised`, and `HomeLayout.tsx` renders the control before all four
+  // panels, so on a tie a panel paints over it. The contract offers nothing between `--z-base` and
+  // `--z-raised`, and `--z-dropdown` is semantically wrong for a skip control, so the guarantee
+  // this surface actually makes is that the control's box never intersects a panel's:
+  // `tests/e2e/front-door.pw.ts` measures exactly that at every width it visits, which is a
+  // stronger claim than a z-index would have been and a falsifiable one.
   z-index: var(--z-raised);
 
   &--name {
     top: 12%;
     left: 8%;
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
-    animation: home-enter var(--dur-major) var(--ease-entrance) 500ms both;
   }
 
   &--sys {
@@ -160,7 +168,10 @@ body[id=''] {
   transition: color var(--dur-micro) var(--ease-toggle);
   animation: home-enter var(--dur-major) var(--ease-entrance) 2000ms both;
 
-  & + & {
+  // `:nth-child`, matching the contact group below, rather than the adjacent-sibling form this
+  // read until 2026-09-21: `& + &` gives every link after the first the same delay, so a third one
+  // would flatten the stagger instead of extending it.
+  &:nth-child(2) {
     animation-delay: 2080ms;
   }
 }
@@ -400,7 +411,9 @@ body[id=''] {
   // contract collapses every duration to 1ms under this same query, but a 1ms run still waits out
   // its `animation-delay`, so a visitor who asked for stillness would get two and a half seconds of
   // blank hero. The `GlitchText.scss:50-58` shape.
-  .home-panel--name,
+  // Five selectors, matching the five animated rules above. `.home-panel--name` left this list on
+  // 2026-09-21 with the animation it should never have had: the retired timeline's `finalState`
+  // never named it, the 2023 stylesheet gave it no `opacity: 0`, and it painted immediately.
   .home-panel--sys,
   .home-role,
   .nav-link,
@@ -411,10 +424,13 @@ body[id=''] {
 }
 
 // The narrowest widths, tightened. **Moved below the two includes above by Story 2-13**, and only
-// moved: the declarations are Story 2-9's and are unchanged but for their units. Both includes
-// restate `padding` and `gap` on a selector one class deep, so left where it was this block would
-// have stopped applying to the flat front door and 360 would have been spaced for a wider viewport
-// than it has.
+// moved then. **Story 2-29 put them on the spacing scale, which moved three of them**, because the
+// scale has no 2rem or 5rem step: the bottom padding went from `5rem` to `--s-2xl`, 4rem, in this
+// block and in both includes above; the top padding at 767 and on the flat door went from `2rem` to
+// `--s-xl`, 2.5rem; and this block's `gap` went from `2rem` to `--s-lg`, 1.5rem. Every other value
+// is Story 2-9's unchanged. Both includes restate `padding` and `gap` on a selector one class deep,
+// so left where it was this block would have stopped applying to the flat front door and 360 would
+// have been spaced for a wider viewport than it has.
 @media (max-width: 420px) {
   .home-container {
     padding: var(--s-lg) var(--page-pad) var(--s-2xl);

@@ -225,9 +225,11 @@ describe('the scrim layer, placed inside the canvas box (Story 2-29)', () => {
 
 describe('the canvas box is out of the accessibility tree (A-14)', () => {
   it('marks .home-gem aria-hidden and leaves nothing focusable inside it', () => {
-    // A-14's two live clauses, at the wrapper. The element-level half is `GemComponent`'s, which
-    // sets `aria-hidden` and `tabIndex = -1` on `gl.domElement` (Story 2-13, DW-46) and is asserted
-    // in `tests/e2e/front-door.pw.ts`; this is the wrapper half, and neither may be dropped. The
+    // A-14's two live clauses, at the wrapper. The element-level half is `Scene.tsx`'s, which sets
+    // `aria-hidden` on the `<Canvas>` at `:40` and `aria-hidden` with `tabIndex = -1` on
+    // `gl.domElement` at `:49-50` (Story 2-13, DW-46), asserted in `tests/e2e/front-door.pw.ts`;
+    // this is the wrapper half, and neither may be dropped. **Corrected 2026-09-21**: this comment
+    // named `GemComponent`, which sets neither and only renders the module that renders `Scene`. The
     // withdrawn third clause ("its content is stated in prose") is deliberately not implemented:
     // the Operator withdrew it on 2026-09-13 and DW-97 records the planning lines that still carry
     // it.
@@ -331,10 +333,45 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     expect([...css.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]), 'the stylesheet declares a custom property').toEqual([]);
   });
 
+
+  /**
+   * Every CSS named colour, because a hex literal can leave this file as one.
+   *
+   * **The hex and `rgb(` guards below are leaky on their own, and this is what closes them.**
+   * Dart Sass emits the shortest form: `#ff0000` compiles to `red` and `rgb(140, 90, 210)` compiles
+   * to `#8c5ad2`. So the hex guard catches a written `rgb()` and neither catches a colour Sass can
+   * shorten to a keyword. Added 2026-09-21 after the Step-04 review found the pair porous.
+   *
+   * Matched with a lookbehind and a lookahead on the identifier boundary, or `var(--token-text)`
+   * would read as the keyword `tan`. `transparent` and `currentcolor` are deliberately absent: they
+   * are keywords rather than named colours, Sass never produces them from a literal, and each has
+   * honest uses.
+   */
+  const NAMED_COLOURS = `aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue
+    blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan
+    darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange
+    darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise
+    darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia
+    gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory
+    khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow
+    lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray
+    lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue
+    mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred
+    midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid
+    palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple
+    rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue
+    slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise violet wheat
+    white whitesmoke yellow yellowgreen`.split(/\s+/);
+
   it('carries no colour literal, no gradient, no transition: all and no bare z-index integer', () => {
     expect(css, 'a hex colour literal survived the rebuild').not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(css, 'an rgba() literal survived the rebuild').not.toContain('rgba(');
     expect(css, 'an rgb() literal survived the rebuild').not.toContain('rgb(');
+    expect(
+      NAMED_COLOURS.filter((name) => new RegExp(`(?<![\\w-])${name}(?![\\w-])`, 'i').test(css)),
+      'a CSS named colour survived the rebuild. Sass emits the shortest form, so a hex literal can ' +
+        'leave this file as a keyword and slip past the two guards above'
+    ).toEqual([]);
     expect(css, 'a gradient survived the rebuild').not.toContain('gradient(');
     expect(css, 'transition: all is barred (EXPERIENCE.md:689-691)').not.toMatch(/transition:\s*all\b/);
     expect(
@@ -351,7 +388,6 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     }
     expect([...css.matchAll(/clip-path:/g)], 'the silhouette gained or lost a panel').toHaveLength(4);
   });
-
 
   /**
    * One at-rule's body, brace-matched out of the compiled sheet.
@@ -374,9 +410,20 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     throw new Error(`the "${prelude}" block is never closed`);
   };
 
-  /** Every `selector { order: N }` inside one block, as a map, in the order the block declares them. */
+  /**
+   * Every `selector { order: N }` inside one block, in the order the block declares them.
+   *
+   * **The rule is parsed whole and `order:` is anchored to a declaration start**, since 2026-09-21.
+   * The earlier form searched the body for `order:` unanchored, and `border:1px` contains it, so a
+   * border shorthand entering the mobile block would have read as a fifth order declaration and
+   * failed the case blaming the hero's reading order. Found by the Step-04 review against the real
+   * regex.
+   */
   const ordersIn = (block: string): [string, string][] =>
-    [...block.matchAll(/([^{}]+)\{[^{}]*?order:(\d+)/g)].map((match) => [match[1].trim(), match[2]]);
+    [...block.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .map(([, selector, body]) => [selector.trim(), /(?:^|;)\s*order:\s*(\d+)/.exec(body)?.[1]] as const)
+      .filter((entry): entry is readonly [string, string] => entry[1] !== undefined)
+      .map(([selector, order]) => [selector, order]);
 
   it('stacks the hero in reading order below 768, with no readout panel and no scrim', () => {
     // **The matrix's below-768 row, read where jsdom cannot see it.** The cases above compile the
@@ -427,6 +474,27 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     expect([...css.matchAll(/@keyframes/g)], 'the stylesheet declares more than one keyframe').toHaveLength(1);
     expect(css, 'the entrance keyframe was renamed or lost').toContain('@keyframes home-enter{from{opacity:0}}');
     expect(css, 'an animation repeats').not.toMatch(/animation[^;}]*infinite/);
-    expect(css, 'the dim-siblings rule is back, so opacity expresses state again').not.toMatch(/opacity:0\.\d/);
+
+    // **Every `opacity` the file declares, held to the one the keyframe's `from` carries**, the
+    // shape the `z-index` read above uses. This was `not.toMatch(/opacity:0\.\d/)` until
+    // 2026-09-21, which could not fail for any value: Dart Sass writes `opacity:.2`, never
+    // `opacity:0.2`, so the pattern matched nothing at all. Found by the Step-04 review, which
+    // compiled `.a{opacity:0.2}` through this repository's own sass to prove it.
+    expect(
+      [...css.matchAll(/opacity:([^;}]+)/g)].map((match) => match[1].trim()),
+      'the stylesheet declares an opacity other than the entrance keyframe\'s from, so either ' +
+        'opacity expresses state again or a second initial state arrived'
+    ).toEqual(['0']);
+
+    // Five animated rules, which is what the file's header, `sprint-status.yaml` and DW-100 all
+    // say. `.home-panel--name` carried a sixth until 2026-09-21: the retired timeline never named
+    // it, the 2023 stylesheet gave it no initial state, and it painted immediately, so the entrance
+    // was hiding the hero's name for 500ms and running `GlitchText`'s own delay inside a parent
+    // that was itself ramping.
+    expect(
+      [...css.matchAll(/animation:home-enter/g)],
+      'the entrance animates a number of rules other than the five the records state'
+    ).toHaveLength(5);
+    expect(css, 'the name panel took the entrance back').not.toMatch(/\.home-panel--name\{[^}]*animation:/);
   });
 });

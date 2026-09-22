@@ -2,7 +2,7 @@
 title: 'Story 2.29: Redesign `HomeLayout` token-native'
 type: 'feature'
 created: '2026-09-21'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: '88e209937b10bf40cb83d018bec3b29394c3e4b7'
 review_loop_iteration: 0
 context:
@@ -192,9 +192,15 @@ ledger rows and their records in the same commit.
 - `Header.tsx:12` returns `null` on `/`, so no sticky header renders over the home canvas, and
   `header.scss:59` already sets `background-color: var(--token-bg)`. Both permitted resolutions of
   the z-level trap hold; the criterion is about proving it by sampling, not about changing code.
-- No `aria-hidden` and no `tabIndex` exists anywhere on the gem canvas subtree (`GemComponent.tsx`,
-  `GemNarrative.tsx`, `Gem.tsx`, `CanvasOrbitControls.tsx`). DW-46's premise that Story 2-13 shipped
-  both halves is wrong.
+- **Corrected 2026-09-21, and the correction is the finding.** This read "No `aria-hidden` and no
+  `tabIndex` exists anywhere on the gem canvas subtree (`GemComponent.tsx`, `GemNarrative.tsx`,
+  `Gem.tsx`, `CanvasOrbitControls.tsx`). DW-46's premise that Story 2-13 shipped both halves is
+  wrong." **That claim was wrong and DW-46's premise was right.** Both halves are in
+  `components/atoms/Scene/Scene.tsx`, which this list did not read: `aria-hidden='true'` on the
+  `<Canvas>` at `:40`, and `canvas.setAttribute('aria-hidden', 'true')` with `canvas.tabIndex = -1`
+  inside `onCreated` at `:49-50`. `GemNarrative` renders `Scene`, so `/`'s canvas is covered on the
+  wrapper and on the element. The implementation verified this rather than re-implementing it, as
+  DW-46 asked, and added a third `aria-hidden` on `.home-gem` at the level this story owns.
 - `app/app.scss:115-118` already sets `overflow-x: clip` on `html, body`, and `:120-128` already
   uses `width: 100%`. The criterion at `epics.md:3362-3366` was discharged by Story 2-9.
 
@@ -323,9 +329,13 @@ as `animation: none` in the `GlitchText.scss:50-58` shape.
 **The clipped rings, closed without touching the silhouette.** Each notch cuts a 10px triangle from
 one corner of a panel that contains focusable links, and a ring at `--stroke-focus` with
 `--focus-offset` runs 5px past the link's box, so five rings paint as fragments. The four polygons
-are kept exactly; what changes is that each panel gains `padding` on its two notched sides at
-`var(--s-sm)` (12px), which is more than the 10px cut plus the ring's reach, so every ring falls
-inside the clipped region. The silhouette is untouched and the ledger's clipped-ring count drops
+are kept exactly; what changes is that each panel gains `padding: var(--s-sm)` (12px) **on every
+side**, which is two separate comparisons and clears both: on a straight edge 12px is more than the
+ring's 5px reach, and on a notched corner a point inset 12px from each of the two edges is 24px of
+combined inset against a cut that removes 10px of it, with the ring's reach leaving 14px. The
+padding is uniform rather than on the notched sides alone, because three of the six clipped rings
+were clipped on a straight edge (the nav links' left and right, the contact links' left) and a
+notch-only padding would have closed none of those. The silhouette is untouched and the ledger's clipped-ring count drops
 from six to one, the survivor being the skip-link row that belongs to Story 2.32.
 
 **What the silhouette actually paints, recorded rather than fixed.** The panels carry no background

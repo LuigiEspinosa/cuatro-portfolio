@@ -264,7 +264,10 @@ sweep reported `home-nav` as a stale row naming both files. A row cannot go half
 other nav link was still under, so `home-nav` had to take the floor on both of its links or come
 back off the ledger dishonestly. **`home-contact` was a different case and is recorded as one.**
 Nothing forced the three contact links past the floor: they were where they had always been, and
-setting `min-block-size` on them was elective. **Operator ruling of 2026-09-21, taken after the audit of Story 2-29 separated the two rows.** `home-nav` was **forced**: the display step alone took the first nav link to 296.00 x 68.75 and the sweep reported the row stale, and a row cannot go half stale. `home-contact` was **elective**: nothing made those three links clear the floor, and setting `min-block-size` on them was a choice. The Operator ruled to keep both, so all five hero links hold `min-block-size: var(--tap)` and both rows stay deleted, and ruled Pending Operator action 9 answered by Story 2-29 for the home pair, open for `chrome-logo` alone. Both groups therefore carry
+setting `min-block-size` on them was elective. **The Operator ruled on 2026-09-21, after the audit
+of Story 2-29 separated the two rows, to keep both repairs**: all five hero links hold the floor,
+both rows stay deleted, and Pending Operator action 9 in `ops/known-violations.md` is answered for
+the home pair and open for `chrome-logo` alone. Both groups therefore carry
 `min-block-size: var(--tap)` on a flex box, the `SkipControl.scss:12-21` idiom and the shape
 `EXPERIENCE.md:727-730` prescribes, and both rows were deleted in the same commit as the repair.
 The five measured after the repair, in the same image at 360 x 800 with the display face loaded,

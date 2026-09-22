@@ -1,4 +1,4 @@
-import { test, expect, type Browser, type Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from './harness';
@@ -135,13 +135,11 @@ const ROUTES = ['/', '/cv', '/work', '/celeste', '/api/health'] as const;
 
 /**
  * A path the Hub does not route, which renders `app/not-found.tsx` through the same root layout
- * and the same `Body`. Two of the eleven `--accent-dim` call sites and one `--monument-bold`
- * call site live only here.
+ * and the same `Body`. One of the eight `--accent-dim` call sites and one `--monument-bold`
+ * call site live only here. **Two of eleven until 2026-09-21**, when Story 2-29 took the three
+ * HomeLayout rows and the second of this route's pair went with the count rather than the route.
  */
 const NOT_FOUND = '/a-route-that-does-not-exist';
-
-/** Wide enough for the `min-width: 768px` half of `HomeLayout.scss`, which the 360 project is not. */
-const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
 
 /**
  * The Hub declares fifteen custom properties: thirteen aliased onto roles, two left as literals.
@@ -354,8 +352,6 @@ interface CallSite {
   pseudo?: string;
   property: string;
   verdict: 'ornament' | 'boundary';
-  /** Read in a second context at 1024 wide, because the rule only applies above 767px. */
-  wide?: true;
 }
 
 /**
@@ -494,28 +490,16 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
 };
 
 /**
- * Run `read` against `/` in a second context 1024 wide.
+ * **Removed 2026-09-21 with the last row that needed it.**
  *
- * The project pins 360 (AD-19's floor), and one of the twelve call sites is a rule that only
- * applies above 767px. Opening a context is deliberate and says so, on the pattern
- * `tests/e2e/contract-anchor.pw.ts` set for its wide-viewport and no-preference reads.
+ * `inWideContext` opened a second context 1024 wide, because one `--accent-dim` call site was a
+ * rule that only applied above 767px: `HomeLayout.scss`'s desktop `border-right-color` on the
+ * contact links. Story 2-29 rebuilt that file against the contract and the row went with the other
+ * two, leaving the helper, its `WIDE_VIEWPORT`, the `wide` field on `CallSite` and the loop that
+ * read them with nothing to do. Every surviving row is read at the project's own 360, which is
+ * AD-19's floor and the width the rest of this file measures at. Kept as a note rather than as
+ * dead code, so a later row that needs a wide read knows this was tried and why it left.
  */
-const inWideContext = async <T>(browser: Browser, read: (page: Page) => Promise<T>): Promise<T> => {
-  const context = await browser.newContext({
-    viewport: { ...WIDE_VIEWPORT },
-    deviceScaleFactor: 1,
-    colorScheme: 'light',
-    reducedMotion: 'reduce',
-  });
-  try {
-    const page = await context.newPage();
-    expect(page.viewportSize()?.width ?? 0, 'the second context is not wider than the mobile rule').toBeGreaterThan(767);
-    return await read(page);
-  } finally {
-    await context.close();
-  }
-};
-
 test('parses a real alias layer, so every case below measures something', () => {
   expect(HUB.size, 'app/app.scss no longer declares fifteen custom properties on :root').toBe(HUB_PROPERTY_COUNT);
   expect(CONTRACT.size, 'no :root block was parsed out of contracts/tokens.css').toBeGreaterThan(0);
@@ -728,7 +712,7 @@ test('the two properties the alias layer must not move still hold their authored
   );
 });
 
-test('--accent-dim resolves to the role its call site earns, at all twelve', async ({ page, browser }) => {
+test('--accent-dim resolves to the role its call site earns, at all eight', async ({ page }) => {
   const readSite = async (target: Page, site: CallSite, roles: Record<string, string>): Promise<string | null> => {
     const expected = roles[site.verdict === 'boundary' ? BOUNDARY : ORNAMENT];
     const actual = site.pseudo
@@ -744,29 +728,18 @@ test('--accent-dim resolves to the role its call site earns, at all twelve', asy
   const wrong: string[] = [];
   let read = 0;
 
-  for (const route of [...new Set(CALL_SITES.filter((site) => !site.wide).map((site) => site.route))]) {
+  for (const route of [...new Set(CALL_SITES.map((site) => site.route))]) {
     await goTo(page, route, route === NOT_FOUND ? 404 : 200);
     const roles = await probeRoleColours(page, [ORNAMENT, BOUNDARY]);
     expect(roles[ORNAMENT], `${ORNAMENT} and ${BOUNDARY} resolve to the same colour on ${route}`).not.toBe(
       roles[BOUNDARY]
     );
 
-    for (const site of CALL_SITES.filter((candidate) => candidate.route === route && !candidate.wide)) {
+    for (const site of CALL_SITES.filter((candidate) => candidate.route === route)) {
       const failure = await readSite(page, site, roles);
       read += 1;
       if (failure) wrong.push(failure);
     }
-  }
-
-  // The one row whose rule only applies above 767px, read where it wins.
-  for (const site of CALL_SITES.filter((candidate) => candidate.wide)) {
-    const failure = await inWideContext(browser, async (wide) => {
-      await goTo(wide, site.route);
-      const roles = await probeRoleColours(wide, [ORNAMENT, BOUNDARY]);
-      return readSite(wide, site, roles);
-    });
-    read += 1;
-    if (failure) wrong.push(failure);
   }
 
   // A selector that matched nothing throws out of `computedStyleValue` rather than being skipped,

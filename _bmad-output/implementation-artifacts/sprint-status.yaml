@@ -270,6 +270,24 @@ development_status:
   # ops/hit-target-floor.md's tolerated-breach counts, per-element table, docblock and
   # failure-mode row, ops/hub-accessibility-pass.md's ground row, and this component's own
   # ledger citation.
+  # Step-04 review 2026-09-21, six layers, all findings patched on the branch by Operator ruling
+  # rather than looped back. A third assertion in this story could not fail and is the headline:
+  # the opacity guard read /opacity:0\.\d/ where Dart Sass emits opacity:.6, so it matched nothing
+  # for any value; it now collects every opacity the sheet declares and holds the set to the
+  # keyframe's from, seen failing on a planted opacity: 0.6. The hex and rgb( guards were leaky the
+  # same way (#ff0000 compiles to red) and gained a CSS named-colour check. The entrance's delays
+  # and its animation-fill-mode: both, which is the whole of DW-42's no-script guarantee, were read
+  # by nothing: narrative.pw.ts now tables all five sites and reads name, delay and fill per element
+  # on the running page. The reduced-motion case's two new reads gained a planted control. The
+  # scrim's marker read went per panel, with .home-panel--sys exempt and its distance logged. The
+  # ordersIn regex matched order:1 inside border:1px and is anchored.
+  # Behaviour: .home-panel--name lost the 500ms entrance the rebuild gave it and the retired
+  # timeline never had, so the file, DW-100 and this block all say five animated rules; the skip
+  # control's lost z-index guarantee became a tested non-overlap claim at both widths, because the
+  # contract offers no level between --z-base and --z-raised and --z-dropdown is wrong for it;
+  # SkipControl.scss's hover is gated; the nav stagger uses :nth-child like the contact group.
+  # Twelve records and comments corrected, chiefly that A-14's two halves are in Scene.tsx and not
+  # GemComponent, which the spec's own planning read got wrong. DW-106, DW-107 and DW-108 filed.
   # Waits on the Operator: the entrance's feel played at 2x to 5x in the animation inspector, and
   # the --t-xl reading of the nav and contact type, which is a gap in DESIGN.md rather than a
   # value it supplied.

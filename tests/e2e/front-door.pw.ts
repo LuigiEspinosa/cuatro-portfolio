@@ -1094,12 +1094,12 @@ test.describe('the running page settles at one height', () => {
             `${drops.map((step) => step.toFixed(2)).join(', ') || '(not at all)'}`
         );
 
-      // **The slice did not eat the collapse.** `heightsOn` starts counting at
-      // `document.fonts.ready`, and nothing in the platform orders that against hydration: on a
-      // cold container the fonts could settle after the hero had already collapsed, leaving a
-      // sampler that saw only the flat state and a case that failed for a reason it does not own.
-      // The first sample on these doors is the tall one, or this case says so rather than blaming
-      // the collapse count below.
+        // **The slice did not eat the collapse.** `heightsOn` starts counting at
+        // `document.fonts.ready`, and nothing in the platform orders that against hydration: on a
+        // cold container the fonts could settle after the hero had already collapsed, leaving a
+        // sampler that saw only the flat state and a case that failed for a reason it does not own.
+        // The first sample on these doors is the tall one, or this case says so rather than
+        // blaming the collapse count below.
         expect(
           samples[0] - samples[samples.length - 1],
           `${door.name} was already collapsed by the first sample. The frame window starts at ` +
@@ -1141,7 +1141,6 @@ test.describe('the running page settles at one height', () => {
   }
 });
 
-
 // ---------------------------------------------------------------------------
 // The hero below 768, where the corners become a column.
 // ---------------------------------------------------------------------------
@@ -1170,6 +1169,88 @@ const stackedHero = (page: Page) =>
       scrimsInDom: document.querySelectorAll('.home-gem .scanline-overlay').length,
     };
   });
+
+/** Every box the skip control's guarantee is about, at whatever width the page is open at. */
+const skipControlAgainstPanels = (page: Page) =>
+  page.evaluate(() => {
+    const control = document.querySelector('.skip-control');
+    if (!control) return null;
+    const box = (node: Element) => {
+      const rect = node.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+    };
+
+    return {
+      control: box(control),
+      controlZ: getComputedStyle(control).zIndex,
+      panels: [...document.querySelectorAll('.home-panel')].map((panel) => ({
+        at: panel.className,
+        box: box(panel),
+        z: getComputedStyle(panel).zIndex,
+      })),
+      controlIsFirst: [...(control.parentElement?.children ?? [])].indexOf(control) === 0,
+    };
+  });
+
+test.describe('the skip control is never under a panel', () => {
+  for (const viewport of [RENDERED_VIEWPORT, WIDE_VIEWPORT]) {
+    test(`its box intersects no panel at ${viewport.width}`, async ({ browser }) => {
+      // **FR-2's only interaction, and the one element on this surface whose stacking is not
+      // decided by a z-index.** Until Story 2-29 the panels were `z-index: 5` and this control was
+      // `10`. Both are `var(--z-raised)` now, and `HomeLayout.tsx` renders the control before all
+      // four panels, so on that tie a panel paints over it. The contract offers nothing between
+      // `--z-base` and `--z-raised`, and `--z-dropdown` is a role a skip control has no claim to,
+      // so the guarantee this surface makes is that the two never overlap. That is a layout fact,
+      // which is measurable, where "it is above" would have been a reading of a value that no
+      // longer distinguishes them.
+      //
+      // Added 2026-09-21 by the Step-04 review, which found the guarantee lost and nothing testing
+      // it.
+      const read = await onPath(
+        browser,
+        DEFAULT_PATH,
+        async (page) => {
+          await goTo(page);
+          await settled(page);
+          return skipControlAgainstPanels(page);
+        },
+        viewport
+      );
+
+      expect(read, `the default door rendered no .skip-control at ${viewport.width}`).not.toBeNull();
+      expect(read?.panels.length, 'the hero rendered no panels, so the comparison is over nothing').toBe(4);
+      expect(
+        read?.control.width ?? 0,
+        'the skip control has no box, so an overlap could not be seen'
+      ).toBeGreaterThan(0);
+
+      // The tie itself, recorded rather than asserted away: if these ever differ the guarantee
+      // below stops being the only thing holding the control visible, and this line says so.
+      console.log(
+        `front-door: skip control at ${viewport.width} is z ${read?.controlZ}, rendered first ${read?.controlIsFirst}, ` +
+          `panels z ${[...new Set(read?.panels.map((panel) => panel.z))].join(', ')}`
+      );
+
+      const overlapping = (read?.panels ?? [])
+        .filter((panel) => {
+          const a = read!.control;
+          const b = panel.box;
+          return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+        })
+        .map(
+          (panel) =>
+            `${panel.at} at [${panel.box.left.toFixed(1)}, ${panel.box.top.toFixed(1)}, ${panel.box.right.toFixed(1)}, ` +
+              `${panel.box.bottom.toFixed(1)}] overlaps the control at [${read!.control.left.toFixed(1)}, ` +
+              `${read!.control.top.toFixed(1)}, ${read!.control.right.toFixed(1)}, ${read!.control.bottom.toFixed(1)}]`
+        );
+      expect(
+        overlapping,
+        `a panel's box intersects the skip control's at ${viewport.width}. Both sit at the same z-level and the control ` +
+          `is rendered first, so the panel paints over FR-2's one interaction:\n${overlapping.join('\n')}`
+      ).toEqual([]);
+    });
+  }
+});
 
 test.describe('the hero below 768 on the default front door', () => {
   test('stacks in reading order, renders no readout panel and paints no scrim', async ({ browser }) => {

@@ -1959,6 +1959,11 @@ test.describe('the scrim over the home canvas', () => {
     // The default door, because the project's context asks for reduced motion and that door renders
     // no canvas at all. The same shape `tests/e2e/front-door.pw.ts:259-275` uses.
     const context = await browser.newContext({
+      // `colorScheme: 'light'` is `playwright.config.ts:79`'s value, carried here rather than
+      // dropped so this context differs from the project's in the two ways it means to and in no
+      // other: the viewport and the motion preference. The contract is dark only and declares no
+      // `color-scheme`, so the scheme changes nothing the sampling reads, and pinning it is what
+      // keeps that a statement rather than an assumption (RESTYLE-SPEC F-11, filed as DW-95).
       viewport: { ...SCRIM_VIEWPORT },
       deviceScaleFactor: 1,
       colorScheme: 'light',
@@ -2034,12 +2039,36 @@ test.describe('the scrim over the home canvas', () => {
           `that panel:\n${notCovered.join('\n')}`
       ).toEqual([]);
 
-      // At least one panel still paints its own text over the marker, or the panels are under it.
-      const overMarker = marked.filter((sample) => sample.nearest.slice(0, SCRIM_ROLES.length).some((distance) => distance <= 12));
+      // **Each panel paints its own text over the marker, or that panel is under the layer rather
+      // than above it.** Read per panel since 2026-09-21: it was `overMarker.length > 0` until the
+      // Step-04 review pointed out that three of the four could be buried or blank and it would
+      // still pass.
+      //
+      // **No panel is exempt, and that was measured rather than assumed.** `.home-panel--sys` was
+      // exempted when this went per panel, on the guess that its `HudLabel` is the smallest type on
+      // the surface and might be antialiased short of the probe distance on every pixel. The run
+      // said otherwise: all four panels read a nearest distance of **0.0**, an exact hit on one of
+      // the five roles, `--light-gray-color` and `--accent` on that panel aliasing two of them. So
+      // the set below is empty and stays empty unless a measurement puts something in it; the
+      // distances are printed on every run so the question is answered by the log rather than by
+      // this comment.
+      const EXEMPT_FROM_MARKER = new Set<string>();
+      const nearestPerPanel = marked.map((sample, index) => ({
+        panel: SCRIM_PANELS[index],
+        nearest: Math.min(...sample.nearest.slice(0, SCRIM_ROLES.length)),
+      }));
+      console.log(
+        `accessibility-floor: over the repainted scrim, ` +
+          `${nearestPerPanel.map((read) => `${read.panel} nearest ${read.nearest.toFixed(1)}`).join('; ')}`
+      );
+      const buried = nearestPerPanel
+        .filter((read) => !EXEMPT_FROM_MARKER.has(read.panel) && read.nearest > 12)
+        .map((read) => `${read.panel} comes no closer than ${read.nearest.toFixed(1)} to any of the five roles`);
       expect(
-        overMarker.length,
-        'no panel painted a role colour over the repainted scrim, so the text is beneath the layer rather than above it'
-      ).toBeGreaterThan(0);
+        buried,
+        `a panel painted no role colour over the repainted scrim, so its text is beneath the layer rather than above ` +
+          `it:\n${buried.join('\n')}`
+      ).toEqual([]);
 
       // The real composite, and the five ratios computed from the sampled sRGB rather than typed.
       const served = await sampleBoxes(page, await page.screenshot(), boxes, roleRgba);

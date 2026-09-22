@@ -97,9 +97,11 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
           any case, so `flat` is a one-way door and this element only ever goes away.
 
           `aria-hidden` here is A-14's first clause at the wrapper: the canvas is decorative, and
-          `GemComponent` already sets `aria-hidden` and `tabIndex = -1` on the WebGL element itself
-          (Story 2-13), so the subtree is out of the accessibility tree and out of the tab order
-          from two directions. `ScanlineOverlay` is the last child and inside this box on purpose:
+          `Scene.tsx:40` already sets `aria-hidden` on the `<Canvas>` while `:49-50` sets it and
+          `tabIndex = -1` on `gl.domElement` inside `onCreated` (Story 2-13), so the subtree is out
+          of the accessibility tree and out of the tab order from two directions. **Corrected
+          2026-09-21**: this named `GemComponent`, which sets neither; it renders `GemNarrative`,
+          which renders `Scene`, and `Scene` is where both live. DW-46's closure says the same. `ScanlineOverlay` is the last child and inside this box on purpose:
           the box is positioned at the base level and is therefore a stacking context, so the
           scrim's own raised level is confined to it and the panels above clear the whole subtree.
           The scrim is `aria-hidden` itself and carries no content, so putting it inside a hidden

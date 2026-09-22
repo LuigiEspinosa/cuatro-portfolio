@@ -4969,6 +4969,19 @@ status: done
     the shipped sequence sit on one clock for the first time, and the gap between the heading's
     reveal and the panels' is what the numbers say rather than that plus the hydration time.
 
+    **Five rules animate, and `.home-panel--name` is not one of them.** The `1.0` above is
+    `GlitchText`'s own `--delay`, passed as an inline style on the heading inside that panel; the
+    stylesheet's five are the gem at 500ms, the role line at 1300, the readout panel at 1600 and
+    the two link groups at 2000 and 2200, with three `animation-delay` overrides for the staggers.
+    The rebuild briefly gave the name panel a sixth at 500ms, which the retired timeline never had:
+    its `finalState` was `['.home-panel--sys', '.home-role', '.nav-link', '.contact-container a']`
+    and the 2023 stylesheet gave `--name` no `opacity: 0`, so it had always painted immediately.
+    That hid the hero's name for 500ms and ran `GlitchText`'s delay inside a parent that was itself
+    ramping, a composite nobody specified. **Removed 2026-09-21** by the Step-04 review, which is
+    also when `tests/e2e/narrative.pw.ts` started reading every site's delay and fill on the running
+    page: until then nothing did, and `both`, which is the whole of DW-42's no-script guarantee,
+    could have been dropped from any of the five without a failure.
+
     The other face closes with DW-42: a scriptless document now shows the whole hero, heading
     included, because every base state is the final state and the keyframes supply only the `from`.
 
@@ -5143,4 +5156,102 @@ status: done
     no assertion reads them.
 
     **Owner and trigger.** The next story that edits either citing file; trigger, that edit.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-106
+  summary: >-
+    The five hero links are `opacity: 0` for up to 2.36 seconds while focusable and clickable, so a
+    keyboard visitor who tabs during the entrance takes a focus ring onto an invisible target. The
+    shape is pre-existing and slightly better than it was; it is filed because nothing else stands
+    between a tab press and an invisible link.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. `HomeLayout.scss` animates the two
+    link groups from `opacity: 0` with `animation-fill-mode: both`, so the `from` is held through
+    the delay: the first nav link is invisible until 2000ms, the second until 2080, and the three
+    contact links until 2200, 2280 and 2360. Nothing removes them from the tab order or from the
+    hit-testing tree while they are transparent, so `Tab` lands on them and the global
+    `:focus-visible` ring paints around a link the visitor cannot read, and a click at the right
+    coordinates activates it.
+
+    **Pre-existing, and marginally improved by that story rather than caused by it.** The 2023
+    stylesheet opened the same elements at `opacity: 0` and the GSAP timeline lifted them on the
+    same schedule; what changed is the clock. GSAP's ran from hydration, CSS's runs from first
+    paint, so the window is now shorter by the hydration time and, more to the point, deterministic.
+    A reduced-motion visitor never sees it at all, because `HomeLayout.scss`'s
+    `prefers-reduced-motion` block sets `animation: none` and that door renders the flat hero.
+
+    **Not Story 2-29's to fix**, whose frozen criteria fix the entrance's shape and its five delays
+    and name no focus behaviour during it. The conformant repairs are all bigger than a line: shorten
+    the sequence so the window closes before a visitor could plausibly tab, give the links
+    `pointer-events: none` and `visibility: hidden` until their turn, which changes what the
+    entrance is, or move the whole orchestration behind a "has the visitor interacted yet" gate.
+    Each is a design decision about the hero rather than a defect in the stylesheet.
+
+    **Owner: Story 2-32**, which rebuilds the chrome and the contact links and already owns the
+    hit-target and focus behaviour of two of the five. **Trigger: the next change to the entrance's
+    delays, or any accessibility pass that tabs `/` inside the first 2.4 seconds.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-107
+  summary: >-
+    `.home-panel--sys` is `display: none` below 768, so a viewport crossing upward after the
+    entrance has run re-displays it with its `animation-delay` restarting, leaving the readout panel
+    blank for 1.6 seconds on a surface that has otherwise finished arriving.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. `HomeLayout.scss`'s
+    `@media (max-width: 767px)` block sets `.home-panel--sys { display: none }`, and the panel's own
+    rule animates `home-enter` at a 1600ms delay with `animation-fill-mode: both`. An element with
+    no box runs no animation; when the viewport crosses 768 upward the box appears and the animation
+    starts then, from its delay, so the panel is held at the keyframe's `opacity: 0` for 1.6 seconds
+    while the four panels around it are already at rest.
+
+    Reachable by rotating a tablet, by dragging a desktop window across the breakpoint, and by any
+    responsive-design-mode session. Not reachable by a normal load at either width: below 768 the
+    panel is never shown and above it the delay runs with everything else.
+
+    The same shape exists for `.home-gem` and `.skip-control` across the flat modifier, and does not
+    matter there: both are removed from the DOM by `HomeLayout.tsx` on that path rather than hidden,
+    and the path is a one-way door.
+
+    **Not fixed here** because the conformant repairs both cost more than the defect: rendering the
+    panel conditionally puts a viewport read into React, which is the layout thrashing Story 2-13's
+    hook exists to avoid, and dropping the delay on a re-display needs a class toggled by a resize
+    listener, which `EXPERIENCE.md` bars in favour of `IntersectionObserver` and which would be a
+    script for a cosmetic case. Recorded so a reader who sees a blank corner mark after a rotation
+    knows it is this and not a regression.
+
+    **Owner: Story 2-31**, which rebuilds `HudLabel`, the component that panel renders. **Trigger:
+    that rebuild, or any story that gives the readout panel a responsive rule of its own.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-108
+  summary: >-
+    Every figure in `ops/asset-budget.md` is pinned by nothing. `ops/__tests__/asset-budget.test.ts`
+    runs the model against a synthetic fixture root, so the recorded readings can drift from the
+    tool's output, from each other and from the build without a failure anywhere.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. That suite builds a fixture tree and
+    asserts the model's arithmetic on it, which is the right thing to test and is not the question:
+    nothing reads `ops/asset-budget.md`'s tables back and compares them with anything. Contrast the
+    two ledgers that are held both ways, `ops/hit-target-floor.md` against
+    `tests/e2e/hit-target-floor.pw.ts` by `ops/__tests__/hit-target-floor.test.ts`, and
+    `ops/hub-accessibility-pass.md` against `tests/e2e/accessibility-floor.pw.ts` by
+    `ops/__tests__/hub-accessibility-pass.test.ts`, each of which fails when a row and its record
+    disagree.
+
+    **Pre-existing, and noted because Story 2-29 moved those numbers.** That story added a dated
+    reading and a dated run, and its arithmetic (a 235-byte gzipped delta decomposed into a 225-byte
+    chunk movement and two rebuild-variance renames) is held true by a reader alone. So is the
+    cross-reading claim that the before build reproduces an earlier story's after figures, which it
+    did not, for a reason that had to be found by hand.
+
+    **A cheap first step, short of a full harness**: a unit case that parses the build table out of
+    the most recent `### The ... reading` section and asserts its own totals are self-consistent,
+    which would have caught nothing here but costs little and can only tighten. The full version
+    needs a build, which puts it outside the `test` job.
+
+    **Owner: unassigned.** **Trigger: the next story that records a reading in that file, or the
+    first time a figure in it is found wrong.**
   status: open
