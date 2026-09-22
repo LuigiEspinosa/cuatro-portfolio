@@ -202,38 +202,42 @@ ledger rows and their records in the same commit.
 
 **Execution** (in this order):
 
-- [ ] On `dev` at `88e2099` before branching: `corepack pnpm build && node ops/asset-budget.mjs`
+- [x] On `dev` at `88e2099` before branching: `corepack pnpm build && node ops/asset-budget.mjs`
       plus the gzipped size of every `.next/static/chunks/*.css`, saved to the scratchpad as the
       before reading; confirm it reproduces the Story 2-28 after figures.
-- [ ] Branch `story/2-29-redesign-homelayout-token-native` off `dev`.
-- [ ] `deferred-work.md`: close DW-97 first, before the criteria are frozen, because its trigger is
+- [x] Branch `story/2-29-redesign-homelayout-token-native` off `dev`.
+- [x] `deferred-work.md`: close DW-97 first, before the criteria are frozen, because its trigger is
       this story's planning. Its finding stands: the withdrawn A-14 clause "its content is stated in
       prose" is not implemented here, and `epics.md:3336-3338` is read as the `aria-hidden` and
       not-focusable half only. Correct DW-46's premise in the same pass.
-- [ ] `HomeLayout.scss`: the rewrite as Design Notes states. Run
+- [x] `HomeLayout.scss`: the rewrite as Design Notes states. Run
       `corepack pnpm test --run app/__tests__/anchor-contract.test.ts` with the path left out of
       `TOKEN_NATIVE_STYLESHEETS` and see `:855-857` fail naming `HomeLayout.scss`; then add the entry.
-- [ ] `HomeLayout.tsx`: the timeline, the `gsap` and `useGsapContext` imports and `containerRef` out;
+- [x] `HomeLayout.tsx`: the timeline, the `gsap` and `useGsapContext` imports and `containerRef` out;
       `aria-hidden='true'` and `<ScanlineOverlay />` into the gem block; the two stale docblock
       sentences rewritten.
-- [ ] `SkipControl.scss:23-25`: the comment amended to `--z-base` with the date.
-- [ ] `HomeLayout.test.tsx`: drop the `useGsapContext` mock; add cases for the scrim's presence
+- [x] `SkipControl.scss:23-25`: the comment amended to `--z-base` with the date.
+- [x] `HomeLayout.test.tsx`: drop the `useGsapContext` mock; add cases for the scrim's presence
       inside `.home-gem` and its absence on the flat path, for `aria-hidden` on `.home-gem` with no
       focusable descendant, and for the stylesheet read (the ScanlineOverlay ordering: verify each
       pinned role against `contracts/tokens.css` first, then against the source). See each fail
       against the old files first.
-- [ ] `accessibility-floor.pw.ts`, `hub-accessibility-pass.md`, `known-violations.md`: the six rows,
+- [x] `accessibility-floor.pw.ts`, `hub-accessibility-pass.md`, `known-violations.md`: the six rows,
       the four counts, the clip table, F-11's closure, the three KV-6 cells. Then
       `corepack pnpm test --run ops/__tests__/hub-accessibility-pass.test.ts` green, having seen
       `:608-620` fail first against the unmoved counts.
-- [ ] `anchor-aliases.pw.ts`, `type-swap.pw.ts`, `contract-anchor.pw.ts`,
+- [x] `anchor-aliases.pw.ts`, `type-swap.pw.ts`, `contract-anchor.pw.ts`,
       `ops/__tests__/hub-accessibility-probe.test.ts`: the `--accent-dim` rows and count, the
       `--confillia-normal` retirement to a zero-call-site pin, the two ground literals.
-- [ ] Branch build: `corepack pnpm build && node ops/asset-budget.mjs` and the `.css` sizes again;
+      *(As executed: `contract-anchor.pw.ts` was left unchanged. Its `ROUTE` is `/work` at `:61`, so
+      the `rgb(10, 0, 15)` it asserts at `:1072` is `app/app.scss`'s `body#work` and Story 2-33's,
+      not the home ground. The spec's premise was wrong; the edit was made, found wrong and reverted.
+      `ops/__tests__/hub-accessibility-probe.test.ts:31` was the one ground literal that moved.)*
+- [x] Branch build: `corepack pnpm build && node ops/asset-budget.mjs` and the `.css` sizes again;
       `ops/asset-budget.md`: the dated reading and run, the Derived delta, DW-57's `/projects` rows.
-- [ ] Container, `corepack pnpm test:e2e`: the full suite, with the DW-101 sampling case added to
+- [x] Container, `corepack pnpm test:e2e`: the full suite, with the DW-101 sampling case added to
       `accessibility-floor.pw.ts`. Record each measured ratio beside the table's figure.
-- [ ] `deferred-work.md`: close the remaining entries. `corepack pnpm test --run`,
+- [x] `deferred-work.md`: close the remaining entries. `corepack pnpm test --run`,
       `corepack pnpm typecheck`; commit on the branch (no push and no remote operation from the
       implementation step); `sprint-status.yaml`: `review` and the comment block.
 
