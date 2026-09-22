@@ -946,20 +946,84 @@ test.describe("the gem's reveal", () => {
     ).toEqual([]);
   });
 
+  /**
+   * Every element `HomeLayout.scss`'s reduced-motion block names, and the one it cannot: the gem,
+   * which this path does not render at all.
+   *
+   * A selector that matches nothing is reported rather than skipped, so a renamed class reads as a
+   * fixture failure instead of as a hero with no animation on it.
+   */
+  const REDUCED_MOTION_SELECTORS = [
+    '.home-panel--name',
+    '.home-panel--sys',
+    '.home-role',
+    'a.nav-link',
+    '.home-panel--contact .contact-container a',
+  ] as const;
+
+  /**
+   * What each selector's elements compute for the entrance, and whether anything is animating.
+   *
+   * Shared by the reduced-motion cases and by the control below them, so the control exercises the
+   * same code path rather than a second read that happens to agree with it.
+   */
+  const heroMotionState = (page: Page, selectors: readonly string[]) =>
+    page.evaluate((list: string[]) => {
+      const animated: string[] = [];
+      for (const selector of list) {
+        const nodes = [...document.querySelectorAll<HTMLElement>(selector)];
+        if (nodes.length === 0) {
+          animated.push(`${selector} matched nothing, so the fixture is gone rather than the claim`);
+          continue;
+        }
+        nodes.forEach((node, index) => {
+          const name = getComputedStyle(node).animationName;
+          if (name !== 'none') animated.push(`${selector}[${index}] computes animation-name "${name}"`);
+        });
+      }
+
+      const hero = document.querySelector('.home-container');
+      const running = hero
+        ? document.getAnimations().filter((animation) => {
+            const target = (animation as unknown as { effect?: { target?: Element | null } }).effect?.target ?? null;
+            return target !== null && hero.contains(target);
+          }).length
+        : -1;
+
+      const role = document.querySelector('.home-role');
+      return {
+        animated,
+        running,
+        roleOpacity: role ? Number.parseFloat(getComputedStyle(role).opacity) : -1,
+      };
+    }, [...selectors]);
+
   for (const webgl of [true, false]) {
     test(`the reduced-motion hero is at its final state immediately, WebGL ${
       webgl ? 'present' : 'absent'
     }`, async ({ page }) => {
-      // **What this case measures changed with Story 2-13, and the reason it still exists did
-      // not.** `HomeLayout.scss` opens the role line, the sys panel, the nav links and the contact
-      // links at `opacity: 0`, and the timeline that lifts them never runs for a reduced-motion
-      // visitor: `gsap.set(finalState, { opacity: 1, y: 0 })` in `HomeLayout`'s reduced-motion
-      // branch is the one thing that ever does. Delete that line and this visitor gets a
-      // permanently blank hero, while every `no-preference` case above stays green. `toBeVisible`
-      // would not catch it either: an element at `opacity: 0` is visible to Playwright.
+      // **What this case reads changed with Story 2-29, and the reason it exists did not.** Until
+      // then `HomeLayout.scss` opened the role line, the sys panel and the five links at
+      // `opacity: 0` and only `gsap.set(finalState, { opacity: 1, y: 0 })` in `HomeLayout`'s
+      // reduced-motion branch ever lifted them, so deleting that branch left this visitor with a
+      // permanently blank hero and an eventual-opacity poll caught it.
+      //
+      // **That poll stopped being able to fail.** The entrance is now a `home-enter` keyframe with
+      // `animation-fill-mode: both`, whose base state is the final state, so with the reduced-motion
+      // block deleted the hero is blank for the delay, between 1.3s and 2.36s, and then at full
+      // opacity: a poll with a 15s budget passes either way and nothing would pin the override.
+      // Corrected 2026-09-21 in the same commit as the entrance, after the audit named it.
+      //
+      // **So this reads what reduced motion actually changes.** `HomeLayout.scss`'s block under the
+      // query sets `animation: none` on every animated element in the hero, in the
+      // `GlitchText.scss:50-58` shape, because the contract's duration collapse to 1ms does not
+      // touch `animation-delay` and a 1ms run still waits it out. Computed `animation-name` answers
+      // that at any moment on any run, and `document.getAnimations()` says the same thing one level
+      // down: on this path nothing in the hero is animating at all. Delete the block and both fail
+      // immediately, by name.
       //
       // The gem half of it is gone rather than moved: reduced motion is one of the four non-3D
-      // triggers, so this hero has no `.home-gem` to reveal, which is asserted here as the second
+      // triggers, so this hero has no `.home-gem` to reveal, which is asserted here as the last
       // half of the same read. The WebGL stub is carried through both values to show that: on this
       // context it changes nothing, because the motion preference has already decided the path.
       //
@@ -968,21 +1032,26 @@ test.describe("the gem's reveal", () => {
       if (!webgl) await page.addInitScript(NO_WEBGL);
       await goTo(page, ROUTE);
 
-      await expect
-        .poll(
-          () =>
-            page.evaluate(() => {
-              const role = document.querySelector('.home-role');
-              return role ? Number.parseFloat(getComputedStyle(role).opacity) : -1;
-            }),
-          {
-            timeout: SETTLE_TIMEOUT,
-            message:
-              'a reduced-motion visitor never sees the hero: the stylesheet holds it at opacity 0 ' +
-              "and HomeLayout's reduced-motion branch is the only thing that undoes it",
-          }
-        )
-        .toBe(1);
+      const read = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+
+      expect(
+        read.animated,
+        `a reduced-motion visitor's hero still carries the entrance. HomeLayout.scss's ` +
+          `prefers-reduced-motion block sets animation: none on every one of these, and without it ` +
+          `the hero is blank for the delay before the keyframe fills it:\n${read.animated.join('\n')}`
+      ).toEqual([]);
+
+      expect(
+        read.running,
+        'an animation is running inside the hero on a reduced-motion context, which is the same ' +
+          'defect one level down from the computed read above'
+      ).toBe(0);
+
+      expect(
+        read.roleOpacity,
+        'the role line is not at full opacity on the frame this was read, so the base state is no ' +
+          'longer the final state and a reduced-motion visitor waits for it'
+      ).toBe(1);
 
       expect(
         await page.locator('.home-gem').count(),
@@ -992,22 +1061,48 @@ test.describe("the gem's reveal", () => {
     });
   }
 
-  test('and that reduced-motion read fires, measured against the state it is asserting away', async ({ page }) => {
-    // The control. It plants exactly the failure the case above exists for, the hero left at the
-    // stylesheet's initial state, and shows the read reporting it rather than answering 1 always.
+  test('and all three reduced-motion reads fire, measured against the states they assert away', async ({ page }) => {
+    // The control, and since 2026-09-21 it covers **all three** reads rather than the opacity one.
+    // The Step-04 review found the two added that day, `animated` and `running`, with nothing
+    // showing they could fire; this plants the state each exists to catch and shows it reported,
+    // then takes it away and shows it gone, in the `display-entrance.pw.ts:300-302,352-357` shape.
     await goTo(page, ROUTE);
-    await page.evaluate(() => {
-      const style = document.createElement('style');
-      style.textContent = '.home-role { opacity: 0 !important; }';
-      document.head.append(style);
-    });
 
-    const read = await page.evaluate(() => {
-      const role = document.querySelector('.home-role');
-      return role ? Number.parseFloat(getComputedStyle(role).opacity) : -1;
-    });
+    const clean = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect(clean.animated, 'the surface under the plants already carries the entrance').toEqual([]);
+    expect(clean.running, 'the surface under the plants is already animating').toBe(0);
+    expect(clean.roleOpacity, 'the surface under the plants is already dimmed').toBe(1);
 
-    expect(read, 'a hero planted at opacity 0 still read as 1, so the read is a constant').toBe(0);
+    // One: an animation put back on the role line, which is exactly what deleting the
+    // reduced-motion block would leave. Five seconds and no delay, so it is running rather than
+    // waiting, which is what `getAnimations()` is asked about.
+    const unplantMotion = await page.addStyleTag({
+      content: '.home-role { animation: home-enter 5s linear 0s both !important; }',
+    });
+    const animating = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect(
+      animating.animated,
+      'a planted entrance on the role line was not reported by the computed read'
+    ).toEqual(['.home-role[0] computes animation-name "home-enter"']);
+    expect(animating.running, 'a planted running animation was not seen by getAnimations()').toBeGreaterThan(0);
+    await unplantMotion.evaluate((node) => (node as Element).remove());
+
+    const afterMotion = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect([afterMotion.animated.length, afterMotion.running], 'the planted animation outlived its case').toEqual([0, 0]);
+
+    // Two: the hero left at the stylesheet's old initial state, which is the failure this case has
+    // existed for since Story 2-12.
+    const unplantDim = await page.addStyleTag({ content: '.home-role { opacity: 0 !important; }' });
+    expect(
+      (await heroMotionState(page, REDUCED_MOTION_SELECTORS)).roleOpacity,
+      'a hero planted at opacity 0 still read as 1, so the read is a constant'
+    ).toBe(0);
+    await unplantDim.evaluate((node) => (node as Element).remove());
+
+    expect(
+      (await heroMotionState(page, REDUCED_MOTION_SELECTORS)).roleOpacity,
+      'the planted opacity outlived its case'
+    ).toBe(1);
   });
 });
 
@@ -1066,28 +1161,184 @@ test.describe('the entrance touches only opacity and transform, and does not loo
       { probe: selector }
     );
 
+  /**
+   * What the stylesheets declare and what the running hero asks of them.
+   *
+   * **The entrance stopped writing inline styles on 2026-09-21.** Story 2-29 replaced
+   * `HomeLayout.tsx`'s GSAP timeline with one `home-enter` keyframe and five `animation-delay`
+   * declarations, so the inline sweep above now legitimately observes nothing and can no longer be
+   * the thing that proves the entrance ran. It is kept, because a tween returning to this component
+   * is exactly what it catches. What the entrance animates is read here instead: every property any
+   * `@keyframes` block on this route declares, and the iteration count and direction every animated
+   * element in the hero computes, which is where a loop or a yoyo would show up in a CSS entrance.
+   *
+   * The `#gem-canvas` subtree is skipped for the reason the sweep above gives.
+   */
+  const declaredEntrance = (page: Page, selectors: readonly string[]) =>
+    page.evaluate((list: string[]) => {
+      const selectors = list;
+      const properties = new Set<string>();
+      const walk = (rules: readonly CSSRule[]): void => {
+        for (const rule of rules) {
+          const keyframes = rule as CSSKeyframesRule;
+          if (typeof keyframes.name === 'string' && keyframes.cssRules) {
+            for (const frame of [...keyframes.cssRules] as CSSKeyframeRule[]) {
+              for (let index = 0; index < frame.style.length; index += 1) properties.add(frame.style[index]);
+            }
+            continue;
+          }
+          const group = rule as CSSGroupingRule;
+          if (group.cssRules) walk([...group.cssRules]);
+        }
+      };
+      for (const sheet of [...document.styleSheets]) {
+        // A stylesheet this document cannot read is not one this repository wrote.
+        try {
+          walk([...sheet.cssRules]);
+        } catch {
+          continue;
+        }
+      }
+
+      const animated: string[] = [];
+      const iterations = new Set<string>();
+      const directions = new Set<string>();
+      for (const node of document.querySelectorAll<HTMLElement>('.home-container, .home-container *')) {
+        if (node.closest('#gem-canvas')) continue;
+        const style = getComputedStyle(node);
+        if (style.animationName === 'none' || style.animationName === '') continue;
+        animated.push(style.animationName);
+        iterations.add(style.animationIterationCount);
+        directions.add(style.animationDirection);
+      }
+
+      const sites = (selectors as string[]).map((selector) => ({
+        selector,
+        elements: [...document.querySelectorAll<HTMLElement>(selector)].map((node) => {
+          const style = getComputedStyle(node);
+          return {
+            name: style.animationName,
+            delay: Math.round(Number.parseFloat(style.animationDelay) * 1000),
+            fill: style.animationFillMode,
+          };
+        }),
+      }));
+
+      return {
+        properties: [...properties].sort(),
+        animated: [...new Set(animated)].sort(),
+        iterations: [...iterations].sort(),
+        directions: [...directions].sort(),
+        sites,
+      };
+    }, [...selectors]);
+
+  /**
+   * The five rules `HomeLayout.scss` animates, each with the delays its elements carry, in the
+   * order the entrance plays them.
+   *
+   * **Nothing read the delays or the fill until 2026-09-21.** The settle in
+   * `hit-target-floor.pw.ts` and `accessibility-floor.pw.ts` waits on `ENTRANCE_SELECTOR`, which is
+   * the two link groups only, so `.home-panel--sys`, `.home-role` and `.home-gem` were observed by
+   * nothing on the default door: dropping a delay, or dropping `both` from any of the five, shipped
+   * green. `both` is not a detail. It is the whole of the no-script guarantee the spec's No-script
+   * row and DW-42 rest on: the keyframe supplies only the `from`, so `backwards` is what holds an
+   * element absent through its delay and `forwards` is what leaves it present afterwards. Without
+   * it the hero flickers to its base state and back. Found by the Step-04 review.
+   *
+   * **Five, not six.** `.home-panel--name` carried a sixth until the same day; the retired timeline
+   * never named it and the 2023 stylesheet gave it no initial state, so it had been painting
+   * immediately and the entrance had started hiding the hero's name for 500ms.
+   *
+   * A selector matching a different number of elements is reported as a fixture failure rather than
+   * skipped, the way `REDUCED_MOTION_SELECTORS` above is read.
+   */
+  const ENTRANCE_SITES = [
+    { selector: '.home-gem', delays: [500] },
+    { selector: '.home-role', delays: [1300] },
+    { selector: '.home-panel--sys', delays: [1600] },
+    { selector: 'a.nav-link', delays: [2000, 2080] },
+    { selector: '.home-panel--contact .contact-container a', delays: [2200, 2280, 2360] },
+  ] as const;
+
   /** `transform` plus `opacity`, and the spellings a browser may echo back for either. */
   const ALLOWED = new Set(['opacity', 'transform', '-webkit-transform', 'translate', 'rotate', 'scale']);
 
   test('writes no property outside opacity and transform, and no opacity ever goes back down', async ({
     browser,
   }) => {
-    const observed = await withMotion(browser, async (page) => {
+    const { declared, ...observed } = await withMotion(browser, async (page) => {
       await goTo(page, ROUTE);
-      return sweep(page, '.home-role');
+      const fromCss = await declaredEntrance(page, ENTRANCE_SITES.map((site) => site.selector));
+      const fromInline = await sweep(page, '.home-role');
+      return { ...fromInline, declared: fromCss };
     });
 
     expect(
-      observed.properties.length,
-      'the entrance wrote no inline property at all over four seconds, so either it did not run ' +
-        'or this sweep is reading the wrong subtree'
+      declared.animated.length,
+      'no element in the hero declares an animation at all, so either the entrance did not run or ' +
+        'this sweep is reading the wrong subtree'
     ).toBeGreaterThan(0);
+    expect(declared.animated, `the hero entrance is not the home-enter keyframe: ${declared.animated.join(', ')}`).toContain(
+      'home-enter'
+    );
+
+    const declaredOffending = declared.properties.filter((property) => !ALLOWED.has(property));
+    expect(
+      declaredOffending,
+      `a @keyframes block on ${ROUTE} animates a property EXPERIENCE.md:685-699 does not allow: ` +
+        `${declaredOffending.join(', ')}. The whole set declared was ${declared.properties.join(', ')}`
+    ).toEqual([]);
+
+    // **Every animated rule, with its delay and its fill.** This is the read the Step-04 review
+    // found missing: `both` is the no-script guarantee and three of the five sites were observed by
+    // nothing at all on this door.
+    const offSequence: string[] = [];
+    for (const site of ENTRANCE_SITES) {
+      const read = declared.sites.find((entry) => entry.selector === site.selector);
+      if (!read || read.elements.length !== site.delays.length) {
+        offSequence.push(
+          `${site.selector} matched ${read?.elements.length ?? 0} elements and the table names ${site.delays.length}, ` +
+            `so the fixture moved rather than the entrance`
+        );
+        continue;
+      }
+      read.elements.forEach((element, index) => {
+        if (element.name !== 'home-enter') offSequence.push(`${site.selector}[${index}] animates "${element.name}"`);
+        if (element.delay !== site.delays[index]) {
+          offSequence.push(`${site.selector}[${index}] waits ${element.delay}ms and the table says ${site.delays[index]}ms`);
+        }
+        if (element.fill !== 'both') {
+          offSequence.push(
+            `${site.selector}[${index}] fills "${element.fill}" rather than "both", so the keyframe's from is not held ` +
+              `through the delay and a document with no script flickers`
+          );
+        }
+      });
+    }
+    console.log(
+      `narrative: entrance sites ${declared.sites
+        .map((site) => `${site.selector} [${site.elements.map((element) => `${element.delay}ms ${element.fill}`).join(', ')}]`)
+        .join('; ')}`
+    );
+    expect(offSequence, `the entrance is off the sequence this file tables:\n${offSequence.join('\n')}`).toEqual([]);
+
+    // A loop and a yoyo, read where a CSS entrance would carry them. `EXPERIENCE.md:693-694` allows
+    // one orchestrated entrance per page load and nothing inside it that repeats.
+    expect(
+      declared.iterations,
+      `an animation in the hero repeats: iteration counts ${declared.iterations.join(', ')}`
+    ).toEqual(['1']);
+    expect(
+      declared.directions,
+      `an animation in the hero alternates, which is a yoyo by another name: ${declared.directions.join(', ')}`
+    ).toEqual(['normal']);
 
     const offending = observed.properties.filter((property) => !ALLOWED.has(property));
     expect(
       offending,
-      `the entrance animates a property EXPERIENCE.md:685-699 does not allow: ${offending.join(', ')}. ` +
-        `The whole set observed was ${observed.properties.join(', ')}`
+      `something in the hero writes an inline property EXPERIENCE.md:685-699 does not allow: ` +
+        `${offending.join(', ')}. The whole set observed was ${observed.properties.join(', ')}`
     ).toEqual([]);
 
     // A `yoyo` shows up here and nowhere else: the value walks back down between samples. The role

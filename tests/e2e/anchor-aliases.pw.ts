@@ -1,4 +1,4 @@
-import { test, expect, type Browser, type Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from './harness';
@@ -135,13 +135,11 @@ const ROUTES = ['/', '/cv', '/work', '/celeste', '/api/health'] as const;
 
 /**
  * A path the Hub does not route, which renders `app/not-found.tsx` through the same root layout
- * and the same `Body`. Two of the eleven `--accent-dim` call sites and one `--monument-bold`
- * call site live only here.
+ * and the same `Body`. One of the eight `--accent-dim` call sites and one `--monument-bold`
+ * call site live only here. **Two of eleven until 2026-09-21**, when Story 2-29 took the three
+ * HomeLayout rows and the second of this route's pair went with the count rather than the route.
  */
 const NOT_FOUND = '/a-route-that-does-not-exist';
-
-/** Wide enough for the `min-width: 768px` half of `HomeLayout.scss`, which the 360 project is not. */
-const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
 
 /**
  * The Hub declares fifteen custom properties: thirteen aliased onto roles, two left as literals.
@@ -354,8 +352,6 @@ interface CallSite {
   pseudo?: string;
   property: string;
   verdict: 'ornament' | 'boundary';
-  /** Read in a second context at 1024 wide, because the rule only applies above 767px. */
-  wide?: true;
 }
 
 /**
@@ -408,34 +404,17 @@ const CALL_SITES: readonly CallSite[] = [
   // take the same rule.
   { at: 'error-page.scss:59', route: NOT_FOUND, selector: '.error-page__back', property: 'border-left-color', verdict: 'boundary' },
 
-  // The link's hover repaints its `color`, never this rule. The three HomeLayout citations were
-  // re-read on 2026-09-12 by Story 2-20, which added a `font-stretch` line above each of the first
-  // two: they had read `:121`, `:154` and `:234`, three lines stale already, and nothing holds
-  // them but a reader editing the file.
-  { at: 'HomeLayout.scss:125', route: '/', selector: '.nav-link', property: 'border-left-color', verdict: 'ornament' },
-  {
-    at: 'HomeLayout.scss:154',
-    route: '/',
-    selector: '.home-panel--contact .contact-container a',
-    property: 'border-right-color',
-    verdict: 'ornament',
-    // Below 768 the same element takes `border-right: none` at `HomeLayout.scss:228`, which
-    // resets the colour to `currentcolor`. This row is the desktop rule and is read where it wins.
-    wide: true,
-  },
-  {
-    at: 'HomeLayout.scss:229',
-    route: '/',
-    selector: '.home-panel--contact .contact-container a',
-    property: 'border-left-color',
-    verdict: 'ornament',
-  },
+  // **The three HomeLayout rows left on 2026-09-21 with Story 2-29**, which rebuilt that
+  // stylesheet token-native: its two nav rules and its mobile contact rule name `--token-border`
+  // directly now, which is the leading-edge role `DESIGN.md:768` gives them, so the alias is not in
+  // their path at all. They were the only rows here read at the wide viewport, and the last three
+  // `--accent-dim` call sites on `/`.
 
   // A static section divider. The `ProjectsHero.scss:8` twin of this row left with Story 2-14.
   { at: 'WorkHero.scss:8', route: '/work', selector: '.work-hero', property: 'border-bottom-color', verdict: 'ornament' },
 ];
 
-const CALL_SITE_COUNT = 11;
+const CALL_SITE_COUNT = 8;
 const BOUNDARY_COUNT = 2;
 
 /**
@@ -511,28 +490,16 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
 };
 
 /**
- * Run `read` against `/` in a second context 1024 wide.
+ * **Removed 2026-09-21 with the last row that needed it.**
  *
- * The project pins 360 (AD-19's floor), and one of the twelve call sites is a rule that only
- * applies above 767px. Opening a context is deliberate and says so, on the pattern
- * `tests/e2e/contract-anchor.pw.ts` set for its wide-viewport and no-preference reads.
+ * `inWideContext` opened a second context 1024 wide, because one `--accent-dim` call site was a
+ * rule that only applied above 767px: `HomeLayout.scss`'s desktop `border-right-color` on the
+ * contact links. Story 2-29 rebuilt that file against the contract and the row went with the other
+ * two, leaving the helper, its `WIDE_VIEWPORT`, the `wide` field on `CallSite` and the loop that
+ * read them with nothing to do. Every surviving row is read at the project's own 360, which is
+ * AD-19's floor and the width the rest of this file measures at. Kept as a note rather than as
+ * dead code, so a later row that needs a wide read knows this was tried and why it left.
  */
-const inWideContext = async <T>(browser: Browser, read: (page: Page) => Promise<T>): Promise<T> => {
-  const context = await browser.newContext({
-    viewport: { ...WIDE_VIEWPORT },
-    deviceScaleFactor: 1,
-    colorScheme: 'light',
-    reducedMotion: 'reduce',
-  });
-  try {
-    const page = await context.newPage();
-    expect(page.viewportSize()?.width ?? 0, 'the second context is not wider than the mobile rule').toBeGreaterThan(767);
-    return await read(page);
-  } finally {
-    await context.close();
-  }
-};
-
 test('parses a real alias layer, so every case below measures something', () => {
   expect(HUB.size, 'app/app.scss no longer declares fifteen custom properties on :root').toBe(HUB_PROPERTY_COUNT);
   expect(CONTRACT.size, 'no :root block was parsed out of contracts/tokens.css').toBeGreaterThan(0);
@@ -561,9 +528,9 @@ test('parses a real alias layer, so every case below measures something', () => 
   // could be satisfied by one value and would prove nothing.
   expect(CONTRACT.get(ORNAMENT), `${ORNAMENT} and ${BOUNDARY} are declared the same`).not.toBe(CONTRACT.get(BOUNDARY));
 
-  // The call-site table, pinned on both counts. Nine ornament and two boundary is what makes a
+  // The call-site table, pinned on both counts. Six ornament and two boundary is what makes a
   // single global alias unable to pass, and a table that lost a row would simply loop less.
-  expect(CALL_SITES.length, 'the --accent-dim table no longer carries eleven call sites').toBe(CALL_SITE_COUNT);
+  expect(CALL_SITES.length, 'the --accent-dim table no longer carries eight call sites').toBe(CALL_SITE_COUNT);
   expect(CALL_SITES.filter((site) => site.verdict === 'boundary').length, 'the two boundary sites moved').toBe(
     BOUNDARY_COUNT
   );
@@ -622,17 +589,18 @@ test('parses a real alias layer, so every case below measures something', () => 
     'the --monument-regular call sites on disk are not the two whose clamp this file checks'
   ).toEqual(sortedEntries(tabled(DISPLAY_REGULAR_SITES)));
 
-  // The same trap on the width axis, since Story 2-20 retargeted `--confillia-normal` onto the
-  // display family: the alias carries the family and not the narrow width the old face had, so
-  // each call site sets `font-stretch: 75%` by hand on the line after `font-family`. A third site
-  // without that line renders at 100% width and nothing else says so.
-  expect(sortedEntries(callSitesOf('--confillia-normal')), 'a --confillia-normal call site is outside HomeLayout.scss').toEqual([
-    ['HomeLayout.scss', 2],
-  ]);
+  // **Zero call sites since 2026-09-21**, the shape `--hero-height` has had since Story 1-18: a
+  // property the alias layer still declares with nothing left reading it. Story 2-20 retargeted
+  // `--confillia-normal` onto the display family and each of its two call sites set
+  // `font-stretch: 75%` by hand on the line after `font-family`, because a family alias cannot
+  // carry width any more than it can carry weight; Story 2-29 rebuilt `HomeLayout.scss` against the
+  // contract, so the two hero link groups name the display family directly and take the published
+  // face at its default width. Pinned at zero rather than deleted, because a new call site would
+  // arrive without that hand-set width and nothing else would say so.
   expect(
-    (COMPONENT_STYLESHEETS.get('HomeLayout.scss') ?? '').match(/font-family:\s*var\(--confillia-normal\);\r?\n\s*font-stretch:\s*75%;/g)?.length ?? 0,
-    'a --confillia-normal call site does not set font-stretch: 75% on the line after font-family, so it renders at full width'
-  ).toBe(2);
+    sortedEntries(callSitesOf('--confillia-normal')),
+    'a --confillia-normal call site is back, and a family alias carries no width'
+  ).toEqual([]);
 
   // The parsers, on planted controls, before any empty or agreeing result is read as good news.
   expect(aliasRole('--white-color'), '--white-color is no longer aliased onto a role').toBe('--token-text');
@@ -744,7 +712,7 @@ test('the two properties the alias layer must not move still hold their authored
   );
 });
 
-test('--accent-dim resolves to the role its call site earns, at all twelve', async ({ page, browser }) => {
+test('--accent-dim resolves to the role its call site earns, at all eight', async ({ page }) => {
   const readSite = async (target: Page, site: CallSite, roles: Record<string, string>): Promise<string | null> => {
     const expected = roles[site.verdict === 'boundary' ? BOUNDARY : ORNAMENT];
     const actual = site.pseudo
@@ -760,34 +728,23 @@ test('--accent-dim resolves to the role its call site earns, at all twelve', asy
   const wrong: string[] = [];
   let read = 0;
 
-  for (const route of [...new Set(CALL_SITES.filter((site) => !site.wide).map((site) => site.route))]) {
+  for (const route of [...new Set(CALL_SITES.map((site) => site.route))]) {
     await goTo(page, route, route === NOT_FOUND ? 404 : 200);
     const roles = await probeRoleColours(page, [ORNAMENT, BOUNDARY]);
     expect(roles[ORNAMENT], `${ORNAMENT} and ${BOUNDARY} resolve to the same colour on ${route}`).not.toBe(
       roles[BOUNDARY]
     );
 
-    for (const site of CALL_SITES.filter((candidate) => candidate.route === route && !candidate.wide)) {
+    for (const site of CALL_SITES.filter((candidate) => candidate.route === route)) {
       const failure = await readSite(page, site, roles);
       read += 1;
       if (failure) wrong.push(failure);
     }
   }
 
-  // The one row whose rule only applies above 767px, read where it wins.
-  for (const site of CALL_SITES.filter((candidate) => candidate.wide)) {
-    const failure = await inWideContext(browser, async (wide) => {
-      await goTo(wide, site.route);
-      const roles = await probeRoleColours(wide, [ORNAMENT, BOUNDARY]);
-      return readSite(wide, site, roles);
-    });
-    read += 1;
-    if (failure) wrong.push(failure);
-  }
-
   // A selector that matched nothing throws out of `computedStyleValue` rather than being skipped,
-  // so this count can only reach twelve by reading twelve real elements.
-  expect(read, 'fewer than twelve call sites were read').toBe(CALL_SITE_COUNT);
+  // so this count can only reach the tabled one by reading that many real elements.
+  expect(read, 'fewer call sites were read than this file tables').toBe(CALL_SITE_COUNT);
   expect(
     wrong,
     `a --accent-dim call site resolves to the wrong role. Ornament and boundary are two different ` +

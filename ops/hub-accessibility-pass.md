@@ -26,25 +26,26 @@ without a method is a claim. **Story ids are written hyphenated**, as `Story 2-2
 | Routes swept | 5: `/`, `/work`, `/cv`, `/celeste` and `/a-route-that-does-not-exist` (the 404), derived from `app/` rather than listed | **Decision.** `routesOnDisk` in `tests/e2e/accessibility-floor.pw.ts`, less `/api/health` |
 | Tab stops read | **39**: `/` 18, `/work` 7, `/cv` 9, the 404 5, `/celeste` 0; none inside an `aria-hidden` subtree, none disabled or inert | **Observed 2026-09-13** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by tagging every tabbable in DOM order and pressing Tab once per tabbable from `body` |
 | Every stop computes the ring | `2px solid lab(79.9388 18.6867 -44.8585) at 3px`, `:focus-visible` true, `transition-property` `all` over `0s` on every stop, which never animates | **Observed 2026-09-13**, same run. The `lab()` string is Chromium's computed form of `--token-focus`; rasterised through a canvas it is `rgb(198, 189, 255)`. Computed, not painted whole: the next row is what a visitor sees |
-| Six stops paint a fragment of it | **33 of 39 stops paint the ring whole. Six do not**, all on `/`: the two home nav links and the three contact links sit flush inside panels whose `clip-path` is bounded by the panel's own border box, so the ring paints on one or two sides only; the skip-link is parked at the viewport's top-left corner, so its top and left sides are past the edge when it is revealed | **Observed 2026-09-13** in the review re-run, by reading every stop's box against each ancestor's `clip-path` and `overflow` box and against the document's edge, within the ring's reach of 5px (offset plus stroke). Carried as the six `clip` rows of the ledger, Story 2-29's and Story 2-32's |
+| Stops that paint a fragment of the ring | **33 of 39 stops paint the ring whole. Six do not**, all on `/`: the two home nav links and the three contact links sit flush inside panels whose `clip-path` is bounded by the panel's own border box, so the ring paints on one or two sides only; the skip-link is parked at the viewport's top-left corner, so its top and left sides are past the edge when it is revealed. **Re-read 2026-09-21: one**, the skip-link alone. Story 2-29 gave `.home-panel` `padding: var(--s-sm)`, 12px on every side, which is more than the ring's 5px reach on a straight edge and more than the 10px corner cut on a notched one, so the five home stops ring whole inside a silhouette whose four polygons did not move | **Observed 2026-09-13** in the review re-run, by reading every stop's box against each ancestor's `clip-path` and `overflow` box and against the document's edge, within the ring's reach of 5px (offset plus stroke). Carried as the six `clip` rows of the ledger, Story 2-29's and Story 2-32's. **Observed 2026-09-21** by Story 2-29 in the pinned image, the same read, with its five rows deleted and `clip-skip-link` the one that remains |
 | The two skip targets ring on Enter | `main#main` after Enter on the skip-link and `h2#suite` after Enter on the skip control both match `:focus-visible` and compute `2px solid` at `3px`; the landmark's ring is clipped by the document's edge on its top, left and right, the heading's paints whole | **Observed 2026-09-13** in the review re-run. See § Decisions |
 | Traversal in DOM order | Every route's stops equal its DOM-ordered visible tabbables; the extra Tab leaves the document; no `tabindex` computes above zero | **Observed 2026-09-13**, same run |
-| The ring against its ground | `--token-bg` **11.73:1** on a shipped element; `--token-bg-raised` **11.24:1** and `--token-bg-raised-2` **10.47:1** on planted controls; the cybercore literal `#0a000f` **11.89:1** on `/`, `/work` and the 404's exits | **Observed 2026-09-13**, same run, WCAG 2.1 relative luminance on canvas-rasterised sRGB. The 3:1 non-text floor holds everywhere the ring can land |
+| The ring against its ground | `--token-bg` **11.73:1** on a shipped element; `--token-bg-raised` **11.24:1** and `--token-bg-raised-2` **10.47:1** on planted controls; the cybercore literal `#0a000f` **11.89:1** on `/work` and the 404's exits, and on `/` until 2026-09-21 | **Observed 2026-09-13**, same run, WCAG 2.1 relative luminance on canvas-rasterised sRGB. The 3:1 non-text floor holds everywhere the ring can land. **Amended 2026-09-21** by Story 2-29, which replaced `HomeLayout.scss`'s `body[id='']` literal with `var(--token-bg)`, so every ring on `/` is read against the first ground in this row rather than the fourth |
 | The mouse paints nothing | 38 elements hovered (every tabbable but the parked skip-link), `outline-style` `none` under the pointer on each; one prevented click per route on a link and, where one exists, on a button, `:focus-visible` false and `outline-style` `none` after it | **Observed 2026-09-13**, same run |
 | Focus and hover are different tokens | `--token-focus` `rgb(198, 189, 255)`, `--token-accent-hover` `rgb(173, 161, 255)`, `--token-accent` `rgb(143, 126, 240)`, pairwise different on every route | **Observed 2026-09-13**, same run, rasterised |
-| z-index literals in the built CSS | **7**: `20`, `5`, `3`, `10`, and `2` three times, over 14 built stylesheets, all carried by ledger rows below; seven `--z-*` names read off the contract. **Re-read 2026-09-14: 6**, `20`, `5`, `3`, and `2` three times, over 13 built stylesheets, the `10` gone with the stylesheet that wrote it | **Observed 2026-09-13**, same run, by reading `.next/static/chunks/*.css` as text. **Observed 2026-09-14** by Story 2-28, by reading the branch build's `.next/static/chunks/*.css` as text on the authoring host after `ScanlineOverlay.scss` was rewritten to `var(--z-raised)` and its two call sites removed (no chunk carries `.scanline-overlay`, so the stylesheet is not in the build at all), and by the sweep in the pinned image the same day, whose tally printed `z-index=2 x3, z-index=20 x1, z-index=5 x1, z-index=3 x1` over 13 built stylesheets |
-| Depth tells in the built CSS | `text-shadow` **7**, `linear-gradient(` **6**, `radial-gradient(` **1**, `repeating-linear-gradient(` **1**, `box-shadow` **0**, `conic-gradient(` **0**, all carried by rows below. **Re-read 2026-09-14**: `text-shadow` **0**, the other five unchanged, eight in all. **Re-read again 2026-09-14**: `radial-gradient(` **0** and `repeating-linear-gradient(` **0**, `linear-gradient(` still **6**, six in all | **Observed 2026-09-13**, same run. **Observed 2026-09-14** by Story 2-27, by reading the branch build's `.next/static/chunks/*.css` as text on the authoring host after `glitch-text.scss` and its seven `text-shadow` steps were deleted, and by the sweep in the pinned image the same day, whose tally printed `depth=linear-gradient x6, depth=radial-gradient x1, depth=repeating-linear-gradient x1` and no `text-shadow` over 14 built stylesheets. **Observed 2026-09-14** by Story 2-28, later the same day, the same two methods after the raster's vignette and scanlines were deleted: the host read counts `radial-gradient(` and `repeating-linear-gradient(` zero times across the thirteen chunks, and the pinned image's tally printed `depth=linear-gradient x6` and nothing else |
+| z-index literals in the built CSS | **7**: `20`, `5`, `3`, `10`, and `2` three times, over 14 built stylesheets, all carried by ledger rows below; seven `--z-*` names read off the contract. **Re-read 2026-09-14: 6**, `20`, `5`, `3`, and `2` three times, over 13 built stylesheets, the `10` gone with the stylesheet that wrote it. **Re-read 2026-09-21: 3**, `2` three times, over 13 built stylesheets, the `20`, the `5` and the `3` gone with the home stylesheet that wrote them; four `--z-*` names are read off the contract in what ships, `--z-base` and `--z-raised` (both new to the build with this story), `--z-sticky` and `--z-tooltip` | **Observed 2026-09-13**, same run, by reading `.next/static/chunks/*.css` as text. **Observed 2026-09-14** by Story 2-28, by reading the branch build's `.next/static/chunks/*.css` as text on the authoring host after `ScanlineOverlay.scss` was rewritten to `var(--z-raised)` and its two call sites removed (no chunk carries `.scanline-overlay`, so the stylesheet is not in the build at all), and by the sweep in the pinned image the same day, whose tally printed `z-index=2 x3, z-index=20 x1, z-index=5 x1, z-index=3 x1` over 13 built stylesheets. **Observed 2026-09-21** by Story 2-29, the same host read of `.next/static/chunks/*.css` after the branch build, which printed `z-index literals 2 x3` and no other value, and by the sweep in the pinned image the same day |
+| Depth tells in the built CSS | `text-shadow` **7**, `linear-gradient(` **6**, `radial-gradient(` **1**, `repeating-linear-gradient(` **1**, `box-shadow` **0**, `conic-gradient(` **0**, all carried by rows below. **Re-read 2026-09-14**: `text-shadow` **0**, the other five unchanged, eight in all. **Re-read again 2026-09-14**: `radial-gradient(` **0** and `repeating-linear-gradient(` **0**, `linear-gradient(` still **6**, six in all. **Re-read 2026-09-21**: `linear-gradient(` **4**, the home ground's pair gone with the stylesheet that wrote it, four in all | **Observed 2026-09-13**, same run. **Observed 2026-09-14** by Story 2-27, by reading the branch build's `.next/static/chunks/*.css` as text on the authoring host after `glitch-text.scss` and its seven `text-shadow` steps were deleted, and by the sweep in the pinned image the same day, whose tally printed `depth=linear-gradient x6, depth=radial-gradient x1, depth=repeating-linear-gradient x1` and no `text-shadow` over 14 built stylesheets. **Observed 2026-09-14** by Story 2-28, later the same day, the same two methods after the raster's vignette and scanlines were deleted: the host read counts `radial-gradient(` and `repeating-linear-gradient(` zero times across the thirteen chunks, and the pinned image's tally printed `depth=linear-gradient x6` and nothing else. **Observed 2026-09-21** by Story 2-29, the same host read after the branch build, which printed `linear-gradient( x4` and no other tell, and by the sweep in the pinned image the same day |
 | Text reads | **318** across the five routes, 28 of them generated `::before` text (the timeline's `//` highlight markers), none under `--t-3xs`, no paragraph under `--t-2xs` outside the four labels `DESIGN.md` places there, no prose under `--t-sm`, nothing italic. **Re-read 2026-09-14: 331**, 28 generated, the same verdict: the home heading's thirteen non-blank character spans are read where its one `aria-hidden` `<h1>` was not, each at 36px in Bricolage Grotesque at 800 | **Observed 2026-09-13** in the review re-run, which added the pseudo-elements; the first run read 290 elements and no generated text. **Observed 2026-09-14** by Story 2-27 in the pinned image |
 | Level-1 headings per route | `/` one, named `Luigi Espinosa`, off the accessibility tree; `/work`, `/cv` and `/celeste` one each; **the 404 none** | **Observed 2026-09-13** in the review re-run by `getByRole('heading', { level: 1 })`. The 404 is the ledger's `heading-404` row, Story 2-30's |
 | Synthesised weights | **2**: `.work-item__initiative` on `/work` and `/cv`, `font-weight: 600` on Geist Mono, whose published range is `400` | **Observed 2026-09-13**, same run; ledger row `weight-work-initiative` |
 | Families outside the contract | **23** elements, skipped rather than judged on weight, all three shapes booked below: `sans-serif` on the header's labels, `system-ui` on `/celeste`'s heading, and the user agent's button face on the timeline's role and period spans | **Observed 2026-09-13**, same run |
 | `font-size` in `px` under `app/` and `components/` | **none** | **Observed 2026-09-13**, by the spec's scan of every `.scss`, comments stripped |
 | Autoplay | **nothing**: no `video`, `audio`, `marquee`, refresh meta or `[autoplay]` on any route | **Observed 2026-09-13**, same run |
+| The scrim's composited contrast on `/` | **Five roles sampled, every one above the table and clear of its floor**: `--token-text` 17.66:1, `--token-focus` 11.80:1, `--token-accent-hover` 9.07:1, `--token-text-secondary` 7.07:1, `--token-accent` 6.24:1, all against a ground sampled at `rgb(5, 4, 9)` beneath all four panels | **Observed 2026-09-21** by Story 2-29 in the pinned image at 1024 x 800 on the default door, by screenshotting the composited surface and reading each panel's modal ground through a canvas. See § The scrim's composited contrast on the home surface |
 | Accent share of the homepage viewport | **0.17%** at 360 x 800, **0.05%** at 1280 x 800, scroll top, reduced-motion door | **Observed 2026-09-13** by `ops/hub-accessibility-probe.mjs`. Not a gate (RESTYLE-SPEC F-8, `RESTYLE-SPEC.md:654`) |
 | Lighthouse | `/` 1.00 / 1.00 / 1.00, `/work` 1.00 / 1.00 / 1.00, `/cv` 0.96 / 1.00 / 1.00 (accessibility / best practices / SEO). **Re-read 2026-09-14** with the new heading markup: `/` 1.00 / 1.00 / 1.00, `/work` 1.00 / 1.00 / 1.00, `/cv` 0.96 / 1.00 / 1.00, every run; on `/`, `aria-prohibited-attr` and `heading-order` both pass on all three runs | **Observed 2026-09-13** locally, Lighthouse 12.6.1, three runs per URL. `/cv` joined `.lighthouserc.js`. **Observed 2026-09-14** by Story 2-27, `@lhci/cli` 0.15.1 driving Lighthouse 12.6.1 under headless Chrome 152.0.0.0 against `corepack pnpm build` and `corepack pnpm start --port 3000`, `lhci collect` then `lhci assert`, three runs per URL, every assertion green |
 | Fixed | Four things: the focus rule, `.site-footer__line` to `--t-2xs`, `GlitchText`'s wrapper as a heading, `/cv` in the Lighthouse gate | **Decision.** AD-19, AD-20: everything else is a ledger row or a finding |
-| The spec in the pinned image | 14 cases, all green, **32.4 s** Playwright headline for the file alone, the sweep case **5.6 s**; 11 cases, **25.8 s** and **4.3 s** before the review pass added the clip read, the Enter read and the heading count | **Observed 2026-09-13**, both runs |
-| The whole suite in the pinned image | 22 spec files, **245 tests**, all green, **4.1 min** Playwright headline after the review pass (242 tests, 3.9 min before it); no snapshot directory written by this file. **Re-run 2026-09-14**: 23 spec files, **253 tests**, all green, **5.6 min**, `display-entrance.pw.ts` the eight new cases and the `shadow-glitch-loop` row gone. **Re-run again 2026-09-14** by Story 2-28: 23 spec files, **253 tests**, all green, with the three `ScanlineOverlay` ledger rows fewer and the `/work` baseline regenerated; **5.3 min**, **5.5 min** and **4.6 min** on the story's three plain runs (before the update, after it, and after the forced update), and **6.7 min** on the coordinator's independent plain run on the final tree | **Observed 2026-09-13**, `pnpm test:e2e` in the same image, both runs, then `git status --porcelain -- tests/e2e/accessibility-floor.pw.ts-snapshots`, which was empty. **Observed 2026-09-14** by Story 2-27, same command, same image. **Observed 2026-09-14** by Story 2-28, same command, same image, the story's runs earlier in the day and the coordinator's after them |
+| The spec in the pinned image | 14 cases, all green, **32.4 s** Playwright headline for the file alone, the sweep case **5.6 s**; 11 cases, **25.8 s** and **4.3 s** before the review pass added the clip read, the Enter read and the heading count. **Re-read 2026-09-21** by Story 2-29: **15 cases**, all green, **33.8 s** summed from the list reporter's per-case durations, the built-CSS sweep case **7.3 s** and the new scrim case **18.0 s**, which screenshots the composited surface twice and decodes both through a canvas | **Observed 2026-09-13**, both runs. **Observed 2026-09-21** by Story 2-29 in the same image |
+| The whole suite in the pinned image | 22 spec files, **245 tests**, all green, **4.1 min** Playwright headline after the review pass (242 tests, 3.9 min before it); no snapshot directory written by this file. **Re-run 2026-09-14**: 23 spec files, **253 tests**, all green, **5.6 min**, `display-entrance.pw.ts` the eight new cases and the `shadow-glitch-loop` row gone. **Re-run again 2026-09-14** by Story 2-28: 23 spec files, **253 tests**, all green, with the three `ScanlineOverlay` ledger rows fewer and the `/work` baseline regenerated; **5.3 min**, **5.5 min** and **4.6 min** on the story's three plain runs (before the update, after it, and after the forced update), and **6.7 min** on the coordinator's independent plain run on the final tree. **Re-run 2026-09-21** by Story 2-29: **261 tests**, all green, **7.6 min**, with the scrim's sampling case added here and eight cases where there were four in `front-door.pw.ts` (DW-98). **It took three runs, and the first two are the finding.** The first reported three failures and the second five, and every one was a consequence of this story that had to be measured rather than a defect in it: `home-nav` going stale because the display step took the first nav link past the hit-target floor, the entrance's inline-declaration sweep observing nothing once the timeline became a keyframe, the collapse margin at 1024 narrowing from 152.95 to 104.83 as the flat hero grew, the `/#suite` landing reading -0.31 on a hero with fractional heights, and two ledger controls hosted on rows this story deleted. `git status --porcelain -- tests/e2e/accessibility-floor.pw.ts-snapshots` was empty on all three and the committed `/work` baseline matched on all three. **Re-run again 2026-09-21** after the audit of that story: **262 tests**, all green, **8.0 min**, the count up one on the below-768 case the audit added to `front-door.pw.ts` for the matrix row nothing covered. **Re-run again 2026-09-22** after the Step-04 review of the same story: **264 tests**, all green, **6.2 min**, the count up two on the skip control's non-overlap case at each of the two widths. That review found a third assertion in the story that could not fail and two more that were porous, so the run before this one is not evidence for the patch and this one is: it was taken on the committed code with only record markdown edited afterwards, and no Playwright spec reads a record | **Observed 2026-09-13**, `pnpm test:e2e` in the same image, both runs, then `git status --porcelain -- tests/e2e/accessibility-floor.pw.ts-snapshots`, which was empty. **Observed 2026-09-14** by Story 2-27, same command, same image. **Observed 2026-09-14** by Story 2-28, same command, same image, the story's runs earlier in the day and the coordinator's after them. **Observed 2026-09-21** by Story 2-29, same command, same image, three runs |
 
 ## Environment
 
@@ -67,7 +68,7 @@ two tables that follow this section, and the board cannot reach `done` while eit
 
 | # | Check | Method | Result | Nature |
 |---|---|---|---|---|
-| 1 | Keyboard-only traversal of the homepage | **Machine half.** `tests/e2e/accessibility-floor.pw.ts` tags every visible tabbable on `/` in DOM order, presses Tab from `body` once per tabbable, reads which element holds focus and its ring at each stop, then presses Tab once more. **Human half.** The Operator, in their own browser, with the mouse untouched: the table below | **18 stops on `/` in DOM order** (the skip-link, two nav links, three contact links, eleven Suite Directory links, the footer link), every stop ringed, **six of them as a fragment** (the skip-link, the two nav links and the three contact links, § The focus standard), the nineteenth Tab leaving the document, no positive `tabindex`, Enter on the skip-link ringing the landmark it lands on, and clicking the same stops ringing nothing. The one Satellite `EXPERIENCE.md` names is `cs-tracker`, recorded on 2026-08-27 in `ops/cs-tracker-accessibility-pass.md` | **Observed 2026-09-13** in the pinned image; the human half awaits the Operator |
+| 1 | Keyboard-only traversal of the homepage | **Machine half.** `tests/e2e/accessibility-floor.pw.ts` tags every visible tabbable on `/` in DOM order, presses Tab from `body` once per tabbable, reads which element holds focus and its ring at each stop, then presses Tab once more. **Human half.** The Operator, in their own browser, with the mouse untouched: the table below | **18 stops on `/` in DOM order** (the skip-link, two nav links, three contact links, eleven Suite Directory links, the footer link), every stop ringed, **six of them as a fragment** (the skip-link, the two nav links and the three contact links, § The focus standard; **one of them since 2026-09-21**, the skip-link alone, Story 2-29 having padded the panels that clipped the other five), the nineteenth Tab leaving the document, no positive `tabindex`, Enter on the skip-link ringing the landmark it lands on, and clicking the same stops ringing nothing. The one Satellite `EXPERIENCE.md` names is `cs-tracker`, recorded on 2026-08-27 in `ops/cs-tracker-accessibility-pass.md` | **Observed 2026-09-13** in the pinned image; the human half awaits the Operator |
 | 2 | 360px viewport with no horizontal scroll and no truncated Status | `tests/e2e/hit-target-floor.pw.ts` measures every interactive element's edges against the viewport at 360 on every route (A-5's scroll half); `tests/e2e/status-mark.pw.ts` measures every rendered Status mark's box for clipping, ellipsis and wrap (A-5's Status half). Both ran in the same container invocation as the full suite | **No interactive element outside either edge on any route; no Status truncates or wraps.** The 28 non-interactive elements past the right edge on `/work` are KV-5, Stories 2-31 and 2-33, and are deliberately not re-measured here | **Observed 2026-09-13**, the whole `pnpm test:e2e` run in the pinned image |
 | 3 | Greyscale render with the Status taxonomy still readable | **Machine half.** `tests/e2e/status-mark.pw.ts` asserts the three structural axes and reads greyscale in the print medium. **Human half.** `ops/hub-accessibility-probe.mjs` renders `/` at 360 x 800 and 1280 x 800 with one of each of the four values planted across the six marks, the dot removed from the three that do not carry one, and `html { filter: grayscale(1) }` applied; the Operator reads the two PNGs with no legend: the table below | **Two PNGs written** to the `--out` directory on 2026-09-13; the axes assertion is green in the same run as check 2. The 2026-09-06 confirmation in `ops/status-mark-axes.md` stands and is confirmed alongside, not replaced | **Observed 2026-09-13** for the renders; the human half awaits the Operator |
 | 4 | `prefers-reduced-motion` forced and the Suite Directory fully reachable | Every case in `tests/e2e/accessibility-floor.pw.ts` runs on the project's `reducedMotion: 'reduce'` context, which is the forced preference: the traversal on `/` reaches all eleven Directory links by Tab, each ringed, and the prevented click lands on one. `tests/e2e/front-door.pw.ts` asserts the flat door's layout and the skip-link on the same context | **Reachable**: the eleven Directory links are stops 7 to 17 of the 18 on `/`, and `/#suite` resolves to the heading with `tabindex="-1"` (`app/__tests__/page.test.tsx`) | **Observed 2026-09-13** in the pinned image |
@@ -90,10 +91,10 @@ The human half of check 1.
 
 | Field | Value |
 |---|---|
-| Method | Open `/` in your own browser at any width with the mouse untouched. Press Tab from the top of the document until focus leaves it, counting the stops: the skip-link first, then the two nav links, the three contact links, the eleven Directory links and the footer link. Every stop shows the ring, at full strength the moment it lands. **Expect a fragment, not a whole ring, on six of them today**: the skip-link shows its bottom and right sides only, and the two nav links and three contact links show one or two sides, because their panels clip the ring (§ The focus standard, Story 2-29's and Story 2-32's). The Directory links and the footer link show it whole. Then press Tab until the skip-link holds focus again and press Enter: focus lands on the main landmark and its bottom edge rings across the page. Then click the same elements with the mouse: no ring appears on any of them |
+| Method | Open `/` in your own browser at any width with the mouse untouched. Press Tab from the top of the document until focus leaves it, counting the stops: the skip-link first, then the two nav links, the three contact links, the eleven Directory links and the footer link. Every stop shows the ring, at full strength the moment it lands. **Expect a fragment, not a whole ring, on one of them today**: the skip-link shows its bottom and right sides only, because it is parked at the viewport's corner (§ The focus standard, Story 2-32's). **This read six until 2026-09-21**, the two nav links and the three contact links showing one or two sides because their panels clipped the ring; Story 2-29 padded those panels and the five ring whole now. The Directory links and the footer link show it whole. Then press Tab until the skip-link holds focus again and press Enter: focus lands on the main landmark and its bottom edge rings across the page. Then click the same elements with the mouse: no ring appears on any of them |
 | Checked by | The Operator |
 | Checked on | 2026-09-14 |
-| Result | **Pass.** One keyboard-only traversal of `/` in the Operator's own browser against the production build served on this host at `acb0c55`, mouse untouched: every stop ringed the moment it landed, the six recorded fragments as described and no seventh, the main landmark ringed after Enter on the skip-link, and a mouse click on the same elements painted nothing |
+| Result | **Pass.** One keyboard-only traversal of `/` in the Operator's own browser against the production build served on this host at `acb0c55`, mouse untouched: every stop ringed the moment it landed, the six recorded fragments as described and no seventh, the main landmark ringed after Enter on the skip-link, and a mouse click on the same elements painted nothing. **The confirmation stands for its date and is not re-taken here.** It was read against the surface as Story 2-28 left it; five of its six fragments closed on 2026-09-21 with Story 2-29, which is a change in the Hub's favour and is recorded in the method above rather than by rewriting a dated reading |
 
 ## The focus standard
 
@@ -112,8 +113,10 @@ The human half of check 1.
 Hub painted its ring nine times in eight stylesheets. Five were the standard verbatim
 (`SkipLink.scss`, `SkipControl.scss`, `CvIntro.scss`, `SiteFooter.scss`, `SuiteDirectory.scss`)
 and four, in three files, were `1px solid var(--accent)`, the hover token: three at a `4px` offset,
-on the home nav links and the home contact links (`HomeLayout.scss`, two blocks) and on the 404's
-exits (`error-page.scss`), and one inset at `-2px`, on the timeline's triggers (`WorkItem.scss`),
+on the home nav links and the home contact links (`HomeLayout.scss`, two blocks, in the file as
+Story 2-26 found it; Story 2-29 rebuilt it on 2026-09-21 and the citation is history rather than a
+place to look) and on the 404's exits (`error-page.scss`), and one inset at `-2px`, on the
+timeline's triggers (`WorkItem.scss`),
 so a keyboard visitor on those surfaces could not tell focus from hover (A-1).
 One rule replaces all nine; a component that needs the ring needs nothing, and a component that
 wants to remove it has to write `outline: none`, which the sweep names. The rule stays at
@@ -140,7 +143,7 @@ named beside it.
 | `--token-bg` (`rgb(6, 5, 9)`) | The 404's logo link, on `.header-container`, which paints `--token-bg` under the sticky header; the same header on `/work` and `/cv` | **11.73:1** | **Observed 2026-09-13**, on a shipped element |
 | `--token-bg-raised` (`rgb(14, 12, 20)` by `oklch`, `lab(3.62 0.99 -3.09)` as computed) | A **planted** link inside a wrapper painting the role, appended to the 404, because no shipped interactive element sits on this ground on any route: the skip-link paints it on itself, and a ring is drawn outside the element | **11.24:1** | **Observed 2026-09-13**, labelled planted in the run's own output |
 | `--token-bg-raised-2` (`lab(7.10 1.63 -4.87)` as computed) | The same **planted** control, because nothing in the Hub paints this ground at all today | **10.47:1** | **Observed 2026-09-13**, planted |
-| `#0a000f` (`rgb(10, 0, 15)`), none of the three | `body[id='']` on `/` under the skip-link and every home stop; `.error-page` under the 404's two exits; `body#work` under every stop on `/work`. Each also paints the cybercore grid as two `linear-gradient` images at 6% alpha, named in the reading and carried as ledger rows below | **11.89:1** | **Observed 2026-09-13**. Read as what it is: a literal Stories 2-29, 2-30 and 2-33 own, not a token ground. The ring is visible on it; the finding is the literal, not the ring |
+| `#0a000f` (`rgb(10, 0, 15)`), none of the three | `.error-page` under the 404's two exits; `body#work` under every stop on `/work`. Each also paints the cybercore grid as two `linear-gradient` images at 6% alpha, named in the reading and carried as ledger rows below. **`body[id='']` on `/` left this row on 2026-09-21**: Story 2-29 replaced that rule's literal and its grid pair with `var(--token-bg)`, so every home stop's ring is now read against the first ground in this table rather than against a fourth one | **Observed 2026-09-13**. Read as what it is: a literal Stories 2-30 and 2-33 own, not a token ground. The ring is visible on it; the finding is the literal, not the ring |
 
 `RESTYLE-SPEC.md:342` publishes 11.70 / 11.19 / 10.45 for the same three grounds. The readings
 here are within 0.05 of each, the difference being the canvas rasterisation of `oklch` into sRGB
@@ -166,7 +169,9 @@ whole. It does not render on the project's reduced-motion context at all, which 
 own case.
 
 **Six stops paint a fragment of the ring, and computed style cannot see it.** **Observed
-2026-09-13** in the review re-run, and the one serious finding of the review. `getComputedStyle`
+2026-09-13** in the review re-run, and the one serious finding of the review. **One since
+2026-09-21**, the skip-link alone: the reading below is kept as it was taken and the four home rows
+of its table carry their closure beside them. `getComputedStyle`
 answers the ring's four values whatever an ancestor does to them, so the first run's "every stop
 paints the ring" was green for five stops on `/` where a keyboard visitor sees one or two sides.
 The sweep now walks every ancestor of the focused element and reports any whose `clip-path` is
@@ -178,15 +183,23 @@ viewport's, for a fixed element). What it found:
 | Stop | Clipped on | By | Owner |
 |---|---|---|---|
 | `a.skip-link` | top, left | The viewport's edge: the link is parked at `inset-block-start: 0; inset-inline-start: 0` (`SkipLink.scss:33-34`) and revealed in place, so the ring's top and left sides sit past the edge and `overflow-x: clip` on the root clips them | **Story 2-32**, by ownership of the top-of-page chrome, the KV-4 precedent for a row booked by ownership alone. `SkipLink` was built by Story 2-13, which is `done`, and no redesign story names it. **Flagged for the Operator to confirm or reassign** |
-| `a.nav-link`, first | top, left, right | `.home-panel--nav` carries `clip-path: polygon(...)` bounded by its own border box and no padding (`HomeLayout.scss:62`), and the link fills the panel's width | **Story 2-29**, with the panel |
-| `a.nav-link`, second | left, right | The same panel | Story 2-29 |
-| `.contact-container a`, first | top, left | `.home-panel--contact`'s `clip-path` (`HomeLayout.scss:69`), no padding, the link a full-width block | Story 2-29 |
-| `.contact-container a`, second and third | left | The same panel | Story 2-29 |
+| `a.nav-link`, first | top, left, right | `.home-panel--nav` carries `clip-path: polygon(...)` bounded by its own border box and no padding (`HomeLayout.scss:62` as read on 2026-09-13), and the link fills the panel's width | **Closed 2026-09-21 by Story 2-29**, with the panel |
+| `a.nav-link`, second | left, right | The same panel | **Closed 2026-09-21 by Story 2-29** |
+| `.contact-container a`, first | top, left | `.home-panel--contact`'s `clip-path` (`HomeLayout.scss:69` as read on 2026-09-13), no padding, the link a full-width block | **Closed 2026-09-21 by Story 2-29** |
+| `.contact-container a`, second and third | left | The same panel | **Closed 2026-09-21 by Story 2-29** |
 
-The other 33 stops paint the ring whole. Each of the six is a `clip` row in the ledger below,
+The other 33 stops paint the ring whole. Each of the six was a `clip` row in the ledger below when
+this was written, and one still is,
 tallied by the stop's selector, so a repair that pads the panel or moves the clip fails the row
 as stale on the commit that makes it. **The reach is read off the element, never typed**, so a
 contract that widened the offset would widen what counts as clipped.
+
+**Five of the six closed on 2026-09-21, and the mechanism above is what forced them to.** Story
+2-29 rebuilt `HomeLayout.scss` and gave `.home-panel` `padding: var(--s-sm)` on every side, 12px,
+which clears both the ring's 5px reach on a straight edge and the notch's 10px corner cut, so the
+four polygons are byte-identical and no ring falls outside the clipped region. The two ledger rows
+`clip-home-nav` and `clip-home-contact` were deleted in that commit, which is what the stale-row
+check required rather than permitted. `clip-skip-link` is untouched and is Story 2-32's.
 
 **The trigger's ring paints outside a full-width button.** **Observed 2026-09-13** in the review
 re-run. `button.work-item__header` is `width: 100%` inside `article.work-item`, whose `::before`
@@ -205,6 +218,72 @@ animated door, after Tab to the skip control and Enter, `h2#suite` does the same
 the full width of the document with no page padding, so its ring is clipped by the document's edge
 on the top, left and right and what a visitor sees is its bottom edge, a line across the page under
 the Directory; the heading sits inside the Directory's padding and rings whole. See § Decisions.
+
+## The scrim's composited contrast on the home surface
+
+Added 2026-09-21 by Story 2-29, which placed `ScanlineOverlay` inside `.home-gem` across the home
+canvas and so gave `--token-scrim` its first consumer. `epics.md:3254-3261` asks for the guarantee
+to be verified by **screenshotting the composited surface, sampling the rendered ground beneath the
+text and computing the ratio by hand**, never by trusting the table, and DW-101 carried that
+verification from Story 2-28 to this one because until now no surface composited the layer beneath
+text.
+
+**Observed 2026-09-21** in `mcr.microsoft.com/playwright:v1.62.1-noble`, by
+`tests/e2e/accessibility-floor.pw.ts` § the scrim over the home canvas, on a `no-preference`
+context so the default door renders. The viewport screenshot is decoded through a canvas in the
+page, and the ground beneath each panel's text is read as the **modal** colour of that panel's box,
+the glyphs covering a minority of it.
+
+**Read at 1024 x 800, not at DW-101's stated 360 x 800.** Below 768 `HomeLayout.scss` stacks the
+hero into a flex column, the gem becomes a static item between the name and the nav, and the mobile
+block hides the scrim because no text overlays imagery there. At 360 there is no composited surface
+to sample; 1024 is the narrowest width at which the four panels sit over the canvas.
+
+| Ground sampled | Where | Share of the box | Nature |
+|---|---|---|---|
+| `rgb(5, 4, 9)` | `.home-panel--name` | 60.8% of 80,852px | **Observed 2026-09-21** |
+| `rgb(5, 4, 9)` | `.home-panel--sys` | 70.2% of 6,996px | **Observed 2026-09-21** |
+| `rgb(5, 4, 9)` | `.home-panel--nav` | 75.8% of 52,392px | **Observed 2026-09-21** |
+| `rgb(5, 4, 9)` | `.home-panel--contact` | 74.5% of 29,600px | **Observed 2026-09-21** |
+
+| Role | Measured over the sampled ground | `epics.md:3254-3256` | Its own floor | Nature |
+|---|---|---|---|---|
+| `--token-text` | **17.66:1** | 13.51:1 | 4.5:1 (WCAG 1.4.3) | **Observed 2026-09-21** |
+| `--token-focus` | **11.80:1** | 9.02:1 | 3:1 (WCAG 1.4.11) | **Observed 2026-09-21** |
+| `--token-accent-hover` | **9.07:1** | 6.94:1 | 4.5:1 | **Observed 2026-09-21** |
+| `--token-text-secondary` | **7.07:1** | 5.41:1 | 4.5:1 | **Observed 2026-09-21** |
+| `--token-accent` | **6.24:1** | 4.77:1 | 4.5:1 | **Observed 2026-09-21** |
+
+Each role's colour is rasterised through the same 1 by 1 canvas the ring readings use, and the ratio
+is WCAG 2.1 relative luminance on the sampled sRGB. The figure recorded is the **worst** of the four
+panels for that role, and all four sampled the same ground.
+
+**Every measured ratio is above the tabled one, and that is the table being read correctly rather
+than a disagreement.** **Derived.** The table is the worst case: the scrim's 0.88 alpha over a
+**pure white** backdrop. The real backdrop is the near-black narrative canvas over `--token-bg`, so
+the composite is darker than the worst case and every role contrasts better against it. What the
+table fixes is the floor, and the floor holds with margin.
+
+**That the scrim is genuinely beneath the text is proved by sampling, not by reading a z-index.**
+**Observed 2026-09-21**, same run. The layer is repainted an unmistakable colour and the surface
+screenshotted again: beneath every one of the four panels the ground becomes that colour, which
+says the scrim covers the imagery there, and a panel still paints a role colour over it, which says
+the panel is above the scrim. Neither half depends on what the WebGL canvas draws, which is what
+makes this readable in a container running SwiftShader.
+
+**The z-level trap `epics.md:3300-3304` names is resolved by the header not being on this route.**
+**Observed 2026-09-21**, same case, which reads zero `.header-container` on `/`: `Header.tsx:12`
+returns `null` there, so no `--z-sticky` element exists to sit above a `--z-raised` scrim and
+compute against the imagery. The other permitted resolution also holds and is not relied on
+(`header.scss:59` sets `background-color: var(--token-bg)`), and neither was read off a `z-index`
+value.
+
+**The stack itself is two roles and no more.** **Decision**, Story 2-29. `.home-gem` takes
+`var(--z-base)` while positioned, which makes it a stacking context, so `ScanlineOverlay.scss`'s own
+`var(--z-raised)` is confined to it: the scrim paints above the canvas and below everything outside
+the gem. The four panels and `.skip-control` take `var(--z-raised)` at container level and so clear
+the gem's whole subtree, scrim included. The contract's next level above `--z-raised` is
+`--z-dropdown` at 100, and a corner panel is not a dropdown.
 
 ## The exemption ledger
 
@@ -240,19 +319,23 @@ timeline carries an initiative line on one entry, not four.
 
 | Id | Check | Match | Count | Source | Closed by |
 |---|---|---|---|---|---|
-| `z-home-overlay` | `z-index` | `20` | 1 | `components/organisms/HomeLayout/HomeLayout.scss:28` | Story 2-29 |
-| `z-home-panel` | `z-index` | `5` | 1 | `components/organisms/HomeLayout/HomeLayout.scss:39` | Story 2-29 |
-| `z-home-gem` | `z-index` | `3` | 1 | `components/organisms/HomeLayout/HomeLayout.scss:181` | Story 2-29 |
 | `z-work-hero` | `z-index` | `2` | 2 | `components/organisms/WorkHero/WorkHero.scss:15,40` | Story 2-33 |
 | `z-error-content` | `z-index` | `2` | 1 | `components/organisms/ErrorPage/error-page.scss:19` | Story 2-30 |
 | `gradient-work-ground` | `depth` | `linear-gradient` | 2 | `app/app.scss:136-137` | Story 2-33 |
-| `gradient-home-ground` | `depth` | `linear-gradient` | 2 | `components/organisms/HomeLayout/HomeLayout.scss:11-12` | Story 2-29 |
 | `gradient-error-ground` | `depth` | `linear-gradient` | 2 | `components/organisms/ErrorPage/error-page.scss:9-10` | Story 2-30 |
 | `weight-work-initiative` | `weight` | `.work-item__initiative` | 2 | `components/atoms/WorkItem/WorkItem.scss:85` | Story 2-31 |
-| `clip-home-nav` | `clip` | `a.nav-link` | 2 | `components/organisms/HomeLayout/HomeLayout.scss:62` | Story 2-29 |
-| `clip-home-contact` | `clip` | `.contact-container a` | 3 | `components/organisms/HomeLayout/HomeLayout.scss:69` | Story 2-29 |
 | `clip-skip-link` | `clip` | `a.skip-link` | 1 | `components/atoms/SkipLink/SkipLink.scss:33-34` | Story 2-32 |
 | `heading-404` | `heading` | `/a-route-that-does-not-exist` | 1 | `components/organisms/ErrorPage/Error404.tsx:62-68` | Story 2-30 |
+
+**The six home rows left on 2026-09-21 with Story 2-29**, which rebuilt `HomeLayout.scss` against
+the contract. `z-home-overlay` closed by deletion rather than by re-levelling: `.home-overlay` was
+a rule no markup matched anywhere in the repository, so the `20` went with the rule. `z-home-panel`
+and `z-home-gem` became `var(--z-raised)` and `var(--z-base)`, the two levels the stack needs and
+no more, the gem positioned at the base level so it is a stacking context and the scrim inside it
+is confined to it. `gradient-home-ground` closed with the grid pair, deleted rather than tokenised,
+and the ground it sat on is `var(--token-bg)`. `clip-home-nav` and `clip-home-contact` closed with
+`padding: var(--s-sm)` on `.home-panel`, the four polygons unmoved. **Every one was deleted in the
+same commit as the repair**, which the sweep makes unavoidable rather than optional.
 
 **Why `z-scanline` was a row although `10` equalled `--z-raised`.** The row left the ledger on
 2026-09-14 with Story 2-28, which rewrote `ScanlineOverlay.scss` to `z-index: var(--z-raised)`;
@@ -263,7 +346,8 @@ to a named level, and a literal that coincides with one resolves to nothing. The
 with the row gone, because the next literal that equals a level by value will be read the same way.
 
 **`body#work`'s gradients are booked to Story 2-33 by ownership of the `/work` surface**, the way
-`HomeLayout.scss`'s pair is Story 2-29's and `error-page.scss`'s pair is Story 2-30's. The
+`HomeLayout.scss`'s pair was Story 2-29's, which deleted it on 2026-09-21, and `error-page.scss`'s
+pair is Story 2-30's. The
 declaration sits in `app/app.scss`, which no redesign story names; the surface it paints is the
 one Story 2-33 rebuilds.
 
@@ -297,7 +381,7 @@ that a later story repairs; the ledger rows above are findings too, and are not 
 | F-8 | `.glitch-text__inner` sets `line-height: 0.9`, under the `0.95` floor `DESIGN.md:486` gives all-caps display | `components/molecules/GlitchText/glitch-text.scss:8` | Story 2-27 | **Observed 2026-09-13** by reading. Not swept: DR45's line-height rule was not among the listed checks. **Closed 2026-09-14 by Story 2-27**: `glitch-text.scss` is deleted and `GlitchText.scss` sets `line-height: var(--lh-display)`, which `tests/e2e/display-entrance.pw.ts` reads off the heading as `0.95` times its size and refuses under the floor |
 | F-9 | `.work-item__description` sets `line-height: 1.7` against the body `1.6` `DESIGN.md:485` fixes | `components/atoms/WorkItem/WorkItem.scss:95` | Story 2-31 | **Observed 2026-09-13** by reading. Not swept, same reason |
 | F-10 | The trigger's hover is an alpha fill, `rgba(91, 33, 182, 0.06)`, which `DESIGN.md:1281-1283` bars | `components/atoms/WorkItem/WorkItem.scss:35` | Story 2-31 | **Observed 2026-09-13** by reading |
-| F-11 | Three surfaces paint the cybercore literal `#0a000f` with the grid as two `linear-gradient` images, so every ring on `/`, on `/work` and on the 404's exits was read against a ground that is none of the three tokens (11.89:1, visible) | `components/organisms/HomeLayout/HomeLayout.scss:8-14`, `app/app.scss:133-139`, `components/organisms/ErrorPage/error-page.scss:7-11` | Stories 2-29, 2-33 and 2-30 | **Observed 2026-09-13** by the sweep's ground walk; the gradients are ledger rows |
+| F-11 | Three surfaces paint the cybercore literal `#0a000f` with the grid as two `linear-gradient` images, so every ring on `/`, on `/work` and on the 404's exits was read against a ground that is none of the three tokens (11.89:1, visible) | `components/organisms/HomeLayout/HomeLayout.scss:8-14`, `app/app.scss:133-139`, `components/organisms/ErrorPage/error-page.scss:7-11` | Stories 2-29, 2-33 and 2-30 | **Observed 2026-09-13** by the sweep's ground walk; the gradients are ledger rows. **Partly closed 2026-09-21 by Story 2-29**, in the F-8 shape: findings are annotated, never deleted. `HomeLayout.scss`'s `body[id='']` names `var(--token-bg)` and paints no image at all, so `/` is off this finding and every ring there is read against `--token-bg` at 11.73:1. **Two surfaces remain**, `app/app.scss:136-137` on `/work` (Story 2-33) and `components/organisms/ErrorPage/error-page.scss:9-10` on the 404 (Story 2-30); the finding closes when the later of the two lands |
 | F-12 | `.error-page__code` carries `aria-label` on a `<p>`, whose `paragraph` role prohibits a name, the same defect `GlitchText` had on `/`. Lighthouse refuses to audit a page answering 404, so no gate can see it | `components/organisms/ErrorPage/Error404.tsx:62` | Story 2-30 | **Observed 2026-09-13** by reading, and by `lighthouse` refusing the URL with "Status code: 404" |
 | F-13 | `/work`, `/celeste` and the 404 render no skip-link and no `<main>`; `/cv` has a `<main>` with no id. `<main>` is four per-page edits, not one shared change, because a layout-level landmark would wrap the footer `/` keeps outside it by design (`app/page.tsx:79-81`), and a skip-link on `/celeste` would be the one visible control on a surface asserted to have none | `app/layout.tsx:42-45`, `app/cv/page.tsx:46`, `app/work/page.tsx`, `app/celeste/page.tsx`, `app/not-found.tsx` | Story 2-32 | **Decision**, at this story's planning, re-booking what DW-43 had booked to Story 2-26. See § Decisions |
 | F-14 | `DESIGN.md` places the tech array at `--t-2xs` in its scale table (`:468`) and at `--t-3xs` in the Registry Entry component (`:660`); the shipped `.suite-directory__tech` follows `:660`. The two lines disagree and one of them is wrong | `DESIGN.md:468,660`, `components/organisms/SuiteDirectory/SuiteDirectory.scss:152` | The design owner, filed as DW-96, unassigned | **Observed 2026-09-13** by reading, when the paragraph floor met four labels marked up as `<p>`. See § Decisions |

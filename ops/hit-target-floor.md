@@ -254,12 +254,37 @@ one of its routes**, so a row covering two surfaces cannot go half stale in sile
 | Id | Selector | Source | Routes | Covers | Measured | Closed by |
 |---|---|---|---|---|---|---|
 | `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/cv`, `/a-route-that-does-not-exist` | 3 | 184.00 x 20.00 | Story 2-32 |
-| `home-nav` | `a.nav-link` | `components/organisms/HomeLayout/HomeLayout.tsx:142,150` | `/` | 2 | 320.00 x 32.00 | Story 2-32 |
-| `home-contact` | `.contact-container a` | `components/molecules/ContactContainer/ContactContainer.tsx:5,8,15` | `/` | 3 | 57.00 x 32.00 to 81.00 x 32.00 | Story 2-32 |
+
+**Both home rows left on 2026-09-21 with Story 2-29, and the sweep is what forced them out.**
+**Observed 2026-09-21** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800. That story
+rebuilt `HomeLayout.scss` token-native and set the two hero link groups in the display face at
+`--t-xl`, which is larger than the `clamp(1.5rem, 2.5vw, 2.5rem)` they had at 360. The first nav
+link wrapped to two lines and measured **296.00 x 68.75**, clearing the floor of 44, and this
+sweep reported `home-nav` as a stale row naming both files. A row cannot go half stale and the
+other nav link was still under, so `home-nav` had to take the floor on both of its links or come
+back off the ledger dishonestly. **`home-contact` was a different case and is recorded as one.**
+Nothing forced the three contact links past the floor: they were where they had always been, and
+setting `min-block-size` on them was elective. **The Operator ruled on 2026-09-21, after the audit
+of Story 2-29 separated the two rows, to keep both repairs**: all five hero links hold the floor,
+both rows stay deleted, and Pending Operator action 9 in `ops/known-violations.md` is answered for
+the home pair and open for `chrome-logo` alone. Both groups therefore carry
+`min-block-size: var(--tap)` on a flex box, the `SkipControl.scss:12-21` idiom and the shape
+`EXPERIENCE.md:727-730` prescribes, and both rows were deleted in the same commit as the repair.
+The five measured after the repair, in the same image at 360 x 800 with the display face loaded,
+printed by `tests/e2e/type-swap.pw.ts`'s swap comparison: `a.nav-link[0]` **296.00 x 68.75**,
+`a.nav-link[1]` **296.00 x 44.00**, and the three contact links **101.39**, **123.52** and
+**86.33 x 44.00**. Every one clears the floor on both axes, four of them by the `min-block-size`
+and the first by wrapping. No row is kept for them: a deleted row takes its `Measured` cell with
+it, and what holds the claim is the sweep itself, which fails on every run if any of them drops
+back under.
+**The story did not plan this.** Its own acceptance criteria name no hit-target floor; the
+measurement did. `ops/known-violations.md` KV-4 and Pending Operator action 9 record the ownership
+half, which was an open question until this ran.
 
 **The `Measured` column carried the date 2026-09-06 in its header until 2026-09-12**, when the two
-home rows were re-read; `chrome-logo` is still the 2026-09-06 reading and the two home rows are
-dated in the paragraph below.
+home rows were re-read; `chrome-logo` is still the 2026-09-06 reading. The two home rows were dated
+in the paragraph below until Story 2-29 deleted them on 2026-09-21, and the per-element table now
+carries one row, as the ledger does.
 
 **Both home rows were re-measured on 2026-09-12 by Story 2-20, and grew taller without leaving the
 floor.** **Observed 2026-09-12** in the pinned container at 360 x 800, by `getBoundingClientRect()`
@@ -285,8 +310,11 @@ no row lists, which is what a row narrower than the tree looks like.
 `HomeLayout.tsx:64,67` from Story 2-8 onwards, which was 78 lines stale: Story 2-15 edited the
 second of the two real lines and read the citation while doing it. The agreement suite holds the
 **file** to disk and holds nothing about the line numbers, so a citation like this one stays true
-only because somebody editing the file keeps it true. The box the row records is untouched, which
-is the point of repointing a link rather than rebuilding it.
+only because somebody editing the file keeps it true. The box the row recorded was untouched by
+that correction, which is the point of repointing a link rather than rebuilding it. **The row
+itself left on 2026-09-21 with Story 2-29**, so this paragraph is history: what it demonstrates,
+that a `path:line` citation in either file is kept true only by a reader, still holds for
+`chrome-logo` and for every row that follows it.
 
 **Every size above was measured in the browser, never read off the CSS.** **Observed 2026-09-06**
 by `Element.getBoundingClientRect()` in the pinned image at 360 x 800, after `document.fonts.ready`
@@ -294,7 +322,8 @@ resolved and after the home entrance had settled. `EXPERIENCE.md:731-732` says t
 single easiest one to miss while appearing to meet it, and reading a stylesheet is exactly how it
 gets missed.
 
-**Six rows at Story 2-8, five after Story 2-9, four after Story 2-15, three now, where that story's
+**Six rows at Story 2-8, five after Story 2-9, four after Story 2-15, three after Story 2-17 and
+one since Story 2-29, where that story's
 code map named four.** **Observed 2026-09-06**, re-read **2026-09-08** after Story 2-15 deleted
 `chrome-nav`, and re-read **2026-09-11** after Story 2-17 deleted `error-back`.
 `chrome-logo` was not on that list and was found by sweeping: `Logo.tsx:7` is a plain
@@ -302,7 +331,8 @@ inline `<a>` wrapping a 184 x 66 image, so the element's own box is the 20px tex
 the image paints past the bottom of it. That is the same class of defect the ledger exists to
 record, and it is the clearest argument for a universal sweep over a list of surfaces someone
 remembered. Story 2-32 names `Logo` in its own title (`epics.md:3559`) and is what closes it. The
-home surface is carried as two rows because it is authored in two files at two different sizes.
+home surface was carried as two rows, because it is authored in two files at two different sizes,
+until Story 2-29 repaired both on 2026-09-21.
 
 **`directory-links` was deleted by Story 2-9**, in the commit that replaced the `/projects` card
 grid with the Suite Directory. **Observed 2026-09-06** in the pinned container: the directory's
@@ -352,15 +382,15 @@ class now clear the floor. The size is kept in the `error-back` paragraph above 
 | Element | Measured | Which axis fails |
 |---|---|---|
 | `.logo a` | 184.00 x 20.00 | Height |
-| `a.nav-link`, both home links | 320.00 x 32.00 | Height |
-| `.contact-container a`, "Github" | 66.00 x 32.00 | Height |
-| `.contact-container a`, "LinkedIn" | 81.00 x 32.00 | Height |
-| `.contact-container a`, "Email" | 57.00 x 32.00 | Height |
 | `button.work-item__header`, all four | 216.00 x 88.80 | **None.** These clear the floor, which is what keeps the comparison from being a check that always fails |
 
-**The four home rows above are the 2026-09-12 reading.** Until Story 2-20 they read
-`320.00 x 23.00`, `68.00 x 23.00`, `84.00 x 23.00` and `58.00 x 23.00`, **observed 2026-09-06** in
-Confillia Normal at 24px; the re-measurement and its cause are in the ledger paragraph above. The
+**The four home rows left this table on 2026-09-21 with the two ledger rows they detailed**, which
+is this table's own rule: a per-element row is the breakdown behind a range, and both the range and
+the elements are gone. They read `320.00 x 32.00` for both nav links and `66.00`, `81.00` and
+`57.00 x 32.00` for the three contact links, the 2026-09-12 reading, and before Story 2-20 they
+read `320.00 x 23.00`, `68.00 x 23.00`, `84.00 x 23.00` and `58.00 x 23.00`, **observed 2026-09-06**
+in Confillia Normal at 24px. Their sizes are not lost: the ledger paragraph above carries both
+readings and the boxes they measure now. The
 `.logo a` and `.work-item__header` rows are still the 2026-09-06 reading.
 
 **The four `.work-item__header` buttons are load-bearing for the whole assertion.** **Decision.**
@@ -381,9 +411,15 @@ own.
 
 ## The tolerated breach
 
-**8 of the 39 measured elements are under the floor.** Behind those 8 rendered instances are
-**6 authored controls**: one logo link, two home nav links and three home contact links.
-**Observed 2026-09-11**, after Story 2-17. Both counts moved and the reason is a repair: the 404's
+**3 of the 39 measured elements are under the floor.** Behind those 3 rendered instances is
+**1 authored control**: the logo link, rendered on `/work`, `/cv` and the 404. **Observed
+2026-09-21**, after Story 2-29, which set `min-block-size: var(--tap)` on both hero link groups and
+deleted `home-nav` and `home-contact` in the same commit: five rendered instances and two authored
+controls left the breach, and the measured total did not move, because the five are still measured
+and now clear the floor.
+
+**Re-measured 2026-09-11**, and that reading is kept rather than overwritten: it was 8 of 39 behind
+6 controls, one logo link, two home nav links and three home contact links. Both counts moved and the reason is a repair: the 404's
 back link, the nearest miss in the census at 5.81px short, was replaced by the header's two
 destinations built to `--tap` on both axes, so one authored control and its one rendered instance
 left the breach, and the three elements this story authored, the footer link on `/` and the two
@@ -412,12 +448,14 @@ being rendered on two surfaces rather than three after Story 2-14.
 times each on `/projects`. Story 2-9 deleted the component and its ledger row together, so both the
 authored count and the rendered count fell.
 
-The 31 elements that clear the floor are the eight `.work-item__header` buttons, four on each of
+The 36 elements that clear the floor are the eight `.work-item__header` buttons, four on each of
 `/work` and `/cv`, the eleven Suite Directory links on `/`, the A-6 skip link Story 2-13 added, the
 six chrome nav links Story 2-15 rebuilt, two on each of `/work`, `/cv` and the 404, the two intro
-links Story 2-16 authored on `/cv`, and the three Story 2-17 authored: the footer link on `/` and
-the two 404 exits. **Observed 2026-09-11.** The 2026-09-10 reading of the same figure was 28, the
-2026-09-08 one was 20, over four buttons and four nav links, and the 2026-09-07 one was 16.
+links Story 2-16 authored on `/cv`, the three Story 2-17 authored, the footer link on `/` and the
+two 404 exits, and the five Story 2-29 took past the floor on 2026-09-21, the two home nav links
+and the three contact links. **Observed 2026-09-21.** The 2026-09-11 reading of the same figure was
+31, the 2026-09-10 one was 28, the 2026-09-08 one was 20, over four buttons and four nav links, and
+the 2026-09-07 one was 16.
 
 **The two figures above were one out before this re-measurement, and that is filed rather than
 back-dated.** **Observed 2026-09-07.** They read 27 of 53 and 26 respectively while the surfaces
@@ -679,9 +717,9 @@ fail is not known to work.
 |---|---|---|
 | An unlisted element under the floor | Fails naming the route, a stable selector, the element's text and the measured box, and the floor it was compared against | **Observed 2026-09-06.** "fails on an unlisted element under the floor, naming the route, the selector and the box", which plants a 10 x 10 link |
 | A plain inline element padded to look compliant | Fails on the height axis while the width axis clears the floor, so the failure is the padding rather than the size | **Observed 2026-09-06.** "fails on an element that reaches the floor only through vertical padding on a plain inline element" |
-| A listed element that now clears the floor | Fails as a stale row, naming the row id and both files that carry it | **Observed 2026-09-06** against the chrome nav, and **re-observed 2026-09-08** against the homepage panel. The case injects a compliant link into a surface a real row lists, so a real row goes stale rather than a synthetic one. It hosted in `nav.navbar` until Story 2-15 repaired that surface and deleted `chrome-nav`; the host is now `nav.home-panel--nav` and the row is `home-nav`, which stays in the ledger for Story 2-32. The plant is taken out of flow deliberately, or an in-flow 80px child reflows its siblings and the control reports a layout side effect rather than the predicate |
+| A listed element that now clears the floor | Fails as a stale row, naming the row id and both files that carry it | **Observed 2026-09-06** against the chrome nav, and **re-observed 2026-09-08** against the homepage panel. The case injects a compliant link into a surface a real row lists, so a real row goes stale rather than a synthetic one. It hosted in `nav.navbar` until Story 2-15 repaired that surface and deleted `chrome-nav`, then in `nav.home-panel--nav` against `home-nav` until Story 2-29 repaired that surface on 2026-09-21 and deleted both home rows; the host is now `.logo` on the 404 and the row is `chrome-logo`, the one row left, which stays in the ledger for Story 2-32. The plant is taken out of flow deliberately, or an in-flow 80px child reflows its siblings and the control reports a layout side effect rather than the predicate |
 | A row that matches nothing **on one of the routes it lists** | Fails naming the row **and the route**, its selector, its source and its closing story. A row covering more than one surface cannot go half stale, and since Story 2-14 the widest row covers two | **Observed 2026-09-06.** "fails a row that has stopped matching on one of the routes it lists", driven through the pure verdict with a two-route row that matches on one of them |
-| A row covering more elements than it says | Fails naming the row and both counts. This is what stops an existing selector exempting a newly added control for free | **Observed 2026-09-06.** The same case, plus the stale-row case, which plants a third `a.nav-link` on the homepage panel and asserts the row reports covering three. It planted a seventh chrome link and asserted seven until 2026-09-08, when that row was repaired away |
+| A row covering more elements than it says | Fails naming the row and both counts. This is what stops an existing selector exempting a newly added control for free | **Observed 2026-09-06.** The same case, plus the stale-row case, which since 2026-09-21 plants a second `.logo a` on the 404 and asserts the row reports covering two, read against `chrome-logo` narrowed to that one surface. It planted a third `a.nav-link` on the homepage panel and asserted three from 2026-09-08 until Story 2-29 repaired that surface, and a seventh chrome link asserting seven before that, when that row was repaired away |
 | A row matching an element that is not under the floor | Fails on the arithmetic as well as on the element, which is what wires the per-row `under` tally to something | **Observed 2026-09-06.** Same case |
 | A route `app/` serves that nothing sweeps | Fails naming the unregistered route. The route set is walked off the filesystem rather than restated | **Observed 2026-09-06.** "every route app/ serves is registered as a swept surface or as a non-Hub route" |
 | A hidden or decorative candidate | Skipped with a stated reason, never measured and never counted | **Observed 2026-09-06.** "never sweeps a hidden or decorative node, and never counts one", which asserts `/celeste`'s real skips, seven of them until 2026-09-08 and three since, and then plants one node per arm of the rule: `aria-hidden`, the `hidden` attribute, `display: none`, zero area and `visibility: hidden`. **Each arm is looked up by name**, so an arm that stopped being planted fails rather than quietly stopping being demonstrated |

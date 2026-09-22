@@ -468,6 +468,86 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-21 reading, after Story 2-29
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `wyW2OiV9VvlHmhcctT2lp`, written
+2026-09-22T02:06:29Z, taken on the story's working tree at `88e2099` plus its own files, before the
+commit that carries them: the tool's own dirty-inputs row named five paths
+(`app/__tests__/anchor-contract.test.ts`, `components/atoms/SkipControl/SkipControl.scss`,
+`components/organisms/HomeLayout/HomeLayout.scss`, `HomeLayout.tsx` and its test, every one
+modified) and every one of them is this story's. The before reading is the same command against
+build `gy6Se_c6bioa2StBLDgHX` (written 2026-09-22T01:37:28Z at `88e2099` on `dev`, no measured input
+dirty). Both sides were built twice and reproduced to the byte, the after build also arriving as
+`USdhcRswdaCPR2f5s0kYr` with the same 34 chunks at the same sizes and the same names, so the
+per-chunk listing below could be taken on both sides.
+
+**The before build does not reproduce the Story 2-28 after figures, and the gap is a commit rather
+than a measurement.** That reading recorded 21 `.js` and 13 `.css` at 2,031,505 on disk and 618,931
+gzipped, with 25,859 on disk and 8,681 gzipped of `.css`. The `.css` figures reproduce exactly; the
+whole-directory figure is 816 lighter on disk and 183 lighter gzipped here, because `dev` has
+carried `647315a` (`fix(a-17): scope Lenis smooth scroll to the motion preference`) since that
+reading, which is a change to JavaScript on every route. None of that gap is this story's, and it is
+recorded rather than smoothed over.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 20,340 | 492,656 | yes | yes | **Observed** |
+| `/cv` | 21,456 | 258,263 | no | yes | **Observed** |
+| `/celeste` | 13,748 | 251,922 | no | yes | **Observed** |
+| `/_not-found` | 13,863 | 251,777 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,762 | no | **no**: Next's own document | **Observed** |
+
+**`/` has no row here and does not gain one.** It is a dynamic route: `app/page.tsx` reads the
+`Save-Data` request header, so Next writes no prerendered document for it, and this tool reads
+prerendered documents. The surface this story rebuilt is therefore invisible in this table by
+construction, which is why the movement is recorded in the per-chunk listing and the totals instead.
+Every row above is within four gzipped bytes of the before build's, which is the rebuild variance
+§ Stated limits records.
+
+**The whole build, before and after, and the four chunks that moved.** **Observed 2026-09-21**, the
+tool's own build table on each side, and every `.next/static/chunks/*.css` and `*.js` weighed with
+`zlib.gzipSync` at level 9 (the tool's method) on both builds.
+
+| Figure | Before, `dev` at `88e2099` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 21 `.js`, 13 `.css` | 21 `.js`, 13 `.css` | none | **Observed** |
+| Bytes in `.next/static/chunks` | 2,030,689 on disk, 618,748 gzipped | 2,030,896 on disk, 618,513 gzipped | **207 heavier on disk, 235 gzipped lighter** | **Observed**, tool's build table; **Derived** delta |
+| Every `.css` chunk together | 25,859 on disk, 8,681 gzipped | 26,785 on disk, 8,673 gzipped | **926 heavier on disk, 8 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The chunk carrying the home stylesheet | `0wrloex~kocd~.css`, 5,173 on disk, 1,339 gzipped, carrying `.home-panel` and no `.scanline-overlay` | `0z0c.kxmb03ra.css`, 6,099 on disk, 1,331 gzipped, carrying `.home-panel` and `.scanline-overlay` | 926 heavier on disk, 8 gzipped lighter: the whole `.css` movement is this one chunk, and the other twelve are byte-identical by name and size | **Observed** |
+| Every `.js` chunk together | 2,004,830 on disk, 610,067 gzipped | 2,004,111 on disk, 609,840 gzipped | **719 on disk, 227 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The chunk carrying `HomeLayout` | `11o5270alhovv.js`, 8,545 on disk, 3,390 gzipped, carrying `home-panel` and `gsap` | `0uifu5rc1y.iv.js`, 7,826 on disk, 3,165 gzipped, carrying `home-panel` and `scanline-overlay` and **no `gsap`** | 719 on disk, 225 gzipped lighter | **Observed**, by reading each chunk as text for the three marks |
+| The other two chunks that moved | `0h-snp3t~clk6.js` 1,744 on disk, 765 gzipped; `0jzyz7fy.nr7f.js` 27,428 on disk, 9,295 gzipped | `00j1ooy.0cni2.js` 1,744 on disk, 767 gzipped; `10pryuwzqynw-.js` 27,428 on disk, 9,291 gzipped | renamed with identical bytes on disk, 2 gzipped heavier and 4 gzipped lighter; the remaining 30 chunks are byte-identical by name and size | **Observed** |
+| Narrative chunks the fingerprints hit | 8, 1,351,566 on disk, 413,083 gzipped | 8, 1,351,566 on disk, 413,079 gzipped | 4 gzipped lighter, which is the `three-stdlib` rename above and nothing this story wrote | **Observed**, the tool's narrative table; **Derived** delta |
+
+**What the JavaScript number says, and GSAP is the mover.** **Derived.** The component's chunk is
+225 gzipped bytes lighter and the string `gsap` no longer occurs in it: `HomeLayout.tsx` dropped
+the `gsap` import, the `useGsapContext` import and the whole timeline, and the entrance is now five
+`animation-delay` declarations in the stylesheet. **GSAP left this component, not the route.** Its
+own chunk, `08pj4xkz~kajd.js` at 26,971 gzipped, is unchanged and is still referenced by
+`/_not-found`, `/celeste`, `/cv` and `/work`; `app/providers.tsx` imports `gsap` and
+`gsap/ScrollTrigger` in the root layout, so the library is on every route including `/` whatever
+this component does. `WorkItem`, `WorkHero`, `WorkTimeline` and the 404 still tween. The 719 on
+disk and 225 gzipped are what one component's removal of the dependency is worth, and no more.
+
+**What the CSS number says.** **Derived.** The home stylesheet's chunk is 926 bytes heavier on disk
+and 8 gzipped lighter, which is the shape a token-native rewrite has: `var(--token-text-secondary)`
+is longer text than `var(--light-gray-color)` and far longer than `#0a000f`, and the file gained
+the `@keyframes`, the five `animation` declarations and the `@media (hover: hover)` block. Against
+that it lost the two `linear-gradient` images, the `.home-overlay` and `.home-sys-coords` rules and
+the dim-siblings rule. Repetition is what gzip is good at, and 32 `var(--…)` names drawn from one
+small set compress far better than the literals they replaced, so the longer file is the smaller
+transfer. The scrim's own five declarations arrived in this same chunk, which is the cost Story
+2-28's reading deferred to this story: `ScanlineOverlay.scss` was in no chunk at all after that
+story removed both of its call sites, and it is in this one now.
+
+**Against the Story 2-28 reading.** **Derived.** That reading's after build carried 21 `.js` and 13
+`.css` at 2,031,505 on disk and 618,931 gzipped, with 25,859 on disk and 8,681 gzipped of `.css`.
+Today's after build is 609 lighter on disk and 418 gzipped lighter than that one across the whole
+directory, and 926 heavier on disk and 8 gzipped lighter in `.css`. Of the 418, this story's own
+share is 235 by today's own before listing; the remaining 183 is `647315a`, the A-17 fix, which
+landed on `dev` between the two readings. The non-3D line still names `/cv`, 118,263 over budget,
+84.5 percent, where it was 118,219 over.
+
 ### The 2026-09-14 reading, after Story 2-28
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `HMUMVY1c3c8TaxM8ZpHFr`, written
@@ -992,6 +1072,40 @@ if a fingerprint above hits it.
 
 ## Findings
 
+### The 2026-09-21 run, after Story 2-29
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `wyW2OiV9VvlHmhcctT2lp`. § Every route's
+2026-09-21 reading after Story 2-29 and this section were filed from this run; every other section
+in this file is still the reading its own heading names.
+
+- The narrative bundle is 413,079 bytes gzipped across 8 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 36,921 below the top.
+- 118,881 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0d3ymyos8iowp.js` and
+  `05e6tciymra6v.js` are referenced by no prerendered document. The other 294,198 is on a document
+  at first paint, so the `next/dynamic` boundaries defer far less than their shape suggests.
+- The non-3D path is over budget as measured: 258,263 against 140,000, 118,263 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,298 against 140,000, 36,702 of margin. That
+  decomposition has no line for the JavaScript or the preloads the document actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Nothing in this list is this story's, and that is the finding.** **Derived.** The surface Story
+2-29 rebuilt is `/`, which is a dynamic route with no prerendered document, so every figure the
+tool derives from documents is blind to it; the two chunks that moved are weighed in the reading
+above instead. `components/atoms/ScanlineOverlay/ScanlineOverlay.tsx` also leaves the tool's
+"imported by nothing" list here, which Story 2-28 predicted: it is imported by `HomeLayout.tsx` now.
+
+**DW-57's `ops/asset-budget.md` half is discharged by this run.** **Decision.** That entry records
+that this file's fingerprint tables, per-route tables and 2026-09-07 finding all name `/projects`,
+a route Story 2-14 redirected on 2026-09-07, and that the honest correction is a re-run against the
+current tree with a dated paragraph rather than an edit of readings that were true when they were
+taken. This section and the reading above are that re-run: neither names `/projects`, because no
+such route exists in either build, and every dated section that does name it is left exactly as it
+was taken. The `TorusKnotCanvas` half of Pending Operator action 6 is struck below by the same
+arithmetic, with no measurement needed: the file was deleted with the route.
+
 ### The 2026-09-14 run, after Story 2-28
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `HMUMVY1c3c8TaxM8ZpHFr`. § Every route's
@@ -1222,7 +1336,7 @@ than left in prose, in the shape `ops/font-contract.md` and `ops/rendered-output
 | 3 | **Decide the disposition of the four orphaned assets and two orphaned components** | Operator | 1,215,179 bytes under `public/assets/home/` and two `.tsx` files are reachable from nothing. Deleting a published asset is a reversibility question, not a cleanup | _not done_ |
 | 4 | **Re-run `node ops/asset-budget.mjs` when Story 2-20 retires the legacy faces, and add a row** | Operator | 962,952 bytes on disk, 692,644 gzipped across nine unreached families and three formats each, are the largest single thing this reading found that a named story already plans to remove. The figure after it lands is what tells whether it worked. **It worked**: the 2026-09-12 table under § The faces the built CSS declares reads three families, 94,400 on disk, 0 unreached | 2026-09-12 |
 | 5 | **Re-run it again once the non-3D front door lands (Story 2-13)** | Operator | The 140 KB budget is 102.8 percent breached today, and 245,605 of the 283,945 is JavaScript on a route with no 3D on it. Whether that story moves the number is the question this record exists to make answerable | _not done_ |
-| 6 | **Rule on whether `EXPERIENCE.md` Rule 1 is repaired or retired** | Operator | § What this reads against the budget's own rules shows it does not hold. Either the narrative is genuinely deferred, which is a change to three components and `app/providers.tsx`, or the rule is rewritten to describe what the Hub does. Both are decisions this story may not take. **Narrowed 2026-09-07 by Story 2-12**: one of the three components is done and the rule now holds on `/`. It still fails on `/work` and `/projects` (`TorusCanvas.tsx:8`, `TorusKnotCanvas.tsx:8`) and on every route through `app/providers.tsx`, so the decision is unchanged in kind and smaller in size | _not done_ |
+| 6 | **Rule on whether `EXPERIENCE.md` Rule 1 is repaired or retired** | Operator | § What this reads against the budget's own rules shows it does not hold. Either the narrative is genuinely deferred, which is a change to three components and `app/providers.tsx`, or the rule is rewritten to describe what the Hub does. Both are decisions this story may not take. **Narrowed 2026-09-07 by Story 2-12**: one of the three components is done and the rule now holds on `/`. It still fails on `/work` and `/projects` (`TorusCanvas.tsx:8`, `TorusKnotCanvas.tsx:8`) and on every route through `app/providers.tsx`, so the decision is unchanged in kind and smaller in size. **Narrowed again 2026-09-21 by Story 2-29**, by arithmetic and not by measurement (DW-57): `/projects` and `TorusKnotCanvas.tsx` were deleted with the route by Story 2-14 on 2026-09-07, so what remains is `TorusCanvas.tsx:8` on `/work` and `app/providers.tsx` on every route | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row

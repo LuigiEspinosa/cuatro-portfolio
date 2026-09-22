@@ -195,30 +195,6 @@ interface Exemption {
  */
 const EXEMPTIONS: readonly Exemption[] = [
   {
-    id: 'z-home-overlay',
-    check: 'z-index',
-    match: '20',
-    count: 1,
-    source: 'components/organisms/HomeLayout/HomeLayout.scss:28',
-    closedBy: 'Story 2-29',
-  },
-  {
-    id: 'z-home-panel',
-    check: 'z-index',
-    match: '5',
-    count: 1,
-    source: 'components/organisms/HomeLayout/HomeLayout.scss:39',
-    closedBy: 'Story 2-29',
-  },
-  {
-    id: 'z-home-gem',
-    check: 'z-index',
-    match: '3',
-    count: 1,
-    source: 'components/organisms/HomeLayout/HomeLayout.scss:181',
-    closedBy: 'Story 2-29',
-  },
-  {
     id: 'z-work-hero',
     check: 'z-index',
     match: '2',
@@ -243,14 +219,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     closedBy: 'Story 2-33',
   },
   {
-    id: 'gradient-home-ground',
-    check: 'depth',
-    match: 'linear-gradient',
-    count: 2,
-    source: 'components/organisms/HomeLayout/HomeLayout.scss:11-12',
-    closedBy: 'Story 2-29',
-  },
-  {
     id: 'gradient-error-ground',
     check: 'depth',
     match: 'linear-gradient',
@@ -265,22 +233,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     count: 2,
     source: 'components/atoms/WorkItem/WorkItem.scss:85',
     closedBy: 'Story 2-31',
-  },
-  {
-    id: 'clip-home-nav',
-    check: 'clip',
-    match: 'a.nav-link',
-    count: 2,
-    source: 'components/organisms/HomeLayout/HomeLayout.scss:62',
-    closedBy: 'Story 2-29',
-  },
-  {
-    id: 'clip-home-contact',
-    check: 'clip',
-    match: '.contact-container a',
-    count: 3,
-    source: 'components/organisms/HomeLayout/HomeLayout.scss:69',
-    closedBy: 'Story 2-29',
   },
   {
     id: 'clip-skip-link',
@@ -1902,5 +1854,245 @@ test.describe('the accessibility floor', () => {
     expect(publishedWeightRange('Planted', '@font-face { font-family: "Planted"; font-weight: 100 900; }')).toEqual([100, 900]);
     expect(publishedWeightRange('Split', '@font-face { font-family: "Split"; font-weight: 400; } @font-face { font-family: "Split"; font-weight: 700; }')).toEqual([400, 700]);
     expect(publishedWeightRange('Bare', '@font-face { font-family: "Bare"; src: url(x); }'), 'a face with no font-weight is the initial 400').toEqual([400, 400]);
+  });
+});
+
+/**
+ * The scrim's composited-contrast guarantee, sampled rather than trusted (Story 2-29, DW-101).
+ *
+ * `epics.md:3254-3261` gives the contrast table for the five roles over `--token-scrim`, worst case
+ * over a pure white backdrop, and asks for the guarantee to be verified by screenshotting the
+ * composited surface, sampling the rendered ground beneath the text and computing the ratio by
+ * hand, never by trusting the table. Story 2-28 built the layer and removed both of its call sites,
+ * so until Story 2-29 placed it across the home canvas there was no composited surface to sample.
+ *
+ * **Read at 1024, not at DW-101's stated 360.** Below 768 `HomeLayout.scss` stacks the hero into a
+ * flex column, the gem becomes a static item between the name and the nav, and the mobile block
+ * hides the scrim because no text overlays imagery there. At 360 there is therefore nothing
+ * composited to sample; 1024 is the narrowest width at which the panels sit over the canvas.
+ */
+const SCRIM_VIEWPORT = { width: 1024, height: 800 } as const;
+
+/**
+ * The five roles `epics.md:3254-3256` tables over the scrim, each with the ratio published there
+ * and the WCAG 2.1 floor it has to clear: 4.5:1 for text (1.4.3), 3:1 for the ring, which is
+ * non-text contrast (1.4.11).
+ */
+const SCRIM_ROLES = [
+  { role: '--token-text', tabled: 13.51, floor: 4.5 },
+  { role: '--token-focus', tabled: 9.02, floor: 3 },
+  { role: '--token-accent-hover', tabled: 6.94, floor: 4.5 },
+  { role: '--token-text-secondary', tabled: 5.41, floor: 4.5 },
+  { role: '--token-accent', tabled: 4.77, floor: 4.5 },
+] as const;
+
+/** The four corner panels, every one of which sits over the canvas at this width. */
+const SCRIM_PANELS = ['.home-panel--name', '.home-panel--sys', '.home-panel--nav', '.home-panel--contact'] as const;
+
+/** A box in CSS pixels, which is image pixels too at `deviceScaleFactor: 1`. */
+interface Box {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** What one sampled box answered: its ground, and how much of the box that ground covers. */
+interface Sample {
+  readonly modal: string;
+  readonly share: number;
+  readonly pixels: number;
+  /** The smallest Euclidean distance from any pixel in the box to each probe colour, in order. */
+  readonly nearest: number[];
+}
+
+/**
+ * Sample a screenshot inside the page, through a canvas, so no image decoder is added for this.
+ *
+ * The ground beneath the text is read as the **modal** colour of a panel's box: the glyphs cover a
+ * minority of it, so the most common colour is what they are read against. `nearest` carries how
+ * close the box comes to each probe colour, which is what says whether the text painted at all.
+ */
+const sampleBoxes = async (page: Page, shot: Buffer, boxes: readonly Box[], probes: readonly string[]): Promise<Sample[]> =>
+  page.evaluate(
+    async ({ dataUrl, boxes, probes }: { dataUrl: string; boxes: Box[]; probes: number[][] }) => {
+      const image = new Image();
+      image.src = dataUrl;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('no 2d context for the screenshot');
+      context.drawImage(image, 0, 0);
+
+      return boxes.map((box) => {
+        const x = Math.max(0, Math.round(box.x));
+        const y = Math.max(0, Math.round(box.y));
+        const width = Math.max(1, Math.min(Math.round(box.width), canvas.width - x));
+        const height = Math.max(1, Math.min(Math.round(box.height), canvas.height - y));
+        const { data } = context.getImageData(x, y, width, height);
+        const counts = new Map<string, number>();
+        const nearest = probes.map(() => Number.POSITIVE_INFINITY);
+        for (let index = 0; index < data.length; index += 4) {
+          const [r, g, b, a] = [data[index], data[index + 1], data[index + 2], data[index + 3]];
+          const key = `${r},${g},${b},${a}`;
+          counts.set(key, (counts.get(key) ?? 0) + 1);
+          probes.forEach((probe, slot) => {
+            const distance = Math.hypot(r - probe[0], g - probe[1], b - probe[2]);
+            if (distance < nearest[slot]) nearest[slot] = distance;
+          });
+        }
+        const [modal, hits] = [...counts].sort((one, two) => two[1] - one[1])[0];
+        return { modal, share: hits / (width * height), pixels: width * height, nearest };
+      });
+    },
+    {
+      dataUrl: `data:image/png;base64,${shot.toString('base64')}`,
+      boxes: boxes.map((box) => ({ ...box })),
+      probes: probes.map((probe) => probe.split(',').slice(0, 3).map(Number)),
+    }
+  );
+
+test.describe('the scrim over the home canvas', () => {
+  test('sits genuinely beneath every role, sampled off the composited surface (DW-101)', async ({ browser }) => {
+    // The default door, because the project's context asks for reduced motion and that door renders
+    // no canvas at all. The same shape `tests/e2e/front-door.pw.ts:259-275` uses.
+    const context = await browser.newContext({
+      // `colorScheme: 'light'` is `playwright.config.ts:79`'s value, carried here rather than
+      // dropped so this context differs from the project's in the two ways it means to and in no
+      // other: the viewport and the motion preference. The contract is dark only and declares no
+      // `color-scheme`, so the scheme changes nothing the sampling reads, and pinning it is what
+      // keeps that a statement rather than an assumption (RESTYLE-SPEC F-11, filed as DW-95).
+      viewport: { ...SCRIM_VIEWPORT },
+      deviceScaleFactor: 1,
+      colorScheme: 'light',
+      reducedMotion: 'no-preference',
+    });
+    try {
+      const page = await context.newPage();
+      await goTo(page, '/');
+      await expect
+        .poll(() => page.evaluate(() => document.querySelector('.home-gem .scanline-overlay') !== null), {
+          timeout: 20_000,
+          message: 'the default door rendered no scrim inside .home-gem, so there is no composited surface to sample',
+        })
+        .toBe(true);
+      await settle(page, { route: '/', status: 200, entrance: true });
+
+      // **The z-level trap, resolved by where the header is rather than by what it is painted on.**
+      // `Header.tsx:12` returns `null` on `/`, so the sticky header is not in the document at all
+      // and cannot be a `--z-sticky` element over a `--z-raised` scrim. Read off the DOM, and the
+      // scrim's own placement is then read off the composited pixels below rather than off any
+      // `z-index` value.
+      expect(
+        await page.evaluate(() => document.querySelectorAll('.header-container').length),
+        'a sticky header renders on `/`, so it sits above the scrim and computes against the imagery'
+      ).toBe(0);
+
+      const boxes = await page.evaluate(
+        (selectors: string[]) =>
+          selectors.map((selector) => {
+            const node = document.querySelector(selector);
+            if (!node) throw new Error(`${selector} is not on the page`);
+            const { x, y, width, height } = node.getBoundingClientRect();
+            return { x, y, width, height };
+          }),
+        [...SCRIM_PANELS]
+      );
+      for (const [index, box] of boxes.entries()) {
+        expect(box.width * box.height, `${SCRIM_PANELS[index]} has no box, so nothing can be sampled inside it`).toBeGreaterThan(0);
+      }
+
+      // Every panel really is over the canvas, or the sample below would be of the page ground.
+      const gem = await page.evaluate(() => {
+        const node = document.querySelector('.home-gem');
+        if (!node) throw new Error('.home-gem is not on the page');
+        const { x, y, width, height } = node.getBoundingClientRect();
+        return { x, y, width, height };
+      });
+      for (const [index, box] of boxes.entries()) {
+        const inside = box.x >= gem.x && box.y >= gem.y && box.x + box.width <= gem.x + gem.width && box.y + box.height <= gem.y + gem.height;
+        expect(inside, `${SCRIM_PANELS[index]} is not inside the canvas box, so it overlays no imagery`).toBe(true);
+      }
+
+      const roleValues = await Promise.all(SCRIM_ROLES.map(({ role }) => rootCustomPropertyValue(page, role)));
+      const roleRgba = await rasterise(page, roleValues);
+
+      // **The proof that the layer is genuinely between the imagery and the text, taken by
+      // sampling.** The scrim is repainted an unmistakable colour and the surface screenshotted
+      // again: beneath every panel the ground becomes that colour, which says the scrim covers the
+      // imagery there, and the panel's own text is still painted over it, which says the panel is
+      // above the scrim rather than under it. Neither half reads a `z-index`, and neither depends
+      // on what the WebGL canvas happens to draw.
+      const MARKER = '255,0,255';
+      const planted = await page.addStyleTag({ content: '.scanline-overlay { background-color: rgb(255, 0, 255) !important; }' });
+      const marked = await sampleBoxes(page, await page.screenshot(), boxes, [...roleRgba, `${MARKER},255`]);
+      await planted.evaluate((node) => (node as Element).remove());
+
+      const notCovered = marked
+        .map((sample, index) => `${SCRIM_PANELS[index]} reads ${sample.modal} at ${(sample.share * 100).toFixed(1)}% of its box`)
+        .filter((_, index) => !marked[index].modal.startsWith(`${MARKER},`));
+      expect(
+        notCovered,
+        `the repainted scrim is not the ground beneath a panel's text, so the layer is not genuinely between the imagery and ` +
+          `that panel:\n${notCovered.join('\n')}`
+      ).toEqual([]);
+
+      // **Each panel paints its own text over the marker, or that panel is under the layer rather
+      // than above it.** Read per panel since 2026-09-21: it was `overMarker.length > 0` until the
+      // Step-04 review pointed out that three of the four could be buried or blank and it would
+      // still pass.
+      //
+      // **No panel is exempt, and that was measured rather than assumed.** `.home-panel--sys` was
+      // exempted when this went per panel, on the guess that its `HudLabel` is the smallest type on
+      // the surface and might be antialiased short of the probe distance on every pixel. The run
+      // said otherwise: all four panels read a nearest distance of **0.0**, an exact hit on one of
+      // the five roles, `--light-gray-color` and `--accent` on that panel aliasing two of them. So
+      // the set below is empty and stays empty unless a measurement puts something in it; the
+      // distances are printed on every run so the question is answered by the log rather than by
+      // this comment.
+      const EXEMPT_FROM_MARKER = new Set<string>();
+      const nearestPerPanel = marked.map((sample, index) => ({
+        panel: SCRIM_PANELS[index],
+        nearest: Math.min(...sample.nearest.slice(0, SCRIM_ROLES.length)),
+      }));
+      console.log(
+        `accessibility-floor: over the repainted scrim, ` +
+          `${nearestPerPanel.map((read) => `${read.panel} nearest ${read.nearest.toFixed(1)}`).join('; ')}`
+      );
+      const buried = nearestPerPanel
+        .filter((read) => !EXEMPT_FROM_MARKER.has(read.panel) && read.nearest > 12)
+        .map((read) => `${read.panel} comes no closer than ${read.nearest.toFixed(1)} to any of the five roles`);
+      expect(
+        buried,
+        `a panel painted no role colour over the repainted scrim, so its text is beneath the layer rather than above ` +
+          `it:\n${buried.join('\n')}`
+      ).toEqual([]);
+
+      // The real composite, and the five ratios computed from the sampled sRGB rather than typed.
+      const served = await sampleBoxes(page, await page.screenshot(), boxes, roleRgba);
+      const grounds = served.map((sample) => sample.modal);
+      for (const [index, ground] of grounds.entries()) {
+        expect(ground.endsWith(',255'), `${SCRIM_PANELS[index]} sampled a ground that is not opaque: ${ground}`).toBe(true);
+      }
+
+      const readings: string[] = [];
+      const under: string[] = [];
+      SCRIM_ROLES.forEach(({ role, tabled, floor }, slot) => {
+        const measured = Math.min(...grounds.map((ground) => ratio(roleRgba[slot], ground)));
+        readings.push(`${role} ${measured.toFixed(2)}:1 measured against the table's ${tabled.toFixed(2)}:1, floor ${floor}:1`);
+        if (measured < floor) under.push(`${role} contrasts ${measured.toFixed(2)}:1 against the sampled ground, under its ${floor}:1 floor`);
+      });
+      expect(under, `a role does not clear its own floor over the scrim as composited:\n${under.join('\n')}`).toEqual([]);
+
+      console.log(
+        `accessibility-floor: the scrim at ${SCRIM_VIEWPORT.width}x${SCRIM_VIEWPORT.height}, default door. Grounds sampled ` +
+          `${grounds.map((ground, index) => `${SCRIM_PANELS[index]} ${ground} (${(served[index].share * 100).toFixed(1)}% of ${served[index].pixels}px)`).join('; ')}. ` +
+          `Ratios: ${readings.join('; ')}`
+      );
+    } finally {
+      await context.close();
+    }
   });
 });

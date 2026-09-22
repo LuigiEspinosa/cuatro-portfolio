@@ -313,6 +313,12 @@ const TOKEN_NATIVE_STYLESHEETS = [
   // a file between the two lists. Story 2-30 rebuilds it, at which point it becomes a rebuild like
   // the rest.
   'components/organisms/ErrorPage/error-page.scss',
+  // The home surface, rebuilt by Story 2-29. A rebuild like the rest: the 2023 literals left disk
+  // with the `#0a000f` ground, its two grid gradients, the three bare `z-index` integers and the
+  // GSAP timeline, and this file names the ground, the text, border and accent roles, the body and
+  // display families with their size, weight, line-height and tracking steps, the spacing scale,
+  // the hairline stroke, two z-levels and the entrance's duration and easing directly.
+  'components/organisms/HomeLayout/HomeLayout.scss',
   'components/organisms/Premise/Premise.scss',
   'components/organisms/SiteFooter/SiteFooter.scss',
   'components/organisms/SuiteDirectory/SuiteDirectory.scss',

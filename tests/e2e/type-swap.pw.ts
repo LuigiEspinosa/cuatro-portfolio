@@ -83,21 +83,30 @@ interface DisplaySite {
   readonly count: number;
 }
 
-/** The two Confillia call sites, `HomeLayout.scss:120` and `:147`, and how many elements each renders. */
-const CONFILLIA_SITES: readonly DisplaySite[] = [
+/**
+ * The two hero link groups, and how many elements each renders.
+ *
+ * **They were the two `--confillia-normal` call sites until 2026-09-21.** Story 2-20 retargeted
+ * that alias onto the display family and each site set `font-stretch: 75%` by hand beside
+ * `font-family`, the narrow end of the published `75% 100%`, because a family alias cannot carry
+ * width. Story 2-29 rebuilt `HomeLayout.scss` against the contract: both groups name the display
+ * family directly and neither sets a width, so they render at the face's default `100%`, which is
+ * the one width `contracts/fonts.css`'s single `size-adjust` was fitted at (DW-82).
+ */
+const HERO_DISPLAY_SITES: readonly DisplaySite[] = [
   { selector: 'a.nav-link', count: 2 },
   { selector: '.contact-container a', count: 3 },
 ];
 
-/** The width both sites set by hand beside `font-family`, the narrow end of the published `75% 100%`. */
-const CONFILLIA_STRETCH = '75%';
+/** The width both groups now compute, which is the axis default and not a value any rule sets. */
+const HERO_DISPLAY_STRETCH = '100%';
 
 /**
  * Every element that reaches the display face, per surface, and how many of each the surface
- * renders. The two `--monument-bold` sites, the two `--monument-regular` sites and the two
- * Confillia sites, which is the whole set `tests/e2e/anchor-aliases.pw.ts` tables, plus the display
- * entrance on `/`, which reaches the face through `--f-display` directly since Story 2-27. `/cv`
- * and `/celeste` reach no display face and are not here.
+ * renders. The two `--monument-bold` sites, the two `--monument-regular` sites and the two hero
+ * link groups, plus the display entrance on `/`, which reaches the face through `--f-display`
+ * directly since Story 2-27, as the two hero groups have since Story 2-29. `/cv` and `/celeste`
+ * reach no display face and are not here.
  *
  * The count is pinned so the swap cannot be measured over an empty selection: a renamed class
  * fails here naming itself rather than shortening the loop below to nothing.
@@ -116,7 +125,7 @@ const DISPLAY_ELEMENTS: readonly {
     // deleted preload's comment named was its wrapped `<h1>`, and the wrapper is gone). Its
     // characters are inline spans in one line box, present at full opacity under the harness's
     // reduced motion, so its box is a line box like the others.
-    selectors: [...CONFILLIA_SITES, { selector: '.glitch-text', count: 1 }],
+    selectors: [...HERO_DISPLAY_SITES, { selector: '.glitch-text', count: 1 }],
   },
   {
     route: '/work',
@@ -513,7 +522,7 @@ test('parses a real contract, so every case below measures something', () => {
   expect(DISPLAY_ELEMENTS.flatMap((surface) => surface.selectors).length, 'no display element is tabled').toBe(7);
 });
 
-test('the two Confillia sites compute the display family at 75% width, and the alias reads the display stack', async ({
+test('the two hero link groups compute the display family at its default width, and the retired alias still reads the display stack', async ({
   page,
 }) => {
   await goTo(page, '/');
@@ -531,7 +540,7 @@ test('the two Confillia sites compute the display family at 75% width, and the a
   // Every element at both call sites, counted per selector so a renamed class cannot pass over
   // nothing.
   const wrong: string[] = [];
-  for (const site of CONFILLIA_SITES) {
+  for (const site of HERO_DISPLAY_SITES) {
     const elements = page.locator(site.selector);
     expect(await elements.count(), `${site.selector} does not match ${site.count} elements on /`).toBe(site.count);
     for (let index = 0; index < site.count; index += 1) {
@@ -540,24 +549,24 @@ test('the two Confillia sites compute the display family at 75% width, and the a
       if (firstFamily(family) !== displayFamily) {
         wrong.push(`${site.selector}[${index}] computes font-family "${family}", expected ${displayFamily} first`);
       }
-      if (stretch !== CONFILLIA_STRETCH) {
-        wrong.push(`${site.selector}[${index}] computes font-stretch "${stretch}", expected ${CONFILLIA_STRETCH}`);
+      if (stretch !== HERO_DISPLAY_STRETCH) {
+        wrong.push(`${site.selector}[${index}] computes font-stretch "${stretch}", expected ${HERO_DISPLAY_STRETCH}`);
       }
     }
   }
   expect(
     wrong,
-    `a Confillia call site does not render the display face at the narrow end of its width axis. The ` +
-      `alias carries the family and font-stretch is set by hand beside it, and one of the two is off:\n${wrong.join('\n')}`
+    `a hero link group does not render the display face at the default end of its width axis. Story 2-29 retired the hand-set ` +
+      `75%, so a site reading anything else has had a width put back on it:\n${wrong.join('\n')}`
   ).toEqual([]);
 
   // The width read, live: the same element reports something else once a rule overrides it, so
-  // `75%` twice above is a measurement and not a constant.
-  await plantStyle(page, '.nav-link:first-child { font-stretch: 100% !important; }');
+  // `100%` twice above is a measurement and not a constant.
+  await plantStyle(page, '.nav-link:first-child { font-stretch: 75% !important; }');
   expect(
     await computedStyleValue(page, 'a.nav-link', 'font-stretch'),
     'the width axis survived a rule that overrode it, so the read above is a constant'
-  ).toBe('100%');
+  ).toBe('75%');
 });
 
 test('every surface declares exactly the contract faces and fetches nothing under /fonts/, and the old binary answers 404', async ({

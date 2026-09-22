@@ -20,8 +20,12 @@
   min-inline-size: var(--tap);
   padding-inline: var(--s-md);
 
-  // Above `.home-gem`, which is at `z-index: 3` and spans the whole hero on the default path. This
-  // control only ever renders on that path, so it is the one thing here that has to clear it.
+  // Above `.home-gem`, which spans the whole hero on the default path. This control only ever
+  // renders on that path, so it is the one thing here that has to clear it. **Amended 2026-09-21
+  // by Story 2-29**: the gem read `z-index: 3` until that story rebuilt `HomeLayout.scss` and put
+  // it at `--z-base`, where it is a stacking context holding the scrim, and the four corner panels
+  // joined this declaration at `--z-raised` so they clear the gem's whole subtree. This line is
+  // unchanged and is the precedent they followed.
   z-index: var(--z-raised);
 
   color: var(--token-text-secondary);
@@ -37,9 +41,17 @@
 
 // One signal, and it is a recolour. The underline never appears on hover and never changes width:
 // both are layout changes and both reflow the line.
-.skip-control:hover {
-  color: var(--token-text);
-  border-block-end-color: var(--token-accent-hover);
+//
+// **Gated on 2026-09-21 by Story 2-29**, which owns the one surface this control renders on. Touch
+// is the primary user (NFR-5): on a coarse pointer a tap paints `:hover` and leaves it painted
+// until the next tap lands elsewhere, so an ungated rule is a colour that sticks on FR-2's only
+// interaction. The two-term query is the one `epics.md:3332-3333` specifies; `and (pointer: fine)`
+// is not added, because a hybrid device with both pointers would lose the hover it can use.
+@media (hover: hover) {
+  .skip-control:hover {
+    color: var(--token-text);
+    border-block-end-color: var(--token-accent-hover);
+  }
 }
 
 // **Two placements, because the hero has two layouts and both have to keep this above the fold.**

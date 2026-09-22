@@ -1,19 +1,25 @@
-// Story 2-9 removed the `@media (max-width: 767px) { overflow: auto }` that sat here. It was an
-// override of `app/app.scss`'s `body[id=''] { overflow: hidden }`, letting the home route scroll on
-// mobile while the desktop layout stayed pinned to one viewport. That rule is gone, so the override
-// has nothing left to override; worse, `overflow` is a shorthand, so it would have set `overflow-x`
-// back to `auto` on this selector and turned the new global `overflow-x: clip` into real horizontal
-// scroll at exactly the 360px width A-5 is measured at. Load-bearing in the wrong direction, and
-// therefore deleted rather than kept.
+// The home surface (Story 2-29, `DESIGN.md:758-769`, `RESTYLE-SPEC.md` § The scrim,
+// `EXPERIENCE.md` § Home surface): the Hub's largest surface, rebuilt against the published token
+// contract alone. Every colour, length, family, tracking, duration, easing and z-level here is a
+// contract role; the file declares no custom property of its own, because
+// `app/__tests__/anchor-contract.test.ts` holds every declared `--name` to `app/app.scss`. The
+// contract's path is deliberately not written here: that same suite reads every source for a
+// mention of it and allows exactly two, neither of them a component stylesheet.
+//
+// What left with the 2023 surface, deleted rather than tokenised: the `#0a000f` ground's two
+// `linear-gradient` grid images (§ Rules bars a gradient in a background), the `opacity: 0.2`
+// dim-siblings rule (opacity never expresses state), the two ungated `:hover` blocks (a tap paints
+// `:hover` and leaves it painted, review A-5), the `.home-overlay` and `.home-sys-coords` rules
+// (matched by no markup anywhere in the repository), and the GSAP timeline, which is now **five
+// animated rules on one keyframe**, each carrying its delay in the `animation` shorthand, with
+// three further `animation-delay` overrides for the staggers inside the two link groups.
+
 body[id=''] {
-  background-color: #0a000f;
-  background-image:
-    linear-gradient(rgba(140, 90, 210, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(140, 90, 210, 0.06) 1px, transparent 1px);
-  background-size: 56px 56px;
+  background-color: var(--token-bg);
 }
 
-// Layout
+// ── Layout ───────────────────────────────────────────────────────────────────
+
 .home-container {
   position: relative;
   width: 100%;
@@ -22,22 +28,55 @@ body[id=''] {
   place-items: center;
 }
 
-.home-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  pointer-events: none;
-  opacity: 0;
+// ── The entrance ─────────────────────────────────────────────────────────────
+//
+// **Base state is the final state and the keyframe supplies only the `from`.** A visitor whose
+// script never runs, or whose bundle never arrives, sees every panel, the role line and all five
+// links at full opacity, because nothing here is revealed by JavaScript any more (DW-42). The
+// `both` fill holds the `from` through the delay, so an element is absent until its turn and
+// present after it, once.
+//
+// The five delays are the shipped sequence (500, 1300, 1600, 2000, 2200ms) with an 80ms stagger
+// inside the two link groups. They are plain `animation-delay` literals rather than custom
+// properties, because this file declares none; the contract mints no delay role, which is the
+// honest gap and is why `GlitchText` takes its `--delay` as an inline style instead.
+//
+// One clock, measured from first paint rather than from hydration, so the heading's `--delay: 1s`
+// and these delays finally agree (DW-100).
+@keyframes home-enter {
+  from {
+    opacity: 0;
+  }
 }
 
-// Panels
+// ── Panels ───────────────────────────────────────────────────────────────────
+//
+// The notched silhouette survives byte for byte: it is geometry rather than an effect
+// (`epics.md:3304-3305`). What is new is the padding. A `clip-path` polygon is bounded by the
+// element's border box, so the global focus ring runs 5px past a link that sits flush inside a
+// panel and paints as a fragment; `--s-sm` is 12px, more than the ring's reach on a straight edge
+// and more than the 10px corner cut on a notched one, so every ring falls inside the clipped
+// region. The polygons are untouched and five of the six clipped rings close.
 .home-panel {
   position: absolute;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  z-index: 5;
-  transition: opacity 0.4s ease;
+  gap: var(--s-xs);
+  padding: var(--s-sm);
+
+  // Above the gem's whole subtree, the scrim included. `.home-gem` is a stacking context at
+  // `--z-base`, so `--z-raised` here clears everything inside it; `SkipControl.scss:25` reached
+  // for the same role for the same reason, and the contract's next level up is the dropdown level
+  // at 100, which a corner panel is not.
+  //
+  // **This shares a level with `.skip-control`, and the tie is resolved by layout rather than by
+  // this line.** Both are `--z-raised`, and `HomeLayout.tsx` renders the control before all four
+  // panels, so on a tie a panel paints over it. The contract offers nothing between `--z-base` and
+  // `--z-raised`, and `--z-dropdown` is semantically wrong for a skip control, so the guarantee
+  // this surface actually makes is that the control's box never intersects a panel's:
+  // `tests/e2e/front-door.pw.ts` measures exactly that at every width it visits, which is a
+  // stronger claim than a z-index would have been and a falsifiable one.
+  z-index: var(--z-raised);
 
   &--name {
     top: 12%;
@@ -49,8 +88,8 @@ body[id=''] {
     top: 2%;
     right: 2%;
     align-items: flex-end;
-    opacity: 0;
     clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    animation: home-enter var(--dur-major) var(--ease-entrance) 1600ms both;
   }
 
   &--nav {
@@ -58,7 +97,7 @@ body[id=''] {
     left: 8%;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--s-xs);
     clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
   }
 
@@ -72,114 +111,147 @@ body[id=''] {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 0.5rem;
+      gap: var(--s-xs);
     }
   }
 }
 
-.home-container:has(.home-panel:hover) .home-panel:not(:hover) {
-  opacity: 0.2;
-}
+// ── Name and role ────────────────────────────────────────────────────────────
 
-// Name + Role
 .home-role {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  margin-top: 0.6rem;
-  opacity: 0;
+  gap: var(--s-2xs);
+  margin-top: var(--s-xs);
+  animation: home-enter var(--dur-major) var(--ease-entrance) 1300ms both;
 
   span:first-child {
-    font-family: var(--font-regular);
-    font-size: clamp(1rem, 1.5vw, 1.2rem);
-    color: var(--light-gray-color);
-    letter-spacing: 0.06em;
+    font-family: var(--f-body);
+    font-size: var(--t-md);
+    line-height: var(--lh-body);
+    letter-spacing: var(--tr-body);
+    color: var(--token-text-secondary);
   }
 
+  // An ornament, `aria-hidden` in the markup, so it takes the muted accent the subordinate-line
+  // rule at `RESTYLE-SPEC.md:447-451` gives an ornament rather than the full accent.
   &__jp {
-    font-size: 0.85rem;
-    color: var(--accent);
-    font-family: var(--font-regular);
-    letter-spacing: 0.08em;
+    font-family: var(--f-body);
+    font-size: var(--t-sm);
+    line-height: var(--lh-label);
+    letter-spacing: var(--tr-meta);
+    color: var(--token-accent-muted);
   }
 }
 
-// Sys Data
-.home-sys-coords {
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--light-gray-color);
-  text-align: right;
-  line-height: 1.8;
-  margin-top: 0.3rem;
-  opacity: 0.7;
-}
-
-// Navigation
+// ── Navigation ───────────────────────────────────────────────────────────────
+//
+// **The hit-target floor, reached rather than exempted.** `min-block-size` with a flex box, never
+// vertical padding on a plain inline element (`EXPERIENCE.md:727-730`), the `SkipControl.scss:12-21`
+// idiom. Both link groups were `home-nav` and `home-contact` in the AD-19 ledger until 2026-09-21
+// at 320 x 32 and 57 to 81 x 32; the display step this story sets already takes the first nav link
+// past the floor on its own, which would have left one row half stale, so the floor is set on all
+// five and both rows are deleted in this commit.
 .nav-link {
-  font-family: var(--confillia-normal);
-  font-stretch: 75%;
-  font-size: clamp(1.5rem, 2.5vw, 2.5rem);
-  color: var(--light-gray-color);
+  display: flex;
+  align-items: center;
+  min-block-size: var(--tap);
+  font-family: var(--f-display);
+  font-size: var(--t-xl);
+  font-weight: var(--w-bold);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-heading);
+  color: var(--token-text);
   text-decoration: none;
-  border-left: 1px solid var(--accent-dim);
-  padding-left: 0.75rem;
-  transition: color 0.2s ease;
-  opacity: 0;
-  transform: translateY(20px);
+  border-left: var(--stroke-hair) solid var(--token-border);
+  padding-left: var(--s-sm);
+  transition: color var(--dur-micro) var(--ease-toggle);
+  animation: home-enter var(--dur-major) var(--ease-entrance) 2000ms both;
 
-  &:hover {
-    color: var(--accent);
+  // `:nth-child`, matching the contact group below, rather than the adjacent-sibling form this
+  // read until 2026-09-21: `& + &` gives every link after the first the same delay, so a third one
+  // would flatten the stagger instead of extending it.
+  &:nth-child(2) {
+    animation-delay: 2080ms;
   }
 }
 
 .home-nav-jp {
-  font-family: var(--font-regular);
-  font-size: 0.85rem;
-  color: var(--accent);
-  letter-spacing: 0.1em;
-  padding-left: 0.75rem;
+  font-family: var(--f-body);
+  font-size: var(--t-sm);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  color: var(--token-accent-muted);
+  padding-left: var(--s-sm);
 }
 
-// Contact
+// ── Contact ──────────────────────────────────────────────────────────────────
+
 .home-panel--contact {
   .contact-container a {
-    font-family: var(--confillia-normal);
-    font-stretch: 75%;
-    font-size: clamp(1.5rem, 2.5vw, 2.5rem);
-    color: var(--light-gray-color);
+    font-family: var(--f-display);
+    font-size: var(--t-xl);
+    font-weight: var(--w-bold);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tr-heading);
+    color: var(--token-text);
     text-decoration: none;
-    display: block;
-    text-align: right;
-    border-right: 1px solid var(--accent-dim);
-    padding-right: 0.75rem;
-    transition: color 0.2s ease;
-    opacity: 0;
-    transform: translateY(20px);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-block-size: var(--tap);
+    min-inline-size: var(--tap);
+    border-right: var(--stroke-hair) solid var(--token-border);
+    padding-right: var(--s-sm);
+    transition: color var(--dur-micro) var(--ease-toggle);
+    animation: home-enter var(--dur-major) var(--ease-entrance) 2200ms both;
 
-    &:hover {
-      color: var(--accent);
+    &:nth-child(2) {
+      animation-delay: 2280ms;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 2360ms;
     }
   }
 }
 
 .home-contact-jp {
-  font-family: var(--font-regular);
-  font-size: 0.85rem;
-  color: var(--accent);
-  letter-spacing: 0.1em;
-  padding-right: 0.75rem;
+  font-family: var(--f-body);
+  font-size: var(--t-sm);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  color: var(--token-accent-muted);
+  padding-right: var(--s-sm);
   text-align: right;
 }
 
-// Gem
+// ── Hover, gated ─────────────────────────────────────────────────────────────
+//
+// Every `:hover` in this file is behind `@media (hover: hover)`. On a touch device a tap paints
+// `:hover` and leaves it painted until the next tap lands elsewhere, so an ungated rule is a
+// colour that sticks (review A-5). Gated, no hover colour is computed on a coarse pointer at all.
+@media (hover: hover) {
+  .nav-link:hover,
+  .home-panel--contact .contact-container a:hover {
+    color: var(--token-accent-hover);
+  }
+}
+
+// ── Gem ──────────────────────────────────────────────────────────────────────
+//
+// **The stack guarantee, built rather than asserted.** `z-index` on a positioned element makes
+// this a stacking context, so `ScanlineOverlay`'s own `--z-raised` is confined to it: the scrim
+// paints above the canvas and below everything outside this box. `inset: 0` is what makes the
+// scrim span the canvas's full extent (`epics.md:3314-3315`), so a panel cannot drift off its
+// cover on a viewport nobody tested.
 .home-gem {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 3;
-  opacity: 0;
+  z-index: var(--z-base);
+  animation: home-enter var(--dur-major) var(--ease-entrance) 500ms both;
 
   #gem-canvas {
     width: 100%;
@@ -187,7 +259,8 @@ body[id=''] {
   }
 }
 
-// Mobile
+// ── Mobile ───────────────────────────────────────────────────────────────────
+
 @media (max-width: 767px) {
   .home-container {
     height: auto;
@@ -195,8 +268,8 @@ body[id=''] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem var(--page-padding) 5rem;
-    gap: 2.5rem;
+    padding: var(--s-xl) var(--page-pad) var(--s-2xl);
+    gap: var(--s-xl);
   }
 
   .home-panel {
@@ -224,11 +297,11 @@ body[id=''] {
       }
 
       .contact-container a {
-        text-align: left;
+        justify-content: flex-start;
         border-right: none;
-        border-left: 1px solid var(--accent-dim);
+        border-left: var(--stroke-hair) solid var(--token-border);
         padding-right: 0;
-        padding-left: 0.75rem;
+        padding-left: var(--s-sm);
       }
     }
   }
@@ -242,9 +315,17 @@ body[id=''] {
     flex-shrink: 0;
   }
 
+  // **No scrim here, because no text overlays imagery here.** Below 768 the hero is a flex column
+  // and the gem is a static item between the name and the nav, so a scrim would be a treatment on
+  // imagery, which `DESIGN.md:414-416` bars. The layer's own rule is "present or absent, never
+  // faint", and this is the absent half of it rather than a softened one.
+  .home-gem .scanline-overlay {
+    display: none;
+  }
+
   .home-contact-jp {
     padding-right: 0;
-    padding-left: 0.75rem;
+    padding-left: var(--s-sm);
     text-align: left;
   }
 }
@@ -266,6 +347,9 @@ body[id=''] {
 // class after hydration. `hooks/useNarrativePath.ts` is where that decision lives; this is only its
 // shape.
 //
+// The flat door needs no scrim rule of its own: `.home-gem` is hidden here and the layer is its
+// child, so the scrim goes with its parent.
+//
 // Both blocks sit last in the file deliberately. Every selector here is one class deep, the same as
 // the `max-width` block it overrides, so order is what decides it.
 
@@ -279,8 +363,8 @@ body[id=''] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem var(--page-padding) 5rem;
-    gap: 2.5rem;
+    padding: var(--s-xl) var(--page-pad) var(--s-2xl);
+    gap: var(--s-xl);
   }
 
   #{$container} .home-panel {
@@ -302,11 +386,7 @@ body[id=''] {
 
     // **Order and nothing else.** Below 768 the block above already turns this panel's links
     // around, and above it they keep the alignment and the border edge the panel has always had:
-    // nav on the left, contact on the right, which is the panel identity Story 2-29 owns. Restating
-    // the mobile swap here would also plant a thirteenth `--accent-dim` call site, and
-    // `tests/e2e/anchor-aliases.pw.ts` holds the twelve on disk equal to the twelve it tables,
-    // reading the desktop `border-right-color` at 1024 on a reduced-motion context, which is this
-    // path.
+    // nav on the left, contact on the right, which is the panel identity this file owns.
     &--contact {
       order: 4;
     }
@@ -326,15 +406,34 @@ body[id=''] {
 
 @media (prefers-reduced-motion: reduce) {
   @include flat-hero('.home-container');
+
+  // **Present at full opacity at first paint, and stated rather than relied on.** The token
+  // contract collapses every duration to 1ms under this same query, but a 1ms run still waits out
+  // its `animation-delay`, so a visitor who asked for stillness would get two and a half seconds of
+  // blank hero. The `GlitchText.scss:50-58` shape.
+  // Five selectors, matching the five animated rules above. `.home-panel--name` left this list on
+  // 2026-09-21 with the animation it should never have had: the retired timeline's `finalState`
+  // never named it, the 2023 stylesheet gave it no `opacity: 0`, and it painted immediately.
+  .home-panel--sys,
+  .home-role,
+  .nav-link,
+  .home-panel--contact .contact-container a,
+  .home-gem {
+    animation: none;
+  }
 }
 
 // The narrowest widths, tightened. **Moved below the two includes above by Story 2-13**, and only
-// moved: the declarations are Story 2-9's and are unchanged. Both includes restate `padding` and
-// `gap` on a selector one class deep, so left where it was this block would have stopped applying
-// to the flat front door and 360 would have been spaced for a wider viewport than it has.
+// moved then. **Story 2-29 put them on the spacing scale, which moved three of them**, because the
+// scale has no 2rem or 5rem step: the bottom padding went from `5rem` to `--s-2xl`, 4rem, in this
+// block and in both includes above; the top padding at 767 and on the flat door went from `2rem` to
+// `--s-xl`, 2.5rem; and this block's `gap` went from `2rem` to `--s-lg`, 1.5rem. Every other value
+// is Story 2-9's unchanged. Both includes restate `padding` and `gap` on a selector one class deep,
+// so left where it was this block would have stopped applying to the flat front door and 360 would
+// have been spaced for a wider viewport than it has.
 @media (max-width: 420px) {
   .home-container {
-    padding: 1.5rem var(--page-padding) 5rem;
-    gap: 2rem;
+    padding: var(--s-lg) var(--page-pad) var(--s-2xl);
+    gap: var(--s-lg);
   }
 }

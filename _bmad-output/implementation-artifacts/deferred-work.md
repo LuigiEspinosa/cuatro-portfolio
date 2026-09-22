@@ -2755,7 +2755,18 @@ status: done
     `color` is neither `transform` nor `opacity`. All three were explicitly outside Story 2-12's
     boundaries, which permitted exactly one declaration in this file to move, `filter: brightness(0)`
     to `opacity: 0` at `:190`.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29**, which rebuilt `HomeLayout.scss` against the contract. The
+    dim-siblings rule and the `transition: opacity 0.4s ease` that drove it are deleted, which is
+    the retirement `epics.md:3322-3326` books to this story: opacity no longer expresses state on
+    this surface at all. The two `color` transitions are kept and tokenised as
+    `transition: color var(--dur-micro) var(--ease-toggle)`, and on reading it again that half was
+    not the breach this entry called it: `EXPERIENCE.md:689-691` bars layout properties and names
+    `transition: border-color var(--dur-micro) var(--ease-toggle)` as its own example of the
+    conformant shape, so a named colour transition on contract duration and easing is the pattern
+    rather than an exception to it. Both hover blocks also moved inside `@media (hover: hover)`, so
+    on a coarse pointer no hover colour is computed and none can stick (review A-5).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-34
@@ -2957,7 +2968,20 @@ status: done
     `HomeLayout.tsx`, its stylesheet and two test files, and rewriting a fifth file's mocking
     strategy is a change with its own failure modes. Story 2-29 redesigns `HomeLayout` and is the
     natural owner.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29, by dissolving rather than by fixing.** `HomeLayout.tsx`
+    imports neither `gsap` nor `useGsapContext`; the entrance is one `home-enter` keyframe and five
+    `animation-delay` declarations in `HomeLayout.scss`; both mocks are deleted from
+    `HomeLayout.test.tsx`. Nothing in that file reads as coverage of motion any more, because there
+    is no motion in its subject to cover. What the entrance does is asserted where it lives: the
+    same file compiles the stylesheet and holds it to one keyframe whose only declaration is
+    `opacity: 0` in the `from`, no `infinite`, no `opacity: 0.x`, and every `:hover` inside
+    `@media (hover: hover)`; `tests/e2e/narrative.pw.ts` was rewritten in the same commit to read
+    the running page's `animation-name`, `animation-iteration-count` and `animation-direction` and
+    every `@keyframes` property on the route, because its inline-declaration sweep saw GSAP and can
+    see nothing now. The hazard the entry names is gone as well as the hole: the base state is the
+    final state, so deleting a line can no longer leave a permanently blank hero.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-42
@@ -2979,7 +3003,17 @@ status: done
     that line change and should be able to find out that the question was asked and deliberately not
     answered. Story 2-29 rebuilds this stylesheet and is where the decision belongs; Story 2-13,
     which builds the non-3D front door, is the other candidate.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29.** The no-script floor is the entrance's shape rather than a
+    rule beside it: every panel, the role line, the five links and the gem box are at full opacity
+    in the base state, and `@keyframes home-enter` supplies only the `from`, held through the delay
+    by `animation-fill-mode: both`. A visitor with scripting off, or one whose bundle never
+    arrives, sees the finished hero. Neither of the two shapes this entry floated was needed: no
+    `<noscript>` rule and no `html.no-js` class.
+    `components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx` holds the compiled stylesheet to
+    exactly `@keyframes home-enter{from{opacity:0}}`, which is the assertion that fails if a `to`
+    or a base `opacity: 0` comes back.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-43
@@ -3102,7 +3136,24 @@ status: done
     **Corrected 2026-09-07 after review: this entry describes two of A-14's three clauses.**
     `EXPERIENCE.md:773` and `epics.md:2591` read "aria-hidden, not focusable, **and its content is
     stated in prose**". The third is not shipped and is filed separately as DW-52.
-  status: open
+
+    **Re-verified 2026-09-21 by Story 2-29, and this entry's premise holds.** That story's planning
+    read claimed no `aria-hidden` and no `tabIndex` exists anywhere on the gem canvas subtree,
+    having looked at `GemComponent.tsx`, `GemNarrative.tsx`, `Gem.tsx` and `CanvasOrbitControls.tsx`.
+    **That claim is wrong**, and it is wrong because it did not read the file this entry names: both
+    halves are in `components/atoms/Scene/Scene.tsx`, `aria-hidden='true'` on the `<Canvas>` at
+    `:40` and `canvas.setAttribute('aria-hidden', 'true')` with `canvas.tabIndex = -1` inside
+    `onCreated` at `:49-50`. `GemNarrative` renders `Scene`, so the canvas on `/` is covered on both
+    the wrapper and the element, exactly as Story 2-13 shipped it.
+
+    **Closed 2026-09-21 by Story 2-29**, which did what this entry asked: verified rather than
+    re-implemented, dropped neither half, and added a third at the level it owns,
+    `aria-hidden='true'` on `.home-gem`, so the box that now holds the canvas and the scrim is out
+    of the accessibility tree whatever the library does inside it.
+    `components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx` reads that attribute and asserts
+    no focusable descendant inside it; `tests/e2e/front-door.pw.ts` still reads the other two. The
+    third A-14 clause is still not shipped and is still DW-52's.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-47
@@ -3168,7 +3219,14 @@ status: done
 
     Story 2-29 rebuilds this component and is the natural owner. DW-41 and DW-42 are the two related
     entries on the same four lines.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29.** The line went with the timeline: `HomeLayout.tsx` carries
+    no `gsap.set`, no `useReduceMotion` call and no reduced-motion branch, because the reveal is a
+    CSS keyframe whose base state is the final state. The coupling this entry warned about is now
+    harmless rather than load-bearing: a future story that let a reduced-motion visitor onto the
+    narrative path would find `.home-gem` already at full opacity, with `animation: none` under that
+    media query, and would need no line put back.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-49
@@ -3486,6 +3544,19 @@ status: done
     `/projects` row is the trigger, because that reader is the person the staleness costs. The
     `TorusKnotCanvas` half of Operator action 6 is closed by arithmetic already and can be struck in
     the same pass without a measurement.
+
+    **The `ops/asset-budget.md` half closed 2026-09-21 by Story 2-29**, in the shape this entry
+    asked for: a re-run of `ops/asset-budget.mjs` against a before build and an after build, filed
+    as `### The 2026-09-21 reading, after Story 2-29` under § Every route and
+    `### The 2026-09-21 run, after Story 2-29` under § Findings. Neither names `/projects`, because
+    no such route exists in either build, and **no dated reading that does name it was edited**,
+    which is the correction this entry insisted on. The `TorusKnotCanvas` half of Pending Operator
+    action 6 is struck in the same pass by arithmetic and without a measurement: that file and
+    `TorusKnot.tsx` were deleted with the route, so what remains is `TorusCanvas.tsx:8` on `/work`
+    and `app/providers.tsx` on every route.
+
+    **KV-5's title is untouched**, and its owner and trigger stand: whichever of Stories 2-31 and
+    2-33 lands second, at the KV-5 retirement. This entry stays open on that half alone.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
@@ -4355,6 +4426,28 @@ status: done
 
     **Owner: whichever of Story 2-29 and the next `contracts/fonts.css` MINOR lands first.**
     **Trigger: the first edit to `packages/fonts/faces.json`, or to `HomeLayout.scss:119-160`.**
+
+    **The `HomeLayout.scss` half closed 2026-09-21 by Story 2-29**, by the second of the two shapes
+    of fix this entry sets out. That story rebuilt the file against the contract: both hero link
+    groups name the display family directly, neither sets `font-stretch` at all, and both render at
+    the published face's default 100% width, which is the one width `contracts/fonts.css`'s single
+    `size-adjust` was fitted at. **Re-measured 2026-09-21** in the pinned container by the same
+    `tests/e2e/type-swap.pw.ts` comparison that took the original reading, fallback then face:
+    `.contact-container a[0]` 95.94 to 101.39 (**5.68 percent**, where it was 18.57),
+    `[1]` 119.67 to 123.52 (**3.21 percent**, where it was 19.59) and `[2]` 83.17 to 86.33
+    (**3.79 percent**, where it was 19.17). The two `a.nav-link` elements read 296.00 both ways,
+    the panel's full width less its new padding. Heights held at 0.00 percent on all five, as
+    before. What is left is the ordinary swap movement `ops/font-contract.md` records for arbitrary
+    text rather than a width-axis fault. `--confillia-normal` has zero call sites,
+    `tests/e2e/type-swap.pw.ts` reads `100%` at both groups and `tests/e2e/anchor-aliases.pw.ts`
+    pins the alias at zero call sites in the shape `--hero-height` already used.
+
+    **The structural half stands and is what this entry is now about.** `contracts/fonts.css` still
+    publishes one `@font-face` for Bricolage Grotesque with `font-stretch: 75% 100%` and one
+    `size-adjust` fitted at the default width, and `Premise.scss:68` still asks for `75%`, so the
+    same shift exists on the framework band and has still never been measured. **Owner: the next
+    `contracts/fonts.css` MINOR.** **Trigger: the first edit to `packages/fonts/faces.json`, or to
+    `Premise.scss`'s display rule.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
@@ -4741,7 +4834,23 @@ status: done
     **Owner: Story 2-29**, which reaches `epics.md:3328` when it opens and can carry the other three
     lines in the same dated amendment. **Trigger: Story 2-29's planning**, before its criteria are
     frozen.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29**, whose planning is this entry's trigger. **The finding
+    stands and the withdrawn clause is not implemented.** `epics.md:3336-3338` was read as A-14's
+    `aria-hidden` and not-focusable half only: the canvas is `aria-hidden` on its `<Canvas>` wrapper
+    (`Scene.tsx:40`), on the element itself (`:49-50`) and now on `.home-gem` as well, and nothing
+    in that story writes prose describing the scene. So the requirement the stale Given states was
+    read against the ruling rather than against its own text, and was not inherited.
+
+    **The four lines are left unamended, deliberately.** `EXPERIENCE.md` and `epics.md` are frozen
+    planning artifacts under an approval, and a story does not edit one as a side effect of
+    implementing it, which is the same reason the ruling landed as one dated amendment at
+    `EXPERIENCE.md:773` rather than as four edits. The three restatements at
+    `EXPERIENCE.md:527-528`, `epics.md:644` and `epics.md:2591` describe a clause the Operator
+    withdrew on 2026-09-13 and are harmless; the live one at `epics.md:3328` is now spent, because
+    the story it addressed has read it. The withdrawal is recorded at `EXPERIENCE.md:773`, in
+    `ops/hub-accessibility-pass.md` and in DW-52's closure, and now here.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
   id: DW-98
@@ -4770,7 +4879,18 @@ status: done
     **Owner: Story 2-29**, which rebuilds `HomeLayout` and owns the hero's height at every width.
     **Trigger: that story's first edit to `HomeLayout.scss`'s below-768 block**, or the Operator
     saying otherwise.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29**, whose first edit to `HomeLayout.scss`'s below-768 block is
+    this entry's trigger. Both cases run at `RENDERED_VIEWPORT` beside `WIDE_VIEWPORT` now: `and the
+    default path does not move either at 360` and `at 1024`, and, for each of the three doors
+    answered before paint, `... never moves at 360, sampled every frame` and `at 1024`. Eight cases
+    where there were four.
+
+    `SETTLING_SLACK` was re-read against what the stacked hero actually does and did not move: the
+    narrow readings came back inside it on the first run, which is what the entry expected but could
+    not assert. The measurement was worth taking anyway, because it is the width the panels stack on
+    and the one this story reshaped.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
   id: DW-99
@@ -4841,7 +4961,35 @@ status: done
 
     **Owner: Story 2-29**, which re-orchestrates the hero's entrance when it rebuilds
     `HomeLayout`. **Trigger: that story's first edit to the timeline.**
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29.** The two clocks are one clock. `HomeLayout.tsx`'s timeline
+    is gone and the five delays are `animation-delay` literals in `HomeLayout.scss`, counted from
+    the moment the stylesheet first applies to the served markup, which is the moment `GlitchText`'s
+    `--delay: 1s` has counted from since Story 2-27. So the `1.0`, `1.3`, `1.6`, `2.0` and `2.2` of
+    the shipped sequence sit on one clock for the first time, and the gap between the heading's
+    reveal and the panels' is what the numbers say rather than that plus the hydration time.
+
+    **Five rules animate, and `.home-panel--name` is not one of them.** The `1.0` above is
+    `GlitchText`'s own `--delay`, passed as an inline style on the heading inside that panel; the
+    stylesheet's five are the gem at 500ms, the role line at 1300, the readout panel at 1600 and
+    the two link groups at 2000 and 2200, with three `animation-delay` overrides for the staggers.
+    The rebuild briefly gave the name panel a sixth at 500ms, which the retired timeline never had:
+    its `finalState` was `['.home-panel--sys', '.home-role', '.nav-link', '.contact-container a']`
+    and the 2023 stylesheet gave `--name` no `opacity: 0`, so it had always painted immediately.
+    That hid the hero's name for 500ms and ran `GlitchText`'s delay inside a parent that was itself
+    ramping, a composite nobody specified. **Removed 2026-09-21** by the Step-04 review, which is
+    also when `tests/e2e/narrative.pw.ts` started reading every site's delay and fill on the running
+    page: until then nothing did, and `both`, which is the whole of DW-42's no-script guarantee,
+    could have been dropped from any of the five without a failure.
+
+    The other face closes with DW-42: a scriptless document now shows the whole hero, heading
+    included, because every base state is the final state and the keyframes supply only the `from`.
+
+    **What is not closed is whether the sequence still feels right.** The five delays were tuned
+    against a clock that started later than this one, so the order is correct by construction and
+    the rhythm is not asserted by anything. That is carried into Story 2-29's own § Verification as
+    a manual check, to be played at 2x to 5x in the animation inspector with fresh eyes.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token.md`
   id: DW-101
@@ -4869,7 +5017,39 @@ status: done
     the pinned image at 360 x 800, sample the ground beneath each of the five roles where it sits
     over the scrim, and compute the ratio from the sampled sRGB, recording each beside the table's
     figure.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29**, which placed the layer inside `.home-gem` across the home
+    canvas and added the sampling case this entry asks for to
+    `tests/e2e/accessibility-floor.pw.ts`. **Observed 2026-09-21** in
+    `mcr.microsoft.com/playwright:v1.62.1-noble`, on a `no-preference` context so the default door
+    renders, with the composited surface screenshotted and read through a canvas in the page.
+
+    **Read at 1024 x 800 rather than at the 360 x 800 this entry states.** Below 768 the hero is a
+    flex column, the gem is a static item between the name and the nav, and `HomeLayout.scss` hides
+    the scrim there because no text overlays imagery; at 360 there is no composited surface to
+    sample. 1024 is the narrowest width at which the four panels sit over the canvas.
+
+    The ground beneath every panel's text sampled `rgb(5, 4, 9)`, the modal colour of each panel's
+    box, covering 60.8 to 75.8 percent of it. Against that ground, each role's rasterised sRGB, with
+    the figure `epics.md:3254-3256` tables beside it: `--token-text` **17.66:1** against 13.51;
+    `--token-focus` **11.80:1** against 9.02; `--token-accent-hover` **9.07:1** against 6.94;
+    `--token-text-secondary` **7.07:1** against 5.41; `--token-accent` **6.24:1** against 4.77.
+    Every one clears its own floor, 4.5:1 for the four text roles and 3:1 for the ring.
+
+    **Every measured ratio is above the tabled one, and that is the table being read correctly
+    rather than a disagreement.** The table is the worst case, the scrim over a pure white backdrop;
+    the real backdrop is the near-black canvas over `--token-bg`, so the composite is darker than
+    the worst case and every role contrasts better against it. The guarantee is the floor, and the
+    table is the floor's worst case.
+
+    **That the scrim is genuinely beneath is proved by sampling, not by reading a z-index.** The
+    layer is repainted an unmistakable colour and the surface screenshotted again: beneath every
+    panel the ground becomes that colour, which says the scrim covers the imagery there, and each
+    panel still paints its own text over it, which says the panel is above the scrim. Neither half
+    depends on what the WebGL canvas draws. The z-level trap `epics.md:3300-3304` names is resolved
+    by the header not being there at all: the same case reads zero `.header-container` on `/`,
+    because `Header.tsx:12` returns `null` on that route.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token.md`
   id: DW-102
@@ -4976,4 +5156,102 @@ status: done
     no assertion reads them.
 
     **Owner and trigger.** The next story that edits either citing file; trigger, that edit.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-106
+  summary: >-
+    The five hero links are `opacity: 0` for up to 2.36 seconds while focusable and clickable, so a
+    keyboard visitor who tabs during the entrance takes a focus ring onto an invisible target. The
+    shape is pre-existing and slightly better than it was; it is filed because nothing else stands
+    between a tab press and an invisible link.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. `HomeLayout.scss` animates the two
+    link groups from `opacity: 0` with `animation-fill-mode: both`, so the `from` is held through
+    the delay: the first nav link is invisible until 2000ms, the second until 2080, and the three
+    contact links until 2200, 2280 and 2360. Nothing removes them from the tab order or from the
+    hit-testing tree while they are transparent, so `Tab` lands on them and the global
+    `:focus-visible` ring paints around a link the visitor cannot read, and a click at the right
+    coordinates activates it.
+
+    **Pre-existing, and marginally improved by that story rather than caused by it.** The 2023
+    stylesheet opened the same elements at `opacity: 0` and the GSAP timeline lifted them on the
+    same schedule; what changed is the clock. GSAP's ran from hydration, CSS's runs from first
+    paint, so the window is now shorter by the hydration time and, more to the point, deterministic.
+    A reduced-motion visitor never sees it at all, because `HomeLayout.scss`'s
+    `prefers-reduced-motion` block sets `animation: none` and that door renders the flat hero.
+
+    **Not Story 2-29's to fix**, whose frozen criteria fix the entrance's shape and its five delays
+    and name no focus behaviour during it. The conformant repairs are all bigger than a line: shorten
+    the sequence so the window closes before a visitor could plausibly tab, give the links
+    `pointer-events: none` and `visibility: hidden` until their turn, which changes what the
+    entrance is, or move the whole orchestration behind a "has the visitor interacted yet" gate.
+    Each is a design decision about the hero rather than a defect in the stylesheet.
+
+    **Owner: Story 2-32**, which rebuilds the chrome and the contact links and already owns the
+    hit-target and focus behaviour of two of the five. **Trigger: the next change to the entrance's
+    delays, or any accessibility pass that tabs `/` inside the first 2.4 seconds.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-107
+  summary: >-
+    `.home-panel--sys` is `display: none` below 768, so a viewport crossing upward after the
+    entrance has run re-displays it with its `animation-delay` restarting, leaving the readout panel
+    blank for 1.6 seconds on a surface that has otherwise finished arriving.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. `HomeLayout.scss`'s
+    `@media (max-width: 767px)` block sets `.home-panel--sys { display: none }`, and the panel's own
+    rule animates `home-enter` at a 1600ms delay with `animation-fill-mode: both`. An element with
+    no box runs no animation; when the viewport crosses 768 upward the box appears and the animation
+    starts then, from its delay, so the panel is held at the keyframe's `opacity: 0` for 1.6 seconds
+    while the four panels around it are already at rest.
+
+    Reachable by rotating a tablet, by dragging a desktop window across the breakpoint, and by any
+    responsive-design-mode session. Not reachable by a normal load at either width: below 768 the
+    panel is never shown and above it the delay runs with everything else.
+
+    The same shape exists for `.home-gem` and `.skip-control` across the flat modifier, and does not
+    matter there: both are removed from the DOM by `HomeLayout.tsx` on that path rather than hidden,
+    and the path is a one-way door.
+
+    **Not fixed here** because the conformant repairs both cost more than the defect: rendering the
+    panel conditionally puts a viewport read into React, which is the layout thrashing Story 2-13's
+    hook exists to avoid, and dropping the delay on a re-display needs a class toggled by a resize
+    listener, which `EXPERIENCE.md` bars in favour of `IntersectionObserver` and which would be a
+    script for a cosmetic case. Recorded so a reader who sees a blank corner mark after a rotation
+    knows it is this and not a regression.
+
+    **Owner: Story 2-31**, which rebuilds `HudLabel`, the component that panel renders. **Trigger:
+    that rebuild, or any story that gives the readout panel a responsive rule of its own.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-108
+  summary: >-
+    Every figure in `ops/asset-budget.md` is pinned by nothing. `ops/__tests__/asset-budget.test.ts`
+    runs the model against a synthetic fixture root, so the recorded readings can drift from the
+    tool's output, from each other and from the build without a failure anywhere.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. That suite builds a fixture tree and
+    asserts the model's arithmetic on it, which is the right thing to test and is not the question:
+    nothing reads `ops/asset-budget.md`'s tables back and compares them with anything. Contrast the
+    two ledgers that are held both ways, `ops/hit-target-floor.md` against
+    `tests/e2e/hit-target-floor.pw.ts` by `ops/__tests__/hit-target-floor.test.ts`, and
+    `ops/hub-accessibility-pass.md` against `tests/e2e/accessibility-floor.pw.ts` by
+    `ops/__tests__/hub-accessibility-pass.test.ts`, each of which fails when a row and its record
+    disagree.
+
+    **Pre-existing, and noted because Story 2-29 moved those numbers.** That story added a dated
+    reading and a dated run, and its arithmetic (a 235-byte gzipped delta decomposed into a 225-byte
+    chunk movement and two rebuild-variance renames) is held true by a reader alone. So is the
+    cross-reading claim that the before build reproduces an earlier story's after figures, which it
+    did not, for a reason that had to be found by hand.
+
+    **A cheap first step, short of a full harness**: a unit case that parses the build table out of
+    the most recent `### The ... reading` section and asserts its own totals are self-consistent,
+    which would have caught nothing here but costs little and can only tighten. The full version
+    needs a build, which puts it outside the `test` job.
+
+    **Owner: unassigned.** **Trigger: the next story that records a reading in that file, or the
+    first time a figure in it is found wrong.**
   status: open
