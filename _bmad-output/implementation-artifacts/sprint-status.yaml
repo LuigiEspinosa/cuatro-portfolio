@@ -227,7 +227,9 @@ development_status:
   # so the plain run passed, the update run wrote nothing, and the update had to be forced with
   # --update-snapshots=all, recorded as the one exception in ops/rendered-output-harness.md.
   2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token: done
-  # 2-29 built 2026-09-21: HomeLayout.scss is rebuilt against the contract alone, with no alias,
+  # 2-29 built 2026-09-21, merged 2026-09-22 (PR #79, dev at 14a6151, six CI jobs green after a
+  # cancelled fonts-contract was re-run and passed in 23s): HomeLayout.scss is rebuilt against the
+  # contract alone, with no alias,
   # no colour literal, no rgba, no gradient, no transition: all and no bare z-index; the #0a000f
   # ground and its two grid images are gone, the opacity: 0.2 dim-siblings rule with them, every
   # :hover sits inside @media (hover: hover), and the GSAP timeline is one home-enter keyframe
@@ -291,7 +293,7 @@ development_status:
   # Waits on the Operator: the entrance's feel played at 2x to 5x in the animation inspector, and
   # the --t-xl reading of the nav and contact type, which is a gap in DESIGN.md rather than a
   # value it supplied.
-  2-29-redesign-homelayout-token-native: review
+  2-29-redesign-homelayout-token-native: done
   2-30-redesign-error404-token-native: backlog
   2-31-redesign-workitem-and-hudlabel-token-native: backlog
   2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog
