@@ -2,7 +2,7 @@
 title: 'Story 2.29: Redesign `HomeLayout` token-native'
 type: 'feature'
 created: '2026-09-21'
-status: 'in-review'
+status: 'done'
 baseline_commit: '88e209937b10bf40cb83d018bec3b29394c3e4b7'
 review_loop_iteration: 0
 context:
@@ -393,3 +393,75 @@ state and the alias call sites return together, and no record carries a runtime.
   tuned against a GSAP clock that started at hydration and now start at first paint, so the sequence
   is correct by construction but its feel is not, and the gap between the heading's reveal and the
   panels' is the part to look at with fresh eyes the next day.
+
+## Suggested Review Order
+
+**The stack guarantee, which is the story's one architectural decision**
+
+- Start here: why the gem is a stacking context and the panels clear its whole subtree.
+  [`HomeLayout.scss:243`](../../components/organisms/HomeLayout/HomeLayout.scss#L243)
+
+- The scrim is placed inside the imagery's own box, so it covers the canvas, not the hero.
+  [`HomeLayout.tsx:110`](../../components/organisms/HomeLayout/HomeLayout.tsx#L110)
+
+- The gem at `--z-base`, the only level the contract offers beneath the panels.
+  [`HomeLayout.scss:248`](../../components/organisms/HomeLayout/HomeLayout.scss#L248)
+
+- The panels at `--z-raised`, level with the skip control, ordered by layout not by z-index.
+  [`HomeLayout.scss:60`](../../components/organisms/HomeLayout/HomeLayout.scss#L60)
+
+- The guarantee that replaces the ordering the contract cannot express.
+  [`front-door.pw.ts:1195`](../../tests/e2e/front-door.pw.ts#L1195)
+
+- The composited proof, sampling the rendered ground beneath the text rather than reading z-index.
+  [`accessibility-floor.pw.ts:1957`](../../tests/e2e/accessibility-floor.pw.ts#L1957)
+
+**The entrance, moved from GSAP into CSS**
+
+- One keyframe on opacity, with the base state already final so a scriptless visitor sees the hero.
+  [`HomeLayout.scss:46`](../../components/organisms/HomeLayout/HomeLayout.scss#L46)
+
+- Reduced motion stated explicitly, not left to the contract's 1ms collapse.
+  [`HomeLayout.scss:407`](../../components/organisms/HomeLayout/HomeLayout.scss#L407)
+
+- The delays and the `both` fill read on the running page, which nothing did before review.
+  [`narrative.pw.ts:1256`](../../tests/e2e/narrative.pw.ts#L1256)
+
+- Deleting the reduced-motion block fails here by name; an opacity poll could not.
+  [`narrative.pw.ts:1002`](../../tests/e2e/narrative.pw.ts#L1002)
+
+**Ground, state and touch**
+
+- The 2023 ground and its two grid gradients replaced by one role.
+  [`HomeLayout.scss:17`](../../components/organisms/HomeLayout/HomeLayout.scss#L17)
+
+- Every hover behind a hover-capable pointer, so a tap cannot leave one painted.
+  [`HomeLayout.scss:234`](../../components/organisms/HomeLayout/HomeLayout.scss#L234)
+
+- The same gate on the one home element the first pass missed.
+  [`SkipControl.scss:50`](../../components/atoms/SkipControl/SkipControl.scss#L50)
+
+**The ledger and the records it is held equal to**
+
+- The file joins the token-native partition; this is the pin that fails first if it does not.
+  [`anchor-contract.test.ts:321`](../../app/__tests__/anchor-contract.test.ts#L321)
+
+- KV-6 drops to three z-index literals, four depth tells and one clipped ring.
+  [`known-violations.md:472`](../../ops/known-violations.md#L472)
+
+- The measured weight delta, with GSAP leaving this component's chunk.
+  [`asset-budget.md:471`](../../ops/asset-budget.md#L471)
+
+**Tests and peripherals**
+
+- The guard that replaced one which could not match Sass output for any value.
+  [`HomeLayout.test.tsx:470`](../../components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx#L470)
+
+- The below-768 row: stack order, absent readout, absent scrim.
+  [`HomeLayout.test.tsx:428`](../../components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx#L428)
+
+- A-14 closed on the wrapper, with `Scene.tsx` carrying the element half.
+  [`HomeLayout.test.tsx:227`](../../components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx#L227)
+
+- The four notch polygons, kept byte for byte as the criterion requires.
+  [`HomeLayout.test.tsx:383`](../../components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx#L383)
