@@ -946,20 +946,47 @@ test.describe("the gem's reveal", () => {
     ).toEqual([]);
   });
 
+  /**
+   * Every element `HomeLayout.scss`'s reduced-motion block names, and the one it cannot: the gem,
+   * which this path does not render at all.
+   *
+   * A selector that matches nothing is reported rather than skipped, so a renamed class reads as a
+   * fixture failure instead of as a hero with no animation on it.
+   */
+  const REDUCED_MOTION_SELECTORS = [
+    '.home-panel--name',
+    '.home-panel--sys',
+    '.home-role',
+    'a.nav-link',
+    '.home-panel--contact .contact-container a',
+  ] as const;
+
   for (const webgl of [true, false]) {
     test(`the reduced-motion hero is at its final state immediately, WebGL ${
       webgl ? 'present' : 'absent'
     }`, async ({ page }) => {
-      // **What this case measures changed with Story 2-13, and the reason it still exists did
-      // not.** `HomeLayout.scss` opens the role line, the sys panel, the nav links and the contact
-      // links at `opacity: 0`, and the timeline that lifts them never runs for a reduced-motion
-      // visitor: `gsap.set(finalState, { opacity: 1, y: 0 })` in `HomeLayout`'s reduced-motion
-      // branch is the one thing that ever does. Delete that line and this visitor gets a
-      // permanently blank hero, while every `no-preference` case above stays green. `toBeVisible`
-      // would not catch it either: an element at `opacity: 0` is visible to Playwright.
+      // **What this case reads changed with Story 2-29, and the reason it exists did not.** Until
+      // then `HomeLayout.scss` opened the role line, the sys panel and the five links at
+      // `opacity: 0` and only `gsap.set(finalState, { opacity: 1, y: 0 })` in `HomeLayout`'s
+      // reduced-motion branch ever lifted them, so deleting that branch left this visitor with a
+      // permanently blank hero and an eventual-opacity poll caught it.
+      //
+      // **That poll stopped being able to fail.** The entrance is now a `home-enter` keyframe with
+      // `animation-fill-mode: both`, whose base state is the final state, so with the reduced-motion
+      // block deleted the hero is blank for the delay, between 1.3s and 2.36s, and then at full
+      // opacity: a poll with a 15s budget passes either way and nothing would pin the override.
+      // Corrected 2026-09-21 in the same commit as the entrance, after the audit named it.
+      //
+      // **So this reads what reduced motion actually changes.** `HomeLayout.scss`'s block under the
+      // query sets `animation: none` on every animated element in the hero, in the
+      // `GlitchText.scss:50-58` shape, because the contract's duration collapse to 1ms does not
+      // touch `animation-delay` and a 1ms run still waits it out. Computed `animation-name` answers
+      // that at any moment on any run, and `document.getAnimations()` says the same thing one level
+      // down: on this path nothing in the hero is animating at all. Delete the block and both fail
+      // immediately, by name.
       //
       // The gem half of it is gone rather than moved: reduced motion is one of the four non-3D
-      // triggers, so this hero has no `.home-gem` to reveal, which is asserted here as the second
+      // triggers, so this hero has no `.home-gem` to reveal, which is asserted here as the last
       // half of the same read. The WebGL stub is carried through both values to show that: on this
       // context it changes nothing, because the motion preference has already decided the path.
       //
@@ -968,21 +995,54 @@ test.describe("the gem's reveal", () => {
       if (!webgl) await page.addInitScript(NO_WEBGL);
       await goTo(page, ROUTE);
 
-      await expect
-        .poll(
-          () =>
-            page.evaluate(() => {
-              const role = document.querySelector('.home-role');
-              return role ? Number.parseFloat(getComputedStyle(role).opacity) : -1;
-            }),
-          {
-            timeout: SETTLE_TIMEOUT,
-            message:
-              'a reduced-motion visitor never sees the hero: the stylesheet holds it at opacity 0 ' +
-              "and HomeLayout's reduced-motion branch is the only thing that undoes it",
+      const read = await page.evaluate((selectors: string[]) => {
+        const animated: string[] = [];
+        for (const selector of selectors) {
+          const nodes = [...document.querySelectorAll<HTMLElement>(selector)];
+          if (nodes.length === 0) {
+            animated.push(`${selector} matched nothing, so the fixture is gone rather than the claim`);
+            continue;
           }
-        )
-        .toBe(1);
+          nodes.forEach((node, index) => {
+            const name = getComputedStyle(node).animationName;
+            if (name !== 'none') animated.push(`${selector}[${index}] computes animation-name "${name}"`);
+          });
+        }
+
+        const hero = document.querySelector('.home-container');
+        const running = hero
+          ? document.getAnimations().filter((animation) => {
+              const target = (animation as unknown as { effect?: { target?: Element | null } }).effect?.target ?? null;
+              return target !== null && hero.contains(target);
+            }).length
+          : -1;
+
+        const role = document.querySelector('.home-role');
+        return {
+          animated,
+          running,
+          roleOpacity: role ? Number.parseFloat(getComputedStyle(role).opacity) : -1,
+        };
+      }, [...REDUCED_MOTION_SELECTORS]);
+
+      expect(
+        read.animated,
+        `a reduced-motion visitor's hero still carries the entrance. HomeLayout.scss's ` +
+          `prefers-reduced-motion block sets animation: none on every one of these, and without it ` +
+          `the hero is blank for the delay before the keyframe fills it:\n${read.animated.join('\n')}`
+      ).toEqual([]);
+
+      expect(
+        read.running,
+        'an animation is running inside the hero on a reduced-motion context, which is the same ' +
+          'defect one level down from the computed read above'
+      ).toBe(0);
+
+      expect(
+        read.roleOpacity,
+        'the role line is not at full opacity on the frame this was read, so the base state is no ' +
+          'longer the final state and a reduced-motion visitor waits for it'
+      ).toBe(1);
 
       expect(
         await page.locator('.home-gem').count(),

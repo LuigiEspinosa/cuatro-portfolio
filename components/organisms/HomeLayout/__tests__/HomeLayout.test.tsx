@@ -352,6 +352,66 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     expect([...css.matchAll(/clip-path:/g)], 'the silhouette gained or lost a panel').toHaveLength(4);
   });
 
+
+  /**
+   * One at-rule's body, brace-matched out of the compiled sheet.
+   *
+   * A regex cannot do this: a media block holds rule blocks, so the first `}` closes a rule rather
+   * than the query. Written here rather than pulled in, because it is four lines and this is its
+   * only reader.
+   */
+  const blockBody = (source: string, prelude: string): string => {
+    const opens = source.indexOf(`${prelude}{`);
+    if (opens < 0) throw new Error(`the compiled stylesheet carries no "${prelude}" block`);
+    let depth = 0;
+    for (let index = opens + prelude.length; index < source.length; index += 1) {
+      if (source[index] === '{') depth += 1;
+      if (source[index] === '}') {
+        depth -= 1;
+        if (depth === 0) return source.slice(opens + prelude.length + 1, index);
+      }
+    }
+    throw new Error(`the "${prelude}" block is never closed`);
+  };
+
+  /** Every `selector { order: N }` inside one block, as a map, in the order the block declares them. */
+  const ordersIn = (block: string): [string, string][] =>
+    [...block.matchAll(/([^{}]+)\{[^{}]*?order:(\d+)/g)].map((match) => [match[1].trim(), match[2]]);
+
+  it('stacks the hero in reading order below 768, with no readout panel and no scrim', () => {
+    // **The matrix's below-768 row, read where jsdom cannot see it.** The cases above compile the
+    // stylesheet and read the rules that apply everywhere; a media query applies to nothing in
+    // jsdom, so the mobile block is invisible to a rendered read here and has to be read as text.
+    // `tests/e2e/front-door.pw.ts` measures the same three claims on a real 360 viewport, which is
+    // what makes this a reading of the rule rather than of the intention.
+    const mobile = blockBody(css, '@media(max-width: 767px)');
+
+    // Reading order: name, imagery, navigation, contact (`EXPERIENCE.md:529-530`). The gem is the
+    // imagery and takes its place in the column rather than sitting behind it.
+    const orders = ordersIn(mobile);
+    expect(
+      orders.length,
+      `the mobile block gives ${orders.length} items an order and the column has four: ${JSON.stringify(orders)}`
+    ).toBe(4);
+    expect(
+      [...orders].sort((one, two) => Number(one[1]) - Number(two[1])).map(([selector]) => selector),
+      `the stacked hero is not in reading order below 768: ${JSON.stringify(orders)}`
+    ).toEqual(['.home-panel--name', '.home-gem', '.home-panel--nav', '.home-panel--contact']);
+    expect(mobile, 'the panels are not taken out of their absolute corners below 768').toContain(
+      '.home-panel{position:static;width:100%}'
+    );
+
+    // The readout panel is omitted rather than rendered empty (`epics.md` § Empty edge).
+    expect(mobile, 'the readout panel is still rendered below 768').toContain('.home-panel--sys{display:none}');
+
+    // And the scrim is absent, because the gem is a static item in the column here and no text
+    // overlays it. A scrim with no text over it is a treatment on imagery, which `DESIGN.md:414-416`
+    // bars, and the layer's own rule is present or absent, never faint.
+    expect(mobile, 'the scrim still paints below 768, where no text overlays the imagery').toContain(
+      '.home-gem .scanline-overlay{display:none}'
+    );
+  });
+
   it('gates every hover rule on @media (hover: hover)', () => {
     // A tap paints `:hover` on a coarse pointer and leaves it painted until the next tap lands
     // elsewhere (review A-5), so an ungated rule is a colour that sticks on the primary device.

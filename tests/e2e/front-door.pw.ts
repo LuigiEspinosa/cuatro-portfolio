@@ -860,6 +860,33 @@ const heroHeights = (page: Page): Promise<HeightSamples> =>
  */
 const COLLAPSE_FLOOR = 64;
 
+/**
+ * The canary bound on the wide viewport's collapse, and why it is neither the floor nor twice it.
+ *
+ * The case at the foot of this file asserts that the collapse is **far enough above
+ * `COLLAPSE_FLOOR`** that the floor is a separation rather than a coincidence. That assertion is
+ * the reason the three no-movement cases beside it are measurements, so it has to be able to fail.
+ *
+ * **A bound at `COLLAPSE_FLOOR` cannot fail.** `heightSteps` only pushes a step into `drops` when
+ * it is steeper than the floor, so every member of `drops` clears a bound set at the floor by
+ * construction. That is what this line read from 2026-09-21 until it was corrected the same day,
+ * and it made the 1024 arm of the case tautological.
+ *
+ * **88 is the bound that can fail.** **Measured 2026-09-21** in
+ * `mcr.microsoft.com/playwright:v1.62.1-noble`: the collapse at 1024 is **104.83px** on both
+ * script-only doors and on two independent runs, where it was 152.95px before Story 2-29 set the
+ * hero's link groups in the display face and padded the panels. 88 sits 24px above the floor, so a
+ * collapse that decayed toward the floor fails here before it can be mistaken for type settling;
+ * 16.83px below the measurement, which is more headroom than the 13.00px of type settling the
+ * floor exists to exclude; and it is a real bound rather than a restatement of `heightSteps`.
+ * Verified by pushing the flat hero 32px taller, which took the gap to 72.83 and failed this
+ * assertion while `drops.length` stayed at one.
+ *
+ * The narrow viewport keeps `COLLAPSE_FLOOR * 2`, its collapse being 416.00px on the same runs:
+ * the flat door drops the gem's `90vw` box there, so the gap is several times the bound.
+ */
+const WIDE_COLLAPSE_MARGIN = 88;
+
 /** Every step between consecutive samples that is larger than the collapse floor, signed. */
 const heightSteps = (samples: readonly number[]): { drops: number[]; rises: number[] } => {
   const drops: number[] = [];
@@ -1089,15 +1116,15 @@ test.describe('the running page settles at one height', () => {
         // And the collapse is far enough above the floor that the floor is a separation rather than
         // a coincidence. If this ever fails, the cases above have stopped being measurements.
         //
-        // **The doubled margin is asserted at 360 and the single floor at 1024, since
-        // 2026-09-21.** Story 2-29 set the hero's two link groups in the display face at `--t-xl`
-        // and gave the panels padding, which made the flat hero taller and narrowed the gap the
-        // collapse crosses at the wide viewport: **observed 152.95 before that story and 104.83
-        // after**, still a real step and no longer twice the floor. At 360 the flat door also
-        // drops the gem's `90vw` box, so the gap there is several hundred pixels and the doubled
-        // margin still holds. The separation argument now lives at the narrow width, which is also
-        // the authored one.
-        const margin = viewport.width === WIDE_VIEWPORT.width ? COLLAPSE_FLOOR : COLLAPSE_FLOOR * 2;
+        // **Two bounds since 2026-09-21, and neither is `COLLAPSE_FLOOR` itself.** Story 2-29 set
+        // the hero's two link groups in the display face at `--t-xl` and gave the panels padding,
+        // which made the flat hero taller and narrowed the gap the collapse crosses at 1024 from
+        // 152.95 to 104.83, so `COLLAPSE_FLOOR * 2` no longer fits under it. The correction was
+        // first written as `COLLAPSE_FLOOR`, which `heightSteps` satisfies by construction and
+        // which therefore could not fail; `WIDE_COLLAPSE_MARGIN` above is the bound that can, with
+        // the measurement it is derived from. At 360 the flat door also drops the gem's `90vw`
+        // box, so the gap is 416.00 and the doubled floor still holds there.
+        const margin = viewport.width === WIDE_VIEWPORT.width ? WIDE_COLLAPSE_MARGIN : COLLAPSE_FLOOR * 2;
         expect(
           Math.abs(drops[0] ?? 0),
           `${door.name} collapsed by ${Math.abs(drops[0] ?? 0).toFixed(2)} at ${viewport.width}, ` +
@@ -1112,6 +1139,93 @@ test.describe('the running page settles at one height', () => {
       });
     }
   }
+});
+
+
+// ---------------------------------------------------------------------------
+// The hero below 768, where the corners become a column.
+// ---------------------------------------------------------------------------
+
+/** Each element the stacked hero's matrix row names, with what the browser gave it. */
+const stackedHero = (page: Page) =>
+  page.evaluate(() => {
+    const read = (selector: string) => {
+      const node = document.querySelector(selector);
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      return {
+        top: rect.top + window.scrollY,
+        boxes: node.getClientRects().length,
+        position: getComputedStyle(node).position,
+      };
+    };
+
+    return {
+      name: read('.home-panel--name'),
+      gem: read('.home-gem'),
+      nav: read('.home-panel--nav'),
+      contact: read('.home-panel--contact'),
+      sys: read('.home-panel--sys'),
+      scrim: read('.home-gem .scanline-overlay'),
+      scrimsInDom: document.querySelectorAll('.home-gem .scanline-overlay').length,
+    };
+  });
+
+test.describe('the hero below 768 on the default front door', () => {
+  test('stacks in reading order, renders no readout panel and paints no scrim', async ({ browser }) => {
+    // **The matrix's below-768 row, measured rather than read off the stylesheet.** This is the
+    // default door at 360: the gem is a static item in the column between the name and the nav,
+    // which is exactly why the scrim is hidden there. The reduced-motion door is a different row
+    // and is measured by `the fold on the non-3D path` above, which renders no gem at all.
+    const hero = await onPath(
+      browser,
+      DEFAULT_PATH,
+      async (page) => {
+        await goTo(page);
+        await settled(page);
+        return stackedHero(page);
+      },
+      RENDERED_VIEWPORT
+    );
+
+    for (const [label, box] of [
+      ['.home-panel--name', hero.name],
+      ['.home-gem', hero.gem],
+      ['.home-panel--nav', hero.nav],
+      ['.home-panel--contact', hero.contact],
+    ] as const) {
+      expect(box, `${label} is not on the stacked hero at ${RENDERED_VIEWPORT.width}`).not.toBeNull();
+      expect(box?.position, `${label} is still positioned at ${RENDERED_VIEWPORT.width}, so the corners survived`).toBe('static');
+      expect(box?.boxes, `${label} has no box at ${RENDERED_VIEWPORT.width}`).toBeGreaterThan(0);
+    }
+
+    // Reading order, `EXPERIENCE.md:529-530`: name, imagery, navigation, contact. Measured as
+    // position down the page rather than as the `order` property, because that is what a visitor
+    // and a screen reader following the flow actually meet.
+    const order = [
+      ['name', hero.name?.top ?? -1],
+      ['imagery', hero.gem?.top ?? -1],
+      ['navigation', hero.nav?.top ?? -1],
+      ['contact', hero.contact?.top ?? -1],
+    ] as const;
+    console.log(`front-door: stacked hero at 360 ${order.map(([label, top]) => `${label} ${top.toFixed(2)}`).join(', ')}`);
+    expect(
+      [...order].sort((one, two) => one[1] - two[1]).map(([label]) => label),
+      `the stacked hero is not in reading order: ${order.map(([label, top]) => `${label} at ${top.toFixed(2)}`).join(', ')}`
+    ).toEqual(['name', 'imagery', 'navigation', 'contact']);
+
+    // The readout panel is omitted rather than rendered empty, which is a box of zero rather than
+    // an element of zero content.
+    expect(
+      hero.sys?.boxes,
+      'the readout panel renders a box at 360, where the hero has no corners for a corner mark'
+    ).toBe(0);
+
+    // And the scrim: in the document, so this is a rule rather than a missing element, and with no
+    // box, so nothing is painted over imagery that no text overlays.
+    expect(hero.scrimsInDom, 'the gem carries no scrim at all, so its absence here proves nothing').toBe(1);
+    expect(hero.scrim?.boxes, 'the scrim paints at 360, where no text overlays the imagery').toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------

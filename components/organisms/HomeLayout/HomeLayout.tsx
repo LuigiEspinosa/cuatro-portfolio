@@ -119,7 +119,9 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
             2026-09-08, which booked both chrome call sites to Story 2-15. On this route the click
             is a same-route fragment navigation that never reaches the 301, so the visitor lands on
             the Directory rather than at the top of the page, which is what DW-55 and DW-58 record.
-            The link's geometry is untouched and its `home-nav` ledger row is Story 2-32's. */}
+            The link's geometry is untouched. Its `home-nav` row in the AD-19 ledger was Story
+            2-32's until Story 2-29 took both hero link groups past the hit-target floor and deleted
+            the row; see `HomeLayout.scss`'s navigation block. */}
         <Link href='/#suite' className='nav-link'>
           Suite Directory
         </Link>

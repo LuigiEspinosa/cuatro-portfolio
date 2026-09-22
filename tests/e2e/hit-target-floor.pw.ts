@@ -152,8 +152,9 @@ const NON_HUB_ROUTES = ['/api/health'] as const;
  * reads computed `opacity`, which answers the same question whatever writes it.
  *
  * **This docblock predicted that Story 2-15 renames `.nav-link`, and that prediction was wrong.**
- * Corrected 2026-09-08. `.nav-link` is `HomeLayout`'s class, on the homepage panel, and its ledger
- * row `home-nav` is `closedBy: 'Story 2-32'`; Story 2-15 reshaped the chrome nav in
+ * Corrected 2026-09-08, and again 2026-09-21: `.nav-link` is `HomeLayout`'s class, on the homepage
+ * panel, and its ledger row `home-nav` was `closedBy: 'Story 2-32'` until Story 2-29 repaired the
+ * links and deleted the row. Story 2-15 reshaped the chrome nav in
  * `Navbar.tsx`, which carries no class at all on its links and is not matched here. It repointed
  * the panel's second link and relabelled it, which moves neither the class nor this selector. The
  * guard below is still the thing that would catch the rename whenever Story 2-32 makes it.
@@ -235,16 +236,17 @@ interface Exemption {
  * The ledger. Held equal to the table in `ops/hit-target-floor.md` in both directions by
  * `ops/__tests__/hit-target-floor.test.ts`, so neither file is the only reader of the other.
  *
- * **Six rows at Story 2-8, three now.** The chrome logo was not on that story's own list of four
+ * **Six rows at Story 2-8, one now.** The chrome logo was not on that story's own list of four
  * and was found by measuring: its `<a>` is a plain inline box, so its rect is the text line box
  * while the 66px-tall image inside it paints past the bottom. Story 2-32 names `Logo` in its title
- * and is what closes it. The home surface is carried as two rows because it is authored in two
- * files at two different sizes. Story 2-9 deleted `directory-links` in the commit that replaced
- * the card grid with the Suite Directory, whose two links meet the floor on both axes, Story
- * 2-15 deleted `chrome-nav` on 2026-09-08 in the commit that rebuilt the header's links to `--tap`
- * on both axes, and Story 2-17 deleted `error-back` on 2026-09-11 in the commit that replaced the
- * 404's single back link with the header's two destinations, each built to `--tap`; the ledger
- * can only shrink, so nothing had to remember to widen a scope afterwards.
+ * and is what closes it. The home surface was carried as two rows, because it is authored in two
+ * files at two different sizes, until Story 2-29 repaired both on 2026-09-21. Story 2-9 deleted
+ * `directory-links` in the commit that replaced the card grid with the Suite Directory, whose two
+ * links meet the floor on both axes, Story 2-15 deleted `chrome-nav` on 2026-09-08 in the commit
+ * that rebuilt the header's links to `--tap` on both axes, and Story 2-17 deleted `error-back` on
+ * 2026-09-11 in the commit that replaced the 404's single back link with the header's two
+ * destinations, each built to `--tap`; the ledger can only shrink, so nothing had to remember to
+ * widen a scope afterwards.
  */
 const EXEMPTIONS: readonly Exemption[] = [
   {
@@ -262,11 +264,12 @@ const EXEMPTIONS: readonly Exemption[] = [
   },
   // **`home-nav` and `home-contact` left on 2026-09-21 with Story 2-29**, which rebuilt
   // `HomeLayout.scss` and gave both link groups `min-block-size: var(--tap)` on a flex box, the
-  // `SkipControl.scss:12-21` idiom. The story did not set out to take them: its display step alone
-  // pushed the first nav link to 296.00 x 68.75, which this sweep reported as a stale row, and a
-  // row cannot go half stale, so the floor was set on all five and both rows went in the same
-  // commit. `ops/known-violations.md` KV-4 records the ownership half, which was Pending Operator
-  // action 9's open question.
+  // `SkipControl.scss:12-21` idiom. **Only `home-nav` was forced.** That story did not set out to
+  // take either: its display step alone pushed the first nav link to 296.00 x 68.75, this sweep
+  // reported that row stale, and a row cannot go half stale, so both its links had to take the
+  // floor. `home-contact` was elective, and is the Operator's ruling of 2026-09-21 rather than the
+  // instrument's: nothing made those three links clear the floor. The ruling keeps both, and
+  // `ops/known-violations.md` KV-4 and Pending Operator action 9 carry it.
 ];
 
 /**

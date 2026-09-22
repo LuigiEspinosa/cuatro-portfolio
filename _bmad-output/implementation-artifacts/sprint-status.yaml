@@ -241,9 +241,11 @@ development_status:
   # tells, one clipped ring, seen in the pinned image and in the branch build's CSS) and F-11 is
   # annotated partly closed, /work and the 404 remaining.
   # Not planned, measured: setting the hero links at --t-xl took the first nav link past the 44px
-  # floor, the hit-target sweep reported home-nav stale, a row cannot go half stale, so
-  # min-block-size: var(--tap) went on all five links and KV-4's two home rows went with them.
-  # That answers pending Operator action 9 for the home pair and leaves chrome-logo open.
+  # floor and the hit-target sweep reported home-nav stale; a row cannot go half stale, so both nav
+  # links took min-block-size: var(--tap). home-contact was not forced. Nothing made the three
+  # contact links clear the floor, and the Operator ruled on 2026-09-21 to keep that repair too, so
+  # all five hero links hold the floor and both KV-4 rows are deleted. That answers pending
+  # Operator action 9 for the home pair and leaves chrome-logo open.
   # DW-101's composited-contrast sampling is done at 1024 rather than 360, because below 768 no
   # text overlays imagery: --token-text 17.66:1, --token-focus 11.80:1, --token-accent-hover
   # 9.07:1, --token-text-secondary 7.07:1, --token-accent 6.24:1, all against a ground sampled at
@@ -254,6 +256,20 @@ development_status:
   # overall. DW-33, 41, 42, 46, 48, 97, 98, 100 and 101 are closed; DW-57 and DW-82 are closed on
   # their halves this story owns. DW-46's premise was re-verified and holds: the planning read
   # that called it wrong had not read Scene.tsx.
+  # Audit pass 2026-09-21, 17 findings, all fixed on the same branch in one follow-up commit.
+  # Two were test-integrity defects this story introduced and both are now proved by deliberate
+  # breakage: the 1024 collapse bound had been widened to COLLAPSE_FLOOR, which heightSteps
+  # satisfies by construction, so it could not fail (now WIDE_COLLAPSE_MARGIN 88, against the
+  # measured 104.83, seen failing at 72.83); and narrative.pw.ts's reduced-motion case polled an
+  # eventual opacity the CSS entrance reaches whether or not the override exists, so nothing
+  # pinned it (now reads computed animation-name and document.getAnimations, seen failing on all
+  # five selectors with the block deleted). The matrix's below-768 row had no covering test at
+  # all and now has two, a compiled-CSS read in HomeLayout.test.tsx and a rendered read at 360 in
+  # front-door.pw.ts, for the reading order, the absent readout panel and the absent scrim. The
+  # other ten were records left stale by the repair: KV-4's breach, shape and booking cells,
+  # ops/hit-target-floor.md's tolerated-breach counts, per-element table, docblock and
+  # failure-mode row, ops/hub-accessibility-pass.md's ground row, and this component's own
+  # ledger citation.
   # Waits on the Operator: the entrance's feel played at 2x to 5x in the animation inspector, and
   # the --t-xl reading of the nav and contact type, which is a gap in DESIGN.md rather than a
   # value it supplied.
