@@ -290,10 +290,14 @@
 }
 
 // One signal, and it is a recolour. The underline never appears on hover and never changes width:
-// both are layout changes and both reflow the line.
-.suite-directory__live:hover .suite-directory__rule,
-.suite-directory__source:hover .suite-directory__rule {
-  border-block-end-color: var(--token-accent-hover);
+// both are layout changes and both reflow the line. Gated on a pointer that can hover since Story
+// 2-22 (DW-115): on a touch device a tap paints `:hover` and leaves it painted until the next tap
+// lands elsewhere (review A-5).
+@media (hover: hover) {
+  .suite-directory__live:hover .suite-directory__rule,
+  .suite-directory__source:hover .suite-directory__rule {
+    border-block-end-color: var(--token-accent-hover);
+  }
 }
 
 // ── Family group ──────────────────────────────────────────────────────────────

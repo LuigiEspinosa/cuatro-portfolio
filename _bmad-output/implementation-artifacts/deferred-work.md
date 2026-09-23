@@ -5735,6 +5735,16 @@ status: done
     for it is a different gate with its own false-positive question (a `:hover` inside
     `@media (hover: hover)` written in another file, or reached through a mixin). The three files are
     untouched; **owner unassigned**, trigger the first edit to any of the three.
+
+    **The `SuiteDirectory.scss` half closed 2026-09-23 by Story 2-22**, on that trigger: the story
+    rewrote the file's header comment, and its independent verifier refused it for leaving the hover
+    below that comment ungated. The live and source links' recolour sits inside
+    `@media (hover: hover)` (`SuiteDirectory.scss:296-301`), read off the compiled sheet by
+    `components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx` on the `SkipLink`
+    precedent, and `tests/e2e/suite-directory.pw.ts` still sees both links recolour under a pointer
+    that can hover. The other two files are untouched and still ship their hover ungated, so this
+    entry stays open for them: `CvIntro.scss:122` and `SiteFooter.scss:89`, **owner unassigned**,
+    trigger the first edit to either.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`

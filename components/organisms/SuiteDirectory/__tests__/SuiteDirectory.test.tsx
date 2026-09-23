@@ -1,4 +1,6 @@
+import { resolve } from 'node:path';
 import { render, screen, within } from '@testing-library/react';
+import { compile } from 'sass';
 import { LIVE_EVENT, SOURCE_EVENT, SuiteDirectory, SuiteDirectoryRow } from '../SuiteDirectory';
 import { REACH_EVENT } from '../SuiteReach';
 import {
@@ -456,6 +458,32 @@ describe('a Complete entry, which the committed Registry does not hold', () => {
     const { container } = drawRow({ ...finished, status: 'Live' });
     expect(container.querySelector('.suite-directory__live')).toBeNull();
     expect(container.querySelectorAll('a[href=""]')).toHaveLength(0);
+  });
+});
+
+/**
+ * The stylesheet's hover gate (Story 2-22, DW-115), read as it compiles, which is what ships.
+ *
+ * Whether the underline still recolours under a pointer that can hover is the browser's question:
+ * `tests/e2e/suite-directory.pw.ts` hovers both links and reads it. What is settled here is that the
+ * recolour sits behind the query at all, since on a touch device a tap paints `:hover` and leaves it
+ * painted until the next tap lands elsewhere (review A-5).
+ */
+describe('SuiteDirectory.scss', () => {
+  const css = compile(resolve(__dirname, '..', 'SuiteDirectory.scss'), { style: 'compressed' }).css;
+
+  /** A compiled sheet with every `@media (hover: hover)` block cut out. */
+  const ungated = (source: string): string => source.replace(/@media\(hover: hover\)\{(?:[^{}]*\{[^{}]*\})*\}/g, '');
+
+  it('gates its hover on a pointer that can hover, and still has one to gate', () => {
+    expect(ungated(css), 'a :hover rule sits outside @media (hover: hover) (DW-115)').not.toContain(':hover');
+    expect(css).toContain(
+      '@media(hover: hover){.suite-directory__live:hover .suite-directory__rule,' +
+        '.suite-directory__source:hover .suite-directory__rule{border-block-end-color:var(--token-accent-hover)}}'
+    );
+    expect(ungated('.a:hover{color:red}@media(hover: hover){.b:hover{color:red}}'), 'the gate strip keeps an ungated rule').toContain(
+      '.a:hover'
+    );
   });
 });
 

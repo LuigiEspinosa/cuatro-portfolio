@@ -514,6 +514,20 @@ the built CSS declares lost one value line in this run's output, `font-family: v
 which was the base rule's; the rule names `var(--f-body)`, already listed, and every family the built
 CSS declares is still reached.
 
+**Fix round 1, re-read the same day.** **Observed 2026-09-23**, `node ops/asset-budget.mjs` against
+build `3ILavmsOL7v4MHooMZ6MG`, written 2026-09-23T19:48:57Z at `5810b4a` plus the round's two dirty
+inputs, `SuiteDirectory.scss` and its suite, the second a file the build does not read. The round
+wraps the Suite Directory's link hover in `@media (hover: hover)` (DW-115), and that stylesheet is
+the one chunk that moved: `0ev.nkernamvc.css`, 12,609 on disk and 2,292 gzipped, became
+`0cpcu.c2vi0a1.css`, 12,631 and 2,297, **22 heavier on disk and 5 gzipped**. The other eleven
+stylesheets match by sha256, and every `.js` chunk together is the same 2,858,402 on disk and 831,372
+gzipped (**Derived**, the tool's chunk total of 2,886,877 and 839,867 less the twelve stylesheets).
+No prerendered document links that stylesheet: `/` renders on demand and only its client reference
+manifest names it, so no route in the table above carries the 5 bytes. `/work` reads 253,764,
+`/_not-found` and `/celeste` 1 heavier, `/_global-error` 1 lighter and `/cv` unchanged, the rebuild
+variance of hashed names inside each document; the non-3D line names `/work`, 113,764 over, 81.3
+percent.
+
 ### The 2026-09-23 reading, after Story 2-34
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `zZ7f-R4Ufn4KQJqPQZi4Q`, written
@@ -1495,6 +1509,10 @@ in this file is still the reading its own heading names.
 **Two lines moved, each by the global stylesheet's lighter bytes.** **Observed**, the tool's tables on
 each side: the non-3D path, 253,877 to 253,763, and the decomposition, 103,661 to 103,547, its HTML
 and critical CSS line 9,172 to 9,058. Nothing else in the list moved.
+
+**Fix round 1's re-read**, against build `3ILavmsOL7v4MHooMZ6MG`, moved the same two lines by 1 byte of
+rebuild variance, the non-3D path to 253,764 and the decomposition to 103,548, and nothing else in the
+list: the stylesheet the round changed is on no prerendered document.
 
 ### The 2026-09-23 run, after Story 2-34
 

@@ -173,6 +173,40 @@ Story 2-33 captured after the last redesign, unchanged, and a unit pin ties that
 
 ## Spec Change Log
 
+**2026-09-23, fix round 1, after the independent verification.** The verifier's static sweep refused
+the story on the motion and touch rule. `components/organisms/SuiteDirectory/SuiteDirectory.scss`, a
+file this story's diff touches for its header comment, carried the live and source links' hover
+recolour (`:294-297`) outside any `@media (hover: hover)`, and build `37FF9P8STslG2tLdxZeOq` shipped
+it at the top level of its chunk, so on a touch screen a tap painted `--token-accent-hover` on the
+underline and left it painted. `epic-2-context.md:133-135` binds every `:hover` rule to a
+hover-capable pointer query, and DW-115 had booked this rule to the first edit of the file (Story
+2-34 re-armed that trigger), so the header edit brought the gate with it. **The cause was the
+boundary, not the edit.** "Never: no component stylesheet change beyond comments" was written without
+reading DW-115, and the header edit cannot be dropped, because the old header named three of the
+thirteen and the search refuses them. **Amended, acting for the Operator, the frozen block left as
+written:** the boundary admits one component stylesheet change, the `@media (hover: hover)` wrapper
+around that rule, which DW-115 books and the epic's rule binds; no markup, dependency, CI job or
+other stylesheet moves. The repair: the rule sits inside the query (`SuiteDirectory.scss:296-301`,
+its comment saying why), which moves the Family block four lines down, so the block's one live
+citation, `tests/e2e/status-mark.pw.ts:774`, follows it to `:309-313`. `SuiteDirectory.test.tsx`
+gains a `SuiteDirectory.scss` case on the `SkipLink` precedent: it compiles the sheet, cuts every
+`@media (hover: hover)` block and finds no `:hover` left, pins the gated rule as it compiles, and
+plants an ungated rule the strip must keep. The same compile and strip over the sheet at `5810b4a`
+finds the ungated `:hover` and no gated rule, so the case fails on the tree the verifier refused.
+DW-115's `SuiteDirectory.scss` half is closed; `CvIntro.scss:122` and `SiteFooter.scss:89` sit in no
+file this story touches and stay open, owner unassigned. On a pointer that can hover nothing moves;
+on a touch screen a tap no longer leaves the hover colour behind. KEEP: the header edit and the gate,
+together. Re-run: `corepack pnpm typecheck` clean; `corepack pnpm test --run` 59 files and 1,547
+tests, all passed (the one case added); `node ops/literal-conformance.mjs` exit 0, the same 25
+stylesheets and one alpha; `corepack pnpm build && node ops/asset-budget.mjs` on build
+`3ILavmsOL7v4MHooMZ6MG`: the directory's stylesheet 22 heavier on disk and 5 gzipped, the eleven
+other stylesheets byte for byte and the scripts' total unchanged, no prerendered route carrying the
+change, `/work` 253,764 by 1 byte of rebuild variance, filed in `ops/asset-budget.md`; the container
+`pnpm test:e2e`, no filter, 325 passed in 5.9 minutes, `tests/e2e/suite-directory.pw.ts`'s hover case
+among them reading both links recolour under the gate, the compiled root read unchanged (12
+stylesheets, 106 root declarations, 90 names), no snapshot written and the `/work` baseline still
+`93a1aa4e...`.
+
 ## Design Notes
 
 Each resolution below is an assumption taken from the documents in their precedence order
@@ -238,7 +272,8 @@ this story's criterion names it: a DW entry for the Operator.
   and `git grep -n -E "style=\{|\.style\." -- app components hooks content lib ':(exclude)**/__tests__/**'`,
   the FR-17 survey: expected the four scene files, and the inline styles named in the Design Notes.
 - `corepack pnpm build && node ops/asset-budget.mjs`: expected only the global stylesheet to move,
-  lighter; recorded against Story 2-2's 140,000.
+  lighter, and since fix round 1 the directory's stylesheet, 5 gzipped heavier for its hover gate;
+  recorded against Story 2-2's 140,000.
 - The container `pnpm test:e2e`, no filter: expected green, no snapshot written, the baseline's
   sha256 unchanged.
 
@@ -406,3 +441,9 @@ hover, focus or motion changed.
 
 - The first token-native stylesheet's header, reworded without the old names.
   [`SuiteDirectory.scss:6`](../../components/organisms/SuiteDirectory/SuiteDirectory.scss#L6)
+
+- Its link hover gated on a pointer that can hover, fix round 1's repair (DW-115).
+  [`SuiteDirectory.scss:296`](../../components/organisms/SuiteDirectory/SuiteDirectory.scss#L296)
+
+- The gate read off the compiled sheet, on the `SkipLink` precedent.
+  [`SuiteDirectory.test.tsx:472`](../../components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx#L472)
