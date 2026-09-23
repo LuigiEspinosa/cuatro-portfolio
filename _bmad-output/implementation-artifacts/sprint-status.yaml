@@ -306,7 +306,39 @@ development_status:
   # value it supplied.
   2-29-redesign-homelayout-token-native: done
   2-30-redesign-error404-token-native: backlog
-  2-31-redesign-workitem-and-hudlabel-token-native: backlog
+  # 2-31 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
+  # pushes. HudLabel is deleted and folded into the Plate mark as its annotated and side-ruled
+  # variants; the props are a union on variant, so a fourth combination does not type-check,
+  # every cell is uppercase in the DOM for RESTYLE-SPEC § 7's CSS-off check, and the subordinate
+  # line is aria-hidden in every render. WorkItem.scss is rebuilt against the contract alone, a
+  # row and not a card: the leading rule is two out-of-flow pseudo-elements switched by
+  # transform, so the widest state is reserved and nothing reflows; hover recolours that rule and
+  # nothing else, inside @media (hover: hover); the trigger inherits the page type (F-3), the
+  # initiative asks for no weight (F-4), the highlights take the secondary role (F-5), the
+  # description --lh-body (F-9), the alpha hover ground is gone (F-10), the meta line wraps
+  # (KV-5's component half) and the ring stays inside its own row (F-19). The tweens run
+  # --dur-major and --dur-exit on power2.out both ways (A-4, without reading --ease-exit,
+  # DW-103); the panel is a region named by its company, both lists carry role='list', and a
+  # print rule expands every panel (DW-73).
+  # Records: the weight-work-initiative ledger row left and KV-6 reads zero synthesised weights;
+  # KV-5 was re-read at 360, /work 10 (all the hero's, Story 2-33) and /cv 0. DW-34, 67, 72 and
+  # 73 closed; DW-76 and DW-107 re-read and left open; DW-82 and DW-103 amended; DW-110 (the
+  # readout's SYS_ONLINE wording, the Operator's), DW-111 (closed panels as regions) and DW-112
+  # (the heading inside the trigger button, from the review, predating the story) filed. The
+  # /work baseline was regenerated in the pinned image, sha256 7c059024...
+  # One gate changed what it asserts, and it is flagged: type-swap.pw.ts holds the four row names
+  # to their line box rather than their height, because at wdth 85 the first company sets on two
+  # lines in the fallback and one in the face (DW-82's structural half). The scrim read in
+  # accessibility-floor.pw.ts probes the mark's hairline rather than exempting the readout panel.
+  # Step-04 review 2026-09-23, six layers run inline because this session had no subagent tool,
+  # so the review is not independent: three patches (a constant assertion deleted, a // read
+  # added to the CSS-off case with the 404's label as its control, an inert transform-origin
+  # removed) and one deferral (DW-112). After it: typecheck clean, 1,377 unit tests in 55 files,
+  # the budget re-read on build 0KxutAmqMQuDuV6dR2omk, and 287 e2e tests green in 7.5 min in the
+  # pinned image.
+  # Waits on the Operator: the spec's manual checks (the hover and the greyscale read at 360 and
+  # 1280, a phone, a printed /cv) and DW-110's words. Lighthouse was not run locally.
+  2-31-redesign-workitem-and-hudlabel-token-native: review
   2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog
   2-33-redesign-workhero-and-worktimeline-token-native: backlog
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog

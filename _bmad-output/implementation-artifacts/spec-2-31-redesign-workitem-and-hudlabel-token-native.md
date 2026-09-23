@@ -2,7 +2,7 @@
 title: 'Story 2.31: Redesign `WorkItem`, and retire `HudLabel` into the Plate mark'
 type: 'feature'
 created: '2026-09-23'
-status: 'in-review'
+status: 'done'
 baseline_commit: '460230c6fd09ccf839bbd5bba89aba713388fe37'
 review_loop_iteration: 0
 warnings: ['oversized']
@@ -404,3 +404,87 @@ settled by `EXPERIENCE.md` § Motion and § Work item or by this spec. Re-run af
 - Look at `/work` and `/cv` at 360 and at 1280 on a hover-capable pointer and on a phone: the rule
   lights on hover only where a pointer can hover, and the open item reads by the rule's width in
   greyscale.
+
+## Suggested Review Order
+
+**One label component, three variants**
+
+- Start here: a union on `variant`, so a fourth combination fails to type-check.
+  [`PlateMark.tsx:40`](../../components/molecules/PlateMark/PlateMark.tsx#L40)
+
+- The subordinate line is ornament, hidden from assistive technology in every render.
+  [`PlateMark.tsx:91`](../../components/molecules/PlateMark/PlateMark.tsx#L91)
+
+- A variant moves the rule and adds none; the mirror is logical properties throughout.
+  [`PlateMark.scss:80`](../../components/molecules/PlateMark/PlateMark.scss#L80)
+
+- The readout loses its `//` and `◕` decoration, and no word changes (DW-110).
+  [`HomeLayout.tsx:92`](../../components/organisms/HomeLayout/HomeLayout.tsx#L92)
+
+- The 404 label moves verbatim: its `//` is Story 2-30's to remove.
+  [`Error404.tsx:62`](../../components/organisms/ErrorPage/Error404.tsx#L62)
+
+**The row, a rule and not a card**
+
+- Two out-of-flow layers reserve the widest state; `transform` switches it, nothing reflows.
+  [`WorkItem.scss:35`](../../components/atoms/WorkItem/WorkItem.scss#L35)
+
+- Hover recolours the rule alone, and only where a pointer can hover.
+  [`WorkItem.scss:66`](../../components/atoms/WorkItem/WorkItem.scss#L66)
+
+- The trigger inherits the page type and keeps the tap floor (F-3).
+  [`WorkItem.scss:76`](../../components/atoms/WorkItem/WorkItem.scss#L76)
+
+- The row name at `wdth 85`, which is what moved the type-swap gate.
+  [`WorkItem.scss:105`](../../components/atoms/WorkItem/WorkItem.scss#L105)
+
+- The meta line wraps, which closes KV-5's component half at 360.
+  [`WorkItem.scss:119`](../../components/atoms/WorkItem/WorkItem.scss#L119)
+
+- The `//` marker is generated content with empty alternative text.
+  [`WorkItem.scss:186`](../../components/atoms/WorkItem/WorkItem.scss#L186)
+
+**The disclosure's timing and semantics**
+
+- Durations held to the contract; both tweens ease out, closing A-4 without `--ease-exit`.
+  [`WorkItem.tsx:30`](../../components/atoms/WorkItem/WorkItem.tsx#L30)
+
+- The panel is a region named by its company heading, not the trigger's sentence.
+  [`WorkItem.tsx:157`](../../components/atoms/WorkItem/WorkItem.tsx#L157)
+
+- Print outranks GSAP's inline height, so a printed CV carries every company (DW-73).
+  [`_print.scss:50`](../../app/scss/_print.scss#L50)
+
+**Gates that moved, the first flagged**
+
+- Flagged: the row names hold their line box, not their height, across the swap.
+  [`type-swap.pw.ts:150`](../../tests/e2e/type-swap.pw.ts#L150)
+
+- The scrim read probes the mark's hairline rather than exempting the readout panel.
+  [`accessibility-floor.pw.ts:2015`](../../tests/e2e/accessibility-floor.pw.ts#L2015)
+
+- The alias scope loses `.work-item::before`, and one boundary remains.
+  [`app.scss:82`](../../app/app.scss#L82)
+
+- `WorkItem.scss` joins the files allowed to name contract roles directly.
+  [`anchor-contract.test.ts:305`](../../app/__tests__/anchor-contract.test.ts#L305)
+
+**Peripherals**
+
+- Every browser criterion, each with a planted control that makes its read fail.
+  [`plate-mark-and-work-item.pw.ts:365`](../../tests/e2e/plate-mark-and-work-item.pw.ts#L365)
+
+- The stylesheet read at source: roles only, the hover gated, `border-color` the one transition.
+  [`WorkItem.test.tsx:429`](../../components/atoms/WorkItem/__tests__/WorkItem.test.tsx#L429)
+
+- The tween durations read off the published contract, and the curve measured as an ease-out.
+  [`WorkItem.test.tsx:357`](../../components/atoms/WorkItem/__tests__/WorkItem.test.tsx#L357)
+
+- Scans `app/` and `components/` so `HudLabel` cannot come back under its old name.
+  [`PlateMark.test.tsx:295`](../../components/molecules/PlateMark/__tests__/PlateMark.test.tsx#L295)
+
+- KV-5's re-read: `/work` 10, all the hero's, and `/cv` 0.
+  [`known-violations.md:432`](../../ops/known-violations.md#L432)
+
+- The three entries this story filed, the last from its review.
+  [`deferred-work.md:5365`](deferred-work.md#L5365)
