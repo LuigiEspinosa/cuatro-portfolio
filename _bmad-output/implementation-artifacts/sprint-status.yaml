@@ -435,7 +435,21 @@ development_status:
   # hover-capable pointer, and with reduced motion on; the entrance at 2x to 5x) and DW-119's
   # ruling.
   2-33-redesign-workhero-and-worktimeline-token-native: done
-  2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
+  # 2-34 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier pushes.
+  # ops/literal-conformance.mjs, run by the new blocking literal-conformance job (last in ci.yml, so
+  # the line numbers other records cite hold), reads every stylesheet git tracks and refuses a colour
+  # literal and a hand-written 44px anywhere outside contracts/ and app/scss/_print.scss, a spacing
+  # literal in a spacing property and a type literal in a type property, and any alpha but the one on
+  # --c-scrim in contracts/tokens.css. The permitted set, the alpha allowance and the four dispositions
+  # are named entries with their reasons in the gate; no comment silences it. Its first run over
+  # 802fbf4 named five literals: celeste.scss #444, #fff, system-ui and min(8vw, 5rem), now
+  # --token-bg, --token-text, --f-display and --t-display, and app.scss --accent-glow, deleted on
+  # DESIGN.md closure of O-11 (the Hub counts 14 properties now in three suites). F-2 closed; the
+  # F-8 fill grep, DW-95, DW-102 url( half and DW-115 re-booked, not taken; DW-121 filed (/celeste
+  # unredesigned). Weight: 11 gzipped lighter, the global stylesheet only. Six review layers inline,
+  # not independent: two patches, no loopback. Typecheck clean, 1,545 unit tests in 59 files, 325
+  # e2e green in 5.9 min in the pinned image, the /work baseline unchanged.
+  2-34-fr-17-conformance-no-colour-literal-outside-the-contract: review
   epic-2-retrospective: optional
 
   epic-3: backlog
