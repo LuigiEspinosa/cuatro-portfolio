@@ -191,7 +191,7 @@ development_status:
   # Operator. Weight: the global stylesheet 112 gzipped lighter; /work 113,763 over the 140,000.
   # Step-04 review, six layers inline (no subagent tool, so not independent): four patches, no loopback.
   # Typecheck clean, 1,546 unit tests in 59 files, 325 e2e green in 5.8 min in the pinned image.
-  2-22-migration-step-7-delete-the-aliases: review
+  2-22-migration-step-7-delete-the-aliases: done
   # 2-23 closed 2026-09-12. Job live at d91fe09, runs 34721281941 (exit 2, mail proven) and
   # 34722748245 (35 of 35 on a GitHub-hosted runner), secret set, first SM-4 reading 80%.
   # Heartbeat refused by the UptimeRobot free plan (DW-85 open); PAT rotates before 2026-12-11.
