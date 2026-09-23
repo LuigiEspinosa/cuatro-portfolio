@@ -227,14 +227,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     closedBy: 'Story 2-30',
   },
   {
-    id: 'weight-work-initiative',
-    check: 'weight',
-    match: '.work-item__initiative',
-    count: 2,
-    source: 'components/atoms/WorkItem/WorkItem.scss:85',
-    closedBy: 'Story 2-31',
-  },
-  {
     id: 'clip-skip-link',
     check: 'clip',
     match: 'a.skip-link',
@@ -2018,6 +2010,9 @@ test.describe('the scrim over the home canvas', () => {
 
       const roleValues = await Promise.all(SCRIM_ROLES.map(({ role }) => rootCustomPropertyValue(page, role)));
       const roleRgba = await rasterise(page, roleValues);
+      // The hairline role, which a panel's Plate mark paints opaque. Probed alongside the five text
+      // roles in the marker read below and nowhere else: the ratios further down are text's alone.
+      const [ruleRgba] = await rasterise(page, [await rootCustomPropertyValue(page, '--token-border')]);
 
       // **The proof that the layer is genuinely between the imagery and the text, taken by
       // sampling.** The scrim is repainted an unmistakable colour and the surface screenshotted
@@ -2027,7 +2022,7 @@ test.describe('the scrim over the home canvas', () => {
       // on what the WebGL canvas happens to draw.
       const MARKER = '255,0,255';
       const planted = await page.addStyleTag({ content: '.scanline-overlay { background-color: rgb(255, 0, 255) !important; }' });
-      const marked = await sampleBoxes(page, await page.screenshot(), boxes, [...roleRgba, `${MARKER},255`]);
+      const marked = await sampleBoxes(page, await page.screenshot(), boxes, [...roleRgba, ruleRgba, `${MARKER},255`]);
       await planted.evaluate((node) => (node as Element).remove());
 
       const notCovered = marked
@@ -2052,10 +2047,18 @@ test.describe('the scrim over the home canvas', () => {
       // the set below is empty and stays empty unless a measurement puts something in it; the
       // distances are printed on every run so the question is answered by the log rather than by
       // this comment.
+      //
+      // **Still empty since 2026-09-23, and a measurement nearly put `.home-panel--sys` back.** Story
+      // 2-31 folded `HudLabel` into the Plate mark, so the readout is now set at `--t-3xs`, and in the
+      // pinned image its glyphs came no closer than **13.1** to any of the five roles, one past the
+      // threshold: the smallest type on the surface did antialias short of it, as the original guess
+      // had it. Rather than exempt the panel, the mark's hairline is probed as well: it is one opaque
+      // pixel of `--token-border`, painted by the panel, so an exact hit on it over the repainted
+      // scrim says the panel is above the layer just as a glyph does.
       const EXEMPT_FROM_MARKER = new Set<string>();
       const nearestPerPanel = marked.map((sample, index) => ({
         panel: SCRIM_PANELS[index],
-        nearest: Math.min(...sample.nearest.slice(0, SCRIM_ROLES.length)),
+        nearest: Math.min(...sample.nearest.slice(0, SCRIM_ROLES.length + 1)),
       }));
       console.log(
         `accessibility-floor: over the repainted scrim, ` +
@@ -2063,7 +2066,7 @@ test.describe('the scrim over the home canvas', () => {
       );
       const buried = nearestPerPanel
         .filter((read) => !EXEMPT_FROM_MARKER.has(read.panel) && read.nearest > 12)
-        .map((read) => `${read.panel} comes no closer than ${read.nearest.toFixed(1)} to any of the five roles`);
+        .map((read) => `${read.panel} comes no closer than ${read.nearest.toFixed(1)} to any of the five roles or the hairline`);
       expect(
         buried,
         `a panel painted no role colour over the repainted scrim, so its text is beneath the layer rather than above ` +

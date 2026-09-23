@@ -675,6 +675,24 @@ census, which counts elements of any kind, and "very likely" is not a measuremen
 whole reason this section separates the two. Filed as **DW-72**, with the same owner DW-67 already
 carries: whichever of Stories 2-31 and 2-33 lands first.
 
+**Re-measured on both surfaces on 2026-09-23 by Story 2-31**, the first of the two to land and the
+owner DW-67 and DW-72 name. That story rebuilt `WorkItem.scss` so the meta line wraps in a column that
+can shrink. **Observed 2026-09-23** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800 by
+`tests/e2e/plate-mark-and-work-item.pw.ts`, which compares both edges of every element with a box
+against the viewport, asserts the timeline's own elements and prints the whole page's:
+
+| Surface | Elements past an edge | Of them the timeline's | Furthest | Nature |
+|---|---|---|---|---|
+| `/work` | **10** | **0** | `div.work-hero__text` and `div.work-hero__canvas-wrap`, both at **372.00** | **Observed 2026-09-23** |
+| `/cv` | **0** | **0** | n/a | **Observed 2026-09-23** |
+
+**The 28 fell to 10, and the ten are the hero's.** **Derived.** Every one of the ten is inside
+`.work-hero`: its text column with the Plate mark, its two cells, the heading and the meta line, and
+its canvas wrapper with what it holds, the column measuring 300 inside a 216 box (the hero half of
+KV-5, Story 2-33's). The hero rendered the same number of boxes before this story, the retired label's
+three having become the Plate mark's three, so the eighteen that left were the timeline's. `/cv`
+renders the timeline and no hero, and is clean. **No left-edge overflow on either surface.**
+
 **This section's 36 is not § The surfaces swept's 36, and the collision is an accident of timing.**
 That one is the number of interactive elements the floor **measures**, across four surfaces, and it
 fell from 54 to 36 when `/projects` left. This one was the number of elements of any kind sitting

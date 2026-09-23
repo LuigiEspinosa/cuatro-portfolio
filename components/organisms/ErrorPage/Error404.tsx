@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import HudLabel from '@/components/atoms/HudLabel/HudLabel';
+import { PlateMark } from '@/components/molecules/PlateMark/PlateMark';
 import { DESTINATIONS } from '@/components/atoms/Navbar/Navbar';
 import { useGsapContext } from '@/hooks/useGsapContext';
 import { gsap } from 'gsap';
@@ -20,7 +20,7 @@ import './error-page.scss';
  * **No `aria-current`.** The header on this page marks nothing either: an unrouted path is neither
  * destination, so a mark here would announce a page the visitor is not on.
  *
- * **Everything else on this surface is Story 2-30's.** The title, the numeral, the `HudLabel`, the
+ * **Everything else on this surface is Story 2-30's.** The title, the numeral, the Plate mark, the
  * cybercore literals in `error-page.scss` and the focus ring are all booked there
  * (`EXPERIENCE.md:540-542`). The `ScanlineOverlay` was booked there too until it left with Story
  * 2-28 on 2026-09-14: the layer is a scrim for text over moving imagery, and nothing moves behind
@@ -57,7 +57,9 @@ const NotFound = () => {
   return (
     <div className='error-page' ref={ref}>
       <div className='error-page__content'>
-        <HudLabel label='// ERR_NOT_FOUND' sub='// SIGNAL_LOST' />
+        {/* Moved onto the Plate mark's annotated variant by Story 2-31, which retired `HudLabel`, with
+            its strings exactly as they were: the label's wording is Story 2-30's criterion. */}
+        <PlateMark variant='annotated' label='// ERR_NOT_FOUND' sub='// SIGNAL_LOST' />
 
         <p className='error-page__code' aria-label='Error 404'>
           404

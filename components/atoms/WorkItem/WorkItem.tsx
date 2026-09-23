@@ -12,6 +12,27 @@ interface WorkItemProps {
   onToggle: () => void;
 }
 
+/**
+ * The disclosure's two durations, in seconds, and they are the contract's rather than this file's
+ * (Story 2-31).
+ *
+ * Opening runs the contract's major duration and closing its exit duration, both on an ease-out.
+ * The close used to run an ease-in over 0.3s, which holds visible movement back to exactly the frames
+ * after the click and reads as lag (`review-apple-design-2026-09-15.md` A-4). The contract's own exit
+ * easing is an ease-in too, so the curve is stated here by hand rather than borrowed from it: that is
+ * DW-103, a contract change, and not this component's to make.
+ *
+ * **Written as numbers because GSAP takes numbers**, which puts them out of reach of the contract's
+ * reduced-motion collapse; `useReduceMotion` below is what takes them to zero instead.
+ * `__tests__/WorkItem.test.tsx` reads both values off the published contract and holds these equal to
+ * them, so a retuned duration fails there rather than drifting here.
+ */
+const OPEN_DURATION = 0.42;
+const CLOSE_DURATION = 0.165;
+
+/** Both tweens ease out: movement starts at speed, the moment the click lands. */
+const EASE = 'power2.out';
+
 export function WorkItem({ entry, isOpen, onToggle }: WorkItemProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const isMountedRef = useRef<boolean>(false);
@@ -74,13 +95,17 @@ export function WorkItem({ entry, isOpen, onToggle }: WorkItemProps) {
     let tween: gsap.core.Tween;
     const duration = reducedMotion ? 0 : undefined;
 
+    // **Height is a layout property, and this is the one place the system animates it.** A disclosure
+    // that jumps is worse than one that eases, so `EXPERIENCE.md` § Work item records this tween as the
+    // single named exception to "only transform and opacity animate", and reduced motion takes it to
+    // zero rather than removing it.
     if (isOpen) {
       const targetHeight = el.scrollHeight;
       gsap.set(el, { overflow: 'hidden' });
       tween = gsap.to(el, {
         height: targetHeight,
-        duration: duration ?? 0.4,
-        ease: 'power2.out',
+        duration: duration ?? OPEN_DURATION,
+        ease: EASE,
         onComplete: () => {
           gsap.set(el, { height: 'auto', overflow: '' });
         },
@@ -89,8 +114,8 @@ export function WorkItem({ entry, isOpen, onToggle }: WorkItemProps) {
       gsap.set(el, { height: el.offsetHeight, overflow: 'hidden' });
       tween = gsap.to(el, {
         height: 0,
-        duration: duration ?? 0.3,
-        ease: 'power2.in',
+        duration: duration ?? CLOSE_DURATION,
+        ease: EASE,
       });
     }
 
@@ -108,7 +133,9 @@ export function WorkItem({ entry, isOpen, onToggle }: WorkItemProps) {
         aria-controls={`${entry.id}-content`}
       >
         <div className='work-item__meta'>
-          <h2 className='work-item__company'>{entry.company}</h2>
+          <h2 id={`${entry.id}-heading`} className='work-item__company'>
+            {entry.company}
+          </h2>
           <div className='work-item__sub'>
             <span>{entry.role}</span>
             <span>
@@ -121,20 +148,28 @@ export function WorkItem({ entry, isOpen, onToggle }: WorkItemProps) {
         </span>
       </button>
 
+      {/* **A labelled region, named by its company** (`EXPERIENCE.md` § Work item). Named by the
+          heading rather than by the trigger, whose accessible name carries the role and the dates
+          as well, so a landmark list reads four companies rather than four sentences. */}
       <div
         id={`${entry.id}-content`}
         className='work-item__content'
+        role='region'
+        aria-labelledby={`${entry.id}-heading`}
         ref={contentRef}
         style={collapsedOnFirstRender ? { height: 0, overflow: 'hidden' } : undefined}
       >
         {entry.initiative && <p className='work-item__initiative'>{entry.initiative}</p>}
         <p className='work-item__description'>{entry.description}</p>
-        <ul className='work-item__highlights'>
+        {/* `role='list'` on both lists, because the stylesheet sets `list-style: none` and WebKit
+            stops exposing such a list as a list. The `//` marker is generated content, so the items
+            carry their text and nothing else. */}
+        <ul className='work-item__highlights' role='list'>
           {entry.highlights.map((hightlight, i) => (
             <li key={i}>{hightlight}</li>
           ))}
         </ul>
-        <ul className='work-item__tech'>
+        <ul className='work-item__tech' role='list'>
           {entry.tech.map((t) => (
             <li key={t}>{t}</li>
           ))}

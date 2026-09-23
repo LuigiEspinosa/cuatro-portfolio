@@ -2784,7 +2784,16 @@ status: done
     transform-based reveal, which is a rebuild of the component's open state rather than a tweak, and
     Story 2-31 is the rebuild. The reduced-motion path is handled at `:36`, which sets the duration
     to zero rather than skipping the tween.
-  status: open
+
+    Closed 2026-09-23 by Story 2-31, by ruling rather than by repair. That story's criteria keep
+    the height tween and record it as the single named exception to "only transform and opacity
+    animate" (`epics.md` Story 2.31, `EXPERIENCE.md` § Work item): a disclosure that jumps is
+    worse than one that eases. What the rebuild changed is the tween's timing, not its property:
+    the open runs `power2.out` over the contract's major duration and the close `power2.out`
+    over its exit duration, both taken to zero under reduced motion, and
+    `components/atoms/WorkItem/__tests__/WorkItem.test.tsx` holds both durations to the
+    published contract and both curves to an ease-out measured on the curve itself.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-35
@@ -3925,7 +3934,15 @@ status: done
     **Owner: whichever of Stories 2-31 and 2-33 lands first**, since both exist to remove elements
     from that census and neither can claim a figure without re-reading it. **Trigger: the next time
     KV-5's per-surface breakdown is read for a decision**, or either of those stories starting.
-  status: open
+
+    Closed 2026-09-23 by Story 2-31, the first of the two to land, on this entry's second
+    trigger. The census was re-read in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800
+    by `tests/e2e/plate-mark-and-work-item.pw.ts`, which compares both edges of every element
+    with a box against the viewport and prints the whole page on every run: `/work` 10, every
+    one of them the hero's, and `/cv` 0, the timeline contributing none on either. Recorded as a
+    dated paragraph in `ops/hit-target-floor.md` § The overflow this assertion does not cover
+    and in KV-5's cells.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-68
@@ -4087,7 +4104,14 @@ status: done
     both exist to remove elements from this census and neither can claim a figure without re-reading
     it, and 2-31 owns `WorkItem`, which is the component that produces every one of the 28.
     **Trigger: the next time KV-5's per-surface breakdown is read for a decision.**
-  status: open
+
+    Closed 2026-09-23 by Story 2-31, with DW-67 and by the same reading: `/cv` measures 0
+    elements past either edge at 360, and the timeline measures none on `/work` either. The 10
+    left on `/work` are the hero's, KV-5's half booked to Story 2-33. The read is a standing
+    case now rather than a census taken once: `tests/e2e/plate-mark-and-work-item.pw.ts` fails
+    if any element inside `.work-timeline` sits past either edge on either route, and is seen
+    reporting a planted meta line that will not wrap.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-73
@@ -4116,7 +4140,17 @@ status: done
     **Owner: Story 2-31**, which rebuilds `WorkItem` and already owns the height animation DW-34
     records. **Trigger: that rebuild choosing its open-state mechanism**, since a
     `grid-template-rows` or transform reveal makes the print rule a one-liner rather than a fight.
-  status: open
+
+    Closed 2026-09-23 by Story 2-31, on the trigger. The rebuild chose its open-state mechanism
+    by its own criteria, which keep the height tween, so the print rule was going to be the one
+    this entry expected to be a fight: `app/scss/_print.scss` now sets `.work-item__content` to
+    `height: auto` and `overflow: visible`, each `!important`, which is what an author rule
+    needs to outrank an inline one and the idiom that file already uses throughout. In the print
+    medium nothing is tweening, so there is no moving target. **Observed 2026-09-23** in the
+    pinned image by `tests/e2e/plate-mark-and-work-item.pw.ts`: under `emulateMedia({ media:
+    'print' })` all four panels on `/cv` have height, and the same page in the screen medium
+    keeps three of them at zero.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-74
@@ -4228,6 +4262,17 @@ status: done
     **Owner: Story 2-31**, which rebuilds `WorkItem` token-native and already owns the open-state
     mechanism through DW-34 and DW-73. **Trigger: that rebuild choosing its open-state mechanism**,
     which is the one moment the no-script and the print behaviour are both cheap to get right.
+
+    Re-read 2026-09-23 by Story 2-31, on the trigger, and not closed. The rebuild kept the
+    height tween by its own criteria, so the cheap shape this entry hoped for, a mechanism that
+    is open-able without script, did not arrive. What remains is a CSS rule under `@media
+    (scripting: none)` that forces the panels open, the same two declarations the print rule
+    uses. It was not made, because it is a behaviour decision rather than a restyle: with script
+    off, three triggers would announce themselves collapsed over content that is visible, and do
+    nothing when pressed, and `tests/e2e/cv.pw.ts`'s standing no-script reading, which Story
+    2-16 wrote with the three closed panels as its control, would invert. **Owner: unassigned.**
+    **Trigger: an Operator ruling on whether a scriptless `/cv` shows every company with inert
+    triggers, or keeps the one open company it shows today.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
@@ -4448,6 +4493,19 @@ status: done
     same shift exists on the framework band and has still never been measured. **Owner: the next
     `contracts/fonts.css` MINOR.** **Trigger: the first edit to `packages/fonts/faces.json`, or to
     `Premise.scss`'s display rule.**
+
+    **Measured on the Work item's row name on 2026-09-23 by Story 2-31**, and it is the first
+    time the structural half has shown as a height rather than a width. That story set
+    `.work-item__company` in the display face at `font-stretch: 85%`, the row name
+    `RESTYLE-SPEC.md` § 2 specifies for a work-history item, and in the pinned image at 360 the
+    first company set on two lines in the fallback and on one in the face (35.19 to 17.59), its
+    height per line held. The swap moved a whole line because the fallback has no width axis to
+    narrow to, which is this entry's cause exactly. `tests/e2e/type-swap.pw.ts` now holds the
+    four row names to their line box rather than their height, with the reason at the site, and
+    still holds every element at the default width to its height; the line counts stay printed.
+    The Suite Directory's row names carry the same `85%` and are still not measured. **Owner and
+    trigger unchanged: the next `contracts/fonts.css` MINOR, the first edit to
+    `packages/fonts/faces.json`.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
@@ -5120,6 +5178,12 @@ status: done
     propagation procedure), which is where a published value changes and propagates; trigger,
     the first contract change that opens a minor for any other reason, so the curve rides with
     it rather than costing a propagation of its own.
+
+    Story 2-31 made the Hub's half of this on 2026-09-23 without touching the contract:
+    `WorkItem`'s close tween runs `power2.out` over the exit duration, stated by hand in
+    `components/atoms/WorkItem/WorkItem.tsx`, and its unit suite measures the curve as an
+    ease-out on GSAP's own parser. `contracts/tokens.css` still publishes the ease-in, and no
+    Hub stylesheet reads it. Owner and trigger unchanged.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-a-17-lenis-scoped-to-reduced-motion.md`
   id: DW-104
@@ -5223,6 +5287,18 @@ status: done
 
     **Owner: Story 2-31**, which rebuilds `HudLabel`, the component that panel renders. **Trigger:
     that rebuild, or any story that gives the readout panel a responsive rule of its own.**
+
+    Re-read 2026-09-23 by Story 2-31, on the trigger, and not closed. The rebuild moved the
+    readout's label onto the Plate mark's side-ruled variant and changed nothing about the panel
+    that holds it: the `display: none` below 768 and the 1600ms `home-enter` delay are both in
+    `HomeLayout.scss`, Story 2-29's file, and the label is a child of the box that restarts, not
+    the box. The two conformant repairs this entry names are unchanged and still cost more than
+    a blank corner after a rotation. A third was considered and is recorded so it is not
+    rediscovered: holding the panel at `visibility: hidden` rather than `display: none` below
+    768 keeps its box and lets the entrance finish unseen, but it moves two pinned below-768
+    readings (`HomeLayout.test.tsx` and `tests/e2e/front-door.pw.ts`) on a surface this story
+    does not own. **Owner: unassigned.** **Trigger: this entry's second one, any story that
+    gives the readout panel a responsive rule of its own.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
@@ -5283,4 +5359,79 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next change to either probe, or the next re-run that stops
     at exit 3 on the banner.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
+  id: DW-110
+  summary: >-
+    The home readout's label reads `SYS_ONLINE`, a code rather than words, and no planning
+    document supplies the words it should read; a label is read aloud, so the Plate mark's own
+    rule asks for real words there.
+  evidence: |-
+    Found 2026-09-23 by Story 2-31, moving the readout from `HudLabel` onto the Plate mark's
+    side-ruled variant (`components/organisms/HomeLayout/HomeLayout.tsx`). `EXPERIENCE.md` §
+    Plate mark says the label is read, so its text is real words and not a decorative code, and
+    names `// ERR_NOT_FOUND` as the example. The shipped readout was `// SYS_ONLINE ◕`. Story
+    2-31 took out the two pieces of decoration, the `//` and the `◕`, because the Plate mark
+    carries no marker (`DESIGN.md` § Components, Plate mark) and decoration inside a read string
+    is the defect the rule describes; it changed no word, because a restyle does not rewrite
+    copy (`RESTYLE-SPEC.md` § The ceiling) and no document says what the readout should say. The
+    mockup that rendered a side-ruled mirror used a location and a time zone, and a mockup loses
+    to all three documents, so that is not a source either.
+
+    The panel is also not an obvious genuine ordinal or domain, which is the other condition
+    `RESTYLE-SPEC.md` § 7 puts on a label; the Home surface's composition still asks for a Plate
+    mark in every panel, so the two rules meet here and neither yields. **Owner: the Operator,
+    as the author of the site's copy.** **Trigger: any story that edits the readout panel, or a
+    copy pass over the hero.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
+  id: DW-111
+  summary: >-
+    A collapsed work item's panel stays in the accessibility tree, and since Story 2-31 each is
+    a named region, so a landmark list on `/work` or `/cv` offers four regions of which three
+    are closed.
+  evidence: |-
+    Observed 2026-09-23 by Story 2-31, which gave each panel `role='region'` named by its
+    company, as `EXPERIENCE.md` § Work item asks. The panel collapses to `height: 0; overflow:
+    hidden`, which hides it from sight and from nothing else: its text has always been read by a
+    screen reader whether the row is open or not, and the region role now lists it as a landmark
+    too. The disclosure pattern expects collapsed content to be hidden, which here means
+    `hidden` or `inert` set when the close tween completes and cleared before the open one
+    starts.
+
+    Not done by Story 2-31, because it changes the disclosure's behaviour rather than its look:
+    GSAP owns the panel's box, the first render's collapsed style is frozen on purpose (Story
+    2-16), and hiding closed panels from the tree would also hide them from the no-script and
+    print readings DW-76 and DW-73 are about. **Owner: unassigned.** **Trigger: the next change
+    to the disclosure's mechanism, or an accessibility pass that reads `/cv` with a screen
+    reader.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
+  id: DW-112
+  summary: >-
+    Each work item's company heading sits inside its trigger `<button>`, wrapped in a `<div>`,
+    so the markup breaks the button's content model and the four companies are not expected to
+    be headings a screen reader can move between.
+  evidence: |-
+    Found 2026-09-23 by Story 2-31's review, and it predates that story: the nesting at
+    `components/atoms/WorkItem/WorkItem.tsx:135-145` (`div.work-item__meta` holding the `h2` and
+    `div.work-item__sub`, inside `button.work-item__header`) is the same at the story's
+    baseline, `460230c`, and the story only gave the `h2` an `id` so the panel's region can be
+    named by it. A `<button>` admits phrasing content only, and `<div>` and `<h2>` are flow
+    content, so a conformance checker reports both. WAI-ARIA 1.2 gives the `button` role
+    presentational children, which a browser should not expose, so the heading role beneath the
+    trigger is not expected to reach a screen reader; not measured with one. The region's name
+    is unaffected: `aria-labelledby` reads the text of the node it points at whatever that
+    node's role is, and `tests/e2e/plate-mark-and-work-item.pw.ts` reads each region named by
+    its company.
+
+    The pattern that keeps both is a heading that holds the button, `<h2><button
+    aria-expanded>`, with the meta line set in phrasing elements. That moves the trigger's box,
+    the focus ring's reach that the same spec measures (F-19) and the `/work` baseline, and it
+    is a change to the disclosure's markup rather than its look, so Story 2-31 did not make it.
+    **Owner: unassigned.** **Trigger: DW-111's, the next change to the disclosure's mechanism,
+    since both entries are the same component's semantics.**
   status: open

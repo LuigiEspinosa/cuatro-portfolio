@@ -296,6 +296,13 @@ const TOKEN_NATIVE_STYLESHEETS = [
   'components/atoms/ScanlineOverlay/ScanlineOverlay.scss',
   'components/atoms/SkipControl/SkipControl.scss',
   'components/atoms/SkipLink/SkipLink.scss',
+  // The timeline's row, rebuilt by Story 2-31. A rebuild like the rest: the 2023 alpha hover ground,
+  // the alpha chip border, the filled chip and the five aliases it read left disk with its literals,
+  // and this file names the text, border and accent roles, the display and mono families with their
+  // size, weight, line-height and tracking steps, the spacing scale, both strokes, the tap floor and
+  // the hover transition's duration and easing directly. Its `::before` left the alias layer's
+  // boundary scope in `app/app.scss` in the same commit, having nothing there left to resolve.
+  'components/atoms/WorkItem/WorkItem.scss',
   // The display entrance, rebuilt by Story 2-27. A rebuild like the rest: the 2023 `glitch-text.scss`
   // and its `--monument-bold` call site left disk with the loop, and this file sets the display
   // roles (family, weight, size, line-height, tracking, colour) and the three motion roles directly.
@@ -1060,12 +1067,16 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     ).not.toContain('.work-item');
     expect(selectorsOf('.a::before,\n.b { --accent-dim: var(--x); }')).toEqual(['.a::before', '.b']);
 
+    // **One selector since 2026-09-23.** Story 2-31 rebuilt `WorkItem.scss` against the contract, so
+    // `.work-item::before` reads no alias and left the scope in the same commit; the parser controls
+    // above keep its name because the shape it has, a pseudo-element in a selector list, is still
+    // the one a first-colon split would misread.
     expect(
       selectorsOf(afterRoot).sort(),
-      `app/app.scss no longer scopes --accent-dim on exactly the two selectors the mapping needs. ` +
+      `app/app.scss no longer scopes --accent-dim on exactly the selector the mapping needs. ` +
         `A selector renamed in its component stylesheet silently stops matching, and that call site ` +
         `falls back to the :root value`
-    ).toEqual(['.error-page__back', '.work-item::before'].sort());
+    ).toEqual(['.error-page__back']);
 
     expect(
       MAPPING.filter(([, roles]) => roles.length > 1).map(([property]) => property),

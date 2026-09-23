@@ -15,7 +15,7 @@ import { WorkTimeline } from '@/components/organisms/WorkTimeline/WorkTimeLine';
  * **`WorkTimeline` is mounted, not touched.** This is the identical component `app/work/page.tsx:21`
  * mounts, with no props, and `/work` goes on rendering it standalone. Story 2-33 restyles it and is
  * required not to alter its structure, props or behaviour, so a prop added here would be work that
- * story is forbidden to undo. **One mount per document**: `WorkItem.tsx:100,117` builds each panel id
+ * story is forbidden to undo. **One mount per document**: `WorkItem.tsx:133,155` builds each panel id
  * as `${entry.id}-content`, so a second timeline in one page would duplicate all four ids and break
  * `aria-controls` on both.
  *

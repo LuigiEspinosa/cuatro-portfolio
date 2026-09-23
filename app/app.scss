@@ -77,10 +77,11 @@
 // Story 2-9 removed the third selector and the counter-scope beneath it. The card the Suite
 // Directory replaced is gone, and so is the counter-scope that existed only to take that card's
 // boundary value back off the chips inheriting it. Both selectors lost their subject when the
-// component was deleted, and their call sites went with it. `.work-item::before` declares on a
-// pseudo-element, which its siblings do not inherit from, so nothing else needs the value taken
-// back.
-.work-item::before,
+// component was deleted, and their call sites went with it.
+//
+// Story 2-31 removed `.work-item::before` on 2026-09-23. The row's stylesheet was rebuilt against
+// the contract and reads no alias at all, so the open-state rule this scope used to resolve names
+// its roles directly and the selector had nothing left here to redefine. One boundary remains.
 .error-page__back {
   --accent-dim: var(--token-border-interactive);
 }

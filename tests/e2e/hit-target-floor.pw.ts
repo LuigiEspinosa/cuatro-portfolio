@@ -43,8 +43,9 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * viewport is what detects that. The remaining half of KV-5 is the component one, `WorkItem.scss`
  * and `WorkHero.scss` on `/work`, 28 elements booked to Stories 2-31 and 2-33. The eight that were
  * booked to Story 2-14 are gone: that story redirected `/projects` on 2026-09-07 and deleted the
- * hero that rendered them, rather than repairing it. The entry stays `Open` until the other two
- * land.
+ * hero that rendered them, rather than repairing it. Story 2-31 closed the timeline's on 2026-09-23:
+ * ten remain, every one of them the hero's, and `tests/e2e/plate-mark-and-work-item.pw.ts` holds the
+ * timeline inside the viewport on `/work` and `/cv`. The entry stays `Open` until Story 2-33 lands.
  *
  * **No screenshot is taken.** This file writes no snapshot directory, so `keeps exactly one
  * committed baseline` in `tests/e2e/rendered-output.pw.ts` stays true. Same precedent as

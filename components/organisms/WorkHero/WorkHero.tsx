@@ -5,7 +5,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGsapContext } from '@/hooks/useGsapContext';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
-import HudLabel from '@/components/atoms/HudLabel/HudLabel';
+import { PlateMark } from '@/components/molecules/PlateMark/PlateMark';
 import { TorusCanvas } from '@/components/molecules/TorusCanvas/TorusCanvas';
 import { work } from '@/content/work';
 import './WorkHero.scss';
@@ -53,7 +53,11 @@ export function WorkHero() {
   return (
     <section className='work-hero' ref={heroRef}>
       <div className='work-hero__text'>
-        <HudLabel label='// EXPERIENCE' sub='経験' />
+        {/* The page's section identity, on the Plate mark's annotated variant since Story 2-31. The
+            `//` that led the label is gone rather than moved: it was decoration inside a string a
+            screen reader speaks, and the Plate mark carries no marker (`EXPERIENCE.md` § Plate
+            mark). The kanji stays as the subordinate line, which is ornament and never read. */}
+        <PlateMark variant='annotated' label='EXPERIENCE' sub='経験' />
         <h1 className='work-hero__heading'>
           Frontend Developer
           <br />

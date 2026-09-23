@@ -61,6 +61,16 @@ const UNBREAKABLE = `Aaa${'z'.repeat(120)}Zzz`;
  */
 const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
 
+/**
+ * The premise's own mark, scoped to the block.
+ *
+ * `/` has carried two Plate marks since Story 2-31 folded `HudLabel` into the component: this one and
+ * the readout's side-ruled mark in the hero, which comes first in the document and is `display: none`
+ * at 360. An unscoped `.plate-mark` is then a strict-mode violation for every locator here and, through
+ * `document.querySelector`, a read of the wrong element's box.
+ */
+const MARK = '.premise .plate-mark';
+
 const goTo = async (page: Page, route: string): Promise<void> => {
   const response = await page.goto(route, { waitUntil: 'load' });
   expect(response, `navigating to ${route} produced no response`).toBeTruthy();
@@ -77,7 +87,7 @@ const goTo = async (page: Page, route: string): Promise<void> => {
   // timeouts naming nothing, which reads as a hung browser rather than as a Registry that stopped
   // identifying the Hub.
   await expect(
-    page.locator('.plate-mark'),
+    page.locator(MARK),
     'the home route draws no plate mark, so hubEntry answered undefined: the Registry serves the ' +
       'declared origin from no entry, or from more than one'
   ).toBeVisible();
@@ -586,7 +596,7 @@ test.describe('the plate mark is tracked by the token and not by a figure', () =
     await goTo(page, ROUTE);
 
     const expected = await trackingPx(page, '--tr-label', '--t-3xs');
-    const measured = await page.locator('.plate-mark').evaluate((element) => ({
+    const measured = await page.locator(MARK).evaluate((element) => ({
       letterSpacing: getComputedStyle(element).letterSpacing,
       fontFamily: getComputedStyle(element).fontFamily,
       fontSize: getComputedStyle(element).fontSize,
@@ -611,7 +621,7 @@ test.describe('the plate mark is tracked by the token and not by a figure', () =
     const expected = await trackingPx(page, '--tr-label', '--t-3xs');
 
     await plantStyle(page, '.plate-mark { letter-spacing: 0.16em !important; }');
-    const planted = await page.locator('.plate-mark').evaluate((element) => getComputedStyle(element).letterSpacing);
+    const planted = await page.locator(MARK).evaluate((element) => getComputedStyle(element).letterSpacing);
 
     expect(
       planted,
@@ -625,7 +635,7 @@ test.describe('the plate mark is tracked by the token and not by a figure', () =
 
     const stroke = await lengthPx(page, '--stroke-hair');
     const border = await roleColour(page, '--token-border');
-    const drawn = await page.locator('.plate-mark').evaluate((element) => {
+    const drawn = await page.locator(MARK).evaluate((element) => {
       const style = getComputedStyle(element);
       return {
         width: style.borderBottomWidth,
@@ -638,7 +648,7 @@ test.describe('the plate mark is tracked by the token and not by a figure', () =
     expect(drawn.width, 'the mark sits on something other than a hairline').toBe(stroke);
     expect(drawn.colour, 'the rule beneath the mark is not the border role').toBe(border);
 
-    const geometry = await ruleGeometry(page, '.plate-mark', '.premise');
+    const geometry = await ruleGeometry(page, MARK, '.premise');
     expect(geometry.padStart, 'the block is not padded, so the content width and the viewport are the same').toBeGreaterThan(
       0
     );
@@ -656,7 +666,7 @@ test.describe('every count-bearing element carries tabular numerals', () => {
     // it does not shift the characters beside it.
     await goTo(page, ROUTE);
 
-    for (const selector of ['.plate-mark', '.site-footer__line']) {
+    for (const selector of [MARK, '.site-footer__line']) {
       const value = await page
         .locator(selector)
         .first()
@@ -669,7 +679,7 @@ test.describe('every count-bearing element carries tabular numerals', () => {
     await goTo(page, ROUTE);
     await plantStyle(page, '.plate-mark, .site-footer__line { font-variant-numeric: normal !important; }');
 
-    for (const selector of ['.plate-mark', '.site-footer__line']) {
+    for (const selector of [MARK, '.site-footer__line']) {
       const value = await page
         .locator(selector)
         .first()

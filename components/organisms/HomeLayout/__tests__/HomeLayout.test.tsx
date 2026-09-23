@@ -60,10 +60,6 @@ vi.mock('@/components/molecules/GlitchText/GlitchText', () => ({
   default: ({ text }: { text: string }) => <div>{text}</div>,
 }));
 
-vi.mock('@/components/atoms/HudLabel/HudLabel', () => ({
-  default: ({ label }: { label: string }) => <div>{label}</div>,
-}));
-
 vi.mock('@/components/molecules/ContactContainer/ContactContainer', () => ({
   default: () => (
     <div>

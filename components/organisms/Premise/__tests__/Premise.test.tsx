@@ -130,9 +130,12 @@ describe("the plate mark names the Hub from the Hub's own entry", () => {
     const hub = hubEntry();
     expect(hub, `no committed entry serves ${HUB_ORIGIN}, so this case is vacuous`).toBeDefined();
 
-    expect(container.querySelector('.plate-mark__label')?.textContent).toBe(hub?.name);
+    // Uppercase in the document since Story 2-31, which made the mark uppercase every cell it draws so a
+    // label reads the same with CSS turned off (`RESTYLE-SPEC.md` § 7). The fact is the Registry's; the
+    // case is the mark's.
+    expect(container.querySelector('.plate-mark__label')?.textContent).toBe(hub?.name.toUpperCase());
     expect(container.querySelector('.plate-mark__domain')?.textContent).toBe(
-      new URL(hub?.live ?? HUB_ORIGIN).hostname
+      new URL(hub?.live ?? HUB_ORIGIN).hostname.toUpperCase()
     );
   });
 
@@ -141,7 +144,7 @@ describe("the plate mark names the Hub from the Hub's own entry", () => {
     // reader is already on this application, and a second lookup could disagree with the first.
     const { container } = render(<Premise />);
     const hub = renderedApplications.find((application) => application.live === hubEntry()?.live);
-    expect(container.querySelector('.plate-mark__label')?.textContent).toBe(hub?.name);
+    expect(container.querySelector('.plate-mark__label')?.textContent).toBe(hub?.name.toUpperCase());
   });
 
   it('states no count in the mark', () => {

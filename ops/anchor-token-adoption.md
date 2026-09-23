@@ -500,6 +500,17 @@ ornament now, and the `--monument-bold` set falls from four call sites to three;
 2-9: a table pinned above what the tree holds fails as a missing call site, which is the opposite of
 what happened.
 
+**Two since 2026-09-23, and the table above is still kept as the Story 1-18 reading.** Story 2-29
+rebuilt `HomeLayout.scss` against the contract on 2026-09-21, and its three rows (`:121`, `:154`,
+`:234`) left the tests without a note here, which this paragraph supplies; eight remained. Story 2-31
+then deleted `hud-label.scss` with the atom it styled and rebuilt `WorkItem.scss` against the contract,
+taking six more: the label's two side rules, and the row's separator, open-state bar, highlight marker
+and chip fill. The bar was the second boundary, so `app/app.scss` now scopes `--accent-dim` on
+`.error-page__back` alone, and `.work-item::before` left that block in the same commit. One boundary
+and one ornament remain, `error-page.scss:59` and `WorkHero.scss:8`, which is still what keeps a single
+global alias from passing `tests/e2e/anchor-aliases.pw.ts`; that file's counts moved in the same
+commit, and its pseudo-element read left with the last row that needed it.
+
 **One row is read in a second browser context at 1024 wide**, and it is worth writing down rather
 than discovering later. `HomeLayout.scss:154` is the desktop `border-right` on the contact links.
 At the harness's pinned 360 viewport, `HomeLayout.scss:233` sets `border-right: none` on the same
@@ -551,6 +562,11 @@ face clamps to 700, which is exactly the `--f-display` plus `--w-bold` the mappi
 **Two since 2026-09-06**: Story 2-9 deleted `ProjectCard.scss` with the component it styled, and
 `tests/e2e/anchor-aliases.pw.ts` moved its `DISPLAY_REGULAR_SITES` table from three rows to two in
 the same commit. The argument is unchanged for the two that remain.
+
+**One since 2026-09-23.** Story 2-31 rebuilt `WorkItem.scss` against the contract, and
+`.work-item__company` names the display family and the bold weight directly rather than asking the
+alias for a clamped 500. `error-page.scss:40` is the one call site left, until Story 2-30, and the
+argument is unchanged for it.
 
 **Those four lines are the only place outside `app/app.scss` that names a contract role**, and the
 consumer scan in `app/__tests__/anchor-contract.test.ts` is written to say exactly that rather

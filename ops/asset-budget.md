@@ -468,6 +468,87 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-23 reading, after Story 2-31
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `0KxutAmqMQuDuV6dR2omk`, written
+2026-09-23T08:03:45Z, taken on the story's working tree at `460230c` plus its own files, before the
+commit that carries them: the tool's own dirty-inputs row named nineteen paths (the three
+`components/atoms/HudLabel/` files deleted; `app/app.scss`, `app/scss/_print.scss`,
+`app/cv/page.tsx`, `app/__tests__/anchor-contract.test.ts`, the `WorkItem` and `PlateMark` sources and
+tests, `CvIntro.tsx`, `Error404.tsx`, `HomeLayout.tsx` and its test, `Premise.test.tsx` and
+`WorkHero.tsx`, every one modified) and every one of them is this story's. The before reading is the
+same command against build `xYaWbFMJEJtFEN4Ffs5N6` (written 2026-09-23T06:09:04Z at `460230c` on
+`dev`, no measured input dirty). The after side was built three times. The first two,
+`UrWXqz0rhlKgfAkd_0BeV` and `NUFEJaWf2yKbCGCGaweZV`, wrote the same 32 chunks at the same names and
+sizes, and moved each prerendered document by one or two gzipped bytes, which is the rebuild
+variance § Stated limits records. The story's review then took one inert declaration out of the
+row's stylesheet (a `transform-origin` on a transform that never animates), and the third build, the
+one read here, differs from those two in that chunk alone: `15~vasjft7hvg.css` in place of
+`1563bpat~2q1f.css`, 19 bytes lighter on disk and 5 gzipped. The before side was built once.
+
+**The before build reproduces the Story 2-29 after figures within one commit.** That reading
+recorded 21 `.js` and 13 `.css` at 2,030,896 on disk and 618,513 gzipped, with 26,785 on disk and
+8,673 gzipped of `.css`. The `.js` figures reproduce exactly; the `.css` is 87 heavier on disk and 1
+gzipped heavier here, because `dev` has carried `53df9c0` (the Story 2-29 review patch to
+`HomeLayout.scss` and `SkipControl.scss`) since that reading was taken. None of that gap is this
+story's.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 20,799 | 493,246 | yes | yes | **Observed** |
+| `/cv` | 21,771 | 258,438 | no | yes | **Observed** |
+| `/celeste` | 13,748 | 252,206 | no | yes | **Observed** |
+| `/_not-found` | 13,873 | 252,060 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,763 | no | **no**: Next's own document | **Observed** |
+
+Against the before build, on the wire: `/work` 586 gzipped heavier, `/cv` 171, `/celeste` 282,
+`/_not-found` 282, and `/_global-error` 1 lighter, which is the rebuild variance. The `/work` and `/cv` documents grew by 459 and 315
+bytes, the new `role`, `aria-labelledby` and heading `id` on every row, and `/`, a dynamic route,
+still has no row by construction.
+
+**The whole build, before and after, and the chunks that moved.** **Observed 2026-09-23**, the tool's
+own build table on each side, and every `.next/static/chunks/*.css` and `*.js` weighed with
+`zlib.gzipSync` at level 9 (the tool's method) on both builds.
+
+| Figure | Before, `dev` at `460230c` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 21 `.js`, 13 `.css` | 21 `.js`, 11 `.css` | two `.css` fewer | **Observed** |
+| Bytes in `.next/static/chunks` | 2,030,983 on disk, 618,514 gzipped | 2,033,913 on disk, 618,565 gzipped | **2,930 heavier on disk, 51 gzipped heavier** | **Observed**, tool's build table; **Derived** delta |
+| Every `.css` chunk together | 26,872 on disk, 8,674 gzipped | 27,857 on disk, 8,308 gzipped | **985 heavier on disk, 366 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The label's stylesheets | `0-5rhfyxrv3md.css` (the Plate mark, 496 on disk, 303 gzipped) and `0fmvj6dex6cl5.css` (`HudLabel`, 515 and 268) | `10qpy4vobcu5f.css`, 997 on disk, 418 gzipped, carrying all three variants and the subordinate line | 14 lighter on disk, 153 gzipped lighter: two chunks became one | **Observed** |
+| The row's stylesheet | `0k~wcaar2jss4.css`, 2,189 on disk, 771 gzipped | `15~vasjft7hvg.css`, 3,137 on disk, 861 gzipped | 948 heavier on disk, 90 gzipped heavier | **Observed** |
+| The global stylesheet | `07pbhe.gtum3m.css`, 5,806 on disk, 2,282 gzipped | `03njxn1smh8rb.css`, 5,857 on disk, 2,294 gzipped | 51 on disk, 12 gzipped heavier: the print rule in, the `.work-item::before` scope out | **Observed** |
+| The home route's stylesheets | `01dn06xnqi6ak.css` (the home surface, 6,186 and 1,332) and `14iggcube1kma.css` (the premise, the footer and the Directory, 6,401 and 1,262) | `0ahkrv13~wi6m.css`, 12,587 on disk, 2,279 gzipped, carrying all of them | the same bytes on disk, 315 gzipped lighter: two chunks became one | **Observed** |
+| Every `.js` chunk together | 2,004,111 on disk, 609,840 gzipped | 2,006,056 on disk, 610,257 gzipped | **1,945 heavier on disk, 417 gzipped heavier** | **Observed** per chunk; **Derived** total and delta |
+| The four `.js` chunks that moved | `00j1ooy.0cni2.js` (the 404, 1,744 and 767), `0uifu5rc1y.iv.js` (the home surface, 7,826 and 3,165), `0z9ribvuutp1v.js` (the row, 6,430 and 2,822), `10pryuwzqynw-.js` (`/work`'s hero with `three-stdlib`, 27,428 and 9,291) | `0i9pf4zw4lx2x.js` (2,332 and 885), `0lm_ikg6v8~uk.js` (8,406 and 3,264), `0f5gej2xr49rk.js` (6,526 and 2,868), `0tfhdb1o6m9y7.js` (28,109 and 9,445) | 118, 99, 46 and 154 gzipped heavier; the other 17 are byte-identical by name and size | **Observed**, by reading each chunk as text for the marks `hud-label`, `plate-mark` and `work-item` |
+| Narrative chunks the fingerprints hit | 8, 1,351,566 on disk, 413,079 gzipped | 8, 1,352,247 on disk, 413,233 gzipped | 154 gzipped heavier, which is `/work`'s hero chunk above and nothing else | **Observed**, the tool's narrative table; **Derived** delta |
+
+**What the JavaScript number says, and the Plate mark is the mover.** **Derived.** Three of the four
+chunks that moved are the three client routes that render a label, the 404, `/` and `/work`, and each
+went from carrying `hud-label` to carrying `plate-mark`: the Plate mark is a larger component than the
+atom it absorbed (three variants behind a union, and every cell uppercased), and each client route
+that renders one compiles its own copy, so the difference lands three times. `/cv` renders its mark
+from a server component and ships none of it. The fourth is the row itself, 46 gzipped heavier with
+the region's labelling and the lists' roles, and GSAP stays in it: the height tween is the one named
+exception and survives the rebuild.
+
+**What the CSS number says.** **Derived.** The rebuilt stylesheets are heavier on disk and lighter on
+the wire, for the reason Story 2-29's reading gives: `var(--token-...)` names are long, repeated and
+drawn from a small set, which gzip does well, and the 2023 literals they replaced were short and
+various. Most of the 366 is not a rewrite at all but a regrouping: with the atom gone, the bundler
+emits the label's two stylesheets as one chunk and the home route's two as one, and a single gzip
+stream over each pair is 468 bytes shorter than two. The row's own stylesheet is 90 heavier: the
+leading rule is two pseudo-elements, the hover is a `:has()` rule, and the marker declares its
+content twice.
+
+**Against the Story 2-29 reading.** **Derived.** That reading's after build carried 21 `.js` and 13
+`.css` at 2,030,896 on disk and 618,513 gzipped, with 26,785 on disk and 8,673 gzipped of `.css`.
+Today's after build is 3,017 heavier on disk and 52 gzipped heavier than that one across the whole
+directory, and 1,072 heavier on disk and 365 gzipped lighter in `.css`. Of the 52, this story's own
+share is 51 by today's own before listing; the remaining 1 is `53df9c0`. The non-3D line names `/cv`,
+118,438 over budget, 84.6 percent, where it was 118,267 over before this story and 118,263 after
+Story 2-29, measured against Story 2-2's 140,000 each time.
+
 ### The 2026-09-21 reading, after Story 2-29
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `wyW2OiV9VvlHmhcctT2lp`, written
@@ -1071,6 +1152,33 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-23 run, after Story 2-31
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `0KxutAmqMQuDuV6dR2omk`. § Every route's
+2026-09-23 reading after Story 2-31 and this section were filed from this run; every other section
+in this file is still the reading its own heading names.
+
+- The narrative bundle is 413,233 bytes gzipped across 8 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 36,767 below the top.
+- 118,881 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0d3ymyos8iowp.js`,
+  `05e6tciymra6v.js` is referenced by no prerendered document. The other 294,352 is on a document at
+  first paint, so the `next/dynamic` boundaries defer far less than their shape suggests.
+- The non-3D path is over budget as measured: 258,438 against 140,000, 118,438 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,577 against 140,000, 36,423 of margin. That
+  decomposition has no line for the 248,792 of JavaScript or the 558 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**One figure in this list moved for a reason the reading above does not state.** **Observed**, the
+tool's itemised preload table on each side. The preloads `/cv` carries fell from 826 to 558 bytes
+because `0fmvj6dex6cl5.css`, the `HudLabel` stylesheet, 268 gzipped, is no longer among them: `/cv`
+preloaded the atom's stylesheet without ever rendering the atom, and the atom is gone. The
+stylesheets the document does reference grew from 4,150 to 4,367, the row's and the label's among
+them.
 
 ### The 2026-09-21 run, after Story 2-29
 
