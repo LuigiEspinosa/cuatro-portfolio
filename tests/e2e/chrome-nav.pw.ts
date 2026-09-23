@@ -297,16 +297,26 @@ const pixelsIn = async (page: Page, area: Region): Promise<string[][]> => {
 };
 
 /**
- * A region's pixels once the page is still: read until two consecutive reads agree.
+ * A region's pixels once the page is still: read until two consecutive reads agree, the shape
+ * `tests/e2e/plate-mark-and-work-item.pw.ts` settled on for a frame still in flight.
  *
- * **Observed 2026-09-23** in the pinned image: one run in three, four pixels on the left edge of the
- * wordmark's first glyph differed between a rest read and a hover read taken a moment later on
- * `/work`, where nothing about the wordmark had changed. That page mounted its torus canvas after
- * hydration, and the compositor re-rasterising text around it is a difference in the screenshot that
- * is not a difference in the style. Reading until two reads agree is the shape
- * `tests/e2e/plate-mark-and-work-item.pw.ts` settled on for the same class of noise. The canvas is
- * never mounted on this project's reduced-motion context since Story 2-33; the reads stay two-deep,
- * because re-rasterisation is not the canvas's alone.
+ * **Still is not settled on a first load, which is why the hover case reads a second one.** Story
+ * 2-32 saw four pixels on the left edge of the wordmark's first glyph differ between a rest read and
+ * a hover read on `/work` and put them on the torus canvas mounting after hydration. Story 2-33 took
+ * the canvas off this context and the same four pixels stayed (x 19, y 44 to 47 of the band at 360).
+ * **Measured 2026-09-23** in the pinned image: this Chromium sets text with subpixel antialiasing,
+ * whose filter tints one column past a glyph's ink box, here the column left of the `C` at the
+ * container's 20px edge. A first load paints the band before its faces arrive (`font-display: swap`),
+ * and the swap repaints the glyph's ink box but not that column. On some first loads the compositor's
+ * frames then disagree in that column and nowhere else: the rest read has the tint, every hover's
+ * frame has the bare ground, and moving off brings the tint back, which fits a spare tile buffer
+ * repainted only where something changed. Through the hover case's own reads in fresh contexts, 20
+ * of 160 first loads failed that way (18 at the `C`, 2 at the `S` of `Suite`) and 0 of 260 second
+ * loads did. A second load's faces read `loaded` in its first animation frame every time they were
+ * read (212 of 212), where a first load's read `unloaded` or `loading` 11 times in 12. Pages with the
+ * stale column turned up at least as often with the hover taken one to two and a half seconds after
+ * load (11 of 70), so no wait for hydration reaches it, and a planted repaint of the whole band
+ * cleared it on every page that had it (3 of 3). Nothing about the hover's style is in those pixels.
  */
 const stillPixelsIn = async (page: Page, area: Region): Promise<string[][]> => {
   let previous = await pixelsIn(page, area);
@@ -1038,8 +1048,29 @@ test.describe('the chrome as Story 2-32 rebuilt it', () => {
   });
 
   test('recolours the rule under the hovered label and nothing else, on a pointer that can hover', async ({ page }) => {
+    // **Read on a second load, and only once every face was in place for its first frame** (see
+    // `stillPixelsIn`): a first load paints the band in the fallback, and on some pages the swap
+    // leaves the compositor a frame whose glyph edge every hover then shows. The statuses are taken
+    // in the document's first animation frame, the rendering update its first paint comes out of.
+    await page.addInitScript(() => {
+      requestAnimationFrame(() => {
+        (window as unknown as { facesAtFirstFrame: string[] }).facesAtFirstFrame = [...document.fonts].map(
+          (face) => `${face.family}: ${face.status}`
+        );
+      });
+    });
     await goTo(page, '/work');
     await facesReady(page);
+    await goTo(page, '/work');
+    await facesReady(page);
+    const faces = await page.evaluate(
+      () => (window as unknown as { facesAtFirstFrame?: string[] }).facesAtFirstFrame ?? []
+    );
+    expect(faces.length, 'no face was read in the first frame, so the check below reads nothing').toBeGreaterThan(0);
+    expect(
+      faces.filter((face) => !face.endsWith(': loaded')),
+      'a face was still loading when the band first painted, so the compositor can still hold its fallback frame'
+    ).toEqual([]);
     // No torus canvas to wait for since Story 2-33: this context asks for reduced motion, under which
     // it is never requested. The pixel reads below still read twice (see `stillPixelsIn`).
     expect(await page.locator('canvas').count(), 'a canvas mounted under reduced motion').toBe(0);

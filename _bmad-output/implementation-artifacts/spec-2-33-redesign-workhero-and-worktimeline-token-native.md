@@ -251,6 +251,36 @@ items booked here.
 
 ## Spec Change Log
 
+**2026-09-23, fix round 1, after the independent verification.** The verifier's plain container run
+on `3986699` read 324 passed and 1 failed: `tests/e2e/chrome-nav.pw.ts`'s hover case saw four pixels
+outside the Suite rule change under hover, x 19, y 44 to 47 of the band on `/work` at 360, the left
+edge of the wordmark's `C`, once in the 24 runs of that case the verifier took. The story owns it: it
+replaced the case's wait for the torus canvas with an assertion that none mounts, and Story 2-32 had
+put these four pixels on that canvas. **Diagnosed in the pinned image rather than guessed.** The
+pixels are the tint the subpixel antialiasing filter lays one column past the `C`'s ink box,
+`(6, 5, 23)` at rest against the bare ground `(6, 5, 9)` under hover. A first load paints the band
+before its faces arrive (the contract's `font-display: swap`), and the swap repaints the glyph's ink
+box, not that column. On some first loads the compositor's frames then disagree in that column and
+nowhere else: the rest read has the tint, every hover on either link shows the ground, and moving off
+brings the tint back, which fits a spare tile buffer repainted only where something changed. Measured
+through the case's own reads in fresh contexts: 20 of 160 first loads failed (18 at the `C`, 2 at the
+`S` of `Suite`) against 0 of 260 second loads; a second load's three faces read `loaded` in its first
+animation frame 212 times in 212, a first load's `unloaded` or `loading` 11 times in 12; pages with
+the stale column turned up at least as often with the hover taken one to two and a half seconds after
+load (11 of 70), so the hydration settle the verifier offered would not have reached it; and a
+planted repaint of the whole band, set and removed a captured frame apart, cleared it on the 3 pages
+of 24 that had it. **The repair is in the case**, since no product code paints those pixels and the
+swap is the contract's by design: the case loads `/work` once so its faces are cached, reads the
+second load, and first asserts that every face read `loaded` in that document's first animation
+frame; `stillPixelsIn`'s docblock states the measured cause where the canvas stood. The comparison,
+its region, its one-pixel margin and its planted control are unchanged, and nothing retries. KEEP:
+the second load and its faces check. Re-run: `corepack pnpm typecheck` clean;
+`corepack pnpm test --run` 58 files and 1,446 tests, all passed; in the pinned image the case alone
+with `--repeat-each=120` read 120 of 120, where the pre-fix case copied out of `3986699` read 119 of
+120 under the same command, its one failure the same four pixels; the plain run with no filter,
+twice, read 325 of 325 in 5.7 minutes each time, the `/work` baseline still `93a1aa4e...` and no
+snapshot written.
+
 ## Design Notes
 
 Each resolution below is an assumption taken from the documents in their precedence order
