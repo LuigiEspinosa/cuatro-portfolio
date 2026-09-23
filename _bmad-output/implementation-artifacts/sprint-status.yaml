@@ -367,7 +367,40 @@ development_status:
   # Waits on the Operator: the spec's manual checks (the hover and the greyscale read at 360 and
   # 1280, a phone, a printed /cv) and DW-110's words.
   2-31-redesign-workitem-and-hudlabel-token-native: done
-  2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog
+  # 2-32 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
+  # pushes. The chrome is rebuilt against the contract. The header is a band across the whole
+  # viewport, sticky and opaque on --token-bg, closed beneath by a --stroke-hair rule in
+  # --token-border and as tall as its content (no block size anywhere, DW-62), with the wordmark
+  # and the destinations in the page's own container inside it (DW-63); html:has(.header-container)
+  # restates its height from the same four tokens as scroll padding. The two destinations are mono
+  # uppercase at --t-2xs and --tr-label, each over a hairline rule at rest that the current route
+  # widens to --stroke-emphasis in the accent and a hover recolours behind (hover: hover), with no
+  # transition (DW-69). The wordmark is the text Cuatro in the display face at wdth 75 and
+  # --w-black where the raster stood, so the chrome-logo row and public/logo.png left and the
+  # hit-target ledger is empty, its refusals exercised against a planted row (DW-68). The container
+  # is min(100%, 1920px) at --page-pad. The contact group is one list of three links naming their
+  # destinations, its stagger re-keyed on the items. The skip link parks one ring's reach inside
+  # the corner, so it rings whole, and its hover is gated (this story's half of DW-115). Celeste's
+  # suppression was already CSS on body#celeste since 681a4c6 (Story 2-1), read green here.
+  # Records: KV-4 retired 2026-09-23; KV-6 reads zero clipped rings with Story 2-33 its only
+  # closer; F-1 closed and clip-skip-link out of the accessibility ledger; KV-5's census re-read at
+  # 360, /work 0 and /cv 0, its retirement filed for Story 2-33 (DW-116). DW-62, 63, 68 and 69
+  # closed; DW-43, 71 and 106 and F-13 and F-20 re-booked unassigned under the restyle ceiling;
+  # DW-117 (the site's name and the wordmark's size and tracking, the Operator's) and DW-118 (the
+  # scroll padding's ceiling on a wrapped row) filed. Weight: 5,342 gzipped lighter overall,
+  # next/image gone with the raster; /cv 111,906 over the 140,000. The /work baseline was
+  # regenerated in the pinned image, sha256 916c5460...
+  # Step-04 review 2026-09-23, six layers run inline because this session had no subagent tool,
+  # so the review is not independent: one patch (a second probe helper and a one-caller context
+  # factory in chrome-nav.pw.ts folded into the file's own probeComputed), no deferral. After it:
+  # typecheck clean, 1,423 unit tests in 58 files, and 308 e2e tests green in 5.9 min
+  # in the pinned image, the /work baseline unchanged.
+  # A local Lighthouse reading in the same image, three runs per URL: /work and /cv 1.00, / 0.96,
+  # every assertion green; /'s one failing audit is DW-113's six ornaments, none of them this
+  # story's.
+  # Waits on the Operator: the spec's manual check (the chrome at 360 and 1280 on a hover-capable
+  # pointer and on a phone) and DW-117's words.
+  2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: review
   2-33-redesign-workhero-and-worktimeline-token-native: backlog
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
   epic-2-retrospective: optional
