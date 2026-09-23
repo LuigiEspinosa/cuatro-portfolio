@@ -1,4 +1,6 @@
+import { resolve } from 'node:path';
 import { render, cleanup } from '@testing-library/react';
+import { compile } from 'sass';
 import { CvIntro } from '../CvIntro';
 
 /**
@@ -87,5 +89,34 @@ describe('the lede agrees with both counts, in either number', () => {
         /\d/
       );
     }
+  });
+});
+
+/**
+ * The stylesheet's hover gate (DW-115), read as it compiles, which is what ships.
+ *
+ * On a touch device a tap paints `:hover` and leaves it painted until the next tap lands elsewhere
+ * (review A-5), so the recolour sits behind the query. **No browser case reads the recolour on these
+ * two links**: `tests/e2e/accessibility-floor.pw.ts` hovers them only to find no ring, and
+ * `tests/e2e/cv.pw.ts` reads their ring against the hover role, so the rule pinned verbatim below is
+ * what holds the recolour unchanged inside the gate.
+ */
+describe('CvIntro.scss', () => {
+  const css = compile(resolve(__dirname, '..', 'CvIntro.scss'), { style: 'compressed' }).css;
+
+  /** A compiled sheet with every `@media (hover: hover)` block cut out. */
+  const ungated = (source: string): string => source.replace(/@media\(hover: hover\)\{(?:[^{}]*\{[^{}]*\})*\}/g, '');
+
+  it('gates its hover on a pointer that can hover, and still has one to gate', () => {
+    expect(ungated(css), 'a :hover rule sits outside @media (hover: hover) (DW-115)').not.toContain(':hover');
+    expect(css).toContain(
+      '@media(hover: hover){.cv-intro__link:hover .cv-intro__rule{border-block-end-color:var(--token-accent-hover)}}'
+    );
+    // The control: an ungated rule on either side of a gated block survives the strip, and only the
+    // gated one goes, so the first expectation is not reading a sheet the strip emptied.
+    expect(
+      ungated('.a:hover{color:red}@media(hover: hover){.b:hover{color:red}}.c:hover{color:red}'),
+      'the gate strip does not remove exactly the gated block'
+    ).toBe('.a:hover{color:red}.c:hover{color:red}');
   });
 });

@@ -119,8 +119,11 @@
 
 // One signal, and it is a recolour. The underline never appears on hover and never changes width:
 // both are layout changes and both reflow the line (`RESTYLE-SPEC.md:200-201`).
-.cv-intro__link:hover .cv-intro__rule {
-  border-block-end-color: var(--token-accent-hover);
+// Gated on a pointer that can hover (DW-115): a tap paints it and leaves it painted (review A-5).
+@media (hover: hover) {
+  .cv-intro__link:hover .cv-intro__rule {
+    border-block-end-color: var(--token-accent-hover);
+  }
 }
 
 // The standard ring (`RESTYLE-SPEC.md:202`, § 4) is the global `:focus-visible` rule in
