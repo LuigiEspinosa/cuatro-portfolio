@@ -330,7 +330,7 @@ development_status:
   # for chunk, and 300 e2e tests green in 5.7 min in the pinned image, the /work baseline unchanged.
   # Waits on the Operator: the spec's manual check (the 404 at 360 and 1280 on a hover-capable
   # pointer and on a phone) and DW-114's words.
-  2-30-redesign-error404-token-native: review
+  2-30-redesign-error404-token-native: done
   # 2-31 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
   # pushes. HudLabel is deleted and folded into the Plate mark as its annotated and side-ruled
   # variants; the props are a union on variant, so a fourth combination does not type-check,
