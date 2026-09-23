@@ -34,6 +34,13 @@ const canAsk = (): boolean => typeof window !== 'undefined' && typeof window.mat
  * for it. `app/providers.tsx`, a consumer since 2026-09-15 (A-17), reads it the same way, in its
  * effect and that effect's dependency array only. Nothing branches on it in render output. A
  * consumer that starts to must guard its own first paint.
+ *
+ * **`WorkHero.tsx` is the one that does, since 2026-09-23 (Story 2-33), and it guards its first
+ * paint as this paragraph asks.** It reads the value only in an effect and its dependency array, as
+ * the others do, and copies it into its own state there: that state is `false` on the server and on
+ * the first client render, so the torus it gates is absent from both and hydration compares equal,
+ * and the render branch moves only once the effect has run. Its GSAP callback no longer reads the
+ * hook at all, its entrance having moved into the stylesheet.
  */
 export function useReduceMotion(): boolean {
   const [reduceMotion, setReduceMotion] = useState(

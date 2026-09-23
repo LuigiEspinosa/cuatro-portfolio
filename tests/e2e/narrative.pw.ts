@@ -571,8 +571,9 @@ test.describe('the narrative still runs', () => {
     //
     // **Measured as a difference between two loads rather than as an absence on one.** `/` is not
     // free of narrative requests on either path: the App Router prefetches the route bundles behind
-    // the hero's two `<Link>`s, and `/work` still carries `three` eagerly, so a flat "no narrative
-    // chunk is requested" assertion fails on something this story does not own. The second link
+    // the hero's two `<Link>`s, and `/work` carried `three` eagerly until Story 2-33 moved its torus
+    // behind one boundary on 2026-09-23, so a flat "no narrative chunk is requested" assertion failed
+    // on something this story does not own. The second link
     // pointed at `/projects`, which carried `three-stdlib` through `TorusKnotCanvas` until Story
     // 2-14 deleted the route on 2026-09-07; it now prefetches a redirect, and repointing the chrome
     // at `/#suite` is Story 2-15's job. That prefetch is filed in

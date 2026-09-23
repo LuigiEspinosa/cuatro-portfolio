@@ -468,6 +468,79 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-23 reading, after Story 2-33
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `3khZaamuAoVzhg3IZI1ZP`, written
+2026-09-23T14:36:11Z, taken on the story's working tree at `70cdbbd` plus its own files, before the
+commit that carries them: the tool's own dirty-inputs row named nine paths (`app/app.scss`, the hero's
+and the timeline's components and stylesheets, `TorusCanvas.tsx`, and the three unit suites that
+read them) and every one of them is this story's. The before reading is the same command against build
+`xX5gFekkt9wODVOqKSW22` (written 2026-09-23T13:37:55Z at `70cdbbd` on `dev`, no measured input
+dirty).
+
+**The before build reproduces the Story 2-32 after figures exactly**: 18 `.js` and 12 `.css` at
+2,017,280 on disk and 611,711 gzipped, with 28,771 on disk and 8,614 gzipped of `.css`, and `/work` at
+486,682 on the wire, one byte of rebuild variance from 486,681. `dev` carried no measured change
+between that reading and this one, so the whole of the movement below is this story's.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,962 | 253,886 | **no** | yes | **Observed** |
+| `/cv` | 23,218 | 252,295 | no | yes | **Observed** |
+| `/_not-found` | 18,793 | 246,248 | no | **no**: Next's own document | **Observed** |
+| `/celeste` | 15,380 | 246,223 | no | yes | **Observed** |
+| `/_global-error` | 9,578 | 188,760 | no | **no**: Next's own document | **Observed** |
+
+**`/work` stopped carrying the WebGL stack**: 232,796 gzipped lighter on the wire, and a non-3D route
+for the first time, because the torus, its scene and every library under them sit behind one
+`next/dynamic` boundary that is rendered only once motion is known to be allowed. Against the before
+build, on the wire: `/cv` 389 heavier, `/celeste` 583 and `/_not-found` 593, and `/_global-error` 2
+lighter. The three that grew did so by the `gsap` split in the table below, which every document
+references; nothing on those routes changed otherwise.
+
+**The whole build, before and after, and the chunks that moved.** **Observed 2026-09-23**, the tool's
+own build table on each side, and every `.next/static/chunks/*.css` and `*.js` weighed with
+`zlib.gzipSync` at level 9 (the tool's method) on both builds.
+
+| Figure | Before, `dev` at `70cdbbd` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 18 `.js`, 12 `.css` | 19 `.js`, 12 `.css` | one `.js` more | **Observed** |
+| Bytes in `.next/static/chunks` | 2,017,280 on disk, 611,711 gzipped | 2,887,265 on disk, 839,985 gzipped | **869,985 heavier on disk, 228,274 gzipped heavier** | **Observed**, tool's build table; **Derived** delta |
+| Every `.css` chunk together | 28,771 on disk, 8,614 gzipped | 28,863 on disk, 8,613 gzipped | **92 heavier on disk, 1 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The global stylesheet | `0wn8wl0h.tdd5.css`, 6,210 on disk, 2,387 gzipped | `059376_8ige11.css`, 6,044 on disk, 2,321 gzipped | 166 lighter on disk, 66 gzipped lighter: `body#work`, its literal and its grid pair | **Observed** |
+| The hero's stylesheet | `00oxvo_zdq~fx.css`, 777 on disk, 412 gzipped | `03_4rzt07q3yp.css`, 1,025 on disk, 472 gzipped | 248 heavier on disk, 60 gzipped heavier: the display row, the boundary, the two-column rule and its gate, the ratio, the entrance keyframe and its reduced-motion block | **Observed** |
+| The timeline's and the row's stylesheet | `15~vasjft7hvg.css`, 3,137 on disk, 861 gzipped | `0aa~uxd40vt21.css`, 3,147 on disk, 866 gzipped | 10 heavier on disk, 5 gzipped heavier: the last row's separator dropped, the inline padding gone | **Observed** |
+| Every `.js` chunk together | 1,988,509 on disk, 603,097 gzipped | 2,858,402 on disk, 831,372 gzipped | **869,893 heavier on disk, 228,275 gzipped heavier** | **Observed** per chunk; **Derived** total and delta |
+| The three/R3F chunk `/work` referenced, shared with the gem | `0g0oqlx4fsym~.js`, 870,402 on disk, 228,423 gzipped, "three, @react-three/fiber" on `/work` | two copies, `0vynw~tou1f72.js` and `0w~ig71whmz0p.js`, 895,063 on disk each, 234,553 and 234,552 gzipped, "three, @react-three/fiber, @react-three/drei", both loaded on demand | 240,682 gzipped heavier in the build; **no document references either** | **Observed**. The copies are byte-identical for 870,361 characters and differ in the last 24,702, where the `/work` group's also carries the `three` namespace and a `useThree` re-export drei's orbit controls reach for (DW-120) |
+| The torus's own chunk | none (its modules were in `/work`'s page chunks) | `0f-49j-pqi~h-.js`, 16,685 on disk, 5,117 gzipped, the torus, the orbit controls and `three-stdlib`'s `OrbitControls` | 5,117 gzipped, on demand | **Observed** |
+| The two `Scene` chunks and `three-stdlib` on `/work` | `0d3ymyos8iowp.js` 6,500, `05e6tciymra6v.js` 6,495, `0_z_ou0-lbari.js` 9,446 gzipped | none | 22,441 gzipped lighter | **Observed** |
+| `gsap` and `ScrollTrigger`, on every document | `0lp2sdt4pg9tq.js`, 113,435 on disk, 43,904 gzipped, the two together | `06wq285.0v7oj.js` 27,147 and `12pmsiouzm_k5.js` 17,373 gzipped, split | 616 gzipped heavier across the pair, paid on every route | **Observed**. The timeline no longer imports `ScrollTrigger`, and the bundler now groups the two by different sets of importers |
+| The two routes' own page chunks | `173-m8hv7hjla.js`, 6,520 on disk, 2,871 gzipped | `15w3jb3pjlugp.js`, 11,318 on disk, 4,513 gzipped, on `/work`, carrying the hero and the torus's boundary; `0hr.q4x7~~l6g.js`, 6,090 on disk, 2,670 gzipped, on `/cv` | 4,312 gzipped heavier: the hero's code stands in a chunk of its own now, where it rode with the libraries before | **Observed**, the after side by reading each document's references; the before chunk's contents were not read |
+| The home chunk | `0lvxja6x.ejpu.js`, 8,498 on disk, 3,278 gzipped | `0fs5q.~.e-s03.js`, 8,465 on disk, 3,267 gzipped | 11 gzipped lighter: module ids renumbered | **Observed** |
+| Narrative chunks the fingerprints hit | 7, 1,346,880 on disk, 410,855 gzipped, 291,974 of it on `/work` at first paint | 7, 2,205,918 on disk, 634,829 gzipped, **none on a document but `gsap`, `ScrollTrigger` and `lenis`**, 580,108 on demand | 223,974 gzipped heavier in the build | **Observed**, the tool's narrative table; **Derived** delta |
+
+**What the JavaScript number says.** **Derived.** Per route, the story took 232,796 gzipped off
+`/work`'s first paint and added under 600 to the other three documents. Per build, the directory grew
+by 228,275 gzipped, and all of it is one library emitted twice: before the story `/work` imported its
+three/R3F chunk statically and the homepage's gem boundary happened to resolve to the same file; with
+both scenes behind their own boundary, Turbopack emits one large chunk per boundary. A visitor on `/`
+fetches one copy, as before; a visitor on `/work` with motion allowed fetches the other, on demand;
+a visitor on `/work` under reduced motion fetches neither; and a session that visits both scenes
+fetches the library twice, which is the cost DW-120 files. The rows above sum to the 228,275 exactly.
+
+**What the CSS number says.** **Derived.** The hero's sheet grew by its rebuild and the global sheet
+shrank by `body#work`, one gzipped byte apart in total.
+
+**Against the Story 2-32 reading.** **Derived.** Today's before build reproduces that reading's after
+build exactly, so the whole of today's movement is this story's: 869,985 heavier on disk and 228,274
+gzipped heavier across the directory, 92 heavier on disk and 1 gzipped lighter in `.css`. **The
+non-3D line names `/work` now**, 113,886 over budget, 81.3 percent, where Story 2-32's reading named
+`/cv` at 111,906 over; `/cv` reads 112,295 over today. `/work` became the heaviest non-3D route by
+leaving the 3D set, not by growing: it is 232,796 gzipped lighter than it was. Measured against Story
+2-2's 140,000 each time. The narrative total, 634,829, is over the top of `EXPERIENCE.md:946`'s
+estimate by the duplication above and by nothing that grew; the trade that estimate names was not
+weighed on a figure that counts one library twice (DW-120).
+
 ### The 2026-09-23 reading, after Story 2-32
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `N4qdBF98aHF4vMMIrE44u`, written
@@ -1308,6 +1381,34 @@ if a fingerprint above hits it.
 
 ## Findings
 
+### The 2026-09-23 run, after Story 2-33
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `3khZaamuAoVzhg3IZI1ZP`. § Every route's
+2026-09-23 reading after Story 2-33 and this section were filed from this run; every other section
+in this file is still the reading its own heading names.
+
+- The narrative bundle is 634,829 bytes gzipped across 7 chunks, against an estimate of 300,000 to
+  450,000. That is 184,829 over the top of the range.
+- 580,108 bytes of that is genuinely deferred: `0vynw~tou1f72.js`, `0w~ig71whmz0p.js`,
+  `10mmj2_fz7c58.js`, `0f-49j-pqi~h-.js` is referenced by no prerendered document. The other 54,721
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 253,886 against 140,000, 113,886 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,670 against 140,000, 36,330 of margin. That
+  decomposition has no line for the 243,875 of JavaScript or the 830 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Two figures in this list moved for reasons the reading above states.** **Observed**, the tool's
+tables on each side. The narrative total is 223,974 heavier because the three/R3F library is emitted
+once per dynamic boundary (DW-120), and the deferred share is 580,108 where it was 118,881 because
+`/work`'s document references no WebGL chunk; the 54,721 left at first paint is `gsap`,
+`ScrollTrigger` and `lenis`, on every route (DW-36). The route the non-3D line names moved from `/cv`
+to `/work`, which left the 3D set.
+
 ### The 2026-09-23 run, after Story 2-32
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `N4qdBF98aHF4vMMIrE44u`. § Every route's
@@ -1622,7 +1723,7 @@ measurement that covers everything.
 | The whole reading is one build, and two builds from one commit are not byte-identical | Three builds were taken from commit `9662d03` during this story. `/celeste` read 283,949, then 283,942, then 283,945, and the narrative total 418,743, then 418,757 twice. Chunk file names changed completely between the first and the second and not at all between the second and the third, so a rebuild may or may not move them and neither outcome is a defect. The determinism this file asserts is of the tool against one build, not of the build against itself, and every figure and chunk name printed here is good for `BUILD_ID` `uXKXS8QHdHPNgUPIdvcnq` only | **Observed 2026-08-29** |
 | The tool re-reads everything on every call, and its cost grows with the build | It walks `app/` and `components/` once per asset and once per orphan check, and gzips each chunk once for the build table and again for each document that references it. On this build that is a second or two and nobody notices. On a build with many more routes it would be quadratic in the wrong place. It is a reading run by hand, not a gate on a runner, so the cost is recorded rather than optimised | **Decision.** Story 2-2 scope |
 | No browser was involved | Every figure is a file on disk weighed by a script. Nothing here says what a browser prioritised, what it fetched first, what it fetched at all, or how long any of it took. SM-1 measures Suite Directory interactive, which is a browser measurement this file does not make and does not replace | **Decision.** Story 2-2 scope |
-| A route's figure counts what its document references, and not what the router prefetches next | **Added 2026-09-07.** `/` reads 295,154 and carries no WebGL chunk, which is a true statement about first paint and an incomplete one about a session. `HomeLayout` renders `<Link href='/work'>` and `<Link href='/projects'>`, and the App Router prefetches both route bundles once they are in the viewport, so a homepage visitor's browser does fetch `three` and `three-stdlib` shortly after hydration. Observed in the pinned Playwright container by recording every script request on `/` and subtracting the set the document names. The tool reads prerendered documents and cannot see this; closing the `TorusCanvas` and `TorusKnotCanvas` boundaries would shrink the homepage's real transfer as well as those two routes' | **Observed 2026-09-07.** Filed in `deferred-work.md` as DW-38 |
+| A route's figure counts what its document references, and not what the router prefetches next | **Added 2026-09-07.** `/` reads 295,154 and carries no WebGL chunk, which is a true statement about first paint and an incomplete one about a session. `HomeLayout` renders `<Link href='/work'>` and `<Link href='/projects'>`, and the App Router prefetches both route bundles once they are in the viewport, so a homepage visitor's browser does fetch `three` and `three-stdlib` shortly after hydration. Observed in the pinned Playwright container by recording every script request on `/` and subtracting the set the document names. The tool reads prerendered documents and cannot see this; closing the `TorusCanvas` and `TorusKnotCanvas` boundaries would shrink the homepage's real transfer as well as those two routes'. **Amended 2026-09-23**: `TorusKnotCanvas` left with `/projects` (Story 2-14), and Story 2-33 closed the `TorusCanvas` boundary, so `/work`'s route bundle carries no WebGL chunk; the homepage's prefetch was not re-measured, and the row stands until it is | **Observed 2026-09-07.** Filed in `deferred-work.md` as DW-38 |
 | The `/` figure is the document, not the session | 625,823 is what `/` references at first paint. It excluded `gem-fallback.png`, which only a visitor without WebGL fetched, and it excludes every route chunk a client-side navigation would pull afterwards. **Amended 2026-09-07:** the exclusion no longer has a subject. Story 2-13 deleted that file and the non-3D path renders no image at all, so the figure is unchanged and there is no longer an image outside it. What a non-3D visitor now fetches beyond this document is strictly less than what a default-path one does, and `tests/e2e/front-door.pw.ts` measures the difference on all four triggers | **Decision**, amended |
 | `/` is no longer among the prerendered documents this file weighs | **Added 2026-09-07.** Story 2-13 reads the `Save-Data` request header in `app/page.tsx`, on an Operator ruling that a trigger answerable before the document paints must be answered there. `headers()` is a dynamic API, so `/` is server-rendered on demand: the build prints `ƒ /`, `.next/server/app` holds seven documents rather than eight, and this tool, which takes a route's assets from its own prerendered HTML, has no file to read for the homepage. Every `/` figure in this file is therefore the reading of 2026-08-29 and cannot be re-taken by `corepack node ops/asset-budget.mjs` alone; re-measuring it needs a request against a running server, which is how `tests/e2e/narrative.pw.ts` already reads the same document. The tool still runs, refusing only an empty set, and nothing gates on either | **Observed 2026-09-07.** Filed in `deferred-work.md` as DW-50 |
 | Nothing gates on the figures | `.github/workflows/ci.yml` gained no job. Two things here are pinned by `ops/__tests__/asset-budget.test.ts` and cannot drift silently, the three contract-face figures and the fingerprint table, and everything else in this file goes stale invisibly until someone re-runs the tool. Story 2-34 is the gate story | **Decision.** Story 2-2 boundary |

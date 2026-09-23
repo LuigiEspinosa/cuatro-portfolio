@@ -801,9 +801,16 @@ describe('the assertion is sourced and scoped the way the record says', () => {
 
     const kv5 = indexRow('KV-5');
     expect(kv5, 'the KV-5 index row does not name the rule it breaches').toContain('AD-19');
-    expect(kv5, 'the KV-5 index row is not Open').toContain('**Open**');
-    expect(kv5, 'the KV-5 index row names no closing story').toContain('Stories 2-31, 2-33 and 2-14');
-    expect(kv5, 'the KV-5 index row claims a retirement date').toContain('_not retired_');
+    // **Retired on 2026-09-23 by Story 2-33**, which rebuilt the `/work` hero, the last half the entry
+    // was open on, and widened `tests/e2e/hit-target-floor.pw.ts`'s A-5 arm to every element with a box
+    // in the same commit (DW-116). "Stories 2-31, 2-33 and 2-14" were pinned here as the closing list
+    // until then; the index row names the story that retired it, KV-4's shape, and the entry keeps the
+    // three in its history. DW-57 and DW-66's title and closing-list corrections landed with it.
+    expect(kv5, 'the KV-5 index row is not Retired').toContain('**Retired**');
+    expect(kv5, 'the KV-5 index row does not name the story that retired it').toContain('Story 2-33');
+    expect(kv5, 'the KV-5 index row carries no retirement date').toContain('2026-09-23');
+    expect(kv5, 'the KV-5 index row still reads as not retired').not.toContain('_not retired_');
+    expect(kv5, 'the KV-5 index row still counts the elements it was opened over').not.toContain('Thirty-six');
 
     // The register's own rule is that the index is the copy, so a closing story named in an index
     // row that no entry names would be a row nobody derived. Both are read back off the entries.
@@ -816,9 +823,12 @@ describe('the assertion is sourced and scoped the way the record says', () => {
     // The entry is authoritative and the index is its copy, so the retirement is read off both.
     expect(entryOf('KV-4'), 'the KV-4 entry is not marked Retired').toMatch(/^\| Status \| \*\*Retired\*\*/m);
     expect(entryOf('KV-4'), 'the KV-4 entry carries no retirement date').toMatch(/^\| Retired on \| \*\*2026-09-23\*\*/m);
-    expect(entryOf('KV-5'), "the KV-5 entry does not name the index row's closing stories").toContain(
+    expect(entryOf('KV-5'), 'the KV-5 entry lost the closing stories its history names').toContain(
       'Stories 2-31, 2-33 and 2-14'
     );
+    expect(entryOf('KV-5'), 'the KV-5 entry is not marked Retired').toMatch(/^\| Status \| \*\*Retired\*\*/m);
+    expect(entryOf('KV-5'), 'the KV-5 entry carries no retirement date').toMatch(/^\| Retired on \| \*\*2026-09-23\*\*/m);
+    expect(entryOf('KV-5'), "the KV-5 entry does not name the story that retired it").toContain('Story 2-33');
   });
 
   it('writes story ids hyphenated in the text this story authored', () => {

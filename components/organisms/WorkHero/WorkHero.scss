@@ -1,51 +1,108 @@
+// The `/work` hero, rebuilt token-native (Story 2-33, `DESIGN.md` § Components → Work hero and
+// timeline, `EXPERIENCE.md` § Work hero and work timeline, `RESTYLE-SPEC.md` § 6 and § 8).
+//
+// The 2023 file read six aliases, wrote its lengths and tracking by hand, stacked its two columns on
+// a bare `z-index: 2` (the ledger's `z-work-hero`), held a `42vh` floor and clipped with
+// `overflow: hidden`. This file names contract roles directly, so
+// `app/__tests__/anchor-contract.test.ts` lists it as token-native and the alias layer in
+// `app/app.scss` is not in its path at all.
+//
+// **It declares no custom property of its own**, which keeps every one of the Hub's in `app/app.scss`.
+// The two entrance delays are plain `animation-delay` values for the same reason, the
+// `HomeLayout.scss` and `Error404.scss` precedent: the contract mints no delay role.
+
+// ── The surface ───────────────────────────────────────────────────────────────
+//
+// **Display line left, canvas right, closed beneath by the boundary rule** (`DESIGN.md`). One column
+// at the 360 floor, the canvas box following the text in the order the document has it. It pads in
+// the block axis only: it sits inside `.container`, which pays the inline gutter once
+// (`RESTYLE-SPEC.md` § 2, the row is flush and the page is padded), and `CvIntro.scss` pads `/cv`'s
+// opening block with the same two steps. Content-high, never a held viewport fraction. The one column
+// is `minmax(0, 1fr)` rather than the implicit `auto` track, so a word longer than the column cannot
+// widen it past the viewport.
 .work-hero {
-  position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-lg);
   align-items: center;
-  min-height: 42vh;
-  padding: 5rem var(--page-padding) 3rem;
-  border-bottom: 1px solid var(--accent-dim);
-  overflow: hidden;
+  padding-block: var(--s-2xl) var(--s-xl);
+  border-block-end: var(--stroke-boundary) solid var(--token-border-interactive);
+}
 
-  &__text {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    z-index: 2;
+// **Three fifths to the display line, two to the canvas, where the canvas is drawn.** Measured in the
+// pinned image on 2026-09-23: `DEVELOPER` sets 336.9px wide at the display size 768 wide resolves to,
+// and equal columns there give the line 325.6px, so the line takes the larger share, as the page's
+// primary voice. 768 is the breakpoint this file and `HomeLayout.scss` already used. Under reduced
+// motion the canvas box is omitted below, so the line keeps the whole width at every size.
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .work-hero {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.work-hero__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-md);
+}
+
+// ── The display line ──────────────────────────────────────────────────────────
+//
+// `RESTYLE-SPEC.md` § 6's Display row and `DESIGN.md`'s display values: the display face at its
+// default width, the display step, the heaviest weight, tight leading and negative tracking,
+// uppercase as structure, in the text role. The break is the floor below 360 (`CvIntro.scss`'s
+// name sets it the same way): a word that could not break would paint past the edge, which is A-5
+// outright rather than a typographic preference.
+.work-hero__heading {
+  font-family: var(--f-display);
+  font-size: var(--t-display);
+  font-weight: var(--w-black);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tr-display);
+  text-transform: uppercase;
+  overflow-wrap: break-word;
+  color: var(--token-text);
+  animation: work-hero-enter var(--dur-minor) var(--ease-entrance) 100ms both;
+}
+
+// The meta line is a Plate mark, which carries its own treatment; this wrapper only takes it into
+// the entrance, after the heading, in the order the two 2023 tweens had.
+.work-hero__meta {
+  animation: work-hero-enter var(--dur-minor) var(--ease-entrance) 400ms both;
+}
+
+// ── The canvas box ────────────────────────────────────────────────────────────
+//
+// Reserved by ratio, so nothing moves when the torus arrives after hydration and no length is
+// written: at 360 it is the 2023 box exactly, 320 wide and 240 tall. The torus draws itself
+// `aria-hidden` and out of the tab order (`Scene.tsx`); this box carries nothing of its own.
+.work-hero__canvas-wrap {
+  aspect-ratio: 4 / 3;
+}
+
+// ── The entrance ──────────────────────────────────────────────────────────────
+//
+// The route's one entrance (`EXPERIENCE.md` § Motion), on opacity alone, replacing two GSAP tweens
+// that slid the heading in from 40px and ran only after hydration, so the served heading vanished
+// and came back. Only the `from` is declared: the base state is the final state, and a document with
+// no script is already at it once the keyframe has run.
+@keyframes work-hero-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+// **Reduced motion: present at first paint, and no canvas box.** Stated rather than relied on: the
+// contract collapses the durations to 1ms under the same query, but a 1ms run still waits out its
+// delay. The torus is never rendered under this preference (`WorkHero.tsx`), and an empty section is
+// omitted rather than rendered empty (`RESTYLE-SPEC.md` § 8).
+@media (prefers-reduced-motion: reduce) {
+  .work-hero__heading,
+  .work-hero__meta {
+    animation: none;
   }
 
-  &__heading {
-    font-family: var(--monument-bold);
-    font-weight: var(--w-black); // set by hand: --monument-bold's alias carries family, not weight
-    font-size: clamp(2rem, 4vw, 3.5rem);
-    line-height: 1.1;
-    margin: 0;
-    color: var(--light-gray-color);
-  }
-
-  &__meta {
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    margin: 0;
-  }
-
-  &__canvas-wrap {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 420px;
-    z-index: 2;
-  }
-
-  @media (max-width: 767px) {
-    grid-template-columns: 1fr;
-    min-height: auto;
-
-    &__canvas-wrap {
-      height: 240px;
-    }
+  .work-hero__canvas-wrap {
+    display: none;
   }
 }

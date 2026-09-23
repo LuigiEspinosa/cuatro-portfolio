@@ -39,7 +39,7 @@ a seventh job would fail the two suites that pin the job names as an exact set.
 | The route set | Is every route `app/` serves either a swept surface or a declared non-Hub route | **Decision.** Derived from the filesystem, so a route a later story adds cannot go unswept while KV-4 claims every route is covered |
 | The ledger, forwards | Does anything under the floor escape the ledger | **Decision.** An unlisted breach fails the build naming the route, a stable selector and the measured box |
 | The ledger, backwards | Does the ledger still describe the tree | **Decision.** A listed element that now clears the floor fails as a **stale row**; so does a row that has stopped matching **on any one of the routes it lists**; and so does a row that covers a different number of elements than it says. The list can only shrink |
-| A-5 | Does any measured element's right **or left** edge sit outside the viewport at 360 wide | **Decision.** `EXPERIENCE.md:764`, less the Status half, which Story 2-10 asserts in `tests/e2e/status-mark.pw.ts` because the mark is not interactive and this sweep never reaches it |
+| A-5 | Does any measured element's right **or left** edge sit outside the viewport at 360 wide; **and since 2026-09-23, does any element with a box, interactive or not** | **Decision.** `EXPERIENCE.md:764`, less the Status half, which Story 2-10 asserts in `tests/e2e/status-mark.pw.ts` because the mark is not interactive and this sweep never reaches it. **Widened by Story 2-33**, which retired KV-5 on it: `outsideTheViewport` reads every element with a box on every surface, both edges at the same slack, and a standing case shows it reporting two planted blocks the interactive arm cannot see |
 | The count | Did each surface yield exactly what it is registered to yield | **Decision.** The three per-surface counts are pinned rather than bounded, and the guard is a predicate driven by a standing case with synthetic counts rather than an inline assertion inside the sweep |
 
 **The floor is read, never written.** **Decision.** It comes off `--tap` on `:root` in the
@@ -601,7 +601,7 @@ that covers everything.
 | Not asserted | Why not | Owner |
 |---|---|---|
 | A plain inline element padded to exactly the floor | It measures 44.00 and passes, as the table above shows. Closing it means asserting something about `display` or about overlap rather than about a box, which is a different predicate from the one AD-19 states | **Decision.** Story 2-8 scope. Story 2-32 asserts the shape (`min-height` plus `inline-flex` plus `padding-inline`) at the surface it rebuilds (`epics.md:3579-3580`) |
-| Non-interactive elements against A-5 | The sweep measures interactive elements, and A-5 is asserted on the right edge of each one. **The Hub does overflow at 360 today, on elements that are not targets**, and that is measured rather than assumed: see the row below | **Decision.** Filed as deferred work. Story 2-9 repaired the stylesheet half; Stories 2-31, 2-33 and 2-14 own the elements that still sit outside the viewport |
+| Non-interactive elements against A-5 | **Superseded in place by Story 2-33 on 2026-09-23: asserted.** The sweep measured interactive elements, and A-5 was asserted on the right edge of each one, while the Hub overflowed at 360 on elements that were not targets, measured rather than assumed in the section below. With the last of those gone, the A-5 arm reads every element with a box (§ What is asserted), and nothing sits past either edge on any surface | **Decision.** Filed as deferred work until then. Story 2-9 repaired the stylesheet half; Stories 2-31, 2-33 and 2-14 owned the elements; Story 2-33 widened the arm and retired KV-5 |
 | The Status mark's axes, and Status truncation | Not interactive (`EXPERIENCE.md:351`), so this sweep never reaches the mark and the three structural axes are a different predicate needing a different instrument. **Closed elsewhere, not still open:** Story 2-10 built that instrument on 2026-09-06 as `tests/e2e/status-mark.pw.ts`, recorded in `ops/status-mark-axes.md`. Nothing moved in this file's ledger or surfaces, because a non-interactive element is outside the floor by property rather than by exemption | **Decision.** Story 2-10, **2026-09-06** |
 | Any viewport other than 360 x 800 | AD-19 states the floor at 360, and a second Playwright project is a change to the harness rather than to this assertion | **Decision.** Story 2-8 scope |
 | Whether a target is reachable by keyboard, or has a focus ring | A different requirement with a different instrument | **Decision.** Story 2-26 |
@@ -741,6 +741,27 @@ the hero's column is fed a wider box and fits in it, which is what `DESIGN.md` s
 container, that it is what makes the 360 floor fail. KV-5 has nothing measured in breach, and its
 retirement, with this sweep's A-5 arm widened past interactive elements as that entry asks, is filed
 as DW-116 rather than taken by the story that measured it.
+
+**Re-measured on every surface on 2026-09-23 by Story 2-33, and asserted from then on.** That story
+rebuilt `WorkHero.scss` against the contract and widened the Story 2-8 sweep's A-5 arm to every element
+with a box, which is the act KV-5's entry asked the last closing story to take (DW-116). **Observed
+2026-09-23** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by `outsideTheViewport` in
+`tests/e2e/hit-target-floor.pw.ts`, both edges, every element with a box, the project's reduced-motion
+context:
+
+| Surface | Elements of any kind past an edge | Nature |
+|---|---|---|
+| `/` | **0** | **Observed 2026-09-23** |
+| `/work` | **0** | **Observed 2026-09-23** |
+| `/cv` | **0** | **Observed 2026-09-23** |
+| `/celeste` | **0** | **Observed 2026-09-23** |
+| `/a-route-that-does-not-exist` | **0** | **Observed 2026-09-23** |
+
+**KV-5 is retired on this reading**, and the instrument is what keeps it retired: an element of any
+kind that lands past either edge now fails the build naming its box, where until this story it was a
+register cell a later census had to notice. On a context that allows motion the torus draws inside
+the hero's canvas box, and `tests/e2e/work-hero.pw.ts` reads the hero's own elements inside the
+viewport at 360 with it drawn.
 
 **This section's 36 is not § The surfaces swept's 36, and the collision is an accident of timing.**
 That one is the number of interactive elements the floor **measures**, across four surfaces, and it

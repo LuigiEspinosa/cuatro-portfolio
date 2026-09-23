@@ -1,40 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { WorkItem } from '@/components/atoms/WorkItem/WorkItem';
-import { useGsapContext } from '@/hooks/useGsapContext';
 import { work } from '@/content/work';
 import './WorkTimeline.scss';
 
-gsap.registerPlugin(ScrollTrigger);
-
+/**
+ * The work timeline, mounted by `/work` and by `/cv` (Stories 2-16 and 2-33).
+ *
+ * **The rows simply exist.** Until Story 2-33 a `ScrollTrigger.batch` faded every row up from 40px as
+ * it scrolled into view, with no motion preference read: the universal scroll-triggered fade-up
+ * `EXPERIENCE.md` § Motion bans, and a second entrance on a route whose one entrance is the hero's.
+ * Deleting it was ruled a presentation change on 2026-09-15, so the structure, the props and the
+ * disclosure Story 2-16 built are what they were.
+ */
 export function WorkTimeline() {
   const [openId, setOpenId] = useState<string | null>(work[0]?.id ?? null);
-
-  // If the list grows beyond 20 entries, the initial batch on page
-  // load many animate too many times simultaneously. Add a `batchMax` option then.
-  const listRef = useGsapContext<HTMLUListElement>(() => {
-    ScrollTrigger.batch('.work-item', {
-      onEnter: (batch) =>
-        gsap.from(batch, {
-          y: 40,
-          opacity: 0,
-          stagger: 0.1,
-          duration: 0.6,
-          ease: 'power2.out',
-        }),
-      start: 'top 85%',
-    });
-  }, []);
 
   const handleToggle = (id: string) => {
     setOpenId((prev) => (prev === id ? null : id));
   };
 
   return (
-    <ul className='work-timeline' ref={listRef}>
+    // `role='list'` because `list-style: none` drops list semantics in WebKit, so a screen reader
+    // there would not hear a list of four (the Story 2-31 and 2-32 precedent).
+    <ul className='work-timeline' role='list'>
       {work.map((entry) => (
         <li key={entry.id}>
           <WorkItem

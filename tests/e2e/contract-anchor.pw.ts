@@ -1063,13 +1063,18 @@ test('the Hub renders the token roles its alias layer maps its own names onto', 
   expect(roles['--token-text'], '--token-text and --token-bg resolve to the same colour').not.toBe(roles['--token-bg']);
 
   // `body` takes its colour from `--white-color`, which is `--token-text` now. `body#work`
-  // (`app/app.scss`) still paints its own background over `background: var(--black-color)` at a
-  // higher specificity, and that `#0a000f` literal belongs to UX-DR10 and the Epic 2 redesign
-  // rather than to this step, so it is asserted unmoved.
+  // (`app/app.scss`) painted its own background over `background: var(--black-color)` at a higher
+  // specificity, and that `#0a000f` literal belonged to UX-DR10 and the Epic 2 redesign rather than
+  // to this step, so it was asserted unmoved here. **Story 2-33 was that redesign**: it deleted
+  // `body#work` on 2026-09-23, and `/work` paints the base rule's ground, which is `--token-bg`
+  // through `--black-color`, so the same read is asserted against the role.
   expect(await computedStyleValue(page, 'body', 'color'), 'body no longer paints --token-text').toBe(
     roles['--token-text']
   );
-  expect(await computedStyleValue(page, 'body', 'background-color')).toBe('rgb(10, 0, 15)');
+  expect(
+    await computedStyleValue(page, 'body', 'background-color'),
+    '/work paints a ground other than the base rule\'s --token-bg, so an override is back'
+  ).toBe(roles['--token-bg']);
 
   // Each of the four against the role it names, read on `:root` in the same page. Both sides are
   // custom property token streams here, so this comparison is exact rather than canonicalised,
@@ -1087,7 +1092,8 @@ test('the Hub renders the token roles its alias layer maps its own names onto', 
   expect(drift, `an alias no longer resolves to the role it names:\n${drift.join('\n')}`).toEqual([]);
 
   // `--black-color` is read on a probe rather than on `body`, because **the base `body`
-  // background is not visible on `/work`**, the one URL this file visits:
+  // background was not visible on `/work`**, the one URL this file visits, until Story 2-33 deleted
+  // `body#work` on 2026-09-23 (the read above takes it on `body` since). As first written:
   // `body#work` overrides it (`app/app.scss`, which listed `body#projects` beside it until Story
   // 2-14 redirected that route), `body[id='']` overrides
   // it for `/` (`components/organisms/HomeLayout/HomeLayout.scss:1-2`) and `#celeste` overrides

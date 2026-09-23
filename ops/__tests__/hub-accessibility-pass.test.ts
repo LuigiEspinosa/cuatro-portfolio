@@ -68,10 +68,17 @@ interface Row {
   closedBy: string;
 }
 
-/** The exemption table in the record. */
+/**
+ * The exemption table in the record.
+ *
+ * **Zero rows is a reading, not a failure, since 2026-09-23**, when Story 2-33 deleted the last two
+ * and KV-6 retired, the shape `ops/__tests__/hit-target-floor.test.ts` took for its own empty ledger
+ * with Story 2-32. What still fails is a record this cannot read: no section, two sections, or no
+ * table under the heading, each of which `section` and `table` refuse. A header with no rows beneath
+ * it is the empty ledger, and the agreement case below holds the spec's literal to the same answer.
+ */
 const recordRows = (markdown: string): Row[] => {
   const { rows } = table(section(markdown, 'The exemption ledger'), 'Id');
-  if (rows.length === 0) throw new Error(`${RECORD_REL}: the exemption table has zero rows, so there is nothing to compare`);
   return rows.map((cells: string[]) => ({
     id: unticked(cells[0]),
     check: unticked(cells[1]),
@@ -93,7 +100,12 @@ const specRows = (source: string): Row[] => {
 
   const objects = [...block.matchAll(/\{\n([\s\S]*?)\n {2}\},/g)].map((match) => match[1]);
   const declared = [...block.matchAll(/^\s*id: '/gm)].length;
-  if (objects.length === 0) throw new Error(`${SPEC_REL}: the EXEMPTIONS literal parsed to zero rows, so there is nothing to compare`);
+  // **An empty literal is the empty ledger** (Story 2-33): zero objects parsed from a block that
+  // declares zero ids and holds no object at all, comments aside. A block holding an object the parser
+  // missed still fails, here or below, as a reflow rather than as agreement over nothing.
+  if (objects.length === 0 && /\{/.test(block.replace(/\/\/.*$/gm, ''))) {
+    throw new Error(`${SPEC_REL}: the EXEMPTIONS literal holds an object that parsed to no row. This is a reflow.`);
+  }
   if (objects.length !== declared) {
     throw new Error(
       `${SPEC_REL}: the EXEMPTIONS literal parsed to ${objects.length} rows and declares ${declared} ids. The object ` +
@@ -267,14 +279,15 @@ describe('the record and the exemption ledger agree in both directions', () => {
   const fromRecord = recordRows(record);
   const fromSpec = specRows(spec);
 
-  it('parses a real table and a real literal, so the comparison below is not over nothing', () => {
-    expect(fromRecord.length, `${RECORD_REL} exempts nothing`).toBeGreaterThan(0);
-    expect(fromSpec.length, `${SPEC_REL} exempts nothing`).toBeGreaterThan(0);
-    // A row that is really in both files. `z-work-hero` outlives the rest: Story 2-33 closes it,
-    // the last of the redesigns to land. Until 2026-09-14 the pin was `z-scanline`, the row whose
-    // literal equalled a token by value; that reason left with the row when Story 2-28 rewrote it.
-    expect(fromRecord.map((row) => row.id)).toContain('z-work-hero');
-    expect(fromSpec.map((row) => row.id)).toContain('z-work-hero');
+  it('parses a real table and a real literal, both empty since KV-6 retired, so the comparison below is over the files', () => {
+    // **Both ledgers read empty since 2026-09-23**, when Story 2-33 deleted `z-work-hero` and
+    // `gradient-work-ground` with the hero and the `/work` ground they sat in. Until then a row really in
+    // both files was pinned here (`z-work-hero` last, `z-scanline` until 2026-09-14). An empty ledger is
+    // read from the real files, not assumed: both parsers above throw on a record or a literal they
+    // cannot find, and the planted cases below show each of them reading rows when rows are there.
+    expect(fromRecord, `${RECORD_REL} exempts something again after KV-6 retired`).toEqual([]);
+    expect(fromSpec, `${SPEC_REL} exempts something again after KV-6 retired`).toEqual([]);
+    expect(record, `${RECORD_REL} does not say in words that its ledger is empty`).toContain('The ledger is empty since 2026-09-23');
     for (const row of fromSpec) {
       expect(Number.isInteger(row.count), `"${row.id}" parsed a non-integer count`).toBe(true);
       expect(row.count, `"${row.id}" counts nothing`).toBeGreaterThan(0);
@@ -321,9 +334,12 @@ describe('the record and the exemption ledger agree in both directions', () => {
 
   it('refuses a record or a literal it could not read, rather than comparing a short list', () => {
     expect(() => recordRows('# nothing\n')).toThrow(/no "## The exemption ledger" section/);
-    expect(() => recordRows(fragment([]))).toThrow(/zero rows/);
+    // A header with no rows is the empty ledger, and a literal of comments alone is too (Story 2-33);
+    // what is refused is a table or a literal that cannot be read, and an object the parser missed.
+    expect(recordRows(fragment([])), 'a header-only table is not read as the empty ledger').toEqual([]);
     expect(() => specRows('const OTHER = [];')).toThrow(/no "const EXEMPTIONS/);
-    expect(() => specRows('const EXEMPTIONS: readonly Exemption[] = [\n\n];')).toThrow(/parsed to zero rows/);
+    expect(specRows('const EXEMPTIONS: readonly Exemption[] = [\n  // a note where the rows were\n];')).toEqual([]);
+    expect(() => specRows("const EXEMPTIONS: readonly Exemption[] = [\n{ id: 'x' },\n];")).toThrow(/holds an object that parsed to no row/);
     expect(() => specRows(literal().replace("    closedBy: 'Story 2-29',\n", ''))).toThrow(/carries no "closedBy" field/);
     expect(() => specRows(literal().replace('    count: 1,\n', ''))).toThrow(/carries no "count" field/);
     const reflowed = literal(['z-one', 'z-two']).replace('  },\n  {', '    },\n    {');
@@ -583,27 +599,31 @@ describe('the four manual checks and the readings are recorded', () => {
 describe('the register, the harness record and the story ids', () => {
   const fromRecord = recordRows(record);
 
-  it('registers KV-6 with the index row and the entry naming the same closers and carrying the ledger counts, spelled out', () => {
+  it('registers KV-6 as retired, the index row and the entry agreeing, and carrying the ledger counts, spelled out', () => {
     const kv6 = indexRow('KV-6');
     expect(kv6, 'the KV-6 index row does not name the rules it breaches').toContain('UX-DR44');
-    expect(kv6, 'the KV-6 index row is not Open').toContain('**Open**');
-    expect(kv6, 'the KV-6 index row claims a retirement date').toContain('_not retired_');
     const entry = entryOf('KV-6');
     expect(entry.length, 'the KV-6 entry sliced to nothing').toBeGreaterThan(500);
     const heading = entry.split('\n')[0];
 
-    // The closers are read off the ledger rather than restated: every story the rows name is in
-    // both the index row and the entry, and no story the rows do not name is in the index row.
-    const closers = [...new Set(fromRecord.map((row) => row.closedBy.replace('Story ', '')))].sort();
-    expect(closers.length).toBeGreaterThan(0);
-    for (const closer of closers) {
-      expect(kv6, `the KV-6 index row does not name Story ${closer}, which a ledger row is closed by`).toContain(closer);
-      expect(entry, `the KV-6 entry does not name Story ${closer}, which a ledger row is closed by`).toContain(closer);
-    }
+    // **Retired on 2026-09-23 by Story 2-33**, which deleted the ledger's last two rows with the hero
+    // and the `/work` ground they sat in. Until then the closers were read off the ledger's rows and
+    // held equal to the index row's; with no row left, what is held is the retirement itself, in the
+    // entry, which is authoritative, and in the index row, which is its copy. The literals move with the
+    // register rather than loosening to a pattern, as `ops/__tests__/hit-target-floor.test.ts` holds
+    // KV-4's.
+    expect(fromRecord, 'KV-6 reads retired while its ledger still carries a row').toEqual([]);
+    expect(kv6, 'the KV-6 index row is not Retired').toContain('**Retired**');
+    expect(kv6, 'the KV-6 index row carries no retirement date').toContain('2026-09-23');
+    expect(kv6, 'the KV-6 index row still reads as not retired').not.toContain('_not retired_');
     const retiredBy = /\| KV-6 \|(?:[^|]*\|){4}([^|]*)\|/.exec(kv6)?.[1] ?? '';
-    expect(retiredBy.trim(), 'the KV-6 index row has no "Retired by" cell').not.toBe('');
     const namedInIndex = [...new Set([...retiredBy.matchAll(/\b(\d+-\d+)\b/g)].map((match) => match[1]))].sort();
-    expect(namedInIndex, 'the KV-6 index row names a closer no ledger row is closed by, or misses one').toEqual(closers);
+    expect(namedInIndex, 'the KV-6 index row does not name exactly the story that retired it').toEqual(['2-33']);
+    expect(entry, 'the KV-6 entry is not marked Retired').toMatch(/^\| Status \| \*\*Retired\*\*/m);
+    expect(entry, 'the KV-6 entry carries no retirement date').toMatch(/^\| Retired on \| \*\*2026-09-23\*\*/m);
+    expect(entry, 'the KV-6 entry does not name the story that retired it').toContain('Story 2-33');
+    // The cell parse, on a planted open row, so the equality above is a read and not a default.
+    expect(/\| KV-6 \|(?:[^|]*\|){4}([^|]*)\|/.exec('| KV-6 | a | b | **Open** | 2026-09-13 | Story 2-99 | _not retired_ |')?.[1]).toBe(' Story 2-99 ');
 
     // The counts in the heading and the index row are the ledger's sums per check, spelled out, so
     // a row deleted without the heading moving fails here rather than reading as a stale count.

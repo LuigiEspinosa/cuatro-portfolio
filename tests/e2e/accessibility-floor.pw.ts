@@ -192,24 +192,18 @@ interface Exemption {
  *
  * Every count was read off this sweep's own failure output in
  * `mcr.microsoft.com/playwright:v1.62.1-noble`, never computed from a census of the source.
+ *
+ * **Empty since 2026-09-23, and KV-6 retired with it.** The instrument stays: a z-index literal, a
+ * depth tell, a clipped ring, a synthesised weight or a route off the one-heading rule that no row
+ * claims fails exactly as before, and a row added back has to be a dated Operator ruling in both files.
  */
 const EXEMPTIONS: readonly Exemption[] = [
-  {
-    id: 'z-work-hero',
-    check: 'z-index',
-    match: '2',
-    count: 2,
-    source: 'components/organisms/WorkHero/WorkHero.scss:15,40',
-    closedBy: 'Story 2-33',
-  },
-  {
-    id: 'gradient-work-ground',
-    check: 'depth',
-    match: 'linear-gradient',
-    count: 2,
-    source: 'app/app.scss:140-141',
-    closedBy: 'Story 2-33',
-  },
+  // **`z-work-hero` and `gradient-work-ground` left on 2026-09-23 with Story 2-33**, the ledger's
+  // last two rows. `WorkHero.scss` was rebuilt against the contract with no `z-index` at all (its two
+  // `2`s stacked the text and the canvas over a scrim Story 2-28 had already removed), and
+  // `app/app.scss`'s `body#work` rule, the cybercore ground under its two-gradient grid, was deleted
+  // with the `/work` surface's rebuild; the built CSS carries neither tell since.
+  //
   // **`clip-skip-link` left on 2026-09-23 with Story 2-32**, the ledger's last `clip` row. The
   // skip-link was parked at the viewport's corner, so its revealed ring lost its top and left sides
   // past the edge; it is parked one ring-reach inside the corner now, and the sweep reads the ring
@@ -1077,7 +1071,10 @@ test.describe('the accessibility floor', () => {
     expect(SURFACES.map((surface) => surface.route)).toEqual(onDisk.filter((route) => route !== '/api/health'));
     expect(SURFACES.length, 'fewer than two Hub surfaces, so the sweep is not universal').toBeGreaterThan(1);
 
-    expect(EXEMPTIONS.length, 'the ledger is empty, so the tally exempts nothing').toBeGreaterThan(0);
+    // **The ledger is empty since Story 2-33**, which is a reading rather than a hole: every sweep below
+    // still fails on an unclaimed tell, and each tally is shown firing on a planted one. The checks on a
+    // row's shape run over whatever rows there are, so a row written back is checked on arrival.
+    expect(EXEMPTIONS, 'a row is back in the ledger KV-6 retired on 2026-09-23').toEqual([]);
     expect(new Set(EXEMPTIONS.map((row) => row.id)).size, 'two rows share an id').toBe(EXEMPTIONS.length);
     for (const row of EXEMPTIONS) {
       expect(row.closedBy, `"${row.id}" names no closing story`).toMatch(/^Story \d+-\d+$/);
@@ -1457,8 +1454,25 @@ test.describe('the accessibility floor', () => {
     expect(verdict.unlisted, `a z-index literal or depth tell ships that no ledger row claims:\n${verdict.unlisted.join('\n')}`).toEqual([]);
     expect(verdict.stale, `a ledger row claims what the built CSS no longer carries:\n${verdict.stale.join('\n')}`).toEqual([]);
     expect(verdict.mismatched, `a ledger row's count is not what the built CSS carries:\n${verdict.mismatched.join('\n')}`).toEqual([]);
-    // At least one literal and one tell were observed, or the two agreeing lists are empty ones.
-    expect(verdict.observed.size, 'the tally observed nothing, so agreement with the ledger means nothing').toBeGreaterThan(0);
+
+    // **Nothing to claim since Story 2-33**, so the vacuity guard reads what the sweep did see rather
+    // than what it tallied. Until then at least one literal and one tell were observed, which is what
+    // kept two agreeing empty lists from meaning nothing; now the built CSS carries none, so the guard
+    // is that the scan read real stylesheets that set layers (every `z-index` written as a contract
+    // layer, which the tally passes over), and that the same tally, handed the 2023 hero's shapes and
+    // the `/work` grid, reports each of them unlisted against this ledger.
+    const layered = styles.reduce((sum, { text }) => sum + [...text.matchAll(/(?<![\w-])z-index:\s*var\(--z-/g)].length, 0);
+    expect(layered, 'the built CSS read here sets no z-index through a contract layer, so it is not the built CSS').toBeGreaterThan(0);
+    expect(verdict.observed.size, 'the built CSS carries a tell a ledger row claims, where KV-6 retired on an empty ledger').toBe(0);
+    const planted = tally(
+      [{ name: 'planted.css', text: '.work-hero__text{z-index:2}body#work{background-image:linear-gradient(red,blue),linear-gradient(90deg,red,blue)}' }],
+      EXEMPTIONS,
+      layers
+    );
+    expect(planted.unlisted, 'the tally does not report a planted literal and a planted grid').toEqual([
+      'depth=linear-gradient occurs 2 time(s) in the built CSS and no ledger row claims it',
+      'z-index=2 occurs 1 time(s) in the built CSS and no ledger row claims it',
+    ]);
   });
 
   test('every visible text on every route clears the type floor, and nothing autoplays', async ({ page }) => {

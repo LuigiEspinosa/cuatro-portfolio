@@ -36,9 +36,10 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
   await page.evaluate(async () => {
     await document.fonts.ready;
   });
-  // `/work`'s torus mounts after hydration and widens the hero's column when it does, which moves
-  // every row below it. A box read before the mount and a pixel read after it would disagree.
-  if (route === '/work') await page.locator('.work-hero__canvas-wrap canvas').waitFor({ state: 'attached', timeout: 20_000 });
+  // No canvas to wait for since Story 2-33. `/work`'s torus used to mount after hydration and widen
+  // the hero's column, moving every row below it, so this waited for it; the torus is never requested
+  // under the reduced motion every context here asks for, and its box is omitted, so the layout a
+  // read sees at `load` is the one it keeps.
 };
 
 /** A context that differs from the project's in the options given and in nothing else. */
@@ -177,10 +178,12 @@ const uniformColumns = (grid: readonly string[][], colour: string): number[] =>
  * The part of an element's box a visitor can see, in viewport coordinates: its border box cut by
  * every ancestor that clips its overflow, and by the viewport.
  *
- * **Cut rather than whole, because `/work` clips.** The hero's text column measures 300px inside a
- * 216px box at 360 and `.work-hero` hides the overflow, so the annotated mark's rule is painted from
- * its leading edge to the hero's and no further (KV-5's hero half, Story 2-33's). A strip read over
- * the whole border box would sample the ground beyond the clip and call the rule broken.
+ * **Cut rather than whole, because `/work` clipped.** The hero's text column measured 300px inside a
+ * 216px box at 360 and `.work-hero` hid the overflow, so the annotated mark's rule was painted from
+ * its leading edge to the hero's and no further (KV-5's hero half). A strip read over the whole border
+ * box would have sampled the ground beyond the clip and called the rule broken. Story 2-32 widened the
+ * container and Story 2-33 took `overflow: hidden` off the hero, so nothing on these surfaces clips a
+ * mark now; the cut stays, because an ancestor that clips is still a shape a surface can take.
  */
 const boxOf = (page: Page, selector: string, index = 0): Promise<Box> =>
   page.evaluate(
@@ -210,12 +213,15 @@ const boxOf = (page: Page, selector: string, index = 0): Promise<Box> =>
  */
 /**
  * Wait until nothing on the page is moving: no CSS transition or animation running, and no timeline
- * row part-way through `WorkTimeLine.tsx`'s scroll entrance.
+ * row away from rest.
  *
- * **That entrance is why this exists.** GSAP drives it from script, so the Web Animations API cannot
- * see it, and it reads no motion preference (review A-3, Story 2-33's to delete): a row scrolled into
- * view fades up from 40px below over 0.6s, and a pixel read inside the fade reads a blend of the rule
- * and the ground, which is how the first run of this file read every rule on the timeline.
+ * **The entrance this was written for is deleted.** `WorkTimeLine.tsx` faded each row up from 40px
+ * as a scroll revealed it, driven by GSAP where the Web Animations API cannot see it and reading no
+ * motion preference (review A-3), and a pixel read inside the fade read a blend of the rule and the
+ * ground, which is how the first run of this file read every rule on the timeline. Story 2-33 deleted
+ * the batch on 2026-09-23, and `tests/e2e/work-hero.pw.ts` reads every row at rest in the frames after
+ * a scroll. The wait stays: it costs two reads when the page is still, and it is what a row put back
+ * in motion would meet here first.
  */
 const settled = async (page: Page): Promise<void> => {
   // **Still, and still twice in a row.** A scroll reaches GSAP's `ScrollTrigger` on a later frame
@@ -306,7 +312,9 @@ const columnsAt = async (page: Page, edge: number, top: number, height: number, 
  */
 const MARKS = [
   { variant: 'section', route: '/cv', status: 200, selector: '.cv-intro .plate-mark', rule: 'bottom', wide: false },
-  { variant: 'annotated', route: '/work', status: 200, selector: '.work-hero .plate-mark', rule: 'bottom', wide: false },
+  { variant: 'annotated', route: '/work', status: 200, selector: '.work-hero .plate-mark--annotated', rule: 'bottom', wide: false },
+  // The hero's meta line, a section mark since Story 2-33 (`DESIGN.md` § Work hero and timeline).
+  { variant: 'section', route: '/work', status: 200, selector: '.work-hero__meta .plate-mark', rule: 'bottom', wide: false },
   { variant: 'section', route: NOT_FOUND, status: 404, selector: '.error-page .plate-mark', rule: 'bottom', wide: false },
   { variant: 'side-ruled end', route: '/', status: 200, selector: '.home-panel--sys .plate-mark', rule: 'right', wide: true },
 ] as const;
@@ -314,7 +322,9 @@ const MARKS = [
 /** How many marks each surface carries: one per genuine domain, never one per heading. */
 const MARKS_PER_ROUTE = [
   { route: '/', status: 200, count: 2 },
-  { route: '/work', status: 200, count: 1 },
+  // Two since Story 2-33 made the hero's meta line a Plate mark: the section identity and the count
+  // with its period, each a genuine domain.
+  { route: '/work', status: 200, count: 2 },
   { route: '/cv', status: 200, count: 1 },
   { route: NOT_FOUND, status: 404, count: 1 },
   { route: '/celeste', status: 200, count: 0 },
@@ -451,17 +461,19 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
       expect(drawn.tracking, 'the subordinate line is not at --tr-meta').toBe(await tracking(page, '--tr-meta', '--t-3xs'));
       expect(drawn.hidden, 'the subordinate line is exposed to assistive technology').toBe('true');
 
+      // Scoped to the mark that carries the line: `/work` carries two marks since Story 2-33.
+      const mark = page.locator('.plate-mark', { has: sub });
       const text = (await sub.textContent()) ?? '';
-      const tree = await page.locator('.plate-mark').ariaSnapshot();
+      const tree = await mark.ariaSnapshot();
       expect(tree, 'the mark is absent from the tree altogether, so the read below is of nothing').toContain(
-        (await page.locator('.plate-mark__label').textContent()) ?? '\u0000'
+        (await mark.locator('.plate-mark__label').textContent()) ?? '\u0000'
       );
       expect(tree, 'the subordinate line is in the accessibility tree').not.toContain(text);
 
       // The control: the same line with its attribute taken off is read, so the absence above is the
       // attribute's doing and not a snapshot that cannot see the line.
       await sub.evaluate((node) => node.removeAttribute('aria-hidden'));
-      expect(await page.locator('.plate-mark').ariaSnapshot(), 'the snapshot cannot see the line at all').toContain(text);
+      expect(await mark.ariaSnapshot(), 'the snapshot cannot see the line at all').toContain(text);
     });
   }
 
@@ -597,13 +609,23 @@ test.describe('the work item is a row, not a card', () => {
         expect(row.radius, `row ${index} is rounded`).toBe('0px');
         expect(row.shadow, `row ${index} casts a shadow`).toBe('none');
         expect([row.top, row.left, row.right], `row ${index} draws a box`).toEqual(['0px', '0px', '0px']);
-        expect(row.bottom, `row ${index}'s separator is not a solid hairline in the border role`).toBe(`${hair} solid ${border}`);
+        // **The last row drops its separator** since Story 2-33 (`DESIGN.md` § Work hero and timeline).
+        if (index === rows.length - 1) {
+          expect(row.bottom, 'the last row still draws a separator').toMatch(/^0px none /);
+        } else {
+          expect(row.bottom, `row ${index}'s separator is not a solid hairline in the border role`).toBe(`${hair} solid ${border}`);
+        }
       }
+
+      // The control: the separator planted back on the last row is read as one, so the absence above
+      // is the timeline's doing and not a read that cannot see a border.
+      await plantStyle(page, `.work-timeline > li:last-child > .work-item { border-block-end: ${hair} solid red !important; }`);
+      expect((await rowBoxes(page)).at(-1)?.bottom, 'a planted separator on the last row is not read').toMatch(/^1px solid /);
     });
 
     test(`paints its separator and leading rules as exact pixels of their roles on ${route}`, async ({ page }) => {
-      // On `/work` the ground is the 2023 literal with its grid, and on `/cv` it is the token ground,
-      // so the two routes are the two grounds the rules sit over.
+      // Both routes paint the token ground since Story 2-33 deleted `body#work`, the 2023 literal and
+      // its grid that `/work` painted until then; the read runs on both because both render the rows.
       await goTo(page, route);
       const [border, accent] = await rasterise(page, [await role(page, '--token-border'), await role(page, '--token-accent')]);
 

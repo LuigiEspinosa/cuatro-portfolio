@@ -131,13 +131,7 @@ body {
   min-height: 100vh;
 }
 
-// `body#projects` left this list with Story 2-14. `Container.tsx:12-16` derives the id from
-// `usePathname()`, and `/projects` now answers a 301 rather than rendering, so no request can
-// match it again.
-body#work {
-  background-color: #0a000f;
-  background-image:
-    linear-gradient(rgba(140, 90, 210, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(140, 90, 210, 0.06) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
+// **No route overrides the ground since Story 2-33**, which deleted `body#work`: the cybercore literal
+// and its two-gradient grid, the last of the three surfaces that painted them (the home's left with
+// Story 2-29 and the 404's with Story 2-30). `body#projects` had left the same rule with Story 2-14.
+// Every route now paints the base rule above.

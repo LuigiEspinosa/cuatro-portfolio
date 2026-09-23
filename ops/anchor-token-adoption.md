@@ -520,6 +520,15 @@ site left, `WorkHero.scss:8`, is ornament and reads the `:root` value; the mappi
 has no subject until Story 2-22 deletes the layer. `tests/e2e/anchor-aliases.pw.ts` tables one call
 site and no boundary, and `app/__tests__/anchor-contract.test.ts` pins both scoped readings empty.
 
+**None since later still on 2026-09-23, and the table above is kept as the Story 1-18 reading.**
+Story 2-33 rebuilt `WorkHero.scss` against the contract: the hero's section divider, `WorkHero.scss:8`,
+is the boundary rule in `--token-border-interactive` named directly, which is the treatment
+`DESIGN.md` § Work hero and timeline gives it, so the last `--accent-dim` call site left with the
+alias. `tests/e2e/anchor-aliases.pw.ts` retired its call-site table and the per-site case with the last
+row and pins the alias at zero call sites, and `app/__tests__/anchor-contract.test.ts` holds every
+stylesheet but `app/app.scss` to reading none of the Hub's fifteen properties, which is FR-37's
+removal condition for this layer (Story 2-22).
+
 **One row is read in a second browser context at 1024 wide**, and it is worth writing down rather
 than discovering later. `HomeLayout.scss:154` is the desktop `border-right` on the contact links.
 At the harness's pinned 360 viewport, `HomeLayout.scss:233` sets `border-right: none` on the same
@@ -563,6 +572,13 @@ family and the heaviest weight by their roles in `Error404.scss`, which is on th
 in its place. `WEIGHT_SITES` in `tests/e2e/anchor-aliases.pw.ts` fell to one (`WorkHero.scss:19`), and
 `WEIGHT_CALL_SITES` in `app/__tests__/anchor-contract.test.ts` was already that one. The table is kept
 as taken.
+
+**No row since later on 2026-09-23.** Story 2-33 rebuilt `components/organisms/WorkHero/WorkHero.scss`
+against the contract, the last of the three that were trapped: the heading names the display family
+and the heaviest weight by their roles, so no alias is in its path. `WEIGHT_SITES` and its case left
+`tests/e2e/anchor-aliases.pw.ts`, which pins `--monument-bold` at zero call sites, and
+`WEIGHT_CALL_SITES` and claim two left `app/__tests__/anchor-contract.test.ts`, the file joining
+`TOKEN_NATIVE_STYLESHEETS`. The table is kept as taken.
 
 **The order is the point, for the three that were trapped.**
 `ops/rendered-output-harness.md` § "The finding Story 1-18 inherits" records that a `font-weight`

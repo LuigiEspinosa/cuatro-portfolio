@@ -38,12 +38,13 @@ export const RENDERED_VIEWPORT = { width: 360, height: 800 } as const;
  * by hand at all four sites in the same commit (`epics.md:1842-1843`) before asserting it
  * (`:1844`). Read without that step, the weight assertion is green and meaningless.
  *
- * **Three call sites since 2026-09-07, two since 2026-09-14, one since 2026-09-23.** Story 2-14
- * redirected `/projects` and deleted `ProjectsHero.scss` with the route it styled; Story 2-27
- * deleted `glitch-text.scss` with the loop it carried, and `GlitchText.scss` names the display roles
- * directly; Story 2-30 deleted `error-page.scss`, and `Error404.scss` does the same. The note above
- * is the 2026-08-24 reading and is kept as it was taken; `tests/e2e/anchor-aliases.pw.ts` carries
- * the current table.
+ * **Three call sites since 2026-09-07, two since 2026-09-14, one since 2026-09-23, and none since
+ * later that day.** Story 2-14 redirected `/projects` and deleted `ProjectsHero.scss` with the route it
+ * styled; Story 2-27 deleted `glitch-text.scss` with the loop it carried, and `GlitchText.scss` names
+ * the display roles directly; Story 2-30 deleted `error-page.scss`, and `Error404.scss` does the same;
+ * Story 2-33 rebuilt `WorkHero.scss`, whose heading was the last, against the contract. The note above
+ * is the 2026-08-24 reading and is kept as it was taken; `tests/e2e/anchor-aliases.pw.ts` pins the
+ * alias at zero call sites.
  */
 
 interface ScreenshotOptions {

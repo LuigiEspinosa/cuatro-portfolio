@@ -10,7 +10,8 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * this story. Nothing in the repository measured a hit target: `--tap` shipped in the contract
  * with zero consumers, and the shipped Hub is under the floor on every route that carries chrome.
  * `EXPERIENCE.md:763` books it as **A-4**, and `:764` books no-horizontal-scroll-at-360 as **A-5**;
- * this file asserts A-4 and the scroll half of A-5.
+ * this file asserts A-4 and the scroll half of A-5, the latter over every element with a box since
+ * Story 2-33 retired KV-5 (below).
  *
  * **A sweep plus a ledger, rather than a list of compliant surfaces.** A sweep scoped to what
  * already passes would match almost nothing today, go green, and prove nothing, which is the
@@ -48,8 +49,14 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * hero that rendered them, rather than repairing it. Story 2-31 closed the timeline's on 2026-09-23:
  * ten remain, every one of them the hero's, and `tests/e2e/plate-mark-and-work-item.pw.ts` holds the
  * timeline inside the viewport on `/work` and `/cv`. Story 2-32 widened the container later the same
- * day and that case's whole-page census reads none since; the entry stays `Open` until its retirement,
- * with this sweep's A-5 arm widened past interactive elements, is made (DW-116).
+ * day and that case's whole-page census reads none since; the entry stayed `Open` until its retirement,
+ * with this sweep's A-5 arm widened past interactive elements, was made (DW-116).
+ *
+ * **Widened on 2026-09-23 by Story 2-33, which retired KV-5 with it.** The sweep's A-5 arm reads every
+ * element with a box on every surface now, not only the interactive ones it measures for the floor, by
+ * the census predicate KV-5 was opened and re-read with: both edges, `EDGE_SLACK`, an element with no
+ * box skipped (`outsideTheViewport` below). Nothing on the Hub sits past either edge at 360, so a
+ * non-interactive element arriving past one fails the build rather than a register entry noticing it.
  *
  * **No screenshot is taken.** This file writes no snapshot directory, so `keeps exactly one
  * committed baseline` in `tests/e2e/rendered-output.pw.ts` stays true. Same precedent as
@@ -304,6 +311,33 @@ const PLANTED_ROW: Exemption = {
  * measured under `--tap` is under it.
  */
 const EDGE_SLACK = 0.5;
+
+/**
+ * A-5 over every element, not only the interactive ones (Story 2-33, KV-5's retirement, DW-116).
+ *
+ * Every element with a box whose edge sits past either side of the viewport, by the predicate KV-5
+ * was opened, re-read and retired with: both edges, because a negative `left` scrolls the page as
+ * surely as a wide `right`; `EDGE_SLACK`, because a third of a pixel is layout rounding; and an
+ * element with no box skipped, because `display: none` answers a zero rect. Measured on elements for
+ * the reason the docblock above gives: `overflow-x: clip` clamps what a scroll width would report.
+ */
+const outsideTheViewport = (page: Page, route: string): Promise<string[]> =>
+  page.evaluate(
+    ({ where, slack }) => {
+      const width = window.innerWidth;
+      const found: string[] = [];
+      for (const node of document.querySelectorAll('body *')) {
+        const rect = node.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) continue;
+        if (rect.right > width + slack || rect.left < -slack) {
+          const name = `${node.tagName.toLowerCase()}${[...node.classList].map((token) => `.${token}`).join('')}${node.id ? `#${node.id}` : ''}`;
+          found.push(`${where}: ${name} spans [${rect.left.toFixed(2)}, ${rect.right.toFixed(2)}] against a ${width} viewport`);
+        }
+      }
+      return found;
+    },
+    { where: route, slack: EDGE_SLACK }
+  );
 
 /** One element that was measured. */
 interface Measured {
@@ -939,6 +973,7 @@ test.describe('the hit-target floor', () => {
     const misrouted: string[] = [];
     const stale: string[] = [];
     const wide: string[] = [];
+    const outside: string[] = [];
     const counted: string[] = [];
     const summary: string[] = [];
 
@@ -966,6 +1001,8 @@ test.describe('the hit-target floor', () => {
       );
 
       const { found, skipped, measured } = await measureSurface(page);
+      const census = await outsideTheViewport(page, surface.route);
+      outside.push(...census);
 
       counted.push(
         ...countVerdict(
@@ -981,7 +1018,8 @@ test.describe('the hit-target floor', () => {
       );
 
       summary.push(
-        `${surface.route}: found ${found}, skipped ${skipped.length}, measured ${measured.length}` +
+        `${surface.route}: found ${found}, skipped ${skipped.length}, measured ${measured.length}, ` +
+          `${census.length} element(s) of any kind past an edge` +
           (skipped.length > 0 ? ` [${skipped.map((row) => `${row.at} (${row.why})`).join('; ')}]` : '')
       );
 
@@ -1029,6 +1067,48 @@ test.describe('the hit-target floor', () => {
         `measured on the element because html and body carry overflow-x: clip, so the document's ` +
         `scroll width is clamped by the clipping rather than by the absence of ` +
         `overflow:\n${wide.join('\n')}`
+    ).toEqual([]);
+
+    // **A-5 over every element since Story 2-33**, which retired KV-5 on this reading: the arm above
+    // reads the interactive elements the floor measures, and this one reads everything with a box.
+    console.log(`hit-target-floor: ${summary.join('; ')}`);
+    expect(
+      outside,
+      `A-5: an element sits past a viewport edge at the pinned width. KV-5 was retired on 2026-09-23 ` +
+        `when nothing did, so this is a new breach rather than a tolerated one:\n${outside.join('\n')}`
+    ).toEqual([]);
+  });
+
+  test('A-5 reads every element with a box, where the interactive arm reads only what it measures', async ({ page }) => {
+    // The widening Story 2-33 made, shown doing what the interactive arm cannot: two plain blocks,
+    // neither a control, planted past each edge of the 404 surface, are reported by the census and
+    // are invisible to `judge`, which reads only the elements the floor measures.
+    await goTo(page, NOT_FOUND, 404);
+    await settle(page, { route: NOT_FOUND, entrance: false });
+    expect(await outsideTheViewport(page, NOT_FOUND), 'the 404 already carries an element past an edge').toEqual([]);
+
+    await page.evaluate(() => {
+      for (const [id, left] of [
+        ['planted-block-past', '300px'],
+        ['planted-block-before', '-90px'],
+      ]) {
+        const block = document.createElement('div');
+        block.id = id;
+        block.setAttribute('style', `position:absolute;top:200px;left:${left};width:120px;height:10px;`);
+        document.body.appendChild(block);
+      }
+    });
+
+    const census = await outsideTheViewport(page, NOT_FOUND);
+    expect(census.find((line) => line.includes('#planted-block-past')), 'the block past the right edge was not reported').toContain('420.00');
+    expect(census.find((line) => line.includes('#planted-block-before')), 'the block before the left edge was not reported').toContain('-90.00');
+
+    const floor = await floorFrom(page);
+    const { measured } = await measureSurface(page);
+    const verdict = judge(NOT_FOUND, measured, floor, RENDERED_VIEWPORT.width);
+    expect(
+      verdict.wide.filter((line) => line.includes('planted-block')),
+      'the interactive arm reports a plain block, so the census above adds nothing to it'
     ).toEqual([]);
   });
 

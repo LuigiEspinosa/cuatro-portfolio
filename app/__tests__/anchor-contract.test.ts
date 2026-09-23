@@ -30,9 +30,10 @@ import { dirname, join, relative, resolve } from 'node:path';
  *     in every scanned file under every shipped source root, `app/`, `components/`, `hooks/` and
  *     `content/`, and the count of files read is asserted so the scan cannot pass over an empty
  *     selection. `app/app.scss` must reference exactly the pinned set of roles the mapping names,
- *     the `--monument-bold` call sites exactly `--w-black`, and every other scanned file
- *     none, so a component stylesheet reaching for a role and an alias silently retargeted both
- *     fail.
+ *     each token-native rebuild at least one, and every other scanned file none, so a component
+ *     stylesheet reaching for a role and an alias silently retargeted both fail. (The
+ *     `--monument-bold` call sites were a third, narrower allowance, exactly `--w-black`, until
+ *     Story 2-33 rebuilt the last of them on 2026-09-23.)
  *  4. **There is no second authored copy.** The Anchor is the publisher, not a Satellite
  *     (AD-1, AD-4), so it loads `contracts/` directly and vendors nothing. The listing is
  *     `git ls-files` rather than the working tree, because `pnpm build` writes the generated,
@@ -261,25 +262,27 @@ const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height'] as const;
  * rebuilt `GlitchText` token-native: `glitch-text.scss` left disk with its alias call site, and
  * `GlitchText.scss` beside the component names the display roles directly, so it is a
  * `TOKEN_NATIVE_STYLESHEETS` entry and not a weight site at all.
+ *
+ * **Retired on 2026-09-23 with the last site, and the partition with it.** Story 2-33 rebuilt
+ * `WorkHero.scss` against the contract: its heading names the display family and the heaviest weight
+ * by their roles, so the file joined `TOKEN_NATIVE_STYLESHEETS` below and no `--monument-bold` call
+ * site is left anywhere (`tests/e2e/anchor-aliases.pw.ts` pins it at zero). The list, `WEIGHT_ROLE`
+ * and claim two, which held each site to naming that one role, went with it: a partition of no
+ * files and a claim over none would pass whatever the tree held. This note is where they were.
  */
-const WEIGHT_CALL_SITES = ['components/organisms/WorkHero/WorkHero.scss'] as const;
-
-/** The one role those call sites are allowed to name, per `DESIGN.md` § The mapping. */
-const WEIGHT_ROLE = '--w-black';
 
 /**
  * The stylesheets that consume contract roles **directly**, rather than through an alias.
  *
- * A different partition from `WEIGHT_CALL_SITES` above, and deliberately not an extension of it.
- * Those are migrated cybercore files that name exactly `--w-black`, because the weight that
- * lived in the family name `MonumentExtended-Bold` is the one thing a family alias cannot carry;
- * anything else they named would be a component reaching past the alias layer mid-migration. The
- * files here are Epic 2 rebuilds with no old name to keep, so they name whatever roles they need
- * and the alias layer is not in their path at all.
+ * Until 2026-09-23 a different partition from the `--monument-bold` call sites (see the note above),
+ * which were migrated cybercore files that named exactly `--w-black`, because the weight that lived
+ * in the family name `MonumentExtended-Bold` is the one thing a family alias cannot carry. The files
+ * here are Epic 2 rebuilds with no old name to keep, so they name whatever roles they need and the
+ * alias layer is not in their path at all. **Since Story 2-33 every component stylesheet that names a
+ * contract role is on this list**, which is FR-37's removal condition for the alias layer.
  *
  * The list is a whitelist rather than a pattern, and each member is asserted to reference at least
- * one role, so a file added here that consumes nothing is a hole rather than an entry. Story 2-22
- * deletes the alias layer, at which point this partition and `WEIGHT_CALL_SITES` collapse into one.
+ * one role, so a file added here that consumes nothing is a hole rather than an entry.
  */
 const TOKEN_NATIVE_STYLESHEETS = [
   // The chrome, rebuilt by Story 2-32: the page container, the wordmark, the header's two
@@ -333,6 +336,14 @@ const TOKEN_NATIVE_STYLESHEETS = [
   'components/organisms/Premise/Premise.scss',
   'components/organisms/SiteFooter/SiteFooter.scss',
   'components/organisms/SuiteDirectory/SuiteDirectory.scss',
+  // The `/work` hero and the timeline, rebuilt by Story 2-33, the last redesign in the group. Rebuilds
+  // like the rest: `WorkHero.scss` left its six aliases (the last `--monument-bold` and `--accent-dim`
+  // call sites among them), its two bare `z-index` integers, its `42vh` floor and its hand-written
+  // lengths, and names the display roles, the boundary stroke and its role, the spacing scale and the
+  // entrance's duration and easing directly; `WorkTimeline.scss` left the page-padding alias and names
+  // two spacing steps.
+  'components/organisms/WorkHero/WorkHero.scss',
+  'components/organisms/WorkTimeline/WorkTimeline.scss',
 ] as const;
 
 /** The one file that carries the alias layer. */
@@ -871,14 +882,14 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
 
     expect(scanned, 'no file was read').toBe(files.length);
     expect(files, `${ALIAS_LAYER} was not among the scanned files, so the case below is vacuous`).toContain(ALIAS_LAYER);
-    for (const site of [...WEIGHT_CALL_SITES, ...TOKEN_NATIVE_STYLESHEETS]) {
+    for (const site of TOKEN_NATIVE_STYLESHEETS) {
       expect(files, `${site} was not among the scanned files`).toContain(site);
     }
 
     // The pinned lists are checked against the contract before they are compared against the
     // sources. A role renamed in `contracts/tokens.css` would otherwise make every list below
     // agree on a name the contract no longer declares, and a MAJOR bump is meant to be loud.
-    for (const role of [...ALIAS_ROLES, ...FOCUS_ROLES, WEIGHT_ROLE]) {
+    for (const role of [...ALIAS_ROLES, ...FOCUS_ROLES]) {
       expect(TOKEN_NAMES, `${role} is in the pinned mapping but the contract no longer declares it`).toContain(role);
     }
 
@@ -896,14 +907,10 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
         `or one of its four missing, changes what every focused element paints.`
     ).toEqual([...ALIAS_ROLES, ...FOCUS_ROLES].sort());
 
-    // Claim two: the `--monument-bold` call sites reference exactly `--w-black`, which is
-    // the weight a family alias cannot carry, and nothing else.
-    for (const site of WEIGHT_CALL_SITES) {
-      expect(
-        referencesBy.get(site) ?? [],
-        `${site} is a --monument-bold call site and may name ${WEIGHT_ROLE} and no other contract name`
-      ).toEqual([WEIGHT_ROLE]);
-    }
+    // Claim two held the `--monument-bold` call sites to naming exactly `--w-black`, the weight a
+    // family alias cannot carry, until Story 2-33 rebuilt the last of them on 2026-09-23. With no site
+    // left the claim went with its list (see the note where `WEIGHT_CALL_SITES` was), and the
+    // numbering is kept so the claims below still read as they are cited.
 
     // Claim three: the token-native stylesheets consume roles directly, and each really does.
     // Listed rather than pattern-matched, and asserted non-empty in both directions: a file named
@@ -920,7 +927,7 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     // Claim four: nothing else reaches for a role at all. A component stylesheet consuming a
     // token role directly is an Epic 2 rebuild, which is what the list above admits one file at a
     // time; anywhere else it leaves the alias layer no longer describing what the site reads.
-    const allowed = new Set<string>([ALIAS_LAYER, ...WEIGHT_CALL_SITES, ...TOKEN_NATIVE_STYLESHEETS]);
+    const allowed = new Set<string>([ALIAS_LAYER, ...TOKEN_NATIVE_STYLESHEETS]);
     const elsewhere = [...referencesBy]
       .filter(([file]) => !allowed.has(file))
       .map(([file, names]) => `${file} references ${names.join(', ')}`);
@@ -1202,6 +1209,38 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     expect(floorLiteral.test(withoutComments('.a { min-block-size: 44px; }'))).toBe(true);
     expect(floorLiteral.test(withoutComments('// a 44px box on a line of prose\n.a { color: red; }'))).toBe(false);
     expect(floorLiteral.test(withoutComments('.a { inline-size: 144px; }'))).toBe(false);
+  });
+
+  it('has no stylesheet but the alias layer read any of the Hub’s fifteen properties, which is FR-37’s removal condition', () => {
+    // FR-37: "no component stylesheet consumes a transitional alias once its component has been
+    // redesigned", and the alias layer is deleted when the last one is. Story 2-33 rebuilt the last
+    // two, `WorkHero.scss` and `WorkTimeline.scss`, on 2026-09-23, so from then no stylesheet but
+    // `app/app.scss` reads a Hub property at all, and Story 2-22 is unblocked. The three the base
+    // `body` rule there reads are the layer's own, and that story repoints them.
+    //
+    // **Raw text, comments included**, the rule `tests/e2e/anchor-aliases.pw.ts` counts call sites
+    // by: a read inside a comment is a read waiting to be uncommented. The fallback form counts too.
+    const readOf = (name: string): RegExp => new RegExp(`var\\(\\s*${name}\\s*[,)]`);
+    const stylesheets = files.filter((file) => (file.endsWith('.scss') || file.endsWith('.css')) && file !== ALIAS_LAYER);
+    for (const rebuilt of ['components/organisms/WorkHero/WorkHero.scss', 'components/organisms/WorkTimeline/WorkTimeline.scss']) {
+      expect(stylesheets, `${rebuilt} was not scanned, so the read below says nothing about it`).toContain(rebuilt);
+    }
+    const reads = stylesheets.flatMap((file) => {
+      const source = readFileSync(resolve(REPO_ROOT, file), 'utf8');
+      return HUB_NAMES.filter((name) => readOf(name).test(source)).map((name) => `${file} reads ${name}`);
+    });
+    expect(
+      reads,
+      `a stylesheet reads a Hub property outside the alias layer, so the layer cannot be deleted:\n${reads.join('\n')}`
+    ).toEqual([]);
+
+    // The read, on planted controls: the 2023 timeline's padding fires, a fallback form fires, and a
+    // longer name that starts with an alias does not.
+    const planted = (source: string): string[] => HUB_NAMES.filter((name) => readOf(name).test(source));
+    expect(planted('.a { padding: 2rem var(--page-padding) 8rem; }')).toEqual(['--page-padding']);
+    expect(planted('.a { color: var( --accent , red); }')).toEqual(['--accent']);
+    expect(planted('.a { color: var(--accent-dimmer); }')).toEqual([]);
+    expect(HUB_NAMES.length, 'app/app.scss no longer declares the fifteen this reads for').toBe(HUB_PROPERTY_COUNT);
   });
 });
 

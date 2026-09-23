@@ -117,8 +117,8 @@ const HERO_DISPLAY_STRETCH = '100%';
  * renders. The two `--monument-bold` sites, the two `--monument-regular` sites and the two hero
  * link groups, plus the display entrance on `/`, which reaches the face through `--f-display`
  * directly since Story 2-27, as the two hero groups have since Story 2-29, the row names since
- * Story 2-31 and the 404's numeral and heading since Story 2-30; `/work`'s hero heading is the one
- * alias site left. `/cv` and `/celeste` reach no display face and are not here.
+ * Story 2-31, the 404's numeral and heading since Story 2-30, and `/work`'s hero heading since Story
+ * 2-33, which left no alias site at all. `/cv` and `/celeste` reach no display face and are not here.
  *
  * The count is pinned so the swap cannot be measured over an empty selection: a renamed class
  * fails here naming itself rather than shortening the loop below to nothing.
@@ -127,8 +127,6 @@ const DISPLAY_ELEMENTS: readonly {
   route: string;
   status: number;
   selectors: readonly DisplaySite[];
-  /** A node that must be attached before either pass is measured, where the page's layout settles after `load`. */
-  settle?: string;
 }[] = [
   {
     route: '/',
@@ -150,12 +148,12 @@ const DISPLAY_ELEMENTS: readonly {
       // per line held. Held to the line box for that reason; DW-82 carries the measurement.
       { selector: '.work-item__company', count: 4, holds: 'lineBox' },
     ],
-    // The torus canvas mounts on demand after hydration and widens `.work-hero`'s grid column
-    // from 216px to 300px at 360 (**observed 2026-09-12**: the column reads 216px at `load` and at
-    // `fonts.ready`, 300px once `<canvas>` is attached), and the heading wraps differently in
-    // each. A pass measured before the mount and a pass measured after would compare two layouts
-    // rather than two faces, so both passes wait for the canvas.
-    settle: '.work-hero__canvas-wrap canvas',
+    // **No wait since Story 2-33.** The torus canvas mounted on demand after hydration and widened
+    // `.work-hero`'s grid column from 216px to 300px at 360 (**observed 2026-09-12**: 216px at `load`
+    // and at `fonts.ready`, 300px once `<canvas>` was attached), so both passes waited for it through
+    // a `settle` option this route alone set. Under this project's reduced motion the torus is never
+    // requested and its box is omitted, so the hero's layout at `load` is its layout; the option left
+    // with its one use, and a wait for a canvas would only time out.
   },
   {
     route: NOT_FOUND,
@@ -405,18 +403,13 @@ interface Swap {
  */
 const measureSwap = async (
   page: Page,
-  surfaces: readonly { route: string; status: number; selectors: readonly DisplaySite[]; settle?: string }[]
+  surfaces: readonly { route: string; status: number; selectors: readonly DisplaySite[] }[]
 ): Promise<Map<string, Swap>> => {
   const results = new Map<string, Swap>();
-  const settled = async (surface: { route: string; settle?: string }): Promise<void> => {
-    if (!surface.settle) return;
-    await page.locator(surface.settle).first().waitFor({ state: 'attached', timeout: 15_000 });
-  };
 
   await page.route('**/*.woff2', (candidate) => candidate.abort());
   for (const surface of surfaces) {
     await goTo(page, surface.route, surface.status);
-    await settled(surface);
     await plantStrippedFace(page);
     await fontsReady(page, [PLANTED_STRIPPED_SPEC]);
     results.set(surface.route, {
@@ -437,7 +430,6 @@ const measureSwap = async (
   for (const surface of surfaces) {
     statuses = new Map();
     await goTo(page, `${surface.route}?faces=1`, surface.status);
-    await settled(surface);
     const plantedSrc = await plantStrippedFace(page);
     await fontsReady(page, [PLANTED_STRIPPED_SPEC]);
     const available = await page.evaluate(

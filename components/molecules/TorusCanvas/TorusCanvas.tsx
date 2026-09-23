@@ -1,14 +1,20 @@
 'use client';
 
 import type { RefObject } from 'react';
-import dynamic from 'next/dynamic';
+import { Scene } from '@/components/atoms/Scene/Scene';
 import { Torus } from '@/components/atoms/Torus/Torus';
 import { CanvasOrbitControls } from '@/components/atoms/CanvasOrbitControls/CanvasOrbitControls';
 
-const Scene = dynamic(() => import('@/components/atoms/Scene/Scene').then((m) => m.Scene), {
-  ssr: false,
-});
-
+/**
+ * Everything on the WebGL side of `/work`'s one dynamic boundary (Story 2-33).
+ *
+ * `WorkHero` imports this module through `next/dynamic` and nothing else in the Hub imports it, so
+ * `Scene`, `Torus`, the orbit controls and the libraries under them load together, on demand, and
+ * only where motion is allowed. `Scene` is imported statically for that reason: until this story it
+ * sat behind a second `next/dynamic` call here while `Torus` and the controls pulled `three`, R3F and
+ * drei in statically beside it, so the libraries landed in the page's own chunks and only `Scene`
+ * was deferred. One boundary, at the hero, is the shape `GemNarrative.tsx` gave the homepage.
+ */
 interface TorusCanvasProps {
   scrollRef: RefObject<{ value: number }>;
   className?: string;

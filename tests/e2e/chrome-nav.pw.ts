@@ -301,10 +301,12 @@ const pixelsIn = async (page: Page, area: Region): Promise<string[][]> => {
  *
  * **Observed 2026-09-23** in the pinned image: one run in three, four pixels on the left edge of the
  * wordmark's first glyph differed between a rest read and a hover read taken a moment later on
- * `/work`, where nothing about the wordmark had changed. That page mounts its torus canvas after
+ * `/work`, where nothing about the wordmark had changed. That page mounted its torus canvas after
  * hydration, and the compositor re-rasterising text around it is a difference in the screenshot that
  * is not a difference in the style. Reading until two reads agree is the shape
- * `tests/e2e/plate-mark-and-work-item.pw.ts` settled on for the same class of noise.
+ * `tests/e2e/plate-mark-and-work-item.pw.ts` settled on for the same class of noise. The canvas is
+ * never mounted on this project's reduced-motion context since Story 2-33; the reads stay two-deep,
+ * because re-rasterisation is not the canvas's alone.
  */
 const stillPixelsIn = async (page: Page, area: Region): Promise<string[][]> => {
   let previous = await pixelsIn(page, area);
@@ -1038,8 +1040,9 @@ test.describe('the chrome as Story 2-32 rebuilt it', () => {
   test('recolours the rule under the hovered label and nothing else, on a pointer that can hover', async ({ page }) => {
     await goTo(page, '/work');
     await facesReady(page);
-    // The torus canvas mounts after hydration; the pixel reads below wait for it (see `stillPixelsIn`).
-    await page.locator('.work-hero__canvas-wrap canvas').waitFor({ state: 'attached', timeout: 20_000 });
+    // No torus canvas to wait for since Story 2-33: this context asks for reduced motion, under which
+    // it is never requested. The pixel reads below still read twice (see `stillPixelsIn`).
+    expect(await page.locator('canvas').count(), 'a canvas mounted under reduced motion').toBe(0);
     expect(await page.evaluate(() => matchMedia('(hover: hover)').matches), 'the project context cannot hover').toBe(true);
 
     const link = page.locator("nav.navbar a[href='/#suite']");

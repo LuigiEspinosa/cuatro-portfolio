@@ -1163,8 +1163,8 @@ origin: spec-deferred a79a806f0a61
 location: app/app.scss:107
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: medium
-reason: app/app.scss:107 (body#work, body#projects), HomeLayout.scss:2 and error-page.scss:7 each paint #0a000f as a literal at a higher specificity than the base body rule, so the --token-bg this story wires onto --black-color is visible on the 404 surface and nowhere else. ProjectCard.scss:27,36,67, WorkItem.scss:35,145 and error-page.scss:9-10,28 carry the same shape of literal. Their mapping is rebaseline-2026-08-15.md section O-10 and it is assigned to UX-DR10 and the Epic 2 redesign, not to this migration step, so this is recorded rather than fixed. It matters because the story's user story is written at the pixel surface and the aliases are asserted at the custom-property surface, which is exactly the gap between "the Hub renders in the Ecosystem's visual identity" and what a visitor sees after this commit.
-status: open
+reason: app/app.scss:107 (body#work, body#projects), HomeLayout.scss:2 and error-page.scss:7 each paint #0a000f as a literal at a higher specificity than the base body rule, so the --token-bg this story wires onto --black-color is visible on the 404 surface and nowhere else. ProjectCard.scss:27,36,67, WorkItem.scss:35,145 and error-page.scss:9-10,28 carry the same shape of literal. Their mapping is rebaseline-2026-08-15.md section O-10 and it is assigned to UX-DR10 and the Epic 2 redesign, not to this migration step, so this is recorded rather than fixed. It matters because the story's user story is written at the pixel surface and the aliases are asserted at the custom-property surface, which is exactly the gap between "the Hub renders in the Ecosystem's visual identity" and what a visitor sees after this commit. Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`, the last of the surfaces this entry names: body#projects left with Story 2-14, WorkItem.scss's literals with Story 2-31, HomeLayout.scss's ground with Story 2-29 and error-page.scss with Story 2-30, and Story 2-33 deleted body#work, so no route paints #0a000f and every route paints the base rule's --token-bg. Observed 2026-09-23 in mcr.microsoft.com/playwright:v1.62.1-noble: tests/e2e/accessibility-floor.pw.ts lists no ring ground outside the three tokens on any route, and tests/e2e/cv.pw.ts and tests/e2e/contract-anchor.pw.ts read /work's body at --token-bg with no image.
+status: done
 
 ### DW-9: The retired display face is still preloaded on every route and the face that replaced it is not, so each page fetches roughly 20 KB it never paints and the first-paint width guarantee the preload exis
 origin: spec-deferred 295c0abf8f2c
@@ -2811,7 +2811,15 @@ status: done
     and `WorkHero` as Story 2-33's and forbid touching them, and because `/work` is a route Story
     2-12 was required to leave byte-identical in shape: its R3F boundary carries the same static
     import defect the homepage's did and is deliberately still standing.
-  status: open
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`.** The batch, its imports and the list ref are deleted from
+    `WorkTimeLine.tsx` (ruled a presentation change on 2026-09-15), so the rows simply exist and the
+    route's one entrance is the hero's, a CSS opacity keyframe. `WorkTimeline.test.tsx` fails if a
+    batch or a from-tween comes back, and `tests/e2e/work-hero.pw.ts` reads every row on `/work` and
+    `/cv` at opacity 1 with no transform, no animation and no inline style in the six frames after
+    each scroll that reveals it, a planted CSS fade reported by the same read. The R3F static import
+    this entry mentions is closed too: DW-37.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-36
@@ -2867,7 +2875,17 @@ status: done
     the redirect and needs an owner of its own. Whichever lands first should take both, because the
     change is identical and a route that shows an error page instead of its content after one
     dropped request is the most user-visible item in this cluster.
-  status: open
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`**, which took the `/work` half because it wrote that boundary: the
+    `TorusKnotCanvas` half had already ceased to exist, deleted with `/projects` by Story 2-14.
+    `WorkHero` now imports `TorusCanvas` through one `next/dynamic` boundary in the `GemComponent`
+    shape, a module resolving without the export or a chunk that never arrives resolving to a component
+    that draws nothing, logged; `TorusCanvas` imports `Scene` statically behind it. **Observed
+    2026-09-23** in the pinned image by `tests/e2e/work-hero.pw.ts`: with every WebGL-carrying script
+    aborted on a context that allows motion, `/work` renders its heading, both marks and four rows,
+    throws no page error, mounts no canvas and logs the containment; `WorkHero.test.tsx` drives the
+    loader against a module that resolves, one missing the export and one that throws.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-38
@@ -2891,6 +2909,13 @@ status: done
     homepage's real transfer as well as those two routes'. Worth a line in
     `ops/asset-budget.md` § Stated limits when that file is next re-measured, and worth knowing
     before anyone reads `/` at 295,123 gzipped as the whole story.
+
+    **Half of it moved on 2026-09-23 with `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`**, which put `/work`'s whole WebGL
+    stack behind one dynamic boundary: `ops/asset-budget.mjs` reads `/work` as carrying no WebGL
+    chunk from that build on, so a prefetch of `/work`'s route bundle from `/` can no longer pull
+    `three` with it. **Not re-measured on `/`**: the request recording this entry was made with was
+    not repeated, and the `§ Stated limits` line it asks for is still unwritten, so the entry stays
+    open on both.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
@@ -3578,7 +3603,12 @@ status: done
 
     **KV-5's title is untouched**, and its owner and trigger stand: whichever of Stories 2-31 and
     2-33 lands second, at the KV-5 retirement. This entry stays open on that half alone.
-  status: open
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`**, the second of the two to land, at the KV-5 retirement
+    as this entry asked: the heading and the index row read "No element sits past either viewport edge
+    at 360px", the statement of what holds, KV-4's shape on retiring, and the entry's first paragraph
+    records the old title, so an inbound citation that quotes it still finds it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-58
@@ -3931,7 +3961,12 @@ status: done
     title, the index row and the closing list all have to move anyway. **Fallback trigger: KV-5
     staying open past Epic 2**, at which point the count and the story list should be corrected
     rather than left.
-  status: open
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`**, at the trigger: KV-5 is retired, its index row names the story
+    that retired it (Story 2-33), and `ops/__tests__/hit-target-floor.test.ts` pins the retirement,
+    the date and the title's move in the index row and the entry, with the entry keeping "Stories
+    2-31, 2-33 and 2-14" in its history.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-67
@@ -4525,6 +4560,13 @@ status: done
     "three" and `AGENTS.md`'s "four existing sites" are stale by five stories. Story 2-30 edited
     `app/app.scss` below that block, where the `--accent-dim` scope was, and not `:49-58`, so the
     trigger has not fired; the owner and the trigger stand.
+
+    **Counted again 2026-09-23** by Story 2-33, which rebuilt `WorkHero.scss` against the contract:
+    no `--monument-bold` call site is left anywhere. `tests/e2e/anchor-aliases.pw.ts` retired
+    `WEIGHT_SITES` and pins the alias at zero, and `app/__tests__/anchor-contract.test.ts` retired
+    `WEIGHT_CALL_SITES`. The two comments now overstate by four sites, and Story 2-33 edited
+    `app/app.scss` below that block (the `body#work` rule) and not `:49-58`, so the trigger has not
+    fired; the owner and the trigger stand, and Story 2-22 is unblocked.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
@@ -5250,6 +5292,17 @@ status: done
     second, tighter comparison for the compared region: **unassigned**; trigger, the next baseline
     change the comparator measures as none. The `AGENTS.md` line: the next `bmad-project-context`
     refresh, which owns the managed block; trigger, that refresh.
+
+    **Story 2-33's first edit to `WorkHero.scss` fired the surface half on 2026-09-23**, and it was
+    taken there: the rebuilt stylesheet is held by `WorkHero.test.tsx` to naming its fourteen pinned
+    roles and nothing else, with no `url(`, no colour function, no `transition`, no `z-index`, no
+    `overflow: hidden`, and no opacity but the entrance keyframe's `from`, so a grain, a raster or a
+    faint layer written back into the hero fails there. **The sweep's `url(` and low-alpha tell is
+    not taken**: it is a change to `tests/e2e/accessibility-floor.pw.ts`'s built-CSS tally, which is
+    where Story 2-34's colour-literal gate belongs, and that owner and trigger stand. The `threshold`
+    question and the `AGENTS.md` line are unchanged. **Seen on the day**: the `/work` baseline was
+    regenerated by Story 2-33 on a change the comparator did count (85,590 differing pixels), not one
+    it measured as none.
   status: open
 
 - source_spec: `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/review-apple-design-2026-09-15.md`
@@ -5655,7 +5708,14 @@ status: done
     **Owner: Story 2-33**, the last closing story KV-5 names, which rebuilds `WorkHero` and can
     retire the entry on its own hero reading. **Trigger: that story starting**, or any earlier
     reading of KV-5 for a decision.
-  status: open
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`.** The Story 2-8 sweep's A-5 arm reads every element with a box on
+    every surface (`outsideTheViewport` in `tests/e2e/hit-target-floor.pw.ts`, both edges at the same
+    slack), and a standing case shows it reporting two planted blocks that the interactive arm misses.
+    **Observed 2026-09-23** in the pinned image: 0 elements of any kind past an edge on `/`, `/work`,
+    `/cv`, `/celeste` and the 404. KV-5 is retired in its entry and index row, `ops/hit-target-floor.md`
+    records the widening and the reading, and DW-57 and DW-66 closed with it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
   id: DW-117
@@ -5718,4 +5778,63 @@ status: done
 
     **Owner: unassigned.** **Trigger: a header that has to wrap at a supported width, a fragment
     target added to `/celeste`, or the next change to the header's contents.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`
+  id: DW-119
+  summary: >-
+    The `/work` torus can still be dragged: `CanvasOrbitControls` gives a decorative canvas a pointer
+    rotation that `EXPERIENCE.md` rules out ("no gesture"), which Story 2-33 left in place because the
+    restyle ceiling keeps interactions. The homepage's `ParticleWave` drag has the same shape.
+  evidence: |-
+    `components/molecules/TorusCanvas/TorusCanvas.tsx` renders `<CanvasOrbitControls />` inside the
+    scene, drei's `OrbitControls` with zoom and pan off and rotation on, so a mouse or a finger can turn
+    the torus. `EXPERIENCE.md` § Pointer and touch says "No long-press, no swipe, no gesture. Everything
+    is a tap or a click", § Work hero and work timeline calls the canvas decorative, and `Scene.tsx`'s
+    own comment says there is "nothing inside it to operate", which is true of the gem and not of the
+    torus. `RESTYLE-SPEC.md` § The ceiling keeps "the same interactions" through a restyle, so Story
+    2-33 recorded the conflict rather than removing an interaction, the way Story 2-32 re-booked the
+    new controls it was not asked for. **Observed 2026-09-23** in `mcr.microsoft.com/playwright:v1.62.1-noble`
+    on a context that allows motion: the canvas computes `touch-action: auto` at 360, 768 and 1280, so a
+    touch that starts on it still scrolls the page; the gesture costs a phone nothing but a drag that
+    rotates the torus. The home's `ParticleWave` (CHANGELOG 3.2.0: "Click-drag rotation with inertia")
+    is the same question on the other canvas.
+
+    A consequence worth knowing before ruling: the orbit controls are what pull `three-stdlib` and the
+    `three` namespace into `/work`'s WebGL chunk group, which is why Turbopack emits that group's large
+    chunk separately from the homepage's (DW-120). Removing them is likely, not verified, to let the two
+    groups share one file.
+
+    **Owner: the Operator**, for a ruling: keep the rotation as a deliberate divergence written into
+    `EXPERIENCE.md`, or remove it from both canvases in a story that owns them. **Trigger: that ruling,
+    or the next change to either scene.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`
+  id: DW-120
+  summary: >-
+    The build now carries the three.js, R3F and drei library code twice, once per dynamic boundary,
+    so the narrative total reads 634,829 gzipped against the 450,000 top of the estimate, and a visitor
+    who loads `/` and then `/work` with motion allowed downloads it twice.
+  evidence: |-
+    **Observed 2026-09-23** by `node ops/asset-budget.mjs` against the Story 2-33 branch build `3khZaamuAoVzhg3IZI1ZP`: two
+    chunks of 895,063 bytes on disk, 234,553 and 234,552 gzipped, both "three, @react-three/fiber,
+    @react-three/drei", both loaded on demand. They are byte-identical for their first 870,361
+    characters and differ in the last 24,702, where the `/work` group's copy also carries the `three`
+    namespace re-export and a `useThree` re-export that drei's orbit controls reach for. Before the
+    story `/work` imported the torus statically, its library chunk was referenced by the `/work`
+    document and happened to be the same file the homepage's gem boundary loaded; with both scenes
+    behind their own `next/dynamic` boundary, Turbopack emits one large chunk per boundary.
+
+    **What it costs, and what it does not.** Per route, nothing: `/work`'s document stopped carrying the
+    WebGL stack (486,682 to 253,886 gzipped on the wire, the chunk requested only when motion is
+    allowed), and `/`'s gem loads one copy as it loaded one before. What it costs is the build's total
+    (the directory is 228,274 gzipped heavier) and a session that visits both scenes, which fetches
+    the library twice where one cached file used to serve both. The estimate at `EXPERIENCE.md:946`
+    is crossed by this duplication and not by any narrative growing; the trade it names
+    (`@react-three/postprocessing`) was not weighed on a figure that counts one library twice.
+
+    **Owner: unassigned.** Candidates: DW-119's ruling (without the orbit controls the two groups are
+    likely to share one file, not verified), or a story that owns the build tooling (Epic 3 introduces
+    Turborepo). **Trigger: either of those, or the next change to either scene's boundary.**
   status: open

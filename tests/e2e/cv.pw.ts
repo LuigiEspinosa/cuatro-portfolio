@@ -215,9 +215,10 @@ test.describe('/cv answers a document', () => {
 
   test('paints the base body rule, which no id override reaches on this surface', async ({ page }) => {
     // `Body` writes the stripped pathname onto `<body id>`, and `body#cv` matches none of
-    // `body#work` (`app/app.scss`), `body[id='']` (`HomeLayout.scss`) or `#celeste`
-    // (`celeste.scss`), so the base rule paints. The 404 was the only such surface until this story
-    // and three records said so; this is the reading that makes the correction a measurement.
+    // `body[id='']` (`HomeLayout.scss`) or `#celeste` (`celeste.scss`), so the base rule paints. It
+    // matched no `body#work` either, the rule `app/app.scss` carried until Story 2-33 deleted it. The
+    // 404 was the only such surface until this story and three records said so; this is the reading
+    // that makes the correction a measurement.
     await goTo(page, ROUTE);
 
     expect(await page.evaluate(() => document.body.id), '/cv no longer derives its own body id').toBe('cv');
@@ -234,13 +235,28 @@ test.describe('/cv answers a document', () => {
       await probeComputed(page, 'background-color:var(--token-bg);', 'background-color')
     );
 
-    // **The control**, and it is the surface next door. `/work` really does override the base rule,
-    // so the same two reads have to answer differently there, or this says nothing about `/cv`.
+    // **`/work` is read the same way since Story 2-33**, which deleted `body#work`, the cybercore
+    // literal and its grid; until then it was this read's control, the surface next door answering
+    // differently. Every route now paints the base rule.
     await goTo(page, WORK);
+    expect(await page.evaluate(() => document.body.id), '/work no longer derives its own body id').toBe('work');
+    expect(
+      await page.evaluate(() => window.getComputedStyle(document.body).backgroundImage),
+      'body on /work paints a background image, so a grid-ground rule matches it again'
+    ).toBe('none');
     expect(
       await page.evaluate(() => window.getComputedStyle(document.body).backgroundColor),
-      'body#work no longer overrides the base ground, so the reading on /cv is not about an override'
+      'the ground /work paints is not the base rule\'s --token-bg'
+    ).toBe(ground);
+
+    // **The control**, planted for this surface's id: an override the reads have to see, or the
+    // agreement above says nothing about overrides.
+    await page.addStyleTag({ content: 'body#work { background-color: rgb(10, 0, 15); background-image: linear-gradient(red, blue); }' });
+    expect(
+      await page.evaluate(() => window.getComputedStyle(document.body).backgroundColor),
+      'a planted body#work override is not read, so the agreement above is not about overrides'
     ).not.toBe(ground);
+    expect(await page.evaluate(() => window.getComputedStyle(document.body).backgroundImage)).not.toBe('none');
   });
 });
 
