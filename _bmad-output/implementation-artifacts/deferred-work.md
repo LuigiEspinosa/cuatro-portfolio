@@ -5255,3 +5255,32 @@ status: done
     **Owner: unassigned.** **Trigger: the next story that records a reading in that file, or the
     first time a figure in it is found wrong.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-19-cs-tracker-adopts-the-token-contract.md`
+  id: DW-109
+  summary: >-
+    Both `cs-tracker` probes stop at exit 3 on this Windows host unless the shell sets `NO_COLOR`,
+    because the Tailwind 4.1.12 CLI colours its `--help` banner and the version match cannot read
+    through the escape codes. The Block If fires on a colour code, not on a wrong compiler.
+  evidence: |-
+    Observed 2026-09-23, re-running both probes for AD-22 (Pending Operator action 2 in Story 1-15's
+    `ops/daisyui-route.md` and in Story 1-19's `ops/cs-tracker-token-adoption.md`).
+    `node ops/daisyui-route-probe.mjs` and `node ops/cs-tracker-adoption-probe.mjs` each exited 3
+    with "the Tailwind binary reports no version at all, not v4.1.12", and each completed once
+    `NO_COLOR=1` was set: exit 0 and exit 1 respectively, the 1 being DW-17's known pin. Spawned
+    directly with `--help` through a pipe, `cs-tracker`'s own 4.1.12 binary prints
+    `tailwindcss \x1b[34mv4.1.12\x1b[39m`, coloured with `TERM` unset and with `TERM=dumb` alike and
+    plain only under `NO_COLOR=1`. The matches are `/(tailwindcss v[\d.]+)/` at
+    `ops/daisyui-route-probe.mjs:748` and `ops/cs-tracker-adoption-probe.mjs:1052`. The recorded runs
+    of 2026-08-25 to 2026-08-29 read a plain banner on the same host; what their shells set is not
+    recorded.
+
+    Both records now tell the Operator to set `NO_COLOR=1`, so the scheduled re-run is not blocked.
+    The repair is to strip ANSI escape sequences from the `--help` output before matching, in both
+    probes, with a unit case feeding the coloured banner to the match. That is a code change to two
+    Epic 1 deliverables and outside the documentation-only closure of those actions, so it is filed
+    rather than made.
+
+    **Owner: unassigned.** **Trigger: the next change to either probe, or the next re-run that stops
+    at exit 3 on the banner.**
+  status: open

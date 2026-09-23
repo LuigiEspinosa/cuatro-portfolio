@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-22-2026
+last_updated: 09-23-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -125,9 +125,20 @@ development_status:
   1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: done
   1-14-ci-enforces-the-contract-boundary: done
   1-15-determine-cs-tracker-s-daisyui-adoption-route: done
+  # 2026-09-23: 1-16 stays awaiting-operator on one Operator decision, action 3 in
+  # ops/contract-serving.md: settle Traefik versus the Hub before Epic 4 plans its work.
+  # Action 6 is closed, the AGENTS.md context refresh having landed 2026-08-27 in 4112ee8.
+  # Action 4 carries a date, but its cell says the user-agent instruction is written down
+  # and not yet delivered to any Satellite; that delivery is the Operator's too.
   1-16-serve-contracts-at-https-cuatro-dev-contracts: awaiting-operator
   1-17-anchor-migration-step-1-add-the-contract-change-nothing: done
   1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: done
+  # 2026-09-23: 1-19 stays awaiting-operator on three Operator actions in
+  # ops/cs-tracker-token-adoption.md. 2: the probe joined AD-22's scope today, but its
+  # re-run exits 1 on the pipeline pin DW-17 describes, which waits on the Operator's
+  # reconcile in ops/contract-adoption.md action 7. 3: decide whether --color-secondary
+  # stays on a repeated ground. 5: evaluate seam S-8 on the running application. The
+  # sibling daisyUI probe passed its re-run and closed ops/daisyui-route.md action 2.
   1-19-cs-tracker-adopts-the-token-contract: awaiting-operator
   1-20-record-the-adopted-contract-version-and-the-automation-polic: done
   epic-1-retrospective: done
