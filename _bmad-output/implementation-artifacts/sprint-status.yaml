@@ -434,7 +434,7 @@ development_status:
   # Waits on the Operator: the spec's manual checks (/work at 360 and 1280 on a phone and on a
   # hover-capable pointer, and with reduced motion on; the entrance at 2x to 5x) and DW-119's
   # ruling.
-  2-33-redesign-workhero-and-worktimeline-token-native: review
+  2-33-redesign-workhero-and-worktimeline-token-native: done
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
   epic-2-retrospective: optional
 
