@@ -5745,7 +5745,22 @@ status: done
     that can hover. The other two files are untouched and still ship their hover ungated, so this
     entry stays open for them: `CvIntro.scss:122` and `SiteFooter.scss:89`, **owner unassigned**,
     trigger the first edit to either.
-  status: open
+
+    **The last two halves closed 2026-09-23 by
+    `_bmad-output/implementation-artifacts/spec-dw-115-cv-intro-and-footer-hovers-gated.md`**, a fix
+    made for this entry alone. Each rule is unchanged and now sits inside `@media (hover: hover)`,
+    `CvIntro.scss:123-127` and `SiteFooter.scss:90-94`, read off the compiled sheet by
+    `components/organisms/CvIntro/__tests__/CvIntro.test.tsx` and
+    `components/organisms/SiteFooter/__tests__/SiteFooter.test.tsx` on the `SkipLink` and
+    `SuiteDirectory` precedent. `tests/e2e/secondary-surfaces.pw.ts` still sees the footer link
+    recolour under a pointer that can hover. No browser case reads the `/cv` intro links' recolour
+    (`tests/e2e/accessibility-floor.pw.ts` hovers them only to find no ring), so the rule pinned
+    verbatim in their suite is what holds it. **Observed 2026-09-23**: every tracked stylesheet,
+    compiled with `sass` and stripped of its `@media (hover: hover)` blocks as those suites strip
+    them, has no `:hover` left, so no hover in the Hub sits outside the gate the 2026-09-15 rule
+    asks for. Nothing gates the next one: each suite reads its own file, and the repository-wide
+    check this entry offered Story 2-34 was not taken.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
   id: DW-116
