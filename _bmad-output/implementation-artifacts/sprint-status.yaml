@@ -400,7 +400,7 @@ development_status:
   # story's.
   # Waits on the Operator: the spec's manual check (the chrome at 360 and 1280 on a hover-capable
   # pointer and on a phone) and DW-117's words.
-  2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: review
+  2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: done
   2-33-redesign-workhero-and-worktimeline-token-native: backlog
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
   epic-2-retrospective: optional
