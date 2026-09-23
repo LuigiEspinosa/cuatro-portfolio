@@ -73,8 +73,8 @@ docker run --rm --ipc=host ^
 ```
 
 Drop the trailing `exec playwright test status-mark` for `pnpm test:e2e` and the whole suite runs.
-The image is pinned because glyph rasterization is not portable and `--font-mono` falls back to a
-different face on Linux than on Windows (`ops/rendered-output-harness.md`).
+The image is pinned because glyph rasterization is not portable, even for `--f-mono`, whose Geist
+Mono the contract serves to Linux and Windows alike (`ops/rendered-output-harness.md`).
 
 ## The four values, measured
 

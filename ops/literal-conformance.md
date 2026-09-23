@@ -181,4 +181,4 @@ the file's seven job names as a set and read this job's command.
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Record the first real CI run of the `literal-conformance` job** from the Actions run summary | Operator | The gate and its suite have run on the authoring host only. A push to `dev` runs the job; the run's number and outcome belong here | _not done_ |
+| 1 | **Record the first real CI run of the `literal-conformance` job** from the Actions run summary | Operator | The gate and its suite have run on the authoring host only. A push to `dev` runs the job; the run's number and outcome belong here | **2026-09-23.** Run `35902047573` on `dev` at `809bef7`, `literal-conformance: success`, 18:22:52Z to 18:23:08Z, **16 s**. All seven jobs in that run passed. On the runner the gate printed the passing line under "The first run" verbatim: 25 stylesheets, 21 outside the permitted set and 4 inside it, and one alpha, on `--c-scrim`. Run `35914640345` on `8ba447b` followed, green, and the push that carries this row runs the job again |

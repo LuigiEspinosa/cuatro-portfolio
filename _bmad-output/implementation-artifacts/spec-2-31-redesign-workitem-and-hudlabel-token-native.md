@@ -265,8 +265,19 @@ render byte-identical markup and `Premise.test.tsx:120` holds. Annotated adds
 `.plate-mark--annotated` (column, rule beneath) and `.plate-mark__sub`; side-ruled adds
 `.plate-mark--side-ruled` (rule on the leading edge, `padding-inline-start: var(--s-sm)`) and, for
 `align='end'`, `.plate-mark--end` (the mirror). The props are a union keyed on `variant`, so `domain`
-exists only on section, `sub` only on annotated and `align` only on side-ruled: a fourth
-combination does not type-check.
+is declared only on section, `sub` only on annotated and `align` only on side-ruled.
+
+**Corrected 2026-09-23, after the story closed.** This paragraph went on "a fourth combination does
+not type-check", which overstates the union. Checked with `corepack pnpm typecheck` (TypeScript
+5.9.3) against a scratch `.tsx`, since deleted: with `variant` written, another variant's prop is
+refused (`sub` or `align` on a section mark, `domain` or `align` on an annotated one, `sub` or
+`domain` on a side-ruled one), and so is an annotated mark without `sub`. With `variant` omitted the
+mark is a section mark: `<PlateMark label='A' sub='s' />` compiles, and so does an `align` typed as
+its literal (`align={'end' as const}`), because a union's excess-property check asks only that each
+prop exist on some member, and the mark renders as a section mark with them dropped. A bare
+`<PlateMark label='A' align='end' />` is refused (TS2322), but only because the literal is widened
+to `string` there. A props object spread from a variable is not checked for another variant's prop
+at all.
 
 ```ts
 type PlateMarkProps =
@@ -358,7 +369,8 @@ the old baseline return together.
 
 **Commands:**
 
-- `corepack pnpm typecheck`: expected clean; the union refuses a fourth combination.
+- `corepack pnpm typecheck`: expected clean; the union refuses another variant's prop where
+  `variant` is written, not every fourth combination (corrected 2026-09-23, see Design Notes).
 - `corepack pnpm test --run`: expected every file passes (about 900 tests in 34 files before this story).
 - `corepack pnpm build && node ops/asset-budget.mjs`: expected a reading the Derived paragraph accounts for.
 - Container `pnpm test:e2e` with no filter: expected green after the baseline update, the new spec file included.
@@ -414,11 +426,12 @@ settled by `EXPERIENCE.md` § Motion and § Work item or by this spec. Re-run af
 
 **One label component, three variants**
 
-- Start here: a union on `variant`, so a fourth combination fails to type-check.
-  [`PlateMark.tsx:40`](../../components/molecules/PlateMark/PlateMark.tsx#L40)
+- Start here: a union on `variant`, which refuses another variant's prop only where `variant` is
+  written (corrected 2026-09-23, see Design Notes).
+  [`PlateMark.tsx:42`](../../components/molecules/PlateMark/PlateMark.tsx#L42)
 
 - The subordinate line is ornament, hidden from assistive technology in every render.
-  [`PlateMark.tsx:91`](../../components/molecules/PlateMark/PlateMark.tsx#L91)
+  [`PlateMark.tsx:93`](../../components/molecules/PlateMark/PlateMark.tsx#L93)
 
 - A variant moves the rule and adds none; the mirror is logical properties throughout.
   [`PlateMark.scss:80`](../../components/molecules/PlateMark/PlateMark.scss#L80)

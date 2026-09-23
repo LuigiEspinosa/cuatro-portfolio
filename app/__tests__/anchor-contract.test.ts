@@ -245,8 +245,8 @@ const LITERAL_PROPERTIES = ['--hero-height'] as const;
  * this list is allowed to move in. Story 2-17 then moved `error-page.scss` to
  * `TOKEN_NATIVE_STYLESHEETS` below rather than off disk: it still sets `--w-black` by hand at its
  * `--monument-bold` call site, and it now also names `--tap`, which claim two refuses from a file
- * listed here. The `--monument-bold` call site itself is unchanged, and
- * `tests/e2e/anchor-aliases.pw.ts` goes on reading it at `error-page.scss:24`. Story 2-27 then
+ * listed here. The `--monument-bold` call site was unchanged, and `tests/e2e/anchor-aliases.pw.ts`
+ * read it at `error-page.scss:24` until Story 2-30 deleted the file on 2026-09-23. Story 2-27 then
  * rebuilt `GlitchText` token-native: `glitch-text.scss` left disk with its alias call site, and
  * `GlitchText.scss` beside the component names the display roles directly, so it is a
  * `TOKEN_NATIVE_STYLESHEETS` entry and not a weight site at all.

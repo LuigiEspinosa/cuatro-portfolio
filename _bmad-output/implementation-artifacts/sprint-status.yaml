@@ -145,8 +145,9 @@ development_status:
   # REMINDER: run /bmad-project-context (refresh) before starting epic-2.
   # Epic 1 installs Playwright (1-10), enumerates the real Caddy routing table (1-7),
   # and starts the token migration, so three lines in the AGENTS.md block go stale here.
+  # 2026-09-23: done. The refresh landed 2026-08-27 in 4112ee8 and 2026-08-28 in 967abfd.
 
-  epic-2: in-progress
+  epic-2: done
   2-1-the-pre-existing-repository-defects: done
   2-2-measure-the-narrative-bundle-against-the-asset-budget: done
   2-3-the-registry-schema-and-its-blocking-ci-gate: done
@@ -177,7 +178,7 @@ development_status:
   # 2-21 DELETED 2026-08-15. A rewritten stylesheet has no call sites to rename.
   # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
   2-20-migration-step-5-swap-the-type: done
-  # 2-22 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier pushes.
+  # 2-22 built and pushed 2026-09-23: dev at 8ba447b, CI run 35914640345 green on seven jobs.
   # The alias layer is deleted: app/app.scss declares --hero-height alone, and the base rule names
   # --token-bg, --f-body at --w-regular and --token-text, the values the three aliases it read resolved
   # to, so no computed value moved. The thirteen go (the story's ten, the two accent rows and the width
@@ -190,7 +191,7 @@ development_status:
   # managed alias line is corrected (DW-81 closed); DW-122 files --hero-height, read by nothing, for the
   # Operator. Weight: the global stylesheet 112 gzipped lighter; /work 113,763 over the 140,000.
   # Step-04 review, six layers inline (no subagent tool, so not independent): four patches, no loopback.
-  # Typecheck clean, 1,546 unit tests in 59 files, 325 e2e green in 5.8 min in the pinned image.
+  # Typecheck clean, 1,547 unit tests in 59 files, 325 e2e green in 5.8 min in the pinned image.
   2-22-migration-step-7-delete-the-aliases: done
   # 2-23 closed 2026-09-12. Job live at d91fe09, runs 34721281941 (exit 2, mail proven) and
   # 34722748245 (35 of 35 on a GitHub-hosted runner), secret set, first SM-4 reading 80%.
@@ -319,8 +320,8 @@ development_status:
   # the --t-xl reading of the nav and contact type, which is a gap in DESIGN.md rather than a
   # value it supplied.
   2-29-redesign-homelayout-token-native: done
-  # 2-30 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
-  # pushes. Error404 is a server component on the documents' structure: a section Plate mark
+  # 2-30 built and pushed 2026-09-23: dev at cdaf966, CI run 35850154182 green on six jobs.
+  # Error404 is a server component on the documents' structure: a section Plate mark
   # reading ERROR (plain words, no // and no code), the display entrance (GlitchText) as the
   # page's one <h1>, one secondary line and the header's DESTINATIONS as controls, with the numeral
   # aria-hidden and unnamed in the muted accent at --t-xl. The redundancy test ran in the pinned
@@ -345,11 +346,14 @@ development_status:
   # Waits on the Operator: the spec's manual check (the 404 at 360 and 1280 on a hover-capable
   # pointer and on a phone) and DW-114's words.
   2-30-redesign-error404-token-native: done
-  # 2-31 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
-  # pushes. HudLabel is deleted and folded into the Plate mark as its annotated and side-ruled
-  # variants; the props are a union on variant, so a fourth combination does not type-check,
-  # every cell is uppercase in the DOM for RESTYLE-SPEC § 7's CSS-off check, and the subordinate
-  # line is aria-hidden in every render. WorkItem.scss is rebuilt against the contract alone, a
+  # 2-31 built and pushed 2026-09-23: dev at 2eb0aa0, CI run 35840556081 green on six jobs.
+  # HudLabel is deleted and folded into the Plate mark as its annotated and side-ruled
+  # variants; the props are a union on variant, which refuses another variant's prop only where
+  # variant is written (corrected 2026-09-23 against TypeScript 5.9.3: a mark that omits it is a
+  # section mark and compiles with a sub, or with an align typed as its literal, dropping either;
+  # a bare align='end' there fails only by widening to string), every cell is uppercase in the
+  # DOM for RESTYLE-SPEC § 7's CSS-off check, and the subordinate line is aria-hidden in every
+  # render. WorkItem.scss is rebuilt against the contract alone, a
   # row and not a card: the leading rule is two out-of-flow pseudo-elements switched by
   # transform, so the widest state is reserved and nothing reflows; hover recolours that rule and
   # nothing else, inside @media (hover: hover); the trigger inherits the page type (F-3), the
@@ -381,8 +385,8 @@ development_status:
   # Waits on the Operator: the spec's manual checks (the hover and the greyscale read at 360 and
   # 1280, a phone, a printed /cv) and DW-110's words.
   2-31-redesign-workitem-and-hudlabel-token-native: done
-  # 2-32 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
-  # pushes. The chrome is rebuilt against the contract. The header is a band across the whole
+  # 2-32 built and pushed 2026-09-23: dev at 70cdbbd, CI run 35863809617 green on six jobs.
+  # The chrome is rebuilt against the contract. The header is a band across the whole
   # viewport, sticky and opaque on --token-bg, closed beneath by a --stroke-hair rule in
   # --token-border and as tall as its content (no block size anywhere, DW-62), with the wordmark
   # and the destinations in the page's own container inside it (DW-63); html:has(.header-container)
@@ -415,8 +419,8 @@ development_status:
   # Waits on the Operator: the spec's manual check (the chrome at 360 and 1280 on a hover-capable
   # pointer and on a phone) and DW-117's words.
   2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: done
-  # 2-33 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
-  # pushes. The /work hero and the timeline are rebuilt against the contract. The hero is a grid,
+  # 2-33 built and pushed 2026-09-23: dev at 802fbf4, CI run 35892351537 green on six jobs.
+  # The /work hero and the timeline are rebuilt against the contract. The hero is a grid,
   # one minmax(0, 1fr) column at 360 and three fifths to the display line beside two to the canvas
   # from 768 where motion is allowed, padded block-wise on --s-2xl and --s-xl and closed beneath by
   # --stroke-boundary in --token-border-interactive; no alias, z-index, 42vh floor or overflow:
@@ -449,7 +453,8 @@ development_status:
   # hover-capable pointer, and with reduced motion on; the entrance at 2x to 5x) and DW-119's
   # ruling.
   2-33-redesign-workhero-and-worktimeline-token-native: done
-  # 2-34 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier pushes.
+  # 2-34 built and pushed 2026-09-23: dev at 809bef7, CI run 35902047573 green on seven jobs, the
+  # literal-conformance job's first real run (ops/literal-conformance.md action 1).
   # ops/literal-conformance.mjs, run by the new blocking literal-conformance job (last in ci.yml, so
   # the line numbers other records cite hold), reads every stylesheet git tracks and refuses a colour
   # literal and a hand-written 44px anywhere outside contracts/ and app/scss/_print.scss, a spacing

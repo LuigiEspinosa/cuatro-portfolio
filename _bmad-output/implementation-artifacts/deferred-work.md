@@ -1115,8 +1115,22 @@ origin: spec-deferred 591fb1589fe3
 location: AGENTS.md:52-57
 source_spec: `spec-1-14-ci-enforces-the-contract-boundary.md`
 severity: low
-reason: AGENTS.md:52-53 reads "CI (.github/workflows/ci.yml) runs typecheck and tests only" against a file that now carries five jobs, "The full suite is 38 tests in roughly 45 seconds" against a suite this story leaves at 474, and AGENTS.md:55-57 reads "Playwright is not installed" against a rendered-output job that runs pnpm test:e2e. Pre-existing: stale since Stories 1-10 and 1-11. Every story since has recorded it as a Pending Operator action rather than fixing it, because the block is managed by bmad-project-context and edits inside it are replaced on refresh, which is why this story's boundaries forbid touching it. It needs one bmad-project-context refresh, not a per-story note.
-status: open
+reason: |-
+  AGENTS.md:52-53 reads "CI (.github/workflows/ci.yml) runs typecheck and tests only" against a file that now carries five jobs, "The full suite is 38 tests in roughly 45 seconds" against a suite this story leaves at 474, and AGENTS.md:55-57 reads "Playwright is not installed" against a rendered-output job that runs pnpm test:e2e. Pre-existing: stale since Stories 1-10 and 1-11. Every story since has recorded it as a Pending Operator action rather than fixing it, because the block is managed by bmad-project-context and edits inside it are replaced on refresh, which is why this story's boundaries forbid touching it. It needs one bmad-project-context refresh, not a per-story note.
+
+  Closed 2026-09-23, found done: the refresh this entry asks for ran twice. `4112ee8` (2026-08-27)
+  replaced all three claims: CI was named as its five jobs, the suite figure became 600 tests across
+  26 files, and "Playwright is not installed" became "Playwright is installed and `rendered-output`
+  is a blocking CI job". The `bmad-project-context` refresh of 2026-08-28, `967abfd`, rewrote the
+  block again (`Verified 2026-08-28 against c490f33`). Observed 2026-09-23 in `AGENTS.md` at
+  `304767f`: nothing describes CI as typecheck and tests only, Playwright is in the stack line
+  (`:9`) with the rendered-output job at `:64-67`, and the suite figure (`:53-56`, 890 tests across
+  34 files, measured 2026-08-29) is dated and says it is a rough expectation, not a number to assert
+  on; the suite ran 1,549 tests in 59 files on 2026-09-23. The same refresh stood as a Pending
+  Operator action in six `ops/` records, closed the same day as `ops/contract-serving.md` action 6
+  was: `token-contract.md`, `font-contract.md`, `rendered-output-harness.md`, `tailwind-adapter.md`,
+  `contract-purity.md` and `anchor-token-adoption.md`.
+status: done
 
 ### DW-3: No job in ci.yml declares a permissions block, so all five inherit the repository default GITHUB_TOKEN scope rather than the contents:read they each need.
 origin: spec-deferred 96247ee3936d

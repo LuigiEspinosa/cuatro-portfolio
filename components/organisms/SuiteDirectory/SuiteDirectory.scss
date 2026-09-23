@@ -210,9 +210,9 @@
 // filled square and `:305-314` explains why it is load-bearing rather than ornament: without it
 // `Live` and `Complete` are both `1px solid` and sit 1.13:1 apart in greyscale. `RESTYLE-SPEC.md:654`
 // states F-8 as a binary grep for `--token-accent` used as a fill, expecting zero occurrences, and
-// this is one. It needs a named exemption in Story 2.34's gate, the way `::selection` has one at
-// `RESTYLE-SPEC.md:657`, and that is filed in `deferred-work.md`. Do not resolve it by unfilling
-// the dot.
+// this is one. It needs a named exemption, the way `::selection` has one at `RESTYLE-SPEC.md:657`.
+// Story 2-34's gate reads literals, not roles, so no gate runs F-8's grep: the Story 2-9 entry in
+// `deferred-work.md` is unassigned until a story takes F-8. Do not resolve it by unfilling the dot.
 .suite-directory__dot {
   flex: none;
   inline-size: 4px;

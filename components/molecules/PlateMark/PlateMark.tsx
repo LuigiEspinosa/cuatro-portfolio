@@ -16,9 +16,11 @@ import './PlateMark.scss';
  * **`HudLabel` was folded into this component by Story 2-31 and deleted rather than aliased.** The
  * two were the same atom under two names (decided 2026-08-15); its `sub` is the annotated variant's
  * subordinate line and its right alignment is the side-ruled mirror. The props are a union on
- * `variant`, so a trailing cell exists only on a section mark, a subordinate line only on an
- * annotated one and an alignment only on a side-ruled one: a fourth combination does not
- * type-check.
+ * `variant`, which refuses another variant's prop, or an annotated mark without its `sub`, only
+ * where `variant` is written (TypeScript 5.9.3, checked 2026-09-23). A mark that omits it is a
+ * section mark: a `sub`, or an `align` typed as its literal, compiles and is dropped, and a bare
+ * `align='end'` fails only because it widens to `string`. A props object spread from a variable
+ * is not checked for another variant's prop at all.
  *
  * **The subordinate line is ornament, and hidden from assistive technology in every render.** It
  * takes the muted accent role at 2.74:1 (`DESIGN.md:701-704`), which is barred from carrying
