@@ -5615,6 +5615,20 @@ status: done
     the Epic 2 merge, and `/` clears the line by one hundredth: a second failing audit on that
     route would very likely take it under. **Owner: unassigned.** **Trigger: the Epic 2 merge to
     `main`, or any story that sets new text in the muted accent on `/`.**
+
+    **Widened 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`, observed rather than predicted.**
+    The same local reading, taken after that story deleted `body#work`, reads `/work` at 0.96 on
+    all three runs, where the Story 2-31 reading put it at 1.00: its one failing audit is
+    `color-contrast` on the annotated Plate mark's subordinate line, `span.plate-mark__sub`
+    (`経験`), `aria-hidden` ornament in the muted accent, `#564c91` on `#060509` at 2.74:1. The node
+    is Story 2-31's and did not move; what moved is the ground beneath it. Until that story `/work`
+    painted the cybercore grid as two `linear-gradient` images on `body`, and the change in the
+    reading is consistent with axe setting a node over a background image aside for review rather
+    than failing it; on the plain `--token-bg` it computes the ratio. `/cv` reads 1.00 (its section
+    mark carries no subordinate line), `/` 0.96 as above, best practices and SEO 1.00 everywhere,
+    and every assertion is green. **The margin is one hundredth on two routes now**, so the trigger
+    widens: the Epic 2 merge to `main`, or any story that sets new text in the muted accent on `/`
+    or on `/work`.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-30-redesign-error404-token-native.md`
