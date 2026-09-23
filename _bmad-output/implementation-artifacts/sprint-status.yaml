@@ -341,7 +341,7 @@ development_status:
   # none of them this story's, filed as DW-113 because / clears the main gate by one hundredth.
   # Waits on the Operator: the spec's manual checks (the hover and the greyscale read at 360 and
   # 1280, a phone, a printed /cv) and DW-110's words.
-  2-31-redesign-workitem-and-hudlabel-token-native: review
+  2-31-redesign-workitem-and-hudlabel-token-native: done
   2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog
   2-33-redesign-workhero-and-worktimeline-token-native: backlog
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
