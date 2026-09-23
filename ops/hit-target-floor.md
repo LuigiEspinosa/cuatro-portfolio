@@ -366,7 +366,11 @@ floor on the 404 and the row went stale in the direction that forces its own del
 booked to Story 2-30, which still owns everything else on that surface; the floor was met early
 because two links written today under it would have been a new KV-4 breach, which that register has
 no shape for. This is the third time the ledger has shrunk, and KV-4's closing list narrows to
-Story 2-32 alone.
+Story 2-32 alone. **Since 2026-09-23 the class is `error-page__exit`**: Story 2-30 rebuilt the
+surface, and all three of the things that keyed on the old name went with it (`error-page.scss`
+replaced by `Error404.scss`, the `app/app.scss` scope deleted, the tween now a CSS keyframe). The
+exits are controls there, still at `--tap` on both axes through `min-block-size` and
+`min-inline-size`, and the 404 still measures five interactive elements, none under the floor.
 
 **Per-element detail behind the ranges**, **observed 2026-09-06**, so a later reader can see how
 far under the floor each one is without running anything. **The six `nav.navbar a` rows left this

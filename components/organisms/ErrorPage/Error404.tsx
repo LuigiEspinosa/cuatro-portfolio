@@ -1,85 +1,62 @@
-'use client';
-
 import Link from 'next/link';
 import { PlateMark } from '@/components/molecules/PlateMark/PlateMark';
+import GlitchText from '@/components/molecules/GlitchText/GlitchText';
 import { DESTINATIONS } from '@/components/atoms/Navbar/Navbar';
-import { useGsapContext } from '@/hooks/useGsapContext';
-import { gsap } from 'gsap';
-import './error-page.scss';
+import './Error404.scss';
 
 /**
- * The 404 surface.
+ * The 404 surface (Stories 2-17 and 2-30).
+ *
+ * **The structure is the documents' four parts and nothing else** (`EXPERIENCE.md` § Error
+ * surface, `RESTYLE-SPEC.md` § 8 Empty edge): a section Plate mark, the display line as the page's
+ * one `<h1>`, one supporting line, and the exits. The display line is `GlitchText`, which
+ * `EXPERIENCE.md:447-448` names the error surface's heading as well as the homepage's, so the
+ * heading and its entrance are that component's rather than restated here.
+ *
+ * **The numeral is ornament, and hidden** (O-12 item 3, branch A). With it removed from the
+ * accessibility tree the page still says it was not found three times over, in its title, its
+ * heading and its message, which `tests/e2e/error-surface.pw.ts` reads rather than assumes. So it
+ * carries `aria-hidden` and no name: a hidden element needs none, and the `aria-label` the 2023
+ * paragraph carried sat on a role that prohibits one (O-13, a pre-existing defect corrected here,
+ * not one the redesign introduced). No element in this component carries a name by attribute.
+ *
+ * **The label is a plain word.** `// ERR_NOT_FOUND` was decoration a screen reader speaks and a
+ * code rather than words (`EXPERIENCE.md` § Plate mark). `Error` is the word the code abbreviated;
+ * the rest of it is what the heading says, and the page says one thing once.
  *
  * **Its exits are the header's list, not a copy of it (Story 2-17).** `RESTYLE-SPEC.md:472` fixes
  * an error surface's exits at exactly the ones the application's header already carries, never
- * more and never fewer, and the cheapest way to make that structural rather than asserted is to
- * render the same `DESTINATIONS` the header renders. A third exit cannot arrive here without
- * arriving in the header, and a label changed there changes here in the same edit. The single
- * `← Go home` this replaced was one exit where the header offered two.
+ * more and never fewer, and rendering the same `DESTINATIONS` the header renders makes that
+ * structural rather than asserted. No `aria-current`: an unrouted path is neither destination.
+ * Each exit is a control (`RESTYLE-SPEC.md` § 1), and the ring is the global rule, so nothing here
+ * paints one.
  *
- * **No `aria-current`.** The header on this page marks nothing either: an unrouted path is neither
- * destination, so a mark here would announce a page the visitor is not on.
- *
- * **Everything else on this surface is Story 2-30's.** The title, the numeral, the Plate mark, the
- * cybercore literals in `error-page.scss` and the focus ring are all booked there
- * (`EXPERIENCE.md:540-542`). The `ScanlineOverlay` was booked there too until it left with Story
- * 2-28 on 2026-09-14: the layer is a scrim for text over moving imagery, and nothing moves behind
- * the text here, so the surface carries no scrim rather than a faint one (`EXPERIENCE.md:480-481`,
- * `epics.md:3252`). This story adds the two exits and gets them to the hit-target
- * floor, which is why the `error-page__back` class survives on both: `error-page.scss:52-80` styles
- * it, `app/app.scss:82-85` scopes a boundary role on it, and the entrance tween below targets it,
- * so both exits fade in together. The name is 2023 legacy Story 2-30 retires with the rest.
+ * **A server component.** The three GSAP tweens this surface ran on mount, two of them spatial and
+ * none reading the motion preference (DW-77), are one CSS keyframe on opacity in `Error404.scss`,
+ * which takes reduced motion from the stylesheet and leaves nothing here to hydrate. No
+ * `ScanlineOverlay` either: the layer is for text over moving imagery, and nothing moves behind
+ * this text.
  */
-const NotFound = () => {
-  const ref = useGsapContext<HTMLDivElement>(() => {
-    gsap.from('.error-page__code', {
-      opacity: 0,
-      y: 20,
-      duration: 0.6,
-      ease: 'power3.out',
-      delay: 0.1,
-    });
-    gsap.from('.error-page__message', {
-      opacity: 0,
-      duration: 0.5,
-      ease: 'power2.out',
-      delay: 0.3,
-    });
-    gsap.from('.error-page__back', {
-      opacity: 0,
-      y: 10,
-      duration: 0.4,
-      ease: 'power2.out',
-      delay: 0.5,
-    });
-  }, []);
+const NotFound = () => (
+  <div className='error-page'>
+    <PlateMark label='Error' />
 
-  return (
-    <div className='error-page' ref={ref}>
-      <div className='error-page__content'>
-        {/* Moved onto the Plate mark's annotated variant by Story 2-31, which retired `HudLabel`, with
-            its strings exactly as they were: the label's wording is Story 2-30's criterion. */}
-        <PlateMark variant='annotated' label='// ERR_NOT_FOUND' sub='// SIGNAL_LOST' />
+    <p className='error-page__code' aria-hidden='true'>
+      404
+    </p>
 
-        <p className='error-page__code' aria-label='Error 404'>
-          404
-        </p>
+    <GlitchText text='Page not found.' delay={0.3} />
 
-        <div className='error-page__message'>
-          <p className='error-page__title'>Page not found.</p>
-          <p className='error-page__sub'>The page you're looking for does not exist.</p>
-        </div>
+    <p className='error-page__sub'>The page you’re looking for does not exist.</p>
 
-        <div className='error-page__exits'>
-          {DESTINATIONS.map((destination) => (
-            <Link key={destination.href} href={destination.href} className='error-page__back'>
-              {destination.label}
-            </Link>
-          ))}
-        </div>
-      </div>
+    <div className='error-page__exits'>
+      {DESTINATIONS.map((destination) => (
+        <Link key={destination.href} href={destination.href} className='error-page__exit'>
+          {destination.label}
+        </Link>
+      ))}
     </div>
-  );
-};
+  </div>
+);
 
 export default NotFound;

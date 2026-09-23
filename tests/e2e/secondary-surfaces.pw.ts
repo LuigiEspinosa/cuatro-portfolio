@@ -632,9 +632,10 @@ test.describe('the 404 exits', () => {
       0
     );
 
-    // Each at or above `--tap` on both axes. The entrance tween in `Error404.tsx` fades the exits
-    // in and translates them; neither changes a box's size, and `hit-target-floor.pw.ts` measures
-    // the same elements in the same way without waiting on it.
+    // Each at or above `--tap` on both axes. The entrance in `Error404.scss` fades the exits'
+    // wrapper in on opacity alone (a GSAP tween that also translated each exit until Story 2-30),
+    // which changes no box's size, and `hit-target-floor.pw.ts` measures the same elements in the
+    // same way without waiting on it.
     const floor = await floorFrom(page);
     const boxes = await measure(page, EXITS);
     expect(boxes, 'no exit was measured').toHaveLength(2);
@@ -697,7 +698,7 @@ test.describe('the 404 exits', () => {
     ).toBeGreaterThanOrEqual(apartBy - EDGE_SLACK);
 
     // **The control.** Take the gap off through the browser and the same comparison has to report
-    // the pair as too close, or deleting `gap: var(--s-lg)` from `error-page.scss` would leave the
+    // the pair as too close, or deleting `gap: var(--s-lg)` from `Error404.scss` would leave the
     // reading above green.
     await page.addStyleTag({ content: '.error-page__exits { gap: 0 !important; }' });
     expect(
@@ -824,7 +825,8 @@ test.describe('A-13 on every surface', () => {
     // a page gone since Story 2-14, so every unrouted path shared as a link previewed under another
     // route's name. The block is dropped and Next resolves `og:title` from `title`; measured
     // 2026-09-11 against the local build, that is `Page not Found | Luigi Espinosa`, the document
-    // title with the layout's template applied. `app/__tests__/not-found.test.tsx` pins the export;
+    // title with the layout's template applied, and `Page not found | Luigi Espinosa` since Story
+    // 2-30 set the title in sentence case. `app/__tests__/not-found.test.tsx` pins the export;
     // this reads what the document says.
     await goTo(page, NOT_FOUND, 404);
     const title = await page.title();

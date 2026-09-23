@@ -203,28 +203,12 @@ const EXEMPTIONS: readonly Exemption[] = [
     closedBy: 'Story 2-33',
   },
   {
-    id: 'z-error-content',
-    check: 'z-index',
-    match: '2',
-    count: 1,
-    source: 'components/organisms/ErrorPage/error-page.scss:19',
-    closedBy: 'Story 2-30',
-  },
-  {
     id: 'gradient-work-ground',
     check: 'depth',
     match: 'linear-gradient',
     count: 2,
-    source: 'app/app.scss:136-137',
+    source: 'app/app.scss:140-141',
     closedBy: 'Story 2-33',
-  },
-  {
-    id: 'gradient-error-ground',
-    check: 'depth',
-    match: 'linear-gradient',
-    count: 2,
-    source: 'components/organisms/ErrorPage/error-page.scss:9-10',
-    closedBy: 'Story 2-30',
   },
   {
     id: 'clip-skip-link',
@@ -233,14 +217,6 @@ const EXEMPTIONS: readonly Exemption[] = [
     count: 1,
     source: 'components/atoms/SkipLink/SkipLink.scss:33-34',
     closedBy: 'Story 2-32',
-  },
-  {
-    id: 'heading-404',
-    check: 'heading',
-    match: '/a-route-that-does-not-exist',
-    count: 1,
-    source: 'components/organisms/ErrorPage/Error404.tsx:62-68',
-    closedBy: 'Story 2-30',
   },
 ];
 
@@ -1438,8 +1414,10 @@ test.describe('the accessibility floor', () => {
     // A-7, read off the accessibility tree. Until Story 2-27 that was what told the `GlitchText`
     // wrapper, which carried the role on `/`, from its `aria-hidden` `<h1>`, which no markup count
     // could tell apart; the heading is a real `<h1>` named by its own text now, and the tree is
-    // still where the name is read. A route off the rule is a ledger row, so the 404, which renders
-    // its numeral and title as paragraphs, is carried by `heading-404` until Story 2-30 rebuilds it.
+    // still where the name is read. A route off the rule is a ledger row. The 404, which rendered
+    // its numeral and title as paragraphs, was carried by `heading-404` until Story 2-30 rebuilt it
+    // on 2026-09-23 with the display entrance as its one `<h1>` and deleted the row: no route is
+    // off the rule now, and the planted second heading below is what keeps the count a measurement.
     const hits = new Map<string, number>();
     const unclaimed: string[] = [];
     const readings: string[] = [];

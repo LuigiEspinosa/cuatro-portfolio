@@ -4310,7 +4310,21 @@ status: done
     **Owner: Story 2-30**, which redesigns `Error404` token-native and owns its motion. **Trigger:
     that story's first edit to the entrance**, at which point the guard is one line beside the
     tween it already has to rewrite.
-  status: open
+
+    Closed 2026-09-23 by Story 2-30, on the trigger, and by the second shape rather than either
+    guard this entry weighed. The three `gsap.from` tweens are gone with the hook call and the
+    `gsap` import: the numeral, the supporting line and the exits run one CSS keyframe on opacity
+    alone, at `--dur-minor` on `--ease-entrance` at 100, 300 and 500ms, the order the tweens had,
+    and `@media (prefers-reduced-motion: reduce)` sets `animation: none` on all three, so a
+    visitor who asked for stillness gets the surface at full opacity on first paint rather than a
+    1ms run that still waits out its delay. The heading is the display entrance, whose own
+    reduced-motion rule does the same. `Error404` is a server component now, so nothing on the
+    surface hydrates at all, and `useGsapContext` has no caller left that does not guard itself.
+    **Observed 2026-09-23** in the pinned image by `tests/e2e/error-surface.pw.ts`: every animated
+    element computes `animation-name: none` at full opacity at the first read on the project's
+    reduced-motion context, the keyframe runs on a `no-preference` context and animates nothing
+    but opacity, and with every script aborted the surface ends whole at full opacity.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
   id: DW-78
@@ -4387,7 +4401,16 @@ status: done
 
     **Owner: Story 2-30**, which redesigns `Error404` token-native and rewrites this block.
     **Trigger: that story's first edit to `.error-page__back`.**
-  status: open
+
+    Closed 2026-09-23 by Story 2-30, on the trigger: `error-page.scss` is deleted and the block
+    with it. `Error404.scss` gives the exits one transition, `border-color var(--dur-micro)
+    var(--ease-toggle)`, a valid declaration on the one property the hover changes, and the hover
+    rule sits behind `@media (hover: hover)`; `components/organisms/ErrorPage/__tests__/Error404.test.tsx` reads it
+    off the compiled stylesheet as the only transition the file declares, and
+    `tests/e2e/error-surface.pw.ts` watches a fine pointer's hover change the border's pixels and
+    no others, and a tap start no border transition at all. F-6 in
+    `ops/hub-accessibility-pass.md` is closed in the same commit.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
   id: DW-81
@@ -4430,6 +4453,15 @@ status: done
     (`WorkHero.scss`), so `app/app.scss:49-56`'s "four" and `AGENTS.md`'s "four existing sites"
     are now stale by four stories. Neither comment was edited, for the reasons above; the owner
     and the trigger stand.
+
+    **Counted again 2026-09-23** by Story 2-30, which deleted `error-page.scss` with its
+    `--monument-bold` call site (`:24`) and its `--monument-regular` one (`:40`): `WEIGHT_SITES` in
+    `tests/e2e/anchor-aliases.pw.ts` has one row (`WorkHero.scss:19`), and `--monument-regular` has
+    no call site at all, so that file pins it at zero in the `--confillia-normal` shape and the clamp
+    precondition case left with the last site it protected. `app/app.scss:49-56`'s "four" and
+    "three" and `AGENTS.md`'s "four existing sites" are stale by five stories. Story 2-30 edited
+    `app/app.scss` below that block, where the `--accent-dim` scope was, and not `:49-58`, so the
+    trigger has not fired; the owner and the trigger stand.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
@@ -5459,4 +5491,60 @@ status: done
     the Epic 2 merge, and `/` clears the line by one hundredth: a second failing audit on that
     route would very likely take it under. **Owner: unassigned.** **Trigger: the Epic 2 merge to
     `main`, or any story that sets new text in the muted accent on `/`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-30-redesign-error404-token-native.md`
+  id: DW-114
+  summary: >-
+    The 404's supporting line restates the heading (`Page not found.`, then `The page you’re
+    looking for does not exist.`), and no design document supplies either string or the Plate
+    mark's label, so the page says one thing twice and its label is a reading of a code.
+  evidence: |-
+    Found 2026-09-23 by Story 2-30, whose user story asks the 404 to say one thing once.
+    `EXPERIENCE.md` § Error surface, `DESIGN.md` § The redesigned Hub surfaces and
+    `RESTYLE-SPEC.md` § 8 fix the structure (a Plate mark, the display line, one line of secondary
+    text, the exits) and none of them gives the words; § UI strings in `EXPERIENCE.md` has no row
+    for this surface. The story kept the shipped line verbatim, with its apostrophe typeset per
+    `DESIGN.md` § Typography, because rewriting copy is the Operator's act rather than a
+    stylesheet's, and set the label to `Error`, the plain word the shipped `// ERR_NOT_FOUND`
+    abbreviated, because its criteria required real words and the rest of the code is what the
+    heading already says. Both are recorded in the story's Design Notes as assumptions. The line
+    could carry something the heading does not (where the reader might go instead, or why the
+    address may be wrong), and the label could be a different domain word; either is a copy
+    decision. `tests/e2e/error-surface.pw.ts` reads the title, the heading and the message for the
+    redundancy test and pins all three as saying the page was not found, so a new line either keeps
+    saying it or moves that pin in the same change; branch A of O-12 item 3 holds while at least one
+    of the three does, and the numeral stops being ornament the day none does.
+
+    **Owner: the Operator, as the author of the site's copy**, the DW-110 precedent. **Trigger:
+    any copy pass over the Hub, or a `§ UI strings` row added for the error surface.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-30-redesign-error404-token-native.md`
+  id: DW-115
+  summary: >-
+    Five `:hover` rules outside the files the redesign stories rebuild are still not gated on a
+    hover-capable pointer, so on a phone a tap paints them and leaves them painted, which the
+    2026-09-15 rule binding every redesign story forbids and no story owns for these files.
+  evidence: |-
+    Found 2026-09-23 by Story 2-30's review, reading the built stylesheets for the 404 (the skip
+    link's rules now ship in their own chunk beside the display entrance's). A grep of
+    `components/` for `:hover` outside `@media (hover: hover)` names
+    `components/atoms/SkipLink/SkipLink.scss:62`, `components/organisms/CvIntro/CvIntro.scss:122`,
+    `components/organisms/SiteFooter/SiteFooter.scss:89` and
+    `components/organisms/SuiteDirectory/SuiteDirectory.scss:294-295`, besides
+    `components/atoms/Navbar/navbar.scss:44`, which is Story 2-32's file and its criterion.
+    `review-apple-design-2026-09-15.md` A-5 booked the gate to the four restyle stories by file
+    ownership and listed the files it read; these four were not among them, and each was built by a
+    story that is `done` (2-13, 2-16, 2-11 with the footer link from 2-17, and 2-9), so the binding rule in
+    `_bmad-output/implementation-artifacts/epic-2-context.md` reaches them through no story. Each is
+    a recolour of an underline or a border, so what sticks is a colour rather than a layout, and the
+    fix is the one line per file the review proposed: wrap the block in the query, as
+    `Error404.scss`, `WorkItem.scss`, `HomeLayout.scss` and `SkipControl.scss` do. Not done by Story
+    2-30, whose scope is the 404's own stylesheet.
+
+    **Owner:** Story 2-32 for `SkipLink.scss`, by the same ownership of the top-of-page chrome that
+    books `clip-skip-link` to it; **unassigned** for the other three, with Story 2-34's conformance
+    gate the natural place for a check that would find the next one. **Trigger: Story 2-32's first
+    edit to the chrome, or Story 2-34's first edit to the sweep.**
   status: open

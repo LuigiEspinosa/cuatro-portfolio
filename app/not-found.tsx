@@ -6,7 +6,7 @@ import Error404 from '@/components/organisms/ErrorPage/Error404';
 // path shared as a link previewed under another route's name. Next resolves `openGraph.title` from
 // `title` when none is declared, and the layout template supplies the rest.
 export const metadata: Metadata = {
-  title: 'Page not Found',
+  title: 'Page not found',
   description: 'This page does not exist.',
 };
 

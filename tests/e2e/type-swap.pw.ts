@@ -116,8 +116,9 @@ const HERO_DISPLAY_STRETCH = '100%';
  * Every element that reaches the display face, per surface, and how many of each the surface
  * renders. The two `--monument-bold` sites, the two `--monument-regular` sites and the two hero
  * link groups, plus the display entrance on `/`, which reaches the face through `--f-display`
- * directly since Story 2-27, as the two hero groups have since Story 2-29. `/cv` and `/celeste`
- * reach no display face and are not here.
+ * directly since Story 2-27, as the two hero groups have since Story 2-29, the row names since
+ * Story 2-31 and the 404's numeral and heading since Story 2-30; `/work`'s hero heading is the one
+ * alias site left. `/cv` and `/celeste` reach no display face and are not here.
  *
  * The count is pinned so the swap cannot be measured over an empty selection: a renamed class
  * fails here naming itself rather than shortening the loop below to nothing.
@@ -159,9 +160,13 @@ const DISPLAY_ELEMENTS: readonly {
   {
     route: NOT_FOUND,
     status: 404,
+    // The numeral and the heading, which reach the display face through `--f-display` directly
+    // since Story 2-30 rebuilt the surface: the numeral in `Error404.scss`, and the heading as the
+    // display entrance, the same `.glitch-text` `/` renders (the 2023 `.error-page__title` it
+    // replaced reached the face through `--monument-regular`).
     selectors: [
       { selector: '.error-page__code', count: 1 },
-      { selector: '.error-page__title', count: 1 },
+      { selector: '.glitch-text', count: 1 },
     ],
   },
 ];

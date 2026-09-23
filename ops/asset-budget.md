@@ -468,6 +468,91 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-23 reading, after Story 2-30
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `9xKq1w4OnW0Bc5Jf53GQ1`, written
+2026-09-23T10:02:07Z, taken on the story's working tree at `2eb0aa0` plus its own files, before the
+commit that carries them: the tool's own dirty-inputs row named eight paths (`Error404.scss` added,
+`error-page.scss` deleted, `app/app.scss`, `app/not-found.tsx`, `Error404.tsx`, and the three unit
+suites beside them, every one modified) and every one of them is this story's. The before reading
+is the same command against build `gx6qgwAvuy7LjkwmJMVxX` (written 2026-09-23T09:26:46Z at `2eb0aa0`
+on `dev`, no measured input dirty). The after side was built twice, `Sbk60a9S_F4Dc7v8z5Zyz` and
+`9xKq1w4OnW0Bc5Jf53GQ1`, which wrote the same 31 chunks at the same names and sizes and moved the
+`/cv` document by two gzipped bytes, the rebuild variance § Stated limits records. A build between
+them, `6yHba_HPNvPNeMUIxs016`, weighed the same component with a client directive added and is the
+comparison in the Derived paragraphs below, not a reading.
+
+**The before build reproduces the Story 2-31 after figures exactly**: 21 `.js` and 11 `.css` at
+2,033,913 on disk and 618,565 gzipped, with 27,857 on disk and 8,308 gzipped of `.css`. `dev` carried
+no measured change between that reading and this one, so the whole of the movement below is this
+story's.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 22,596 | 492,272 | yes | yes | **Observed** |
+| `/cv` | 23,471 | 257,492 | no | yes | **Observed** |
+| `/celeste` | 15,645 | 251,225 | no | yes | **Observed** |
+| `/_not-found` | 19,058 | 251,250 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,764 | no | **no**: Next's own document | **Observed** |
+
+Against the before build, on the wire: `/work` 975 gzipped lighter, `/cv` 947, `/celeste` 982 and
+`/_not-found` 811, and `/_global-error` unchanged. Every document grew on disk, `/work` by 1,797,
+`/cv` by 1,700, `/celeste` by 1,897 and `/_not-found` by 5,185, for the reason the second Derived
+paragraph gives; `/`, a dynamic route, still has no row by construction.
+
+**The whole build, before and after, and the chunks that moved.** **Observed 2026-09-23**, the tool's
+own build table on each side, and every `.next/static/chunks/*.css` and `*.js` weighed with
+`zlib.gzipSync` at level 9 (the tool's method) on both builds.
+
+| Figure | Before, `dev` at `2eb0aa0` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 21 `.js`, 11 `.css` | 19 `.js`, 12 `.css` | two `.js` fewer, one `.css` more | **Observed** |
+| Bytes in `.next/static/chunks` | 2,033,913 on disk, 618,565 gzipped | 2,031,526 on disk, 617,053 gzipped | **2,387 lighter on disk, 1,512 gzipped lighter** | **Observed**, tool's build table; **Derived** delta |
+| Every `.css` chunk together | 27,857 on disk, 8,308 gzipped | 27,907 on disk, 8,371 gzipped | **50 heavier on disk, 63 gzipped heavier** | **Observed** per chunk; **Derived** total and delta |
+| The 404's stylesheet | `0ngdt25qujsn2.css`, 1,342 on disk, 558 gzipped | `0ydehnkcsx3lo.css`, 1,455 on disk, 529 gzipped | 113 heavier on disk, 29 gzipped lighter | **Observed** |
+| The global stylesheet | `03njxn1smh8rb.css`, 5,857 on disk, 2,294 gzipped | `0z.nwkyilu5e..css`, 5,794 on disk, 2,278 gzipped | 63 lighter on disk, 16 gzipped lighter: the `.error-page__back` scope out | **Observed** |
+| The display entrance's stylesheet | inside `04dfo_faqzsrs.css`, 1,198 on disk, 525 gzipped, one chunk with the skip link's | `12osslk_d1pps.css` (560 and 301) beside `0sx._u9-xj1vh.css` (the skip link's, 638 and 332) | the same 1,198 bytes on disk in two chunks, 108 gzipped heavier | **Observed**, by reading each chunk as text |
+| Every `.js` chunk together | 2,006,056 on disk, 610,257 gzipped | 2,003,619 on disk, 608,682 gzipped | **2,437 lighter on disk, 1,575 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The 404's own chunk | `0i9pf4zw4lx2x.js`, 2,332 on disk, 885 gzipped, carrying the page, the Plate mark and its GSAP import | none: the component renders on the server | 885 gzipped lighter | **Observed** |
+| GSAP and ScrollTrigger | `08pj4xkz~kajd.js` (70,032 and 26,971) and `0r_9pnds9g3a0.js` (43,379 and 17,542) | `0lp2sdt4pg9tq.js`, 113,435 on disk, 43,904 gzipped, the two in one chunk | 24 heavier on disk, 609 gzipped lighter | **Observed**, the tool's fingerprint table |
+| Lenis | `0zk544r9xyc8z.js`, 38,087 and 11,971 | `0lpnzc9vw7rq3.js`, 38,374 and 12,068 | 287 heavier on disk, 97 gzipped heavier | **Observed** |
+| One shared chunk | `0hmi~~u8b2onv.js`, 9,934 and 3,913 | `0_mmocpo6-784.js`, 9,530 and 3,739 | 404 lighter on disk, 174 gzipped lighter | **Observed** |
+| Three chunks renamed | `0lm_ikg6v8~uk.js` (8,406 and 3,264), `0tfhdb1o6m9y7.js` (28,109 and 9,445), `0f5gej2xr49rk.js` (6,526 and 2,868) | `14zyd3ba1wiyn.js` (8,406 and 3,256), `0_z_ou0-lbari.js` (28,103 and 9,446), `173-m8hv7hjla.js` (6,520 and 2,871) | 8 lighter, 1 and 3 heavier, gzipped: module ids renumbered | **Observed** |
+| Narrative chunks the fingerprints hit | 8, 1,352,247 on disk, 413,233 gzipped | 7, 1,352,552 on disk, 412,722 gzipped | 511 gzipped lighter, the GSAP pair and Lenis above | **Observed**, the tool's narrative table; **Derived** delta |
+
+**What the JavaScript number says.** **Derived.** The 404 renders on the server now, so its client
+chunk left the build, and with it the one importer of GSAP that did not import ScrollTrigger as
+well: the bundler emits the two libraries as one chunk, which one gzip stream packs 609 bytes
+tighter, and Lenis's chunk and one shared chunk moved with the regrouping. Those rows sum to the
+1,575 exactly. `/cv`'s scripts fell by 1,568, from 248,792 to 247,224, which is the same arithmetic
+less the two renamed chunks `/cv` does not load, so the 404's chunk was on `/cv`'s document before
+this story: the root layout's not-found boundary is on every route, and so was its client code.
+
+**What the documents say, and why the component stays on the server.** **Derived.** Each route's
+document grew by 1,700 to 1,900 bytes on disk, `/cv`'s by 365 gzipped (4,722 to 5,087), because the
+root layout's not-found boundary travels in every route's flight payload: a client component as a
+reference, a server component as its rendered tree, fifteen character spans included. The 404's
+stylesheet and the display entrance's are preloaded on every route for the same reason, 558 to 830
+gzipped on `/cv`. That cost was weighed against the alternative rather than assumed: the same
+component with a client directive (build `6yHba_HPNvPNeMUIxs016`, 20 `.js` and 12 `.css`) put `/cv`
+at 258,002 gzipped on the wire (document 4,715, scripts 248,106), 510 heavier than the server
+component's 257,492, because its client chunk loads on every route; `/work` read 492,805 (533
+heavier), `/celeste` 251,768 (543) and `/_not-found` 251,675 (425). The server component is the
+lighter of the two on every route, so it stays.
+
+**What the CSS number says.** **Derived.** The rebuilt 404 stylesheet is 29 gzipped lighter than
+the 2023 one and the global stylesheet 16 lighter with the scope gone, but the display entrance's
+rules, emitted with the skip link's until today, are a chunk of their own now that the 404 renders
+the heading as well as `/`, and two gzip streams over what one covered cost 108. The 63 is those
+three.
+
+**Against the Story 2-31 reading.** **Derived.** Today's before build reproduces that reading's
+after build exactly, so the whole of today's movement is this story's: 2,387 lighter on disk and
+1,512 gzipped lighter across the directory, 50 heavier on disk and 63 gzipped heavier in `.css`. The
+non-3D line names `/cv`, 117,492 over budget, 83.9 percent, where it was 118,439 over before this
+story and 118,438 at Story 2-31's reading (one byte of rebuild variance), measured against Story
+2-2's 140,000 each time.
+
 ### The 2026-09-23 reading, after Story 2-31
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `0KxutAmqMQuDuV6dR2omk`, written
@@ -1152,6 +1237,32 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-23 run, after Story 2-30
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `9xKq1w4OnW0Bc5Jf53GQ1`. § Every route's
+2026-09-23 reading after Story 2-30 and this section were filed from this run; every other section
+in this file is still the reading its own heading names.
+
+- The narrative bundle is 412,722 bytes gzipped across 7 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 37,278 below the top.
+- 118,881 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0d3ymyos8iowp.js`,
+  `05e6tciymra6v.js` is referenced by no prerendered document. The other 293,841 is on a document at
+  first paint, so the `next/dynamic` boundaries defer far less than their shape suggests.
+- The non-3D path is over budget as measured: 257,492 against 140,000, 117,492 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,927 against 140,000, 36,073 of margin. That
+  decomposition has no line for the 247,224 of JavaScript or the 830 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Two figures in this list moved for reasons the reading above states.** **Observed**, the tool's
+narrative and preload tables on each side. The narrative bundle is one chunk fewer because GSAP and
+ScrollTrigger share one now, and 511 lighter for the same reason. The preloads `/cv` carries rose
+from 558 to 830: the 404's stylesheet (529) and the display entrance's (301), both on every route
+through the root layout's not-found boundary, where the 2023 404's one stylesheet was 558.
 
 ### The 2026-09-23 run, after Story 2-31
 

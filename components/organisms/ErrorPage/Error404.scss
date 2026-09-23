@@ -1,0 +1,122 @@
+// The 404 surface, rebuilt token-native (Story 2-30, `DESIGN.md` § Components → The redesigned Hub
+// surfaces, `EXPERIENCE.md` § Error surface, `RESTYLE-SPEC.md` § 1 and § 8).
+//
+// Written beside the component in place of the 2023 `error-page.scss`, which left disk with its
+// `#0a000f` ground, its two grid gradients, a bare `z-index`, four aliases, an invalid transition
+// and an ungated hover. This file names contract roles directly, so
+// `app/__tests__/anchor-contract.test.ts` lists it as token-native, and the alias layer in
+// `app/app.scss` is not in its path at all.
+//
+// **It declares no custom property of its own**, which keeps every one of the Hub's in `app/app.scss`.
+// The three entrance delays are plain `animation-delay` values for the same reason, the
+// `HomeLayout.scss` precedent: the contract mints no delay role.
+
+// ── The surface ───────────────────────────────────────────────────────────────
+//
+// **Content-high and start-aligned, never a full-viewport centred hero** (`EXPERIENCE.md:1021`,
+// the floor at `epics.md:3056`): the 2023 rule held a whole viewport and centred on both axes. A
+// grid, because this is page structure (`DESIGN.md` § Layout), whose items stretch, so the Plate
+// mark's rule runs the content width. It paints no ground: the base `body` rule already paints the
+// one role this surface may stand on, and nothing overrides it on an unrouted path.
+.error-page {
+  display: grid;
+  gap: var(--s-md);
+  padding-block: var(--s-2xl) var(--s-3xl);
+  padding-inline: var(--page-pad);
+}
+
+// ── The numeral ───────────────────────────────────────────────────────────────
+//
+// Ornament, hidden from assistive technology by the component (branch A of O-12 item 3), so the
+// muted accent is correct here: the contrast floor does not bind something that is not content,
+// and `DESIGN.md` permits this role on the numeral on that branch only. On the scale at the step
+// `DESIGN.md` gives secondary display, below the heading's size at every width, because the display
+// line is the page's primary voice.
+.error-page__code {
+  font-family: var(--f-display);
+  font-size: var(--t-xl);
+  font-weight: var(--w-black);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tr-display);
+  color: var(--token-accent-muted);
+  animation: error-page-enter var(--dur-minor) var(--ease-entrance) 100ms both;
+}
+
+// ── The supporting line ───────────────────────────────────────────────────────
+//
+// One line of secondary text at the body floor (`RESTYLE-SPEC.md` § 8), prose, so capped at the
+// measure as a maximum that still shrinks with the viewport, and set at the body leading and
+// tracking.
+.error-page__sub {
+  max-inline-size: var(--measure);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  letter-spacing: var(--tr-body);
+  color: var(--token-text-secondary);
+  animation: error-page-enter var(--dur-minor) var(--ease-entrance) 300ms both;
+}
+
+// ── The exits ─────────────────────────────────────────────────────────────────
+//
+// Two boxes at the floor take `var(--s-lg)` of gap so they cannot overlap and become one target by
+// touch (`RESTYLE-SPEC.md:206`), and wrap rather than push one past the edge at 360.
+.error-page__exits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-lg);
+  animation: error-page-enter var(--dur-minor) var(--ease-entrance) 500ms both;
+}
+
+// A control, `RESTYLE-SPEC.md` § 1 verbatim: transparent ground, the boundary stroke in the
+// interactive border role on all four sides, square, a mono uppercase label, and the floor on both
+// axes through `min-*-size` on an `inline-flex` box, never vertical padding on an inline element,
+// which paints outward without growing the hit area. No radius is set: the initial value is square,
+// and the global ring rule gives the ring its own. The one transition is the border's colour.
+.error-page__exit {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+  padding-block: var(--s-xs);
+  padding-inline: var(--s-md);
+  border: var(--stroke-boundary) solid var(--token-border-interactive);
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--token-text);
+  transition: border-color var(--dur-micro) var(--ease-toggle);
+}
+
+// One signal, the border's colour, and only where a pointer can hover: on a touch screen a tap
+// paints `:hover` and leaves it painted until the next tap lands elsewhere (review A-5).
+@media (hover: hover) {
+  .error-page__exit:hover {
+    border-color: var(--token-accent-hover);
+  }
+}
+
+// ── The entrance ──────────────────────────────────────────────────────────────
+//
+// One keyframe on opacity, replacing three GSAP tweens that translated two of their targets and
+// ran under reduced motion (DW-77). Only the `from` is declared, so the base state is the final
+// state and a document with no script is already at it; `both` holds the `from` through each
+// delay, which keeps the order the tweens had: the numeral, the message (the heading's characters
+// begin with the line, through `GlitchText`'s own entrance), then the exits.
+@keyframes error-page-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+// Present at full opacity at first paint. Stated rather than relied on: the contract collapses the
+// durations to 1ms under the same query, but a 1ms run still waits out its delay.
+@media (prefers-reduced-motion: reduce) {
+  .error-page__code,
+  .error-page__sub,
+  .error-page__exits {
+    animation: none;
+  }
+}

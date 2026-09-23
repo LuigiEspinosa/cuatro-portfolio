@@ -312,14 +312,15 @@ const TOKEN_NATIVE_STYLESHEETS = [
   // The `/cv` intro block, added by Story 2-16. A rebuild like the rest of this list: the route was
   // a redirect until that story, so there is no 2023 stylesheet behind it and no alias name to keep.
   'components/organisms/CvIntro/CvIntro.scss',
-  // The 404, moved here from `WEIGHT_CALL_SITES` by Story 2-17 on the `navbar.scss` precedent
-  // above: a 2023 file that keeps its name and its declarations, and names one more role because
-  // the story gave it one thing to do the alias layer carries no name for. Its two exits reach the
-  // hit-target floor through `--tap`, beside the `--w-black` it has set by hand since Story 1-18.
-  // Claim two below allows a weight call site exactly `--w-black`, so a second role is what moves
-  // a file between the two lists. Story 2-30 rebuilds it, at which point it becomes a rebuild like
-  // the rest.
-  'components/organisms/ErrorPage/error-page.scss',
+  // The 404, rebuilt by Story 2-30. A rebuild like the rest: the 2023 `error-page.scss` left disk
+  // with the `#0a000f` ground, its two grid gradients, a bare `z-index`, its four aliases (its
+  // `--monument-bold` and `--monument-regular` call sites and the last `--accent-dim` boundary
+  // among them) and an invalid transition, and this file, written beside the component, names the
+  // text, border and accent roles, the display and mono families with their size, weight,
+  // line-height and tracking steps, the spacing scale, the page padding, the measure, the boundary
+  // stroke, the tap floor and the motion roles directly. Story 2-17 had moved the old file here
+  // from `WEIGHT_CALL_SITES` on the `navbar.scss` precedent, when its exits first named `--tap`.
+  'components/organisms/ErrorPage/Error404.scss',
   // The home surface, rebuilt by Story 2-29. A rebuild like the rest: the 2023 literals left disk
   // with the `#0a000f` ground, its two grid gradients, the three bare `z-index` integers and the
   // GSAP timeline, and this file names the ground, the text, border and accent roles, the body and
@@ -1010,7 +1011,7 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     // and a first-colon split would read `.work-item:` as the property name and skip the row.
     const accentDim = MAPPING.find(([property]) => property === '--accent-dim');
     expect(accentDim?.[1].length, 'the --accent-dim row no longer carries two roles').toBe(2);
-    const [ornamentRole, boundaryRole] = accentDim?.[1] ?? [];
+    const [ornamentRole] = accentDim?.[1] ?? [];
 
     const afterRoot = source.slice((root?.index ?? 0) + (root?.[0].length ?? 0));
     const SCOPED = /(?:^|[;{])\s*--accent-dim\s*:\s*([^;}]+)/gm;
@@ -1021,17 +1022,21 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
       [...'.work-item::before, .a { --accent-dim: var(--x); }'.matchAll(SCOPED)].map((found) => found[1].trim())
     ).toEqual(['var(--x)']);
 
-    // **One block, not two.** Story 2-9 deleted the Suite Directory's predecessor and the
+    // **No block since 2026-09-23.** Story 2-9 deleted the Suite Directory's predecessor and the
     // counter-scope that existed only to take the card's boundary value back off the chips
-    // inheriting it. The boundary scope remains and is the load-bearing half: without it the
-    // boundary call sites fall below the 3:1 floor AD-19 asserts. The ornament role is still
-    // pinned, on `:root`, by the row-by-row comparison above, so removing this reading of it
-    // narrows what is checked here and not what is checked.
+    // inheriting it, which left one boundary scope; Story 2-31 took `.work-item::before` out of it,
+    // and Story 2-30 took `.error-page__back`, the last boundary call site, out later the same day,
+    // when the 404's exits were rebuilt against the contract and stopped reading the alias. So
+    // nothing outside `:root` redeclares the property: its one remaining call site is an ornament
+    // reading the `:root` value, which the row-by-row comparison above pins, and the mapping's
+    // boundary role has no subject until Story 2-22 deletes the layer. A scope written back would
+    // need a boundary call site to justify it, and `tests/e2e/anchor-aliases.pw.ts` counts those on
+    // disk; the planted control above is what makes this empty reading a measurement.
     expect(
       scopedValues,
-      `app/app.scss no longer redeclares --accent-dim outside :root in the boundary scope, without ` +
-        `which the remaining boundary call sites fall below the 3:1 floor AD-19 asserts`
-    ).toEqual([`var(${boundaryRole})`]);
+      `app/app.scss redeclares --accent-dim outside :root again, and no boundary call site is left ` +
+        `for a scope to resolve`
+    ).toEqual([]);
     expect(ornamentRole, 'the --accent-dim ornament role is no longer the first of its row').toBe(
       '--token-accent-muted'
     );
@@ -1067,16 +1072,16 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     ).not.toContain('.work-item');
     expect(selectorsOf('.a::before,\n.b { --accent-dim: var(--x); }')).toEqual(['.a::before', '.b']);
 
-    // **One selector since 2026-09-23.** Story 2-31 rebuilt `WorkItem.scss` against the contract, so
+    // **No selector since 2026-09-23.** Story 2-31 rebuilt `WorkItem.scss` against the contract, so
     // `.work-item::before` reads no alias and left the scope in the same commit; the parser controls
     // above keep its name because the shape it has, a pseudo-element in a selector list, is still
-    // the one a first-colon split would misread.
+    // the one a first-colon split would misread. Story 2-30 rebuilt the 404 later the same day and
+    // `.error-page__back`, the class its exits carried, left with the block that scoped it.
     expect(
       selectorsOf(afterRoot).sort(),
-      `app/app.scss no longer scopes --accent-dim on exactly the selector the mapping needs. ` +
-        `A selector renamed in its component stylesheet silently stops matching, and that call site ` +
-        `falls back to the :root value`
-    ).toEqual(['.error-page__back']);
+      `app/app.scss scopes --accent-dim on a selector again, and no boundary call site is left for ` +
+        `one to resolve`
+    ).toEqual([]);
 
     expect(
       MAPPING.filter(([, roles]) => roles.length > 1).map(([property]) => property),

@@ -297,11 +297,17 @@ const columnsAt = async (page: Page, edge: number, top: number, height: number, 
 // The Plate mark
 // ---------------------------------------------------------------------------
 
-/** Where each variant renders, and the side its rule sits on. */
+/**
+ * Where each variant renders, and the side its rule sits on.
+ *
+ * **The 404's mark is the section variant since 2026-09-23.** Story 2-31 moved it onto the annotated
+ * variant with its 2023 strings; Story 2-30 rebuilt the surface to the structure the documents give
+ * it, a section mark, with its label in plain words and no subordinate line.
+ */
 const MARKS = [
   { variant: 'section', route: '/cv', status: 200, selector: '.cv-intro .plate-mark', rule: 'bottom', wide: false },
   { variant: 'annotated', route: '/work', status: 200, selector: '.work-hero .plate-mark', rule: 'bottom', wide: false },
-  { variant: 'annotated', route: NOT_FOUND, status: 404, selector: '.error-page .plate-mark', rule: 'bottom', wide: false },
+  { variant: 'section', route: NOT_FOUND, status: 404, selector: '.error-page .plate-mark', rule: 'bottom', wide: false },
   { variant: 'side-ruled end', route: '/', status: 200, selector: '.home-panel--sys .plate-mark', rule: 'right', wide: true },
 ] as const;
 
@@ -427,9 +433,12 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
     expect(drawn.borders.bottom.width, 'the side-ruled mark kept the rule beneath as well').toBe('0px');
   });
 
-  for (const route of ['/work', NOT_FOUND] as const) {
+  // `/work` alone since 2026-09-23: the 404's mark carried `SIGNAL_LOST` as a subordinate line until
+  // Story 2-30 rebuilt that surface onto the section variant, which has none, and
+  // `tests/e2e/error-surface.pw.ts` pins that it has none.
+  for (const route of ['/work'] as const) {
     test(`the subordinate line on ${route} is the muted accent at meta tracking, and never read`, async ({ page }) => {
-      await goTo(page, route, route === NOT_FOUND ? 404 : 200);
+      await goTo(page, route);
       const sub = page.locator('.plate-mark__sub');
       await expect(sub, `${route} draws no subordinate line`).toHaveCount(1);
       const drawn = await sub.evaluate((node) => {
@@ -488,6 +497,21 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
     // `RESTYLE-SPEC.md` § 7's check, run: turn off CSS, and every label still reads as a short
     // uppercase string and every subordinate line is absent from the accessibility tree. Every route,
     // with the mark count pinned per route, because a label on every section is the anti-pattern.
+
+    /** What is wrong with one cell read with the sheets off. A function, so the plants below drive it. */
+    const cellFindings = (route: string, cell: string, tree: string): string[] => {
+      const found: string[] = [];
+      if (cell === '') found.push(`${route}: an empty cell`);
+      if (cell !== cell.toUpperCase()) found.push(`${route}: "${cell}" is not uppercase with CSS off`);
+      if (cell.length > 32 || cell.split(/\s+/).length > 4) found.push(`${route}: "${cell}" is not a short string`);
+      if (!tree.includes(cell)) found.push(`${route}: "${cell}" is not in the accessibility tree, and the label is what is read`);
+      // **No `//` inside a read cell** (`EXPERIENCE.md` § Plate mark): the marker is styling or the
+      // label is plain words, because a screen reader speaks it. No shipped label carries one since
+      // Story 2-30 gave the 404 a plain word on 2026-09-23, so the control below plants one.
+      if (cell.includes('//')) found.push(`${route}: "${cell}" carries a // marker, which is read aloud`);
+      return found;
+    };
+
     const wrong: string[] = [];
     for (const surface of MARKS_PER_ROUTE) {
       await goTo(page, surface.route, surface.status);
@@ -503,24 +527,29 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
       const subs = await page.evaluate(() => [...document.querySelectorAll('.plate-mark__sub')].map((line) => (line.textContent ?? '').trim()));
       const tree = await page.locator('body').ariaSnapshot();
 
-      for (const cell of cells) {
-        if (cell === '') wrong.push(`${surface.route}: an empty cell`);
-        if (cell !== cell.toUpperCase()) wrong.push(`${surface.route}: "${cell}" is not uppercase with CSS off`);
-        if (cell.length > 32 || cell.split(/\s+/).length > 4) wrong.push(`${surface.route}: "${cell}" is not a short string`);
-        if (!tree.includes(cell)) wrong.push(`${surface.route}: "${cell}" is not in the accessibility tree, and the label is what is read`);
-        // **No `//` inside a read cell** (`EXPERIENCE.md` § Plate mark): the marker is styling or the
-        // label is plain words, because a screen reader speaks it. The 404 is the exception and this
-        // read's control at once: its label is Story 2-30's wording, moved here verbatim, and it still
-        // carries the marker, so the same read has to find it there. When that story lands its label,
-        // the control fails and asks for a planted one.
-        const marked = cell.includes('//');
-        if (surface.route !== NOT_FOUND && marked) wrong.push(`${surface.route}: "${cell}" carries a // marker, which is read aloud`);
-        if (surface.route === NOT_FOUND && !marked)
-          wrong.push(`${surface.route}: "${cell}" carries no // marker, so Story 2-30 has landed its label and this read needs a planted control`);
-      }
+      for (const cell of cells) wrong.push(...cellFindings(surface.route, cell, tree));
       for (const sub of subs) if (tree.includes(sub)) wrong.push(`${surface.route}: the subordinate line "${sub}" is in the accessibility tree`);
     }
     expect(wrong, wrong.join('\n')).toEqual([]);
+
+    // The control for the marker read. Until 2026-09-23 the 404's own `// ERR_NOT_FOUND` was it, the
+    // one shipped label the read had to find a marker in; Story 2-30 replaced that label with a plain
+    // word, so the same string is planted back into the same cell and read the same way, sheets off.
+    await goTo(page, NOT_FOUND, 404);
+    await page.evaluate(() => {
+      const cell = document.querySelector('.error-page .plate-mark__label');
+      if (cell) cell.textContent = '// ERR_NOT_FOUND';
+      for (const sheet of Array.from(document.styleSheets)) sheet.disabled = true;
+    });
+    const plantedCells = await page.evaluate(() =>
+      [...document.querySelectorAll('.plate-mark > :not(.plate-mark__sub)')].map((cell) => (cell as HTMLElement).innerText.trim())
+    );
+    const plantedTree = await page.locator('body').ariaSnapshot();
+    expect(plantedCells, 'the plant did not land in the 404’s label').toContain('// ERR_NOT_FOUND');
+    expect(
+      plantedCells.flatMap((cell) => cellFindings(NOT_FOUND, cell, plantedTree)).filter((line) => line.includes('// marker')),
+      'a // planted into a real label is not reported'
+    ).toHaveLength(1);
 
     // The control: a planted mixed-case cell is reported, with the sheets off, by the same read.
     await goTo(page, '/cv');

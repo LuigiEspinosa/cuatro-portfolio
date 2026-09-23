@@ -43,7 +43,6 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
 
 const APP_SCSS = readFileSync(join(REPO_ROOT, 'app', 'app.scss'), 'utf8');
 const TOKENS_CSS = readFileSync(join(REPO_ROOT, 'contracts', 'tokens.css'), 'utf8');
-const FONTS_CSS = readFileSync(join(REPO_ROOT, 'contracts', 'fonts.css'), 'utf8');
 
 /**
  * Every component stylesheet on disk, by basename, with its contents.
@@ -327,28 +326,33 @@ interface CallSite {
 }
 
 /**
- * Both, counted 2026-09-23 by `git grep -o -- "var(--accent-dim)" -- components`.
+ * The one left, counted 2026-09-23 by `git grep -o -- "var(--accent-dim)" -- components`.
  *
- * One is a boundary and one is ornament, which is still what makes a single global alias unable to
- * pass this case.
+ * **It is ornament, and no boundary is left.** One boundary and one ornament was what made a single
+ * global alias unable to pass the per-call-site case below until the last boundary left; with none,
+ * that case reads the one ornament site against the ornament role and the counts pin the rest, so a
+ * boundary call site written back fails here as a count that moved before it could take the wrong
+ * role in silence.
  *
  * **Fifteen at Story 1-18, twelve after Story 2-9, eleven after Story 2-14, eight after Story 2-29,
- * two now.** Story 2-9 deleted `ProjectCard.scss` whole when the Suite Directory replaced the card grid,
- * taking two boundary rows (the card's top and left edges) and one ornament row (its tech-chip fill)
- * with it. Story 2-14 deleted `ProjectsHero.scss` with the route it styled on 2026-09-07, taking the
- * ornament row for its section divider. Story 2-29 rebuilt `HomeLayout.scss` on 2026-09-21 and its
- * three nav and contact rules left. Story 2-31 deleted `hud-label.scss` with the atom it styled and
- * rebuilt `WorkItem.scss` against the contract on 2026-09-23, taking six rows: the label's two side
- * rules, and the row's separator, open-state bar, highlight marker and chip fill, the bar being the
- * second boundary. The counts below moved in the same commit each time, because a table pinned above
- * what the tree holds fails as a missing call site, which is the opposite of what happened.
+ * two after Story 2-31, one now.** Story 2-9 deleted `ProjectCard.scss` whole when the Suite Directory
+ * replaced the card grid, taking two boundary rows (the card's top and left edges) and one ornament
+ * row (its tech-chip fill) with it. Story 2-14 deleted `ProjectsHero.scss` with the route it styled on
+ * 2026-09-07, taking the ornament row for its section divider. Story 2-29 rebuilt `HomeLayout.scss` on
+ * 2026-09-21 and its three nav and contact rules left. Story 2-31 deleted `hud-label.scss` with the
+ * atom it styled and rebuilt `WorkItem.scss` against the contract on 2026-09-23, taking six rows: the
+ * label's two side rules, and the row's separator, open-state bar, highlight marker and chip fill, the
+ * bar being the second boundary. Story 2-30 rebuilt the 404 later the same day and deleted
+ * `error-page.scss`, taking the last boundary, `error-page.scss:59`, the exits' leading edge, which
+ * `:76-79` repainted on hover. The counts below moved in the same commit each time, because a table
+ * pinned above what the tree holds fails as a missing call site, which is the opposite of what
+ * happened.
  */
 const CALL_SITES: readonly CallSite[] = [
-  // `error-page.scss:76-79` repaints `border-left-color` on hover. Two elements carry the class
-  // since Story 2-17 gave the 404 the header's two exits; the harness reads the first, and both
-  // take the same rule.
-  { at: 'error-page.scss:59', route: NOT_FOUND, selector: '.error-page__back', property: 'border-left-color', verdict: 'boundary' },
-
+  // **The 404's row left on 2026-09-23 with Story 2-30**, which wrote `Error404.scss` against the
+  // contract: the exits are controls bordered in the interactive role named directly, so the alias
+  // is not in their path at all, and `app/app.scss`'s boundary scope left with the class it scoped.
+  //
   // **The three HomeLayout rows left on 2026-09-21 with Story 2-29**, which rebuilt that
   // stylesheet token-native: its two nav rules and its mobile contact rule name `--token-border`
   // directly now, which is the leading-edge role `DESIGN.md:768` gives them, so the alias is not in
@@ -363,73 +367,48 @@ const CALL_SITES: readonly CallSite[] = [
   { at: 'WorkHero.scss:8', route: '/work', selector: '.work-hero', property: 'border-bottom-color', verdict: 'ornament' },
 ];
 
-const CALL_SITE_COUNT = 2;
-const BOUNDARY_COUNT = 1;
+const CALL_SITE_COUNT = 1;
+const BOUNDARY_COUNT = 0;
 
 /**
  * The `--monument-bold` call sites, each on the route that renders it.
  *
- * **Four until 2026-09-07, three until 2026-09-14.** `ProjectsHero.scss:19` was the third of the
- * three that set family alone before Story 1-18 added the weight beside it, and Story 2-14 deleted
- * the file with the route. `glitch-text.scss:5` was the one of the four that set its own weight,
- * and Story 2-27 deleted the file with the loop: `GlitchText.scss` names the display roles directly
- * and reaches no alias, so it is read by `tests/e2e/display-entrance.pw.ts` and not here. The
- * remaining two keep the argument unchanged.
+ * **Four until 2026-09-07, three until 2026-09-14, two until 2026-09-23.** `ProjectsHero.scss:19`
+ * was the third of the three that set family alone before Story 1-18 added the weight beside it,
+ * and Story 2-14 deleted the file with the route. `glitch-text.scss:5` was the one of the four that
+ * set its own weight, and Story 2-27 deleted the file with the loop: `GlitchText.scss` names the
+ * display roles directly and reaches no alias, so it is read by `tests/e2e/display-entrance.pw.ts`
+ * and not here. `error-page.scss:24`, the 404's numeral, left with Story 2-30, which deleted the
+ * file and set the numeral in the display family and the heaviest weight by their roles in
+ * `Error404.scss`. The one that remains keeps the argument unchanged.
  */
-const WEIGHT_SITES = [
-  { at: 'error-page.scss:24', route: NOT_FOUND, selector: '.error-page__code' },
+// Typed rather than `as const`: with one row left, a literal route would make the loop's 404 branch
+// a comparison the compiler refuses, and the loop is kept for the table rather than for its size.
+const WEIGHT_SITES: readonly { at: string; route: string; selector: string }[] = [
   { at: 'WorkHero.scss:19', route: '/work', selector: '.work-hero__heading' },
-] as const;
+];
 
-const WEIGHT_SITE_COUNT = 2;
+const WEIGHT_SITE_COUNT = 1;
 
 /** The weight `--monument-bold` maps onto, per `DESIGN.md` § The mapping. */
 const WEIGHT_ROLE = '--w-black';
 
 /**
- * The `--monument-regular` call site, and the `font-weight` it asks for.
+ * **`--monument-regular` has had no call site since 2026-09-23**, and the precondition case that
+ * checked the clamp its call sites relied on left with the last of them.
  *
- * `DESIGN.md` § The mapping assigns them `--f-display` plus `--w-bold`, and `app/app.scss` gets
- * there without a hand edit by relying on the variable face **clamping** a request below its
- * published range up to the range's lower bound. That is an argument, and the premise it rests on
- * is a value in `contracts/fonts.css` that a MINOR bump is free to change. Republished as
- * `400 800`, `.error-page__title` renders at 400, stops being bold, and nothing else in this story
- * reacts: the alias comparison reads `:root` token streams and `WEIGHT_SITES` never visits this
- * selector. So the clamp is asserted as a precondition below rather than argued.
- *
- * **Three at Story 1-18, two after Story 2-9, one now.** Story 2-9 deleted `ProjectCard.scss` with
- * the component it styled, and the card heading at `:40` was the third. Story 2-31 rebuilt
- * `WorkItem.scss` against the contract on 2026-09-23, and `.work-item__company` names the display
- * family and the bold weight directly now rather than asking the alias for a clamped 500.
- *
- * **No `font-weight` line is added at these.** The acceptance criteria name four call sites
- * and these are not among them.
+ * `DESIGN.md` § The mapping assigns the alias `--f-display` plus `--w-bold`, and `app/app.scss` got
+ * there without a hand edit by relying on the variable face clamping a request below its published
+ * range up to the range's lower bound, a premise that lives in `contracts/fonts.css` and that a MINOR
+ * bump is free to change. So the clamp was asserted as a precondition rather than argued, over a
+ * table of the call sites it protected: **three at Story 1-18, two after Story 2-9, one after Story
+ * 2-31**, and none since Story 2-30 deleted `error-page.scss`, whose `.error-page__title` at `:40`
+ * was the last. The 404's heading is the display entrance now, which names the display roles
+ * directly. With nothing left to clamp, a precondition over an empty table would pass whatever
+ * the contract published, so it went, and the alias is pinned at zero call sites below in the shape
+ * `--confillia-normal` has had since Story 2-29: a new call site would arrive relying on a clamp
+ * nothing checks any more.
  */
-const DISPLAY_REGULAR_SITES = [
-  // No `font-weight` of its own, so it asks for the initial 400.
-  { at: 'error-page.scss:40', route: NOT_FOUND, selector: '.error-page__title', requests: 400 },
-] as const;
-
-/**
- * The `font-weight` range `contracts/fonts.css` publishes for `family`, as `[lower, upper]`.
- *
- * A single value is read as a range of itself, which is how `Geist Mono`'s `font-weight: 400` is
- * declared.
- */
-const publishedWeightRange = (family: string): [number, number] | null => {
-  const faces = FONTS_CSS.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/@font-face\s*\{([^}]*)\}/g);
-  for (const face of faces) {
-    const block = face[1];
-    const declared = /font-family\s*:\s*([^;]+)/.exec(block)?.[1].trim().replace(/^["']|["']$/g, '');
-    if (declared !== family) continue;
-    const weight = /font-weight\s*:\s*([^;]+)/.exec(block)?.[1].trim();
-    if (!weight) return null;
-    const parts = weight.split(/\s+/).map(Number);
-    if (parts.some(Number.isNaN)) return null;
-    return [parts[0], parts[parts.length - 1]];
-  }
-  return null;
-};
 
 /** Navigate, and refuse to read anything off a page that did not answer the status expected. */
 const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
@@ -477,14 +456,16 @@ test('parses a real alias layer, so every case below measures something', () => 
   // could be satisfied by one value and would prove nothing.
   expect(CONTRACT.get(ORNAMENT), `${ORNAMENT} and ${BOUNDARY} are declared the same`).not.toBe(CONTRACT.get(BOUNDARY));
 
-  // The call-site table, pinned on both counts. One ornament and one boundary is what makes a
-  // single global alias unable to pass, and a table that lost a row would simply loop less.
-  expect(CALL_SITES.length, 'the --accent-dim table no longer carries two call sites').toBe(CALL_SITE_COUNT);
-  expect(CALL_SITES.filter((site) => site.verdict === 'boundary').length, 'the one boundary site moved').toBe(
+  // The call-site table, pinned on both counts. One ornament and one boundary was what made a
+  // single global alias unable to pass, until Story 2-30 took the last boundary away on 2026-09-23;
+  // a table that lost a row would simply loop less, and one that gained a boundary would carry a
+  // scope `app/app.scss` no longer has.
+  expect(CALL_SITES.length, 'the --accent-dim table no longer carries one call site').toBe(CALL_SITE_COUNT);
+  expect(CALL_SITES.filter((site) => site.verdict === 'boundary').length, 'a boundary site is back in the table').toBe(
     BOUNDARY_COUNT
   );
   expect(new Set(CALL_SITES.map((site) => site.at)).size, 'two rows name the same call site').toBe(CALL_SITE_COUNT);
-  expect(WEIGHT_SITES.length, 'the --monument-bold table no longer carries two call sites').toBe(WEIGHT_SITE_COUNT);
+  expect(WEIGHT_SITES.length, 'the --monument-bold table no longer carries one call site').toBe(WEIGHT_SITE_COUNT);
 
   // **Both tables against the stylesheets on disk**, which is what makes the counts above a
   // measurement rather than a restatement. Compared per file so a failure names where the new call
@@ -498,7 +479,7 @@ test('parses a real alias layer, so every case below measures something', () => 
   expect(COMPONENT_STYLESHEETS.size, 'no component stylesheet was read, so the counts below are vacuous').toBeGreaterThan(
     0
   );
-  for (const named of new Set([...CALL_SITES, ...WEIGHT_SITES, ...DISPLAY_REGULAR_SITES].map((site) => site.at.split(':')[0]))) {
+  for (const named of new Set([...CALL_SITES, ...WEIGHT_SITES].map((site) => site.at.split(':')[0]))) {
     expect([...COMPONENT_STYLESHEETS.keys()], `${named} is tabled below but was not read off disk`).toContain(named);
   }
 
@@ -522,21 +503,25 @@ test('parses a real alias layer, so every case below measures something', () => 
 
   expect(
     sortedEntries(callSitesOf('--accent-dim')),
-    `the --accent-dim call sites on disk are not the two this file tables. A call site missing ` +
+    `the --accent-dim call sites on disk are not the one this file tables. A call site missing ` +
       `from the table silently takes the :root ornament role, and if it is a boundary it falls below ` +
       `the 3:1 floor AD-19 asserts with every case here green`
   ).toEqual(sortedEntries(tabled(CALL_SITES)));
 
   expect(
     sortedEntries(callSitesOf('--monument-bold')),
-    `the --monument-bold call sites on disk are not the two this file tables. A third one loses the ` +
+    `the --monument-bold call sites on disk are not the one this file tables. A second one loses the ` +
       `weight that lived in the family name and renders at 400, which is the exact trap this story exists to close`
   ).toEqual(sortedEntries(tabled(WEIGHT_SITES)));
 
+  // **Zero call sites since 2026-09-23**, the shape `--confillia-normal` below has had since Story
+  // 2-29: Story 2-30 deleted `error-page.scss`, whose heading was the last call site, and the clamp
+  // case that protected the alias's call sites left with it (see the note where the table was).
+  // Pinned at zero rather than deleted, because a new call site would rely on a clamp nothing checks.
   expect(
     sortedEntries(callSitesOf('--monument-regular')),
-    'the --monument-regular call sites on disk are not the one whose clamp this file checks'
-  ).toEqual(sortedEntries(tabled(DISPLAY_REGULAR_SITES)));
+    'a --monument-regular call site is back, and nothing checks the clamp it relies on any more'
+  ).toEqual([]);
 
   // **Zero call sites since 2026-09-21**, the shape `--hero-height` has had since Story 1-18: a
   // property the alias layer still declares with nothing left reading it. Story 2-20 retargeted
@@ -661,7 +646,7 @@ test('the two properties the alias layer must not move still hold their authored
   );
 });
 
-test('--accent-dim resolves to the role its call site earns, at both', async ({ page }) => {
+test('--accent-dim resolves to the role its call site earns, at each one left', async ({ page }) => {
   const readSite = async (target: Page, site: CallSite, roles: Record<string, string>): Promise<string | null> => {
     const expected = roles[site.verdict === 'boundary' ? BOUNDARY : ORNAMENT];
     const actual = await computedStyleValue(target, site.selector, site.property);
@@ -742,7 +727,7 @@ test('the --monument-bold call sites compute as the display family at its heavie
     }
   }
 
-  expect(read, 'fewer than two --monument-bold call sites were read').toBe(WEIGHT_SITE_COUNT);
+  expect(read, 'fewer --monument-bold call sites were read than this file tables').toBe(WEIGHT_SITE_COUNT);
   expect(
     wrong,
     `the alias trap is open at a --monument-bold call site. A family alias carries the family and ` +
@@ -759,64 +744,12 @@ test('the --monument-bold call sites compute as the display family at its heavie
   ).not.toBe('800');
 });
 
-test('the display face still clamps --monument-regular up, which is a precondition rather than an argument', async ({
-  page,
-}) => {
-  // `--monument-regular` gets no hand-set weight, and the reason `app/app.scss` gives is that its
-  // call sites request a weight below the range the display face publishes and the variable
-  // face clamps them up to its lower bound. **That premise lives in `contracts/fonts.css` and a
-  // MINOR bump is free to change it.** Republished as `400 800`, both of these quietly stop
-  // being bold and nothing else in this story notices. So the premise is checked here.
-  const displayFamily = firstFamily(CONTRACT.get('--f-display') ?? '');
-  expect(displayFamily, 'contracts/tokens.css declares no first family for --f-display').not.toBe('');
-
-  const range = publishedWeightRange(displayFamily);
-  expect(range, `contracts/fonts.css publishes no font-weight range for ${displayFamily}`).not.toBeNull();
-
-  // The parser, on planted controls: a body family whose range differs, and a single-value
-  // declaration read as a range of itself. Without these an empty parse would read as a pass.
-  expect(publishedWeightRange('Geist Mono'), 'a single font-weight is not read as a range').toEqual([400, 400]);
-  expect(publishedWeightRange('Geist')?.[0], 'the parser answers the same range for every family').not.toBe(
-    range?.[0]
-  );
-  expect(publishedWeightRange('A Family Nothing Publishes'), 'the parser invents a range').toBeNull();
-
-  const heaviestRequested = Math.max(...DISPLAY_REGULAR_SITES.map((site) => site.requests));
-  expect(
-    range?.[0] ?? 0,
-    `${displayFamily} publishes font-weight ${range?.join(' ')}, and the heaviest weight the ` +
-      `--monument-regular call sites request is ${heaviestRequested}. The mapping assigns them ` +
-      `the display family at bold and relies on the face clamping the request up to its lower bound. ` +
-      `With a lower bound at or below ${heaviestRequested} the clamp stops happening and ` +
-      `${DISPLAY_REGULAR_SITES.map((site) => site.at).join(', ')} render lighter than the mapping says, ` +
-      `with no other case in this story reacting.`
-  ).toBeGreaterThan(heaviestRequested);
-
-  // And the family itself reaches both, which is the other half of the same claim. The
-  // weight is deliberately not asserted here: these two request 400 and 500 by design and the
-  // clamp happens at rasterization, not in the computed value. No font-weight line is added to
-  // these stylesheets, because the acceptance criteria name four call sites and these are not
-  // among them.
-  const wrong: string[] = [];
-  let read = 0;
-
-  for (const route of [...new Set(DISPLAY_REGULAR_SITES.map((site) => site.route))]) {
-    await goTo(page, route, route === NOT_FOUND ? 404 : 200);
-    for (const site of DISPLAY_REGULAR_SITES.filter((candidate) => candidate.route === route)) {
-      const family = await computedStyleValue(page, site.selector, 'font-family');
-      read += 1;
-      if (firstFamily(family) !== displayFamily) {
-        wrong.push(`${site.at} (${site.selector}) computes font-family "${family}", expected ${displayFamily} first`);
-      }
-      if (/MonumentExtended/.test(family)) {
-        wrong.push(`${site.at} (${site.selector}) still resolves the retired family "${family}"`);
-      }
-    }
-  }
-
-  expect(read, 'fewer --monument-regular call sites were read than this file tables').toBe(DISPLAY_REGULAR_SITES.length);
-  expect(wrong, `a --monument-regular call site does not resolve the display family:\n${wrong.join('\n')}`).toEqual([]);
-});
+// **The clamp case left on 2026-09-23 with the last call site it protected.** It asserted that the
+// display face publishes a weight range whose lower bound sits above what the `--monument-regular`
+// call sites request, which is what made them bold without a hand-set weight. Story 2-30 deleted
+// `error-page.scss` and the last of them with it, and a precondition over no call site passes
+// whatever `contracts/fonts.css` publishes, so the case and its range parser went, and the alias is
+// pinned at zero call sites in the first case of this file. See the note where the table was.
 
 test('the body ground and body copy where the base rule paints are the token roles, and neither is pure', async ({
   page,
@@ -839,7 +772,9 @@ test('the body ground and body copy where the base rule paints are the token rol
   // unrouted path's id matches none of `body#work` (`app/app.scss`, which listed `body#projects`
   // beside it until Story 2-14), `body[id='']` (`HomeLayout.scss`) or `#celeste`
   // (`celeste.scss`), so nothing overrides `background: var(--black-color)` there.
-  // `error-page.scss:7` paints its own `#0a000f` on the error container, not on `body`.
+  // `error-page.scss:7` painted its own `#0a000f` on the error container, not on `body`, until Story
+  // 2-30 replaced the file on 2026-09-23 with `Error404.scss`, which paints no ground at all: this
+  // base rule is the ground a visitor sees on the 404 now, as `tests/e2e/error-surface.pw.ts` samples.
   await goTo(page, NOT_FOUND, 404);
 
   // The guard, saying what it actually covers. The three rules that override the base ground on

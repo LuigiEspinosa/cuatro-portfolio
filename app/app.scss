@@ -81,10 +81,13 @@
 //
 // Story 2-31 removed `.work-item::before` on 2026-09-23. The row's stylesheet was rebuilt against
 // the contract and reads no alias at all, so the open-state rule this scope used to resolve names
-// its roles directly and the selector had nothing left here to redefine. One boundary remains.
-.error-page__back {
-  --accent-dim: var(--token-border-interactive);
-}
+// its roles directly and the selector had nothing left here to redefine. One boundary remained.
+//
+// Story 2-30 removed `.error-page__back`, the last selector, later the same day, and the block went
+// with it. The 404 was rebuilt against the contract and its exits read no alias at all, so no
+// boundary call site is left for this layer to resolve and the one call site that remains is an
+// ornament reading the :root value above. The mapping's boundary half has no subject now, and it
+// leaves with the rest of this layer when Story 2-22 deletes it.
 
 * {
   margin: 0;

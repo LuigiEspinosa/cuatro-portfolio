@@ -152,8 +152,9 @@ test.describe('the site header', () => {
     // survives while hydration leaves the attribute alone. Measured 2026-08-29: with a
     // structural hydration mismatch planted in `Header`, the id flipped to
     // `a-route-that-does-not-exist` mid-test and the control went red for a reason that had
-    // nothing to do with the header. `Error404.tsx:35,41-43` renders the same markup on both
-    // sides and is what this case is actually about.
+    // nothing to do with the header. `Error404.tsx:41,44-46` renders the same markup on both
+    // sides and is what this case is actually about (a server component since Story 2-30, so the
+    // markup is the server's on both).
     await expect(page.locator('.error-page')).toHaveCount(1);
     await expect(page.locator('.error-page__code')).toHaveText('404');
 
