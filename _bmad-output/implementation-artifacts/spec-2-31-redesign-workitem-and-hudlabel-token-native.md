@@ -398,6 +398,11 @@ settled by `EXPERIENCE.md` § Motion and § Work item or by this spec. Re-run af
   stylesheet 19 bytes lighter on disk and 5 gzipped, every other chunk unchanged.
 - Container `pnpm test:e2e`, same image, no filter: 287 of 287 passed, 7.5 minutes, no snapshot
   written, the `/work` baseline still `7c059024...`.
+- Lighthouse, which this spec does not ask for and which gates on `main` only, read in the same image
+  the way `.github/workflows/lighthouse.yml` takes it, three runs per URL: accessibility `/cv` 1.00
+  (F-5's audit passing), `/work` 1.00 and `/` 0.96, best practices and SEO 1.00 everywhere, every
+  assertion green. `/`'s one failing audit is six `aria-hidden` ornaments, none of them this
+  story's (DW-113).
 
 **Manual checks:**
 

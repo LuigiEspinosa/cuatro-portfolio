@@ -5435,3 +5435,28 @@ status: done
     **Owner: unassigned.** **Trigger: DW-111's, the next change to the disclosure's mechanism,
     since both entries are the same component's semantics.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
+  id: DW-113
+  summary: >-
+    Lighthouse reads `/` at 0.96 on accessibility against the 0.95 gate, because axe scores
+    colour contrast on `aria-hidden` ornament: three of the home surface's Japanese lines and
+    three of the premise band's names, all in the muted accent at 2.74:1.
+  evidence: |-
+    Observed 2026-09-23 by Story 2-31, on a local reading taken the way
+    `.github/workflows/lighthouse.yml` takes it (`@lhci/cli` 0.15.1, Lighthouse 12.6.1, mobile
+    emulation, three runs per URL, the Umami variables empty, nothing uploaded) in
+    `mcr.microsoft.com/playwright:v1.62.1-noble`: `/` 0.96 on every run with `color-contrast`
+    its one failing audit, `/work` and `/cv` 1.00. A further run itemised the audit as
+    `.home-role__jp`, `.home-nav-jp`, `.home-contact-jp` and three `.premise__framework` names,
+    each hidden from assistive technology and each `#564c91` on `#060509`. `DESIGN.md` and
+    `EXPERIENCE.md` settle that colour as ornament that may carry nothing a reader needs, so no
+    reader loses a word here; the gate's instrument and a design decision disagree. None of the
+    six nodes is Story 2-31's, and the last recorded reading of `/`, 2026-09-14 in
+    `ops/hub-accessibility-pass.md`, was 1.00.
+
+    **Why it is worth an entry.** The job runs on push to `main` only, so this first gates at
+    the Epic 2 merge, and `/` clears the line by one hundredth: a second failing audit on that
+    route would very likely take it under. **Owner: unassigned.** **Trigger: the Epic 2 merge to
+    `main`, or any story that sets new text in the muted accent on `/`.**
+  status: open

@@ -336,8 +336,11 @@ development_status:
   # removed) and one deferral (DW-112). After it: typecheck clean, 1,377 unit tests in 55 files,
   # the budget re-read on build 0KxutAmqMQuDuV6dR2omk, and 287 e2e tests green in 7.5 min in the
   # pinned image.
+  # A local Lighthouse reading in the same image, three runs per URL: /cv and /work 1.00, / 0.96,
+  # every assertion green; /'s one failing audit is six aria-hidden ornaments in the muted accent,
+  # none of them this story's, filed as DW-113 because / clears the main gate by one hundredth.
   # Waits on the Operator: the spec's manual checks (the hover and the greyscale read at 360 and
-  # 1280, a phone, a printed /cv) and DW-110's words. Lighthouse was not run locally.
+  # 1280, a phone, a printed /cv) and DW-110's words.
   2-31-redesign-workitem-and-hudlabel-token-native: review
   2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog
   2-33-redesign-workhero-and-worktimeline-token-native: backlog
