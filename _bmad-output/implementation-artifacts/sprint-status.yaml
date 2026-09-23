@@ -305,7 +305,32 @@ development_status:
   # the --t-xl reading of the nav and contact type, which is a gap in DESIGN.md rather than a
   # value it supplied.
   2-29-redesign-homelayout-token-native: done
-  2-30-redesign-error404-token-native: backlog
+  # 2-30 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
+  # pushes. Error404 is a server component on the documents' structure: a section Plate mark
+  # reading ERROR (plain words, no // and no code), the display entrance (GlitchText) as the
+  # page's one <h1>, one secondary line and the header's DESTINATIONS as controls, with the numeral
+  # aria-hidden and unnamed in the muted accent at --t-xl. The redundancy test ran in the pinned
+  # image and took branch A: with the numeral removed, the title (set in sentence case, Page not
+  # found), the heading and the message each say it; O-13's aria-label on a <p> is corrected as a
+  # pre-existing defect. Error404.scss replaces error-page.scss against the contract alone: no
+  # ground of its own, no grid, no z-index, content-high and start-aligned rather than a centred
+  # hero, exits bordered in the interactive role with the hover gated on (hover: hover), and one
+  # opacity keyframe (100, 300, 500ms on --dur-minor and --ease-entrance, none under reduced
+  # motion) replacing three GSAP tweens (DW-77, DW-80 closed). The alias layer lost its last
+  # --accent-dim boundary scope and its last --monument-regular site (pinned at zero, the clamp
+  # case gone with it).
+  # Records: z-error-content, gradient-error-ground and heading-404 left the ledger, KV-6 reads
+  # two, two, one, zero and zero with closers 2-32 and 2-33, F-6, F-12 and F-18 closed and F-11
+  # down to /work. Weight: 1,512 gzipped lighter overall; /cv 257,492 on the wire, 117,492 over the
+  # 140,000; the server component weighed 510 lighter on /cv than the same component as a client
+  # one. DW-114 (the 404's copy, the Operator's) and DW-115 (five ungated hovers outside any
+  # remaining story, found in review) filed.
+  # Step-04 review, six layers inline (no subagent tool, so not independent): four patches, one
+  # deferral. After it: typecheck clean, 1,393 unit tests in 55 files, the budget reproduced chunk
+  # for chunk, and 300 e2e tests green in 5.7 min in the pinned image, the /work baseline unchanged.
+  # Waits on the Operator: the spec's manual check (the 404 at 360 and 1280 on a hover-capable
+  # pointer and on a phone) and DW-114's words.
+  2-30-redesign-error404-token-native: review
   # 2-31 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
   # pushes. HudLabel is deleted and folded into the Plate mark as its annotated and side-ruled
   # variants; the props are a union on variant, so a fourth combination does not type-check,
