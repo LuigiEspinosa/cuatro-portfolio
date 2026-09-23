@@ -282,14 +282,17 @@ const WEIGHT_ROLE = '--w-black';
  * deletes the alias layer, at which point this partition and `WEIGHT_CALL_SITES` collapse into one.
  */
 const TOKEN_NATIVE_STYLESHEETS = [
-  // The two chrome stylesheets Story 2-15 brought onto the contract. They are the first entries
-  // here that are **not** Epic 2 rebuilds: both keep their 2023 lowercase names and their old
-  // declarations, and each names a role because this story gave it one thing to do that the alias
-  // layer carries no name for. `navbar.scss` reaches the hit-target floor through `--tap` and
-  // marks the current route with `--stroke-emphasis` in `--token-accent`; `header.scss` goes
-  // sticky at `--z-sticky` on an opaque `--token-bg` ground. Story 2-32 rebuilds both, at which
-  // point they become rebuilds like the rest of this list.
-  'components/atoms/Navbar/navbar.scss',
+  // The chrome, rebuilt by Story 2-32: the page container, the wordmark, the header's two
+  // destinations and (below) the header band. Rebuilds like the rest of this list, each written
+  // beside its component under its PascalCase name. Story 2-15 had brought the lowercase
+  // `navbar.scss` and `header.scss` onto the contract first, the two entries here that were not
+  // rebuilds, each naming a role for the one thing that story gave it to do; they left disk with
+  // their 2023 declarations, `sans-serif`, `#fff`, the ungated hover and the `140px` among them.
+  // `Container.scss` names the page padding alone, and its `1920px` cap is the one length
+  // `DESIGN.md` states for it.
+  'components/atoms/Container/Container.scss',
+  'components/atoms/Logo/Logo.scss',
+  'components/atoms/Navbar/Navbar.scss',
   // The scrim layer, rebuilt by Story 2-28. A rebuild like the rest: the 2023 raster left disk with
   // its literals (the `#000` alphas, the two gradients, the grain and the `10` that equalled a level
   // by value), and this file names the scrim role and the raised layer directly.
@@ -307,7 +310,7 @@ const TOKEN_NATIVE_STYLESHEETS = [
   // and its `--monument-bold` call site left disk with the loop, and this file sets the display
   // roles (family, weight, size, line-height, tracking, colour) and the three motion roles directly.
   'components/molecules/GlitchText/GlitchText.scss',
-  'components/molecules/Header/header.scss',
+  'components/molecules/Header/Header.scss',
   'components/molecules/PlateMark/PlateMark.scss',
   // The `/cv` intro block, added by Story 2-16. A rebuild like the rest of this list: the route was
   // a redirect until that story, so there is no 2023 stylesheet behind it and no alias name to keep.
@@ -343,8 +346,10 @@ const ALIAS_LAYER = 'app/app.scss';
 const KNOWN_TRACKED = [
   'app/app.scss',
   'components/atoms/Container/Container.tsx',
-  // `public/fonts/ConfilliaBold-Regular.woff` until Story 2-20 deleted the directory, on 2026-09-12.
-  'public/logo.png',
+  // `public/fonts/ConfilliaBold-Regular.woff` until Story 2-20 deleted the directory, on 2026-09-12,
+  // and `public/logo.png` until Story 2-32 retired the raster for a text wordmark, on 2026-09-23.
+  // The CV's PDF is linked from `/cv` and served at its own URL.
+  'public/pdf/cv.pdf',
 ] as const;
 
 /** The three basenames a vendored copy would arrive under (AD-14). */
@@ -1180,6 +1185,23 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
       named.filter((path) => !REGISTRY_PATHS.includes(path)),
       `${REGISTRY_MODULE} names something under contracts/ beyond the Registry pair`
     ).toEqual([]);
+  });
+
+  it('writes the hit-target floor by hand in no stylesheet, so every control reads it off the contract', () => {
+    // Story 2-32's criterion, and the rule Story 2-34's gate will enforce as a spacing literal like any
+    // other (`DESIGN.md` § The hit-target floor): the floor is `--tap`, minted so that five frameworks
+    // cannot each write their own. Comments are stripped first, because a sentence about the number is
+    // not a declaration of it; a declaration anywhere in a scanned stylesheet fails naming the file.
+    const floorLiteral = /(?<![\w.-])44px\b/;
+    const written = files
+      .filter((file) => file.endsWith('.scss') || file.endsWith('.css'))
+      .filter((file) => floorLiteral.test(withoutComments(readFileSync(resolve(REPO_ROOT, file), 'utf8'))));
+    expect(written, `a stylesheet writes the floor by hand instead of reading --tap:\n${written.join('\n')}`).toEqual([]);
+
+    // The scan, on planted controls: a declaration fires, a comment and a longer number do not.
+    expect(floorLiteral.test(withoutComments('.a { min-block-size: 44px; }'))).toBe(true);
+    expect(floorLiteral.test(withoutComments('// a 44px box on a line of prose\n.a { color: red; }'))).toBe(false);
+    expect(floorLiteral.test(withoutComments('.a { inline-size: 144px; }'))).toBe(false);
   });
 });
 

@@ -1,0 +1,12 @@
+// The page container (Story 2-32), listed in `TOKEN_NATIVE_STYLESHEETS` in
+// `app/__tests__/anchor-contract.test.ts`.
+//
+// **Width-capped, not width-percentaged** (`DESIGN.md` § The redesigned Hub surfaces, Chrome). The
+// 2023 `min(80%, 1920px)` spent 20% of a 360px viewport on margin before any padding applied, which is
+// what made the mobile floor fail. The page padding is the one gutter now, and it is the contract's.
+// `1920px` is the cap `DESIGN.md` states; the contract carries no token for it.
+.container {
+  width: min(100%, 1920px);
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}

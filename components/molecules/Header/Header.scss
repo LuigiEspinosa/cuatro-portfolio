@@ -1,0 +1,60 @@
+// The site header (Story 2-15 made it sticky; Story 2-32 rebuilt it against the contract).
+//
+// **Contract roles and nothing else**, which is why this file is listed in
+// `TOKEN_NATIVE_STYLESHEETS` in `app/__tests__/anchor-contract.test.ts`. It declares no custom
+// property of its own and no block size at all.
+//
+// **A band with the page's container inside it.** The ground and the hairline are painted on the
+// `<header>`, which spans the viewport at every width; the wordmark and the destinations sit in
+// `.container` inside it, so they align to the same `--page-pad` edge as the page beneath. The 2023
+// header was the container itself, so its ground stopped at 80% of the viewport and the page scrolled
+// through the gutters either side (DW-63).
+.header-container {
+  // **Sticky, and it does not hide, shrink or change on scroll** (`EXPERIENCE.md` § Nav). A header
+  // that disappears costs Marcus the `Suite` link at the exact moment he wants it. This works because
+  // `app/app.scss` sets `overflow-x: clip` rather than `hidden` on `html` and `body`: `clip` does not
+  // make the element a scroll container, which is what breaks a descendant's `position: sticky`.
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-sticky);
+
+  // **Opaque, on the paper role**, so the page never paints through the links as it scrolls under
+  // them; alpha grounds and `backdrop-filter` are barred outside the scrim (`DESIGN.md` § Rules).
+  background-color: var(--token-bg);
+
+  // **Closed beneath by a hairline**, so content scrolling under the band meets an edge rather than
+  // an invisible line: lightness, then a hairline, is the depth vocabulary `DESIGN.md` § Elevation &
+  // Depth allows, never an alpha edge, a shadow or a blur (review A-6).
+  border-block-end: var(--stroke-hair) solid var(--token-border);
+
+  // **Content-driven**: no height is declared (DW-62). The band is this padding, one row of controls
+  // each held to `--tap`, and the hairline.
+  padding-block: var(--s-lg);
+}
+
+.header-container__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  // Sibling spacing by `gap`, and at `--s-lg` so the wordmark's `--tap` box and the first
+  // destination's can never touch however narrow the row gets (`RESTYLE-SPEC.md` § 1b).
+  gap: var(--s-lg);
+}
+
+// **Sticky chrome occludes the top of the scrollport, so the scrollport is told how much.** Without
+// this a fragment target, and any element the browser scrolls to the top edge when focus reaches it,
+// lands behind the header. `scroll-padding` is read off the scroll container, which for viewport
+// scrolling is the root element, so it is declared on `html`, and only where a header is in the
+// document: `Header.tsx` renders none on `/`, whose fragments the Hub actually uses.
+//
+// **The band's own block size, restated from the same four tokens that produce it**: the padding
+// above, one `--tap` row, the padding below and the hairline. It is not a number that can drift from
+// the band, the way the 2023 `140px` spent twice could, and `tests/e2e/chrome-nav.pw.ts` holds it
+// equal to the rendered box on every surface that renders one. **Its ceiling, stated**: it is exact
+// while the row is one line, which it is from 360 wide up; a row wrapped below the supported floor,
+// or text zoomed past `--tap`, leaves it short by the second line (DW-118). Measuring the band from
+// script instead would write onto the root element from a component, which `AGENTS.md` rules out.
+html:has(.header-container) {
+  scroll-padding-block-start: calc(var(--s-lg) + var(--tap) + var(--s-lg) + var(--stroke-hair));
+}

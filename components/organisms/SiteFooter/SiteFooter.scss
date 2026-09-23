@@ -78,8 +78,8 @@
 }
 
 // The rule is drawn on the inner span, not on the hit-target box, or it floats away from the text
-// by the height of the padding (`RESTYLE-SPEC.md:198-199`). Same shape as `navbar.scss:58-60` and
-// `CvIntro.scss:110-118`.
+// by the height of the padding (`RESTYLE-SPEC.md:198-199`). Same shape as `Navbar.scss`'s
+// `.navbar__label` and `CvIntro.scss:110-118`.
 .site-footer__label {
   border-block-end: var(--stroke-hair) solid var(--token-border-interactive);
 }

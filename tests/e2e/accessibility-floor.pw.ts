@@ -210,14 +210,10 @@ const EXEMPTIONS: readonly Exemption[] = [
     source: 'app/app.scss:140-141',
     closedBy: 'Story 2-33',
   },
-  {
-    id: 'clip-skip-link',
-    check: 'clip',
-    match: 'a.skip-link',
-    count: 1,
-    source: 'components/atoms/SkipLink/SkipLink.scss:33-34',
-    closedBy: 'Story 2-32',
-  },
+  // **`clip-skip-link` left on 2026-09-23 with Story 2-32**, the ledger's last `clip` row. The
+  // skip-link was parked at the viewport's corner, so its revealed ring lost its top and left sides
+  // past the edge; it is parked one ring-reach inside the corner now, and the sweep reads the ring
+  // whole, which reported the row stale.
 ];
 
 /** The four depth properties and functions the built-CSS sweep counts, as written in minified CSS. */

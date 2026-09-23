@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import './container.scss';
+import './Container.scss';
 
 interface ContainerProps {
   children: ReactNode;

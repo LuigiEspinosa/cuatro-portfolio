@@ -253,7 +253,20 @@ one of its routes**, so a row covering two surfaces cannot go half stale in sile
 
 | Id | Selector | Source | Routes | Covers | Measured | Closed by |
 |---|---|---|---|---|---|---|
-| `chrome-logo` | `.logo a` | `components/atoms/Logo/Logo.tsx:7` | `/work`, `/cv`, `/a-route-that-does-not-exist` | 3 | 184.00 x 20.00 | Story 2-32 |
+
+**The ledger is empty since 2026-09-23.** **Observed 2026-09-23** in
+`mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800. Story 2-32 replaced the chrome logo's
+raster with a text wordmark whose link holds `min-block-size` and `min-inline-size` at `--tap`, so on
+`/work`, `/cv` and the 404 it clears the floor on both axes, and the sweep reported `chrome-logo`, the
+last row, stale in the commit that repaired it: the row listed those three routes, covered three
+elements and recorded 184.00 x 20.00, the line box of a plain inline link whose 66px image painted
+past it. The header above is kept, with no row under it, because the shape outlives the rows: a
+breach the Operator rules to tolerate is written here and in `EXEMPTIONS` in the same commit, and an
+element under the floor that nothing lists fails the sweep whether the ledger is empty or not.
+`ops/__tests__/hit-target-floor.test.ts` reads this sentence and holds the spec's literal empty
+with it. The instrument's own demonstrations plant a real element against an invented row since
+then (DW-68, § Failing loudly rather than vacuously). KV-4 in `ops/known-violations.md` retired in
+the same commit.
 
 **Both home rows left on 2026-09-21 with Story 2-29, and the sweep is what forced them out.**
 **Observed 2026-09-21** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800. That story
@@ -284,7 +297,8 @@ half, which was an open question until this ran.
 **The `Measured` column carried the date 2026-09-06 in its header until 2026-09-12**, when the two
 home rows were re-read; `chrome-logo` is still the 2026-09-06 reading. The two home rows were dated
 in the paragraph below until Story 2-29 deleted them on 2026-09-21, and the per-element table now
-carries one row, as the ledger does.
+carries one row, as the ledger does. **Since 2026-09-23** the ledger carries none and the
+per-element table keeps only the row that was never a breach.
 
 **Both home rows were re-measured on 2026-09-12 by Story 2-20, and grew taller without leaving the
 floor.** **Observed 2026-09-12** in the pinned container at 360 x 800, by `getBoundingClientRect()`
@@ -322,15 +336,15 @@ resolved and after the home entrance had settled. `EXPERIENCE.md:731-732` says t
 single easiest one to miss while appearing to meet it, and reading a stylesheet is exactly how it
 gets missed.
 
-**Six rows at Story 2-8, five after Story 2-9, four after Story 2-15, three after Story 2-17 and
-one since Story 2-29, where that story's
+**Six rows at Story 2-8, five after Story 2-9, four after Story 2-15, three after Story 2-17,
+one after Story 2-29 and none since Story 2-32, where that story's
 code map named four.** **Observed 2026-09-06**, re-read **2026-09-08** after Story 2-15 deleted
 `chrome-nav`, and re-read **2026-09-11** after Story 2-17 deleted `error-back`.
 `chrome-logo` was not on that list and was found by sweeping: `Logo.tsx:7` is a plain
 inline `<a>` wrapping a 184 x 66 image, so the element's own box is the 20px text line box while
 the image paints past the bottom of it. That is the same class of defect the ledger exists to
 record, and it is the clearest argument for a universal sweep over a list of surfaces someone
-remembered. Story 2-32 names `Logo` in its own title (`epics.md:3559`) and is what closes it. The
+remembered. Story 2-32 names `Logo` in its own title (`epics.md:3559`) and is what closed it, on 2026-09-23. The
 home surface was carried as two rows, because it is authored in two files at two different sizes,
 until Story 2-29 repaired both on 2026-09-21.
 
@@ -385,7 +399,6 @@ class now clear the floor. The size is kept in the `error-back` paragraph above 
 
 | Element | Measured | Which axis fails |
 |---|---|---|
-| `.logo a` | 184.00 x 20.00 | Height |
 | `button.work-item__header`, all four | 216.00 x 88.80 | **None.** These clear the floor, which is what keeps the comparison from being a check that always fails |
 
 **The four home rows left this table on 2026-09-21 with the two ledger rows they detailed**, which
@@ -394,8 +407,12 @@ the elements are gone. They read `320.00 x 32.00` for both nav links and `66.00`
 `57.00 x 32.00` for the three contact links, the 2026-09-12 reading, and before Story 2-20 they
 read `320.00 x 23.00`, `68.00 x 23.00`, `84.00 x 23.00` and `58.00 x 23.00`, **observed 2026-09-06**
 in Confillia Normal at 24px. Their sizes are not lost: the ledger paragraph above carries both
-readings and the boxes they measure now. The
-`.logo a` and `.work-item__header` rows are still the 2026-09-06 reading.
+readings and the boxes they measure now. **The `.logo a` row left on 2026-09-23 with `chrome-logo`**,
+by the same rule: it read 184.00 x 20.00, failing on height, from 2026-09-06 until Story 2-32
+replaced the raster, and that size is kept in the ledger's paragraph above and in KV-4. The
+`.work-item__header` row is still the 2026-09-06 reading; **re-read 2026-09-23** after Story 2-32
+widened the container, the first trigger on `/work` measures 256.00 x 91.19, printed by
+`tests/e2e/accessibility-floor.pw.ts` in the pinned image, and it still clears the floor.
 
 **The four `.work-item__header` buttons are load-bearing for the whole assertion.** **Decision.**
 A standing case asserts that at least one measured element clears the floor and at least one does
@@ -409,13 +426,22 @@ four on 2026-09-08**, two nav links on each of `/work` and the 404, and they are
 on a route the buttons do not render on that clear the floor, so the standing case's other half
 now holds on the 404 without leaving that surface. **Story 2-17 added three on 2026-09-11**, the
 footer link on `/` and the two exits on the 404, and took the back link out of the other half, so
-the 404 now measures four elements clearing the floor and one under it, the logo, where it measured
-two and two. Both halves of the case still hold on each of `/`, `/work`, `/cv` and the 404 on their
-own.
+the 404 then measured four elements clearing the floor and one under it, the logo, where it measured
+two and two. **Since 2026-09-23 the other half is planted.** Story 2-32 took the logo past the floor,
+so every shipped control on every surface clears it, and the standing case plants an undersized
+link on `/work` and reads it under the floor through the same sweep (DW-68), after asserting that
+nothing shipped is.
 
 ## The tolerated breach
 
-**3 of the 39 measured elements are under the floor.** Behind those 3 rendered instances is
+**None of the 39 measured elements is under the floor, and no authored control is.** **Observed
+2026-09-23** in the pinned image at 360 x 800, after Story 2-32 replaced the logo raster with a text
+wordmark held to `--tap` on both axes and deleted `chrome-logo`, the last row: the ledger is empty,
+the sweep is green against it, and KV-4 is retired. The readings below are kept rather than
+overwritten.
+
+**Re-measured 2026-09-21**, and that reading is kept: 3 of the 39 measured elements were under the
+floor. Behind those 3 rendered instances was
 **1 authored control**: the logo link, rendered on `/work`, `/cv` and the 404. **Observed
 2026-09-21**, after Story 2-29, which set `min-block-size: var(--tap)` on both hero link groups and
 deleted `home-nav` and `home-contact` in the same commit: five rendered instances and two authored
@@ -457,7 +483,9 @@ The 36 elements that clear the floor are the eight `.work-item__header` buttons,
 six chrome nav links Story 2-15 rebuilt, two on each of `/work`, `/cv` and the 404, the two intro
 links Story 2-16 authored on `/cv`, the three Story 2-17 authored, the footer link on `/` and the
 two 404 exits, and the five Story 2-29 took past the floor on 2026-09-21, the two home nav links
-and the three contact links. **Observed 2026-09-21.** The 2026-09-11 reading of the same figure was
+and the three contact links. **Observed 2026-09-21.** **All 39 since 2026-09-23**, the three
+wordmarks Story 2-32 built to the floor on `/work`, `/cv` and the 404 being the last three. The
+2026-09-21 reading of the same figure was 36, the 2026-09-11 one was
 31, the 2026-09-10 one was 28, the 2026-09-08 one was 20, over four buttons and four nav links, and
 the 2026-09-07 one was 16.
 
@@ -472,7 +500,8 @@ Those 6 are a live breach of AD-19 and are recorded as **KV-4** in
 `ops/known-violations.md`, with the ruling that tolerates them and the one story that retires
 it. **Three stories until 2026-09-08**, when Story 2-15 closed its own row and left that entry's
 list, and **two until 2026-09-11**, when Story 2-17 deleted `error-back` and Story 2-30 left it
-with nothing there to close. The A-5 half is **KV-5** in the same file: Story 2-9 repaired its stylesheet half, and the
+with nothing there to close. **Retired on 2026-09-23**, when Story 2-32 deleted the last row and
+the ledger emptied. The A-5 half is **KV-5** in the same file: Story 2-9 repaired its stylesheet half, and the
 component half, 28 elements owned by `WorkItem.scss` and `WorkHero.scss`, keeps that entry `Open`.
 This file describes the instrument; that file is the register of what the estate is knowingly
 running in breach.
@@ -697,6 +726,22 @@ KV-5, Story 2-33's). The hero rendered the same number of boxes before this stor
 three having become the Plate mark's three, so the eighteen that left were the timeline's. `/cv`
 renders the timeline and no hero, and is clean. **No left-edge overflow on either surface.**
 
+**Re-measured on both surfaces on 2026-09-23 by Story 2-32**, which rebuilt `.container` from
+`min(80%, 1920px)` to `min(100%, 1920px)` at `--page-pad`, so at 360 the page's content box is 320
+wide where it was 256. **Observed 2026-09-23** in the pinned image by the same case, with the torus
+canvas mounted:
+
+| Surface | Elements past an edge | Of them the timeline's | Furthest | Nature |
+|---|---|---|---|---|
+| `/work` | **0** | **0** | n/a | **Observed 2026-09-23** |
+| `/cv` | **0** | **0** | n/a | **Observed 2026-09-23** |
+
+**The ten were the container's as much as the hero's.** **Derived.** No hero stylesheet changed:
+the hero's column is fed a wider box and fits in it, which is what `DESIGN.md` said of the 2023
+container, that it is what makes the 360 floor fail. KV-5 has nothing measured in breach, and its
+retirement, with this sweep's A-5 arm widened past interactive elements as that entry asks, is filed
+as DW-116 rather than taken by the story that measured it.
+
 **This section's 36 is not § The surfaces swept's 36, and the collision is an accident of timing.**
 That one is the number of interactive elements the floor **measures**, across four surfaces, and it
 fell from 54 to 36 when `/projects` left. This one was the number of elements of any kind sitting
@@ -739,21 +784,21 @@ fail is not known to work.
 |---|---|---|
 | An unlisted element under the floor | Fails naming the route, a stable selector, the element's text and the measured box, and the floor it was compared against | **Observed 2026-09-06.** "fails on an unlisted element under the floor, naming the route, the selector and the box", which plants a 10 x 10 link |
 | A plain inline element padded to look compliant | Fails on the height axis while the width axis clears the floor, so the failure is the padding rather than the size | **Observed 2026-09-06.** "fails on an element that reaches the floor only through vertical padding on a plain inline element" |
-| A listed element that now clears the floor | Fails as a stale row, naming the row id and both files that carry it | **Observed 2026-09-06** against the chrome nav, and **re-observed 2026-09-08** against the homepage panel. The case injects a compliant link into a surface a real row lists, so a real row goes stale rather than a synthetic one. It hosted in `nav.navbar` until Story 2-15 repaired that surface and deleted `chrome-nav`, then in `nav.home-panel--nav` against `home-nav` until Story 2-29 repaired that surface on 2026-09-21 and deleted both home rows; the host is now `.logo` on the 404 and the row is `chrome-logo`, the one row left, which stays in the ledger for Story 2-32. The plant is taken out of flow deliberately, or an in-flow 80px child reflows its siblings and the control reports a layout side effect rather than the predicate |
+| A listed element that now clears the floor | Fails as a stale row, naming the row id and both files that carry it | **Observed 2026-09-06** against the chrome nav, and **re-observed 2026-09-08** against the homepage panel. The case injects a compliant link into a surface a real row lists, so a real row goes stale rather than a synthetic one. It hosted in `nav.navbar` until Story 2-15 repaired that surface and deleted `chrome-nav`, then in `nav.home-panel--nav` against `home-nav` until Story 2-29 repaired that surface on 2026-09-21 and deleted both home rows; the host was `.logo` on the 404 and the row `chrome-logo` until Story 2-32 deleted that row, the last, on 2026-09-23. **Since then the row is invented**, `PLANTED_ROW`, and the elements are real: a listed breach and a repair planted side by side on the real 404 and measured by the real sweep, the repair read stale naming the invented row and this file (DW-68). The plants are taken out of flow deliberately, or an in-flow 80px child reflows its siblings and the control reports a layout side effect rather than the predicate |
 | A row that matches nothing **on one of the routes it lists** | Fails naming the row **and the route**, its selector, its source and its closing story. A row covering more than one surface cannot go half stale, and since Story 2-14 the widest row covers two | **Observed 2026-09-06.** "fails a row that has stopped matching on one of the routes it lists", driven through the pure verdict with a two-route row that matches on one of them |
-| A row covering more elements than it says | Fails naming the row and both counts. This is what stops an existing selector exempting a newly added control for free | **Observed 2026-09-06.** The same case, plus the stale-row case, which since 2026-09-21 plants a second `.logo a` on the 404 and asserts the row reports covering two, read against `chrome-logo` narrowed to that one surface. It planted a third `a.nav-link` on the homepage panel and asserted three from 2026-09-08 until Story 2-29 repaired that surface, and a seventh chrome link asserting seven before that, when that row was repaired away |
+| A row covering more elements than it says | Fails naming the row and both counts. This is what stops an existing selector exempting a newly added control for free | **Observed 2026-09-06.** The same case, plus the stale-row case, which since 2026-09-23 reads `PLANTED_ROW` covering two where it says one, the listed breach and the repair, and from 2026-09-21 until then planted a second `.logo a` on the 404 and read `chrome-logo` narrowed to that one surface covering two. It planted a third `a.nav-link` on the homepage panel and asserted three from 2026-09-08 until Story 2-29 repaired that surface, and a seventh chrome link asserting seven before that, when that row was repaired away |
 | A row matching an element that is not under the floor | Fails on the arithmetic as well as on the element, which is what wires the per-row `under` tally to something | **Observed 2026-09-06.** Same case |
 | A route `app/` serves that nothing sweeps | Fails naming the unregistered route. The route set is walked off the filesystem rather than restated | **Observed 2026-09-06.** "every route app/ serves is registered as a swept surface or as a non-Hub route" |
 | A hidden or decorative candidate | Skipped with a stated reason, never measured and never counted | **Observed 2026-09-06.** "never sweeps a hidden or decorative node, and never counts one", which asserts `/celeste`'s real skips, seven of them until 2026-09-08 and three since, and then plants one node per arm of the rule: `aria-hidden`, the `hidden` attribute, `display: none`, zero area and `visibility: hidden`. **Each arm is looked up by name**, so an arm that stopped being planted fails rather than quietly stopping being demonstrated |
 | An element outside **either** edge | A-5 fails naming the element and the edge it measured. An element at a negative x scrolls the page as surely as one past the right edge | **Observed 2026-09-06.** "A-5 fails on an element outside either edge, which a scroll width check reports inconsistently". The case asserts its **own premise** first, that the surface carries no element outside the viewport before anything is planted. **Re-measured 2026-09-06 after Story 2-9** and re-stated in both directions: on that planted page `document.body.scrollWidth` does not grow, both planted elements being absolutely positioned against the initial containing block, while `document.documentElement.scrollWidth` does, `overflow-x: clip` on the root not clamping out-of-flow content the way it clamps in-flow overflow. On `/work` the same root read answers 360 against elements at 490, the opposite result from the same call. Both are now asserted, because the disagreement is the measurement the element-edge method rests on. The earlier form asserted only that `body` did not grow and attributed it to `body`'s `overflow-x: hidden`, which was true for an unrelated reason and stayed true after that rule was replaced |
 | A surface that yields nothing, or a count that moved | Fails naming the route and the count. Driven as a predicate over synthetic counts rather than as an inline assertion inside the sweep, because the earlier shape asserted a message it had itself supplied and was green with the guard deleted | **Observed 2026-09-06.** "the count guard fires on every way a surface can go vacuous", plus the empty-fixture half of "the candidate selector matches controls and passes over ordinary content" |
-| An element under the floor matched by a row that does not list this route | Reported as a route mismatch naming the row, not as "nothing lists it", which would send a reader hunting for a row that exists | **Observed 2026-09-06.** "separates an unlisted element from one whose row does not list this route" |
+| An element under the floor matched by a row that does not list this route | Reported as a route mismatch naming the row, not as "nothing lists it", which would send a reader hunting for a row that exists | **Observed 2026-09-06.** "separates an unlisted element from one whose row does not list this route". Since 2026-09-23 it plants its element on `/` against `PLANTED_ROW`, which lists the 404 alone, and reads the same element against the real, empty ledger as a plain breach, which is what an empty ledger has to mean |
 | An exemption selector the browser cannot parse | Throws naming the row rather than a page-side `SyntaxError` from inside `Element.matches` | **Observed 2026-09-06.** "the ledger is well formed before anything is measured against it" |
 | The candidate selector matching the wrong things | A fixture asserts it matches an `<a href>`, a `<button>` and a `role="button"`, and passes over prose, an `<a>` with no `href` and `tabindex="-1"` | **Observed 2026-09-06.** "the candidate selector matches controls and passes over ordinary content" |
 | `--tap` not declared, or not a length | The harness throws naming the property; the parser refuses `""`, `auto`, `0px`, `-8px`, `3rem`, `48` and `48 px` | **Observed 2026-09-06.** "the ledger is well formed before anything is measured against it" and "the floor is read from the contract on every surface it is applied to" |
 | A candidate the visibility rule admitted whose box comes back `null` | Throws naming the element. A candidate is either skipped with a stated reason or measured; it is never dropped in silence | **Decision.** `measureSurface` in the spec file |
 | The entrance not settled | Throws naming the route **and carrying the underlying failure**, so a crashed page and a genuinely unsettled entrance are not reported as the same thing | **Decision.** `settle` in the spec file |
-| The entrance selector matching nothing | Fails naming the surface. `Array.every` over an empty NodeList is `true`, so a renamed class turns the settle into a no-op that reports nothing. **Corrected 2026-09-08:** this row and the spec file's own docblock both predicted Story 2-15 would rename `.nav-link`, and it did not. That class is `HomeLayout`'s, on the homepage panel, and its ledger row is `closedBy: 'Story 2-32'`; Story 2-15 reshaped `Navbar`, whose links carry no class. The guard is unchanged and is what will fire whenever the rename happens | **Decision.** `settle`, on any surface declaring `entrance: true` |
+| The entrance selector matching nothing | Fails naming the surface. `Array.every` over an empty NodeList is `true`, so a renamed class turns the settle into a no-op that reports nothing. **Corrected 2026-09-08:** this row and the spec file's own docblock both predicted Story 2-15 would rename `.nav-link`, and it did not. That class is `HomeLayout`'s, on the homepage panel, and its ledger row was `closedBy: 'Story 2-32'` until Story 2-29 deleted it; Story 2-15 reshaped `Navbar`, whose links carry no class. Story 2-32 renamed nothing either: the contact group became a list and its links are still `.contact-container a`. The guard is unchanged and is what will fire whenever a rename happens | **Decision.** `settle`, on any surface declaring `entrance: true` |
 | A row whose recorded size claims a compliant box | Fails naming the row. The recorded size is documentation, and this is the one thing it is held to mechanically | **Decision.** "the ledger is well formed before anything is measured against it" |
 | The record and the ledger disagreeing | Vitest fails in whichever direction is short | **Decision.** `ops/__tests__/hit-target-floor.test.ts`, on the pattern `ops/__tests__/contract-adoption.test.ts` sets |
 

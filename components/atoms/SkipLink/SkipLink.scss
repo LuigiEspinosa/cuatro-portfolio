@@ -30,9 +30,16 @@
   // as the box it is hiding. A fixed offset is a bet on the label's height: text zoom, a fallback
   // face while the mono font loads, or a longer string in a later story leaves the bottom edge of
   // the box showing at the top of every page, permanently, on a control nobody has focused.
-  inset-block-start: 0;
-  inset-inline-start: 0;
-  transform: translateY(-100%);
+  //
+  // **Parked one ring's reach inside the viewport's corner, so the ring lands whole** (Story 2-32,
+  // the `clip-skip-link` row in `ops/hub-accessibility-pass.md`). The global ring is drawn
+  // `--focus-offset` outside the box and `--stroke-focus` wide; parked at the corner itself, its top
+  // and left sides fell past the viewport's edge and `overflow-x: clip` took them. The inset is those
+  // two roles summed rather than a number, so a wider ring moves it too, and the hide climbs the same
+  // inset further so no edge of the box shows while it is parked.
+  inset-block-start: calc(var(--focus-offset) + var(--stroke-focus));
+  inset-inline-start: calc(var(--focus-offset) + var(--stroke-focus));
+  transform: translateY(calc(-100% - var(--focus-offset) - var(--stroke-focus)));
 
   // Above everything, including the sticky header the other four surfaces carry. A skip-link that
   // reveals itself behind the chrome is a skip-link nobody can see.
@@ -58,9 +65,13 @@
   text-decoration: none;
 }
 
-// One signal, and it is a recolour of an underline that is already drawn.
-.skip-link:hover {
-  border-block-end-color: var(--token-accent-hover);
+// One signal, and it is a recolour of an underline that is already drawn. Gated on a pointer that
+// can hover since Story 2-32 (DW-115): on a touch device a tap paints `:hover` and leaves it painted
+// until the next tap lands elsewhere (review A-5).
+@media (hover: hover) {
+  .skip-link:hover {
+    border-block-end-color: var(--token-accent-hover);
+  }
 }
 
 // **The reveal is on `:focus`, not on `:focus-visible`.** Focus moved by script, which is how a

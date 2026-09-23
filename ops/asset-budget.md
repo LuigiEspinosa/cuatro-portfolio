@@ -468,6 +468,76 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-23 reading, after Story 2-32
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `N4qdBF98aHF4vMMIrE44u`, written
+2026-09-23T11:56:50Z, taken on the story's working tree at `cdaf966` plus its own files, before the
+commit that carries them: the tool's own dirty-inputs row named twenty-two paths (the four chrome
+stylesheets renamed to their PascalCase names, `public/logo.png` deleted, the five chrome
+components, `SkipLink.scss`, `HomeLayout.scss`, four comment-only stylesheet edits, and the unit
+suites beside them) and every one of them is this story's. The before reading is the same command
+against build `1Kac2bThegXv_e_j6smcv` (written 2026-09-23T11:13:06Z at `cdaf966` on `dev`, no
+measured input dirty).
+
+**The before build reproduces the Story 2-30 after figures exactly**: 19 `.js` and 12 `.css` at
+2,031,526 on disk and 617,053 gzipped, with 27,907 on disk and 8,371 gzipped of `.css`. `dev` carried
+no measured change between that reading and this one, so the whole of the movement below is this
+story's.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,536 | 486,681 | yes | yes | **Observed** |
+| `/cv` | 22,453 | 251,906 | no | yes | **Observed** |
+| `/celeste` | 14,724 | 245,637 | no | yes | **Observed** |
+| `/_not-found` | 18,111 | 245,654 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,759 | no | **no**: Next's own document | **Observed** |
+
+Against the before build, on the wire: `/work` 5,589 gzipped lighter, `/cv` 5,582, `/celeste` 5,583
+and `/_not-found` 5,593, and `/_global-error` 3 lighter, the rebuild variance § Stated limits
+records. Every document shrank on disk too, `/work` by 1,060, `/cv` by 1,018, `/celeste` by 921 and
+`/_not-found` by 947, the header's `<img>` and its `srcset` gone from each; `/`, a dynamic route,
+still has no row by construction.
+
+**The whole build, before and after, and the chunks that moved.** **Observed 2026-09-23**, the tool's
+own build table on each side, and every `.next/static/chunks/*.css` and `*.js` weighed with
+`zlib.gzipSync` at level 9 (the tool's method) on both builds.
+
+| Figure | Before, `dev` at `cdaf966` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 19 `.js`, 12 `.css` | 18 `.js`, 12 `.css` | one `.js` fewer | **Observed** |
+| Bytes in `.next/static/chunks` | 2,031,526 on disk, 617,053 gzipped | 2,017,280 on disk, 611,711 gzipped | **14,246 lighter on disk, 5,342 gzipped lighter** | **Observed**, tool's build table; **Derived** delta |
+| Every `.css` chunk together | 27,907 on disk, 8,371 gzipped | 28,771 on disk, 8,614 gzipped | **864 heavier on disk, 243 gzipped heavier** | **Observed** per chunk; **Derived** total and delta |
+| The global stylesheet | `0z.nwkyilu5e..css`, 5,794 on disk, 2,278 gzipped | `0wn8wl0h.tdd5.css`, 6,210 on disk, 2,387 gzipped | 416 heavier on disk, 109 gzipped heavier: the header band, its hairline and the scroll padding's `calc()`, and the wordmark's type | **Observed** |
+| The nav's stylesheet | `06.b3.34agec_.css`, 463 on disk, 278 gzipped | `16rnu_sqn25nj.css`, 703 on disk, 338 gzipped | 240 heavier on disk, 60 gzipped heavier: the mono type, the rule at rest and the gated hover | **Observed** |
+| The skip link's stylesheet | `0sx._u9-xj1vh.css`, 638 on disk, 332 gzipped | `0_b3v9lcev-t~.css`, 802 on disk, 378 gzipped | 164 heavier on disk, 46 gzipped heavier: the reach inset and the hover gate | **Observed** |
+| The container's stylesheet | `0tvend-vkl3zw.css`, 63 on disk, 83 gzipped | `11190o19awian.css`, 85 on disk, 98 gzipped | 22 heavier on disk, 15 gzipped heavier | **Observed** |
+| The home stylesheet | `0ahkrv13~wi6m.css`, 12,587 on disk, 2,279 gzipped | `0ev.nkernamvc.css`, 12,609 on disk, 2,292 gzipped | 22 heavier on disk, 13 gzipped heavier: the list reset and the stagger on list items | **Observed** |
+| Every `.js` chunk together | 2,003,619 on disk, 608,682 gzipped | 1,988,509 on disk, 603,097 gzipped | **15,110 lighter on disk, 5,585 gzipped lighter** | **Observed** per chunk; **Derived** total and delta |
+| The root layout's chunk, which the tool attributes to Lenis | `0lpnzc9vw7rq3.js`, 38,374 on disk, 12,068 gzipped, carrying the header, the raster's `srcSet` and its alternative text | `0xnq42xqfatvg.js`, 32,702 on disk, 10,201 gzipped, carrying the header and the wordmark | 5,672 lighter on disk, 1,867 gzipped lighter | **Observed**, by reading each chunk as text |
+| One shared chunk | `0_mmocpo6-784.js`, 9,530 on disk, 3,739 gzipped | none | 3,739 gzipped lighter | **Observed** |
+| The home chunk | `14zyd3ba1wiyn.js`, 8,406 on disk, 3,256 gzipped | `0lvxja6x.ejpu.js`, 8,498 on disk, 3,278 gzipped | 92 heavier on disk, 22 gzipped heavier: the contact group's list markup | **Observed** |
+| One chunk renamed | `0xas7euhouwkj.js`, 54,650 on disk, 12,839 gzipped | `0oep0lme1dsc8.js`, 54,650 on disk, 12,838 gzipped | 1 gzipped lighter: module ids renumbered | **Observed** |
+| Narrative chunks the fingerprints hit | 7, 1,352,552 on disk, 412,722 gzipped | 7, 1,346,880 on disk, 410,855 gzipped | 1,867 gzipped lighter, the Lenis chunk above | **Observed**, the tool's narrative table; **Derived** delta |
+
+**What the JavaScript number says.** **Derived.** The logo was the one importer of `next/image` in
+the Hub, and the story's only removed import; the markup it added (one wrapper in the header, a list
+in the contact group) is the 22 the home chunk gained. So the 5,606 gzipped that left the layout's
+chunk and the shared chunk together is `next/image` and what only it pulled in, on every route,
+because the header sits in the root layout. The rows above sum to the 5,585 exactly.
+
+**What the CSS number says.** **Derived.** The chrome was a raster and three 2023 declarations; it is
+a band, a hairline, a wordmark and two labelled links with a rule at rest and a gated hover now, all
+of it contract roles, and the skip link gained its reach inset and its hover gate. That is the 243,
+spread over five chunks, and it is paid on every route that renders a header, and the scripts it
+removed repay it more than twenty times over.
+
+**Against the Story 2-30 reading.** **Derived.** Today's before build reproduces that reading's after
+build exactly, so the whole of today's movement is this story's: 14,246 lighter on disk and 5,342
+gzipped lighter across the directory, 864 heavier on disk and 243 gzipped heavier in `.css`. The
+non-3D line names `/cv`, 111,906 over budget, 79.9 percent, where it was 117,488 over before this
+story and 117,492 at Story 2-30's reading (four bytes of rebuild variance), measured against Story
+2-2's 140,000 each time.
+
 ### The 2026-09-23 reading, after Story 2-30
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `9xKq1w4OnW0Bc5Jf53GQ1`, written
@@ -1237,6 +1307,32 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-23 run, after Story 2-32
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `N4qdBF98aHF4vMMIrE44u`. § Every route's
+2026-09-23 reading after Story 2-32 and this section were filed from this run; every other section
+in this file is still the reading its own heading names.
+
+- The narrative bundle is 410,855 bytes gzipped across 7 chunks, against an estimate of 300,000 to
+  450,000. That is inside the range, 39,145 below the top.
+- 118,881 bytes of that is genuinely deferred: `10mmj2_fz7c58.js`, `0d3ymyos8iowp.js`,
+  `05e6tciymra6v.js` is referenced by no prerendered document. The other 291,974 is on a document at
+  first paint, so the `next/dynamic` boundaries defer far less than their shape suggests.
+- The non-3D path is over budget as measured: 251,906 against 140,000, 111,906 over, on route `/cv`.
+  The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,948 against 140,000, 36,052 of margin. That
+  decomposition has no line for the 241,617 of JavaScript or the 830 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**One figure in this list moved for a reason the reading above states.** **Observed**, the tool's
+narrative table on each side. The narrative bundle is 1,867 lighter because the chunk the tool
+attributes to Lenis is the root layout's, and it carried the logo's `next/image` until this story;
+the attribution overstates in the direction § Stated limits names, and the bytes that left were never
+Lenis's.
 
 ### The 2026-09-23 run, after Story 2-30
 

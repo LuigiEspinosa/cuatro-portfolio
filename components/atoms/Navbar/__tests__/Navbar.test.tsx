@@ -105,9 +105,11 @@ describe('Navbar', () => {
 
   it('wraps each label in the span the current-route rule is drawn on', () => {
     // `RESTYLE-SPEC.md:198-199`: the underline is drawn on an inner span, not on the `--tap` box,
-    // or it floats away from the text by the height of the padding. `navbar.scss` selects
-    // `.navbar__label`, so a label rendered as a bare text node leaves that rule matching nothing
-    // and the current route unmarked while every assertion above stays green.
+    // or it floats away from the text by the height of the padding. `Navbar.scss` draws both the
+    // rule every destination carries at rest and the current route's mark on `.navbar__label`
+    // (Story 2-32), so a label rendered as a bare text node leaves both matching nothing, with no
+    // underline for hover to recolour and the current route unmarked, while every assertion above
+    // stays green.
     const { container } = render(<Navbar pathname='/cv' />);
 
     const labels = [...container.querySelectorAll('.navbar__label')];

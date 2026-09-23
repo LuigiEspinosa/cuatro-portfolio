@@ -3065,6 +3065,18 @@ status: done
     the finding until it lands (`ops/hub-accessibility-pass.md`, F-13). The A-number sweep this
     entry asked for was made: A-1, the traversal, A-11, A-12 and A-16 are asserted on every route
     by `tests/e2e/accessibility-floor.pw.ts`, and the record lists what stays manual.
+
+    **Re-read 2026-09-23 by Story 2-32, and re-booked rather than done.** The paragraph above books
+    the non-home `<main>` and skip link to that story as a chrome change. Its criteria in `epics.md`
+    ask for neither, and both put on four routes what `RESTYLE-SPEC.md` § The ceiling keeps out of a
+    restyle, a new control and a landmark; the story's spec records the call under Design Notes,
+    "Re-booked rather than taken". The work is still what the paragraph above says: four per-page
+    `<main id='main' tabIndex={-1}>` edits, the `SURFACES` pins in `tests/e2e/hit-target-floor.pw.ts`
+    and the `/celeste` case in `tests/e2e/secondary-surfaces.pw.ts`. One shape is worth knowing: the
+    header renders on exactly the four routes that lack a skip link, and `#celeste header` hides it
+    where no control should show, so a skip link carried as the header's first child would be one
+    change rather than four. **Owner: unassigned, for an Operator ruling**, the story it was
+    booked to having kept to its criteria. **Trigger: that ruling.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
@@ -3772,7 +3784,16 @@ status: done
     entry closes on a re-measurement rather than on an edit. If Story 2-32 is descoped past Epic 2,
     the fallback trigger is any complaint about vertical room on a small viewport, which is the
     person the 17.5% costs.
-  status: open
+
+    **Closed 2026-09-23 by Story 2-32, on the re-measurement.** `Header.scss` declares no block size:
+    the band is `padding-block: var(--s-lg)`, one row of controls each held to `--tap`, and a
+    `--stroke-hair` rule beneath. **Observed 2026-09-23** in `mcr.microsoft.com/playwright:v1.62.1-noble`
+    at 360 x 800 by `tests/e2e/chrome-nav.pw.ts`: the header measures **93.00** on `/work`, `/cv` and
+    the 404, which is the four tokens' sum and **11.6%** of the viewport where it was 17.5%, and a child
+    planted taller than the floor grows it, which a declared height would not. The scroll padding the
+    `140px` was also spent on is the same four tokens in a `calc()`, and reads **93px** on all three,
+    equal to the box; its ceiling (a row that wraps) is filed as DW-118.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-63
@@ -3799,7 +3820,15 @@ status: done
     **Owner: Story 2-32**, which redesigns `Header` and `Container` together. **Trigger: that
     story's first look at the header box**, or, earlier, any visual review of `/work` scrolled past
     the hero, which is where it is visible.
-  status: open
+
+    **Closed 2026-09-23 by Story 2-32**, by the shape this entry named. The `<header>` is a band that
+    carries the ground and the hairline at the document's full width, with the page's `.container`
+    inside it for the wordmark and the destinations, and `.container` itself is `min(100%, 1920px)`
+    at `--page-pad`. **Observed 2026-09-23** in the pinned image by `tests/e2e/chrome-nav.pw.ts`: the
+    band starts at 0 and spans the document on `/work`, `/cv` and the 404 at 360, and on `/work` and
+    `/cv` at 1280 and at 2400, where the container caps at 1920 and centres at x 240 while the band
+    runs on either side of it; the hairline row reads the border role on every column at 360.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-64
@@ -3974,7 +4003,23 @@ status: done
     **Owner: whichever of Stories 2-30 and 2-32 lands second**, because that is the commit on which
     the ledger empties and the case cannot be left as it stands. **Trigger: the last ledger row
     being deleted**, which is also when KV-4 retires, so the two are one act.
-  status: open
+
+    **Closed 2026-09-23 by Story 2-32**, on the trigger: Story 2-17 had already taken Story 2-30's
+    row, so 2-32 landed second, and `chrome-logo`, the last row, left with the repair of the chrome
+    logo; KV-4 retired in the same commit. **The resolution is the first shape combined with the
+    third's premise.** The instrument outlives the breaches, because its first direction needs no
+    row: an element under the floor that nothing lists fails on every run, and the row shape stays
+    for a breach the Operator rules to tolerate. So `EXEMPTIONS` may be empty and is, and the cases
+    that need a row to exist plant a real element on a real page against an invented row,
+    `PLANTED_ROW`, through `measureSurface`'s and `judge`'s own `exemptions` parameter, the shape
+    "fails a row that has stopped matching" already used. Every predicate stays demonstrated: the
+    stale-row case plants a listed breach and a repair side by side and reads the repair stale and
+    the row covering two where it says one; the misrouted case reads the same element as a plain
+    breach against the real, empty ledger; the separates-two-answers case plants its breach, since
+    no shipped control is under the floor. `ops/__tests__/hit-target-floor.test.ts` accepts a ledger
+    empty by declaration (an empty literal, a header-only table) and still refuses one it cannot
+    read, and `ops/hit-target-floor.md` states the emptiness in a dated sentence that suite reads.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-69
@@ -4011,7 +4056,16 @@ status: done
     and Story 2-16's forbid restyling the chrome. What changed is the severity, not the owner: the
     accent half of the mark is asserted on the real surface by `tests/e2e/cv.pw.ts` and the hover
     half is asserted nowhere, so a rebuild that dropped the collision would not be noticed by a gate.
-  status: open
+
+    **Closed 2026-09-23 by Story 2-32.** `Navbar.scss` draws one rule on each label: a hairline in
+    the interactive border role at rest, the accent emphasis on the current route, and a hover that
+    recolours that rule to the hover role at its own width, inside `@media (hover: hover)`. The text
+    underline is gone, so there is no second rule to paint. Both halves are asserted now:
+    `components/molecules/Header/__tests__/Header.test.tsx` holds the compiled hover to exactly that
+    recolour and refuses a `text-decoration: underline`, and `tests/e2e/chrome-nav.pw.ts` hovers a
+    destination on `/work` in the pinned image and finds every changed pixel inside the label's own
+    rule, where a planted text recolour is seen outside it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-70
@@ -4072,6 +4126,15 @@ status: done
     **Owner: Story 2-32**, which redesigns `Header`, `Logo`, `ContactContainer` and `Container`
     together. **Trigger: that story's first look at the header box**, which is the same trigger
     DW-63 carries for the band around it.
+
+    **The trigger fired on 2026-09-23 and the entry is re-booked rather than closed.** Story 2-32
+    rebuilt the header box (DW-63 closed with it) and did not add the landmarks: they are page
+    structure on four routes rather than the chrome's presentation, a skip link is a new control,
+    and `RESTYLE-SPEC.md` § The ceiling keeps both out of a restyle, which is the reading that
+    story's spec records. What changed under this entry is the height it names: the header is as
+    tall as its content since that story, measured in the pinned image, rather than 140px. **Owner:
+    unassigned, for an Operator ruling**, together with DW-43 and F-13 in
+    `ops/hub-accessibility-pass.md`, which are the same work. **Trigger: that ruling.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
@@ -5286,6 +5349,14 @@ status: done
     **Owner: Story 2-32**, which rebuilds the chrome and the contact links and already owns the
     hit-target and focus behaviour of two of the five. **Trigger: the next change to the entrance's
     delays, or any accessibility pass that tabs `/` inside the first 2.4 seconds.**
+
+    **Re-read 2026-09-23 by Story 2-32; the trigger did not fire, and the entry is re-booked.** That
+    story made the contact group a list and moved its stagger from `a:nth-child()` to
+    `li:nth-child() a` with the same three delays, which is not a change to them:
+    `tests/e2e/narrative.pw.ts` reads 2200, 2280 and 2360 on the three links as before. Every repair
+    set out above changes what the entrance does, which is behaviour, and `RESTYLE-SPEC.md` § The
+    ceiling keeps behaviour out of a restyle; no design document states focus during the entrance.
+    **Owner: unassigned, for an Operator ruling on the entrance.** **Trigger: unchanged.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
@@ -5547,4 +5618,104 @@ status: done
     books `clip-skip-link` to it; **unassigned** for the other three, with Story 2-34's conformance
     gate the natural place for a check that would find the next one. **Trigger: Story 2-32's first
     edit to the chrome, or Story 2-34's first edit to the sweep.**
+
+    **The `SkipLink.scss` half closed 2026-09-23 by Story 2-32**, on the first trigger. The link's
+    hover sits inside `@media (hover: hover)`, read off the compiled sheet by
+    `components/atoms/SkipLink/__tests__/SkipLink.test.tsx`, and `clip-skip-link` closed in the same
+    commit. `navbar.scss:44` left disk with the file: `Navbar.scss` gates its one hover (DW-69). The
+    other three files are untouched and this entry stays open for them: `CvIntro.scss:122`,
+    `SiteFooter.scss:89` and `SuiteDirectory.scss:294-295`, **unassigned**, Story 2-34's sweep still
+    the natural home for the check.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
+  id: DW-116
+  summary: >-
+    KV-5 has nothing measured in breach since Story 2-32 widened the container, so its retirement is
+    due: the whole-page census reads no element past either edge at 360 on `/work` or `/cv`, and the
+    act of retiring it has not been made.
+  evidence: |-
+    **Observed 2026-09-23** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800 by
+    `tests/e2e/plate-mark-and-work-item.pw.ts`, which compares both edges of every element with a box
+    against the viewport and prints the whole page's count with the torus canvas mounted: `/work` 0
+    and `/cv` 0, where Story 2-31's reading earlier the same day was `/work` 10, every one of them the
+    hero's. No hero stylesheet changed. Story 2-32 rebuilt `.container` from `min(80%, 1920px)` to
+    `min(100%, 1920px)` at `--page-pad`, which `DESIGN.md` names as what made the 360 floor fail, and
+    at 360 the page's content box grew from 256 to 320, which the hero's column fits.
+
+    `ops/known-violations.md` KV-5 fills `Retired on` "when no element sits outside the viewport at
+    360", and its own paragraph under the halves table asks whoever closes the last half to widen the
+    Story 2-8 sweep's A-5 arm past interactive elements and retire the entry. That is a change to an
+    instrument, `tests/e2e/hit-target-floor.pw.ts` and its record, and a retirement that moves the
+    entry's status, date, title, index row and the literal pins in
+    `ops/__tests__/hit-target-floor.test.ts`, with DW-57 and DW-66's title and closing-list
+    corrections due at the same moment. None of it is Story 2-32's chrome, whose spec records the
+    measurement and books the act here rather than taking it. KV-5's cells carry the re-read, dated.
+
+    **Owner: Story 2-33**, the last closing story KV-5 names, which rebuilds `WorkHero` and can
+    retire the entry on its own hero reading. **Trigger: that story starting**, or any earlier
+    reading of KV-5 for a decision.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
+  id: DW-117
+  summary: >-
+    No design document states the wordmark's string, size or tracking, or the underline a
+    non-current nav link carries at rest, and "the site name" has three candidate strings in the
+    repository. Story 2-32 took values by precedence and the mock; the Operator should confirm them.
+  evidence: |-
+    `DESIGN.md` § Components, Nav gives the wordmark the display face at `wdth 75` and `--w-black`,
+    and `EXPERIENCE.md` § Chrome says its accessible name is the site name. Neither states which
+    string that is, what size it sets at, or its tracking, and `RESTYLE-SPEC.md` is silent too. What
+    Story 2-32 shipped, and why:
+
+    - **The string `Cuatro`**, as the link's whole content, so its accessible name is its text with no
+      `alt` or `aria-label`, uppercased by the stylesheet. It is the word the retired raster drew
+      (`CU4TRO`) and the word the design's mock sets (`mockups/redesigned-components.html`, § C5), and
+      `RESTYLE-SPEC.md` § The ceiling keeps a restyle's copy as it was. **The other two candidates**:
+      the Registry names the Hub `Cuatro Ecosystem` (`contracts/registry.json`, `cuatro-portfolio`),
+      and `app/layout.tsx` declares `openGraph.siteName: 'Luigi Espinosa'`, which the page titles'
+      `%s | Luigi Espinosa` template repeats. The three disagree, and which one "the site name" means
+      is the Operator's.
+    - **`--t-sm`**, the size the mock sets, and **`--tr-name`**, the name role nearest the mock's
+      hand-written `-0.02em`; `--lh-heading` is `RESTYLE-SPEC.md` § 6's for non-display type. Measured
+      in the pinned image, the word sets **37.75** wide at `wdth 75` and 49.75 at 100, so its link is
+      held to `--tap` on the inline axis by `min-inline-size`.
+    - **The rest underline on a non-current destination**: `--stroke-hair` in
+      `--token-border-interactive`, the Source link's and the footer link's, because `DESIGN.md` says
+      hover recolours "the existing underline" and `RESTYLE-SPEC.md` § 1b gives every link one at
+      rest that never appears on hover. The mock draws a transparent 2px rule at rest instead, which
+      loses on precedence and would appear on hover.
+
+    **Owner: the Operator**, for a ruling on each; a change is one line in `Logo.tsx` or in
+    `Logo.scss` or `Navbar.scss`, with the pins in `components/molecules/Header/__tests__/Header.test.tsx`,
+    `components/atoms/Logo/__tests__/Logo.test.tsx` and `tests/e2e/chrome-nav.pw.ts`. **Trigger:
+    the Operator's next look at the chrome.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
+  id: DW-118
+  summary: >-
+    The header's scroll padding restates its one-row block size from four tokens, so it is exact
+    while the row does not wrap and short by a line when it does; and it also applies on `/celeste`,
+    where the header is rendered and hidden.
+  evidence: |-
+    `Header.scss` declares `scroll-padding-block-start: calc(var(--s-lg) + var(--tap) + var(--s-lg) +
+    var(--stroke-hair))` on `html:has(.header-container)`. **Observed 2026-09-23** in the pinned image
+    at 360 x 800: it reads **93px** on `/work`, `/cv` and the 404, equal to the rendered header, which
+    `tests/e2e/chrome-nav.pw.ts` holds on every run. The row is one line at 360 and above, which is
+    what that equality observes on all three surfaces: a wrapped row would make the box taller than
+    the padding. Two ceilings, stated so neither is found by surprise:
+
+    1. **A row that wraps**, under the supported 360 floor or with text zoomed until a label is taller
+       than `--tap`, grows the band by a line the padding does not know about, so a fragment target
+       lands that much under the header. Measuring the band from script would close it and would write
+       onto the root element from a component, which `AGENTS.md` rules out; container queries cannot
+       reach the scroll container. Nothing in the Hub's supported range wraps today.
+    2. **`/celeste` carries the padding with no visible header**, because `#celeste header` hides the
+       header by `display: none` while `html:has(.header-container)` still matches the element. The
+       page has no fragment target, so nothing lands anywhere; the 2023 `140px` had the same shape.
+
+    **Owner: unassigned.** **Trigger: a header that has to wrap at a supported width, a fragment
+    target added to `/celeste`, or the next change to the header's contents.**
   status: open

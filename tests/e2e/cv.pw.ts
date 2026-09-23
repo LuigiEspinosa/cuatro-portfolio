@@ -112,22 +112,18 @@ const probeComputed = (page: Page, declaration: string, property: string): Promi
   );
 
 /**
- * The one control on this surface the AD-19 ledger still exempts.
+ * One measured box, labelled by what it is, so a failure names the control rather than an index.
  *
- * `ops/hit-target-floor.md` carries the row as `chrome-logo` and Story 2-32 closes it: the link is
- * a plain inline `<a>` around a 184 x 66 image, so its own box is the 20px text line box. It is
- * excluded by name here rather than by loosening the floor, and the count of what it excludes is
- * asserted, so a second undersized control cannot inherit the exclusion.
+ * **No control on this surface is exempt since 2026-09-23.** The chrome logo was, as the `chrome-logo`
+ * row in `ops/hit-target-floor.md`: a plain inline `<a>` around a 184 x 66 image, whose own box was
+ * the 20px text line box. Story 2-32 replaced it with a text wordmark held to the floor and deleted
+ * the row, so the exclusion this file carried by name, and the count that stopped a second control
+ * inheriting it, went with it.
  */
-const LEDGER_EXEMPT = '.logo a';
-
-/** One measured box, labelled by what it is, so a failure names the control rather than an index. */
 interface Box {
   readonly label: string;
   readonly width: number;
   readonly height: number;
-  /** Whether the AD-19 exemption ledger already covers this element on this surface. */
-  readonly exempt: boolean;
 }
 
 /** Which of a set of boxes fails the floor, and by how much. A predicate, so a plant can drive it. */
@@ -146,18 +142,17 @@ const measure = async (page: Page): Promise<Box[]> => {
   const boxes: Box[] = [];
 
   for (const target of targets) {
-    const meta = await target.evaluate((node: Element, exemptSelector: string) => {
+    const meta = await target.evaluate((node: Element) => {
       const tag = node.tagName.toLowerCase();
       const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 30);
       const href = node.getAttribute('href');
       return {
         label: `${tag}${href ? `[href=${href}]` : ''}${text ? ` "${text}"` : ''}`,
-        exempt: node.matches(exemptSelector),
       };
-    }, LEDGER_EXEMPT);
+    });
     const box = await target.boundingBox();
     expect(box, `${meta.label} on ${page.url()} has no box at all, so it cannot be hit`).toBeTruthy();
-    boxes.push({ label: meta.label, width: box?.width ?? 0, height: box?.height ?? 0, exempt: meta.exempt });
+    boxes.push({ label: meta.label, width: box?.width ?? 0, height: box?.height ?? 0 });
   }
 
   return boxes;
@@ -294,14 +289,21 @@ test.describe('the header marks this surface as the current page', () => {
       'the mark is drawn on the --tap box rather than on the inner span'
     ).toBe('0px');
 
-    // **The control for the rule.** The unmarked destination's label carries no such border, so the
-    // three comparisons above are about `aria-current` and not about every label in the nav.
-    expect(
-      await page
-        .locator(`${SUITE_LINK} .navbar__label`)
-        .evaluate((node) => window.getComputedStyle(node).borderBottomStyle),
-      'the unmarked destination is underlined too, so the rule is not keyed on the current route'
-    ).toBe('none');
+    // **The control for the rule.** The unmarked destination's label carries the rule every
+    // destination has at rest since Story 2-32 (the hairline in the interactive border role, so
+    // hover recolours an underline rather than adding one), which is narrower than the mark and not
+    // the accent, so the three comparisons above are about `aria-current` and not about every label
+    // in the nav. It read `none` until that story, when the unmarked label drew no rule at all.
+    const rest = await page.locator(`${SUITE_LINK} .navbar__label`).evaluate((node) => ({
+      width: window.getComputedStyle(node).borderBottomWidth,
+      color: window.getComputedStyle(node).borderBottomColor,
+    }));
+    expect(rest.width, 'the unmarked destination carries the mark too, so it is not keyed on the current route').toBe(
+      await probeComputed(page, 'border-bottom:var(--stroke-hair) solid red;', 'border-bottom-width')
+    );
+    expect(rest.color, 'the unmarked destination is underlined in the accent, so the mark is not keyed on the current route').toBe(
+      await probeComputed(page, 'color:var(--token-border-interactive);', 'color')
+    );
 
     // **And the control for the probe**, which would make either colour comparison vacuous if it
     // answered the same string for every input. A different token from the same family has to
@@ -566,8 +568,9 @@ test.describe('with scripting off, which is the medium the collapsed-height defe
 test.describe('every control on /cv is a real target', () => {
   test('measures each interactive element at or above --tap on both axes', async ({ page }) => {
     // A-4 (`EXPERIENCE.md:763`), re-measured here on this surface alone so a failure names the page
-    // rather than a sweep. `tests/e2e/hit-target-floor.pw.ts` is the universal instrument and
-    // carries the one authored control still under the floor, the chrome logo, in its ledger.
+    // rather than a sweep. `tests/e2e/hit-target-floor.pw.ts` is the universal instrument; its ledger
+    // carried the chrome logo until Story 2-32 took the wordmark to the floor, so every control here,
+    // the header's three included, is measured with none excused.
     await goTo(page, ROUTE);
     await page.evaluate(async () => {
       await document.fonts.ready;
@@ -579,15 +582,13 @@ test.describe('every control on /cv is a real target', () => {
     const boxes = await measure(page);
     expect(boxes.length, '/cv yielded no interactive element, so this loop is over nothing').toBeGreaterThan(0);
 
-    const swept = boxes.filter((box) => !box.exempt);
     expect(
-      boxes.length - swept.length,
-      `the ledger exemption ${LEDGER_EXEMPT} no longer matches exactly one element on this surface, ` +
-        `so either the logo stopped rendering or a second control is being excused for free`
-    ).toBe(1);
+      boxes.map((box) => box.label).filter((label) => label.startsWith('a[href=/]')),
+      'the wordmark is not among the controls measured here, so the header is only partly swept'
+    ).toHaveLength(1);
 
     expect(
-      underFloor(swept, floor),
+      underFloor(boxes, floor),
       `a control on ${ROUTE} is under the AD-19 floor. The intro block's links are built with ` +
         `min-block-size, min-inline-size and inline-flex for exactly this reason, and vertical ` +
         `padding on a plain inline element would read as compliant here and measure otherwise`
@@ -657,7 +658,6 @@ test.describe('every control on /cv is a real target', () => {
           label: 'planted unfloored link',
           width: plantedBox?.width ?? 0,
           height: plantedBox?.height ?? 0,
-          exempt: false,
         },
       ],
       floor

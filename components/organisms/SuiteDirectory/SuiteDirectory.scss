@@ -18,9 +18,9 @@
 
 .suite-directory {
   padding-block: var(--s-2xl) var(--s-3xl);
-  // The list pads itself. It is deliberately not inside `.container`, whose `min(80%, 1920px)`
-  // leaves 288px of content at a 360px viewport and is what `ops/known-violations.md:399` blames
-  // for the hero overflow beside it.
+  // The list pads itself, outside `.container`, whose 2023 `min(80%, 1920px)` left 288px of content
+  // at 360 and was what KV-5 blamed for the hero overflow beside it until Story 2-32 rebuilt it to
+  // `min(100%, 1920px)` at this same `--page-pad`.
   padding-inline: var(--page-pad);
 }
 

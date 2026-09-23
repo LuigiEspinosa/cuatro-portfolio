@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import './navbar.scss';
+import './Navbar.scss';
 
 /**
  * The header's two destinations (Story 2-15).
@@ -26,10 +26,10 @@ import './navbar.scss';
  * story landed, which is what closes DW-64: the prefetch now warms a route bundle rather than a
  * redirect.
  *
- * **The logo is not one of the two.** It is a sibling of this element in `Header.tsx:14`, not a
- * nav link, so "exactly two destinations" is two `nav.navbar a` while `<header>` still holds three
- * anchors. It is also still under the hit-target floor, which is `chrome-logo` in
- * `ops/hit-target-floor.md` and Story 2-32's to close.
+ * **The wordmark is not one of the two.** It is a sibling of this element inside the header's
+ * container (`Header.tsx`), not a nav link, so "exactly two destinations" is two `nav.navbar a` while
+ * `<header>` still holds three anchors. Story 2-32 rebuilt it as text and took it to the hit-target
+ * floor, which deleted `chrome-logo`, the last row of the ledger in `ops/hit-target-floor.md`.
  *
  * **The pathname arrives as a prop rather than from a second `usePathname()`.** `Header.tsx:10` is
  * already the client boundary and already reads it to decide whether to render at all, so reading
@@ -84,7 +84,8 @@ export const Navbar = ({ pathname }: NavbarProps) => (
             that floor is deliberately not named here, and neither is any other contract role: this
             file is source rather than a stylesheet, so `app/__tests__/anchor-contract.test.ts`
             reads a role named in a comment as a component reaching past the alias layer. The names
-            live in `navbar.scss`, which is listed there as token-native. */}
+            live in `Navbar.scss`, which is listed there as token-native, and every destination's
+            label carries a rule at rest there, so hover recolours one rather than adding one. */}
         <span className='navbar__label'>{destination.label}</span>
       </Link>
     ))}
