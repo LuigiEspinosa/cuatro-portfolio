@@ -231,7 +231,7 @@ jobs:
     timeout-minutes: 20
 
     # The baseline PNG in `tests/e2e/rendered-output.pw.ts-snapshots/` was generated inside
-    # this exact image. Glyph rasterization is not portable, and `--font-mono` has no Courier
+    # this exact image. Glyph rasterization is not portable, and the 2023 mono stack had no Courier
     # New on Linux, so pinning both sides to one image is what makes the tolerance a real
     # number. Bump the image tag and the `@playwright/test` pin in `package.json` together,
     # then regenerate the baseline. See `ops/rendered-output-harness.md`.

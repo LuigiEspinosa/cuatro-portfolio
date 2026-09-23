@@ -249,7 +249,7 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
    *
    * Pinned rather than derived, and read in both directions below: a role dropped from the
    * stylesheet fails, and a name the stylesheet reaches for that is not listed here fails too, so
-   * an alias (`--accent`, `--light-gray-color`, `--confillia-normal`, `--page-padding`) or a name
+   * a Story 1-18 alias (Story 2-22 deleted them, and the tree is searched for their names) or a name
    * the contract does not declare cannot arrive unnoticed.
    */
   const ROLES = [

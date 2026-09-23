@@ -84,10 +84,10 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
 - Name a new component stylesheet for its component in PascalCase, beside the component, as
   in `WorkTimeline.scss`. The lowercase names (`navbar.scss`, `error-page.scss`) are 2023
   legacy; do not copy them, and do not rename them in an unrelated story.
-- `--monument-bold` and `--monument-regular` are family-only aliases onto `var(--f-display)`
-  (`app/app.scss:56-57`). A family alias cannot carry weight, so any new `--monument-bold`
-  call site must set `font-weight: var(--w-black)` by hand beside `font-family`, as the four
-  existing sites do. Omitting it silently drops bold.
+- Story 2-22 deleted the Story 1-18 alias layer: `app/app.scss` declares one custom property,
+  `--hero-height`, and every stylesheet names contract roles directly. A family role carries no
+  weight: a call site that wants the display face at its heaviest sets `font-weight: var(--w-black)`
+  beside `font-family: var(--f-display)`. `app/__tests__/anchor-contract.test.ts` refuses an old name.
 
 ## Known pitfalls
 

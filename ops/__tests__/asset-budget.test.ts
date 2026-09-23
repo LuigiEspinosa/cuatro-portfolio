@@ -803,20 +803,20 @@ describe('classifying a chunk by fingerprint', () => {
 // ---------------------------------------------------------------------------
 
 describe('which declared faces a font-family rule can reach', () => {
-  // Two hops, which is what the real build carries: `--monument-bold` holds
-  // `var(--f-display)`, which holds the family. A resolver that stopped after
-  // one hop would call Bricolage Grotesque unreachable and hand a later story a
-  // reason to delete a face that is on every page.
+  // Two hops, which is what the real build carried until Story 2-22 deleted the
+  // aliases: an alias held `var(--f-display)`, which holds the family. A resolver
+  // that stopped after one hop would call Bricolage Grotesque unreachable and hand
+  // a later story a reason to delete a face that is on every page.
   const css = `
 @font-face{font-family:"Bricolage Grotesque";src:url(../media/bricolage.woff2) format("woff2")}
 @font-face{font-family:'Confillia Normal';src:url(../media/confillia.woff2) format("woff2")}
 @font-face{font-family:MonumentExtended-Bold;src:url(../media/monument.woff2) format("woff2")}
 @font-face{font-family:"Fallback Only";src:url(../media/fallback.woff2) format("woff2")}
 @font-face{font-family:"Cased";src:url(../media/cased.woff2) format("woff2")}
-:root{--f-display:"Bricolage Grotesque","Archivo",system-ui,sans-serif;--monument-bold:var(--f-display);
---confillia-normal:"Confillia Normal"}
-h1{font-family:var(--monument-bold);font-weight:900}
-p{font-family:var(--confillia-normal)!important}
+:root{--f-display:"Bricolage Grotesque","Archivo",system-ui,sans-serif;--display-alias:var(--f-display);
+--narrow-alias:"Confillia Normal"}
+h1{font-family:var(--display-alias);font-weight:900}
+p{font-family:var(--narrow-alias)!important}
 aside{font-family:var(--never-defined, "Fallback Only"),sans-serif}
 b{font-family:  cased  }
 figcaption{font-family:var(--never-defined)}
@@ -836,7 +836,7 @@ figcaption{font-family:var(--never-defined)}
 
   it('follows a two-hop var() chain to the family it names', () => {
     const properties = parseFontUses(css).properties;
-    expect(resolveFontValue('var(--monument-bold)', properties).families[0]).toBe('Bricolage Grotesque');
+    expect(resolveFontValue('var(--display-alias)', properties).families[0]).toBe('Bricolage Grotesque');
   });
 
   it('follows the fallback arm, so a face reached only through one is reached', () => {
@@ -873,8 +873,8 @@ figcaption{font-family:var(--never-defined)}
     // would look reachable and the reachability column would say nothing.
     expect(parseFontUses(css).uses).toEqual([
       'cased',
-      'var(--confillia-normal)',
-      'var(--monument-bold)',
+      'var(--display-alias)',
+      'var(--narrow-alias)',
       'var(--never-defined)',
       'var(--never-defined, "Fallback Only"),sans-serif',
     ]);

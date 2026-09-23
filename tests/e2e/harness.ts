@@ -29,7 +29,7 @@ export const RENDERED_VIEWPORT = { width: 360, height: 800 } as const;
  * These helpers throw instead.
  *
  * A note Story 1.18 inherits rather than rediscovers: assert both `font-family` and
- * `font-weight` at the `--monument-bold` call sites, and set the weight before reading it.
+ * `font-weight` at the bold display alias's call sites, and set the weight before reading it.
  * Three of the four sites (`WorkHero.scss:19`, `ProjectsHero.scss:19`, `error-page.scss:24`)
  * set family alone at the time this was written, so their computed `font-weight` was `400`
  * both before and after an alias that silently drops bold. The weight lives in the family name,
@@ -43,8 +43,8 @@ export const RENDERED_VIEWPORT = { width: 360, height: 800 } as const;
  * styled; Story 2-27 deleted `glitch-text.scss` with the loop it carried, and `GlitchText.scss` names
  * the display roles directly; Story 2-30 deleted `error-page.scss`, and `Error404.scss` does the same;
  * Story 2-33 rebuilt `WorkHero.scss`, whose heading was the last, against the contract. The note above
- * is the 2026-08-24 reading and is kept as it was taken; `tests/e2e/anchor-aliases.pw.ts` pins the
- * alias at zero call sites.
+ * is the 2026-08-24 reading and is kept as it was taken. Story 2-22 deleted the alias with the rest
+ * of the layer, and `app/__tests__/anchor-contract.test.ts` holds the tree free of its name.
  */
 
 interface ScreenshotOptions {

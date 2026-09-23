@@ -30,8 +30,8 @@
 //
 // The names are consumed. Story 1-18 redefined the Hub's custom properties in `app/app.scss`
 // as references to the token roles, which is the commit that changed how `cuatro.dev` looks,
-// and the Epic 2 rebuilds name roles directly. `app/__tests__/anchor-contract.test.ts` holds the
-// partition of who may name what.
+// and the Epic 2 rebuilds name roles directly, which is why Story 2-22 could delete those
+// references. `app/__tests__/anchor-contract.test.ts` holds the partition of who may name what.
 @use '../../contracts/tokens';
 @use '../../contracts/fonts';
 

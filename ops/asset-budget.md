@@ -470,6 +470,50 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-23 reading, after Story 2-22
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `37FF9P8STslG2tLdxZeOq`, written
+2026-09-23T19:06:03Z, taken on the story's working tree at `809bef7` plus its own files, before the
+commit that carries them: the tool's dirty-inputs row named seven paths (`app/app.scss`,
+`app/scss/_index.scss`, `components/organisms/SuiteDirectory/SuiteDirectory.scss` and four suites the
+build does not read) and every one of them is this story's. The before reading is the same command
+against build `vgd007GkAU7Lyi6-3J296` (written 2026-09-23T18:38:24Z at `809bef7` on `dev`, no measured
+input dirty).
+
+**The before build reproduces the Story 2-34 after figures exactly** in both kinds of chunk: 19 `.js`
+at 2,858,402 on disk and 831,372 gzipped, and 12 `.css` at 28,873 on disk and 8,602 gzipped. The
+routes read 2 to 4 bytes below that reading on the wire (`/work` 253,877 against 253,879), the rebuild
+variance of hashed file names inside each document.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,962 | 253,763 | no | yes | **Observed** |
+| `/cv` | 23,218 | 252,173 | no | yes | **Observed** |
+| `/_not-found` | 18,793 | 246,124 | no | **no**: Next's own document | **Observed** |
+| `/celeste` | 15,380 | 246,099 | no | yes | **Observed** |
+| `/_global-error` | 9,578 | 188,761 | no | **no**: Next's own document | **Observed** |
+
+**Every route moved by the global stylesheet and nothing else.** Against the before build, on the
+wire: `/work` and `/_not-found` 114 lighter, `/cv` and `/celeste` 113 lighter, `/_global-error` 2
+heavier. **Observed 2026-09-23**, every `.next/static/chunks/*.css` and `*.js` weighed with
+`zlib.gzipSync` at level 9 (the tool's method) on both builds, the eleven other stylesheets compared
+byte for byte:
+
+| Figure | Before, `dev` at `809bef7` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Bytes in `.next/static/chunks` | 2,887,275 on disk, 839,974 gzipped | 2,886,855 on disk, 839,862 gzipped | **420 lighter on disk, 112 gzipped lighter** | **Observed**, tool's build table; **Derived** delta |
+| Every `.js` chunk together | 19, 2,858,402 on disk, 831,372 gzipped | the same 19, 2,858,402 and 831,372 | 0 | **Observed**, tool's totals less the `.css` row |
+| Every `.css` chunk together | 12, 28,873 on disk, 8,602 gzipped | 12, 28,453 on disk, 8,490 gzipped | 420 lighter on disk, 112 gzipped lighter | **Observed** per chunk; **Derived** total |
+| The global stylesheet | `0.sgj2-qlca8y.css`, 6,020 on disk, 2,310 gzipped | `15iatak4a_jum.css`, 5,600 on disk, 2,198 gzipped | 420 lighter on disk, 112 gzipped lighter: the thirteen aliases off `:root`, and the base rule naming four roles where it read three aliases | **Observed** |
+
+**Against the Story 2-34 reading.** **Derived.** The chunks reproduce it, so the whole of the movement
+is this story's: the non-3D line still names `/work`, 113,763 over, 81.3 percent, where Story 2-34's
+read 113,879 over; the 116 bytes between them are this story's 114 lighter and 2 of rebuild variance.
+Measured against Story 2-2's 140,000 each time. The narrative total, 634,829, did not move. § The faces
+the built CSS declares lost one value line in this run's output, `font-family: var(--font-regular)`,
+which was the base rule's; the rule names `var(--f-body)`, already listed, and every family the built
+CSS declares is still reached.
+
 ### The 2026-09-23 reading, after Story 2-34
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `zZ7f-R4Ufn4KQJqPQZi4Q`, written
@@ -1426,6 +1470,31 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-23 run, after Story 2-22
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `37FF9P8STslG2tLdxZeOq`. § Every route's
+2026-09-23 reading after Story 2-22 and this section were filed from this run; every other section
+in this file is still the reading its own heading names.
+
+- The narrative bundle is 634,829 bytes gzipped across 7 chunks, against an estimate of 300,000 to
+  450,000. That is 184,829 over the top of the range.
+- 580,108 bytes of that is genuinely deferred: `0vynw~tou1f72.js`, `0w~ig71whmz0p.js`,
+  `10mmj2_fz7c58.js`, `0f-49j-pqi~h-.js` is referenced by no prerendered document. The other 54,721
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 253,763 against 140,000, 113,763 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,547 against 140,000, 36,453 of margin. That
+  decomposition has no line for the 243,875 of JavaScript or the 830 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Two lines moved, each by the global stylesheet's lighter bytes.** **Observed**, the tool's tables on
+each side: the non-3D path, 253,877 to 253,763, and the decomposition, 103,661 to 103,547, its HTML
+and critical CSS line 9,172 to 9,058. Nothing else in the list moved.
 
 ### The 2026-09-23 run, after Story 2-34
 

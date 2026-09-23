@@ -1,48 +1,45 @@
 import { test, expect, type Page } from '@playwright/test';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from './harness';
 
 /**
- * The alias layer, measured in a real browser (Story 1-18, Anchor migration step 2).
+ * The alias layer's deletion, measured in a real browser (Story 2-22, Anchor migration step 7).
  *
- * `app/app.scss` redefines thirteen of the Hub's fourteen custom properties as `var()` references
- * to token roles, and the fifteen component stylesheets go on reading the old names. That is a
- * claim about what the Hub *resolves*, and almost none of it is visible to a screenshot:
+ * Story 1-18 wrote the layer: thirteen of the Hub's custom properties redefined in `app/app.scss` as
+ * `var()` references to token roles, so the fifteen 2023 component stylesheets could go on reading the
+ * old names while Epic 2 rebuilt each against the contract. This file measured that layer for four
+ * weeks: every alias resolving to its role, the per-call-site boundary and ornament reads, the hand-set
+ * weights a family alias could not carry, the literals it had to leave alone. Story 2-33 rebuilt the last
+ * component that read an alias, which is FR-37's removal condition, and Story 2-22 deleted the layer.
  *
- *  1. **An alias that resolves to the wrong role** paints a plausible violet either way.
- *  2. **`--accent-dim` doing two jobs.** It is ornament at ten of its twelve call sites and
- *     a boundary a person reads state from at the other two, so a single global alias drops the
- *     boundary uses below the 3:1 floor AD-19 asserts while looking entirely reasonable. Each of
- *     the twelve is read on its real element here, for the property that call site declares.
- *  3. **The alias trap.** `--monument-bold` baked its weight into the family name
- *     `MonumentExtended-Bold`. A family alias cannot carry that, so `font-weight` is set by hand
- *     beside `font-family` at the four call sites **in the same commit**, and only then read.
- *     Read against a tree where the weight was not set, the weight assertion is green and
- *     meaningless (`tests/e2e/harness.ts`, and `ops/rendered-output-harness.md` § "The finding
- *     Story 1-18 inherits").
- *  4. **The base `body` rule.** `/work` never shows it, because `body#work` overrides it. Nor
- *     does `/cv`, which `next.config.js` redirects to a PDF, which is a correction to what
- *     `ops/anchor-token-adoption.md` § "A second finding" concluded by reading stylesheets
- *     rather than by rendering. The 404 surface does, and that is where the body ground and body
- *     copy are read.
+ * **What is measured here now is the absence, where only a browser can see it**, and the parts of the
+ * old file that were never about the aliases:
  *
- * **Since 2026-09-23 the second and third have nothing left to read, and the fourth has company.**
- * Story 2-33 rebuilt `WorkHero.scss`, whose section divider was the last `--accent-dim` call site and
- * whose heading the last `--monument-bold` one, and deleted `body#work`, so `/work` paints the base
- * rule too. Both call-site tables and their per-site cases left with their last rows; both aliases are
- * pinned at zero call sites below, in the shape `--monument-regular` and `--confillia-normal` already
- * had, and `app/__tests__/anchor-contract.test.ts` holds every stylesheet but `app/app.scss` to reading
- * none of the Hub's fourteen properties (FR-37). What is still measured here is the layer itself: every
- * alias resolves to its role, the one literal holds, and the base rule's ground and copy are the roles.
+ *  1. **`:root` in the compiled stylesheet carries the contract's properties and `--hero-height`,
+ *     and nothing else.** Every stylesheet the build writes is parsed by the browser's own CSS
+ *     parser, grouping rules included, and every custom property declared on a rule that reaches the
+ *     root element is collected. That is the build's word, after Sass and the minifier, which a read
+ *     of `app/app.scss` cannot give: a partial, a library stylesheet or a rewrite could put a name on
+ *     `:root` that no source in this repository spells.
+ *  2. **The one property the Hub keeps still holds its authored literal.**
+ *  3. **The base `body` rule paints the roles it names**, on the 404 surface where nothing overrides
+ *     it: the ground, the copy, the body family and the regular weight, and neither colour is pure.
+ *  4. **Every route the Hub serves still answers 2xx** (NFR-2).
  *
- * **Nothing here is restated.** The alias map is parsed out of `app/app.scss`, the roles are read
- * back in the same page, and every expected colour is put through a probe element rather than
- * written down as a literal, because a computed colour and a custom property's token stream do
- * not serialise the same way.
+ * `app/__tests__/anchor-contract.test.ts` is the source half: it holds `app/app.scss` to declaring
+ * `--hero-height` alone, and searches every file git tracks for the thirteen deleted names. This file
+ * names none of them, and does not need to: a name outside the contract on `:root` fails here whatever
+ * it is called.
  *
- * Every predicate this file introduces is shown firing on a planted control, and every parsed
- * list is asserted non-empty and carrying a known member, so a case cannot pass over nothing.
+ * **Nothing here is restated.** The contract's names are parsed out of `contracts/tokens.css`, the
+ * Hub's out of `app/app.scss`, the roles are read back in the same page, and every expected colour is
+ * put through a probe element rather than written down as a literal, because a computed colour and a
+ * custom property's token stream do not serialise the same way.
+ *
+ * Every predicate this file introduces is shown firing on a planted control, and every parsed list is
+ * asserted non-empty and carrying a known member, so a case cannot pass over nothing.
  */
 
 // `__dirname` rather than `import.meta.url`: Playwright transpiles a spec to CommonJS and the
@@ -53,69 +50,8 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
 const APP_SCSS = readFileSync(join(REPO_ROOT, 'app', 'app.scss'), 'utf8');
 const TOKENS_CSS = readFileSync(join(REPO_ROOT, 'contracts', 'tokens.css'), 'utf8');
 
-/**
- * Every component stylesheet on disk, by basename, with its contents.
- *
- * **The call-site tables below were pinned against themselves**, comparing their own length to a
- * literal declared beside them and reading no stylesheet at all. A sixteenth `var(--accent-dim)`
- * call site, or a fifth `var(--monument-bold)` one, was invisible to every check in this story: it
- * would silently take the ornament role, or lose its weight, with the whole suite green. This is
- * what makes the count a measurement of the tree rather than of the table.
- */
-const COMPONENT_STYLESHEETS = ((): Map<string, string> => {
-  const found = new Map<string, string>();
-  const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      const path = join(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name !== '__tests__') walk(path);
-        continue;
-      }
-      if (entry.isFile() && entry.name.endsWith('.scss')) {
-        // **Keyed by basename, so a repeat would overwrite rather than add.** The table rows are
-        // written `basename.scss:line` and are compared against these keys, so the key has to be
-        // the basename. A second stylesheet with the same name in another directory would drop
-        // one file's call sites out of the count with nothing failing, which is the hole this
-        // whole map exists to close, so the collision is refused rather than resolved.
-        if (found.has(entry.name)) {
-          throw new Error(
-            `two component stylesheets are named ${entry.name}. The call-site counts below are keyed ` +
-              `by basename, so one of them would be counted and the other silently dropped`
-          );
-        }
-        found.set(entry.name, readFileSync(path, 'utf8'));
-      }
-    }
-  };
-  walk(join(REPO_ROOT, 'components'));
-  return found;
-})();
-
-/**
- * How many times `name` is read as `var(--name)`, per stylesheet basename, over the whole file.
- *
- * Raw text, comments included, which is the same method the recorded count used
- * (`git grep -o -- "var(--accent-dim)" -- components`) and the same rule Story 1-17 set for the
- * consumer scan: a call site inside a comment is a call site waiting to be uncommented.
- *
- * **The fallback form counts too.** `var(--accent-dim, #fff)` reads the property exactly as the
- * bare form does, so a call site authored that way is a call site. Matching only the bare form
- * would let one escape the table and take the `:root` ornament role in silence, which is the
- * failure this counter exists to make loud. The name is still bounded, so `--accent-dimmer` does
- * not match.
- */
-const callSitesOf = (name: string, sources: Map<string, string> = COMPONENT_STYLESHEETS): Map<string, number> => {
-  const pattern = new RegExp(`var\\(\\s*${name}\\s*[,)]`, 'g');
-  const counted = new Map<string, number>();
-  for (const [file, source] of sources) {
-    const hits = source.match(pattern)?.length ?? 0;
-    if (hits > 0) counted.set(file, hits);
-  }
-  return counted;
-};
-
-const sortedEntries = (counted: Map<string, number>): [string, number][] =>
-  [...counted].sort(([a], [b]) => a.localeCompare(b));
+/** Where Next 16 writes the built stylesheets, the directory `accessibility-floor.pw.ts` reads too. */
+const CHUNK_DIR = join(REPO_ROOT, '.next', 'static', 'chunks');
 
 /**
  * Every route the Hub serves. NFR-2 binds every migration step, so all five are swept.
@@ -133,34 +69,29 @@ const ROUTES = ['/', '/cv', '/work', '/celeste', '/api/health'] as const;
 
 /**
  * A path the Hub does not route, which renders `app/not-found.tsx` through the same root layout
- * and the same `Body`, and the surface the base rule's ground and copy are read on below. It carried
- * an `--accent-dim` and a `--monument-bold` call site of its own until Story 2-30 rebuilt the 404 on
- * 2026-09-23, and no route carries either since Story 2-33 later the same day.
+ * and the same `Body`, and the surface the base rule's ground, copy, family and weight are read on
+ * below. It carried two alias call sites of its own until Story 2-30 rebuilt the 404 on 2026-09-23.
  */
 const NOT_FOUND = '/a-route-that-does-not-exist';
 
 /**
- * The Hub declares fourteen custom properties: thirteen aliased onto roles, one left as a literal.
+ * The Hub declares one custom property, authored as a literal.
  *
- * **Sixteen, twelve and four until 2026-09-12.** Story 2-20 retargeted `--confillia-normal` onto
- * the display role and deleted `--confillia-bold`, which had zero call sites. The same three
- * counts moved in `app/__tests__/anchor-contract.test.ts` in the same commit. **Fifteen and two
- * until 2026-09-23.** Story 2-34 deleted `--accent-glow`, a colour literal with zero call sites that
- * the FR-17 conformance gate refuses outside `contracts/`, and the same counts moved in
- * `app/__tests__/anchor-contract.test.ts` and `tests/e2e/contract-anchor.pw.ts`.
+ * **Sixteen, twelve and four until 2026-09-12**, when Story 2-20 retargeted one alias and deleted a
+ * dead one. **Fifteen and two until 2026-09-23**, when Story 2-34 deleted a dead colour literal the
+ * FR-17 gate refuses. **Fourteen, thirteen of them aliases, until later on 2026-09-23**, when Story
+ * 2-22 deleted the thirteen; the same count moved in `app/__tests__/anchor-contract.test.ts` and
+ * `tests/e2e/contract-anchor.pw.ts` in the same commit.
  */
-const HUB_PROPERTY_COUNT = 14;
-const ALIASED_COUNT = 13;
+const HUB_PROPERTY_COUNT = 1;
 const LITERAL_COUNT = 1;
 
-/** The one this story must not move, and the reason that holds it. */
+/** The one the Hub keeps, and the reason that holds it: a layout constant the contract carries no role for. */
 const LITERAL_PROPERTIES = ['--hero-height'] as const;
 
-/**
- * None of them is a colour since Story 2-34 deleted `--accent-glow`, the one that was, so none takes
- * the colour route below; a colour literal written back here would fail the FR-17 gate as well.
- */
-const LITERAL_COLOUR_COUNT = 0;
+/** The counts `contracts/tokens.css` publishes at v1.0.0, pinned as `contract-anchor.pw.ts` pins them. */
+const DECLARED_COUNT = 89;
+const REDUCED_COUNT = 4;
 
 const withoutComments = (source: string): string =>
   source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:(])\/\/.*$/gm, '$1');
@@ -178,35 +109,121 @@ const declarationsIn = (block: string): Map<string, string> => {
   return found;
 };
 
-/** The Hub's fourteen, as `app/app.scss` authors them. */
+/** The Hub's own, as `app/app.scss` authors them. */
 const HUB = declarationsIn(/:root\s*\{([^}]*)\}/.exec(withoutComments(APP_SCSS))?.[1] ?? '');
+
+const REDUCED_BLOCK = /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)\s*\{\s*:root\s*\{([^}]*)\}\s*\}/;
 
 /** Every custom property `contracts/tokens.css` puts on `:root` outside a media query. */
 const CONTRACT = declarationsIn(
-  /:root\s*\{([^}]*)\}/.exec(
-    withoutComments(TOKENS_CSS).replace(
-      /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)\s*\{\s*:root\s*\{[^}]*\}\s*\}/,
-      ''
-    )
-  )?.[1] ?? ''
+  /:root\s*\{([^}]*)\}/.exec(withoutComments(TOKENS_CSS).replace(REDUCED_BLOCK, ''))?.[1] ?? ''
 );
+
+/** The four it redefines on `:root` under `prefers-reduced-motion: reduce`. */
+const CONTRACT_REDUCED = declarationsIn(REDUCED_BLOCK.exec(withoutComments(TOKENS_CSS))?.[1] ?? '');
+
+/**
+ * What `:root` may carry in the compiled stylesheet: every name the contract declares there, under
+ * either block, and the Hub's one. Derived from the two files rather than typed.
+ */
+const ROOT_ALLOWED = [...new Set([...CONTRACT.keys(), ...CONTRACT_REDUCED.keys(), ...HUB.keys()])].sort();
 
 const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
 
-/** The token role a Hub property is aliased onto, or `null` while it is authored as a literal. */
-const aliasRole = (name: string): string | null => IS_VAR_REFERENCE.exec(HUB.get(name) ?? '')?.[1] ?? null;
+/**
+ * Every stylesheet the build wrote, as text, named by its path under the chunk directory. An absent
+ * or empty build throws naming the directory, so the root read never passes over nothing
+ * (`accessibility-floor.pw.ts` holds its own tally to the same rule).
+ */
+const builtStylesheets = (directory = CHUNK_DIR): { name: string; text: string }[] => {
+  if (!existsSync(directory)) {
+    throw new Error(`Alias deletion: ${directory} is not there. Run corepack pnpm build first; an absent build proves nothing.`);
+  }
+  const found = (readdirSync(directory, { recursive: true }) as string[])
+    .map((relative) => relative.replace(/\\/g, '/'))
+    .filter((relative) => relative.endsWith('.css'))
+    .sort()
+    .map((name) => ({ name, text: readFileSync(join(directory, name), 'utf8') }));
+  if (found.length === 0) {
+    throw new Error(`Alias deletion: ${directory} holds no .css file, so the root read would pass over nothing.`);
+  }
+  return found;
+};
 
-/** The thirteen aliased properties, derived from the file rather than restated. */
-const ALIASES = [...HUB.keys()].filter((name) => aliasRole(name) !== null);
+interface RootDeclaration {
+  readonly sheet: string;
+  readonly selector: string;
+  readonly name: string;
+}
 
-const normaliseQuotes = (value: string): string => value.replace(/'/g, '"');
+/**
+ * Every custom property the given stylesheets declare on a rule that reaches the root element, and
+ * every rule the walk could not read.
+ *
+ * Parsed in the page by the browser's own parser (`CSSStyleSheet.replaceSync`), so the minifier's
+ * spelling is no obstacle, and walked through every grouping rule, because the contract's colours
+ * arrive twice: once as a hex fallback, once inside `@supports (color: lab(0% 0 0))`. **A rule
+ * reaches the root** when the root element matches its selector with the conditions that depend on
+ * the moment taken out: a user-action state (`:hover`, `:focus` and their kin) and `:has()`, whose
+ * answer depends on what the page the read happens to run on contains (`html:has(.header-container)`
+ * is in the build, and `/` renders no header). So `:root`, `html`, `*`, `:root:hover` and
+ * `html:has(...)` are read, and `*:not(:root)` or `html body` are not. A selector the parser refuses
+ * after that falls back to whether it names `:root`.
+ *
+ * **What it cannot read fails closed.** The build flattens nesting, so no nested style rule is
+ * expected, and a nested rule's relative selector cannot be matched against the root on its own; and a
+ * constructed stylesheet drops an `@import` rather than following it, so a chunk carrying one would be
+ * read without what it imports. Either is reported rather than skipped, which is the shape
+ * `ops/literal-conformance.mjs` takes with a statement it cannot read.
+ */
+const rootDeclarations = async (
+  page: Page,
+  sheets: readonly { name: string; text: string }[]
+): Promise<{ found: RootDeclaration[]; unread: string[] }> =>
+  page.evaluate((list) => {
+    const found: { sheet: string; selector: string; name: string }[] = [];
+    const unread: string[] = [];
+    const MOMENT =
+      /:(?:hover|active|focus(?:-visible|-within)?|visited|target(?:-within)?)\b|:has\((?:[^()]|\([^()]*\))*\)/g;
+    const reachesRoot = (selector: string): boolean => {
+      try {
+        return document.documentElement.matches(selector.replace(MOMENT, ''));
+      } catch {
+        return selector.includes(':root');
+      }
+    };
+    const walk = (rules: CSSRuleList, sheet: string): void => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSStyleRule) {
+          if (reachesRoot(rule.selectorText)) {
+            for (let index = 0; index < rule.style.length; index += 1) {
+              const name = rule.style[index];
+              if (name.startsWith('--')) found.push({ sheet, selector: rule.selectorText, name });
+            }
+          }
+          const nested = (rule as CSSStyleRule & { cssRules?: CSSRuleList }).cssRules;
+          if (nested && nested.length > 0) unread.push(`${sheet}: "${rule.selectorText}" nests ${nested.length} rule(s)`);
+          continue;
+        }
+        const children = (rule as CSSRule & { cssRules?: CSSRuleList }).cssRules;
+        if (children) walk(children, sheet);
+      }
+    };
+    for (const { name, text } of list) {
+      if (/@import\b/i.test(text)) unread.push(`${name}: carries an @import, which a constructed stylesheet does not follow`);
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(text);
+      walk(sheet.cssRules, name);
+    }
+    return { found, unread };
+  }, sheets);
 
 /**
  * The computed colour of a throwaway element painted `background-color: var(<name>)`.
  *
- * A computed `border-left-color` and a custom property's token stream do not serialise the same
- * way, so an expected role is put through a real element in the same page rather than compared
- * as text or written down as a literal.
+ * A computed `background-color` and a custom property's token stream do not serialise the same way,
+ * so an expected role is put through a real element in the same page rather than compared as text or
+ * written down as a literal.
  */
 const probeRoleColours = async (page: Page, names: readonly string[]): Promise<Record<string, string>> => {
   const read = await page.evaluate((properties: string[]) => {
@@ -234,27 +251,35 @@ const probeRoleColours = async (page: Page, names: readonly string[]): Promise<R
 };
 
 /**
- * **`computedPseudoValue` was removed on 2026-09-23 with the last row that read a pseudo-element.**
- *
- * It read a property off `::before`, with the harness's two rules (name what was asked for in any
- * failure, never return a value that could compare equal when the thing asked for is absent), because
- * two call sites declared there: `WorkItem.scss`'s open-state bar and its `//` highlight marker. Story
- * 2-31 rebuilt that stylesheet against the contract, so neither reads `--accent-dim` any more, and the
- * helper, the `pseudo` field on `CallSite` and the planted control that proved the read was of the
- * pseudo-element and not the element beside it had nothing left to do. Kept as a note in the
- * `inWideContext` shape below, so a later row on a pseudo-element knows this was built once and why it
- * left.
+ * The computed `font-family` and `font-weight` of a throwaway element declared with each, read in the
+ * same page, so the base rule's family and weight are compared against their roles and not against a
+ * stack or a number typed here.
  */
+const probeType = async (page: Page, family: string, weight: string): Promise<{ family: string; weight: string }> =>
+  page.evaluate(
+    ([declaredFamily, declaredWeight]) => {
+      const probe = document.createElement('div');
+      probe.style.cssText =
+        `position:absolute;left:-99999px;top:0;width:1px;height:1px;` +
+        `font-family:${declaredFamily};font-weight:${declaredWeight};`;
+      document.body.appendChild(probe);
+      const computed = window.getComputedStyle(probe);
+      const read = { family: computed.fontFamily, weight: computed.fontWeight };
+      probe.remove();
+      return read;
+    },
+    [family, weight]
+  );
 
 /**
  * A colour rasterised to four 8-bit sRGB channels through a 1 x 1 canvas.
  *
- * The build rewrites `rgba(139, 92, 246, 0.4)` to `#8b5cf666` on the way to the browser, so a
- * text comparison against the authored literal would report a drift the pipeline did not cause.
- * The canvas is the browser's own parser, and `globalCompositeOperation = 'copy'` keeps the alpha
- * rather than compositing it away. A `fillStyle` the context cannot parse is specified to be
- * *ignored*, leaving the previous colour in place, so a sentinel write proves the assignment took
- * and an unparsed value is reported rather than swallowed.
+ * The build rewrites colours on the way to the browser (`rgba(139, 92, 246, 0.4)` arrives as
+ * `#8b5cf666`), so a text comparison against an authored literal would report a drift the pipeline
+ * did not cause. The canvas is the browser's own parser, and `globalCompositeOperation = 'copy'` keeps
+ * the alpha rather than compositing it away. A `fillStyle` the context cannot parse is specified to be
+ * *ignored*, leaving the previous colour in place, so a sentinel write proves the assignment took and
+ * an unparsed value is reported rather than swallowed.
  */
 const rasterise = async (page: Page, values: readonly string[]): Promise<string[]> => {
   const read = await page.evaluate((list: string[]) => {
@@ -288,13 +313,12 @@ const rasterise = async (page: Page, values: readonly string[]): Promise<string[
     });
   }, [...values]);
 
-  // **Thrown rather than returned.** A missing 2D context answered `no-2d-context` for every
-  // input, so the drift comparison in "the four properties this story must not move" would have
-  // compared two identical sentinels, found no drift, and reached its verdict over a measurement
-  // that never happened. The controls at the end of that case fire only after the verdict.
+  // **Thrown rather than returned.** A missing 2D context answered `no-2d-context` for every input,
+  // so a comparison would have compared two identical sentinels, found no drift, and reached its
+  // verdict over a measurement that never happened.
   if (read.some((answer) => answer === 'no-2d-context')) {
     throw new Error(
-      `Alias reads: the page gave no 2D canvas context, so none of ${values.join(', ')} was ` +
+      `Alias deletion: the page gave no 2D canvas context, so none of ${values.join(', ')} was ` +
         `rasterised. A colour comparison cannot be made and is reported rather than assumed equal.`
     );
   }
@@ -304,43 +328,6 @@ const rasterise = async (page: Page, values: readonly string[]): Promise<string[
 const PURE_BLACK = '0,0,0,255';
 const PURE_WHITE = '255,255,255,255';
 
-/**
- * **The two call-site tables left on 2026-09-23 with their last rows.**
- *
- * `CALL_SITES` read each `--accent-dim` call site on its real element against the role its use
- * earned, ornament or boundary (a declaration some selector repaints under `:hover`,
- * `:focus-visible` or a data-state attribute, or the only indicator of a component's state, was a
- * boundary; everything else ornament). Fifteen at Story 1-18, then twelve, eleven, eight, two and one
- * as Stories 2-9, 2-14, 2-29, 2-31 and 2-30 rebuilt or deleted the files that carried them.
- * `WEIGHT_SITES` read each `--monument-bold` call site's family and its hand-set weight, because a
- * family alias cannot carry the bold that lived in the name `MonumentExtended-Bold`: four at Story
- * 1-18, then three, two and one after Stories 2-14, 2-27 and 2-30.
- *
- * **Story 2-33 took the last row of each**, `WorkHero.scss:8`, the hero's section divider, and
- * `WorkHero.scss:19`, its heading, when it rebuilt that stylesheet against the contract. A table of no
- * rows, and a case looping over it, would pass whatever the tree held, so both went, with the
- * `CallSite` shape, the two roles `--accent-dim` split across and the weight role, and both aliases are
- * pinned at zero call sites in the first case below. The per-row reasoning stays in
- * `ops/anchor-token-adoption.md`, kept as each reading was taken.
- */
-
-/**
- * **`--monument-regular` has had no call site since 2026-09-23**, and the precondition case that
- * checked the clamp its call sites relied on left with the last of them.
- *
- * `DESIGN.md` § The mapping assigns the alias `--f-display` plus `--w-bold`, and `app/app.scss` got
- * there without a hand edit by relying on the variable face clamping a request below its published
- * range up to the range's lower bound, a premise that lives in `contracts/fonts.css` and that a MINOR
- * bump is free to change. So the clamp was asserted as a precondition rather than argued, over a
- * table of the call sites it protected: **three at Story 1-18, two after Story 2-9, one after Story
- * 2-31**, and none since Story 2-30 deleted `error-page.scss`, whose `.error-page__title` at `:40`
- * was the last. The 404's heading is the display entrance now, which names the display roles
- * directly. With nothing left to clamp, a precondition over an empty table would pass whatever
- * the contract published, so it went, and the alias is pinned at zero call sites below in the shape
- * `--confillia-normal` has had since Story 2-29: a new call site would arrive relying on a clamp
- * nothing checks any more.
- */
-
 /** Navigate, and refuse to read anything off a page that did not answer the status expected. */
 const goTo = async (page: Page, route: string, expected = 200): Promise<void> => {
   const response = await page.goto(route, { waitUntil: 'load' });
@@ -349,167 +336,141 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
 };
 
 /**
- * **Removed 2026-09-21 with the last row that needed it.**
- *
- * `inWideContext` opened a second context 1024 wide, because one `--accent-dim` call site was a
- * rule that only applied above 767px: `HomeLayout.scss`'s desktop `border-right-color` on the
- * contact links. Story 2-29 rebuilt that file against the contract and the row went with the other
- * two, leaving the helper, its `WIDE_VIEWPORT`, the `wide` field on `CallSite` and the loop that
- * read them with nothing to do. Every surviving row is read at the project's own 360, which is
- * AD-19's floor and the width the rest of this file measures at. Kept as a note rather than as
- * dead code, so a later row that needs a wide read knows this was tried and why it left.
+ * **What left this file on 2026-09-23 with the layer it measured.** The alias map parsed out of
+ * `app/app.scss` and the case reading every alias against its role on `:root`; the component
+ * stylesheet map and the counter that pinned each retired alias at zero call sites on disk (the
+ * search in `app/__tests__/anchor-contract.test.ts` reads every file for the names now, not only the
+ * stylesheets under `components/`); and, earlier, the per-call-site boundary and ornament table, the
+ * hand-set weight table, the clamp precondition, the pseudo-element read and the wide-viewport
+ * context, each of which left with the last row it read and is recorded in
+ * `ops/anchor-token-adoption.md` as it was taken. Kept as a note so a later reader knows each was
+ * built once and why it went.
  */
-test('parses a real alias layer, so every case below measures something', () => {
-  expect(HUB.size, 'app/app.scss no longer declares fourteen custom properties on :root').toBe(HUB_PROPERTY_COUNT);
-  expect(CONTRACT.size, 'no :root block was parsed out of contracts/tokens.css').toBeGreaterThan(0);
-  for (const known of ['--token-bg', '--token-text', '--f-display', '--page-pad']) {
+test('parses a real app.scss and a real contract, so every case below measures something', () => {
+  expect(HUB.size, 'app/app.scss no longer declares one custom property on :root').toBe(HUB_PROPERTY_COUNT);
+  expect([...HUB.keys()], 'the property app/app.scss keeps is not --hero-height').toEqual([...LITERAL_PROPERTIES]);
+  expect(CONTRACT.size, 'contracts/tokens.css no longer declares 89 custom properties on :root').toBe(DECLARED_COUNT);
+  expect(CONTRACT_REDUCED.size, 'the reduced-motion block no longer redefines 4 values').toBe(REDUCED_COUNT);
+  for (const known of ['--token-bg', '--token-text', '--f-body', '--w-regular', '--page-pad']) {
     expect([...CONTRACT.keys()], `contracts/tokens.css no longer declares ${known}`).toContain(known);
   }
-
-  // The partition is pinned in both halves. Thirteen aliased and one literal, and the one named,
-  // so an alias quietly written over it fails here rather than passing as thirteen of fourteen.
-  expect(ALIASES.length, 'app/app.scss no longer aliases exactly thirteen properties onto token roles').toBe(
-    ALIASED_COUNT
-  );
-  expect(
-    [...HUB.keys()].filter((name) => aliasRole(name) === null).sort(),
-    'the property the alias layer must not move is not the one still authored as a literal'
-  ).toEqual([...LITERAL_PROPERTIES].sort());
-  for (const name of ALIASES) {
-    expect(
-      [...CONTRACT.keys()],
-      `${name} is aliased onto ${aliasRole(name)}, which contracts/tokens.css does not declare`
-    ).toContain(aliasRole(name));
+  for (const name of CONTRACT_REDUCED.keys()) {
+    expect([...CONTRACT.keys()], `${name} is redefined under reduced motion but never declared`).toContain(name);
   }
-
-  // **The stylesheets on disk, read whole**, which is what makes each zero below a measurement of the
-  // tree rather than of a table. Non-empty and carrying the two files Story 2-33 took the last call
-  // sites out of, rather than pinned at a literal count of stylesheets under `components/`, which
-  // would have to move for any unrelated component added. A basename collision, which is what would
-  // actually drop call sites out of these counts, is refused where the map is built.
-  expect(COMPONENT_STYLESHEETS.size, 'no component stylesheet was read, so the counts below are vacuous').toBeGreaterThan(
-    0
-  );
-  for (const named of ['WorkHero.scss', 'WorkTimeline.scss']) {
-    expect([...COMPONENT_STYLESHEETS.keys()], `${named} was not read off disk`).toContain(named);
-  }
-
-  // The counter, on planted controls, before any agreement is read as good news. Two occurrences
-  // in one fixture, a bounded name that does not match a longer one, a whitespace form, and the
-  // fallback form, which reads the property exactly as the bare form does.
-  const control = new Map([
-    ['a.scss', '.x { border-left: 1px solid var(--accent-dim); background: var( --accent-dim ); }'],
-    ['b.scss', '.y { color: var(--accent); border: 1px solid var(--accent-dimmer); }'],
-    ['c.scss', '.z { background: var(--accent-dim, #fff); }'],
-  ]);
-  expect([...callSitesOf('--accent-dim', control)], 'the call-site counter no longer fires').toEqual([
-    ['a.scss', 2],
-    ['c.scss', 1],
-  ]);
-  expect([...callSitesOf('--monument-bold', control)], 'the counter matches a name it should not').toEqual([]);
-
-  // **Zero call sites since 2026-09-23, both of them.** Story 2-33 rebuilt `WorkHero.scss`, whose
-  // section divider and heading were the last `--accent-dim` and `--monument-bold` call sites (see
-  // the note where the two tables were). Pinned at zero rather than deleted, in the shape the two
-  // below have: a new `--accent-dim` call site would take the `:root` ornament role whatever its use,
-  // and a new `--monument-bold` one would lose the weight that lived in the family name.
-  expect(
-    sortedEntries(callSitesOf('--accent-dim')),
-    'an --accent-dim call site is back, and it takes the :root ornament role whatever its use earns'
-  ).toEqual([]);
-  expect(
-    sortedEntries(callSitesOf('--monument-bold')),
-    'a --monument-bold call site is back, and a family alias drops the weight that lived in the name'
-  ).toEqual([]);
-
-  // **Zero call sites since 2026-09-23**, the shape `--confillia-normal` below has had since Story
-  // 2-29: Story 2-30 deleted `error-page.scss`, whose heading was the last call site, and the clamp
-  // case that protected the alias's call sites left with it (see the note where the table was).
-  // Pinned at zero rather than deleted, because a new call site would rely on a clamp nothing checks.
-  expect(
-    sortedEntries(callSitesOf('--monument-regular')),
-    'a --monument-regular call site is back, and nothing checks the clamp it relies on any more'
-  ).toEqual([]);
-
-  // **Zero call sites since 2026-09-21**, the shape `--hero-height` has had since Story 1-18: a
-  // property the alias layer still declares with nothing left reading it. Story 2-20 retargeted
-  // `--confillia-normal` onto the display family and each of its two call sites set
-  // `font-stretch: 75%` by hand on the line after `font-family`, because a family alias cannot
-  // carry width any more than it can carry weight; Story 2-29 rebuilt `HomeLayout.scss` against the
-  // contract, so the two hero link groups name the display family directly and take the published
-  // face at its default width. Pinned at zero rather than deleted, because a new call site would
-  // arrive without that hand-set width and nothing else would say so.
-  expect(
-    sortedEntries(callSitesOf('--confillia-normal')),
-    'a --confillia-normal call site is back, and a family alias carries no width'
-  ).toEqual([]);
+  expect(ROOT_ALLOWED.length, 'the allowed root set is not the contract and the Hub one').toBe(DECLARED_COUNT + HUB_PROPERTY_COUNT);
 
   // The parsers, on planted controls, before any empty or agreeing result is read as good news.
-  expect(aliasRole('--white-color'), '--white-color is no longer aliased onto a role').toBe('--token-text');
   expect(IS_VAR_REFERENCE.test('var(--token-bg)')).toBe(true);
   expect(IS_VAR_REFERENCE.test('rgba(139, 92, 246, 0.4)')).toBe(false);
   expect(IS_VAR_REFERENCE.test('var(--token-bg) 1px')).toBe(false);
-  expect(normaliseQuotes("'Confillia'")).toBe('"Confillia"');
   expect([...declarationsIn('  --a: 1px; --b: var(--c);').entries()]).toEqual([
     ['--a', '1px'],
     ['--b', 'var(--c)'],
   ]);
   expect([...declarationsIn('.btn--primary:hover { color: red; }').keys()]).toEqual([]);
-});
 
-test('every aliased Hub property resolves to exactly the token role it names', async ({ page }) => {
-  await goTo(page, '/');
-
-  // Both sides are custom property token streams read on `:root` in the same page, so this
-  // comparison is exact rather than canonicalised. A role read in a different page, or a value
-  // restated here as a literal, would compare against a build rewrite rather than against the
-  // contract.
-  const drift: string[] = [];
-  let compared = 0;
-  for (const name of ALIASES) {
-    const role = aliasRole(name) ?? '';
-    const aliased = await rootCustomPropertyValue(page, name);
-    const direct = await rootCustomPropertyValue(page, role);
-    compared += 1;
-    if (aliased !== direct) drift.push(`${name} aliases ${role}: read "${aliased}", ${role} reads "${direct}"`);
+  // The build read, on planted directories: an absent one and one holding no stylesheet both throw
+  // naming the directory, so the root read below can never pass over nothing.
+  const empty = mkdtempSync(join(tmpdir(), 'alias-deletion-'));
+  try {
+    expect(() => builtStylesheets(join(empty, 'absent'))).toThrow(/is not there/);
+    expect(() => builtStylesheets(empty)).toThrow(/holds no \.css file/);
+  } finally {
+    rmSync(empty, { recursive: true, force: true });
   }
-
-  expect(compared, 'no alias was compared').toBe(ALIASED_COUNT);
-  expect(drift, `an alias no longer resolves to the role it names:\n${drift.join('\n')}`).toEqual([]);
-
-  // The comparison, on a planted control through the same two reads. An equality that held for
-  // every pair would look identical to one that could not tell two roles apart.
-  expect(
-    await rootCustomPropertyValue(page, '--white-color'),
-    '--white-color and --token-bg resolve to the same value, so the comparison above discriminates nothing'
-  ).not.toBe(await rootCustomPropertyValue(page, '--token-bg'));
 });
 
-test('the property the alias layer must not move still holds its authored literal', async ({ page }) => {
+test(':root in the compiled stylesheet carries only the contract’s properties and --hero-height', async ({ page }) => {
+  // Story 2-22's second criterion, read off the build. A page is needed for its parser and its root
+  // element; which route does not matter, because every stylesheet is read whether this route links it
+  // or not, a chunk only another route or a dynamic boundary loads included.
   await goTo(page, '/');
 
-  expect(LITERAL_PROPERTIES.length, 'the list of untouched properties is empty').toBe(LITERAL_COUNT);
-
-  // Two comparison routes, because a literal may be a colour and the build rewrites colours on the
-  // way to the browser. The colour route read `--accent-glow`, authored `rgba(139, 92, 246, 0.4)` and
-  // arriving as `#8b5cf666`, until Story 2-34 deleted it; it stays, with its planted controls below,
-  // because the body-ground case reads through the same `rasterise`. The text route read the two
-  // single-quoted Confillia literals until Story 2-20 retargeted one and deleted the other; it
-  // reads `--hero-height` now, and stays because a literal that is not a colour still needs a
-  // route that compares it.
-  const isColour = await page.evaluate(
-    (values: string[]) => values.map((value) => CSS.supports('color', value)),
-    LITERAL_PROPERTIES.map((name) => HUB.get(name) ?? '')
-  );
-  expect(isColour.filter(Boolean).length, 'a literal the alias layer keeps is a colour again, which the FR-17 gate refuses').toBe(
-    LITERAL_COLOUR_COUNT
-  );
-  expect(isColour.filter((taken) => !taken).length, 'the text route is no longer exercised').toBe(
-    LITERAL_COUNT - LITERAL_COLOUR_COUNT
+  const built = builtStylesheets();
+  const { found, unread } = await rootDeclarations(page, built);
+  expect(unread, `a built rule could not be read, so the root set below may be missing it:\n${unread.join('\n')}`).toEqual(
+    []
   );
 
+  const names = [...new Set(found.map((entry) => entry.name))].sort();
+  const extra = found
+    .filter((entry) => !ROOT_ALLOWED.includes(entry.name))
+    .map((entry) => `${entry.sheet}: "${entry.selector}" declares ${entry.name}`);
+  const missing = ROOT_ALLOWED.filter((name) => !names.includes(name));
+
+  console.log(
+    `alias deletion: ${built.length} built stylesheets read, ${found.length} root declarations, ` +
+      `${names.length} distinct names, in ${[...new Set(found.map((entry) => entry.sheet))].join(', ')}`
+  );
+
+  expect(
+    extra,
+    `the compiled stylesheet puts a custom property on :root that is neither the contract's nor ` +
+      `--hero-height:\n${extra.join('\n')}`
+  ).toEqual([]);
+  expect(missing, `a name the contract or the Hub declares never reaches :root in the build:\n${missing.join('\n')}`).toEqual(
+    []
+  );
+
+  // The Hub's own arrives once, on `:root` itself, which is what `app/app.scss` authors.
+  expect(
+    found.filter((entry) => entry.name === '--hero-height').map((entry) => entry.selector),
+    '--hero-height is not declared exactly once, on :root, in the build'
+  ).toEqual([':root']);
+
+  // The walk, on planted controls through the same function and the same parser: a plain root rule,
+  // one inside a grouping rule, the root element by its type selector, a root state the page is not in
+  // and a root condition this page does not meet are each collected; a rule on another element, one that
+  // excludes the root, one on a descendant of it and a standard property are not; a nested style rule
+  // and an `@import` are reported as unread rather than skipped.
+  const planted = await rootDeclarations(page, [
+    {
+      name: 'planted.css',
+      text:
+        ':root{--planted-root:1px;color:red}' +
+        '@supports (display:grid){@media (min-width:1px){:root{--planted-group:1px}}}' +
+        'html{--planted-html:1px}' +
+        ':root:hover{--planted-state:1px}' +
+        'html:has(.a-class-this-page-does-not-render){--planted-has:1px}' +
+        'body{--planted-body:1px}' +
+        '.x{--planted-class:1px}' +
+        '*:not(:root){--planted-not-root:1px}' +
+        'html body{--planted-descendant:1px}',
+    },
+    { name: 'nested.css', text: '.y{color:red;& .z{--planted-nested:1px}}' },
+    { name: 'import.css', text: '@import url(elsewhere.css);:root{--planted-imported:1px}' },
+  ]);
+  expect(planted.found.map((entry) => entry.name).sort(), 'the root walk no longer collects what it should').toEqual([
+    '--planted-group',
+    '--planted-has',
+    '--planted-html',
+    '--planted-imported',
+    '--planted-root',
+    '--planted-state',
+  ]);
+  expect(planted.unread, 'a rule the walk cannot read was skipped rather than reported').toEqual([
+    'nested.css: ".y" nests 1 rule(s)',
+    'import.css: carries an @import, which a constructed stylesheet does not follow',
+  ]);
+
+  // And the comparison, on a planted root set: a name outside the allowed set is extra, and a contract
+  // name the build never carried is missing.
+  expect(['--token-bg', '--planted-root'].filter((name) => !ROOT_ALLOWED.includes(name))).toEqual(['--planted-root']);
+  expect(ROOT_ALLOWED.filter((name) => !['--hero-height'].includes(name)).length).toBe(DECLARED_COUNT);
+});
+
+test('the one property the Hub keeps still holds its authored literal', async ({ page }) => {
+  await goTo(page, '/');
+
+  expect(LITERAL_PROPERTIES.length, 'the list of kept properties is empty').toBe(LITERAL_COUNT);
+
+  // **One route, text.** Until Story 2-22 this case carried a second, colour route through the canvas,
+  // for a literal the build rewrites on the way to the browser; the one colour literal it read left with
+  // Story 2-34, and the FR-17 gate refuses a colour literal here, so no literal can take that route and
+  // it went with the layer. A custom property's computed value is its token stream, so the authored
+  // `40vh` is what `:root` answers.
   const drift: string[] = [];
-  for (const [index, name] of LITERAL_PROPERTIES.entries()) {
+  for (const name of LITERAL_PROPERTIES) {
     const authored = HUB.get(name) ?? '';
     expect(authored, `app/app.scss no longer declares ${name}`).not.toBe('');
     expect(
@@ -519,66 +480,12 @@ test('the property the alias layer must not move still holds its authored litera
     ).toBe(false);
 
     const read = await rootCustomPropertyValue(page, name);
-    if (isColour[index]) {
-      const [expected, actual] = await rasterise(page, [authored, read]);
-      expect(expected, `the canvas could not parse the authored value of ${name}`).not.toMatch(/^unparsed-by-canvas:/);
-      if (expected !== actual) drift.push(`${name}: app/app.scss authors "${authored}" (${expected}), read "${read}" (${actual})`);
-    } else if (normaliseQuotes(authored) !== read) {
-      drift.push(`${name}: app/app.scss authors "${authored}", expected "${normaliseQuotes(authored)}", read "${read}"`);
-    }
+    if (authored !== read) drift.push(`${name}: app/app.scss authors "${authored}", :root reads "${read}"`);
   }
-  expect(drift, `a property this story must not move has drifted:\n${drift.join('\n')}`).toEqual([]);
-
-  // The colour route, on planted controls through the same helper: two spellings of one colour
-  // compare equal, a different alpha compares unequal, and a different hue compares unequal.
-  //
-  // **The resolution is coarser than 1/255 once alpha is involved**, and that is recorded rather
-  // than papered over. The canvas stores premultiplied and `getImageData` unpremultiplies, so at
-  // alpha 0.4 a channel round-trips through a step of about 1/0.4, and `#8b5cf666` and
-  // `#8c5cf666` both read back as `140,92,245,102`. A rewrite that shifted a channel by one
-  // 8-bit step under alpha would pass here. That is a real ceiling on this route, and it is the
-  // same shape of ceiling `ops/anchor-token-adoption.md` records for the opaque colour route.
-  const [equivalentA, equivalentB, otherAlpha, otherHue] = await rasterise(page, [
-    'rgba(139, 92, 246, 0.4)',
-    '#8b5cf666',
-    '#8b5cf6ff',
-    '#5b21b666',
-  ]);
-  expect(equivalentA, 'the colour route no longer treats two spellings of one colour as equal').toBe(equivalentB);
-  expect(equivalentA, 'the colour route no longer separates two alphas').not.toBe(otherAlpha);
-  expect(equivalentA, 'the colour route no longer separates two hues').not.toBe(otherHue);
-  const [refused] = await rasterise(page, ['not-a-colour-at-all']);
-  expect(refused, 'the canvas guard no longer reports a value it could not parse').toBe(
-    'unparsed-by-canvas:not-a-colour-at-all'
-  );
+  expect(drift, `the property the Hub keeps has drifted:\n${drift.join('\n')}`).toEqual([]);
 });
 
-// **The per-call-site case left on 2026-09-23 with the last row it read.** It read each `--accent-dim`
-// call site on its real element against the ornament or boundary role, through a probe in the same
-// page, on every route the table named. Story 2-33 rebuilt `WorkHero.scss`, whose divider was the one
-// row left, and the alias is pinned at zero call sites in the first case of this file.
-//
-// **The pseudo-element read's planted control left on 2026-09-23 with the helper it proved**, when
-// Story 2-31 rebuilt the last stylesheet that declared an `--accent-dim` call site on `::before`. See
-// the note above `rasterise`.
-
-// **The weight case left on 2026-09-23 with the last `--monument-bold` call site.** It read each site's
-// computed family and weight, in that order and after Story 1-18 had set the weight by hand, because a
-// family alias drops the bold that lived in `MonumentExtended-Bold` and a weight read against a tree
-// where it was never set is green and meaningless. Story 2-33 rebuilt `WorkHero.scss`, whose heading
-// names the display family and the heaviest weight by their roles, and `tests/e2e/work-hero.pw.ts`
-// reads that heading's computed face and weight now.
-
-// **The clamp case left on 2026-09-23 with the last call site it protected.** It asserted that the
-// display face publishes a weight range whose lower bound sits above what the `--monument-regular`
-// call sites request, which is what made them bold without a hand-set weight. Story 2-30 deleted
-// `error-page.scss` and the last of them with it, and a precondition over no call site passes
-// whatever `contracts/fonts.css` publishes, so the case and its range parser went, and the alias is
-// pinned at zero call sites in the first case of this file. See the note where the table was.
-
-test('the body ground and body copy where the base rule paints are the token roles, and neither is pure', async ({
-  page,
-}) => {
+test('the base rule paints the ground, copy, family and weight it names, and neither colour is pure', async ({ page }) => {
   // **The 404, and it stopped being the only choice on 2026-09-10.** Story 1-17 concluded from the
   // stylesheets that `/cv` and `/recommendation` were the two routes where the base `body` rule
   // paints, and said so while recording that it had not rendered them
@@ -595,20 +502,24 @@ test('the body ground and body copy where the base rule paints are the token rol
   //
   // `Container.tsx` sets `<body id={route}>` from the stripped, hyphenated pathname, and an
   // unrouted path's id matches none of `body[id='']` (`HomeLayout.scss`) or `#celeste`
-  // (`celeste.scss`), so nothing overrides `background: var(--black-color)` there. It matched none
-  // of `body#work` either, in `app/app.scss` with `body#projects` beside it until Story 2-14, until
-  // Story 2-33 deleted that rule on 2026-09-23 and `/work` took the base rule as well.
-  // `error-page.scss:7` painted its own `#0a000f` on the error container, not on `body`, until Story
-  // 2-30 replaced the file on 2026-09-23 with `Error404.scss`, which paints no ground at all: this
-  // base rule is the ground a visitor sees on the 404 now, as `tests/e2e/error-surface.pw.ts` samples.
+  // (`celeste.scss`), so nothing overrides the base rule there. It matched none of `body#work`
+  // either, until Story 2-33 deleted that rule on 2026-09-23 and `/work` took the base rule as well.
+  // `Error404.scss` paints no ground at all, so this base rule is the ground a visitor sees on the 404,
+  // as `tests/e2e/error-surface.pw.ts` samples.
+  //
+  // **Story 2-22 repointed the rule** from the three aliases it read to the roles they resolved to,
+  // and named the regular weight `DESIGN.md` § The mapping gives the body family, which the initial
+  // 400 had supplied until then. The family and the weight are read here for the first time, because
+  // until that story the family came through an alias the per-alias case already compared and the
+  // weight came from no rule at all.
   await goTo(page, NOT_FOUND, 404);
 
   // The guard, saying what it actually covers. The three rules that overrode the base ground on
   // the other routes all painted a grid **image** as well as a colour, so an image on `body` here
   // meant one of them had started matching the 404's id; none is left since Story 2-33, and an image
-  // here now means a new one arrived. It does not cover a colour-only override,
-  // which is why it is not the assertion this case rests on: the comparison against `--token-bg`
-  // below is, and a colour-only override fails there naming both values.
+  // here now means a new one arrived. It does not cover a colour-only override, which is why it is
+  // not the assertion this case rests on: the comparison against `--token-bg` below is, and a
+  // colour-only override fails there naming both values.
   expect(
     await computedStyleValue(page, 'body', 'background-image'),
     'body on the 404 surface paints a background image, so one of the grid-ground rules now matches ' +
@@ -624,7 +535,19 @@ test('the body ground and body copy where the base rule paints are the token rol
   expect(background, 'the body ground where the base rule paints is not --token-bg').toBe(roles['--token-bg']);
   expect(colour, 'body copy where the base rule paints is not --token-text').toBe(roles['--token-text']);
 
-  // And neither is pure, compared as pixels rather than as strings, because a colour can be
+  // The family and the weight, each against a probe declared with the role in the same page, and the
+  // probe itself against a control declared with something else, so an equality cannot come from a
+  // probe that ignored its declaration and inherited the body's.
+  const type = await probeType(page, 'var(--f-body)', 'var(--w-regular)');
+  const control = await probeType(page, 'var(--f-display)', 'var(--w-black)');
+  expect(type.family, 'the body family role reads the same stack as the display role, so it discriminates nothing').not.toBe(
+    control.family
+  );
+  expect(type.weight, 'the regular weight role reads the same number as the black one').not.toBe(control.weight);
+  expect(await computedStyleValue(page, 'body', 'font-family'), 'the body family is not --f-body').toBe(type.family);
+  expect(await computedStyleValue(page, 'body', 'font-weight'), 'the body weight is not --w-regular').toBe(type.weight);
+
+  // And neither colour is pure, compared as pixels rather than as strings, because a colour can be
   // written several ways and the build writes it in one of them.
   const [groundPixel, copyPixel, blackPixel, whitePixel] = await rasterise(page, [
     background,
@@ -634,6 +557,10 @@ test('the body ground and body copy where the base rule paints are the token rol
   ]);
   expect(blackPixel, 'the raster control for pure black no longer holds').toBe(PURE_BLACK);
   expect(whitePixel, 'the raster control for pure white no longer holds').toBe(PURE_WHITE);
+  const [refused] = await rasterise(page, ['not-a-colour-at-all']);
+  expect(refused, 'the canvas guard no longer reports a value it could not parse').toBe(
+    'unparsed-by-canvas:not-a-colour-at-all'
+  );
   expect(groundPixel, 'the body ground is pure black, which the contract retires').not.toBe(PURE_BLACK);
   expect(copyPixel, 'body copy is pure white, which the contract retires').not.toBe(PURE_WHITE);
 });
@@ -646,7 +573,7 @@ test('every route the Hub serves still answers 2xx', async ({ page }) => {
   // download rather than a navigation and `page.goto` rejected with "Download is starting". The
   // request context follows a redirect and reports the status the visitor ends on, which is what
   // NFR-2 is about. Whether anything redirects is pinned below rather than absorbed, because a
-  // redirect is the fact that moved this story's body-ground read onto the 404 surface. **`/cv`
+  // redirect is the fact that moved this file's body-ground read onto the 404 surface. **`/cv`
   // redirected until 2026-09-10**, when Story 2-16 built the page behind it, and `/recommendation`
   // until Story 2-17 retired the route; the method is unchanged and only the set moved, to empty.
   const failures: string[] = [];

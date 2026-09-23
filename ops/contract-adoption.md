@@ -60,7 +60,7 @@ every Satellite the adopted version is the header of its vendored copy and nothi
 
 | Application | Consumption route | File read | Header read | Adopted version | Nature and method |
 |---|---|---|---|---|---|
-| `cuatro-portfolio` | The publisher. `app/scss/_index.scss` `@use`s `contracts/tokens.css` and `contracts/fonts.css` in place (Story 1-17) and the alias layer in `app/app.scss` reads the roles (Story 1-18). No vendored copy exists, by rule (AD-1, AD-4) | `contracts/tokens.css` | `Contract v1.0.0` | 1.0.0 | **Observed 2026-08-27** by reading `contracts/tokens.css:2` at `b1ab824`. `app/__tests__/anchor-contract.test.ts` asserts there is no second authored copy |
+| `cuatro-portfolio` | The publisher. `app/scss/_index.scss` `@use`s `contracts/tokens.css` and `contracts/fonts.css` in place (Story 1-17) and the alias layer in `app/app.scss` read the roles (Story 1-18) until Story 2-22 deleted it on 2026-09-23; the stylesheets name them directly since. No vendored copy exists, by rule (AD-1, AD-4) | `contracts/tokens.css` | `Contract v1.0.0` | 1.0.0 | **Observed 2026-08-27** by reading `contracts/tokens.css:2` at `b1ab824`. `app/__tests__/anchor-contract.test.ts` asserts there is no second authored copy |
 | `cs-tracker` | Vendored `contracts/` verbatim as `assets/css/cuatro-contracts/`, nine files, and imports its `tailwind.css` from `assets/css/app.css` (Story 1-19, AD-15 route A) | `assets/css/cuatro-contracts/tokens.css` | `Contract v1.0.0` | 1.0.0 | **Observed 2026-08-27** by `git -C cs-tracker show 8adb8e2:assets/css/cuatro-contracts/tokens.css`, line 2, never restated from memory. Asserted by `test/cs_tracker_web/token_contract_test.exs:342`. The nine sha256 values are in `ops/cs-tracker-token-adoption.md:47-57` |
 | `cuatro-finance` | none | none | none | not adopted | **Observed 2026-08-27** by `gh api repos/LuigiEspinosa/cuatro-finance/git/trees/main?recursive=1`: the default branch holds one blob, `LICENSE`. A `dev` branch exists and was not inspected |
 | `cuatro-tracker` | none | none | none | not adopted | **Observed 2026-08-27** by the same call: 400 blobs, none under a `cuatro-contracts` path |
@@ -380,8 +380,9 @@ build, so the served surface moves with the merge. Confirm with
 Append a row to the ledger below: the date, the version moved from and to, the adopter, and the
 pointer to the work item opened in the adopter's own tracker. For a MAJOR the row also names the
 deprecated names and the version they are removed in. Today the adopters are `cs-tracker` and the
-Anchor itself; the Anchor's notification is the same commit as step 1, because the alias layer in
-`app/app.scss` reads the roles in place and a MAJOR changes it there. **The row has a pin**,
+Anchor itself; the Anchor's notification is the same commit as step 1, because the Hub's stylesheets
+read the roles in place (through the alias layer in `app/app.scss` until Story 2-22 deleted it) and a
+MAJOR changes them there. **The row has a pin**,
 **Observed** in the rehearsal: `ops/__tests__/contract-adoption.test.ts` holds the count line equal
 to the number of rows and pins the count literally (`0 today`), so an event is the row, the count
 line and that literal, in one change. Before editing any pin in either repository, confirm

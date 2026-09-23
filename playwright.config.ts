@@ -8,7 +8,7 @@ import { RENDERED_VIEWPORT } from './tests/e2e/harness';
  * the device scale factor and the motion preference. The CI job runs inside
  * `mcr.microsoft.com/playwright:v1.62.1-noble` and the committed baseline PNG is generated
  * inside that same image, because glyph rasterization is not portable across platforms and
- * `--font-mono` falls back to a different face on Linux than on Windows.
+ * the 2023 monospace stack fell back to a different face on Linux than on Windows.
  *
  * See `ops/rendered-output-harness.md` for the tolerance and its reasoning.
  */

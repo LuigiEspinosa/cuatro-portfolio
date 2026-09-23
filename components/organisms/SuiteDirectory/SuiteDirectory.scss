@@ -1,15 +1,15 @@
 // The Suite Directory (Story 2-9).
 //
-// **The first token-native stylesheet in the Hub.** Every other component file still reads the
-// Epic 1 aliases (`--white-color`, `--accent-dim`, `--monument-bold`), which `app/app.scss` maps
-// onto contract roles one file at a time. This one names the roles directly, because it is new
-// rather than migrated and there is no old name for it to keep. `app/__tests__/anchor-contract.test.ts`
-// carries the list of files allowed to do that, and `app/app.scss:18-60` stays where it is:
-// deleting the alias layer is Story 2-22.
+// **The first token-native stylesheet in the Hub.** When it was written every other component file
+// still read the Epic 1 aliases, which `app/app.scss` mapped onto contract roles. This one named the
+// roles directly, because it was new rather than migrated and had no old name to keep, and every
+// rebuild since has done the same, which is why Story 2-22 could delete the aliases.
+// `app/__tests__/anchor-contract.test.ts` carries the list of files that name contract roles.
 //
-// **It declares no custom property of its own.** All sixteen of the Hub's live in `app/app.scss`,
-// which is what makes the collision argument against the contract's eighty-nine checkable in one
-// place. A `--name:` here would break that, and it is asserted rather than remembered.
+// **It declares no custom property of its own.** The Hub's own live in `app/app.scss`, one since
+// Story 2-22, which is what makes the collision argument against the contract's eighty-nine
+// checkable in one place. A `--name:` here would break that, and it is asserted rather than
+// remembered.
 //
 // The row geometry below is transcribed from `RESTYLE-SPEC.md:238-274`, not designed here. Three
 // implementations across the estate diverging on this grid is most of what that file exists to

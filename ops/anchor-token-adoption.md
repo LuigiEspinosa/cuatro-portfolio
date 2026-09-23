@@ -782,10 +782,10 @@ family the contract is free to retune under a MINOR bump. Nothing else in that f
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
 | 5 | **Look at `cuatro.dev` after the merge to `main` and confirm the new appearance is the intended one** | Operator | This is the commit the whole two-step split exists to make reviewable, and it is the one worth a careful visual check. A deploy fires only on a push to `main` and this work is committed on `dev`, so nothing here has been rendered by the deployed container, behind Caddy, behind Cloudflare. The regenerated baseline and the 49,381 differing pixels are the machine's half of the answer; a person looking at the site is the other half. **If something is wrong, the revert is the whole commit**, by `git revert`. An earlier version of this row said it was `app/app.scss` plus the four `font-weight` lines plus the baseline PNG "and nothing else", which is **wrong and would revert red**: three test files in the same commit assert the alias layer exists, so reverting only the sources leaves `app/__tests__/anchor-contract.test.ts`, `tests/e2e/anchor-aliases.pw.ts` and `tests/e2e/contract-anchor.pw.ts` demanding it. Story 1-17's revert really is two lines, which is what the two-step split bought; Story 1-18's is one commit, which is the smallest unit that leaves a working system | _not done_ |
-| 6 | **Decide whether `--gray-color` may keep carrying text at 3.54:1** | Operator | It maps to `--token-border-interactive`, which is a boundary role, and `error-page.scss:48`, `ProjectCard.scss:50`, `:79`, `WorkItem.scss:71` and `:116` use it for body copy and icons (none of them is left since 2026-09-23: `ProjectCard.scss` was deleted by Story 2-9, `WorkItem.scss` rebuilt by Story 2-31 and `error-page.scss` replaced by Story 2-30, and the two rebuilt surfaces set that text in `--token-text-secondary`). That is below 4.5:1 both before and after this story, so it is inherited rather than caused here, and UX-DR10 and the Epic 2 rebuild are where a text role replaces it. Recorded so the number is not rediscovered as a surprise | _not done_ |
+| 6 | **Decide whether `--gray-color` may keep carrying text at 3.54:1** | Operator | It maps to `--token-border-interactive`, which is a boundary role, and `error-page.scss:48`, `ProjectCard.scss:50`, `:79`, `WorkItem.scss:71` and `:116` use it for body copy and icons (none of them is left since 2026-09-23: `ProjectCard.scss` was deleted by Story 2-9, `WorkItem.scss` rebuilt by Story 2-31 and `error-page.scss` replaced by Story 2-30, and the two rebuilt surfaces set that text in `--token-text-secondary`). That is below 4.5:1 both before and after this story, so it is inherited rather than caused here, and UX-DR10 and the Epic 2 rebuild are where a text role replaces it. Recorded so the number is not rediscovered as a surprise | 2026-09-23, moot, by Story 2-22: `--gray-color` is deleted and no call site was left to carry text, the rebuilt surfaces setting it in `--token-text-secondary`. No ruling was taken or needed. See § Story 2-22 deletes the alias layer |
 | 7 | **Close or carry O-11 explicitly** | Operator | `--accent-glow` survives this story on the strength of `epics.md:1835` against two planning documents that both say to delete it at step 2. It has zero call sites, so nothing renders differently either way, and the cost of the disagreement is one dead declaration and this row | 2026-09-23, by Story 2-34: `--accent-glow` deleted on `DESIGN.md` § The mapping's closure of O-11, because the FR-17 conformance gate refuses its `rgba()`. See § Story 2-34 closes O-11, action 7 and the `/celeste` ground rows |
 | 8 | **Record the first real CI run of the `rendered-output` job with the new spec and the new baseline**, from the Actions run summary | Operator | The nine new browser checks and the regenerated baseline have only ever run in a container on a Windows development host. Same open item as action 3, which is in this file's § "Pending Operator actions", the step 1 list, which sits below this section rather than above it, and `ops/rendered-output-harness.md` action 1 | _not done_ |
-| 9 | **Decide who fixes the tech chip label at 2.56:1**, and whether it waits for UX-DR10 | Operator | Unlike action 6, this one is **caused by this commit** rather than inherited: `--accent-dim` lost its `0.22` alpha to two opaque roles, so the label at `ProjectCard.scss:66` and `WorkItem.scss:144` fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor. The measurement and its method are in § "The contrast direction of each colour change". No fix was available inside this story: the mapping is to be followed rather than invented, and a third scoped value or a label colour means inventing one or editing a component stylesheet. The cheapest real fix is a chip fill of `--token-bg-raised` with the border keeping `--accent-dim`, which is a UX-DR10 shaped decision and not this step's to take. It is also below the `.lighthouserc.js` floor on `/work`, which that config asserts at 0.95 severity error, so a Lighthouse run is where it surfaces next. **Narrowed 2026-09-07**: the surviving chip is `WorkItem.scss:144` alone and `/projects` left the collect list with the route, so `/work` is the only audited surface the pair reaches | _not done_ |
+| 9 | **Decide who fixes the tech chip label at 2.56:1**, and whether it waits for UX-DR10 | Operator | Unlike action 6, this one is **caused by this commit** rather than inherited: `--accent-dim` lost its `0.22` alpha to two opaque roles, so the label at `ProjectCard.scss:66` and `WorkItem.scss:144` fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor. The measurement and its method are in § "The contrast direction of each colour change". No fix was available inside this story: the mapping is to be followed rather than invented, and a third scoped value or a label colour means inventing one or editing a component stylesheet. The cheapest real fix is a chip fill of `--token-bg-raised` with the border keeping `--accent-dim`, which is a UX-DR10 shaped decision and not this step's to take. It is also below the `.lighthouserc.js` floor on `/work`, which that config asserts at 0.95 severity error, so a Lighthouse run is where it surfaces next. **Narrowed 2026-09-07**: the surviving chip is `WorkItem.scss:144` alone and `/projects` left the collect list with the route, so `/work` is the only audited surface the pair reaches | 2026-09-23, moot, by Story 2-22: the filled chip left disk with Story 2-31's rebuild of `WorkItem.scss` and `--accent-dim` left with this story, so no label sits on that fill. No ruling was taken or needed. See § Story 2-22 deletes the alias layer |
 
 ### Step 5, the type swap, closes six rows across four of the sections above
 
@@ -894,6 +894,61 @@ where it read `#fff`, `system-ui` and `min(8vw, 5rem)`. `tests/e2e/celeste-heade
 against its role in the pinned image, with a planted `#444` ground and a planted family reported by
 the same reads, and `app/__tests__/anchor-contract.test.ts` lists `celeste.scss` among the stylesheets
 that name contract roles directly.
+
+### Story 2-22 deletes the alias layer, migration step 7
+
+**2026-09-23, Story 2-22.** Every record above is left as written but two completion cells; this
+section says which of step 2's sections stopped being true on this date. Story 2-33 rebuilt the last
+component stylesheet that read an alias, which is FR-37's removal condition, and this story deleted the
+thirteen from `app/app.scss`: `--white-color`, `--black-color`, `--light-gray-color`, `--gray-color`,
+`--accent`, `--accent-dim`, `--page-padding`, `--font-regular`, `--font-bold`, `--monument-regular`,
+`--monument-bold`, `--confillia-normal` and `--font-mono`. `epics.md` names ten of them; the other
+three, the two accent rows this record's step 2 wrote and the width alias Story 2-20 added, go by the
+story's second criterion, which admits nothing on `:root` beyond the contract and `--hero-height`.
+`--hero-height` is the Hub's one custom property, authored `40vh`. It has had no call site since at
+least this record's count of 2026-08-26, and it stays because that criterion names it (DW-122).
+
+**§ The mapping as applied: no row is live.** The base `body` rule was the layer's last reader, and it
+names the roles its three aliases resolved to, `--token-bg`, `--f-body` and `--token-text`, plus
+`--w-regular`, the weight `DESIGN.md` § The mapping gives the body family, which the initial 400 had
+supplied until now and which that role equals. No computed value moved: the rendered comparison ran
+against the `/work` baseline Story 2-33 captured after the last redesign and did not regenerate it
+(`ops/rendered-output-harness.md` § Regenerating the baseline). § `--accent-dim` per call site and
+§ The four hand-set weights are history: neither has had a call site since Story 2-33, and the scoped
+redefinitions left with Story 2-30.
+
+**§ What is asserted, and by which gate: all four rows replaced.** Source half, the blocking `test` job,
+`app/__tests__/anchor-contract.test.ts`: `app/app.scss` declares `--hero-height` alone on `:root` and no
+custom property on any other selector, and names exactly the eight roles of its base and focus rules;
+no file git tracks or would track names any of the thirteen, read as raw text with comments, Markdown
+and `_bmad-output/` excluded as the dated record and the suite itself as the list's holder, and
+Tailwind's own `--font-mono` theme key in its three adapter files the one allowance, claimed back; and
+the committed `/work` baseline is the capture the harness record names, on the Story 2-33 row or a later
+one. Browser half, the blocking `rendered-output` job: `tests/e2e/anchor-aliases.pw.ts` parses every
+stylesheet the build writes with the browser's own parser and holds what reaches `:root` to the
+contract's properties plus `--hero-height`, reads the kept literal, and reads the base rule's ground,
+copy, family and weight on the 404; `tests/e2e/contract-anchor.pw.ts` reads `/work`'s body against the
+two colour roles; `tests/e2e/type-swap.pw.ts` measures the weight distinction on `--f-display` where it
+measured the two display aliases. Planted controls show each claim firing.
+
+**§ What would invalidate the step 2 record: every row names the layer, and none can fire now.** Its
+successors:
+
+| If this changes | This record is wrong until it is re-read |
+|---|---|
+| A stylesheet, spec, config, workflow or comment names one of the thirteen again | The unit search fails naming the path and the name. A new name standing in for a role is not caught by name; a build that puts one on `:root` is caught by the row below, and one declared elsewhere is a declaration the collision case refuses outside `app/app.scss` |
+| The build puts a custom property on a rule reaching `:root` that is neither the contract's nor `--hero-height` | `tests/e2e/anchor-aliases.pw.ts` fails naming the chunk, the selector and the name |
+| The contract gains, loses or renames a `:root` name | Both counts of eighty-nine fail as before, and the root read reports the name missing or extra |
+| `/work`'s baseline is regenerated without its row, or an earlier capture is put back | The baseline pin fails naming both values |
+
+**§ Pending Operator actions, step 2: actions 6 and 9 have no subject left**, and their completion cells
+say so. Neither was performed and no ruling was taken: the property action 6 asked about is deleted with
+no call site left, and the chip label action 9 asked about left disk with Story 2-31's rebuild before its
+fill's alias left with this story.
+
+**DW-81 is closed.** The stale counts it filed sat in the alias layer's comment, which left with the
+layer, and in the convention line of `AGENTS.md`'s managed block, corrected in the same commit to state
+the deletion.
 
 ## What Story 1-20 will record here
 

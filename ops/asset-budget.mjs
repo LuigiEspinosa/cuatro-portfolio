@@ -611,7 +611,7 @@ export const MAX_VAR_HOPS = 8;
  * Follow `var()` through the custom properties until the value names families
  * rather than properties.
  *
- * The design's own aliases are two hops deep (`--monument-bold` holds
+ * The design's own aliases were two hops deep until Story 2-22 deleted them (one held
  * `var(--f-display)`, which holds the family), so stopping at one would report a
  * reachable face as unreachable. A property with no definition and no fallback
  * arm is returned as unresolved rather than as naming nothing: "we could not

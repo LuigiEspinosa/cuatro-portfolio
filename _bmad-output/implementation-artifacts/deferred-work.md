@@ -4578,7 +4578,16 @@ status: done
     `WEIGHT_CALL_SITES`. The two comments now overstate by four sites, and Story 2-33 edited
     `app/app.scss` below that block (the `body#work` rule) and not `:49-58`, so the trigger has not
     fired; the owner and the trigger stand, and Story 2-22 is unblocked.
-  status: open
+
+    Closed 2026-09-23 by
+    `_bmad-output/implementation-artifacts/spec-2-22-migration-step-7-delete-the-aliases.md`, the
+    owner, in the same commit as both halves: the `app/app.scss` comment left with the alias layer it
+    described, and the `AGENTS.md` convention line, inside the managed `bmad:context` block, now states
+    the deletion instead of the two aliases and their call-site count. Its one remaining instruction, a
+    family role carrying no weight, is stated against the role (`font-weight: var(--w-black)` beside
+    `font-family: var(--f-display)`) rather than against an alias. The next `bmad-project-context`
+    refresh regenerates that block and should keep the corrected line rather than restore the old one.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
   id: DW-82
@@ -5913,4 +5922,30 @@ status: done
     **Owner: the Operator**, for a ruling: keep `/celeste` token-coloured and unrestyled as a
     personal surface, or book its restyle against S10. **Trigger: that ruling, or the next edit to
     `celeste.scss`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-22-migration-step-7-delete-the-aliases.md`
+  id: DW-122
+  summary: >-
+    `--hero-height` is the Hub's one custom property and nothing reads it: it has had no call site
+    since at least 2026-08-26, and it survives the alias deletion only because Story 2.22's second
+    criterion names it.
+  evidence: |-
+    Story 2-22 deleted the thirteen aliases from `app/app.scss` and left `--hero-height: 40vh`, as
+    `epics.md` Story 2.22 requires (":root in the compiled stylesheet carries only the contract's
+    properties plus `--hero-height`") and `DESIGN.md` § The mapping records ("stays local", a layout
+    constant the contract carries no viewport height for). **Observed 2026-09-23**:
+    `git grep -n -e "var(--hero-height" -- app components hooks content lib ':(exclude)**/__tests__/**'`
+    returns nothing (exit 1), and `ops/anchor-token-adoption.md` § Stated limits of step 2 already
+    counted it among four properties with zero call sites on 2026-08-26. So the
+    property is declared, pinned by three suites (`app/__tests__/anchor-contract.test.ts`,
+    `tests/e2e/anchor-aliases.pw.ts`, `tests/e2e/contract-anchor.pw.ts`) and read by nothing.
+
+    Not deleted here: the story's own criterion names it as the one survivor, and a criterion is not
+    this story's to rewrite. Deleting it is one line in `app/app.scss` and the three pins moving to
+    zero, and it would make `:root` in the compiled stylesheet the contract's properties alone.
+
+    **Owner: the Operator**, for a ruling: keep the constant for a hero that may want it, or delete it
+    and amend `epics.md` Story 2.22's criterion and `DESIGN.md` § The mapping's row in the same
+    change. **Trigger: that ruling, or the next story that needs a viewport height in the Hub.**
   status: open

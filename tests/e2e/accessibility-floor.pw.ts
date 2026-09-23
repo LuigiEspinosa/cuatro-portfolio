@@ -1559,7 +1559,7 @@ test.describe('the accessibility floor', () => {
     expect(rings, `a :focus-visible rule other than the global one declares an outline, which is the nine-rules shape this story deleted:\n${rings.join('\n')}`).toEqual([]);
     expect(ringRulesOutsideTheGlobal([[RING_FILE, `${RING_SELECTOR} { outline: 1px solid red; }`]]), 'the global rule itself was reported').toEqual([]);
     const fabricated: [string, string][] = [
-      ['components/x/X.scss', '.x {\n  color: red;\n  &:focus-visible {\n    outline: 1px solid var(--accent);\n  }\n}\n.y:focus-visible { outline-color: red; }\n.z:focus-visible { transform: none; }'],
+      ['components/x/X.scss', '.x {\n  color: red;\n  &:focus-visible {\n    outline: 1px solid var(--token-accent);\n  }\n}\n.y:focus-visible { outline-color: red; }\n.z:focus-visible { transform: none; }'],
       [RING_FILE, '.scoped:focus-visible { outline: none; }'],
     ];
     expect(ringRulesOutsideTheGlobal(fabricated)).toEqual([
@@ -2031,7 +2031,7 @@ test.describe('the scrim over the home canvas', () => {
       // exempted when this went per panel, on the guess that its `HudLabel` is the smallest type on
       // the surface and might be antialiased short of the probe distance on every pixel. The run
       // said otherwise: all four panels read a nearest distance of **0.0**, an exact hit on one of
-      // the five roles, `--light-gray-color` and `--accent` on that panel aliasing two of them. So
+      // the five roles, two of them reaching that panel through Story 1-18 aliases then. So
       // the set below is empty and stays empty unless a measurement puts something in it; the
       // distances are printed on every run so the question is answered by the log rather than by
       // this comment.

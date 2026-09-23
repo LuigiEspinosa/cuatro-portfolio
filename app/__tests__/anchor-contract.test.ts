@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import type { SpawnSyncReturns } from 'node:child_process';
@@ -21,17 +22,19 @@ import { dirname, join, relative, resolve } from 'node:path';
  *     A runtime `@import` would fetch the contract from a URL Next never emits and would break
  *     the relative `url("./fonts/<file>.woff2")` resolution. The `@use` assertion is what holds
  *     that shut; the no-extension assertion below is a convention check and says so.
- *  2. **No name collides.** All fourteen of the Hub's custom properties are declared in
- *     `app/app.scss`, none of the eighty-nine contract names is among them, and both counts are
- *     pinned so the intersection cannot be empty because a list was.
- *  3. **The contract is consumed by the alias layer and by nothing else.** Story 1-17 asserted
- *     that nothing consumed it at all; Story 1-18 wrote the alias layer, so the case is
- *     **inverted rather than deleted**. Every name `contracts/tokens.css` declares is looked for
- *     in every scanned file under every shipped source root, `app/`, `components/`, `hooks/` and
- *     `content/`, and the count of files read is asserted so the scan cannot pass over an empty
- *     selection. `app/app.scss` must reference exactly the pinned set of roles the mapping names,
- *     each token-native rebuild at least one, and every other scanned file none, so a component
- *     stylesheet reaching for a role and an alias silently retargeted both fail. (The
+ *  2. **No name collides.** The Hub's one custom property, `--hero-height`, is declared in
+ *     `app/app.scss` (fourteen until Story 2-22 deleted the thirteen aliases around it), none of
+ *     the eighty-nine contract names is among them, and both counts are pinned so the
+ *     intersection cannot be empty because a list was.
+ *  3. **The contract is consumed by the global stylesheet's two rules and the token-native
+ *     stylesheets, and by nothing else.** Story 1-17 asserted that nothing consumed it at all;
+ *     Story 1-18 wrote the alias layer, so the case was **inverted rather than deleted**, and Story
+ *     2-22 deleted the layer, so it narrowed again. Every name `contracts/tokens.css` declares is
+ *     looked for in every scanned file under every shipped source root, `app/`, `components/`,
+ *     `hooks/` and `content/`, and the count of files read is asserted so the scan cannot pass over
+ *     an empty selection. `app/app.scss` must reference exactly the eight roles its base and focus
+ *     rules name, each token-native rebuild at least one, and every other scanned file none, so a
+ *     component stylesheet reaching for a role and a base rule retargeted both fail. (The
  *     `--monument-bold` call sites were a third, narrower allowance, exactly `--w-black`, until
  *     Story 2-33 rebuilt the last of them on 2026-09-23.)
  *  4. **There is no second authored copy.** The Anchor is the publisher, not a Satellite
@@ -39,6 +42,10 @@ import { dirname, join, relative, resolve } from 'node:path';
  *     `git ls-files` rather than the working tree, because `pnpm build` writes the generated,
  *     gitignored served copy into `public/contracts/` (Story 1-16) and a working-tree scan
  *     would read that as an authored file.
+ *  5. **The migration is closed** (Story 2-22, migration step 7). None of the thirteen deleted
+ *     aliases is named by any file git tracks or would track outside the dated record and this
+ *     file, and the `/work` baseline the rendered comparison runs against is the capture the
+ *     record names after the last redesign, never an earlier one.
  */
 
 // Vitest runs from the repository root, and `import.meta.url` under Vitest is a vite URL
@@ -162,81 +169,57 @@ const DECLARED_COUNT = 89;
 const REDUCED_COUNT = 4;
 
 /**
- * The Hub's own custom properties, all fourteen of them, all in one file.
+ * The Hub's own custom properties: one, `--hero-height`, in one file.
  *
  * **Sixteen until 2026-09-12.** Story 2-20 deleted `--confillia-bold`, which had zero call sites,
  * with the local face it named. Both suites moved in the same commit. **Fifteen until
  * 2026-09-23.** Story 2-34 deleted `--accent-glow`, a colour literal with zero call sites that the
  * FR-17 conformance gate refuses and `DESIGN.md` § The mapping drops; the three suites that count
- * the Hub's properties moved in the same commit.
+ * the Hub's properties moved in the same commit. **Fourteen until later on 2026-09-23.** Story 2-22
+ * deleted the thirteen aliases Story 1-18 and Story 2-20 wrote (`DELETED_ALIASES` below), which left
+ * the one property that was never an alias; the same three suites moved in the same commit.
  */
-const HUB_PROPERTY_COUNT = 14;
+const HUB_PROPERTY_COUNT = 1;
 
 /**
- * **The mapping, property by property**, which is the whole content of Story 1-18's first
- * acceptance criterion. `epics.md:1821-1836` and `DESIGN.md` § The mapping, whose value-by-value
- * half for the cybercore properties is `rebaseline-2026-08-15.md` § O-10.
- *
- * **Pairwise, not as a set.** An earlier version of this file pinned only the set of roles the
- * alias layer references and then asserted that each aliased property named *some* member of it.
- * Swapping `--light-gray-color` and `--gray-color` onto each other's roles leaves that set
- * unchanged and passed every gate in both halves of the story, while turning the Hub's secondary
- * text into a border colour and its borders into text. The row is what this criterion is about,
- * so the row is what is pinned.
- *
- * `--accent-dim` maps to two roles, which is the point of it: `--token-accent-muted` is the
- * `:root` value and the eleven ornament call sites, and `--token-border-interactive` arrives
- * through the three scoped redefinitions for the four boundary call sites
- * (`epics.md:1831-1834`). It is the only row with a second role, and that is asserted below.
+ * **The mapping left on 2026-09-23 with the layer it pinned.** `MAPPING` held Story 1-18's alias
+ * layer property by property, the whole content of that story's first acceptance criterion
+ * (`epics.md:1821-1836`, `DESIGN.md` § The mapping): thirteen `app/app.scss` properties, each a
+ * `var()` reference to the role its row assigned. It was pinned **pairwise, not as a set**, because an
+ * earlier set-level pin passed a swap of `--light-gray-color` and `--gray-color` onto each other's
+ * roles with every gate green. `--accent-dim` was the one row with two roles, its boundary half
+ * carried by scoped redefinitions that Stories 2-9, 2-31 and 2-30 emptied one selector at a time.
+ * Story 2-22 deleted the layer once Story 2-33 had rebuilt the last component reading it (FR-37), so
+ * the rows went with it, and `ROLE_ON_ROOT`, `ALIASED_PROPERTIES` and `ALIAS_ROLES`, which were
+ * derived from them. The names are kept in `DELETED_ALIASES` below, which the repository search pins
+ * absent, and `ops/anchor-token-adoption.md` keeps each row as it was read.
  */
-const MAPPING: ReadonlyArray<readonly [property: string, roles: readonly string[]]> = [
-  ['--white-color', ['--token-text']],
-  ['--black-color', ['--token-bg']],
-  ['--light-gray-color', ['--token-text-secondary']],
-  ['--gray-color', ['--token-border-interactive']],
-  ['--accent', ['--token-accent']],
-  ['--accent-dim', ['--token-accent-muted', '--token-border-interactive']],
-  ['--page-padding', ['--page-pad']],
-  ['--font-regular', ['--f-body']],
-  ['--font-bold', ['--f-body']],
-  ['--monument-regular', ['--f-display']],
-  ['--monument-bold', ['--f-display']],
-  // Story 2-20's row, the type swap. Family only: the narrow width the old face had is a
-  // `font-stretch` line set by hand at each of its two call sites, which is the same shape as
-  // the hand-set weight at the `--monument-bold` sites, and no weight line at either, because
-  // the published `700 800` range clamps the inherited 400 up to 700.
-  ['--confillia-normal', ['--f-display']],
-  ['--font-mono', ['--f-mono']],
-];
-
-/** The role the alias layer declares a property as on `:root`, which is the first of its row. */
-const ROLE_ON_ROOT = new Map(MAPPING.map(([property, roles]) => [property, roles[0]]));
-
-/** The thirteen Hub properties the alias layer redefines as `var()` references, from the map. */
-const ALIASED_PROPERTIES = MAPPING.map(([property]) => property);
 
 /**
- * The roles the alias layer references, **derived from the map** rather than restated beside it.
+ * The four roles the base `body` rule in `app/app.scss` names (Story 2-22).
  *
- * A second list would be a second place to keep in step, and the failure it would hide is a row
- * changed in one and not the other.
+ * The ground, the body family, the regular weight and the text: what `DESIGN.md` § The mapping says
+ * the three aliases the rule read become (`--black-color`, `--font-regular` with its weight, and
+ * `--white-color`). The first three resolved to the same ground, family and text, and the weight was
+ * the initial 400 the regular role equals, so repointing the rule moved no computed value. Pinned as
+ * its own list, beside `FOCUS_ROLES`, so claim one below holds that file to exactly these eight.
  */
-const ALIAS_ROLES = [...new Set(MAPPING.flatMap(([, roles]) => roles))];
+const BASE_RULE_ROLES = ['--token-bg', '--f-body', '--w-regular', '--token-text'] as const;
 
 /**
  * The four roles the global focus rule names, `RESTYLE-SPEC.md:326-341` § 4 verbatim.
  *
  * Story 2-26 moved the ring out of nine per-component blocks into one `:focus-visible` rule in
- * `app/app.scss`, which is the first rule in that file to consume the contract for something other
- * than an alias. Pinned as a separate list rather than folded into `MAPPING`, because these are not
- * aliases: nothing in the Hub reads them through an old name, and a row in the map would claim a
- * property the alias layer never declares. Claim one below asserts the union, so a fifth role
- * arriving in that file, or one of these four leaving it, is loud.
+ * `app/app.scss`, which was the first rule in that file to consume the contract for something other
+ * than an alias. Pinned as a separate list, as `BASE_RULE_ROLES` is, and the two are disjoint. Claim
+ * one below asserts the union, so a ninth role arriving in that file, or one of these eight leaving
+ * it, is loud.
  */
 const FOCUS_ROLES = ['--stroke-focus', '--token-focus', '--focus-offset', '--r-hair'] as const;
 
 /**
- * The one the alias layer deliberately leaves authored as a literal.
+ * The one the alias layer deliberately left authored as a literal, and since Story 2-22 deleted the
+ * layer around it the one custom property the Hub declares.
  *
  * Not an oversight: `--hero-height` is a layout constant the contract carries no role for. **Four
  * until 2026-09-12**: the two Confillia names were held by the type swap (UX-DR12) and O-6, and Story
@@ -284,7 +267,9 @@ const LITERAL_PROPERTIES = ['--hero-height'] as const;
  * in the family name `MonumentExtended-Bold` is the one thing a family alias cannot carry. The files
  * here are Epic 2 rebuilds with no old name to keep, so they name whatever roles they need and the
  * alias layer is not in their path at all. **Since Story 2-33 every component stylesheet that names a
- * contract role is on this list**, which is FR-37's removal condition for the alias layer.
+ * contract role is on this list**, which is FR-37's removal condition for the alias layer, and Story
+ * 2-22 met it by deleting the layer: with no alias left to reach a role through, this list and
+ * `app/app.scss` are the whole of the contract's consumers.
  *
  * The list is a whitelist rather than a pattern, and each member is asserted to reference at least
  * one role, so a file added here that consumes nothing is a hole rather than an entry.
@@ -357,8 +342,89 @@ const TOKEN_NATIVE_STYLESHEETS = [
   'components/organisms/WorkTimeline/WorkTimeline.scss',
 ] as const;
 
-/** The one file that carries the alias layer. */
-const ALIAS_LAYER = 'app/app.scss';
+/**
+ * The one global stylesheet: the base rule, the focus rule and `--hero-height`. It carried the alias
+ * layer until Story 2-22 deleted it, and was named for it until then.
+ */
+const GLOBAL_STYLESHEET = 'app/app.scss';
+
+/**
+ * The thirteen properties Story 2-22 deleted from `app/app.scss` (UX-DR14, migration step 7).
+ *
+ * The story's own list is ten: the four colours, the page padding and the five font aliases Story 1-18
+ * wrote (`epics.md` § Story 2.22). The other three go by its second criterion, which admits nothing on
+ * `:root` beyond the contract and `--hero-height`: the two accent rows Story 1-18 also wrote and the
+ * width alias Story 2-20 added after the story was written.
+ *
+ * **This file is the one place outside the dated record that names them**, because a search has to name
+ * what it pins absent, so the search below excludes it by path.
+ */
+const DELETED_ALIASES = [
+  '--white-color',
+  '--black-color',
+  '--light-gray-color',
+  '--gray-color',
+  '--page-padding',
+  '--font-regular',
+  '--font-bold',
+  '--monument-regular',
+  '--monument-bold',
+  '--font-mono',
+  '--accent',
+  '--accent-dim',
+  '--confillia-normal',
+] as const;
+
+/**
+ * What the repository search does not read, by reason rather than by pattern.
+ *
+ * Markdown, wherever it sits, and everything under `_bmad-output/`: the dated record and the planning
+ * documents, which name the aliases as history and are never rewritten (`epics.md` names them in Story
+ * 2.22's own criterion, so a search that read it could not pass). And this file, which holds the list.
+ */
+const isSearchExcluded = (path: string): boolean =>
+  path.endsWith('.md') || path.startsWith('_bmad-output/') || path === HERE;
+
+/**
+ * A different property sharing one of the thirteen names: Tailwind's own `--font-mono` theme key, which
+ * `contracts/tailwind.css` publishes for the Tailwind consumers the Anchor is not one of (AD-14),
+ * generated from `packages/tokens/theme-map.json` and pinned by the adapter's own suite. Each allowance
+ * is claimed back, so one that no longer occurs fails as stale rather than widening the search in silence.
+ */
+const TAILWIND_KEY: ReadonlyArray<readonly [path: string, name: string]> = [
+  ['contracts/tailwind.css', '--font-mono'],
+  ['packages/tokens/theme-map.json', '--font-mono'],
+  ['packages/tokens/__tests__/tailwind-adapter.test.ts', '--font-mono'],
+];
+
+/**
+ * Files the search must have read as text, one of each kind the criterion's "repository-wide" reaches
+ * beyond the shipped sources: a stylesheet, the global stylesheet, a browser spec, a workflow, a config,
+ * record tooling, a published contract file and the manifest. Each is non-empty and names none of the
+ * thirteen today, so a listing that lost one fails naming it rather than reading as a clean result.
+ */
+const SEARCH_SENTINELS = [
+  'components/organisms/SuiteDirectory/SuiteDirectory.scss',
+  'app/app.scss',
+  'tests/e2e/anchor-aliases.pw.ts',
+  '.github/workflows/ci.yml',
+  'playwright.config.ts',
+  'ops/asset-budget.mjs',
+  'contracts/tailwind.css',
+  'package.json',
+] as const;
+
+/** The committed `/work` baseline Story 1-10's harness compares against, and the record that names it. */
+const BASELINE = 'tests/e2e/rendered-output.pw.ts-snapshots/work-360x800-chromium-linux.png';
+const HARNESS_RECORD = 'ops/rendered-output-harness.md';
+
+/**
+ * The story whose regeneration is the redesigned capture: Story 2-33, FR-37's last redesign, which
+ * regenerated the baseline after it rebuilt the hero and the timeline. Story 2-22's second criterion
+ * compares the render against that capture and never against the pre-redesign build. A later story that
+ * changes `/work` appends its own row, as the record requires, and stays on the right side of this one.
+ */
+const REDESIGNED_BY = 'Story 2-33';
 
 /**
  * One tracked file under each pathspec the copy check lists, so an empty `git ls-files` cannot read
@@ -402,19 +468,23 @@ const spawned = <T>(run: SpawnSyncReturns<T>): SpawnSyncReturns<T> => {
  * carrying a non-ASCII or unusual byte, wrapping it in quotes and escaping it. A vendored copy
  * under such a path would then match neither the basename filter nor the path-segment filter
  * below, and the check would report "nothing found" about a file that is right there.
+ *
+ * `flags` widens the listing where a case needs more than the index: the repository search passes
+ * `--cached --others --exclude-standard`, the tree a commit would carry, which is the listing
+ * `ops/literal-conformance.mjs` reads for the same reason. Duplicates are dropped.
  */
-const gitLsFiles = (paths: string[]): string[] => {
+const gitLsFiles = (paths: string[], flags: string[] = []): string[] => {
   const run = spawned(
-    spawnSync('git', ['-c', 'core.quotePath=false', 'ls-files', '-z', '--', ...paths], {
+    spawnSync('git', ['-c', 'core.quotePath=false', 'ls-files', '-z', ...flags, '--', ...paths], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       maxBuffer: 32 * 1024 * 1024,
     })
   );
   if (run.status !== 0) {
-    throw new Error(`${HERE}: git ls-files -- ${paths.join(' ')} exited ${run.status}: ${run.stderr}`);
+    throw new Error(`${HERE}: git ls-files ${flags.join(' ')} -- ${paths.join(' ')} exited ${run.status}: ${run.stderr}`);
   }
-  return run.stdout.split('\0').filter((line) => line !== '');
+  return [...new Set(run.stdout.split('\0').filter((line) => line !== ''))];
 };
 
 /**
@@ -434,7 +504,7 @@ const withoutComments = (source: string): string =>
  * A custom property **declaration**, anchored on the character that can open one.
  *
  * `--name:` on its own is not enough: a BEM modifier carrying a pseudo-class, `.btn--primary:hover`,
- * is `--name:` too. Reading that as a declaration would inflate the Hub's pinned count of fourteen
+ * is `--name:` too. Reading that as a declaration would inflate the Hub's pinned count of one
  * and fail the collision argument for a reason unrelated to the contract. Anchoring on `;`, `{` or
  * a line start is what separates the two. The same expression is used by every place in this file
  * that counts declarations, so the three cannot drift apart.
@@ -483,7 +553,7 @@ const CONTRACT = atCollection('could not parse contracts/tokens.css:', () => {
 
 const TOKEN_NAMES = [...new Set([...CONTRACT.base.keys(), ...CONTRACT.reduced.keys()])];
 
-/** Every `--name` `app/app.scss` declares. All fourteen of the Hub's own live in that one file. */
+/** Every `--name` `app/app.scss` declares. The Hub's own, one since Story 2-22, live in that one file. */
 const HUB_NAMES = atCollection('could not parse app/app.scss:', () => {
   const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
   return [...new Set([...source.matchAll(DECLARATION)].map((found) => found[1]))];
@@ -747,15 +817,12 @@ describe('the token contract is wired into the Anchor stylesheet graph', () => {
 });
 
 describe('no contract name collides with a name the Hub already declares', () => {
-  it('found all fourteen of the Hub own custom properties in app/app.scss', () => {
+  it('found the Hub’s one custom property in app/app.scss, and no other', () => {
     // The "identical by construction" argument rests on this count. If the Hub declared a
-    // fifteenth somewhere else, the intersection below would be empty for the wrong reason.
-    expect(HUB_NAMES.length, 'app/app.scss no longer declares exactly fourteen custom properties').toBe(
-      HUB_PROPERTY_COUNT
-    );
-    for (const name of ['--white-color', '--black-color', '--accent', '--monument-bold']) {
-      expect(HUB_NAMES, `app/app.scss no longer declares ${name}`).toContain(name);
-    }
+    // second somewhere else, the intersection below would be empty for the wrong reason. Fourteen
+    // until Story 2-22 deleted the thirteen aliases, whose four named members this loop used to read.
+    expect(HUB_NAMES.length, 'app/app.scss no longer declares exactly one custom property').toBe(HUB_PROPERTY_COUNT);
+    expect(HUB_NAMES, 'the one property app/app.scss declares is not --hero-height').toEqual([...LITERAL_PROPERTIES]);
 
     // No component stylesheet declares one, which is the other half of the same argument.
     //
@@ -800,7 +867,7 @@ describe('no contract name collides with a name the Hub already declares', () =>
   });
 });
 
-describe('the Anchor consumes the contract through the alias layer and nowhere else', () => {
+describe('the Anchor consumes the contract in its global stylesheet and its token-native stylesheets, and nowhere else', () => {
   const files = atCollection(`could not scan ${SCANNED.join(', ')}:`, () =>
     SCANNED.flatMap((directory) => scannedUnder(directory)).sort()
   );
@@ -876,11 +943,12 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     }
   });
 
-  it('is consumed by the alias layer in app/app.scss and by nothing else', () => {
+  it('is consumed by the base and focus rules in app/app.scss and the token-native stylesheets, and by nothing else', () => {
     // Story 1-17's case asserted zero references from every scanned file, and its failure
-    // message said a consumer "is Story 1-18's act and not this one's". This is that act, so the
-    // case is inverted rather than deleted: the same scan, over the same files, now says exactly
-    // where a contract name is allowed to appear and exactly which names are allowed there.
+    // message said a consumer "is Story 1-18's act and not this one's". That act wrote the alias
+    // layer, so the case was inverted rather than deleted: the same scan, over the same files, says
+    // exactly where a contract name is allowed to appear and exactly which names are allowed there.
+    // Story 2-22 deleted the layer, so the global stylesheet's allowance narrowed to its two rules.
     const referencesBy = new Map<string, string[]>();
     let scanned = 0;
 
@@ -892,7 +960,9 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     }
 
     expect(scanned, 'no file was read').toBe(files.length);
-    expect(files, `${ALIAS_LAYER} was not among the scanned files, so the case below is vacuous`).toContain(ALIAS_LAYER);
+    expect(files, `${GLOBAL_STYLESHEET} was not among the scanned files, so the case below is vacuous`).toContain(
+      GLOBAL_STYLESHEET
+    );
     for (const site of TOKEN_NATIVE_STYLESHEETS) {
       expect(files, `${site} was not among the scanned files`).toContain(site);
     }
@@ -900,23 +970,27 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     // The pinned lists are checked against the contract before they are compared against the
     // sources. A role renamed in `contracts/tokens.css` would otherwise make every list below
     // agree on a name the contract no longer declares, and a MAJOR bump is meant to be loud.
-    for (const role of [...ALIAS_ROLES, ...FOCUS_ROLES]) {
-      expect(TOKEN_NAMES, `${role} is in the pinned mapping but the contract no longer declares it`).toContain(role);
+    for (const role of [...BASE_RULE_ROLES, ...FOCUS_ROLES]) {
+      expect(TOKEN_NAMES, `${role} is in a pinned list but the contract no longer declares it`).toContain(role);
     }
 
-    // Claim one: the alias layer references exactly the roles the mapping names, plus the four
-    // the global focus rule names since Story 2-26. An alias silently retargeted to some other
-    // role fails here, and so does one dropped altogether; so does a ring rule that names a fifth
-    // role, or loses one of its four. The two lists are disjoint, and that is asserted too, so a
-    // role cannot be counted as both an alias target and a focus role.
-    expect(FOCUS_ROLES.filter((role) => ALIAS_ROLES.includes(role)), 'a focus role is also an alias target').toEqual([]);
+    // Claim one: the global stylesheet references exactly the four roles its base rule names and
+    // the four the focus rule names since Story 2-26. Until Story 2-22 the first four were the roles
+    // the alias layer mapped onto (see the note where `MAPPING` was). A base rule retargeted to some
+    // other role fails here, and so does one dropped altogether; so does a ring rule that names a
+    // fifth role, or loses one of its four. The two lists are disjoint, and that is asserted too, so
+    // a role cannot be counted as both.
     expect(
-      referencesBy.get(ALIAS_LAYER) ?? [],
-      `${ALIAS_LAYER} does not reference exactly the roles epics.md:1821-1836 maps onto plus the ` +
-        `four RESTYLE-SPEC.md § 4 names for the ring. An alias retargeted to a different role, or ` +
-        `dropped, changes what the whole site paints from one line; a fifth role in the ring rule, ` +
-        `or one of its four missing, changes what every focused element paints.`
-    ).toEqual([...ALIAS_ROLES, ...FOCUS_ROLES].sort());
+      FOCUS_ROLES.filter((role) => (BASE_RULE_ROLES as readonly string[]).includes(role)),
+      'a focus role is also a base-rule role'
+    ).toEqual([]);
+    expect(
+      referencesBy.get(GLOBAL_STYLESHEET) ?? [],
+      `${GLOBAL_STYLESHEET} does not reference exactly the four roles DESIGN.md § The mapping gives the ` +
+        `body plus the four RESTYLE-SPEC.md § 4 names for the ring. A base rule retargeted to a different ` +
+        `role changes what every page paints from one line; a fifth role in the ring rule, or one of its ` +
+        `four missing, changes what every focused element paints.`
+    ).toEqual([...BASE_RULE_ROLES, ...FOCUS_ROLES].sort());
 
     // Claim two held the `--monument-bold` call sites to naming exactly `--w-black`, the weight a
     // family alias cannot carry, until Story 2-33 rebuilt the last of them on 2026-09-23. With no site
@@ -926,7 +1000,8 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     // Claim three: the token-native stylesheets consume roles directly, and each really does.
     // Listed rather than pattern-matched, and asserted non-empty in both directions: a file named
     // here that references nothing is a hole in claim four below rather than an entry, and it
-    // would read as "the rebuild happened" while the file still went through the alias layer.
+    // would read as "the rebuild happened" while the file still consumed nothing (it went through
+    // the alias layer while there was one).
     for (const site of TOKEN_NATIVE_STYLESHEETS) {
       expect(
         (referencesBy.get(site) ?? []).length,
@@ -937,15 +1012,15 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
 
     // Claim four: nothing else reaches for a role at all. A component stylesheet consuming a
     // token role directly is an Epic 2 rebuild, which is what the list above admits one file at a
-    // time; anywhere else it leaves the alias layer no longer describing what the site reads.
-    const allowed = new Set<string>([ALIAS_LAYER, ...TOKEN_NATIVE_STYLESHEETS]);
+    // time; anywhere else it is a consumer no list names, which is what a partition exists to refuse.
+    const allowed = new Set<string>([GLOBAL_STYLESHEET, ...TOKEN_NATIVE_STYLESHEETS]);
     const elsewhere = [...referencesBy]
       .filter(([file]) => !allowed.has(file))
       .map(([file, names]) => `${file} references ${names.join(', ')}`);
     expect(
       elsewhere,
-      `a source outside the alias layer consumes the contract, so the migration no longer runs ` +
-        `through one file:\n${elsewhere.join('\n')}`
+      `a source outside the global stylesheet and the token-native list consumes the contract, so ` +
+        `the partition no longer describes who reads it:\n${elsewhere.join('\n')}`
     ).toEqual([]);
 
     // The scan, against planted control strings rather than against a file. A run that read
@@ -962,17 +1037,16 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
       ).toBe(true);
     }
     expect(
-      TOKEN_NAMES.some((name) => referenceTo(name).test('.control { color: var(--accent-dim); }')),
-      'the scan fires on a Hub name, so the partition above cannot tell a role from an alias'
+      TOKEN_NAMES.some((name) => referenceTo(name).test('.control { min-height: var(--hero-height); }')),
+      'the scan fires on the Hub’s own name, so the partition above cannot tell a role from it'
     ).toBe(false);
   });
 
-  it('aliases each of the thirteen onto the role the mapping assigns it, and leaves the other one as a literal', () => {
-    // The mapping is a whitelist in both directions, **row by row**. Thirteen properties become
-    // `var()` references to a named role; the other one stays a literal because something holds
-    // it, and aliasing it anyway is a silent departure from the plan that no rendered check would
-    // see as a defect. Read off `app/app.scss` rather than off the browser, because
-    // what is being asserted is what the file authors.
+  it('declares --hero-height alone, on :root, as a literal, and no custom property on any other selector', () => {
+    // Story 2-22's first criterion, read off the file rather than the browser, because what is
+    // asserted is what the file authors (`tests/e2e/anchor-aliases.pw.ts` reads what the build ships).
+    // Until that story this case held the thirteen aliases to their roles row by row, and the scoped
+    // `--accent-dim` redefinitions to their selectors; see the note where `MAPPING` was.
     const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
     const root = /:root\s*\{([^}]*)\}/.exec(source);
     expect(root, 'no :root block was parsed out of app/app.scss, so this case measures nothing').not.toBeNull();
@@ -989,126 +1063,27 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     };
 
     const declared = declarationsIn(root?.[1] ?? '');
+    expect([...declared.keys()], 'app/app.scss declares something on :root beyond --hero-height').toEqual([
+      ...LITERAL_PROPERTIES,
+    ]);
 
-    expect(declared.size, 'app/app.scss no longer declares fourteen custom properties on :root').toBe(
-      HUB_PROPERTY_COUNT
-    );
+    // **Every declaration in the file, whatever its selector.** A custom property redeclared on
+    // `body` or on a component selector is an alias by another route, which is the shape the
+    // boundary scope had, so the whole file is read and not only `:root`.
     expect(
-      [...declared.keys()].sort(),
-      'the aliased and literal lists do not partition the Hub fourteen'
-    ).toEqual([...ALIASED_PROPERTIES, ...LITERAL_PROPERTIES].sort());
+      [...source.matchAll(DECLARATION)].map((found) => found[1]),
+      'app/app.scss declares a custom property outside :root, or a second one on it'
+    ).toEqual([...LITERAL_PROPERTIES]);
 
     const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
 
-    // The matcher, on a planted pair, before either verdict below is read as good news.
+    // The matchers, on planted controls, before either verdict is read as good news: a reference is
+    // told from a literal, and a redefinition scoped on a pseudo-element in a selector list, the
+    // shape that defeats a first-colon split, is still read as a declaration.
     expect(IS_VAR_REFERENCE.test('var(--token-bg)')).toBe(true);
-    expect(IS_VAR_REFERENCE.test('rgba(139, 92, 246, 0.4)')).toBe(false);
-
-    // **Row by row, not against the set.** `toContain` over `ALIAS_ROLES` would pass on any
-    // permutation of the thirteen across the ten roles, and swapping `--light-gray-color` with
-    // `--gray-color` is a permutation that turns secondary text into a border colour with every
-    // gate green.
-    const wrong: string[] = [];
-    for (const name of ALIASED_PROPERTIES) {
-      const value = declared.get(name) ?? '';
-      const reference = IS_VAR_REFERENCE.exec(value);
-      expect(reference, `app/app.scss authors ${name} as "${value}" rather than as a var() reference`).not.toBeNull();
-      const assigned = ROLE_ON_ROOT.get(name);
-      if (reference?.[1] !== assigned) {
-        wrong.push(`${name} references ${reference?.[1]}, and epics.md:1821-1836 assigns it ${assigned}`);
-      }
-    }
+    expect(IS_VAR_REFERENCE.test('40vh')).toBe(false);
     expect(
-      wrong,
-      `an alias names a role the mapping does not assign it. A permutation of the thirteen across ` +
-        `the ten roles leaves every set-level check green and repaints the whole site:\n${wrong.join('\n')}`
-    ).toEqual([]);
-
-    // **The second half of the `--accent-dim` row**, which lives outside `:root` by design. The
-    // scoped redefinitions are what make one property resolve per call site
-    // (`epics.md:1831-1834`), and without this the boundary role would be pinned nowhere at
-    // source: the `:root` parse above sees only the ornament value.
-    //
-    // Parsed by the declaration regex rather than by `declarationsIn`, because a selector list
-    // carrying `::before` puts a colon ahead of the declaration in the same `;`-delimited chunk
-    // and a first-colon split would read `.work-item:` as the property name and skip the row.
-    const accentDim = MAPPING.find(([property]) => property === '--accent-dim');
-    expect(accentDim?.[1].length, 'the --accent-dim row no longer carries two roles').toBe(2);
-    const [ornamentRole] = accentDim?.[1] ?? [];
-
-    const afterRoot = source.slice((root?.index ?? 0) + (root?.[0].length ?? 0));
-    const SCOPED = /(?:^|[;{])\s*--accent-dim\s*:\s*([^;}]+)/gm;
-    const scopedValues = [...afterRoot.matchAll(SCOPED)].map((found) => found[1].trim());
-
-    // The matcher, on a planted control in the shape that defeats a first-colon split.
-    expect(
-      [...'.work-item::before, .a { --accent-dim: var(--x); }'.matchAll(SCOPED)].map((found) => found[1].trim())
-    ).toEqual(['var(--x)']);
-
-    // **No block since 2026-09-23.** Story 2-9 deleted the Suite Directory's predecessor and the
-    // counter-scope that existed only to take the card's boundary value back off the chips
-    // inheriting it, which left one boundary scope; Story 2-31 took `.work-item::before` out of it,
-    // and Story 2-30 took `.error-page__back`, the last boundary call site, out later the same day,
-    // when the 404's exits were rebuilt against the contract and stopped reading the alias. So
-    // nothing outside `:root` redeclares the property: its one remaining call site is an ornament
-    // reading the `:root` value, which the row-by-row comparison above pins, and the mapping's
-    // boundary role has no subject until Story 2-22 deletes the layer. A scope written back would
-    // need a boundary call site to justify it, and `tests/e2e/anchor-aliases.pw.ts` counts those on
-    // disk; the planted control above is what makes this empty reading a measurement.
-    expect(
-      scopedValues,
-      `app/app.scss redeclares --accent-dim outside :root again, and no boundary call site is left ` +
-        `for a scope to resolve`
-    ).toEqual([]);
-    expect(ornamentRole, 'the --accent-dim ornament role is no longer the first of its row').toBe(
-      '--token-accent-muted'
-    );
-
-    // **The selector lists are parsed, not substring-matched.** `.work-item` is a substring of
-    // `.work-item::before`, so asking whether the source contains a selector was satisfied by a
-    // longer one containing it: dropping a shorter selector out of the boundary block left this
-    // check green and put that call site on the ornament role, below the 3:1 floor AD-19 asserts.
-    const SCOPED_BLOCK = /([^{}]*)\{[^{}]*--accent-dim\s*:[^{}]*\}/g;
-    const selectorsOf = (text: string): string[] =>
-      [...text.matchAll(SCOPED_BLOCK)].flatMap((found) =>
-        found[1]
-          .split(/\r?\n/)
-          .filter((line) => !line.trim().startsWith('//'))
-          .join(' ')
-          .split(',')
-          .map((one) => one.trim())
-          .filter((one) => one !== '')
-      );
-
-    // The parser, on a planted control: a comment line in the prelude, a multi-selector list, and
-    // a longer selector that must not stand in for the shorter one it contains.
-    expect(
-      selectorsOf('// note\n.work-item::before { --accent-dim: var(--x); }'),
-      'the selector parser no longer separates a selector from a longer one containing it'
-    ).toEqual(['.work-item::before']);
-    // The containment the comment above names, planted as the pair it names: the shorter selector
-    // must not be reported when only the longer one is present. A control that planted a single
-    // selector demonstrated the comment stripping and nothing about containment at all.
-    expect(
-      selectorsOf('.work-item::before { --accent-dim: var(--x); }'),
-      'the parser reports .work-item for a block that only declares .work-item::before'
-    ).not.toContain('.work-item');
-    expect(selectorsOf('.a::before,\n.b { --accent-dim: var(--x); }')).toEqual(['.a::before', '.b']);
-
-    // **No selector since 2026-09-23.** Story 2-31 rebuilt `WorkItem.scss` against the contract, so
-    // `.work-item::before` reads no alias and left the scope in the same commit; the parser controls
-    // above keep its name because the shape it has, a pseudo-element in a selector list, is still
-    // the one a first-colon split would misread. Story 2-30 rebuilt the 404 later the same day and
-    // `.error-page__back`, the class its exits carried, left with the block that scoped it.
-    expect(
-      selectorsOf(afterRoot).sort(),
-      `app/app.scss scopes --accent-dim on a selector again, and no boundary call site is left for ` +
-        `one to resolve`
-    ).toEqual([]);
-
-    expect(
-      MAPPING.filter(([, roles]) => roles.length > 1).map(([property]) => property),
-      'a property other than --accent-dim now maps to more than one role, which the story does not do'
+      [...'.work-item::before, .a { --accent-dim: var(--x); }'.matchAll(DECLARATION)].map((found) => found[1])
     ).toEqual(['--accent-dim']);
 
     for (const name of LITERAL_PROPERTIES) {
@@ -1221,36 +1196,178 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     expect(floorLiteral.test(withoutComments('.a { inline-size: 144px; }'))).toBe(false);
   });
 
-  it('has no stylesheet but the alias layer read any of the Hub’s fourteen properties, which is FR-37’s removal condition', () => {
-    // FR-37: "no component stylesheet consumes a transitional alias once its component has been
-    // redesigned", and the alias layer is deleted when the last one is. Story 2-33 rebuilt the last
-    // two, `WorkHero.scss` and `WorkTimeline.scss`, on 2026-09-23, so from then no stylesheet but
-    // `app/app.scss` reads a Hub property at all, and Story 2-22 is unblocked. The three the base
-    // `body` rule there reads are the layer's own, and that story repoints them.
-    //
-    // **Raw text, comments included**, the rule `tests/e2e/anchor-aliases.pw.ts` counts call sites
-    // by: a read inside a comment is a read waiting to be uncommented. The fallback form counts too.
-    const readOf = (name: string): RegExp => new RegExp(`var\\(\\s*${name}\\s*[,)]`);
-    const stylesheets = files.filter((file) => (file.endsWith('.scss') || file.endsWith('.css')) && file !== ALIAS_LAYER);
-    for (const rebuilt of ['components/organisms/WorkHero/WorkHero.scss', 'components/organisms/WorkTimeline/WorkTimeline.scss']) {
-      expect(stylesheets, `${rebuilt} was not scanned, so the read below says nothing about it`).toContain(rebuilt);
+  // **The FR-37 case left on 2026-09-23 with the layer.** It held every stylesheet but `app/app.scss`
+  // to reading none of the Hub's fourteen properties, FR-37's removal condition, which Story 2-33 met.
+  // Story 2-22 deleted the thirteen that were aliases, so the case's subject is gone; the repository
+  // search below reads every stylesheet, and every other file git tracks, for the names themselves.
+});
+
+/**
+ * The search, pure over its inputs so the planted controls go through the same code as the tree:
+ * every one of the thirteen that occurs in a file, less the allowances, plus every allowance nothing
+ * claimed. Bounded on both sides by `referenceTo`, so `.link--accent`, `--token-accent` and
+ * `--accent-dimmer` are not the names they contain.
+ */
+const aliasFindings = (
+  files: ReadonlyArray<readonly [path: string, text: string]>,
+  allowed: ReadonlyArray<readonly [path: string, name: string]>
+): string[] => {
+  const findings: string[] = [];
+  const claimed = new Set<string>();
+  for (const [path, text] of files) {
+    for (const name of DELETED_ALIASES) {
+      if (!referenceTo(name).test(text)) continue;
+      if (allowed.some(([at, key]) => at === path && key === name)) claimed.add(`${path} ${name}`);
+      else findings.push(`${path} names ${name}`);
     }
-    const reads = stylesheets.flatMap((file) => {
-      const source = readFileSync(resolve(REPO_ROOT, file), 'utf8');
-      return HUB_NAMES.filter((name) => readOf(name).test(source)).map((name) => `${file} reads ${name}`);
-    });
+  }
+  for (const [path, name] of allowed) {
+    if (!claimed.has(`${path} ${name}`)) {
+      findings.push(`${path} is allowed ${name} and no longer carries it, so the allowance is stale`);
+    }
+  }
+  return findings;
+};
+
+/** Binary by git's own rule: a NUL in the first 8000 bytes. The search reads text only. */
+const isBinary = (bytes: Buffer): boolean => bytes.subarray(0, 8000).includes(0);
+
+/** The current value the harness record states, and its regeneration table's rows in order. */
+const baselineRecord = (record: string): { current: string | null; rows: { sha: string; by: string }[] } => ({
+  current: /Its sha256 is `([0-9a-f]{64})`/.exec(record)?.[1] ?? null,
+  rows: [...record.matchAll(/^\| `([0-9a-f]{64})` \| (Story \d+-\d+)/gm)].map((found) => ({
+    sha: found[1],
+    by: found[2],
+  })),
+});
+
+/** Why `digest` is not the redesigned baseline by the record's own account, or null when it is. */
+const baselineVerdict = (digest: string, record: string): string | null => {
+  const { current, rows } = baselineRecord(record);
+  const redesigned = rows.findIndex((row) => row.by === REDESIGNED_BY);
+  const at = rows.findIndex((row) => row.sha === digest);
+  if (redesigned === -1) return `${HARNESS_RECORD} carries no ${REDESIGNED_BY} row, so there is nothing to compare against`;
+  if (current !== digest) return `the committed baseline is ${digest}, and ${HARNESS_RECORD} says the current one is ${current}`;
+  if (at === -1) return `${digest} is not a row of the regeneration table in ${HARNESS_RECORD}`;
+  if (at < redesigned) return `${digest} is ${rows[at].by}'s capture, taken before ${REDESIGNED_BY}'s redesigned one`;
+  return null;
+};
+
+describe('the migration is closed (Story 2-22, migration step 7)', () => {
+  it('names none of the thirteen deleted aliases in any file git tracks or would track, outside the record and this list', () => {
+    // `epics.md` Story 2.22: "a repository-wide search returns zero remaining references to any of
+    // them", and "no component stylesheet in the tree still consumes an alias name", FR-37's first
+    // consequence, which this reads as a special case. `DESIGN.md` § Sequence step 7 states the same
+    // acceptance as "no rule anywhere references an alias name".
+    //
+    // **The tree a commit would carry**, tracked and untracked but not ignored, which keeps `.next/`,
+    // `node_modules/` and the generated `public/contracts/` out. **Raw text, comments included**: a
+    // name in a comment is a name the next reader copies. A file whose first 8000 bytes carry a NUL
+    // is binary, which is git's own rule, and a listed file gone from the working tree is a deletion
+    // not yet staged, which nothing reads.
+    const listed = atCollection('could not list the repository:', () =>
+      gitLsFiles(['.'], ['--cached', '--others', '--exclude-standard'])
+    );
+    const read: [string, string][] = [];
+    let excluded = 0;
+    let binary = 0;
+    for (const path of listed) {
+      if (isSearchExcluded(path)) {
+        excluded += 1;
+        continue;
+      }
+      let bytes: Buffer;
+      try {
+        bytes = readFileSync(resolve(REPO_ROOT, path));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw error;
+      }
+      if (isBinary(bytes)) {
+        binary += 1;
+        continue;
+      }
+      read.push([path, bytes.toString('utf8')]);
+    }
+
+    // Measured, not assumed: the listing reached every kind of file the criterion names, it skipped
+    // the record and at least one binary by the rules above, and this file is among what it skipped.
+    for (const sentinel of SEARCH_SENTINELS) {
+      expect(
+        read.map(([path]) => path),
+        `${sentinel} was not read as text, so the search says nothing about it`
+      ).toContain(sentinel);
+    }
+    expect(excluded, 'no Markdown or _bmad-output file was listed, so the exclusion rule is untested').toBeGreaterThan(0);
+    expect(binary, 'no binary was listed, so the NUL rule is untested').toBeGreaterThan(0);
+    expect(listed, `${HERE} was not listed, so its own exclusion is untested`).toContain(HERE);
+
+    const findings = aliasFindings(read, TAILWIND_KEY);
     expect(
-      reads,
-      `a stylesheet reads a Hub property outside the alias layer, so the layer cannot be deleted:\n${reads.join('\n')}`
+      findings,
+      `a file names an alias Story 2-22 deleted, so the contract is not the only source:\n${findings.join('\n')}`
     ).toEqual([]);
 
-    // The read, on planted controls: the 2023 timeline's padding fires, a fallback form fires, and a
-    // longer name that starts with an alias does not.
-    const planted = (source: string): string[] => HUB_NAMES.filter((name) => readOf(name).test(source));
-    expect(planted('.a { padding: 2rem var(--page-padding) 8rem; }')).toEqual(['--page-padding']);
-    expect(planted('.a { color: var( --accent , red); }')).toEqual(['--accent']);
-    expect(planted('.a { color: var(--accent-dimmer); }')).toEqual([]);
-    expect(HUB_NAMES.length, 'app/app.scss no longer declares the fourteen this reads for').toBe(HUB_PROPERTY_COUNT);
+    // The search, on planted controls through the same function: a read, a declaration and a runtime
+    // lookup each fire; a BEM modifier, a longer role and a longer name do not; an allowance is
+    // honoured where its key occurs and refused as stale where it does not.
+    expect(aliasFindings([['x.scss', '.a { color: var(--white-color); }']], [])).toEqual(['x.scss names --white-color']);
+    expect(aliasFindings([['x.scss', ':root { --accent: red; }']], [])).toEqual(['x.scss names --accent']);
+    expect(aliasFindings([['x.ts', "rootCustomPropertyValue(page, '--confillia-normal');"]], [])).toEqual([
+      'x.ts names --confillia-normal',
+    ]);
+    expect(
+      aliasFindings([['x.tsx', "<a className='link--accent' style={{ color: 'var(--token-accent)' }} /> // --accent-dimmer"]], [])
+    ).toEqual([]);
+    expect(aliasFindings([['t.css', '--font-mono: var(--f-mono);']], [['t.css', '--font-mono']])).toEqual([]);
+    expect(aliasFindings([['t.css', '--f-mono: x;']], [['t.css', '--font-mono']])).toEqual([
+      't.css is allowed --font-mono and no longer carries it, so the allowance is stale',
+    ]);
+    expect(aliasFindings([['t.css', '--font-mono: x; --font-bold: y;']], [['t.css', '--font-mono']])).toEqual([
+      't.css names --font-bold',
+    ]);
+    // A comment is read: a workflow comment naming an alias is a finding, as a prose line is.
+    expect(aliasFindings([['ci.yml', '    # the 2023 --font-mono stack had no Courier New']], [])).toEqual([
+      'ci.yml names --font-mono',
+    ]);
+    // The binary rule, on planted buffers: a NUL early marks a file binary whatever text follows it,
+    // and a text file carrying an alias name is not binary.
+    expect(isBinary(Buffer.from('PNG\0 --accent'))).toBe(true);
+    expect(isBinary(Buffer.from(':root { --accent: red; }'))).toBe(false);
+
+    // The exclusions, by the same predicate: the record and this file are skipped, a spec and a
+    // stylesheet are read.
+    expect(isSearchExcluded('ops/anchor-token-adoption.md')).toBe(true);
+    expect(isSearchExcluded('_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/mockups/directions-4.html')).toBe(true);
+    expect(isSearchExcluded(HERE)).toBe(true);
+    expect(isSearchExcluded('tests/e2e/anchor-aliases.pw.ts')).toBe(false);
+    expect(isSearchExcluded('app/app.scss')).toBe(false);
+  });
+
+  it('compares /work against the redesigned baseline, the capture the record names, never an earlier one', () => {
+    // `epics.md` Story 2.22: "the rendered result is asserted against the redesigned baseline captured
+    // by Story 1.10's harness, not against the pre-redesign build". `tests/e2e/rendered-output.pw.ts`
+    // compares `/work` against the committed file; this holds the committed file to being that capture,
+    // by its sha256 against `ops/rendered-output-harness.md`, so a baseline regenerated over a regression
+    // and not recorded, or an older capture put back, fails here rather than passing the comparison.
+    const digest = createHash('sha256').update(readFileSync(resolve(REPO_ROOT, BASELINE))).digest('hex');
+    const record = readFileSync(resolve(REPO_ROOT, HARNESS_RECORD), 'utf8');
+    const { rows } = baselineRecord(record);
+    expect(rows.length, `no regeneration row was parsed out of ${HARNESS_RECORD}`).toBeGreaterThanOrEqual(7);
+    expect(rows[0].by, 'the first row is no longer Story 1-10, the original capture').toBe('Story 1-10');
+
+    expect(baselineVerdict(digest, record)).toBeNull();
+
+    // The verdict, on planted records through the same function: an unrecorded file, a current value
+    // the table does not carry, and a capture from before the redesign are each refused.
+    const recordSaying = (sha: string): string => record.replace(/Its sha256 is `[0-9a-f]{64}`/, `Its sha256 is \`${sha}\``);
+    const unknown = 'f'.repeat(64);
+    expect(baselineVerdict(unknown, record)).toMatch(/says the current one is/);
+    expect(baselineVerdict(unknown, recordSaying(unknown))).toMatch(/is not a row of the regeneration table/);
+    expect(baselineVerdict(rows[0].sha, recordSaying(rows[0].sha))).toBe(
+      `${rows[0].sha} is Story 1-10's capture, taken before ${REDESIGNED_BY}'s redesigned one`
+    );
+    expect(baselineVerdict(digest, record.replace(`| ${REDESIGNED_BY} |`, '| Story 0-0 |'))).toMatch(/carries no Story 2-33 row/);
   });
 });
 

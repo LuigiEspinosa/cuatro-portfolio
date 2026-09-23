@@ -192,7 +192,7 @@ describe('a colour literal outside the permitted set', () => {
       'background-color: transparent;',
       'border-color: currentcolor;',
       'color: var(--token-text);',
-      'color: var(--white-color);',
+      'color: var(--white-ish);',
       'white-space: nowrap;',
       'grid-area: tanned;',
       'rotate: calc(tan(45deg) * 1turn);',
@@ -407,10 +407,10 @@ describe('a type literal in a type property', () => {
     expect(findingsIn(rule(`${declaration};`))).toEqual([`type ${property}: ${value}`]);
   });
 
-  it('allows a role, the alias layer\'s reference, a Sass variable and a CSS-wide keyword', () => {
+  it('allows a role, a reference to any other custom property, a Sass variable and a CSS-wide keyword', () => {
     for (const declaration of [
       'font-family: var(--f-display);',
-      'font-family: var(--font-regular);',
+      'font-family: var(--local-family);',
       'font-size: var(--t-display);',
       'font-size: $size;',
       'font-weight: var(--w-black);',

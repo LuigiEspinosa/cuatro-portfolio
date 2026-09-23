@@ -128,8 +128,8 @@ describe('the stylesheet names contract roles and nothing else', () => {
     }
     const read = [...new Set([...css.matchAll(/var\((--[\w-]+)\)/g)].map((match) => match[1]))].sort();
     expect(read, 'the stylesheet reads a name this file does not pin, an alias among them').toEqual([...ROLES].sort());
-    expect([...new Set([...'.a{padding:2rem var(--page-padding) 8rem}'.matchAll(/var\((--[\w-]+)\)/g)].map((m) => m[1]))]).toEqual([
-      '--page-padding',
+    expect([...new Set([...'.a{padding:2rem var(--page-gutter) 8rem}'.matchAll(/var\((--[\w-]+)\)/g)].map((m) => m[1]))]).toEqual([
+      '--page-gutter',
     ]);
   });
 

@@ -7,17 +7,19 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  * The type swap, observed on the Hub's real routes (Story 2-20, migration step 5).
  *
  * Until this story the Hub self-hosted ten legacy faces through `app/scss/_fonts.scss` and served
- * their binaries from `public/fonts/`, and one rule reached one of them: `--confillia-normal`, at
- * the two hero panels on `/`. That alias now lands on the display role with `font-stretch: 75%`
- * set by hand at both call sites, the partial and the directory are gone, and the two preloads
+ * their binaries from `public/fonts/`, and one rule reached one of them: the narrow display alias, at
+ * the two hero panels on `/`. That alias then landed on the display role with `font-stretch: 75%`
+ * set by hand at both call sites (Story 2-29 later named the role there directly, and Story 2-22
+ * deleted the alias), the partial and the directory are gone, and the two preloads
  * in `app/layout.tsx` went with them (`tests/e2e/narrative.pw.ts` pins that the `/` document
  * preloads no font, against a planted preload). None of that is visible to a screenshot of
  * `/work`, which no local face ever reached, and a computed `font-family` reads the declared
  * stack whether or not the face behind it loaded (`RESTYLE-SPEC.md:648`, F-2). So five things
  * are measured here:
  *
- *  1. **The two Confillia sites** compute the display family at the narrow end of its width axis,
- *     and the alias on `:root` reads the display stack.
+ *  1. **The two Confillia sites** compute the display family, at the narrow end of its width axis
+ *     until Story 2-29 and at its default width since, read against the display role itself since
+ *     Story 2-22 deleted the alias the case also read.
  *  2. **No retired family survives in the built CSS on any surface**, no request reaches
  *     `/fonts/` from any of them, and the old binary's URL answers 404.
  *  3. **The swap holds the line box still** on every element that reaches the display face, on
@@ -30,8 +32,9 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  *     tells a failure that is a reflow (lines moved, line box held) from one that is a metric
  *     drift (line box moved).
  *  4. **The weight distinction is a width.** `getComputedStyle().fontWeight` answers the requested
- *     value, 400 at a `--monument-regular` site, not the 700 the variable face clamps it to, so
- *     one string planted at both display aliases is measured and the two widths differ.
+ *     value, 400 where nothing asks for a weight, not the 700 the variable face clamps it to, so
+ *     one string planted at the display role's inherited weight and at `--w-black` is measured and
+ *     the two widths differ. (It was planted at the two display aliases until Story 2-22 deleted them.)
  *  5. **The width axis is a width too.** `getComputedStyle().fontStretch` answers the requested
  *     `75%` whether or not the loaded face carries a `wdth` axis, so the same string at `75%` and
  *     at `100%` is measured and the two widths differ.
@@ -97,7 +100,7 @@ interface DisplaySite {
 /**
  * The two hero link groups, and how many elements each renders.
  *
- * **They were the two `--confillia-normal` call sites until 2026-09-21.** Story 2-20 retargeted
+ * **They were the two call sites of the narrow display alias until 2026-09-21.** Story 2-20 retargeted
  * that alias onto the display family and each site set `font-stretch: 75%` by hand beside
  * `font-family`, the narrow end of the published `75% 100%`, because a family alias cannot carry
  * width. Story 2-29 rebuilt `HomeLayout.scss` against the contract: both groups name the display
@@ -114,7 +117,7 @@ const HERO_DISPLAY_STRETCH = '100%';
 
 /**
  * Every element that reaches the display face, per surface, and how many of each the surface
- * renders. The two `--monument-bold` sites, the two `--monument-regular` sites and the two hero
+ * renders. The two bold display alias sites, the two regular display alias sites and the two hero
  * link groups, plus the display entrance on `/`, which reaches the face through `--f-display`
  * directly since Story 2-27, as the two hero groups have since Story 2-29, the row names since
  * Story 2-31, the 404's numeral and heading since Story 2-30, and `/work`'s hero heading since Story
@@ -161,7 +164,7 @@ const DISPLAY_ELEMENTS: readonly {
     // The numeral and the heading, which reach the display face through `--f-display` directly
     // since Story 2-30 rebuilt the surface: the numeral in `Error404.scss`, and the heading as the
     // display entrance, the same `.glitch-text` `/` renders (the 2023 `.error-page__title` it
-    // replaced reached the face through `--monument-regular`).
+    // replaced reached the face through the regular display alias).
     selectors: [
       { selector: '.error-page__code', count: 1 },
       { selector: '.glitch-text', count: 1 },
@@ -534,18 +537,14 @@ test('parses a real contract, so every case below measures something', () => {
   expect(DISPLAY_ELEMENTS.flatMap((surface) => surface.selectors).length, 'no display element is tabled').toBe(7);
 });
 
-test('the two hero link groups compute the display family at its default width, and the retired alias still reads the display stack', async ({
-  page,
-}) => {
+test('the two hero link groups compute the display family at its default width', async ({ page }) => {
   await goTo(page, '/');
   await fontsReady(page);
 
-  // The alias itself, on `:root`, against the role it names, both read in the same page.
+  // The display role, on `:root`. Until Story 2-22 this also read the retired narrow alias against it,
+  // in the same page; the alias is deleted, and `tests/e2e/anchor-aliases.pw.ts` holds `:root` in the
+  // build to the contract's names and the Hub's one, so there is nothing left under that name to read.
   const displayStack = await rootCustomPropertyValue(page, '--f-display');
-  expect(
-    await rootCustomPropertyValue(page, '--confillia-normal'),
-    '--confillia-normal no longer resolves to what --f-display resolves to'
-  ).toBe(displayStack);
   const displayFamily = firstFamily(displayStack);
   expect(displayFamily, '--f-display declares no first family').not.toBe('');
 
@@ -711,18 +710,21 @@ test('the fallback-to-face swap holds every display element within 1% in height,
   expect(breaches, `the swap moved a line box, or failed to move the control:\n${breaches.join('\n')}`).toEqual([]);
 });
 
-test('one string at the two display aliases measures two widths, which is the weight distinction', async ({ page }) => {
+test('one string at the display face’s inherited weight and at its heaviest measures two widths, which is the weight distinction', async ({
+  page,
+}) => {
   await goTo(page, NOT_FOUND, 404);
 
-  // Two spans, one string. The first asks nothing of the weight and inherits 400, which the
-  // published `700 800` range clamps up to 700 at rasterisation; the second asks for the heaviest
-  // weight the contract publishes, the way the `--monument-bold` call sites do. The twin is the
-  // second again.
+  // Two spans, one string, both on the display role. The first asks nothing of the weight and
+  // inherits 400, which the published `700 800` range clamps up to 700 at rasterisation; the second
+  // asks for the heaviest weight the contract publishes, the way the display call sites do. The twin
+  // is the second again. Until Story 2-22 the two spans read the regular and the bold display aliases,
+  // which resolved to this same role; the distinction measured is the face's, not the aliases'.
   const { first, second, twin } = await measureAxis(
     page,
     'weight',
-    'font-family: var(--monument-regular);',
-    'font-family: var(--monument-bold); font-weight: var(--w-black);'
+    'font-family: var(--f-display);',
+    'font-family: var(--f-display); font-weight: var(--w-black);'
   );
 
   // The requested weights, stated so the reader sees the computed value cannot carry the claim.
@@ -731,8 +733,8 @@ test('one string at the two display aliases measures two widths, which is the we
 
   expect(
     Math.abs(second.width - first.width),
-    `the same string measures ${first.width.toFixed(2)} at var(--monument-regular) and ${second.width.toFixed(2)} ` +
-      `at var(--monument-bold) with --w-black, so the two aliases render one weight and the distinction ` +
+    `the same string measures ${first.width.toFixed(2)} at var(--f-display) and ${second.width.toFixed(2)} ` +
+      `at var(--f-display) with --w-black, so the face renders one weight and the distinction ` +
       `the mapping names is gone`
   ).toBeGreaterThan(WIDTH_FLOOR);
 

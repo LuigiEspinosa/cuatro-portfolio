@@ -298,9 +298,11 @@ describe('the stylesheet names contract roles and nothing else', () => {
   });
 
   it('and those guards fire on what the 2023 sheet carried', () => {
+    // Its two alias reads carry stand-in names since Story 2-22 deleted the aliases and the tree is
+    // searched for theirs; the role read below only needs a name outside the contract to see.
     const planted = css.replace(
       '.work-hero{',
-      '.work-hero{min-height:42vh;padding:5rem var(--page-padding) 3rem;border-bottom:1px solid var(--accent-dim);overflow:hidden;z-index:2;color:#fff;letter-spacing:.08em;'
+      '.work-hero{min-height:42vh;padding:5rem var(--page-gutter) 3rem;border-bottom:1px solid var(--hairline-dim);overflow:hidden;z-index:2;color:#fff;letter-spacing:.08em;'
     );
     expect(planted, 'the planted rule did not land').not.toBe(css);
     expect(values(planted), 'the length guard lets a viewport height through').toMatch(LENGTH);
@@ -308,7 +310,7 @@ describe('the stylesheet names contract roles and nothing else', () => {
     expect(planted).toMatch(/overflow:hidden/);
     expect(planted).toMatch(/#[0-9a-f]{3,8}\b/i);
     const read = [...new Set([...planted.matchAll(/var\((--[\w-]+)\)/g)].map((match) => match[1]))].sort();
-    expect(read, 'the role read does not see an alias').toContain('--accent-dim');
+    expect(read, 'the role read does not see a name outside the contract').toContain('--hairline-dim');
     expect(values('.a{}@media(min-width: 768px){.a{color:red}}'), 'the value read takes a breakpoint for a length').not.toMatch(LENGTH);
   });
 

@@ -11,7 +11,7 @@ import {
 /**
  * One test per harness capability, against `/work` (Story 1-10).
  *
- * `/work` is the chosen route because it is the only one that combines a `--monument-bold`
+ * `/work` is the chosen route because it is the only one that combines a bold display alias
  * call site (`.work-hero__heading`), the `body#work` background rule keyed off
  * `<body id={route}>`, and server-rendered content whose entrance tweens sit behind
  * `if (!reduceMotion)`. Its `TorusCanvas` is WebGL driven by `useFrame` and can never be
@@ -24,7 +24,7 @@ import {
  * pinned preference the torus is never requested and its box is omitted, so the whole frame is
  * compared, and the capture asserts there is no canvas to mask rather than trusting it. The two
  * capability reads below read what the heading declares, `--f-display`, rather than the alias it
- * used to.
+ * used to, which Story 2-22 deleted with the rest of the layer.
  */
 
 const ROUTE = '/work';
@@ -58,7 +58,7 @@ const exercised = new Set<string>();
  * The computed `font-family` of a throwaway element declared `font-family: <value>`.
  *
  * Added by Story 1-18. The two capability tests below used to compare against the literal
- * `MonumentExtended-Bold`, which that story retired by aliasing `--monument-bold` onto a
+ * `MonumentExtended-Bold`, which that story retired by aliasing the bold display name onto a
  * published family. Reading the expectation off a probe in the same page keeps both tests
  * measuring the capability rather than a font name, and keeps them from having to restate a value
  * the contract is free to retune under a MINOR bump.
@@ -80,7 +80,7 @@ const probeFamily = async (page: Page, value: string): Promise<string> => {
  *
  * This is the failure the plain read had. `font-family` is inherited, so a probe declared
  * `font-family: var(--undeclared)` does not go blank: it falls back to whatever `body` sets, which
- * is exactly what `.work-hero__heading` would also fall back to if `var(--monument-bold)` stopped
+ * is exactly what `.work-hero__heading` would also fall back to if the reference it declares stopped
  * resolving. The two would then compare **equal**, and `not.toMatch(/MonumentExtended/)` would pass
  * as well, so the capability test would be green while the display family reached no heading. The
  * inherited family is measured through a name nothing declares, and the two are required to differ.
@@ -135,7 +135,7 @@ test.describe('rendered-output harness', () => {
 
     const family = await computedStyleValue(page, HEADING, 'font-family');
 
-    // **Amended by Story 1-18**, which aliased `--monument-bold` onto the published display
+    // **Amended by Story 1-18**, which aliased the bold display name onto the published display
     // family and retired `MonumentExtended-Bold` from this call site. The expectation is read
     // through a probe in the same page rather than restated as a literal, so a MINOR bump that
     // retunes the family stack moves both sides together instead of failing the harness's own
@@ -153,8 +153,8 @@ test.describe('rendered-output harness', () => {
   test('reads the computed value of a custom property on :root', async ({ page }) => {
     await page.goto(ROUTE);
 
-    // `--monument-bold` until Story 2-33 moved the heading onto the display role itself; the pair of
-    // shapes this reads is the same, and it no longer depends on an alias Story 2-22 deletes.
+    // The bold display alias until Story 2-33 moved the heading onto the display role itself; the pair
+    // of shapes this reads is the same, and it no longer depends on an alias, which Story 2-22 deleted.
     const declared = await rootCustomPropertyValue(page, '--f-display');
 
     // Two capabilities, two different shapes of the same family, which is why both are asserted
