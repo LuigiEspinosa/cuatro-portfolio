@@ -449,7 +449,7 @@ development_status:
   # unredesigned). Weight: 11 gzipped lighter, the global stylesheet only. Six review layers inline,
   # not independent: two patches, no loopback. Typecheck clean, 1,545 unit tests in 59 files, 325
   # e2e green in 5.9 min in the pinned image, the /work baseline unchanged.
-  2-34-fr-17-conformance-no-colour-literal-outside-the-contract: review
+  2-34-fr-17-conformance-no-colour-literal-outside-the-contract: done
   epic-2-retrospective: optional
 
   epic-3: backlog
