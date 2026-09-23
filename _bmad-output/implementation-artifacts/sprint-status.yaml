@@ -401,7 +401,40 @@ development_status:
   # Waits on the Operator: the spec's manual check (the chrome at 360 and 1280 on a hover-capable
   # pointer and on a phone) and DW-117's words.
   2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: done
-  2-33-redesign-workhero-and-worktimeline-token-native: backlog
+  # 2-33 built 2026-09-23 and committed to dev locally, not pushed: an independent verifier
+  # pushes. The /work hero and the timeline are rebuilt against the contract. The hero is a grid,
+  # one minmax(0, 1fr) column at 360 and three fifths to the display line beside two to the canvas
+  # from 768 where motion is allowed, padded block-wise on --s-2xl and --s-xl and closed beneath by
+  # --stroke-boundary in --token-border-interactive; no alias, z-index, 42vh floor or overflow:
+  # hidden is left. The heading is the page's one <h1> on the display row (--f-display,
+  # --t-display, --w-black, --lh-display, --tr-display, uppercase, --token-text), and the meta line
+  # is a section Plate mark (4 POSITIONS, 2017 - PRESENT) with its // gone. The entrance is one
+  # opacity keyframe at --dur-minor on --ease-entrance, 100 and 400ms, none under reduced motion.
+  # The torus sits behind one next/dynamic boundary in the GemComponent containment shape and is
+  # rendered only once an effect knows motion is allowed, so under reduced motion no WebGL chunk is
+  # requested and its box is omitted; the binding is scrub: true (A-7). The timeline's scroll batch
+  # is deleted, the list is flush and its last separator dropped; body#work is deleted, so /work
+  # paints --token-bg. Records: KV-5 retired on a widened A-5 sweep (every element with a box, 0
+  # past an edge on five surfaces), KV-6 retired with the exemption ledger empty, F-11 closed;
+  # DW-8, 35, 37, 57, 66 and 116 closed, DW-38, 81 and 102 annotated; DW-119 (the torus's drag, the
+  # Operator's) and DW-120 (the three/R3F library emitted once per dynamic boundary) filed. FR-37's
+  # alias removal condition is met, so Story 2-22 is unblocked. Weight: /work 232,796 gzipped
+  # lighter on the wire and no longer a 3D route, the build directory 228,274 heavier (DW-120);
+  # /work 113,886 over the 140,000. The /work baseline was regenerated in the pinned image with
+  # nothing masked, sha256 93a1aa4e...
+  # Step-04 review 2026-09-23, six layers run inline because this session had no subagent tool,
+  # so the review is not independent: patches only (the composition case at 768, 1280 and 2400
+  # with the 3 to 2 split, a dead settle option, a one-caller factory, unused mocks, one message,
+  # four stale record sentences), no deferral. After it: typecheck clean, 1,446 unit tests in 58
+  # files, and 325 e2e tests green in 6.5 min in the pinned image (the new and changed specs 69
+  # of 69 three times over), the /work baseline unchanged.
+  # A local Lighthouse reading in the same image, three runs per URL: /cv 1.00, / and /work 0.96,
+  # every assertion green; /work's one failing audit is the annotated mark's aria-hidden kanji in
+  # the muted accent, exposed by body#work's deletion, which is DW-113's class and filed there.
+  # Waits on the Operator: the spec's manual checks (/work at 360 and 1280 on a phone and on a
+  # hover-capable pointer, and with reduced motion on; the entrance at 2x to 5x) and DW-119's
+  # ruling.
+  2-33-redesign-workhero-and-worktimeline-token-native: review
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
   epic-2-retrospective: optional
 
