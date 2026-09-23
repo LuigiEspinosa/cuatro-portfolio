@@ -19,7 +19,9 @@ They are the same stories.
 
 **Nothing about the build, the bundle or the assets was changed to produce this file.** Story 2-2
 measures and records. Every finding below is a reading, not a gate: `.github/workflows/ci.yml` gained
-no job, and Story 2-34 is where a gate belongs.
+no job, and Story 2-34 is where a gate belongs. **Amended 2026-09-23**: Story 2-34's gate is the FR-17 literal gate,
+which reads stylesheets and gates no figure in this file; nothing gates the budget, and no story's
+criteria ask for it.
 
 **KB is 1000 bytes throughout**, and gzip is level 9, both matching `ops/font-contract.md:136` and
 `packages/fonts/subset.py`, so a figure here and a figure there mean the same thing.
@@ -467,6 +469,50 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 `zlib.gzipSync({level: 9})` on every unit run so the two records cannot drift apart silently.
 
 ## Every route
+
+### The 2026-09-23 reading, after Story 2-34
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `zZ7f-R4Ufn4KQJqPQZi4Q`, written
+2026-09-23T17:54:27Z, taken on the story's working tree at `802fbf4` plus its own files, before the
+commit that carries them: the tool's dirty-inputs row named three paths (`app/app.scss`,
+`components/organisms/Celeste/celeste.scss` and `app/__tests__/anchor-contract.test.ts`, the last a
+suite the build does not read) and every one of them is this story's. The before reading is the same
+command against build `eZg2jFEWKmNPSm_vK1LsG` (written 2026-09-23T17:27:59Z at `802fbf4` on `dev`, no
+measured input dirty).
+
+**The before build reproduces the Story 2-33 after figures exactly** in both kinds of chunk: 19 `.js`
+at 2,858,402 on disk and 831,372 gzipped, and 12 `.css` at 28,863 on disk and 8,613 gzipped. The
+routes read 3 to 4 bytes above that reading on the wire (`/work` 253,890 against 253,886), the
+rebuild variance of hashed file names inside each document.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,962 | 253,879 | no | yes | **Observed** |
+| `/cv` | 23,218 | 252,289 | no | yes | **Observed** |
+| `/_not-found` | 18,793 | 246,241 | no | **no**: Next's own document | **Observed** |
+| `/celeste` | 15,380 | 246,215 | no | yes | **Observed** |
+| `/_global-error` | 9,578 | 188,763 | no | **no**: Next's own document | **Observed** |
+
+**Every route moved by the global stylesheet and nothing else.** Against the before build, on the
+wire: `/work` and `/celeste` 11 lighter, `/cv` and `/_not-found` 9 lighter, `/_global-error` 1
+heavier. **Observed 2026-09-23**, every `.next/static/chunks/*.css` and `*.js` weighed with
+`zlib.gzipSync` at level 9 (the tool's method) on both builds:
+
+| Figure | Before, `dev` at `802fbf4` | After, this story | Delta | Nature |
+|---|---|---|---|---|
+| Bytes in `.next/static/chunks` | 2,887,265 on disk, 839,985 gzipped | 2,887,275 on disk, 839,974 gzipped | **10 heavier on disk, 11 gzipped lighter** | **Observed**, tool's build table; **Derived** delta |
+| Every `.js` chunk together | 19, 2,858,402 on disk, 831,372 gzipped | the same 19, byte for byte | 0 | **Observed** per chunk |
+| Every `.css` chunk together | 12, 28,863 on disk, 8,613 gzipped | 12, 28,873 on disk, 8,602 gzipped | 10 heavier on disk, 11 gzipped lighter | **Observed** per chunk; **Derived** total |
+| The global stylesheet | `059376_8ige11.css`, 6,044 on disk, 2,321 gzipped | `0.sgj2-qlca8y.css`, 6,020 on disk, 2,310 gzipped | 24 lighter on disk, 11 gzipped lighter: `--accent-glow` and its `rgba()` | **Observed** |
+| `/celeste`'s stylesheet | `065o.2hw7ixf9.css`, 206 on disk, 167 gzipped | `13o0xta9_o96y.css`, 240 on disk, 167 gzipped | 34 heavier on disk, 0 gzipped: four role names where four literals stood | **Observed** |
+
+**Against the Story 2-33 reading.** **Derived.** The chunks reproduce it, so the whole of the movement
+is this story's, and it is noise against the 140,000: the non-3D line still names `/work`, 113,879
+over, 81.3 percent, where Story 2-33's read 113,886 over; the 7 bytes between them are this story's
+11 lighter less the 4 of rebuild variance. Measured against Story 2-2's 140,000 each time. The
+narrative total, 634,829, did not move. § The faces the built CSS declares lost one value line in
+this run's output, `font-family: system-ui`, which was `/celeste`'s heading; every family the built
+CSS declares is still reached.
 
 ### The 2026-09-23 reading, after Story 2-33
 
@@ -1381,6 +1427,31 @@ if a fingerprint above hits it.
 
 ## Findings
 
+### The 2026-09-23 run, after Story 2-34
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `zZ7f-R4Ufn4KQJqPQZi4Q`. § Every route's
+2026-09-23 reading after Story 2-34 and this section were filed from this run; every other section
+in this file is still the reading its own heading names.
+
+- The narrative bundle is 634,829 bytes gzipped across 7 chunks, against an estimate of 300,000 to
+  450,000. That is 184,829 over the top of the range.
+- 580,108 bytes of that is genuinely deferred: `0vynw~tou1f72.js`, `0w~ig71whmz0p.js`,
+  `10mmj2_fz7c58.js`, `0f-49j-pqi~h-.js` is referenced by no prerendered document. The other 54,721
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 253,879 against 140,000, 113,879 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,663 against 140,000, 36,337 of margin. That
+  decomposition has no line for the 243,875 of JavaScript or the 830 of preloads the document
+  actually carries.
+- 1,215,179 bytes under `public/assets/home/` are reachable from no module anything imports:
+  `environment_D.hdr`, `gem.glb`, `gem.gltf`, `gem_data.bin`. They are committed, they are served,
+  and no route asks for them.
+
+**Two lines moved, each by the global stylesheet's 11 gzipped bytes.** **Observed**, the tool's
+tables on each side: the non-3D path, 253,890 to 253,879, and the decomposition, 103,674 to 103,663,
+its HTML and critical CSS line 9,185 to 9,174. Nothing else in the list moved.
+
 ### The 2026-09-23 run, after Story 2-33
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `3khZaamuAoVzhg3IZI1ZP`. § Every route's
@@ -1726,7 +1797,7 @@ measurement that covers everything.
 | A route's figure counts what its document references, and not what the router prefetches next | **Added 2026-09-07.** `/` reads 295,154 and carries no WebGL chunk, which is a true statement about first paint and an incomplete one about a session. `HomeLayout` renders `<Link href='/work'>` and `<Link href='/projects'>`, and the App Router prefetches both route bundles once they are in the viewport, so a homepage visitor's browser does fetch `three` and `three-stdlib` shortly after hydration. Observed in the pinned Playwright container by recording every script request on `/` and subtracting the set the document names. The tool reads prerendered documents and cannot see this; closing the `TorusCanvas` and `TorusKnotCanvas` boundaries would shrink the homepage's real transfer as well as those two routes'. **Amended 2026-09-23**: `TorusKnotCanvas` left with `/projects` (Story 2-14), and Story 2-33 closed the `TorusCanvas` boundary, so `/work`'s route bundle carries no WebGL chunk; the homepage's prefetch was not re-measured, and the row stands until it is | **Observed 2026-09-07.** Filed in `deferred-work.md` as DW-38 |
 | The `/` figure is the document, not the session | 625,823 is what `/` references at first paint. It excluded `gem-fallback.png`, which only a visitor without WebGL fetched, and it excludes every route chunk a client-side navigation would pull afterwards. **Amended 2026-09-07:** the exclusion no longer has a subject. Story 2-13 deleted that file and the non-3D path renders no image at all, so the figure is unchanged and there is no longer an image outside it. What a non-3D visitor now fetches beyond this document is strictly less than what a default-path one does, and `tests/e2e/front-door.pw.ts` measures the difference on all four triggers | **Decision**, amended |
 | `/` is no longer among the prerendered documents this file weighs | **Added 2026-09-07.** Story 2-13 reads the `Save-Data` request header in `app/page.tsx`, on an Operator ruling that a trigger answerable before the document paints must be answered there. `headers()` is a dynamic API, so `/` is server-rendered on demand: the build prints `ƒ /`, `.next/server/app` holds seven documents rather than eight, and this tool, which takes a route's assets from its own prerendered HTML, has no file to read for the homepage. Every `/` figure in this file is therefore the reading of 2026-08-29 and cannot be re-taken by `corepack node ops/asset-budget.mjs` alone; re-measuring it needs a request against a running server, which is how `tests/e2e/narrative.pw.ts` already reads the same document. The tool still runs, refusing only an empty set, and nothing gates on either | **Observed 2026-09-07.** Filed in `deferred-work.md` as DW-50 |
-| Nothing gates on the figures | `.github/workflows/ci.yml` gained no job. Two things here are pinned by `ops/__tests__/asset-budget.test.ts` and cannot drift silently, the three contract-face figures and the fingerprint table, and everything else in this file goes stale invisibly until someone re-runs the tool. Story 2-34 is the gate story | **Decision.** Story 2-2 boundary |
+| Nothing gates on the figures | `.github/workflows/ci.yml` gained no job. Two things here are pinned by `ops/__tests__/asset-budget.test.ts` and cannot drift silently, the three contract-face figures and the fingerprint table, and everything else in this file goes stale invisibly until someone re-runs the tool. Story 2-34 is the gate story. **Amended 2026-09-23**: Story 2-34 added `literal-conformance`, a gate on stylesheet literals, and no gate on these figures, which no story's criteria ask for | **Decision.** Story 2-2 boundary |
 
 ## What this closes
 

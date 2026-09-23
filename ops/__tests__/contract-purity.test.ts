@@ -1015,19 +1015,31 @@ describe('the CI wiring', () => {
     );
   });
 
-  it('sits among the six jobs the file carries, and adds no other', () => {
+  it('sits among the seven jobs the file carries, and adds no other', () => {
     // This set and the identical one in `ops/__tests__/registry-schema.test.ts`
     // are the fourth committed assertion the contents of `ci.yml` are pinned by,
     // and adding a job fails both. That is deliberate: each of the two suites
     // reads the file for its own gate, and neither may be the only reader.
+    //
+    // Six jobs until Story 2-34 added `literal-conformance`, FR-17's blocking
+    // gate (AD-21), whose wiring is asserted in
+    // `ops/__tests__/literal-conformance.test.ts` beside the module it runs.
     expect(
       jobNames,
       'the order is a reader convenience rather than a rule, since jobs run in parallel. The set is not: a job' +
         ' added or removed here changes what holds AD-1 and what this suite has been told to expect'
-    ).toEqual(['test', 'tokens-contract', 'fonts-contract', JOB, 'registry-schema', 'rendered-output']);
+    ).toEqual([
+      'test',
+      'tokens-contract',
+      'fonts-contract',
+      JOB,
+      'registry-schema',
+      'rendered-output',
+      'literal-conformance',
+    ]);
   });
 
-  it('leaves the five jobs beside it carrying the steps they carried', () => {
+  it('leaves the six jobs beside it carrying the steps they carried', () => {
     // Not a byte comparison against a baseline commit, which each story that
     // touches `ci.yml` verifies once by hand. This is the standing half: every
     // job in the file still does the thing it exists to do, so a later edit
@@ -1042,6 +1054,7 @@ describe('the CI wiring', () => {
     expect(instructionsOf('tokens-contract')).toContain('pnpm tokens:build');
     expect(instructionsOf('fonts-contract')).toContain('pnpm fonts:build');
     expect(instructionsOf('registry-schema')).toContain('node ops/registry-schema.mjs');
+    expect(instructionsOf('literal-conformance')).toContain('node ops/literal-conformance.mjs');
     expect(instructionsOf('rendered-output')).toContain('pnpm test:e2e');
   });
 });

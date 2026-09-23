@@ -1714,22 +1714,34 @@ describe('the CI wiring', () => {
   });
 
   it('sits after contract-purity, and adds no other job', () => {
+    // Six jobs until Story 2-34 added `literal-conformance` after this one,
+    // FR-17's blocking gate (AD-21), whose wiring is asserted in
+    // `ops/__tests__/literal-conformance.test.ts` beside the module it runs.
     expect(
       jobNames,
       'the order is a reader convenience, since jobs run in parallel. The set is not: a job added or removed' +
         ' here changes what holds AD-4 and AD-1 and what this suite has been told to expect'
-    ).toEqual(['test', 'tokens-contract', 'fonts-contract', 'contract-purity', JOB, 'rendered-output']);
+    ).toEqual([
+      'test',
+      'tokens-contract',
+      'fonts-contract',
+      'contract-purity',
+      JOB,
+      'rendered-output',
+      'literal-conformance',
+    ]);
   });
 
-  it('leaves the five pre-existing jobs carrying the steps they carried', () => {
+  it('leaves the six other jobs carrying the steps they carried', () => {
     // Not a byte comparison against the baseline commit, which the story
-    // verified once by hand. This is the standing half: the five jobs still do
-    // the five things they exist to do.
+    // verified once by hand. This is the standing half: the six jobs still do
+    // the six things they exist to do.
     expect(instructionsOf('test')).toContain('pnpm test --run');
     expect(instructionsOf('test')).toContain('pnpm typecheck');
     expect(instructionsOf('tokens-contract')).toContain('pnpm tokens:build');
     expect(instructionsOf('fonts-contract')).toContain('pnpm fonts:build');
     expect(instructionsOf('contract-purity')).toContain('node ops/contract-purity.mjs');
+    expect(instructionsOf('literal-conformance')).toContain('node ops/literal-conformance.mjs');
     expect(instructionsOf('rendered-output')).toContain('pnpm test:e2e');
   });
 });

@@ -12,8 +12,10 @@
 //
 // The mapping is epics.md:1821-1836 and DESIGN.md section "The mapping", whose value-by-value
 // half for the cybercore properties is rebaseline-2026-08-15.md section O-10. Follow the table,
-// do not invent a row. Two properties are deliberately left as literals, each with its reason
-// written beside it rather than left to read as an oversight.
+// do not invent a row. One property is deliberately left as a literal, with its reason written
+// beside it rather than left to read as an oversight. It was two until Story 2-34 deleted
+// --accent-glow, a colour literal with zero call sites that DESIGN.md section "The mapping" drops
+// (O-11, closed there on 2026-08-15) and that the FR-17 conformance gate would refuse.
 
 :root {
   // Colors
@@ -25,8 +27,6 @@
   // The ornament value, which is eleven of the fifteen call sites. The other four take the
   // boundary role through the scoped redefinitions below.
   --accent-dim: var(--token-accent-muted);
-  // Left alone pending O-11, which is open. Zero call sites either way, so this costs nothing.
-  --accent-glow: rgba(139, 92, 246, 0.4);
 
   // Spacing
   --page-padding: var(--page-pad);

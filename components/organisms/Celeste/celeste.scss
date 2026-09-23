@@ -1,5 +1,5 @@
 #celeste {
-  background-color: #444;
+  background-color: var(--token-bg);
   display: grid;
   place-items: center;
   min-height: 100vh;
@@ -10,9 +10,9 @@
   }
 
   h1 {
-    font-family: system-ui;
-    font-size: min(8vw, 5rem);
+    font-family: var(--f-display);
+    font-size: var(--t-display);
     text-align: center;
-    color: #fff;
+    color: var(--token-text);
   }
 }

@@ -107,7 +107,7 @@ const REDUCED = declarationsIn(REDUCED_MATCH ? REDUCED_MATCH[1] : '');
 const FLAT_NAMES = [...source.matchAll(/(--[A-Za-z0-9_-]+)\s*:/g)].map((found) => found[1]);
 
 /**
- * Every custom property `app/app.scss` declares, which is all fifteen the Hub has.
+ * Every custom property `app/app.scss` declares, which is all fourteen the Hub has.
  *
  * The `//` strip is guarded on the preceding character, exactly as
  * `app/__tests__/anchor-contract.test.ts` guards it, so a `url(https://...)` or a
@@ -134,9 +134,10 @@ const PRE_CHANGE_NAMES = ['--white-color', '--black-color', '--accent', '--monum
  *
  * Added by Story 1-18, the alias layer. Before it, every one of the Hub's sixteen was a literal
  * and the comparison below was against the text `app/app.scss` authors. Twelve of them became
- * `var()` references then, thirteen of fifteen since Story 2-20 retargeted `--confillia-normal`
- * and deleted `--confillia-bold`, and the computed value of a custom property is its token stream **after**
- * substitution, so what `:root` answers for an aliased name is the role's value and never the
+ * `var()` references then, thirteen of fifteen after Story 2-20 retargeted `--confillia-normal`
+ * and deleted `--confillia-bold`, and thirteen of fourteen since Story 2-34 deleted `--accent-glow`.
+ * The computed value of a custom property is its token stream **after** substitution, so what
+ * `:root` answers for an aliased name is the role's value and never the
  * string `var(--token-text)`. The comparison therefore reads the role in the same page instead.
  */
 const aliasRole = (name: string): string | null =>
@@ -593,10 +594,11 @@ test('the token contract declares a real list of names', () => {
   expect(expandVars('var(--token-bg)')).toBe(DECLARED.get(roleTarget?.[1] ?? ''));
   expect(expandVars('var(--token-bg)'), '--token-bg still carries a var() after substitution').not.toMatch(/var\(/);
 
-  // The Hub's own fifteen, read from `app/app.scss` so the pre-change expectations below are
+  // The Hub's own fourteen, read from `app/app.scss` so the pre-change expectations below are
   // not literals restated here. `app/__tests__/anchor-contract.test.ts` holds the count and the
-  // no-collision claim; this is the part this file depends on. Sixteen until Story 2-20.
-  expect(HUB_DECLARED.size, 'app/app.scss no longer declares fifteen custom properties').toBe(15);
+  // no-collision claim; this is the part this file depends on. Sixteen until Story 2-20, fifteen
+  // until Story 2-34 deleted `--accent-glow`, the colour literal the FR-17 gate refuses.
+  expect(HUB_DECLARED.size, 'app/app.scss no longer declares fourteen custom properties').toBe(14);
   for (const name of PRE_CHANGE_NAMES) {
     expect([...HUB_DECLARED.keys()], `app/app.scss no longer declares ${name}`).toContain(name);
     expect([...DECLARED.keys()], `${name} is now declared by the contract as well as by the Hub`).not.toContain(name);
@@ -1148,7 +1150,7 @@ test('the Hub renders the token roles its alias layer maps its own names onto', 
   expect(used.background, 'pure black is retired from the system').not.toBe('rgb(0, 0, 0)');
   expect(used.color, 'pure white is retired from the system').not.toBe('rgb(255, 255, 255)');
 
-  // None of the Hub's fifteen is a contract name, which is why the render can be identical by
+  // None of the Hub's fourteen is a contract name, which is why the render can be identical by
   // construction rather than by luck. `app/__tests__/anchor-contract.test.ts` is the
   // authoritative check with both counts pinned; this asserts the same thing where the values
   // were just read, so neither half can drift alone.

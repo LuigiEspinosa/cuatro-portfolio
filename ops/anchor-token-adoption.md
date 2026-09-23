@@ -783,7 +783,7 @@ family the contract is free to retune under a MINOR bump. Nothing else in that f
 |---|---|---|---|---|
 | 5 | **Look at `cuatro.dev` after the merge to `main` and confirm the new appearance is the intended one** | Operator | This is the commit the whole two-step split exists to make reviewable, and it is the one worth a careful visual check. A deploy fires only on a push to `main` and this work is committed on `dev`, so nothing here has been rendered by the deployed container, behind Caddy, behind Cloudflare. The regenerated baseline and the 49,381 differing pixels are the machine's half of the answer; a person looking at the site is the other half. **If something is wrong, the revert is the whole commit**, by `git revert`. An earlier version of this row said it was `app/app.scss` plus the four `font-weight` lines plus the baseline PNG "and nothing else", which is **wrong and would revert red**: three test files in the same commit assert the alias layer exists, so reverting only the sources leaves `app/__tests__/anchor-contract.test.ts`, `tests/e2e/anchor-aliases.pw.ts` and `tests/e2e/contract-anchor.pw.ts` demanding it. Story 1-17's revert really is two lines, which is what the two-step split bought; Story 1-18's is one commit, which is the smallest unit that leaves a working system | _not done_ |
 | 6 | **Decide whether `--gray-color` may keep carrying text at 3.54:1** | Operator | It maps to `--token-border-interactive`, which is a boundary role, and `error-page.scss:48`, `ProjectCard.scss:50`, `:79`, `WorkItem.scss:71` and `:116` use it for body copy and icons (none of them is left since 2026-09-23: `ProjectCard.scss` was deleted by Story 2-9, `WorkItem.scss` rebuilt by Story 2-31 and `error-page.scss` replaced by Story 2-30, and the two rebuilt surfaces set that text in `--token-text-secondary`). That is below 4.5:1 both before and after this story, so it is inherited rather than caused here, and UX-DR10 and the Epic 2 rebuild are where a text role replaces it. Recorded so the number is not rediscovered as a surprise | _not done_ |
-| 7 | **Close or carry O-11 explicitly** | Operator | `--accent-glow` survives this story on the strength of `epics.md:1835` against two planning documents that both say to delete it at step 2. It has zero call sites, so nothing renders differently either way, and the cost of the disagreement is one dead declaration and this row | _not done_ |
+| 7 | **Close or carry O-11 explicitly** | Operator | `--accent-glow` survives this story on the strength of `epics.md:1835` against two planning documents that both say to delete it at step 2. It has zero call sites, so nothing renders differently either way, and the cost of the disagreement is one dead declaration and this row | 2026-09-23, by Story 2-34: `--accent-glow` deleted on `DESIGN.md` § The mapping's closure of O-11, because the FR-17 conformance gate refuses its `rgba()`. See § Story 2-34 closes O-11, action 7 and the `/celeste` ground rows |
 | 8 | **Record the first real CI run of the `rendered-output` job with the new spec and the new baseline**, from the Actions run summary | Operator | The nine new browser checks and the regenerated baseline have only ever run in a container on a Windows development host. Same open item as action 3, which is in this file's § "Pending Operator actions", the step 1 list, which sits below this section rather than above it, and `ops/rendered-output-harness.md` action 1 | _not done_ |
 | 9 | **Decide who fixes the tech chip label at 2.56:1**, and whether it waits for UX-DR10 | Operator | Unlike action 6, this one is **caused by this commit** rather than inherited: `--accent-dim` lost its `0.22` alpha to two opaque roles, so the label at `ProjectCard.scss:66` and `WorkItem.scss:144` fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor. The measurement and its method are in § "The contrast direction of each colour change". No fix was available inside this story: the mapping is to be followed rather than invented, and a third scoped value or a label colour means inventing one or editing a component stylesheet. The cheapest real fix is a chip fill of `--token-bg-raised` with the border keeping `--accent-dim`, which is a UX-DR10 shaped decision and not this step's to take. It is also below the `.lighthouserc.js` floor on `/work`, which that config asserts at 0.95 severity error, so a Lighthouse run is where it surfaces next. **Narrowed 2026-09-07**: the surviving chip is `WorkItem.scss:144` alone and `/projects` left the collect list with the route, so `/work` is the only audited surface the pair reaches | _not done_ |
 
@@ -862,6 +862,38 @@ the width axis `getComputedStyle().fontStretch` cannot see. `tests/e2e/narrative
 pinning that the `/` document preloads no font. `tests/e2e/anchor-aliases.pw.ts` holds the
 `--confillia-normal` call sites on disk to two, each with its `font-stretch: 75%` line, the way it
 holds `--monument-bold` to its weight lines. `ops/rendered-output-harness.md` carries the row.
+
+### Story 2-34 closes O-11, action 7 and the `/celeste` ground rows
+
+**2026-09-23, Story 2-34.** Every record above is left as written but action 7's completion cell;
+this section says which rows stopped being true on this date. The FR-17 conformance gate, `ops/literal-conformance.mjs` run by the
+blocking `literal-conformance` job (`ops/literal-conformance.md`), refuses a colour literal in any
+stylesheet outside `contracts/` and `app/scss/_print.scss`. **Observed 2026-09-23**, its first run
+over the tree at `802fbf4` named five: `app/app.scss:29`, `--accent-glow: rgba(139, 92, 246, 0.4)`,
+and `/celeste`'s four. Both were cleared in the same commit so the gate lands green.
+
+**§ The four properties deliberately left alone, a third row closed.** `--accent-glow` is deleted.
+`DESIGN.md` § The mapping drops it and closed O-11 on 2026-08-15 ("one occurrence in the whole
+repository, its own declaration"); Story 1-18 kept it on `epics.md:1835`, the later and more
+specific instruction at the time; and the gate cannot pass over its `rgba()`, which is both a colour
+and an alpha outside the permitted set. It had zero call sites, so nothing renders differently.
+**O-11 is closed in the tree as it was in the design.** `--hero-height` is the one literal the layer
+keeps, and the three suites that count the Hub's properties, `app/__tests__/anchor-contract.test.ts`,
+`tests/e2e/anchor-aliases.pw.ts` and `tests/e2e/contract-anchor.pw.ts`, pin fourteen: thirteen
+aliased and one literal. Action 7 below is done on the design document's own closure rather than on
+a new ruling, and its row says so.
+
+**§ What would invalidate the step 2 record, the literals row narrowed again.** It names
+`--hero-height` alone now. The literals case failed on the deletion, in both suites, as the row said
+it would, and the question is recorded here rather than closed in silence.
+
+**The `/celeste` rows in § A second finding and § Two corrections to step 1's record.** `/celeste`
+no longer paints `rgb(68, 68, 68)` from a hardcoded `#444`: its own rule names `--token-bg`, which is
+the base rule's ground too, and its heading names `--token-text`, `--f-display` and `--t-display`
+where it read `#fff`, `system-ui` and `min(8vw, 5rem)`. `tests/e2e/celeste-header.pw.ts` reads each
+against its role in the pinned image, with a planted `#444` ground and a planted family reported by
+the same reads, and `app/__tests__/anchor-contract.test.ts` lists `celeste.scss` among the stylesheets
+that name contract roles directly.
 
 ## What Story 1-20 will record here
 

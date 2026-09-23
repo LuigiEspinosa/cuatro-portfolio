@@ -85,7 +85,7 @@ test.describe('the site header', () => {
     await expect(header).not.toHaveAttribute('style');
   });
 
-  test('/celeste still paints the rest of the block the header rule was edited into', async ({
+  test('/celeste still paints the rest of the block the header rule was edited into, from the roles', async ({
     page,
   }) => {
     // Story 2-1 edited one selector inside the `#celeste` block, and that block also carries the
@@ -93,27 +93,70 @@ test.describe('the site header', () => {
     // file takes no screenshot, so without these reads a mistake anywhere else in the same block
     // (a brace moved, a selector renamed, the whole block lost) leaves every case green while
     // the page is wrong.
+    //
+    // **Story 2-34 moved the block onto the contract** so the FR-17 conformance gate lands green:
+    // `#444`, `#fff`, `system-ui` and `min(8vw, 5rem)` became `--token-bg`, `--token-text`,
+    // `--f-display` and `--t-display`. Each is read against its role, resolved in the same page
+    // through a probe, rather than against a value restated here.
     await goTo(page, '/celeste');
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
 
-    // `#celeste { background-color: #444; display: grid; place-items: center; }` on `<body>`.
-    expect(await computed(page, 'body', 'background-color'), 'the /celeste ground is not #444').toBe(
-      'rgb(68, 68, 68)'
+    const roles = await page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.cssText =
+        'position:absolute;left:-99999px;top:0;background-color:var(--token-bg);color:var(--token-text);' +
+        'font-family:var(--f-display);font-size:var(--t-display);';
+      document.body.appendChild(probe);
+      const style = window.getComputedStyle(probe);
+      const read = { ground: style.backgroundColor, text: style.color, family: style.fontFamily, size: style.fontSize };
+      probe.remove();
+      return read;
+    });
+    // Resolved and distinct, or one colour could satisfy both comparisons below.
+    expect(roles.ground, 'var(--token-bg) did not resolve on the probe').not.toBe('rgba(0, 0, 0, 0)');
+    expect(roles.ground, '--token-bg and --token-text resolve to one colour').not.toBe(roles.text);
+    expect(roles.family, 'var(--f-display) did not resolve on the probe').toContain('Bricolage Grotesque');
+
+    // `#celeste { background-color: var(--token-bg); display: grid; place-items: center; }` on `<body>`.
+    expect(await computed(page, 'body', 'background-color'), 'the /celeste ground is not --token-bg').toBe(
+      roles.ground
     );
     expect(await computed(page, 'body', 'display'), '/celeste no longer centres on a grid').toBe('grid');
     expect(await computed(page, 'body', 'place-items')).toContain('center');
 
-    // `#celeste h1 { color: #fff; text-align: center; }`.
-    expect(await computed(page, 'h1', 'color')).toBe('rgb(255, 255, 255)');
+    // `#celeste h1 { font-family: var(--f-display); font-size: var(--t-display); text-align: center;
+    // color: var(--token-text); }`. The heading keeps the user agent's bold, 700, which the display
+    // face publishes (`700 800`), so the face is loaded at that weight and nothing is synthesised.
+    expect(await computed(page, 'h1', 'color'), 'the heading is not --token-text').toBe(roles.text);
+    expect(await computed(page, 'h1', 'font-family'), 'the heading is not set in the display family').toBe(
+      roles.family
+    );
+    expect(await computed(page, 'h1', 'font-size'), 'the heading is not at the display size').toBe(roles.size);
+    expect(await computed(page, 'h1', 'font-weight')).toBe('700');
+    expect(
+      await page.evaluate(() => document.fonts.check('700 16px "Bricolage Grotesque"')),
+      'the display face is not loaded at the weight the heading asks for'
+    ).toBe(true);
     expect(await computed(page, 'h1', 'text-align')).toBe('center');
 
-    // The planted control. `body` on `/work` takes the grid ground and the ordinary block
-    // display, so the two reads above are discriminating rather than something every route
-    // would answer.
+    // The planted controls: the 2023 ground and a family off the contract, written back over the
+    // block, are each reported by the same reads, so a pass above is a measurement.
+    await page.addStyleTag({
+      content: 'body#celeste { background-color: rgb(68, 68, 68) !important; } #celeste h1 { font-family: serif !important; }',
+    });
+    expect(await computed(page, 'body', 'background-color'), 'a planted #444 ground reads as the role').not.toBe(
+      roles.ground
+    );
+    expect(await computed(page, 'h1', 'font-family'), 'a planted family reads as the display family').not.toBe(
+      roles.family
+    );
+
+    // And the block is the block: `/work` takes the ordinary block display. Until Story 2-34 this
+    // also read `/work`'s ground as different from `/celeste`'s; both paint `--token-bg` now, which is
+    // the point, so the display is what tells the two apart.
     await goTo(page, '/work');
-    expect(
-      await computed(page, 'body', 'background-color'),
-      'every route paints the /celeste ground, so the reads above measure nothing'
-    ).not.toBe('rgb(68, 68, 68)');
     expect(await computed(page, 'body', 'display')).not.toBe('grid');
   });
 

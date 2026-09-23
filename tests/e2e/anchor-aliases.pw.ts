@@ -6,7 +6,7 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
 /**
  * The alias layer, measured in a real browser (Story 1-18, Anchor migration step 2).
  *
- * `app/app.scss` redefines thirteen of the Hub's fifteen custom properties as `var()` references
+ * `app/app.scss` redefines thirteen of the Hub's fourteen custom properties as `var()` references
  * to token roles, and the fifteen component stylesheets go on reading the old names. That is a
  * claim about what the Hub *resolves*, and almost none of it is visible to a screenshot:
  *
@@ -33,8 +33,8 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  * rule too. Both call-site tables and their per-site cases left with their last rows; both aliases are
  * pinned at zero call sites below, in the shape `--monument-regular` and `--confillia-normal` already
  * had, and `app/__tests__/anchor-contract.test.ts` holds every stylesheet but `app/app.scss` to reading
- * none of the Hub's fifteen properties (FR-37). What is still measured here is the layer itself: every
- * alias resolves to its role, the two literals hold, and the base rule's ground and copy are the roles.
+ * none of the Hub's fourteen properties (FR-37). What is still measured here is the layer itself: every
+ * alias resolves to its role, the one literal holds, and the base rule's ground and copy are the roles.
  *
  * **Nothing here is restated.** The alias map is parsed out of `app/app.scss`, the roles are read
  * back in the same page, and every expected colour is put through a probe element rather than
@@ -140,21 +140,27 @@ const ROUTES = ['/', '/cv', '/work', '/celeste', '/api/health'] as const;
 const NOT_FOUND = '/a-route-that-does-not-exist';
 
 /**
- * The Hub declares fifteen custom properties: thirteen aliased onto roles, two left as literals.
+ * The Hub declares fourteen custom properties: thirteen aliased onto roles, one left as a literal.
  *
  * **Sixteen, twelve and four until 2026-09-12.** Story 2-20 retargeted `--confillia-normal` onto
  * the display role and deleted `--confillia-bold`, which had zero call sites. The same three
- * counts moved in `app/__tests__/anchor-contract.test.ts` in the same commit.
+ * counts moved in `app/__tests__/anchor-contract.test.ts` in the same commit. **Fifteen and two
+ * until 2026-09-23.** Story 2-34 deleted `--accent-glow`, a colour literal with zero call sites that
+ * the FR-17 conformance gate refuses outside `contracts/`, and the same counts moved in
+ * `app/__tests__/anchor-contract.test.ts` and `tests/e2e/contract-anchor.pw.ts`.
  */
-const HUB_PROPERTY_COUNT = 15;
+const HUB_PROPERTY_COUNT = 14;
 const ALIASED_COUNT = 13;
-const LITERAL_COUNT = 2;
+const LITERAL_COUNT = 1;
 
-/** The two this story must not move, and the open question or reason that holds each. */
-const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height'] as const;
+/** The one this story must not move, and the reason that holds it. */
+const LITERAL_PROPERTIES = ['--hero-height'] as const;
 
-/** Exactly one of the two is a colour, so exactly one takes the colour route below. */
-const LITERAL_COLOUR_COUNT = 1;
+/**
+ * None of them is a colour since Story 2-34 deleted `--accent-glow`, the one that was, so none takes
+ * the colour route below; a colour literal written back here would fail the FR-17 gate as well.
+ */
+const LITERAL_COLOUR_COUNT = 0;
 
 const withoutComments = (source: string): string =>
   source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:(])\/\/.*$/gm, '$1');
@@ -172,7 +178,7 @@ const declarationsIn = (block: string): Map<string, string> => {
   return found;
 };
 
-/** The Hub's fifteen, as `app/app.scss` authors them. */
+/** The Hub's fourteen, as `app/app.scss` authors them. */
 const HUB = declarationsIn(/:root\s*\{([^}]*)\}/.exec(withoutComments(APP_SCSS))?.[1] ?? '');
 
 /** Every custom property `contracts/tokens.css` puts on `:root` outside a media query. */
@@ -354,21 +360,20 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
  * dead code, so a later row that needs a wide read knows this was tried and why it left.
  */
 test('parses a real alias layer, so every case below measures something', () => {
-  expect(HUB.size, 'app/app.scss no longer declares fifteen custom properties on :root').toBe(HUB_PROPERTY_COUNT);
+  expect(HUB.size, 'app/app.scss no longer declares fourteen custom properties on :root').toBe(HUB_PROPERTY_COUNT);
   expect(CONTRACT.size, 'no :root block was parsed out of contracts/tokens.css').toBeGreaterThan(0);
   for (const known of ['--token-bg', '--token-text', '--f-display', '--page-pad']) {
     expect([...CONTRACT.keys()], `contracts/tokens.css no longer declares ${known}`).toContain(known);
   }
 
-  // The partition is pinned in both halves. Thirteen aliased and two literal, and the two named,
-  // so an alias quietly written over one of them fails here rather than passing as thirteen of
-  // fifteen.
+  // The partition is pinned in both halves. Thirteen aliased and one literal, and the one named,
+  // so an alias quietly written over it fails here rather than passing as thirteen of fourteen.
   expect(ALIASES.length, 'app/app.scss no longer aliases exactly thirteen properties onto token roles').toBe(
     ALIASED_COUNT
   );
   expect(
     [...HUB.keys()].filter((name) => aliasRole(name) === null).sort(),
-    'the two properties the alias layer must not move are not the two still authored as literals'
+    'the property the alias layer must not move is not the one still authored as a literal'
   ).toEqual([...LITERAL_PROPERTIES].sort());
   for (const name of ALIASES) {
     expect(
@@ -480,14 +485,15 @@ test('every aliased Hub property resolves to exactly the token role it names', a
   ).not.toBe(await rootCustomPropertyValue(page, '--token-bg'));
 });
 
-test('the two properties the alias layer must not move still hold their authored literals', async ({ page }) => {
+test('the property the alias layer must not move still holds its authored literal', async ({ page }) => {
   await goTo(page, '/');
 
   expect(LITERAL_PROPERTIES.length, 'the list of untouched properties is empty').toBe(LITERAL_COUNT);
 
-  // Two comparison routes, because one of the two is a colour and the build rewrites colours on
-  // the way to the browser. `--accent-glow` is authored `rgba(139, 92, 246, 0.4)` and arrives as
-  // `#8b5cf666`, which is the same colour and a different string. The text route read the two
+  // Two comparison routes, because a literal may be a colour and the build rewrites colours on the
+  // way to the browser. The colour route read `--accent-glow`, authored `rgba(139, 92, 246, 0.4)` and
+  // arriving as `#8b5cf666`, until Story 2-34 deleted it; it stays, with its planted controls below,
+  // because the body-ground case reads through the same `rasterise`. The text route read the two
   // single-quoted Confillia literals until Story 2-20 retargeted one and deleted the other; it
   // reads `--hero-height` now, and stays because a literal that is not a colour still needs a
   // route that compares it.
@@ -495,7 +501,7 @@ test('the two properties the alias layer must not move still hold their authored
     (values: string[]) => values.map((value) => CSS.supports('color', value)),
     LITERAL_PROPERTIES.map((name) => HUB.get(name) ?? '')
   );
-  expect(isColour.filter(Boolean).length, 'the colour route is no longer exercised by exactly one of the two').toBe(
+  expect(isColour.filter(Boolean).length, 'a literal the alias layer keeps is a colour again, which the FR-17 gate refuses').toBe(
     LITERAL_COLOUR_COUNT
   );
   expect(isColour.filter((taken) => !taken).length, 'the text route is no longer exercised').toBe(
@@ -508,8 +514,8 @@ test('the two properties the alias layer must not move still hold their authored
     expect(authored, `app/app.scss no longer declares ${name}`).not.toBe('');
     expect(
       IS_VAR_REFERENCE.test(authored),
-      `app/app.scss authors ${name} as "${authored}", a var() reference. O-11 holds --accent-glow, ` +
-        `and the contract carries no viewport height for --hero-height.`
+      `app/app.scss authors ${name} as "${authored}", a var() reference. The contract carries no ` +
+        `viewport height for --hero-height.`
     ).toBe(false);
 
     const read = await rootCustomPropertyValue(page, name);

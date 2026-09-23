@@ -21,7 +21,7 @@ import { dirname, join, relative, resolve } from 'node:path';
  *     A runtime `@import` would fetch the contract from a URL Next never emits and would break
  *     the relative `url("./fonts/<file>.woff2")` resolution. The `@use` assertion is what holds
  *     that shut; the no-extension assertion below is a convention check and says so.
- *  2. **No name collides.** All fifteen of the Hub's custom properties are declared in
+ *  2. **No name collides.** All fourteen of the Hub's custom properties are declared in
  *     `app/app.scss`, none of the eighty-nine contract names is among them, and both counts are
  *     pinned so the intersection cannot be empty because a list was.
  *  3. **The contract is consumed by the alias layer and by nothing else.** Story 1-17 asserted
@@ -162,12 +162,15 @@ const DECLARED_COUNT = 89;
 const REDUCED_COUNT = 4;
 
 /**
- * The Hub's own custom properties, all fifteen of them, all in one file.
+ * The Hub's own custom properties, all fourteen of them, all in one file.
  *
  * **Sixteen until 2026-09-12.** Story 2-20 deleted `--confillia-bold`, which had zero call sites,
- * with the local face it named. Both suites moved in the same commit.
+ * with the local face it named. Both suites moved in the same commit. **Fifteen until
+ * 2026-09-23.** Story 2-34 deleted `--accent-glow`, a colour literal with zero call sites that the
+ * FR-17 conformance gate refuses and `DESIGN.md` § The mapping drops; the three suites that count
+ * the Hub's properties moved in the same commit.
  */
-const HUB_PROPERTY_COUNT = 15;
+const HUB_PROPERTY_COUNT = 14;
 
 /**
  * **The mapping, property by property**, which is the whole content of Story 1-18's first
@@ -233,14 +236,16 @@ const ALIAS_ROLES = [...new Set(MAPPING.flatMap(([, roles]) => roles))];
 const FOCUS_ROLES = ['--stroke-focus', '--token-focus', '--focus-offset', '--r-hair'] as const;
 
 /**
- * The two the alias layer deliberately leaves authored as literals.
+ * The one the alias layer deliberately leaves authored as a literal.
  *
- * Not an oversight, and each is held by something: `--accent-glow` by O-11, which is open, and
- * `--hero-height` by being a layout constant the contract carries no role for. **Four until
- * 2026-09-12**: the two Confillia names were held by the type swap (UX-DR12) and O-6, and Story
+ * Not an oversight: `--hero-height` is a layout constant the contract carries no role for. **Four
+ * until 2026-09-12**: the two Confillia names were held by the type swap (UX-DR12) and O-6, and Story
  * 2-20 is that swap. `--confillia-normal` moved into `MAPPING` and `--confillia-bold` was deleted.
+ * **Two until 2026-09-23**: `--accent-glow` was held by O-11, which `DESIGN.md` § The mapping had
+ * closed by dropping it, and Story 2-34 deleted it, because its `rgba()` is a colour literal the
+ * FR-17 conformance gate refuses outside `contracts/`.
  */
-const LITERAL_PROPERTIES = ['--accent-glow', '--hero-height'] as const;
+const LITERAL_PROPERTIES = ['--hero-height'] as const;
 
 /**
  * The `--monument-bold` call sites, the only component stylesheets Story 1-18 edits.
@@ -315,6 +320,12 @@ const TOKEN_NATIVE_STYLESHEETS = [
   'components/molecules/GlitchText/GlitchText.scss',
   'components/molecules/Header/Header.scss',
   'components/molecules/PlateMark/PlateMark.scss',
+  // `/celeste`, the residue no redesign story reached, brought onto the contract by Story 2-34 so the
+  // FR-17 conformance gate lands green: its `#444` ground, `#fff` heading, `system-ui` family and
+  // `min(8vw, 5rem)` size became the ground, text, display family and display size roles. Not a
+  // rebuild: the file keeps its selectors, its centring and the header rule Story 2-1 wrote, and
+  // keeps its 2023 lowercase name, which a story that does not rebuild it does not rename.
+  'components/organisms/Celeste/celeste.scss',
   // The `/cv` intro block, added by Story 2-16. A rebuild like the rest of this list: the route was
   // a redirect until that story, so there is no 2023 stylesheet behind it and no alias name to keep.
   'components/organisms/CvIntro/CvIntro.scss',
@@ -423,7 +434,7 @@ const withoutComments = (source: string): string =>
  * A custom property **declaration**, anchored on the character that can open one.
  *
  * `--name:` on its own is not enough: a BEM modifier carrying a pseudo-class, `.btn--primary:hover`,
- * is `--name:` too. Reading that as a declaration would inflate the Hub's pinned count of fifteen
+ * is `--name:` too. Reading that as a declaration would inflate the Hub's pinned count of fourteen
  * and fail the collision argument for a reason unrelated to the contract. Anchoring on `;`, `{` or
  * a line start is what separates the two. The same expression is used by every place in this file
  * that counts declarations, so the three cannot drift apart.
@@ -472,7 +483,7 @@ const CONTRACT = atCollection('could not parse contracts/tokens.css:', () => {
 
 const TOKEN_NAMES = [...new Set([...CONTRACT.base.keys(), ...CONTRACT.reduced.keys()])];
 
-/** Every `--name` `app/app.scss` declares. All fifteen of the Hub's own live in that one file. */
+/** Every `--name` `app/app.scss` declares. All fourteen of the Hub's own live in that one file. */
 const HUB_NAMES = atCollection('could not parse app/app.scss:', () => {
   const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
   return [...new Set([...source.matchAll(DECLARATION)].map((found) => found[1]))];
@@ -736,10 +747,10 @@ describe('the token contract is wired into the Anchor stylesheet graph', () => {
 });
 
 describe('no contract name collides with a name the Hub already declares', () => {
-  it('found all fifteen of the Hub own custom properties in app/app.scss', () => {
+  it('found all fourteen of the Hub own custom properties in app/app.scss', () => {
     // The "identical by construction" argument rests on this count. If the Hub declared a
-    // sixteenth somewhere else, the intersection below would be empty for the wrong reason.
-    expect(HUB_NAMES.length, 'app/app.scss no longer declares exactly fifteen custom properties').toBe(
+    // fifteenth somewhere else, the intersection below would be empty for the wrong reason.
+    expect(HUB_NAMES.length, 'app/app.scss no longer declares exactly fourteen custom properties').toBe(
       HUB_PROPERTY_COUNT
     );
     for (const name of ['--white-color', '--black-color', '--accent', '--monument-bold']) {
@@ -956,11 +967,11 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     ).toBe(false);
   });
 
-  it('aliases each of the thirteen onto the role the mapping assigns it, and leaves the other two as literals', () => {
+  it('aliases each of the thirteen onto the role the mapping assigns it, and leaves the other one as a literal', () => {
     // The mapping is a whitelist in both directions, **row by row**. Thirteen properties become
-    // `var()` references to a named role; the other two stay literals because something holds
-    // each of them, and aliasing one anyway is a silent departure from the plan that no rendered
-    // check would see as a defect. Read off `app/app.scss` rather than off the browser, because
+    // `var()` references to a named role; the other one stays a literal because something holds
+    // it, and aliasing it anyway is a silent departure from the plan that no rendered check would
+    // see as a defect. Read off `app/app.scss` rather than off the browser, because
     // what is being asserted is what the file authors.
     const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
     const root = /:root\s*\{([^}]*)\}/.exec(source);
@@ -979,12 +990,12 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
 
     const declared = declarationsIn(root?.[1] ?? '');
 
-    expect(declared.size, 'app/app.scss no longer declares fifteen custom properties on :root').toBe(
+    expect(declared.size, 'app/app.scss no longer declares fourteen custom properties on :root').toBe(
       HUB_PROPERTY_COUNT
     );
     expect(
       [...declared.keys()].sort(),
-      'the aliased and literal lists do not partition the Hub fifteen'
+      'the aliased and literal lists do not partition the Hub fourteen'
     ).toEqual([...ALIASED_PROPERTIES, ...LITERAL_PROPERTIES].sort());
 
     const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
@@ -1105,9 +1116,8 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
       expect(value, `app/app.scss no longer declares ${name}`).not.toBe('');
       expect(
         IS_VAR_REFERENCE.test(value),
-        `app/app.scss authors ${name} as "${value}", a var() reference. It is held by an open ` +
-          `question (O-11 for --accent-glow) or, for --hero-height, by the contract carrying no ` +
-          `viewport height at all.`
+        `app/app.scss authors ${name} as "${value}", a var() reference. It is held by the ` +
+          `contract carrying no viewport height at all.`
       ).toBe(false);
       for (const role of TOKEN_NAMES) {
         expect(
@@ -1195,9 +1205,9 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
   });
 
   it('writes the hit-target floor by hand in no stylesheet, so every control reads it off the contract', () => {
-    // Story 2-32's criterion, and the rule Story 2-34's gate will enforce as a spacing literal like any
-    // other (`DESIGN.md` § The hit-target floor): the floor is `--tap`, minted so that five frameworks
-    // cannot each write their own. Comments are stripped first, because a sentence about the number is
+    // Story 2-32's criterion, and the rule Story 2-34's gate enforces in every declaration outside the
+    // permitted set (`ops/literal-conformance.mjs`, `DESIGN.md` § The hit-target floor): the floor is
+    // `--tap`, minted so that five frameworks cannot each write their own. Comments are stripped first, because a sentence about the number is
     // not a declaration of it; a declaration anywhere in a scanned stylesheet fails naming the file.
     const floorLiteral = /(?<![\w.-])44px\b/;
     const written = files
@@ -1211,7 +1221,7 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     expect(floorLiteral.test(withoutComments('.a { inline-size: 144px; }'))).toBe(false);
   });
 
-  it('has no stylesheet but the alias layer read any of the Hub’s fifteen properties, which is FR-37’s removal condition', () => {
+  it('has no stylesheet but the alias layer read any of the Hub’s fourteen properties, which is FR-37’s removal condition', () => {
     // FR-37: "no component stylesheet consumes a transitional alias once its component has been
     // redesigned", and the alias layer is deleted when the last one is. Story 2-33 rebuilt the last
     // two, `WorkHero.scss` and `WorkTimeline.scss`, on 2026-09-23, so from then no stylesheet but
@@ -1240,7 +1250,7 @@ describe('the Anchor consumes the contract through the alias layer and nowhere e
     expect(planted('.a { padding: 2rem var(--page-padding) 8rem; }')).toEqual(['--page-padding']);
     expect(planted('.a { color: var( --accent , red); }')).toEqual(['--accent']);
     expect(planted('.a { color: var(--accent-dimmer); }')).toEqual([]);
-    expect(HUB_NAMES.length, 'app/app.scss no longer declares the fifteen this reads for').toBe(HUB_PROPERTY_COUNT);
+    expect(HUB_NAMES.length, 'app/app.scss no longer declares the fourteen this reads for').toBe(HUB_PROPERTY_COUNT);
   });
 });
 
