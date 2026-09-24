@@ -28,7 +28,8 @@ import { capitalise, pluralise, spellOut } from '../words';
  * The Hub's read of the published Registry (Story 2.7).
  *
  * This file asserts the **rule**, not the data. What the fourteen entries say is
- * `ops/registry-inputs.md`'s subject and `ops/__tests__/registry-schema.test.ts`'s gate; a case
+ * `contracts/registry.json`'s alone, its only source since 2026-09-24 (`ops/registry-inputs.md` is
+ * a frozen record), held to its shape by `ops/__tests__/registry-schema.test.ts`'s gate; a case
  * here that pinned six rendered entries by name would fail on the day an application ships, which
  * is the day AD-4 says nothing should have to change.
  *
