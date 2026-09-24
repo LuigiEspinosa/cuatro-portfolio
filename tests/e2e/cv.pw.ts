@@ -519,65 +519,63 @@ test.describe('with scripting off, which is the medium the collapsed-height defe
   // `app/cv/__tests__/page.test.tsx` asserts the same thing on `renderToStaticMarkup` output. That
   // reads the string; this reads the boxes a browser lays out from it, which is the claim the
   // acceptance criterion is written about.
+  //
+  // **Inverted on 2026-09-24** (Operator ruling, DW-76). Until then this block read the open entry
+  // open and the other three at zero, the reading DW-76 was filed on: a scriptless `/cv` showed one
+  // company of four. `WorkItem.scss` opens every panel under `@media (scripting: none)` now, with the
+  // two declarations the print sheet uses, so the whole CV reads without script, on `/work` too, and
+  // the three triggers stay inert over visible text, the cost the ruling accepted.
   test.use({ javaScriptEnabled: false });
 
-  test('serves the open entry already open, and leaves the page inside the viewport', async ({ page }) => {
-    await goTo(page, ROUTE);
-
-    const panels = page.locator('.work-item__content');
-    const count = await panels.count();
-    expect(count, '/cv rendered no panel with scripting off').toBeGreaterThan(0);
-
-    const heights = await panels.evaluateAll((nodes: Element[]) =>
-      nodes.map((node) => node.getBoundingClientRect().height)
-    );
-
-    expect(
-      heights[0],
-      'the entry that is open on arrival has no height with scripting off, so its detail is ' +
-        'unreachable: nothing can expand it and the markup shipped it collapsed'
-    ).toBeGreaterThan(0);
-
-    // The detail is really there rather than the box merely being tall.
-    const detail = (await panels.first().innerText()).trim();
-    expect(detail.length, 'the open panel has a box and no text in it').toBeGreaterThan(200);
-
-    // **The control, and it is the other three panels.** They are closed, they measure zero, and
-    // nothing on this page can open them, which is the reading DW-73 is filed on. Without it,
-    // "taller than zero" above is a statement about every panel rather than about the open one.
-    expect(
-      heights.slice(1).filter((height) => height > 0),
-      'a closed panel has height with scripting off, so the reading above is not about the open entry'
-    ).toEqual([]);
-
-    // A-5 holds on this path too: nothing that only runs with scripting on is what keeps the
-    // document inside the viewport.
-    const width = await page.evaluate(() => ({
-      scroll: document.documentElement.scrollWidth,
-      inner: window.innerWidth,
-    }));
-    expect(width.scroll, `/cv scrolls horizontally with scripting off: ${JSON.stringify(width)}`).toBeLessThanOrEqual(
-      width.inner
-    );
-  });
-
-  test('and the same reading reports a collapsed panel, so it is measuring the markup', async ({ page }) => {
-    // **The counterpart.** With scripting off there is nothing to plant a defect with, so the
-    // control is the surface that still ships every panel collapsed: `/work` renders the identical
-    // component, and its first entry is open for the same reason. If both routes read the same, the
-    // measurement above is about `WorkItem` and not about a page that happens to work.
-    await goTo(page, WORK);
-
-    const heights = await page
+  /** Every panel's height and text length on the open page, in document order. */
+  const panelsOn = (page: Page) =>
+    page
       .locator('.work-item__content')
-      .evaluateAll((nodes: Element[]) => nodes.map((node) => node.getBoundingClientRect().height));
+      .evaluateAll((nodes: Element[]) =>
+        nodes.map((node) => ({ height: node.getBoundingClientRect().height, text: (node as HTMLElement).innerText.trim().length }))
+      );
 
-    expect(heights.length, '/work rendered no panel with scripting off').toBeGreaterThan(0);
-    expect(heights[0], '/work ships its open entry collapsed, so the fix reached only one route').toBeGreaterThan(0);
-    expect(
-      heights.slice(1).filter((height) => height > 0),
-      '/work leaves a closed panel open, so a zero on /cv is not the collapsed style being read'
-    ).toEqual([]);
+  for (const route of [ROUTE, WORK]) {
+    test(`serves every entry open on ${route}, and leaves the page inside the viewport`, async ({ page }) => {
+      await goTo(page, route);
+      expect(await page.evaluate(() => matchMedia('(scripting: none)').matches), 'this context is running script').toBe(true);
+
+      const panels = await panelsOn(page);
+      expect(panels.length, `${route} rendered fewer than two panels with scripting off, so "every" is over nothing`).toBeGreaterThan(1);
+      // Every company's detail is really there, not only a tall box: none is a heading with nothing under it.
+      expect(
+        panels.flatMap((panel, index) => (panel.height === 0 || panel.text < 100 ? [index] : [])),
+        `${route} leaves a company closed with scripting off: ${JSON.stringify(panels)}`
+      ).toEqual([]);
+
+      // A-5 holds on this path too: nothing that only runs with scripting on is what keeps the
+      // document inside the viewport, now that every panel is open.
+      const width = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        inner: window.innerWidth,
+      }));
+      expect(width.scroll, `${route} scrolls horizontally with scripting off: ${JSON.stringify(width)}`).toBeLessThanOrEqual(
+        width.inner
+      );
+    });
+  }
+
+  test('and with script the same read finds every other entry closed, so the open panels are that one rule', async ({ browser }) => {
+    // **The control.** The same component, the same read, a context that runs script: the first entry
+    // open and every other at the zero height the first render writes, which is what the rule above
+    // overrides and the disclosure keeps owning wherever a handler can run.
+    const context = await browser.newContext({ viewport: { ...RENDERED_VIEWPORT }, deviceScaleFactor: 1, javaScriptEnabled: true });
+    try {
+      const page = await context.newPage();
+      await goTo(page, ROUTE);
+      expect(await page.evaluate(() => matchMedia('(scripting: none)').matches), 'the control context is not running script').toBe(false);
+      const panels = await panelsOn(page);
+      expect(panels.length, '/cv rendered fewer than two panels with scripting on').toBeGreaterThan(1);
+      expect(panels[0].height, 'the entry open on arrival is closed with script').toBeGreaterThan(0);
+      expect(panels.slice(1).filter((panel) => panel.height > 0), 'a closed entry is open with script, so the rule is not scoped').toEqual([]);
+    } finally {
+      await context.close();
+    }
   });
 });
 

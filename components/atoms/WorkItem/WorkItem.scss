@@ -137,9 +137,22 @@
   color: var(--token-text-secondary);
 }
 
-// **`.work-item__content` has no rule here, and must not gain vertical padding.** GSAP owns its
-// `height` and `overflow` inline, and with `box-sizing: border-box` a collapsed panel would still paint
-// its padding. The spacing inside it is its children's margins.
+// **`.work-item__content` has no rule here but the scriptless one below, and must not gain vertical
+// padding.** GSAP owns its `height` and `overflow` inline, and with `box-sizing: border-box` a
+// collapsed panel would still paint its padding. The spacing inside it is its children's margins.
+
+// **With scripting off, every panel is open** (Operator ruling 2026-09-24, DW-76). No handler runs, so
+// a panel the first render closed would keep that render's inline zero height and a scriptless `/cv`
+// would show one company of four. These are the two declarations `app/scss/_print.scss` opens the
+// panels with on paper; `!important` is what outranks the inline style, and under this query no tween
+// is running for it to fight. The triggers stay inert and announce themselves collapsed over visible
+// text, the cost the ruling accepted over a rebuild on `<details>`.
+@media (scripting: none) {
+  .work-item__content {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
 
 .work-item__initiative {
   margin: 0 0 var(--s-sm);

@@ -596,4 +596,18 @@ describe('the stylesheet names contract roles and nothing else', () => {
     ).toEqual(['var(--w-bold)']);
     expect(css).toMatch(/\.work-item__company\{[^}]*font-family:var\(--f-display\)[^}]*font-weight:var\(--w-bold\)/);
   });
+
+  it('opens every panel when scripting is off, with the two declarations the print sheet opens them with (DW-76)', () => {
+    // Operator ruling 2026-09-24. No handler runs without script, so a panel the first render closed
+    // would keep its inline zero height and three companies of four would be missing. `!important`
+    // is what outranks that inline style; the browser half is `tests/e2e/cv.pw.ts`.
+    const opened = '.work-item__content{height:auto !important;overflow:visible !important}';
+    expect(css, 'no rule opens the panels when scripting is off').toContain(`@media(scripting: none){${opened}}`);
+    const print = compile(resolve(REPO_ROOT, 'app', 'scss', '_print.scss'), { style: 'compressed' }).css;
+    expect(print, 'the print sheet no longer opens the panels with these two declarations').toContain(opened);
+    // Scoped to that medium alone: nowhere else does this sheet touch the panel the tween owns.
+    expect(css.replace(`@media(scripting: none){${opened}}`, ''), 'a rule on the panel outside the scripting block').not.toContain(
+      '.work-item__content'
+    );
+  });
 });
