@@ -1882,11 +1882,6 @@ test.describe('the hero links wait for their turn in the entrance (DW-106)', () 
           held.filter((link) => link.opacity !== '0').map((link) => link.name),
           'a link is past the start of its fade, so the hold did not catch the entrance and this read is not at its start'
         ).toEqual([]);
-        expect(
-          held.filter((link) => link.visibility !== 'hidden').map((link) => link.name),
-          'a link is open to the keyboard and the pointer while its fade has not begun'
-        ).toEqual([]);
-        expect(held.filter((link) => link.takesTheClick).map((link) => link.name), 'a click at a hidden link lands on it').toEqual([]);
 
         const stops = await tabUntilDirectory(page);
         console.log(`front-door: Tab at the start of the entrance: ${stops.join(' | ')}`);
@@ -1896,6 +1891,11 @@ test.describe('the hero links wait for their turn in the entrance (DW-106)', () 
           stops.slice(0, -1).map((stop) => /skip-(link|control)/.exec(stop)?.[0] ?? stop),
           'Tab stopped somewhere other than the two skips before the Directory'
         ).toEqual(['skip-link', 'skip-control']);
+        expect(
+          held.filter((link) => link.visibility !== 'hidden').map((link) => link.name),
+          'a link is open to the keyboard and the pointer while its fade has not begun'
+        ).toEqual([]);
+        expect(held.filter((link) => link.takesTheClick).map((link) => link.name), 'a click at a hidden link lands on it').toEqual([]);
 
         // The control, on the same page: the entrance played to its end, and the same reads now find
         // all five, in order, each taking the click at its centre.
