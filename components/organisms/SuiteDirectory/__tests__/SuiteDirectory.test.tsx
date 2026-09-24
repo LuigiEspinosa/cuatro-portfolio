@@ -64,6 +64,19 @@ const rows = (container: HTMLElement) => [...container.querySelectorAll<HTMLElem
 
 const nameOf = (row: Element) => row.querySelector('.suite-directory__name')?.textContent;
 
+/**
+ * The external-navigation mark both links end in (Operator ruling 2026-09-24): the north-east arrow
+ * and the text-presentation selector. Written here rather than imported, so a changed glyph fails
+ * here instead of agreeing with itself.
+ */
+const GLYPH = '\u2197\uFE0E';
+
+/** What both links' accessible names end with, since both open a new tab. */
+const NEW_TAB = ', opens in a new tab';
+
+/** A link's visible label, the underlined span, without the mark after it. */
+const labelOf = (link: Element | null) => link?.querySelector('.suite-directory__rule')?.textContent;
+
 describe('the Suite Directory', () => {
   it('renders one row per rendered entry, in the order the rules produce', () => {
     const { container } = render(<SuiteDirectory />);
@@ -135,10 +148,54 @@ describe('the Suite Directory', () => {
     const { container } = render(<SuiteDirectory />);
     for (const [index, row] of rows(container).entries()) {
       const application = drawn()[index];
-      const source = within(row).getByRole('link', { name: `Source: ${application.name}` });
+      const source = within(row).getByRole('link', { name: `Source: ${application.name}${NEW_TAB}` });
       expect(source).toHaveAttribute('href', application.source);
-      expect(source.textContent).toBe('Source');
+      expect(labelOf(source)).toBe('Source');
     }
+  });
+
+  it('marks both links as opening a new tab: the glyph after the label, hidden, and the words in the name', () => {
+    // Operator ruling 2026-09-24 (the ledger entry on new-tab links). Both keep `target="_blank"`, so
+    // each says so twice: to the eye, the system's external-navigation mark after the underlined
+    // label; to a reader, the words at the end of the name, which begins with the visible label
+    // (WCAG 2.5.3) so speech input still finds the link by what it shows.
+    const findings = (link: Element): string[] => {
+      const found: string[] = [];
+      const at = `${link.className} "${labelOf(link)}"`;
+      if (link.getAttribute('target') !== '_blank') found.push(`${at} does not open a new tab`);
+      if (link.getAttribute('rel') !== 'noopener noreferrer') found.push(`${at} gives the new tab an opener`);
+      const marks = [...link.querySelectorAll('.suite-directory__external')];
+      if (marks.length !== 1) found.push(`${at} carries ${marks.length} external marks, not one`);
+      const [mark] = marks;
+      if (mark && mark.getAttribute('aria-hidden') !== 'true') found.push(`${at}'s mark is exposed to assistive technology`);
+      if (mark && mark.textContent !== GLYPH) found.push(`${at}'s mark reads "${mark.textContent}"`);
+      // After the label and outside it, so the underline runs under the words and not the mark.
+      if (mark && (link.lastElementChild !== mark || mark.closest('.suite-directory__rule'))) found.push(`${at}'s mark is not after its label`);
+      const name = link.getAttribute('aria-label') ?? '';
+      if (!name.endsWith(NEW_TAB)) found.push(`${at} is named "${name}", which does not say it opens a new tab`);
+      if (!name.toLowerCase().startsWith((labelOf(link) ?? '').toLowerCase())) found.push(`${at} is named "${name}", which does not begin with its label`);
+      return found;
+    };
+
+    const { container } = render(<SuiteDirectory />);
+    const links = [...container.querySelectorAll('a.suite-directory__live, a.suite-directory__source')];
+    expect(links.length, 'no Directory link was drawn, so this case reads nothing').toBeGreaterThan(0);
+    expect(links.flatMap(findings)).toEqual([]);
+
+    // The control: the same read, on a link carrying neither signal, names both.
+    const planted = document.createElement('a');
+    planted.className = 'suite-directory__live';
+    planted.setAttribute('target', '_blank');
+    planted.setAttribute('rel', 'noopener noreferrer');
+    const label = document.createElement('span');
+    label.className = 'suite-directory__rule';
+    label.textContent = 'planted.example';
+    planted.append(label);
+    expect(findings(planted)).toEqual([
+      'suite-directory__live "planted.example" carries 0 external marks, not one',
+      'suite-directory__live "planted.example" is named "", which does not say it opens a new tab',
+      'suite-directory__live "planted.example" is named "", which does not begin with its label',
+    ]);
   });
 
   it('labels every live link with the bare domain, never with View Live', () => {
@@ -160,7 +217,7 @@ describe('the Suite Directory', () => {
       // Asserted as two properties of the label rather than as a copy of the transform, which
       // would be the transform written twice and would agree with itself however it changed. No
       // committed entry carries a `www.` prefix, so the exact strip is pinned over a fixture below.
-      const label = live?.textContent ?? '';
+      const label = labelOf(live) ?? '';
       expect(label, `${application.id} labels its live link with a www. prefix`).not.toMatch(/^www\./);
       expect(
         new URL(application.live).hostname.endsWith(label),
@@ -182,7 +239,7 @@ describe('the Suite Directory', () => {
     const row = rows(container).find((candidate) => nameOf(candidate) === hub?.name) as HTMLElement;
     expect(row, "the Hub's own entry is not rendered").toBeDefined();
     expect(within(row).getByText('You are here')).toBeInTheDocument();
-    expect(within(row).getByRole('link', { name: `Source: ${hub?.name}` })).toHaveAttribute('href', hub?.source);
+    expect(within(row).getByRole('link', { name: `Source: ${hub?.name}${NEW_TAB}` })).toHaveAttribute('href', hub?.source);
     expect(
       row.querySelector('.suite-directory__live'),
       'the Hub links a visitor to the page they are already reading'
@@ -287,7 +344,7 @@ describe('the visitor events the rows carry (Story 2-24)', () => {
     const { container } = render(<SuiteDirectory />);
     for (const [index, row] of rows(container).entries()) {
       const application = drawn()[index];
-      const source = within(row).getByRole('link', { name: `Source: ${application.name}` });
+      const source = within(row).getByRole('link', { name: `Source: ${application.name}${NEW_TAB}` });
       expect(source, `${application.id}'s Source link fires no event`).toHaveAttribute('data-umami-event', SOURCE_EVENT);
       expect(source).toHaveAttribute('data-umami-event-app', application.id);
     }
@@ -383,7 +440,7 @@ describe('a Complete entry, which the committed Registry does not hold', () => {
     const { container } = drawRow(finished);
     expect(container.querySelector('.suite-directory__live')).toBeNull();
     expect(screen.getAllByRole('link')).toHaveLength(1);
-    expect(screen.getByRole('link', { name: 'Source: Finished Thing' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: `Source: Finished Thing${NEW_TAB}` })).toHaveAttribute(
       'href',
       finished.source
     );
@@ -395,7 +452,7 @@ describe('a Complete entry, which the committed Registry does not hold', () => {
     expect(links, 'the row draws no links container').not.toBeNull();
     expect(links?.children, 'the links container holds something besides the Source link').toHaveLength(1);
     // Not a dash, not an ellipsis, not a space standing in for a destination.
-    expect(links?.textContent).toBe('Source');
+    expect(links?.textContent).toBe(`Source${GLYPH}`);
   });
 
   it('renders no You are here either, the entry not being the current origin', () => {
@@ -429,14 +486,14 @@ describe('a Complete entry, which the committed Registry does not hold', () => {
     const { container } = drawRow({ ...finished, status: 'Live', live: 'https://www.example.com/path' });
     const live = container.querySelector<HTMLAnchorElement>('.suite-directory__live');
     expect(live).toHaveAttribute('href', 'https://www.example.com/path');
-    expect(live?.textContent).toBe('example.com');
+    expect(labelOf(live)).toBe('example.com');
   });
 
   it('keeps a subdomain that merely starts like the prefix', () => {
     // The strip is anchored, so `wwwx.` and `www2.` are ordinary subdomains and survive. A bare
     // `replace('www.', '')` would eat the first match anywhere in the hostname.
     const { container } = drawRow({ ...finished, status: 'Live', live: 'https://www2.example.com' });
-    expect(container.querySelector('.suite-directory__live')?.textContent).toBe('www2.example.com');
+    expect(labelOf(container.querySelector('.suite-directory__live'))).toBe('www2.example.com');
   });
 
   it('draws no live link for an entry whose hostname is an empty string', () => {
@@ -446,13 +503,13 @@ describe('a Complete entry, which the committed Registry does not hold', () => {
     const { container } = drawRow({ ...finished, status: 'Live', live: '' });
     expect(container.querySelector('.suite-directory__live')).toBeNull();
     expect(container.querySelectorAll('a[href=""]')).toHaveLength(0);
-    expect(container.querySelector('.suite-directory__links')?.textContent).toBe('Source');
+    expect(container.querySelector('.suite-directory__links')?.textContent).toBe(`Source${GLYPH}`);
   });
 
   it('draws no live link for an entry whose hostname is only whitespace', () => {
     const { container } = drawRow({ ...finished, status: 'Live', live: '   ' });
     expect(container.querySelector('.suite-directory__live')).toBeNull();
-    expect(container.querySelector('.suite-directory__links')?.textContent).toBe('Source');
+    expect(container.querySelector('.suite-directory__links')?.textContent).toBe(`Source${GLYPH}`);
   });
 
   it('draws no live link for a Live entry that carries no hostname, rather than an empty one', () => {

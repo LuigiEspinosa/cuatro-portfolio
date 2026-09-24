@@ -5,7 +5,8 @@ import { test, expect, type Browser, type Locator, type Page } from '@playwright
  *
  * Both are rows of that story's I/O matrix and neither is visible to jsdom, which applies no
  * stylesheets: one is about what happens to a long unbroken token, the other about what changes on
- * `:hover` and, more to the point, about everything that must not.
+ * `:hover` and, more to the point, about everything that must not. A third since 2026-09-24: each link
+ * opening a new tab says so, with a painted mark after its underline and in its accessible name.
  *
  * **Separate from `tests/e2e/hit-target-floor.pw.ts` on purpose.** That file is the A-4 floor and
  * the A-5 edge sweep, and its `EXEMPTIONS` and `SURFACES` literals are parsed as text by
@@ -611,5 +612,85 @@ test.describe('the Suite Directory on hover', () => {
       Number.parseFloat(live.underlineWidth),
       'the live underline is not heavier than the source one, so the two read as one rank'
     ).toBeGreaterThan(Number.parseFloat(source.underlineWidth));
+  });
+});
+
+test.describe('the Suite Directory links say they open a new tab', () => {
+  /**
+   * Operator ruling 2026-09-24 (the ledger entry on new-tab links). Both links keep `target="_blank"`
+   * and say so twice: to the eye, the system's external-navigation mark after the underlined label,
+   * in the link's own colour and face, so it spends no accent (`DESIGN.md` § Colors → Rules); to a
+   * reader, the words at the end of the accessible name, the mark itself hidden from the tree.
+   */
+  const MARK = '\u2197\uFE0E';
+
+  /** What each Directory link on the open page carries, in document order. */
+  const readLinks = (page: Page) =>
+    page.locator('.suite-directory__live, .suite-directory__source').evaluateAll((nodes: Element[]) =>
+      nodes.map((link) => {
+        const mark = link.querySelector('.suite-directory__external');
+        const rule = link.querySelector('.suite-directory__rule');
+        const markBox = mark?.getBoundingClientRect();
+        const ruleBox = rule?.getBoundingClientRect();
+        return {
+          at: `${link.className} "${rule?.textContent ?? ''}"`,
+          target: link.getAttribute('target'),
+          name: link.getAttribute('aria-label') ?? '',
+          marks: link.querySelectorAll('.suite-directory__external').length,
+          hidden: mark?.getAttribute('aria-hidden') ?? null,
+          text: mark?.textContent ?? null,
+          colour: mark ? window.getComputedStyle(mark).color : '',
+          linkColour: window.getComputedStyle(link).color,
+          family: mark ? window.getComputedStyle(mark).fontFamily : '',
+          linkFamily: window.getComputedStyle(link).fontFamily,
+          painted: markBox !== undefined && markBox.width > 0 && markBox.height > 0,
+          after: markBox !== undefined && ruleBox !== undefined && markBox.left >= ruleBox.right,
+          ruled: mark ? window.getComputedStyle(mark).borderBottomStyle !== 'none' : false,
+        };
+      })
+    );
+
+  /** The verdict on those reads. Pure, so a planted link drives the same predicate. */
+  const newTabFindings = (reads: Awaited<ReturnType<typeof readLinks>>): string[] =>
+    reads.flatMap((read) => {
+      const found: string[] = [];
+      if (read.target !== '_blank') found.push(`${read.at} does not open a new tab`);
+      if (read.marks !== 1) found.push(`${read.at} carries ${read.marks} external marks`);
+      if (read.marks === 1 && read.hidden !== 'true') found.push(`${read.at}'s mark is in the accessibility tree`);
+      if (read.marks === 1 && read.text !== MARK) found.push(`${read.at}'s mark reads "${read.text}"`);
+      if (read.marks === 1 && (read.colour !== read.linkColour || read.family !== read.linkFamily)) found.push(`${read.at}'s mark is not in its link's colour and face`);
+      if (read.marks === 1 && !read.painted) found.push(`${read.at}'s mark paints nothing`);
+      if (read.marks === 1 && (!read.after || read.ruled)) found.push(`${read.at}'s mark is not after its underline, clear of it`);
+      if (!read.name.endsWith(', opens in a new tab')) found.push(`${read.at} is named "${read.name}"`);
+      return found;
+    });
+
+  test('each ends in the external mark, hidden, in its own type, and its name says a new tab opens', async ({ page }) => {
+    await goTo(page, ROUTE);
+    const reads = await readLinks(page);
+    expect(reads.length, 'the Directory drew no link, so this reads nothing').toBeGreaterThan(0);
+    expect(newTabFindings(reads)).toEqual([]);
+
+    // The names as the accessibility tree computes them, the mark contributing nothing.
+    const links = page.locator('.suite-directory__live, .suite-directory__source');
+    for (let index = 0; index < reads.length; index += 1) {
+      await expect(links.nth(index)).toHaveAccessibleName(/^(Source: .+|[a-z0-9.-]+), opens in a new tab$/);
+    }
+
+    // **The control.** A link planted beside them with its mark and its name taken off is what the
+    // same read names, so an empty list above is a measurement.
+    await page.evaluate(() => {
+      const source = document.querySelector('.suite-directory__source');
+      const planted = source?.cloneNode(true) as HTMLElement | undefined;
+      if (!source || !planted) return;
+      planted.querySelector('.suite-directory__external')?.remove();
+      planted.removeAttribute('aria-label');
+      source.after(planted);
+    });
+    const planted = newTabFindings(await readLinks(page));
+    expect(planted).toEqual([
+      'suite-directory__source "Source" carries 0 external marks',
+      'suite-directory__source "Source" is named ""',
+    ]);
   });
 });

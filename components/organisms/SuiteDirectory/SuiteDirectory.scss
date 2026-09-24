@@ -268,6 +268,16 @@
   min-inline-size: 0;
 }
 
+// **The external-navigation mark ends each link** (Operator ruling 2026-09-24): after the underline
+// and clear of it, so the rule runs under the words alone, in the link's own colour, face and size,
+// so it spends no accent (`DESIGN.md` § Colors → Rules keeps the accent to underlines, the `Live` mark
+// and the active nav rule). The gap is the only thing this adds; the link's `inline-flex` keeps the
+// mark on the label's line.
+.suite-directory__live,
+.suite-directory__source {
+  gap: var(--s-2xs);
+}
+
 .suite-directory__live {
   color: var(--token-text);
 }

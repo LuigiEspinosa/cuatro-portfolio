@@ -49,6 +49,22 @@ export const SOURCE_EVENT = 'source-open';
 const TECH_SEPARATOR = ' · ';
 
 /**
+ * Both links open a new tab, and say so (Operator ruling 2026-09-24, the ledger entry on new-tab
+ * links). To the eye, the external-navigation mark, one of the system's three glyphs
+ * (`RESTYLE-SPEC.md` § Icons): the north-east arrow, U+2197, then U+FE0E, which asks for the text form
+ * so no platform paints it as an emoji. It is decoration, hidden from assistive technology, whose
+ * accessible name ends in the same fact as words. One element, drawn after each link's underline.
+ */
+const EXTERNAL_MARK = (
+  <span className='suite-directory__external' aria-hidden='true'>
+    {'\u2197\uFE0E'}
+  </span>
+);
+
+/** What each link's accessible name ends with, after its visible label (WCAG 2.5.3). */
+const NEW_TAB = 'opens in a new tab';
+
+/**
  * The live link's text: the bare domain, never "View Live" (`EXPERIENCE.md:289`).
  *
  * The URL is the evidence, so the label is read off the URL rather than written beside it. A `www.`
@@ -102,6 +118,7 @@ export function SuiteDirectoryRow({ entry }: { entry: RegistryEntry }) {
    * behaves like a broken one. A presence check on the key alone would let it through.
    */
   const live = entry.live?.trim() ?? '';
+  const domain = bareDomain(live);
 
   return (
     <li className='suite-directory__row'>
@@ -129,10 +146,12 @@ export function SuiteDirectoryRow({ entry }: { entry: RegistryEntry }) {
             href={live}
             target='_blank'
             rel='noopener noreferrer'
+            aria-label={`${domain}, ${NEW_TAB}`}
             data-umami-event={LIVE_EVENT}
             data-umami-event-app={entry.id}
           >
-            <span className='suite-directory__rule'>{bareDomain(live)}</span>
+            <span className='suite-directory__rule'>{domain}</span>
+            {EXTERNAL_MARK}
           </a>
         )}
 
@@ -141,11 +160,12 @@ export function SuiteDirectoryRow({ entry }: { entry: RegistryEntry }) {
           href={entry.source}
           target='_blank'
           rel='noopener noreferrer'
-          aria-label={`Source: ${entry.name}`}
+          aria-label={`Source: ${entry.name}, ${NEW_TAB}`}
           data-umami-event={SOURCE_EVENT}
           data-umami-event-app={entry.id}
         >
           <span className='suite-directory__rule'>Source</span>
+          {EXTERNAL_MARK}
         </a>
       </div>
     </li>
