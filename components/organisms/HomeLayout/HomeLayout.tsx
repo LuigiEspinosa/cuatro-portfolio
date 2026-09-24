@@ -4,7 +4,6 @@ import Link from 'next/link';
 import GemComponent from '@/components/molecules/GemComponent/GemComponent';
 import ContactContainer from '@/components/molecules/ContactContainer/ContactContainer';
 import GlitchText from '@/components/molecules/GlitchText/GlitchText';
-import { PlateMark } from '@/components/molecules/PlateMark/PlateMark';
 import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import { SkipControl } from '@/components/atoms/SkipControl/SkipControl';
 import { useNarrativePath, type ServedNarrativePath } from '@/hooks/useNarrativePath';
@@ -80,16 +79,6 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
             フロントエンドエンジニア
           </span>
         </p>
-      </div>
-
-      {/* The readout, on the Plate mark's side-ruled variant mirrored to the trailing edge, since
-          Story 2-31 retired `HudLabel`. The `//` and the `◕` that framed the word are gone rather
-          than moved: both were decoration inside a string a screen reader speaks, and the Plate
-          mark carries no marker (`EXPERIENCE.md` § Plate mark). The word itself is unchanged and
-          is still a code rather than words; no document supplies its words, so that is filed as
-          deferred work for the Operator rather than decided here. */}
-      <div className='home-panel home-panel--sys'>
-        <PlateMark variant='side-ruled' align='end' label='SYS_ONLINE' />
       </div>
 
       {/* Not rendered at all on the flat path, rather than rendered empty: below 768 this box is

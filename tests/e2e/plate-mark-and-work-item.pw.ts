@@ -22,9 +22,6 @@ import { RENDERED_VIEWPORT } from './harness';
 /** A path the Hub does not route, which renders `app/not-found.tsx`. Same as `hit-target-floor.pw.ts`. */
 const NOT_FOUND = '/a-route-that-does-not-exist';
 
-/** The width at which the home readout panel is a corner mark rather than omitted. */
-const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
-
 /** The two routes that render the timeline. */
 const TIMELINE_ROUTES = ['/work', '/cv'] as const;
 
@@ -311,17 +308,19 @@ const columnsAt = async (page: Page, edge: number, top: number, height: number, 
  * it, a section mark, with its label in plain words and no subordinate line.
  */
 const MARKS = [
-  { variant: 'section', route: '/cv', status: 200, selector: '.cv-intro .plate-mark', rule: 'bottom', wide: false },
-  { variant: 'annotated', route: '/work', status: 200, selector: '.work-hero .plate-mark--annotated', rule: 'bottom', wide: false },
+  { variant: 'section', route: '/cv', status: 200, selector: '.cv-intro .plate-mark', rule: 'bottom' },
+  { variant: 'annotated', route: '/work', status: 200, selector: '.work-hero .plate-mark--annotated', rule: 'bottom' },
   // The hero's meta line, a section mark since Story 2-33 (`DESIGN.md` § Work hero and timeline).
-  { variant: 'section', route: '/work', status: 200, selector: '.work-hero__meta .plate-mark', rule: 'bottom', wide: false },
-  { variant: 'section', route: NOT_FOUND, status: 404, selector: '.error-page .plate-mark', rule: 'bottom', wide: false },
-  { variant: 'side-ruled end', route: '/', status: 200, selector: '.home-panel--sys .plate-mark', rule: 'right', wide: true },
+  { variant: 'section', route: '/work', status: 200, selector: '.work-hero__meta .plate-mark', rule: 'bottom' },
+  { variant: 'section', route: NOT_FOUND, status: 404, selector: '.error-page .plate-mark', rule: 'bottom' },
+  // No side-ruled row since 2026-09-24: its one call site, the home readout panel, was removed by
+  // Operator ruling (DW-110). Both side-ruled forms are planted below instead.
 ] as const;
 
 /** How many marks each surface carries: one per genuine domain, never one per heading. */
 const MARKS_PER_ROUTE = [
-  { route: '/', status: 200, count: 2 },
+  // One since 2026-09-24, the premise's: the readout's side-ruled mark left with its panel (DW-110).
+  { route: '/', status: 200, count: 1 },
   // Two since Story 2-33 made the hero's meta line a Plate mark: the section identity and the count
   // with its period, each a genuine domain.
   { route: '/work', status: 200, count: 2 },
@@ -331,28 +330,24 @@ const MARKS_PER_ROUTE = [
 ] as const;
 
 /**
- * The home readout at 1024, on the animated door, where it is a corner mark. The project's context
- * asks for reduced motion, which is the flat door, and the flat door omits the readout.
+ * Plant a side-ruled mark into `/cv`'s intro, where a real one would sit beside content, leading or
+ * mirrored. No route renders the variant since the home readout panel's removal (Operator ruling
+ * 2026-09-24, DW-110), and the variant is `DESIGN.md`'s, so it is read on a plant.
  */
-const withReadout = async <T>(browser: Browser, read: (page: Page) => Promise<T>): Promise<T> => {
-  const context = await contextWith(browser, { viewport: { ...WIDE_VIEWPORT }, reducedMotion: 'no-preference' });
-  try {
-    const page = await context.newPage();
-    await goTo(page, '/');
-    // Visible first: on the flat door the panel is `display: none`, which still computes an opacity
-    // of 1 and would let every read below run against a mark nobody sees.
-    await expect(page.locator('.home-panel--sys'), 'the default door did not render the readout panel').toBeVisible({ timeout: 20_000 });
-    await expect
-      .poll(() => page.evaluate(() => getComputedStyle(document.querySelector('.home-panel--sys') as Element).opacity), {
-        timeout: 20_000,
-        message: 'the readout panel never finished arriving, so the default door did not render it',
-      })
-      .toBe('1');
-    return await read(page);
-  } finally {
-    await context.close();
-  }
-};
+const plantSideRuled = (page: Page, id: string, mirrored: boolean): Promise<void> =>
+  page.evaluate(
+    ({ markId, end }) => {
+      const planted = document.createElement('div');
+      planted.id = markId;
+      planted.className = end ? 'plate-mark plate-mark--side-ruled plate-mark--end' : 'plate-mark plate-mark--side-ruled';
+      const label = document.createElement('span');
+      label.className = 'plate-mark__label';
+      label.textContent = 'PLANTED';
+      planted.append(label);
+      document.querySelector('.cv-intro')?.append(planted);
+    },
+    { markId: id, end: mirrored }
+  );
 
 /** Everything the label treatment decides, read off one mark. */
 const markStyle = (page: Page, selector: string) =>
@@ -382,21 +377,16 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
   for (const mark of MARKS) {
     test(`the ${mark.variant} mark on ${mark.route} is mono, uppercase, tracked, secondary and tabular, ruled on its ${mark.rule}`, async ({
       page,
-      browser,
     }) => {
-      const read = async (target: Page) => {
-        if (!mark.wide) await goTo(target, mark.route, mark.status);
-        const expected = {
-          size: (await probe(target, { 'font-size': 'var(--t-3xs)' }, ['font-size']))['font-size'],
-          tracking: await tracking(target, '--tr-label', '--t-3xs'),
-          colour: await role(target, '--token-text-secondary'),
-          border: await role(target, '--token-border'),
-          hair: await length(target, '--stroke-hair'),
-          small: await length(target, '--s-sm'),
-        };
-        return { expected, drawn: await markStyle(target, mark.selector) };
+      await goTo(page, mark.route, mark.status);
+      const expected = {
+        size: (await probe(page, { 'font-size': 'var(--t-3xs)' }, ['font-size']))['font-size'],
+        tracking: await tracking(page, '--tr-label', '--t-3xs'),
+        colour: await role(page, '--token-text-secondary'),
+        border: await role(page, '--token-border'),
+        hair: await length(page, '--stroke-hair'),
       };
-      const { expected, drawn } = mark.wide ? await withReadout(browser, read) : await read(page);
+      const drawn = await markStyle(page, mark.selector);
 
       expect(drawn.family, 'the mark is not set in the mono family').toContain('Geist Mono');
       expect(drawn.size, 'the mark is not at --t-3xs').toBe(expected.size);
@@ -415,32 +405,35 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
           expect(border.width, `the ${mark.variant} mark draws a second rule, on its ${side}`).toBe('0px');
         }
       }
-      if (mark.rule === 'right') {
-        expect(drawn.paddingRight, 'the side-ruled mirror does not sit --s-sm inside its rule').toBe(expected.small);
-        expect(drawn.paddingLeft, 'the side-ruled mirror keeps the leading padding it moved').toBe('0px');
-      }
     });
   }
 
-  test('a side-ruled mark at the leading edge rules its left and pads inside it', async ({ page }) => {
-    // No call site renders the leading-edge form today, so it is planted: the variant exists and a
-    // component that drew it wrongly would otherwise ship it the first time a call site asked.
+  test('a side-ruled mark rules its leading edge, or its trailing one mirrored, and pads inside the rule', async ({ page }) => {
+    // No call site renders either form, so both are planted: the variant exists and a component that
+    // drew it wrongly would otherwise ship it the first time a call site asked. The mirror was read
+    // on the home readout panel until that panel's removal (Operator ruling 2026-09-24, DW-110).
     await goTo(page, '/cv');
-    await page.evaluate(() => {
-      const planted = document.createElement('div');
-      planted.id = 'planted-side-ruled';
-      planted.className = 'plate-mark plate-mark--side-ruled';
-      const label = document.createElement('span');
-      label.className = 'plate-mark__label';
-      label.textContent = 'PLANTED';
-      planted.append(label);
-      document.querySelector('.cv-intro')?.append(planted);
-    });
-    const drawn = await markStyle(page, '#planted-side-ruled');
-    expect(drawn.borders.left.width).toBe(await length(page, '--stroke-hair'));
-    expect(drawn.borders.left.colour).toBe(await role(page, '--token-border'));
-    expect(drawn.paddingLeft).toBe(await length(page, '--s-sm'));
-    expect(drawn.borders.bottom.width, 'the side-ruled mark kept the rule beneath as well').toBe('0px');
+    await plantSideRuled(page, 'planted-side-ruled', false);
+    await plantSideRuled(page, 'planted-side-ruled-end', true);
+    const hair = await length(page, '--stroke-hair');
+    const border = await role(page, '--token-border');
+    const small = await length(page, '--s-sm');
+
+    const leading = await markStyle(page, '#planted-side-ruled');
+    expect(leading.borders.left.width).toBe(hair);
+    expect(leading.borders.left.colour).toBe(border);
+    expect(leading.paddingLeft).toBe(small);
+    expect(leading.borders.bottom.width, 'the side-ruled mark kept the rule beneath as well').toBe('0px');
+
+    const mirrored = await markStyle(page, '#planted-side-ruled-end');
+    for (const side of ['top', 'bottom', 'left'] as const) {
+      expect(mirrored.borders[side].width, `the side-ruled mirror draws a second rule, on its ${side}`).toBe('0px');
+    }
+    expect(mirrored.borders.right.style, 'the side-ruled mirror has no rule on its trailing edge').toBe('solid');
+    expect(mirrored.borders.right.width, 'the side-ruled mirror rule is not a hairline').toBe(hair);
+    expect(mirrored.borders.right.colour, 'the side-ruled mirror rule is not the border role').toBe(border);
+    expect(mirrored.paddingRight, 'the side-ruled mirror does not sit --s-sm inside its rule').toBe(small);
+    expect(mirrored.paddingLeft, 'the side-ruled mirror keeps the leading padding it moved').toBe('0px');
   });
 
   // `/work` alone since 2026-09-23: the 404's mark carried `SIGNAL_LOST` as a subordinate line until
@@ -477,25 +470,29 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
     });
   }
 
-  test('draws each rule as one opaque pixel of the border role, on every ground it sits over', async ({ page, browser }) => {
+  test('draws each rule as one opaque pixel of the border role, on every ground it sits over', async ({ page }) => {
     // `RESTYLE-SPEC.md` § 3's check: sample the rule and compare it with the computed border role.
     // An alpha rule or a sub-pixel one changes value with what is behind it and matches nothing.
     const found: string[] = [];
-    for (const mark of MARKS.filter((candidate) => !candidate.wide)) {
+    for (const mark of MARKS) {
       await goTo(page, mark.route, mark.status);
       const [border] = await rasterise(page, [await role(page, '--token-border')]);
       const box = await centre(page, mark.selector);
       const rows = await ruleBeneath(page, box, border);
       if (rows.found.length !== 1) found.push(`${mark.route} ${mark.variant}: ${rows.found.length} rows of the border role beneath the mark\n${rows.seen}`);
     }
-    const side = await withReadout(browser, async (wide) => {
-      const [border] = await rasterise(wide, [await role(wide, '--token-border')]);
-      await settled(wide);
-      const box = await boxOf(wide, '.home-panel--sys .plate-mark');
-      const grid = await pixels(wide, { x: Math.floor(box.x + box.width) - 4, y: box.y + 2, width: 8, height: box.height - 4 });
-      return { found: uniformColumns(grid, border), seen: summary((grid[0] ?? []).map((_, column) => grid.map((row) => row[column]))) };
-    });
-    if (side.found.length !== 1) found.push(`/ side-ruled end: ${side.found.length} columns of the border role beside the mark\n${side.seen}`);
+    // The side-ruled mirror's rule, on a plant since the home readout panel that carried it was
+    // removed (Operator ruling 2026-09-24, DW-110): one column of the border role at its trailing edge.
+    await goTo(page, '/cv');
+    await plantSideRuled(page, 'planted-side-ruled-end', true);
+    const [sideBorder] = await rasterise(page, [await role(page, '--token-border')]);
+    const sideBox = await centre(page, '#planted-side-ruled-end');
+    const grid = await pixels(page, { x: Math.floor(sideBox.x + sideBox.width) - 4, y: sideBox.y + 2, width: 8, height: sideBox.height - 4 });
+    const columns = uniformColumns(grid, sideBorder);
+    if (columns.length !== 1) {
+      const seen = summary((grid[0] ?? []).map((_, column) => grid.map((row) => row[column])));
+      found.push(`/cv planted side-ruled end: ${columns.length} columns of the border role beside the mark\n${seen}`);
+    }
     expect(found, `a mark's rule is not one opaque pixel of the border role:\n${found.join('\n')}`).toEqual([]);
 
     // The control: the same rule at half alpha over the same ground is found nowhere.

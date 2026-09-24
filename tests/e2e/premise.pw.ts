@@ -64,10 +64,10 @@ const WIDE_VIEWPORT = { width: 1024, height: 800 } as const;
 /**
  * The premise's own mark, scoped to the block.
  *
- * `/` has carried two Plate marks since Story 2-31 folded `HudLabel` into the component: this one and
- * the readout's side-ruled mark in the hero, which comes first in the document and is `display: none`
- * at 360. An unscoped `.plate-mark` is then a strict-mode violation for every locator here and, through
- * `document.querySelector`, a read of the wrong element's box.
+ * `/` carried two Plate marks from Story 2-31, which folded `HudLabel` into the component, until the
+ * Operator's ruling of 2026-09-24 removed the readout panel whose side-ruled mark came first in the
+ * document (DW-110). This one is the only mark on `/` now, and the scope stays: an unscoped
+ * `.plate-mark` would read whatever mark the hero gains next.
  */
 const MARK = '.premise .plate-mark';
 

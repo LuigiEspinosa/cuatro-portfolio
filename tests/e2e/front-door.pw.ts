@@ -1163,7 +1163,7 @@ const stackedHero = (page: Page) =>
       gem: read('.home-gem'),
       nav: read('.home-panel--nav'),
       contact: read('.home-panel--contact'),
-      sys: read('.home-panel--sys'),
+      readouts: document.querySelectorAll('.home-panel--sys').length,
       scrim: read('.home-gem .scanline-overlay'),
       scrimsInDom: document.querySelectorAll('.home-gem .scanline-overlay').length,
     };
@@ -1197,7 +1197,7 @@ test.describe('the skip control is never under a panel', () => {
       // **FR-2's only interaction, and the one element on this surface whose stacking is not
       // decided by a z-index.** Until Story 2-29 the panels were `z-index: 5` and this control was
       // `10`. Both are `var(--z-raised)` now, and `HomeLayout.tsx` renders the control before all
-      // four panels, so on that tie a panel paints over it. The contract offers nothing between
+      // three panels, so on that tie a panel paints over it. The contract offers nothing between
       // `--z-base` and `--z-raised`, and `--z-dropdown` is a role a skip control has no claim to,
       // so the guarantee this surface makes is that the two never overlap. That is a layout fact,
       // which is measurable, where "it is above" would have been a reading of a value that no
@@ -1217,7 +1217,8 @@ test.describe('the skip control is never under a panel', () => {
       );
 
       expect(read, `the default door rendered no .skip-control at ${viewport.width}`).not.toBeNull();
-      expect(read?.panels.length, 'the hero rendered no panels, so the comparison is over nothing').toBe(4);
+      // Three since the readout panel's removal (Operator ruling 2026-09-24, DW-110).
+      expect(read?.panels.length, 'the hero rendered some other number of panels than its three').toBe(3);
       expect(
         read?.control.width ?? 0,
         'the skip control has no box, so an overlap could not be seen'
@@ -1252,7 +1253,7 @@ test.describe('the skip control is never under a panel', () => {
 });
 
 test.describe('the hero below 768 on the default front door', () => {
-  test('stacks in reading order, renders no readout panel and paints no scrim', async ({ browser }) => {
+  test('stacks in reading order, carries no readout panel and paints no scrim', async ({ browser }) => {
     // **The matrix's below-768 row, measured rather than read off the stylesheet.** This is the
     // default door at 360: the gem is a static item in the column between the name and the nav,
     // which is exactly why the scrim is hidden there. The reduced-motion door is a different row
@@ -1294,18 +1295,89 @@ test.describe('the hero below 768 on the default front door', () => {
       `the stacked hero is not in reading order: ${order.map(([label, top]) => `${label} at ${top.toFixed(2)}`).join(', ')}`
     ).toEqual(['name', 'imagery', 'navigation', 'contact']);
 
-    // The readout panel is omitted rather than rendered empty, which is a box of zero rather than
-    // an element of zero content.
-    expect(
-      hero.sys?.boxes,
-      'the readout panel renders a box at 360, where the hero has no corners for a corner mark'
-    ).toBe(0);
+    // The readout panel was omitted here by `display: none` until 2026-09-24, when the Operator's
+    // ruling removed it from the hero altogether (DW-110): not a hidden box, no element at all.
+    expect(hero.readouts, 'the readout panel is back in the document').toBe(0);
 
     // And the scrim: in the document, so this is a rule rather than a missing element, and with no
     // box, so nothing is painted over imagery that no text overlays.
     expect(hero.scrimsInDom, 'the gem carries no scrim at all, so its absence here proves nothing').toBe(1);
     expect(hero.scrim?.boxes, 'the scrim paints at 360, where no text overlays the imagery').toBe(0);
   });
+});
+
+// ---------------------------------------------------------------------------
+// The corner the readout panel held, at the widths where the hero has corners.
+// ---------------------------------------------------------------------------
+
+/** The two widths the Operator's ruling names beside 360, both past the 768 breakpoint. */
+const CORNER_WIDTHS = [
+  { width: 768, height: 800 },
+  { width: 1280, height: 800 },
+] as const;
+
+/**
+ * The panels on the page, and what a point 10px inside the corner the readout panel held resolves
+ * to. The panel sat at `top: 2%; right: 2%` of the viewport-tall container, so that point was inside
+ * its box at every width it rendered at.
+ */
+const cornerRead = (page: Page) =>
+  page.evaluate(() => {
+    const container = document.querySelector('.home-container');
+    if (!container) throw new Error('no .home-container on the page');
+    const box = container.getBoundingClientRect();
+    const x = box.right - box.width * 0.02 - 10;
+    const y = box.top + box.height * 0.02 + 10;
+    const hit = document.elementFromPoint(x, y);
+    return {
+      at: `${Math.round(x)},${Math.round(y)}`,
+      hit: hit ? `${hit.tagName.toLowerCase()}.${String(hit.getAttribute('class') ?? '').split(' ').join('.')}` : '(nothing)',
+      inImagery: hit !== null && hit.closest('.home-gem') !== null,
+      panels: [...document.querySelectorAll('.home-panel')].map((panel) => panel.className),
+    };
+  });
+
+test.describe('the hero holds its corners without the readout panel', () => {
+  for (const viewport of CORNER_WIDTHS) {
+    test(`the corner it held shows the imagery, with no hole, at ${viewport.width}`, async ({ browser }) => {
+      // Operator ruling 2026-09-24 (DW-110) removed the readout panel. The panels are positioned
+      // over the canvas rather than laid out around each other, so nothing reflows into the corner
+      // and nothing is left there: the point the panel covered is the imagery's. The control plants
+      // a box where the panel sat, and the same read has to report it.
+      const read = await onPath(
+        browser,
+        DEFAULT_PATH,
+        async (page) => {
+          await goTo(page);
+          await settled(page);
+          const clean = await cornerRead(page);
+          await page.evaluate(() => {
+            const planted = document.createElement('div');
+            planted.className = 'planted-corner';
+            planted.style.cssText = 'position:absolute;top:2%;right:2%;width:120px;height:40px;z-index:var(--z-raised)';
+            document.querySelector('.home-container')?.append(planted);
+          });
+          return { clean, planted: await cornerRead(page) };
+        },
+        viewport
+      );
+      console.log(`front-door: at ${viewport.width} the readout's corner ${read.clean.at} resolves to ${read.clean.hit}`);
+
+      expect(read.clean.panels, `the hero at ${viewport.width} carries some other set of panels`).toEqual([
+        'home-panel home-panel--name',
+        'home-panel home-panel--nav',
+        'home-panel home-panel--contact',
+      ]);
+      expect(
+        read.clean.inImagery,
+        `the point ${read.clean.at} where the readout panel sat resolves to ${read.clean.hit} at ${viewport.width}, not to the imagery`
+      ).toBe(true);
+      expect(read.planted.hit, 'a box planted in the corner is not what the read reports, so it cannot see one').toContain(
+        'planted-corner'
+      );
+      expect(read.planted.inImagery, 'the planted box read as the imagery').toBe(false);
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------

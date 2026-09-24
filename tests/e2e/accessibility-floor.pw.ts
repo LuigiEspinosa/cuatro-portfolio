@@ -1866,8 +1866,11 @@ const SCRIM_ROLES = [
   { role: '--token-accent', tabled: 4.77, floor: 4.5 },
 ] as const;
 
-/** The four corner panels, every one of which sits over the canvas at this width. */
-const SCRIM_PANELS = ['.home-panel--name', '.home-panel--sys', '.home-panel--nav', '.home-panel--contact'] as const;
+/**
+ * The corner panels, every one of which sits over the canvas at this width. Three since the
+ * readout panel's removal (Operator ruling 2026-09-24, DW-110).
+ */
+const SCRIM_PANELS = ['.home-panel--name', '.home-panel--nav', '.home-panel--contact'] as const;
 
 /** A box in CSS pixels, which is image pixels too at `deviceScaleFactor: 1`. */
 interface Box {
@@ -1998,9 +2001,6 @@ test.describe('the scrim over the home canvas', () => {
 
       const roleValues = await Promise.all(SCRIM_ROLES.map(({ role }) => rootCustomPropertyValue(page, role)));
       const roleRgba = await rasterise(page, roleValues);
-      // The hairline role, which a panel's Plate mark paints opaque. Probed alongside the five text
-      // roles in the marker read below and nowhere else: the ratios further down are text's alone.
-      const [ruleRgba] = await rasterise(page, [await rootCustomPropertyValue(page, '--token-border')]);
 
       // **The proof that the layer is genuinely between the imagery and the text, taken by
       // sampling.** The scrim is repainted an unmistakable colour and the surface screenshotted
@@ -2010,7 +2010,7 @@ test.describe('the scrim over the home canvas', () => {
       // on what the WebGL canvas happens to draw.
       const MARKER = '255,0,255';
       const planted = await page.addStyleTag({ content: '.scanline-overlay { background-color: rgb(255, 0, 255) !important; }' });
-      const marked = await sampleBoxes(page, await page.screenshot(), boxes, [...roleRgba, ruleRgba, `${MARKER},255`]);
+      const marked = await sampleBoxes(page, await page.screenshot(), boxes, [...roleRgba, `${MARKER},255`]);
       await planted.evaluate((node) => (node as Element).remove());
 
       const notCovered = marked
@@ -2037,16 +2037,16 @@ test.describe('the scrim over the home canvas', () => {
       // this comment.
       //
       // **Still empty since 2026-09-23, and a measurement nearly put `.home-panel--sys` back.** Story
-      // 2-31 folded `HudLabel` into the Plate mark, so the readout is now set at `--t-3xs`, and in the
+      // 2-31 folded `HudLabel` into the Plate mark, so the readout was set at `--t-3xs`, and in the
       // pinned image its glyphs came no closer than **13.1** to any of the five roles, one past the
-      // threshold: the smallest type on the surface did antialias short of it, as the original guess
-      // had it. Rather than exempt the panel, the mark's hairline is probed as well: it is one opaque
-      // pixel of `--token-border`, painted by the panel, so an exact hit on it over the repainted
-      // scrim says the panel is above the layer just as a glyph does.
+      // threshold. The mark's hairline was probed as well, rather than exempting the panel.
+      // **The probe left with the panel on 2026-09-24** (Operator ruling, DW-110): the three panels
+      // that remain paint body and display type, which read an exact hit on a role, so the read is
+      // text's alone again.
       const EXEMPT_FROM_MARKER = new Set<string>();
       const nearestPerPanel = marked.map((sample, index) => ({
         panel: SCRIM_PANELS[index],
-        nearest: Math.min(...sample.nearest.slice(0, SCRIM_ROLES.length + 1)),
+        nearest: Math.min(...sample.nearest.slice(0, SCRIM_ROLES.length)),
       }));
       console.log(
         `accessibility-floor: over the repainted scrim, ` +
@@ -2054,7 +2054,7 @@ test.describe('the scrim over the home canvas', () => {
       );
       const buried = nearestPerPanel
         .filter((read) => !EXEMPT_FROM_MARKER.has(read.panel) && read.nearest > 12)
-        .map((read) => `${read.panel} comes no closer than ${read.nearest.toFixed(1)} to any of the five roles or the hairline`);
+        .map((read) => `${read.panel} comes no closer than ${read.nearest.toFixed(1)} to any of the five roles`);
       expect(
         buried,
         `a panel painted no role colour over the repainted scrim, so its text is beneath the layer rather than above ` +

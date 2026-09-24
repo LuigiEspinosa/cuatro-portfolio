@@ -44,7 +44,7 @@ beforeEach(() => {
  * DW-41 recorded that the `useGsapContext` mock received the callback holding the whole entrance
  * and dropped it, so no case here could observe the homepage entrance at all and the mock read as
  * coverage while covering nothing. The entry dissolves rather than being fixed: the entrance is
- * five `animation-delay` declarations on one `home-enter` keyframe in `HomeLayout.scss`, this
+ * `animation-delay` declarations on keyframes in `HomeLayout.scss`, this
  * component imports neither `gsap` nor the hook, and what there is to assert about the entrance is
  * a stylesheet read (below) and a browser read (`tests/e2e/narrative.pw.ts`), not a mock.
  */
@@ -99,6 +99,23 @@ describe('HomeLayout', () => {
   it('renders the gem component', () => {
     render(<HomeLayout />);
     expect(screen.getByTestId('gem-component')).toBeInTheDocument();
+  });
+
+  it('renders three panels, name, navigation and contact, and no readout on either door', () => {
+    // Operator ruling 2026-09-24 (DW-110): the readout panel and its Plate mark are removed, so no
+    // panel carries a mark and nothing on the hero reads a code. Both doors, because the flat one
+    // served the panel too and only hid it.
+    for (const path of ['narrative', 'flat'] as const) {
+      decided.path = path;
+      const { container, unmount } = render(<HomeLayout />);
+      expect(
+        [...container.querySelectorAll('.home-panel')].map((panel) => panel.className),
+        `the ${path} door renders some other set of panels`
+      ).toEqual(['home-panel home-panel--name', 'home-panel home-panel--nav', 'home-panel home-panel--contact']);
+      expect(container.querySelectorAll('.plate-mark'), `the ${path} door still draws a Plate mark in the hero`).toHaveLength(0);
+      expect(container.textContent, `the ${path} door still reads the readout's code`).not.toContain('SYS_ONLINE');
+      unmount();
+    }
   });
 });
 
@@ -288,10 +305,13 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     '--z-raised',
   ] as const;
 
-  /** The four notch polygons, as `epics.md:3304-3305` requires them kept. */
+  /**
+   * The notch polygons, as `epics.md:3304-3305` requires them kept. Three since 2026-09-24: the
+   * readout panel's, `polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px))`, left with
+   * the panel (Operator ruling 2026-09-24, DW-110), and the three that remain did not move.
+   */
   const POLYGONS = [
     'polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%)',
-    'polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
     'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%)',
     'polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px)',
   ] as const;
@@ -376,13 +396,14 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     ).toEqual(['var(--z-raised)', 'var(--z-base)']);
   });
 
-  it('keeps the four notch polygons', () => {
+  it('keeps the three notch polygons, and no rule for the readout panel', () => {
     for (const polygon of POLYGONS) {
       // Verbatim: the compiler preserves the spacing inside the function, so this is the authored
       // spelling compared against what ships.
       expect(css, `a notch polygon moved: ${polygon}`).toContain(polygon);
     }
-    expect([...css.matchAll(/clip-path:/g)], 'the silhouette gained or lost a panel').toHaveLength(4);
+    expect([...css.matchAll(/clip-path:/g)], 'the silhouette gained or lost a panel').toHaveLength(3);
+    expect(css, 'a rule for the removed readout panel survived').not.toContain('home-panel--sys');
   });
 
   /**
@@ -421,7 +442,7 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
       .filter((entry): entry is readonly [string, string] => entry[1] !== undefined)
       .map(([selector, order]) => [selector, order]);
 
-  it('stacks the hero in reading order below 768, with no readout panel and no scrim', () => {
+  it('stacks the hero in reading order below 768, with no scrim', () => {
     // **The matrix's below-768 row, read where jsdom cannot see it.** The cases above compile the
     // stylesheet and read the rules that apply everywhere; a media query applies to nothing in
     // jsdom, so the mobile block is invisible to a rendered read here and has to be read as text.
@@ -444,8 +465,8 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
       '.home-panel{position:static;width:100%}'
     );
 
-    // The readout panel is omitted rather than rendered empty (`epics.md` § Empty edge).
-    expect(mobile, 'the readout panel is still rendered below 768').toContain('.home-panel--sys{display:none}');
+    // The readout panel's `display: none` left with the panel (Operator ruling 2026-09-24, DW-110);
+    // the case above reads that no rule anywhere names it.
 
     // And the scrim is absent, because the gem is a static item in the column here and no text
     // overlays it. A scrim with no text over it is a treatment on imagery, which `DESIGN.md:414-416`
@@ -482,15 +503,16 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
         'opacity expresses state again or a second initial state arrived'
     ).toEqual(['0']);
 
-    // Five animated rules, which is what the file's header, `sprint-status.yaml` and DW-100 all
-    // say. `.home-panel--name` carried a sixth until 2026-09-21: the retired timeline never named
-    // it, the 2023 stylesheet gave it no initial state, and it painted immediately, so the entrance
-    // was hiding the hero's name for 500ms and running `GlitchText`'s own delay inside a parent
-    // that was itself ramping.
+    // Four animated rules since 2026-09-24, when the readout panel's left with the panel (Operator
+    // ruling 2026-09-24, DW-110); five until then, which is what the file's header,
+    // `sprint-status.yaml` and DW-100 said. `.home-panel--name` carried a sixth until 2026-09-21:
+    // the retired timeline never named it, the 2023 stylesheet gave it no initial state, and it
+    // painted immediately, so the entrance was hiding the hero's name for 500ms and running
+    // `GlitchText`'s own delay inside a parent that was itself ramping.
     expect(
       [...css.matchAll(/animation:home-enter/g)],
-      'the entrance animates a number of rules other than the five the records state'
-    ).toHaveLength(5);
+      'the entrance animates a number of rules other than the four the records state'
+    ).toHaveLength(4);
     expect(css, 'the name panel took the entrance back').not.toMatch(/\.home-panel--name\{[^}]*animation:/);
   });
 });

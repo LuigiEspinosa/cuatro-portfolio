@@ -23,9 +23,10 @@
   // Above `.home-gem`, which spans the whole hero on the default path. This control only ever
   // renders on that path, so it is the one thing here that has to clear it. **Amended 2026-09-21
   // by Story 2-29**: the gem read `z-index: 3` until that story rebuilt `HomeLayout.scss` and put
-  // it at `--z-base`, where it is a stacking context holding the scrim, and the four corner panels
-  // joined this declaration at `--z-raised` so they clear the gem's whole subtree. This line is
-  // unchanged and is the precedent they followed.
+  // it at `--z-base`, where it is a stacking context holding the scrim, and the corner panels
+  // joined this declaration at `--z-raised` so they clear the gem's whole subtree (three since the
+  // readout panel's removal on 2026-09-24, DW-110). This line is unchanged and is the precedent
+  // they followed.
   z-index: var(--z-raised);
 
   color: var(--token-text-secondary);

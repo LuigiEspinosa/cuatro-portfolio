@@ -1157,7 +1157,6 @@ test.describe("the gem's reveal", () => {
    */
   const REDUCED_MOTION_SELECTORS = [
     '.home-panel--name',
-    '.home-panel--sys',
     '.home-role',
     'a.nav-link',
     '.home-panel--contact .contact-container a',
@@ -1436,12 +1435,13 @@ test.describe('the entrance touches only opacity and transform, and does not loo
     }, [...selectors]);
 
   /**
-   * The five rules `HomeLayout.scss` animates, each with the delays its elements carry, in the
-   * order the entrance plays them.
+   * The four rules `HomeLayout.scss` animates, each with the delays its elements carry, in the
+   * order the entrance plays them. Five until 2026-09-24, when the readout panel's 1600ms rule left
+   * with the panel (Operator ruling 2026-09-24, DW-110).
    *
    * **Nothing read the delays or the fill until 2026-09-21.** The settle in
    * `hit-target-floor.pw.ts` and `accessibility-floor.pw.ts` waits on `ENTRANCE_SELECTOR`, which is
-   * the two link groups only, so `.home-panel--sys`, `.home-role` and `.home-gem` were observed by
+   * the two link groups only, so the readout panel, `.home-role` and `.home-gem` were observed by
    * nothing on the default door: dropping a delay, or dropping `both` from any of the five, shipped
    * green. `both` is not a detail. It is the whole of the no-script guarantee the spec's No-script
    * row and DW-42 rest on: the keyframe supplies only the `from`, so `backwards` is what holds an
@@ -1458,7 +1458,6 @@ test.describe('the entrance touches only opacity and transform, and does not loo
   const ENTRANCE_SITES = [
     { selector: '.home-gem', delays: [500] },
     { selector: '.home-role', delays: [1300] },
-    { selector: '.home-panel--sys', delays: [1600] },
     { selector: 'a.nav-link', delays: [2000, 2080] },
     { selector: '.home-panel--contact .contact-container a', delays: [2200, 2280, 2360] },
   ] as const;

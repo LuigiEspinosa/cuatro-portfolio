@@ -10,9 +10,14 @@
 // `linear-gradient` grid images (§ Rules bars a gradient in a background), the `opacity: 0.2`
 // dim-siblings rule (opacity never expresses state), the two ungated `:hover` blocks (a tap paints
 // `:hover` and leaves it painted, review A-5), the `.home-overlay` and `.home-sys-coords` rules
-// (matched by no markup anywhere in the repository), and the GSAP timeline, which is now **five
-// animated rules on one keyframe**, each carrying its delay in the `animation` shorthand, with
-// three further `animation-delay` overrides for the staggers inside the two link groups.
+// (matched by no markup anywhere in the repository), and the GSAP timeline, which is now animated
+// rules each carrying its delay in the `animation` shorthand, with three further `animation-delay`
+// overrides for the staggers inside the two link groups.
+//
+// **The readout panel left on 2026-09-24**, by Operator ruling (DW-110): `.home-panel--sys`, its
+// Plate mark reading the code `SYS_ONLINE`, its notch, its 1600ms entrance and its two
+// `display: none` rules. Three panels remain, and on the default door the corner it held shows the
+// imagery beneath.
 
 body[id=''] {
   background-color: var(--token-bg);
@@ -36,10 +41,11 @@ body[id=''] {
 // `both` fill holds the `from` through the delay, so an element is absent until its turn and
 // present after it, once.
 //
-// The five delays are the shipped sequence (500, 1300, 1600, 2000, 2200ms) with an 80ms stagger
-// inside the two link groups. They are plain `animation-delay` literals rather than custom
-// properties, because this file declares none; the contract mints no delay role, which is the
-// honest gap and is why `GlitchText` takes its `--delay` as an inline style instead.
+// The delays are the shipped sequence (500, 1300, 2000, 2200ms) with an 80ms stagger inside the two
+// link groups; the readout panel's 1600ms left with it on 2026-09-24. They are plain
+// `animation-delay` literals rather than custom properties, because this file declares none; the
+// contract mints no delay role, which is the honest gap and is why `GlitchText` takes its `--delay`
+// as an inline style instead.
 //
 // One clock, measured from first paint rather than from hydration, so the heading's `--delay: 1s`
 // and these delays finally agree (DW-100).
@@ -70,7 +76,7 @@ body[id=''] {
   // at 100, which a corner panel is not.
   //
   // **This shares a level with `.skip-control`, and the tie is resolved by layout rather than by
-  // this line.** Both are `--z-raised`, and `HomeLayout.tsx` renders the control before all four
+  // this line.** Both are `--z-raised`, and `HomeLayout.tsx` renders the control before all three
   // panels, so on a tie a panel paints over it. The contract offers nothing between `--z-base` and
   // `--z-raised`, and `--z-dropdown` is semantically wrong for a skip control, so the guarantee
   // this surface actually makes is that the control's box never intersects a panel's:
@@ -82,14 +88,6 @@ body[id=''] {
     top: 12%;
     left: 8%;
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
-  }
-
-  &--sys {
-    top: 2%;
-    right: 2%;
-    align-items: flex-end;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-    animation: home-enter var(--dur-major) var(--ease-entrance) 1600ms both;
   }
 
   &--nav {
@@ -286,10 +284,6 @@ body[id=''] {
       order: 1;
     }
 
-    &--sys {
-      display: none;
-    }
-
     &--nav {
       order: 3;
     }
@@ -381,11 +375,6 @@ body[id=''] {
       order: 1;
     }
 
-    // The HUD label is a decorative corner mark for a layout that no longer has corners.
-    &--sys {
-      display: none;
-    }
-
     &--nav {
       order: 3;
     }
@@ -417,10 +406,10 @@ body[id=''] {
   // contract collapses every duration to 1ms under this same query, but a 1ms run still waits out
   // its `animation-delay`, so a visitor who asked for stillness would get two and a half seconds of
   // blank hero. The `GlitchText.scss:50-58` shape.
-  // Five selectors, matching the five animated rules above. `.home-panel--name` left this list on
+  // Four selectors, matching the four animated rules above. `.home-panel--name` left this list on
   // 2026-09-21 with the animation it should never have had: the retired timeline's `finalState`
   // never named it, the 2023 stylesheet gave it no `opacity: 0`, and it painted immediately.
-  .home-panel--sys,
+  // `.home-panel--sys` left it on 2026-09-24 with the readout panel (DW-110).
   .home-role,
   .nav-link,
   .home-panel--contact .contact-container a,
