@@ -40,6 +40,7 @@ import {
   hubFixtureHtml,
   namesInNamespace,
   oklchLiterals,
+  pipelineVerdict,
   preflightCount,
   recordedVersionVerdict,
   retiredLiterals,
@@ -774,6 +775,83 @@ describe('the Tailwind banner', () => {
     // must reach it rather than throw.
     expect(tailwindBanner('')).toBeNull();
     expect(tailwindBanner(undefined as unknown as string)).toBeNull();
+  });
+});
+
+describe('the build pipeline case', () => {
+  // `cs-tracker`'s alias block as its `32a466a` left it, cut to what the case reads: `cuatro.fonts`
+  // runs in `assets.build` and in `assets.deploy` ahead of `phx.digest`, and not in `assets.setup`,
+  // because the Dockerfile runs that alias before the task's source and the faces are in the image.
+  const AFTER_32A466A = `
+  defp aliases do
+    [
+      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
+      # cuatro.fonts deliberately does NOT run here, though Story 1.19 first put it here
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
+      "assets.build": ["compile", "tailwind cs_tracker", "esbuild cs_tracker", "cuatro.fonts"],
+      "assets.deploy": [
+        "tailwind cs_tracker --minify",
+        "esbuild cs_tracker --minify",
+        "cuatro.fonts",
+        "phx.digest"
+      ]
+    ]
+  end
+`;
+  const FONTS_TASK = '  @target_rel "priv/static/assets/css/fonts"\n';
+  const CONFIG_EXS = '      --input=assets/css/app.css\n      --output=priv/static/assets/css/app.css\n';
+
+  const verdict = (mixExs: string, fontsTask = FONTS_TASK, configExs = CONFIG_EXS) =>
+    pipelineVerdict(mixExs, fontsTask, configExs);
+
+  it('passes cs-tracker as 32a466a left it, with cuatro.fonts out of assets.setup (DW-17)', () => {
+    const { pass, detail } = verdict(AFTER_32A466A);
+
+    expect(pass, detail).toBe(true);
+    expect(detail).toContain('It runs in assets.build: true, in assets.deploy: true, and there before phx.digest');
+  });
+
+  it('does not care whether assets.setup runs it too', () => {
+    const before = AFTER_32A466A.replace(
+      '"esbuild.install --if-missing"]',
+      '"esbuild.install --if-missing", "cuatro.fonts"]'
+    );
+    expect(before).not.toBe(AFTER_32A466A);
+
+    expect(verdict(before).pass).toBe(true);
+  });
+
+  it('fails when cuatro.fonts leaves assets.build', () => {
+    const noBuild = AFTER_32A466A.replace('"esbuild cs_tracker", "cuatro.fonts"]', '"esbuild cs_tracker"]');
+    expect(noBuild).not.toBe(AFTER_32A466A);
+
+    expect(verdict(noBuild).pass).toBe(false);
+  });
+
+  it('fails when cuatro.fonts leaves assets.deploy, or runs there after phx.digest', () => {
+    const noDeploy = AFTER_32A466A.replace('"esbuild cs_tracker --minify",\n        "cuatro.fonts",', '"esbuild cs_tracker --minify",');
+    const afterDigest = AFTER_32A466A.replace(
+      '"cuatro.fonts",\n        "phx.digest"',
+      '"phx.digest",\n        "cuatro.fonts"'
+    );
+    expect(noDeploy).not.toBe(AFTER_32A466A);
+    expect(afterDigest).not.toBe(AFTER_32A466A);
+
+    expect(verdict(noDeploy).pass).toBe(false);
+    const late = verdict(afterDigest);
+    expect(late.pass).toBe(false);
+    expect(late.detail).toContain('NOT before phx.digest');
+  });
+
+  it('fails when the task writes somewhere the compiled url() values do not resolve', () => {
+    const elsewhere = verdict(AFTER_32A466A, '  @target_rel "priv/static/fonts"\n');
+
+    expect(elsewhere.pass).toBe(false);
+    expect(elsewhere.detail).toContain('DISAGREE');
+  });
+
+  it('fails, rather than throwing, on files it could not read', () => {
+    expect(pipelineVerdict('', '', '').pass).toBe(false);
   });
 });
 

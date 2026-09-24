@@ -652,6 +652,43 @@ export function fontUrls(css) {
 }
 
 /**
+ * Whether `cs-tracker`'s build places the contract's faces where the compiled
+ * stylesheet's unrebased `url()` values resolve, read out of the text of its
+ * `mix.exs`, `lib/mix/tasks/cuatro.fonts.ex` and `config/config.exs`.
+ *
+ * `cuatro.fonts` must run in `assets.build`, and in `assets.deploy` ahead of
+ * `phx.digest`. `assets.setup` is not read: `cs-tracker`'s `32a466a` took the
+ * task out of it, because the Dockerfile runs that alias before the task's
+ * source and the faces are in the image, and `setup` still reaches the task
+ * through `assets.build` (DW-17, Operator ruling 2026-09-24).
+ */
+export function pipelineVerdict(mixExs, fontsTask, configExs) {
+  const targetRel = /@target_rel\s+"([^"]+)"/.exec(fontsTask)?.[1] ?? null;
+  const tailwindOutput = /--output=(\S+)/.exec(configExs)?.[1] ?? null;
+  const aliasList = (name) =>
+    new RegExp(`"${name}":\\s*\\[([^\\]]*)\\]`).exec(mixExs.replace(/#[^\n]*/g, ''))?.[1] ?? null;
+  const buildAlias = aliasList('assets\\.build');
+  const deployAlias = aliasList('assets\\.deploy');
+  const expectedTarget =
+    tailwindOutput === null ? null : `${tailwindOutput.split('/').slice(0, -1).join('/')}/fonts`;
+  const inBuild = buildAlias !== null && buildAlias.includes('"cuatro.fonts"');
+  const inDeploy = deployAlias !== null && deployAlias.includes('"cuatro.fonts"');
+  const beforeDigest =
+    inDeploy && deployAlias.indexOf('"cuatro.fonts"') < deployAlias.indexOf('"phx.digest"');
+  return {
+    pass: targetRel !== null && expectedTarget !== null && targetRel === expectedTarget && inBuild && beforeDigest,
+    detail:
+      `mix cuatro.fonts writes to ${targetRel ?? '(unread)'}, and the Tailwind profile writes its ` +
+      `stylesheet to ${tailwindOutput ?? '(unread)'}, whose url() values therefore resolve in ` +
+      `${expectedTarget ?? '(unread)'}. The two ${targetRel === expectedTarget ? 'agree' : 'DISAGREE'}. ` +
+      `It runs in assets.build: ${inBuild}, in assets.deploy: ${inDeploy}, and there ` +
+      `${beforeDigest ? 'before' : 'NOT before'} phx.digest, which rewrites the url() values onto the ` +
+      `digested names and needs the files present to do it. assets.setup is not required since ` +
+      `cs-tracker's 32a466a, which took the task out of it so the container build can run`,
+  };
+}
+
+/**
  * The names in one contract namespace, read out of `contracts/tokens.css`
  * rather than restated, so a rename shows up as a count that moved.
  */
@@ -1668,41 +1705,12 @@ async function probe() {
     // Read out of cs-tracker's own files rather than restated, because the
     // failure this guards against is silent: the faces 404, the page falls back
     // to a system stack, and it looks almost right.
-    const mixExs = readOrNull(join(CS_TRACKER, 'mix.exs')) ?? '';
-    const fontsTask = readOrNull(join(CS_TRACKER, 'lib', 'mix', 'tasks', 'cuatro.fonts.ex')) ?? '';
-    const configExs = readOrNull(join(CS_TRACKER, 'config', 'config.exs')) ?? '';
-    const targetRel = /@target_rel\s+"([^"]+)"/.exec(fontsTask)?.[1] ?? null;
-    const tailwindOutput = /--output=(\S+)/.exec(configExs)?.[1] ?? null;
-    const aliasList = (name) =>
-      new RegExp(`"${name}":\\s*\\[([^\\]]*)\\]`).exec(mixExs.replace(/#[^\n]*/g, ''))?.[1] ?? null;
-    const buildAlias = aliasList('assets\\.build');
-    const deployAlias = aliasList('assets\\.deploy');
-    const setupAlias = aliasList('assets\\.setup');
-    const expectedTarget =
-      tailwindOutput === null ? null : `${tailwindOutput.split('/').slice(0, -1).join('/')}/fonts`;
-    const inDeploy = deployAlias !== null && deployAlias.includes('"cuatro.fonts"');
-    const beforeDigest =
-      inDeploy && deployAlias.indexOf('"cuatro.fonts"') < deployAlias.indexOf('"phx.digest"');
-    const pipelineOk =
-      targetRel !== null &&
-      expectedTarget !== null &&
-      targetRel === expectedTarget &&
-      buildAlias !== null &&
-      buildAlias.includes('"cuatro.fonts"') &&
-      setupAlias !== null &&
-      setupAlias.includes('"cuatro.fonts"') &&
-      beforeDigest;
-    record(
-      'The build pipeline places them',
-      pipelineOk,
-      `mix cuatro.fonts writes to ${targetRel ?? '(unread)'}, and the Tailwind profile writes its ` +
-        `stylesheet to ${tailwindOutput ?? '(unread)'}, whose url() values therefore resolve in ` +
-        `${expectedTarget ?? '(unread)'}. The two ${targetRel === expectedTarget ? 'agree' : 'DISAGREE'}. ` +
-        `It runs in assets.setup: ${setupAlias !== null && setupAlias.includes('"cuatro.fonts"')}, in ` +
-        `assets.build: ${buildAlias !== null && buildAlias.includes('"cuatro.fonts"')}, in assets.deploy: ` +
-        `${inDeploy}, and there ${beforeDigest ? 'before' : 'NOT before'} phx.digest, which rewrites the ` +
-        `url() values onto the digested names and needs the files present to do it`
+    const pipeline = pipelineVerdict(
+      readOrNull(join(CS_TRACKER, 'mix.exs')) ?? '',
+      readOrNull(join(CS_TRACKER, 'lib', 'mix', 'tasks', 'cuatro.fonts.ex')) ?? '',
+      readOrNull(join(CS_TRACKER, 'config', 'config.exs')) ?? ''
     );
+    record('The build pipeline places them', pipeline.pass, pipeline.detail);
 
     // ---- case: automatic source detection stays off -----------------------
     // ops/daisyui-route.md recorded this as "a clean negative across five
