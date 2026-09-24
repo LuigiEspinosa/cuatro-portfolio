@@ -6569,3 +6569,40 @@ status: done
     KV-2's action 5 with all three dispositions. **Trigger: that package, or the next Registry
     verification run that reports the row can be struck.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`
+  id: DW-129
+  summary: >-
+    Two published palette values sit outside sRGB, `--c-accent-bright` and `--c-focus`, so the
+    Operator's ruling of 2026-09-24 that the palette stays inside sRGB holds for ten of twelve, their
+    hex entries in `DESIGN.md` are clipped rather than computed, and whether to bring them inside is
+    a value decision nobody has taken.
+  evidence: |-
+    Found 2026-09-24 by the Contract 2.0.0 package while writing the case the ruling asked for. The
+    ruling rested on the brief's reading that no contract value changes, and it does not hold:
+    converting each `--c-*` value to linear sRGB through Ottosson's OKLab matrices, cross-checked
+    with `colorjs.io` 0.5.2's `inGamut('srgb')`, `oklch(76% 0.145 288)` reads blue 1.0762 and
+    `oklch(84% 0.130 288)` blue 1.2628. The other ten sit inside 0 to 1. Both are already vendored
+    into `cs-tracker`, and `ops/anchor-token-adoption.md` said on 2026-08-26 that no v1.0.0 token was
+    outside sRGB.
+
+    **What it costs today.** On an sRGB display both render as the clipped colour the hex column
+    already records (`#ada1ff`, `#c6bdff`), and the contrast figures `DESIGN.md` gives, 9.00:1 and
+    11.70:1, match that clipped hex (9.02 and 11.73 by this package's arithmetic). A display wider
+    than sRGB may render more of the authored colour; no instrument here has observed one. The accent
+    is hover only and the focus colour is the focus ring only, so no resting pixel on the Hub reads
+    either.
+
+    **Not fixed in the package**, because `DESIGN.md` is the value authority and authors both, and
+    the same ruling has the Hub render unchanged. The in-gamut chroma at each value's own lightness
+    and hue is 0.1304 for `--c-accent-bright` (authored 0.145) and 0.0841 for `--c-focus` (authored
+    0.130), so bringing the focus ring inside is a visible desaturation rather than a rounding. The
+    case in `packages/tokens/__tests__/tokens-contract.test.ts` admits exactly these two by name at
+    those readings, so no third value can join them and neither can drift.
+
+    **Owner: the Operator**, choosing between bringing both inside (a value change, a MINOR, with
+    `DESIGN.md`'s palette and contrast rows, the focus pins in
+    `ops/__tests__/cs-tracker-accessibility-probe.test.ts` and a `cs-tracker` re-vendor) and
+    accepting both as named exceptions to the rule. **Trigger: the next contract release that opens
+    for any other reason**, so the choice rides in it rather than costing a propagation of its own.
+  status: open

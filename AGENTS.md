@@ -93,10 +93,6 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
 
 ## Known pitfalls
 
-- `contracts/tailwind.css` names its spacing keys (`--spacing-sm` through `--spacing-2xl`),
-  which shadows Tailwind's container scale in every consumer: `max-w-md` compiles to
-  `max-width: var(--s-md)`, 16px, not 28rem. Verified against tailwindcss 4.3.3. Use
-  `max-w-measure` or an explicit value, not `max-w-sm` through `max-w-2xl`. Filed as DW-15.
 - `cs-tracker` has no CI at all, and `mix precommit` builds no image, so a change to how it
   builds is not built the way production builds it until the deploy runs. Its token contract
   test asserts against the text of `assets/css/app.css` rather than rendered output, so a

@@ -7,6 +7,11 @@ amended-2026-08-16: >-
   the two redesigned-Hub entries that still carried it (H-10 residue). Minted --tap: 44px into
   the contract (LOW-2). Added the addition and removal categories to Versioning (MED-2). Stated
   that typeset punctuation governs rendered UI copy while the house rule governs repository prose.
+amended-2026-09-24: >-
+  Operator ruling, Contract 2.0.0. Retargeted motion.ease-exit from cubic-bezier(0.7, 0, 0.84, 0), an
+  ease-in, to the ease-out cubic-bezier(0.33, 1, 0.68, 1) (DW-103). Renamed the Tailwind adapter's
+  eight spacing keys to --spacing-s-* with no deprecation window (DW-15). Held the palette inside sRGB
+  by rule, with the two values that already break it named (DW-129).
 theme: dark-only
 anchor-hue: 288
 colors:
@@ -148,7 +153,7 @@ motion:
   dur-major: 420ms
   dur-exit: 165ms
   ease-entrance: cubic-bezier(0.16, 1, 0.3, 1)
-  ease-exit: cubic-bezier(0.7, 0, 0.84, 0)
+  ease-exit: cubic-bezier(0.33, 1, 0.68, 1)
   ease-toggle: cubic-bezier(0.65, 0, 0.35, 1)
 z:
   base: '1'
@@ -240,6 +245,14 @@ Every value is authored in **OKLCH** on a single anchor hue of **288°**. OKLCH 
 perceptually uniform, so the lightness number *is* the perceived lightness, which is what
 makes the elevation ladder below a reliable ladder rather than a guess. The hex column is
 the computed sRGB fallback, not a second source of truth.
+
+**Every palette value stays inside sRGB, so its hex fallback is the colour itself and every contrast
+figure below, computed in gamma-encoded sRGB, is exact.** *(Amended 2026-09-24 by Operator ruling, on
+the `oklch()` downlevelling row of `ops/anchor-token-adoption.md`. `packages/tokens/__tests__/tokens-contract.test.ts`
+converts each `--c-*` value to linear sRGB and fails on a channel outside 0 to 1. Two values authored
+before the rule break it on blue: `--c-accent-bright` reads 1.0762 and `--c-focus` 1.2628, so their
+hex entries below are clipped, not computed. The case admits those two by name at those readings and
+nothing else, until DW-129 decides them.)*
 
 ### The palette
 
@@ -865,7 +878,7 @@ wherever the folder lands.
 
 ```css
 /* Cuatro Ecosystem, Design Tokens
- * Contract v1.0.0 · dark only · anchor hue 288
+ * Contract v2.0.0 · dark only · anchor hue 288
  * Values only. Font files: see fonts.css (same folder).
  * A value change or an addition is a MINOR bump. A rename or a removal is MAJOR.
  */
@@ -983,7 +996,7 @@ wherever the folder lands.
   --dur-major: 420ms;
   --dur-exit:  165ms;                              /* ~75% of minor */
   --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-exit:     cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-exit:     cubic-bezier(0.33, 1, 0.68, 1);
   --ease-toggle:   cubic-bezier(0.65, 0, 0.35, 1);
 
   /* ── layer ─────────────────────────────────────────────── */
@@ -1005,6 +1018,12 @@ wherever the folder lands.
   }
 }
 ```
+
+*(Amended 2026-09-24 by Operator ruling, DW-103: `--ease-exit` read `cubic-bezier(0.7, 0, 0.84, 0)`,
+an ease-in, which holds still on exactly the frames after the input and reads as lag. It is now
+`cubic-bezier(0.33, 1, 0.68, 1)`, the CSS form of GSAP's `power2.out` that `WorkItem`'s close already
+runs. It ships in Contract 2.0.0, the MAJOR the adapter rename below opened, which is the version
+the header above now reads.)*
 
 **The `prefers-reduced-motion` block is inside the contract on purpose.** It is the one piece
 of *behaviour* the token layer can genuinely federate: a Satellite that adopts the tokens
@@ -1037,11 +1056,18 @@ SCSS. Mechanical output from Style Dictionary: a build-step cost, not an authori
   --font-display:      var(--f-display);
   --font-sans:         var(--f-body);
   --font-mono:         var(--f-mono);
-  --spacing-lg:        var(--s-lg);
+  --spacing-s-lg:      var(--s-lg);
   --radius-DEFAULT:    var(--r-none);
   /* … one line per token that should mint a utility */
 }
 ```
+
+*(Amended 2026-09-24 by Operator ruling, DW-15: the spacing keys are `--spacing-s-*`, so the
+utilities read `p-s-md` and `gap-s-lg`. Contract 1.0.0 named them `--spacing-2xs` to `--spacing-3xl`,
+and a named spacing key outranks Tailwind's container key of the same size, so `max-w-md` compiled to
+`var(--s-md)`, 16px rather than 28rem, in every consumer. `ops/__tests__/tailwind-container.test.ts`
+now compiles the adapter and holds `max-w-2xs` to `max-w-3xl` to Tailwind's container widths
+(DW-19).)*
 
 **`tailwind.css` must import `fonts.css` too.** An adapter that pulls in only `tokens.css`
 gives the cluster three named font families and **no `@font-face` for any of them**, so every
@@ -1076,11 +1102,15 @@ Per NL Design System convention, inherited from research §D2:
   adopted the new token is unaffected, and nothing it already reads changes value. **A token present
   at first publication is not an addition and bumps nothing**, which is why `--token-scrim` ships
   inside `v1.0.0` rather than as a `v1.1.0` release.
-- A **rename** is **major**, including fixing a typo in a token name. Contracts break.
+- A **rename** is **major**, including fixing a typo in a token name. Contracts break. *(Amended
+  2026-09-24 by Operator ruling, DW-15: a key in the generated `tailwind.css` is a published name
+  too, so renaming one is major. Contract 2.0.0 is that release.)*
 - A **removal** is **major**, for the same reason a rename is: a consumer's `var()` silently falls
   back. This is why `--r-pill` stays declared but unused rather than being deleted.
 - With no atomic commits across eight repositories, the only workable model is
-  **deprecate → migrate → remove**.
+  **deprecate → migrate → remove**. *(Waived once, 2026-09-24, by Operator ruling: Contract 2.0.0
+  renamed the eight spacing keys with no deprecation step, because an alias would have published the
+  collision it removes, and the one adopter read none of the old names.)*
 - Adoption is **explicit and reviewed** in every Satellite. No unattended dependency merge in
   any repository without a real test suite (FR-19, NFR-10).
 

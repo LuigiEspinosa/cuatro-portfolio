@@ -47,11 +47,14 @@ instance, recording every failure as a finding and fixing none.
 
 ## The adopted versions
 
-Published contract version: **1.0.0**, read off `contracts/tokens.css:2` (`Contract v1.0.0 · dark
-only · anchor hue 288`) and `packages/tokens/package.json:3` (`"version": "1.0.0"`) at `b1ab824`.
-**Observed 2026-08-27** by reading both files, and held equal to this line by
+Published contract version: **2.0.0**, read off `contracts/tokens.css:2` (`Contract v2.0.0 · dark
+only · anchor hue 288`) and `packages/tokens/package.json:3` (`"version": "2.0.0"`). **Observed
+2026-09-24** by reading both files after `corepack pnpm tokens:build`, and held equal to this line by
 `ops/__tests__/contract-adoption.test.ts` on every run of the blocking `test` job, so the record
-and the header cannot drift apart in silence.
+and the header cannot drift apart in silence. It read **1.0.0**, observed 2026-08-27 at `b1ab824` by
+the same reading, until Contract 2.0.0 by Operator ruling 2026-09-24: the Tailwind adapter's eight
+spacing keys renamed to `--spacing-s-*` (DW-15), a MAJOR, with `--ease-exit` retargeted to an ease-out
+(DW-103) in the same release. § The propagation ledger carries it as event 1.
 
 One row per application `ops/estate.md:73-75` names at the eleven-repository waypoint. **Adopted**
 means the application renders from the contract; **loaded** would mean it merely has the file. For
@@ -60,7 +63,7 @@ every Satellite the adopted version is the header of its vendored copy and nothi
 
 | Application | Consumption route | File read | Header read | Adopted version | Nature and method |
 |---|---|---|---|---|---|
-| `cuatro-portfolio` | The publisher. `app/scss/_index.scss` `@use`s `contracts/tokens.css` and `contracts/fonts.css` in place (Story 1-17) and the alias layer in `app/app.scss` read the roles (Story 1-18) until Story 2-22 deleted it on 2026-09-23; the stylesheets name them directly since. No vendored copy exists, by rule (AD-1, AD-4) | `contracts/tokens.css` | `Contract v1.0.0` | 1.0.0 | **Observed 2026-08-27** by reading `contracts/tokens.css:2` at `b1ab824`. `app/__tests__/anchor-contract.test.ts` asserts there is no second authored copy |
+| `cuatro-portfolio` | The publisher. `app/scss/_index.scss` `@use`s `contracts/tokens.css` and `contracts/fonts.css` in place (Story 1-17) and the alias layer in `app/app.scss` read the roles (Story 1-18) until Story 2-22 deleted it on 2026-09-23; the stylesheets name them directly since. No vendored copy exists, by rule (AD-1, AD-4) | `contracts/tokens.css` | `Contract v2.0.0` | 2.0.0 | **Observed 2026-09-24** by reading `contracts/tokens.css:2` after the Contract 2.0.0 build: adopted and loaded stay one version, because the Anchor loads `contracts/` in place. It read `Contract v1.0.0` and 1.0.0, **observed 2026-08-27** by reading `contracts/tokens.css:2` at `b1ab824`. `app/__tests__/anchor-contract.test.ts` asserts there is no second authored copy |
 | `cs-tracker` | Vendored `contracts/` verbatim as `assets/css/cuatro-contracts/`, nine files, and imports its `tailwind.css` from `assets/css/app.css` (Story 1-19, AD-15 route A) | `assets/css/cuatro-contracts/tokens.css` | `Contract v1.0.0` | 1.0.0 | **Observed 2026-08-27** by `git -C cs-tracker show 8adb8e2:assets/css/cuatro-contracts/tokens.css`, line 2, never restated from memory. Asserted by `test/cs_tracker_web/token_contract_test.exs:342`. The nine sha256 values are in `ops/cs-tracker-token-adoption.md:47-57` |
 | `cuatro-finance` | none | none | none | not adopted | **Observed 2026-08-27** by `gh api repos/LuigiEspinosa/cuatro-finance/git/trees/main?recursive=1`: the default branch holds one blob, `LICENSE`. A `dev` branch exists and was not inspected |
 | `cuatro-tracker` | none | none | none | not adopted | **Observed 2026-08-27** by the same call: 400 blobs, none under a `cuatro-contracts` path |

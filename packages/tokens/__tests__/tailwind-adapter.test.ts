@@ -154,14 +154,18 @@ const EXPECTED_MAPPINGS: [key: string, token: string][] = [
   ['--tracking-body', '--tr-body'],
   ['--tracking-meta', '--tr-meta'],
   ['--tracking-label', '--tr-label'],
-  ['--spacing-2xs', '--s-2xs'],
-  ['--spacing-xs', '--s-xs'],
-  ['--spacing-sm', '--s-sm'],
-  ['--spacing-md', '--s-md'],
-  ['--spacing-lg', '--s-lg'],
-  ['--spacing-xl', '--s-xl'],
-  ['--spacing-2xl', '--s-2xl'],
-  ['--spacing-3xl', '--s-3xl'],
+  // `--spacing-s-*` from Contract 2.0.0 (Operator ruling 2026-09-24, DW-15). 1.0.0 named these
+  // `--spacing-2xs` to `--spacing-3xl`, and each shadowed Tailwind's `--container-*` of the same
+  // size, so `max-w-md` read 16px in every consumer. `ops/__tests__/tailwind-container.test.ts`
+  // holds what `max-w-*` resolves to; this list holds the names.
+  ['--spacing-s-2xs', '--s-2xs'],
+  ['--spacing-s-xs', '--s-xs'],
+  ['--spacing-s-sm', '--s-sm'],
+  ['--spacing-s-md', '--s-md'],
+  ['--spacing-s-lg', '--s-lg'],
+  ['--spacing-s-xl', '--s-xl'],
+  ['--spacing-s-2xl', '--s-2xl'],
+  ['--spacing-s-3xl', '--s-3xl'],
   ['--spacing-page-pad', '--page-pad'],
   ['--spacing-tap', '--tap'],
   ['--radius-none', '--r-none'],

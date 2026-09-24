@@ -13,7 +13,7 @@
   "ease": {
     "$type": "cubicBezier",
     "entrance": { "$value": "cubic-bezier(0.16, 1, 0.3, 1)" },
-    "exit": { "$value": "cubic-bezier(0.7, 0, 0.84, 0)" },
+    "exit": { "$value": "cubic-bezier(0.33, 1, 0.68, 1)" },
     "toggle": { "$value": "cubic-bezier(0.65, 0, 0.35, 1)" }
   }
 }
