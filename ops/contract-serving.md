@@ -40,7 +40,8 @@ PS> "$($a.StatusCode)  $($a.Headers['Server'])"
 The apex answered, the surface did not. Three contract files and three woff2 faces existed in
 the repository and were reachable by nobody. That 404 is the baseline the Operator's live
 confirmation is measured against, and it is still the live state on `main` until this branch
-merges.
+merges. *(Amended 2026-09-24: no longer. `main` deployed at `cb51ed9` on 2026-08-27 and every path
+answered 200, recorded under "Live over HTTPS, 2026-08-27".)*
 
 ## The mechanism
 
@@ -56,14 +57,16 @@ The Hub's own Next server serves the directory. `packages/contracts-serve/publis
 | Also wired into | `dev`, for parity, so every path that starts a server has the served copy in place | **Decision.** Story 1-16 |
 | Named script | `contracts:publish`, on the `packages/<name>/<verb>.mjs` plus `<name>:<verb>` convention `packages/tokens` and `packages/fonts` set | **Decision** |
 | Served copy | `public/contracts/`, generated, gitignored, never committed | **Decision.** AD-4: one authored location |
-| Files published | **9**: three `.css`, three `.woff2` and three OFL `.txt` under `fonts/` | **Observed 2026-08-26**, by running the publish and by `ops/contract-purity.mjs`, which reads the same nine |
+| Files published | **9**: three `.css`, three `.woff2` and three OFL `.txt` under `fonts/` | **Observed 2026-08-26**, by running the publish and by `ops/contract-purity.mjs`, which reads the same nine. *(Amended 2026-09-24: **11** since 2026-08-29, when Story 2-3 committed `contracts/registry.json` and `contracts/registry.schema.json`; the served JSON types are under "The observed content types")* |
 | Reaches production by | `docker/Dockerfile` running `pnpm build` in its builder stage and its runner stage copying `public` | **Observed 2026-08-26**, by reading `docker/Dockerfile:27,32-34`. No Dockerfile change and no new layer. Held by `docker/__tests__/runner-stage.test.ts`, because that COPY line is the single hop carrying the surface into the image and nothing else in the repository fails if it is dropped |
 | Reaches the apex by | `docker/Caddyfile:41-49`, one `cuatro.dev` site block reverse-proxying `anchor-app:3000`, which is the Hub's own container | **Observed 2026-08-24** in `ops/routing-inventory.md:301`. No ingress change was needed and this story makes none |
-| Files added under `contracts/` | **0**. `docker/`, `.github/`, `pnpm-lock.yaml` and `pnpm-workspace.yaml` are byte-identical to `6b134d3` | **Observed 2026-08-26**, by `git diff --stat` against the baseline |
+| Files added under `contracts/` | **0**. `docker/`, `.github/`, `pnpm-lock.yaml` and `pnpm-workspace.yaml` are byte-identical to `6b134d3` | **Observed 2026-08-26**, by `git diff --stat` against the baseline. *(Corrected 2026-09-24: of `docker/`, it is `docker/Dockerfile` and `docker/Caddyfile` that stayed byte-identical. This story added `docker/__tests__/runner-stage.test.ts`, as the spec's amended AC7 says)* |
 
 **The whole directory is copied, not a named list of files.** `contracts/registry.json` (AD-4,
 Story 2-5) does not exist yet, and neither does anything else a later story publishes. Copying
-the directory means every one of them is served with no change to this mechanism.
+the directory means every one of them is served with no change to this mechanism. *(Amended
+2026-09-24: `contracts/registry.json` and `contracts/registry.schema.json` arrived on 2026-08-29 and
+are served, and this mechanism did not change, which is the property this paragraph describes.)*
 
 ### Why `public/` and not a Caddy file server
 
@@ -144,13 +147,34 @@ read on the same build with `Invoke-WebRequest`, were `text/css; charset=UTF-8`,
 | `.css` | `text/css; charset=UTF-8` | **Observed 2026-08-26** against Next 16.2.1 |
 | `.woff2` | `font/woff2` | **Observed 2026-08-26**, same run |
 | `.txt` | `text/plain; charset=UTF-8` | **Observed 2026-08-26**, same run |
+| `.json` | `application/json`, the essence the spec compares and prints; the full header was not read | **Observed 2026-09-24**, added by the cold review of Story 1-16: both JSON files have been served since 2026-08-29 with no observed value here. Quoted below |
+
+**Eleven paths, observed 2026-09-24** in `mcr.microsoft.com/playwright:v1.62.1-noble` against Next
+16.2.1, from the `pnpm test:e2e` run the cold review of Story 1-16 made with no filter, printed by
+`tests/e2e/contract-serving.pw.ts`:
+
+```
+contract-serving observed (11 paths):
+200 text/css /contracts/fonts.css
+200 text/plain /contracts/fonts/OFL-bricolage-grotesque.txt
+200 text/plain /contracts/fonts/OFL-geist-mono.txt
+200 text/plain /contracts/fonts/OFL-geist.txt
+200 font/woff2 /contracts/fonts/bricolage-grotesque-latin.woff2
+200 font/woff2 /contracts/fonts/geist-latin.woff2
+200 font/woff2 /contracts/fonts/geist-mono-latin.woff2
+200 application/json /contracts/registry.json
+200 application/json /contracts/registry.schema.json
+200 text/css /contracts/tailwind.css
+200 text/css /contracts/tokens.css
+```
 
 **Every one is correct, so no `headers()` block was added to `next.config.js`.** Next resolves
 these itself. That absence is a checked fact rather than a lucky default: the expected table
 lives in `tests/e2e/contract-serving.pw.ts` and a Next version that started serving a stylesheet
 as something else fails the `rendered-output` job.
 
-The same spec also compares the served **bytes** against the authored file for all nine paths. A
+The same spec also compares the served **bytes** against the authored file for all nine paths
+(eleven since 2026-08-29, amended 2026-09-24). A
 truncated or stale served copy answers 200 with the right type and hands a consumer a contract
 nobody published, which the status alone cannot see.
 
@@ -285,14 +309,14 @@ publish completed, so nothing under the destination may be read as the published
 
 | # | Refusal | Why it is a refusal and not a warning |
 |---|---|---|
-| 1 | The source is missing | Matrix row "Missing source". A silent empty publish would serve 404s from a green build, so the step exits non-zero and leaves no destination behind |
+| 1 | The source is missing | Matrix row "Missing source". A silent empty publish would serve 404s from a green build, so the step exits non-zero and leaves no destination behind. *(Corrected 2026-09-24: it refuses before it touches the destination, so a served copy an earlier build wrote is left as it was. What keeps that copy from shipping is the non-zero exit, which stops `&& next build`)* |
 | 2 | The source is a file, not a directory | Same reasoning, different shape |
 | 3 | The source is a link | The served copy must be the committed directory. `ops/contract-purity.mjs` refuses a linked surface root for the same reason |
 | 4 | The source holds no files | The empty case one level down. A green build must not be able to publish an empty served tree |
 | 5 | An entry under the source is a link | What it would serve is decided outside the published folder, and a vendored copy resolves elsewhere or nowhere |
 | 6 | An entry under the source is neither a file nor a directory | A socket or a fifo is not something a server can send |
 | 7 | The destination's final segment is not `contracts` | The publish opens with a recursive removal of a computed path, and this guard is what keeps a mistake in that computation from taking the rest of `public/` with it |
-| 8 | Either path contains the other, equality included | `rmSync(destination)` runs before the copy, so a destination inside the source, or a source inside the destination, deletes the published surface on the way to serving it. Equality was the obvious case and, until this was widened, the only one caught |
+| 8 | Either path contains the other, equality included | `rmSync(destination)` runs before the copy, so a destination inside the source, or a source inside the destination, deletes the published surface on the way to serving it. Equality was the obvious case and, until this was widened, the only one caught. *(Amended 2026-09-24: compared on disk, the real path of each one's deepest existing ancestor, since the cold review of Story 1-16. The text-only comparison passed a linked `public/`, which puts `public/contracts` on `contracts/` itself, and the removal then deleted the authored surface; observed that day on a scratch tree)* |
 | 9 | **The destination will not be removed** | EPERM, EBUSY, a locked file. Left unguarded this raised an error carrying neither this file's name nor the clause, and a stale contract could then have survived underneath a fresh publish |
 | 10 | **A copy fails part way through** | ENOSPC, EACCES on file five of nine. A half written served tree is worse than none: it answers 200 for the contract files that made it and 404 for the rest, from a build that exited non-zero somewhere a deploy log may not be read. The partial tree is removed before the refusal, and the refusal says whether that succeeded. This is the one refusal that can leave debris, and when it does it names the leftover path rather than claiming a clean failure |
 
@@ -376,10 +400,10 @@ amendments.
 | **This story sets no `Access-Control-Allow-Origin` either, so cross-origin request-time use does not work** | `docker/Caddyfile`'s `cuatro.dev` block sends `X-Content-Type-Options`, `X-Frame-Options` and `Referrer-Policy` and no CORS header at all. A site that links `https://cuatro.dev/contracts/fonts.css` from another origin therefore gets the stylesheet, because a plain `<link>` is not a CORS request, and then every `@font-face` fetch fails the CORS check **silently**: fonts are always fetched in CORS mode, so each face is blocked and the page falls back to a system stack that looks almost right. **That is a limit and not a defect, because cross-origin request-time consumption is not a designed path.** AD-14 and AD-16 have consumers vendor the folder by copy under the fixed name `cuatro-contracts/`, which makes every face same-origin wherever it lands, and AD-4 has Satellites fetch the Registry **at build time**, where there is no origin to be cross to. If it ever becomes a designed path, the change is a `header` line in the `cuatro.dev` site block, which is a shared-box edit outside this repository, plus a decision about which origins may read the surface | **Decision**, with the mechanism **Observed 2026-08-26** by reading `docker/Caddyfile:41-49`. Not exercised: this story asserts nothing cross-origin, because the harness serves one origin |
 | **`pnpm start` on its own does not publish** | `dev` and `build` both run the publish; `start` is unchanged and serves whatever `public/contracts/` is already on disk. So a developer who pulls a commit that changed `contracts/` and then runs `pnpm start` without rebuilding gets 200s carrying the previous surface. **The deploy path is unaffected**, because `docker/Dockerfile`'s builder stage always runs `pnpm build` and the runner stage copies the result of that build into a fresh image, so a deployed container cannot serve a surface its own build did not write. `start` was left alone deliberately: prepending the publish to it would mean a command whose job is to serve an existing build silently rewriting part of it, which is a worse property than the stale read it would prevent, and `next start` already warns that it is not how this `output: 'standalone'` application runs in production | **Decision.** Story 1-16 |
 | **A build-time fetch with an empty user agent is blocked at the edge** | `ops/bot-mitigation.md` rule 3 issues a managed challenge to requests with an empty user agent that are not verified bots, on all five application hostnames. A non-browser client cannot solve one, so it reads as a 403. AD-4 has Satellites fetch the Registry at build time, and a fetch library that sends no user agent will fail against a mechanism that is working perfectly. Rule 1 blocks a list of crawler user agents outright, `Scrapy` among them | **Observed 2026-08-26** against the live apex on `/logo.png`, which is served by the same Next `public/` path this story publishes into: a normal user agent answered **200**, an explicitly empty one **403**, and `GPTBot/1.0` **403**. Pending Operator action 4 |
-| **Nothing consumes the served URL yet** | Publishing is not adopting. Story 1.19 is where `cs-tracker` first vendors the folder, and `contracts/registry.json` arrives in Story 2-5. The URL is proved reachable, not proved used | **Decision.** Story 1-16 scope |
+| **Nothing consumes the served URL yet** | Publishing is not adopting. Story 1.19 is where `cs-tracker` first vendors the folder, and `contracts/registry.json` arrives in Story 2-5. The URL is proved reachable, not proved used | **Decision.** Story 1-16 scope. *(Amended 2026-09-24: `contracts/registry.json` arrived on 2026-08-29 and is served, and still nothing fetches it: `cs-tracker` vendors the folder, and `ops/registry-verification.mjs` reads the committed file and names the URL only in its user agent)* |
 | **The served result is only ever asserted against the harness's own server** | `playwright.config.ts` starts `pnpm build && pnpm start` on `127.0.0.1:3100`. That is the same build the Docker builder stage runs, but it is not the deployed container, not behind Caddy, and not behind Cloudflare. Everything between the Hub and a Visitor is asserted by the Operator's live confirmation and by nothing in CI | **Decision**, with the residual risk stated. Pending Operator action 1 |
 | **`next start` is not how production runs** | `next.config.js` sets `output: 'standalone'`, and `next start` prints a warning saying so. The harness uses it anyway because the alternative is running `.next/standalone/server.js`, which the config was not written for here, and because the file serving under test is the same static handler in both. A deploy runs `node server.js` in the runner stage | **Observed 2026-08-26**, in the harness's own web server output. Pre-existing, inherited from Story 1-10 |
-| **Three Playwright specs fail on a Windows development host** | Unrelated to this story and pre-existing: one font-swap tolerance and the screenshot baselines, which were captured in `mcr.microsoft.com/playwright:v1.62.1-noble` and are not portable. Verified pre-existing by running the whole suite against `6b134d3` with this story's files stashed: the same five cases failed, 16 passed, against 19 passing with this story's three added | **Observed 2026-08-26**, by the stashed comparison run |
+| **Three Playwright specs fail on a Windows development host** *(corrected 2026-09-24: five cases in two specs, `contract-fonts.pw.ts:334` and four in `rendered-output.pw.ts`, as the Epic 1 retrospective lists them)* | Unrelated to this story and pre-existing: one font-swap tolerance and the screenshot baselines, which were captured in `mcr.microsoft.com/playwright:v1.62.1-noble` and are not portable. Verified pre-existing by running the whole suite against `6b134d3` with this story's files stashed: the same five cases failed, 16 passed, against 19 passing with this story's three added | **Observed 2026-08-26**, by the stashed comparison run |
 
 ## Probe output
 
@@ -796,4 +820,4 @@ moved or was simply re-stated. Deletion is not used here.
 | `ops/deploy-remote.sh` is moved or renamed, or the workflow's command string stops ending in the sha | Under the forced command (Pending Operator action 7) every deploy fails until the `authorized_keys` line is edited to match, and "The deploy runs one script" is stale |
 | The same, in `LuigiEspinosa/list-wheel`, or that repository's checkout leaves `/home/deploy/list-wheel` | Under its forced command (Pending Operator action 9) every `list-wheel` deploy fails until that key's line is edited to match, and "`list-wheel`'s deploy, the same shape" is stale. Nothing in this repository can see that one, since it lives in the other |
 | A Cloudflare rule starts challenging or caching `/contracts/*` differently | The two limits about the edge, and Pending Operator actions 2 and 4, are stale |
-| **`contracts/registry.json` arrives in Story 2-5**, or any later story publishes a tenth file | Four things in this file go stale together, and none of them is wrong today: the file count of **nine** in the mechanism table, the content-type table (which has a `.json` row in `tests/e2e/contract-serving.pw.ts` but no observed value here, because nothing publishes JSON yet), Pending Operator action 1's list of **nine** URLs to fetch, and Probe 1's transcript. The mechanism itself needs no change, which is the whole point of copying a directory rather than a named list, so this is a record to re-read rather than a step to redesign |
+| **`contracts/registry.json` arrives in Story 2-5**, or any later story publishes a tenth file | Four things in this file go stale together, and none of them is wrong today: the file count of **nine** in the mechanism table, the content-type table (which has a `.json` row in `tests/e2e/contract-serving.pw.ts` but no observed value here, because nothing publishes JSON yet), Pending Operator action 1's list of **nine** URLs to fetch, and Probe 1's transcript. The mechanism itself needs no change, which is the whole point of copying a directory rather than a named list, so this is a record to re-read rather than a step to redesign. *(Amended 2026-09-24: it happened on 2026-08-29, both JSON files at once, and this record was not re-read until the cold review of Story 1-16. The file count and the content types are now amended in place; action 1's nine URLs and Probe 1's transcript are dated observations of the nine that existed then, and stay as they are. From here the row stands for the next file, a twelfth, and the file count and the content-type table are the two things it makes stale)* |

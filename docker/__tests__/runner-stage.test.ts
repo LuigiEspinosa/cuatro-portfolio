@@ -39,6 +39,13 @@ const RUNNER = 'runner';
 /** What the builder stage must run, because it is what writes `public/contracts`. */
 const BUILD = 'pnpm build';
 
+/**
+ * The line that runs `BUILD` as an instruction. A `RUN` line, not the text
+ * anywhere, so a commented-out build step does not count as one.
+ */
+const BUILD_LINE = new RegExp(String.raw`^[ \t]*RUN[ \t][^\n]*\b${BUILD}(?=\s|$)[^\n]*`, 'm');
+const runsBuild = (stage: string): boolean => BUILD_LINE.test(stage);
+
 /** The directory Next serves as the document root, relative to the image's working directory. */
 const PUBLIC = 'public';
 
@@ -136,10 +143,10 @@ describe('the Dockerfile runner stage', () => {
 
   it('runs the build in the builder stage, which is what writes the served copy', () => {
     expect(
-      builder,
+      runsBuild(builder),
       `docker/Dockerfile's builder stage no longer runs \`${BUILD}\`, so nothing publishes contracts/ into ` +
         `${builderWorkdir}/${PUBLIC}/contracts and the image carries no published surface`
-    ).toContain(BUILD);
+    ).toBe(true);
   });
 
   it("copies the builder's public directory forward, which is the only hop that carries the published surface", () => {
@@ -191,12 +198,13 @@ describe('the Dockerfile runner stage', () => {
     expect(copyOfDirectory(repointed, BUILDER, absolute)?.destination).toBe('assets');
   });
 
-  it('rejects a build step removed from the builder stage', () => {
-    const withoutBuild = builder
-      .split('\n')
-      .filter((line) => !line.includes(BUILD))
-      .join('\n');
-    expect(withoutBuild).not.toContain(BUILD);
+  it('rejects a build step removed from the builder stage, or left there as a comment', () => {
+    // Through the same predicate the check above uses. Until 2026-09-24 this
+    // case asserted on the string it had just filtered, so it could not fail,
+    // and the check it stood beside was a substring a comment satisfied.
+    expect(runsBuild(builder), 'the builder stage has no build line to plant a negative on').toBe(true);
+    expect(runsBuild(builder.replace(BUILD_LINE, ''))).toBe(false);
+    expect(runsBuild(builder.replace(BUILD_LINE, (line) => `# ${line.trim()}`))).toBe(false);
   });
 
   it('rejects a COPY form it cannot read, rather than skipping the line', () => {

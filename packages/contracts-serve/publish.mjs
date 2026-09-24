@@ -134,19 +134,41 @@ const HOST = {
 };
 
 /**
- * True when `inner` is `outer` or sits underneath it.
+ * Where `path` is on disk: the real path of its deepest existing ancestor with
+ * the missing tail put back, because the destination often does not exist yet.
+ * On Windows the native call also settles the letter case the disk uses.
+ *
+ * @param {string} path
+ * @returns {string}
+ */
+const onDisk = (path) => {
+  const absolute = resolve(path);
+  try {
+    return realpathSync.native(absolute);
+  } catch {
+    const parent = dirname(absolute);
+    return parent === absolute ? absolute : join(onDisk(parent), basename(absolute));
+  }
+};
+
+/**
+ * True when `inner` is `outer` or sits underneath it, on disk.
  *
  * The publish removes the destination before it writes, so a destination that
  * contains the source, or a source that contains the destination, would delete
  * the published surface on the way to serving it. Equality is the obvious case
- * and the only one the first draft of this file caught.
+ * and the only one the first draft of this file caught. The comparison is of
+ * physical paths, not of the text: with `public` a link to the root,
+ * `public/contracts` is `contracts` itself, and the text-only version of this
+ * check let the removal delete the authored surface (the cold review of Story
+ * 1-16, 2026-09-24).
  *
  * @param {string} outer
  * @param {string} inner
  */
 const contains = (outer, inner) => {
-  const above = resolve(outer);
-  const below = resolve(inner);
+  const above = onDisk(outer);
+  const below = onDisk(inner);
   return below === above || below.startsWith(above.endsWith(sep) ? above : `${above}${sep}`);
 };
 
@@ -201,13 +223,13 @@ function walk(directory, read, prefix = '', found = []) {
  * @returns {string[]}
  */
 export function publish(source, destination, host = HOST) {
-  // Containment rather than equality. `rmSync(destination)` runs before the
-  // copy, so either path sitting inside the other removes the published surface
-  // before anything is read out of it.
+  // Containment rather than equality, and on disk rather than in the text.
+  // `rmSync(destination)` runs before the copy, so either path sitting inside
+  // the other removes the published surface before anything is read out of it.
   if (contains(source, destination) || contains(destination, source)) {
     refuse(
       `the source ${asPosix(resolve(source))} and the destination ${asPosix(resolve(destination))} are the ` +
-        `same path or one contains the other, and the publish begins by removing the destination.`
+        `same path on disk or one contains the other, and the publish begins by removing the destination.`
     );
   }
   if (basename(destination) !== SURFACE) {
