@@ -25,7 +25,8 @@
 }
 
 // The focus standard, `RESTYLE-SPEC.md:326-341` § 4 verbatim, and the one rule in the Hub that
-// paints a ring (Story 2-26, Operator ruling of 2026-09-13). It replaced nine per-component rules
+// paints a ring (Story 2-26, Operator ruling of 2026-09-13), with the landmark's inset beneath it the
+// single deliberate exception since 2026-09-24. It replaced nine per-component rules
 // in eight stylesheets, four of which (three files, three at a 4px offset and one inset at -2px)
 // painted it in the hover colour at 1px. Global on purpose: `:focus-visible`, never `:focus`, so
 // a mouse click paints nothing; never transitioned, so the ring is at full strength the frame
@@ -39,6 +40,19 @@
   outline: var(--stroke-focus) solid var(--token-focus);
   outline-offset: var(--focus-offset);
   border-radius: var(--r-hair);
+}
+
+// **The one deliberate exception to § 4 verbatim** (Operator ruling 2026-09-24, F-20). The skip link
+// puts focus on `<main>`, which is as wide as the document, so the ring drawn `--focus-offset` outside
+// it fell past the document's edge on three sides and a visitor saw a line at the bottom. On the
+// landmark alone the same ring is drawn inside the box, inset by its own width, so no edge takes any of
+// it on any route. A positioned layer inside the landmark still paints over it: on `/`'s default door
+// at 768 and wider the hero's canvas and scrim cover it within the hero (DW-127). The same two roles,
+// and no length: the `-1` is the sign, not a value.
+// `tests/e2e/accessibility-floor.pw.ts` holds this the one other selector here allowed an outline.
+main:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: calc(-1 * var(--stroke-focus));
 }
 
 // `clip`, not `hidden`, and on both elements (`DESIGN.md:558-559`). The two clip identically; what

@@ -9,7 +9,7 @@ import { Navbar } from '../Navbar';
  * `usePathname` stub, and nothing here asserts a value it supplied to the assertion itself.
  *
  * **`aria-current` had no live instance on the shipped Hub until 2026-09-10.** `Suite` is current
- * only on `/`, where `Header.tsx:12` renders no header at all, and `CV` is current only on `/cv`,
+ * only on `/`, where `Header.tsx:18` renders no header at all, and `CV` is current only on `/cv`,
  * which answered a 308 to a PDF until Story 2-16 built the page. So the mechanism was asserted here
  * at the unit level and again as a planted browser control in `tests/e2e/chrome-nav.pw.ts`, and the
  * first live instance arrived needing nothing here to change: `tests/e2e/cv.pw.ts` reads it on the

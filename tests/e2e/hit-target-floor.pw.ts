@@ -91,7 +91,7 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * changes what a surface renders moves the number here, in the record, and nowhere else.
  *
  * `measured: 0` on `/celeste` is a measurement rather than an omission: `celeste.scss:8-10` sets
- * `display: none` on the header, so all three of its candidates are removed by the visibility
+ * `display: none` on the header, so all four of its candidates are removed by the visibility
  * rule and none is left to measure.
  *
  * **`/` moved from 16 to 17 with Story 2-13, and only by one.** That story adds two controls and
@@ -126,13 +126,20 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * two destinations, so that surface went from 4 to 5. Both readings were taken off this sweep's
  * own failure output in the pinned container before the pins were moved. `/celeste` did not move:
  * it renders no footer and gained no exit, which `tests/e2e/secondary-surfaces.pw.ts` asserts.
+ *
+ * **Every surface with a header moved by one on 2026-09-24** (Operator ruling, DW-43). The skip link
+ * moved into `Header` as the band's first child, so `/work` went from 7 to 8, `/cv` from 9 to 10 and
+ * the 404 from 5 to 6, each new element parked above the viewport with a real box this floor measures
+ * and passes; `/celeste` from 3 found and 3 skipped to 4 and 4, the link hidden with its band. `/` did
+ * not move: it renders the same one link, from `Header` now rather than from `app/page.tsx`. Read off
+ * this sweep's own failure output in the pinned container before the pins were moved.
  */
 const SURFACES = [
   { route: '/', status: 200, entrance: true, found: 18, skipped: 0, measured: 18 },
-  { route: '/work', status: 200, entrance: false, found: 7, skipped: 0, measured: 7 },
-  { route: '/cv', status: 200, entrance: false, found: 9, skipped: 0, measured: 9 },
-  { route: '/celeste', status: 200, entrance: false, found: 3, skipped: 3, measured: 0 },
-  { route: NOT_FOUND, status: 404, entrance: false, found: 5, skipped: 0, measured: 5 },
+  { route: '/work', status: 200, entrance: false, found: 8, skipped: 0, measured: 8 },
+  { route: '/cv', status: 200, entrance: false, found: 10, skipped: 0, measured: 10 },
+  { route: '/celeste', status: 200, entrance: false, found: 4, skipped: 4, measured: 0 },
+  { route: NOT_FOUND, status: 404, entrance: false, found: 6, skipped: 0, measured: 6 },
 ] as const;
 
 /**

@@ -14,11 +14,15 @@ export const metadata: Metadata = {
   },
 };
 
+// The skip-link's target, focusable by script and never a Tab stop (Operator ruling 2026-09-24,
+// DW-43): every route carries one, and `Header` carries the link.
 export default function WorkPage() {
   return (
-    <Container>
-      <WorkHero />
-      <WorkTimeline />
-    </Container>
+    <main id='main' tabIndex={-1}>
+      <Container>
+        <WorkHero />
+        <WorkTimeline />
+      </Container>
+    </main>
   );
 }

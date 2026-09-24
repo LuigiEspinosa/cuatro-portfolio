@@ -18,7 +18,9 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *     clipped by an ancestor's `clip-path` or `overflow`, nor by the viewport's edge, within the
  *     ring's reach. The three token grounds are each read at least once, a control planted and
  *     labelled where no shipped element sits on one. Focus and hover are different tokens. The
- *     `[tabindex="-1"]` landmarks the two skips move focus to ring on keyboard activation.
+ *     `[tabindex="-1"]` landmarks the two skips move focus to ring on keyboard activation: since
+ *     2026-09-24 every route carries one `main#main`, every route with a visible header reaches it
+ *     from a skip link its first Tab lands on, and its ring is the one inset exception, whole.
  *  2. **Traversal in DOM order** (`EXPERIENCE.md:739`). Tab from `body` visits exactly the
  *     tabbables in document order, the next Tab leaves the document or wraps, no `tabindex`
  *     computes above zero, and no focusable sits inside an `aria-hidden` subtree. On the animated
@@ -33,7 +35,8 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *     the labels `DESIGN.md` places on `<p>` at the smallest step excepted by name; none of the
  *     six prose selectors under `--t-sm`; nothing italic; no weight above the family's published
  *     range except what the ledger carries; no stylesheet sets `font-size` or `font` in `px`; and
- *     no `:focus-visible` rule outside `app/app.scss` declares an `outline`.
+ *     no `:focus-visible` rule outside `app/app.scss`, nor any there but the global one and the
+ *     landmark's, declares an `outline`.
  *  5. **One level-1 heading per document, A-7** (`EXPERIENCE.md:766`), read off the accessibility
  *     tree rather than the markup. Until Story 2-27 that was what told the home route's
  *     `GlitchText` wrapper, which carried the role, from its hidden `<h1>`; the heading is a real
@@ -87,6 +90,13 @@ const FONTS_CSS = join(REPO_ROOT, 'contracts', 'fonts.css');
 /** The one file allowed to declare the ring, and the one selector it may declare it on. */
 const RING_FILE = 'app/app.scss';
 const RING_SELECTOR = ':focus-visible';
+
+/**
+ * The one deliberate exception to `RESTYLE-SPEC.md` § 4 verbatim (Operator ruling 2026-09-24, F-20):
+ * the skip link's target, `<main>`, is as wide as the document, so its ring is drawn inside its box,
+ * in the same file and from the same roles. Nothing else may declare an outline.
+ */
+const LANDMARK_RING_SELECTOR = 'main:focus-visible';
 
 /** Where Next 16 writes the built stylesheets. Never `.next/static/css/`. */
 const CHUNK_DIR = join('.next', 'static', 'chunks');
@@ -665,8 +675,13 @@ const readStop = async (page: Page, ledger: readonly Exemption[] = EXEMPTIONS): 
       const fixed = style.position === 'fixed';
       const scrollX = fixed ? 0 : window.scrollX;
       const scrollY = fixed ? 0 : window.scrollY;
-      const width = fixed ? window.innerWidth : document.documentElement.scrollWidth;
-      const height = fixed ? window.innerHeight : document.documentElement.scrollHeight;
+      // `scrollWidth` and `scrollHeight` are whole pixels, so a box ending on a fractional pixel at the
+      // document's end read a hundredth past it, which mattered once a ring could reach zero (the
+      // landmark's inset, F-20, first read on 2026-09-24 as "0.02px past" on `/cv`). The root element's
+      // own box is not rounded, and the larger of the two is the document's extent.
+      const root = document.documentElement.getBoundingClientRect();
+      const width = fixed ? window.innerWidth : Math.max(document.documentElement.scrollWidth, root.width);
+      const height = fixed ? window.innerHeight : Math.max(document.documentElement.scrollHeight, root.height);
       const edges: [string, number][] = [
         ['top', box.top + scrollY],
         ['left', box.left + scrollX],
@@ -722,9 +737,15 @@ const transitionsOutline = (property: string, duration: string): boolean => {
 };
 
 /**
- * The ring verdict on one stop. Pure, so the planted controls can drive it.
+ * The ring verdict on one stop. Pure, so the planted controls can drive it. `offset` is
+ * `--focus-offset` everywhere but on the landmark, whose inset is the one exception (F-20).
  */
-const ringFindings = (route: string, stop: Stop, contract: RingContract): string[] => {
+const ringFindings = (
+  route: string,
+  stop: Stop,
+  contract: RingContract,
+  offset: { readonly value: string; readonly as: string } = { value: contract.offset, as: '--focus-offset' }
+): string[] => {
   const where = `${route}: ${stop.at} ("${stop.text}")`;
   const values =
     `outline-style ${stop.outlineStyle}, outline-width ${stop.outlineWidth}, outline-color ${stop.outlineColor}, ` +
@@ -734,10 +755,21 @@ const ringFindings = (route: string, stop: Stop, contract: RingContract): string
   if (stop.outlineStyle !== 'solid') found.push(`${where} paints no solid ring under Tab; ${values}`);
   if (stop.outlineWidth !== contract.width) found.push(`${where} ring is not --stroke-focus (${contract.width}) wide; ${values}`);
   if (stop.outlineColor !== contract.colour) found.push(`${where} ring is not painted in --token-focus (${contract.colour}); ${values}`);
-  if (stop.outlineOffset !== contract.offset) found.push(`${where} ring is not at --focus-offset (${contract.offset}); ${values}`);
+  if (stop.outlineOffset !== offset.value) found.push(`${where} ring is not at ${offset.as} (${offset.value}); ${values}`);
   if (transitionsOutline(stop.transitionProperty, stop.transitionDuration)) found.push(`${where} transitions its outline; ${values}`);
   return found;
 };
+
+/**
+ * The landmark's verdict after Enter on a skip link (DW-43, F-20): focus on `main#main`, the standard
+ * ring but for its offset, which is the stroke's own width inward, and no side clipped, so the whole
+ * ring is inside the box on every route. `inset` is read through a probe, never typed.
+ */
+const landmarkFindings = (route: string, stop: Stop, contract: RingContract, inset: string): string[] => [
+  ...(stop.at.endsWith('main#main') ? [] : [`${route}: focus is on ${stop.at}, not main#main`]),
+  ...ringFindings(route, stop, contract, { value: inset, as: 'the landmark inset, -1 times --stroke-focus' }),
+  ...stop.clipped.map((side) => `${route}: ${stop.at} ring is clipped, ${side}`),
+];
 
 /**
  * The traversal verdict: the stops Tab visited against the DOM-ordered tabbables, what the extra
@@ -1053,14 +1085,15 @@ const pxFontSizes = (sheets: readonly [string, string][] = stylesheets()): strin
  * painted once, in `app/app.scss`, on the bare `:focus-visible` selector, and a second declaration
  * anywhere under `app/` or `components/` is the nine-rules shape this story deleted coming back.
  * Sass nesting (`&:focus-visible { ... }`) is read the same way, by the selector text before the
- * brace.
+ * brace. **One exception since 2026-09-24**, the landmark's inset ring beside the global rule in the
+ * same file (F-20), which is `LANDMARK_RING_SELECTOR` there and nowhere else.
  */
 const ringRulesOutsideTheGlobal = (sheets: readonly [string, string][] = stylesheets()): string[] =>
   sheets.flatMap(([path, source]) =>
     [...withoutComments(source).matchAll(/([^{};]*:focus-visible[^{;]*)\{([^{}]*)\}/g)]
       .filter((rule) => /(?<![\w-])outline(?:-[a-z]+)?\s*:/.test(rule[2]))
       .map((rule) => [path, rule[1].trim()] as const)
-      .filter(([at, selector]) => !(at === RING_FILE && selector === RING_SELECTOR))
+      .filter(([at, selector]) => !(at === RING_FILE && (selector === RING_SELECTOR || selector === LANDMARK_RING_SELECTOR)))
       .map(([at, selector]) => `${at}: "${selector}" declares an outline, and the ring is painted once, by "${RING_SELECTOR}" in ${RING_FILE}`)
   );
 
@@ -1349,15 +1382,57 @@ test.describe('the accessibility floor', () => {
     // them; a keyboard visitor lands on them through Enter, which is where A-1's visible indicator
     // matters most: it is the only sign of where focus went. The global rule paints on them, and
     // `outline: none` on either is forbidden by the story.
-    await goTo(page, '/');
-    await settle(page, { route: '/', status: 200, entrance: true });
-    const contract = await ringContract(page);
-    expect(await tabTo(page, page.locator('.skip-link'), 3), 'the skip-link is not among the first three Tab stops').toBe(true);
+    //
+    // **Every route since 2026-09-24** (Operator ruling, DW-43, DW-71, F-13 and F-20). Each carries
+    // exactly one `main#main`; each with a visible header carries the skip link as the header's first
+    // child, and `/` carries it alone, so the first Tab lands on it everywhere a control shows; and
+    // `/celeste`, whose header is hidden, shows none. The landmark's ring is inset, and whole.
+    const found: string[] = [];
+    const readings: string[] = [];
+    for (const surface of SURFACES) {
+      await goTo(page, surface.route, surface.status);
+      await settle(page, surface);
+      const landmarks = await page.locator('main').evaluateAll((nodes: Element[]) => nodes.map((node) => `main#${node.id} tabindex=${node.getAttribute('tabindex')}`));
+      if (landmarks.join(', ') !== 'main#main tabindex=-1') found.push(`${surface.route} carries [${landmarks.join(', ')}], not one main#main at tabindex -1`);
+      const skips = await page.locator('.skip-link').evaluateAll((nodes: Element[]) => nodes.map((node) => node.getClientRects().length > 0));
+      if (surface.route === '/celeste') {
+        if (skips.some((shown) => shown)) found.push('/celeste displays a skip link, where the page shows no control');
+        continue;
+      }
+      if (skips.length !== 1 || !skips[0]) {
+        found.push(`${surface.route} renders ${skips.length} skip link(s), ${skips.filter((shown) => shown).length} displayed, not one`);
+        continue;
+      }
+      await page.keyboard.press('Tab');
+      const first = await page.evaluate(() => document.activeElement?.className ?? '(nothing)');
+      if (first !== 'skip-link') {
+        found.push(`${surface.route}: the first Tab lands on "${first}", not the skip link`);
+        continue;
+      }
+      await page.keyboard.press('Enter');
+      await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? ''), { message: `${surface.route}: Enter on the skip link did not move focus to main#main` }).toBe('main');
+      const contract = await ringContract(page);
+      const inset = await probeComputed(page, 'outline-offset:calc(-1 * var(--stroke-focus));', 'outline-offset');
+      const landmark = await readStop(page);
+      found.push(...landmarkFindings(surface.route, landmark, contract, inset));
+      readings.push(`${surface.route} main#main after Enter: focus-visible ${landmark.focusVisible}, ${landmark.outlineWidth} ${landmark.outlineStyle} at ${landmark.outlineOffset}, clipped [${landmark.clipped.join('; ')}]`);
+    }
+    console.log(`accessibility-floor: ${readings.join('; ')}`);
+    expect(found, `A-6 and A-1 on the landmark:\n${found.join('\n')}`).toEqual([]);
+    expect(readings.length, 'no route put focus on its landmark, so the read above is over nothing').toBe(SURFACES.length - 1);
+
+    // **The control**, on `/work`: the standard offset put back on the landmark is named twice, as the
+    // offset and as the sides the document's edge takes, which is F-20 as it was.
+    await goTo(page, '/work');
+    await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
-    await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? ''), { message: 'Enter on the skip-link did not move focus to main#main' }).toBe('main');
-    const landmark = await readStop(page);
-    expect(landmark.at, 'focus is not on the main landmark').toContain('main#main');
-    expect(ringFindings('/ (after Enter on the skip-link)', landmark, contract), 'the main landmark does not paint the standard ring when the skip-link puts focus on it').toEqual([]);
+    await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? '')).toBe('main');
+    await page.addStyleTag({ content: 'main:focus-visible { outline-offset: var(--focus-offset) !important; }' });
+    const contract = await ringContract(page);
+    const inset = await probeComputed(page, 'outline-offset:calc(-1 * var(--stroke-focus));', 'outline-offset');
+    const planted = landmarkFindings('/work (planted)', await readStop(page), contract, inset);
+    expect(planted.some((line) => line.includes('ring is not at the landmark inset')), `the offset was not named:\n${planted.join('\n')}`).toBe(true);
+    expect(planted.some((line) => /ring is clipped, (left|right) by the document edge/.test(line)), `the clipped sides were not named:\n${planted.join('\n')}`).toBe(true);
 
     // The skip control, on the animated door, moves focus to the Directory heading the same way.
     const context = await browser.newContext({ viewport: { ...RENDERED_VIEWPORT }, deviceScaleFactor: 1, colorScheme: 'light', reducedMotion: 'no-preference' });
@@ -1373,8 +1448,7 @@ test.describe('the accessibility floor', () => {
       expect(heading.at, 'focus is not on the Directory heading').toContain('h2#suite');
       expect(ringFindings('/ (after Enter on the skip control)', heading, doorContract), 'the Directory heading does not paint the standard ring when the skip control puts focus on it').toEqual([]);
       console.log(
-        `accessibility-floor: main#main after Enter: focus-visible ${landmark.focusVisible}, ${landmark.outlineWidth} ${landmark.outlineStyle} at ` +
-          `${landmark.outlineOffset}, clipped [${landmark.clipped.join('; ')}]; h2#suite after Enter: focus-visible ${heading.focusVisible}, ` +
+        `accessibility-floor: h2#suite after Enter: focus-visible ${heading.focusVisible}, ` +
           `${heading.outlineWidth} ${heading.outlineStyle} at ${heading.outlineOffset}, clipped [${heading.clipped.join('; ')}]`
       );
     } finally {
@@ -1589,14 +1663,20 @@ test.describe('the accessibility floor', () => {
     const rings = ringRulesOutsideTheGlobal(sheets);
     expect(rings, `a :focus-visible rule other than the global one declares an outline, which is the nine-rules shape this story deleted:\n${rings.join('\n')}`).toEqual([]);
     expect(ringRulesOutsideTheGlobal([[RING_FILE, `${RING_SELECTOR} { outline: 1px solid red; }`]]), 'the global rule itself was reported').toEqual([]);
+    expect(
+      ringRulesOutsideTheGlobal([[RING_FILE, `${LANDMARK_RING_SELECTOR} { outline-offset: 0; }`]]),
+      'the landmark exception was reported in the one file allowed it'
+    ).toEqual([]);
     const fabricated: [string, string][] = [
       ['components/x/X.scss', '.x {\n  color: red;\n  &:focus-visible {\n    outline: 1px solid var(--token-accent);\n  }\n}\n.y:focus-visible { outline-color: red; }\n.z:focus-visible { transform: none; }'],
       [RING_FILE, '.scoped:focus-visible { outline: none; }'],
+      ['components/x/Y.scss', `${LANDMARK_RING_SELECTOR} { outline-offset: 0; }`],
     ];
     expect(ringRulesOutsideTheGlobal(fabricated)).toEqual([
       `components/x/X.scss: "&:focus-visible" declares an outline, and the ring is painted once, by "${RING_SELECTOR}" in ${RING_FILE}`,
       `components/x/X.scss: ".y:focus-visible" declares an outline, and the ring is painted once, by "${RING_SELECTOR}" in ${RING_FILE}`,
       `${RING_FILE}: ".scoped:focus-visible" declares an outline, and the ring is painted once, by "${RING_SELECTOR}" in ${RING_FILE}`,
+      `components/x/Y.scss: "${LANDMARK_RING_SELECTOR}" declares an outline, and the ring is painted once, by "${RING_SELECTOR}" in ${RING_FILE}`,
     ]);
   });
 
@@ -1995,10 +2075,10 @@ test.describe('the scrim over the home canvas', () => {
       await settle(page, { route: '/', status: 200, entrance: true });
 
       // **The z-level trap, resolved by where the header is rather than by what it is painted on.**
-      // `Header.tsx:12` returns `null` on `/`, so the sticky header is not in the document at all
-      // and cannot be a `--z-sticky` element over a `--z-raised` scrim. Read off the DOM, and the
-      // scrim's own placement is then read off the composited pixels below rather than off any
-      // `z-index` value.
+      // `Header.tsx:18` renders no band on `/`, only the skip link, so the sticky header is not in the
+      // document at all and cannot be a `--z-sticky` element over a `--z-raised` scrim. Read off the
+      // DOM, and the scrim's own placement is then read off the composited pixels below rather than
+      // off any `z-index` value.
       expect(
         await page.evaluate(() => document.querySelectorAll('.header-container').length),
         'a sticky header renders on `/`, so it sits above the scrim and computes against the imagery'

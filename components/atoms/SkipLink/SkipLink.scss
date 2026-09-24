@@ -7,12 +7,11 @@
 // **It declares no custom property of its own**, which is what keeps every one of the Hub's sixteen
 // in one file and the collision argument checkable in one place. Asserted, not remembered.
 //
-// **Neither this control nor the skip control has a visual row in any design document.**
-// `review-rubric.md:40` names the gap for the skip control; this one is not mentioned as a
-// component at all, which is a wider gap and is filed in `deferred-work.md` as DW-44. Both are
-// therefore built from the rules that do exist: mono uppercase signage on a hairline, hover
-// recolouring an existing underline rather than adding one, the global `:focus-visible` ring
-// `app/app.scss` paints on every element since Story 2-26, and `--tap` as the size floor.
+// **`DESIGN.md` § Components carries a row for this control and the skip control since 2026-09-24**
+// (Operator ruling, DW-44), describing what shipped. Until then neither had one, so both were built
+// from the rules that do exist: mono uppercase signage on a hairline, hover recolouring an existing
+// underline rather than adding one, the global `:focus-visible` ring `app/app.scss` paints on every
+// element since Story 2-26, and `--tap` as the size floor. The row is what a later edit preserves.
 
 .skip-link {
   position: fixed;
@@ -41,8 +40,10 @@
   inset-inline-start: calc(var(--focus-offset) + var(--stroke-focus));
   transform: translateY(calc(-100% - var(--focus-offset) - var(--stroke-focus)));
 
-  // Above everything, including the sticky header the other four surfaces carry. A skip-link that
-  // reveals itself behind the chrome is a skip-link nobody can see.
+  // Above everything. A skip-link that reveals itself behind the chrome is a skip-link nobody can see.
+  // **Since 2026-09-24 it sits inside the sticky header** on every route that renders one (DW-43), so
+  // it rises within the header's own stack, over the wordmark and the destinations, and the header
+  // at `--z-sticky` is above the page; on `/`, which renders no header, it is at the root.
   z-index: var(--z-tooltip);
 
   // `min-block-size` with `inline-flex`, never `padding-block` on a plain inline element: vertical

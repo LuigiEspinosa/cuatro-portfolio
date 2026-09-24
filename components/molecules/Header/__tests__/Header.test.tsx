@@ -8,8 +8,8 @@ import { Header } from '../Header';
  * The chrome as it renders and as its four stylesheets compile (Story 2-32).
  *
  * **The markup.** A band that carries the ground and the hairline at the viewport's full width,
- * with the page's container inside it holding the wordmark and then the two destinations (DW-63),
- * and nothing at all on the home route.
+ * with the skip link first and the page's container inside it holding the wordmark and then the two
+ * destinations (DW-63, DW-43), and on the home route the skip link alone.
  *
  * **The stylesheets, read as they compile**, which is what ships and carries no comments. The four
  * files the header is built from (`Header.scss`, `Navbar.scss`, `Logo.scss` and `Container.scss`) are
@@ -44,10 +44,29 @@ const renderAt = (pathname: string) => {
 };
 
 describe('the header renders a band holding the wordmark and the two destinations', () => {
-  it('renders nothing on the home route, which carries its own navigation', () => {
+  it('renders the skip link alone on the home route, which carries its own navigation', () => {
+    // No band on `/`, where the hero panels are the navigation. The skip link is the one thing the
+    // header renders there (Operator ruling 2026-09-24, DW-43): it moved here from `app/page.tsx`,
+    // so every route takes it from one place and `/` still has exactly one, first in the document.
     const { container } = renderAt('/');
-    expect(container.innerHTML, 'a header rendered on /, where the hero panels are the navigation').toBe('');
+    expect(container.querySelector('header'), 'a header rendered on /, where the hero panels are the navigation').toBeNull();
+    expect([...container.children].map((child) => `${child.tagName.toLowerCase()}.${child.className}`)).toEqual(['a.skip-link']);
+    expect(container.querySelector('.skip-link')).toHaveAttribute('href', '#main');
   });
+
+  it.each(['/work', '/cv', '/celeste', '/a-route-that-does-not-exist'])(
+    'carries the skip link as the first child of the band on %s, and one only',
+    (pathname) => {
+      // Every route but `/` renders the band, `/celeste` included, whose stylesheet hides it, so the
+      // link hides with it and that page shows no control (DW-43, F-13).
+      const { container } = renderAt(pathname);
+      const header = container.querySelector('header');
+      expect(header, `no header rendered on ${pathname}`).not.toBeNull();
+      expect(header?.firstElementChild?.className, `the skip link is not the band's first child on ${pathname}`).toBe('skip-link');
+      expect(header?.firstElementChild).toHaveAttribute('href', '#main');
+      expect(container.querySelectorAll('.skip-link'), `${pathname} renders more than one skip link`).toHaveLength(1);
+    }
+  );
 
   it('paints the band on the header and puts the content in the page container inside it', () => {
     // DW-63: the 2023 header was itself the container, so its ground stopped at 80% of the
@@ -56,9 +75,12 @@ describe('the header renders a band holding the wordmark and the two destination
     const header = container.querySelector('header');
     expect(header, 'no header rendered on /work').not.toBeNull();
     expect(header?.className).toBe('header-container');
-    expect([...(header?.children ?? [])].map((child) => child.className)).toEqual(['header-container__inner container']);
+    expect([...(header?.children ?? [])].map((child) => child.className)).toEqual([
+      'skip-link',
+      'header-container__inner container',
+    ]);
 
-    const inner = header?.firstElementChild;
+    const inner = header?.querySelector(':scope > .header-container__inner');
     expect(
       [...(inner?.children ?? [])].map((child) => `${child.tagName.toLowerCase()}.${child.className}`),
       'the band does not hold the wordmark and then the nav'

@@ -35,7 +35,7 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * and against an alpha channel, because a translucent ground would still equal its own probe.
  *
  * **`aria-current` had no live instance on the shipped Hub until 2026-09-10, and now it has one.**
- * `Suite` is current only on `/`, where `Header.tsx:12` renders no header at all, and `CV` is
+ * `Suite` is current only on `/`, where `Header.tsx:18` renders no header at all, and `CV` is
  * current only on `/cv`, which answered a 308 to a PDF until Story 2-16 built the page. This file
  * goes on asserting the attribute **absent** on the two surfaces that are neither destination,
  * watched against a planted mark, because that is the claim those two surfaces support and it is
@@ -739,11 +739,11 @@ test.describe('the chrome nav', () => {
       ).toBe(height);
     }
 
-    // **The control, and it is the surface with no header.** `Header.tsx:12` renders nothing on
-    // `/`, which is the one route whose fragments the Hub actually uses, so reserving space there
-    // would push `/#suite` and the skip-link's `#main` down by a header that is not present. A
-    // rule applied to every route would pass every reading above and be wrong here, which is what
-    // makes this a control rather than an extra assertion.
+    // **The control, and it is the surface with no header.** `Header.tsx:18` renders no band on
+    // `/`, only the skip link, and `/` is the one route whose fragments the Hub actually uses, so
+    // reserving space there would push `/#suite` and the skip-link's `#main` down by a header that
+    // is not present. A rule applied to every route would pass every reading above and be wrong
+    // here, which is what makes this a control rather than an extra assertion.
     await goTo(page, '/');
     await expect(page.locator('header')).toHaveCount(0);
     expect(

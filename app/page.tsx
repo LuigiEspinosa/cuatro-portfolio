@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { SkipLink } from '@/components/atoms/SkipLink/SkipLink';
 import type { ServedNarrativePath } from '@/hooks/useNarrativePath';
 import HomeLayout from '@/components/organisms/HomeLayout/HomeLayout';
 import { Premise } from '@/components/organisms/Premise/Premise';
@@ -58,13 +57,12 @@ export default async function Home() {
 
   return (
     <>
-      {/* A-6, and it is first in the fragment because being the first tabbable element is the whole
-          of what makes it the accessibility skip-link rather than a second skip control. `Header`
-          renders nothing on `/` (`Header.tsx:12`), so nothing focusable precedes this. */}
-      <SkipLink />
-      {/* `id` is the skip-link's target and `tabIndex={-1}` is what makes the landmark receive
-          focus rather than only scroll, the same treatment `SuiteDirectory`'s heading carries. It
-          is negative, so `<main>` never becomes a tab stop of its own. */}
+      {/* A-6's skip-link is not rendered here since the Operator ruling of 2026-09-24 (DW-43): `Header`
+          renders it on every route, alone on `/`, where it renders no band, and the root layout puts
+          the header ahead of this fragment, so it is still the first tabbable element on this page.
+          `id` is its target and `tabIndex={-1}` is what makes the landmark receive focus rather than
+          only scroll, the same treatment `SuiteDirectory`'s heading carries. It is negative, so
+          `<main>` never becomes a tab stop of its own. Every route carries the same landmark. */}
       <main id='main' tabIndex={-1}>
         <HomeLayout servedPath={served} />
         {/* The hero is one viewport tall on the default path, shorter than one on the non-3D path

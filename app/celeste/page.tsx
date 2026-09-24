@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
+// A landmark like every route's (Operator ruling 2026-09-24, DW-43), though nothing here reaches it:
+// the header, and the skip link its first child, are hidden on this surface.
 export default function Celeste() {
-  return <CelesteComponent />;
+  return (
+    <main id='main' tabIndex={-1}>
+      <CelesteComponent />
+    </main>
+  );
 }

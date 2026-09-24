@@ -56,6 +56,9 @@ describe('the home route', () => {
     const main = container.querySelector('main');
     expect(main, 'the route no longer renders a main landmark').not.toBeNull();
     expect(within(main as HTMLElement).getByRole('heading', { level: 2, name: 'The Suite' })).toBeInTheDocument();
+    // The skip link's target, which takes focus rather than only scroll, and is never a Tab stop.
+    expect(main).toHaveAttribute('id', 'main');
+    expect(main).toHaveAttribute('tabindex', '-1');
   });
 
   it('puts the premise between the hero and the directory, so the claim precedes its evidence', async () => {
@@ -82,11 +85,12 @@ describe('the home route', () => {
     // while being exactly the thing FR-1 forbids. The region between the Directory and the footer
     // is what Stories 2-12 and 2-17 edit next, so this is the guard those changes meet.
     //
-    // Story 2-13 added the first entry. The A-6 skip-link is rendered ahead of `<main>` because
-    // being the first tabbable element is what makes it the accessibility skip-link, and FR-1 is a
-    // claim about what follows the Directory, which is still the footer and nothing else.
+    // Story 2-13 added a first entry, the A-6 skip-link, and the Operator ruling of 2026-09-24 moved it
+    // into `Header` (DW-43), which the root layout renders ahead of every route, so it is still the
+    // first tabbable element on `/` and this fragment is back to the landmark and the footer. FR-1 is
+    // a claim about what follows the Directory, which is still the footer and nothing else.
     const { container } = await renderHome();
-    expect([...container.children].map((child) => child.tagName)).toEqual(['A', 'MAIN', 'FOOTER']);
+    expect([...container.children].map((child) => child.tagName)).toEqual(['MAIN', 'FOOTER']);
 
     const footer = container.querySelector('footer.site-footer');
     expect(footer, 'the home route renders no footer').not.toBeNull();

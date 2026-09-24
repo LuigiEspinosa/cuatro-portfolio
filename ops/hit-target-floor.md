@@ -96,12 +96,12 @@ one commit.
 | Surface | Status | Candidates found | Skipped | Measured |
 |---|---|---|---|---|
 | `/` | 200 | 18 | 0 | 18 |
-| `/work` | 200 | 7 | 0 | 7 |
-| `/cv` | 200 | 9 | 0 | 9 |
-| `/celeste` | 200 | 3 | 3 | 0 |
-| `/a-route-that-does-not-exist` | 404 | 5 | 0 | 5 |
+| `/work` | 200 | 8 | 0 | 8 |
+| `/cv` | 200 | 10 | 0 | 10 |
+| `/celeste` | 200 | 4 | 4 | 0 |
+| `/a-route-that-does-not-exist` | 404 | 6 | 0 | 6 |
 
-**39 elements measured across five surfaces.**
+**42 elements measured across five surfaces**, 39 until 2026-09-24 (see the re-measurement of that date below).
 
 **Re-measured 2026-09-07** after Story 2-13 built the non-3D front door. `/` went from 16 to 17 and
 the other four did not move. The one new element is the A-6 skip-link, which renders on every path
@@ -176,6 +176,19 @@ footer and gained no exit, and its three hidden candidates are still the header'
 total goes from 37 across five surfaces to 39, and all three new elements clear the floor, so the
 exemption ledger shrinks by a row rather than gaining one.
 
+**Re-measured 2026-09-24 after the Operator ruling of that day moved the skip link into `Header`**
+(DW-43, `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`). `/work` went from 7 to
+8, `/cv` from 9 to 10 and the 404 from 5 to 6; `/celeste` from three found and three skipped to four
+and four; `/` did not move. **Read off the sweep's own failure output**: the run in
+`mcr.microsoft.com/playwright:v1.62.1-noble` against the old pins failed naming the four surfaces and
+printed `/work: found 8, skipped 0, measured 8`, `/cv: found 10, skipped 0, measured 10`,
+`/celeste: found 4, skipped 4, measured 0` and `/a-route-that-does-not-exist: found 6, skipped 0,
+measured 6`, with `/` printed unchanged at 18, and the pins were moved to what it printed. The one new
+element on each surface with a header is the A-6 skip link, the band's first child, parked above the
+viewport with a real box that clears the floor on both axes; on `/celeste` it is the fourth candidate
+the hidden band takes out of the sweep. `/` renders the same one link, from `Header` rather than from
+`app/page.tsx`. The whole-run total goes from 39 to 42, and the exemption ledger gains no row.
+
 **`/projects` is in neither this table nor the non-Hub list, and that is deliberate.** A browser
 asked for it now gets a 301 to `/#suite` and lands on `/`, which is a Hub surface this sweep already
 measures. Playwright follows redirects, so a row that merely kept the route would have gone green
@@ -192,11 +205,12 @@ A dynamic segment is refused rather than guessed, because there is no single URL
 
 **`/celeste` is the one surface that measures zero, and it says so rather than reaching it by
 accident.** **Decision.** `SURFACES` in the spec file carries `expectsMeasured: false` for that
-route alone, and the sweep asserts both halves there: the selector still matches three candidates,
-and all three are removed by the visibility rule. Written as a bare "at least one element per
+route alone, and the sweep asserts both halves there: the selector still matches four candidates,
+and all four are removed by the visibility rule. Written as a bare "at least one element per
 route" guard it would have been the one route where a broken selector looked exactly like a
 correct skip. **Seven candidates until 2026-09-08**, when Story 2-15 reshaped the header the rule
-hides; the argument is unchanged and only the count moved.
+hides; the argument is unchanged and only the count moved. **Three until 2026-09-24**, when the
+skip link joined the band as its first child (DW-43).
 
 **Two routes render no Hub markup and are excluded by measurement, not by omission.**
 **Observed 2026-09-10** by `page.request.get`, which follows the redirect and reports where a

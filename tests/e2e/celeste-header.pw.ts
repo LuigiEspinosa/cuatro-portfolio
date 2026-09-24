@@ -17,9 +17,9 @@ import { expect, test, type Page } from '@playwright/test';
  * here.
  *
  * **Two routes reach "no header" by two different mechanisms**, and this file keeps them apart.
- * On `/celeste` the element is rendered and the stylesheet hides it. On `/` `Header.tsx:12`
- * returns `null` and no element exists at all. Conflating them is how a broken suppression
- * passes: `toBeHidden()` is green for an element that is simply absent.
+ * On `/celeste` the element is rendered and the stylesheet hides it. On `/` `Header.tsx:18`
+ * renders the skip link alone and no header element exists at all. Conflating them is how a
+ * broken suppression passes: `toBeHidden()` is green for an element that is simply absent.
  *
  * Assertions only. No screenshot is taken, so this file writes no snapshot directory and the
  * "keeps exactly one committed baseline" case in `rendered-output.pw.ts` is untouched: that
@@ -208,9 +208,10 @@ test.describe('the site header', () => {
   });
 
   test('/ renders no header element at all, which is a different mechanism', async ({ page }) => {
-    // **Absence, not `display: none`.** `Header.tsx:12` returns `null` when the pathname is `/`,
-    // so the home route never renders a `<header>` for anything to hide, and `celeste.scss` is
-    // not involved: its rule is scoped to `#celeste` and the home route's body id is `''`.
+    // **Absence, not `display: none`.** `Header.tsx:18` renders only the skip link when the pathname
+    // is `/` (since 2026-09-24, DW-43), so the home route never renders a `<header>` for anything
+    // to hide, and `celeste.scss` is not involved: its rule is scoped to `#celeste` and the home
+    // route's body id is `''`.
     //
     // That is the whole distinction between the two routes this file covers. On `/celeste` the
     // element **is** rendered and the stylesheet hides it, which is why that case asserts

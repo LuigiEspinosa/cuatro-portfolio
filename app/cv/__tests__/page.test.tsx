@@ -89,13 +89,16 @@ describe('the /cv route', () => {
   });
 
   it('renders the intro block inside a main landmark, above the timeline', () => {
-    // The header is sticky at 140px since Story 2-15 and this surface renders no skip link, so the
-    // landmark is the only way past the chrome. The order is the claim: an intro rendered after the
-    // timeline would satisfy every other case here and be read second.
+    // The landmark is the skip link's target since the Operator ruling of 2026-09-24 (DW-43): the
+    // header carries the link, and `main#main` takes focus from it, `tabindex="-1"` so it is never a
+    // Tab stop of its own. The order is the claim: an intro rendered after the timeline would satisfy
+    // every other case here and be read second.
     const { container } = render(<CvPage />);
 
     const main = container.querySelector('main');
     expect(main, '/cv renders no main landmark').not.toBeNull();
+    expect(main, 'the landmark is not the skip link target').toHaveAttribute('id', 'main');
+    expect(main).toHaveAttribute('tabindex', '-1');
 
     const intro = container.querySelector('.cv-intro');
     const timeline = container.querySelector('.work-timeline');

@@ -38,12 +38,10 @@ export const metadata: Metadata = {
 
 export default function CvPage() {
   return (
-    // **A `<main>`, which `/work` does not have.** Story 2-15 made the header sticky at 140px and
-    // this surface renders no skip link, so without a landmark there is no way past the chrome for
-    // assistive technology. Adding one here is a single element on a page being written from
-    // scratch; adding it to `/work`, `/celeste` and the 404 is a chrome change and belongs to Story
-    // 2-32, so that half is filed rather than done.
-    <main>
+    // **The skip-link's target** (Operator ruling 2026-09-24, DW-43, DW-71). Story 2-16 gave this page
+    // the Hub's second `<main>`, bare; every route carries one since, with the `id` the header's skip
+    // link targets and `tabIndex={-1}`, so it takes focus from the link and is never a Tab stop.
+    <main id='main' tabIndex={-1}>
       <Container>
         <CvIntro />
         <WorkTimeline />
