@@ -24,10 +24,10 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *     computes above zero, and no focusable sits inside an `aria-hidden` subtree. On the animated
  *     door `.skip-control` is a stop and paints the ring.
  *  3. **The built CSS** (`epics.md:3053-3061`, UX-DR44). Every `z-index:<number>`, `box-shadow`,
- *     `text-shadow` and `*-gradient(` occurrence in `.next/static/chunks/*.css` is claimed by a
- *     ledger row and every row is claimed back, tallied per value, property or function. The
- *     `--z-*` names come from `contracts/tokens.css`, and an empty build throws rather than
- *     passing over nothing.
+ *     `text-shadow` and `*-gradient(` occurrence in `.next/static/chunks/*.css`, and since
+ *     2026-09-24 every `url(` outside `@font-face` (DW-102), is claimed by a ledger row and every
+ *     row is claimed back, tallied per value, property or function. The `--z-*` names come from
+ *     `contracts/tokens.css`, and an empty build throws rather than passing over nothing.
  *  4. **The type floor, A-11 and A-12** (`epics.md:3042-3051`, `DESIGN.md:461-502`). Nothing
  *     visible, generated text included, computes under `--t-3xs`; no paragraph under `--t-2xs`,
  *     the labels `DESIGN.md` places on `<p>` at the smallest step excepted by name; none of the
@@ -213,6 +213,14 @@ const EXEMPTIONS: readonly Exemption[] = [
 /** The four depth properties and functions the built-CSS sweep counts, as written in minified CSS. */
 const DEPTH_PROPERTIES = ['box-shadow', 'text-shadow'] as const;
 const DEPTH_FUNCTIONS = ['linear-gradient', 'radial-gradient', 'repeating-linear-gradient', 'conic-gradient'] as const;
+
+/**
+ * The seventh tell, counted apart because it is legitimate in one place (DW-102, Operator ruling
+ * 2026-09-24). A `url(` in built CSS is either a face's `src`, inside `@font-face`, or a painted image:
+ * the grain Story 2-28 deleted came back that way, and no gradient or shadow count sees it. So every
+ * `url(` outside an `@font-face` block is counted, and zero is expected.
+ */
+const DEPTH_URL = 'url' as const;
 
 /** The WCAG 2.1 non-text contrast floor the ring is held to (1.4.11). */
 const RING_CONTRAST_FLOOR = 3;
@@ -822,6 +830,9 @@ const tally = (
     for (const fn of DEPTH_FUNCTIONS) {
       for (const found of text.matchAll(new RegExp(`(?<![\\w-])(?:-webkit-|-moz-)?${fn}\\s*\\(`, 'g'))) bump(`depth=${fn}`);
     }
+    // A face's `src` is the one `url(` that belongs here; the block is cut out before counting.
+    const outsideFaces = text.replace(/@font-face\s*\{[^}]*\}/g, '');
+    for (const found of outsideFaces.matchAll(new RegExp(`(?<![\\w-])${DEPTH_URL}\\s*\\(`, 'g'))) bump(`depth=${DEPTH_URL}`);
   }
   const claimed = new Map<string, number>();
   for (const row of ledger) {
@@ -1083,7 +1094,7 @@ test.describe('the accessibility floor', () => {
       expect(existsSync(join(REPO_ROOT, row.source.split(':')[0])), `"${row.id}" names ${row.source}, which is not on disk`).toBe(true);
       if (row.check === 'z-index') expect(row.match, `"${row.id}" is a z-index row whose match is not an integer`).toMatch(/^-?\d+$/);
       if (row.check === 'depth') {
-        expect([...DEPTH_PROPERTIES, ...DEPTH_FUNCTIONS] as readonly string[], `"${row.id}" names a depth tell this sweep does not count`).toContain(row.match);
+        expect([...DEPTH_PROPERTIES, ...DEPTH_FUNCTIONS, DEPTH_URL] as readonly string[], `"${row.id}" names a depth tell this sweep does not count`).toContain(row.match);
       }
       if (row.check === 'heading') expect(SURFACES.map((surface) => surface.route), `"${row.id}" names a route this sweep does not visit`).toContain(row.match);
     }
@@ -1472,6 +1483,26 @@ test.describe('the accessibility floor', () => {
     expect(planted.unlisted, 'the tally does not report a planted literal and a planted grid').toEqual([
       'depth=linear-gradient occurs 2 time(s) in the built CSS and no ledger row claims it',
       'z-index=2 occurs 1 time(s) in the built CSS and no ledger row claims it',
+    ]);
+
+    // **The `url(` tell (DW-102).** The build's faces carry their `url(` inside `@font-face`, so the
+    // real read passes over them, and a planted grain is seen beside a planted face that is not.
+    const faceUrls = styles.reduce((sum, { text }) => sum + [...text.matchAll(/(?<![\w-])url\s*\(/g)].length, 0);
+    expect(faceUrls, 'the built CSS carries no url( at all, so the face exclusion below is untested on it').toBeGreaterThan(0);
+    const grain = tally(
+      [
+        {
+          name: 'planted.css',
+          text:
+            '@font-face{font-family:Planted;src:url(./planted.woff2) format("woff2")}' +
+            '.work-hero::after{background-image:url("data:image/svg+xml;utf8,<svg/>")}.grain{background:url(grain.png) repeat}',
+        },
+      ],
+      EXEMPTIONS,
+      layers
+    );
+    expect(grain.unlisted, 'the tally does not report two planted url() grounds, or counts the face').toEqual([
+      'depth=url occurs 2 time(s) in the built CSS and no ledger row claims it',
     ]);
   });
 
