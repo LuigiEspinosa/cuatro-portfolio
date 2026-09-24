@@ -1475,6 +1475,15 @@ reason: |-
   proof waits on the merge, since a dispatch needs the workflow on `main`: `ops/contract-serving.md`
   Pending Operator action 8, a dispatch on `dev` that the first step refuses. Epic 1 retrospective
   action 7 closes with this entry.
+
+  **Amended 2026-09-24 for `list-wheel`**, on the same ruling, by
+  `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+  `30e5e8b`. That repository's deploy reports the same way through a `report` job (`needs: [test,
+  deploy]`, `if: failure()`, `issues: write` on that job alone) rather than a last step, because a red
+  suite skips its deploy job whole and a step inside it would never run. So a red suite, the ref
+  refusal, the gate and a failed deploy each open an issue there, and the job that runs `npm ci`
+  holds no write scope. `ops/deploy-remote.test.mjs` there pins the job's wiring; its one live proof
+  is `ops/contract-serving.md` Pending Operator action 10.
 status: done
 ### DW-21: Four content defects of the same class as the one story 2-1 fixed still ship to the page from `content/work.ts`.
 origin: spec-deferred 2026-08-29
@@ -5098,6 +5107,15 @@ status: done
     not what the pinned `ssh-action` downloads when it runs, which is DW-130. The repository's
     default token permission is still `write` (observed through the API that day), and every
     workflow now overrides it. `list-wheel`'s `deploy.yml` is outside this entry and this package.
+
+    **Amended 2026-09-24 for `list-wheel`**, on the same ruling, by
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+    `30e5e8b`. Its `deploy.yml` declares `permissions: contents: read` at the top (that repository's
+    own default is already `read`, observed through the API that day), only its `report` job widens
+    it, by `issues: write`, and `appleboy/ssh-action` is pinned to the same
+    `0ff4204d59e8e51228ff73bce53f80d53301dee2` (`v1.2.5`, where `v1` still pointed by `git ls-remote`
+    that day). GitHub's own actions stay on tags. `ops/deploy-remote.test.mjs` there holds both rules
+    for its one workflow, with planted controls.
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-24-hub-visitor-instrumentation.md`
@@ -5187,7 +5205,24 @@ status: done
     and `npm test` against a Chrome the runner provides, plus the wiring test for the deploy
     workflow, which is a decision about that repository and not this one. **Trigger: the first CI
     job added to `list-wheel` for any reason, or the first edit to its `deploy.yml`.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (option A: a test job the deploy needs), by
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+    `30e5e8b`, committed in a clone that day and left for the session that verifies the package to
+    push, which redeploys `wheel.cuatro.dev` once.** That repository's `.github/workflows/deploy.yml`
+    gains a `test` job (checkout, `setup-node` 22, `npm ci`, `npm test`, which `karma.conf.js` runs in
+    `ChromeHeadlessNoSandbox`, then `node --test ops/deploy-remote.test.mjs`), and `deploy` carries
+    `needs: test`, so a red suite stops the deploy before the box is touched; with `main` unprotected,
+    that `needs:` is the gate. The wiring test this entry asked for is `ops/deploy-remote.test.mjs`
+    there, on the standard library's runner, so no dependency is added: it holds the test job's steps,
+    the `needs:`, the Capacity Gate before the SSH step, no `continue-on-error`, no `|| true` and no
+    condition but the failure report's. Rehearsed on Node 22 with a Chromium in a container from the
+    committed tree: `npm test` 145 of 145, the new file 26 of 26, and a planted failing spec made
+    `npm test` exit 1. `ops/contract-adoption.md` moves the repository's real-test-suite verdict to yes
+    from the push; the fourth condition still fails, since `main` is unprotected, so no automation may
+    be enabled there. **What it does not do**: run the suite on a pull request, which the ruling did not
+    ask for, so a branch is tested when it reaches `main` and not before.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-91
@@ -5304,7 +5339,20 @@ status: done
     `00f5957` (read through the API on 2026-09-24); until that lands the two files differ by exactly
     these additions, which is the drift this entry names. **Owner: the `list-wheel` half of the same
     ruling.**
-  status: open
+
+    **Closed 2026-09-24 on the `list-wheel` half, on the same ruling, by
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+    `30e5e8b`, pushed by the session that verifies that package.** That repository's `deploy.yml` now
+    carries the Anchor's `concurrency: deploy` without cancellation, `paths-ignore: '**.md'` (its
+    `.dockerignore` keeps every Markdown file out of the image, and neither the build nor either suite
+    reads one) and `workflow_dispatch`, refused at the deploy job's first step on any ref but `main`, and
+    it resets to the pushed sha through its own `ops/deploy-remote.sh`, the Anchor's script at `b0aeaff`
+    with the checkout (`~/list-wheel`) and the compose line (no env file) changed. The two files are one
+    shape again, apart from what DW-90's test job adds and the failure report that moves into a job of
+    its own with it (DW-20). `ops/deploy-remote.test.mjs` there runs the Anchor's matrix against the
+    script. Nothing compares the two repositories' files, so the next edit to either carries the other
+    by hand, as this entry already said.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-94
@@ -5345,6 +5393,19 @@ status: done
     rollback written there; until it is dated the Anchor's key still opens a shell. And `list-wheel`'s
     key, which waits for that repository's own script under the same ruling. Epic 3's image-pull
     deploy edits the script (`epics.md` Story 3.4, amended).
+
+    **Amended 2026-09-24: `list-wheel`'s script landed, by
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+    `30e5e8b`, pushed by the session that verifies that package.** That repository's
+    `ops/deploy-remote.sh` holds the same contract, resets `~/list-wheel` and runs its own compose
+    line, and its workflow sends the same one-string shape; `ops/deploy-remote.test.mjs` there runs
+    the Anchor's matrix against it on every run of its test job. Rehearsed against the real history in
+    a container that day: a checkout cloned at `00f5957`, the box's commit, took the unrestricted
+    string to `50691bd` and then the forced command, and refused `id` and an empty command. **What is
+    open**: the two lines on the box, `ops/contract-serving.md` Pending Operator actions 7 (the
+    Anchor's key) and 9 (`list-wheel`'s), each due after the first deploy that brings its script.
+    Until both are dated, each key still opens a shell. Story 4.3 edits `list-wheel`'s script
+    (`epics.md`, amended).
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
@@ -6769,4 +6830,42 @@ status: done
 
     **Owner: Story 3-4, which rewrites the deploy step for image pulls.** **Trigger: that story, or
     the next edit to the `ssh-action` pin.**
+
+    **Amended 2026-09-24:** `list-wheel`'s deploy step runs the same pinned action since
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md` (`list-wheel` commit
+    `30e5e8b`), and ran `@v1` before it, which pointed at that commit when read on 2026-09-24, so the
+    same unverified binary holds that repository's key. The same closer applies there, and Story 4.3 is
+    the story booked to rewrite that step.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`
+  id: DW-131
+  summary: >-
+    Either repository's forced-command script accepts a commit on `main` that predates the script
+    itself, and resetting to it deletes the file the key's `authorized_keys` line names, so one such
+    call leaves every later deploy failing until the Operator repairs the checkout by hand.
+  evidence: |-
+    Found 2026-09-24 by the DW-90 package's edge-case review and **Observed** that day in a `node:22`
+    container: a checkout at `/home/deploy/list-wheel` holding the new script ran the forced command
+    with an `SSH_ORIGINAL_COMMAND` whose last word was `00f595709348f7684cabcb5b0c8e7830561c1754`,
+    logged `deploying 00f595709348f7684cabcb5b0c8e7830561c1754, read from SSH_ORIGINAL_COMMAND`, exited
+    0 and reset to `00f5957`, which carries no `ops/deploy-remote.sh`; the next forced call, naming
+    `main`'s head, printed
+    `/bin/bash: /home/deploy/list-wheel/ops/deploy-remote.sh: No such file or directory` and exited 127.
+    The Anchor's script at `b0aeaff` has the same shape: every commit on its `main` before `b0aeaff`
+    passes `git merge-base --is-ancestor` and carries no script. The workflows never send such a sha,
+    since a push or a dispatch deploys a commit that carries it, so the path needs a leaked key or a
+    forced call made by hand. The rollback itself is the accepted "redeploy a commit already on
+    `main`"; what goes beyond it is that deploys then stop until the recovery in
+    `ops/contract-serving.md` § "If a broken script reaches `main`", and that the report opens an
+    issue for each failed run meanwhile.
+
+    Not fixed in the package: the Operator ruled the two scripts one shape, so a guard in one would be
+    the drift DW-93 names, and the Anchor's script is outside that package. The cheap closer is one
+    line after the ancestor check in both scripts, `git cat-file -e "$target:ops/deploy-remote.sh" ||
+    refuse "$target carries no ops/deploy-remote.sh"`, with a case each running the forced command at a
+    pre-script commit.
+
+    **Owner: unassigned; both scripts together.** **Trigger: the next edit to either
+    `ops/deploy-remote.sh`, Story 3-4 or Story 4.3 at the latest.**
   status: open

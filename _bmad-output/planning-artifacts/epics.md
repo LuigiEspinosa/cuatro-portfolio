@@ -4303,6 +4303,12 @@ Move the estate's only application with no server-side component onto the new pr
 **Acceptance intent:** addendum §G names this the natural first candidate precisely because it
 verifies static serving without an application runtime in the way; the hostname keeps serving
 across the move.
+*(amended 2026-09-24 by Operator ruling, DW-94 and DW-90: `list-wheel`'s compose line now lives in
+that repository's `ops/deploy-remote.sh`, which its workflow's SSH step runs and which is its deploy
+key's forced command on the box, and a `test` job the deploy needs runs its suite first. A move that
+changes how `list-wheel` deploys edits that script rather than the step: the sha stays the last word
+of the step's command string and the script keeps its path, so the `authorized_keys` line needs no
+change. `ops/contract-serving.md` § `list-wheel`'s deploy, the same shape records the contract.)*
 
 ### Story 4.4: One Postgres, one database and one role per consumer
 Stand up the estate's single Postgres instance and migrate each consumer onto its own database.

@@ -519,7 +519,9 @@ restrict,command="/bin/bash /home/deploy/cuatro-portfolio/ops/deploy-remote.sh"
 whatever the client asks for. A leaked `SSH_PRIVATE_KEY` then redeploys a commit already on `main`
 and does nothing else. **What it leaves alone:** `deploy` keeps passwordless sudo, which the ruling
 did not take up; the Operator's own key stays unrestricted, and is the recovery path; and
-`list-wheel`'s key waits for that repository's own script, under the same ruling.
+`list-wheel`'s key waits for that repository's own script, under the same ruling. **Amended
+2026-09-24:** that script is `list-wheel` commit `30e5e8b`; "`list-wheel`'s deploy, the same shape"
+below describes it, and Pending Operator action 9 holds its key's line.
 
 **If a broken script reaches `main`.** Under the forced command the box runs the copy the last
 deploy left in the checkout, so a script that breaks before its reset also blocks the deploy of its
@@ -601,6 +603,99 @@ The count reads `1`. The workflow deploys through the unrestricted shell again w
 and a dispatch then logs `read from its argument`. Reverting the workflow or the script needs the
 line rolled back first, since the forced script refuses any string whose last word is not a sha.
 
+### `list-wheel`'s deploy, the same shape
+
+**Written 2026-09-24** by `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`,
+Operator ruling 2026-09-24 (DW-90, and DW-93, DW-94, DW-20 and DW-87 for
+`LuigiEspinosa/list-wheel`). Everything here is a **Decision** of that ruling unless it is marked
+**Observed**. It is `list-wheel` commit `30e5e8b`, with `50691bd` for that repository's README and
+CHANGELOG, committed in a clone that day and left for the session that verifies the package to push.
+That push runs the first deploy through it, the unrestricted way, and redeploys `wheel.cuatro.dev` once.
+
+**What a deploy runs.** `list-wheel`'s `.github/workflows/deploy.yml` is the Anchor's shape, with the
+same triggers, token, `deploy` group, ref refusal and pinned `ssh-action`, and three differences. A
+`test` job runs first (`npm ci`, `npm test`, which runs the Karma suite in `ChromeHeadlessNoSandbox`,
+then `node --test ops/deploy-remote.test.mjs`) and the deploy job needs it, so a red suite stops the
+deploy before the box is touched (DW-90). The Capacity Gate is read from this repository's `main` by
+sparse checkout, as it was. And the failure report is a job of its own, `needs: [test, deploy]`,
+`if: failure()`, holding `issues: write` alone, because a red suite skips the deploy job whole and a
+step inside it would never run. Its `ops/deploy-remote.sh` is the Anchor's script at `b0aeaff` with two
+lines changed: the checkout it resets, `/home/deploy/list-wheel`, and the compose line,
+`docker compose up --build -d --remove-orphans`, which names no env file because that checkout holds
+none. The one string the box is sent, with `SHA` as above:
+
+```
+cd ~/list-wheel && git fetch origin main && s="$(git show SHA:ops/deploy-remote.sh)" && exec /bin/bash -c "$s" deploy-remote SHA
+```
+
+`ops/deploy-remote.test.mjs` in that repository runs the Anchor's matrix against the script on every
+run of the test job, reads the forced command out of the script's own header, and holds the
+workflow's wiring. **Observed 2026-09-24**, rehearsed against the real history in a `node:22`
+container: a checkout at `/home/deploy/list-wheel` cloned at `00f5957`, the box's commit, took the
+unrestricted string to `50691bd` and logged `read from its argument`, then took the forced command
+and logged `read from SSH_ORIGINAL_COMMAND`, compose running once each time against a stub; `id` and
+an empty command were refused with exit 1.
+
+**The limits above hold here too, and two more.** Nothing compares the two repositories' scripts or
+workflows, so a change carried to one and not the other is the drift DW-93 named, and only a reader
+finds it. Each repository's `deploy` group holds its own runs only, so an Anchor deploy and a
+`list-wheel` deploy can still build on the box at the same time, as they could before. And either
+script accepts a commit on `main` older than itself: a forced call naming one resets the checkout to
+a tree without the file the key's line names, and deploys stop until the recovery above (DW-131,
+**Observed 2026-09-24** in the same container).
+
+### Holding `list-wheel`'s deploy key to the forced command
+
+Pending Operator action 9. Run on the box as `deploy`, over the Operator's own key, the same way as
+action 7 and independently of it.
+
+**Precondition.** The first `list-wheel` deploy after the push of `30e5e8b` is green, and
+`test -f ~/list-wheel/ops/deploy-remote.sh && echo present` prints `present`.
+
+**The edit**, idempotent, with a backup beside the file that action 7's does not overwrite:
+
+```
+sed -i.bak-dw-90 '/^ssh-ed25519 .* github-actions-deploy@list-wheel$/s#^#restrict,command="/bin/bash /home/deploy/list-wheel/ops/deploy-remote.sh" #' ~/.ssh/authorized_keys
+grep -c 'github-actions-deploy@list-wheel$' ~/.ssh/authorized_keys
+grep -c '^restrict,command="/bin/bash /home/deploy/list-wheel/ops/deploy-remote.sh" ssh-ed25519 .* github-actions-deploy@list-wheel$' ~/.ssh/authorized_keys
+stat -c %a ~/.ssh/authorized_keys
+sudo sshd -T | grep -iE '^(acceptenv|permituserenvironment) '
+```
+
+Both counts read `1` and `stat` reads `600`, and the last command reads as action 7 says it should.
+
+**Verification, both halves.**
+
+1. A dispatch deploy succeeds through the forced command:
+   `gh workflow run deploy.yml --repo LuigiEspinosa/list-wheel --ref main`, then
+   `gh run list --repo LuigiEspinosa/list-wheel --workflow deploy.yml --limit 1` until it reads
+   `completed success`. Its SSH step logs `read from SSH_ORIGINAL_COMMAND`, and
+   `git -C ~/list-wheel rev-parse HEAD` on the box equals the run's sha.
+2. An interactive ssh held to the line fails, checked with a throwaway key given the identical
+   options, as in action 7:
+
+   ```
+   ssh-keygen -q -t ed25519 -N '' -C dw-90-check -f /tmp/dw-90-check
+   echo "restrict,command=\"/bin/bash /home/deploy/list-wheel/ops/deploy-remote.sh\" $(cat /tmp/dw-90-check.pub)" >> ~/.ssh/authorized_keys
+   ssh -tt -i /tmp/dw-90-check -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no deploy@localhost; echo "exit $?"
+   ssh -i /tmp/dw-90-check -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no deploy@localhost id; echo "exit $?"
+   sed -i '/ dw-90-check$/d' ~/.ssh/authorized_keys && rm /tmp/dw-90-check /tmp/dw-90-check.pub
+   ```
+
+   Both `ssh` calls print `deploy-remote: refused: the target read from SSH_ORIGINAL_COMMAND is not
+   a full lowercase commit sha` and `exit 1`, with no shell and no `id` output, and the first also
+   prints `PTY allocation request failed on channel 0`.
+
+**Rollback.**
+
+```
+sed -i 's#^restrict,command="/bin/bash /home/deploy/list-wheel/ops/deploy-remote.sh" ##' ~/.ssh/authorized_keys
+grep -c '^ssh-ed25519 .* github-actions-deploy@list-wheel$' ~/.ssh/authorized_keys
+```
+
+The count reads `1`, and `list-wheel`'s workflow deploys through the unrestricted shell again with no
+code change. Reverting its workflow or script needs this line rolled back first.
+
 ## The cache policy
 
 **Decided 2026-08-27**, Pending Operator action 2. **The decision only. Nothing below is built,
@@ -681,6 +776,8 @@ rather than left in prose, in the shape `ops/token-contract.md`, `ops/font-contr
 | 6 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10, 1-12 and 1-13, and this story widens it again. `AGENTS.md:52-53` describes CI as typecheck and tests only, against a file with five jobs, and `AGENTS.md:55-57` says Playwright is not installed and that no acceptance criterion may claim a browser check, which is now false for four spec files. Nothing in `AGENTS.md` yet says that `pnpm build` publishes into `public/contracts/`, which is the first thing an agent editing the build script needs to know | **2026-08-27**, found done and closed here on 2026-09-23. The refresh landed in `4112ee8` and replaced all three claims: CI was named as its five jobs, "Playwright is not installed" became "Playwright is installed and `rendered-output` is a blocking CI job", and a new line said `corepack pnpm build` runs `packages/contracts-serve/publish.mjs` first, copying `contracts/` into the generated, never committed `public/contracts/`. The `bmad-project-context` refresh of 2026-08-28, `967abfd`, rewrote the block again (`Verified 2026-08-28 against c490f33`) and no longer lists the jobs. **Observed 2026-09-23** in `AGENTS.md` at `81984db`: Playwright is in the stack line (`:9`), the rendered-output job is run with `corepack pnpm test:e2e` and its baselines are regenerated only in the pinned image (`:64-67`), the publish into `public/contracts/` is stated (`:68-70`), and nothing describes CI as typecheck and tests only. The row was not updated when the refresh landed, although the board's 1-10 comment already counted the item closed for 1-16 |
 | 7 | **Hold the Anchor's deploy key to the forced command** (DW-94) | Operator | Operator ruling 2026-09-24. The precondition, the exact `authorized_keys` edit, both verifications (a dispatch deploy that succeeds and logs `read from SSH_ORIGINAL_COMMAND`, and an interactive ssh held to the line that fails) and the rollback are under "Holding the deploy key to the forced command". Due after the first deploy that follows the Epic 2 merge, never before it, since the line names a file that deploy brings. Until this cell is dated the key opens a shell with passwordless sudo, as `ops/routing-inventory.md` records | _not done_ |
 | 8 | **Prove the failure report once, after the Epic 2 merge** (DW-20) | Operator, or the session that merges Epic 2 | A dispatch needs the workflow on `main`, so this cannot run before the merge. With no Deploy run in progress or waiting (`gh run list --repo LuigiEspinosa/cuatro-portfolio --workflow deploy.yml --limit 3`), since a dispatch on another ref would replace a waiting one, `gh workflow run deploy.yml --repo LuigiEspinosa/cuatro-portfolio --ref dev` fails at "Refuse any ref but main", before anything reaches the box, and its last step opens an issue titled `Deploy failed at <sha7>`. Confirm it with `gh issue list --repo LuigiEspinosa/cuatro-portfolio --search "Deploy failed"`, confirm the notification reached the mailbox `ops/monitoring.md` names, then close the issue with `gh issue close <number>`. That proves the ref refusal and the report without a deploy | _not done_ |
+| 9 | **Hold `list-wheel`'s deploy key to the forced command** (DW-94, the `list-wheel` half) | Operator | Operator ruling 2026-09-24. The precondition, the exact `authorized_keys` edit, both verifications (a dispatch deploy that succeeds and logs `read from SSH_ORIGINAL_COMMAND`, and an interactive ssh held to the line that fails) and the rollback are under "Holding `list-wheel`'s deploy key to the forced command". Due after the first `list-wheel` deploy that follows the push of its commit `30e5e8b`, never before it, since the line names a file that deploy brings; independent of action 7, which waits on the Epic 2 merge instead. Until this cell is dated the key, `github-actions-deploy@list-wheel`, opens a shell with passwordless sudo, as `ops/routing-inventory.md` records | _not done_ |
+| 10 | **Prove `list-wheel`'s failure report once, after its push** (DW-20, the `list-wheel` half) | Operator | A dispatch needs the workflow on the default branch, and its ref needs a copy of the workflow: `list-wheel` has only `main` and `gh-pages`, which carries none, so this uses a throwaway branch at `main`'s head. With no Deploy run in progress or waiting (`gh run list --repo LuigiEspinosa/list-wheel --workflow deploy.yml --limit 3`), since a dispatch on another ref would replace a waiting one, run from any clone of that repository: `git fetch origin`, `git push origin origin/main:refs/heads/dw-20-check`, which names the remote's `main` whatever the clone has checked out, then `gh workflow run deploy.yml --repo LuigiEspinosa/list-wheel --ref dw-20-check`. The test job runs and passes, the deploy job fails at "Refuse any ref but main" before anything reaches the box, and the report job opens an issue titled `Deploy failed at <sha7>`. Confirm it with `gh issue list --repo LuigiEspinosa/list-wheel --search "Deploy failed"`, confirm the notification reached the mailbox `ops/monitoring.md` names, then `gh issue close <number> --repo LuigiEspinosa/list-wheel` and `git push origin --delete dw-20-check`. A red suite reaching the report the same way is held by the wiring test, not by this proof | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row
@@ -697,5 +794,6 @@ moved or was simply re-stated. Deletion is not used here.
 | `docker/Caddyfile`'s `cuatro.dev` block stops reverse-proxying `anchor-app:3000` | The apex no longer reaches the Hub, and nothing here reaches a Visitor |
 | The Next version changes what it sends for `.css`, `.woff2` or `.txt` | The `rendered-output` job fails naming the path and the value it got, and the table under "The observed content types" is stale |
 | `ops/deploy-remote.sh` is moved or renamed, or the workflow's command string stops ending in the sha | Under the forced command (Pending Operator action 7) every deploy fails until the `authorized_keys` line is edited to match, and "The deploy runs one script" is stale |
+| The same, in `LuigiEspinosa/list-wheel`, or that repository's checkout leaves `/home/deploy/list-wheel` | Under its forced command (Pending Operator action 9) every `list-wheel` deploy fails until that key's line is edited to match, and "`list-wheel`'s deploy, the same shape" is stale. Nothing in this repository can see that one, since it lives in the other |
 | A Cloudflare rule starts challenging or caching `/contracts/*` differently | The two limits about the edge, and Pending Operator actions 2 and 4, are stale |
 | **`contracts/registry.json` arrives in Story 2-5**, or any later story publishes a tenth file | Four things in this file go stale together, and none of them is wrong today: the file count of **nine** in the mechanism table, the content-type table (which has a `.json` row in `tests/e2e/contract-serving.pw.ts` but no observed value here, because nothing publishes JSON yet), Pending Operator action 1's list of **nine** URLs to fetch, and Probe 1's transcript. The mechanism itself needs no change, which is the whole point of copying a directory rather than a named list, so this is a record to re-read rather than a step to redesign |
