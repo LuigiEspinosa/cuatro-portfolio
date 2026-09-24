@@ -35,7 +35,7 @@ body[id=''] {
 
 // ── The entrance ─────────────────────────────────────────────────────────────
 //
-// **Base state is the final state and the keyframe supplies only the `from`.** A visitor whose
+// **Base state is the final state and each keyframe supplies only the `from`.** A visitor whose
 // script never runs, or whose bundle never arrives, sees every panel, the role line and all five
 // links at full opacity, because nothing here is revealed by JavaScript any more (DW-42). The
 // `both` fill holds the `from` through the delay, so an element is absent until its turn and
@@ -52,6 +52,20 @@ body[id=''] {
 @keyframes home-enter {
   from {
     opacity: 0;
+  }
+}
+
+// **The five links take their own keyframe, whose `from` also hides them** (Operator ruling
+// 2026-09-24, DW-106). Faded out but still visible, a link was a Tab stop and a click target for up
+// to 2.36s while nobody could see it. `visibility` does not tween: it is hidden at the keyframe's
+// start and through the delay the `both` fill holds, and visible from the fade's first frame, so a
+// link joins the tab order and hit-testing exactly when it starts to appear. The role line and the
+// gem keep the opacity-only keyframe above, since the ruling names the links and nothing else here
+// is interactive. Reduced motion is untouched: its block below sets `animation: none`.
+@keyframes home-enter-link {
+  from {
+    opacity: 0;
+    visibility: hidden;
   }
 }
 
@@ -167,7 +181,7 @@ body[id=''] {
   border-left: var(--stroke-hair) solid var(--token-border);
   padding-left: var(--s-sm);
   transition: color var(--dur-micro) var(--ease-toggle);
-  animation: home-enter var(--dur-major) var(--ease-entrance) 2000ms both;
+  animation: home-enter-link var(--dur-major) var(--ease-entrance) 2000ms both;
 
   // `:nth-child`, matching the contact group below, rather than the adjacent-sibling form this
   // read until 2026-09-21: `& + &` gives every link after the first the same delay, so a third one
@@ -205,7 +219,7 @@ body[id=''] {
     border-right: var(--stroke-hair) solid var(--token-border);
     padding-right: var(--s-sm);
     transition: color var(--dur-micro) var(--ease-toggle);
-    animation: home-enter var(--dur-major) var(--ease-entrance) 2200ms both;
+    animation: home-enter-link var(--dur-major) var(--ease-entrance) 2200ms both;
   }
 
   // The stagger counts list items since Story 2-32 made the group a list: each link is the only

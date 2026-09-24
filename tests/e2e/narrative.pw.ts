@@ -1379,12 +1379,16 @@ test.describe('the entrance touches only opacity and transform, and does not loo
     page.evaluate((list: string[]) => {
       const selectors = list;
       const properties = new Set<string>();
+      // Every keyframe that declares `visibility`, as `name key value`, since DW-106 put one there.
+      const visibilityFrames: string[] = [];
       const walk = (rules: readonly CSSRule[]): void => {
         for (const rule of rules) {
           const keyframes = rule as CSSKeyframesRule;
           if (typeof keyframes.name === 'string' && keyframes.cssRules) {
             for (const frame of [...keyframes.cssRules] as CSSKeyframeRule[]) {
               for (let index = 0; index < frame.style.length; index += 1) properties.add(frame.style[index]);
+              const visibility = frame.style.getPropertyValue('visibility');
+              if (visibility !== '') visibilityFrames.push(`${keyframes.name} ${frame.keyText} ${visibility}`);
             }
             continue;
           }
@@ -1427,6 +1431,7 @@ test.describe('the entrance touches only opacity and transform, and does not loo
 
       return {
         properties: [...properties].sort(),
+        visibilityFrames: visibilityFrames.sort(),
         animated: [...new Set(animated)].sort(),
         iterations: [...iterations].sort(),
         directions: [...directions].sort(),
@@ -1456,14 +1461,25 @@ test.describe('the entrance touches only opacity and transform, and does not loo
    * skipped, the way `REDUCED_MOTION_SELECTORS` above is read.
    */
   const ENTRANCE_SITES = [
-    { selector: '.home-gem', delays: [500] },
-    { selector: '.home-role', delays: [1300] },
-    { selector: 'a.nav-link', delays: [2000, 2080] },
-    { selector: '.home-panel--contact .contact-container a', delays: [2200, 2280, 2360] },
+    { selector: '.home-gem', name: 'home-enter', delays: [500] },
+    { selector: '.home-role', name: 'home-enter', delays: [1300] },
+    // The five links take their own keyframe since 2026-09-24 (Operator ruling, DW-106).
+    { selector: 'a.nav-link', name: 'home-enter-link', delays: [2000, 2080] },
+    { selector: '.home-panel--contact .contact-container a', name: 'home-enter-link', delays: [2200, 2280, 2360] },
   ] as const;
 
   /** `transform` plus `opacity`, and the spellings a browser may echo back for either. */
   const ALLOWED = new Set(['opacity', 'transform', '-webkit-transform', 'translate', 'rotate', 'scale']);
+
+  /**
+   * The one `visibility` any keyframe on the route may declare: the links keyframe's `from`, which
+   * Chromium reports as `0%`. Operator ruling 2026-09-24 (DW-106): each hero link is hidden until its
+   * fade begins, so it is neither a Tab stop nor a click target before it can be seen. `visibility`
+   * does not tween: it is hidden at progress 0 and through the delay, and visible from the first
+   * frame of the fade, so it moves nothing and `EXPERIENCE.md` § Motion's opacity-and-transform rule
+   * still holds for every property that animates.
+   */
+  const ALLOWED_VISIBILITY = ['home-enter-link 0% hidden'];
 
   test('writes no property outside opacity and transform, and no opacity ever goes back down', async ({
     browser,
@@ -1484,12 +1500,17 @@ test.describe('the entrance touches only opacity and transform, and does not loo
       'home-enter'
     );
 
-    const declaredOffending = declared.properties.filter((property) => !ALLOWED.has(property));
+    const declaredOffending = declared.properties.filter((property) => !ALLOWED.has(property) && property !== 'visibility');
     expect(
       declaredOffending,
       `a @keyframes block on ${ROUTE} animates a property EXPERIENCE.md:685-699 does not allow: ` +
         `${declaredOffending.join(', ')}. The whole set declared was ${declared.properties.join(', ')}`
     ).toEqual([]);
+    expect(
+      declared.visibilityFrames,
+      `a @keyframes block on ${ROUTE} declares visibility somewhere other than the links keyframe's from, ` +
+        `the one place DW-106's ruling puts it`
+    ).toEqual(ALLOWED_VISIBILITY);
 
     // **Every animated rule, with its delay and its fill.** This is the read the Step-04 review
     // found missing: `both` is the no-script guarantee and three of the five sites were observed by
@@ -1505,7 +1526,7 @@ test.describe('the entrance touches only opacity and transform, and does not loo
         continue;
       }
       read.elements.forEach((element, index) => {
-        if (element.name !== 'home-enter') offSequence.push(`${site.selector}[${index}] animates "${element.name}"`);
+        if (element.name !== site.name) offSequence.push(`${site.selector}[${index}] animates "${element.name}" and the table says "${site.name}"`);
         if (element.delay !== site.delays[index]) {
           offSequence.push(`${site.selector}[${index}] waits ${element.delay}ms and the table says ${site.delays[index]}ms`);
         }
@@ -1586,10 +1607,21 @@ test.describe('the entrance touches only opacity and transform, and does not loo
         const looping = document.createElement('div');
         looping.className = 'planted-yoyo';
         container.append(looping);
+
+        // A second keyframe declaring `visibility`, which the one place DW-106 allows does not cover.
+        const hiding = document.createElement('style');
+        hiding.textContent = '@keyframes planted-visibility { from { visibility: hidden } }';
+        document.head.append(hiding);
       });
 
-      return sweep(page, '.planted-yoyo');
+      const planted = await declaredEntrance(page, ENTRANCE_SITES.map((site) => site.selector));
+      return { ...(await sweep(page, '.planted-yoyo')), visibilityFrames: planted.visibilityFrames };
     });
+
+    expect(
+      observed.visibilityFrames,
+      'a planted keyframe declaring visibility was not seen, so the one-place read above reports a clean entrance for the wrong reason'
+    ).toContain('planted-visibility 0% hidden');
 
     expect(
       observed.properties,

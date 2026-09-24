@@ -1792,3 +1792,160 @@ test.describe('the narrative canvas', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// The five hero links during the entrance (DW-106).
+// ---------------------------------------------------------------------------
+
+/**
+ * Hold every animation on the page at its start, from the first frame the document is styled in.
+ *
+ * An init script, so it runs before anything paints: each frame it pauses whatever animation has
+ * appeared, which catches every entrance inside its delay (the earliest link waits 2000ms). A read on
+ * a held page is a read of the entrance's start however long the runner takes to reach it, which a
+ * real-time Tab against a two-second window on a loaded container could not promise.
+ * `window.__releaseEntrance` stops the hold, so a control can play the entrance to its end.
+ */
+const HOLD_ENTRANCE = `
+  window.__entranceHeld = true;
+  window.__releaseEntrance = () => { window.__entranceHeld = false; };
+  const hold = () => {
+    if (!window.__entranceHeld) return;
+    for (const animation of document.getAnimations()) if (animation.playState === 'running') animation.pause();
+    requestAnimationFrame(hold);
+  };
+  requestAnimationFrame(hold);
+`;
+
+/** The five hero links: the two destinations, then the three contacts. */
+const HERO_LINKS = '.home-panel--nav a.nav-link, .home-panel--contact .contact-container a';
+
+/** The five, in the order the hero renders them. */
+const HERO_LINK_NAMES = ['Professional Experience', 'Suite Directory', 'Github', 'LinkedIn', 'Email'];
+
+/** Every Tab stop from wherever focus is now, until one lands in the Directory or the presses run out. */
+const tabUntilDirectory = async (page: Page, presses = 12): Promise<string[]> => {
+  const stops: string[] = [];
+  for (let press = 0; press < presses; press += 1) {
+    await page.keyboard.press('Tab');
+    const at = await page.evaluate(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body) return '(body)';
+      const where = active.closest('.suite-directory') ? 'directory' : active.closest('.home-panel') ? 'hero link' : 'page';
+      return `${where}: ${active.tagName.toLowerCase()}.${active.getAttribute('class') ?? ''} "${(active.textContent ?? '').trim()}"`;
+    });
+    stops.push(at);
+    if (at.startsWith('directory')) break;
+  }
+  return stops;
+};
+
+/** The names of the hero links among some Tab stops, in the order they were reached. */
+const heroStops = (stops: readonly string[]): string[] =>
+  stops.filter((stop) => stop.startsWith('hero link')).map((stop) => /"(.*)"$/.exec(stop)?.[1] ?? stop);
+
+/** Each hero link's visibility and opacity, and whether a click at its centre would land on it. */
+const heroLinkState = (page: Page) =>
+  page.evaluate(
+    (selector) =>
+      [...document.querySelectorAll<HTMLElement>(selector)].map((link) => {
+        const box = link.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        const style = getComputedStyle(link);
+        return {
+          name: (link.textContent ?? '').trim(),
+          visibility: style.visibility,
+          opacity: style.opacity,
+          takesTheClick: hit !== null && link.contains(hit),
+        };
+      }),
+    HERO_LINKS
+  );
+
+test.describe('the hero links wait for their turn in the entrance (DW-106)', () => {
+  test('Tab at the start of the entrance skips all five, and a click there lands on what is beneath them', async ({
+    browser,
+  }) => {
+    // Operator ruling 2026-09-24: each link takes `visibility: hidden` at the start of its entrance
+    // keyframe, so until it starts to appear it is neither a Tab stop nor a click target. 1280, so
+    // all five sit inside the viewport and each centre can be hit-tested.
+    await onPath(
+      browser,
+      { ...DEFAULT_PATH, inits: [HOLD_ENTRANCE] },
+      async (page) => {
+        await goTo(page);
+        await settled(page);
+
+        const held = await heroLinkState(page);
+        expect(held.map((link) => link.name), 'the hero carries some other set of links').toEqual(HERO_LINK_NAMES);
+        expect(
+          held.filter((link) => link.opacity !== '0').map((link) => link.name),
+          'a link is past the start of its fade, so the hold did not catch the entrance and this read is not at its start'
+        ).toEqual([]);
+        expect(
+          held.filter((link) => link.visibility !== 'hidden').map((link) => link.name),
+          'a link is open to the keyboard and the pointer while its fade has not begun'
+        ).toEqual([]);
+        expect(held.filter((link) => link.takesTheClick).map((link) => link.name), 'a click at a hidden link lands on it').toEqual([]);
+
+        const stops = await tabUntilDirectory(page);
+        console.log(`front-door: Tab at the start of the entrance: ${stops.join(' | ')}`);
+        expect(heroStops(stops), 'Tab landed on a hero link before its turn').toEqual([]);
+        expect(stops.at(-1) ?? '', 'Tab never reached the Directory, so the read did not cross the hero').toMatch(/^directory/);
+        expect(
+          stops.slice(0, -1).map((stop) => /skip-(link|control)/.exec(stop)?.[0] ?? stop),
+          'Tab stopped somewhere other than the two skips before the Directory'
+        ).toEqual(['skip-link', 'skip-control']);
+
+        // The control, on the same page: the entrance played to its end, and the same reads now find
+        // all five, in order, each taking the click at its centre.
+        await page.evaluate(() => {
+          (window as unknown as { __releaseEntrance: () => void }).__releaseEntrance();
+          for (const animation of document.getAnimations()) {
+            try {
+              animation.finish();
+            } catch {
+              // An animation with no end cannot finish; the hero declares none.
+            }
+          }
+        });
+        const played = await heroLinkState(page);
+        expect(
+          played.filter((link) => link.visibility !== 'visible' || link.opacity !== '1').map((link) => link.name),
+          'the entrance did not finish, so the control reads a page mid-entrance'
+        ).toEqual([]);
+        expect(
+          played.filter((link) => !link.takesTheClick).map((link) => link.name),
+          'a finished link does not take a click at its centre, so the hit-test above proves nothing'
+        ).toEqual([]);
+        await page.evaluate(() => (document.querySelector('.skip-link') as HTMLElement | null)?.focus());
+        expect(
+          heroStops(await tabUntilDirectory(page)),
+          'with the entrance finished Tab does not reach the five links in order, so the skip above proves nothing'
+        ).toEqual(HERO_LINK_NAMES);
+      },
+      { width: 1280, height: 800 }
+    );
+  });
+
+  test('under reduced motion the five are Tab stops from the first frame', async ({ browser }) => {
+    // Reduced motion sets `animation: none` on every animated rule in the hero, so no keyframe holds
+    // a link hidden, and the ruling leaves that visitor's hero as it was.
+    await onPath(
+      browser,
+      { ...doorNamed('reduced-motion'), inits: [HOLD_ENTRANCE] },
+      async (page) => {
+        await goTo(page);
+        await settled(page);
+        expect(
+          (await heroLinkState(page)).filter((link) => link.visibility !== 'visible').map((link) => link.name),
+          'a link is hidden on the reduced-motion door'
+        ).toEqual([]);
+        expect(heroStops(await tabUntilDirectory(page)), 'Tab on the reduced-motion door does not reach the five in order').toEqual(
+          HERO_LINK_NAMES
+        );
+      },
+      { width: 1280, height: 800 }
+    );
+  });
+});

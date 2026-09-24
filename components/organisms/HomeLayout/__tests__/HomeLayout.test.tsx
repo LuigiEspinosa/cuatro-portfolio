@@ -509,12 +509,25 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     expect(css, 'no hover rule is gated at all, so the read above passed vacuously').toContain('@media(hover: hover)');
   });
 
-  it('animates opacity and nothing else, once, with no loop and no state in it', () => {
+  it('animates opacity, holds the links out of reach until their turn, once, with no loop and no state in it', () => {
     // `EXPERIENCE.md:685-699`: one orchestrated entrance per page load, no loop inside it, and
-    // opacity never expressing state. One keyframe, whose only declaration is the `from`, so the
-    // base state is the final state and a document with no script is already at it (DW-42).
-    expect([...css.matchAll(/@keyframes/g)], 'the stylesheet declares more than one keyframe').toHaveLength(1);
+    // opacity never expressing state. Each keyframe declares only its `from`, so the base state is
+    // the final state and a document with no script is already at it (DW-42).
+    //
+    // **Two keyframes since 2026-09-24** (Operator ruling, DW-106). The five links take their own,
+    // whose `from` also holds `visibility: hidden`: a discrete value, hidden through the delay and
+    // visible from the fade's first frame, so a link is out of the tab order and hit-testing until it
+    // starts to appear. The role line and the gem keep the opacity-only keyframe, because the ruling
+    // names the links and `EXPERIENCE.md` § Motion allows transform and opacity only.
+    expect([...css.matchAll(/@keyframes/g)], 'the stylesheet declares some other number of keyframes').toHaveLength(2);
     expect(css, 'the entrance keyframe was renamed or lost').toContain('@keyframes home-enter{from{opacity:0}}');
+    expect(css, 'the links keyframe was renamed, lost, or no longer hides them').toContain(
+      '@keyframes home-enter-link{from{opacity:0;visibility:hidden}}'
+    );
+    expect(
+      [...css.matchAll(/visibility:([^;}]+)/g)].map((match) => match[1].trim()),
+      'visibility is declared somewhere other than the from of the links keyframe'
+    ).toEqual(['hidden']);
     expect(css, 'an animation repeats').not.toMatch(/animation[^;}]*infinite/);
 
     // **Every `opacity` the file declares, held to the one the keyframe's `from` carries**, the
@@ -526,18 +539,22 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
       [...css.matchAll(/opacity:([^;}]+)/g)].map((match) => match[1].trim()),
       'the stylesheet declares an opacity other than the entrance keyframe\'s from, so either ' +
         'opacity expresses state again or a second initial state arrived'
-    ).toEqual(['0']);
+    ).toEqual(['0', '0']);
 
     // Four animated rules since 2026-09-24, when the readout panel's left with the panel (Operator
     // ruling 2026-09-24, DW-110); five until then, which is what the file's header,
     // `sprint-status.yaml` and DW-100 said. `.home-panel--name` carried a sixth until 2026-09-21:
     // the retired timeline never named it, the 2023 stylesheet gave it no initial state, and it
     // painted immediately, so the entrance was hiding the hero's name for 500ms and running
-    // `GlitchText`'s own delay inside a parent that was itself ramping.
-    expect(
-      [...css.matchAll(/animation:home-enter/g)],
-      'the entrance animates a number of rules other than the four the records state'
-    ).toHaveLength(4);
+    // `GlitchText`'s own delay inside a parent that was itself ramping. Two on each keyframe: the
+    // gem and the role line on the first, the two link groups on the second (DW-106).
+    const animated = (name: string) => [...css.matchAll(new RegExp(`animation:${name} `, 'g'))].length;
+    expect(animated('home-enter'), 'the gem and the role line are not the two rules on the opacity-only keyframe').toBe(2);
+    expect(animated('home-enter-link'), 'the two link groups are not the two rules on the links keyframe').toBe(2);
+    expect(css, 'a link group is back on the opacity-only keyframe').toMatch(/\.nav-link\{[^}]*animation:home-enter-link /);
+    expect(css, 'the contact links are back on the opacity-only keyframe').toMatch(
+      /\.home-panel--contact \.contact-container a\{[^}]*animation:home-enter-link /
+    );
     expect(css, 'the name panel took the entrance back').not.toMatch(/\.home-panel--name\{[^}]*animation:/);
   });
 });
