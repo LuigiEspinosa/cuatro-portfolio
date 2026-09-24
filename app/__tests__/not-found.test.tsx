@@ -15,9 +15,11 @@ import { metadata } from '../not-found';
  * Next's own, injected by its not-found boundary (DW-78).
  *
  * **The title is in sentence case since Story 2-30**, which Story 2-17 booked the title to. It read
- * `Page not Found` until then, and it is one of the three places the page says it was not found
- * that let the numeral be ornament (O-12 item 3, branch A): `tests/e2e/error-surface.pw.ts` reads
- * the document title, the heading and the message together with the numeral removed.
+ * `Page not Found` until then, and it is one of the two places the page says it was not found that
+ * let the numeral be ornament (O-12 item 3, branch A), the heading the other; the message was a third
+ * until the Operator's ruling of 2026-09-24 gave it the next step (DW-114).
+ * `tests/e2e/error-surface.pw.ts` reads the document title, the heading and the message together
+ * with the numeral removed, and holds the carriers to exactly the title and the heading.
  */
 
 describe('the 404 metadata', () => {
