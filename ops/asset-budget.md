@@ -481,6 +481,55 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-24 reading, after the DW-15 contract 2.0.0 package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `8lYebNNfgiclmtAUbcLF_`, written
+2026-09-24T14:58:17Z at `ae7ffb2` with no measured input dirty. It is one reading after the
+package's Operator rulings of 2026-09-24: `40591cd` published Contract 2.0.0, whose one value change,
+`--ease-exit`, reaches the global stylesheet every route links, while its adapter rename reaches no
+Hub byte, the Hub being Sass; `ae7ffb2` moved a Registry value no route renders. The before is the
+DW-121 package's reading below, since the Registry 1.2.0 package moved no shipped byte after it.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,402 | 231,829 | no | yes | **Observed** |
+| `/cv` | 22,662 | 230,420 | no | yes | **Observed** |
+| `/celeste` | 14,780 | 197,305 | no | yes | **Observed** |
+| `/_not-found` | 18,101 | 197,189 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,761 | no | **no**: Next's own document | **Observed** |
+
+**Every route before and after, on the wire.** **Observed** on both sides, **Derived** delta. `/` was
+not fetched for this reading: it is not prerendered, and it links the same global stylesheet whose
+change is the whole of the delta below.
+
+| Route | Before | After, `ae7ffb2` | Delta | Nature |
+|---|---|---|---|---|
+| `/work` | 231,834 | 231,829 | 5 lighter | **Observed**, the tool |
+| `/cv` | 230,426 | 230,420 | 6 lighter | **Observed**, the tool |
+| `/celeste` | 197,310 | 197,305 | 5 lighter | **Observed**, the tool |
+| `/_not-found` | 197,196 | 197,189 | 7 lighter | **Observed**, the tool |
+| `/_global-error` | 188,762 | 188,761 | 1 lighter | **Observed**, the tool |
+
+**What moved.** **Observed** on the host build. The global stylesheet every route links, now
+`0ld-hsjub8o27.css`, is 5,832 bytes on disk and 2,254 gzipped where the DW-121 reading's
+`0arcbgdcvpkv9.css` read 2,257 gzipped: it carries `--ease-exit:cubic-bezier(.33, 1, .68, 1)` where
+it carried `cubic-bezier(.7, 0, .84, 0)`, one byte longer on disk and three shorter gzipped. Every
+document is the length it was on disk and names the stylesheet's new hash, so the rest of each
+route's delta is the build id inside the document, as the DW-121 reading found.
+
+**The whole build, before and after.** **Observed**, the tool's tables on each side.
+
+| Figure | Before, `bc23bab` | After, `ae7ffb2` | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 18 `.js`, 13 `.css` | 18 `.js`, 13 `.css` | 0 | **Observed** |
+| Bytes in `.next/static/chunks` | 2,851,997 on disk, 830,259 gzipped | 2,851,998 on disk, 830,256 gzipped | **1 heavier on disk, 3 lighter gzipped** | **Observed**; **Derived** delta |
+| The narrative total | 619,351 across 5 chunks | the same 619,351 across 5 chunks | 0 | **Observed** |
+| The non-3D line | `/work`, 231,834, 91,834 over, 65.6 percent | `/work`, 231,829, 91,829 over, 65.6 percent | 5 lighter | **Observed**; **Derived** delta |
+| The budget's own decomposition | 104,117, 35,883 of margin | 104,112, 35,888 of margin | 5 lighter, all of it HTML and critical CSS | **Observed**; **Derived** delta |
+
+**Against the budget.** **Derived.** Noise: the package moves no narrative byte and no route by more
+than 7 gzipped, against Story 2-2's 140,000.
+
 ### The 2026-09-24 reading, after the DW-121 secondary-surfaces package
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `BQB_cRpzq_XDxi6F5Pk-M`, written
@@ -1752,6 +1801,28 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-24 run, after the DW-15 contract 2.0.0 package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `8lYebNNfgiclmtAUbcLF_`. § Every route's
+2026-09-24 reading after the DW-15 package and this section were filed from this run.
+
+- The narrative bundle is 619,351 bytes gzipped across 5 chunks, against an estimate of 300,000 to
+  450,000. That is 169,351 over the top of the range.
+- 592,380 bytes of that is genuinely deferred: `0x9hgoafoipaz.js`, `0-742gw60ue7o.js`,
+  `031y-gd1885yp.js`, `0te7gr59z3e7w.js` is referenced by no prerendered document. The other 26,971
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 231,829 against 140,000, 91,829 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 104,112 against 140,000, 35,888 of margin. That
+  decomposition has no line for the 221,376 of JavaScript or the 830 of preloads the document
+  actually carries.
+
+**Two lines moved, both on `/work`, both lighter.** **Observed**, against the DW-121 run below. The
+non-3D line reads 231,829 where it read 231,834, and the decomposition 104,112 where it read 104,117:
+HTML and critical CSS 9,623 where they read 9,628, the global stylesheet with Contract 2.0.0's exit
+curve. The JavaScript and the narrative lines are unchanged to the byte.
 
 ### The 2026-09-24 run, after the DW-121 secondary-surfaces package
 

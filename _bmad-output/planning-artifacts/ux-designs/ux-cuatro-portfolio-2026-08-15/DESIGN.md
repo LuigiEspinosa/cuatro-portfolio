@@ -246,8 +246,8 @@ perceptually uniform, so the lightness number *is* the perceived lightness, whic
 makes the elevation ladder below a reliable ladder rather than a guess. The hex column is
 the computed sRGB fallback, not a second source of truth.
 
-**Every palette value stays inside sRGB, so its hex fallback is the colour itself and every contrast
-figure below, computed in gamma-encoded sRGB, is exact.** *(Amended 2026-09-24 by Operator ruling, on
+**The palette is held inside sRGB by rule, so that a hex fallback is the colour itself and a
+contrast figure computed in gamma-encoded sRGB is exact.** *(Amended 2026-09-24 by Operator ruling, on
 the `oklch()` downlevelling row of `ops/anchor-token-adoption.md`. `packages/tokens/__tests__/tokens-contract.test.ts`
 converts each `--c-*` value to linear sRGB and fails on a channel outside 0 to 1. Two values authored
 before the rule break it on blue: `--c-accent-bright` reads 1.0762 and `--c-focus` 1.2628, so their
@@ -1066,8 +1066,8 @@ SCSS. Mechanical output from Style Dictionary: a build-step cost, not an authori
 utilities read `p-s-md` and `gap-s-lg`. Contract 1.0.0 named them `--spacing-2xs` to `--spacing-3xl`,
 and a named spacing key outranks Tailwind's container key of the same size, so `max-w-md` compiled to
 `var(--s-md)`, 16px rather than 28rem, in every consumer. `ops/__tests__/tailwind-container.test.ts`
-now compiles the adapter and holds `max-w-2xs` to `max-w-3xl` to Tailwind's container widths
-(DW-19).)*
+now compiles the adapter and holds every `max-w-*` size, `3xs` to `7xl`, to Tailwind's container
+widths (DW-19).)*
 
 **`tailwind.css` must import `fonts.css` too.** An adapter that pulls in only `tokens.css`
 gives the cluster three named font families and **no `@font-face` for any of them**, so every

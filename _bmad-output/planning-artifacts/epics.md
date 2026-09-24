@@ -3585,6 +3585,9 @@ open keeps its ease-out at a duration matching `--dur-major`
 does not hold its hover border
 *(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-4 and A-5. The contract's own
 `--ease-exit` is an ease-in too; that is DW-103, a contract change, and not this story's to make.)*
+*(amended 2026-09-24 by Operator ruling: the contract's `--ease-exit` is the same curve now,
+`cubic-bezier(0.33, 1, 0.68, 1)`, the CSS form of `power2.out`, published in Contract 2.0.0, so the
+close could read the token; nothing here requires it to.)*
 
 **Given** `rgba(91, 33, 182, 0.06)` at `WorkItem.scss:35` and `rgba(91, 33, 182, 0.3)` at
 `WorkItem.scss:145` are alpha values used as hairlines *(criteria relocated from deleted Story
@@ -4709,7 +4712,12 @@ interrupts a transition
 `token_contract` declaration still reads `1.0.0`, and **both are expected to be unchanged**
 **And** **Epic 2 does not move the contract**: `--token-scrim` ships inside `v1.0.0` and Story 2.28
 consumes it, so **no re-vendor is required and no version drift is expected here** *(corrected
-2026-08-15; this story previously anticipated a `v1.1.0` bump that does not occur)*.
+2026-08-15; this story previously anticipated a `v1.1.0` bump that does not occur)*. *(amended
+2026-09-24 by Operator ruling: the contract moved after all, to `v2.0.0`, which renamed the Tailwind
+adapter's spacing keys (DW-15) and retargeted `--ease-exit` (DW-103). `cs-tracker` was re-vendored at
+`v2.0.0` and its Registry `token_contract` reads `2.0.0`, so this criterion expects `v2.0.0` and
+`2.0.0`, unchanged by the restyle. The re-vendor is committed in `cs-tracker` and its push is the
+Operator's; the restyle has nothing to migrate, since `cs-tracker` wrote none of the renamed keys.)*
 
 ### Story 8.2: `digital-library` adopts the contract and is restyled (Svelte, SvelteKit)
 **Wave:** 1. **Depends on:** Epic 2, the Restyle Specification.

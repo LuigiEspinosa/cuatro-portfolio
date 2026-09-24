@@ -1294,7 +1294,21 @@ reason: |-
   restate the container scale explicitly beside the spacing scale, or drop the named
   spacing keys and require the numeric scale. Choosing between those is a contract
   decision, and the contract is versioned under AD-16.
-status: open
+
+  **Closed 2026-09-24 on the Operator ruling of that day, by
+  `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`, commit `40591cd`.** The
+  first shape: the eight keys are `--spacing-s-2xs` to `--spacing-s-3xl`, published as Contract
+  2.0.0, a MAJOR with no alias window, because an alias would have kept the collision. Compiled
+  with the pinned `tailwindcss`, `max-w-2xs` to `max-w-3xl` now read `var(--container-*)` at 18rem
+  to 48rem, where on the 1.0.0 adapter every one read `var(--s-*)` (DW-19's gate, red first, which
+  also holds the five container sizes no 1.0.0 key shadowed).
+  `cs-tracker` is re-vendored as its local commit `991d0f6`, and its own Tailwind 4.1.12 now
+  compiles `max-w-md` and `max-w-sm` to `var(--container-md)` and `var(--container-sm)`; the
+  Registry followed in `ae7ffb2`. What is left is the Operator's: pushing and deploying
+  `cs-tracker` and moving its Elixir version pin (`ops/contract-adoption.md` action 8), after which
+  the empty-state card this entry was found on wraps at 28rem on `cs-tracker.cuatro.dev`. Epic 1
+  retrospective action 1 closes with it.
+status: done
 
 ### DW-16: `bandit 1.11.1`, the HTTP server in front of `cs-tracker.cuatro.dev`, carries two HIGH advisories that are both remote-triggerable resource exhaustion.
 origin: operator-observed 2026-08-27
@@ -1372,7 +1386,18 @@ reason: |-
   and that ordering belongs to DW-15's contract decision under AD-16 rather than here.
   Either shape is a Node test under `ops/__tests__/` running the same compile, with no
   browser, so it fits the runners the way `contract-purity` already does.
-status: open
+
+  **Closed 2026-09-24 on the Operator ruling of that day, by
+  `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`, commit `40591cd`.** The
+  second polarity, since DW-15's fix landed in the same commit:
+  `ops/__tests__/tailwind-container.test.ts` compiles one `@import` of the published adapter with
+  the pinned `tailwindcss` through its own `compile()` and holds `max-w-2xs` to `max-w-3xl`, and
+  since the review (`1a94020`) the rest of the container scale with them, `max-w-3xs` to `max-w-7xl`, to
+  `var(--container-*)` at Tailwind 4.3.3's widths. Run against the 1.0.0 adapter before the rename
+  the eight failed, each naming `var(--s-<size>)`, the five the old keys never shadowed passed, and
+  all thirteen pass on 2.0.0. It sits in the blocking `test` job, so no `ci.yml` job name moved. The transcript is in
+  `ops/tailwind-adapter.md` § The container-width gate. Epic 1 retrospective action 2 closes with it.
+status: done
 
 ### DW-20: A failed deploy is reported to nobody, and the monitoring that exists watches the site rather than the pipeline.
 origin: operator-approved 2026-08-28
@@ -5647,7 +5672,16 @@ status: done
     `components/atoms/WorkItem/WorkItem.tsx`, and its unit suite measures the curve as an
     ease-out on GSAP's own parser. `contracts/tokens.css` still publishes the ease-in, and no
     Hub stylesheet reads it. Owner and trigger unchanged.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`, commit `40591cd`.** The
+    published `--ease-exit` is `cubic-bezier(0.33, 1, 0.68, 1)`, the CSS form of the `power2.out`
+    WorkItem already runs, rather than the entrance curve, set in both places `DESIGN.md` states it
+    and in `packages/tokens/tokens/motion.json`. It rode in Contract 2.0.0, the MAJOR DW-15 opened,
+    so `cs-tracker` re-vendored once for both (`991d0f6`). A tokens-contract case holds the curve's
+    opening slope above linear; on the 1.0.0 file it failed reading a slope of 0. No Hub stylesheet
+    and nothing in `cs-tracker` reads the token, so nothing renders differently today.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-a-17-lenis-scoped-to-reduced-motion.md`
   id: DW-104
   summary: >-

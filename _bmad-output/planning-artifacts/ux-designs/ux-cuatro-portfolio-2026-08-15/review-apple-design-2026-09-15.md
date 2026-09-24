@@ -87,6 +87,10 @@ one layout-property exception.
 the same sluggish exit. Changing a published token is an AD-16 propagation, so this is a
 candidate for the next contract minor with `--ease-exit` retargeted to an ease-out (the
 `--ease-entrance` curve at `--dur-exit` is the smallest change), not an edit to make now.
+*Taken 2026-09-24 by Operator ruling (DW-103):* the contract publishes `--ease-exit` as
+`cubic-bezier(0.33, 1, 0.68, 1)`, the CSS form of the `power2.out` Story 2-31's close runs, rather
+than the entrance curve, and it shipped inside Contract 2.0.0, a major opened by the Tailwind adapter
+rename (DW-15), not a minor of its own (spec-dw-15-contract-2-0-0.md).
 
 ### A-5. Hover rules are not gated on a hover-capable pointer
 

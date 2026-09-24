@@ -61,6 +61,18 @@ of the published contract, not a copy fault, and it is stated here so a later re
 as one. `ops/__tests__/cs-tracker-adoption-probe.test.ts` pins both that equality and the inequality
 of two woff2 faces, so a walk that never descended into `fonts/` fails there as well as here.
 
+**Re-vendored at 2.0.0 on 2026-09-24**, by Operator ruling, as `cs-tracker` commit `991d0f6` on
+`main`, which stages `assets/css/cuatro-contracts/` and nothing else and is not pushed (Pending
+Operator action 8 in `ops/contract-adoption.md`). Three hashes moved and the other six are
+byte-identical to the table above. **Observed 2026-09-24** by `sha256sum` on both sides after the
+copy, and by the probe's verbatim-copy case:
+
+| Path under `assets/css/cuatro-contracts/` | sha256 at 2.0.0 |
+|---|---|
+| `tokens.css` | `dd7bf3c2ab826c8480e1fdca1ea51ba0d5377d202b4024976b9f9a6dc0e43e32` |
+| `fonts.css` | `c2c0a2f78e32b233b307d07424faa270648b50f4a51115c7de3217aea2f14f19` |
+| `tailwind.css` | `14bce2d5d11c28d8d8ce4fc74fb1854dc6bc6c08cf708a474a077659a6463a8c` |
+
 **The byte-identity survives git, which is the half that matters.** `cuatro-portfolio/.gitattributes`
 forces `contracts/**/*.css|json|txt` to LF and deliberately leaves `.woff2` alone;
 `cs-tracker/.gitattributes` is `* text=auto eol=lf`. **Observed 2026-08-27**, by hashing the staged
@@ -75,6 +87,7 @@ copy rather than in the folder itself, so not even one assertion writes to a pub
 |---|---|---|
 | Folder name | `cuatro-contracts/`, exactly, under `assets/css/` | **Decision.** AD-14 and AD-16: a scheduled drift check needs a target rather than a search |
 | Contract version | **v1.0.0**, from the `Contract v1.0.0` header `tokens.css` carries | **Observed 2026-08-27**, asserted by the Elixir suite |
+| Contract version, re-vendored | **v2.0.0** on the local `main` at `991d0f6`; the remote `main` reads v1.0.0 until the Operator pushes | **Observed 2026-09-24** by the probe's recorded-version case. The Elixir suite still asserts v1.0.0 at `test/cs_tracker_web/token_contract_test.exs:342`, and that is its one failure: 26 tests, 1 failure, run against a throwaway `postgres:16` |
 | Import form | `@import "./cuatro-contracts/tailwind.css";` in `assets/css/app.css`, after the `@source` lines and before the `@plugin` lines | **Decision.** AD-14 names `cs-tracker` in bold among the Tailwind consumers that import the adapter rather than the plain pair |
 | Scan exclusion | `@source not "../css/cuatro-contracts";` | **Decision**, and measured below: it works, and today it is precautionary |
 

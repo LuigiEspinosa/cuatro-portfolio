@@ -45,6 +45,14 @@ same Style Dictionary run that writes `tokens.css`, driven by the committed tran
 | Line endings | LF, one trailing newline | **Observed**, asserted by `packages/tokens/__tests__/tailwind-adapter.test.ts`. Pinned by `.gitattributes` rule `contracts/**/*.css` |
 | Executable content | none, and none anywhere under `contracts/` | **Decision.** AD-1, asserted by three unit cases |
 
+**Contract 2.0.0, 2026-09-24.** By Operator ruling, a MAJOR: the eight spacing-scale keys are
+`--spacing-s-2xs` to `--spacing-s-3xl`, so the utilities read `p-s-md` and `gap-s-lg`, and no key
+collides with Tailwind's container scale (DW-15, § The mapping table). No alias of an old key ships:
+the old names are the defect. The header reads `Contract v2.0.0`, the mappings stay **55**, and the
+file is still **4,522 bytes over 3,862 characters and 94 lines**, because each renamed key is shorter
+than `--spacing-page-pad` and fills the alignment padding it used to leave (**observed 2026-09-24**,
+by reading the file; sha256 `14bce2d5d11c28d8d8ce4fc74fb1854dc6bc6c08cf708a474a077659a6463a8c`).
+
 **The `inline` keyword is mandatory rather than stylistic.** Without it a `var()` reference resolves
 where the theme variable is defined rather than where it is used. This system has no `[data-theme]`
 override today, so nothing breaks now, but the moment one is added a non-`inline` block fails
@@ -95,7 +103,8 @@ The `Utility` column names the class the browser check probes, and the property 
 
 | Tailwind theme key | Contract token | Utility probed | Nature |
 |---|---|---|---|
-| `--spacing-2xs` … `--spacing-3xl` | `--s-2xs` … `--s-3xl` | `p-*`, `padding` | **Decision.** Eight scale steps |
+| ~~`--spacing-2xs` … `--spacing-3xl`~~ | `--s-2xs` … `--s-3xl` | `p-*`, `padding` | **Decision.** Eight scale steps. **Renamed 2026-09-24**, struck rather than deleted: each named key outranked Tailwind's `--container-*` of the same size, so `max-w-md` compiled to `var(--s-md)`, 16px, in every consumer (DW-15) |
+| `--spacing-s-2xs` … `--spacing-s-3xl` | `--s-2xs` … `--s-3xl` | `p-s-*`, `padding` | **Decision**, Operator ruling 2026-09-24, Contract 2.0.0. The same eight steps under names no Tailwind namespace shares, the `s-` taken from the tokens they read. `ops/__tests__/tailwind-container.test.ts` holds `max-w-3xs` to `max-w-7xl` to the container widths |
 | `--spacing-page-pad` | `--page-pad` | `p-page-pad` | **Decision.** The page gutter is a spacing value even though its name carries no `--s-` prefix |
 | `--spacing-tap` | `--tap` | `p-tap`, and `min-w-tap` and `min-h-tap` | **Decision.** The 44px hit-target floor. **Observed 2026-08-25**: all three compile to `var(--tap)`, and the harness asserts the two beyond the namespace's own probe rule, so the reachability claim in this row is exercised rather than stated |
 | `--radius-none`, `--radius-hair`, `--radius-pill` | `--r-none`, `--r-hair`, `--r-pill` | `rounded-*`, `border-radius` | **Decision.** Three radii |
@@ -253,6 +262,46 @@ no new job and no edit to that file at all.
 **Verified rather than assumed**, **observed 2026-08-25**: `git diff` against `c07038d` leaves
 `.github/workflows/ci.yml` byte-identical.
 
+### The container-width gate, 2026-09-24 (DW-19)
+
+**What the file means to a consumer now has a gate, and it is still not a new job.** The drift gate
+proves the adapter is what the generator makes; nothing proved what `max-w-*` resolves to, which is
+how DW-15 shipped. `ops/__tests__/tailwind-container.test.ts` compiles one `@import "./tailwind.css"`
+with the pinned `tailwindcss` through its own `compile()`, handing it a stylesheet resolver rather
+than spawning the CLI, so it needs no scratch tree, and asks for Tailwind's whole container scale,
+`max-w-3xs` to `max-w-7xl`. Each rule must read `var(--container-<size>)`, and each
+`--container-<size>` must be the width Tailwind 4.3.3 declares, 16rem to 80rem. The ruling names
+`max-w-2xs` to `max-w-3xl`, the eight the 1.0.0 keys shadowed; the review added the other five, so a
+spacing key added later at any container size fails too. It runs inside the blocking `test` job, so
+the set of `ci.yml` job names the two pin suites hold did not move. By Operator ruling 2026-09-24.
+
+**Red against the 1.0.0 adapter first**, as the ruling asked. **Observed 2026-09-24T14:42:15Z**,
+`corepack pnpm vitest --run ops/__tests__/tailwind-container.test.ts` on the committed adapter,
+before the rename, each message verbatim up to Vitest's own `expected` clause:
+
+```
+AssertionError: max-w-2xs compiles to max-width: var(--s-2xs), where Tailwind means var(--container-2xs). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-xs compiles to max-width: var(--s-xs), where Tailwind means var(--container-xs). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-sm compiles to max-width: var(--s-sm), where Tailwind means var(--container-sm). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-md compiles to max-width: var(--s-md), where Tailwind means var(--container-md). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-lg compiles to max-width: var(--s-lg), where Tailwind means var(--container-lg). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-xl compiles to max-width: var(--s-xl), where Tailwind means var(--container-xl). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-2xl compiles to max-width: var(--s-2xl), where Tailwind means var(--container-2xl). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-3xl compiles to max-width: var(--s-3xl), where Tailwind means var(--container-3xl). A spacing key in the adapter is shadowing the container scale (DW-15).
+ Test Files  1 failed (1)
+      Tests  8 failed (8)
+```
+
+After `tokens:build` on the renamed map, the same command: 8 passed (8), in 458 ms. **With the
+five sizes the review added**, the same run against the 1.0.0 adapter at 15:10Z read 8 failed, 5
+passed (13): the same eight, and `max-w-3xs` and `max-w-4xl` to `max-w-7xl` passing, since no 1.0.0
+key carried those names. On 2.0.0, 13 passed (13).
+
+**The adopter reads the same**: `cs-tracker`'s own `assets/css/app.css`, compiled with its own
+Tailwind 4.1.12 at the re-vendor commit `991d0f6` into a scratch file, emits `.max-w-md { max-width:
+var(--container-md); }` and `.max-w-sm { max-width: var(--container-sm); }` beside `--container-md:
+28rem` and `--container-sm: 24rem`, the two utilities it writes (**observed 2026-09-24**).
+
 ## Probe output
 
 ### Probe 1: the drift gate over the adapter
@@ -404,6 +453,25 @@ against the fixture's own font. All three are the browser's resolution of the sa
 sides of the comparison, which is why the check compares against a control element rather than
 against a number written here.
 
+**At Contract 2.0.0**, **observed 2026-09-24** in the same pinned image by the unfiltered run of
+`pnpm test:e2e` (337 passed), the ten spacing rows read, verbatim:
+
+```
+--spacing-s-2xs -> .p-s-2xs { padding } = 4px
+--spacing-s-xs -> .p-s-xs { padding } = 8px
+--spacing-s-sm -> .p-s-sm { padding } = 12px
+--spacing-s-md -> .p-s-md { padding } = 16px
+--spacing-s-lg -> .p-s-lg { padding } = 24px
+--spacing-s-xl -> .p-s-xl { padding } = 40px
+--spacing-s-2xl -> .p-s-2xl { padding } = 64px
+--spacing-s-3xl -> .p-s-3xl { padding } = 96px
+--spacing-page-pad -> .p-page-pad { padding } = 20px
+--spacing-tap -> .p-tap { padding } = 44px
+```
+
+The other 45 rows are unchanged, the count is still 55, and the negative control below still reads
+42 absent and the same 13 stock names: no renamed utility is a name stock Tailwind ships.
+
 ### Probe 4: the same fixture with no `@theme` block
 
 **Observed 2026-08-25**, same run. Verbatim:
@@ -503,7 +571,7 @@ one Playwright spec.
 | The default Tailwind colour palette is still present | `@theme inline` adds to the default theme rather than replacing it, so `bg-red-500` still exists beside `bg-accent`. Clearing it is `--color-*: initial`, which is a consumer decision about its own build and not a property of the contract | **Observed 2026-08-25** |
 | The unit suite reads `DESIGN.md` out of a dated planning directory | `packages/tokens/__tests__/tailwind-adapter.test.ts` compares the published mappings against the authored block. That couples a test to a planning artefact this story does not own. Every way the coupling can break throws naming the coupling rather than failing obscurely | **Decision**, inherited from Story 1-11 |
 | The browser check's scratch tree is built inside the repository | The Tailwind CLI resolves `@import "tailwindcss"` by walking up from the input file for `node_modules`, so a tree under `tmpdir()` cannot find the pinned compiler. The tree is removed in `afterAll`, which Playwright runs on failure as well as on success, but a hard kill of the process would leave one behind | **Decision**, with the residual risk stated |
-| No CI job builds a Tailwind bundle | The adapter's real verification lives in the `rendered-output` job, which runs the whole Playwright suite in the pinned container. If that job is ever narrowed, the adapter loses its only executing check | **Observed 2026-08-25**, by reading `.github/workflows/ci.yml` |
+| No CI job builds a Tailwind bundle | The adapter's real verification lives in the `rendered-output` job, which runs the whole Playwright suite in the pinned container. If that job is ever narrowed, the adapter loses its only executing check | **Observed 2026-08-25**, by reading `.github/workflows/ci.yml`. **Narrowed 2026-09-24**: the `test` job now compiles the adapter too, through `ops/__tests__/tailwind-container.test.ts`, for the container widths alone; every other mapping's executing check is still the `rendered-output` job |
 
 ## Pending Operator actions
 

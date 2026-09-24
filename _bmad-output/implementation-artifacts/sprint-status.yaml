@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-23-2026
+last_updated: 09-24-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -542,22 +542,27 @@ development_status:
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
 action_items:
+  # 2026-09-24: done by Operator ruling, Contract 2.0.0 (commit 40591cd): the keys are
+  # --spacing-s-*, a MAJOR with no alias window. DW-15 closed in deferred-work.md.
   - id: 'epic-1-retro-item-1-settle-the-shape-of-the-contracts-tailwi'
     epic: 1
     action: 'Settle the shape of the contracts/tailwind.css spacing-key fix (rename
       to --spacing-s-*, restate the container scale, or drop the named keys) and ship
       it under AD-16. DW-15.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling: ops/__tests__/tailwind-container.test.ts (40591cd)
+  # pins max-w-* to the container widths, red on 1.0.0 first for the eight the old keys
+  # shadowed. DW-19 closed.
   - id: 'epic-1-retro-item-2-add-the-dw-19-gate-a-node-test-under-ops'
     epic: 1
     action: 'Add the DW-19 gate: a Node test under ops/__tests__/ compiling the published
       adapter and pinning what max-w-sm through max-w-2xl resolve to. Polarity follows
       the item above.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-3-decide-what-happens-to-the-five-stories'
