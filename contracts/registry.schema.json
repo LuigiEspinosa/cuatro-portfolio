@@ -15,7 +15,7 @@
     "contract_version": {
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+$",
-      "description": "The Registry's own semver (AD-5). A value change is a minor bump; any field rename is major (AD-16)."
+      "description": "The Registry's own semver (AD-5). A wording-only edit to a \"description\" or a \"name\" is a patch bump; any other value change is a minor bump; a field renamed or removed is a major bump (AD-16). Split three ways on 2026-09-24, so a consumer can tell an editorial pass from a change in the data."
     },
     "applications": {
       "type": "array",
@@ -112,7 +112,7 @@
         "absorbed_into": {
           "type": "string",
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-          "description": "The id of the application this one's code now lives in (AD-6). An absorbed application keeps its entry. A value naming no entry in this file is refused, and so is an entry naming itself: draft-07 cannot express a reference at all, so both rules are applied by the gate beside the duplicate-id one."
+          "description": "The id of the application this one has been, or is set to be, folded into (AD-6): a fold recorded as intent counts as well as one that has happened, so the field alone does not say the code has moved, and \"source\" names where it sits today. An absorbed application keeps its entry. A value naming no entry in this file is refused, and so is an entry naming itself: draft-07 cannot express a reference at all, so both rules are applied by the gate beside the duplicate-id one."
         },
         "token_contract": {
           "type": "string",

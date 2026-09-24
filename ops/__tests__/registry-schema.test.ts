@@ -389,6 +389,38 @@ describe('the shipped schema', () => {
     }
   });
 
+  it('states the version rule AD-5 splits three ways, and the gate prints it beside a refused version', () => {
+    // Operator ruling 2026-09-24. The node read "A value change is a minor bump;
+    // any field rename is major", which made every editorial correction a minor
+    // bump, so the version sat at 1.1.0 through two stories of value changes. The
+    // description is what the editor shows an author and what the gate prints
+    // beside a refused `contract_version`, so the rule has to live in it and not
+    // only in the spine.
+    const rule = shippedSchema.properties.contract_version.description;
+
+    expect(rule).toContain('A wording-only edit to a "description" or a "name" is a patch bump');
+    expect(rule).toContain('any other value change is a minor bump');
+    expect(rule).toContain('a field renamed or removed is a major bump');
+
+    const refused = against(
+      JSON.stringify({ $schema: './registry.schema.json', contract_version: '1.2', applications: [entry()] })
+    );
+    expect(refused.ok).toBe(false);
+    expect(refused.message).toContain('/contract_version');
+    expect(refused.message, 'the refusal no longer teaches the rule a bump follows').toContain(rule);
+  });
+
+  it('says absorbed_into names a fold that has happened or is set to happen (AD-6)', () => {
+    // Operator ruling 2026-09-24. The node read "The id of the application this
+    // one's code now lives in", and neither entry carrying the field has moved:
+    // `tcg-tracker` and `connect-four-react` both describe their fold as intent.
+    // The field now covers both, and `source` is what says where the code sits.
+    const meaning = shippedSchema.definitions.application.properties.absorbed_into.description;
+
+    expect(meaning).toContain('has been, or is set to be, folded into');
+    expect(meaning, 'the node still says every fold has already happened').not.toContain('now lives');
+  });
+
   it('uses only keywords the validator implements, so a schema edit cannot outrun it', () => {
     // The audit is the gate's own answer. It runs here against the committed
     // schema, which is the standing half of the refusal below.
@@ -747,6 +779,10 @@ describe('the gate refuses', () => {
     expect(result.message).toContain('"ghost-app"');
     expect(result.message).toContain('AD-6');
     expect(result.message).toContain(BEYOND_THE_SCHEMA);
+    // AD-6 as widened by the Operator ruling of 2026-09-24: the refusal teaches
+    // the meaning in force, not "where its code now lives".
+    expect(result.message).toContain('has been, or is set to be, folded into');
+    expect(result.message).not.toContain('now lives');
   });
 
   it('an entry absorbing itself, which resolves and is still wrong', () => {
@@ -758,6 +794,8 @@ describe('the gate refuses', () => {
       "this entry's own"
     );
     expect(result.message).toContain(BEYOND_THE_SCHEMA);
+    expect(result.message).toContain('has been, or is set to be, folded into');
+    expect(result.message).not.toContain('now lives');
   });
 
   it('a family carried by one entry alone, because a family groups (FR-11)', () => {
