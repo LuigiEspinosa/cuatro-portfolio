@@ -594,19 +594,24 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling (spec-records-and-docs.md, ffcd8aa). The coverage map row
+  # reads FR-17 | 1 / 2, noting Story 2.34's conformance gate, with a dated amendment.
   - id: 'epic-1-retro-item-4-respell-fr-17-as-1-2-at-epics-md-753-sto'
     epic: 1
     action: 'Respell FR-17 as 1 / 2 at epics.md:753. Story 2.34 in Epic 2 is what
       enforces it.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling (spec-records-and-docs.md, ffcd8aa). Epic 1's body reads
+  # Twenty-one stories and places 1.21 with the estate group, dated. The appendix's "Epic 1's twenty
+  # keys" is left: it is dated 2026-08-15, a day before Story 1.21 was added.
   - id: 'epic-1-retro-item-5-correct-epics-md-967-from-twenty-stories'
     epic: 1
     action: 'Correct epics.md:967 from Twenty stories to twenty-one.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-6-audit-every-deploy-secret-against-the-cu'
@@ -674,12 +679,15 @@ action_items:
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling, found held. From the retro (f5df8c8) to 5c8a074, 179 of 192
+  # commit subjects carry a story, DW or package key, and all 41 feat: subjects do; the 13 without
+  # one are tooling and docs chores plus one fix (415e05b, DW-30's), none after 9bf4f20.
   - id: 'epic-1-retro-item-13-process-put-the-story-key-in-every-commi'
     epic: 1
     action: "Process: put the story key in every commit subject including hand-driven
       work. All eleven feat: commits in epic 1's first half carry none."
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-14-process-when-a-story-moves-a-host-treat'

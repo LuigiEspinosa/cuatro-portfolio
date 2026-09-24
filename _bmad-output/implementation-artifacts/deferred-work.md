@@ -1776,7 +1776,17 @@ status: done
     diff to four files, so the repair belongs to a story that owns that file. The repair itself
     is what that file already prescribes for drifting citations: name the heading, give the
     dated line number second.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the not-operator doc items), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, in the package's records
+    commit.** Each handover in `ops/routing-inventory.md` keeps its 2026-08-24 text and gains a dated
+    amendment: the `covidmap` and `future-vizion` rows, the operator-actions row and the paragraph
+    that moved the question to Story 2-4 now point at KV-3 in `ops/known-violations.md`; the
+    `analytics` paragraph says Story 2-4 decided it on 2026-09-02 as infrastructure outside the
+    Registry; and the `cs-tournament` row's citation names the heading first, `ops/estate.md`
+    § Disposition of every application (`:92` then), and its dated amendment states `Live` at
+    `inclusivcup.vercel.app` with the resolving section at `:179` as of 2026-09-24.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
   summary: >-
@@ -1793,7 +1803,16 @@ status: done
     takes `wheel.cuatro.dev`, and both Statuses are confirmed. What is missing is the
     bookkeeping in the planning artifacts, which Story 2-4's Tasks did not cover and which its
     acceptance criteria forbid it from touching.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (mark O-4, O-5 and Q9 closed, in the
+    mechanical batch), by `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit
+    `ffcd8aa`.** `EXPERIENCE.md`'s open-items rows O-4 and O-5 are struck and read **Closed 2026-09-02
+    by Story 2-4**, `prd.md` § 13 Q9 is struck the same way, and the spine's deferred bullet on the two
+    hostnames records the closing, each with a dated note. **`ops/registry-inputs.md` is not edited**,
+    though the ruling's brief asked for its "open item O-5" to move to the past tense: the Operator's
+    ruling of the same day froze that file's body as a dated record, and its `:286` already says O-5
+    was closed there on 2026-09-02.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
   summary: >-
@@ -2429,7 +2448,16 @@ status: done
     survives, since the real-world case really is ~29px, but the stated mechanism is wrong and
     Stories 2-9, 2-15, 2-30 and 2-32 all repair hit targets against it. Correcting a UX spine is
     outside a story that ships an instrument and changes no component.
-  status: open
+  note: |-
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** The
+    passage in `DESIGN.md` § Components now says vertical padding on a plain inline element grows its
+    box but not its line, that `0.25rem` measures about 29px, and that reaching 44px takes padding that
+    overlaps the lines around it, citing `ops/hit-target-floor.md`, with a dated note quoting what it
+    replaces; the rule to use `inline-flex` and `min-height` stands. The matching clause of Story
+    2.32's criterion in `epics.md` takes the same wording. Six more copies of the old mechanism, in
+    `EXPERIENCE.md`, `RESTYLE-SPEC.md` and two further `epics.md` lines, are filed as DW-136.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   summary: `epics.md:3576` premises a Story 2.32 acceptance criterion on a measurement the Story
@@ -2439,7 +2467,13 @@ status: done
     story is the first instrument in the repository positioned to correct that number, and it is
     left standing in the criterion that four surfaces are repaired against. Editing `epics.md` is a
     planning-artifact change, not an implementation one.
-  status: open
+  note: |-
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** Both
+    places Story 2.32 quotes the ~16x27px figure, its premise and its first criterion, keep the figure
+    and carry a dated note: the Story 2-8 sweep measured the links at 38.41 to 98.13 wide by 22.00 tall
+    on 2026-09-06, Story 2-32 repaired them, and KV-4 retired on 2026-09-23.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   summary: `tests/e2e/harness.ts:24` still names only the Epic 1 consumers of the harness, now that
@@ -2473,7 +2507,14 @@ status: done
     follow from Operator rulings of 2026-09-06 and are argued in `ops/hit-target-floor.md`, KV-4 and
     KV-5, but no sprint change proposal or `epics.md` annotation carries them, so a later reader of
     the epic sees criteria that were not met verbatim and a board row reading done.
-  status: open
+  note: |-
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** Story 2.8's
+    first criterion in `epics.md` carries a dated note recording both departures and the rulings of
+    2026-09-06 behind them (`ops/hit-target-floor.md`, KV-4, KV-5), and where each stands: the 44x44
+    half holds exactly as written since 2026-09-23, when the ledger emptied and KV-4 retired, and A-5
+    is still asserted on elements rather than on `scrollWidth`, with KV-5 retired by Story 2-33.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
   summary: `tests/e2e/contract-anchor.pw.ts:903` flakes on a live HTTP fetch and takes the blocking
@@ -2579,7 +2620,14 @@ status: done
     `ProjectsHero` is **not** retired: it still renders on `/projects` above the directory, so the
     2.14 criterion is half true rather than wholly stale. Editing `epics.md` is a planning-artifact
     change and Story 2-8 set the precedent of filing rather than making one from inside a build.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** All five
+    places in `epics.md` keep their text and carry a dated note naming the story that did the work:
+    UX-DR26, Story 2.14's criterion, the Story 2.18 tombstone's two lines and the relocated criterion
+    in Story 2.31. `ProjectCard` and its stylesheet went with Story 2-9; `ProjectsHero` went with
+    `/projects` in Story 2-14, which since 2026-09-07 has made the criterion wholly true.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
   summary: >-
@@ -2682,7 +2730,15 @@ status: done
     Filed rather than fixed because editing `DESIGN.md` is outside Story 2-10 and the design
     documents are a spine: a value in one is changed deliberately, not as a side effect of a story
     that was measuring something else.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** The
+    sentence in `DESIGN.md` § Colors now gives the border pair **1.77:1**, with a dated note that it
+    read 1.13:1, which is the text pair, citing `ops/status-mark-axes.md`; the argument for the dot is
+    unchanged. The same figure beside the same claim in `EXPERIENCE.md` § Status mark, Story 2.10's
+    criterion in `epics.md` and AD-19 in the spine was outside the ruling's brief and is filed as
+    DW-137.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
   summary: >-
@@ -2753,7 +2809,14 @@ status: done
     rather than fixed because `epics.md` is a planning artifact under a frozen approval and the
     design documents are a spine: a value in one is changed deliberately, through a sprint change,
     and not as a side effect of a story that was implementing it.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch; `DESIGN.md` wins on
+    values), by `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit
+    `ffcd8aa`.** UX-DR21 and Story 2.11's criterion in `epics.md` name `--tr-label` in place of the
+    struck `+0.16em`, each with a dated note, so the epic and the design agree with the shipped mark.
+    The mockup's `.plate` at `mockups/key-screens.html:117` is left at the wider figure: the brief
+    made it optional, and `EXPERIENCE.md` has the spines win over every mock.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   summary: >-
@@ -2776,7 +2839,16 @@ status: done
     once across `ops/estate.md`, the Registry and `EXPERIENCE.md`, or to rewrite the canonical
     copy so it names no number and points at the derivation instead. Story 2-4 owns the
     reconciliation; this is filed as a sprint-change item rather than a silent correction.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the copy states no fixed count and says
+    the page derives it from the Registry), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** The
+    canonical copy in `EXPERIENCE.md` § The premise opens `[N] personal projects`, and a dated note
+    says it opened `Fifteen personal projects`, that the page derives `[N]` from
+    `contracts/registry.json` spelled out with the noun agreeing, and that it read `Fourteen` that
+    day. No second copy of the number is kept, and `Premise.tsx`'s "verbatim from its third word on"
+    still holds.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   summary: >-
@@ -2848,7 +2920,15 @@ status: done
     decide the mount point, and the placement cases in `app/__tests__/page.test.tsx` and
     `tests/e2e/premise.pw.ts` both pin the fragment shape that a move would change. Recording the
     decision now costs one docblock; rediscovering it costs a story.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (home-only by design), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `2327d75`.** The
+    docblock of `SiteFooter.tsx` now says `app/page.tsx` alone mounts it, by design, because
+    `EXPERIENCE.md` § The homepage: two paths, one destination draws the footer under the homepage's
+    Directory and nowhere else, so `/work`, `/cv`, `/celeste` and the 404 end without one, and that
+    `app/layout.tsx` would put the control on every route. A comment only: no rendered byte and no
+    per-surface count moved.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
   summary: >-
@@ -3441,7 +3521,13 @@ status: done
     PRD is under a frozen approval and a story does not edit one as a side effect of implementing it.
     The closure is a one-line strike-through in the shape `prd.md:809` and `:813` already use for the
     two questions that closed on 2026-08-15.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (strike Q7 in the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** `prd.md`
+    § 13 Q7 is struck in the shape Q2 and Q6 use and reads **Closed 2026-08-15** in `EXPERIENCE.md`
+    § The homepage: two paths, one destination, shipped by Story 2-13 on 2026-09-07, with a dated
+    note. The PRD and `EXPERIENCE.md` agree again, and the code already agreed with both.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-46
@@ -3528,7 +3614,17 @@ status: done
     Chromium stable, which would answer the slow-connection case in CSS for free. Neither is Story
     2-13's to decide, and the residual shift is a shrink of a hero on a path that is otherwise
     strictly cheaper, so it is recorded with its numbers rather than papered over.
-  status: open
+
+    **Closed 2026-09-24 as accepted, on the Operator ruling of that day, in the package's records
+    commit (`_bmad-output/implementation-artifacts/spec-records-and-docs.md`).** The shift stays: a
+    blocking WebGL probe in `app/layout.tsx` would put a synchronous context creation on every load
+    of every route to spare a rare visitor one downward step on a path that is otherwise cheaper. It
+    stays asserted rather than tolerated: `tests/e2e/front-door.pw.ts` still requires exactly one
+    collapse on the two script-only doors, 104.83px at 1024 as that file measured it on 2026-09-21
+    (279.30px when this entry was written; later hero changes shrank it), and zero on the
+    doors answered before paint. **The future fix** is `prefers-reduced-data` reaching the browsers
+    the Hub serves, which would answer the slow-connection door in CSS; the no-WebGL door has none.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-48
@@ -3615,7 +3711,14 @@ status: done
     fetching in it, so the cost is React SSR on the box rather than anything remote. Worth an
     Operator eye against `ops/capacity-threshold.md` before Epic 3, and worth knowing if `/` ever
     reads slow in production.
-  status: open
+
+    **Closed 2026-09-24 as accepted, on the Operator ruling of that day, in the package's records
+    commit (`_bmad-output/implementation-artifacts/spec-records-and-docs.md`).** `/` stays rendered
+    per request: the 2026-09-07 ruling that moved `Save-Data` to the server was deliberate, the page
+    fetches no data, so the cost is React rendering on the box, and reverting it would give
+    data-saving visitors the hero collapse DW-47 records. The package's own build still prints `ƒ /`.
+    DW-51, the `Vary` header, stays open.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-51
@@ -3834,7 +3937,15 @@ status: done
     `next.config.js` nor `README.md` § Routing. Naming it the owner was a guess at the board, not
     at the subject. **Owner: whichever story next takes a routing decision for the Hub**, which
     by the reading above is no remaining Epic 2 story; the trigger list above stands.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day, the third trigger (the Hub states a case
+    policy), by `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.**
+    The forgiving redirect is accepted as it stands: `README.md` § Routing says Hub URLs are
+    case-sensitive by policy and that the one redirect in `next.config.js` folds case, as Next
+    compiles every `redirects()` source, so `/Projects` and `/PROJECTS` answer the same 301 as
+    `/projects`. `tests/e2e/projects-redirect.pw.ts` already asserts that behaviour as Next's; no
+    `has` condition and no middleware is added. DW-74 closes on the same sentence.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-57
@@ -4585,7 +4696,15 @@ status: done
     `middleware.ts` for any reason**, at which point the marginal cost of covering the cased routes
     is a few lines rather than a new mechanism. If the answer is that it does not matter, the honest
     close is to say so here and note that `/WORK` and `/CELESTE` have the same shape.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (Hub URLs are case-sensitive by policy,
+    while config redirects fold case; one sentence in `README.md` § Routing), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** It does not
+    matter, by ruling rather than by default: `README.md` § Routing says a route answers at its
+    lowercase path alone, so `/CV`, `/WORK` and `/CELESTE` answer 404, while the one redirect in
+    `next.config.js` matches its source in any case. No middleware is added and nothing about the
+    routes changed. DW-56 closes on the same sentence.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-75
@@ -4786,7 +4905,16 @@ status: done
 
     **Owner: the Epic 2 retrospective.** **Trigger: that retrospective's action items**, where the
     2-8 departures are already queued for the same treatment.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (record the retirement in the plans, in the
+    mechanical batch), by `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit
+    `ffcd8aa`.** The four places the ruling's brief names carry a dated note that the route was
+    retired on 2026-09-11 by Operator ruling, Story 2-17, answers 404 and keeps the PDF at its own URL:
+    `EXPERIENCE.md`'s Hub tree and its placement table (the authority `chrome-nav.pw.ts`, `Navbar.tsx`
+    and `SiteFooter.tsx` cite), its secondary-surfaces row, and Story 2.17's criterion in `epics.md`.
+    The other planning lines that still place `/recommendation` or list it among the routes that
+    survive, FR-1 in the PRD and its restatements, are filed as DW-138.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
   id: DW-80
@@ -5482,7 +5610,17 @@ status: done
     **Owner: unassigned, the design owner.** **Trigger: the ruling**, after which one line in each
     pair is corrected and, if the tech array moves to `--t-2xs`, `SuiteDirectory.scss:152` and the
     exception move with it in one change.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (tech arrays stay at `--t-3xs`, 11px, and
+    `DESIGN.md`'s `--t-2xs` row is the line corrected), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** Both
+    halves. F-14: the scale table lists tech arrays on the `--t-3xs` row with a dated note and keeps
+    them struck on the `--t-2xs` row, so the table and § Components → Registry Entry agree with the
+    shipped `.suite-directory__tech`; no build byte moved and the paragraph floor's exception stands.
+    F-17: the four places that said six z-levels, `DESIGN.md` § Z-index scale and its Don'ts line and
+    `epics.md`'s UX-DR44 and hallmark criterion, say seven with a dated note, as the contract declares.
+    `ops/hub-accessibility-pass.md` closes F-14, F-17 and Pending Operator action 2.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
   id: DW-97
@@ -6979,4 +7117,80 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next time a local full run fails a WSL-spawning case that
     then passes, or the next edit to either harness's spawn helper.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-136
+  summary: >-
+    Six planning lines still say vertical padding on a plain inline element does not grow the hit
+    area, the mechanism the Story 2-8 probe disproved and the Operator's ruling of 2026-09-24
+    corrected in `DESIGN.md` and in Story 2.32's criterion only.
+  evidence: |-
+    Found 2026-09-24 by the records-and-docs package, by `grep -rn "paints outward\|does not grow its
+    hit\|without growing the hit"` over the planning artifacts after correcting the two places the
+    ruling's brief names (commit `ffcd8aa`). Still reading the old mechanism: `EXPERIENCE.md`
+    § Registry Entry (`:326`, "does not grow its hit area") and § Pointer and touch (`:737`);
+    `RESTYLE-SPEC.md` § 1b Link (`:196`) and
+    § The floor (`:662-663`, "~29px tall no matter what the padding says"); and `epics.md`'s UX-DR25
+    (`:561`) and Story 8.1's criterion (`:4718`), line numbers as of 2026-09-24. The probe in
+    `ops/hit-target-floor.md` measured 29.00 at `0.25rem` and 44.00 at `0.75rem`: the padding grows
+    the box and not the line, so the practical rule, `inline-flex` with `min-height`, is right in every
+    copy and only the stated mechanism is wrong. `validation-report.md:77` quotes it too and is a dated
+    review, left as it is.
+
+    Not corrected in the package: the ruling approved the corrections its briefs named, and editing
+    four more places in three spines is a planning change nobody ruled. `RESTYLE-SPEC.md` is the one
+    that matters most, since Epic 8 restyles every Satellite against it.
+
+    **Owner: the Operator, as the owner of the spines.** **Trigger: Story 8.1's planning, or the next
+    pass over `RESTYLE-SPEC.md`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-137
+  summary: >-
+    Three planning lines give `Live` and `Complete` 1.13:1 apart in greyscale beside a claim about
+    their shared `1px solid` border, the figure the Operator's ruling of 2026-09-24 corrected in
+    `DESIGN.md` because it belongs to the text pair, while the border pair measures 1.773:1.
+  evidence: |-
+    Found 2026-09-24 by the records-and-docs package, by `grep -rn "1\.13:1"` over the planning
+    artifacts and `ops/` after correcting `DESIGN.md` § Colors (commit `ffcd8aa`). The same figure
+    sits in `EXPERIENCE.md` § Status mark (`:345-346`), Story 2.10's criterion in `epics.md`
+    (`:2463`) and AD-19 in `ARCHITECTURE-SPINE.md` (`:199`), as of 2026-09-24. Each says the two
+    marks are both `1px solid` and 1.13:1 apart without the dot, which reads as the border pair;
+    `ops/status-mark-axes.md` measured the text pair at 1.133:1 and the border pair at 1.773:1 on
+    2026-09-06. Both sit far under
+    3:1, so every argument built on the figure holds, and `tests/e2e/status-mark.pw.ts` asserts the
+    bound rather than a number. The review and memlog files that also carry it are dated records.
+
+    Not corrected in the package: the ruling's brief named `DESIGN.md` alone.
+
+    **Owner: the Operator, as the owner of the spines.** **Trigger: the next pass over any of the
+    three documents.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-138
+  summary: >-
+    FR-1 still lists `/recommendation` among the routes that remain reachable, and six more planning
+    lines place it or require it to render, though Story 2-17 retired it on the Operator ruling of
+    2026-09-11; one of them is a criterion of Story 3.2, which has not run.
+  evidence: |-
+    Found 2026-09-24 by the records-and-docs package while recording DW-79's correction, which the
+    ruling's brief limited to `EXPERIENCE.md` and Story 2.17's criterion (commit `ffcd8aa`). Still
+    naming the route as surviving or linked, line numbers as of 2026-09-24: FR-1's acceptance in
+    `prd.md` (`:141`, "The pre-existing `/cv`, `/work`, `/recommendation` and `/celeste` routes remain
+    reachable and functional"); its restatement in `epics.md`'s requirements inventory (`:62`);
+    UX-DR28 (`:576`, "linked from `/cv` and the footer") and UX-DR35 (`:598`); Story 1.18's criterion
+    (`:1863`) and Story 2.12's (`:2547`), both done; and **Story 3.2's criterion** (`:3952`, "every
+    route still renders: `/`, `/cv`, `/work`, `/recommendation`, ..."), which the story will read as a
+    requirement when it opens and cannot meet, the route answering 404 by design. The retirement is
+    recorded in `next.config.js`'s docblock, `README.md` § Routing, Story 2-17's spec, DW-79 and now
+    `EXPERIENCE.md`.
+
+    Not corrected in the package: FR-1 is the PRD's, and a route leaving a requirement is a planning
+    change the ruling did not make.
+
+    **Owner: the Operator, for FR-1; Story 3.2's planning, for its own criterion.** **Trigger: Story
+    3.2's planning, or any pass over FR-1.**
   status: open
