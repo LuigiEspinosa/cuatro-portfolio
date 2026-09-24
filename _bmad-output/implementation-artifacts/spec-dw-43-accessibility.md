@@ -155,6 +155,18 @@ on both Directory links; a `url(` count in the built-CSS tally.
   gate exit 0, the build exit 0, `node ops/asset-budget.mjs` exit 0 with no measured input dirty
   and the filed reading's bytes unchanged, and the unfiltered container run 338 passed and 0 failed
   in 5.9 minutes, no snapshot written. Nothing was re-derived.
+- **Verifier rejection, 2026-09-24, fix round 2.** The independent verifier passed every local stage
+  on `44e4a7a` and pushed it, `dev` moving from `4a7d1b5` as a fast-forward, but could not read the
+  push's CI run, 35991172984: the permission system denied `gh run watch`, so no conclusion was
+  observed and the verdict could not pass. It named no defect. This round read the run with
+  `gh run view 35991172984 --json status,conclusion,jobs`, which only reads: completed, conclusion
+  success, head `44e4a7a` on `dev`, and all seven jobs success (`literal-conformance`,
+  `contract-purity`, `tokens-contract`, `fonts-contract`, `registry-schema`, `test` with 60 files
+  and 1,565 passed, `rendered-output` with 338 passed in 5.8 minutes), the tallies the local runs
+  gave. Nothing in the package changed; this entry is the round's only edit. On this tree:
+  typecheck exit 0 and `corepack pnpm test --run` 60 files and 1,565 passed. No container run:
+  nothing rendered moved, and CI's `rendered-output` job ran the harness in the pinned image on
+  `44e4a7a`, which this edit leaves unchanged but for this file. Nothing was re-derived.
 
 ## Design Notes
 
