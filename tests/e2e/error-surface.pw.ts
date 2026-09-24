@@ -15,9 +15,10 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *
  * **The redundancy test is run here, not assumed** (`epics.md` Story 2.30, O-12 item 3): with the
  * numeral removed from the accessibility tree, the title, the heading and the message are read
- * together and each has to say the page was not found. It does, so branch A holds and the numeral is
- * ornament; the reading is logged, and the same predicate is watched reporting branch B on a page
- * planted to say none of it.
+ * together, and the title and the heading each have to say the page was not found while the message
+ * says what to do next (Operator ruling 2026-09-24, DW-114; until then the message said it a third
+ * time). They do, so branch A holds and the numeral is ornament; the reading is logged, and the same
+ * predicate is watched reporting branch B on a page planted to say none of it.
  *
  * **Everything keys on the surface's markup, never on `<body id>`.** On this route alone the id is
  * a hydration artifact: `usePathname()` answers `/_not-found` during the prerender and the requested
@@ -324,7 +325,7 @@ test.describe('the surface is a Plate mark, the display line, one line and the e
 // ---------------------------------------------------------------------------
 
 test.describe('the redundancy test, run rather than assumed', () => {
-  test('with the numeral removed from the tree, the title, the heading and the message each say the page was not found: branch A', async ({
+  test('with the numeral removed from the tree, the title and the heading each say the page was not found and the message does not repeat it: branch A', async ({
     page,
   }) => {
     await goTo(page);
@@ -334,9 +335,13 @@ test.describe('the redundancy test, run rather than assumed', () => {
       `error-surface: redundancy test, numeral removed: branch ${verdict.branch}, carried by ${verdict.carriers.join(', ') || 'nothing'}; ` +
         `title "${output.title}", heading "${output.heading}", message "${output.message}"`
     );
-    expect(verdict, 'the page says it was not found in fewer places than the title, the heading and the message').toEqual({
+    // **Exactly the title and the heading** (Operator ruling 2026-09-24, DW-114). The message is the
+    // next step now, so a carrier list that still named it would be the page saying one thing twice
+    // again; one that lost the title or the heading would be branch A resting on less than the ruling
+    // kept. Until that ruling this read `['title', 'heading', 'message']`.
+    expect(verdict, 'the page does not say it was not found in exactly the title and the heading').toEqual({
       branch: 'A',
-      carriers: ['title', 'heading', 'message'],
+      carriers: ['title', 'heading'],
     });
     // Read top to bottom, not only by locator: the heading and the message are in the tree a screen
     // reader walks, and nothing left in it says 404 once the numeral is gone.

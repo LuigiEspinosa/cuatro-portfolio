@@ -14,11 +14,16 @@ import './Error404.scss';
  * heading and its entrance are that component's rather than restated here.
  *
  * **The numeral is ornament, and hidden** (O-12 item 3, branch A). With it removed from the
- * accessibility tree the page still says it was not found three times over, in its title, its
- * heading and its message, which `tests/e2e/error-surface.pw.ts` reads rather than assumes. So it
- * carries `aria-hidden` and no name: a hidden element needs none, and the `aria-label` the 2023
- * paragraph carried sat on a role that prohibits one (O-13, a pre-existing defect corrected here,
- * not one the redesign introduced). No element in this component carries a name by attribute.
+ * accessibility tree the page still says it was not found twice over, in its title and its heading,
+ * which `tests/e2e/error-surface.pw.ts` reads rather than assumes. So it carries `aria-hidden` and no
+ * name: a hidden element needs none, and the `aria-label` the 2023 paragraph carried sat on a role
+ * that prohibits one (O-13, a pre-existing defect corrected here, not one the redesign introduced).
+ * No element in this component carries a name by attribute.
+ *
+ * **The supporting line is the next step, in the Operator's words** (Operator ruling 2026-09-24,
+ * DW-114). The heading already says the page was not found, so the line says what to do about it and
+ * the page says one thing once. Until that ruling it read `The page you’re looking for does not
+ * exist.`, the heading said again, and the message was a third carrier of branch A.
  *
  * **The label is a plain word.** `// ERR_NOT_FOUND` was decoration a screen reader speaks and a
  * code rather than words (`EXPERIENCE.md` § Plate mark). `Error` is the word the code abbreviated;
@@ -47,7 +52,7 @@ const NotFound = () => (
 
     <GlitchText text='Page not found.' delay={0.3} />
 
-    <p className='error-page__sub'>The page you’re looking for does not exist.</p>
+    <p className='error-page__sub'>Check the address, or use one of the links below.</p>
 
     <div className='error-page__exits'>
       {DESTINATIONS.map((destination) => (

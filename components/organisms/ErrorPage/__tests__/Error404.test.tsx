@@ -168,20 +168,21 @@ describe('the surface is a Plate mark, the display line, one line and the exits'
     expect(document_.querySelectorAll('h2, h3, h4, h5, h6'), 'a second heading level arrived on the surface').toHaveLength(0);
   });
 
-  it('sets one supporting line, with its apostrophe typeset', () => {
+  it('sets one supporting line, the next step the Operator ruled, not a second "not found"', () => {
     const lines = document_.querySelectorAll('.error-page__sub');
     expect(lines, 'the surface carries a number of supporting lines other than one').toHaveLength(1);
-    // `DESIGN.md` § Typography: what the product renders is typeset, curly quotes included.
-    expect(lines[0].textContent).toBe('The page you’re looking for does not exist.');
-    expect(lines[0].textContent, 'a straight apostrophe is rendered').not.toContain("'");
+    // Operator ruling 2026-09-24 (DW-114): the heading already says the page was not found, so the
+    // line says what to do next and the page says one thing once. The words are the ruling's, verbatim.
+    expect(lines[0].textContent).toBe('Check the address, or use one of the links below.');
   });
 
   it('hides the numeral from assistive technology and names nothing on any element (O-13)', () => {
     const numeral = document_.querySelectorAll('.error-page__code');
     expect(numeral, 'the surface carries a number of numerals other than one').toHaveLength(1);
     expect(numeral[0].textContent).toBe('404');
-    // Branch A of O-12 item 3: the page says it was not found in its title, its heading and its
-    // message, so the numeral is ornament and a hidden element needs no name.
+    // Branch A of O-12 item 3: the page says it was not found in its title and its heading (and in
+    // its message too until the Operator ruling of 2026-09-24, DW-114), so the numeral is ornament and
+    // a hidden element needs no name.
     expect(numeral[0].getAttribute('aria-hidden'), 'the numeral is exposed to assistive technology').toBe('true');
     expect(namedIn(document_), 'an element on the 404 carries a name by attribute').toEqual([]);
 
