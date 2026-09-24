@@ -378,9 +378,13 @@ describe('the deploy workflow wiring', () => {
     expect(instructions.indexOf('capacity-gate.mjs')).toBeLessThan(instructions.indexOf('ssh-action'));
   });
 
-  it('never downgrades a step to a warning, and never makes one conditional', () => {
+  // One condition is allowed since DW-20, and it is the failure report, which runs after the deploy and
+  // deploys nothing. The gate and the SSH step stay unconditional, which is what AD-21 asks of them.
+  it('never downgrades a step to a warning, and conditions only the failure report after the deploy', () => {
     expect(instructions).not.toMatch(/continue-on-error\s*:/);
-    expect(instructions).not.toMatch(/^\s+if\s*:/m);
+    const conditions = [...instructions.matchAll(/^\s+if\s*:\s*(.*)$/gm)].map((match) => match[1].trim());
+    expect(conditions).toEqual(['failure()']);
+    expect(instructions.indexOf('if: failure()')).toBeGreaterThan(instructions.indexOf('ssh-action'));
   });
 });
 

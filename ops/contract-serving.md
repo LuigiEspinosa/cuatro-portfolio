@@ -262,7 +262,8 @@ publishes again, and requires the destination to be exactly the source afterward
 
 **That removal is load-bearing on the deploy path specifically, not only in theory.**
 `.github/workflows/deploy.yml` runs `docker compose --env-file .env.production up --build -d`
-over SSH against a long-lived checkout on the box, and `.dockerignore` excludes `.gitignore` but
+over SSH against a long-lived checkout on the box (through `ops/deploy-remote.sh` since 2026-09-24,
+DW-94), and `.dockerignore` excludes `.gitignore` but
 not `public/contracts/`. So a served copy left in that checkout by an earlier build is carried
 into the builder stage by `COPY . .`, gitignored or not. Overwriting it in place would leave a
 contract file that was deleted upstream still being served from the apex. Replacing the directory
@@ -464,6 +465,141 @@ PowerShell pipe is not; `SERVER_USER` was set to `deploy`; and the key material 
 **What is still owed.** Nothing watches this pipeline. A deploy that fails now is as silent as the
 twelve days above, and the next person to notice will be whoever wonders why the site is stale.
 That belongs with the monitoring gap already in the deferred ledger, not in this file.
+**Amended 2026-09-24:** a failed run now opens a GitHub issue (DW-20, under "The deploy runs one
+script" below). A deploy that never runs, which is what the twelve days were, still opens nothing.
+
+## The deploy runs one script, and its key can be held to it
+
+**Written 2026-09-24** by `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`,
+Operator ruling 2026-09-24 (DW-94, DW-93, DW-20, DW-87). Everything here is a **Decision** of that
+ruling unless it is marked **Observed**. Nothing in this section has run against the box yet: no
+deploy can run before the Epic 2 merge, and this host has no SSH access to it.
+
+**What a deploy runs.** `.github/workflows/deploy.yml` fires on a push to `main` that changes more
+than Markdown, or on `workflow_dispatch`, one run at a time (`concurrency: deploy`, nothing
+cancelled). Its first step refuses any ref but `main`; then the Capacity Gate; then one SSH step;
+and a last step that runs only when an earlier one failed and opens a GitHub issue naming the run
+(`issues: write` on that job alone). The deploy itself is `ops/deploy-remote.sh`, on the box. It
+refuses a target that is not 40 lowercase hex characters, fetches `main`, refuses a target that is
+not an ancestor of `origin/main`, resets the checkout to the target and runs the compose line that
+used to sit in the SSH step, `docker compose --env-file .env.production up --build -d
+--remove-orphans`, unchanged.
+
+**The one string the box is sent**, with `SHA` standing for `${{ github.sha }}`, which is the pushed
+commit, or `main`'s head on a dispatch:
+
+```
+cd ~/cuatro-portfolio && git fetch origin main && s="$(git show SHA:ops/deploy-remote.sh)" && exec /bin/bash -c "$s" deploy-remote SHA
+```
+
+It works whichever way the key is set, which is what lets the workflow ship before the key changes:
+
+- **While the key is unrestricted**, the `deploy` user's login shell runs the string. It fetches
+  `main`, reads the script out of the commit being deployed and runs it with the sha as its
+  argument. The first deploy after the Epic 2 merge goes this way and is what puts the script into
+  the box's checkout, since the checkout it starts from predates it.
+- **Once the key is held to the forced command**, sshd runs the checkout's copy of the script in
+  place of the string and hands the string over in `SSH_ORIGINAL_COMMAND`. The script reads its last
+  word as the sha and executes none of it. That is why the sha stays the last word, and why the
+  script keeps its path: the line below names it.
+
+The script logs `deploy-remote: deploying <sha>, read from its argument` in the first case and
+`read from SSH_ORIGINAL_COMMAND` in the second, so a run's log says which way it went.
+`ops/__tests__/deploy-remote.test.ts` runs the string both ways against a scratch repository and a
+stub `docker`, and runs the forced command exactly as it is written here.
+
+**The line.** The Anchor's deploy key, comment `github-actions-deploy@cuatro-portfolio`, gains
+this prefix in `/home/deploy/.ssh/authorized_keys`:
+
+```
+restrict,command="/bin/bash /home/deploy/cuatro-portfolio/ops/deploy-remote.sh"
+```
+
+`restrict` turns off the pty, port, agent and X11 forwarding and `~/.ssh/rc`; `command=` replaces
+whatever the client asks for. A leaked `SSH_PRIVATE_KEY` then redeploys a commit already on `main`
+and does nothing else. **What it leaves alone:** `deploy` keeps passwordless sudo, which the ruling
+did not take up; the Operator's own key stays unrestricted, and is the recovery path; and
+`list-wheel`'s key waits for that repository's own script, under the same ruling.
+
+**If a broken script reaches `main`.** Under the forced command the box runs the copy the last
+deploy left in the checkout, so a script that breaks before its reset also blocks the deploy of its
+fix. The unit suite runs the real script on every push, which is the guard. The recovery is the
+Operator's own key: `git -C ~/cuatro-portfolio fetch origin main && git -C ~/cuatro-portfolio
+reset --hard origin/main`, then a dispatch.
+
+**Two limits, stated.** The `deploy` group holds one run and one waiting, and a newer run replaces
+the waiting one; a dispatch on another ref joins the same group, so if it arrives while a push to
+`main` is waiting, that push's run is cancelled, the dispatch fails at its first step and opens an
+issue, and the box stays on the previous deploy until the next run on `main`. And nothing on the box
+serializes two sessions: the group covers this workflow's runs only, so a deploy run by hand over the
+Operator's key beside a running one can interleave a reset with a build.
+
+**Epic 3.** Story 3-4's image-pull deploy edits `ops/deploy-remote.sh`, not the workflow's string:
+the compose line becomes a pull of the sha tag and `docker-rollout`, the path and the
+sha-last-word contract stay, and the key's line does not change. `epics.md` Story 3.4 carries it as
+a dated amendment.
+
+### Holding the deploy key to the forced command
+
+Pending Operator action 7. Run on the box as `deploy`, over the Operator's own key.
+
+**Precondition.** The first deploy after the Epic 2 merge is green, and
+`test -f ~/cuatro-portfolio/ops/deploy-remote.sh && echo present` prints `present`: the line names a
+file that has to be there first.
+
+**The edit**, idempotent, with a backup beside the file:
+
+```
+sed -i.bak-dw-94 '/^ssh-ed25519 .* github-actions-deploy@cuatro-portfolio$/s#^#restrict,command="/bin/bash /home/deploy/cuatro-portfolio/ops/deploy-remote.sh" #' ~/.ssh/authorized_keys
+grep -c 'github-actions-deploy@cuatro-portfolio$' ~/.ssh/authorized_keys
+grep -c '^restrict,command="/bin/bash /home/deploy/cuatro-portfolio/ops/deploy-remote.sh" ssh-ed25519 .* github-actions-deploy@cuatro-portfolio$' ~/.ssh/authorized_keys
+stat -c %a ~/.ssh/authorized_keys
+sudo sshd -T | grep -iE '^(acceptenv|permituserenvironment) '
+```
+
+Both counts read `1`, so the key has one line and that line carries the prefix, and `stat` reads
+`600`. The last command prints `acceptenv LANG`, `acceptenv LC_*` and `permituserenvironment no`,
+Ubuntu's defaults, and nothing more. A forced command overrides the command a client asks for, not
+the environment it sends: sshd passes on only the variables `AcceptEnv` names, so with these
+settings a key cannot hand the shell a `BASH_ENV` or a `GIT_*` override. If either line reads
+otherwise, narrow it before relying on the restriction.
+
+**Verification, both halves.**
+
+1. A dispatch deploy succeeds through the forced command. From the workstation,
+   `gh workflow run deploy.yml --repo LuigiEspinosa/cuatro-portfolio --ref main`, then
+   `gh run list --repo LuigiEspinosa/cuatro-portfolio --workflow deploy.yml --limit 1` until it
+   reads `completed success`. Its SSH step logs `read from SSH_ORIGINAL_COMMAND`, which only the
+   forced command produces, and `git -C ~/cuatro-portfolio rev-parse HEAD` on the box equals the
+   run's sha.
+2. An interactive ssh held to the line fails. The deploy key's private half exists only in the
+   `SSH_PRIVATE_KEY` secret (§ The deploy pipeline was broken: "the key material was deleted"), so
+   this half uses a throwaway key given the identical options, on the box, and removes it:
+
+   ```
+   ssh-keygen -q -t ed25519 -N '' -C dw-94-check -f /tmp/dw-94-check
+   echo "restrict,command=\"/bin/bash /home/deploy/cuatro-portfolio/ops/deploy-remote.sh\" $(cat /tmp/dw-94-check.pub)" >> ~/.ssh/authorized_keys
+   ssh -tt -i /tmp/dw-94-check -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no deploy@localhost; echo "exit $?"
+   ssh -i /tmp/dw-94-check -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no deploy@localhost id; echo "exit $?"
+   sed -i '/ dw-94-check$/d' ~/.ssh/authorized_keys && rm /tmp/dw-94-check /tmp/dw-94-check.pub
+   ```
+
+   Both `ssh` calls print `deploy-remote: refused: the target read from SSH_ORIGINAL_COMMAND is not
+   a full lowercase commit sha` and `exit 1`, with no shell and no `id` output. The first, which
+   forces a terminal with `-tt`, also prints `PTY allocation request failed on channel 0`, which is
+   `restrict` refusing it.
+
+**Rollback.** Strip the prefix, which holds however many times the edit ran, where the
+`.bak-dw-94` copy holds only if it ran once:
+
+```
+sed -i 's#^restrict,command="/bin/bash /home/deploy/cuatro-portfolio/ops/deploy-remote.sh" ##' ~/.ssh/authorized_keys
+grep -c '^ssh-ed25519 .* github-actions-deploy@cuatro-portfolio$' ~/.ssh/authorized_keys
+```
+
+The count reads `1`. The workflow deploys through the unrestricted shell again with no code change,
+and a dispatch then logs `read from its argument`. Reverting the workflow or the script needs the
+line rolled back first, since the forced script refuses any string whose last word is not a sha.
 
 ## The cache policy
 
@@ -543,6 +679,8 @@ rather than left in prose, in the shape `ops/token-contract.md`, `ops/font-contr
 | 4 | **Tell every Satellite that a build-time fetch must send a user agent** | Operator | Observed on the live apex: an empty user agent answers **403** at the Cloudflare edge, and so does `GPTBot/1.0`. AD-4 has seven repositories fetch `https://cuatro.dev/contracts/registry.json` at build time, and a fetch that sends no user agent fails against a mechanism that is working perfectly. This pairs with `ops/tailwind-adapter.md` Pending Operator action 3, which is the other adoption instruction that fails silently if it is missed | **Written down 2026-08-27** as "The adoption instruction every Satellite needs" below, so the instruction exists in one citable place. **Not yet delivered to any Satellite**: `cs-tracker` is the only one that has begun adoption, in Story 1-19, and it is the first consumer this has to reach. **Closed 2026-09-24** with a binding rather than a delivery, by Operator ruling 2026-09-24. The instruction stays written in "The adoption instruction every Satellite needs", and it is delivered by the first story that makes a Satellite fetch from `https://cuatro.dev/contracts/` at build time. No Satellite fetches today, since `cs-tracker` vendors the folder |
 | 5 | **Record the first real CI run of the `rendered-output` job with the new spec**, from the Actions run summary | Operator | The three new browser checks have only ever run against a server started on a Windows development host. The runner figures, and the content types Next sends on Linux, are unknown until the job runs once. Same open item as `ops/tailwind-adapter.md` action 4 | **2026-08-27.** Run `33104210025` on `main`, `rendered-output: success`, 18:35:14Z to 18:36:51Z, **97 s**. All five jobs in that run passed: `test`, `tokens-contract`, `fonts-contract`, `contract-purity`, `rendered-output`. The Linux content types the spec asserts are separately confirmed against the live edge under "Live over HTTPS, 2026-08-27" |
 | 6 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10, 1-12 and 1-13, and this story widens it again. `AGENTS.md:52-53` describes CI as typecheck and tests only, against a file with five jobs, and `AGENTS.md:55-57` says Playwright is not installed and that no acceptance criterion may claim a browser check, which is now false for four spec files. Nothing in `AGENTS.md` yet says that `pnpm build` publishes into `public/contracts/`, which is the first thing an agent editing the build script needs to know | **2026-08-27**, found done and closed here on 2026-09-23. The refresh landed in `4112ee8` and replaced all three claims: CI was named as its five jobs, "Playwright is not installed" became "Playwright is installed and `rendered-output` is a blocking CI job", and a new line said `corepack pnpm build` runs `packages/contracts-serve/publish.mjs` first, copying `contracts/` into the generated, never committed `public/contracts/`. The `bmad-project-context` refresh of 2026-08-28, `967abfd`, rewrote the block again (`Verified 2026-08-28 against c490f33`) and no longer lists the jobs. **Observed 2026-09-23** in `AGENTS.md` at `81984db`: Playwright is in the stack line (`:9`), the rendered-output job is run with `corepack pnpm test:e2e` and its baselines are regenerated only in the pinned image (`:64-67`), the publish into `public/contracts/` is stated (`:68-70`), and nothing describes CI as typecheck and tests only. The row was not updated when the refresh landed, although the board's 1-10 comment already counted the item closed for 1-16 |
+| 7 | **Hold the Anchor's deploy key to the forced command** (DW-94) | Operator | Operator ruling 2026-09-24. The precondition, the exact `authorized_keys` edit, both verifications (a dispatch deploy that succeeds and logs `read from SSH_ORIGINAL_COMMAND`, and an interactive ssh held to the line that fails) and the rollback are under "Holding the deploy key to the forced command". Due after the first deploy that follows the Epic 2 merge, never before it, since the line names a file that deploy brings. Until this cell is dated the key opens a shell with passwordless sudo, as `ops/routing-inventory.md` records | _not done_ |
+| 8 | **Prove the failure report once, after the Epic 2 merge** (DW-20) | Operator, or the session that merges Epic 2 | A dispatch needs the workflow on `main`, so this cannot run before the merge. With no Deploy run in progress or waiting (`gh run list --repo LuigiEspinosa/cuatro-portfolio --workflow deploy.yml --limit 3`), since a dispatch on another ref would replace a waiting one, `gh workflow run deploy.yml --repo LuigiEspinosa/cuatro-portfolio --ref dev` fails at "Refuse any ref but main", before anything reaches the box, and its last step opens an issue titled `Deploy failed at <sha7>`. Confirm it with `gh issue list --repo LuigiEspinosa/cuatro-portfolio --search "Deploy failed"`, confirm the notification reached the mailbox `ops/monitoring.md` names, then close the issue with `gh issue close <number>`. That proves the ref refusal and the report without a deploy | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row
@@ -558,5 +696,6 @@ moved or was simply re-stated. Deletion is not used here.
 | The `build` script stops running the publish, or runs it after `next build` | The standing case fails first, which is the intent |
 | `docker/Caddyfile`'s `cuatro.dev` block stops reverse-proxying `anchor-app:3000` | The apex no longer reaches the Hub, and nothing here reaches a Visitor |
 | The Next version changes what it sends for `.css`, `.woff2` or `.txt` | The `rendered-output` job fails naming the path and the value it got, and the table under "The observed content types" is stale |
+| `ops/deploy-remote.sh` is moved or renamed, or the workflow's command string stops ending in the sha | Under the forced command (Pending Operator action 7) every deploy fails until the `authorized_keys` line is edited to match, and "The deploy runs one script" is stale |
 | A Cloudflare rule starts challenging or caching `/contracts/*` differently | The two limits about the edge, and Pending Operator actions 2 and 4, are stale |
 | **`contracts/registry.json` arrives in Story 2-5**, or any later story publishes a tenth file | Four things in this file go stale together, and none of them is wrong today: the file count of **nine** in the mechanism table, the content-type table (which has a `.json` row in `tests/e2e/contract-serving.pw.ts` but no observed value here, because nothing publishes JSON yet), Pending Operator action 1's list of **nine** URLs to fetch, and Probe 1's transcript. The mechanism itself needs no change, which is the whole point of copying a directory rather than a named list, so this is a record to re-read rather than a step to redesign |
