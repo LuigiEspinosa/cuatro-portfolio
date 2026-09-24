@@ -5,7 +5,7 @@ import { Torus } from '@/components/atoms/Torus/Torus';
 
 /**
  * The WebGL side of `/work`'s one dynamic boundary: the scene, and the binding that turns the torus
- * with the scroll (Story 2-33, DW-36).
+ * with the scroll (Story 2-33, DW-36, DW-119).
  *
  * **The binding moved here from `WorkHero` on 2026-09-24 (DW-36, Operator ruling 2026-09-24).** It is
  * the one use `ScrollTrigger` has in the Hub, so registering and binding it here puts the library in
@@ -100,5 +100,18 @@ describe('the torus is bound to the scroll here, and only here', () => {
     expect(mocks.revert).not.toHaveBeenCalled();
     unmount();
     expect(mocks.revert, 'the binding outlived the torus').toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('the scene is decoration, with nothing in it to operate', () => {
+  it('holds a light and the torus, and nothing that takes a pointer (DW-119)', () => {
+    // Drei's orbit controls sat third in this list until 2026-09-24, turning the torus under a drag
+    // that `EXPERIENCE.md` § Pointer and touch rules out; `tests/e2e/work-hero.pw.ts` drags the canvas
+    // and reads the pixels.
+    render(<TorusCanvas triggerRef={heroRef()} />);
+    const names = sceneElements().map((element) =>
+      typeof element.type === 'string' ? element.type : (element.type as { name?: string }).name
+    );
+    expect(names, 'the scene holds something other than a light and the torus').toEqual(['ambientLight', 'Torus']);
   });
 });

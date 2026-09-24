@@ -652,6 +652,143 @@ test.describe('the narrative still runs', () => {
 });
 
 // ---------------------------------------------------------------------------
+// The wave is decoration: it takes no gesture (DW-119).
+// ---------------------------------------------------------------------------
+
+/**
+ * An init script that keeps every three.js `Scene` the page constructs.
+ *
+ * three.js announces each new `Scene` to `window.__THREE_DEVTOOLS__` when that object exists
+ * (`node_modules/three/src/scenes/Scene.js:115-117`), the hook its browser extension reads, and the
+ * production build keeps the check. Defining it before the page's own scripts is how the wave's pose
+ * is read off the object the renderer draws, with nothing exported from the component for a test.
+ */
+const SCENE_RECORDER = `
+  window.__scenes = [];
+  window.__THREE_DEVTOOLS__ = new EventTarget();
+  window.__THREE_DEVTOOLS__.addEventListener('observe', (event) => {
+    if (event.detail && event.detail.isScene) window.__scenes.push(event.detail);
+  });
+`;
+
+/**
+ * The wave's rotation, read off the group that holds its points in whichever recorded scene has it,
+ * and that group's world matrix, which the renderer recomputes only for a scene it is drawing.
+ * `turnBy` adds to the group's rotation about y before the read, which is how the control plants a turn.
+ */
+const wavePose = (page: Page, turnBy = 0) =>
+  page.evaluate((planted) => {
+    interface Node3D {
+      isGroup?: boolean;
+      isPoints?: boolean;
+      children: Node3D[];
+      rotation: { x: number; y: number; z: number };
+      matrixWorld: { elements: ArrayLike<number> };
+    }
+    for (const scene of (window as unknown as { __scenes?: Node3D[] }).__scenes ?? []) {
+      const group = scene.children.find((child) => child.isGroup && child.children.some((grandchild) => grandchild.isPoints));
+      if (!group) continue;
+      group.rotation.y += planted;
+      return {
+        rotation: { x: group.rotation.x, y: group.rotation.y, z: group.rotation.z },
+        world: Array.from(group.matrixWorld.elements),
+      };
+    }
+    return null;
+  }, turnBy);
+
+/** Wait `count` animation frames in the page. */
+const frames = (page: Page, count: number) =>
+  page.evaluate(
+    (wanted) =>
+      new Promise<void>((done) => {
+        let left = wanted;
+        const tick = () => (--left <= 0 ? done() : requestAnimationFrame(tick));
+        requestAnimationFrame(tick);
+      }),
+    count
+  );
+
+test.describe('the wave is decoration: it takes no gesture', () => {
+  test('a drag across it turns nothing, and no grab cursor is offered on hover or on press', async ({ browser }) => {
+    // Until 2026-09-24 `ParticleWave` turned under a pointer drag, kept turning after the release at
+    // 0.92 a frame, and set a grab cursor on the body to advertise it. `EXPERIENCE.md` § Pointer and
+    // touch allows no gesture, and DW-119's Operator ruling of that day removed all three. The pose
+    // is read off the rendered group rather than off pixels, because the wave moves every frame on
+    // its own clock and a pixel comparison could not tell a drag from the wave.
+    await withMotion(
+      browser,
+      async (page) => {
+        await goTo(page, ROUTE);
+        const canvas = page.locator('#gem-canvas canvas');
+        await expect(canvas, 'no canvas ever mounted, so there is no wave to drag').toBeVisible({ timeout: SETTLE_TIMEOUT });
+        await expect
+          .poll(() => wavePose(page), { timeout: SETTLE_TIMEOUT, message: 'the wave never entered a scene the recorder saw' })
+          .not.toBeNull();
+        await canvas.scrollIntoViewIfNeeded();
+
+        // A point the canvas itself receives, so the drag below reaches the scene rather than whatever
+        // sits over the canvas there.
+        const point = await canvas.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          for (const [across, down] of [
+            [0.5, 0.5],
+            [0.35, 0.5],
+            [0.65, 0.5],
+            [0.5, 0.35],
+            [0.5, 0.65],
+          ]) {
+            const x = box.left + box.width * across;
+            const y = box.top + box.height * down;
+            if (document.elementFromPoint(x, y) === node) return { x, y };
+          }
+          return null;
+        });
+        expect(point, 'no point on the canvas receives the pointer, so a drag could not reach the scene').not.toBeNull();
+        if (!point) return;
+
+        const cursor = () => page.evaluate(() => getComputedStyle(document.body).cursor);
+        const before = await wavePose(page);
+        await page.mouse.move(point.x, point.y);
+        await frames(page, 4);
+        const onHover = await cursor();
+        await page.mouse.down();
+        await frames(page, 2);
+        const onPress = await cursor();
+        await page.mouse.move(point.x + 150, point.y + 60, { steps: 12 });
+        await page.mouse.up();
+        // Long enough for a release to coast, which the drag this replaced did for dozens of frames.
+        await frames(page, 30);
+        const after = await wavePose(page);
+
+        console.log(
+          `narrative: the wave's rotation before ${JSON.stringify(before?.rotation)}, after a drag ${JSON.stringify(after?.rotation)}`
+        );
+        expect(after?.rotation, 'the wave turned under a drag, which EXPERIENCE.md § Pointer and touch rules out').toEqual(
+          before?.rotation
+        );
+        expect({ onHover, onPress }, 'the wave offers a grab cursor, a hover-only affordance for a gesture').toEqual({
+          onHover: 'auto',
+          onPress: 'auto',
+        });
+
+        // The control: a turn planted on the group is drawn. The renderer recomputes a group's world
+        // matrix only while it draws its scene, so a matrix that follows the planted turn a few frames
+        // later proves the rotation read above is the pose on screen, not a copy nothing draws.
+        await wavePose(page, 0.5);
+        await frames(page, 4);
+        const planted = await wavePose(page);
+        expect(planted?.rotation.y, 'the planted turn did not hold').toBeCloseTo((before?.rotation.y ?? 0) + 0.5, 6);
+        expect(planted?.world, 'the renderer never drew the planted turn, so the group read is not the drawn wave').not.toEqual(
+          after?.world
+        );
+      },
+      [SCENE_RECORDER]
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Payload independence, demonstrated by taking the narrative away.
 // ---------------------------------------------------------------------------
 

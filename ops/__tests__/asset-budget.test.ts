@@ -787,12 +787,12 @@ describe('classifying a chunk by fingerprint', () => {
     // this list in the same commit or it does not land. Ten rows until
     // 2026-09-14: Story 2-27 dropped the `gsap/SplitText` import with the
     // component that carried it, and the row left in the same commit. Nine until
-    // 2026-09-24: DW-36 deleted `lenis`, and its row left with it.
+    // 2026-09-24: DW-36 deleted `lenis`, and DW-119 the orbit controls that were
+    // `three-stdlib`'s only importer, and both rows left with them.
     expect(FINGERPRINTS.map((entry) => [entry.library, entry.mark, entry.webgl])).toEqual([
       ['three', 'WebGLRenderer', true],
       ['@react-three/fiber', 'react-three-fiber', true],
       ['@react-three/drei', 'onIncline', true],
-      ['three-stdlib', 'OrbitControls.js encountered', true],
       ['@react-three/postprocessing', '@react-three/postprocessing', true],
       ['postprocessing', 'KawaseBlurPass', true],
       ['gsap', 'GSAP target ', false],

@@ -387,6 +387,81 @@ test.describe('the hero, where motion is allowed', () => {
 });
 
 // ---------------------------------------------------------------------------
+// The torus is decoration: it takes no gesture (DW-119)
+// ---------------------------------------------------------------------------
+
+test.describe('the torus is decoration: it takes no gesture', () => {
+  test('a drag across it turns nothing, and nothing from it up to the root refuses a pan', async ({ browser }) => {
+    // Until 2026-09-24 drei's orbit controls turned the torus under a drag, and connecting them wrote
+    // `touch-action: none` onto the renderer's own wrapper, above the canvas, so a swipe that started
+    // on the torus turned it rather than scrolling the page. `EXPERIENCE.md` § Pointer and touch
+    // allows no gesture, and DW-119's Operator ruling of that day removed them. The torus turns only
+    // with the scroll, so with the page still the canvas draws the same frame over and over, and a
+    // capture before a drag and one after it are compared byte for byte (never against a file).
+    await onContext(browser, { viewport: { width: 1280, height: 1000 }, reducedMotion: 'no-preference' }, async (page) => {
+      await goTo(page);
+      await page.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
+      await expect
+        .poll(() => page.evaluate((selector) => document.querySelector(selector)?.getAttribute('tabindex') ?? null, CANVAS), {
+          timeout: 10_000,
+          message: 'the canvas was never taken out of the tab order, so the renderer never finished creating',
+        })
+        .toBe('-1');
+      const wrap = await boxOf(page, '.work-hero__canvas-wrap');
+      await expect
+        .poll(
+          async () => {
+            const drawn = await boxOf(page, CANVAS);
+            return Math.abs(drawn.width - wrap.width) + Math.abs(drawn.height - wrap.height);
+          },
+          { timeout: 10_000, message: 'the canvas never came to fill its box' }
+        )
+        .toBeLessThanOrEqual(2);
+      await frames(page, 6);
+
+      const canvas = page.locator(CANVAS);
+      const before = await canvas.screenshot();
+      const box = await boxOf(page, CANVAS);
+      const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x + 160, y + 60, { steps: 12 });
+      await page.mouse.up();
+      await frames(page, 6);
+      const after = await canvas.screenshot();
+      expect(after.equals(before), 'the torus turned under a drag, which EXPERIENCE.md § Pointer and touch rules out').toBe(true);
+
+      // The pan read covers the chain because the effective touch action is the intersection of every
+      // box from the target up: the canvas's own `auto` said nothing about the wrapper above it.
+      const refusals = () =>
+        page.evaluate((selector) => {
+          const out: string[] = [];
+          for (let node = document.querySelector(selector); node; node = node.parentElement) {
+            const value = getComputedStyle(node).touchAction;
+            if (value !== 'auto') out.push(`${node.tagName.toLowerCase()}.${[...node.classList].join('.')}: ${value}`);
+          }
+          return out;
+        }, CANVAS);
+      expect(await refusals(), 'an element from the torus up to the root refuses a pan, so a swipe that starts on the torus cannot scroll the page').toEqual([]);
+
+      // Control one: a scroll turns the torus through its binding, and the same comparison sees it. The
+      // header is checked clear of the canvas first, so the difference read is the torus's own.
+      await page.evaluate(() => window.scrollBy(0, 40));
+      await frames(page, 6);
+      const header = await boxOf(page, 'header');
+      const moved = await boxOf(page, CANVAS);
+      expect(moved.y, 'the scroll put the header over the canvas, so the comparison would read the header').toBeGreaterThan(header.y + header.height);
+      const turned = await canvas.screenshot();
+      expect(turned.equals(after), 'a scroll that turns the torus reads as no change, so the drag read proves nothing').toBe(false);
+
+      // Control two: a pan refused on the renderer's wrapper, where the orbit controls wrote theirs, is read.
+      await page.addStyleTag({ content: '.work-hero__canvas-wrap > div { touch-action: none !important; }' });
+      expect((await refusals()).length, 'a planted touch-action: none on the wrapper was not read').toBeGreaterThan(0);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Reduced motion, and what is requested
 // ---------------------------------------------------------------------------
 

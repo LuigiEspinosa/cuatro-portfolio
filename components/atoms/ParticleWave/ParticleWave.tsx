@@ -21,10 +21,12 @@ const DAMPING = 0.82;
 
 const FOLD_DEPTH = 1.4;
 
-const ROT_SENSITIVITY = 0.005;
-const ROT_INERTIA = 0.92;
-const ROT_INIT_X = -0.816;
-const ROT_INIT_Y = 15.977;
+// The wave's pose, which nothing changes. Until 2026-09-24 it was only the starting point of a
+// pointer drag that turned the wave and let it coast at 0.92 a frame after the release, with a grab
+// cursor set on the body to advertise it. The canvas is decoration and `EXPERIENCE.md` § Pointer and
+// touch allows no gesture, so DW-119's Operator ruling of that day removed all three.
+const ROT_X = -0.816;
+const ROT_Y = 15.977;
 
 const H_SEGS = ROWS * (COLS - 1);
 const V_SEGS = (ROWS - 1) * COLS;
@@ -38,11 +40,6 @@ export function ParticleWave() {
   const velZ = useRef(new Float32Array(COLS * ROWS));
   const mouseLocal = useRef(new THREE.Vector3(999, 999, 0));
   const _tmp = useRef(new THREE.Vector3());
-
-  const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const rotCurrent = useRef({ x: ROT_INIT_X, y: ROT_INIT_Y });
-  const rotVel = useRef({ x: 0, y: 0 });
 
   const { pointGeo, lineGeo, basePos } = useMemo(() => {
     const count = COLS * ROWS;
@@ -88,50 +85,6 @@ export function ParticleWave() {
     [pointGeo, lineGeo]
   );
 
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      if (!isDragging.current) return;
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      dragStart.current = { x: e.clientX, y: e.clientY };
-
-      rotVel.current.x = dy * ROT_SENSITIVITY;
-      rotVel.current.y = dx * ROT_SENSITIVITY;
-      rotCurrent.current.x = Math.max(
-        -Math.PI / 2,
-        Math.min(0.6, rotCurrent.current.x + dy * ROT_SENSITIVITY)
-      );
-      rotCurrent.current.y += dx * ROT_SENSITIVITY;
-    };
-
-    const onUp = () => {
-      isDragging.current = false;
-      document.body.style.cursor = '';
-    };
-
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
-
-    return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-      document.body.style.cursor = '';
-    };
-  }, []);
-
-  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
-    isDragging.current = true;
-    dragStart.current = { x: e.clientX, y: e.clientY };
-    rotVel.current = { x: 0, y: 0 };
-    document.body.style.cursor = 'grabbing';
-  };
-
-  const handlePointerEnter = () => {
-    if (!isDragging.current) document.body.style.cursor = 'grab';
-  };
-
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (!groupRef.current) return;
     groupRef.current.worldToLocal(_tmp.current.copy(e.point));
@@ -140,24 +93,10 @@ export function ParticleWave() {
 
   const handlePointerLeave = () => {
     mouseLocal.current.set(999, 999, 0);
-    if (!isDragging.current) document.body.style.cursor = '';
   };
 
   useFrame(({ clock }) => {
-    if (!pointsRef.current || !linesRef.current || !groupRef.current) return;
-
-    if (!isDragging.current) {
-      rotVel.current.x *= ROT_INERTIA;
-      rotVel.current.y *= ROT_INERTIA;
-      rotCurrent.current.x = Math.max(
-        -Math.PI / 2,
-        Math.min(0.6, rotCurrent.current.x + rotVel.current.x)
-      );
-      rotCurrent.current.y += rotVel.current.y;
-    }
-
-    groupRef.current.rotation.x = rotCurrent.current.x;
-    groupRef.current.rotation.y = rotCurrent.current.y;
+    if (!pointsRef.current || !linesRef.current) return;
 
     const pPos = pointsRef.current.geometry.attributes.position.array as Float32Array;
     const lPos = linesRef.current.geometry.attributes.position.array as Float32Array;
@@ -225,13 +164,8 @@ export function ParticleWave() {
   });
 
   return (
-    <group ref={groupRef}>
-      <mesh
-        onPointerDown={handlePointerDown}
-        onPointerEnter={handlePointerEnter}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={handlePointerLeave}
-      >
+    <group ref={groupRef} rotation={[ROT_X, ROT_Y, 0]}>
+      <mesh onPointerMove={handlePointerMove} onPointerLeave={handlePointerLeave}>
         <planeGeometry args={[COLS * SPACING * 1.8, ROWS * SPACING * 1.8]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
