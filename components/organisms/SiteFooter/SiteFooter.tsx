@@ -10,6 +10,11 @@ import './SiteFooter.scss';
  * nothing more. FR-1 says nothing follows the Suite Directory except footer content, and until
  * Story 2-11 there was no footer anywhere in the tree for that to be true of.
  *
+ * **Mounted by `app/page.tsx` alone, by design** (Operator ruling 2026-09-24). `EXPERIENCE.md`
+ * § The homepage: two paths, one destination draws the footer under the homepage's Directory and
+ * nowhere else, so `/work`, `/cv`, `/celeste` and the 404 end without one. That is why it is not in
+ * `app/layout.tsx`, where it would put this control on every route.
+ *
  * **A server component**, for the same reason the Directory above it is one: a client component
  * that value-imported the Registry would ship every entry to the browser to render one figure,
  * which `lib/__tests__/registry.test.ts:621-668` refuses.
