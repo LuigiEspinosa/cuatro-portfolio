@@ -18,8 +18,10 @@ name: Registry verification
 # It installs nothing and uses no pnpm cache, the `contract-purity` shape: the
 # script imports only `node:` builtins and two sibling modules, so the Registry
 # is still verified on a run where an install would have failed. No
-# `continue-on-error`, no `|| true`, no `if:` and no `permissions:` (AD-21):
-# there is one environment and no staging, and the default token is not used.
+# `continue-on-error`, no `|| true` and no `if:` (AD-21): there is one
+# environment and no staging. The token reads the checkout and nothing else,
+# narrowed to `contents: read` below from the repository's `write` default by
+# DW-87 (Operator ruling 2026-09-24); this job widens nothing.
 
 on:
   schedule:
@@ -31,6 +33,9 @@ on:
       - 'ops/registry-verification.mjs'
       - 'ops/registry-verification.md'
       - 'contracts/registry.json'
+
+permissions:
+  contents: read
 
 jobs:
   registry-verification:

@@ -880,7 +880,7 @@ describe('the workflow', () => {
 
   it('triggers on the daily schedule, dispatch, and push on exactly the four paths', () => {
     expect(fileInstructions).toMatch(
-      /^on:\n {2}schedule:\n {4}- cron: '17 6 \* \* \*'\n {2}workflow_dispatch:\n {2}push:\n {4}paths:\n {6}- '\.github\/workflows\/registry-verification\.yml'\n {6}- 'ops\/registry-verification\.mjs'\n {6}- 'ops\/registry-verification\.md'\n {6}- 'contracts\/registry\.json'\n\njobs:$/m
+      /^on:\n {2}schedule:\n {4}- cron: '17 6 \* \* \*'\n {2}workflow_dispatch:\n {2}push:\n {4}paths:\n {6}- '\.github\/workflows\/registry-verification\.yml'\n {6}- 'ops\/registry-verification\.mjs'\n {6}- 'ops\/registry-verification\.md'\n {6}- 'contracts\/registry\.json'\n\npermissions:\n {2}contents: read\n\njobs:$/m
     );
     expect(existsSync(SCRIPT)).toBe(true);
     expect(existsSync(resolve(REPO_ROOT, RECORD_REL))).toBe(true);
@@ -909,11 +909,15 @@ describe('the workflow', () => {
     expect(fileInstructions).not.toContain('HEARTBEAT');
   });
 
-  it('never downgrades to a warning, never skips, never widens permissions, never writes (AD-21, AD-16)', () => {
+  // The token was the repository's default, `write`, until DW-87 narrowed every workflow to
+  // `contents: read` at the top (Operator ruling 2026-09-24). This job reads its checkout and nothing
+  // else, so no job-level block widens it.
+  it('never downgrades to a warning, never skips, reads with a read-only token, never writes (AD-21, AD-16, DW-87)', () => {
     expect(fileInstructions).not.toMatch(/continue-on-error\s*:/);
     expect(fileInstructions).not.toContain('|| true');
     expect(fileInstructions).not.toMatch(/^\s+if\s*:/m);
-    expect(fileInstructions).not.toMatch(/^\s*permissions\s*:/m);
+    expect(fileInstructions.match(/^[ \t]*permissions[ \t]*:.*$/gm)).toEqual(['permissions:']);
+    expect(fileInstructions).toMatch(/^permissions:\n {2}contents: read\n\njobs:$/m);
     expect(fileInstructions).not.toMatch(/^\s+needs\s*:/m);
     expect(fileInstructions).not.toMatch(/git (commit|push)|gh (issue|pr) create|upload-artifact/);
   });
