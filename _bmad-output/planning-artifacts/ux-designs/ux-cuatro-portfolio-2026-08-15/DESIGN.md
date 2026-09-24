@@ -660,7 +660,12 @@ uppercase; status hanging right; description at `--t-sm` in `--token-text-second
 at `46ch`; tech array in mono `--t-3xs` uppercase; links in mono `--t-2xs` uppercase.
 Separated from its neighbour by a `1px` hairline. **No containing box**, so card-in-card
 cannot occur. The Tracker Family group is the only containment layer in the entire
-directory.
+directory. *(Amended 2026-09-24 by Operator ruling, the ledger entry on new-tab links: both
+links open a new tab and each ends in the external-navigation mark, the north-east arrow
+(U+2197, with the text-presentation selector so it is never an emoji), `--s-2xs` after the
+underlined label and outside its underline, in the link's own colour, face and size, so it spends
+no accent. The mark is `aria-hidden`; the link's accessible name is its visible label followed by
+`, opens in a new tab`.)*
 
 **Tracker Family group.** `1px solid var(--token-border)` on all four sides, the only
 containment layer in the directory, and the only place a box is drawn around entries. Group
@@ -711,6 +716,22 @@ current route carries a **`--stroke-emphasis` (2px) accent underline**, the same
 active link underline everywhere else in the system, so "current" reads identically wherever
 it appears. **Two destinations only.** The AI-nav tell is five inline links plus a CTA
 button, and this is structurally the opposite.
+
+**Skip link and skip control.** *(Added 2026-09-24 by Operator ruling, DW-44. This row describes
+what Story 2-13 shipped, so a later change has something to preserve.)* Two controls with one
+vocabulary: mono uppercase at `--t-2xs`, `--lh-label` leading and `--tr-meta` tracking; a
+`--stroke-hair` underline in `--token-border-interactive` that hover recolours to
+`--token-accent-hover`, on a pointer that can hover, and never adds; the global focus ring; and
+`--tap` on both axes through `inline-flex`, with `padding-inline: --s-md`. **The skip link**
+(`Skip to main content`, A-6) is the first tabbable element on every route: the header's first
+child, or on `/`, which has no header, the first thing in the document. It is `--token-text` on
+`--token-bg-raised`, parked above the viewport one ring-reach (`--focus-offset` plus
+`--stroke-focus`) inside the top-left corner, revealed on `:focus` at `--z-tooltip`, and it
+targets `main#main`, whose ring is drawn inset. **The skip control** (`Skip to the suite`, then
+the down arrow hidden from assistive technology) is `--token-text-secondary` on no ground, turns
+`--token-text` on hover, sits at `--z-raised`, and renders on the default door only: first in the
+hero's column below 768, centred near the hero's bottom edge at 768 and wider. It targets
+`h2#suite`.
 
 **Suite Switcher panel.** `--token-bg-raised` ground, `1px` `--token-border-interactive`
 boundary, rows separated by hairlines, hover ground `--token-bg-raised-2`. Each row: app name

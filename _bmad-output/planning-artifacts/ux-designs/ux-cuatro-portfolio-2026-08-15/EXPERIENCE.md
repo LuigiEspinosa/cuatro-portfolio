@@ -772,7 +772,7 @@ Not optional (project constraint). Behavioural floor here; contrast is in
 | A-7 | One `<h1>` per document; heading levels never skip | n/a |
 | A-8 | Suite Directory is a `<ul>` of entries; the Family group is a nested `<ul>` with an accessible name | FR-11 |
 | A-9 | Link text is self-describing out of context. `library.cuatro.dev` and `Source` both are; "click here" is not | FR-10 |
-| A-10 | Source links carry an accessible name naming the application: `Source: Digital Library` | FR-10 |
+| A-10 | Source links carry an accessible name naming the application: `Source: Digital Library`. *(Amended 2026-09-24 by Operator ruling, the ledger entry on new-tab links: both Directory links open a new tab, so each name ends `, opens in a new tab`, as in `Source: Digital Library, opens in a new tab` and `library.cuatro.dev, opens in a new tab`. The visible strings in § UI strings are unchanged.)* | FR-10 |
 | A-11 | Body text ≥14px; nothing below 11px | n/a |
 | A-12 | Prose respects user font-size; `rem` throughout, never `px` for type | n/a |
 | A-13 | `lang` set; page title distinguishes the route | n/a |

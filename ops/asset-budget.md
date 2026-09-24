@@ -481,6 +481,66 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-24 reading, after the DW-43 accessibility package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `L2hNkdPY-jdd0Lk0BmfNZ`, written
+2026-09-24T10:13:18Z at `786e676` with no measured input dirty. It is one reading after the
+package's Operator rulings of 2026-09-24: `ddb63b7` moved the skip link into `Header` as its first
+child and gave every route a `main#main` whose ring is drawn inset (DW-43, F-13, F-20), `81f4078`
+declared the dark colour scheme and an accent selection (DW-95), `1b4fe66` opened every work item
+panel when scripting is off (DW-76), and `786e676` ended both Suite Directory links with the
+external-navigation mark (the ledger entry on new-tab links); `1af8569` changed a test alone. The
+before is the DW-113 package's reading below, and no measured input changed between its `1a5ada5`
+and `4a7d1b5`, where this package started.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,398 | 231,847 | no | yes | **Observed** |
+| `/cv` | 22,658 | 230,440 | no | yes | **Observed** |
+| `/_not-found` | 18,089 | 197,201 | no | **no**: Next's own document | **Observed** |
+| `/celeste` | 14,663 | 197,171 | no | yes | **Observed** |
+| `/_global-error` | 9,578 | 188,761 | no | **no**: Next's own document | **Observed** |
+
+**Every route before and after, on the wire.** **Observed** on both sides, **Derived** delta. The five
+prerendered documents are the tool's own tables against the DW-113 reading's. `/` is weighed the way
+that reading weighed it, the document fetched from `next start` in the pinned image and weighed with
+the tool's own `parseDocumentReferences` and `gzipBytes`, on build `B2afKZ-oLvF3_3rwHpXPY` at
+`786e676`; `/work` fetched the same way read 231,859, twelve bytes from the host's prerendered
+figure.
+
+| Route | Before | After, `786e676` | Delta | Nature |
+|---|---|---|---|---|
+| `/`, fetched | 205,298 | 205,674 | 376 heavier | **Observed**, pinned image |
+| `/work` | 231,168 | 231,847 | 679 heavier | **Observed**, the tool |
+| `/cv` | 229,788 | 230,440 | 652 heavier | **Observed**, the tool |
+| `/_not-found` | 196,566 | 197,201 | 635 heavier | **Observed**, the tool |
+| `/celeste` | 196,558 | 197,171 | 613 heavier | **Observed**, the tool |
+| `/_global-error` | 188,758 | 188,761 | 3 heavier | **Observed**, the tool |
+
+**What moved.** **Observed** on the host build, stylesheet by stylesheet. Every route with a header now
+links the skip link's stylesheet, `0_b3v9lcev-t~.css` at 378 gzipped, which only `/` linked before,
+and that is most of each route's increase. The global stylesheet every route links, `0cndgjkw0~gd1.css`
+at 2,267 gzipped, carries the landmark's ring, the scheme with the minifier's two `light-dark()`
+switches beside it, and the selection. The Work item's, at 907 on `/work` and `/cv`, carries the
+scriptless rule; the Suite Directory's, at 1,303 on `/` alone, the mark's gap. Each document carries
+the skip link's markup and the landmark twice, in the HTML and in its flight data, `/work`'s 784
+bytes longer on disk, and `/work`'s JavaScript is 49 heavier, the link now rendered by the header's
+client chunk. `/` moved least of the served routes: it already linked the skip link's stylesheet.
+
+**The whole build, before and after.** **Observed**, the tool's tables on each side.
+
+| Figure | Before, `1a5ada5` | After, `786e676` | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 18 `.js`, 13 `.css` | 18 `.js`, 13 `.css` | 0 | **Observed** |
+| Bytes in `.next/static/chunks` | 2,851,114 on disk, 829,976 gzipped | 2,851,662 on disk, 830,141 gzipped | **548 heavier on disk, 165 heavier gzipped** | **Observed**; **Derived** delta |
+| The narrative total | 619,351 across 5 chunks | the same 619,351 across 5 chunks | 0 | **Observed** |
+| The non-3D line | `/work`, 231,168, 91,168 over, 65.1 percent | `/work`, 231,847, 91,847 over, 65.6 percent | 679 heavier | **Observed**; **Derived** delta |
+| The budget's own decomposition | 103,500, 36,500 of margin | 104,130, 35,870 of margin | 630 heavier, all of it HTML and critical CSS | **Observed**; **Derived** delta |
+
+**Against the budget.** **Derived.** Noise, in the direction the rulings asked for: the package moves
+no narrative byte and no route by more than 679 gzipped, against Story 2-2's 140,000, and what it
+bought is a way past the chrome on every route and a Directory that says where its links go.
+
 ### The 2026-09-24 reading, after the DW-113 home-surface package
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `RT9WREDML0Cp4cctih6td`, written
@@ -1636,6 +1696,28 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-24 run, after the DW-43 accessibility package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `L2hNkdPY-jdd0Lk0BmfNZ`. § Every route's
+2026-09-24 reading after the DW-43 package and this section were filed from this run.
+
+- The narrative bundle is 619,351 bytes gzipped across 5 chunks, against an estimate of 300,000 to
+  450,000. That is 169,351 over the top of the range.
+- 592,380 bytes of that is genuinely deferred: `0x9hgoafoipaz.js`, `0-742gw60ue7o.js`,
+  `031y-gd1885yp.js`, `0te7gr59z3e7w.js` is referenced by no prerendered document. The other 26,971
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 231,847 against 140,000, 91,847 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 104,130 against 140,000, 35,870 of margin. That
+  decomposition has no line for the 221,376 of JavaScript or the 830 of preloads the document
+  actually carries.
+
+**Two lines moved, both on `/work`.** **Observed**, against the DW-113 run below. The non-3D line
+reads 231,847 where it read 231,168, and the decomposition 104,130 where it read 103,500: HTML and
+critical CSS 9,641 where they read 9,011, the skip link's stylesheet and the global rules above, and
+the JavaScript 221,376 where it read 221,327. The narrative lines are unchanged to the byte.
 
 ### The 2026-09-24 run, after the DW-113 home-surface package
 

@@ -2348,7 +2348,23 @@ status: done
     above stands for whoever builds F-8: exempt the dot's selector, never the role.
     **Owner: unassigned**, for an Operator ruling on which story carries F-8, with DW-95's
     `::selection` beside it. **Trigger: that ruling.**
-  status: open
+
+
+    **Closed 2026-09-24 on the Operator ruling of that day (a unit test refusing an accent role as a
+    fill, the dot and `::selection` exempt by selector, never by role), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `81f4078`.**
+    `ops/__tests__/accent-fill.test.ts` reads every stylesheet git tracks, each `.scss` compiled by
+    Sass so a fill reached through nesting, a mixin or a variable is read under the selector that
+    ships, and refuses `--token-accent`, `--token-accent-hover` or `--token-accent-muted` as a
+    `background`, `background-color` or `fill`. Its two exemptions are a file and an exact selector,
+    `.suite-directory__dot` in `SuiteDirectory.scss` and `::selection` in `app/app.scss`, and each
+    has to be found exactly once, so an exemption cannot outlive its fill. A planted fixture shows it
+    refusing a fill in each of those shapes, at a state, in a keyframe, behind a `var()` fallback,
+    and on either exempt selector written in another file or in a list. It runs in the existing
+    `test` job, so no job name in `.github/workflows/ci.yml` moved. On the pre-ruling tree it failed,
+    the `::selection` exemption finding no fill. **Stated limit**: it reads the three roles the
+    ruling names; a palette name written into a component is not a role and is not read.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
   summary: >-
     `epics.md` books `ProjectCard` and `ProjectCard.scss` retirement to Story 2.14 in five places.
@@ -2404,6 +2420,18 @@ status: done
     states it: `DESIGN.md:658-663` specifies the Registry Entry as name, status, description, tech
     and links, and lists no mark. The alternative resolution is to drop `target='_blank'`
     altogether, which is a behaviour change `EXPERIENCE.md` does not ask for either.
+
+    **Closed 2026-09-24 on the Operator ruling of that day (keep `target="_blank"`, add the
+    external-navigation glyph, hidden, and `opens in a new tab` in each link's accessible name), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `786e676`.** Both the
+    live and the source link end in the north-east arrow, U+2197 with the text-presentation selector
+    so no platform paints an emoji, in an `aria-hidden` span after the underlined label, in the link's
+    own colour and face; each is named by its visible label followed by `, opens in a new tab`, the
+    source link keeping A-10's `Source: <name>`. `SuiteDirectory.test.tsx` reads the markup and the
+    names beside a planted link carrying neither; `tests/e2e/suite-directory.pw.ts` reads the mark
+    painted, after and clear of the underline, in the link's colour and face, and each name off the
+    accessibility tree. `DESIGN.md`'s Registry Entry row and `EXPERIENCE.md`'s A-10 carry dated notes.
+  status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
@@ -3146,7 +3174,21 @@ status: done
     where no control should show, so a skip link carried as the header's first child would be one
     change rather than four. **Owner: unassigned, for an Operator ruling**, the story it was
     booked to having kept to its criteria. **Trigger: that ruling.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (a `<main id="main" tabIndex={-1}>` on
+    every route, the skip link moved into the Header as its first child), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `ddb63b7`.** `/work`,
+    `/celeste` and the 404 gained the landmark and `/cv`'s gained its `id` and `tabIndex`; `/` keeps
+    its own. `Header` renders `SkipLink` as the band's first child on every route that renders a
+    band, and alone on `/`, which renders none, so `app/page.tsx` no longer renders it and the link
+    has one call site; `/celeste` hides the band, and the link with it, so that page still shows no
+    control. `tests/e2e/accessibility-floor.pw.ts` reads every route: one `main#main` at tabindex -1,
+    and on each route with a visible header, `/` included, the first Tab lands on the skip link and
+    Enter moves focus to the landmark, which rings whole (F-20); on the pre-ruling tree the same read
+    named `/work`, `/cv`, `/celeste` and the 404. The hit-target pins moved by one on each surface with
+    a header, read off the sweep's own failure output (`ops/hit-target-floor.md`), and
+    `tests/e2e/secondary-surfaces.pw.ts` reads the link hidden with `/celeste`'s band.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-44
@@ -3171,7 +3213,14 @@ status: done
     The consequence is that a reviewer has nothing to compare the shipped controls against, and the
     next story that touches either has nothing to preserve. Closing it is a `DESIGN.md` edit, which
     is a planning artifact under a frozen approval and not a thing a story may amend on its own.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (a `DESIGN.md` row describing what
+    shipped), by `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, in the
+    package's records commit.** `DESIGN.md` § Components carries a dated row, **Skip link and skip
+    control**, giving both controls' type, colour, underline, hover, ring, floor and placement as
+    `SkipLink.scss` and `SkipControl.scss` ship them, the skip link since that day as the header's
+    first child. `review-rubric.md:40`'s finding on the skip control is annotated closed with it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-45
@@ -4214,7 +4263,12 @@ status: done
     tall as its content since that story, measured in the pinned image, rather than 140px. **Owner:
     unassigned, for an Operator ruling**, together with DW-43 and F-13 in
     `ops/hub-accessibility-pass.md`, which are the same work. **Trigger: that ruling.**
-  status: open
+
+    **Closed 2026-09-24 with DW-43, on the Operator ruling of that day, commit `ddb63b7`.** Every
+    route carries one `<main id="main" tabIndex={-1}>`, and the landmark wraps the page's content, not
+    the header, which stays the root layout's; `/`'s footer stays outside its landmark as it was. DW-43's
+    closing paragraph names the reads.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-72
@@ -4415,7 +4469,21 @@ status: done
     2-16 wrote with the three closed panels as its control, would invert. **Owner: unassigned.**
     **Trigger: an Operator ruling on whether a scriptless `/cv` shows every company with inert
     triggers, or keeps the one open company it shows today.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (every panel open with scripting off, on
+    `/cv` and `/work`, through `@media (scripting: none)` reusing the print declarations), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `1b4fe66`.**
+    `WorkItem.scss` opens `.work-item__content` under that query with the two declarations
+    `app/scss/_print.scss` uses, `height: auto !important` and `overflow: visible !important`, so the
+    inline zero height the first render writes no longer holds a scriptless page shut; the three
+    triggers stay inert and announce themselves collapsed, the cost the ruling accepted.
+    `tests/e2e/cv.pw.ts`'s scriptless block is inverted: with `javaScriptEnabled: false`, every panel
+    on `/cv` and on `/work` has height and text, where the pre-ruling tree read 900.30, 0, 0 and 0 on
+    both; a context running script is the control, the first entry open and every other at zero.
+    `WorkItem.test.tsx` holds the compiled rule to the print sheet's two declarations. **Stated
+    limit**: a browser without the `scripting` media feature (Safari before 17, Firefox before 113)
+    matches nothing and keeps the one open company without script.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
   id: DW-77
@@ -5051,7 +5119,22 @@ status: done
     refused like any other declaration, so the gate needs no exemption for F-11. The exemption this
     entry anticipates belongs to F-8's fill grep, which Story 2-34 did not build (see the Story 2-9
     entry on the status dot). Owner and trigger unchanged.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (`color-scheme: dark` on `:root`, and a
+    `::selection` rule on `--token-accent` with `--token-bg` text), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `81f4078`.** Both are
+    in `app/app.scss` beside the focus rule, the scheme in its own `:root` block. The same commit
+    built F-8's check with this selection as one of its two exemptions (the Story 2-9 entry on the
+    dot). `tests/e2e/contract-anchor.pw.ts` reads F-11 the way `RESTYLE-SPEC.md` states its method, as
+    computed style: the root computes `color-scheme: dark`, and the heading's `::selection` computes
+    the accent ground and the `--token-bg` text, each against the role resolved in the same page,
+    beside a planted control; on the pre-ruling tree the root read `normal`. `app/__tests__/anchor-contract.test.ts`
+    admits `--token-accent` to the global stylesheet as `SELECTION_ROLES`. **Seen on the build**: the
+    minifier, Lightning CSS, writes `--lightningcss-light` and `--lightningcss-dark` beside the scheme,
+    its `light-dark()` polyfill, and `tests/e2e/anchor-aliases.pw.ts` admits that pair on the rule that
+    declares `color-scheme` and nowhere else. Finding F-15 and Pending Operator action 3 in
+    `ops/hub-accessibility-pass.md` close with this entry.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
   id: DW-96
@@ -5388,6 +5471,16 @@ status: done
     legitimate use. A `url()` grain is not a literal and the story's criteria do not name one, so
     that tell is not taken: **owner unassigned**, trigger the next edit to the built-CSS tally. The
     `threshold` question and the `AGENTS.md` line are unchanged.
+
+    **The `url(` half closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `1af8569`.** The
+    built-CSS tally in `tests/e2e/accessibility-floor.pw.ts` counts every `url(` outside an
+    `@font-face` block as the depth tell `url` and expects none, a ledger row being the only way to
+    admit one. On the build it reads the three face `src` urls, all inside `@font-face`, and counts
+    nothing; a planted face beside a planted `background-image` grain and a `background` shorthand is
+    reported as two, and with the counting lines taken out the same case failed in the pinned image
+    before it passed. The `threshold` question and the `AGENTS.md` line are what this entry still
+    holds, owners and triggers unchanged, so it stays open.
   status: open
 
 - source_spec: `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/review-apple-design-2026-09-15.md`
@@ -6218,4 +6311,36 @@ status: done
 
     **Owner: the Operator.** **Trigger: that ruling, or the next change to the entrance or to the
     reduced-motion block.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`
+  id: DW-127
+  summary: >-
+    On `/`'s default door at 768 and wider, the landmark's inset focus ring is painted beneath the
+    hero's canvas and scrim, so after Enter on the skip link a keyboard visitor sees no ring in the
+    first viewport there; it reads whole everywhere else.
+  evidence: |-
+    Observed 2026-09-24 by the DW-43 accessibility package, a scratch probe in
+    `mcr.microsoft.com/playwright:v1.62.1-noble` against `pnpm start` (not committed): Tab, then
+    Enter, then a screenshot, sampling one pixel inside each edge of `main#main`. On `/` at 360 on both
+    doors, and on `/work`, `/cv` and the 404 at 360, the top, left and right edges read the focus
+    colour, `rgb(198, 189, 255)`. On `/`'s default door at 1280 all three read `rgb(29, 27, 39)`,
+    which is that colour under the scrim's 88% paper (0.12 of it over `#060509` computes to
+    28.3, 27.1, 38.5), and the hero fills the viewport there.
+
+    **Why, and why the ruled rule cannot reach it.** The Operator's ruling of 2026-09-24 on F-20 draws
+    the ring inside the landmark with `main:focus-visible`, an outline inset by its own width, which
+    is what took the three sides off the document's edge. An element's outline is painted before its
+    positioned descendants, and on the default door at 768 and wider the hero's canvas and its scrim
+    are positioned descendants of `<main>` that cover its edges; `tests/e2e/accessibility-floor.pw.ts`
+    reads the ring's geometry, which is whole, and no raster. Before the ruling the same ring was
+    drawn outside the landmark and the document's edge took those sides, so nothing was visible there
+    either. The conformant repairs are design decisions: draw the landmark's ring on a positioned
+    layer above the hero (a second exception to `RESTYLE-SPEC.md` § 4's verbatim ring), keep the hero
+    outside `<main>` on `/` so the landmark begins below it, or accept that on the 3D door the skip
+    link's target is a landmark whose first viewport is imagery.
+
+    **Owner: the Operator.** **Trigger: that ruling, the Operator's keyboard confirmation
+    (`ops/hub-accessibility-pass.md` Pending Operator action 1), or the next change to the hero's
+    layering.**
   status: open
