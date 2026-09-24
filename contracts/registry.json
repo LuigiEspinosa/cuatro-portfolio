@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.2.0",
+  "contract_version": "1.3.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -36,7 +36,7 @@
       "identity": "none",
       "live": "https://cs-tracker.cuatro.dev",
       "family": "tracker-family",
-      "token_contract": "1.0.0"
+      "token_contract": "2.0.0"
     },
     {
       "id": "digital-library",

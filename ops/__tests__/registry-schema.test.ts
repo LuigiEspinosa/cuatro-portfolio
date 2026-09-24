@@ -253,7 +253,10 @@ describe('the committed Registry', () => {
     // `live` and `tech`, and the `poketracker-go` and `mutuo` `tech` of the
     // ruling, with `lumen`'s trim riding in it. A Satellite fetches this over
     // HTTPS at build time and has no other signal that an entry changed.
-    expect(committed.contract_version).toBe('1.2.0');
+    // 1.3.0 from later the same day: `cs-tracker`'s `token_contract` moved to
+    // 2.0.0 with its re-vendor (Operator ruling 2026-09-24, DW-15), a value
+    // change and so a minor.
+    expect(committed.contract_version).toBe('1.3.0');
     expect(Array.isArray(committed.applications)).toBe(true);
     expect(committed.applications.length).toBeGreaterThan(0);
     // The one entry rule the schema deliberately left open until there were

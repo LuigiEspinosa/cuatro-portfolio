@@ -73,6 +73,15 @@ const adoption = read(resolve(REPO_ROOT, ADOPTION_REL));
 
 const TOKEN = 'github_pat_planted_never_printed';
 const TOKENS_CSS = '/* Cuatro Ecosystem, Design Tokens\n * Contract v1.0.0 · dark only · anchor hue 288\n */\n:root {}\n';
+
+/**
+ * `cs-tracker`'s vendored header at the version the committed Registry declares: 2.0.0 from
+ * 2026-09-24, when Contract 2.0.0 was re-vendored as `cs-tracker` commit `991d0f6` and the Registry
+ * moved with it (Operator ruling, DW-15). The remote `main` reads it once the Operator pushes
+ * (`ops/contract-adoption.md` action 8); until then the scheduled job fails naming both versions,
+ * which is the mismatch case under `token_contract` below.
+ */
+const TOKENS_CSS_AT_REGISTRY = TOKENS_CSS.replace('v1.0.0', 'v2.0.0');
 const CS_TRACKER_TOKENS = 'assets/css/cuatro-contracts/tokens.css';
 const SLUG = 'LuigiEspinosa/cs-tracker';
 
@@ -124,7 +133,10 @@ const repos = (slug: string, archived = false): { status: number; body: string }
 const contents = (slug: string, path: string, ref = 'main'): string =>
   `${API}/repos/${slug}/contents/${path}?ref=${encodeURIComponent(ref)}`;
 
-/** The routes the committed Registry needs, answered as the estate answered on 2026-09-12. */
+/**
+ * The routes the committed Registry needs, answered as the estate answered on 2026-09-12, but for
+ * `cs-tracker`'s vendored header, which answers at the version the Registry declares.
+ */
 const routesForCommittedRegistry = (): Record<string, Answer | Answer[]> => {
   const routes: Record<string, Answer | Answer[]> = {};
   for (const entry of registry.applications) {
@@ -135,7 +147,7 @@ const routesForCommittedRegistry = (): Record<string, Answer | Answer[]> => {
     routes[entry.source] = PRIVATE.includes(slug) ? 404 : 200;
     if (entry.live !== undefined) routes[entry.live] = REDIRECTING[entry.live] ?? 200;
   }
-  routes[contents(SLUG, CS_TRACKER_TOKENS)] = { status: 200, body: TOKENS_CSS };
+  routes[contents(SLUG, CS_TRACKER_TOKENS)] = { status: 200, body: TOKENS_CSS_AT_REGISTRY };
   return routes;
 };
 
@@ -239,7 +251,7 @@ describe('the committed Registry against the estate as observed', () => {
     const token = rowsOf(result, 'token_contract');
     expect(token).toHaveLength(1);
     expect(token[0].id).toBe('cs-tracker');
-    expect(token[0].detail).toBe(`the Registry declares 1.0.0 and ${SLUG}:${CS_TRACKER_TOKENS}@main reads Contract v1.0.0`);
+    expect(token[0].detail).toBe(`the Registry declares 2.0.0 and ${SLUG}:${CS_TRACKER_TOKENS}@main reads Contract v2.0.0`);
   });
 
   it('prints one PASS or FAIL line per check in the probe shape, and the same rows as a table', async () => {
