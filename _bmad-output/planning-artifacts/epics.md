@@ -3341,7 +3341,9 @@ never leaves a stuck hover state
 **When** the surface renders below 768px
 **Then** the panels **stack in reading order**: name, then imagery, then navigation, then contact
 **And** the readout panel is **omitted rather than rendered empty**, per § Empty edge, because an
-empty section reads as unfinished while an absent one reads as scoped.
+empty section reads as unfinished while an absent one reads as scoped
+*(amended 2026-09-24 by Operator ruling, DW-110: the readout panel is removed from the surface at
+every width, so this clause has no subject; the three panels that remain stack as above)*.
 
 **Given** the notch is a `clip-path` polygon of length literals and the contract mints no token for
 the notch size

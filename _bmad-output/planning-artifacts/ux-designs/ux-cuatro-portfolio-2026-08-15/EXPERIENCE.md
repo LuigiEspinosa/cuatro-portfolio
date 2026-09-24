@@ -528,7 +528,10 @@ The largest single surface in the redesign, and the one the scrim constraint act
   stated in prose.
 - **Mobile is the authored width.** At `<768px` the panels stack in reading order (name, then
   imagery, then navigation, then contact) and the readout panel is omitted rather than rendered
-  empty (§ Empty edge).
+  empty (§ Empty edge). *(Amended 2026-09-24 by Operator ruling, DW-110: the readout panel is
+  removed from the Home surface at every width, so there is no panel to omit. It carried a Plate
+  mark reading the code `SYS_ONLINE`, which no document gave words for. Three panels remain, and on the
+  default door at 768 and wider the corner it held shows the imagery beneath.)*
 - **Seam S-1 stands.** The scene's own colours are JS values and remain a declared FR-17 exception.
 
 ### Error surface, `Error404`
@@ -687,7 +690,10 @@ Durations and easings are tokens: `{motion.dur-micro}` 120ms · `{motion.dur-min
 `{motion.ease-toggle}`.
 
 - **Only `transform` and `opacity` animate.** Never width, height, margin, or a layout
-  property.
+  property. *(Amended 2026-09-24 by Operator ruling, DW-106: the home surface's five hero links
+  also hold `visibility: hidden` at the start of their entrance keyframe. It does not animate: each
+  link is hidden through its delay and visible from the first frame of its fade, so none is a Tab
+  stop or a click target before it can be seen. Reduced motion has no entrance and is unaffected.)*
 - **Name the properties.** `transition: border-color var(--dur-micro) var(--ease-toggle)`.
   Never `transition: all`.
 - **One orchestrated entrance per page load**, then content simply exists. Universal

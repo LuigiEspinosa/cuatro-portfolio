@@ -4818,7 +4818,23 @@ status: done
     **Owner: the first story that needs the split, after 2-29 lands the hero it would read.**
     **Trigger: the first monthly reading whose SM-1 share is under the 60% target, or Story
     2-29's close, whichever comes first.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (split suite-reach by front door), by
+    `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`, commit `9e49b88`.**
+    `suite-reach` carries one key, `door`, `flat` or `narrative`. `HomeLayout` now renders
+    `SuiteReach` and hands it the path `useNarrativePath` already decided, because the Directory is a
+    server component that cannot see it, and nothing is polled or observed while the door is
+    undecided. No new event and no new dependency. `ops/visitor-instrumentation.md` § How each
+    metric is read carries the SM-1 by-door query, a left join on `event_data` that reads
+    `unrecorded` for events sent before the change, and § Stated limits says what the split cannot
+    do: it divides the reached visits, and the Hub sessions stay undivided because a page view
+    carries no door. Held by `SuiteReach.test.tsx`, `HomeLayout.test.tsx`, `SuiteDirectory.test.tsx`
+    and `ops/__tests__/visitor-instrumentation.test.ts`, whose record case reads the key off the
+    component; `tests/e2e/visitor-instrumentation.pw.ts` reads `{ door: 'narrative' }` on the
+    default door and `{ door: 'flat' }` on the reduced-motion one, where the pre-ruling tree sent no
+    data on either. The door reaches production at the Epic 2 merge to `main`, so the first monthly
+    reading to split is the first whole month after that merge.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-24-hub-visitor-instrumentation.md`
   id: DW-89
@@ -5488,7 +5504,22 @@ status: done
     set out above changes what the entrance does, which is behaviour, and `RESTYLE-SPEC.md` § The
     ceiling keeps behaviour out of a restyle; no design document states focus during the entrance.
     **Owner: unassigned, for an Operator ruling on the entrance.** **Trigger: unchanged.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (visibility hidden until each hero link's
+    turn), by `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`, commits `123b723`
+    and `57593b9`.** The five links take their own keyframe, `home-enter-link`, whose `from` holds
+    `visibility: hidden` beside `opacity: 0`: hidden through the delay the `both` fill holds and
+    visible from the fade's first frame, so a link joins the tab order and hit-testing exactly when
+    it starts to appear, on the same five delays. The role line and the gem keep the opacity-only
+    `home-enter`, and reduced motion is untouched, its block setting `animation: none`.
+    `tests/e2e/front-door.pw.ts` holds every animation at its start and tabs from the top: the
+    skip-link, the skip control, then the Directory, with no hero link reached and no click at a
+    link's centre landing on it. Played to its end, the same reads find all five in order, and on the
+    reduced-motion door all five are Tab stops from the first frame. On the pre-ruling tree the same
+    Tab landed on all five while each was at `opacity: 0`. `tests/e2e/narrative.pw.ts` allows
+    `visibility` in exactly one place, the links keyframe's `from`, beside a planted control, and
+    `EXPERIENCE.md` § Motion carries the dated note.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
   id: DW-107
@@ -5533,7 +5564,12 @@ status: done
     readings (`HomeLayout.test.tsx` and `tests/e2e/front-door.pw.ts`) on a surface this story
     does not own. **Owner: unassigned.** **Trigger: this entry's second one, any story that
     gives the readout panel a responsive rule of its own.**
-  status: open
+
+    **Closed 2026-09-24 as moot, on the Operator ruling of that day on DW-110, commit `04b3f4a`.**
+    The readout panel this entry describes is removed from the Home surface at every width, with its
+    1600ms entrance and its `display: none` below 768, so there is no box to re-display after a
+    rotation and no corner left blank while it waits.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
   id: DW-108
@@ -5618,7 +5654,21 @@ status: done
     mark in every panel, so the two rules meet here and neither yields. **Owner: the Operator,
     as the author of the site's copy.** **Trigger: any story that edits the readout panel, or a
     copy pass over the hero.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (remove the readout panel), by
+    `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`, commit `04b3f4a`.**
+    `.home-panel--sys` and its side-ruled Plate mark are deleted from `HomeLayout.tsx`, with its
+    notch, its 1600ms entrance and its two `display: none` rules in `HomeLayout.scss`, so no string
+    on the hero reads a code and the composition's Plate mark rule has no panel left to ask it of.
+    Three panels remain. On the default door at 768 and 1280 the point the readout covered resolves
+    to the imagery beneath, which `tests/e2e/front-door.pw.ts` reads beside a planted box the same
+    read reports; on the pre-ruling tree it resolved to `div.home-panel--sys` at both widths. At 360
+    the stacked hero is unchanged, the panel having been `display: none` there. `HomeLayout.test.tsx`
+    reads three panels and no Plate mark on either door and no rule naming the panel. The Plate
+    mark's side-ruled variant, whose one call site this was, stays as `DESIGN.md`'s vocabulary and
+    is read on planted marks (DW-124). `EXPERIENCE.md`, `DESIGN.md` and `epics.md` carry dated notes;
+    `RESTYLE-SPEC.md` does not describe the panel.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
   id: DW-111
@@ -5707,7 +5757,23 @@ status: done
     and every assertion is green. **The margin is one hundredth on two routes now**, so the trigger
     widens: the Epic 2 merge to `main`, or any story that sets new text in the muted accent on `/`
     or on `/work`.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (move the aria-hidden ornament strings
+    into CSS generated content), by `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`,
+    commit `f97267b`.** The three Japanese lines, every name in the framework band and the Plate
+    mark's subordinate line are empty `aria-hidden` spans whose string is their `data-ornament`,
+    painted by `content: attr(data-ornament)` on `::before` in the colour, face and size each had.
+    axe scores contrast only on an element with text nodes of its own, so nothing a reader does not
+    need is scored and the audit sees each route's real text again. **Observed 2026-09-24** in the
+    pinned image, three runs per URL, the way `.github/workflows/lighthouse.yml` takes it:
+    accessibility 1.00 on every run of `/`, `/work` and `/cv`, `color-contrast` passing with no item,
+    best practices and SEO 1.00, every assertion green, where the package's baseline read `/` and
+    `/work` at 0.96 on all three runs in the same image with the seven ornaments as the audit's only
+    items. The recolouring fallback was not needed and `DESIGN.md` is unchanged. The reading is in
+    `ops/hub-accessibility-pass.md` § Lighthouse readings; `tests/e2e/accessibility-floor.pw.ts` holds
+    each ornament empty, hidden and painted from its attribute beside planted controls. `/`'s
+    ungated performance score moved in the same reading for DW-106's reason, not this one's (DW-125).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-30-redesign-error404-token-native.md`
   id: DW-114
@@ -6071,4 +6137,85 @@ status: done
     **Owner: the Operator**, for a ruling: keep the lift as the narrative's one answer to the
     pointer, written into `EXPERIENCE.md` as a declared exception, or remove it so the wave moves on
     its own clock alone. **Trigger: that ruling, or the next change to the wave.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
+  id: DW-124
+  summary: >-
+    The Plate mark's side-ruled variant and its end-aligned mirror have no call site on the Hub
+    since the readout panel's removal, so a variant `DESIGN.md` specifies ships in the component and
+    its stylesheet and is read only on planted marks.
+  evidence: |-
+    Found 2026-09-24 by the DW-113 home-surface package, whose Operator ruling of that day removed
+    the readout panel (DW-110), the variant's one call site. `PlateMark.tsx` keeps the `side-ruled`
+    arm and its `align` prop, and `PlateMark.scss` keeps `.plate-mark--side-ruled` and
+    `.plate-mark--end`; the component's importers are `CvIntro`, `Error404`, `Premise` and
+    `WorkHero`, each on the section or the annotated variant. `DESIGN.md` § Components tables three
+    variants and `EXPERIENCE.md` § Plate mark names them, so the variant is the design system's rather
+    than the panel's, and the ruling named the panel. The package kept it, moved its two painted reads
+    in `tests/e2e/plate-mark-and-work-item.pw.ts` onto marks planted in `/cv`'s intro, and noted the
+    state in `DESIGN.md` § The redesigned Hub surfaces. Removing it would take the arm, the prop, two
+    rules, their unit cases and the planted reads, and amend both documents' variant lists.
+
+    **Owner: the Operator**, for a ruling: keep the variant as vocabulary for a later call site, or
+    remove it from the component and from both documents. **Trigger: that ruling, or the next call
+    site that wants a label hanging beside content.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
+  id: DW-125
+  summary: >-
+    Since DW-106's ruling the home route's largest contentful paint is the first hero link at its
+    entrance reveal rather than the skip control, which moves Lighthouse's mobile LCP on `/` from
+    2.4 to 2.7s to 5.3 to 5.5s and its ungated performance score from 0.65 to 0.67 down to 0.49.
+  evidence: |-
+    Observed 2026-09-24 by the DW-113 home-surface package, in `mcr.microsoft.com/playwright:v1.62.1-noble`
+    with `@lhci/cli` 0.15.1, three runs per URL, on build `bmBRmKwdT9BiS8QM-RfyU` at `d911028` and
+    `WQ5nO0gJ8OYY3W0IYbvh5` at `1a5ada5` (`ops/hub-accessibility-pass.md` § Lighthouse readings). The
+    LCP element was `a.skip-control` at 2,410 to 2,726ms and is `a.nav-link` at 5,320 to 5,483ms under
+    the simulated mobile throttling; first contentful paint, total blocking time and layout shift did
+    not move, and neither did `/work` or `/cv`. The link is invisible until 2.0s after first paint
+    either way. Chrome never reports an element first painted at `opacity: 0`, so the old LCP left the
+    entrance's largest text out; under the ruled `visibility: hidden` the link's first paint is its
+    reveal, so LCP now measures the entrance. Real-user LCP on `/` will count the same reveal, which
+    sits near the 2.5s line field data calls good.
+
+    Nothing gates it: `.lighthouserc.js` comments performance out. The package did not tune it,
+    because the ruling fixed the mechanism and the package's spec kept the delays, and the ways to
+    move the number are design decisions: shorten the links' delays (Story 2-29's sequence), bring the display links in
+    first, or accept that LCP now reports what the visitor sees. Revealing the links from an
+    `opacity: 0` first paint would restore the old figure only by hiding the entrance from the
+    metric, which is not a fix.
+
+    **Owner: the Operator**, for a ruling on the entrance's timing or on accepting the figure.
+    **Trigger: that ruling, the first field reading of `/`'s LCP over 2.5s, or the next change to the
+    entrance.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
+  id: DW-126
+  summary: >-
+    A visitor whose reduced-motion preference turns off mid-session replays the home entrance, and
+    since DW-106 the five hero links are hidden for its first 2.0 to 2.36s, so a link that holds focus
+    at that moment loses it to the body and does not get it back.
+  evidence: |-
+    Observed 2026-09-24 by the DW-113 home-surface package's review, a scratch probe in
+    `mcr.microsoft.com/playwright:v1.62.1-noble` at 1280 (not committed): on a context with reduced
+    motion, the first nav link focused, then `page.emulateMedia({ reducedMotion: 'no-preference' })`.
+    Before the switch the link computed `animation-name: none` and held focus; 300ms after it, the
+    link computed `home-enter-link` and `visibility: hidden` and `document.activeElement` was the
+    body; 2.6s later the link was visible and focus was still on the body.
+
+    **The replay predates this package.** `HomeLayout.scss` cancels the entrance under
+    `prefers-reduced-motion: reduce` with `animation: none`, so when the query stops matching the
+    animations start from their delays on a hero that had already arrived, which Story 2-29's CSS
+    entrance has done since 2026-09-21 at `opacity: 0`. What is new is the focus: the Operator's ruling
+    of 2026-09-24 on DW-106 hides each link through its delay, and the browser's focus fixup moves
+    focus off an element that stops being focusable. No document rules on a preference switched
+    mid-session, and the conformant repairs are design decisions: cancel the entrance on the terminal
+    flat door as well (the flat modifier outlives the switch, but the other flat doors would lose
+    their entrance), or accept that an OS setting switched mid-visit replays the hero.
+
+    **Owner: the Operator.** **Trigger: that ruling, or the next change to the entrance or to the
+    reduced-motion block.**
   status: open

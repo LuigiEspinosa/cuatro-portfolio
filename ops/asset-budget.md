@@ -481,6 +481,69 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-24 reading, after the DW-113 home-surface package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `RT9WREDML0Cp4cctih6td`, written
+2026-09-24T08:07:49Z at `1a5ada5` with no measured input dirty. It is one reading after the
+package's four Operator rulings of 2026-09-24: `04b3f4a` removed the home readout panel (DW-110),
+`f97267b` moved the muted-accent ornaments into CSS generated content (DW-113), `123b723` gave the
+five hero links a keyframe that hides them until their turn (DW-106), and `9e49b88` moved the
+`suite-reach` component into `HomeLayout` so it carries the front door (DW-88). The before is the
+DW-36 package's reading below: its build was taken at `d91a34f`, and no measured input changed
+between that commit and `d911028`, where this package started.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 20,614 | 231,168 | no | yes | **Observed** |
+| `/cv` | 21,937 | 229,788 | no | yes | **Observed** |
+| `/_not-found` | 17,292 | 196,566 | no | **no**: Next's own document | **Observed** |
+| `/celeste` | 13,918 | 196,558 | no | yes | **Observed** |
+| `/_global-error` | 9,578 | 188,758 | no | **no**: Next's own document | **Observed** |
+
+**Every route before and after, on the wire.** **Observed** on both sides, **Derived** delta. The five
+prerendered documents are the tool's own tables against the DW-36 reading's. `/` is weighed the way
+that reading weighed it, the document fetched from `next start` in the pinned image and weighed with
+the tool's own `parseDocumentReferences` and `gzipBytes`, on build `bmBRmKwdT9BiS8QM-RfyU` at
+`d911028` and `WQ5nO0gJ8OYY3W0IYbvh5` at `1a5ada5`. The before build reproduces the DW-36
+reading's `/` exactly, 205,234, and in that image every prerendered route moves within 3 bytes of
+the host's delta below.
+
+| Route | Before | After, `1a5ada5` | Delta | Nature |
+|---|---|---|---|---|
+| `/`, fetched | 205,234 | 205,298 | 64 heavier | **Observed**, pinned image |
+| `/work` | 231,167 | 231,168 | 1 heavier | **Observed**, the tool |
+| `/cv` | 229,769 | 229,788 | 19 heavier | **Observed**, the tool |
+| `/_not-found` | 196,545 | 196,566 | 21 heavier | **Observed**, the tool |
+| `/celeste` | 196,539 | 196,558 | 19 heavier | **Observed**, the tool |
+| `/_global-error` | 188,760 | 188,758 | 2 lighter | **Observed**, the tool |
+
+**What moved.** **Observed** chunk by chunk on both image builds. On `/` the home route's client
+chunk fell from 3,391 to 3,114 gzipped, the Plate mark's code leaving it with the readout panel
+(`suite-reach`, already in it as the Directory's client reference, is now `HomeLayout`'s import
+in the same chunk). The home stylesheet, which carried `HomeLayout`, `SkipControl`, `Premise` and
+`SuiteDirectory` in one file at 2,299, is written as two since the Plate mark left the hero's
+import graph, `HomeLayout` with `SkipControl` at 1,355 and `Premise` with `SuiteDirectory` at
+1,297: the new keyframe and the two `::before` rules are in them, and so is the cost of one
+compression stream split into two. The document is 137 bytes longer on disk, the `data-ornament`
+attributes and one more stylesheet link against the readout's markup, and 32 bytes shorter gzipped.
+Every prerendered route links the Plate mark's stylesheet, which took the subordinate line's
+`::before` rule, 418 to 438 gzipped; `/work`'s copy of the component's code is 26 lighter, its
+subordinate line an attribute rather than a child, and its document 10 heavier for the attribute.
+
+**The whole build, before and after.** **Observed**, the tool's tables on each side.
+
+| Figure | Before, DW-36's build | After, `1a5ada5` | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 18 `.js`, 12 `.css` | 18 `.js`, 13 `.css` | one `.css` more, the split home stylesheet | **Observed** |
+| Bytes in `.next/static/chunks` | 2,852,353 on disk, 829,907 gzipped | 2,851,114 on disk, 829,976 gzipped | **1,239 lighter on disk, 69 heavier gzipped** | **Observed**; **Derived** delta |
+| The narrative total | 619,351 across 5 chunks | the same 619,351 across 5 chunks | 0 | **Observed** |
+| The non-3D line | `/work`, 231,167, 91,167 over, 65.1 percent | `/work`, 231,168, 91,168 over, 65.1 percent | 1 heavier | **Observed**; **Derived** delta |
+
+**Against the budget.** **Derived.** Noise: the package moves no narrative byte and no route by more
+than 64 gzipped, against Story 2-2's 140,000. What it bought on the wire is on the audit, not the
+budget: `/` and `/work` read 1.00 on Lighthouse's accessibility audit where they read 0.96
+(`ops/hub-accessibility-pass.md` § Lighthouse readings).
+
 ### The 2026-09-24 reading, after DW-36's package
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `ysPv_iPVOqc9Sc90vXp_1`, written
@@ -1573,6 +1636,29 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-24 run, after the DW-113 home-surface package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `RT9WREDML0Cp4cctih6td`. § Every route's
+2026-09-24 reading after the DW-113 package and this section were filed from this run.
+
+- The narrative bundle is 619,351 bytes gzipped across 5 chunks, against an estimate of 300,000 to
+  450,000. That is 169,351 over the top of the range.
+- 592,380 bytes of that is genuinely deferred: `0x9hgoafoipaz.js`, `0-742gw60ue7o.js`,
+  `031y-gd1885yp.js`, `0te7gr59z3e7w.js` is referenced by no prerendered document. The other 26,971
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 231,168 against 140,000, 91,168 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,500 against 140,000, 36,500 of margin. That
+  decomposition has no line for the 221,327 of JavaScript or the 830 of preloads the document
+  actually carries.
+
+**One line moved by a byte, and one by the split.** **Observed**, against the DW-36 run below. The
+non-3D line reads 231,168 where it read 231,167. On the decomposition, HTML and critical CSS read
+9,011 where they read 8,984 and `/work`'s JavaScript 221,327 where it read 221,353: the attribute in
+the document, the `::before` rule in the Plate mark's stylesheet, and the component's code lighter
+by the child it no longer renders. The narrative lines are unchanged to the byte.
 
 ### The 2026-09-24 run, after DW-36's package
 

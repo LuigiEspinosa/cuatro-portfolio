@@ -15,7 +15,10 @@ module.exports = {
       // thresholds below; `/` and `/work` at 1.00 on all three. The one failing audit on `/cv`,
       // `color-contrast` on the timeline highlights, was F-5 in `ops/hub-accessibility-pass.md`.
       // Story 2-31 closed it, and that story's reading on 2026-09-23 put `/cv` and `/work` at 1.00
-      // and `/` at 0.96 (DW-113). `ops/__tests__/hit-target-floor.test.ts` holds this array against
+      // and `/` at 0.96 (DW-113); Story 2-33's put `/work` at 0.96 as well. The DW-113 package's
+      // reading on 2026-09-24 put all three at 1.00 on every run, the muted-accent ornaments moved
+      // into CSS generated content (`ops/hub-accessibility-pass.md` § Lighthouse readings).
+      // `ops/__tests__/hit-target-floor.test.ts` holds this array against
       // `next.config.js`'s redirects, so a URL added here that is redirected fails the unit run.
       url: ['http://localhost:3000', 'http://localhost:3000/work', 'http://localhost:3000/cv'],
       numberOfRuns: 3,

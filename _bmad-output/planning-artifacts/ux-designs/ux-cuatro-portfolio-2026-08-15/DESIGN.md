@@ -765,7 +765,12 @@ over the scrim. *(Corrected 2026-08-16; this previously read "that panel carries
 element" and followed from the same withdrawn contrast table.)* **What the panel must not do is sit
 at a z-level above the scrim**: the sticky header at `--z-sticky` over a scrim at `--z-raised` is
 over the imagery rather than the scrim, and computes against the imagery. Nav items keep their
-**side-ruled** leading edge, at `--token-border` for the rule.
+**side-ruled** leading edge, at `--token-border` for the rule. *(Amended 2026-09-24 by Operator
+ruling, DW-110: the readout panel, the one home panel that carried a Plate mark, is removed. The
+surface has three panels, the name, the navigation and the contact, none of which carries a Plate
+mark, and on the default door at 768 and wider the corner the readout held shows the imagery
+beneath. The Plate mark's side-ruled variant stays in § Components; it has no call site on the Hub
+since, which DW-124 puts to the Operator.)*
 
 **Work item (`WorkItem`).** A **row** per § Components → Registry Entry, not a card. Separator
 `1px solid var(--token-border)`. The left indicator rule becomes `--stroke-emphasis`
