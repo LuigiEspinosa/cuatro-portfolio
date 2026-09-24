@@ -549,6 +549,10 @@ export S3_BUCKET
 export S3_ACCESS_KEY_ID
 export S3_SECRET_ACCESS_KEY
 export BACKUP_PASSPHRASE
+# Read from the config into plain shell variables, so without this the
+# object client never saw either and ran on its own defaults. An unset name
+# stays unset in the child, which then takes its default.
+export S3_CONNECT_TIMEOUT S3_MAX_TIME
 # So the restore verifier this run calls is the one this run was configured
 # with, rather than whichever copy happens to sit beside it.
 export S3_OBJECT_CLIENT="${S3_CLIENT}"

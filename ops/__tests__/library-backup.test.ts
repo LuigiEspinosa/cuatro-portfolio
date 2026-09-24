@@ -76,7 +76,7 @@ const SCRIPT_VARIABLES = [
   'MAX_ARCHIVE_BYTES', 'VERIFY_MAX_BYTES', 'TMPDIR',
   'STUB_CURL_LOG', 'STUB_CURL_ARGV', 'STUB_BUCKET', 'STUB_PUT_CODE', 'STUB_GET_CODE',
   'STUB_CORRUPT_GET', 'STUB_REDIS_DBSIZE', 'STUB_DOCKER_FAIL', 'STUB_SQLITE_INTEGRITY',
-  'STUB_SQLITE_OBJECTS', 'STUB_SQLITE_TABLES', 'STUB_DATE_STAMP',
+  'STUB_SQLITE_OBJECTS', 'STUB_SQLITE_TABLES', 'STUB_DATE_STAMP', 'STUB_OPENSSL_ARGV',
 ];
 
 const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\\''`)}'`;
@@ -597,6 +597,122 @@ describe('a signed request', () => {
     for (const call of curlCalls(box)) {
       expect(call.args).toContain('--connect-timeout');
       expect(call.args).toContain('--max-time');
+    }
+  });
+
+  // The record lists both timeouts as settings the config file may carry. The
+  // config is read into unexported shell variables, so until they were
+  // exported every request ran on 15 and 300 whatever the file said.
+  it('carries the timeouts the config file sets onto every request, the hand-run restore verify included', () => {
+    const box = makeBox('config-timeouts');
+    writeConfig(box, { S3_CONNECT_TIMEOUT: '7', S3_MAX_TIME: '77' });
+    const result = runBackup(box);
+    expect(result.status, result.stderr).toBe(0);
+
+    const key = `digital-library/${archivesIn(box).find((name) => name.endsWith('.tar.gz.gpg'))}`;
+    const verify = runBash(RESTORE_VERIFY, [key], box.env);
+    expect(verify.status, verify.stderr).toBe(0);
+
+    const calls = curlCalls(box);
+    expect(calls.map((call) => call.method)).toEqual(['PUT', 'GET', 'GET', 'GET']);
+    for (const call of calls) {
+      expect(call.args[call.args.indexOf('--connect-timeout') + 1], `a ${call.method} ignored S3_CONNECT_TIMEOUT`).toBe('7');
+      expect(call.args[call.args.indexOf('--max-time') + 1], `a ${call.method} ignored S3_MAX_TIME`).toBe('77');
+    }
+  });
+
+  // `curl --max-time 0` means no limit, which is the hang the two timeouts exist
+  // to prevent, so a zero is refused rather than passed on.
+  it('refuses a timeout of zero before any request, naming the variable', () => {
+    for (const variable of ['S3_MAX_TIME', 'S3_CONNECT_TIMEOUT']) {
+      const box = makeBox('zero-timeout');
+      const payload = join(box.root, 'payload.bin');
+      writeFileSync(payload, 'anything');
+      const result = runBash(S3_OBJECT, ['put', bashPath(payload), 'digital-library/library.tar.gz.gpg'], {
+        ...box.env,
+        S3_ENDPOINT: CONFIG_ENDPOINT,
+        S3_BUCKET: CONFIG_BUCKET,
+        S3_ACCESS_KEY_ID: AWS_EXAMPLE_KEY_ID,
+        S3_SECRET_ACCESS_KEY: AWS_EXAMPLE_SECRET,
+        [variable]: '0',
+      });
+      expect(result.status, `${variable}=0 was accepted`).not.toBe(0);
+      expect(result.stderr).toContain(`${variable} must be`);
+      expect(existsSync(box.curlArgv), `${variable}=0 reached the network`).toBe(false);
+    }
+  });
+
+  // Any account on the box can read `/proc/<pid>/cmdline`, and the first HMAC
+  // key in the SigV4 chain is `AWS4` plus the secret access key itself, so the
+  // key material has to reach openssl on a pipe. The secret here is 64
+  // characters, the length R2 issues, which puts `AWS4` plus it past HMAC's 64
+  // byte block: the branch AWS's 40 character example never reaches.
+  it('never hands openssl key material on its command line, and still signs what the reference signs', () => {
+    const box = makeBox('argv-secret');
+    const secret = sha256Hex('retro-3 fixture secret, not a credential');
+    const argvLog = join(box.root, 'openssl.argv');
+    const wrapperDir = join(box.root, 'openssl-wrapper');
+    mkdirSync(wrapperDir);
+    const wrapper = join(wrapperDir, 'openssl');
+    writeFileSync(
+      wrapper,
+      [
+        '#!/usr/bin/env bash',
+        'printf \'%s\\n\' "$*" >> "$STUB_OPENSSL_ARGV"',
+        'for candidate in /usr/bin/openssl /bin/openssl /usr/local/bin/openssl; do',
+        '  [ -x "$candidate" ] && exec "$candidate" "$@"',
+        'done',
+        'exit 127',
+        '',
+      ].join('\n')
+    );
+    chmodSync(wrapper, 0o755);
+
+    const payload = join(box.root, 'payload.bin');
+    writeFileSync(payload, 'retro-3 payload');
+    const key = 'digital-library/library-20260924T034500Z.tar.gz.gpg';
+    const env = {
+      ...box.env,
+      PATH: `${bashPath(wrapperDir)}:${box.env.PATH}`,
+      STUB_OPENSSL_ARGV: bashPath(argvLog),
+      S3_ENDPOINT: CONFIG_ENDPOINT,
+      S3_BUCKET: CONFIG_BUCKET,
+      S3_ACCESS_KEY_ID: AWS_EXAMPLE_KEY_ID,
+      S3_SECRET_ACCESS_KEY: secret,
+    };
+    const put = runBash(S3_OBJECT, ['put', bashPath(payload), key], env);
+    expect(put.status, put.stderr).toBe(0);
+    const get = runBash(S3_OBJECT, ['get', key, bashPath(join(box.root, 'back.bin'))], env);
+    expect(get.status, get.stderr).toBe(0);
+
+    const seen = readFileSync(argvLog, 'utf8');
+    expect(seen.length, 'the wrapper saw no openssl call, so this case proves nothing').toBeGreaterThan(0);
+    expect(seen, 'an HMAC key reached openssl as an argument').not.toContain('hexkey');
+    expect(seen).not.toContain(secret);
+    expect(seen).not.toContain(Buffer.from(`AWS4${secret}`).toString('hex'));
+
+    const calls = curlCalls(box);
+    expect(calls.map((call) => call.method)).toEqual(['PUT', 'GET']);
+    for (const call of calls) {
+      const payloadHash = call.method === 'PUT' ? sha256Hex(readFileSync(payload)) : EMPTY_SHA256;
+      const signed = referenceSign({
+        secret,
+        region: CONFIG_REGION,
+        service: 's3',
+        method: call.method,
+        uri: new URL(call.url).pathname,
+        query: '',
+        headers: {
+          host: call.headers.host,
+          'x-amz-content-sha256': payloadHash,
+          'x-amz-date': call.headers['x-amz-date'],
+        },
+        payloadHash,
+        amzDate: call.headers['x-amz-date'],
+      });
+      expect(call.headers.authorization, `the ${call.method} carried a signature the reference does not reproduce`).toBe(
+        `AWS4-HMAC-SHA256 Credential=${AWS_EXAMPLE_KEY_ID}/${signed.scope}, SignedHeaders=${signed.signedHeaders}, Signature=${signed.signature}`
+      );
     }
   });
 });
@@ -1215,6 +1331,54 @@ describe('the summary line contract', () => {
     expect(result.stdout).toContain('taking over a stale lock');
   });
 
+  // The other half of the takeover: a holder that is still running keeps its
+  // lock. Process 1 is init on Linux and in WSL, so `/proc/1` exists on every
+  // host this suite runs on.
+  it('refuses a lock whose holder is still running, rather than taking it over', () => {
+    const box = makeBox('live-lock');
+    writeConfig(box);
+    const lock = join(box.backups, '.library-backup.lock');
+    mkdirSync(lock, { recursive: true });
+    writeFileSync(join(lock, 'pid'), '1\n');
+
+    const result = runBackup(box);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('(pid 1) holds');
+    expect(result.stdout).not.toContain('taking over a stale lock');
+    expect(readFileSync(join(lock, 'pid'), 'utf8'), 'the running holder lost its lock').toBe('1\n');
+    expect(archivesIn(box)).toHaveLength(0);
+  });
+
+  // The record says the config file carries secrets and tuning and cannot carry
+  // a path. Every other case writes only allowlisted names, so a plain `.` of
+  // the file would pass them all; this one names the paths and executables the
+  // job must never take from it.
+  it('takes nothing but the allowlisted names from the config file', () => {
+    const box = makeBox('allowlist');
+    const marker = join(box.root, 'impostor-ran');
+    const impostor = join(box.root, 'impostor.sh');
+    writeFileSync(impostor, `#!/usr/bin/env bash\ntouch ${shellQuote(bashPath(marker))}\n`);
+    chmodSync(impostor, 0o755);
+    const elsewhere = join(box.root, 'elsewhere');
+    const sentinel = join(box.root, 'sentinel');
+    mkdirSync(sentinel);
+    writeConfig(box, {
+      S3_OBJECT_CLIENT: bashPath(impostor),
+      LIBRARY_RESTORE_VERIFY: bashPath(impostor),
+      LIBRARY_BACKUP_DIR: bashPath(elsewhere),
+      LIBRARY_DATA_DIR: bashPath(join(box.root, 'no-such-store')),
+      WORK: bashPath(sentinel),
+    });
+
+    const result = runBackup(box);
+    expect(result.status, result.stderr).toBe(0);
+    expect(existsSync(marker), 'the config chose an executable the job ran').toBe(false);
+    expect(existsSync(elsewhere), 'the config moved the backup directory').toBe(false);
+    expect(existsSync(sentinel), 'the cleanup removed the directory the config called WORK').toBe(true);
+    expect(archivesIn(box).some((name) => name.endsWith('.tar.gz.gpg'))).toBe(true);
+    expect(curlCalls(box).map((call) => call.method)).toEqual(['PUT', 'GET', 'GET']);
+  });
+
   // The stamp has second resolution, so a hand run and the 03:45 cron run
   // landing in the same second is the shape this guards against. The date stub
   // reproduces that collision deterministically rather than by racing.
@@ -1312,6 +1476,20 @@ describe('the real restore', () => {
     }
   });
 
+  // The ceiling exists so an unbounded restore never starts unattended on the
+  // serving box. Every other case sits far below it.
+  it('skips the restore above VERIFY_MAX_BYTES, names the ceiling, and downloads nothing for it', () => {
+    const box = makeBox('verify-ceiling');
+    writeConfig(box);
+    const result = runBackup(box, { VERIFY_MAX_BYTES: '16' });
+    const summary = summaryOf(result);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(field(summary, 'roundtrip')).toBe('sha256-match');
+    expect(field(summary, 'restore')).toBe('skipped-over-16b-ceiling');
+    expect(curlCalls(box).map((call) => call.method), 'a restore download started above the ceiling').toEqual(['PUT', 'GET']);
+  });
+
   it('removes its scratch directory, leaving nothing behind outside it', () => {
     const box = makeBox('restore-scratch');
     writeConfig(box);
@@ -1404,23 +1582,46 @@ describe('the store is read and never written', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The record and the box. These three checksums are the only thing tying the
+// The record and the box. These checksums are the only thing tying the
 // committed scripts to what is installed on `177.7.52.248`, so they are held
 // true by a test rather than by whoever last remembered to update the record.
+//
+// A test cannot see the box, so it holds the record's shape instead: the
+// Committed column is exactly the file in the repository, and an Installed
+// digest that differs from it is only allowed while an open Pending Operator
+// row names that script. Pinning committed to installed, as this did until
+// 2026-09-24, left a patch two outcomes: a red suite until the Operator
+// reinstalled, or an uninstalled digest written down as installed.
 // ---------------------------------------------------------------------------
 
 describe('the ops record', () => {
-  it('pins the sha256 of every committed script, matching what the record says is installed', () => {
-    const record = readFileSync(RECORD, 'utf8');
+  it('pins the sha256 of every committed script, and holds a difference from the box to an open reinstall action', () => {
+    const lines = readFileSync(RECORD, 'utf8').split(/\r?\n/);
+    const pending = lines.indexOf('## Pending Operator actions');
+    expect(pending, 'ops/backup-digital-library.md has no Pending Operator actions section').toBeGreaterThan(-1);
+    const sectionEnd = lines.findIndex((line, index) => index > pending && line.startsWith('## '));
+    const openActions = lines
+      .slice(pending, sectionEnd === -1 ? undefined : sectionEnd)
+      .filter((line) => /^\|\s*\d+\s*\|/.test(line) && /\|\s*_not done_\s*\|\s*$/.test(line));
     for (const script of [S3_OBJECT, LIBRARY_BACKUP, RESTORE_VERIFY]) {
-      const name = script.split(/[\\/]/).pop();
+      const name = script.split(/[\\/]/).pop() as string;
       const digest = createHash('sha256').update(readFileSync(script)).digest('hex');
-      const row = record.split('\n').find((line) => line.includes(`/usr/local/sbin/${name}`) && line.includes('|'));
+      const row = lines.find((line) => line.startsWith(`| \`/usr/local/sbin/${name}\` |`));
       expect(row, `ops/backup-digital-library.md has no installed-checksum row for ${name}`).toBeTruthy();
+      const [, , , committed, installed] = row!.split('|').map((cell) => cell.trim());
       expect(
-        row,
-        `ops/backup-digital-library.md records a stale sha256 for ${name}. The committed file is ${digest}. Reinstall on the box and update the record.`
-      ).toContain(digest);
+        committed,
+        `ops/backup-digital-library.md records a stale committed sha256 for ${name}. The file is ${digest}. Update the Committed column, and keep an open Pending Operator row that reinstalls it.`
+      ).toBe(`\`${digest}\``);
+      expect(installed, `the Installed cell for ${name} carries no dated, observed digest`).toMatch(
+        /`[0-9a-f]{64}`, \*\*Observed \d{4}-\d{2}-\d{2}/
+      );
+      if (!installed.includes(digest)) {
+        expect(
+          openActions.some((line) => line.includes(name)),
+          `${name} differs from the copy the record says is installed, and no open Pending Operator row names it`
+        ).toBe(true);
+      }
     }
   });
 });

@@ -19,6 +19,12 @@ its credentials and the passphrase are a vendor-console act, so the story is lef
 Operator rather than reported as done. What is owed is enumerated at the end as eight imperative
 actions.
 
+**Amended 2026-09-24.** That paragraph is the state of 2026-08-24. The Operator performed all eight
+actions by 2026-08-27 and Story 1-8 closed that day; each row of "Pending Operator actions" now
+carries its date. The follow-up review Story 1-8 recommended was run cold on 2026-09-24 (Epic 1
+retrospective action 3, by Operator ruling 2026-09-24), and it changed all three scripts in the
+repository, so the box runs the 2026-08-24 install until action 9 reinstalls them.
+
 ## What was there before
 
 **Do not read the prior state out of this file.** The full evidence lives in
@@ -154,7 +160,7 @@ overwrite an archive that already exists rather than letting `mv` replace a prev
 
 | Exit | Summary field | What it means | What to do |
 |---|---|---|---|
-| 0 | `offsite=ok-...` | Everything ran, including the round trip and a real restore from the bucket | Nothing |
+| 0 | `offsite=ok-...` | Everything ran, including the round trip and a real restore from the bucket. *(Corrected 2026-09-24: above `VERIFY_MAX_BYTES` the restore is skipped and the run still exits 0, with `restore=skipped-over-<n>b-ceiling` in the line; the round trip still proves the stored bytes)* | Nothing, unless `restore` says skipped |
 | 75 | `offsite=not-configured` | The config file does not exist. The local half completed and pruned | Operator actions 1 to 5 |
 | 1 | `offsite=config-unreadable` | The config file exists and this account cannot read it. The local half completed and pruned | Fix the ownership, not the content. The message prints the exact `chown` and `chmod` |
 | 1 | `offsite=misconfigured` | The config file is readable and a required variable is empty | Fill in the named variable |
@@ -208,7 +214,11 @@ another, and that surfaces as a nightly 403 nobody reads.
 
 **No `list` and no `delete`, deliberately.** Offsite retention is a bucket lifecycle rule set in the
 console, which keeps the token's blast radius at write-only: a compromised box can add objects and
-cannot remove the history that would let the estate recover from the compromise.
+cannot remove the history that would let the estate recover from the compromise. *(Amended
+2026-09-24: the scripts' restraint is observed, the token's is not. Nothing here has read the token's
+permission set, and a `PUT` to an existing key replaces the object whatever the delete permission, so
+the history is only as safe as the keys are unguessable, which they are not. DW-134 carries the check
+and the fix, both in the Cloudflare console.)*
 
 ### The encryption path, proved on the box
 
@@ -283,7 +293,7 @@ that recorded it as "inference from documentation, explicitly not observed".
 | Side | Window | Mechanism | Nature |
 |---|---|---|---|
 | **Local**, `/home/deploy/backups/digital-library` | **Removed once a file is 15 whole days old** | `find -maxdepth 1 -type f -name 'library-*' -mtime +14 -delete`, run by the nightly job | **Decided**, and unchanged from the retired script's intent |
-| **Offsite**, the bucket | **Not set by anything in this repository** | A bucket lifecycle rule in the vendor console. **Owed by the Operator**, action 5 below | **Decided** |
+| **Offsite**, the bucket | **Not set by anything in this repository** | A bucket lifecycle rule in the vendor console. **Owed by the Operator**, action 5 below. *(Amended 2026-09-24: set on 2026-08-25 as `expire-digital-library-30d`, 30 days on `digital-library/`, named limit 4)* | **Decided**, and the rule **Observed 2026-08-25**, set through the S3 API and read back |
 
 **The local window is 14 in the predicate and 15 in effect, and the record says so rather than
 rounding.** `find -mtime +14` matches a file whose age in whole 24-hour units is **greater than 14**,
@@ -380,6 +390,10 @@ box.
    with `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` in
    the environment, or by sourcing `/etc/cuatro/library-backup.env` first. As `deploy`: the file is
    group readable by `deploy` precisely so this and the cron job both work without `sudo`.
+   *(Corrected 2026-09-24: a plain `.` of the file sets shell variables and exports none, and
+   `s3-object.sh` is a separate process, so it refuses with every variable missing. Load it with
+   `set -a; . /etc/cuatro/library-backup.env; set +a`, which also leaves `$BACKUP_PASSPHRASE` set
+   for step 3.)*
 3. **Decrypt.**
    `printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt --output /tmp/restore.tar.gz /tmp/restore.tar.gz.gpg`
 4. **Unpack to a scratch directory first, never straight over the live tree.**
@@ -425,7 +439,10 @@ BACKUP_PASSPHRASE=<the symmetric passphrase>
 ```
 
 **Nothing in that file may ever appear in this repository**, which is why the file is on the box and
-this record carries only the variable names.
+this record carries only the variable names. *(Amended 2026-09-24: true of the credentials and the
+passphrase, which never have. The endpoint, which carries the account id, and the bucket name are
+identifiers rather than secrets, and both appear: the bucket in "First offsite run" below, and both
+in `ops/verify-backup-passphrase.ps1`, whose other defects are DW-132.)*
 
 **What the config file may and may not set.** It is read before any path or knob is resolved, in a
 subshell with a cleared environment, and only the names below are carried back out. A hand-edited
@@ -466,15 +483,32 @@ to nothing at all falls back to the documented default, which fails closed rathe
 `sudo install -o root -g root -m 0755`, and the checksums matched the committed files exactly, which
 is the same proof-of-install Story 1-5 used for `capacity-sampler.sh`.
 
-**These three values are held true by a test.** `ops/__tests__/library-backup.test.ts` hashes each
-committed script and fails if the digest recorded here has gone stale, so a patch that is not
-reinstalled and re-recorded cannot pass CI.
+**These values are held true by a test.** `ops/__tests__/library-backup.test.ts` hashes each
+committed script and fails if the Committed column has gone stale, so a patch cannot pass CI without
+being recorded here.
 
-| Path | Mode | SHA-256 |
-|---|---|---|
-| `/usr/local/sbin/s3-object.sh` | `0755 root:root` | `5ab0b586249d7fbdc6483677d3a03227fea9161a217d017d1f6934fda29a0046` |
-| `/usr/local/sbin/library-backup.sh` | `0755 root:root` | `6d1c25f105ec6717bb9f91b9c7e4fa7671705f730f2c91bf03760fc2df54ef5a` |
-| `/usr/local/sbin/library-restore-verify.sh` | `0755 root:root` | `0c4d8502a5778bbcaeacf23eea35bf00c253d839662ede017d8be0b97583df04` |
+**Amended 2026-09-24.** The table used to carry one digest, held equal to the committed file, which
+left a patch two outcomes: a red suite until the Operator reinstalled it, or an uninstalled digest
+written down as installed. The cold review of Story 1-8 (Epic 1 retrospective action 3, Operator
+ruling 2026-09-24) changed all three scripts, and nothing in this repository can reach the box, so
+the table now carries both. **Committed** is the file in the repository, and the test holds it
+exactly. **Installed** is what was last observed on the box, with its date; while the two differ, the
+same test requires an open Pending Operator row naming the script, which is action 9.
+
+| Path | Mode | Committed SHA-256 | Installed SHA-256 |
+|---|---|---|---|
+| `/usr/local/sbin/s3-object.sh` | `0755 root:root` | `61f491f9dbe138854459c9a66addf10313d085faf9cc35e8eec929a74b90d53b` | `5ab0b586249d7fbdc6483677d3a03227fea9161a217d017d1f6934fda29a0046`, **Observed 2026-08-24T12:52Z**. Action 9 replaces it |
+| `/usr/local/sbin/library-backup.sh` | `0755 root:root` | `92ceb1e594556aacbb243f49bf3234b223b171e3ad3d1c33b2f178dd95d0c29a` | `6d1c25f105ec6717bb9f91b9c7e4fa7671705f730f2c91bf03760fc2df54ef5a`, **Observed 2026-08-24T12:52Z**. Action 9 replaces it |
+| `/usr/local/sbin/library-restore-verify.sh` | `0755 root:root` | `c5b8635a43636f9eb8873f50487ed19264a200e690c3a4714921f8bb2f17721b` | `0c4d8502a5778bbcaeacf23eea35bf00c253d839662ede017d8be0b97583df04`, **Observed 2026-08-24T12:52Z**. Action 9 replaces it |
+
+**What the three changed, and what stays true on the box until action 9.** The installed
+`s3-object.sh` hands every HMAC key in the signing chain to `openssl` as an argument, beginning with
+`AWS4` plus the secret access key, so for the few milliseconds each call lives any account on the box
+can read the secret in `/proc/<pid>/cmdline`; the committed one builds the HMAC on a pipe. The
+installed pair also ignores `S3_CONNECT_TIMEOUT` and `S3_MAX_TIME` when the config file sets them, and
+accepts a zero, which `curl` reads as no limit. A config holding only the six lines under
+"Configuration", which is what action 4 prescribed, sets neither timeout, so on that config the two
+versions differ only in how the signature is computed, and `selftest` proves that part on the box.
 
 **The crontab, after. Observed 2026-08-24T12:19Z**, `crontab -l` for `deploy`. Root still has none.
 
@@ -543,11 +577,11 @@ runs it, and it passed every stage. This is the run that turns named limits 1, 2
 statements about a gap into statements about a state.
 
 ```
-library-backup ts=2026-08-25T02:48:28Z snapshot=ok own=ok integrity=ok objects=23
-  archive=library-20260825T024828Z.tar.gz.gpg tar=first-attempt bytes=3350 encrypt=aes256
-  size=within-ceiling redis=empty offsite=ok-digital-library/library-20260825T024828Z.tar.gz.gpg
-  roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
+library-backup ts=2026-08-25T02:48:28Z snapshot=ok own=ok integrity=ok objects=23 archive=library-20260825T024828Z.tar.gz.gpg tar=first-attempt bytes=3350 encrypt=aes256 size=within-ceiling redis=empty offsite=ok-digital-library/library-20260825T024828Z.tar.gz.gpg roundtrip=sha256-match restore=verified prune=removed-0-aged-over-14-whole-days exit=0
 ```
+
+*(Amended 2026-09-24: shown as the one line the job prints. It was wrapped over four indented lines
+here, which is not the line a `grep` of the log would find.)*
 
 | Item | Value | Nature |
 |---|---|---|
@@ -583,7 +617,9 @@ Written down because a coverage claim with an unstated hole reads as coverage.
 1. **There is an offsite copy, as of 2026-08-25.** Actions 1 and 3 to 6 are complete: the bucket
    exists, the config is written, the lifecycle rule is set, and the first run put a verified object
    in the bucket. What remains of the original limit is action 2, the free-tier figures, which are
-   still the vendor's published numbers rather than ones read from the console.
+   still the vendor's published numbers rather than ones read from the console. *(Amended
+   2026-09-24: action 2 itself was performed on 2026-08-27, against the published pricing page, and
+   its row is dated. The published-not-console caveat is all that remains of this limit.)*
 2. **A live 200 from Cloudflare R2 has now been observed.** The first offsite run above did a real
    `PUT`, a real `GET` for the round trip, and a real restore from the bucket. The SigV4 arithmetic
    remains proved against AWS's published vectors and an independent implementation, and it is now
@@ -644,18 +680,23 @@ Written down because a coverage claim with an unstated hole reads as coverage.
 
 ## Pending Operator actions
 
-Everything an agent could do is done and committed. These eight are console and shell acts.
+Everything an agent could do is done and committed. These are console and shell acts.
+
+**Amended 2026-09-24.** Rows 1 to 8 were performed by 2026-08-27, which this record's body and the
+board both said, while every cell below still read `_not done_`; the cold review of Story 1-8 dated
+them from the evidence each cell names. Row 9 is new, from the same review.
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Create the R2 bucket.** In the Cloudflare dashboard, R2, Create bucket. Name it something the estate will recognise, for example `cuatro-digital-library-backup`. Note the account id from the endpoint `https://<account-id>.r2.cloudflarestorage.com` | Location hint may be left automatic. Do **not** make the bucket public | _not done_ |
-| 2 | **Confirm the cost line before you rely on it.** On the same page, read the current free tier for storage and for Class A and Class B operations, and correct "The destination and its cost" above if the published numbers have moved | This row exists because this build could not reach the console, and the $0.00 in that table is a decision, not an observation | _not done_ |
-| 3 | **Create an API token scoped to that one bucket, with Object Read and Write and nothing else.** R2, Manage API tokens, Create API token. Copy the Access Key ID and the Secret Access Key once, because the secret is shown once. Generate a passphrase of at least 32 random characters and store all three in the password manager **before** writing them to the box | Object Read is needed as well as Write, because the round trip and the restore both read the object back. Read is not a widening of the write-only stance: the token still cannot delete | _not done_ |
-| 4 | **Write the config file on the box, readable by the account that runs it.** As `deploy` on `177.7.52.248`: `sudo install -d -o root -g root -m 0755 /etc/cuatro`, then `sudo install -o root -g deploy -m 0640 /dev/null /etc/cuatro/library-backup.env`, then `sudo nano /etc/cuatro/library-backup.env` and paste the six lines under "Configuration" with the real values. Verify with `sudo stat -c '%U %G %a' /etc/cuatro/library-backup.env`, which must print `root deploy 640` | The group matters. The cron entry is in `deploy`'s crontab, so a root-only 0600 file would make every night exit 1 with `offsite=config-unreadable`. Use an editor, not `echo`, so the secret never reaches the shell history | _not done_ |
-| 5 | **Set the offsite lifecycle rule.** In the bucket's Settings, Object lifecycle rules, add a rule that deletes objects under the prefix `digital-library/` after 30 days | 30 days offsite against 15 local is deliberate: the offsite copy is the one that survives losing the box, so it should outlive the local one | _not done_ |
-| 6 | **Run it once in the shape cron actually runs it, and read the summary line.** As `deploy`: `env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /usr/local/sbin/library-backup.sh`. Not `sudo`, and not from your interactive shell. It must exit **0** and the line must read `offsite=ok-digital-library/library-...`, `roundtrip=sha256-match` and `restore=verified` | The retired script died for 25 nights on precisely the difference between a hand run and a cron run, so an acceptance run that validated a different environment would prove nothing. A root run would also leave a root-owned archive in a `deploy` owned directory, which is one of the defects this story removed | _not done_ |
-| 7 | **Prove the passphrase from somewhere that is not the box.** On your own machine, download one object from the bucket through the Cloudflare dashboard, then decrypt it using the passphrase **as stored in the password manager**, typed or pasted from there rather than copied off the box: `gpg --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt --output restored.tar.gz <object>` and then `tar -tzf restored.tar.gz`. Delete both files afterwards | This is the only check that can catch a passphrase mistyped into the password manager. Encryption and verification on the box both read the same value from the same file, so every nightly run would stay green while the copy of record was unopenable by anybody. It is also the only thing that makes the 1 hour RTO an estimate rather than a hope | _not done_ |
-| 8 | **Record the result.** Paste action 6's summary line into this file under a new "First offsite run" heading with its UTC date, replace the projected object size in "The destination and its cost" with the measured one, note action 7's outcome, and change named limits 1, 2 and 5 to describe the state that now holds | The record is the artifact. A backup path nobody wrote down is one nobody can audit | _not done_ |
+| 1 | **Create the R2 bucket.** In the Cloudflare dashboard, R2, Create bucket. Name it something the estate will recognise, for example `cuatro-digital-library-backup`. Note the account id from the endpoint `https://<account-id>.r2.cloudflarestorage.com` | Location hint may be left automatic. Do **not** make the bucket public | 2026-08-25. `cuatro-backups`, not public ("First offsite run") |
+| 2 | **Confirm the cost line before you rely on it.** On the same page, read the current free tier for storage and for Class A and Class B operations, and correct "The destination and its cost" above if the published numbers have moved | This row exists because this build could not reach the console, and the $0.00 in that table is a decision, not an observation | 2026-08-27. Read from Cloudflare's published pricing page rather than the console, unchanged ("The destination and its cost", named limit 1) |
+| 3 | **Create an API token scoped to that one bucket, with Object Read and Write and nothing else.** R2, Manage API tokens, Create API token. Copy the Access Key ID and the Secret Access Key once, because the secret is shown once. Generate a passphrase of at least 32 random characters and store all three in the password manager **before** writing them to the box | Object Read is needed as well as Write, because the round trip and the restore both read the object back. Read is not a widening of the write-only stance: the token still cannot delete. *(Amended 2026-09-24: that last sentence was never observed, and a `PUT` to an existing key overwrites it whatever the delete permission. DW-134)* | 2026-08-25, with two departures from the row as written. The token was created and carried the first offsite run, and its permission set was never read, so "that one bucket" and "nothing else" are unobserved (DW-134). The passphrase was generated on the box and filed in the password manager afterwards, the same day, which is the reverse of the order the row asks for; action 7 is what proved the filed copy ("First offsite run") |
+| 4 | **Write the config file on the box, readable by the account that runs it.** As `deploy` on `177.7.52.248`: `sudo install -d -o root -g root -m 0755 /etc/cuatro`, then `sudo install -o root -g deploy -m 0640 /dev/null /etc/cuatro/library-backup.env`, then `sudo nano /etc/cuatro/library-backup.env` and paste the six lines under "Configuration" with the real values. Verify with `sudo stat -c '%U %G %a' /etc/cuatro/library-backup.env`, which must print `root deploy 640` | The group matters. The cron entry is in `deploy`'s crontab, so a root-only 0600 file would make every night exit 1 with `offsite=config-unreadable`. Use an editor, not `echo`, so the secret never reaches the shell history | 2026-08-25. Read by the first offsite run as `deploy` |
+| 5 | **Set the offsite lifecycle rule.** In the bucket's Settings, Object lifecycle rules, add a rule that deletes objects under the prefix `digital-library/` after 30 days | 30 days offsite against 15 local is deliberate: the offsite copy is the one that survives losing the box, so it should outlive the local one | 2026-08-25. `expire-digital-library-30d`, set through the S3 API and read back (named limit 4) |
+| 6 | **Run it once in the shape cron actually runs it, and read the summary line.** As `deploy`: `env -i HOME=/home/deploy LOGNAME=deploy PATH=/usr/bin:/bin SHELL=/bin/sh /usr/local/sbin/library-backup.sh`. Not `sudo`, and not from your interactive shell. It must exit **0** and the line must read `offsite=ok-digital-library/library-...`, `roundtrip=sha256-match` and `restore=verified` | The retired script died for 25 nights on precisely the difference between a hand run and a cron run, so an acceptance run that validated a different environment would prove nothing. A root run would also leave a root-owned archive in a `deploy` owned directory, which is one of the defects this story removed | 2026-08-25. `2026-08-25T02:48:28Z`, exit 0 ("First offsite run") |
+| 7 | **Prove the passphrase from somewhere that is not the box.** On your own machine, download one object from the bucket through the Cloudflare dashboard, then decrypt it using the passphrase **as stored in the password manager**, typed or pasted from there rather than copied off the box: `gpg --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt --output restored.tar.gz <object>` and then `tar -tzf restored.tar.gz`. Delete both files afterwards | This is the only check that can catch a passphrase mistyped into the password manager. Encryption and verification on the box both read the same value from the same file, so every nightly run would stay green while the copy of record was unopenable by anybody. It is also the only thing that makes the 1 hour RTO an estimate rather than a hope | 2026-08-27. `ops/verify-backup-passphrase.ps1` with the manager's copy (named limit 5) |
+| 8 | **Record the result.** Paste action 6's summary line into this file under a new "First offsite run" heading with its UTC date, replace the projected object size in "The destination and its cost" with the measured one, note action 7's outcome, and change named limits 1, 2 and 5 to describe the state that now holds | The record is the artifact. A backup path nobody wrote down is one nobody can audit | 2026-08-27. "First offsite run", the measured size and named limits 1, 2 and 5 |
+| 9 | **Install the 2026-09-24 scripts on the box.** After the `dev` into `main` merge that carries them has deployed, as `deploy` on `177.7.52.248`, in the checkout the deploy maintains. (1) `cd /home/deploy/cuatro-portfolio && sha256sum ops/s3-object.sh ops/library-backup.sh ops/library-restore-verify.sh` must print the Committed column above; stop here if it does not. (2) Keep the installed copies, never overwriting one a retry already kept: `for f in s3-object.sh library-backup.sh library-restore-verify.sh; do [ -e /usr/local/sbin/$f.pre-2026-09-24 ] \|\| sudo cp -p /usr/local/sbin/$f /usr/local/sbin/$f.pre-2026-09-24; done`. (3) Install all three or stop at the first failure: `( set -e; for f in s3-object.sh library-backup.sh library-restore-verify.sh; do sudo install -o root -g root -m 0755 ops/$f /usr/local/sbin/$f; done )`. (4) `sha256sum /usr/local/sbin/s3-object.sh /usr/local/sbin/library-backup.sh /usr/local/sbin/library-restore-verify.sh` must print the same three. (5) `/usr/local/sbin/s3-object.sh selftest` must end `matches byte for byte`. (6) One run in the cron shape of action 6 must exit **0** with `roundtrip=sha256-match` and `restore=verified`. **If any of steps 3 to 6 fails**, put all three old copies back with `for f in s3-object.sh library-backup.sh library-restore-verify.sh; do sudo install -o root -g root -m 0755 /usr/local/sbin/$f.pre-2026-09-24 /usr/local/sbin/$f; done`, confirm with `sha256sum` that the box again matches the Installed column, and record the failure here | The cold review of Story 1-8 changed all three in the repository (see "What is installed on the box"): the signing no longer puts key material in argv, and the two timeouts a config sets now reach the object client, and a zero is refused. Until this row is done the box runs the 2026-08-24 install. Afterwards, write the three installed digests and the date into the Installed column, paste the run's summary line under a dated heading, date this cell, and delete the `.pre-2026-09-24` copies | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace the cell with the ISO 8601 UTC
 completion date and leave the row in place. Deletion is not used: which part of the path was
