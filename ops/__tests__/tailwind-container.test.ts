@@ -29,11 +29,14 @@ const CONTRACTS = resolve(process.cwd(), 'contracts');
 const require_ = createRequire(resolve(process.cwd(), 'package.json'));
 
 /**
- * Tailwind 4.3.3's container scale for the eight sizes, as `tailwindcss/theme.css` declares it.
+ * Tailwind 4.3.3's whole container scale, as `tailwindcss/theme.css` declares it. The eight from
+ * `2xs` to `3xl` are the ones the 1.0.0 keys shadowed and the ruling names; the other five are held
+ * too, so a spacing key added later at any container size fails here rather than on a screenshot.
  * Literal rather than read from that file, so a Tailwind bump that moves a width is a reviewed line
  * here, the way the stock utility list in `tests/e2e/contract-tailwind.pw.ts` is.
  */
 const CONTAINER_WIDTHS: [size: string, width: string][] = [
+  ['3xs', '16rem'],
   ['2xs', '18rem'],
   ['xs', '20rem'],
   ['sm', '24rem'],
@@ -42,6 +45,10 @@ const CONTAINER_WIDTHS: [size: string, width: string][] = [
   ['xl', '36rem'],
   ['2xl', '42rem'],
   ['3xl', '48rem'],
+  ['4xl', '56rem'],
+  ['5xl', '64rem'],
+  ['6xl', '72rem'],
+  ['7xl', '80rem'],
 ];
 
 const loadStylesheet = async (id: string, base: string) => {
