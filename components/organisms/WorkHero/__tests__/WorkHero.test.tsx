@@ -19,42 +19,30 @@ import { work } from '@/content/work';
  *
  * **What the mocks honour.** `next/dynamic` is replaced by a recorder that keeps the loader and the
  * options it was handed, so the options are read as the component wrote them and the loader can be
- * driven against a module that resolves, one that lacks the export and one that fails. GSAP records
- * every tween it is asked for, so the binding's vars are read as written and an entrance tween coming
- * back is seen. `useReduceMotion` answers whatever the case sets, which is the one input the torus's
- * branch reads.
+ * driven against a module that resolves, one that lacks the export and one that fails; the stand-in
+ * it returns keeps the props the hero hands the torus. `useReduceMotion` answers whatever the case
+ * sets, which is the one input the torus's branch reads.
+ *
+ * **The hero runs no GSAP since 2026-09-24 (DW-36, Operator ruling 2026-09-24).** Its entrance is the
+ * stylesheet's, and the scroll binding moved behind the boundary into `TorusCanvas`, whose own suite
+ * reads its vars, so `ScrollTrigger` loads with the torus rather than with the page.
  */
 
 const mocks = vi.hoisted(() => ({
   reduceMotion: false,
   dynamicCalls: [] as { loader: () => Promise<unknown>; options?: Record<string, unknown> }[],
-  to: vi.fn(),
-  from: vi.fn(),
-  fromTo: vi.fn(),
+  torusProps: null as Record<string, unknown> | null,
 }));
-
-vi.mock('gsap', () => {
-  const gsapMock = {
-    registerPlugin: vi.fn(),
-    to: mocks.to,
-    from: mocks.from,
-    fromTo: mocks.fromTo,
-    context: vi.fn((fn: (context: unknown) => void) => {
-      fn({});
-      return { revert: vi.fn() };
-    }),
-  };
-  return { gsap: gsapMock, default: gsapMock };
-});
-
-vi.mock('gsap/ScrollTrigger', () => ({ ScrollTrigger: {} }));
 
 vi.mock('@/hooks/useReduceMotion', () => ({ useReduceMotion: () => mocks.reduceMotion }));
 
 vi.mock('next/dynamic', () => ({
   default: (loader: () => Promise<unknown>, options?: Record<string, unknown>) => {
     mocks.dynamicCalls.push({ loader, options });
-    const MockTorus = () => <div data-testid='torus-canvas' />;
+    const MockTorus = (props: Record<string, unknown>) => {
+      mocks.torusProps = props;
+      return <div data-testid='torus-canvas' />;
+    };
     MockTorus.displayName = 'MockTorus';
     return MockTorus;
   },
@@ -79,9 +67,7 @@ const SERVED = parse(MARKUP);
 
 beforeEach(() => {
   mocks.reduceMotion = false;
-  mocks.to.mockClear();
-  mocks.from.mockClear();
-  mocks.fromTo.mockClear();
+  mocks.torusProps = null;
 });
 
 describe('the hero as the server renders it', () => {
@@ -132,28 +118,22 @@ describe('the hero as the server renders it', () => {
   });
 });
 
-describe('the torus is drawn only where motion is allowed, and bound to the scroll 1:1', () => {
-  it('draws the torus and binds it with scrub: true when no reduced motion is asked for', () => {
+describe('the torus is drawn only where motion is allowed, and handed the hero it turns through', () => {
+  it('draws the torus when no reduced motion is asked for, and hands it this section as its trigger', () => {
     const { container } = render(<WorkHero />);
     expect(screen.getByTestId('torus-canvas'), 'the torus was not drawn').toBeInTheDocument();
-    expect(mocks.to, 'the scroll binding was not created exactly once').toHaveBeenCalledTimes(1);
-    const [target, vars] = mocks.to.mock.calls[0] as [{ value: number }, Record<string, unknown>];
-    expect(target, 'the binding does not drive the scroll bridge').toEqual({ value: 0 });
-    expect(vars.value).toBe(1);
-    expect(vars.ease, 'the binding eases, so the rotation would not track the scroll').toBe('none');
-    expect(vars.scrollTrigger, 'the binding is not the hero scrolled through the viewport, 1:1').toEqual({
-      trigger: container.querySelector('.work-hero'),
-      start: 'top bottom',
-      end: 'bottom top',
-      scrub: true,
-    });
+    const triggerRef = mocks.torusProps?.triggerRef as { current: unknown } | undefined;
+    expect(container.querySelector('.work-hero'), 'the hero renders no section to hand over').not.toBeNull();
+    expect(triggerRef?.current, 'the torus is not handed the hero section its scroll binding runs over').toBe(
+      container.querySelector('.work-hero')
+    );
   });
 
-  it('requests no torus and creates no scroll binding under reduced motion', () => {
+  it('requests no torus under reduced motion', () => {
     mocks.reduceMotion = true;
     render(<WorkHero />);
     expect(screen.queryByTestId('torus-canvas'), 'the torus is drawn under reduced motion').not.toBeInTheDocument();
-    expect(mocks.to, 'a scroll binding exists with nothing to drive').not.toHaveBeenCalled();
+    expect(mocks.torusProps, 'the torus was rendered under reduced motion').toBeNull();
   });
 
   it('takes the torus away when the preference changes to reduce mid-session', () => {
@@ -164,13 +144,17 @@ describe('the torus is drawn only where motion is allowed, and bound to the scro
     expect(screen.queryByTestId('torus-canvas'), 'the torus outlived a preference for reduced motion').not.toBeInTheDocument();
   });
 
-  it('runs no entrance tween from script: the entrance is the stylesheet’s', () => {
-    render(<WorkHero />);
-    mocks.reduceMotion = true;
-    render(<WorkHero />);
-    expect(mocks.from, 'a from-tween is back').not.toHaveBeenCalled();
-    expect(mocks.fromTo, 'a fromTo-tween is back').not.toHaveBeenCalled();
-    expect(mocks.to.mock.calls.every(([target]) => (target as { value?: number }).value !== undefined), 'a tween targets something other than the scroll bridge').toBe(true);
+  it('runs no GSAP at all: the entrance is the stylesheet’s and the scroll binding is the torus’s', () => {
+    // Read off the source, because what is asserted is what the page's own chunk carries: a GSAP or
+    // `ScrollTrigger` import here puts the library on `/work`'s document for every visitor, the one
+    // who never gets the torus included (DW-36). The control shows the read firing on both shapes.
+    const GSAP_IMPORT = /^import[^;]*from\s+['"]gsap(?:\/[\w-]+)?['"]/m;
+    const GSAP_HOOK = /^import[^;]*useGsapContext/m;
+    expect(SOURCE, 'the hero imports GSAP or one of its plugins').not.toMatch(GSAP_IMPORT);
+    expect(SOURCE, 'the hero imports the GSAP hook').not.toMatch(GSAP_HOOK);
+    expect("import { ScrollTrigger } from 'gsap/ScrollTrigger';").toMatch(GSAP_IMPORT);
+    expect("import { gsap } from 'gsap';").toMatch(GSAP_IMPORT);
+    expect("import { useGsapContext } from '@/hooks/useGsapContext';").toMatch(GSAP_HOOK);
   });
 });
 
@@ -204,9 +188,9 @@ describe('the torus is behind one contained dynamic boundary', () => {
   it('draws nothing when the module resolves without the export', async () => {
     vi.doMock('@/components/molecules/TorusCanvas/TorusCanvas', () => ({ TorusCanvas: undefined }));
     try {
-      const Resolved = (await mocks.dynamicCalls[0].loader()) as ComponentType<{ scrollRef: RefObject<{ value: number }> }>;
+      const Resolved = (await mocks.dynamicCalls[0].loader()) as ComponentType<{ triggerRef: RefObject<HTMLElement | null> }>;
       expect(typeof Resolved, 'the loader resolved to something React cannot render').toBe('function');
-      const { container } = render(<Resolved scrollRef={{ current: { value: 0 } }} />);
+      const { container } = render(<Resolved triggerRef={{ current: null }} />);
       expect(container.innerHTML, 'a missing export drew something').toBe('');
     } finally {
       vi.doUnmock('@/components/molecules/TorusCanvas/TorusCanvas');
@@ -220,8 +204,8 @@ describe('the torus is behind one contained dynamic boundary', () => {
       throw new Error('the chunk did not arrive');
     });
     try {
-      const Resolved = (await mocks.dynamicCalls[0].loader()) as ComponentType<{ scrollRef: RefObject<{ value: number }> }>;
-      const { container } = render(<Resolved scrollRef={{ current: { value: 0 } }} />);
+      const Resolved = (await mocks.dynamicCalls[0].loader()) as ComponentType<{ triggerRef: RefObject<HTMLElement | null> }>;
+      const { container } = render(<Resolved triggerRef={{ current: null }} />);
       expect(container.innerHTML, 'a failed chunk drew something').toBe('');
       expect(
         logged.mock.calls.some(([message]) => typeof message === 'string' && message.startsWith('WorkHero: the torus chunk failed to load')),

@@ -33,19 +33,29 @@ const CANVAS = '.work-hero__canvas-wrap canvas';
 const REPO_ROOT = resolve(__dirname, '..', '..');
 
 /**
- * The WebGL fingerprints, read out of `ops/asset-budget.mjs` rather than restated, the way
+ * The fingerprints, read out of `ops/asset-budget.mjs` rather than restated, the way
  * `tests/e2e/narrative.pw.ts` reads them (copied, not imported: a `.pw.ts` imported by another
  * registers its tests twice). A parse that dropped rows would narrow the scan to a clean result, so
  * the entries parsed are held to the entries declared.
  */
-const WEBGL_MARKS = ((): string[] => {
+const FINGERPRINTS = ((): { library: string; mark: string; webgl: boolean }[] => {
   const source = readFileSync(join(REPO_ROOT, 'ops', 'asset-budget.mjs'), 'utf8');
   const block = /export const FINGERPRINTS = \[([\s\S]*?)\n\];/.exec(source)?.[1];
   if (!block) throw new Error('ops/asset-budget.mjs declares no FINGERPRINTS array this parse can find');
   const entries = [...block.matchAll(/\{\s*library:\s*'([^']+)',\s*mark:\s*'((?:[^'\\]|\\.)*)',\s*webgl:\s*(true|false)\s*\}/g)];
   const declared = (block.match(/\blibrary:/g) ?? []).length;
   if (entries.length !== declared) throw new Error(`FINGERPRINTS parsed to ${entries.length} of ${declared} entries`);
-  return entries.filter((match) => match[3] === 'true').map((match) => match[2].replace(/\\(.)/g, '$1'));
+  return entries.map((match) => ({ library: match[1], mark: match[2].replace(/\\(.)/g, '$1'), webgl: match[3] === 'true' }));
+})();
+
+/** The marks of the WebGL stack, which is what makes a chunk the torus's. */
+const WEBGL_MARKS = FINGERPRINTS.filter((entry) => entry.webgl).map((entry) => entry.mark);
+
+/** `ScrollTrigger`'s mark: the library that turns the torus with the scroll, and nothing else here. */
+const SCROLL_BINDING_MARK = ((): string => {
+  const entry = FINGERPRINTS.find((candidate) => candidate.library === 'gsap/ScrollTrigger');
+  if (!entry) throw new Error('ops/asset-budget.mjs no longer fingerprints gsap/ScrollTrigger');
+  return entry.mark;
 })();
 
 /** Navigate, refuse anything but a 200, and wait for the faces. */
@@ -187,7 +197,7 @@ const boxOf = async (page: Page, selector: string): Promise<Box> => {
   return box;
 };
 
-/** Every script the page requested, and which of them carry a WebGL fingerprint. */
+/** Every script the page requested, and which of them carry one of the marks asked about. */
 const scriptLedger = (page: Page) => {
   const requested = new Set<string>();
   page.on('request', (issued) => {
@@ -196,7 +206,7 @@ const scriptLedger = (page: Page) => {
   return {
     requested,
     /** Wait until the set stops growing across two reads, then classify each script by its body. */
-    carrying: async (request: APIRequestContext): Promise<string[]> => {
+    carrying: async (request: APIRequestContext, marks: readonly string[] = WEBGL_MARKS): Promise<string[]> => {
       let previous = -1;
       await expect
         .poll(
@@ -213,7 +223,7 @@ const scriptLedger = (page: Page) => {
         const response = await request.get(url);
         if (response.status() !== 200) continue;
         const text = await response.text();
-        if (WEBGL_MARKS.some((mark) => text.includes(mark))) found.push(url.split('/').pop() ?? url);
+        if (marks.some((mark) => text.includes(mark))) found.push(url.split('/').pop() ?? url);
       }
       return found;
     },
@@ -404,6 +414,31 @@ test.describe('under reduced motion the torus is not requested at all', () => {
       console.log(`work-hero: with motion allowed, WebGL-carrying: ${found.join(', ')}`);
       expect(found.length, 'the ledger finds no WebGL chunk where the torus is drawn, so its clean read proves nothing').toBeGreaterThan(0);
       expect(await moving.locator('.work-hero__canvas-wrap').boundingBox(), 'the canvas box is omitted where motion is allowed').not.toBeNull();
+    });
+  });
+
+  test('and ScrollTrigger arrives with the torus, never without it', async ({ page, browser, request }) => {
+    // Until 2026-09-24 `app/providers.tsx` and this hero both imported `ScrollTrigger` at module
+    // scope, so every document carried it and a visitor who never gets the torus fetched the library
+    // that turns it. DW-36's Operator ruling of that day moved the binding and the registration into
+    // `TorusCanvas`, behind the one boundary, so the library arrives with the torus or not at all.
+    const ledger = scriptLedger(page);
+    await goTo(page);
+    await hydratedHero(page);
+    await frames(page, 4);
+    const carrying = await ledger.carrying(request, [SCROLL_BINDING_MARK]);
+    console.log(`work-hero: under reduced motion, ScrollTrigger-carrying: ${carrying.join(', ') || 'none'}`);
+    expect(ledger.requested.size, 'no script was requested at all, so the ledger read nothing').toBeGreaterThan(0);
+    expect(carrying, 'ScrollTrigger was requested under reduced motion, where there is no torus to turn').toEqual([]);
+
+    // The control: where the torus is drawn, the same read finds the library among what was requested.
+    await onContext(browser, { reducedMotion: 'no-preference' }, async (moving) => {
+      const movingLedger = scriptLedger(moving);
+      await goTo(moving);
+      await moving.locator(CANVAS).waitFor({ state: 'attached', timeout: 20_000 });
+      const found = await movingLedger.carrying(request, [SCROLL_BINDING_MARK]);
+      console.log(`work-hero: with motion allowed, ScrollTrigger-carrying: ${found.join(', ')}`);
+      expect(found.length, 'no requested script carries ScrollTrigger where the torus is drawn, so the clean read proves nothing').toBeGreaterThan(0);
     });
   });
 

@@ -183,9 +183,8 @@ const documentScriptUrls = (html: string, base: string): string[] => {
 };
 
 const goTo = async (page: Page, route: string): Promise<void> => {
-  // Not `networkidle`: the GSAP ticker, and Lenis where the context has not asked for reduced
-  // motion (A-17), keep the Hub from ever reaching it (`tests/e2e/harness.ts:92-95`). That matters
-  // more than usual on a route whose whole subject is loading.
+  // Not `networkidle`, for the reason `expectRouteScreenshot` in `tests/e2e/harness.ts` gives. That
+  // matters more than usual on a route whose whole subject is loading.
   const response = await page.goto(route, { waitUntil: 'load' });
   expect(response, `navigating to ${route} produced no response`).toBeTruthy();
   expect(response?.status(), `${route} did not answer 200`).toBe(200);
@@ -424,6 +423,48 @@ test.describe('the narrative is not in what the browser fetches before it can pa
       'the same scan finds no WebGL library in anything the page fetched on demand either, so it ' +
         'is not discriminating and the clean result above proves nothing'
     ).toBeGreaterThan(0);
+  });
+
+  test("and no route's document carries a narrative library but GSAP, where the Work item uses it", async ({
+    request,
+    baseURL,
+  }) => {
+    // **`EXPERIENCE.md` Rule 1 on every route, not only `/` (DW-36).** Until 2026-09-24
+    // `app/providers.tsx` put `lenis`, `gsap` and `ScrollTrigger` on every document through the root
+    // layout, so a route with no motion of its own shipped a scroll library at first paint. The
+    // Operator ruling of that day deleted it: `ScrollTrigger` loads with the `/work` torus, behind its
+    // boundary, and GSAP's core is on the two documents whose Work item runs its disclosure tween,
+    // which `EXPERIENCE.md` § Secondary surfaces names and which is not narrative. Every fingerprint in
+    // the table is read here, WebGL or not, so a library put back on a document is named.
+    //
+    // The control is in the expectation: `/work` and `/cv` must be seen carrying GSAP's core, so a
+    // scan that read nothing anywhere fails there. `tests/e2e/work-hero.pw.ts` shows the
+    // `ScrollTrigger` mark firing on the chunk `/work` fetches once the torus is drawn.
+    const expected: Record<string, string[]> = {
+      '/': [],
+      '/work': ['gsap'],
+      '/cv': ['gsap'],
+      '/celeste': [],
+      [NOT_FOUND]: [],
+    };
+    const found: Record<string, string[]> = {};
+    for (const route of NAVIGABLE_ROUTES) {
+      const document = await request.get(new URL(route, baseURL).href);
+      expect([200, 404], `${route} answered ${document.status()}`).toContain(document.status());
+      const urls = documentScriptUrls(await document.text(), baseURL as string);
+      expect(urls.length, `the ${route} document references no script, so the scan reads nothing`).toBeGreaterThan(0);
+      const libraries = new Set<string>();
+      for (const url of urls) {
+        const response = await request.get(url);
+        expect(response.status(), `${url} is referenced by ${route} and answered ${response.status()}`).toBe(200);
+        const text = await response.text();
+        for (const entry of FINGERPRINTS) if (text.includes(entry.mark)) libraries.add(entry.library);
+      }
+      found[route] = [...libraries].sort();
+    }
+
+    console.log(`narrative: fingerprinted libraries per document, ${JSON.stringify(found)}`);
+    expect(found, 'a document carries a narrative library it has no use for, or lost the one it uses').toEqual(expected);
   });
 });
 
@@ -714,10 +755,10 @@ test.describe('the page is whole with the narrative blocked', () => {
       ).toBeVisible();
       await expect(page.locator('footer.site-footer'), 'the footer is gone with the narrative blocked').toBeVisible();
 
-      // `toBeInViewport` retries, which is what handles Lenis taking ownership of the scroll
-      // position a moment after hydration, a hazard this case meets only because it runs on
-      // `withMotion` (since A-17 the pinned context never constructs Lenis). Same concern as
-      // `tests/e2e/suite-directory.pw.ts:278-289`, without the fixed wait.
+      // `toBeInViewport` retries, so hydration landing a moment after the jump cannot fail this
+      // read early. It was written for Lenis taking the scroll position after hydration on this
+      // `withMotion` context, which DW-36 deleted on 2026-09-24; `landsOnHeading` in
+      // `tests/e2e/suite-directory.pw.ts` reads the same landing after a fixed window.
       await expect(
         page.locator(`#${HEADING_ID}`),
         `#${HEADING_ID} is off screen after the fragment navigation`
@@ -1470,13 +1511,13 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
   /**
    * Every `.ts` and `.tsx` file under one of the Hub's own source roots, tests excluded.
    *
-   * Read from disk rather than from the browser deliberately. `app/providers.tsx` registers
-   * `ScrollTrigger` and, only when the motion preference is not `reduce` (A-17), constructs Lenis;
-   * both register native `scroll` listeners of their own from inside `node_modules`, so a
-   * browser-side count of listeners cannot answer the question the rule asks, which is whether the
-   * Hub's own components do scroll work, and on the pinned context it would not even see Lenis.
-   * `tests/e2e/hit-target-floor.pw.ts` already reads the tree from a spec file for the same kind of
-   * claim.
+   * Read from disk rather than from the browser deliberately. `TorusCanvas` registers `ScrollTrigger`
+   * on `/work` where motion is allowed, and `ScrollTrigger` registers native `scroll` listeners of
+   * its own from inside `node_modules`, so a browser-side count of listeners cannot answer the
+   * question the rule asks, which is whether the Hub's own components do scroll work. Until
+   * 2026-09-24 `app/providers.tsx` registered it on every route beside Lenis, which did the same;
+   * DW-36 deleted both. `tests/e2e/hit-target-floor.pw.ts` already reads the tree from a spec file
+   * for the same kind of claim.
    *
    * A missing root is reported rather than thrown on, and the caller is told how many roots existed,
    * so a rename cannot turn this sweep into a pass over nothing.
@@ -1531,9 +1572,9 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
 
     const hits = files.filter((file) => SCROLL_LISTENER.test(readFileSync(join(REPO_ROOT, file), 'utf8')));
 
-    // Named for what it measures. Lenis and ScrollTrigger both register native `scroll` listeners
-    // from `node_modules`, so this is not a claim that no listener exists on the page; it is the
-    // claim `EXPERIENCE.md:696` actually makes, that the Hub's own code registers none.
+    // Named for what it measures. `ScrollTrigger` registers native `scroll` listeners from
+    // `node_modules`, so this is not a claim that no listener exists on the page; it is the claim
+    // `EXPERIENCE.md:696` actually makes, that the Hub's own code registers none.
     expect(hits, `EXPERIENCE.md:696 forbids a raw scroll listener:\n${hits.join('\n')}`).toEqual([]);
   });
 
@@ -1559,6 +1600,8 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
     // And it does not fire on the things that merely read like it, which is what makes a clean
     // sweep meaningful rather than merely narrow, and which is why the case above is titled for
     // `addEventListener` rather than for scroll work in general.
+    // The second needle is the call `app/providers.tsx` made until 2026-09-24, kept as the shape of
+    // a library's own scroll event, which the rule does not ask about.
     expect(SCROLL_LISTENER.test("element.addEventListener('wheel', onWheel)")).toBe(false);
     expect(SCROLL_LISTENER.test("lenis.on('scroll', ScrollTrigger.update)")).toBe(false);
   });

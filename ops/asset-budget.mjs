@@ -64,16 +64,20 @@ export const NARRATIVE_ESTIMATE_BYTES = [300 * KB, 450 * KB];
  *
  * `mark` is a literal string from the library's own source that no other source
  * in this tree produces. `webgl` marks the WebGL stack, which is what makes a
- * route a 3D route: `gsap` and `lenis` are narrative libraries too, and they are
- * on every route, which is the whole finding.
+ * route a 3D route: `gsap` and `gsap/ScrollTrigger` are narrative libraries by
+ * that line too, and until 2026-09-24 they rode on every route with `lenis`.
  *
  * Every mark is checked against every chunk on every run, and a mark that
  * matches nothing stops the run. See `proveFingerprints`.
  *
- * Ten rows until 2026-09-14, nine since: `gsap/SplitText` (mark `SplitText
- * called before fonts loaded`) left with Story 2-27, which rebuilt `GlitchText`,
- * its only importer, as server-rendered spans over one CSS keyframe. The row is
- * deleted rather than kept, because a mark that matches nothing stops the run.
+ * Ten rows until 2026-09-14, nine until 2026-09-24, eight since. Each row left
+ * with the last import that put its library in the build, and is deleted rather
+ * than kept, because a mark that matches nothing stops the run:
+ * `gsap/SplitText` (mark `SplitText called before fonts loaded`) with Story
+ * 2-27, which rebuilt `GlitchText` as server-rendered spans over one CSS
+ * keyframe; and `lenis` (mark `lenisVersion`) with DW-36, which deleted
+ * `app/providers.tsx` and smooth scroll with it on the Operator ruling of
+ * 2026-09-24.
  */
 export const FINGERPRINTS = [
   { library: 'three', mark: 'WebGLRenderer', webgl: true },
@@ -84,7 +88,6 @@ export const FINGERPRINTS = [
   { library: 'postprocessing', mark: 'KawaseBlurPass', webgl: true },
   { library: 'gsap', mark: 'GSAP target ', webgl: false },
   { library: 'gsap/ScrollTrigger', mark: 'scrollerProxy', webgl: false },
-  { library: 'lenis', mark: 'lenisVersion', webgl: false },
 ];
 
 /**

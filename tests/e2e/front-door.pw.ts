@@ -281,8 +281,7 @@ const onPath = async <T>(
 /**
  * Navigate, refuse to read anything off a page that did not answer 200, and wait for the fonts.
  *
- * Not `networkidle`: the GSAP ticker, and Lenis where the context has not asked for reduced motion
- * (A-17), keep the Hub from ever reaching it (`tests/e2e/harness.ts:92-95`).
+ * Not `networkidle`, for the reason `expectRouteScreenshot` in `tests/e2e/harness.ts` gives.
  */
 const goTo = async (page: Page, route: string = ROUTE): Promise<void> => {
   const response = await page.goto(route, { waitUntil: 'load' });

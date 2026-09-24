@@ -15,10 +15,11 @@ const REDUCE_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
  *
  * `matchMedia` is absent in a bare jsdom and in some embedded webviews. Calling it there throws
  * inside a `useState` initializer, which is not a caught render error but a component that never
- * mounts, and this hook has five consumers across every route: `HomeLayout.tsx`, `WorkHero.tsx`,
- * `WorkItem.tsx`, `hooks/useNarrativePath.ts` (calling since 2026-09-07 and never counted here until
- * A-17) and `app/providers.tsx` (since 2026-09-15, A-17). `GlitchText` was one more until
- * 2026-09-14, when Story 2-27 rebuilt it with no script in it.
+ * mounts, and this hook has four consumers across `/`, `/work` and `/cv`: `HomeLayout.tsx`,
+ * `WorkHero.tsx`, `WorkItem.tsx` and `hooks/useNarrativePath.ts` (calling since 2026-09-07 and never
+ * counted here until A-17). `GlitchText` was one more until 2026-09-14, when Story 2-27 rebuilt it
+ * with no script in it, and `app/providers.tsx` was one on every route from 2026-09-15 (A-17) until
+ * 2026-09-24, when DW-36 deleted it with Lenis.
  */
 const canAsk = (): boolean => typeof window !== 'undefined' && typeof window.matchMedia === 'function';
 
@@ -31,16 +32,16 @@ const canAsk = (): boolean => typeof window !== 'undefined' && typeof window.mat
  * 2-27 moved its entrance into CSS), each of which reads the value only inside a `useGsapContext`
  * or `useEffect` callback and its dependency array. `hooks/useNarrativePath.ts:175` was a consumer
  * that day too, uncounted, and reads it in its effect and dependency array only, so the claim holds
- * for it. `app/providers.tsx`, a consumer since 2026-09-15 (A-17), reads it the same way, in its
- * effect and that effect's dependency array only. Nothing branches on it in render output. A
- * consumer that starts to must guard its own first paint.
+ * for it. `app/providers.tsx`, a consumer from 2026-09-15 (A-17) until DW-36 deleted it on
+ * 2026-09-24, read it the same way. Nothing branches on it in render output. A consumer that starts
+ * to must guard its own first paint.
  *
  * **`WorkHero.tsx` is the one that does, since 2026-09-23 (Story 2-33), and it guards its first
  * paint as this paragraph asks.** It reads the value only in an effect and its dependency array, as
  * the others do, and copies it into its own state there: that state is `false` on the server and on
  * the first client render, so the torus it gates is absent from both and hydration compares equal,
- * and the render branch moves only once the effect has run. Its GSAP callback no longer reads the
- * hook at all, its entrance having moved into the stylesheet.
+ * and the render branch moves only once the effect has run. It runs no GSAP since 2026-09-24: its
+ * entrance is the stylesheet's and the torus's scroll binding is `TorusCanvas`'s (DW-36).
  */
 export function useReduceMotion(): boolean {
   const [reduceMotion, setReduceMotion] = useState(

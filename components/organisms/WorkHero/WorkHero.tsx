@@ -2,15 +2,10 @@
 
 import { type RefObject, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGsapContext } from '@/hooks/useGsapContext';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { PlateMark } from '@/components/molecules/PlateMark/PlateMark';
 import { work } from '@/content/work';
 import './WorkHero.scss';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const POSITION_COUNT = work.length;
 const EARLIEST_YEAR = '2017';
@@ -21,14 +16,16 @@ const EARLIEST_YEAR = '2017';
  * `TorusCanvas` is the only module here that reaches `three`, `@react-three/fiber` or drei, so none
  * of them is in the document's eager chunks: until this story it was imported statically and its
  * libraries arrived with the page, torus or no torus. The import is issued only when the torus is
- * rendered, which `WorkHero` does only once it knows motion is allowed.
+ * rendered, which `WorkHero` does only once it knows motion is allowed. **Since 2026-09-24 it holds
+ * the scroll binding as well** (DW-36), so GSAP's `ScrollTrigger`, which exists here only to turn the
+ * torus, arrives with it rather than with the page.
  *
  * A module that resolves without the export, or a chunk that never arrives, resolves to a component
  * that draws nothing, so the page is untouched and the canvas box stays empty. The failure is logged
  * rather than swallowed, the shape `GemComponent.tsx` gave the homepage (DW-37). No `loading:`
  * option: an empty box is the intended state while the torus is on its way, never a spinner.
  */
-const TorusCanvas = dynamic<{ scrollRef: RefObject<{ value: number }> }>(
+const TorusCanvas = dynamic<{ triggerRef: RefObject<HTMLElement | null> }>(
   () =>
     import('@/components/molecules/TorusCanvas/TorusCanvas')
       .then((module) => module.TorusCanvas ?? (() => null))
@@ -40,9 +37,8 @@ const TorusCanvas = dynamic<{ scrollRef: RefObject<{ value: number }> }>(
 );
 
 export function WorkHero() {
-  // scrollRef is the bridge: GSAP writes, R3F useFrame reads.
-  // It is a plain object so mutations do not trigger re-renders.
-  const scrollRef = useRef<{ value: number }>({ value: 0 });
+  // The section the torus turns through, handed to it as the scroll binding's trigger.
+  const heroRef = useRef<HTMLElement>(null);
   const reduceMotion = useReduceMotion();
 
   // **The torus is decided in an effect, so the first paint never depends on it.** `false` on the
@@ -56,24 +52,9 @@ export function WorkHero() {
     setDrawTorus(!reduceMotion);
   }, [reduceMotion]);
 
-  // The scroll binding, and nothing else. **`scrub: true`**, so the rotation tracks the scroll rather
-  // than trailing it (review A-7; it was `1.5`, up to a second and a half behind the wheel). Created
-  // only while the torus is drawn, and reverted with it. The entrance is the stylesheet's.
-  const heroRef = useGsapContext<HTMLElement>(() => {
-    if (!drawTorus) return;
-
-    gsap.to(scrollRef.current, {
-      value: 1,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: heroRef.current,
-        start: 'top bottom',
-        end: 'bottom top',
-        scrub: true,
-      },
-    });
-  }, [drawTorus]);
-
+  // **No GSAP here since 2026-09-24.** The entrance is the stylesheet's, and the scroll binding moved
+  // into `TorusCanvas` (DW-36), where it is created when the torus mounts and reverted when the
+  // preference above takes it away.
   return (
     <section className='work-hero' ref={heroRef}>
       <div className='work-hero__text'>
@@ -97,7 +78,7 @@ export function WorkHero() {
         </div>
       </div>
 
-      <div className='work-hero__canvas-wrap'>{drawTorus && <TorusCanvas scrollRef={scrollRef} />}</div>
+      <div className='work-hero__canvas-wrap'>{drawTorus && <TorusCanvas triggerRef={heroRef} />}</div>
     </section>
   );
 }
