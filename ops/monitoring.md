@@ -658,6 +658,12 @@ unchanged: the quarterly re-test is the mitigation, and for the Registry job the
 A paid tier would open the type; whether it is worth buying is a decision against NFR-4's ceiling
 for a later story, not this one.
 
+**Mitigated 2026-09-24, by Operator ruling.** AD-22's fixed refresh scope now names dispatching
+`registry-verification.yml` and confirming it green, so for the Registry job the fallback above is
+a step of every refresh check rather than a practice someone has to remember, and DW-85 is closed
+as mitigated. It is not a dead-man's switch: a quiet spell can still leave the schedule off until
+the next check, and GitHub's one mail is the only notice in between.
+
 ## The certificate rule
 
 **There are two rules, and they are independent.** The age rule catches a renewal that has

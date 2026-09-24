@@ -298,7 +298,9 @@ structure in the Structural Seed (`apps/`, `packages/`, `contracts/`) does not e
   is stale until its next rebuild, deliberately.
 - **AD-5**: The Registry entry shape (see corrected FR-6). `status` accepts exactly four
   strings. The envelope carries `contract_version`; value change = minor bump, field rename =
-  major.
+  major *(amended 2026-09-24 by Operator ruling: a wording-only edit to a `description` or a
+  `name` is a patch, any other value change a minor, a field rename or removal a major; the
+  Registry moved to `1.2.0` that day)*.
 - **AD-6**: Registry membership is by application, not by repository.
 - **AD-7**: Each application is one independent deploy unit, addressed by host. One Dockerfile,
   one GHCR image, one compose service, one Traefik router per id, including the four inside the
@@ -2111,8 +2113,10 @@ value validates.
 **And** a fixture entry violating either half fails validation, demonstrated rather than
 asserted.
 
-**Given** AD-3 makes the public hostname declared rather than derived, because three live
-hostnames already diverge from their ids
+**Given** AD-3 makes the public hostname declared rather than derived, because live hostnames
+already diverge from their ids *(amended 2026-09-24 by Operator ruling: this read "three live
+hostnames", a count dropped rather than updated, since five of the six `Live` entries diverged by
+then)*
 **When** the schema is written
 **Then** nothing in it derives a hostname from an id, and `live` is a free URL field.
 
@@ -2200,11 +2204,17 @@ now lives
 **And** the entry count and the repository count are different numbers, and nothing in the file
 or its validation treats either as validating the other.
 
-**Given** AD-3 gives each application exactly one kebab-case id equal to its repository name
+**Given** AD-3 gives each application exactly one kebab-case id, being its repository name
+lowercased, keeping exactly the hyphens that name carries and adding none
 **When** the ids are authored
-**Then** each id matches its repository name exactly
-**And** the public hostname is declared in `live`, never derived from the id: the three live
-hostnames that diverge from their ids are the reason the rule exists.
+**Then** each id is its repository name lowercased, so `StreamVault` gives `streamvault`, and
+`source` keeps the repository's real capitalisation so it resolves
+**And** the public hostname is declared in `live`, never derived from the id: live hostnames
+that diverge from their ids are the reason the rule exists *(amended 2026-09-24 by Operator
+ruling, recording AD-3's narrowing of 2026-09-03 here: this criterion read "exactly one
+kebab-case id equal to its repository name" and "each id matches its repository name exactly",
+which `Lumen`, `StreamVault`, `MaiCoin` and `Mutuo` cannot satisfy while ids stay lowercase; and
+it counted "the three live hostnames", a count dropped rather than updated)*.
 
 **Given** FR-10 makes the drill-through path the Registry's contract with Marcus
 **When** `source` is authored
@@ -4256,6 +4266,10 @@ was expected GA in September 2026. **Amended 2026-08-16:** two serving addresses
 existed on that date, so the temporary-second-box question has a partial answer in reality;
 this story records the observed topology from `ops/routing-inventory.md` as its starting point
 rather than assuming one box, and AD-22's re-check scope now includes that topology.
+**Amended 2026-09-24:** the list above is a copy and AD-22's own list in the spine is the scope.
+It has grown since this story was written: the two `cs-tracker` adoption probes joined it on
+2026-09-23, and dispatching `registry-verification.yml` and confirming it green joined it on
+2026-09-24 by Operator ruling (DW-85). Re-verify the spine's list, not this copy.
 
 ### Story 4.2: Traefik with Host-matched routers and DNS-01
 Stand up Traefik v3.7 as the estate's proxy, with certificate issuance over DNS-01.

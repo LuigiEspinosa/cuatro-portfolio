@@ -37,7 +37,8 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
   `rendered-output-harness.md`, `monitoring.md`, `backup-digital-library.md`,
   `bot-mitigation.md`, `asset-budget.md` (what the build actually ships, weighed),
   `registry-schema.md` (the App Registry's shape and its blocking gate),
-  `registry-inputs.md` (the confirmed field values Story 2.5 transcribes into that Registry).
+  `registry-inputs.md` (how the Registry's values were first chosen, frozen 2026-09-24:
+  `contracts/registry.json` is the only source of Registry values).
 - Token contract, and the restyle specification Epic 2 rebuilds the Hub against:
   `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md` and
   `RESTYLE-SPEC.md` beside it.

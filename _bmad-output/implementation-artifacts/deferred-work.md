@@ -1591,7 +1591,12 @@ reason: |-
   `application/json`, so the file's behaviour was right before the comment went stale. It is one
   line, and the natural place to take it is the next story that touches this spec for another
   reason, or Story 2.5 when the file stops being an empty envelope.
-status: open
+
+  **Closed 2026-09-24 on the Operator ruling of that day, by
+  `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commit `2e011d6`**, with the
+  ledger entry Story 2-5 filed beside it: the comment now says the `.json` row serves
+  `contracts/registry.json` and its schema (AD-4). No behaviour moved.
+status: done
 
 ### DW-30: The `test` job has been red on every CI run since 2026-08-28, on one case that asserts Windows path semantics and therefore cannot pass on the runner.
 origin: spec-deferred 2026-08-31
@@ -1739,7 +1744,17 @@ status: done
 
     The substance is settled and recorded in `ARCHITECTURE-SPINE.md` and in stated limit 0 of
     `ops/registry-inputs.md`. What is missing is the bookkeeping in the planning artifact.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (Story 2.5 states the narrowed id rule),
+    by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's records
+    commit.** Story 2.5's id criterion in `epics.md` now gives each application one kebab-case id,
+    its repository name lowercased with exactly the hyphens that name carries, says `StreamVault`
+    gives `streamvault` and that `source` keeps the repository's real capitalisation, and carries a
+    dated amendment quoting both superseded phrases. The same pass dropped the hostname count from
+    that criterion and from Story 2.3's (the "three live hostnames" entry below). Story 2.4's
+    `list-wheel` hostname criterion, which this entry pairs with, is not touched here: no ruling of
+    the day covers it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   summary: >-
@@ -1767,7 +1782,22 @@ status: done
     invisible. What stays open is the equality this entry is about: nothing reads
     `ops/registry-inputs.md` against the Registry, so a `tech` value corrected in one file and not the
     other is still invisible, and the job cannot see it either.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (`contracts/registry.json` is the only
+    source of Registry values; `ops/registry-inputs.md` is frozen as a dated historical record), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's records
+    commit.** The duplication is removed rather than guarded: `ops/registry-inputs.md` opens with a
+    dated banner saying it is frozen, that the Registry is the only source and wins where the two
+    differ, that a later value change edits the Registry alone with its evidence in its story record
+    and ledger closing, and that its stated limit 1 closes by the freeze; the banner names what
+    changed that day. The `AGENTS.md` pointer says the same, and `ops/estate.md`,
+    `ops/registry-schema.md` and `ops/registry-verification.md` carry dated notes where they sent a
+    reader to that record or cited the limit; `lib/__tests__/registry.test.ts` says the same in its
+    header, commit `2e011d6`. The first value changes made under the rule, the `poketracker-go` and
+    `mutuo` arrays, touched `contracts/registry.json` alone (`d9dbff6`). `ops/estate.md`'s disposition
+    table still lists the fourteen applications beside the Registry, held equal by nothing; it states
+    disposition, not Registry values, and the ruling does not reach it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   id: DW-83
@@ -1900,7 +1930,21 @@ status: done
     entries as a set, the same shape as the three rules the gate already applies. The cheap first step
     is deciding whether `absorbed_into` means "has moved" or "will move", because the schema
     description says the first and two of the two entries carrying it mean the second.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (`absorbed_into` means "has been, or is set
+    to be, folded into"; no data change), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commit `5cea4f7`.** The
+    `absorbed_into` node in `contracts/registry.schema.json` says the field names the application
+    this one has been, or is set to be, folded into, that it alone does not say the code has moved,
+    and that `source` says where the code sits today; the gate's two refusals, dangling and
+    self-reference, say the same where they said "where its code now lives", since they cite AD-6
+    to the author at the moment of refusal. `ops/__tests__/registry-schema.test.ts` holds the node and
+    both refusals to the widened meaning (red on the pre-ruling tree for exactly that). AD-6 in the
+    spine carries a dated amendment, and `ops/estate.md` and `ops/registry-schema.md` carry dated
+    notes, in the package's records commit. Both carriers are now true as they stand, so no entry
+    changed and no gate rule was added. `cuatro-tracker`'s "five kinds" stays true of today, since
+    the `tcg-tracker` fold is intent.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
   summary: >-
@@ -1922,7 +1966,19 @@ status: done
     Filed as pending Operator action 6 in `ops/registry-schema.md`. Worth settling once as a rule
     rather than per story. A standing case in `ops/__tests__/registry-schema.test.ts` pins the value
     as a literal, so whichever way it is settled the change is one line there beside the Registry.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (a wording-only edit to a `description` or
+    a `name` is a patch, any other value change a minor, a field rename or removal a major; bump to
+    `1.2.0`), by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commits `5cea4f7`
+    and `d9dbff6`.** The `contract_version` node in `contracts/registry.schema.json` states the
+    three-way rule, which the gate prints beside a refused version, held by a new case (`5cea4f7`).
+    `contracts/registry.json` reads `1.2.0`, one minor covering every value change since `1.1.0`:
+    Story 2-25's `list-wheel` `live` and `tech` and the day's `poketracker-go` and `mutuo` arrays,
+    with `lumen`'s trim, a patch on its own, riding in it; the standing pin moved with it
+    (`d9dbff6`). AD-5 in the spine carries a dated amendment, the conventions row and `epics.md`'s
+    AD-5 summary dated notes, and `ops/registry-schema.md` action 6 its Completed date, in the
+    package's records commit.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
   summary: >-
@@ -1941,7 +1997,17 @@ status: done
 
     Left as a note for the next editorial pass rather than as a repair. Recorded so it is found named
     rather than rediscovered.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (Lumen drops its restatement of the
+    Archived status; connect-four-react keeps its clause), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commit `d9dbff6`.** `lumen` now
+    ends "It was never built: the repository holds no code." `connect-four-react` is unchanged, its
+    "retired as a standalone application" being what its next clause parses against. A new case in
+    `ops/__tests__/registry-schema.test.ts` refuses an `Archived` description that says "archived",
+    beside planted controls, one of them the retired clause it must let through; it failed on the
+    pre-ruling tree naming `lumen`. It reads the status word alone and leaves out `Live` and
+    `Complete`, whose words have honest uses in a description.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
   summary: >-
@@ -1963,7 +2029,14 @@ status: done
     weakest values in the file, but they are inferences from different things: the array from PRD
     section 5.2's disposition, the description from the name. The Operator should overwrite either if
     the intent was something else, and nothing else will surface the question.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the description is confirmed as it
+    stands), by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's
+    records commit.** No Registry value changed. The description's source is now the Operator's
+    confirmation of 2026-09-24, recorded in the freeze banner of `ops/registry-inputs.md` beside the
+    table row that says it rests on nothing. The entry's `tech` array, stated limit 2 of that record,
+    was not part of the ruling and stays an inference from PRD section 5.2's disposition.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   summary: >-
@@ -1983,7 +2056,23 @@ status: done
 
     FR-9 makes a wrong `tech` value a defect rather than a cosmetic issue, and stated limit 8 of
     `ops/registry-inputs.md` already records that the granularity ruling is applied unevenly.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (poketracker-go gains Python and
+    discord.py, Mutuo gains PostgreSQL, each proven from its repository's code; Lumen unchanged;
+    within the six-item guide), by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`,
+    commit `d9dbff6`.** `poketracker-go` reads `Go, PostgreSQL, pgx, sqlc, Python, discord.py`:
+    **observed 2026-09-24** by `gh api`, its `dev` branch at `67dc182` (the branch carrying the code,
+    as for the rest of the array) holds `bot/requirements.txt` declaring `discord.py==2.6.4`, there
+    since `3f1ea4c` (2026-07-16), and eight Python files under `bot/`, `bot/parser.py` the bot's
+    announcement parser among them; no `pubspec.yaml` exists, so the guide's Flutter is still a
+    plan and is not added. `mutuo` reads `Bun, Vue, Drizzle ORM, PostgreSQL, Caddy, Docker`:
+    **observed** the same day, `main` at `abd3b2d` holds `docker-compose.yml` with a `postgres`
+    service on `postgres:16-alpine`, there since `4cd0f3a` (2026-03-27), beside the `drizzle-kit`
+    scripts in `package.json` and a `DATABASE_URL` in `.env.example`. Its compose also runs Redis,
+    which is not added: the ruling names PostgreSQL, and a seventh value would break the guide.
+    `lumen` stays `Markdown, WSL2`. Both are In progress, so FR-35 renders neither and nothing on the
+    Hub moved.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   summary: >-
@@ -1998,7 +2087,15 @@ status: done
 
     The comment is now wrong twice rather than once. Nothing fails because of it. Filed as a pointer
     so DW-29 is not read as still waiting on Story 2.5, which cannot take it.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the comment says the `.json` row serves
+    `contracts/registry.json`, which also closes DW-29), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commit `2e011d6`.** The comment
+    above `EXPECTED_TYPE` in `tests/e2e/contract-serving.pw.ts` now says the `.json` row serves
+    `contracts/registry.json`, the estate's only App Registry, and its schema
+    `contracts/registry.schema.json` (AD-4), and keeps why the row has to exist. A comment only: the
+    spec's behaviour and the served surface are unchanged.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   summary: >-
@@ -2017,7 +2114,18 @@ status: done
 
     Worth fixing when Epic 2's planning text is reconciled, since the count appears in the published
     schema as well as in the spine and is now checkable against a shipped file.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the places that say three live hostnames
+    diverge drop the count), by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in
+    the package's records commit.** The count is dropped rather than updated, so it cannot go stale
+    again: AD-3's rule in `ARCHITECTURE-SPINE.md` (with a dated amendment), the `live`, `source` row
+    of `ops/registry-schema.md` (struck and labelled), and the criteria of Stories 2.3 and 2.5 in
+    `epics.md` (each with a dated amendment) now say live hostnames already diverge. **Corrected
+    here**: the published schema never carried the count, as this entry said it did; its `live` and
+    `id` descriptions say only that no hostname is derived. `ops/routing-inventory.md` keeps its own
+    count, which is dated ("three ... on 2026-08-24", "four on 2026-09-13") and scoped to the
+    `cuatro.dev` hostnames that table maps, so it stays true as written.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   summary: >-
@@ -4795,7 +4903,17 @@ status: done
     committed file on a branch that never deploys, which is a new decision against the
     no-bot-commit rule and is not this story's. **Trigger: the first month whose reading is missed,
     or the first time a red run older than 90 days is needed and gone.**
-  status: open
+
+    **Closed 2026-09-24 as accepted, on the Operator ruling of that day (the monthly reading taken
+    from `gh run list` is the accepted history), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's records
+    commit.** Nothing more durable is built. `ops/registry-verification.md` § Readings says any
+    session takes a month's row from `gh run list --workflow registry-verification.yml` and the
+    chosen run's summary or log within 90 days of the month's end, and its stated limit on the
+    90-day expiry is marked accepted with the date. **Observed 2026-09-24** by that command: all
+    twelve scheduled runs on `main` from 2026-09-13 to 2026-09-24 concluded `success`, the last
+    35994948290. September's row exists; October's falls due in early November.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
   id: DW-85
@@ -4828,7 +4946,19 @@ status: done
     The fallback stands: a `workflow_dispatch` run on AD-22's refresh schedule. Reopens if the
     account moves to a tier that offers the type. Recorded in `ops/registry-verification.md`
     action 5 and § Stated limits, and in `ops/monitoring.md` beneath the reopened note.
-  status: open
+
+    **Closed 2026-09-24 as mitigated, on the Operator ruling of that day (AD-22's fixed refresh
+    scope gains "dispatch `registry-verification.yml` and confirm it is green"), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's records
+    commit.** AD-22's rule in `ARCHITECTURE-SPINE.md` names the dispatch as a dated clause of its
+    fixed scope, so the fallback is a step of every refresh check rather than a practice nobody is
+    bound to. `epics.md` Story 4.1, which restates AD-22's list as "exactly", carries a dated
+    amendment pointing at the spine's list, since the copy would otherwise run the check without the
+    dispatch. `ops/registry-verification.md` (action 5 and the stated limit) and `ops/monitoring.md`
+    (beneath the refused note) say the same. **What stays true**: it is not a dead-man's switch; a
+    quiet spell can still leave the schedule off until the next check, and GitHub's one mail is the
+    only notice in between. Reopens with a heartbeat-capable plan, as before.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
   id: DW-86
@@ -6409,4 +6539,33 @@ status: done
     **Owner: the Operator.** **Trigger: that ruling, the Operator's keyboard confirmation
     (`ops/hub-accessibility-pass.md` Pending Operator action 1), or the next change to the hero's
     layering.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`
+  id: DW-128
+  summary: >-
+    `cs-tournament` is public since the KV-2 ruling of 2026-09-24, while the Registry
+    verification's tolerated table, its suite's pins and KV-2's own record still hold it private,
+    so the next run reports that its KV-2 row can be struck and nothing records why.
+  evidence: |-
+    Observed 2026-09-24 by the Registry 1.2.0 package while reading the verification record it was
+    editing: `gh repo view LuigiEspinosa/cs-tournament --json visibility` reads `PUBLIC`, and an
+    anonymous GET of `https://github.com/LuigiEspinosa/cs-tournament` with the job's user agent
+    answered 200 at 13:37Z. The Operator's ruling of that day on KV-2 published it after a clean
+    history scan. Three records have not caught up: `ops/registry-verification.md` § Sources
+    tolerated to answer 404 anonymously still reads `Private. Repairable` for it,
+    `ops/__tests__/registry-verification.test.ts` pins it in `PRIVATE` (and plants a 404 for it in
+    the committed-Registry fixture), and `ops/known-violations.md` KV-2 lists it among the three
+    offending repositories with Pending Operator action 5 undated.
+
+    Nothing is red. The job answers a 2xx on a tolerated row with a pass and a note that the row can
+    be struck, and the unit suite plants its own answers. The cost is a record that says private
+    about a public repository, and a pass line nobody acts on. Not fixed in the Registry package:
+    striking a row is an edit to the table and to the suite's pins together, by that record's own
+    rule, and KV-2's disposition is the KV-2 ruling's records work, not the Registry's.
+
+    **Owner: the package that records the KV-2 ruling.** Strike the row as `Struck 2026-09-24:
+    published by Operator ruling`, move the suite's `PRIVATE` pin and fixture to three, and date
+    KV-2's action 5 with all three dispositions. **Trigger: that package, or the next Registry
+    verification run that reports the row can be struck.**
   status: open

@@ -9,8 +9,9 @@ Epic 2 authors its entries from this file. Nothing here is a published contract 
 
 Governing decision: **AD-6, Registry membership is by application, not by repository.**
 The Registry's unit is the application. An application that has been archived or absorbed
-keeps its entry, with `absorbed_into` naming where its code now lives. No application is
-ever dropped by omission.
+keeps its entry, with `absorbed_into` naming the application it has been, or is set to be,
+folded into (AD-6 as widened on 2026-09-24 by Operator ruling, from "where its code now
+lives"). No application is ever dropped by omission.
 
 Source of truth for every row below: PRD section 5.1, Disposition of every repository, in
 `_bmad-output/planning-artifacts/prds/prd-cuatro-portfolio-2026-08-15/prd.md`.
@@ -213,6 +214,13 @@ Registry is what ships and is what a consumer reads; this file is what should ha
 two are held equal by nothing**, which is stated limit 1 of `ops/registry-inputs.md` and was
 deliberately left open on 2026-09-03, so a row added here and not there stays invisible.
 
+**Amended 2026-09-24, by Operator ruling.** `contracts/registry.json` is the only source of
+Registry values, and `ops/registry-inputs.md` is frozen as a dated record of how they were first
+chosen: author an entry against the Registry and its schema, and read that record only for a
+value's history. Its stated limit 1 closed with the freeze. The disposition table below is not a
+copy of Registry values, but it lists the same fourteen applications, and nothing holds the two
+lists equal.
+
 ### `connect-four-react`, absorbed with its code still in place
 
 `connect-four-react` is recorded as `absorbed_into: cuatro-portfolio`, and **its code has
@@ -224,7 +232,8 @@ the archived `connect-four-react` repository,** exactly as it does for `tcg-trac
 archived repository stays publicly readable so that link keeps resolving.
 
 **The obligation to carry `absorbed_into` today is AD-6's**, which keeps an archived or
-absorbed application in the Registry with `absorbed_into` naming where its code now lives.
+absorbed application in the Registry with `absorbed_into` naming the application it has been,
+or is set to be, folded into (widened on 2026-09-24 from "where its code now lives").
 FR-30, which states the same idea as a product requirement, is deferred to v2 alongside
 FR-29 (PRD section 9, "Embedded Connect Four (FR-29 to FR-30): v2"), so it is future
 intent here and not a live requirement. The field names the decided destination; it does
@@ -372,7 +381,8 @@ invent it.
 
 **The next step, when it is taken.** A product brief defining the quit-habit mechanic, since
 that is the half no reference product supplies. Then a repository, then a row in the
-disposition table, then a Registry entry authored against `ops/registry-inputs.md`. It is an
+disposition table, then a Registry entry authored in `contracts/registry.json` (against
+`ops/registry-inputs.md` until that record was frozen on 2026-09-24). It is an
 iOS application, so it is the first in the Estate that is not served from the box and not
 reachable by a hostname, which the Registry's `live` and `demo` fields are both shaped around.
 That is a real modelling question and it is open, not answered.
