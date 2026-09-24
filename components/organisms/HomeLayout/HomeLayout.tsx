@@ -6,6 +6,7 @@ import ContactContainer from '@/components/molecules/ContactContainer/ContactCon
 import GlitchText from '@/components/molecules/GlitchText/GlitchText';
 import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import { SkipControl } from '@/components/atoms/SkipControl/SkipControl';
+import { SuiteReach } from '@/components/organisms/SuiteDirectory/SuiteReach';
 import { useNarrativePath, type ServedNarrativePath } from '@/hooks/useNarrativePath';
 import './HomeLayout.scss';
 
@@ -130,6 +131,11 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
         <ContactContainer />
         <span className='home-contact-jp' aria-hidden='true' data-ornament='接続' />
       </div>
+
+      {/* The Directory's reach event, rendered here because it carries this page's one decision, the
+          front door, which the server-rendered Directory cannot see (Operator ruling 2026-09-24,
+          DW-88). It renders nothing and observes the heading `/#suite` names. */}
+      <SuiteReach target='suite' door={path} />
     </div>
   );
 };

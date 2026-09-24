@@ -5,7 +5,6 @@ import {
   renderedApplications,
   type RegistryEntry,
 } from '@/lib/registry';
-import { SuiteReach } from './SuiteReach';
 import './SuiteDirectory.scss';
 
 /**
@@ -22,7 +21,9 @@ import './SuiteDirectory.scss';
  * `[data-umami-event]` and reads `data-umami-event-*` as the event's data, so no handler runs here
  * and the Directory stays on the server. The one event with no click to hang on, reach, is
  * `SuiteReach`, a client component that renders nothing, imports no Registry value and is handed
- * the heading's id; it is the last child of the section and the only client file in this folder.
+ * the heading's id; it is the only client file in this folder. **`HomeLayout` renders it since
+ * 2026-09-24** (Operator ruling, DW-88): the event carries the front door, the hero's decision, which
+ * this server component cannot see, so the heading below is observed from the hero.
  *
  * **Every decision here is a rule over data.** What renders is `selectRendered` (Story 2-7),
  * unchanged. The order, the `You are here` mark and the family grouping are the three exported
@@ -188,10 +189,6 @@ export function SuiteDirectory() {
           )
         )}
       </ul>
-
-      {/* Renders nothing. Last as a reading choice, the instrument after the thing it measures; its
-          effect runs after React commits the whole tree, so the order guarantees nothing. */}
-      <SuiteReach target={HEADING_ID} />
     </section>
   );
 }

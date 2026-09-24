@@ -318,11 +318,13 @@ describe('the visitor events the rows carry (Story 2-24)', () => {
     }
   });
 
-  it('mounts the reach component on its own heading', () => {
-    // jsdom has no `IntersectionObserver`, so on every other case the reach effect exits before it
-    // looks anything up and nothing here would notice the mount removed or pointed at another id.
-    // A fake observer that records its targets, and a tracker already present, are enough to see
-    // the one element it watches.
+  it('mounts no reach instrument of its own, HomeLayout carrying it with the door (DW-88)', () => {
+    // Until 2026-09-24 the Directory mounted `SuiteReach` on its heading. The Operator's ruling of
+    // that day has the event carry the front door, which is `HomeLayout`'s decision and invisible to
+    // this server component, so the hero mounts it instead; `HomeLayout.test.tsx` reads that mount.
+    // A second one here would observe the heading twice and could send twice in one notification,
+    // so none is the claim. A fake observer that records its targets, and a tracker already present,
+    // are enough to see any element watched.
     const targets: Element[] = [];
     vi.stubGlobal(
       'IntersectionObserver',
@@ -336,9 +338,11 @@ describe('the visitor events the rows carry (Story 2-24)', () => {
     window.umami = { track: vi.fn() };
     try {
       render(<SuiteDirectory />);
-      expect(targets, 'the reach component observed nothing, so it is not mounted or finds no heading').toEqual([
-        screen.getByRole('heading', { level: 2, name: 'The Suite' }),
-      ]);
+      expect(screen.getByRole('heading', { level: 2, name: 'The Suite' }), 'the heading the hero observes is gone').toHaveAttribute(
+        'id',
+        'suite'
+      );
+      expect(targets, 'the Directory observes its own heading again, beside the hero').toEqual([]);
     } finally {
       vi.unstubAllGlobals();
       delete window.umami;

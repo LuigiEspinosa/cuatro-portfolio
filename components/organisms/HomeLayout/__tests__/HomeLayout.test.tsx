@@ -134,7 +134,7 @@ describe('HomeLayout', () => {
       expect(node?.textContent, `${selector} still carries its string as text`).toBe('');
       expect(node, `${selector} is in the accessibility tree`).toHaveAttribute('aria-hidden', 'true');
     }
-    expect(container.textContent, 'an ornament string is still page text somewhere in the hero').not.toMatch(/[぀-ヿ一-鿿]/);
+    expect(container.textContent, 'an ornament string is still page text somewhere in the hero').not.toMatch(/[\u3040-\u30ff\u4e00-\u9fff]/);
   });
 });
 
@@ -207,6 +207,58 @@ describe('HomeLayout on the two front doors', () => {
     expect(served, 'the served markup is not the flat hero').toContain('home-container--flat');
     expect(served, 'the served markup carries the gem container').not.toContain('home-gem');
     expect(served, 'the served markup carries the skip control').not.toContain('skip-control');
+  });
+
+  it('hands the reach event the decided door, observing the Directory heading (DW-88)', () => {
+    // Operator ruling 2026-09-24: `suite-reach` carries which front door the visitor had. The door
+    // is this component's decision, so it renders the reach instrument and hands it the answer; the
+    // Directory is a server component and cannot see it. Nothing is observed while undecided.
+    const observed: Element[] = [];
+    const callbacks: IntersectionObserverCallback[] = [];
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: IntersectionObserverCallback) {
+          callbacks.push(callback);
+        }
+        observe(target: Element) {
+          observed.push(target);
+        }
+        disconnect() {}
+      }
+    );
+    const track = vi.fn();
+    window.umami = { track };
+    const heading = document.createElement('h2');
+    heading.id = 'suite';
+    document.body.append(heading);
+    try {
+      decided.path = 'undecided';
+      const undecided = render(<HomeLayout />);
+      expect(observed, 'an undecided door observed the heading').toEqual([]);
+      undecided.unmount();
+
+      for (const path of ['flat', 'narrative'] as const) {
+        sessionStorage.clear();
+        observed.length = 0;
+        callbacks.length = 0;
+        track.mockReset();
+        decided.path = path;
+        const { unmount } = render(<HomeLayout />);
+        expect(observed, `the ${path} door did not observe the Directory heading`).toEqual([heading]);
+        callbacks[0](
+          [{ isIntersecting: true, boundingClientRect: { bottom: 100 } } as unknown as IntersectionObserverEntry],
+          {} as IntersectionObserver
+        );
+        expect(track.mock.calls, `the ${path} door sent something other than its door`).toEqual([['suite-reach', { door: path }]]);
+        unmount();
+      }
+    } finally {
+      heading.remove();
+      sessionStorage.clear();
+      delete window.umami;
+      vi.unstubAllGlobals();
+    }
   });
 
   it('renders the default path geometry while the decision is undecided', () => {
