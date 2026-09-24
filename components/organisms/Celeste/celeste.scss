@@ -9,10 +9,37 @@
     display: none;
   }
 
+  // The one display line, restyled to `mockups/secondary-screens.html` S10 (Operator ruling
+  // 2026-09-24, DW-121). `DESIGN.md`'s display row gives the size, weight, case, leading and tracking;
+  // S10 gives the `wdth 85` width, through the property that selects the axis as `SuiteDirectory.scss`
+  // sets it, and the `14ch` measure that stacks the words. The mock's hand-written size, leading and
+  // tracking give way to the roles. The only centred display type in the system, which reads as a
+  // choice because it is the only one.
   h1 {
+    max-inline-size: 14ch;
     font-family: var(--f-display);
     font-size: var(--t-display);
+    font-weight: var(--w-black);
+    font-stretch: 85%;
+    line-height: var(--lh-display);
+    letter-spacing: var(--tr-display);
+    text-transform: uppercase;
     text-align: center;
     color: var(--token-text);
+  }
+
+  // The two emoji on a mono line of their own, inside the heading so its name keeps them. The regular
+  // weight is load-bearing: the mono face publishes 400 alone, and the heading's 800 would otherwise be
+  // inherited and synthesised. No colour of its own, where the mock sets the accent: `DESIGN.md`
+  // § Colors spends the accent on underlines, the `Live` mark and the active rule, and the emoji paint
+  // their own colours anyway.
+  .celeste__emoji {
+    display: block;
+    margin-block-start: var(--s-md);
+    font-family: var(--f-mono);
+    font-size: var(--t-2xs);
+    font-weight: var(--w-regular);
+    line-height: var(--lh-label);
+    letter-spacing: var(--tr-label);
   }
 }

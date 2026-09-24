@@ -121,7 +121,10 @@ const HERO_DISPLAY_STRETCH = '100%';
  * link groups, plus the display entrance on `/`, which reaches the face through `--f-display`
  * directly since Story 2-27, as the two hero groups have since Story 2-29, the row names since
  * Story 2-31, the 404's numeral and heading since Story 2-30, and `/work`'s hero heading since Story
- * 2-33, which left no alias site at all. `/cv` and `/celeste` reach no display face and are not here.
+ * 2-33, which left no alias site at all. `/cv` and `/celeste` are not here, though both reach the face:
+ * `/cv` through its intro heading and its row names, `/celeste` through its heading, at `wdth 85` since
+ * the Operator's ruling of 2026-09-24 (DW-121), which DW-82 records as a narrowed site this file does
+ * not measure.
  *
  * The count is pinned so the swap cannot be measured over an empty selection: a renamed class
  * fails here naming itself rather than shortening the loop below to nothing.

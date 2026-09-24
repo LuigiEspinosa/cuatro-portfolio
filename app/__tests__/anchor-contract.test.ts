@@ -317,9 +317,11 @@ const TOKEN_NATIVE_STYLESHEETS = [
   'components/molecules/PlateMark/PlateMark.scss',
   // `/celeste`, the residue no redesign story reached, brought onto the contract by Story 2-34 so the
   // FR-17 conformance gate lands green: its `#444` ground, `#fff` heading, `system-ui` family and
-  // `min(8vw, 5rem)` size became the ground, text, display family and display size roles. Not a
-  // rebuild: the file keeps its selectors, its centring and the header rule Story 2-1 wrote, and
-  // keeps its 2023 lowercase name, which a story that does not rebuild it does not rename.
+  // `min(8vw, 5rem)` size became the ground, text, display family and display size roles. Restyled to
+  // S10 on 2026-09-24 (Operator ruling, DW-121): the heading takes the display row's weight, leading
+  // and tracking roles and the emoji line the mono family, size, weight, leading, tracking and space
+  // roles. The file keeps its selectors, its centring and the header rule Story 2-1 wrote at the lines
+  // two suites and a record cite, and so keeps its 2023 lowercase name as well.
   'components/organisms/Celeste/celeste.scss',
   // The `/cv` intro block, added by Story 2-16. A rebuild like the rest of this list: the route was
   // a redirect until that story, so there is no 2023 stylesheet behind it and no alias name to keep.
