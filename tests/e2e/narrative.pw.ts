@@ -789,6 +789,29 @@ test.describe('the wave is decoration: it takes no gesture', () => {
 });
 
 // ---------------------------------------------------------------------------
+// The narrative's orphaned assets are gone (ops/asset-budget.md Pending action 3).
+// ---------------------------------------------------------------------------
+
+test.describe('the orphaned narrative assets are not served', () => {
+  /**
+   * The four files `ops/asset-budget.md` § The narrative assets found reached by nothing since
+   * 2026-08-29, deleted on 2026-09-24 with `Gem.tsx`, the one module that named two of them.
+   */
+  const ORPHANS = ['gem.glb', 'gem.gltf', 'gem_data.bin', 'environment_D.hdr'].map((name) => `/assets/home/${name}`);
+
+  test('each answers 404, where a file still under public/assets answers 200', async ({ request, baseURL }) => {
+    // The control first: the Open Graph image is served from the same directory tree, so a 404 below
+    // is the file's absence and not a path this request cannot reach.
+    const control = await request.get(new URL('/assets/og/og-image.png', baseURL).href);
+    expect(control.status(), 'a file under public/assets does not answer 200, so a 404 below proves nothing').toBe(200);
+    for (const path of ORPHANS) {
+      const response = await request.get(new URL(path, baseURL).href);
+      expect(response.status(), `${path} is still served, 1.2 MB that no route asks for`).toBe(404);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Payload independence, demonstrated by taking the narrative away.
 // ---------------------------------------------------------------------------
 
