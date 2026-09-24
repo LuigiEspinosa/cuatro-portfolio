@@ -64,6 +64,7 @@ import { createRequire } from 'node:module';
 import { dirname, extname, join, normalize, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { stripVTControlCharacters } from 'node:util';
 import { CS_TRACKER_TOKENS, RECORD_REL, headerVersion, recordedAdoptedVersion, recordedVersionVerdict } from './contract-adoption.mjs';
 
 // Story 1-20's stand-in for step 6 of the change-propagation runbook, re-exported
@@ -942,6 +943,18 @@ export function findTailwindBinary(buildDir) {
   return null;
 }
 
+/**
+ * The `tailwindcss vX.Y.Z` banner out of the binary's `--help` output, or null.
+ *
+ * The 4.1.12 CLI colours its banner through a pipe as well as on a terminal,
+ * unless `NO_COLOR` is set, and one escape sits between the name and the
+ * version. So every escape sequence is stripped before the match, and the pin
+ * reads the same from any shell (DW-109).
+ */
+export function tailwindBanner(helpText) {
+  return /(tailwindcss v[\d.]+)/.exec(stripVTControlCharacters(helpText ?? ''))?.[1] ?? null;
+}
+
 function serve(root) {
   return new Promise((done, fail) => {
     const server = createServer((request, response) => {
@@ -1049,10 +1062,10 @@ async function probe() {
         `Run mix assets.setup in cs-tracker.`
     );
   }
-  const banner = /(tailwindcss v[\d.]+)/.exec(run(tailwindBinary, ['--help'], { cwd: CS_TRACKER }).stdout ?? '');
-  if (banner === null || !banner[1].endsWith(` v${PINNED_TAILWIND}`)) {
+  const banner = tailwindBanner(run(tailwindBinary, ['--help'], { cwd: CS_TRACKER }).stdout);
+  if (banner === null || !banner.endsWith(` v${PINNED_TAILWIND}`)) {
     throw new BlockedError(
-      `cs-tracker's Tailwind binary reports ${banner?.[1] ?? 'no version at all'}, not v${PINNED_TAILWIND}. ` +
+      `cs-tracker's Tailwind binary reports ${banner ?? 'no version at all'}, not v${PINNED_TAILWIND}. ` +
         `The finding would be about a different compiler from the one cs-tracker runs, so nothing was compiled.`
     );
   }
@@ -1128,7 +1141,7 @@ async function probe() {
   try {
     say(`# scratch tree: ${root}`);
     say(`# cs-tracker:   ${CS_TRACKER}`);
-    say(`# tailwind:     ${tailwindBinary} (${banner[1]})`);
+    say(`# tailwind:     ${tailwindBinary} (${banner})`);
     say(`# daisyui:      ${daisyui[1]}`);
     say(`# hub css:      ${relative(REPO_ROOT, hubStylesheet)}`);
     say('');
@@ -1216,7 +1229,7 @@ async function probe() {
       'It compiles at all',
       compiledOk,
       compiledOk
-        ? `cs-tracker's real assets/css/app.css compiled with its own pinned ${banner[1]} to ` +
+        ? `cs-tracker's real assets/css/app.css compiled with its own pinned ${banner} to ` +
           `${Buffer.byteLength(compiledCss, 'utf8')} bytes, Preflight emitted ${preflightCount(compiledCss)} time(s)`
         : `the CLI ${describeRun(compiled).replace(/\s+/g, ' ').slice(0, 800)}`
     );

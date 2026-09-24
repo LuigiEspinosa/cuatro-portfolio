@@ -46,6 +46,7 @@ import {
   routeVerdict,
   selectionRule,
   shapeMapping,
+  tailwindBanner,
   themeBlocks,
   themeDeclarations,
   unreadableRows,
@@ -751,6 +752,28 @@ describe('the verdict function', () => {
   it('pins daisyUI 5.0.35\'s own default primary, which the components must differ from', () => {
     expect(DAISYUI_DEFAULT_PRIMARY).toBe('oklch(0.45 0.24 277.023)');
     expect(COMPONENT_IDS).toEqual(['btn', 'badge']);
+  });
+});
+
+describe('the Tailwind banner', () => {
+  // The first bytes of `--help` from `cs-tracker`'s own Tailwind 4.1.12 binary, spawned through a
+  // pipe with `NO_COLOR` unset, verbatim. Observed 2026-09-24: the CLI colours its banner whether or
+  // not it has a terminal, and one escape sits between the name and the version, which is what
+  // stopped this probe at exit 3 on 2026-09-23 (DW-109).
+  const COLOURED =
+    '\x1b[3m\x1b[1m\x1b[34m≈\x1b[39m\x1b[22m\x1b[23m tailwindcss \x1b[34mv4.1.12\x1b[39m\n\n' +
+    '\x1b[2mUsage:\x1b[22m\n';
+
+  it('reads the version through the colour codes the CLI prints without NO_COLOR', () => {
+    expect(tailwindBanner(COLOURED)).toBe('tailwindcss v4.1.12');
+  });
+
+  it('reads the plain banner NO_COLOR produces, and no banner as null', () => {
+    expect(tailwindBanner('≈ tailwindcss v4.1.12\n\nUsage:\n')).toBe('tailwindcss v4.1.12');
+    // null is what the Block If turns into "no version at all", so an empty or missing stdout
+    // must reach it rather than throw.
+    expect(tailwindBanner('')).toBeNull();
+    expect(tailwindBanner(undefined as unknown as string)).toBeNull();
   });
 });
 
