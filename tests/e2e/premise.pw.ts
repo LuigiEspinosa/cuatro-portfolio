@@ -286,7 +286,8 @@ const bandNames = (page: Page) =>
       const element = node as HTMLElement;
       const style = getComputedStyle(element);
       return {
-        text: (element.textContent ?? '').trim(),
+        // The name is the span's `data-ornament`, painted by `::before`, since DW-113.
+        text: element.dataset.ornament ?? '',
         colour: style.color,
         fontStretch: style.fontStretch,
         fontWeight: style.fontWeight,
@@ -797,7 +798,8 @@ test.describe('the block holds at 360, where the viewport has least room', () =>
     const planted = await page.evaluate((token) => {
       const name = document.querySelector('.premise__framework');
       if (!name) return false;
-      name.textContent = token;
+      // Through the attribute the stylesheet paints, since the names became generated content (DW-113).
+      name.setAttribute('data-ornament', token);
       return true;
     }, UNBREAKABLE);
     expect(planted, 'no band name was found to plant a token into').toBe(true);

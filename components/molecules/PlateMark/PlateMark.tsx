@@ -27,6 +27,9 @@ import './PlateMark.scss';
  * anything a reader needs, so a subordinate line that carries information is a defect in the call
  * site, not a styling choice: move the information into the label, which is read. The trailing
  * cell of a section mark is the opposite case, ordinary secondary text a reader is meant to read.
+ * **Since 2026-09-24 the line is generated content** (Operator ruling, DW-113): an empty span whose
+ * string is `data-ornament`, painted by `PlateMark.scss`, because axe scores contrast on a text node
+ * whatever `aria-hidden` says and the muted accent failed Lighthouse's audit on `/work`.
  *
  * **Every cell is uppercase in the document, not only on screen.** `RESTYLE-SPEC.md` § 7 checks a
  * label with CSS turned off and expects a short uppercase string, and § 6 calls uppercase
@@ -89,11 +92,7 @@ export function PlateMark(props: PlateMarkProps) {
     return (
       <div className='plate-mark plate-mark--annotated'>
         <span className='plate-mark__label'>{identity}</span>
-        {sub !== '' && (
-          <span className='plate-mark__sub' aria-hidden='true'>
-            {sub}
-          </span>
-        )}
+        {sub !== '' && <span className='plate-mark__sub' aria-hidden='true' data-ornament={sub} />}
       </div>
     );
   }

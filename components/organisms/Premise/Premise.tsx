@@ -98,12 +98,12 @@ export function Premise() {
 
       {/* Ornament, and the only ornament in the system. It carries no state, is not a legend, and
           is made of real facts: `lib/__tests__/registry.test.ts` holds every name in it against
-          some entry's `tech`, because a name that named nothing would be an invented metric. */}
+          some entry's `tech`, because a name that named nothing would be an invented metric. Each
+          name is painted from `data-ornament` by `Premise.scss` rather than set as text, so the
+          contrast audit does not score the band's muted half (Operator ruling 2026-09-24, DW-113). */}
       <p className='premise__band' aria-hidden='true'>
         {ESTATE_FRAMEWORKS.map((framework) => (
-          <span className='premise__framework' key={framework}>
-            {framework}
-          </span>
+          <span className='premise__framework' key={framework} data-ornament={framework} />
         ))}
       </p>
     </section>

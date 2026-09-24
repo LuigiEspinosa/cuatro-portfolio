@@ -75,9 +75,10 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
         <GlitchText text='Luigi Espinosa' delay={1.0} />
         <p className='home-role'>
           <span>Senior Fullstack Engineer / Team Lead</span>
-          <span className='home-role__jp' aria-hidden='true'>
-            フロントエンドエンジニア
-          </span>
+          {/* Ornament, painted from `data-ornament` by `HomeLayout.scss` rather than set as text,
+              so the contrast audit does not score what no reader needs (DW-113). Same for the
+              two below. */}
+          <span className='home-role__jp' aria-hidden='true' data-ornament='フロントエンドエンジニア' />
         </p>
       </div>
 
@@ -122,16 +123,12 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
         <Link href='/#suite' className='nav-link'>
           Suite Directory
         </Link>
-        <span className='home-nav-jp' aria-hidden='true'>
-          ナビゲーション
-        </span>
+        <span className='home-nav-jp' aria-hidden='true' data-ornament='ナビゲーション' />
       </nav>
 
       <div className='home-panel home-panel--contact'>
         <ContactContainer />
-        <span className='home-contact-jp' aria-hidden='true'>
-          接続
-        </span>
+        <span className='home-contact-jp' aria-hidden='true' data-ornament='接続' />
       </div>
     </div>
   );

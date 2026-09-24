@@ -230,6 +230,20 @@ body[id=''] {
   text-align: right;
 }
 
+// ── Ornaments ────────────────────────────────────────────────────────────────
+//
+// **The three Japanese lines are generated content, not text** (Operator ruling 2026-09-24,
+// DW-113). Each is an empty `aria-hidden` span carrying its string in `data-ornament`, painted here
+// in the colour, face and size its own rule above gives it. Axe scores contrast on a text node
+// whatever `aria-hidden` says, so as text the muted accent's 2.74:1 failed Lighthouse's audit on
+// ornament no reader needs; as generated content it is not page text, and the audit keeps its sight
+// of the route's real text.
+.home-role__jp::before,
+.home-nav-jp::before,
+.home-contact-jp::before {
+  content: attr(data-ornament);
+}
+
 // ── Hover, gated ─────────────────────────────────────────────────────────────
 //
 // Every `:hover` in this file is behind `@media (hover: hover)`. On a touch device a tap paints

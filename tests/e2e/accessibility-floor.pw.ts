@@ -2087,3 +2087,99 @@ test.describe('the scrim over the home canvas', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// The muted-accent ornaments, generated content since DW-113.
+// ---------------------------------------------------------------------------
+
+/**
+ * Every `aria-hidden` ornament set in the muted accent, by route: the home surface's three Japanese
+ * lines and the framework band's names, and `/work`'s subordinate line.
+ *
+ * **Why they are generated content** (Operator ruling 2026-09-24, DW-113). axe scores colour contrast
+ * on any element with a text node of its own, `aria-hidden` or not, and these are `--token-accent-muted`
+ * at 2.74:1, which the design allows as ornament. As text they failed Lighthouse's `color-contrast`
+ * on `/` and `/work`, leaving each route one hundredth over the gate and the audit blind to a real
+ * regression. Each is now an empty span whose string is its `data-ornament`, painted by `::before`.
+ */
+const ORNAMENTS = [
+  { route: '/', selector: '.home-role__jp' },
+  { route: '/', selector: '.home-nav-jp' },
+  { route: '/', selector: '.home-contact-jp' },
+  { route: '/', selector: '.premise__framework' },
+  { route: '/work', selector: '.plate-mark__sub' },
+] as const;
+
+/** What each element under one selector is: its own text, its string, its hiding, what `::before` paints. */
+const ornamentReads = (page: Page, selector: string) =>
+  page.evaluate(
+    (target) =>
+      [...document.querySelectorAll<HTMLElement>(target)].map((node) => {
+        const own = getComputedStyle(node);
+        const before = getComputedStyle(node, '::before');
+        return {
+          at: window.cuatroA11y.path(node),
+          ornament: node.getAttribute('data-ornament') ?? '',
+          textNodes: [...node.childNodes].filter((child) => child.nodeType === Node.TEXT_NODE && (child.textContent ?? '').trim() !== '').length,
+          hidden: node.closest('[aria-hidden="true"]') !== null,
+          // Blink resolves `attr()` in `content` to the attribute's string when it computes the style,
+          // so this is the string the pseudo-element paints, serialised as a CSS string.
+          painted: before.content,
+          inherits:
+            before.color === own.color &&
+            before.fontFamily === own.fontFamily &&
+            before.fontSize === own.fontSize &&
+            before.letterSpacing === own.letterSpacing,
+        };
+      }),
+    selector
+  );
+
+/** Everything wrong with one read. A function, so the plants below drive the same judgement. */
+const ornamentFindings = (reads: Awaited<ReturnType<typeof ornamentReads>>): string[] =>
+  reads.flatMap((read) => [
+    ...(read.ornament === '' ? [`${read.at} carries no data-ornament`] : []),
+    ...(read.textNodes > 0 ? [`${read.at} carries its string as text, which axe scores`] : []),
+    ...(!read.hidden ? [`${read.at} is not hidden from assistive technology`] : []),
+    ...(read.painted !== JSON.stringify(read.ornament) ? [`${read.at} paints ${read.painted} where its attribute says ${JSON.stringify(read.ornament)}`] : []),
+    ...(!read.inherits ? [`${read.at} paints its ::before in a colour or type other than its own`] : []),
+  ]);
+
+test.describe('the muted-accent ornaments are generated content (DW-113)', () => {
+  test('each is an empty, hidden element that paints its string in its own colour and type', async ({ page }) => {
+    const found: string[] = [];
+    const counted: string[] = [];
+    for (const route of [...new Set(ORNAMENTS.map((ornament) => ornament.route))]) {
+      await goTo(page, route);
+      await settle(page, { route, status: 200, entrance: route === '/' });
+      for (const { selector } of ORNAMENTS.filter((ornament) => ornament.route === route)) {
+        const reads = await ornamentReads(page, selector);
+        if (reads.length === 0) found.push(`${route}: ${selector} matches nothing, so the fixture moved rather than the claim`);
+        counted.push(`${route} ${selector} ${reads.length}`);
+        found.push(...ornamentFindings(reads));
+      }
+    }
+    console.log(`accessibility-floor: ornaments read ${counted.join('; ')}`);
+    expect(found, `an ornament is page text again, or paints nothing:\n${found.join('\n')}`).toEqual([]);
+  });
+
+  test('and that read fires on an ornament set as text, painting nothing, or exposed', async ({ page }) => {
+    // The controls, planted into the real elements: the same judgement has to name each.
+    await goTo(page, '/');
+    await settle(page, { route: '/', status: 200, entrance: true });
+    await page.evaluate(() => {
+      const role = document.querySelector('.home-role__jp');
+      if (role) role.textContent = 'text';
+      document.querySelector('.home-contact-jp')?.removeAttribute('aria-hidden');
+    });
+    await page.addStyleTag({ content: '.home-nav-jp::before { content: none !important; }' });
+    const found = [
+      ...ornamentFindings(await ornamentReads(page, '.home-role__jp')),
+      ...ornamentFindings(await ornamentReads(page, '.home-nav-jp')),
+      ...ornamentFindings(await ornamentReads(page, '.home-contact-jp')),
+    ];
+    expect(found.some((line) => line.includes('home-role__jp') && line.includes('as text')), 'text set into an ornament was not named').toBe(true);
+    expect(found.some((line) => line.includes('home-nav-jp') && line.includes('paints none')), 'an ornament painting nothing was not named').toBe(true);
+    expect(found.some((line) => line.includes('home-contact-jp') && line.includes('not hidden')), 'an exposed ornament was not named').toBe(true);
+  });
+});

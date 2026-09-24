@@ -74,6 +74,14 @@
   letter-spacing: var(--tr-meta);
 }
 
+// **Painted from its attribute, not set as text** (Operator ruling 2026-09-24, DW-113). The span is
+// empty and carries the line in `data-ornament`, so axe, which scores contrast on text nodes whatever
+// `aria-hidden` says, does not score ornament no reader needs. The pseudo-element inherits every
+// value above, so the line paints exactly as it did.
+.plate-mark__sub::before {
+  content: attr(data-ornament);
+}
+
 // **Side-ruled: a label hanging beside content, the rule on its leading edge.** The rule beneath is
 // taken off rather than kept beside the new one, because a variant moves the rule and does not add
 // a second.

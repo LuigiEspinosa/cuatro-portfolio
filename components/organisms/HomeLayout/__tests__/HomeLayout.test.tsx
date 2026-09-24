@@ -117,6 +117,25 @@ describe('HomeLayout', () => {
       unmount();
     }
   });
+
+  it('carries each Japanese ornament in data-ornament rather than as text, hidden from assistive technology', () => {
+    // Operator ruling 2026-09-24 (DW-113): axe scores contrast on a text node whatever `aria-hidden`
+    // says, and these three are set in the muted accent at 2.74:1, so as text they failed
+    // Lighthouse's audit on ornament no reader needs. As generated content they are not page text.
+    const { container } = render(<HomeLayout />);
+    for (const [selector, ornament] of [
+      ['.home-role__jp', 'フロントエンドエンジニア'],
+      ['.home-nav-jp', 'ナビゲーション'],
+      ['.home-contact-jp', '接続'],
+    ] as const) {
+      const node = container.querySelector(selector);
+      expect(node, `${selector} is not rendered`).not.toBeNull();
+      expect(node?.getAttribute('data-ornament'), `${selector} does not carry its string`).toBe(ornament);
+      expect(node?.textContent, `${selector} still carries its string as text`).toBe('');
+      expect(node, `${selector} is in the accessibility tree`).toHaveAttribute('aria-hidden', 'true');
+    }
+    expect(container.textContent, 'an ornament string is still page text somewhere in the hero').not.toMatch(/[぀-ヿ一-鿿]/);
+  });
 });
 
 describe('HomeLayout on the two front doors', () => {
@@ -474,6 +493,12 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     expect(mobile, 'the scrim still paints below 768, where no text overlays the imagery').toContain(
       '.home-gem .scanline-overlay{display:none}'
     );
+  });
+
+  it('paints the three ornaments from their attribute, and nothing else from one', () => {
+    // The compiled half of DW-113: each ornament's string reaches the page through `::before` alone.
+    const generated = [...css.matchAll(/([^{}]+)\{content:attr\(data-ornament\)\}/g)].flatMap((match) => match[1].split(','));
+    expect(generated.sort()).toEqual(['.home-contact-jp::before', '.home-nav-jp::before', '.home-role__jp::before']);
   });
 
   it('gates every hover rule on @media (hover: hover)', () => {

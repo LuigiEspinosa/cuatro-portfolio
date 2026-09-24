@@ -456,7 +456,11 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
 
       // Scoped to the mark that carries the line: `/work` carries two marks since Story 2-33.
       const mark = page.locator('.plate-mark', { has: sub });
-      const text = (await sub.textContent()) ?? '';
+      // Generated content since the Operator's ruling of 2026-09-24 (DW-113): the string is the
+      // attribute `PlateMark.scss` paints, and the span holds no text of its own for axe to score.
+      const text = (await sub.getAttribute('data-ornament')) ?? '';
+      expect(text, 'the subordinate line carries no string to paint').not.toBe('');
+      expect(await sub.evaluate((node) => node.textContent), 'the subordinate line is page text again').toBe('');
       const tree = await mark.ariaSnapshot();
       expect(tree, 'the mark is absent from the tree altogether, so the read below is of nothing').toContain(
         (await mark.locator('.plate-mark__label').textContent()) ?? '\u0000'
@@ -533,7 +537,10 @@ test.describe('the Plate mark sets every variant as one label treatment', () => 
       const cells = await page.evaluate(() =>
         [...document.querySelectorAll('.plate-mark > :not(.plate-mark__sub)')].map((cell) => (cell as HTMLElement).innerText.trim())
       );
-      const subs = await page.evaluate(() => [...document.querySelectorAll('.plate-mark__sub')].map((line) => (line.textContent ?? '').trim()));
+      // Each line's string is its `data-ornament` since DW-113, and with the sheets off nothing paints it.
+      const subs = await page.evaluate(() =>
+        [...document.querySelectorAll('.plate-mark__sub')].map((line) => (line.getAttribute('data-ornament') ?? '').trim()).filter((line) => line !== '')
+      );
       const tree = await page.locator('body').ariaSnapshot();
 
       for (const cell of cells) wrong.push(...cellFindings(surface.route, cell, tree));

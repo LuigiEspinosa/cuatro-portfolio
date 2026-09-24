@@ -130,7 +130,10 @@ describe('every cell is uppercase in the document, so a label reads the same wit
     ];
     for (const [props, expected] of cases) {
       const { container } = render(<PlateMark {...props} />);
-      const cells = [...(container.querySelector('.plate-mark')?.children ?? [])].map((cell) => cell.textContent);
+      // The subordinate line's string is its `data-ornament` since DW-113; every other cell is text.
+      const cells = [...(container.querySelector('.plate-mark')?.children ?? [])].map(
+        (cell) => cell.getAttribute('data-ornament') ?? cell.textContent
+      );
       expect(cells, `${props.variant ?? 'section'} drew its cells in some other case`).toEqual(expected);
     }
   });
@@ -171,6 +174,17 @@ describe('three variants, and no fourth', () => {
     expect(mark?.querySelector('.plate-mark__label'), 'the label is hidden, and the label is what is read').not.toHaveAttribute(
       'aria-hidden'
     );
+  });
+
+  it('carries the subordinate line in data-ornament rather than as text (DW-113)', () => {
+    // Operator ruling 2026-09-24: axe scores contrast on a text node whatever `aria-hidden` says, and
+    // the line is the muted accent at 2.74:1, so as text it failed Lighthouse's audit on `/work`.
+    // As generated content it is not page text, and the label beside it stays text.
+    const { container } = render(<PlateMark variant='annotated' label='Experience' sub='経験' />);
+    const sub = container.querySelector('.plate-mark__sub');
+    expect(sub?.getAttribute('data-ornament'), 'the line does not carry its string').toBe('経験');
+    expect(sub?.textContent, 'the line still carries its string as text').toBe('');
+    expect(container.querySelector('.plate-mark')?.textContent, 'the label stopped being text').toBe('EXPERIENCE');
   });
 
   it('draws no subordinate line for one that is empty or only whitespace', () => {
@@ -284,6 +298,10 @@ describe('the stylesheet names contract roles and nothing else', () => {
     expect(css, 'the subordinate line is not the muted accent at meta tracking').toMatch(
       /\.plate-mark__sub\{color:var\(--token-accent-muted\);letter-spacing:var\(--tr-meta\)\}/
     );
+    // DW-113: the line's string reaches the page through `::before` alone, and nothing else here does.
+    expect([...css.matchAll(/([^{}]+)\{content:attr\(data-ornament\)\}/g)].map((match) => match[1])).toEqual([
+      '.plate-mark__sub::before',
+    ]);
   });
 
   it('carries no state at all, being signage', () => {

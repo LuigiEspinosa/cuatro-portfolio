@@ -82,3 +82,12 @@
 .premise__framework:nth-child(even) {
   color: var(--token-accent-muted);
 }
+
+// **Every name is painted from its attribute, not set as text** (Operator ruling 2026-09-24,
+// DW-113). Axe scores contrast on a text node whatever `aria-hidden` says, so as text the even names'
+// 2.74:1 failed Lighthouse's audit on `/`. Each span is empty and carries its name in
+// `data-ornament`; the pseudo-element inherits the span's colour and the band's type, so the rhythm
+// paints as it did.
+.premise__framework::before {
+  content: attr(data-ornament);
+}

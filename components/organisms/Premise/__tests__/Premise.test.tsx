@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { render, screen } from '@testing-library/react';
+import { compile } from 'sass';
 import { Premise } from '../Premise';
 import {
   ESTATE_FRAMEWORKS,
@@ -156,8 +157,20 @@ describe("the plate mark names the Hub from the Hub's own entry", () => {
 describe('the framework band is ornament, and it is made of real facts', () => {
   it('draws every declared framework, in the declared order and once each', () => {
     const { container } = render(<Premise />);
-    const names = [...container.querySelectorAll('.premise__framework')].map((span) => span.textContent);
+    const names = [...container.querySelectorAll('.premise__framework')].map((span) => span.getAttribute('data-ornament'));
     expect(names, 'the band draws something other than the declared list').toEqual([...ESTATE_FRAMEWORKS]);
+  });
+
+  it('carries every name in data-ornament rather than as text (DW-113)', () => {
+    // Operator ruling 2026-09-24: axe scores contrast on a text node whatever `aria-hidden` says, and
+    // the even names are the muted accent at 2.74:1, so as text they failed Lighthouse's audit on
+    // `/`. Every name moves, odd and even, so the alternation stays the stylesheet's alone.
+    const { container } = render(<Premise />);
+    expect(container.querySelector('.premise__band')?.textContent, 'a band name is still page text').toBe('');
+    const css = compile(resolve(REPO_ROOT, 'components', 'organisms', 'Premise', 'Premise.scss'), { style: 'compressed' }).css;
+    expect([...css.matchAll(/([^{}]+)\{content:attr\(data-ornament\)\}/g)].map((match) => match[1])).toEqual([
+      '.premise__framework::before',
+    ]);
   });
 
   it('is hidden from assistive technology, every name in it being on a row below', () => {
