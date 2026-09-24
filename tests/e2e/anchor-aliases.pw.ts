@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, computedStyleValue } from './harness';
 
 /**
  * The alias layer's deletion, measured in a real browser (Story 2-22, Anchor migration step 7).
@@ -17,19 +17,20 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  * **What is measured here now is the absence, where only a browser can see it**, and the parts of the
  * old file that were never about the aliases:
  *
- *  1. **`:root` in the compiled stylesheet carries the contract's properties and `--hero-height`,
- *     and nothing else.** Every stylesheet the build writes is parsed by the browser's own CSS
- *     parser, grouping rules included, and every custom property declared on a rule that reaches the
- *     root element is collected. That is the build's word, after Sass and the minifier, which a read
- *     of `app/app.scss` cannot give: a partial, a library stylesheet or a rewrite could put a name on
- *     `:root` that no source in this repository spells.
- *  2. **The one property the Hub keeps still holds its authored literal.**
- *  3. **The base `body` rule paints the roles it names**, on the 404 surface where nothing overrides
+ *  1. **`:root` in the compiled stylesheet carries the contract's properties, and nothing else.**
+ *     Every stylesheet the build writes is parsed by the browser's own CSS parser, grouping rules
+ *     included, and every custom property declared on a rule that reaches the root element is
+ *     collected. That is the build's word, after Sass and the minifier, which a read of
+ *     `app/app.scss` cannot give: a partial, a library stylesheet or a rewrite could put a name on
+ *     `:root` that no source in this repository spells. **Until 2026-09-24 it admitted
+ *     `--hero-height` too**, and a second claim read that property's authored `40vh`; the Operator's
+ *     ruling of that day deleted it and amended Story 2.22's criterion (DW-122).
+ *  2. **The base `body` rule paints the roles it names**, on the 404 surface where nothing overrides
  *     it: the ground, the copy, the body family and the regular weight, and neither colour is pure.
- *  4. **Every route the Hub serves still answers 2xx** (NFR-2).
+ *  3. **Every route the Hub serves still answers 2xx** (NFR-2).
  *
- * `app/__tests__/anchor-contract.test.ts` is the source half: it holds `app/app.scss` to declaring
- * `--hero-height` alone, and searches every file git tracks for the thirteen deleted names. This file
+ * `app/__tests__/anchor-contract.test.ts` is the source half: it holds `app/app.scss` to declaring no
+ * custom property at all, and searches every file git tracks for the thirteen deleted names. This file
  * names none of them, and does not need to: a name outside the contract on `:root` fails here whatever
  * it is called.
  *
@@ -75,19 +76,16 @@ const ROUTES = ['/', '/cv', '/work', '/celeste', '/api/health'] as const;
 const NOT_FOUND = '/a-route-that-does-not-exist';
 
 /**
- * The Hub declares one custom property, authored as a literal.
+ * The Hub declares no custom property of its own.
  *
  * **Sixteen, twelve and four until 2026-09-12**, when Story 2-20 retargeted one alias and deleted a
  * dead one. **Fifteen and two until 2026-09-23**, when Story 2-34 deleted a dead colour literal the
  * FR-17 gate refuses. **Fourteen, thirteen of them aliases, until later on 2026-09-23**, when Story
- * 2-22 deleted the thirteen; the same count moved in `app/__tests__/anchor-contract.test.ts` and
- * `tests/e2e/contract-anchor.pw.ts` in the same commit.
+ * 2-22 deleted the thirteen. **One, `--hero-height`, until 2026-09-24**, when the Operator's ruling
+ * deleted it (DW-122): nothing had read it since at least 2026-08-26. Each time the same count moved in
+ * `app/__tests__/anchor-contract.test.ts` and `tests/e2e/contract-anchor.pw.ts` in the same commit.
  */
-const HUB_PROPERTY_COUNT = 1;
-const LITERAL_COUNT = 1;
-
-/** The one the Hub keeps, and the reason that holds it: a layout constant the contract carries no role for. */
-const LITERAL_PROPERTIES = ['--hero-height'] as const;
+const HUB_PROPERTY_COUNT = 0;
 
 /** The counts `contracts/tokens.css` publishes at v1.0.0, pinned as `contract-anchor.pw.ts` pins them. */
 const DECLARED_COUNT = 89;
@@ -109,7 +107,7 @@ const declarationsIn = (block: string): Map<string, string> => {
   return found;
 };
 
-/** The Hub's own, as `app/app.scss` authors them. */
+/** The Hub's own on its `:root`, as `app/app.scss` authors them: none since 2026-09-24. */
 const HUB = declarationsIn(/:root\s*\{([^}]*)\}/.exec(withoutComments(APP_SCSS))?.[1] ?? '');
 
 const REDUCED_BLOCK = /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)\s*\{\s*:root\s*\{([^}]*)\}\s*\}/;
@@ -124,9 +122,11 @@ const CONTRACT_REDUCED = declarationsIn(REDUCED_BLOCK.exec(withoutComments(TOKEN
 
 /**
  * What `:root` may carry in the compiled stylesheet: every name the contract declares there, under
- * either block, and the Hub's one. Derived from the two files rather than typed.
+ * either block. Derived from the contract rather than typed, and from the contract alone since
+ * 2026-09-24: until then the Hub's `--hero-height` was admitted too, read off `app/app.scss`, which
+ * would have let a Hub name put back there through as well. Now it fails here as extra.
  */
-const ROOT_ALLOWED = [...new Set([...CONTRACT.keys(), ...CONTRACT_REDUCED.keys(), ...HUB.keys()])].sort();
+const ROOT_ALLOWED = [...new Set([...CONTRACT.keys(), ...CONTRACT_REDUCED.keys()])].sort();
 
 /**
  * The two names the build writes beside a `color-scheme` declaration, and nowhere else (since
@@ -137,8 +137,6 @@ const ROOT_ALLOWED = [...new Set([...CONTRACT.keys(), ...CONTRACT_REDUCED.keys()
  * a rule that also declares `color-scheme`, read with it, so the same name anywhere else is extra.
  */
 const MINIFIER_SCHEME_SWITCHES = ['--lightningcss-light', '--lightningcss-dark'] as const;
-
-const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
 
 /**
  * Every stylesheet the build wrote, as text, named by its path under the chunk directory. An absent
@@ -362,12 +360,16 @@ const goTo = async (page: Page, route: string, expected = 200): Promise<void> =>
  * stylesheets under `components/`); and, earlier, the per-call-site boundary and ornament table, the
  * hand-set weight table, the clamp precondition, the pseudo-element read and the wide-viewport
  * context, each of which left with the last row it read and is recorded in
- * `ops/anchor-token-adoption.md` as it was taken. Kept as a note so a later reader knows each was
- * built once and why it went.
+ * `ops/anchor-token-adoption.md` as it was taken. **And on 2026-09-24 the case that read the one
+ * property the Hub kept**, `--hero-height`, against its authored `40vh` through `rootCustomPropertyValue`,
+ * with the reference matcher that told a literal from a `var()`; the Operator's ruling deleted the
+ * property (DW-122), and a case over an empty list would pass over nothing. Kept as a note so a later
+ * reader knows each was built once and why it went.
  */
 test('parses a real app.scss and a real contract, so every case below measures something', () => {
-  expect(HUB.size, 'app/app.scss no longer declares one custom property on :root').toBe(HUB_PROPERTY_COUNT);
-  expect([...HUB.keys()], 'the property app/app.scss keeps is not --hero-height').toEqual([...LITERAL_PROPERTIES]);
+  expect(/color-scheme\s*:\s*dark/.test(withoutComments(APP_SCSS)), 'app/app.scss was not read, or lost its one :root rule').toBe(true);
+  expect([...HUB.keys()], 'app/app.scss declares a custom property on :root again').toEqual([]);
+  expect(HUB.size).toBe(HUB_PROPERTY_COUNT);
   expect(CONTRACT.size, 'contracts/tokens.css no longer declares 89 custom properties on :root').toBe(DECLARED_COUNT);
   expect(CONTRACT_REDUCED.size, 'the reduced-motion block no longer redefines 4 values').toBe(REDUCED_COUNT);
   for (const known of ['--token-bg', '--token-text', '--f-body', '--w-regular', '--page-pad']) {
@@ -376,12 +378,13 @@ test('parses a real app.scss and a real contract, so every case below measures s
   for (const name of CONTRACT_REDUCED.keys()) {
     expect([...CONTRACT.keys()], `${name} is redefined under reduced motion but never declared`).toContain(name);
   }
-  expect(ROOT_ALLOWED.length, 'the allowed root set is not the contract and the Hub one').toBe(DECLARED_COUNT + HUB_PROPERTY_COUNT);
+  expect(ROOT_ALLOWED.length, 'the allowed root set is not the contract alone').toBe(DECLARED_COUNT);
 
-  // The parsers, on planted controls, before any empty or agreeing result is read as good news.
-  expect(IS_VAR_REFERENCE.test('var(--token-bg)')).toBe(true);
-  expect(IS_VAR_REFERENCE.test('rgba(139, 92, 246, 0.4)')).toBe(false);
-  expect(IS_VAR_REFERENCE.test('var(--token-bg) 1px')).toBe(false);
+  // The parsers, on planted controls, before any empty or agreeing result is read as good news: the
+  // `:root` read finds the property the Hub declared until 2026-09-24, as it was written.
+  expect([...declarationsIn(/:root\s*\{([^}]*)\}/.exec(':root {\n  --hero-height: 40vh;\n}')?.[1] ?? '').keys()]).toEqual([
+    '--hero-height',
+  ]);
   expect([...declarationsIn('  --a: 1px; --b: var(--c);').entries()]).toEqual([
     ['--a', '1px'],
     ['--b', 'var(--c)'],
@@ -399,10 +402,12 @@ test('parses a real app.scss and a real contract, so every case below measures s
   }
 });
 
-test(':root in the compiled stylesheet carries only the contract’s properties and --hero-height', async ({ page }) => {
-  // Story 2-22's second criterion, read off the build. A page is needed for its parser and its root
-  // element; which route does not matter, because every stylesheet is read whether this route links it
-  // or not, a chunk only another route or a dynamic boundary loads included.
+test(':root in the compiled stylesheet carries only the contract’s properties', async ({ page }) => {
+  // Story 2-22's second criterion as the Operator's ruling of 2026-09-24 amended it (DW-122: the
+  // contract's properties alone, where it had read "plus `--hero-height`"), read off the build. A page
+  // is needed for its parser and its root element; which route does not matter, because every
+  // stylesheet is read whether this route links it or not, a chunk only another route or a dynamic
+  // boundary loads included.
   await goTo(page, '/');
 
   const built = builtStylesheets();
@@ -430,18 +435,9 @@ test(':root in the compiled stylesheet carries only the contract’s properties 
 
   expect(
     extra,
-    `the compiled stylesheet puts a custom property on :root that is neither the contract's nor ` +
-      `--hero-height:\n${extra.join('\n')}`
+    `the compiled stylesheet puts a custom property on :root that is not the contract's:\n${extra.join('\n')}`
   ).toEqual([]);
-  expect(missing, `a name the contract or the Hub declares never reaches :root in the build:\n${missing.join('\n')}`).toEqual(
-    []
-  );
-
-  // The Hub's own arrives once, on `:root` itself, which is what `app/app.scss` authors.
-  expect(
-    found.filter((entry) => entry.name === '--hero-height').map((entry) => entry.selector),
-    '--hero-height is not declared exactly once, on :root, in the build'
-  ).toEqual([':root']);
+  expect(missing, `a name the contract declares never reaches :root in the build:\n${missing.join('\n')}`).toEqual([]);
 
   // The walk, on planted controls through the same function and the same parser: a plain root rule,
   // one inside a grouping rule, the root element by its type selector, a root state the page is not in
@@ -478,9 +474,12 @@ test(':root in the compiled stylesheet carries only the contract’s properties 
     'import.css: carries an @import, which a constructed stylesheet does not follow',
   ]);
 
-  // And the comparison, on a planted root set: a name outside the allowed set is extra, and a contract
-  // name the build never carried is missing.
-  expect(['--token-bg', '--planted-root'].filter((name) => !ROOT_ALLOWED.includes(name))).toEqual(['--planted-root']);
+  // And the comparison, on a planted root set: a name outside the allowed set is extra, the property
+  // the Hub declared until 2026-09-24 among them, and a contract name the build never carried is missing.
+  expect(['--token-bg', '--planted-root', '--hero-height'].filter((name) => !ROOT_ALLOWED.includes(name))).toEqual([
+    '--planted-root',
+    '--hero-height',
+  ]);
 
   // The minifier's switches, both ways: beside a scheme they are the build's, and without one, on the
   // same element, they are extra like any other name.
@@ -491,33 +490,6 @@ test(':root in the compiled stylesheet carries only the contract’s properties 
     },
   ]);
   expect(switches.found.filter(isExtra).map((entry) => `${entry.selector} ${entry.name}`)).toEqual(['html --lightningcss-dark']);
-  expect(ROOT_ALLOWED.filter((name) => !['--hero-height'].includes(name)).length).toBe(DECLARED_COUNT);
-});
-
-test('the one property the Hub keeps still holds its authored literal', async ({ page }) => {
-  await goTo(page, '/');
-
-  expect(LITERAL_PROPERTIES.length, 'the list of kept properties is empty').toBe(LITERAL_COUNT);
-
-  // **One route, text.** Until Story 2-22 this case carried a second, colour route through the canvas,
-  // for a literal the build rewrites on the way to the browser; the one colour literal it read left with
-  // Story 2-34, and the FR-17 gate refuses a colour literal here, so no literal can take that route and
-  // it went with the layer. A custom property's computed value is its token stream, so the authored
-  // `40vh` is what `:root` answers.
-  const drift: string[] = [];
-  for (const name of LITERAL_PROPERTIES) {
-    const authored = HUB.get(name) ?? '';
-    expect(authored, `app/app.scss no longer declares ${name}`).not.toBe('');
-    expect(
-      IS_VAR_REFERENCE.test(authored),
-      `app/app.scss authors ${name} as "${authored}", a var() reference. The contract carries no ` +
-        `viewport height for --hero-height.`
-    ).toBe(false);
-
-    const read = await rootCustomPropertyValue(page, name);
-    if (authored !== read) drift.push(`${name}: app/app.scss authors "${authored}", :root reads "${read}"`);
-  }
-  expect(drift, `the property the Hub keeps has drifted:\n${drift.join('\n')}`).toEqual([]);
 });
 
 test('the base rule paints the ground, copy, family and weight it names, and neither colour is pure', async ({ page }) => {

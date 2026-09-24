@@ -22,10 +22,10 @@ import { dirname, join, relative, resolve } from 'node:path';
  *     A runtime `@import` would fetch the contract from a URL Next never emits and would break
  *     the relative `url("./fonts/<file>.woff2")` resolution. The `@use` assertion is what holds
  *     that shut; the no-extension assertion below is a convention check and says so.
- *  2. **No name collides.** The Hub's one custom property, `--hero-height`, is declared in
- *     `app/app.scss` (fourteen until Story 2-22 deleted the thirteen aliases around it), none of
- *     the eighty-nine contract names is among them, and both counts are pinned so the
- *     intersection cannot be empty because a list was.
+ *  2. **No name collides.** `app/app.scss` declares no custom property of its own (fourteen until
+ *     Story 2-22 deleted the thirteen aliases, and one, `--hero-height`, until the Operator ruling of
+ *     2026-09-24 deleted it, DW-122), no other stylesheet declares one, and both counts are pinned,
+ *     the Hub's at zero and the contract's at eighty-nine, so no name can collide.
  *  3. **The contract is consumed by the global stylesheet's two rules and the token-native
  *     stylesheets, and by nothing else.** Story 1-17 asserted that nothing consumed it at all;
  *     Story 1-18 wrote the alias layer, so the case was **inverted rather than deleted**, and Story
@@ -169,7 +169,7 @@ const DECLARED_COUNT = 89;
 const REDUCED_COUNT = 4;
 
 /**
- * The Hub's own custom properties: one, `--hero-height`, in one file.
+ * The Hub's own custom properties: none.
  *
  * **Sixteen until 2026-09-12.** Story 2-20 deleted `--confillia-bold`, which had zero call sites,
  * with the local face it named. Both suites moved in the same commit. **Fifteen until
@@ -177,9 +177,12 @@ const REDUCED_COUNT = 4;
  * FR-17 conformance gate refuses and `DESIGN.md` § The mapping drops; the three suites that count
  * the Hub's properties moved in the same commit. **Fourteen until later on 2026-09-23.** Story 2-22
  * deleted the thirteen aliases Story 1-18 and Story 2-20 wrote (`DELETED_ALIASES` below), which left
- * the one property that was never an alias; the same three suites moved in the same commit.
+ * the one property that was never an alias. **One until 2026-09-24.** That property, `--hero-height:
+ * 40vh`, had no reader since at least 2026-08-26, and the Operator's ruling of that day deleted it
+ * and amended Story 2.22's criterion (DW-122), so `:root` carries the contract's properties alone;
+ * the same three suites moved to zero in the same commit.
  */
-const HUB_PROPERTY_COUNT = 1;
+const HUB_PROPERTY_COUNT = 0;
 
 /**
  * **The mapping left on 2026-09-23 with the layer it pinned.** `MAPPING` held Story 1-18's alias
@@ -228,17 +231,14 @@ const FOCUS_ROLES = ['--stroke-focus', '--token-focus', '--focus-offset', '--r-h
 const SELECTION_ROLES = ['--token-accent'] as const;
 
 /**
- * The one the alias layer deliberately left authored as a literal, and since Story 2-22 deleted the
- * layer around it the one custom property the Hub declares.
- *
- * Not an oversight: `--hero-height` is a layout constant the contract carries no role for. **Four
- * until 2026-09-12**: the two Confillia names were held by the type swap (UX-DR12) and O-6, and Story
- * 2-20 is that swap. `--confillia-normal` moved into `MAPPING` and `--confillia-bold` was deleted.
- * **Two until 2026-09-23**: `--accent-glow` was held by O-11, which `DESIGN.md` § The mapping had
- * closed by dropping it, and Story 2-34 deleted it, because its `rgba()` is a colour literal the
- * FR-17 conformance gate refuses outside `contracts/`.
+ * **`LITERAL_PROPERTIES` left on 2026-09-24 with its last member.** It held the properties the alias
+ * layer deliberately left authored as literals: four until 2026-09-12 (the two Confillia names, which
+ * Story 2-20's type swap retargeted and deleted), two until 2026-09-23 (`--accent-glow`, which Story
+ * 2-34 deleted because its `rgba()` is a colour literal the FR-17 gate refuses), then `--hero-height`
+ * alone, a layout constant the contract carries no role for, which the Operator's ruling of 2026-09-24
+ * deleted (DW-122). The case that read each one's literal went with the list; the case below now holds
+ * the file to declaring none.
  */
-const LITERAL_PROPERTIES = ['--hero-height'] as const;
 
 /**
  * The `--monument-bold` call sites, the only component stylesheets Story 1-18 edits.
@@ -353,9 +353,10 @@ const TOKEN_NATIVE_STYLESHEETS = [
 ] as const;
 
 /**
- * The one global stylesheet: the base rule, the focus rule and `--hero-height`, and since 2026-09-24 the
- * landmark's inset ring, the colour scheme and the selection. It carried the alias
- * layer until Story 2-22 deleted it, and was named for it until then.
+ * The one global stylesheet: the base rule and the focus rule, and since 2026-09-24 the landmark's
+ * inset ring, the colour scheme and the selection. It carried the alias layer until Story 2-22 deleted
+ * it, and was named for it until then, and `--hero-height` until the Operator's ruling of 2026-09-24
+ * (DW-122).
  */
 const GLOBAL_STYLESHEET = 'app/app.scss';
 
@@ -363,9 +364,10 @@ const GLOBAL_STYLESHEET = 'app/app.scss';
  * The thirteen properties Story 2-22 deleted from `app/app.scss` (UX-DR14, migration step 7).
  *
  * The story's own list is ten: the four colours, the page padding and the five font aliases Story 1-18
- * wrote (`epics.md` § Story 2.22). The other three go by its second criterion, which admits nothing on
- * `:root` beyond the contract and `--hero-height`: the two accent rows Story 1-18 also wrote and the
- * width alias Story 2-20 added after the story was written.
+ * wrote (`epics.md` § Story 2.22). The other three go by its second criterion, which admitted nothing on
+ * `:root` beyond the contract and `--hero-height` (and nothing beyond the contract since its amendment by
+ * the Operator's ruling of 2026-09-24, DW-122): the two accent rows Story 1-18 also wrote and the width
+ * alias Story 2-20 added after the story was written.
  *
  * **This file is the one place outside the dated record that names them**, because a search has to name
  * what it pins absent, so the search below excludes it by path.
@@ -515,7 +517,7 @@ const withoutComments = (source: string): string =>
  * A custom property **declaration**, anchored on the character that can open one.
  *
  * `--name:` on its own is not enough: a BEM modifier carrying a pseudo-class, `.btn--primary:hover`,
- * is `--name:` too. Reading that as a declaration would inflate the Hub's pinned count of one
+ * is `--name:` too. Reading that as a declaration would inflate the Hub's pinned count of zero
  * and fail the collision argument for a reason unrelated to the contract. Anchoring on `;`, `{` or
  * a line start is what separates the two. The same expression is used by every place in this file
  * that counts declarations, so the three cannot drift apart.
@@ -564,7 +566,7 @@ const CONTRACT = atCollection('could not parse contracts/tokens.css:', () => {
 
 const TOKEN_NAMES = [...new Set([...CONTRACT.base.keys(), ...CONTRACT.reduced.keys()])];
 
-/** Every `--name` `app/app.scss` declares. The Hub's own, one since Story 2-22, live in that one file. */
+/** Every `--name` `app/app.scss` declares: none since 2026-09-24 (one from Story 2-22 until then). */
 const HUB_NAMES = atCollection('could not parse app/app.scss:', () => {
   const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
   return [...new Set([...source.matchAll(DECLARATION)].map((found) => found[1]))];
@@ -828,12 +830,13 @@ describe('the token contract is wired into the Anchor stylesheet graph', () => {
 });
 
 describe('no contract name collides with a name the Hub already declares', () => {
-  it('found the Hub’s one custom property in app/app.scss, and no other', () => {
-    // The "identical by construction" argument rests on this count. If the Hub declared a
-    // second somewhere else, the intersection below would be empty for the wrong reason. Fourteen
-    // until Story 2-22 deleted the thirteen aliases, whose four named members this loop used to read.
-    expect(HUB_NAMES.length, 'app/app.scss no longer declares exactly one custom property').toBe(HUB_PROPERTY_COUNT);
-    expect(HUB_NAMES, 'the one property app/app.scss declares is not --hero-height').toEqual([...LITERAL_PROPERTIES]);
+  it('found no custom property in app/app.scss, and none in any other stylesheet', () => {
+    // The "identical by construction" argument rests on this count. If the Hub declared one
+    // somewhere else, the intersection below would be empty for the wrong reason. Fourteen until
+    // Story 2-22 deleted the thirteen aliases, whose four named members this loop used to read, and
+    // one, `--hero-height`, until the Operator's ruling of 2026-09-24 deleted it (DW-122).
+    expect(HUB_NAMES, 'app/app.scss declares a custom property of its own again').toEqual([]);
+    expect(HUB_NAMES.length).toBe(HUB_PROPERTY_COUNT);
 
     // No component stylesheet declares one, which is the other half of the same argument.
     //
@@ -860,8 +863,10 @@ describe('no contract name collides with a name the Hub already declares', () =>
   });
 
   it('shares no name with the contract, in either direction', () => {
-    // Both sides of the intersection are pinned. An empty intersection means nothing if either
-    // list could have been empty, and this is the argument the whole story rests on.
+    // Both sides of the intersection are pinned. The contract's side at eighty-nine, so an empty
+    // intersection is not an empty contract; the Hub's at zero since 2026-09-24, so the intersection
+    // is empty because the Hub declares nothing, which is the strongest form of the argument the
+    // whole story rests on, and a name put back is refused by the count before it can collide.
     expect(TOKEN_NAMES.length, 'the contract declares a different number of distinct names').toBe(DECLARED_COUNT);
     expect(HUB_NAMES.length, 'app/app.scss declares a different number of custom properties').toBe(HUB_PROPERTY_COUNT);
 
@@ -1052,70 +1057,40 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
       ).toBe(true);
     }
     expect(
-      TOKEN_NAMES.some((name) => referenceTo(name).test('.control { min-height: var(--hero-height); }')),
-      'the scan fires on the Hub’s own name, so the partition above cannot tell a role from it'
+      TOKEN_NAMES.some((name) => referenceTo(name).test('.control { min-height: var(--a-local-name); }')),
+      'the scan fires on a name the contract does not declare, so the partition above cannot tell a role from it'
     ).toBe(false);
   });
 
-  it('declares --hero-height alone, on :root, as a literal, and no custom property on any other selector', () => {
-    // Story 2-22's first criterion, read off the file rather than the browser, because what is
-    // asserted is what the file authors (`tests/e2e/anchor-aliases.pw.ts` reads what the build ships).
-    // Until that story this case held the thirteen aliases to their roles row by row, and the scoped
-    // `--accent-dim` redefinitions to their selectors; see the note where `MAPPING` was.
+  it('declares no custom property, on :root or on any other selector', () => {
+    // Story 2-22's criteria as the Operator's ruling of 2026-09-24 amended them (DW-122), read off the
+    // file rather than the browser, because what is asserted is what the file authors
+    // (`tests/e2e/anchor-aliases.pw.ts` reads what the build ships). Until that story this case held
+    // the thirteen aliases to their roles row by row, and the scoped `--accent-dim` redefinitions to
+    // their selectors (see the note where `MAPPING` was); until the ruling it held `--hero-height` to
+    // being the one declaration, on `:root`, as a literal that named no role.
     const source = withoutComments(readFileSync(APP_SCSS, 'utf8'));
     const root = /:root\s*\{([^}]*)\}/.exec(source);
     expect(root, 'no :root block was parsed out of app/app.scss, so this case measures nothing').not.toBeNull();
-
-    const declarationsIn = (block: string): Map<string, string> => {
-      const found = new Map<string, string>();
-      for (const raw of block.split(';')) {
-        const at = raw.indexOf(':');
-        if (at === -1) continue;
-        const name = raw.slice(0, at).trim();
-        if (name.startsWith('--')) found.set(name, raw.slice(at + 1).trim());
-      }
-      return found;
-    };
-
-    const declared = declarationsIn(root?.[1] ?? '');
-    expect([...declared.keys()], 'app/app.scss declares something on :root beyond --hero-height').toEqual([
-      ...LITERAL_PROPERTIES,
-    ]);
+    expect(root?.[1] ?? '', 'the :root block parsed is not the colour scheme, the one :root rule the file keeps').toMatch(
+      /color-scheme\s*:\s*dark/
+    );
 
     // **Every declaration in the file, whatever its selector.** A custom property redeclared on
     // `body` or on a component selector is an alias by another route, which is the shape the
     // boundary scope had, so the whole file is read and not only `:root`.
     expect(
       [...source.matchAll(DECLARATION)].map((found) => found[1]),
-      'app/app.scss declares a custom property outside :root, or a second one on it'
-    ).toEqual([...LITERAL_PROPERTIES]);
+      'app/app.scss declares a custom property, on :root or on another selector'
+    ).toEqual([]);
 
-    const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
-
-    // The matchers, on planted controls, before either verdict is read as good news: a reference is
-    // told from a literal, and a redefinition scoped on a pseudo-element in a selector list, the
-    // shape that defeats a first-colon split, is still read as a declaration.
-    expect(IS_VAR_REFERENCE.test('var(--token-bg)')).toBe(true);
-    expect(IS_VAR_REFERENCE.test('40vh')).toBe(false);
+    // The matcher, on planted controls, before the empty verdict is read as good news: the property
+    // this file declared until the ruling, as it was written, is read, and so is a redefinition scoped
+    // on a pseudo-element in a selector list, the shape that defeats a first-colon split.
+    expect([...':root {\n  --hero-height: 40vh;\n}'.matchAll(DECLARATION)].map((found) => found[1])).toEqual(['--hero-height']);
     expect(
       [...'.work-item::before, .a { --accent-dim: var(--x); }'.matchAll(DECLARATION)].map((found) => found[1])
     ).toEqual(['--accent-dim']);
-
-    for (const name of LITERAL_PROPERTIES) {
-      const value = declared.get(name) ?? '';
-      expect(value, `app/app.scss no longer declares ${name}`).not.toBe('');
-      expect(
-        IS_VAR_REFERENCE.test(value),
-        `app/app.scss authors ${name} as "${value}", a var() reference. It is held by the ` +
-          `contract carrying no viewport height at all.`
-      ).toBe(false);
-      for (const role of TOKEN_NAMES) {
-        expect(
-          referenceTo(role).test(value),
-          `app/app.scss authors ${name} as "${value}", which names the contract role ${role}`
-        ).toBe(false);
-      }
-    }
   });
 
   it('names none of the three families the font contract publishes, from any of them', () => {

@@ -1,6 +1,7 @@
 @use './scss/' as *;
 
-// The Hub's one custom property of its own (Story 2-22, Anchor migration step 7, UX-DR14).
+// No custom property of its own (Story 2-22, Anchor migration step 7, UX-DR14; Operator ruling
+// 2026-09-24, DW-122).
 //
 // Story 1-18 put an alias layer here: thirteen old names redefined as var() references to the roles
 // the published token contract puts on :root, so the fifteen 2023 component stylesheets could go on
@@ -10,13 +11,10 @@
 // searches the tree for all thirteen). The mapping they followed is DESIGN.md section "The mapping",
 // and ops/anchor-token-adoption.md keeps the record of each.
 //
-// What is left is the one property that was never an alias. It stays local, authored as a literal: a
-// viewport height is a layout constant and the contract carries none. Nothing has read it since at
-// least Story 1-18's count on 2026-08-26; epics.md keeps it by name, which deferred-work.md carries
-// to the Operator.
-:root {
-  --hero-height: 40vh;
-}
+// `--hero-height: 40vh`, the one property that was never an alias, outlived the layer by a day. Nothing
+// had read it since at least Story 1-18's count on 2026-08-26, and the Operator's ruling of 2026-09-24
+// deleted it and amended Story 2.22's criterion, so `:root` in the compiled stylesheet carries the
+// contract's properties alone. `app/__tests__/anchor-contract.test.ts` holds this file to declaring none.
 
 * {
   margin: 0;
@@ -59,8 +57,8 @@ main:focus-visible {
 // **RESTYLE-SPEC F-11** (Operator ruling 2026-09-24, DW-95, finding F-15). The page tells the user
 // agent it is dark, so scrollbars and form controls are drawn for a dark ground, and selected text is
 // the accent ground under `--token-bg` text. That ground is the one accent fill F-8 permits, and
-// `ops/__tests__/accent-fill.test.ts` exempts this selector by name. Its own `:root` block, apart from
-// the one above, which holds the Hub's custom property and nothing else.
+// `ops/__tests__/accent-fill.test.ts` exempts this selector by name. The file's one `:root` block since
+// `--hero-height`'s left with it on the same day (DW-122).
 :root {
   color-scheme: dark;
 }

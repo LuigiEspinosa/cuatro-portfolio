@@ -110,7 +110,8 @@ const REDUCED = declarationsIn(REDUCED_MATCH ? REDUCED_MATCH[1] : '');
 const FLAT_NAMES = [...source.matchAll(/(--[A-Za-z0-9_-]+)\s*:/g)].map((found) => found[1]);
 
 /**
- * Every custom property `app/app.scss` declares, which is the one the Hub has since Story 2-22.
+ * Every custom property `app/app.scss` declares on its `:root`: none since the Operator's ruling of
+ * 2026-09-24 deleted `--hero-height` (DW-122), the one the Hub had from Story 2-22.
  *
  * The `//` strip is guarded on the preceding character, exactly as
  * `app/__tests__/anchor-contract.test.ts` guards it, so a `url(https://...)` or a
@@ -128,7 +129,8 @@ const HUB_DECLARED = declarationsIn(
  * role it named, on `:root` in the same page. Story 2-22 deleted the thirteen aliases, those four
  * among them, so the names, the helper that read their roles and the comparison went together, and
  * the base rule's ground and copy are read against the roles it names in the case at the end of this
- * file. `app/app.scss` declares one property now, `--hero-height`, a literal.
+ * file. `app/app.scss` declared one property after that, `--hero-height`, a literal, until the
+ * Operator's ruling of 2026-09-24 deleted it (DW-122), and declares none now.
  */
 
 /**
@@ -586,12 +588,14 @@ test('the token contract declares a real list of names', () => {
   // made over a list restated here. `app/__tests__/anchor-contract.test.ts` holds the count and the
   // no-collision claim; this is the part this file depends on. Sixteen until Story 2-20, fifteen
   // until Story 2-34 deleted a dead colour literal, fourteen until Story 2-22 deleted the thirteen
-  // aliases, which left the one property that was never an alias.
-  expect(HUB_DECLARED.size, 'app/app.scss no longer declares one custom property').toBe(1);
-  expect([...HUB_DECLARED.keys()], 'the property app/app.scss keeps is not --hero-height').toEqual(['--hero-height']);
-  expect([...DECLARED.keys()], '--hero-height is now declared by the contract as well as by the Hub').not.toContain(
-    '--hero-height'
-  );
+  // aliases, and one, the property that was never an alias, until the Operator's ruling of 2026-09-24
+  // deleted it (DW-122). The parse is watched finding that property as it was written, so the empty
+  // read is the file's and not a parser that stopped matching.
+  expect([...HUB_DECLARED.keys()], 'app/app.scss declares a custom property on :root again').toEqual([]);
+  expect(
+    [...declarationsIn(/:root\s*\{([^}]*)\}/.exec(':root {\n  --hero-height: 40vh;\n}')?.[1] ?? '').keys()],
+    'the :root parse no longer finds a declaration it is shown'
+  ).toEqual(['--hero-height']);
 
   // The font half of the contract, on the same rule as the counts above: **pinned** at three,
   // not bounded. Every face assertion in this file loops over `CONTRACT_FAMILIES`, so a contract
@@ -1063,10 +1067,10 @@ test('the Hub renders the token roles its base rule names', async ({ page }) => 
   expect(background, 'pure black is retired from the system').not.toBe('rgb(0, 0, 0)');
   expect(colour, 'pure white is retired from the system').not.toBe('rgb(255, 255, 255)');
 
-  // The Hub's one property is not a contract name, which is why the render can be identical by
-  // construction rather than by luck. `app/__tests__/anchor-contract.test.ts` is the authoritative
-  // check with both counts pinned; this asserts the same thing where the values were just read, so
-  // neither half can drift alone.
+  // No Hub property is a contract name, which is why the render can be identical by construction
+  // rather than by luck; since 2026-09-24 the Hub declares none (DW-122), so the list read is empty.
+  // `app/__tests__/anchor-contract.test.ts` is the authoritative check with both counts pinned; this
+  // asserts the same thing where the values were just read, so neither half can drift alone.
   const collisions = [...HUB_DECLARED.keys()].filter((name) => DECLARED.has(name));
   expect(collisions, `the contract and app/app.scss declare the same custom property`).toEqual([]);
   expect([...HUB_DECLARED.keys(), '--tap'].filter((name) => DECLARED.has(name))).toEqual(['--tap']);
