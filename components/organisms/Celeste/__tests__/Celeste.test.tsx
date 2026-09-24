@@ -93,6 +93,6 @@ describe('CelesteComponent', () => {
     ).toEqual(['span.celeste__emoji']);
     expect(elements[0].textContent, 'the emoji line does not hold the two emoji alone').toBe('\u{1F499}\u{1F98B}');
     expect(heading.lastChild, 'something follows the emoji line inside the heading').toBe(elements[0]);
-    expect(heading.firstChild?.textContent, 'the words before the emoji line changed').toBe(' Te amo muchísimo hermosa ');
+    expect(heading.firstChild?.textContent, 'the words before the emoji line changed').toBe(' Te amo much\u00EDsimo hermosa ');
   });
 });

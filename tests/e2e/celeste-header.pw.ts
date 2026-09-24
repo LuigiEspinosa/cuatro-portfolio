@@ -184,7 +184,13 @@ test.describe('the site header', () => {
       // `ch` is the width of the element's own zero, so the measure is resolved inside the heading.
       measure: (await probe(page, { 'max-inline-size': '14ch' }, ['max-inline-size'], 'h1'))['max-inline-size'],
     };
-    expect(display.weight, 'var(--w-black) did not resolve to the heaviest weight').toBe('800');
+    // Resolved, and distinct from what the heading would compute without the rule, or an equality
+    // below could hold between two unresolved values: the user agent's bold is `--w-bold`'s 700, and
+    // an unresolved leading or tracking computes to `normal`.
+    const bold = (await probe(page, { 'font-weight': 'var(--w-bold)' }, ['font-weight']))['font-weight'];
+    expect(display.weight, '--w-black resolves to the same weight as --w-bold, the user agent bold').not.toBe(bold);
+    expect(display.leading, 'var(--lh-display) did not resolve on the probe').not.toBe('normal');
+    expect(display.tracking, 'var(--tr-display) did not resolve on the probe').not.toBe('normal');
     const heading = await styles(page, 'h1', [
       'color',
       'font-family',
@@ -208,7 +214,7 @@ test.describe('the site header', () => {
     expect(heading['max-inline-size'], 'the heading is not capped at 14ch').toBe(display.measure);
     expect(heading['text-align']).toBe('center');
     expect(
-      await page.evaluate(() => document.fonts.check('800 16px "Bricolage Grotesque"')),
+      await page.evaluate((weight) => document.fonts.check(`${weight} 16px "Bricolage Grotesque"`), display.weight),
       'the display face is not loaded at the weight the heading asks for'
     ).toBe(true);
     // The measure is a cap the heading honours, and a different one from the prose measure, so the
@@ -251,7 +257,10 @@ test.describe('the site header', () => {
         if (!line || !words || words.nodeType !== Node.TEXT_NODE) return 'no words before the emoji line';
         const range = document.createRange();
         range.selectNodeContents(words);
-        const wordsBottom = Math.max(...Array.from(range.getClientRects(), (rect) => rect.bottom));
+        const rects = Array.from(range.getClientRects());
+        // No line box at all would make the bottom `-Infinity` and any top pass, so it is reported.
+        if (rects.length === 0) return 'the words lay out no line box';
+        const wordsBottom = Math.max(...rects.map((rect) => rect.bottom));
         return line.getBoundingClientRect().top >= wordsBottom;
       }, EMOJI);
     expect(await ownLine(), 'the emoji share a line with the words').toBe(true);
