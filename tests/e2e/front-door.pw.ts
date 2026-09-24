@@ -1666,6 +1666,18 @@ test.describe('the narrative canvas', () => {
       await goTo(page);
       await settled(page);
       await expect(page.locator('#gem-canvas canvas')).toBeVisible({ timeout: SETTLE_TIMEOUT });
+      // **The canvas's own two attributes are written when the renderer is created**, a moment after
+      // the element is visible (`Scene.tsx`, `onCreated`); the wrapper is hidden from the start. So
+      // the renderer is waited for, the way `tests/e2e/work-hero.pw.ts` waits for the torus's, and a
+      // canvas that never gets there fails here, named. Read straight after `toBeVisible`, this case
+      // saw `aria-hidden` null once on a warm server on 2026-09-24 (the DW-36 package's full run) and
+      // passed five repeats in a row cold.
+      await expect
+        .poll(() => page.evaluate(() => document.querySelector('#gem-canvas canvas')?.getAttribute('tabindex') ?? null), {
+          timeout: SETTLE_TIMEOUT,
+          message: 'the canvas was never taken out of the tab order, so the renderer never finished creating',
+        })
+        .toBe('-1');
 
       const semantics = await page.evaluate(() => {
         const canvas = document.querySelector('#gem-canvas canvas');
