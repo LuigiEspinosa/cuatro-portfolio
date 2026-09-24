@@ -206,13 +206,13 @@
 // A 4px square at `--r-none`, not a pill: the plate has corners and so does the dot
 // (`DESIGN.md:621-624`, which settles the `--r-pill` typo at `RESTYLE-SPEC.md:387`).
 //
-// **The fill is deliberate and is a known tension with F-8.** `DESIGN.md:298-303` specifies a
-// filled square and `:305-314` explains why it is load-bearing rather than ornament: without it
-// `Live` and `Complete` are both `1px solid` and sit 1.13:1 apart in greyscale. `RESTYLE-SPEC.md:654`
-// states F-8 as a binary grep for `--token-accent` used as a fill, expecting zero occurrences, and
-// this is one. It needs a named exemption, the way `::selection` has one at `RESTYLE-SPEC.md:657`.
-// Story 2-34's gate reads literals, not roles, so no gate runs F-8's grep: the Story 2-9 entry in
-// `deferred-work.md` is unassigned until a story takes F-8. Do not resolve it by unfilling the dot.
+// **The fill is deliberate, and F-8's one exemption besides `::selection`.** `DESIGN.md:298-303`
+// specifies a filled square and `:305-314` explains why it is load-bearing rather than ornament:
+// without it `Live` and `Complete` are both `1px solid` and sit 1.13:1 apart in greyscale.
+// `RESTYLE-SPEC.md:654` states F-8 as a binary check for an accent role used as a fill, expecting
+// none, and this is one. Since 2026-09-24 (Operator ruling) `ops/__tests__/accent-fill.test.ts` runs
+// that check on every stylesheet and exempts this selector, in this file, by name, never the role.
+// Do not resolve it by unfilling the dot.
 .suite-directory__dot {
   flex: none;
   inline-size: 4px;

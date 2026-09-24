@@ -128,6 +128,16 @@ const CONTRACT_REDUCED = declarationsIn(REDUCED_BLOCK.exec(withoutComments(TOKEN
  */
 const ROOT_ALLOWED = [...new Set([...CONTRACT.keys(), ...CONTRACT_REDUCED.keys(), ...HUB.keys()])].sort();
 
+/**
+ * The two names the build writes beside a `color-scheme` declaration, and nowhere else (since
+ * 2026-09-24, when `app/app.scss` declared `color-scheme: dark` on the root on the Operator's ruling,
+ * DW-95). Next's pipeline minifies with Lightning CSS, which polyfills `light-dark()` for the browsers
+ * it targets by putting this pair of switches on the rule that declares the scheme. They are the
+ * minifier's, not the contract's or the Hub's, and nothing here reads either; each is admitted only on
+ * a rule that also declares `color-scheme`, read with it, so the same name anywhere else is extra.
+ */
+const MINIFIER_SCHEME_SWITCHES = ['--lightningcss-light', '--lightningcss-dark'] as const;
+
 const IS_VAR_REFERENCE = /^var\(\s*(--[A-Za-z0-9_-]+)\s*\)$/;
 
 /**
@@ -154,7 +164,14 @@ interface RootDeclaration {
   readonly sheet: string;
   readonly selector: string;
   readonly name: string;
+  /** The `color-scheme` the same rule declares, or `''`. */
+  readonly scheme: string;
 }
+
+/** A root declaration the allowed set does not cover and no scheme declaration explains. */
+const isExtra = (entry: RootDeclaration): boolean =>
+  !ROOT_ALLOWED.includes(entry.name) &&
+  !((MINIFIER_SCHEME_SWITCHES as readonly string[]).includes(entry.name) && entry.scheme !== '');
 
 /**
  * Every custom property the given stylesheets declare on a rule that reaches the root element, and
@@ -181,7 +198,7 @@ const rootDeclarations = async (
   sheets: readonly { name: string; text: string }[]
 ): Promise<{ found: RootDeclaration[]; unread: string[] }> =>
   page.evaluate((list) => {
-    const found: { sheet: string; selector: string; name: string }[] = [];
+    const found: { sheet: string; selector: string; name: string; scheme: string }[] = [];
     const unread: string[] = [];
     const MOMENT =
       /:(?:hover|active|focus(?:-visible|-within)?|visited|target(?:-within)?)\b|:has\((?:[^()]|\([^()]*\))*\)/g;
@@ -198,7 +215,9 @@ const rootDeclarations = async (
           if (reachesRoot(rule.selectorText)) {
             for (let index = 0; index < rule.style.length; index += 1) {
               const name = rule.style[index];
-              if (name.startsWith('--')) found.push({ sheet, selector: rule.selectorText, name });
+              if (name.startsWith('--')) {
+                found.push({ sheet, selector: rule.selectorText, name, scheme: rule.style.getPropertyValue('color-scheme').trim() });
+              }
             }
           }
           const nested = (rule as CSSStyleRule & { cssRules?: CSSRuleList }).cssRules;
@@ -393,9 +412,15 @@ test(':root in the compiled stylesheet carries only the contract’s properties 
   );
 
   const names = [...new Set(found.map((entry) => entry.name))].sort();
-  const extra = found
-    .filter((entry) => !ROOT_ALLOWED.includes(entry.name))
-    .map((entry) => `${entry.sheet}: "${entry.selector}" declares ${entry.name}`);
+  const extra = found.filter(isExtra).map((entry) => `${entry.sheet}: "${entry.selector}" declares ${entry.name}`);
+
+  // The minifier's pair arrives once, on the rule that declares the Hub's one scheme, and nowhere else.
+  expect(
+    found
+      .filter((entry) => (MINIFIER_SCHEME_SWITCHES as readonly string[]).includes(entry.name))
+      .map((entry) => `${entry.selector} ${entry.name} with color-scheme ${entry.scheme}`),
+    'the build does not write the light-dark switches exactly once, beside color-scheme: dark'
+  ).toEqual(MINIFIER_SCHEME_SWITCHES.map((name) => `:root ${name} with color-scheme dark`));
   const missing = ROOT_ALLOWED.filter((name) => !names.includes(name));
 
   console.log(
@@ -456,6 +481,16 @@ test(':root in the compiled stylesheet carries only the contract’s properties 
   // And the comparison, on a planted root set: a name outside the allowed set is extra, and a contract
   // name the build never carried is missing.
   expect(['--token-bg', '--planted-root'].filter((name) => !ROOT_ALLOWED.includes(name))).toEqual(['--planted-root']);
+
+  // The minifier's switches, both ways: beside a scheme they are the build's, and without one, on the
+  // same element, they are extra like any other name.
+  const switches = await rootDeclarations(page, [
+    {
+      name: 'switches.css',
+      text: ':root{--lightningcss-light: ;--lightningcss-dark:initial;color-scheme:dark}html{--lightningcss-dark:initial}',
+    },
+  ]);
+  expect(switches.found.filter(isExtra).map((entry) => `${entry.selector} ${entry.name}`)).toEqual(['html --lightningcss-dark']);
   expect(ROOT_ALLOWED.filter((name) => !['--hero-height'].includes(name)).length).toBe(DECLARED_COUNT);
 });
 

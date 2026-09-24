@@ -11,7 +11,7 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  * halves of that sentence at once: the contract is really in the stylesheet graph, and the
  * render did not move.
  *
- * Four things a unit test over the source text cannot establish, and this can:
+ * Five things a unit test over the source text cannot establish, and this can:
  *
  *  1. **That the contract inlined rather than deferring.** The rule that decides it is `@use`
  *     against `@import`, not the extension: **observed 2026-08-26** against Dart Sass 1.98.0,
@@ -32,6 +32,8 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  *     roles read in the same page rather than a literal restated here (the Hub's own values until
  *     Story 1-18, the roles through the alias layer until Story 2-22 deleted it).
  *  4. **That the values still mean what the contract declares.** See below.
+ *  5. **That the Hub declares `RESTYLE-SPEC.md` F-11's pair** (Operator ruling 2026-09-24, DW-95):
+ *     the dark colour scheme on the root and the accent selection, read as computed style.
  *
  * **The compiled stylesheet is not the contract byte for byte, and this file measures the
  * difference rather than assuming it away.** Next 16's Turbopack pipeline minifies the CSS it
@@ -1068,4 +1070,37 @@ test('the Hub renders the token roles its base rule names', async ({ page }) => 
   const collisions = [...HUB_DECLARED.keys()].filter((name) => DECLARED.has(name));
   expect(collisions, `the contract and app/app.scss declare the same custom property`).toEqual([]);
   expect([...HUB_DECLARED.keys(), '--tap'].filter((name) => DECLARED.has(name))).toEqual(['--tap']);
+});
+
+test('the Hub declares the dark colour scheme and an accent selection (RESTYLE-SPEC F-11)', async ({ page }) => {
+  // Operator ruling 2026-09-24 (DW-95, finding F-15). The two global rules beside the base rule in
+  // `app/app.scss`: `color-scheme: dark` on the root, so the user agent draws scrollbars and form
+  // controls for a dark page, and a selection on the accent ground with `--token-bg` text, the one
+  // accent fill `RESTYLE-SPEC.md` F-8 permits. F-11's method is the computed style, read here off the
+  // root and off the page's own heading, against the roles resolved in the same page.
+  const onWork = await page.goto(ROUTE, { waitUntil: 'load' });
+  expect(onWork?.status(), `${ROUTE} did not answer 200`).toBe(200);
+
+  const roles = await probeRoleColours(page, ['--token-accent', '--token-bg']);
+  expect(roles['--token-accent'], '--token-accent and --token-bg resolve to one colour').not.toBe(roles['--token-bg']);
+  const read = () =>
+    page.evaluate(() => {
+      const heading = document.querySelector('h1');
+      const selection = heading ? window.getComputedStyle(heading, '::selection') : null;
+      return {
+        scheme: window.getComputedStyle(document.documentElement).colorScheme,
+        ground: selection?.backgroundColor ?? '(no heading)',
+        text: selection?.color ?? '(no heading)',
+      };
+    });
+
+  const shipped = await read();
+  expect(shipped.scheme, 'the root does not declare the dark colour scheme').toBe('dark');
+  expect(shipped.ground, 'a selection is not painted on the accent ground').toBe(roles['--token-accent']);
+  expect(shipped.text, 'selected text is not --token-bg').toBe(roles['--token-bg']);
+
+  // **The control.** The browser's own defaults written back over both rules are what the same read
+  // reports, so a pass above is the two rules and not a read that answers the same whatever ships.
+  await page.addStyleTag({ content: ':root { color-scheme: normal !important; } ::selection { background: rgb(255, 0, 255) !important; color: rgb(0, 255, 0) !important; }' });
+  expect(await read()).toEqual({ scheme: 'normal', ground: 'rgb(255, 0, 255)', text: 'rgb(0, 255, 0)' });
 });

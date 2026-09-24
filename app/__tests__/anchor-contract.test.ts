@@ -202,7 +202,8 @@ const HUB_PROPERTY_COUNT = 1;
  * the three aliases the rule read become (`--black-color`, `--font-regular` with its weight, and
  * `--white-color`). The first three resolved to the same ground, family and text, and the weight was
  * the initial 400 the regular role equals, so repointing the rule moved no computed value. Pinned as
- * its own list, beside `FOCUS_ROLES`, so claim one below holds that file to exactly these eight.
+ * its own list, beside `FOCUS_ROLES`, so claim one below holds that file to exactly these eight and the
+ * selection's accent (`SELECTION_ROLES`, since 2026-09-24).
  */
 const BASE_RULE_ROLES = ['--token-bg', '--f-body', '--w-regular', '--token-text'] as const;
 
@@ -216,6 +217,15 @@ const BASE_RULE_ROLES = ['--token-bg', '--f-body', '--w-regular', '--token-text'
  * it, is loud.
  */
 const FOCUS_ROLES = ['--stroke-focus', '--token-focus', '--focus-offset', '--r-hair'] as const;
+
+/**
+ * The one role `RESTYLE-SPEC.md` F-11's selection rule adds (Operator ruling 2026-09-24, DW-95).
+ *
+ * `::selection` paints the accent ground under `--token-bg` text; the text role is the base rule's
+ * ground, already in `BASE_RULE_ROLES`, so this list holds the accent alone and the three stay
+ * disjoint. The landmark ring added the same day (F-20) names two of `FOCUS_ROLES` and nothing new.
+ */
+const SELECTION_ROLES = ['--token-accent'] as const;
 
 /**
  * The one the alias layer deliberately left authored as a literal, and since Story 2-22 deleted the
@@ -343,7 +353,8 @@ const TOKEN_NATIVE_STYLESHEETS = [
 ] as const;
 
 /**
- * The one global stylesheet: the base rule, the focus rule and `--hero-height`. It carried the alias
+ * The one global stylesheet: the base rule, the focus rule and `--hero-height`, and since 2026-09-24 the
+ * landmark's inset ring, the colour scheme and the selection. It carried the alias
  * layer until Story 2-22 deleted it, and was named for it until then.
  */
 const GLOBAL_STYLESHEET = 'app/app.scss';
@@ -943,7 +954,7 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
     }
   });
 
-  it('is consumed by the base and focus rules in app/app.scss and the token-native stylesheets, and by nothing else', () => {
+  it('is consumed by the base, focus and selection rules in app/app.scss and the token-native stylesheets, and by nothing else', () => {
     // Story 1-17's case asserted zero references from every scanned file, and its failure
     // message said a consumer "is Story 1-18's act and not this one's". That act wrote the alias
     // layer, so the case was inverted rather than deleted: the same scan, over the same files, says
@@ -970,27 +981,31 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
     // The pinned lists are checked against the contract before they are compared against the
     // sources. A role renamed in `contracts/tokens.css` would otherwise make every list below
     // agree on a name the contract no longer declares, and a MAJOR bump is meant to be loud.
-    for (const role of [...BASE_RULE_ROLES, ...FOCUS_ROLES]) {
+    for (const role of [...BASE_RULE_ROLES, ...FOCUS_ROLES, ...SELECTION_ROLES]) {
       expect(TOKEN_NAMES, `${role} is in a pinned list but the contract no longer declares it`).toContain(role);
     }
 
     // Claim one: the global stylesheet references exactly the four roles its base rule names and
-    // the four the focus rule names since Story 2-26. Until Story 2-22 the first four were the roles
-    // the alias layer mapped onto (see the note where `MAPPING` was). A base rule retargeted to some
-    // other role fails here, and so does one dropped altogether; so does a ring rule that names a
-    // fifth role, or loses one of its four. The two lists are disjoint, and that is asserted too, so
-    // a role cannot be counted as both.
+    // the four the focus rule names since Story 2-26, and the accent F-11's selection rule adds since
+    // 2026-09-24. Until Story 2-22 the first four were the roles the alias layer mapped onto (see the
+    // note where `MAPPING` was). A base rule retargeted to some other role fails here, and so does one
+    // dropped altogether; so does a ring rule that names a fifth role, or loses one of its four. The
+    // three lists are disjoint, and that is asserted too, so a role cannot be counted as two.
     expect(
       FOCUS_ROLES.filter((role) => (BASE_RULE_ROLES as readonly string[]).includes(role)),
       'a focus role is also a base-rule role'
     ).toEqual([]);
     expect(
+      SELECTION_ROLES.filter((role) => ([...BASE_RULE_ROLES, ...FOCUS_ROLES] as readonly string[]).includes(role)),
+      'a selection role is also a base-rule or focus role'
+    ).toEqual([]);
+    expect(
       referencesBy.get(GLOBAL_STYLESHEET) ?? [],
       `${GLOBAL_STYLESHEET} does not reference exactly the four roles DESIGN.md § The mapping gives the ` +
-        `body plus the four RESTYLE-SPEC.md § 4 names for the ring. A base rule retargeted to a different ` +
-        `role changes what every page paints from one line; a fifth role in the ring rule, or one of its ` +
-        `four missing, changes what every focused element paints.`
-    ).toEqual([...BASE_RULE_ROLES, ...FOCUS_ROLES].sort());
+        `body, the four RESTYLE-SPEC.md § 4 names for the ring and the accent F-11 gives the selection. A ` +
+        `base rule retargeted to a different role changes what every page paints from one line; a fifth ` +
+        `role in the ring rule, or one of its four missing, changes what every focused element paints.`
+    ).toEqual([...BASE_RULE_ROLES, ...FOCUS_ROLES, ...SELECTION_ROLES].sort());
 
     // Claim two held the `--monument-bold` call sites to naming exactly `--w-black`, the weight a
     // family alias cannot carry, until Story 2-33 rebuilt the last of them on 2026-09-23. With no site

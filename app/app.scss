@@ -33,9 +33,10 @@
 // focus lands; never removed; and at specificity (0,1,0), so a planted `!important` control in a
 // spec can still take it off to prove the reading is of this rule. The reset above does not touch
 // `outline`, so nothing has to reinstate it. `tests/e2e/accessibility-floor.pw.ts` reads the ring
-// on every interactive element on every route, and the four roles named below and the four the
-// base rule names are the only contract names this file is allowed to reference
-// (`app/__tests__/anchor-contract.test.ts`, `FOCUS_ROLES` and `BASE_RULE_ROLES`).
+// on every interactive element on every route, and the four roles named below, the four the base
+// rule names and the accent the selection adds are the only contract names this file is allowed to
+// reference (`app/__tests__/anchor-contract.test.ts`, `FOCUS_ROLES`, `BASE_RULE_ROLES` and
+// `SELECTION_ROLES`).
 :focus-visible {
   outline: var(--stroke-focus) solid var(--token-focus);
   outline-offset: var(--focus-offset);
@@ -53,6 +54,20 @@
 main:focus-visible {
   outline: var(--stroke-focus) solid var(--token-focus);
   outline-offset: calc(-1 * var(--stroke-focus));
+}
+
+// **RESTYLE-SPEC F-11** (Operator ruling 2026-09-24, DW-95, finding F-15). The page tells the user
+// agent it is dark, so scrollbars and form controls are drawn for a dark ground, and selected text is
+// the accent ground under `--token-bg` text. That ground is the one accent fill F-8 permits, and
+// `ops/__tests__/accent-fill.test.ts` exempts this selector by name. Its own `:root` block, apart from
+// the one above, which holds the Hub's custom property and nothing else.
+:root {
+  color-scheme: dark;
+}
+
+::selection {
+  background: var(--token-accent);
+  color: var(--token-bg);
 }
 
 // `clip`, not `hidden`, and on both elements (`DESIGN.md:558-559`). The two clip identically; what
