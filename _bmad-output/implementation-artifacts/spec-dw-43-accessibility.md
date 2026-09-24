@@ -139,6 +139,22 @@ on both Directory links; a `url(` count in the built-CSS tally.
   than importing the literal gate's listing (the gate exports its scan, not its listing, and
   exporting one would change a gate module for a test). The design layer approved: the mark takes
   the link's own colour, no motion was added, and every hover stays gated. Nothing was re-derived.
+- **Verifier rejection, 2026-09-24, fix round 1.** The independent verifier failed stage 2 on ruling
+  (7): the new-tab ledger entry, the one without an id that begins "Every Suite Directory link opens
+  a new tab", held two `status` keys. `87031fd` wrote its closing paragraph and `status: done` above
+  the entry's original `status: open` rather than in its place, as the commit's six other closures
+  did, so the entry was a duplicated YAML key whose last value read open and a grep for
+  `status: open` still found it, though the package reported it closed. The stale line is deleted
+  and the entry closes with one `status: done`, as Boundaries requires. Checked: no ledger entry now
+  holds two `status` lines, and js-yaml over every entry, its backticked `source_spec` read as a
+  plain scalar, finds no duplicated key where at `87031fd` it refused this one; the six entries it
+  cannot parse are the same six at `4a7d1b5`. No check was added: no suite reads the ledger, and
+  its shape belongs to the package that gives every entry an id and a status in place (Operator
+  ruling 2026-09-24, Epic 1 retrospective item 8). Records only, so no rendered output moved. On
+  this tree: typecheck exit 0, `corepack pnpm test --run` 60 files and 1,565 passed, the literal
+  gate exit 0, the build exit 0, `node ops/asset-budget.mjs` exit 0 with no measured input dirty
+  and the filed reading's bytes unchanged, and the unfiltered container run 338 passed and 0 failed
+  in 5.9 minutes, no snapshot written. Nothing was re-derived.
 
 ## Design Notes
 

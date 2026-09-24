@@ -2432,7 +2432,6 @@ status: done
     painted, after and clear of the underline, in the link's colour and face, and each name off the
     accessibility tree. `DESIGN.md`'s Registry Entry row and `EXPERIENCE.md`'s A-10 carry dated notes.
   status: done
-  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
   summary: >-
