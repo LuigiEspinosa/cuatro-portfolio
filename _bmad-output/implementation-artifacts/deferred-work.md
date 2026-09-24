@@ -2865,7 +2865,26 @@ status: done
     own rules falsifies. The cheap version is a client boundary that mounts `Providers` only where
     something needs it; the honest version needs to decide whether Lenis belongs on `/celeste` and
     the 404 at all, which is a design decision rather than a bundling one.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (remove Lenis, register `ScrollTrigger`
+    only where `/work` uses it, make Rule 1 true), by
+    `_bmad-output/implementation-artifacts/spec-dw-36-narrative-weight.md`, commit `237772c`.** Lenis
+    is gone from the Hub and from `package.json`, `app/providers.tsx` is deleted with its suite, and
+    `app/layout.tsx` wraps no route in a client component, so every visitor scrolls natively. GSAP's
+    two remaining uses import it themselves: `WorkItem`'s disclosure tween on `/work` and `/cv`, and
+    `TorusCanvas`, which now holds the torus's scroll binding and registers `ScrollTrigger` behind
+    `WorkHero`'s one dynamic boundary, so the plugin arrives with the torus or not at all.
+    `lagSmoothing(0)` left with Lenis, whose own GSAP recipe it was. **Observed 2026-09-24** by
+    `node ops/asset-budget.mjs` against build `ysPv_iPVOqc9Sc90vXp_1` at `d91a34f`: no document
+    references `lenis` or `ScrollTrigger`, `gsap` (26,971 gzipped) is on `/cv` and `/work` alone, and
+    `/celeste` and the 404 are 49,561 and 49,580 gzipped lighter on the wire than build
+    `h9ihC9KUuEQ39XtLfRn2X` at `9bf4f20`; the reading is `ops/asset-budget.md` § Every route, its
+    2026-09-24 section. `tests/e2e/narrative.pw.ts` holds the fingerprinted libraries on every
+    route's document, `tests/e2e/work-hero.pw.ts` holds `ScrollTrigger` unrequested under reduced
+    motion and requested where the torus is drawn, and `tests/e2e/suite-directory.pw.ts` holds
+    `/#suite` landing by the native jump with no `lenis` class on a context that allows motion; all
+    three failed on the pre-ruling tree.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-37
@@ -5402,7 +5421,16 @@ status: done
     **Owner and trigger.** The O-17 triage pass, which is where the accessibility review's
     residual findings are dispositioned together; trigger, that pass opening. Until then the
     definition is `review-accessibility.md:343`, which every citation names.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (DW-36: remove Lenis, "a-17 moot"),
+    commit `237772c`.** There is no smooth scroll left to scope: Lenis and `app/providers.tsx` are
+    deleted and every visitor scrolls natively, so A-17 has no subject and no row is added to
+    `EXPERIENCE.md`'s Accessibility Floor. `spec-a-17-lenis-scoped-to-reduced-motion.md` records
+    itself superseded, and the code and the eight comments that cited A-17 as a live requirement now
+    cite it as history. `review-accessibility.md:343` stays the record of what was proposed. The
+    same proposal's A-18 delegates keyboard scrolling "to lenis", a target that no longer exists;
+    that item is the O-17 triage pass's, and nothing here decides it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-a-17-lenis-scoped-to-reduced-motion.md`
   id: DW-105
@@ -5903,7 +5931,29 @@ status: done
     **Owner: the Operator**, for a ruling: keep the rotation as a deliberate divergence written into
     `EXPERIENCE.md`, or remove it from both canvases in a story that owns them. **Trigger: that ruling,
     or the next change to either scene.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (remove drag-to-rotate from both
+    canvases), by `_bmad-output/implementation-artifacts/spec-dw-36-narrative-weight.md`, commit
+    `16412d1`.** `CanvasOrbitControls` is deleted, `TorusCanvas` draws a light and the torus and
+    nothing else, and `three-stdlib` left `package.json` with its only importer (drei keeps its own
+    copy). `ParticleWave` lost its pointer drag, the inertia it coasted on after a release and the
+    grab cursor it set on the body, and holds its pose as a static rotation. The torus turns with the
+    scroll and with nothing else, and the wave moves on its own clock.
+
+    **The touch evidence above was incomplete, and the correction is observed.** On the pre-ruling
+    build `BU9kM-lGaB456wSGuYMN5`, in the pinned image at 1280 with motion allowed, the canvas does
+    compute `touch-action: auto`, but connecting the orbit controls wrote an inline `touch-action:
+    none` on the renderer's outer wrapper, which R3F makes its event source
+    (`three-stdlib`'s `OrbitControls.js:300`, `react-three-fiber.esm.js:86`). The effective touch
+    action is the intersection up the chain, so a swipe that started on the torus could not scroll
+    the page. `tests/e2e/work-hero.pw.ts` now reads every box from the canvas to the root, and drags
+    the torus and compares the canvas byte for byte, each against a planted control;
+    `tests/e2e/narrative.pw.ts` drags the wave, reads its pose off the scene the renderer draws and
+    reads the body cursor on hover and on press; `TorusCanvas.test.tsx` pins the scene's contents.
+    On the pre-ruling tree the torus's pixels moved under the drag and the wave turned from
+    (-0.816, 15.977) to (-0.244, 17.407). The wave's answer to a hovering pointer, a lift under the
+    cursor, is not a drag and stays; DW-123 files it for a ruling. DW-120 is re-read below.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`
   id: DW-120
@@ -5932,6 +5982,19 @@ status: done
     **Owner: unassigned.** Candidates: DW-119's ruling (without the orbit controls the two groups are
     likely to share one file, not verified), or a story that owns the build tooling (Epic 3 introduces
     Turborepo). **Trigger: either of those, or the next change to either scene's boundary.**
+
+    **Re-read 2026-09-24, after DW-119's ruling removed the orbit controls: the two groups still do
+    not share one file, so this entry stays open.** **Observed** by `node ops/asset-budget.mjs`
+    against build `ysPv_iPVOqc9Sc90vXp_1` at `d91a34f`: two chunks of 894,996 bytes, 234,536 and
+    234,535 gzipped, both "three, @react-three/fiber, @react-three/drei", both loaded on demand.
+    Evaluating each chunk's pushed module array shows the same entries in both, the module ids and
+    their factories alike, where the pre-ruling pair differed by the `three` namespace and `useThree`
+    re-exports the orbit controls reached for; the two files differ only in the order of two
+    modules, from character 870,360 on. So the controls were not what split them: Turbopack writes
+    one chunk per `next/dynamic` boundary even when the contents match. The narrative total is 619,351
+    gzipped, 169,351 over the top of `EXPERIENCE.md:946`'s estimate, and a session that visits both
+    scenes still downloads the library twice. **Owner: unassigned**, the build-tooling story the
+    only candidate left. **Trigger: that story, or the next change to either scene's boundary.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-34-fr-17-conformance-no-colour-literal-outside-the-contract.md`
@@ -5987,4 +6050,25 @@ status: done
     **Owner: the Operator**, for a ruling: keep the constant for a hero that may want it, or delete it
     and amend `epics.md` Story 2.22's criterion and `DESIGN.md` § The mapping's row in the same
     change. **Trigger: that ruling, or the next story that needs a viewport height in the Hub.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-36-narrative-weight.md`
+  id: DW-123
+  summary: >-
+    The homepage's particle wave still answers the pointer: points under a hovering cursor lift
+    toward the camera. With the drag beside it gone that is the canvas's one response to input, and
+    it reads against `EXPERIENCE.md` § Motion's ban on cursor followers.
+  evidence: |-
+    `components/atoms/ParticleWave/ParticleWave.tsx` keeps `onPointerMove` and `onPointerLeave` on
+    its invisible plane: a pointer over the wave sets a local target, each frame lifts the points
+    within `MOUSE_RADIUS` (1.2) of it by up to `MOUSE_LIFT` (0.9), and a spring eases them back when
+    the pointer leaves. CHANGELOG 3.2.0 names it "Mouse hover repulsion". The Operator ruling of
+    2026-09-24 on DW-119 removed the wave's drag and its inertia and named nothing else, so the lift
+    stays (`spec-dw-36-narrative-weight.md`, Design Notes, assumption 3). It is neither a gesture nor
+    an affordance, so § Pointer and touch does not bar it, but § Motion bans "cursor followers", and
+    a deformation that follows the cursor across the canvas is arguably one.
+
+    **Owner: the Operator**, for a ruling: keep the lift as the narrative's one answer to the
+    pointer, written into `EXPERIENCE.md` as a declared exception, or remove it so the wave moves on
+    its own clock alone. **Trigger: that ruling, or the next change to the wave.**
   status: open

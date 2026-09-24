@@ -946,10 +946,18 @@ looks**. So it needs a number.
 | Narrative JS: Three.js, R3F, drei, postprocessing, GSAP, ScrollTrigger, lenis | **Unmeasured.** Plausibly 300–450 KB | Library sizes only. **Measure before trusting** |
 | Narrative assets: geometry, textures | **Unmeasured** | Not inspected in this run |
 
+*(Amended 2026-09-24 by Operator ruling, DW-36: two names in the Narrative JS row no longer hold as
+written. lenis is removed from the Hub, and GSAP's core is no longer narrative JS: it ships on
+`/work` and `/cv` with the Work item's height tween, which § Secondary surfaces names.
+`ScrollTrigger` loads with the `/work` torus, behind the torus's boundary.)*
+
 ### Rules
 
 1. **The non-3D path is the budget that binds.** Everything narrative is deferred, lazy and
-   non-blocking. If the narrative is not loaded, nothing on the page is missing.
+   non-blocking. If the narrative is not loaded, nothing on the page is missing. *(Amended
+   2026-09-24 by Operator ruling, DW-36: holds as measured. No document references a narrative
+   chunk: the WebGL stack and `ScrollTrigger` load on demand, and only where motion is allowed.
+   `ops/asset-budget.md` § What this reads against the budget's own rules carries the reading.)*
 2. **Suite Directory interactive is the metric**, not page-load-complete. SM-1 measures
    reaching the Directory; a narrative that delays it is a regression by definition.
 3. **Subset the fonts to latin.** The single largest lever on the number that matters.

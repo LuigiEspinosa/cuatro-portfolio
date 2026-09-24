@@ -296,14 +296,14 @@ sibling chain to a fixed point, so an asset named only by a dead asset is dead t
 
 | Asset | Bytes on disk | Bytes gzipped | Referenced from | Reached | Nature |
 |---|---|---|---|---|---|
-| `environment_D.hdr` | 14,377 | 9,996 | `components/atoms/Gem/Gem.tsx:16`, imported by nothing | **no** | **Observed** |
+| `environment_D.hdr` | _deleted 2026-09-24_ (was 14,377) | _deleted 2026-09-24_ (was 9,996) | **nothing**, the file is gone (was `components/atoms/Gem/Gem.tsx:16`, imported by nothing) | **no** | **Observed** |
 | `gem-fallback.png` | _deleted 2026-09-07_ (was 1,755,015) | _deleted 2026-09-07_ (was 1,752,140) | **nothing**, the file is gone | **no** | **Observed** |
-| `gem.glb` | 600,008 | 189,403 | `components/atoms/Gem/Gem.tsx:19`, imported by nothing | **no** | **Observed** |
-| `gem.gltf` | 1,826 | 542 | **nothing** | **no** | **Observed** |
-| `gem_data.bin` | 598,968 | 188,827 | `public/assets/home/gem.gltf:91` | **no** | **Observed** |
-| **Total** | **1,215,179** (was 2,970,194) | **388,768** (was 2,140,908) |  |  | **Observed** |
+| `gem.glb` | _deleted 2026-09-24_ (was 600,008) | _deleted 2026-09-24_ (was 189,403) | **nothing**, the file is gone (was `components/atoms/Gem/Gem.tsx:19`, imported by nothing) | **no** | **Observed** |
+| `gem.gltf` | _deleted 2026-09-24_ (was 1,826) | _deleted 2026-09-24_ (was 542) | **nothing**, the file is gone | **no** | **Observed** |
+| `gem_data.bin` | _deleted 2026-09-24_ (was 598,968) | _deleted 2026-09-24_ (was 188,827) | **nothing**, the file is gone (was `public/assets/home/gem.gltf:91`) | **no** | **Observed** |
+| **Total** | **0** (was 1,215,179, and 2,970,194 before that) | **0** (was 388,768, and 2,140,908 before that) |  |  | **Observed** |
 | Reachable from a module something imports | 0 (was 1,755,015) |  |  |  | **Derived** |
-| Reachable from nothing | 1,215,179 |  |  |  | **Derived** |
+| Reachable from nothing | 0 (was 1,215,179) |  |  |  | **Derived** |
 | Estimate this replaces | not inspected | not inspected |  |  | **Decision**. `EXPERIENCE.md:947` |
 
 **Amended 2026-09-07 by Story 2-13.** The `gem-fallback.png` row and the three figures under it
@@ -312,6 +312,16 @@ anything imported, so the "reachable from a module something imports" figure is 
 total is exactly the orphan figure that was already carried below it. The four remaining assets are
 unchanged and still reachable from nothing. Nothing else in this section was re-measured on that
 date.
+
+**Amended 2026-09-24 by DW-36's package, on the Operator ruling of that day (Pending Operator action
+3).** The four remaining assets are deleted, and so are `Gem.tsx` and `VenomSculpture.tsx`, the two
+components the paragraph below names, in commit `d91a34f`, after `git grep` and graphify found
+nothing that imports the components or names the files outside `Gem.tsx` itself and `gem.gltf`'s own
+reference to `gem_data.bin`, and no config, Dockerfile line or Caddyfile route that names them. The
+2026-09-24 reading under § Every route prints a total of 0 for this directory, which is now empty
+and so absent from a fresh checkout, and names no orphaned component. `tests/e2e/narrative.pw.ts`
+asks the server for all four and reads 404, against a file under `public/assets/og/` that answers
+200. Git history keeps the six files if a gem scene ever wants them back.
 
 Components outside `app/` that nothing imports: `components/atoms/Gem/Gem.tsx`,
 `components/atoms/VenomSculpture/VenomSculpture.tsx`. **Observed**, by resolving every `from '...'`,
@@ -328,7 +338,8 @@ named by nothing at all, at another 600,794 bytes.
 
 **Nothing here is deleted.** **Decision.** Story 2-2 records; deleting a published asset is a
 different story's risk, and `GemComponent.test.tsx:14` still mocks `@/components/atoms/Gem/Gem`,
-which is how an orphan survives a green suite.
+which is how an orphan survives a green suite. **Superseded 2026-09-24**: the Operator ruled the
+deletion and it is done, as the amendment above records; no suite mocked either component by then.
 
 **`gem-fallback.png` was the largest file under `public/`**, at 1,755,015 bytes, gzipping to
 1,752,140, which is what a PNG does. It was live: `GemComponent.tsx:24-31` rendered it when the WebGL
@@ -469,6 +480,72 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 `zlib.gzipSync({level: 9})` on every unit run so the two records cannot drift apart silently.
 
 ## Every route
+
+### The 2026-09-24 reading, after DW-36's package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `ysPv_iPVOqc9Sc90vXp_1`, written
+2026-09-24T05:29:00Z at `d91a34f` with no measured input dirty. It is one reading after all three of
+the package's rulings, as the Operator ruling of 2026-09-24 asks: `237772c` removed Lenis and
+`app/providers.tsx` and moved `ScrollTrigger` behind the torus's boundary (DW-36, Pending action 6),
+`16412d1` removed drag-to-rotate from both canvases (DW-119), and `d91a34f` deleted the four orphaned
+assets and two orphaned components (Pending action 3). The before reading is the same command
+against build `h9ihC9KUuEQ39XtLfRn2X` (written 2026-09-24T04:43:39Z at `9bf4f20` on `dev`, no
+measured input dirty). That build is `dev` as the package found it: after the Story 2-22 fix round's
+reading came DW-115's fix to two stylesheets (`796f0b1`) and comment corrections in `9bf4f20`, which
+is why its `/cv` reads 252,185 against the fix round's 252,173.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 20,597 | 231,167 | no | yes | **Observed** |
+| `/cv` | 21,937 | 229,769 | no | yes | **Observed** |
+| `/_not-found` | 17,292 | 196,545 | no | **no**: Next's own document | **Observed** |
+| `/celeste` | 13,918 | 196,539 | no | yes | **Observed** |
+| `/_global-error` | 9,578 | 188,760 | no | **no**: Next's own document | **Observed** |
+
+**Every route before and after, on the wire.** **Observed** on both sides, **Derived** delta. The five
+prerendered documents are the tool's own tables. `/` renders on demand and the tool cannot weigh it
+(DW-50, accepted), so its row is taken the other way: the document fetched from `next start` on a
+build of each commit in the pinned image, and weighed with the tool's own `parseDocumentReferences`
+and `gzipBytes`. Run on the tool's own build, `ysPv_iPVOqc9Sc90vXp_1`, that read reproduces the
+tool's figure for every prerendered route exactly, and each image build reads within 20 bytes of the
+host build of the same commit on every one of them. Its builds are `jez20byImNqM2-jDcwVHK` at
+`9bf4f20` and `qbWqVpxbHS4T5sesN9ls8` at `d91a34f`.
+
+| Route | Before, `9bf4f20` | After, `d91a34f` | Delta | Nature |
+|---|---|---|---|---|
+| `/`, fetched | 254,754 | 205,234 | **49,520 lighter** | **Observed**, pinned image |
+| `/work` | 253,764 | 231,167 | **22,597 lighter** | **Observed**, the tool |
+| `/cv` | 252,185 | 229,769 | **22,416 lighter** | **Observed**, the tool |
+| `/_not-found` | 246,125 | 196,545 | **49,580 lighter** | **Observed**, the tool |
+| `/celeste` | 246,100 | 196,539 | **49,561 lighter** | **Observed**, the tool |
+| `/_global-error` | 188,762 | 188,760 | 2 lighter | **Observed**, the tool |
+
+**What left each document.** **Observed** on `/` chunk by chunk, both builds read in the pinned image.
+`gsap` (27,145) and `ScrollTrigger` (17,373) are gone from its document. The root layout's chunk, the
+one the tool attributed to Lenis, fell from 10,196 to 5,246 and still carries the header: Lenis and
+`lagSmoothing` left with `app/providers.tsx`, and the motion hook's `matchMedia` moved out with it.
+The home route's own chunk grew from 3,263 to 3,391 by taking that hook, which `HomeLayout` still
+reads. The chunks come to 49,340 lighter and the document itself to 180, which is the 49,520.
+`/celeste` and the 404 changed the same way, 49,561 and 49,580 lighter; `/work` and `/cv` kept `gsap`
+for the Work item's disclosure, which is why they fell by less than half as much.
+
+**The whole build, before and after.** **Observed**, the tool's tables on each side.
+
+| Figure | Before, `9bf4f20` | After, `d91a34f` | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 19 `.js`, 12 `.css` | 18 `.js`, 12 `.css` | one `.js` fewer | **Observed** |
+| Bytes in `.next/static/chunks` | 2,886,921 on disk, 839,882 gzipped | 2,852,353 on disk, 829,907 gzipped | **34,568 lighter on disk, 9,975 gzipped lighter** | **Observed**; **Derived** delta |
+| Narrative chunks the fingerprints hit | 7, 2,205,918 on disk, 634,829 gzipped, 54,721 of it on every route's document | 5, 2,155,781 on disk, 619,351 gzipped, 26,971 of it on `/cv` and `/work` alone | 15,478 gzipped lighter; 592,380 on demand where it was 580,108 | **Observed**, the narrative table; **Derived** delta |
+| The narrative table, after | | `0x9hgoafoipaz.js` and `0-742gw60ue7o.js`, 894,996 on disk each, 234,536 and 234,535 gzipped, three and R3F and drei, on demand; `031y-gd1885yp.js`, 251,816 and 105,544, the post-processing pair and the wave, on demand; `08pj4xkz~kajd.js`, 70,032 and 26,971, `gsap`, on `/cv` and `/work`; `0te7gr59z3e7w.js`, 43,941 and 17,765, `gsap/ScrollTrigger` with the torus and its binding, on demand | | **Observed**, verbatim rows |
+| Narrative assets under `public/assets/home/` | 1,215,179 on disk, 388,768 gzipped, reached by nothing | 0 | the directory is empty | **Observed** |
+| The non-3D line | `/work`, 253,764, 113,764 over, 81.3 percent | `/work`, 231,167, 91,167 over, 65.1 percent | 22,597 closer | **Observed**; **Derived** delta |
+
+**Against the estimate.** **Derived.** The narrative total, 619,351, is still over the top of
+`EXPERIENCE.md:946`'s range, by 169,351, and the whole of the overage is the three and R3F library
+written twice, once per scene's boundary (DW-120, re-read on 2026-09-24: the two copies now hold the
+same modules in a different order, so removing the orbit controls did not merge them). The rest of
+the narrative is where Rule 1 wants it: § What this reads against the budget's own rules says why the
+26,971 of GSAP's core on `/cv` and `/work` is the Work item's and not the narrative's.
 
 ### The 2026-09-23 reading, after Story 2-22
 
@@ -1374,6 +1451,18 @@ focus. Across the build the rule still does not hold: 307,632 of 426,441 gzipped
 72.1 percent, are on a document at first paint, and 56,582 of them are on routes with no 3D at all.
 Pending Operator action 6 stays open on that basis rather than closing on the homepage's result.
 
+**Amended 2026-09-24 by DW-36's package, on the Operator ruling of that day: Rule 1 holds.**
+**Derived**, from the 2026-09-24 reading under § Every route. Of the 619,351 gzipped bytes the
+fingerprints attribute to the narrative, 592,380 are referenced by no document and loaded on demand:
+both WebGL chunks, the post-processing chunk, and `ScrollTrigger`, which now loads with the `/work`
+torus behind its boundary. The other 26,971 is GSAP's core on `/work` and `/cv`, which the Work
+item's disclosure tween uses; `EXPERIENCE.md` § Secondary surfaces names that tween, and the dated
+note on `EXPERIENCE.md`'s budget row says it is not narrative. The tool attributes by library, not
+by use, so its findings line still counts those bytes as narrative at first paint, and this
+paragraph is where the difference is stated. `lenis` is gone, `/`, `/celeste` and the 404 reference
+no fingerprinted library at all, and `tests/e2e/narrative.pw.ts` holds that set on every route.
+Pending Operator action 6 is completed by this paragraph.
+
 **Rule 4 is the one the preload figures test.** `EXPERIENCE.md:956-957` says "Preload only what the
 non-3D path needs." The two preloaded faces cost 31,239 gzipped bytes on a route that is already
 143,945 over budget, and at least 19,936 of those are a family no rule can reach. That is a finding
@@ -1484,6 +1573,38 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-24 run, after DW-36's package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `ysPv_iPVOqc9Sc90vXp_1`. § Every route's
+2026-09-24 reading and this section were filed from this run; every other section in this file is
+still the reading its own heading names.
+
+- The narrative bundle is 619,351 bytes gzipped across 5 chunks, against an estimate of 300,000 to
+  450,000. That is 169,351 over the top of the range.
+- 592,380 bytes of that is genuinely deferred: `0x9hgoafoipaz.js`, `0-742gw60ue7o.js`,
+  `031y-gd1885yp.js`, `0te7gr59z3e7w.js` is referenced by no prerendered document. The other 26,971
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 231,167 against 140,000, 91,167 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 103,473 against 140,000, 36,527 of margin. That
+  decomposition has no line for the 221,353 of JavaScript or the 830 of preloads the document
+  actually carries.
+
+**Four lines moved and one left.** **Observed**, the tool's tables on each side, against build
+`h9ihC9KUuEQ39XtLfRn2X` at `9bf4f20`. The narrative total fell 15,478, from 634,829 across 7 chunks:
+`lenis` (10,201) is gone, and so is the torus's own chunk (5,117), which the tool attributed to
+`three-stdlib` for the orbit controls in it. The torus and its binding now ride in the chunk the
+tool attributes to `ScrollTrigger` (`0te7gr59z3e7w.js`, 17,765, where `ScrollTrigger` alone was
+17,373). The post-processing chunk, which also carries the wave's own code, is 342 lighter with the
+drag gone; GSAP's core is `08pj4xkz~kajd.js` again, the file the 2026-09-07 reading named, 176
+lighter than the chunk that carried it before; and the two WebGL copies are 17 lighter each. The
+deferred share rose from 580,108 to 592,380 by that `ScrollTrigger` chunk,
+now loaded on demand; the 26,971 left at first paint is GSAP's core, the Work item's (§ What this
+reads against the budget's own rules says why that is not the narrative, and why the line above
+still counts it). The non-3D line still names `/work`, 22,597 lighter. The line about 1,215,179
+orphaned bytes under `public/assets/home/` is gone, because the files are.
 
 ### The 2026-09-23 run, after Story 2-22
 
@@ -1893,6 +2014,8 @@ measurement that covers everything.
 artifact is not edited, and the `ops/` record is where the measurement lives. The narrative bundle is
 418,757 gzipped bytes, the narrative assets were 2,970,194 bytes on disk and are 1,215,179 since
 Story 2-13 deleted `gem-fallback.png` on 2026-09-07, and both carry their method above.
+**Amended 2026-09-24**: the narrative assets are 0 bytes since DW-36's package deleted the last four,
+and the narrative bundle reads 619,351 gzipped in the 2026-09-24 reading under § Every route.
 
 `EXPERIENCE.md:946-947` still reads "Unmeasured" and `:961-964` still calls the weight open, and
 correcting that wording is a planning-artifact edit this story is not permitted to make. It is
@@ -1907,10 +2030,10 @@ than left in prose, in the shape `ops/font-contract.md` and `ops/rendered-output
 |---|---|---|---|---|
 | 1 | **Replace the stale wording in `EXPERIENCE.md:946-947` and `:961-964` with a pointer to this file** | Operator | `:946-947` still reads "Unmeasured" for both lines. `:961-964` still says the weight is "Open, and worth measuring before Epic 2" and that the estimate is "inference from published sizes, not a measurement of your build". All four statements are now false, and a reader who reaches `EXPERIENCE.md` first will re-open a closed question | _not done_ |
 | 2 | **Decide what to do about the two preloads at `app/layout.tsx:40-53`** | Operator | `MonumentExtended-Bold` is reached by no rule, and both preloads point at `/fonts/` while the faces load from `/_next/static/media/`, so 31,239 gzipped bytes are fetched at high priority and at least 19,936 of them are used by nothing. Changing `app/layout.tsx` is outside Story 2-2's boundaries. **Decided by Story 2-20's spec, Boundaries & Constraints**: both deleted, nothing added, reasoning under § What this reads against the budget's own rules, Rule 4 | 2026-09-12 |
-| 3 | **Decide the disposition of the four orphaned assets and two orphaned components** | Operator | 1,215,179 bytes under `public/assets/home/` and two `.tsx` files are reachable from nothing. Deleting a published asset is a reversibility question, not a cleanup | _not done_ |
+| 3 | **Decide the disposition of the four orphaned assets and two orphaned components** | Operator | 1,215,179 bytes under `public/assets/home/` and two `.tsx` files are reachable from nothing. Deleting a published asset is a reversibility question, not a cleanup. **Decided by Operator ruling 2026-09-24: delete all six**, git history keeping them. Done in commit `d91a34f` after proving nothing imports or fetches them; the 2026-09-24 reading under § Every route reads 0 bytes under `public/assets/home/`, and `tests/e2e/narrative.pw.ts` holds the four URLs at 404 | 2026-09-24 |
 | 4 | **Re-run `node ops/asset-budget.mjs` when Story 2-20 retires the legacy faces, and add a row** | Operator | 962,952 bytes on disk, 692,644 gzipped across nine unreached families and three formats each, are the largest single thing this reading found that a named story already plans to remove. The figure after it lands is what tells whether it worked. **It worked**: the 2026-09-12 table under § The faces the built CSS declares reads three families, 94,400 on disk, 0 unreached | 2026-09-12 |
 | 5 | **Re-run it again once the non-3D front door lands (Story 2-13)** | Operator | The 140 KB budget is 102.8 percent breached today, and 245,605 of the 283,945 is JavaScript on a route with no 3D on it. Whether that story moves the number is the question this record exists to make answerable | _not done_ |
-| 6 | **Rule on whether `EXPERIENCE.md` Rule 1 is repaired or retired** | Operator | § What this reads against the budget's own rules shows it does not hold. Either the narrative is genuinely deferred, which is a change to three components and `app/providers.tsx`, or the rule is rewritten to describe what the Hub does. Both are decisions this story may not take. **Narrowed 2026-09-07 by Story 2-12**: one of the three components is done and the rule now holds on `/`. It still fails on `/work` and `/projects` (`TorusCanvas.tsx:8`, `TorusKnotCanvas.tsx:8`) and on every route through `app/providers.tsx`, so the decision is unchanged in kind and smaller in size. **Narrowed again 2026-09-21 by Story 2-29**, by arithmetic and not by measurement (DW-57): `/projects` and `TorusKnotCanvas.tsx` were deleted with the route by Story 2-14 on 2026-09-07, so what remains is `TorusCanvas.tsx:8` on `/work` and `app/providers.tsx` on every route | _not done_ |
+| 6 | **Rule on whether `EXPERIENCE.md` Rule 1 is repaired or retired** | Operator | § What this reads against the budget's own rules shows it does not hold. Either the narrative is genuinely deferred, which is a change to three components and `app/providers.tsx`, or the rule is rewritten to describe what the Hub does. Both are decisions this story may not take. **Narrowed 2026-09-07 by Story 2-12**: one of the three components is done and the rule now holds on `/`. It still fails on `/work` and `/projects` (`TorusCanvas.tsx:8`, `TorusKnotCanvas.tsx:8`) and on every route through `app/providers.tsx`, so the decision is unchanged in kind and smaller in size. **Narrowed again 2026-09-21 by Story 2-29**, by arithmetic and not by measurement (DW-57): `/projects` and `TorusKnotCanvas.tsx` were deleted with the route by Story 2-14 on 2026-09-07, so what remains is `TorusCanvas.tsx:8` on `/work` and `app/providers.tsx` on every route. **Decided by Operator ruling 2026-09-24: repaired, not retired.** Story 2-33 closed the torus's boundary on 2026-09-23; DW-36's package deleted `app/providers.tsx` and Lenis and moved `ScrollTrigger` behind that boundary (commit `237772c`), so no document references a narrative library but GSAP's core, which the Work item's disclosure uses on `/work` and `/cv`. `EXPERIENCE.md` carries the dated notes, and § What this reads against the budget's own rules says Rule 1 holds | 2026-09-24 |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row

@@ -3,11 +3,21 @@ title: "A-17: Lenis smooth scroll scoped to the motion preference"
 type: 'bugfix'
 created: '2026-09-15'
 status: 'done'
+superseded: '2026-09-24'
+superseded_by: 'spec-dw-36-narrative-weight.md'
 baseline_commit: 'bf3035442915f82e5cf23f96cc3d719e050298c0'
 review_loop_iteration: 1
 context:
   - '{project-root}/AGENTS.md'
 ---
+
+**Superseded 2026-09-24 by Operator ruling (DW-36).** Lenis is removed from the Hub, and with it
+`app/providers.tsx`, `app/__tests__/providers.test.tsx` and the `/#suite` run that asserted Lenis
+mounted on a context allowing motion (commit `237772c`,
+[`spec-dw-36-narrative-weight.md`](spec-dw-36-narrative-weight.md)). Every visitor scrolls natively,
+so the preference this spec scoped Lenis to has nothing left to gate, and DW-104, which asked for
+A-17 to be carried into the spine, closed the same day. What follows is the record of what shipped on
+2026-09-15, kept as it was.
 
 <frozen-after-approval reason="human-owned intent: do not modify unless human renegotiates">
 
