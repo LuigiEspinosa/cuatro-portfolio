@@ -1898,7 +1898,9 @@ test.describe('the hero links wait for their turn in the entrance (DW-106)', () 
         expect(held.filter((link) => link.takesTheClick).map((link) => link.name), 'a click at a hidden link lands on it').toEqual([]);
 
         // The control, on the same page: the entrance played to its end, and the same reads now find
-        // all five, in order, each taking the click at its centre.
+        // all five, in order, each taking the click at its centre. Back at the top first, because the
+        // Tab above ended in the Directory and scrolled the hero out of the viewport, where no point
+        // hit-tests at all.
         await page.evaluate(() => {
           (window as unknown as { __releaseEntrance: () => void }).__releaseEntrance();
           for (const animation of document.getAnimations()) {
@@ -1908,6 +1910,7 @@ test.describe('the hero links wait for their turn in the entrance (DW-106)', () 
               // An animation with no end cannot finish; the hero declares none.
             }
           }
+          window.scrollTo({ top: 0, behavior: 'instant' });
         });
         const played = await heroLinkState(page);
         expect(
