@@ -4016,6 +4016,11 @@ So that AD-8's standing violation is retired rather than tolerated.
 version
 **And** it **never runs a build**: no `--build` flag and no compile step reaches the box
 **And** the misleading step name is corrected, since the box is Hostinger.
+*(amended 2026-09-24 by Operator ruling, DW-94: the compose line now lives in `ops/deploy-remote.sh`,
+which the workflow's SSH step runs and which is the deploy key's forced command on the box, so this
+rewrite edits that script rather than the step. The sha stays the last word of the step's command
+string and the script keeps its path, so the `authorized_keys` line needs no change;
+`ops/contract-serving.md` § The deploy runs one script records the contract.)*
 
 **Given** AD-9 makes the Capacity Gate a mechanical check inside the deploy path
 **When** the workflow runs

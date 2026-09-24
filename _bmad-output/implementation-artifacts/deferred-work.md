@@ -564,6 +564,15 @@ found them. Append only. Each entry names the spec that surfaced it.
     caused by story 1-4, which added a gate inside `deploy.yml` precisely because a check
     in `ci.yml` would not have blocked anything.
 
+    **Ruled 2026-09-24, Operator ruling 2026-09-24 (`ops/known-violations.md` Pending Operator
+    action 2): not a violation to admit, and it closes when the eight checks, the seven `ci.yml` jobs
+    and Lighthouse, are made required status checks on `main` at the Epic 2 merge.** `main` takes a
+    change only through a pull request with admins included (observed through the API on 2026-09-24,
+    with no required check yet), so a red required check then holds the merge, and with it the push
+    that fires the deploy. **Owner: the session that merges Epic 2.** The entry stays open until that
+    setting is observed.
+  status: open
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
   summary: >-
     `placements` is self-serve: the same commit can add an id and deploy it, with no
@@ -574,6 +583,12 @@ found them. Append only. Each entry names the spec that surfaced it.
     currently refuses only the person who forgets to edit the file. A `CODEOWNERS` entry
     on `ops/capacity-gate.yml` would make widening the gate a reviewed act, which is what
     a fail-closed control needs on a one-operator estate.
+
+    **Closed 2026-09-24 as tolerated, on the Operator ruling of that day (`ops/known-violations.md`
+    Pending Operator action 2), in the DW-94 package's records commit.** One Operator merges every
+    change to `main`, through a pull request, so widening `placements` is already a reviewed act, and
+    no `CODEOWNERS` entry is added. It reopens the day a second person can merge to `main`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
   summary: >-
@@ -586,6 +601,16 @@ found them. Append only. Each entry names the spec that surfaced it.
     forbid editing the SSH step. Epic 3 retires this deploy mechanism entirely, so the
     cheap fix in the meantime is a `concurrency` group plus pinning the reset to
     `github.sha`.
+
+    **Closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`, commit `b0aeaff`.**
+    `deploy.yml` carries `concurrency: deploy` with `cancel-in-progress: false`, so runs queue rather
+    than overlap, and the reset moved into `ops/deploy-remote.sh`, which resets the box to the sha the
+    run was given rather than to `origin/main`, so each run deploys the commit its own gate step
+    checked. `ops/__tests__/deploy-remote.test.ts` pins the group and resets a scratch checkout to a
+    commit behind `origin/main`, where it stays. `list-wheel`'s workflow keeps the hazard until its
+    own half of DW-93 lands.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
   summary: >-
@@ -1137,8 +1162,13 @@ origin: spec-deferred 96247ee3936d
 location: .github/workflows/ci.yml
 source_spec: `spec-1-14-ci-enforces-the-contract-boundary.md`
 severity: low
-reason: .github/workflows/ci.yml declares no `permissions:` key at the top level and none on any of the five jobs. Every job here only reads the tree and runs a command, so `contents: read` is the whole requirement, and a single top-level block would close it for all five at once. The new contract-purity job's own comment claims that "nothing reaching this runner can redirect it", which is true of argv and of `env:` and says nothing about the token the runner hands the process. Pre-existing: the four jobs at b1e02da have the same gap, and this story's boundaries forbid touching them or any line of the file outside the job it adds, so closing it properly means one top-level key, which is a change to the file as a whole rather than to one job.
-status: open
+reason: |-
+  .github/workflows/ci.yml declares no `permissions:` key at the top level and none on any of the five jobs. Every job here only reads the tree and runs a command, so `contents: read` is the whole requirement, and a single top-level block would close it for all five at once. The new contract-purity job's own comment claims that "nothing reaching this runner can redirect it", which is true of argv and of `env:` and says nothing about the token the runner hands the process. Pre-existing: the four jobs at b1e02da have the same gap, and this story's boundaries forbid touching them or any line of the file outside the job it adds, so closing it properly means one top-level key, which is a change to the file as a whole rather than to one job.
+
+  **Closed 2026-09-24 with DW-87, on the Operator ruling of that day, commit `b589228`.** `ci.yml`
+  declares `permissions: contents: read` at the top, the one key this entry asked for, and it now
+  covers seven jobs. `ops/__tests__/workflow-hardening.test.ts` holds it there.
+status: done
 
 ### DW-4: Follow-up review still recommended for 1-14-ci-enforces-the-contract-boundary after the damping cap was spent
 origin: review-budget-followup
@@ -1433,7 +1463,19 @@ reason: |-
   rather than done because this refresh's boundary was the AGENTS.md block, and a change
   to `deploy.yml` is a deploy path change that deserves its own story and its own
   verification.
-status: open
+
+  **Closed 2026-09-24 on the Operator ruling of that day (option B: a last `if: failure()` step that
+  opens a GitHub issue), by `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`,
+  commit `b0aeaff`.** Any failed step before it, the ref refusal and the Capacity Gate included,
+  runs `gh issue create` with the run's link, event, ref, sha and actor, under `issues: write` on the
+  deploy job alone; the issue reaches the Operator through the repository's watch notifications.
+  `ops/__tests__/deploy-remote.test.ts` pins it as the last step and the only condition in the file,
+  and a case there shows a failed compose failing the SSH session, which is what fails the job. **What
+  it does not do**: notice a deploy that never runs, which this entry's twelve days were. The one live
+  proof waits on the merge, since a dispatch needs the workflow on `main`: `ops/contract-serving.md`
+  Pending Operator action 8, a dispatch on `dev` that the first step refuses. Epic 1 retrospective
+  action 7 closes with this entry.
+status: done
 ### DW-21: Four content defects of the same class as the one story 2-1 fixed still ship to the page from `content/work.ts`.
 origin: spec-deferred 2026-08-29
 location: content/work.ts:44
@@ -5041,7 +5083,22 @@ status: done
     **Owner: unassigned; the natural home is Epic 3, which rewrites `deploy.yml` for GHCR
     images (AD-8) and can set the pinning rule for all four files at once.** **Trigger: the
     first edit to any `uses:` line in `.github/workflows/`, or Story 3-3.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (option B: `permissions: contents: read`
+    everywhere, and only third-party actions pinned by commit), by
+    `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`, commits `b0aeaff` and
+    `b589228`.** `ci.yml`, `deploy.yml`, `lighthouse.yml` and `registry-verification.yml` declare
+    `permissions: contents: read` at the top, and the deploy job alone widens it, by `issues: write`
+    for DW-20's report. `appleboy/ssh-action` is pinned to `0ff4204d59e8e51228ff73bce53f80d53301dee2`
+    (`v1.2.5`, where `v1` pointed) and `pnpm/action-setup` to
+    `0977fd99725f1db4007ccb2928dbb4e90d06cc86` (`v6.0.10`, where `v6` pointed; `v6.1.0` existed and
+    was not taken), both read with `git ls-remote` on 2026-09-24, so nothing the jobs run changed.
+    GitHub's own actions stay on tags. `ops/__tests__/workflow-hardening.test.ts` holds every
+    workflow in the directory to both rules, so a fifth inherits them. The pin stops a moved tag and
+    not what the pinned `ssh-action` downloads when it runs, which is DW-130. The repository's
+    default token permission is still `write` (observed through the API that day), and every
+    workflow now overrides it. `list-wheel`'s `deploy.yml` is outside this entry and this package.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-24-hub-visitor-instrumentation.md`
   id: DW-88
@@ -5235,6 +5292,18 @@ status: done
     `concurrency` group, `paths-ignore` and `workflow_dispatch` added to one and not the other
     would be the drift the mirror exists to avoid. **Trigger: the first edit to either
     `deploy.yml`.**
+
+    **Half-closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`, commit `b0aeaff`, and
+    the entry stays open on the `list-wheel` half.** The Anchor's `deploy.yml` runs one deploy at a
+    time (`concurrency: deploy`, `cancel-in-progress: false`), resets to the pushed sha through
+    `ops/deploy-remote.sh`, ignores a push that changes only Markdown (`paths-ignore: '**.md'`, since
+    `.dockerignore` keeps every Markdown file but `README.md` out of the image and nothing the build
+    reads is Markdown), and takes `workflow_dispatch`, refused at its first step on any ref but
+    `main`. The ruling orders the same shape in `list-wheel`, whose `deploy.yml` is unchanged at
+    `00f5957` (read through the API on 2026-09-24); until that lands the two files differ by exactly
+    these additions, which is the drift this entry names. **Owner: the `list-wheel` half of the same
+    ruling.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
@@ -5262,6 +5331,20 @@ status: done
 
     **Owner: the Operator's ruling, Epic 4's rebuild at the latest.** **Trigger: the ruling, or
     the first story that rewrites either SSH step.**
+
+    **Half-closed 2026-09-24 on the Operator ruling of that day for the Anchor's key, by
+    `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`, commit `b0aeaff`, and
+    the entry stays open on the rest.** `ops/deploy-remote.sh` holds the deploy and accepts only a
+    40-character lowercase sha that is an ancestor of `origin/main` after a fetch, read from its
+    argument or from the last word of `SSH_ORIGINAL_COMMAND`. The workflow sends one command string
+    that an unrestricted shell runs to bring the script in from the target commit, and that the
+    script parses under a forced command, so the workflow deploys before and after the key's line
+    changes, the first deploy after the merge included; `ops/__tests__/deploy-remote.test.ts` runs
+    it both ways. **What is open**: the line itself, `ops/contract-serving.md` Pending Operator action
+    7, which is the Operator's since no session here reaches the box, with its verification and
+    rollback written there; until it is dated the Anchor's key still opens a shell. And `list-wheel`'s
+    key, which waits for that repository's own script under the same ruling. Epic 3's image-pull
+    deploy edits the script (`epics.md` Story 3.4, amended).
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
@@ -6660,4 +6743,30 @@ status: done
     `ops/__tests__/cs-tracker-accessibility-probe.test.ts` and a `cs-tracker` re-vendor) and
     accepting both as named exceptions to the rule. **Trigger: the next contract release that opens
     for any other reason**, so the choice rides in it rather than costing a propagation of its own.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`
+  id: DW-130
+  summary: >-
+    `appleboy/ssh-action`, pinned by commit since DW-87, still downloads its `drone-ssh` binary at
+    run time by version from GitHub releases with no checksum, so the step that holds the deploy key
+    runs a binary no pin covers.
+  evidence: |-
+    Read 2026-09-24 by the DW-94 package at `0ff4204d59e8e51228ff73bce53f80d53301dee2`:
+    `entrypoint.sh` sets `DRONE_SSH_VERSION` to `1.8.2`, fetches `drone-ssh-1.8.2-linux-amd64` from
+    `https://github.com/appleboy/drone-ssh/releases/download/v1.8.2` with `curl -fsSL`, marks it
+    executable and runs it with the key in its environment; nothing compares a digest. A release's
+    assets can be replaced by its owner, so the commit pin stops a moved tag and not a replaced
+    asset. Until `ops/contract-serving.md` Pending Operator action 7 is done that binary holds a
+    shell with passwordless sudo on the box; after it, a deploy of a commit already on `main` and
+    nothing else. `lighthouse.yml`'s `npx @lhci/cli autorun` and `npx wait-on` resolve unpinned
+    packages the same way, in a job with a read-only token and no secret.
+
+    Not fixed in the package: the ruling pinned the action, and replacing it is a different change.
+    The cheap closer is a plain `ssh` from the runner, which `ubuntu-latest` carries, with the key
+    written to a file, a pinned `known_hosts` line and the same command string, which retires the
+    third-party action altogether.
+
+    **Owner: Story 3-4, which rewrites the deploy step for image pulls.** **Trigger: that story, or
+    the next edit to the `ssh-action` pin.**
   status: open

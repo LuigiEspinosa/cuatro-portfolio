@@ -15,8 +15,8 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
 - Every CI gate is blocking. Never downgrade a gate to a warning, skip one, or mark a check
   `continue-on-error` to get a story green. There is one environment and no staging, so CI is
   the only gate before production (AD-21).
-- cuatro.dev deploys from `main` on every push. Every change leaves a working system (AD-20,
-  NFR-2).
+- cuatro.dev deploys from `main` on every push that changes more than Markdown. Every change
+  leaves a working system (AD-20, NFR-2).
 - Never add third-party analytics, a tag manager, or a session recorder. Measurement is
   first-party self-hosted Umami only (NFR-8).
 - Commit messages are a subject line only: no body, no `Co-Authored-By` trailer.
@@ -104,15 +104,17 @@ artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually run
   every line, and `gpg --passphrase-fd 0` strips the `\n` but keeps the `\r`, so a correct
   passphrase fails. All three happened on 2026-08-27. Use `cmd /c "prog < file"` for
   byte-exact stdin, or strip it on the far side with `tr -d '\r'`.
-- Nothing monitors whether a deploy succeeds. Deploys go over SSH from
-  `.github/workflows/deploy.yml` as the `deploy` user, and that pipeline was broken for
-  twelve days unnoticed, because nothing merges to `main` often enough to expose it. If a
-  change is green in CI but absent from the site, check the Deploy workflow before debugging
-  code. Diagnosis and repair commands are in `ops/contract-serving.md`.
-- `deploy.yml` runs `docker compose up --build -d` over SSH, so the serving two-core box
-  compiles. This is a recorded standing violation of AD-8, not an oversight: it is in
-  `ops/known-violations.md` and closes in Epic 3. Do not fix it out of sequence, because the
-  replacement needs GHCR images that do not exist yet.
+- A failed Deploy run opens a GitHub issue, but nothing notices a deploy that never runs.
+  Deploys go over SSH from `.github/workflows/deploy.yml` as the `deploy` user, and that
+  pipeline was broken for twelve days unnoticed, because nothing merges to `main` often enough
+  to expose it. If a change is green in CI but absent from the site, check the Deploy workflow
+  before debugging code. Diagnosis and repair commands are in `ops/contract-serving.md`.
+- `ops/deploy-remote.sh`, which `deploy.yml` runs over SSH, runs `docker compose up --build -d`,
+  so the serving two-core box compiles. This is a recorded standing violation of AD-8, not an
+  oversight: it is in `ops/known-violations.md` and closes in Epic 3. Do not fix it out of
+  sequence, because the replacement needs GHCR images that do not exist yet. The script is also the
+  deploy key's forced command: keep the sha the last word of the workflow's command string, and
+  never move the file.
 - `docker/Caddyfile` routes only `cuatro.dev`, `www.cuatro.dev` and `analytics.cuatro.dev`,
   yet `cs-tracker.cuatro.dev`, `tracker.cuatro.dev` and `library.cuatro.dev` all resolve.
   Treat it as incomplete rather than authoritative, and read `ops/routing-inventory.md` for

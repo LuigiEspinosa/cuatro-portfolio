@@ -612,12 +612,14 @@ action_items:
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling: deploy.yml's last step runs on failure and opens a
+  # GitHub issue (b0aeaff). DW-20 closed; one live proof is ops/contract-serving.md action 8.
   - id: 'epic-1-retro-item-7-land-dw-20-a-failure-conditioned-step-in'
     epic: 1
     action: 'Land DW-20: a failure-conditioned step in deploy.yml that reaches the
       Operator on the channel ops/monitoring.md establishes.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-8-run-bmad-loop-sweep-migrate-on-deferred'

@@ -408,3 +408,16 @@ no `pnpm/action-setup` step, so the automatic path would have looked for a pnpm 
 installed. `package-manager-cache: false` is now written into the job by name, which is both the fix
 and the record of the decision, and a standing case in `ops/__tests__/contract-purity.test.ts` pins
 it. The job still installs nothing, and the claim is now held by an input rather than by an absence.
+
+## Third-party actions pinned by commit, and the token narrowed, 2026-09-24
+
+**Changed 2026-09-24** for the whole file, by Operator ruling 2026-09-24 (DW-87, commit `b589228`).
+`pnpm/action-setup` is pinned to `0977fd99725f1db4007ccb2928dbb4e90d06cc86` with `# v6.0.10` beside
+it on all four jobs that use it, the commit `v6` pointed at that day (**Observed** with
+`git ls-remote https://github.com/pnpm/action-setup`; `v6.1.0` existed and was not taken, so nothing
+the jobs run changed). GitHub's own actions stay on their tags. The file declares
+`permissions: contents: read` at the top, and no job widens it. This job's two actions are GitHub's
+own, so its table above is unchanged. `ops/__tests__/workflow-hardening.test.ts` holds every workflow
+in the directory to both rules and each third-party action to one commit across all of them, so a
+bump is one hand edit of every sha and comment together; nothing automates it (`AGENTS.md`,
+Dependency automation policy).
