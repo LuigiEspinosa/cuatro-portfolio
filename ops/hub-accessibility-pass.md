@@ -412,6 +412,10 @@ accessibility tree; A-7 asks for one per document. Story 2-30 rebuilt the surfac
 entrance as its one `<h1>`, and closed F-12, the `aria-label` on that numeral, in the same commit:
 the numeral is `aria-hidden` and unnamed, because the title, the heading and the message each say
 the page was not found without it (O-12 item 3, branch A, read in `tests/e2e/error-surface.pw.ts`).
+**Since 2026-09-24 the title and the heading say it and the message does not**: the Operator's ruling
+on DW-114 gave the line the next step, `Check the address, or use one of the links below.`, so the
+surface says it once, in its heading; branch A holds on the title and the heading, and the same file
+reads exactly those two carriers.
 
 ## The findings
 

@@ -456,7 +456,9 @@ operation.
 **Bricolage's width axis is the identity.** It does what Monument Extended did on the
 current site, variably and for free. Display sets at `wdth 100`; headings and entry names at
 `wdth 85`; the framework band and wordmark compress to `wdth 75`. That single axis is
-carrying most of the visual continuity with the site being reshaped.
+carrying most of the visual continuity with the site being reshaped. *(Amended 2026-09-24 by
+Operator ruling, DW-121: one display line sets at `wdth 85`, `/celeste`'s, as § The redesigned Hub
+surfaces records.)*
 
 ### Scale
 
@@ -819,6 +821,18 @@ content-driven with `padding-block: --s-lg`, not a fixed `140px`. `Container` is
 is what makes the 360px floor fail. `Logo` sets in the display face at `wdth 75` / `--w-black` as a
 wordmark; the raster image is retired.
 
+**Personal surface (`/celeste`).** *(Added 2026-09-24 by Operator ruling, DW-121, which restyles the
+page to [`mockups/secondary-screens.html`](mockups/secondary-screens.html) S10. This entry records
+what shipped, so a later change has something to preserve.)* Ground `--token-bg`, the header
+suppressed, no exit, and one display line centred in the viewport, the only centred display type in
+the system. The line takes the display row's roles, `--t-display`, `--w-black`, uppercase,
+`--lh-display` and `--tr-display` in `--token-text`, **at `wdth 85` rather than 100**, as S10 sets
+it, capped at `14ch` so the words stack. The two emoji sit on a mono line of their own beneath the
+words and inside the heading, so its name keeps them: `--f-mono` at `--t-2xs`, `--w-regular`,
+`--lh-label` and `--tr-label`, `--s-md` above, and no colour of their own. Where S10 writes the size,
+the leading and the tracking by hand and gives the emoji line the accent, the roles win: the accent
+is spent as § Colors, Rules says and nowhere else.
+
 **`ProjectCard` and `ProjectsHero` are not respecified.** They retire with `/projects` at Story
 2.14 and the Registry Entry pattern replaces them.
 
@@ -1159,7 +1173,7 @@ sweep is cheap and the file has changed once already.
 | `--light-gray-color: #b3b0aa` | `--token-text-secondary` → `#98979f` | **Warm → violet-tinted.** The most visible single change in the migration |
 | `--gray-color: #545454` | `--token-border-interactive` → `#656471` | Was untinted and below 3:1; now tinted and compliant |
 | `--page-padding` | `--page-pad` | Retuned; survives by intent |
-| `--hero-height: 40vh` | *stays local* | Layout constant, not a design token. Contract carries no viewport heights |
+| `--hero-height: 40vh` | *stays local* | Layout constant, not a design token. Contract carries no viewport heights. *(Amended 2026-09-24 by Operator ruling, DW-122: **deleted** instead. Nothing had read it since at least 2026-08-26, so `app/app.scss` declares no custom property and `:root` carries the contract's properties alone.)* |
 | `--font-regular` | `--f-body` + `--w-regular` | General Sans retired |
 | `--font-bold` | `--f-body` + `--w-bold` | **Weight, not family.** A family-only alias silently drops bold, see below |
 | `--monument-regular` | `--f-display` + `--w-bold` | Monument Extended → Bricolage Grotesque |

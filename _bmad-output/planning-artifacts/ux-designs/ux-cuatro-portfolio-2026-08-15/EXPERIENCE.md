@@ -293,6 +293,8 @@ Two sentences, no framework named, no adjective doing work.
 | Switcher trigger | `Suite` | |
 | Switcher header | `Part of the Cuatro Ecosystem` | |
 | Footer line | `Six applications · five languages · one operator` | **Update when the count changes, or delete it** |
+| Wordmark | `Cuatro` | The header link's whole content and its accessible name, uppercased by the stylesheet, set at `--t-sm` and `--tr-name`; a nav destination that is not the current route keeps its `--stroke-hair` underline in `--token-border-interactive` at rest, which hover recolours. *(Added 2026-09-24 by Operator ruling, DW-117: confirmed as Story 2-32 shipped it. The Registry's `Cuatro Ecosystem` and the page titles' `Luigi Espinosa` are other names, not the wordmark.)* |
+| Error surface | `Error` · `Page not found.` · `Check the address, or use one of the links below.` | The Plate mark label, the heading and the one supporting line. The title and the heading say the page was not found; the line says what to do next, so the page says one thing once and branch A of O-12 item 3 holds on the title and the heading. *(Added 2026-09-24 by Operator ruling, DW-114; the line read `The page you’re looking for does not exist.` until then.)* |
 
 ### Rules
 

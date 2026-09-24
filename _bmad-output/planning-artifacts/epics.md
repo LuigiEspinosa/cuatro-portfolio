@@ -1826,7 +1826,8 @@ stylesheets
 → `--token-border-interactive`, `--page-padding` → `--page-pad`, `--font-mono` → `--f-mono`, and
 the five font aliases onto `--f-*` plus `--w-*`
 **And** `--hero-height` stays local, because a viewport height is a layout constant and the
-contract carries none
+contract carries none *(amended 2026-09-24 by Operator ruling, DW-122: nothing read it after
+2026-08-26, and it is deleted from `app/app.scss`; see Story 2.22)*
 **And** `--accent` → `--token-accent`, per **O-10, decided in favour of the contract palette**
 **And** `--accent-dim` is resolved **per call site across its fifteen**: `--token-accent-muted`
 where it is ornament, `--token-border-interactive` where it is a boundary a person reads state
@@ -2821,7 +2822,9 @@ Two of its constraints survive, relocated rather than lost:
 - **Every call site consumes a `--token-*` semantic role and never a raw `--c-*` palette value.**
   Now an acceptance criterion on each redesign story, and enforced permanently by Story 2.34's gate.
 - **`--hero-height` stays local**, being a layout constant rather than a design token; the contract
-  carries no viewport heights. Now a criterion on Story 2.29, which owns `HomeLayout`.
+  carries no viewport heights. Now a criterion on Story 2.29, which owns `HomeLayout`. *(Amended
+  2026-09-24 by Operator ruling, DW-122: deleted instead, having no reader; the contract still
+  carries no viewport height.)*
 
 **Number retained as a tombstone**, so no existing story key changes meaning.
 
@@ -2856,7 +2859,8 @@ consequence.
 **When** the site renders
 **Then** Story 2.34's conformance gate passes
 **And** `:root` in the compiled stylesheet carries only the contract's properties plus
-`--hero-height`
+`--hero-height` *(amended 2026-09-24 by Operator ruling, DW-122: `--hero-height` is deleted, so
+`:root` carries the contract's properties alone)*
 **And** the rendered result is asserted against the redesigned baseline captured by Story 1.10's
 harness, **not** against the pre-redesign build: the site is deliberately different by this point,
 so a byte-identical comparison would be asserting the wrong thing.
@@ -3355,7 +3359,8 @@ does not reject the silhouette the design told it to keep *(review finding HIGH-
 from deleted Story 2.21)*
 **When** the redesign lands
 **Then** it stays local and is not moved into the contract, because the contract carries no
-viewport heights.
+viewport heights *(amended 2026-09-24 by Operator ruling, DW-122: nothing read it, so it is deleted
+rather than kept local, and the contract still carries none)*.
 
 **Given** the Three.js narrative's colours are JS values a custom property cannot reach
 **When** FR-37 coverage is assessed

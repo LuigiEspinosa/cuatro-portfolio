@@ -950,6 +950,31 @@ fill's alias left with this story.
 layer, and in the convention line of `AGENTS.md`'s managed block, corrected in the same commit to state
 the deletion.
 
+### The Operator's ruling deletes `--hero-height`, 2026-09-24
+
+**2026-09-24, Operator ruling on DW-122**, applied by
+`_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`, commit `2cbbccf`. Every
+record above is left as written; this section says which of the step 7 section's statements stopped
+being true on this date. `--hero-height` is deleted from `app/app.scss`, which now declares no custom
+property, and Story 2.22's second criterion is amended in `epics.md`, dated, to the contract's
+properties alone. Nothing rendered moved: the property had no reader since at least this record's
+count of 2026-08-26.
+
+**§ What is asserted, and by which gate: two claims narrowed, one gone.** Source half,
+`app/__tests__/anchor-contract.test.ts`: `app/app.scss` declares no custom property on any selector,
+the Hub's count pinned at zero. Browser half, `tests/e2e/anchor-aliases.pw.ts`: the allowed root set
+is derived from the contract alone, where it also admitted the Hub's one name read off `app/app.scss`,
+and what reaches `:root` is held to it, the minifier's two scheme switches admitted on the
+`color-scheme` rule as before; the read of the kept literal left with the literal.
+`tests/e2e/contract-anchor.pw.ts` reads the Hub's `:root` list empty. **Observed** on the baseline tree
+in the pinned image: the build's `:root` carried `--hero-height`, and the root read failed naming it
+as extra.
+
+**§ What would invalidate the step 2 record, the second row restated.** It reads: the build puts a
+custom property on a rule reaching `:root` that is not the contract's, the minifier's scheme pair
+beside `color-scheme` excepted, and `tests/e2e/anchor-aliases.pw.ts` fails naming the chunk, the
+selector and the name.
+
 ## What Story 1-20 will record here
 
 `epics.md` closes Epic 1 with Story 1-20, "Record the adopted contract version and the automation

@@ -481,6 +481,62 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-24 reading, after the DW-121 secondary-surfaces package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `BQB_cRpzq_XDxi6F5Pk-M`, written
+2026-09-24T12:23:18Z at `bc23bab` with no measured input dirty. It is one reading after the
+package's Operator rulings of 2026-09-24: `e03a380` gave the 404's supporting line the next step
+(DW-114), `2cbbccf` deleted `--hero-height` from `app/app.scss` (DW-122), and `8e98285` restyled
+`/celeste` to S10 (DW-121); `bc23bab` changed comments alone (DW-117). The before is the DW-43
+package's reading below, and no measured input changed between its `786e676` and `f414711`, where
+this package started.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,402 | 231,834 | no | yes | **Observed** |
+| `/cv` | 22,662 | 230,426 | no | yes | **Observed** |
+| `/celeste` | 14,780 | 197,310 | no | yes | **Observed** |
+| `/_not-found` | 18,101 | 197,196 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,762 | no | **no**: Next's own document | **Observed** |
+
+**Every route before and after, on the wire.** **Observed** on both sides, **Derived** delta. The five
+prerendered documents are the tool's own tables against the DW-43 reading's. `/` is weighed the way
+that reading weighed it, the document fetched from `next start` in the pinned image and weighed with
+the tool's own `parseDocumentReferences` and `gzipBytes`, on build `Fh3xPyqGKJkcx5RDOQiQJ` at
+`bc23bab`; `/work` fetched the same way read 231,846, twelve bytes from the host's prerendered
+figure, as it did in that reading.
+
+| Route | Before | After, `bc23bab` | Delta | Nature |
+|---|---|---|---|---|
+| `/`, fetched | 205,674 | 205,663 | 11 lighter | **Observed**, pinned image |
+| `/work` | 231,847 | 231,834 | 13 lighter | **Observed**, the tool |
+| `/cv` | 230,440 | 230,426 | 14 lighter | **Observed**, the tool |
+| `/_not-found` | 197,201 | 197,196 | 5 lighter | **Observed**, the tool |
+| `/celeste` | 197,171 | 197,310 | 139 heavier | **Observed**, the tool |
+| `/_global-error` | 188,761 | 188,762 | 1 heavier | **Observed**, the tool |
+
+**What moved.** **Observed** on the host build, stylesheet by stylesheet. The global stylesheet every
+route links, `0arcbgdcvpkv9.css`, reads 2,257 gzipped where the DW-43 reading's read 2,267: the
+`:root` rule that declared `--hero-height` is gone, and no built stylesheet names the property. That is
+most of each lighter route's delta. `/celeste` links its own stylesheet, `1301qx-ghsrrv.css` at 295
+gzipped, which now carries the heading's restyle and the emoji line's rule, and its document carries
+the emoji's `span` in the HTML and in its flight data, 117 bytes longer on disk; together they
+outweigh the global saving. The 404 document carries the ruled line where the old one stood.
+
+**The whole build, before and after.** **Observed**, the tool's tables on each side.
+
+| Figure | Before, `786e676` | After, `bc23bab` | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 18 `.js`, 13 `.css` | 18 `.js`, 13 `.css` | 0 | **Observed** |
+| Bytes in `.next/static/chunks` | 2,851,662 on disk, 830,141 gzipped | 2,851,997 on disk, 830,259 gzipped | **335 heavier on disk, 118 heavier gzipped** | **Observed**; **Derived** delta |
+| The narrative total | 619,351 across 5 chunks | the same 619,351 across 5 chunks | 0 | **Observed** |
+| The non-3D line | `/work`, 231,847, 91,847 over, 65.6 percent | `/work`, 231,834, 91,834 over, 65.6 percent | 13 lighter | **Observed**; **Derived** delta |
+| The budget's own decomposition | 104,130, 35,870 of margin | 104,117, 35,883 of margin | 13 lighter, all of it HTML and critical CSS | **Observed**; **Derived** delta |
+
+**Against the budget.** **Derived.** Noise: the package moves no narrative byte and no route by more
+than 139 gzipped, against Story 2-2's 140,000, and the one heavier served route is the page the
+Operator asked to restyle.
+
 ### The 2026-09-24 reading, after the DW-43 accessibility package
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `L2hNkdPY-jdd0Lk0BmfNZ`, written
@@ -1696,6 +1752,28 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-24 run, after the DW-121 secondary-surfaces package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `BQB_cRpzq_XDxi6F5Pk-M`. § Every route's
+2026-09-24 reading after the DW-121 package and this section were filed from this run.
+
+- The narrative bundle is 619,351 bytes gzipped across 5 chunks, against an estimate of 300,000 to
+  450,000. That is 169,351 over the top of the range.
+- 592,380 bytes of that is genuinely deferred: `0x9hgoafoipaz.js`, `0-742gw60ue7o.js`,
+  `031y-gd1885yp.js`, `0te7gr59z3e7w.js` is referenced by no prerendered document. The other 26,971
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 231,834 against 140,000, 91,834 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 104,117 against 140,000, 35,883 of margin. That
+  decomposition has no line for the 221,376 of JavaScript or the 830 of preloads the document
+  actually carries.
+
+**Two lines moved, both on `/work`, both lighter.** **Observed**, against the DW-43 run below. The
+non-3D line reads 231,834 where it read 231,847, and the decomposition 104,117 where it read 104,130:
+HTML and critical CSS 9,628 where they read 9,641, the global stylesheet without `--hero-height`'s
+`:root` rule. The JavaScript and the narrative lines are unchanged to the byte.
 
 ### The 2026-09-24 run, after the DW-43 accessibility package
 

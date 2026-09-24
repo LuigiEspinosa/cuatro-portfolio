@@ -4763,6 +4763,14 @@ status: done
     The Suite Directory's row names carry the same `85%` and are still not measured. **Owner and
     trigger unchanged: the next `contracts/fonts.css` MINOR, the first edit to
     `packages/fonts/faces.json`.**
+
+    **One more narrowed site from 2026-09-24**, by the Operator ruling of that day on DW-121
+    (`spec-dw-121-secondary-surfaces.md`, commit `8e98285`): `/celeste`'s heading sets the display
+    face at `font-stretch: 85%`, at `--t-display`, where it took the default width before. It is the
+    first display-size line this entry reaches, and `tests/e2e/type-swap.pw.ts` does not measure
+    `/celeste` at all, which its comment on the display sites now says. At 360 in the pinned image,
+    with the face loaded, the heading sets three lines in a `14ch` box 252 wide; whether the fallback
+    wraps it differently across the swap is unmeasured. **Owner and trigger unchanged.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
@@ -5892,7 +5900,22 @@ status: done
 
     **Owner: the Operator, as the author of the site's copy**, the DW-110 precedent. **Trigger:
     any copy pass over the Hub, or a `§ UI strings` row added for the error surface.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the line reads `Check the address, or use
+    one of the links below.` and the label stays `Error`), by
+    `_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`, commit `e03a380`.**
+    `Error404.tsx` sets the ruled line verbatim, so the heading says the page was not found and the
+    line says what to do about it: the page says one thing once. `Error404.test.tsx` pins the new line
+    exactly. `tests/e2e/error-surface.pw.ts` moved its pin as this entry anticipated: with the numeral
+    removed, branch A is carried by exactly the title and the heading, where the pre-ruling tree read
+    the title, the heading and the message (**observed** in the pinned image, the moved case failing
+    on the baseline with the message as a third carrier), so branch A of O-12 item 3 holds on two
+    carriers and the numeral stays ornament. `EXPERIENCE.md` § UI strings carries the error surface's
+    row with the label, the heading and the line; `ops/hub-accessibility-pass.md` and
+    `ops/rendered-output-harness.md` carry dated notes on the carriers. The page's `description`
+    metadata (`This page does not exist.`) is not the supporting line and is unchanged, and
+    `mockups/redesigned-components.html` keeps the old line as a mock.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-30-redesign-error404-token-native.md`
   id: DW-115
@@ -6032,7 +6055,17 @@ status: done
     `Logo.scss` or `Navbar.scss`, with the pins in `components/molecules/Header/__tests__/Header.test.tsx`,
     `components/atoms/Logo/__tests__/Logo.test.tsx` and `tests/e2e/chrome-nav.pw.ts`. **Trigger:
     the Operator's next look at the chrome.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (keep `Cuatro`; `--t-sm`, `--tr-name` and
+    the rest underline confirmed as shipped), by
+    `_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`, in the package's records
+    commit.** No value moves: the ruling confirms what Story 2-32 shipped. `EXPERIENCE.md` § UI strings
+    carries a dated wordmark row naming the string, its size and tracking and the underline a
+    non-current destination keeps at rest. The four comments that called the values filed for the
+    Operator (`Logo.tsx`, `Logo.scss`, `Logo.test.tsx`, `tests/e2e/chrome-nav.pw.ts`) say they are
+    confirmed, commit `bc23bab`. The other two candidate names stay where they are, the Registry's
+    `Cuatro Ecosystem` and the page metadata's `Luigi Espinosa`, since neither is the wordmark.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
   id: DW-118
@@ -6182,7 +6215,26 @@ status: done
     **Owner: the Operator**, for a ruling: keep `/celeste` token-coloured and unrestyled as a
     personal surface, or book its restyle against S10. **Trigger: that ruling, or the next edit to
     `celeste.scss`.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (restyle to S10), by
+    `_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`, commit `8e98285`.**
+    `celeste.scss` sets the heading in the display row's roles, `--t-display`, `--w-black`, uppercase,
+    `--lh-display` and `--tr-display` in `--token-text`, at `wdth 85` through `font-stretch: 85%`,
+    capped at `14ch` and centred. `Celeste.tsx` puts the two emoji in `span.celeste__emoji` inside the
+    heading, set on a mono line of their own: `--f-mono` at `--t-2xs`, `--w-regular`, `--lh-label` and
+    `--tr-label`, `--s-md` above. The heading's text content is unchanged byte for byte. Where S10
+    writes a size, a leading, a tracking and an accent on the emoji line by hand, the roles win (the
+    spec's Design Notes 1 to 5); the regular weight is load-bearing, since the mono face publishes
+    400 alone and the accessibility floor's sweep refuses a synthesised weight. The page stays footer-only,
+    `noindex` and without an exit, and `node ops/literal-conformance.mjs` stays green. **Observed** in
+    the pinned image: at 320 and 360 the heading is 252 wide, `14ch` at 36px, and sets three lines, the
+    widest 153; at 1280 it is 518 wide and sets two; nothing sits past either edge.
+    `tests/e2e/celeste-header.pw.ts` reads each value against its role beside planted controls (the
+    700 pin moved to `--w-black`; the pre-ruling tree read 700), and `Celeste.test.tsx` reads the
+    emoji's own element. `DESIGN.md` § The redesigned Hub surfaces carries a dated `/celeste` entry.
+    The width makes `/celeste` a narrowed display site `tests/e2e/type-swap.pw.ts` does not measure,
+    noted under DW-82.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-22-migration-step-7-delete-the-aliases.md`
   id: DW-122
@@ -6208,7 +6260,22 @@ status: done
     **Owner: the Operator**, for a ruling: keep the constant for a hero that may want it, or delete it
     and amend `epics.md` Story 2.22's criterion and `DESIGN.md` § The mapping's row in the same
     change. **Trigger: that ruling, or the next story that needs a viewport height in the Hub.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (delete it, and amend Story 2.22's
+    criterion and the mapping row), by `_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`,
+    commit `2cbbccf`.** `app/app.scss` declares no custom property, so `:root` in the compiled
+    stylesheet carries the contract's properties alone, beside the minifier's two scheme switches on
+    the `color-scheme` rule as before. The three pins moved to zero: `app/__tests__/anchor-contract.test.ts`
+    holds the file to declaring none on any selector; `tests/e2e/anchor-aliases.pw.ts` derives the
+    allowed root set from the contract alone, so a Hub name put back fails as extra rather than being
+    admitted from the file that declares it, and its kept-literal case left with the literal;
+    `tests/e2e/contract-anchor.pw.ts` reads the Hub's list empty. **Observed** on the baseline tree:
+    the unit suite on the host and both browser suites in the pinned image failed naming the property,
+    the build's `:root` still carrying it. Nothing rendered moved, nothing having read it. `epics.md` (Stories 1.18, 2.21, 2.22 and 2.29) and
+    `DESIGN.md` § The mapping carry dated amendments; `ops/anchor-token-adoption.md`,
+    `ops/rendered-output-harness.md` and `ops/literal-conformance.md` carry dated notes; and the
+    `AGENTS.md` convention line says the file declares none, in the same commit.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-36-narrative-weight.md`
   id: DW-123
