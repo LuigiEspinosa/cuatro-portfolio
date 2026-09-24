@@ -208,9 +208,8 @@ const ALL_CHROME = [
 ] as const;
 
 /**
- * The site's name as the wordmark sets it. No design document states which string that is, so it is
- * filed for the Operator in `_bmad-output/implementation-artifacts/deferred-work.md` (DW-117) and
- * pinned here as the one the component renders.
+ * The site's name as the wordmark sets it, which the Operator confirmed on 2026-09-24 (DW-117) and
+ * `EXPERIENCE.md` § UI strings records, pinned here as the one the component renders.
  */
 const SITE_NAME = 'Cuatro';
 

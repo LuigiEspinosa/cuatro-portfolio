@@ -19,7 +19,7 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-/** The site's name as the wordmark sets it. Which string that is, is filed for the Operator (DW-117). */
+/** The site's name as the wordmark sets it, which the Operator confirmed on 2026-09-24 (DW-117). */
 const SITE_NAME = 'Cuatro';
 
 describe('Logo', () => {

@@ -4,8 +4,8 @@
 // `app/__tests__/anchor-contract.test.ts`. `DESIGN.md` § Components, Nav sets the wordmark in the
 // display face at `wdth 75` and `--w-black`. It states no size and no tracking: `--t-sm` is the size
 // the design's own mock sets it at, and `--tr-name` is the name role, the nearest to the mock's
-// hand-written tracking; both are filed for the Operator in `deferred-work.md` (DW-117) rather than
-// settled here.
+// hand-written tracking. The Operator confirmed both, with the string, on 2026-09-24 (DW-117), and
+// `EXPERIENCE.md` § UI strings records them.
 .logo {
   // `min-block-size` with `inline-flex`, the hit-target idiom every link on the Hub uses: the raster
   // painted 66px past a 20px line box, and that line box is what was measured (the `chrome-logo`

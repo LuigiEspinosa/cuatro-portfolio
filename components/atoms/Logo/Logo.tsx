@@ -12,9 +12,9 @@ import './Logo.scss';
  * spelling out letters (the `SkipLink.tsx` shape).
  *
  * **The string is `Cuatro`**, the word the raster drew and the design's mock sets, the copy a restyle
- * keeps as it was. No design document states the site's name, and the Registry and the page metadata
- * each carry a different one, so which of the three is meant is filed for the Operator in
- * `_bmad-output/implementation-artifacts/deferred-work.md` (DW-117) rather than decided here.
+ * keeps as it was. The Registry and the page metadata each carry a different name, and the Operator
+ * confirmed this one on 2026-09-24, with its size and tracking in `Logo.scss` (DW-117), which
+ * `EXPERIENCE.md` § UI strings records.
  */
 export const Logo = () => (
   <Link href='/' className='logo'>
