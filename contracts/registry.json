@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.1.0",
+  "contract_version": "1.2.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -106,7 +106,7 @@
       "name": "PokéTracker GO",
       "description": "A Pokémon GO companion for completionists: a Pokédex tracker covering every catchable variant, paired with a watchlist. A rule added to the watchlist tells a bot which spawn announcements to watch for, and a phone alert follows when one matches.",
       "status": "In progress",
-      "tech": ["Go", "PostgreSQL", "pgx", "sqlc"],
+      "tech": ["Go", "PostgreSQL", "pgx", "sqlc", "Python", "discord.py"],
       "source": "https://github.com/LuigiEspinosa/poketracker-go",
       "demo": "not-deployed",
       "identity": "none",
@@ -117,7 +117,7 @@
       "name": "Mutuo",
       "description": "A therapy platform connecting patients with licensed therapists. It covers the path from finding a match to booking an appointment, meeting over encrypted video, and keeping notes and assigned work afterwards, with separate portals for patients, therapists and administrators.",
       "status": "In progress",
-      "tech": ["Bun", "Vue", "Drizzle ORM", "Caddy", "Docker"],
+      "tech": ["Bun", "Vue", "Drizzle ORM", "PostgreSQL", "Caddy", "Docker"],
       "source": "https://github.com/LuigiEspinosa/Mutuo",
       "demo": "not-deployed",
       "identity": "none"
@@ -125,7 +125,7 @@
     {
       "id": "lumen",
       "name": "Lumen",
-      "description": "A desktop Markdown note-taking application for developers working inside WSL2, keeping its notes in a git repository and committing them without leaving the editor. It was never built: the repository holds no code, and it is archived.",
+      "description": "A desktop Markdown note-taking application for developers working inside WSL2, keeping its notes in a git repository and committing them without leaving the editor. It was never built: the repository holds no code.",
       "status": "Archived",
       "tech": ["Markdown", "WSL2"],
       "source": "https://github.com/LuigiEspinosa/Lumen",

@@ -103,7 +103,7 @@ export function selectRendered(entries: readonly RegistryEntry[]): readonly Regi
   return entries.filter((entry) => RENDERED_STATUSES.includes(entry.status));
 }
 
-/** The entries the committed Registry marks rendered. Six as of Contract v1.1.0, all of them `Live`. */
+/** The entries the committed Registry marks rendered. Six as of Registry 1.2.0, all of them `Live`. */
 export const renderedApplications: readonly RegistryEntry[] = selectRendered(applications);
 
 /**

@@ -214,16 +214,46 @@ describe('the committed Registry', () => {
     expect(repeated, 'a sentence is carried verbatim by more than one entry').toEqual([]);
   });
 
+  it('lets no Archived description say it is archived, which its status already carries', () => {
+    // Operator ruling 2026-09-24 on the ledger entry Story 2-6 filed: `lumen`
+    // ended "the repository holds no code, and it is archived", restating the
+    // `status` beside it. The state is the Status mark's job, never the prose's.
+    //
+    // It reads the status word itself and nothing else. `connect-four-react`'s
+    // "retired as a standalone application" stays by the same ruling, because
+    // its next clause does not parse without it. `Live` and `Complete` are out
+    // of it: "live" and "complete" have honest uses in a description, which is
+    // why the gate carries no status-synonym rule (`ops/registry-schema.md`).
+    type Described = { id: string; status: string; description: string };
+    const restating = (applications: Described[]): string[] =>
+      applications
+        .filter((application) => application.status === 'Archived' && /\barchived\b/i.test(application.description))
+        .map((application) => application.id);
+
+    const committed = JSON.parse(registryText);
+    expect(restating(committed.applications), 'an Archived description restates its status').toEqual([]);
+    // Planted controls, so an empty result is a measurement rather than a dead matcher.
+    expect(
+      restating([{ id: 'planted', status: 'Archived', description: 'It was never built, and it is archived.' }])
+    ).toEqual(['planted']);
+    expect(
+      restating([{ id: 'planted', status: 'Archived', description: 'It is retired as a standalone application.' }])
+    ).toEqual([]);
+  });
+
   it('carries the envelope AD-4 and AD-5 fix, and the entries Story 2.5 authored', () => {
     const committed = JSON.parse(registryText);
 
     expect(committed.$schema).toBe('./registry.schema.json');
-    // 1.1.0 from Story 2.5, not the 1.0.0 Story 2-3's empty envelope carried.
-    // The field's own rule is that a value change is a minor bump, and going
-    // from zero entries to fourteen while narrowing `applications` is the
-    // largest value change the file will ever see. A Satellite fetches this
-    // over HTTPS at build time and has no other way to tell the two apart.
-    expect(committed.contract_version).toBe('1.1.0');
+    // 1.2.0 from 2026-09-24, after the 1.1.0 Story 2.5 set and the 1.0.0 of
+    // Story 2-3's empty envelope. The rule was split three ways that day by
+    // Operator ruling: a wording-only edit to a `description` or a `name` is a
+    // patch, any other value change a minor, a field renamed or removed a major.
+    // This minor covers every value change since 1.1.0: Story 2-25's `list-wheel`
+    // `live` and `tech`, and the `poketracker-go` and `mutuo` `tech` of the
+    // ruling, with `lumen`'s trim riding in it. A Satellite fetches this over
+    // HTTPS at build time and has no other signal that an entry changed.
+    expect(committed.contract_version).toBe('1.2.0');
     expect(Array.isArray(committed.applications)).toBe(true);
     expect(committed.applications.length).toBeGreaterThan(0);
     // The one entry rule the schema deliberately left open until there were
