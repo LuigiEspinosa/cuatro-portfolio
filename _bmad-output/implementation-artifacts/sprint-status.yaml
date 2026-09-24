@@ -580,13 +580,18 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling (spec-retro-3-cold-reviews.md). 1-8 and 1-16 were reviewed
+  # cold with bmad-code-review: 12 and 10 patches landed (`852f9e1`, `abf3114`) and
+  # DW-132 to DW-134 were filed. 1-1, 1-10 and 1-19 closed as superseded by use, a dated reason in
+  # each spec. The backup fix reaches the box by ops/backup-digital-library.md action 9, Luigi's.
+  # DW-4, DW-5, DW-7, DW-13 and DW-18 stand as they were.
   - id: 'epic-1-retro-item-3-decide-what-happens-to-the-five-stories'
     epic: 1
     action:
       'Decide what happens to the five stories carrying an unrecorded followup_review_recommended:
       true (1-1, 1-8, 1-10, 1-16, 1-19): run the reviews or file DW entries.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-4-respell-fr-17-as-1-2-at-epics-md-753-sto'

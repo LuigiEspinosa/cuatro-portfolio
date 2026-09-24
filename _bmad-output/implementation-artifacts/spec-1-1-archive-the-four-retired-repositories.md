@@ -7,6 +7,7 @@ operator_actions_completed_on: '2026-08-16'
 baseline_revision: 'bf0fd061168b6169b456257855a8860a7499af47'
 review_loop_iteration: 0
 followup_review_recommended: true
+followup_review_closed_on: '2026-09-24'
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -171,3 +172,18 @@ Status: awaiting-operator
 - `apple-music-workspace` could not be located under owner `LuigiEspinosa`. It is one of the fifteen applications and Epic 2 will author a Registry entry needing a resolving `source` for it, so if the repository is genuinely gone, both the application count and SM-4 break. This is the first Operator action to resolve, ahead of the archiving itself.
 - The four `Archived` Status rows and the count of 11 are decided state, not observed state, until the Operator performs the archive actions. Nothing inside the repository re-checks whether that happens, so the record can drift from reality with no signal. `ops/estate.md` declares the gap and carries a maintenance rule for closing it.
 - Four governed repositories are private. Recorded in this spec's `deferred` ledger for Epic 2.
+
+## Follow-up review recommendation, closed 2026-09-24
+
+Closed on 2026-09-24 as superseded by use, by Operator ruling 2026-09-24 (Epic 1 retrospective
+action 3), in `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`. No review was run.
+
+The reason, dated. This story's change was a record, `ops/estate.md`, plus archive acts on GitHub,
+with no code for a review to exercise. The record has since been re-read against the live estate
+three times over: Story 2-4 re-examined it on 2026-09-02, Story 2-5 transcribed it into
+`contracts/registry.json` on 2026-09-03, which is the Registry's only source of values by Operator
+ruling 2026-09-24 and is held by the blocking `registry-schema` gate, and `registry-verification.yml`
+observes the repositories it names on every run: run 34722748245 on 2026-09-12 read `Lumen` and
+`tcg-tracker` archived and every `source` present (`ops/registry-verification.md` § Observed runs). A
+review of the 2026-08-16 diff would re-read a record later stories have already re-read. The one
+archive still owed, `connect-four-react`, stays an Operator action in `ops/estate.md`.

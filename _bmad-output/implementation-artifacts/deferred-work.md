@@ -6869,3 +6869,114 @@ status: done
     **Owner: unassigned; both scripts together.** **Trigger: the next edit to either
     `ops/deploy-remote.sh`, Story 3-4 or Story 4.3 at the latest.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
+  id: DW-132
+  summary: >-
+    `ops/verify-backup-passphrase.ps1`, the workstation check that proved the escrowed backup
+    passphrase, can leave the decrypted archive in WSL's `/tmp`, reports one `DECRYPT: FAILED` for
+    several different causes, and does not clean up after an exception.
+  evidence: |-
+    Found 2026-09-24 by the cold review of Story 1-8 (Epic 1 retrospective action 3) and read in the
+    file as `4112ee8` left it. Its WSL command is `gpg ... --output /tmp/pm-verify.tar.gz ...
+    2>/dev/null && echo 'DECRYPT: ok' && tar -tzf /tmp/pm-verify.tar.gz && rm -f
+    /tmp/pm-verify.tar.gz || echo 'DECRYPT: FAILED'`, so a decrypt that succeeds followed by a listing
+    that fails prints both verdicts and leaves the plaintext archive, which holds a user row and a
+    session row, on the workstation. gpg's stderr is discarded, so nothing separates a wrong
+    passphrase from a WSL, download or listing failure, the same false negative named limit 5 of
+    `ops/backup-digital-library.md` records costing an investigation on 2026-08-27. Nothing is in a
+    `try` and `finally`, the exit status of `aws s3api get-object` is never read, and a stale
+    `pm-verify.tar.gz` from an earlier run would then be the file decrypted. The `gpg` call carries no
+    `--pinentry-mode loopback`, unlike both box scripts, and the endpoint, the bucket and the WSL
+    distribution are literals in the file.
+
+    Not fixed in the package: the script needs the AWS CLI, WSL and gpg on the Operator's
+    workstation, so no CI case can run it, and a rewrite nobody has run would replace a proof that
+    worked on 2026-08-27 with one that never has. The closer is a `try` and `finally` around
+    everything after the download, an exit-status check on `get-object`, and a WSL command that
+    removes the plaintext on every path and prints gpg's own error.
+
+    **Owner: the Operator.** **Trigger: the next time the passphrase is verified or rotated.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
+  id: DW-133
+  summary: >-
+    Three of the nightly backup's orchestration paths are never executed by its suite: the signal
+    traps, the `sudo test -e` second opinion that separates an unreadable config from an absent one,
+    and the `tar` retry, whose `tar=` field also reads `first-attempt` when a first attempt failed for
+    another reason.
+  evidence: |-
+    Found 2026-09-24 by the cold review of Story 1-8 (verification-gap and edge-case layers) and
+    confirmed against `ops/__tests__/library-backup.test.ts`. The signal case matches
+    `trap '...' TERM` in the source text only, so replacing `exit 143` with a command that returns
+    stays green while a killed run leaves no summary line and a plaintext snapshot in its scratch
+    directory. The unreadable-config case uses a directory as the config, where `[ -e ]` is already
+    true, so deleting `|| sudo test -e "${CONFIG_FILE}"` stays green; on the box that would turn an
+    untraversable `/etc/cuatro` into exit 75 and advice to create a file that exists. No case makes
+    `tar` fail, so the `changed as we read it` retry and both of its fields are unexercised, and a
+    first failure for another reason reports `tar=first-attempt` beside `archive=failed`; the exit
+    status and the `archive` field are right, the `tar` field is not.
+
+    Not fixed in the package: each needs a fixture the harness does not build. A signal has to reach
+    bash while it waits on a child, which bash defers until the child exits; an untraversable
+    directory does not survive the Windows drive mount this suite also runs on; and failing `tar` on
+    demand needs a stub that delegates to the real `tar` on every other call. All three are
+    loud-failure or cleanup paths, and none reports a backup that did not happen.
+
+    **Owner: unassigned.** **Trigger: the next edit to `ops/library-backup.sh`, or Story 4.5, which
+    carries this path onto the rebuilt box.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
+  id: DW-134
+  summary: >-
+    The backup record says the R2 token cannot remove offsite history, and nothing verifies it: an S3
+    `PUT` to an existing key replaces the object, and the token was created with Object Read and
+    Write, so a compromised box can overwrite every retained backup whether or not it may delete.
+  evidence: |-
+    Found 2026-09-24 by the cold review of Story 1-8, while rating the finding that the secret access
+    key reached `openssl`'s argv. `ops/backup-digital-library.md` says under "Why a bash SigV4 client
+    and not `restic` or `rclone`" that the lifecycle rule "keeps the token's blast radius at
+    write-only: a compromised box can add objects and cannot remove the history", and Pending
+    Operator action 3's note says "the token still cannot delete". Neither was observed: the record
+    carries no read of the token's permission set, and the scripts' own restraint (no `list`, no
+    `delete`) says nothing about what the same token allows another client. Overwriting needs no
+    delete permission at all, since a `put` to an existing key is an overwrite, and every key is
+    predictable from the local archive names.
+
+    Not fixed in the package: the token's permissions and any retention protection live in the
+    Cloudflare console, which only the Operator can read or set. The closer is to read the token's
+    permission set, to add an R2 bucket lock rule on `digital-library/` covering at least the 30 day
+    lifecycle window if the console offers one for this bucket, to record both as Observed, and to
+    correct the two sentences.
+
+    **Owner: the Operator.** **Trigger: the next Cloudflare console session, or the next rotation of
+    the token.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
+  id: DW-135
+  summary: >-
+    On the Windows authoring host a full `corepack pnpm test --run` sometimes fails two cases that
+    spawn WSL's bash, each getting an empty answer after about 30 seconds, and the next run passes, so
+    a local red run can be the host rather than the change.
+  evidence: |-
+    Observed 2026-09-24 by the retro-3 cold-review package, which ran the full suite six times on one
+    unchanged tree: four runs passed 1634 of 1634, and two each failed two cases. The failing run that
+    was captured had `ops/__tests__/deploy-remote.test.ts` "deploys from a checkout that has no script
+    yet, through an unrestricted shell" throw `the scratch box could not be prepared (exit 1):` with
+    nothing after the colon at 30008 ms, and `ops/__tests__/library-backup.test.ts` "refuses a key
+    holding a space before any network call" read an empty stderr from a spawn that returned non-zero
+    at 30125 ms. Neither case changed in that package, and the same two passed on the next run. Both
+    files spawn `C:\WINDOWS\system32\bash.exe`, which is WSL's; CI runs `ubuntu-latest`'s own bash and
+    has no WSL layer to stall.
+
+    Not fixed in the package: the cause is outside the repository, and no code there changed. The
+    cheap closer is for the two harnesses to name a spawn that returns non-zero with empty output as
+    "WSL did not answer" rather than as the assertion that follows it, so a reader of a red local run
+    knows to re-run before debugging.
+
+    **Owner: unassigned.** **Trigger: the next time a local full run fails a WSL-spawning case that
+    then passes, or the next edit to either harness's spawn helper.**
+  status: open

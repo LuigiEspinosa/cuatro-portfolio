@@ -7,6 +7,7 @@ baseline_commit: '6b134d36de5e60f5dab94b23294cb7a93bbbedad'
 baseline_revision: '6b134d36de5e60f5dab94b23294cb7a93bbbedad'
 review_loop_iteration: 0
 followup_review_recommended: true
+followup_review_closed_on: '2026-09-24'
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -521,3 +522,65 @@ removed in the same commit, which is the end state `bmad-loop confirm` reaches. 
 used, because its audit section would say every action above "was carried out", and action 4 was
 re-bound rather than carried out. `followup_review_recommended: true` stays unspent. That is Epic 1
 retrospective action 3's to settle, not this closure's.
+
+## Follow-up review, 2026-09-24
+
+Epic 1 retrospective action 3, by Operator ruling 2026-09-24. The follow-up review this story
+recommended was run cold on 2026-09-24 by `bmad-code-review`, inside package `retro-3-cold-reviews`
+(`_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`), over `6b134d3..62e0629`
+restricted to this story's files: `packages/contracts-serve/`, `docker/__tests__/runner-stage.test.ts`,
+`tests/e2e/contract-serving.pw.ts`, `package.json`, `.gitignore` and `ops/contract-serving.md`. The
+Blind Hunter ran in Codex; the Edge Case Hunter, the Verification Gap reviewer and the Acceptance
+Auditor ran in fresh Claude sessions, because Codex's read-only sandbox refuses to read files. The
+first Codex Blind Hunter run ended with no output and was run again.
+
+**The finding that mattered, reproduced before it was rated.** The containment guard in
+`publish.mjs` compares resolved paths as text. With `public/` a directory link to the repository
+root, `public/contracts` is `contracts/` on disk, the guard passes, and the recursive removal deletes
+the authored surface; the publish then refuses with a copy error, `ENOENT`, having already lost the
+source. Observed 2026-09-24 on this host against a scratch tree built that way: the source directory
+did not survive the call.
+
+### Review Findings
+
+- [x] [Review][Patch] The containment guard compares paths as text, so a linked `public/`, or a spelling that differs only in case on Windows, lets the recursive removal delete the authored surface [packages/contracts-serve/publish.mjs:147]
+- [x] [Review][Patch] The planted negative "rejects a build step removed from the builder stage" asserts on its own filtered string and can never fail, and the build check it stands beside accepts `pnpm build` in a comment [docker/__tests__/runner-stage.test.ts:139, :188]
+- [x] [Review][Patch] The second-copy search matches file names only while its comment says a copy under another name is caught, so a renamed byte-identical copy passes [packages/contracts-serve/__tests__/contracts-serve.test.ts:885]
+- [x] [Review][Patch] The invoked-directly case spells the path differently only on Windows, so on the Linux runner that gates `main` a textual comparison could return with every case green [packages/contracts-serve/__tests__/contracts-serve.test.ts:715]
+- [x] [Review][Patch] The record still counts nine files and says nothing publishes JSON, while `contracts/registry.json` and `contracts/registry.schema.json` are served, and the invalidation row says none of it is wrong today [ops/contract-serving.md:62, :799]
+- [x] [Review][Patch] The mechanism table says all of `docker/` is byte-identical to `6b134d3`, and this story added `docker/__tests__/runner-stage.test.ts` [ops/contract-serving.md:62]
+- [x] [Review][Patch] Refusal row 1 says a missing source leaves no destination behind, and the refusal comes before the removal, so an earlier build's served copy is left as it was [ops/contract-serving.md:288]
+- [x] [Review][Patch] "Why the file exists at all" still says the 404 is the live state on `main`, which the record's own live confirmation of 2026-08-27 contradicts [ops/contract-serving.md:42]
+- [x] [Review][Patch] The limit row titled "Three Playwright specs fail" describes five cases in two specs [ops/contract-serving.md:382]
+- [x] [Review][Patch] "Nothing consumes the served URL yet" still says `contracts/registry.json` arrives in Story 2-5, which landed on 2026-09-03 [ops/contract-serving.md:379]
+
+No finding was deferred. Dismissed as noise, 19, with the reason each was dropped: the `lenis`,
+`three-stdlib` and lockfile findings (DW-36's commits, which the file filter pulled in; the lockfile
+moved with them); five ways the runner-stage reader could reject a valid Dockerfile spelling (a
+later `WORKDIR`, a trailing slash or a capitalised `--from`, a missing `WORKDIR`'s message, the JSON
+and continuation `COPY` forms, an absolute destination), each of which fails loudly on the edit that
+introduces it; a later runner step deleting the served copy (a deliberate edit, with the live
+confirmation as the backstop); an 8.3 temporary path failing a case on Windows (loud, and the suite is
+green on this host); other spellings of an environment read (a static check that deliberate
+obfuscation defeats); `next dev` serving a stale copy after an edit (a restart republishes); the
+trailing-slash ignore rule and a linked served copy (the next build replaces the link with a
+directory); a query string on a face URL (the fixture has none); a raw `readdirSync` error from the
+walk (a loud exit 1 before anything is removed, naming the path); "Nothing was published." after a
+failed cleanup (the clause's documented meaning, with the leftover named); a source edited between
+the walk and the copy (the Docker build context is static); `pnpm` rather than `corepack pnpm` in the
+record (the scripts' names, not host instructions); `contracts:publish` spelled beside `build` and
+`dev` (a standing case pins all three to one spelling); the browser spec skipping links (the publish
+refuses them first); and the Pending Operator cells carrying narrative after their dates.
+
+### Outcome
+
+Code review complete: 0 decision-needed, 10 patch, 0 defer, 19 dismissed. Every patch item above
+was applied in commit `abf3114`, each with a case that fails without it: the linked-parent
+refusal fails against the baseline `publish.mjs`, which deletes the source; the invoked-directly case
+fails against a textual guard; and the two planted negatives fail against the name-only search and
+the substring build check they replace. The record corrections are dated amendments in
+`ops/contract-serving.md`, the two JSON types quoted from this package's run in
+`mcr.microsoft.com/playwright:v1.62.1-noble`.
+
+`followup_review_recommended: true` is spent, and `followup_review_closed_on` dates it. The story
+stays `done`: every patch landed in the same package that found it.

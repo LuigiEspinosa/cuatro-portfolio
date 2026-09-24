@@ -6,6 +6,7 @@ status: 'done'
 baseline_commit: 'ed9c816c1d4efac219b385aaad2d71fb355c20d6'
 review_loop_iteration: 0
 followup_review_recommended: true
+followup_review_closed_on: '2026-09-24'
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -457,3 +458,70 @@ passphrase, including that a wrong passphrase fails, because the suite necessari
    flag-set test but does not re-prove the round trip, which needs a manual re-run.
 5. Nothing monitors the job's exit status, which is why the original failure survived 25 nights.
    Deferred, because it is `ops/monitoring.md`'s file.
+
+## Follow-up review, 2026-09-24
+
+Epic 1 retrospective action 3, by Operator ruling 2026-09-24. The follow-up review this story
+recommended was run cold on 2026-09-24 by `bmad-code-review`, inside package `retro-3-cold-reviews`
+(`_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`), over `ed9c816..01a5808`
+restricted to this story's files: the three scripts, their suite, the record,
+`ops/verify-backup-passphrase.ps1` and `vitest.setup.ts`. The Blind Hunter and a first Acceptance
+Auditor ran in Codex. The Edge Case Hunter, the Verification Gap reviewer and a second Acceptance
+Auditor ran in fresh Claude sessions, because Codex's read-only sandbox refused to read the two
+layers' instruction files and the auditor's spec.
+
+### Review Findings
+
+- [x] [Review][Patch] Config-file `S3_CONNECT_TIMEOUT` and `S3_MAX_TIME` never reach the object client, so both documented knobs are silently ignored [ops/library-backup.sh:546, ops/library-restore-verify.sh:99]
+- [x] [Review][Patch] `S3_MAX_TIME=0` passes validation and `curl --max-time 0` means no limit, so a stalled endpoint can hang the run [ops/s3-object.sh:192]
+- [x] [Review][Patch] The secret access key reaches `openssl`'s argv as `-macopt hexkey:`, readable in `/proc/<pid>/cmdline` by every account on the box, and so does each derived signing key [ops/s3-object.sh:107]
+- [x] [Review][Patch] A lock held by a live process is never tested, so the `/proc` branch could be deleted with every case green [ops/library-backup.sh:264]
+- [x] [Review][Patch] The config allowlist is never exercised with a name outside it, so a plain `.` of the config would stay green [ops/library-backup.sh:162]
+- [x] [Review][Patch] The restore ceiling is never exercised, so removing it would start an unbounded restore unattended with every case green [ops/library-backup.sh:591]
+- [x] [Review][Patch] The Pending Operator actions all read `_not done_`, and the intro and the Retention table still say the Operator is owed them, while the record's body and the board say all eight were done by 2026-08-27 [ops/backup-digital-library.md:17, :286, :651]
+- [x] [Review][Patch] Restore step 2 says to source the config first, and a plain `.` exports nothing, so `s3-object.sh get` refuses with every variable missing [ops/backup-digital-library.md:379]
+- [x] [Review][Patch] The exit 0 row says every run includes a real restore, and above `VERIFY_MAX_BYTES` it does not [ops/backup-digital-library.md:157]
+- [x] [Review][Patch] The first offsite run's summary line is wrapped over four lines, so the record does not quote the one-line contract it documents [ops/backup-digital-library.md:545]
+- [x] [Review][Patch] "Nothing in that file may ever appear in this repository" is false for the endpoint and the bucket, which are in the record and in `ops/verify-backup-passphrase.ps1` [ops/backup-digital-library.md:427]
+- [x] [Review][Patch] Operator action 2 is described three ways, a decision in its row, verified in the cost table and still owed in named limit 1 [ops/backup-digital-library.md:583, :652]
+- [x] [Review][Defer] `ops/verify-backup-passphrase.ps1` can leave the decrypted archive in WSL's `/tmp`, conflates every failure into one `DECRYPT: FAILED`, and does not clean up on an exception [ops/verify-backup-passphrase.ps1:66]: deferred, DW-132
+- [x] [Review][Defer] The signal traps, the `sudo test -e` second opinion and the `tar` retry are never executed by the suite, and `tar=` reads `first-attempt` on a first failure for another reason [ops/library-backup.sh:137, :172, :372]: deferred, DW-133
+- [x] [Review][Defer] The record says the R2 token cannot remove offsite history, and a `PUT` to an existing key overwrites it whatever the delete permission [ops/backup-digital-library.md:209, :653]: deferred, DW-134
+
+Dismissed as noise, 26, with the reason each was dropped: the restore verifier reading the config
+only when `BACKUP_PASSPHRASE` is unset (a partial environment fails loudly, naming the missing
+variables); sourcing the config running commands (root writes it, and the allowlist guards the
+parent's paths, which is its stated purpose); the installed checksums not being provable from the
+diff (observed on the box and dated); `VERIFY_MAX_BYTES=0` skipping the restore (an explicit
+setting the summary line reports); an uppercase endpoint host, a newline in the endpoint or bucket,
+a dot segment in the prefix and a CRLF config (each only through a hand-made config, each failing
+loudly); the predictable `.partial.$$` path and `get` overwriting its destination (callers pass
+paths inside private `mktemp -d` directories); an ignored `chmod` failure (on a file this account
+just created); a 20 digit ceiling (already no ceiling, reported truthfully); `timeout 0` for Docker
+(environment only, never set by cron); the lock takeover race, PID reuse and a failed pid write
+(each needs two independent failures and none reports success); a killed run's scratch directory
+(`mktemp -d` is 0700 and `systemd-tmpfiles` ages `/tmp`); a quote in `TMPDIR` (cron sets none);
+`sudo` being unavailable (the snapshot needs it and fails first); a quote in a table name (fixed
+schema); the exits table's four rows for three codes; the routing-inventory pointer and the ledger
+entries (both in `708e638`, outside the file filter); the spec's historical Auto Run Result; gpg's
+own `~/.gnupg`; the named-limit count; and the concurrency proof's commands (AC4 accepts the
+recorded evidence).
+
+### Outcome
+
+Code review complete: 0 decision-needed, 12 patch, 3 defer, 26 dismissed. Every patch item above
+was applied in commit `852f9e1`, each with a case that fails on the baseline: the three new
+behaviours (the config's timeouts reaching the client, a zero refused, no key material in
+`openssl`'s argv) were seen red first, and the three guards that had no case (a running lock holder,
+the config allowlist, the verify ceiling) were seen red with each guard removed. The record
+corrections are dated amendments in `ops/backup-digital-library.md`. The three deferred findings are
+DW-132, DW-133 and DW-134.
+
+**The box still runs the 2026-08-24 install.** All three scripts changed in the repository, and
+putting them on `177.7.52.248` is the Operator's: Pending Operator action 9 of
+`ops/backup-digital-library.md` carries the exact install, verification and rollback steps, and the
+record's installed table shows both digests until it is done.
+
+`followup_review_recommended: true` is spent, and `followup_review_closed_on` dates it. The story
+stays `done`: every patch landed in the same package that found it, so the transient `in-progress`
+the review workflow sets for open action items was never written.

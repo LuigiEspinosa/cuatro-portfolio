@@ -7,6 +7,7 @@ baseline_commit: '4f4c751092ade52d649841ff0cd5625f680040b6'
 baseline_revision: '4f4c751092ade52d649841ff0cd5625f680040b6'
 review_loop_iteration: 0
 followup_review_recommended: true
+followup_review_closed_on: '2026-09-24'
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -456,3 +457,16 @@ the image the CI job pins.
   1.17's "visually identical" rests on exactly that unless 1.17 widens it first. Recorded as a
   stated limit rather than papered over.
 </content>
+
+## Follow-up review recommendation, closed 2026-09-24
+
+Closed on 2026-09-24 as superseded by use, by Operator ruling 2026-09-24 (Epic 1 retrospective
+action 3), in `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`. No review was run.
+
+The reason, dated. The harness this story installed has been the blocking `rendered-output` job on
+every push since its first CI run, 32801557172, observed on 2026-08-25, and every story since has built on it:
+it held 325 cases on 2026-09-23, and its baseline has been regenerated six times through the
+procedure this story wrote, each regeneration recorded with its reason in
+`ops/rendered-output-harness.md` § Regenerating the baseline. What that use found was filed where it
+belongs, among it the comparator's threshold question, DW-102, raised by Story 2-28. A cold review of
+the 2026-08-24 diff would re-read code every later story has run, extended and depended on.

@@ -8,6 +8,7 @@ baseline_revision: '1b7cc1c41e002128ae0718c204047003991eda53'
 cs_tracker_baseline_revision: 'ff7667b86c4b9a65acc42c89982eaa29d022d2be'
 review_loop_iteration: 0
 followup_review_recommended: true
+followup_review_closed_on: '2026-09-24'
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -679,3 +680,17 @@ the same commit, which is the end state `bmad-loop confirm` reaches. The tool wa
 its audit section would say every action above "was carried out", and action 4 was moved rather than
 carried out. `followup_review_recommended: true` stays unspent. That is Epic 1 retrospective action
 3's to settle, not this closure's.
+
+## Follow-up review recommendation, closed 2026-09-24
+
+Closed on 2026-09-24 as superseded by use, by Operator ruling 2026-09-24 (Epic 1 retrospective
+action 3), in `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`. No review was run.
+
+The reason, dated. The change lives in `cs-tracker`, and its result has been measured three times
+since it was written: on the two deployed origins on 2026-08-27, where 25 of 25 roles read equal; by
+the side-by-side pass that found DW-15, which Contract 2.0.0 closed on 2026-09-24 with a re-vendor of
+this adoption into `cs-tracker` (its push and deploy are `ops/contract-adoption.md` action 8, the
+Operator's); and by both probes from a plain shell on 2026-09-24, `ops/cs-tracker-adoption-probe.mjs`
+at 19 of 19 and `ops/daisyui-route-probe.mjs` at 7 of 7, which AD-22's refresh scope now re-runs. A
+cold review of the 2026-08-27 diff would re-read code whose output has been measured since, on the
+box and by two probes that keep measuring it.
