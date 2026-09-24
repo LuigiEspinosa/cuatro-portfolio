@@ -169,7 +169,7 @@ graph TD
 
 ### AD-15: The Phoenix route carries both daisyUI paths
 
-- **Binds:** Epic 1 Step 2, seam S-9, open item O-3
+- **Binds:** Epic 1 Step 2, seam S-9, open item O-3, **answered 2026-08-25** by Story 1-15: both paths are live and render identically, so the Rule's own conditional selects the `@plugin` path (`ops/daisyui-route.md`; recorded here 2026-09-24 by Operator ruling)
 - **Prevents:** Epic 1's first visible ecosystem moment blocking on a question the public record cannot answer
 - **Rule:** `cs-tracker` maps daisyUI's variables onto the token roles through `@plugin "daisyui/theme" { --color-primary: var(--token-accent); }` if a scratch `mix phx.new` confirms `var()` is accepted there, and through `[data-theme="…"] { --color-primary: var(--token-accent); }` if it is not. The test is a gate on the step, not on the contract; both paths produce the same rendered result and either satisfies FR-18.
 
@@ -462,6 +462,6 @@ Surfaced rather than smoothed over, as the architecture prompt asked.
 - **Whether the four `In progress` applications are ever built**: an Operator decision outside every document here, and archiving them is a legitimate outcome. Under AD-25 they are also never restyled while unrendered, so this deferral now costs nothing in either direction.
 - **The `--token-scrim` role and the disposition of the three O-12 surfaces:** GlitchText's aberration, ScanlineOverlay's darkening layer, the decorative numeral. Decided in the UX restyle pass, not here. The spine records only that a darkening layer surviving redesign needs a named role, because "nothing is pure" bars `#000` regardless of how the component is rebuilt, and that a role addition is a minor bump under AD-16 forcing no consumer to migrate.
 - **The Restyle Specification's contents.** AD-24 requires the artifact and fixes its job; what the component vocabulary *is* belongs to UX.
-- **Hostnames for `cs-tournament` and `list-wheel`**: `wheel.cuatro.dev` is a placeholder in the UX mocks (O-5); the Registry is the only mapping (AD-3) and it is written when the hostname is chosen.
+- **Hostnames for `cs-tournament` and `list-wheel`**: `wheel.cuatro.dev` is a placeholder in the UX mocks (O-5); the Registry is the only mapping (AD-3) and it is written when the hostname is chosen. **Closed 2026-09-02 by Story 2-4** (recorded here 2026-09-24 by Operator ruling): `cs-tournament` is `Live` at `inclusivcup.vercel.app` and `list-wheel` takes `wheel.cuatro.dev`, where Story 2-25 placed it on 2026-09-13; the Registry carries both.
 - **WSL2 relocation mechanics**: Epic 7, developer machine only, no ecosystem invariant depends on it.
 - **Per-App Layer feature work**: out of scope by PRD §8, in every application.

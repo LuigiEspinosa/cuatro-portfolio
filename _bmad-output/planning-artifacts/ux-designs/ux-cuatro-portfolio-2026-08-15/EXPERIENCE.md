@@ -94,7 +94,7 @@ cuatro.dev
 ├─ /projects             → 301 to /#suite. Superseded. (see below)
 ├─ /cv                   Header destination. Absorbs /work as a section.
 ├─ /work                 Survives as a route. Not in header. (FR-1, Q8)
-├─ /recommendation       Survives. Linked from /cv. Footer.
+├─ /recommendation       Survives. Linked from /cv. Footer.  (amended 2026-09-24: retired 2026-09-11 by Operator ruling, Story 2-17; the PDF keeps its own URL)
 ├─ /celeste              Survives. Footer only.
 └─ /api/health
 ```
@@ -119,7 +119,7 @@ straight to the Suite Directory, and `/projects` becomes exactly that, for free.
 | `#suite` | **Header, primary** | The payload. SM-1 measures reaching it. |
 | `/cv` | **Header, secondary** | Daniela's one likely next click after forming an opinion. |
 | `/work` | Section inside `/cv` | It is the same story told twice. One destination, not two. |
-| `/recommendation` | Linked from `/cv` + footer | Social proof lands next to the CV, not competing with the suite. |
+| `/recommendation` | Linked from `/cv` + footer *(amended 2026-09-24: retired 2026-09-11 by Operator ruling, Story 2-17; it answers 404 and the PDF stays at `/pdf/recommendation-letter.pdf`)* | Social proof lands next to the CV, not competing with the suite. |
 | `/celeste` | Footer only | Personal, and it converts nobody. |
 
 Two header destinations, not five. Every header link competes with the Suite Directory
@@ -273,10 +273,10 @@ is a defect, not a cosmetic issue, and Marcus checking the array is step 2 of hi
 At most three sentences, encountered before or with the Suite Directory, carrying without the
 stack list:
 
-> Fifteen personal projects became one suite. Everything below is running right now, so open it
+> [N] personal projects became one suite. Everything below is running right now, so open it
 > and you are using the real thing, not looking at a picture of it.
 
-Two sentences, no framework named, no adjective doing work.
+Two sentences, no framework named, no adjective doing work. *(Amended 2026-09-24 by Operator ruling: the copy opened `Fifteen personal projects` and names no number now. The page derives `[N]` from `contracts/registry.json`, the count of its applications spelled out and capitalised with the noun agreeing, so the copy cannot go stale against the Registry; the page read `Fourteen` that day.)*
 
 ### UI strings
 
@@ -669,7 +669,7 @@ missing on the one path where nothing is.
 |---|---|
 | `/cv` | **Loaded**, the only state. Statically rendered from `content/work.ts`. **Accordion:** collapsed / expanded, `aria-expanded` on the trigger, `aria-controls` on the panel; the first entry opens on load without a collapsed-height flash. **Reduced motion:** the existing `useReduceMotion` hook drops the GSAP height tween to `0` duration. **Content slots:** Education and Contact do not exist in the repository. Until they do, the section is **omitted, not rendered empty**. An empty section reads as unfinished; an absent one reads as scoped |
 | `/work` | Same accordion states. No separate empty state, `content/work.ts` never being empty |
-| `/recommendation` | **Loaded** with an attributed quote, or **the route is not linked at all.** No unattributed and no placeholder state ships. An unattributed quote is worth less than no quote to a hiring reader |
+| `/recommendation` | **Loaded** with an attributed quote, or **the route is not linked at all.** No unattributed and no placeholder state ships. An unattributed quote is worth less than no quote to a hiring reader. *(Amended 2026-09-24: retired 2026-09-11 by Operator ruling, Story 2-17, a third state beside these two. The route answers 404, and the PDF stays at its own URL.)* |
 | `/celeste` | One state. Header suppressed, no navigation, not indexed. The only surface in the system with no exit, deliberately |
 
 ### Global
@@ -951,8 +951,8 @@ looks**. So it needs a number.
 | HTML + critical CSS | ≤ 20 KB | Estimate |
 | Fonts: 3 variable faces, **latin subset only** | ≤ 120 KB total | Estimate. Subsetting is the lever; unsubsetted variable faces run several times this |
 | **Non-3D path total** | **≤ 140 KB** | **The number that matters.** This is what Daniela gets on a slow connection |
-| Narrative JS: Three.js, R3F, drei, postprocessing, GSAP, ScrollTrigger, lenis | **Unmeasured.** Plausibly 300–450 KB | Library sizes only. **Measure before trusting** |
-| Narrative assets: geometry, textures | **Unmeasured** | Not inspected in this run |
+| Narrative JS: Three.js, R3F, drei, postprocessing, GSAP, ScrollTrigger, lenis | ~~**Unmeasured.** Plausibly 300–450 KB~~ **Measured**: see `ops/asset-budget.md` § The narrative bundle | Library sizes only. **Measure before trusting** *(amended 2026-09-24 by Operator ruling, `ops/asset-budget.md` action 1: measured by Story 2-2 on 2026-08-29 and re-read since)* |
+| Narrative assets: geometry, textures | ~~**Unmeasured**~~ **Measured**: see `ops/asset-budget.md` § The narrative assets | Not inspected in this run *(amended 2026-09-24, as the row above)* |
 
 *(Amended 2026-09-24 by Operator ruling, DW-36: two names in the Narrative JS row no longer hold as
 written. lenis is removed from the Hub, and GSAP's core is no longer narrative JS: it ships on
@@ -974,10 +974,10 @@ written. lenis is removed from the Hub, and GSAP's core is no longer narrative J
 5. **No `loading="lazy"` on an LCP element.** On the non-3D path the LCP element is the display
    heading, which is text, one more reason to prefer it over a poster image.
 
-**Open, and worth measuring before Epic 2:** the actual narrative bundle and asset weight.
+~~**Open, and worth measuring before Epic 2:** the actual narrative bundle and asset weight.
 The library estimate above is inference from published sizes, not a measurement of your build.
 If it lands above ~450 KB, the trade to examine first is `@react-three/postprocessing`, which
-is the largest optional item in that list.
+is the largest optional item in that list.~~ *(Amended 2026-09-24 by Operator ruling, `ops/asset-budget.md` action 1: closed by Story 2-2, which measured the bundle and the assets on 2026-08-29. Every reading since, and what each found against the budget, is in `ops/asset-budget.md`.)*
 
 ---
 
@@ -1060,10 +1060,10 @@ from `cuatro-portfolio` v2.5.3, deliberately, because this is a reshape of a wor
 | # | Item | Blocks |
 |---|---|---|
 | O-1 | The six Registry descriptions are **drafts written to the FR-8 contract from inferred behaviour**. Confirm each describes the software accurately | Epic 2 |
-| O-2 | Narrative bundle and asset weight are **unmeasured**. § Asset Budget carries an estimate, not a measurement | Epic 2, SM-C5 |
-| O-3 | Whether `@plugin "daisyui/theme"` accepts a `var()` reference: undocumented. Cheap to test in a scratch `mix phx.new` | Epic 1 Step 2, seam S-9 |
-| O-4 | `cuatro-finance` and `cs-tournament` real Status: assumed, not confirmed (PRD §13 Q9). Changes the composition of the first six | Epic 2 |
-| O-5 | Whether `list-wheel`'s new subdomain is `wheel.cuatro.dev`: used as a placeholder in the mocks | Epic 2 |
+| ~~O-2~~ | ~~Narrative bundle and asset weight are **unmeasured**. § Asset Budget carries an estimate, not a measurement~~ **Closed 2026-08-29 by Story 2-2**, which measured both; every reading since is in `ops/asset-budget.md`. *(Struck 2026-09-24 by Operator ruling, `ops/asset-budget.md` action 1.)* | Closed |
+| ~~O-3~~ | ~~Whether `@plugin "daisyui/theme"` accepts a `var()` reference: undocumented. Cheap to test in a scratch `mix phx.new`~~ **Closed 2026-08-25 by Story 1-15.** It does: both routes are live and render identically, so AD-15's own conditional selects route A. The evidence is `ops/daisyui-route.md`. *(Struck 2026-09-24 by Operator ruling, `ops/daisyui-route.md` action 1.)* | Closed |
+| ~~O-4~~ | ~~`cuatro-finance` and `cs-tournament` real Status: assumed, not confirmed (PRD §13 Q9). Changes the composition of the first six~~ **Closed 2026-09-02 by Story 2-4.** `cuatro-finance` is `In progress` and `cs-tournament` is `Live` at `inclusivcup.vercel.app`, both confirmed by the Operator, and the first six are unchanged (`ops/estate.md`). *(Struck 2026-09-24 by Operator ruling.)* | Closed |
+| ~~O-5~~ | ~~Whether `list-wheel`'s new subdomain is `wheel.cuatro.dev`: used as a placeholder in the mocks~~ **Closed 2026-09-02 by Story 2-4**: it is `wheel.cuatro.dev`, where Story 2-25 placed it on 2026-09-13, and the Registry carries it (AD-3). *(Struck 2026-09-24 by Operator ruling.)* | Closed |
 | O-6 | `--confillia-bold` has zero call sites and is safe to delete. `--confillia-normal` has **two**, at `HomeLayout.scss:117` and `:148` *(re-baselined 2026-08-15; was `:8`/`:246` on `main`)*, and is retargeted to `--f-display` at `wdth 75`. Confirm that reads acceptably before step 5 | Migration step 5 |
 | ~~O-7~~ | ~~Which Phoenix version is `cs-tracker` on?~~ **Closed 2026-08-15.** `{:phoenix, "~> 1.8.7"}` with Tailwind v4 (`@import "tailwindcss" source(none)`) and daisyUI via `@plugin "../vendor/daisyui"`. **`cs-tracker` takes the adapter route** (AD-15) | Closed |
 | ~~O-10~~ | ~~The palette reconciliation.~~ **Decided 2026-08-15: the contract palette wins.** Cybercore's hardcoded values map to token roles; full mapping in [`rebaseline-2026-08-15.md`](rebaseline-2026-08-15.md) § O-10. Story 1.18 is unblocked | Closed |

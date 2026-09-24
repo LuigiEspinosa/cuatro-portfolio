@@ -322,7 +322,7 @@ Four values, three structural axes, no two alike in greyscale.
 
 This is stated explicitly because the obvious version of this table is wrong. If `Live` and
 `Complete` were distinguished only by border *colour* (both `1px solid`, one accent and one
-neutral) they would sit **1.13:1 apart in greyscale**, and the taxonomy would be carried
+neutral) they would sit **1.77:1 apart in greyscale** *(Amended 2026-09-24 by Operator ruling: this read 1.13:1, which is the two marks' text pair; the border pair measures 1.773:1 in `ops/status-mark-axes.md`, and both sit far under 3:1, so the argument stands)*, and the taxonomy would be carried
 entirely by reading the word. Only `Live` earns accent, because it is the one value that means
 *you can click this right now*; but the accent is confirmation, never the signal.
 
@@ -457,7 +457,7 @@ and a monospace makes them scannable in a way a proportional face does not.
 
 | Family | Role | Licence | Axes used |
 |---|---|---|---|
-| **Bricolage Grotesque** | Display, headings, entry names | OFL | `wdth` 75–100, `opsz` 10–48, `wght` 700–800 |
+| **Bricolage Grotesque** | Display, headings, entry names | OFL | `wdth` 75–100, `opsz` 12 to 48 (pinned at 24 in the contract, `ops/font-contract.md`), `wght` 700–800 *(Amended 2026-09-24 by Operator ruling, `ops/font-contract.md` action 1: the `opsz` floor read 10, which no instance of the family has, since upstream's axis runs 12 to 96)* |
 | **Geist** | Body, lede, UI copy | OFL | `wght` 300–600 |
 | **Geist Mono** | Metadata, status, plate marks, tech arrays | OFL | `wght` 400 |
 
@@ -479,8 +479,8 @@ Ratio-based at **1.25 (major third)** from a 16px base. Not arbitrary jumps.
 
 | Token | Value | Used for |
 |---|---|---|
-| `--t-3xs` | `0.6875rem` / 11px | Status marks, plate marks. **Labels only, never prose** |
-| `--t-2xs` | `0.75rem` / 12px | Metadata, tech arrays, footer |
+| `--t-3xs` | `0.6875rem` / 11px | Status marks, plate marks, tech arrays *(Amended 2026-09-24 by Operator ruling, DW-96: tech arrays were listed on the `--t-2xs` row as well; they set at this step, as § Components → Registry Entry and the shipped Suite Directory have them)*. **Labels only, never prose** |
+| `--t-2xs` | `0.75rem` / 12px | Metadata, ~~tech arrays,~~ footer |
 | `--t-xs` | `0.8125rem` / 13px | UI copy floor |
 | `--t-sm` | `0.875rem` / 14px | **Body floor.** No prose sets smaller. |
 | `--t-base` | `1rem` / 16px | Lede, entry names |
@@ -552,7 +552,7 @@ locally** when the contract did not carry it. Three implementations reaching for
 value is the strongest available evidence that a contract is short one, and every restyled control
 in five frameworks needs it.
 
-**It is authored in `px`, deliberately, and it is the only length in the contract that is.** A
+**It is authored in `px`, deliberately, and it is the one length in the contract that is a physical-size guarantee.** *(Amended 2026-09-24 by Operator ruling, `ops/token-contract.md` action 1: this read "the only length in the contract that is", which is false. The shape and stroke values are `px` too, as fixed geometry rather than as a guarantee, and no reader-scaled length is `px`, as `contracts/tokens.css` says beside `--tap`.)* A
 target floor is a physical-size guarantee about a fingertip. Expressed in `rem` it would shrink for
 any user who reduces their root font size, which is precisely the user least able to afford a
 smaller target. Every other length here scales with the reader; this one must not.
@@ -576,7 +576,7 @@ Hit targets for why `inline-flex` is named alongside the number.
 
 ### Z-index scale
 
-Six named levels. An ad-hoc z-value anywhere is a defect.
+Seven named levels *(Amended 2026-09-24 by Operator ruling, DW-96: this read "Six"; the block below and `contracts/tokens.css` declare seven)*. An ad-hoc z-value anywhere is a defect.
 
 ```
 --z-base: 1;  --z-raised: 10;   --z-dropdown: 100;
@@ -657,9 +657,9 @@ expressed with opacity. Not interactive, so the target floor below does not appl
 
 **Hit targets, every interactive element.** `min-height: var(--tap)`, `display: inline-flex`,
 `align-items: center`, with `padding-block` making up the difference. **Vertical padding on a
-plain inline element does not grow its hit area.** It paints outward without affecting layout
-or hit-testing, so an inline link with `padding: 0.25rem 0` measures ~29px tall no matter what
-the padding says. This is the single easiest way to miss the floor while appearing to meet it,
+plain inline element grows its box but not its line.** It paints outward without affecting layout,
+so an inline link with `padding: 0.25rem 0` measures ~29px tall, and reaching 44px takes padding that overlaps the lines around it
+*(Amended 2026-09-24 by Operator ruling: this read that the padding does not grow the hit area and that the link measures ~29px "no matter what the padding says"; the Story 2-8 probe measured 29.00 at `0.25rem` and 44.00 at `0.75rem`, `ops/hit-target-floor.md`)*. This is the single easiest way to miss the floor while appearing to meet it,
 and it is why the rule names `inline-flex` rather than just naming a number.
 
 Where two targets sit on one line (the live and source links on an entry) they take
@@ -1057,7 +1057,7 @@ SCSS. Mechanical output from Style Dictionary: a build-step cost, not an authori
   --font-sans:         var(--f-body);
   --font-mono:         var(--f-mono);
   --spacing-s-lg:      var(--s-lg);
-  --radius-DEFAULT:    var(--r-none);
+  --radius-none:       var(--r-none);   /* amended 2026-09-24, ops/tailwind-adapter.md action 1: read --radius-DEFAULT, a Tailwind v3 key that mints .rounded-DEFAULT in v4 */
   /* … one line per token that should mint a utility */
 }
 ```
@@ -1362,6 +1362,6 @@ print stylesheet is outside the contract by nature. R8's grep excludes it explic
 - Don't fade every section in on scroll. One orchestrated entrance, then content simply exists.
 - Don't invent a metric. If the number was not supplied, the slot does not exist.
 - Don't reach for an emoji as an icon.
-- Don't write an ad-hoc `z-index`. Six named levels exist.
+- Don't write an ad-hoc `z-index`. Seven named levels exist *(amended 2026-09-24 by Operator ruling, DW-96: this read "Six")*.
 - Don't set prose below `--t-sm`, or anything below `--t-3xs`.
 - Don't rename a token casually. A rename is a **major** contract break across eight repos.

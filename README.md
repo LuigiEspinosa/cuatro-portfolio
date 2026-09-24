@@ -117,6 +117,11 @@ gave the footer the link the design assigns it, and `/celeste` declares `robots:
 The 404 offers the header's two destinations as its exits, mapped from the same list the header
 renders. **Every other route is reached only by an inbound link or by typing it.**
 
+**Hub URLs are case-sensitive, by policy** (Operator ruling 2026-09-24, DW-74 and DW-56): a route
+answers at its lowercase path alone, so `/CV`, `/WORK` and `/CELESTE` answer 404, while the one
+redirect in `next.config.js` matches its source in any case, as Next compiles every `redirects()`
+source, so `/Projects` and `/PROJECTS` answer the same 301 as `/projects`.
+
 ## Animation Architecture
 
 The page scrolls natively on every route. Lenis owned the scroll position for a visitor who allowed

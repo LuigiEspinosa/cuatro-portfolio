@@ -539,7 +539,7 @@ the site working)
 - **UX-DR20**: **Framework band.** Bricolage `wdth 75`/700 uppercase at `--t-3xs`, framework
   names alternating `--token-text-secondary` and `--token-accent-muted`, bounded above and below
   by hairlines. Decorative rhythm; carries no state and is not a legend.
-- **UX-DR21**: **Plate mark.** Mono `--t-3xs`, `+0.16em` tracking, uppercase,
+- **UX-DR21**: **Plate mark.** Mono `--t-3xs`, ~~`+0.16em`~~ `--tr-label` tracking *(amended 2026-09-24 by Operator ruling: `DESIGN.md` sets the plate mark at `--tr-label`, `0.14em`, and the shipped mark follows it)*, uppercase,
   `--token-text-secondary`, sitting on a hairline. Section identity top-left, position or domain
   top-right. Appears on section heads carrying a genuine ordinal or domain, never by default.
 - **UX-DR22**: **Nav.** Wordmark left in Bricolage `wdth 75`/800; **two** mono uppercase links
@@ -567,7 +567,7 @@ the site working)
 
 - **UX-DR26**: `/projects` **301-redirects permanently to `/#suite`**, not deleted, this keeps
   every inbound link working and satisfies FR-2's "stable anchor **or** route" for free.
-  `ProjectCard` and `ProjectsHero` are retired with it.
+  `ProjectCard` and `ProjectsHero` are retired with it *(amended 2026-09-24 by Operator ruling: `ProjectCard` and its stylesheet were retired by Story 2-9, `ProjectsHero` by Story 2-14 with `/projects`)*.
 - **UX-DR27**: Header carries exactly two destinations: `Suite` (primary) and `CV` (secondary).
   Every header link competes with SM-1's ≥60% target.
 - **UX-DR28**: `/cv` is **built around the existing `WorkTimeline` component**, reused unchanged
@@ -668,7 +668,7 @@ the site working)
   background fill, a large block or a button ground; **no `#000` and no `#fff`** anywhere outside
   the print stylesheet; **no shadows at all**: depth is lightness (+4 step), then a hairline,
   then a strong rule, then type weight; **no gradients** anywhere; alpha is not a colour;
-  **opacity never expresses state**; six named z-levels only and an ad-hoc `z-index` is a defect.
+  **opacity never expresses state**; seven *(amended 2026-09-24 by Operator ruling, DW-96: this read "six"; the contract declares seven)* named z-levels only and an ad-hoc `z-index` is a defect.
 - **UX-DR45**: Typography rules: weight gap ≥300 units between any two roles; line-heights
   display `0.95–1.0`, headings `1.1`, body `1.6`, lede `1.55`; tracking display `-0.05em` through
   mono labels `+0.14em`, body never above `+0.05em`; measure `46ch` on descriptions and lede;
@@ -752,7 +752,7 @@ which the spine already names), and none is unaccounted for.
 | FR-14 | **deferred** | Spine § Deferred: v2 |
 | FR-15 | **deferred** | Spine § Deferred: v2 |
 | FR-16 | 1 | Token contract published |
-| FR-17 | 1 | Anchor consumes its own tokens (migration steps 1–2) |
+| FR-17 | 1 / 2 | Anchor consumes its own tokens (migration steps 1–2) · enforced by Story 2.34's conformance gate (2) *(amended 2026-09-24 by Operator ruling, Epic 1 retro action 4: the Epic cell read `1`)* |
 | FR-18 | 1 | **Epic 1's acceptance condition**: Anchor + `cs-tracker` |
 | FR-19 | 1 / 2 / 6 | Policy + versioned header (1) · `token_contract` + drift check (2) · machinery (6) |
 | FR-20 | 5 | |
@@ -815,7 +815,7 @@ product family. The Estate drops from 15 repositories to 11.
 **FRs covered:** FR-16, FR-17, FR-18, FR-31, FR-33, FR-19 *(policy and versioned header only)*
 **Also carries:** §5 archiving to the 11 waypoint · C-2 `digital-library` backup gap ·
 C-9 routing enumeration *(prerequisite of Epic 4, done here because it is cheap and de-risks the
-rebuild)* · C-8 standing AD-8 violation, tracked explicitly · O-3 daisyUI `var()` gate ·
+rebuild)* · C-8 standing AD-8 violation, tracked explicitly · O-3 daisyUI `var()` gate *(answered 2026-08-25 by Story 1-15, route A, `ops/daisyui-route.md`; amended 2026-09-24 by Operator ruling)* ·
 C-7 Playwright installation *(here rather than in Epic 2, because this epic's migration stories
 assert rendered output and AD-19 forbids claiming it)*
 **O-10: DECIDED 2026-08-15: the contract palette wins.** Cybercore's hardcoded values map to
@@ -966,7 +966,7 @@ writing what the box can hold, and a Visitor moving between `cuatro.dev` and
 `cs-tracker.cuatro.dev` sees two applications on different frameworks that visibly belong to one
 product family. The Estate drops from 15 repositories to 11.
 
-Twenty stories in four ordered groups: AD-17 gates and estate (1.1–1.6), discovery and defect
+Twenty-one stories *(amended 2026-09-24 by Operator ruling, Epic 1 retro action 5: this read "Twenty")* in four ordered groups: AD-17 gates and estate (1.1–1.6, and 1.21, added 2026-08-16 and executed first), discovery and defect
 prerequisites (1.7–1.10), the token contract (1.11–1.16), adoption (1.17–1.20). No story depends
 on a later one.
 
@@ -1557,7 +1557,7 @@ line-heights, six tracking values, `--measure`, nine spacing steps, **the `--tap
 floor**, three shape values, five stroke values, three elevation values, seven motion values and
 seven z-index values
 **And** it carries the header `Contract v1.0.0`
-**And** `--tap` is `44px` and is **the only length in the contract authored in `px`**, deliberately,
+**And** `--tap` is `44px` and is **the one length in the contract authored in `px` as a physical-size guarantee** *(amended 2026-09-24 by Operator ruling, `ops/token-contract.md` action 1: this read "the only length in the contract authored in `px`"; shape and stroke values are `px` as fixed geometry, and no reader-scaled length is `px`)*, deliberately,
 because a target floor is a physical-size guarantee that must not shrink when a reader reduces their
 root font size *(minted 2026-08-16, after three reference renders each invented it locally; review
 finding LOW-2)*
@@ -2354,7 +2354,7 @@ and closes the automated half of open item **O-8**.
 `boundingBox()` measures at least 44×44
 **And** it fails against an element that meets the floor only through vertical padding on a plain
 inline element: the ~29px case that reads as compliant in the CSS and is not
-**And** A-5 is asserted alongside it: no horizontal scroll at 360px.
+**And** A-5 is asserted alongside it: no horizontal scroll at 360px. *(amended 2026-09-24 by Operator ruling, recording the rulings of 2026-09-06 in `ops/hit-target-floor.md`, KV-4 and KV-5: what shipped held each element at 44x44 or to a dated ledger row, and A-5 on elements rather than on `scrollWidth`. The 44x44 half holds exactly as written since 2026-09-23, when the ledger emptied and KV-4 retired; A-5 is still asserted on elements, and KV-5 retired with Story 2-33.)*
 
 **Given** `EXPERIENCE.md` says this floor is the single easiest one to miss while appearing to
 meet it, and must be verified by measurement rather than by reading the CSS
@@ -2520,7 +2520,7 @@ UX-DR45, so a changing figure does not shift the characters beside it.
 
 **Given** the plate mark is section identity, not decoration
 **When** section heads are authored
-**Then** a plate mark renders in mono `--t-3xs` at `+0.16em` tracking, uppercase, in
+**Then** a plate mark renders in mono `--t-3xs` at ~~`+0.16em`~~ `--tr-label` tracking *(amended 2026-09-24 by Operator ruling, as UX-DR21)*, uppercase, in
 `--token-text-secondary`, sitting on a hairline, with section identity top-left and position or
 domain top-right
 **And** it appears only on section heads carrying a genuine ordinal or domain: **not by
@@ -2628,7 +2628,7 @@ inbound link, bookmark and search result working
 
 **Given** two renderings of the same data violate NFR-9 the moment they disagree
 **When** the redirect ships
-**Then** `ProjectCard` and `ProjectsHero` are retired along with their stylesheets
+**Then** `ProjectCard` and `ProjectsHero` are retired along with their stylesheets *(amended 2026-09-24 by Operator ruling: `ProjectCard` and its stylesheet went earlier, with Story 2-9; `ProjectsHero` went here)*
 **And** no component outside the Suite Directory renders Registry data.
 
 **Given** `.lighthouserc.js` collects `http://localhost:3000/projects`
@@ -2726,7 +2726,7 @@ So that nothing on the site reads as a placeholder.
 **When** `/recommendation` is assessed
 **Then** it either ships **loaded with an attributed quote**, or the route is **not linked at
 all** from `/cv` or the footer
-**And** no unattributed and no placeholder state ships.
+**And** no unattributed and no placeholder state ships. *(amended 2026-09-24: `/recommendation` was retired outright by Operator ruling on 2026-09-11, Story 2-17, a third state beside these two; the route answers 404 and the PDF stays at its own URL)*
 
 **Given** `/celeste` is personal and converts nobody
 **When** it is placed
@@ -2748,7 +2748,7 @@ suppressed by the mechanism Story 2.1 installed
 ### Story 2.18: DELETED 2026-08-15 (migration step 3, retire the violet hairlines)
 
 **Deleted by the restyle scope change.** This story replaced four hairline values across two files.
-`ProjectCard.scss` is retired by Story 2.14 with `/projects`, and `WorkItem.scss` is redesigned by
+`ProjectCard.scss` is retired by Story 2.14 with `/projects` *(amended 2026-09-24 by Operator ruling: by Story 2-9, which retired `ProjectCard`)*, and `WorkItem.scss` is redesigned by
 Story 2.31, which absorbs the replacements. There is nothing left for the story to do: tokenizing a
 value in a file that is about to be rewritten is the wasted motion the scope change removes.
 
@@ -2756,7 +2756,7 @@ value in a file that is about to be rewritten is the wasted motion the scope cha
 in `sprint-status.yaml` changes meaning.
 
 **Where the work went:** `WorkItem.scss`'s two hairline values are acceptance criteria on Story
-2.31. `ProjectCard.scss` needs nothing, being retired.
+2.31. `ProjectCard.scss` needs nothing, being retired *(by Story 2-9; amended 2026-09-24 by Operator ruling)*.
 
 ---
 
@@ -3075,7 +3075,7 @@ card-in-card, no full-viewport centred hero, no shadow anywhere, no gradient any
 or orb or glass layer, no four-column footer, no emoji used as an icon, no invented metric
 **And** accent occupies **≤3% of the viewport**, measured on the rendered homepage rather than
 inferred from the rules
-**And** per UX-DR44 every `z-index` in the tree resolves to one of the six named levels: an
+**And** per UX-DR44 every `z-index` in the tree resolves to one of the seven *(amended 2026-09-24 by Operator ruling, DW-96: this read "six")* named levels: an
 ad-hoc value is a defect, not a style choice.
 
 **Given** A-16 governs autoplay
@@ -3595,7 +3595,7 @@ close could read the token; nothing here requires it to.)*
 
 **Given** `rgba(91, 33, 182, 0.06)` at `WorkItem.scss:35` and `rgba(91, 33, 182, 0.3)` at
 `WorkItem.scss:145` are alpha values used as hairlines *(criteria relocated from deleted Story
-2.18; `ProjectCard.scss`'s three values need nothing, the file being retired by Story 2.14)*
+2.18; `ProjectCard.scss`'s three values need nothing, the file being retired by Story 2.14)* *(amended 2026-09-24 by Operator ruling: the file was retired by Story 2-9)*
 **When** the component is rebuilt
 **Then** each becomes a **flat token, never an `rgba()` with alpha**, because § Colors bars opacity
 from expressing state and both of these are alpha values doing exactly that
@@ -3621,15 +3621,15 @@ So that the suite framing holds on the secondary routes and not only on the home
 **Sequenced after Story 2.15, never inside it.** 2.15 reshapes the nav to two destinations, which is
 a structural change; this restyles the result. Absorbs `#fff` at `navbar.scss:10`.
 **The 44px floor is this story's acceptance condition, and it is measured rather than read off the
-CSS.** The shipped nav links measure roughly **16×27px**, which is the estate's worst instance of
+CSS.** The shipped nav links measure roughly **16×27px** *(amended 2026-09-24 by Operator ruling: the Story 2-8 sweep measured them at 38.41 to 98.13 wide by 22.00 tall on 2026-09-06; Story 2-32 repaired them and KV-4 retired on 2026-09-23)*, which is the estate's worst instance of
 the floor being missed while appearing to be met (§ Accessibility Floor, A-4).
 **Measured against:** `EXPERIENCE.md` § Chrome, `DESIGN.md` § Components → Nav and → The redesigned
 Hub surfaces, `RESTYLE-SPEC.md` § 1b Link.
 
 **Acceptance Criteria:**
 
-**Given** the shipped links measure ~16×27px, and **vertical padding on a plain inline element
-paints outward without growing the hit area**
+**Given** the shipped links measure ~16×27px *(38.41 to 98.13 by 22.00 when measured, as above)*, and **vertical padding on a plain inline element
+grows its box but not its line** *(amended 2026-09-24 by Operator ruling: this read that the padding "paints outward without growing the hit area"; the Story 2-8 probe measured 29.00 at `0.25rem` and 44.00 at `0.75rem`, and reaching 44px takes padding that overlaps the lines around it, `ops/hit-target-floor.md`)*
 **When** the nav links are rebuilt
 **Then** every nav link reaches **`≥44×44px` on both axes**, via `min-height` plus
 `display: inline-flex` plus `padding-inline` where the label is narrower than 44px
