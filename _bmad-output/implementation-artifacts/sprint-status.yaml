@@ -52,7 +52,13 @@ tracking_system: file-system
 # empty directory and reported no stories rather than failing. Filed from story 1-3.
 story_location: c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
 development_status:
-  epic-1: in-progress
+  # 2026-09-24: done by Operator ruling, the day 1-16 and 1-19 closed, the last two of its
+  # twenty-one stories (spec-epic-1-close.md). The 2026-08-29 retrospective's rejected verdict
+  # rested on three grounds, each now answered: the two unfinished stories are done; DW-15,
+  # the spacing defect behind FR-18, closed with Contract 2.0.0 (40591cd), whose cs-tracker
+  # push and deploy stay the Operator's (ops/contract-adoption.md action 8); and FR-17 is
+  # Story 2-34's, done on dev with DW-8 closed.
+  epic-1: done
   # Amended 08-16-2026 by the topology correction.
   # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-16.md
   # The estate spans two serving addresses and cuatro.dev is DOWN (NFR-2 in violation).
@@ -130,7 +136,11 @@ development_status:
   # Action 6 is closed, the AGENTS.md context refresh having landed 2026-08-27 in 4112ee8.
   # Action 4 carries a date, but its cell says the user-agent instruction is written down
   # and not yet delivered to any Satellite; that delivery is the Operator's too.
-  1-16-serve-contracts-at-https-cuatro-dev-contracts: awaiting-operator
+  # 2026-09-24: done by Operator ruling. Action 3: the Hub keeps serving /contracts/ after
+  # Epic 4, final and not interim (epics.md 1.16 and 4.6 amended). Action 4: the user-agent
+  # instruction stays written and binds to the first story that makes a Satellite fetch.
+  # Park record removed with the closing note in the spec.
+  1-16-serve-contracts-at-https-cuatro-dev-contracts: done
   1-17-anchor-migration-step-1-add-the-contract-change-nothing: done
   1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: done
   # 2026-09-23: 1-19 stays awaiting-operator on three Operator actions in
@@ -139,7 +149,12 @@ development_status:
   # reconcile in ops/contract-adoption.md action 7. 3: decide whether --color-secondary
   # stays on a repeated ground. 5: evaluate seam S-8 on the running application. The
   # sibling daisyUI probe passed its re-run and closed ops/daisyui-route.md action 2.
-  1-19-cs-tracker-adopts-the-token-contract: awaiting-operator
+  # 2026-09-24: done by Operator ruling. 2: the pin follows 32a466a (048793f, DW-17) and both
+  # probes strip colour codes (b14bcbb, DW-109); from a plain shell the adoption probe exits
+  # 0 at 19 of 19 and the daisyUI probe at 7 of 7. 3: --color-secondary keeps repeating
+  # base-300, since RESTYLE-SPEC rules out filled controls. 5: S-8 moves to Story 8.1, with
+  # the 74 hit-target and 38 transition findings. Park record removed with the spec's note.
+  1-19-cs-tracker-adopts-the-token-contract: done
   1-20-record-the-adopted-contract-version-and-the-automation-polic: done
   epic-1-retrospective: done
   # REMINDER: run /bmad-project-context (refresh) before starting epic-2.
@@ -613,12 +628,14 @@ action_items:
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling: spec-1-7, spec-1-8 and spec-1-10 frontmatter read
+  # done, matching the board, which closed all three on 2026-08-27.
   - id: 'epic-1-retro-item-9-advance-the-frontmatter-of-spec-1-7-spec'
     epic: 1
     action: 'Advance the frontmatter of spec-1-7, spec-1-8 and spec-1-10 from awaiting-operator
       to done, matching the board.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-10-extract-the-shared-probe-scaffold-into-o'
@@ -630,12 +647,16 @@ action_items:
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling: every remaining action of 1-16 and 1-19 is resolved,
+  # each named in its spec's closing note, and both park records under .bmad-loop/operator/
+  # are removed. Two were re-bound rather than performed: 1-16's user-agent delivery binds
+  # to the first fetching story, and 1-19's S-8 moves to Story 8.1.
   - id: 'epic-1-retro-item-11-close-stories-1-16-and-1-19-by-completin'
     epic: 1
     action: 'Close stories 1-16 and 1-19 by completing their remaining operator actions
       in .bmad-loop/operator/*.json.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-12-process-act-on-the-oversized-spec-warnin'

@@ -1741,7 +1741,9 @@ So that consuming the contract requires nothing but an HTTP GET from any languag
 serves a repository-root directory at that path. The mechanism below is the least-coupled option
 it survives the Epic 3 move to `apps/hub` and the Epic 4 proxy change without either of them
 re-deciding it. **If the Operator prefers Traefik serving `contracts/` directly in Epic 4, this
-story's mechanism is the interim and should say so.**
+story's mechanism is the interim and should say so.** *(amended 2026-09-24 by Operator ruling: the
+Operator does not. The Hub keeps serving `contracts/` after Epic 4, and this story's mechanism is
+final, not interim. `ops/contract-serving.md` § What Epic 3 and Epic 4 each do to this records it.)*
 
 **Acceptance Criteria:**
 
@@ -1911,7 +1913,9 @@ than partially carried.
 (S-2), form controls take `border-radius: 0` (S-3), and the framework's control defaults are
 mapped onto the token roles (S-9)
 **And** if LiveView DOM patching visibly interrupts a transition, `phx-update="ignore"` is
-applied to the affected containers (S-8).
+applied to the affected containers (S-8). *(amended 2026-09-24 by Operator ruling: S-8 was not
+evaluated in this story and moves to Story 8.1, whose own criterion carries it, so Story 1.19 closes
+without it. `ops/cs-tracker-token-adoption.md` action 5 records the move.)*
 
 **Given** FR-18 is the acceptance condition for "the Ecosystem is visible"
 **When** a Visitor moves between `cuatro.dev` and `cs-tracker.cuatro.dev`
@@ -4319,7 +4323,9 @@ Move the flagship onto the new proxy.
 1.21, so this story moves `cuatro.dev` onto Traefik on the rebuilt topology and does not repeat
 the host migration. `https://cuatro.dev/contracts/` still serves the published surface, since
 Satellites fetch it at build time; Story 1.16's serving mechanism is revisited here if Traefik
-should serve `contracts/` directly rather than the interim mechanism.
+should serve `contracts/` directly rather than the interim mechanism. *(amended 2026-09-24 by
+Operator ruling: Traefik does not serve `contracts/`. Story 1.16's mechanism is final, the Hub keeps
+serving the surface behind the new proxy, and this story revisits nothing there.)*
 
 ### Story 4.7: Migrate `analytics.cuatro.dev` and pin Umami
 Move the analytics instance and retire the estate's one inherited floating tag.
@@ -4705,6 +4711,14 @@ paints outward without growing the hit area.
 **Then** **seam S-8** applies: `phx-update="ignore"` on animated containers if patching visibly
 interrupts a transition
 **And** **seam S-7 stands**, the light theme having been dropped at adoption.
+*(amended 2026-09-24 by Operator ruling: three items from Epic 1 are booked here. S-8 was never
+evaluated in Story 1.19, so it is evaluated here first (`ops/cs-tracker-token-adoption.md` action 5).
+The AD-19 pass's 74 hit-target findings, F-1 to F-74, are this restyle's geometry. Its 38 transition
+findings, T-1 to T-38, are controls whose focus ring eases in, under Tailwind's `transition-colors`
+and the quick-link cards' `transition-all`, against `EXPERIENCE.md`'s rule that the ring is never
+transitioned (`ops/cs-tracker-accessibility-pass.md` action 1, mirrored as `ops/contract-adoption.md`
+action 3). All three are fixed here rather than earlier, and the accessibility probe's re-run after
+this story is the check.)*
 
 **Given** the vendored contract version must still be correct after the restyle
 **When** it is re-checked

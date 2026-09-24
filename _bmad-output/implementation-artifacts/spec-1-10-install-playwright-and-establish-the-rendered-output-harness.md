@@ -2,7 +2,7 @@
 title: 'Install Playwright and establish the rendered-output harness'
 type: 'feature'
 created: '2026-08-24'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '4f4c751092ade52d649841ff0cd5625f680040b6'
 baseline_revision: '4f4c751092ade52d649841ff0cd5625f680040b6'
 review_loop_iteration: 0

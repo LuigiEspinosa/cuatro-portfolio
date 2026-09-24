@@ -2,7 +2,7 @@
 title: 'An offsite backup path for digital-library'
 type: 'feature'
 created: '2026-08-24'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: 'ed9c816c1d4efac219b385aaad2d71fb355c20d6'
 review_loop_iteration: 0
 followup_review_recommended: true

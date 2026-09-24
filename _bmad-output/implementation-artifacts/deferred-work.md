@@ -1349,8 +1349,20 @@ origin: spec-deferred dd2c45a1f4b2
 location: ops/cs-tracker-adoption-probe.mjs
 source_spec: `spec-1-20-record-the-adopted-contract-version-and-the-automation-polic.md`
 severity: medium
-reason: Observed 2026-08-27T22:47:57Z by `node ops/cs-tracker-adoption-probe.mjs` against `cs-tracker` at `32a466a`: 19 cases, 18 PASS, 1 FAIL, the failure reading `It runs in assets.setup: false`. `git -C cs-tracker show 32a466a -- mix.exs` removes `"cuatro.fonts"` from `"assets.setup"` and says why: the Dockerfile runs `assets.setup` before `COPY lib lib` and `COPY assets assets`, so the task could not be found there and the container build broke on 2026-08-27, while `setup` still reaches `assets.build`, which runs it. Not caused by this story and not its to reconcile: the pin, the record row and the `cs-tracker/AGENTS.md` lines are Story 1-19's, which is awaiting-operator. Recorded in `ops/contract-adoption.md` as Pending Operator action 7 and the pin left red deliberately rather than moved.
-status: open
+reason: |-
+  Observed 2026-08-27T22:47:57Z by `node ops/cs-tracker-adoption-probe.mjs` against `cs-tracker` at `32a466a`: 19 cases, 18 PASS, 1 FAIL, the failure reading `It runs in assets.setup: false`. `git -C cs-tracker show 32a466a -- mix.exs` removes `"cuatro.fonts"` from `"assets.setup"` and says why: the Dockerfile runs `assets.setup` before `COPY lib lib` and `COPY assets assets`, so the task could not be found there and the container build broke on 2026-08-27, while `setup` still reaches `assets.build`, which runs it. Not caused by this story and not its to reconcile: the pin, the record row and the `cs-tracker/AGENTS.md` lines are Story 1-19's, which is awaiting-operator. Recorded in `ops/contract-adoption.md` as Pending Operator action 7 and the pin left red deliberately rather than moved.
+
+  **Closed 2026-09-24 on the Operator ruling of that day, by
+  `_bmad-output/implementation-artifacts/spec-epic-1-close.md`, commit `048793f`.** The pin follows
+  the commit. `The build pipeline places them` requires `cuatro.fonts` in `assets.build`, and in
+  `assets.deploy` ahead of `phx.digest`, and no longer reads `assets.setup`. The rule is now the
+  exported `pipelineVerdict`, whose unit case holds `cs-tracker`'s post-`32a466a` alias block to a
+  pass and was red on the old rule first. `node ops/cs-tracker-adoption-probe.mjs` from a plain shell,
+  against `cs-tracker` at `991d0f6`, exited 0 at 19 of 19, closing `ops/contract-adoption.md` action 7
+  and `ops/cs-tracker-token-adoption.md` action 2. What is left is the Operator's: `cs-tracker`'s
+  committed `AGENTS.md:36-39` still says the task runs in `assets.setup`, and the Operator's
+  uncommitted rewrite of that file drops the line.
+status: done
 
 ### DW-18: Follow-up review still recommended for 1-20-record-the-adopted-contract-version-and-the-automation-polic after the damping cap was spent
 origin: review-budget-followup
@@ -5893,7 +5905,16 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next change to either probe, or the next re-run that stops
     at exit 3 on the banner.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-epic-1-close.md`, commit `b14bcbb`.** Both probes
+    read the banner through an exported `tailwindBanner`, which strips every escape sequence with
+    `node:util`'s `stripVTControlCharacters` before the match. Each probe's unit suite feeds it the
+    coloured bytes `cs-tracker`'s 4.1.12 binary printed on 2026-09-24, and both cases were red on the
+    old match first. From Git Bash with `NO_COLOR` unset, `node ops/daisyui-route-probe.mjs` exited 0
+    at 7 of 7 and `node ops/cs-tracker-adoption-probe.mjs` at 19 of 19. The `NO_COLOR` instructions in
+    `ops/daisyui-route.md` and `ops/cs-tracker-token-adoption.md` are withdrawn by dated notes.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
   id: DW-110

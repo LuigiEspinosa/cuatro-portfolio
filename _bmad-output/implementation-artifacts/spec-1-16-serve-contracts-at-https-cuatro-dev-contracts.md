@@ -2,7 +2,7 @@
 title: 'Serve contracts/ at https://cuatro.dev/contracts/'
 type: 'feature'
 created: '2026-08-25'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '6b134d36de5e60f5dab94b23294cb7a93bbbedad'
 baseline_revision: '6b134d36de5e60f5dab94b23294cb7a93bbbedad'
 review_loop_iteration: 0
@@ -490,3 +490,34 @@ rejected, 0 intent gaps, 0 spec repairs.
   publish into `start` would run it twice on the harness's own `pnpm build && pnpm start`.
 - The `every refusal` array's pinned length catches a refusal added to the module and to one of the
   two lists, not one added to neither. Stated in the test and in the record.
+
+## Closing note, 2026-09-24
+
+Closed on 2026-09-24 by Operator ruling 2026-09-24, in
+`_bmad-output/implementation-artifacts/spec-epic-1-close.md`. Each of the six `operator_actions`
+above is resolved in `ops/contract-serving.md` § Pending Operator actions. The row numbers below are
+that table's, and they follow the frontmatter's order:
+
+1. **Confirm the surface live over HTTPS: done 2026-08-27.** All nine URLs answered 200 with the
+   expected content type, recorded as "Live over HTTPS, 2026-08-27". The deploy had to be repaired
+   first. Row 1.
+2. **Decide the cache policy: ruled 2026-08-27.** Version the URL and let the edge cache hard. The
+   decision is recorded in "The cache policy". Building it was never this story's work. Row 2.
+3. **Settle Traefik versus the Hub: ruled 2026-09-24.** The Hub keeps serving `/contracts/` after
+   Epic 4, and the mechanism is final, not interim. The interim caveat under "What Epic 3 and Epic 4
+   each do to this" is retired, and `epics.md` Stories 1.16 and 4.6 carry the ruling as dated
+   amendments. Row 3.
+4. **Tell every Satellite to send a user agent: closed 2026-09-24 with a binding, not a delivery.**
+   The instruction stays written in "The adoption instruction every Satellite needs". The first story
+   that makes a Satellite fetch from `https://cuatro.dev/contracts/` at build time delivers it. No
+   Satellite fetches today, because `cs-tracker` vendors the folder. Row 4.
+5. **Record the first real CI run of `rendered-output`: done 2026-08-27.** Run `33104210025` on
+   `main` took 97 s, with all five jobs green. Row 5.
+6. **Refresh the `bmad:context` block: done 2026-08-27** in `4112ee8`. It was found done and closed
+   on 2026-09-23. Row 6.
+
+The park record `.bmad-loop/operator/1-16-serve-contracts-at-https-cuatro-dev-contracts.json` is
+removed in the same commit, which is the end state `bmad-loop confirm` reaches. The tool was not
+used, because its audit section would say every action above "was carried out", and action 4 was
+re-bound rather than carried out. `followup_review_recommended: true` stays unspent. That is Epic 1
+retrospective action 3's to settle, not this closure's.
