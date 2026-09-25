@@ -7070,7 +7070,12 @@ status: done
     **Owner: the Operator**, for a ruling: keep the variant as vocabulary for a later call site, or
     remove it from the component and from both documents. **Trigger: that ruling, or the next call
     site that wants a label hanging beside content.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25: keep.** The variant stays as design-system
+    vocabulary, read on the planted marks in `/cv`'s intro until a call site returns. Nothing in the
+    component, its stylesheet or its tests changes; `DESIGN.md` carries the ruling as a dated
+    amendment beside the DW-110 note and in its front matter.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
   id: DW-125
@@ -7128,7 +7133,13 @@ status: done
 
     **Owner: the Operator.** **Trigger: that ruling, or the next change to the entrance or to the
     reduced-motion block.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25: accept.** An OS reduced-motion setting switched
+    off mid-visit replays the entrance, and a hero link focused at that moment loses focus; it needs
+    the setting flipped while the page is open, so it is rare. The DW-125 ruling of the same day
+    changes how the links are held out of focus during the entrance, not whether, so this acceptance
+    covers the replay under either mechanism.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`
   id: DW-127
@@ -7234,7 +7245,14 @@ status: done
     `ops/__tests__/cs-tracker-accessibility-probe.test.ts` and a `cs-tracker` re-vendor) and
     accepting both as named exceptions to the rule. **Trigger: the next contract release that opens
     for any other reason**, so the choice rides in it rather than costing a propagation of its own.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25: accept both as named exceptions.** No value
+    changes, so there is no contract release, no pin moves and no `cs-tracker` re-vendor. The
+    tokens-contract case already admits exactly these two at their readings and fails on a third or
+    on either moving, so the rule binds every value authored from here on; its doc comment now cites
+    the ruling. `DESIGN.md` § Colors and its front matter, and `ops/anchor-token-adoption.md` (the
+    corrected downlevelling note and Pending Operator action 2), carry dated amendments.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`
   id: DW-130

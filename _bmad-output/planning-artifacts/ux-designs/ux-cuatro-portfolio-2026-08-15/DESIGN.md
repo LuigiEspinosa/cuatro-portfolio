@@ -12,6 +12,10 @@ amended-2026-09-24: >-
   ease-in, to the ease-out cubic-bezier(0.33, 1, 0.68, 1) (DW-103). Renamed the Tailwind adapter's
   eight spacing keys to --spacing-s-* with no deprecation window (DW-15). Held the palette inside sRGB
   by rule, with the two values that already break it named (DW-129).
+amended-2026-09-25: >-
+  Operator ruling. Accepted --c-accent-bright and --c-focus as the palette's two named exceptions to
+  the sRGB rule, with no value change and no contract bump (DW-129). Kept the Plate mark's side-ruled
+  variant as design-system vocabulary with no Hub call site (DW-124).
 theme: dark-only
 anchor-hue: 288
 colors:
@@ -252,7 +256,8 @@ the `oklch()` downlevelling row of `ops/anchor-token-adoption.md`. `packages/tok
 converts each `--c-*` value to linear sRGB and fails on a channel outside 0 to 1. Two values authored
 before the rule break it on blue: `--c-accent-bright` reads 1.0762 and `--c-focus` 1.2628, so their
 hex entries below are clipped, not computed. The case admits those two by name at those readings and
-nothing else, until DW-129 decides them.)*
+nothing else. Amended 2026-09-25 by Operator ruling, DW-129: both stay as named exceptions, with no
+value change, so the rule binds every value authored from here on.)*
 
 ### The palette
 
@@ -806,7 +811,8 @@ ruling, DW-110: the readout panel, the one home panel that carried a Plate mark,
 surface has three panels, the name, the navigation and the contact, none of which carries a Plate
 mark, and on the default door at 768 and wider the corner the readout held shows the imagery
 beneath. The Plate mark's side-ruled variant stays in § Components; it has no call site on the Hub
-since, which DW-124 puts to the Operator.)*
+since. Amended 2026-09-25 by Operator ruling, DW-124: the variant stays as design-system vocabulary,
+read on planted marks until a call site returns.)*
 
 **Work item (`WorkItem`).** A **row** per § Components → Registry Entry, not a card. Separator
 `1px solid var(--token-border)`. The left indicator rule becomes `--stroke-emphasis`

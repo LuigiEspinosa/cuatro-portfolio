@@ -831,8 +831,8 @@ const outsideSrgb = (name: string, value: string): string[] =>
 
 /**
  * The two values authored before the rule that already break it, at the one channel each breaks.
- * Admitted here and nowhere else until DW-129 decides them, by bringing each inside at its own
- * lightness and hue or by accepting it. A third value, or either of these moving, fails the case.
+ * Admitted here and nowhere else, as named exceptions by Operator ruling 2026-09-25 (DW-129). A third
+ * value, or either of these moving, fails the case.
  */
 const ADMITTED_OUTSIDE_SRGB = ['--c-accent-bright b 1.0762', '--c-focus b 1.2628'];
 
