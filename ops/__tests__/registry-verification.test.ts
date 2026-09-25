@@ -85,8 +85,14 @@ const TOKENS_CSS_AT_REGISTRY = TOKENS_CSS.replace('v1.0.0', 'v2.0.0');
 const CS_TRACKER_TOKENS = 'assets/css/cuatro-contracts/tokens.css';
 const SLUG = 'LuigiEspinosa/cs-tracker';
 
-/** The four KV-2 repositories, pinned: the record's table and the planted run both name exactly these. */
-const PRIVATE = ['LuigiEspinosa/cs-tracker', 'LuigiEspinosa/cs-tournament', 'LuigiEspinosa/StreamVault', 'LuigiEspinosa/Mutuo'];
+/**
+ * The record's four KV-2 rows, pinned in table order. cs-tournament's row is struck (published
+ * 2026-09-24 by Operator ruling), so it stays in the table as history and tolerates nothing.
+ */
+const KV2_TABLE = ['LuigiEspinosa/cs-tracker', 'LuigiEspinosa/cs-tournament', 'LuigiEspinosa/StreamVault', 'LuigiEspinosa/Mutuo'];
+const STRUCK = ['LuigiEspinosa/cs-tournament'];
+/** The repositories that still answer 404 anonymously: the table less its struck rows. */
+const PRIVATE = KV2_TABLE.filter((slug) => !STRUCK.includes(slug));
 const ARCHIVED = ['LuigiEspinosa/Lumen', 'LuigiEspinosa/tcg-tracker'];
 /** The three `live` URLs that answer 3xx at the first hop, as observed 2026-09-12. */
 const REDIRECTING: Record<string, number> = {
@@ -240,8 +246,8 @@ describe('the committed Registry against the estate as observed', () => {
     const resolves = rowsOf(result, 'source resolves');
     expect(resolves).toHaveLength(14);
     const tolerated = resolves.filter((row) => row.detail.includes('tolerated by KV-2'));
-    expect(tolerated.map((row) => row.id).sort()).toEqual(['cs-tournament', 'cs-tracker', 'mutuo', 'streamvault']);
-    expect(resolves.filter((row) => row.detail.includes('answered 200 anonymously'))).toHaveLength(10);
+    expect(tolerated.map((row) => row.id).sort()).toEqual(['cs-tracker', 'mutuo', 'streamvault']);
+    expect(resolves.filter((row) => row.detail.includes('answered 200 anonymously'))).toHaveLength(11);
 
     const live = rowsOf(result, 'live');
     expect(live).toHaveLength(6);
@@ -726,10 +732,10 @@ describe('an entry whose check throws', () => {
 // ---------------------------------------------------------------------------
 
 describe('kv2Rows', () => {
-  it('reads the four tolerated repositories out of the real record, none struck', () => {
+  it('reads the four KV-2 rows out of the real record, cs-tournament alone struck', () => {
     const rows = kv2Rows(record);
-    expect(rows.map((row) => row.repository)).toEqual(PRIVATE);
-    expect(rows.every((row) => !row.struck)).toBe(true);
+    expect(rows.map((row) => row.repository)).toEqual(KV2_TABLE);
+    expect(rows.filter((row) => row.struck).map((row) => row.repository)).toEqual(STRUCK);
     expect(rows.every((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.since))).toBe(true);
     expect(rows.every((row) => row.ruling !== '')).toBe(true);
   });

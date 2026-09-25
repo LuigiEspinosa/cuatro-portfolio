@@ -6905,7 +6905,15 @@ status: done
     published by Operator ruling`, move the suite's `PRIVATE` pin and fixture to three, and date
     KV-2's action 5 with all three dispositions. **Trigger: that package, or the next Registry
     verification run that reports the row can be struck.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day.** The records package's edits to the
+    suite were refused by its permission gate, so the orchestrator made them in its own session:
+    `cs-tournament`'s row in `ops/registry-verification.md` reads `Struck 2026-09-24`, `cs-tracker`
+    and `Mutuo` read private by decision with their scan findings, the suite pins the four-row table
+    with `cs-tournament` alone struck and answers its source 200 (11 by 2xx, 3 tolerated), shown red
+    first against the unstruck record, and KV-2's action 5 is dated with all three dispositions and
+    the entry retired.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`
   id: DW-129
