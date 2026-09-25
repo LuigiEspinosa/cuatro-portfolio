@@ -1379,7 +1379,8 @@ test.describe('the entrance touches only opacity and transform, and does not loo
     page.evaluate((list: string[]) => {
       const selectors = list;
       const properties = new Set<string>();
-      // Every keyframe that declares `visibility`, as `name key value`, since DW-106 put one there.
+      // Every keyframe that declares `visibility`, as `name key value`. DW-106 put one there on
+      // 2026-09-24 and DW-125 took it out on 2026-09-25, so on this route the list is empty.
       const visibilityFrames: string[] = [];
       const walk = (rules: readonly CSSRule[]): void => {
         for (const rule of rules) {
@@ -1463,23 +1464,22 @@ test.describe('the entrance touches only opacity and transform, and does not loo
   const ENTRANCE_SITES = [
     { selector: '.home-gem', name: 'home-enter', delays: [500] },
     { selector: '.home-role', name: 'home-enter', delays: [1300] },
-    // The five links take their own keyframe since 2026-09-24 (Operator ruling, DW-106).
-    { selector: 'a.nav-link', name: 'home-enter-link', delays: [2000, 2080] },
-    { selector: '.home-panel--contact .contact-container a', name: 'home-enter-link', delays: [2200, 2280, 2360] },
+    // The five links took their own keyframe from 2026-09-24 (DW-106) and share this one again
+    // since 2026-09-25 (Operator ruling, DW-125): `inert` from script holds them now.
+    { selector: 'a.nav-link', name: 'home-enter', delays: [2000, 2080] },
+    { selector: '.home-panel--contact .contact-container a', name: 'home-enter', delays: [2200, 2280, 2360] },
   ] as const;
 
   /** `transform` plus `opacity`, and the spellings a browser may echo back for either. */
   const ALLOWED = new Set(['opacity', 'transform', '-webkit-transform', 'translate', 'rotate', 'scale']);
 
   /**
-   * The one `visibility` any keyframe on the route may declare: the links keyframe's `from`, which
-   * Chromium reports as `0%`. Operator ruling 2026-09-24 (DW-106): each hero link is hidden until its
-   * fade begins, so it is neither a Tab stop nor a click target before it can be seen. `visibility`
-   * does not tween: it is hidden at progress 0 and through the delay, and visible from the first
-   * frame of the fade, so it moves nothing and `EXPERIENCE.md` § Motion's opacity-and-transform rule
-   * still holds for every property that animates.
+   * No keyframe on the route declares `visibility` (Operator ruling 2026-09-25, DW-125). From
+   * 2026-09-24 the links keyframe's `from` held it (DW-106), and a link first painted at its reveal
+   * became Chrome's largest contentful paint on `/`; the links are held out of reach by `inert` from
+   * script now, and paint at `opacity: 0` through their delay, which LCP never counts.
    */
-  const ALLOWED_VISIBILITY = ['home-enter-link 0% hidden'];
+  const ALLOWED_VISIBILITY: string[] = [];
 
   test('writes no property outside opacity and transform, and no opacity ever goes back down', async ({
     browser,
@@ -1500,7 +1500,7 @@ test.describe('the entrance touches only opacity and transform, and does not loo
       'home-enter'
     );
 
-    const declaredOffending = declared.properties.filter((property) => !ALLOWED.has(property) && property !== 'visibility');
+    const declaredOffending = declared.properties.filter((property) => !ALLOWED.has(property));
     expect(
       declaredOffending,
       `a @keyframes block on ${ROUTE} animates a property EXPERIENCE.md:685-699 does not allow: ` +
@@ -1508,8 +1508,8 @@ test.describe('the entrance touches only opacity and transform, and does not loo
     ).toEqual([]);
     expect(
       declared.visibilityFrames,
-      `a @keyframes block on ${ROUTE} declares visibility somewhere other than the links keyframe's from, ` +
-        `the one place DW-106's ruling puts it`
+      `a @keyframes block on ${ROUTE} declares visibility, which since DW-125 no keyframe there may, ` +
+        `because a link first painted at its reveal is what Chrome reports as the largest contentful paint`
     ).toEqual(ALLOWED_VISIBILITY);
 
     // **Every animated rule, with its delay and its fill.** This is the read the Step-04 review
@@ -1608,7 +1608,7 @@ test.describe('the entrance touches only opacity and transform, and does not loo
         looping.className = 'planted-yoyo';
         container.append(looping);
 
-        // A second keyframe declaring `visibility`, which the one place DW-106 allows does not cover.
+        // A keyframe declaring `visibility`, which no keyframe on the route may since DW-125.
         const hiding = document.createElement('style');
         hiding.textContent = '@keyframes planted-visibility { from { visibility: hidden } }';
         document.head.append(hiding);

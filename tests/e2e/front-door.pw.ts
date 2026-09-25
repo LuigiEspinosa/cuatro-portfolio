@@ -1794,7 +1794,7 @@ test.describe('the narrative canvas', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The five hero links during the entrance (DW-106).
+// The five hero links during the entrance (DW-106, DW-125).
 // ---------------------------------------------------------------------------
 
 /**
@@ -1844,7 +1844,7 @@ const tabUntilDirectory = async (page: Page, presses = 12): Promise<string[]> =>
 const heroStops = (stops: readonly string[]): string[] =>
   stops.filter((stop) => stop.startsWith('hero link')).map((stop) => /"(.*)"$/.exec(stop)?.[1] ?? stop);
 
-/** Each hero link's visibility and opacity, and whether a click at its centre would land on it. */
+/** Each hero link's visibility, opacity and `inert`, and whether a click at its centre would land on it. */
 const heroLinkState = (page: Page) =>
   page.evaluate(
     (selector) =>
@@ -1856,19 +1856,40 @@ const heroLinkState = (page: Page) =>
           name: (link.textContent ?? '').trim(),
           visibility: style.visibility,
           opacity: style.opacity,
+          inert: link.inert,
           takesTheClick: hit !== null && link.contains(hit),
         };
       }),
     HERO_LINKS
   );
 
-test.describe('the hero links wait for their turn in the entrance (DW-106)', () => {
-  test('Tab at the start of the entrance skips all five, and a click there lands on what is beneath them', async ({
+/**
+ * An init script that records every hero link that is ever made `inert`, from before the first
+ * script runs, so a door where the attribute must never appear is read over the whole load rather
+ * than at one moment after it.
+ */
+const RECORD_INERT = `
+  window.__everInert = [];
+  new MutationObserver((records) => {
+    for (const record of records) {
+      const node = record.target;
+      if (node.hasAttribute('inert') && node.closest('.home-panel')) window.__everInert.push((node.textContent || '').trim());
+    }
+  }).observe(document, { subtree: true, attributes: true, attributeFilter: ['inert'] });
+`;
+
+/** The hero links the recorder above saw made `inert` at any point of the load. */
+const everInert = (page: Page) => page.evaluate(() => (window as unknown as { __everInert: string[] }).__everInert);
+
+test.describe('the hero links wait for their turn in the entrance (DW-106, DW-125)', () => {
+  test('held at the start of the entrance each link is inert at opacity 0, Tab skips all five and a click lands beneath them, and after it none is inert', async ({
     browser,
   }) => {
-    // Operator ruling 2026-09-24: each link takes `visibility: hidden` at the start of its entrance
-    // keyframe, so until it starts to appear it is neither a Tab stop nor a click target. 1280, so
-    // all five sit inside the viewport and each centre can be hit-tested.
+    // Operator ruling 2026-09-24 (DW-106): no link is a Tab stop or a click target before its turn.
+    // Operator ruling 2026-09-25 (DW-125): the mechanism is `inert`, set from script while a link's
+    // entrance waits, and never `visibility: hidden`, whose first paint at the reveal became `/`'s
+    // largest contentful paint. 1280, so all five sit inside the viewport and each centre can be
+    // hit-tested.
     await onPath(
       browser,
       { ...DEFAULT_PATH, inits: [HOLD_ENTRANCE] },
@@ -1882,6 +1903,14 @@ test.describe('the hero links wait for their turn in the entrance (DW-106)', () 
           held.filter((link) => link.opacity !== '0').map((link) => link.name),
           'a link is past the start of its fade, so the hold did not catch the entrance and this read is not at its start'
         ).toEqual([]);
+        expect(
+          held.filter((link) => !link.inert).map((link) => link.name),
+          'a link is open to the keyboard and the pointer while its fade has not begun'
+        ).toEqual([]);
+        expect(
+          held.filter((link) => link.visibility !== 'visible').map((link) => link.name),
+          'a link is hidden with visibility, so its first paint is its reveal and LCP measures the entrance (DW-125)'
+        ).toEqual([]);
 
         const stops = await tabUntilDirectory(page);
         console.log(`front-door: Tab at the start of the entrance: ${stops.join(' | ')}`);
@@ -1891,16 +1920,12 @@ test.describe('the hero links wait for their turn in the entrance (DW-106)', () 
           stops.slice(0, -1).map((stop) => /skip-(link|control)/.exec(stop)?.[0] ?? stop),
           'Tab stopped somewhere other than the two skips before the Directory'
         ).toEqual(['skip-link', 'skip-control']);
-        expect(
-          held.filter((link) => link.visibility !== 'hidden').map((link) => link.name),
-          'a link is open to the keyboard and the pointer while its fade has not begun'
-        ).toEqual([]);
-        expect(held.filter((link) => link.takesTheClick).map((link) => link.name), 'a click at a hidden link lands on it').toEqual([]);
+        expect(held.filter((link) => link.takesTheClick).map((link) => link.name), 'a click at a waiting link lands on it').toEqual([]);
 
         // The control, on the same page: the entrance played to its end, and the same reads now find
-        // all five, in order, each taking the click at its centre. Back at the top first, because the
-        // Tab above ended in the Directory and scrolled the hero out of the viewport, where no point
-        // hit-tests at all.
+        // all five released, in order, each taking the click at its centre. Back at the top first,
+        // because the Tab above ended in the Directory and scrolled the hero out of the viewport,
+        // where no point hit-tests at all.
         await page.evaluate(() => {
           (window as unknown as { __releaseEntrance: () => void }).__releaseEntrance();
           for (const animation of document.getAnimations()) {
@@ -1912,6 +1937,11 @@ test.describe('the hero links wait for their turn in the entrance (DW-106)', () 
           }
           window.scrollTo({ top: 0, behavior: 'instant' });
         });
+        await expect
+          .poll(async () => (await heroLinkState(page)).filter((link) => link.inert).map((link) => link.name), {
+            message: 'a link is still inert after its entrance finished, stranded out of reach',
+          })
+          .toEqual([]);
         const played = await heroLinkState(page);
         expect(
           played.filter((link) => link.visibility !== 'visible' || link.opacity !== '1').map((link) => link.name),
@@ -1931,24 +1961,50 @@ test.describe('the hero links wait for their turn in the entrance (DW-106)', () 
     );
   });
 
-  test('under reduced motion the five are Tab stops from the first frame', async ({ browser }) => {
-    // Reduced motion sets `animation: none` on every animated rule in the hero, so no keyframe holds
-    // a link hidden, and the ruling leaves that visitor's hero as it was.
+  test('played in real time, the links are made inert and none is still inert once the entrance is over', async ({ browser }) => {
+    // Nothing held: the page runs its own clock. The recorder proves the links were made inert at
+    // all on this door, so the release read before it is not vacuous.
     await onPath(
       browser,
-      { ...doorNamed('reduced-motion'), inits: [HOLD_ENTRANCE] },
+      { ...DEFAULT_PATH, inits: [RECORD_INERT] },
       async (page) => {
         await goTo(page);
         await settled(page);
-        expect(
-          (await heroLinkState(page)).filter((link) => link.visibility !== 'visible').map((link) => link.name),
-          'a link is hidden on the reduced-motion door'
-        ).toEqual([]);
-        expect(heroStops(await tabUntilDirectory(page)), 'Tab on the reduced-motion door does not reach the five in order').toEqual(
-          HERO_LINK_NAMES
-        );
+        await expect
+          .poll(async () => (await heroLinkState(page)).filter((link) => link.inert || link.opacity !== '1').map((link) => link.name), {
+            timeout: 15_000,
+            message: 'a link is still inert, or never arrived, after the entrance should have finished',
+          })
+          .toEqual([]);
+        const recorded = await everInert(page);
+        console.log(`front-door: links made inert during the real-time entrance: ${recorded.join(', ')}`);
+        expect(recorded, 'no link was ever inert on the default door, so the entrance held nothing out of reach').not.toEqual([]);
       },
       { width: 1280, height: 800 }
     );
   });
+
+  for (const id of ['reduced-motion', 'save-data'] as const) {
+    test(`on the ${id} door no link is ever inert, and the five are Tab stops from the first frame`, async ({ browser }) => {
+      // Reduced motion sets `animation: none` on every animated rule in the hero, and the Save-Data
+      // door is flat from the server, so no entrance waits and the ruling holds nothing out of reach.
+      await onPath(
+        browser,
+        { ...doorNamed(id), inits: [RECORD_INERT, HOLD_ENTRANCE] },
+        async (page) => {
+          await goTo(page);
+          await settled(page);
+          expect(await everInert(page), `a link was made inert on the ${id} door`).toEqual([]);
+          expect(
+            (await heroLinkState(page)).filter((link) => link.visibility !== 'visible').map((link) => link.name),
+            `a link is hidden on the ${id} door`
+          ).toEqual([]);
+          expect(heroStops(await tabUntilDirectory(page)), `Tab on the ${id} door does not reach the five in order`).toEqual(
+            HERO_LINK_NAMES
+          );
+        },
+        { width: 1280, height: 800 }
+      );
+    });
+  }
 });

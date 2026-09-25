@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import GemComponent from '@/components/molecules/GemComponent/GemComponent';
 import ContactContainer from '@/components/molecules/ContactContainer/ContactContainer';
@@ -20,6 +21,23 @@ interface HomeLayoutProps {
    */
   servedPath?: ServedNarrativePath;
 }
+
+/** The five hero links: the two destinations and the three contacts. */
+const HERO_LINKS = '.home-panel--nav a, .home-panel--contact a';
+
+/** The events that end a link's wait: its fade begins, or the animation ends or is cancelled. */
+const WAIT_ENDS = ['animationstart', 'animationend', 'animationcancel'] as const;
+
+/**
+ * Whether an element's entrance is still inside its delay. A pending animation has no current time
+ * yet and has not begun either. Without `getAnimations` (a runtime with no Web Animations) nothing
+ * is held, so a link is never made unreachable by a guess.
+ */
+const waiting = (element: HTMLElement): boolean =>
+  (element.getAnimations?.() ?? []).some((animation) => {
+    const delay = Number(animation.effect?.getTiming().delay ?? 0);
+    return delay > 0 && (animation.currentTime === null || Number(animation.currentTime) < delay);
+  });
 
 const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
   /**
@@ -47,9 +65,44 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
    */
   const path = useNarrativePath(servedPath);
   const flat = path === 'flat';
+  const container = useRef<HTMLDivElement>(null);
+
+  /**
+   * **Each hero link is `inert` while its entrance waits, and only then** (Operator ruling
+   * 2026-09-25, DW-125). DW-106's ruled effect stands: no link is a Tab stop, a click target or in
+   * the accessibility tree before its turn. The mechanism moved out of the keyframe, whose
+   * `visibility: hidden` made a link's first paint its reveal and so moved Chrome's largest
+   * contentful paint on `/` from the skip control to the entrance; at `opacity: 0` a link is never
+   * a candidate.
+   *
+   * Set from script and never in the markup, so a visitor with no script, or before hydration, is
+   * never handed a dead link. Set only on a link whose animation is still inside its delay, which is
+   * none under reduced motion (`animation: none`) and none on a link whose turn has already come.
+   * Released when its fade starts, the moment `visibility` used to flip, or when the animation ends
+   * or is cancelled, and every link is released when this effect is cleaned up, which covers an
+   * unmount and the door turning flat. The flat door holds nothing at all.
+   */
+  useEffect(() => {
+    if (flat || !container.current) return;
+    const releases: (() => void)[] = [];
+    for (const link of container.current.querySelectorAll<HTMLElement>(HERO_LINKS)) {
+      if (!waiting(link)) continue;
+      link.setAttribute('inert', '');
+      const release = () => {
+        link.removeAttribute('inert');
+        for (const type of WAIT_ENDS) link.removeEventListener(type, onWaitEnd);
+      };
+      const onWaitEnd = (event: Event) => {
+        if (event.target === link) release();
+      };
+      for (const type of WAIT_ENDS) link.addEventListener(type, onWaitEnd);
+      releases.push(release);
+    }
+    return () => releases.forEach((release) => release());
+  }, [flat]);
 
   return (
-    <div className={flat ? 'home-container home-container--flat' : 'home-container'}>
+    <div ref={container} className={flat ? 'home-container home-container--flat' : 'home-container'}>
       {/* FR-2's one interaction, and only on the path that costs one. The flat path reaches the
           Directory by scrolling and no control at all, which is the diagram's zero interactions
           (`EXPERIENCE.md:154-169`). First inside the container, so a keyboard reader meets it

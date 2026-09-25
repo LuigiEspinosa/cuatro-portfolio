@@ -275,6 +275,83 @@ describe('HomeLayout on the two front doors', () => {
   });
 });
 
+/**
+ * The five hero links are held `inert` while their entrance waits (Operator ruling 2026-09-25,
+ * DW-125). jsdom runs no CSS animation, so each element's `getAnimations()` is stubbed here with the
+ * shape a browser reports: a delay, and a current time before or past it. The browser half, the hold
+ * and Tab and the click, is `tests/e2e/front-door.pw.ts`.
+ */
+describe('the hero links are inert only while their entrance waits (DW-125)', () => {
+  const HERO_LINKS = '.home-panel--nav a, .home-panel--contact a';
+  let clock: number | null = 0;
+  let running = true;
+
+  beforeEach(() => {
+    clock = 0;
+    running = true;
+    // jsdom declares no `getAnimations` at all, so it is defined for this block and removed after it.
+    Object.defineProperty(Element.prototype, 'getAnimations', {
+      configurable: true,
+      value: () => (running ? [{ currentTime: clock, effect: { getTiming: () => ({ delay: 2000 }) } }] : []),
+    });
+  });
+
+  afterEach(() => {
+    delete (Element.prototype as { getAnimations?: unknown }).getAnimations;
+  });
+
+  const inert = (root: ParentNode) => [...root.querySelectorAll(HERO_LINKS)].map((link) => link.hasAttribute('inert'));
+
+  it('holds every link inert through its delay, and frees each one when its entrance starts, ends or is cancelled', () => {
+    const { container } = render(<HomeLayout />);
+    const links = [...container.querySelectorAll<HTMLElement>(HERO_LINKS)];
+    expect(links.length, 'the hero rendered no links, so the reads below are over nothing').toBeGreaterThan(2);
+    expect(inert(container), 'a link is reachable while its entrance has not begun').toEqual(links.map(() => true));
+
+    links[0].dispatchEvent(new Event('animationstart'));
+    links[1].dispatchEvent(new Event('animationend'));
+    links[2].dispatchEvent(new Event('animationcancel'));
+    expect(inert(container).slice(0, 3), 'a link stayed inert after its entrance started, ended or was cancelled').toEqual([false, false, false]);
+    expect(inert(container).slice(3), 'an event on one link freed another').toEqual(links.slice(3).map(() => true));
+  });
+
+  it('never strands a link: unmounting, or the door turning flat, frees every one', () => {
+    const { container, rerender, unmount } = render(<HomeLayout />);
+    expect(inert(container).every(Boolean)).toBe(true);
+    decided.path = 'flat';
+    rerender(<HomeLayout />);
+    expect(inert(container), 'a link stayed inert after the door turned flat').not.toContain(true);
+
+    decided.path = 'narrative';
+    const second = render(<HomeLayout />);
+    const held = [...second.container.querySelectorAll(HERO_LINKS)];
+    second.unmount();
+    expect(held.map((link) => link.hasAttribute('inert')), 'a link stayed inert after the hero unmounted').not.toContain(true);
+    unmount();
+  });
+
+  it('holds nothing where no entrance waits: reduced motion, a delay already passed, or a flat door', () => {
+    running = false; // reduced motion: `animation: none`, so the browser reports no animation
+    expect(inert(render(<HomeLayout />).container), 'a link is inert with no animation running').not.toContain(true);
+
+    running = true;
+    clock = 2500; // hydration after the delay: the link is already fading in
+    expect(inert(render(<HomeLayout />).container), 'a link was made inert after its turn had come').not.toContain(true);
+
+    clock = null; // a pending animation has no time yet, and is still before its delay
+    expect(inert(render(<HomeLayout />).container).every(Boolean), 'a pending entrance left a link reachable').toBe(true);
+
+    clock = 0;
+    decided.path = 'flat';
+    expect(inert(render(<HomeLayout />).container), 'a link is inert on the flat door').not.toContain(true);
+  });
+
+  it('never serves a link inert: the attribute comes from script alone', () => {
+    decided.path = 'undecided';
+    expect(renderToStaticMarkup(<HomeLayout />), 'the served markup carries inert').not.toContain('inert');
+  });
+});
+
 describe('the scrim layer, placed inside the canvas box (Story 2-29)', () => {
   it('renders the scrim as the last child of .home-gem, after the canvas', () => {
     // The placement **is** the guarantee. `ScanlineOverlay` covers the positioned box it is placed
@@ -561,25 +638,19 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
     expect(css, 'no hover rule is gated at all, so the read above passed vacuously').toContain('@media(hover: hover)');
   });
 
-  it('animates opacity, holds the links out of reach until their turn, once, with no loop and no state in it', () => {
+  it('animates opacity alone, once, with no loop and no state in it, and hides no link with visibility', () => {
     // `EXPERIENCE.md:685-699`: one orchestrated entrance per page load, no loop inside it, and
-    // opacity never expressing state. Each keyframe declares only its `from`, so the base state is
+    // opacity never expressing state. The keyframe declares only its `from`, so the base state is
     // the final state and a document with no script is already at it (DW-42).
     //
-    // **Two keyframes since 2026-09-24** (Operator ruling, DW-106). The five links take their own,
-    // whose `from` also holds `visibility: hidden`: a discrete value, hidden through the delay and
-    // visible from the fade's first frame, so a link is out of the tab order and hit-testing until it
-    // starts to appear. The role line and the gem keep the opacity-only keyframe, because the ruling
-    // names the links and `EXPERIENCE.md` § Motion allows transform and opacity only.
-    expect([...css.matchAll(/@keyframes/g)], 'the stylesheet declares some other number of keyframes').toHaveLength(2);
+    // **One keyframe again since 2026-09-25** (Operator ruling, DW-125). From 2026-09-24 the five
+    // links took a second keyframe whose `from` also held `visibility: hidden` (DW-106), which made a
+    // link's first paint its reveal and moved `/`'s largest contentful paint onto the entrance. The
+    // links are held out of reach by `inert` from script now (`HomeLayout.tsx`), so no rule in this
+    // file declares `visibility` at all.
+    expect([...css.matchAll(/@keyframes/g)], 'the stylesheet declares some other number of keyframes').toHaveLength(1);
     expect(css, 'the entrance keyframe was renamed or lost').toContain('@keyframes home-enter{from{opacity:0}}');
-    expect(css, 'the links keyframe was renamed, lost, or no longer hides them').toContain(
-      '@keyframes home-enter-link{from{opacity:0;visibility:hidden}}'
-    );
-    expect(
-      [...css.matchAll(/visibility:([^;}]+)/g)].map((match) => match[1].trim()),
-      'visibility is declared somewhere other than the from of the links keyframe'
-    ).toEqual(['hidden']);
+    expect(css, 'a rule declares visibility, so a link can again first paint at its reveal').not.toMatch(/visibility:/);
     expect(css, 'an animation repeats').not.toMatch(/animation[^;}]*infinite/);
 
     // **Every `opacity` the file declares, held to the one the keyframe's `from` carries**, the
@@ -591,21 +662,20 @@ describe('HomeLayout.scss is token-native (Story 2-29)', () => {
       [...css.matchAll(/opacity:([^;}]+)/g)].map((match) => match[1].trim()),
       'the stylesheet declares an opacity other than the entrance keyframe\'s from, so either ' +
         'opacity expresses state again or a second initial state arrived'
-    ).toEqual(['0', '0']);
+    ).toEqual(['0']);
 
     // Four animated rules since 2026-09-24, when the readout panel's left with the panel (Operator
     // ruling 2026-09-24, DW-110); five until then, which is what the file's header,
     // `sprint-status.yaml` and DW-100 said. `.home-panel--name` carried a sixth until 2026-09-21:
     // the retired timeline never named it, the 2023 stylesheet gave it no initial state, and it
     // painted immediately, so the entrance was hiding the hero's name for 500ms and running
-    // `GlitchText`'s own delay inside a parent that was itself ramping. Two on each keyframe: the
-    // gem and the role line on the first, the two link groups on the second (DW-106).
+    // `GlitchText`'s own delay inside a parent that was itself ramping. All four on the one keyframe
+    // since 2026-09-25 (DW-125): the gem, the role line and the two link groups.
     const animated = (name: string) => [...css.matchAll(new RegExp(`animation:${name} `, 'g'))].length;
-    expect(animated('home-enter'), 'the gem and the role line are not the two rules on the opacity-only keyframe').toBe(2);
-    expect(animated('home-enter-link'), 'the two link groups are not the two rules on the links keyframe').toBe(2);
-    expect(css, 'a link group is back on the opacity-only keyframe').toMatch(/\.nav-link\{[^}]*animation:home-enter-link /);
-    expect(css, 'the contact links are back on the opacity-only keyframe').toMatch(
-      /\.home-panel--contact \.contact-container a\{[^}]*animation:home-enter-link /
+    expect(animated('home-enter'), 'the gem, the role line and the two link groups are not the four rules on the keyframe').toBe(4);
+    expect(css, 'the links left the entrance keyframe').toMatch(/\.nav-link\{[^}]*animation:home-enter /);
+    expect(css, 'the contact links left the entrance keyframe').toMatch(
+      /\.home-panel--contact \.contact-container a\{[^}]*animation:home-enter /
     );
     expect(css, 'the name panel took the entrance back').not.toMatch(/\.home-panel--name\{[^}]*animation:/);
   });

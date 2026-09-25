@@ -55,19 +55,14 @@ body[id=''] {
   }
 }
 
-// **The five links take their own keyframe, whose `from` also hides them** (Operator ruling
-// 2026-09-24, DW-106). Faded out but still visible, a link was a Tab stop and a click target for up
-// to 2.36s while nobody could see it. `visibility` does not tween: it is hidden at the keyframe's
-// start and through the delay the `both` fill holds, and visible from the fade's first frame, so a
-// link joins the tab order and hit-testing exactly when it starts to appear. The role line and the
-// gem keep the opacity-only keyframe above, since the ruling names the links and nothing else here
-// is interactive. Reduced motion is untouched: its block below sets `animation: none`.
-@keyframes home-enter-link {
-  from {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
+// **The five links share it, and are held out of reach by script, not by this file** (Operator
+// ruling 2026-09-25, DW-125). From 2026-09-24 they took a second keyframe whose `from` also held
+// `visibility: hidden` (DW-106), so a link was no Tab stop or click target before its turn; but a
+// link first painted at its reveal became Chrome's largest contentful paint on `/`. `HomeLayout.tsx`
+// sets `inert` on each link while its animation is still inside its delay and lifts it when the fade
+// starts, so the ruled effect stands, and through its delay a link paints at `opacity: 0`, which LCP
+// never counts. Reduced motion is untouched: its block below sets `animation: none`, so nothing waits
+// and nothing is held.
 
 // ── Panels ───────────────────────────────────────────────────────────────────
 //
@@ -181,7 +176,7 @@ body[id=''] {
   border-left: var(--stroke-hair) solid var(--token-border);
   padding-left: var(--s-sm);
   transition: color var(--dur-micro) var(--ease-toggle);
-  animation: home-enter-link var(--dur-major) var(--ease-entrance) 2000ms both;
+  animation: home-enter var(--dur-major) var(--ease-entrance) 2000ms both;
 
   // `:nth-child`, matching the contact group below, rather than the adjacent-sibling form this
   // read until 2026-09-21: `& + &` gives every link after the first the same delay, so a third one
@@ -219,7 +214,7 @@ body[id=''] {
     border-right: var(--stroke-hair) solid var(--token-border);
     padding-right: var(--s-sm);
     transition: color var(--dur-micro) var(--ease-toggle);
-    animation: home-enter-link var(--dur-major) var(--ease-entrance) 2200ms both;
+    animation: home-enter var(--dur-major) var(--ease-entrance) 2200ms both;
   }
 
   // The stagger counts list items since Story 2-32 made the group a list: each link is the only
