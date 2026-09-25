@@ -3,7 +3,15 @@
 Findings surfaced incidentally by a build run, real but not caused by the story that
 found them. Append only. Each entry names the spec that surfaced it.
 
+**Amended 2026-09-25 by Operator ruling 2026-09-24 (Epic 1 retrospective action 8):** every entry
+carries an id and a status. The 99 entries that had no id took DW-141 to DW-239 in file order, in
+place, as an `id:` line under `source_spec:`; every entry with no status took one; and each open or
+statusless entry was checked against the tree, those found resolved closing with a dated note. No
+id moved and no entry was deleted. Append only still holds for everything else: a new entry takes
+the next free id and a status line.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-141
   summary: >-
     `cuatro.dev` is not serving the Anchor. It presents a self-signed
     `CN=TRAEFIK DEFAULT CERT` and returns 404 at `/api/health`, so every browser
@@ -30,7 +38,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     the migration lands, which is the condition `ops/monitoring.md` covers under what
     closes the gate: an outage alert is not the induced test alert.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 1-21's move ended the outage on 2026-08-17, as DW-154 records: the apex serves
+    the Hub over a valid certificate and `/api/health` answers 200 with `"status":"ok"`.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-142
   summary: >-
     The estate does not serve from one address, which the AGENTS.md "one Hetzner
     box" framing and Story 1-7's routing enumeration both assume.
@@ -49,7 +63,15 @@ found them. Append only. Each entry names the spec that surfaced it.
     which is no longer true of the estate and is a `/bmad-project-context` refresh
     item rather than an edit to make by hand.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Since 2026-08-17 every `cuatro.dev` A and AAAA record points at `177.7.52.248`
+    (`ops/routing-inventory.md`), AD-22 has re-checked the serving topology since its 2026-08-16
+    amendment, and the `AGENTS.md` block has named one Hostinger KVM 2 box since the refresh of
+    2026-08-28 (`967abfd`).
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-143
   summary: >-
     AD-17a has no mechanical enforcement. The gate exists only as prose in a file
     that no script, workflow or source file reads.
@@ -62,8 +84,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     needs a check that reads the line, or the epic should state that it is an
     honour-system gate. This is an architectural question spanning several stories,
     not a defect in this record.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-144
   summary: >-
     `app/api/health/route.ts` is now a monitored contract, and neither the route nor
     its tests know it.
@@ -78,8 +102,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     monitor would report the Anchor down while it is healthy. A comment on the route
     and a test asserting the serialized form would close it. Left out of this story
     because its task list is confined to `ops/monitoring.md`.
+  status: open
 
 - source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  id: DW-145
   summary: >-
     Two live applications serve from `cuatro.dev` subdomains and appear nowhere in
     `ops/estate.md`, so the Estate record's fifteen applications is wrong and AD-6's
@@ -98,7 +124,15 @@ found them. Append only. Each entry names the spec that surfaced it.
     and that exclusion needs writing down. Story 2-4 confirms assumed statuses and is
     the natural place to land it, but the Estate record is wrong today.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The exclusion this entry asked to have written down is written: the Operator ruled
+    `covidmap` and `future-vizion` out of the Estate and the Registry on 2026-09-02, `ops/estate.md`
+    records the ruling and its reason (Story 2-4, `d21f0c7`), and retiring both subdomains is KV-3
+    in `ops/known-violations.md`.
+  status: done
+
 - source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  id: DW-146
   summary: >-
     `n8n.cuatro.dev` resolves to the box being decommissioned, is not in any planning
     artifact, and is the leading suspect for the `cuatro.dev` outage.
@@ -116,7 +150,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     automation running in an estate whose AD-17a gate reads `not-satisfied`, which is
     either a governance gap or evidence that n8n is personal rather than Ecosystem.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), closed by
+    disappearance.** The record had left the zone by 2026-08-17 and its box was decommissioned, as
+    DW-154 records, so the hypothesis can no longer be tested; `ops/routing-inventory.md` found the
+    name absent again on 2026-08-24.
+  status: done
+
 - source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  id: DW-147
   summary: >-
     The `cuatro.dev` zone carries several leftovers from previous providers that
     nothing in the plan accounts for.
@@ -131,8 +172,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     receiving. Confirm it receives before relying on it. Certificate Transparency
     also shows retired `pokemon.cuatro.dev` and `api.pokemon.cuatro.dev` names with
     no current DNS record, probably `poketracker-go`.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-148
   summary: >-
     Two containers answer to the DNS name `app` on the shared ingress network, and
     `cs-tracker.cuatro.dev` is reverse-proxied to `app:4000`. Pre-existing, not
@@ -150,8 +193,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     or an explicit unique alias in the shared Caddyfile, in the `cuatro-tracker`
     repository rather than this one. Story 1.21 avoided adding a third claimant by
     naming every Anchor service `anchor-*`, which is pinned in `docker-compose.yml`.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-149
   summary: >-
     Every hostname in the estate depends on a Caddyfile that lives inside another
     project's git checkout, where a routine `git reset --hard` would discard it.
@@ -166,8 +211,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     with Traefik and per-application routers, which dissolves the problem; until
     then the cheap mitigation is to move the shared Caddyfile out of any project
     checkout, or to add its blocks to a directory Caddy imports.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-150
   summary: >-
     No host in the estate sends Strict-Transport-Security, and Story 1.21
     deliberately did not add it.
@@ -181,8 +228,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     HTTP is strippable. Worth a small dedicated story covering the whole estate at
     once, including whether `includeSubDomains` is safe from the apex, which it is
     not while any Satellite could need to serve over HTTP for a challenge.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-151
   summary: >-
     `cuatro.dev`, `www.cuatro.dev` and `analytics.cuatro.dev` have no AAAA record
     while the three Satellites on the same box do.
@@ -197,8 +246,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     IPv6, by verifying a Satellite over IPv6 first and then adding the three records.
     **2026-09-13:** `wheel.cuatro.dev` joined the group, `A` only, placed by Story 2-25
     mirroring the Anchor's three by its own Ask First rule, so the close is four records.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-152
   summary: >-
     The `AGENTS.md` context block is stale in two ways that a `/bmad-project-context`
     refresh would fix.
@@ -214,8 +265,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     refresh item and not an edit to make by hand. The sprint change proposal already
     assigns this; it is repeated here because Story 1.21 changed the deployment model
     that the block describes.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-153
   summary: >-
     RESOLVED 2026-08-16 by AD-26. The spec's deferred item, that Story 4.2 must
     confirm Traefik's ACME renewal trigger is relative rather than a fixed day
@@ -231,7 +284,12 @@ found them. Append only. Each entry names the spec that surfaced it.
     here rather than by editing the closed spec, since a done spec is a record of
     what was known then.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8).** A record of
+    AD-26's narrowing, complete as written; the check it leaves is Story 4.2's DNS-01 proof.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-154
   summary: >-
     RESOLVED 2026-08-17. Three earlier entries are closed by the Anchor's move: the
     `cuatro.dev` outage, the estate spanning two serving addresses, and
@@ -262,7 +320,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     `ops/estate.md` still stands. Both were re-confirmed present in the zone on
     2026-08-17. Story 2-4 owns it.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8).** A record of
+    three closures, complete as written. The thread it left open, `covidmap` and `future-vizion`,
+    was ruled on 2026-09-02 and closes with DW-145.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-155
   summary: >-
     No test or CI job observes the serialized body of `/api/health`, which is the
     contract an external keyword monitor asserts, and no job reads a monitor's
@@ -280,8 +344,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     and a Vitest render of `RootLayout` with both env values stubbed asserting the
     script `src` and `data-website-id`. This is the same class of gap that produced
     incident 3 in Story 1-21 and hid the inverted monitor.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-156
   summary: >-
     `docker/Caddyfile` is a mirror of the file that actually serves, and nothing
     compares the two, so the repository's claim to describe the running system
@@ -298,8 +364,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     records that a `git reset --hard` in the `cs-tracker` checkout would erase every
     appended block, and Story 1-21 made `deploy.yml` do exactly that in the Anchor's
     own directory.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-157
   summary: >-
     The `www.cuatro.dev` monitor asserts a 301 status but cannot see the `Location`
     header, so a redirect to the wrong target, or a loop, reads UP.
@@ -312,8 +380,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     and no schedule. Closing it needs either a probe that can assert a response
     header, or the re-gather step proposed for the Caddyfile drift item above,
     capturing the observed `Location` alongside the status code.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-158
   summary: >-
     A Cloudflare API token with zone DNS edit rights on `cuatro.dev` was created for
     the Story 1-21 cutover and must be revoked. It is tracked only in a spec
@@ -330,7 +400,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     place. Until then it is an unrevoked standing credential with no consumer, the
     exact condition that story calls out as an unnecessary key.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), superseded.**
+    The Operator retained the token on 2026-08-17, as the next entry (DW-160) records, and the
+    live-credentials table in `ops/routing-inventory.md` carries it; the revoke instruction is
+    withdrawn.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-159
   summary: >-
     `analytics.cuatro.dev` is unmonitored, and Story 1-21 made that a worse trade
     than when the exclusion was written.
@@ -342,8 +419,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     silent metric loss with no baseline against which the gap would look anomalous,
     and the Hub's tracking script fails quietly when its host is down. One more
     monitor costs nothing on a free tier holding 6 of 50.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-160
   summary: >-
     SUPERSEDED 2026-08-17 by Operator decision. The entry above asking for the
     Cloudflare zone-edit token to be revoked is withdrawn: the token is retained
@@ -367,8 +446,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     living forever, and note that a token in a developer machine's `.env` has a
     different exposure profile from one in a secret store, which is a reasonable
     trade at this estate's size but should be a knowing one.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-161
   summary: >-
     The estate now has a hard dependency on Cloudflare for all ingress, and the
     documented recovery path runs through a firewall rule rather than DNS.
@@ -385,7 +466,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     `ops/routing-inventory.md` or a dedicated story, since the person needing it
     will be under time pressure.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The recovery is written down: `ops/bot-mitigation.md` § Recovering from this
+    firewall gives the two commands and why `systemctl stop` alone leaves every rule in place, and
+    `ops/routing-inventory.md` repeats the flush.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-162
   summary: >-
     Cloudflare's IP ranges are hardcoded into the origin firewall script and nothing
     refreshes them, so a new Cloudflare range silently breaks the estate.
@@ -398,8 +486,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     hardest shapes to diagnose. The cheap closure is a scheduled job that re-fetches
     the list, compares the etag, and either rewrites the script or alerts. It must
     run off the box per AD-18, or it shares the failure it is watching for.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-163
   summary: >-
     The estate now depends on a TLS certificate it does not control and cannot
     renew, and the one rule that would warn about it is still not configured.
@@ -414,8 +504,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     cycle, which is genuinely gone. It did not cover the edge certificate, which is
     new. `ops/monitoring.md` records this under the observed-state section. Worth
     deciding deliberately rather than discovering at expiry.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-164
   summary: >-
     Bot rule 2 matches self-declared user agents, so a crawler that lies is not
     caught, and the native controls that would not rely on self-declaration were
@@ -431,8 +523,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     protection is weaker than it reads, and Cloudflare retires the legacy single
     toggle on 2026-09-15 in favour of independent Search, Agent and Training
     categories, so this should be revisited before that date rather than after.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-165
   summary: >-
     Authenticated Origin Pulls was never considered as an alternative to the
     hardcoded Cloudflare IP allowlist, and it removes the maintenance problem the
@@ -450,8 +544,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     is simply absent from the record. Worth evaluating alongside the range-refresh
     job rather than instead of it, since Caddy would need `client_auth` configured
     and that touches the shared ingress.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-166
   summary: >-
     The Origin CA private key has no backup, no recorded fingerprint, and no
     reprovisioning procedure, and losing it now takes every hostname down with no
@@ -469,8 +565,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     secrets, and write the reissue procedure next to the recovery commands. Note the
     certificate is valid for fifteen years, so the person who needs this will not be
     the person who set it up.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-167
   summary: >-
     Proxy defaults were checked ad hoc rather than swept, and one payload-altering
     feature was found only by accident.
@@ -487,8 +585,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     of this kind carries nothing else. A recorded sweep of what the proxy turns on by
     default, with the current value of each, belongs in `ops/` before Epic 2 ships
     anything that depends on the rendered payload.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-168
   summary: >-
     Three dated commitments now exist with no mechanism that will surface them, in a
     file the repository itself records as read by nothing.
@@ -501,8 +601,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     The nearest one is four weeks out. AD-22 already establishes a bounded re-check
     for settled inputs and would be the natural home for the first two, which is a
     smaller change than building a reminder mechanism.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-169
   summary: >-
     `sprint-status.yaml` carries a `story_location` pointing at a directory that does
     not exist in this checkout.
@@ -514,7 +616,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     only for its own status transitions. Left unfixed here because the spec's frozen
     boundaries forbid this story writing that file beyond the workflow's own sync.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** `d4404ee` corrected it on 2026-08-25, and `sprint-status.yaml:53` reads
+    `c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts`.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-170
   summary: >-
     The Capacity Gate binds only the Anchor's own deploy workflow, so it is not
     reachable at the moment a genuinely new application is placed.
@@ -539,8 +647,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     `ops/capacity-threshold.md` § What this record does not claim. The three Satellites still
     deploy from their own repositories and never call the checker, so every id Epic 4 places
     is still outside its reach, and that is the half this entry now waits on.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-171
   summary: >-
     `status: open` means yes to every id, and nothing ever compares `reading` against
     `threshold`.
@@ -552,7 +662,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     `threshold: banana` would open it. Story 1-6 must define what `open` actually checks
     and what shape a threshold takes, rather than inheriting this placeholder.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 1-6 defined both: `ops/capacity-gate.mjs` refuses an open gate whose
+    `threshold` names no positive load15 figure and one whose recorded `baseline` does not sit below
+    it, and its header says why no live reading is compared (`:33-47`).
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-172
   summary: >-
     A red CI run does not stop a deploy, because `ci.yml` and `deploy.yml` trigger in
     parallel on a push to `main`.
@@ -574,6 +691,7 @@ found them. Append only. Each entry names the spec that surfaced it.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-173
   summary: >-
     `placements` is self-serve: the same commit can add an id and deploy it, with no
     review requirement.
@@ -591,6 +709,7 @@ found them. Append only. Each entry names the spec that surfaced it.
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-174
   summary: >-
     `deploy.yml` has no `concurrency` group, so two pushes to `main` can race the same
     `git reset --hard` on the box.
@@ -613,6 +732,7 @@ found them. Append only. Each entry names the spec that surfaced it.
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  id: DW-175
   summary: >-
     The capacity CSV records no core count and no `MemTotal`, so a box resize mid-week would
     silently change what every "share of the box" figure means, and container RSS has no
@@ -628,8 +748,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     incompatible halves. The cheap version, if this recurs, is a `note` row carrying
     `cores=$(nproc)` once per run, which is schema-compatible, plus a close-out assertion that
     the run saw exactly one distinct value.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  id: DW-176
   summary: >-
     The sampler's append is unguarded by any lock, and the day-file header is a check-then-write,
     so two runs meeting at a UTC midnight boundary could truncate a file that already holds
@@ -644,8 +766,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     header creation and the append. Left alone because changing the sampler mid-week means
     reinstalling the thing being measured, and the observed risk over one week on one timer is
     very low.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  id: DW-177
   summary: >-
     The sampler assumes every container cgroup lives under `system.slice`, and silently counts a
     container as vanished if it does not.
@@ -659,8 +783,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     that is missing an application without anything looking wrong. A fallback search across
     plausible parents, or an explicit assertion at install time that every running container
     resolves to a cgroup, would close it.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-178
   summary: >-
     The capacity gate has no entry in the estate record, no README or AGENTS.md line, and
     `AGENTS.md` still states a test count of 38.
@@ -672,7 +798,15 @@ found them. Append only. Each entry names the spec that surfaced it.
     story 1-4 against the 38 recorded in the AGENTS.md block, which is managed by
     `bmad-project-context` and refreshed by it rather than edited here.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The `AGENTS.md` block has named the Capacity Gate and pointed at
+    `ops/capacity-threshold.md` since the refresh of 2026-08-28 (`967abfd`), `ops/estate.md` names
+    the gate where `list-wheel` was placed through it, and the suite figure is a dated measurement.
+    `README.md` still says nothing, which this entry counted as documentation debt only.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
+  id: DW-179
   summary: >-
     `anchor-umami` carries no healthcheck, which is a second live AD-8 breach in this
     repository, and `ARCHITECTURE-SPINE.md` asserts the opposite is already true.
@@ -691,8 +825,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     breach is tolerated, and no story has taken that ruling. Either it is ruled and promoted
     to the register, or the healthcheck is added, or `ARCHITECTURE-SPINE.md:128` stops
     claiming it is already true. Story 3.4 is the natural forcing point.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
+  id: DW-180
   summary: >-
     Two of the four places that mention the AD-8 violation still resolve it through the
     string "Story 1-9" rather than through `ops/known-violations.md`, so the register is
@@ -712,8 +848,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     anyway, and have the `bmad:context` refresh replace "tracked in story 1-9" with the
     register path. That refresh is already queued by the earlier entry about the stale
     "one Hetzner box" line.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-181
   summary: >-
     RESOLVED 2026-08-24 by observation. The Cloudflare edge certificate renewed. The
     earlier entry asking whether the estate would find out if it did not renew is
@@ -752,7 +890,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     be the same job. Recorded here because a dated observation that renewal works is
     worth more than the open question it replaces.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8).** A dated
+    record of one renewal, complete as written. The question it leaves, whether the estate would
+    notice a failed renewal, stays with DW-163.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-182
   summary: >-
     `library-backup.sh` has aborted on line 13 every night since 2026-07-31. A valid
     snapshot is still written, so `digital-library` does have a nightly local backup,
@@ -790,7 +934,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     test, which is where that gets settled. Not fixed here because Story 1-7's pass is
     read-only.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Closed in full on 2026-08-24 by Story 1-8, as DW-192 records:
+    `ops/library-backup.sh` replaced the script and both bugs were fixed.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-183
   summary: >-
     No backup anywhere in the estate is offsite, and two of the four compose projects
     have no logical backup at all. Story 1.8 scopes only `digital-library`.
@@ -813,8 +963,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     comment rather than an observation. If it is real it is the estate's only offsite
     copy and it should be written into `ops/` with its retention and its restore
     procedure; if it is not real the estate has no offsite copy of anything.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-184
   summary: >-
     `analytics.cuatro.dev` is a live hostname with no application id, which AD-3 and
     AD-6 together do not allow for, and no Estate row. Story 2-4 territory.
@@ -832,7 +984,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     current state is that a hostname the estate depends on maps to nothing. Story 2-4
     already owns the two Vercel hostnames and is the natural place to land this too.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The exclusion is written down: `ops/estate.md` records `analytics.cuatro.dev` as
+    self-hosted Umami, infrastructure the estate runs rather than an application the Registry
+    describes, so it takes no id (Story 2-4, `d21f0c7`).
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-185
   summary: >-
     The build-on-the-box breach is estate-wide, not Anchor-only. All four compose
     projects build their images on the serving two-core box, while KV-1 records only
@@ -879,8 +1038,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     image on 2026-09-13, so KV-1's scope paragraph and table were widened to carry it as a
     second half, retired by Story 4-3. The three Satellites are where they were, observed
     building and ruled on by nobody, and this entry stays open on them.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-186
   summary: >-
     A BitTorrent client and a third-party security agent both run on the serving box and
     appear in no planning artifact.
@@ -900,8 +1061,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     Hostinger's bundled agent, reachable from nowhere outside the box, so it does not
     reach a hostname. It is third-party software with host-level visibility that nobody
     in the planning record chose, which is worth a knowing decision rather than silence.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-187
   summary: >-
     `digital-library`'s box-only ingress override is untracked and NOT gitignored,
     unlike `cuatro-tracker`'s, so it is protected by nobody having run `git clean`
@@ -917,8 +1080,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     network and take `library.cuatro.dev` off the air with no error until the next
     request. One line in that repository's `.gitignore` closes it. This belongs in the
     `digital-library` repository rather than here.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-188
   summary: >-
     `cs-tracker.cuatro.dev` is the only live hostname whose Caddy site block sends no
     security headers, and its site label is an unresolved environment variable.
@@ -936,8 +1101,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     that indirection across or resolve it deliberately rather than discovering it. Both
     fixes belong in the `cs-tracker` repository. Recorded here because Story 1-7 is
     read-only and because `ops/routing-inventory.md` is the file Epic 4 rebuilds from.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-189
   summary: >-
     Two live third-party credentials sit in project `.env` files on the box that nothing
     in the estate had recorded: a `CLOUDFLARE_API_TOKEN` in `cuatro-tracker` and a
@@ -971,8 +1138,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     that exist only on this box, are in no repository and are backed up nowhere; losing
     the box loses all of them. Full list of names in `ops/routing-inventory.md` under
     "The variable names each project needs".
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-190
   summary: >-
     qBittorrent's WebUI is running on an auto-generated temporary password printed to
     the container log, with `WebUI\Address=*`. It is safe only because no port is
@@ -997,8 +1166,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     `QBITTORRENT_USER` and `QBITTORRENT_PASS` in that project's `.env` are static, so it
     is not obvious the application's own credentials still match. Belongs in the
     `cuatro-tracker` repository. Not touched here: Story 1-7 is read-only.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-191
   summary: >-
     Every service in the estate runs on a floating image tag, and no image on the box
     carries a registry manifest digest that a rebuild could pin to. Epic 4 rebuilds from
@@ -1023,8 +1194,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     auditable after the fact. Making it reproducible needs either digests read from the
     registry, or the GHCR path AD-8 requires, which is Epic 3. Recorded so Epic 4 does
     not discover it while rebuilding.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  id: DW-192
   summary: >-
     RESOLVED IN CODE. Closes the code half of two entries from
     `spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`, identified below by
@@ -1083,7 +1256,12 @@ found them. Append only. Each entry names the spec that surfaced it.
     anywhere is offsite, and `cuatro-backup.sh`'s claim to complement a Hostinger weekly
     snapshot is still an unverified comment in a script.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8).** A record of
+    Story 1-8's closure, complete as written. The estate-wide half it names stays with DW-183.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  id: DW-193
   summary: >-
     No cron job on the box has its exit status monitored by anything. That is the actual
     reason the `library-backup.sh` failure survived 25 nights, and fixing one script does
@@ -1104,8 +1282,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     proposed in this ledger: a scheduled job that reads the last line of each backup log,
     or a healthcheck ping the job makes on exit 0. It is `ops/monitoring.md`'s file and
     another story's decision, so it is recorded rather than taken here.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  id: DW-194
   summary: >-
     The box now runs two different backup idioms, and `cuatro-backup.sh` is the one still
     uncommitted, unencrypted, unpruned by any reviewed code and local only. The three
@@ -1126,6 +1306,7 @@ found them. Append only. Each entry names the spec that surfaced it.
     `digital-library` and only `digital-library`, and because the same argument applies to
     `cs-tracker`'s and the Anchor's Postgres, neither of which has any backup at all. That
     is one story, not three, and it is not this one.
+  status: open
 
 ### DW-1: Nothing under `contracts/` identifies the folder to a repository that vendors it: no README, no source repository or commit, and no licence line.
 origin: spec-deferred 3a3801b1c64f
@@ -1233,8 +1414,8 @@ origin: spec-deferred bc3c95f49531
 location: components/organisms/WorkItem/WorkItem.scss:144
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: medium
-reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord Amended 2026-09-06 by Story 2-9: half of this defect is gone with the component that carried it. ProjectCard.scss:66 was deleted when the Suite Directory replaced the card grid, so the location above moves to the surviving half, WorkItem.scss:144 on /work, which is unchanged and still at 2.56:1. The entry stays open on that half. The Suite Directory renders no tech chip at all: its tech line is unfilled mono text at --token-text-secondary, so the replacement did not reproduce the defect.
-status: open
+reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord Amended 2026-09-06 by Story 2-9: half of this defect is gone with the component that carried it. ProjectCard.scss:66 was deleted when the Suite Directory replaced the card grid, so the location above moves to the surviving half, WorkItem.scss:144 on /work, which is unchanged and still at 2.56:1. The entry stays open on that half. The Suite Directory renders no tech chip at all: its tech line is unfilled mono text at --token-text-secondary, so the replacement did not reproduce the defect. Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found resolved: Story 2-31 (`780e586`, 2026-09-23) rebuilt the chip outlined and unfilled (`components/atoms/WorkItem/WorkItem.scss:209-230`), so its label reads `--token-text-secondary` on the page's ground, which `DESIGN.md` gives at 7.03:1, and `--accent-dim` left with Story 2-22's alias layer.
+status: done
 
 ### DW-11: Eight local @font-face declarations are resolved by nothing after this commit, not the one the record previously named, and the story that retires the local faces inherits that inventory plus the publ
 origin: spec-deferred 268fa6aabf8d
@@ -1558,7 +1739,13 @@ reason: |-
   that file is where a reader goes to run this harness. Deferred rather than done because the
   story 2-1 spec's scope was the two defects and their tests, and `ops/` is the estate's
   operational record rather than story output.
-status: open
+
+  Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found resolved:
+  `ops/rendered-output-harness.md` records the invocation beside the tolerance, `corepack enable`
+  first and `node_modules` and `.next` masked by named volumes, each with its reason, since
+  `cc03c0c` (2026-08-24), five days before this entry was filed. A plain run differs only in the
+  script name, `pnpm test:e2e` for `pnpm run test:e2e:update`.
+status: done
 
 ### DW-24: The font reachability pass reads `font-family` declarations only, so a family named through the `font` shorthand or defined only under a theme selector would read as unreachable.
 origin: spec-deferred 2026-08-29
@@ -1726,6 +1913,7 @@ reason: |-
   about the separator rather than about `..`.
 status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  id: DW-195
   summary: >-
     AD-3 asserts an application id is lowercase kebab-case AND equal to its repository name.
     Four repositories are not lowercase, so both halves cannot hold and Story 2-5 must
@@ -1758,6 +1946,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  id: DW-196
   summary: >-
     `ops/routing-inventory.md` still carries four handovers to Story 2-4 as open questions, and
     one citation into `ops/estate.md` that Story 2-4 made false in both its line number and its
@@ -1789,6 +1978,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  id: DW-197
   summary: >-
     `epics.md:2141` says Story 2-4 closes open items O-4, O-5 and PRD section 13 Q9. The
     decisions were taken and recorded, but none of the three registers that carry those items
@@ -1815,6 +2005,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  id: DW-198
   summary: >-
     The `ops/registry-inputs.md` pointer Story 2-4 added to AGENTS.md sits inside the managed
     `bmad:context` block and will be dropped by the next `/bmad-project-context` refresh, with
@@ -1834,6 +2025,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-199
   summary: >-
     `epics.md:2202-2204` still states Story 2.5's acceptance as "each id matches its repository name
     exactly", which four shipped entries deliberately do not satisfy after AD-3 was narrowed. The
@@ -1864,6 +2056,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-200
   summary: >-
     Nothing holds `contracts/registry.json` equal to `ops/registry-inputs.md`, and the Operator
     deferred the check on 2026-09-03. Filed here because the same argument DW-26 makes says an
@@ -1940,6 +2133,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-201
   summary: >-
     Story 2.6 inherits three description problems Story 2-5 found and was ruled not to fix: two of
     the six `EXPERIENCE.md` drafts contradict their repositories, a third contradicts the Registry
@@ -1972,6 +2166,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-202
   summary: >-
     `list-wheel` ships `RxJS` in its `tech` array against a README that states signals-first state
     and no source file that imports it. Found while confirming the description; not repaired,
@@ -2008,6 +2203,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-203
   summary: >-
     A description and the entry's own `absorbed_into` can contradict each other, and nothing reads
     the two together. `tcg-tracker` says the idea "is set to fold into" Cuatro Tracker while its
@@ -2054,6 +2250,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-204
   summary: >-
     `contract_version` stayed at `1.1.0` while nine of the fourteen `description` values changed, and
     the field's own rule says a value change is a minor bump.
@@ -2088,6 +2285,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-205
   summary: >-
     Two descriptions still restate what `status` already carries, and were left because they were
     outside the set Story 2-6 was scoped to change.
@@ -2117,6 +2315,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-206
   summary: >-
     `tcg-tracker`'s description still rests on its id and nothing else, and Story 2-6 confirmed that
     there is no source anywhere to confirm it against.
@@ -2146,6 +2345,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-207
   summary: >-
     Three `tech` arrays in `contracts/registry.json` are materially thinner than their projects'
     architecture guides, and none was changed because changing one is a change to
@@ -2182,6 +2382,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-208
   summary: >-
     DW-29's stale comment at `tests/e2e/contract-serving.pw.ts:68-72` got staler: it says
     `contracts/registry.json` arrives in Story 2-5, which has now happened, and Story 2-5 was
@@ -2205,6 +2406,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-209
   summary: >-
     AD-3 and `contracts/registry.schema.json` both say "three live hostnames already diverge from
     their ids". Against the Registry Story 2-5 shipped, five of the six `Live` entries diverge.
@@ -2235,6 +2437,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-210
   summary: >-
     One case in the unit suite failed once and passed on three other runs of the same tree, and it
     was not identified because the run that failed had its output truncated. The suite gates
@@ -2259,6 +2462,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-211
   summary: >-
     Deleting `content/projects.ts` leaves three records citing it by line number, so each now
     points at a file that does not exist.
@@ -2279,6 +2483,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-212
   summary: >-
     `ProjectCard` labels every `source` link "// Github", but the Registry schema requires only that
     `source` resolve to a repository.
@@ -2300,6 +2505,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-213
   summary: >-
     `/projects` went from one card to six with no rendered-output coverage. The Playwright harness
     holds a baseline for `/work` only.
@@ -2312,8 +2518,14 @@ status: done
     Not worth a baseline of its own: Story 2.14 redirects `/projects` to `/#suite`, and Story 2.9
     builds the surface that replaces it. Filed so the gap is a known one rather than an assumed
     coverage.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 2-14 (`d75193e`, 2026-09-07) redirected `/projects` permanently to `/#suite`
+    and deleted `app/projects`, so no surface is left to baseline;
+    `tests/e2e/projects-redirect.pw.ts` holds the redirect.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-214
   summary: >-
     The projects hero reads "{count} PROJECTS" over data that can now be 1 or 0, so "1 PROJECTS" and
     "0 PROJECTS // ONGOING" are both reachable strings.
@@ -2326,9 +2538,14 @@ status: done
     `RESTYLE-SPEC.md`, and this story's boundary is the data source rather than the wording. Pick it
     up there, or when the hero is redesigned, rather than pluralising a line that is about to be
     replaced.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 2-14 (`d75193e`) deleted `ProjectsHero` with the route, so neither string is
+    reachable.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-215
   summary: >-
     `/projects` has no empty state. With no rendered entry it draws an empty `<ul>` under a hero
     reading zero.
@@ -2339,9 +2556,15 @@ status: done
 
     Filed rather than built because an empty state is a designed surface, and the surface that
     replaces this route is Story 2.9's Suite Directory. Deciding it twice is the waste.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The route left with Story 2-14 (`d75193e`), and the Suite Directory that replaced it
+    treats zero rendered entries as a defect its suite fails on rather than a state to design
+    (`components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx:84`).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-216
   summary: >-
     `AGENTS.md` should record that exactly two sources may name `contracts/`, and that the Registry
     module may name only the Registry pair.
@@ -2357,6 +2580,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-217
   summary: >-
     `SCANNED_EXTENSIONS` in `app/__tests__/anchor-contract.test.ts` carries no `.json`, so a JSON
     module under a shipped source root is invisible to both the consumer scan and the new
@@ -2373,6 +2597,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-218
   summary: >-
     `app/app.scss:92-102` breaches `DESIGN.md:558`: `width: 100vw` with `overflow-x: hidden` where
     the contract says widths are `100%` and the clip is `clip`. Thirty-six elements really do sit
@@ -2439,6 +2664,7 @@ status: done
   status: promoted to KV-5 in `ops/known-violations.md` on 2026-09-06
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-219
   summary: `DESIGN.md:645-648` states something the Story 2-8 probe measured to be false, and four
     later stories will read it as guidance.
   evidence: The passage says vertical padding on a plain inline element "paints outward without
@@ -2460,6 +2686,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-220
   summary: `epics.md:3576` premises a Story 2.32 acceptance criterion on a measurement the Story
     2-8 sweep disproved.
   evidence: The criterion reads that the shipped links measure ~16x27px. The sweep measured the
@@ -2476,6 +2703,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-221
   summary: `tests/e2e/harness.ts:24` still names only the Epic 1 consumers of the harness, now that
     a sixth spec imports it.
   evidence: The docstring reads "Stories 1.12, 1.17, 1.18 and 1.19 import this file", and
@@ -2486,6 +2714,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-222
   summary: The hit-target sweep does not skip controls inside an `inert` subtree or at
     `opacity: 0`, and whether it should is an Ask First decision the story did not take.
   evidence: `hit-target-floor.pw.ts` skips `aria-hidden`, `display: none` and zero-area nodes. An
@@ -2497,6 +2726,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-223
   summary: What shipped departs from the literal wording of Story 2.8's acceptance criteria in two
     places, and nothing records that where `epics.md` is read.
   evidence: `epics.md:2337-2338` requires that for every interactive element the assertion asserts
@@ -2517,6 +2747,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-224
   summary: `tests/e2e/contract-anchor.pw.ts:903` flakes on a live HTTP fetch and takes the blocking
     `rendered-output` gate red with it.
   evidence: CI run 34020245249, on commit `9f71fba`, failed with `Error: apiRequestContext.get:
@@ -2532,6 +2763,7 @@ status: done
     `test.retry` on the whole case, which would hide a real 404 as readily as a hang up.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-225
   summary: The `Live` status dot fills 4px with `--token-accent`, which F-8's gate greps for and
     expects zero of. It needs a named exemption in Story 2.34 exactly as `::selection` has one at
     F-11, or that gate fails on the taxonomy's load-bearing element.
@@ -2603,6 +2835,7 @@ status: done
     ruling names; a palette name written into a component is not a role and is not read.
   status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-226
   summary: >-
     `epics.md` books `ProjectCard` and `ProjectCard.scss` retirement to Story 2.14 in five places.
     Story 2-9 retired them, so five planning statements now describe work that is already done.
@@ -2630,6 +2863,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-227
   summary: >-
     On `/projects` the hero and the Suite Directory start at different left edges, because one is
     inside `Container` and the other deliberately is not.
@@ -2646,9 +2880,14 @@ status: done
     because its geometry is Story 2-33's. Filed rather than fixed because Story 2-14 redirects
     `/projects` to `/#suite`, after which the surface renders nothing and the misalignment cannot
     be seen. If 2-14 is descoped or delayed, this becomes visible work.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 2-14 (`d75193e`) redirected `/projects`, so the two sections no longer share a
+    page, as this entry expected.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-228
   summary: >-
     Every Suite Directory link opens a new tab and none carries the external-navigation mark the
     contract declares as one of its three glyphs.
@@ -2678,6 +2917,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-229
   summary: >-
     `list-wheel`'s live link renders as `luigiespinosa.github.io`, which names the operator rather
     than the application and would collide with any second GitHub Pages entry.
@@ -2710,6 +2950,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  id: DW-230
   summary: >-
     `DESIGN.md:310-314` attributes the 1.13:1 greyscale figure to the `Live` and `Complete` border
     pair, and the shipped border pair measures 1.773:1. The 1.13 is the text pair, exactly.
@@ -2741,6 +2982,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  id: DW-231
   summary: >-
     The Status mark is unasserted under `forced-colors`, where a user stylesheet or a high-contrast
     mode can override the border colour and the dot's fill together.
@@ -2765,6 +3007,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  id: DW-232
   summary: >-
     Three Playwright spec files now carry their own copy of `goTo`, `plantStyle` and
     `EDGE_SLACK = 0.5` instead of importing them from `tests/e2e/harness.ts`.
@@ -2788,6 +3031,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-233
   summary: >-
     `epics.md:2508` specifies the plate mark's tracking one step wider than `DESIGN.md:686` does,
     and the reference mockup follows `epics.md` on its plate marks while following `DESIGN.md` on
@@ -2819,6 +3063,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-234
   summary: >-
     `EXPERIENCE.md:276` writes the premise opening as `Fifteen personal projects`, and
     `contracts/registry.json` holds fourteen entries. The shipped premise derives its number, so
@@ -2851,6 +3096,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-235
   summary: >-
     `GlitchText.tsx:72` puts `aria-label` on a plain `<div>`, which is the one ARIA attribute that
     role prohibits, and hides the `<h1>` inside it. The home route therefore ships a page heading
@@ -2903,6 +3149,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-236
   summary: >-
     `SiteFooter` is mounted in `app/page.tsx`, so the component named for the site ships on the home
     route only. Every other route still ends without a footer, and the next story to touch the region
@@ -2931,6 +3178,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-237
   summary: >-
     `tests/e2e/premise.pw.ts`'s `outsideViewport` sweeps `document.querySelectorAll('*')`, so any
     overflow anywhere on the home route fails the premise suite, duplicating the A-5 sweep
@@ -2952,6 +3200,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-238
   summary: >-
     `ESTATE_FRAMEWORKS` and `ESTATE_LANGUAGES` cite `DESIGN.md:208`, `EXPERIENCE.md:79` and the
     reference mockup for their names, order and counts, and nothing holds the constants against those
@@ -2977,6 +3226,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-239
   summary: >-
     The Plate mark's `label` is documented as section identity above a section head, and its only
     caller passes the Hub application's own name above a block that deliberately renders no heading.
@@ -4326,7 +4576,13 @@ status: done
     writing a dated paragraph in the same section and the correction belongs beside it. On today's
     board that is Story 2-30 or Story 2-32, both of which delete a ledger row and move a count.
     **Trigger: the next dated paragraph added to that section.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** `ddb63b7` (the DW-43 accessibility package, 2026-09-24) made the skip link the
+    header's first child (`components/molecules/Header/Header.tsx`), and `app/layout.tsx` renders
+    the header on every route, so the sentence at `ops/hit-target-floor.md:107` now describes the
+    markup.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-66
