@@ -201,6 +201,50 @@ describe('the framework band is ornament, and it is made of real facts', () => {
   });
 });
 
+describe("the running claim is the Operator's words, and true of the rows below it (DW-244)", () => {
+  /**
+   * Every rendered entry that carries an address and is not `Live`.
+   *
+   * `SuiteDirectoryRow` draws an address from `live` alone, and the schema lets a `Complete` entry
+   * carry one. So this is how "every address below is running" turns false with the copy unchanged,
+   * the way Registry 1.4.0 made "Everything below is running" false with every suite green (Epic 2
+   * retrospective, E1).
+   */
+  const addressedButNotLive = (entries: typeof renderedApplications) =>
+    entries.filter((application) => application.live !== undefined && application.status !== 'Live');
+
+  it('sets the ruled copy after the count, word for word', () => {
+    // Operator ruling 2026-09-25. Planted: red on the sentence it replaced, 2026-09-25.
+    const { container } = render(<Premise />);
+    expect(lede(container)).toBe(
+      `${opening()} became one suite. Every address below is running right now, so open one and you ` +
+        'are using the real thing, not looking at a picture of it.'
+    );
+  });
+
+  it('draws no address on a rendered entry that is not Live', () => {
+    // Planted: red with `cs-tournament`, a `Complete` entry, given a `live` URL in a scratch edit of
+    // the Registry, 2026-09-25.
+    expect(
+      renderedApplications.some((application) => application.live !== undefined),
+      'no rendered entry carries an address, so this case is vacuous'
+    ).toBe(true);
+    expect(
+      addressedButNotLive(renderedApplications).map(
+        (application) => `${application.id} is ${application.status}`
+      ),
+      'an entry below carries an address and is not Live, so "every address below is running" is false'
+    ).toEqual([]);
+  });
+
+  it('and that read fires on a Complete entry planted with an address', () => {
+    const planted = renderedApplications.find((application) => application.live !== undefined);
+    if (planted === undefined) throw new Error('no rendered entry carries an address to plant');
+    const found = addressedButNotLive([{ ...planted, status: 'Complete' }]);
+    expect(found.map((application) => application.id)).toEqual([planted.id]);
+  });
+});
+
 describe('the three surfaces this story adds state no fact of their own', () => {
   /**
    * The story's acceptance criterion, encoded rather than read by eye.

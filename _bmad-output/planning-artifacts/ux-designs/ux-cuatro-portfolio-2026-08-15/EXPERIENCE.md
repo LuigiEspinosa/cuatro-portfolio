@@ -273,10 +273,10 @@ is a defect, not a cosmetic issue, and Marcus checking the array is step 2 of hi
 At most three sentences, encountered before or with the Suite Directory, carrying without the
 stack list:
 
-> [N] personal projects became one suite. Everything below is running right now, so open it
+> [N] personal projects became one suite. Every address below is running right now, so open one
 > and you are using the real thing, not looking at a picture of it.
 
-Two sentences, no framework named, no adjective doing work. *(Amended 2026-09-24 by Operator ruling: the copy opened `Fifteen personal projects` and names no number now. The page derives `[N]` from `contracts/registry.json`, the count of its applications spelled out and capitalised with the noun agreeing, so the copy cannot go stale against the Registry; the page read `Fourteen` that day.)*
+Two sentences, no framework named, no adjective doing work. *(Amended 2026-09-24 by Operator ruling: the copy opened `Fifteen personal projects` and names no number now. The page derives `[N]` from `contracts/registry.json`, the count of its applications spelled out and capitalised with the noun agreeing, so the copy cannot go stale against the Registry; the page read `Fourteen` that day.)* *(Amended 2026-09-25 by Operator ruling, DW-244: the second sentence read `Everything below is running right now, so open it`. From Registry 1.4.0 the Directory renders a `Complete` row that runs nowhere, `cs-tournament`, with its Source link and no address, so that was false. An address, the bare domain of § UI strings' Live link, is drawn on `Live` rows only, so every address below is running, and `Premise.test.tsx` fails if a rendered entry carrying one is not `Live`. `[N]` is derived as before.)*
 
 ### UI strings
 

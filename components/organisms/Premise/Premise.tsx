@@ -18,9 +18,9 @@ import './Premise.scss';
  *
  * **Nothing on this block states a fact of its own.** The opening number is the length of the
  * published Registry, the mark's identity and its trailing cell are the Hub's own entry read through
- * `hubEntry`, and the band's names are the estate's declared list held against that same Registry by
- * test. A count is never typed (`EXPERIENCE.md:299-300`), so none of it can go stale in a way a
- * maintainer has to remember to correct.
+ * `hubEntry`, and a test holds both the band's names, the estate's declared list, and the copy's one
+ * claim, that every address below is running (DW-244), against that same Registry. A count is never
+ * typed (`EXPERIENCE.md` § Rules), so none of it can go stale in a way no test would notice.
  *
  * **No heading.** The reference mockup puts a display line here and the page already has one, which
  * `HomeLayout` renders above this block. A second would be a heading-structure defect, and the
@@ -59,15 +59,15 @@ const COUNTED = 'personal project';
  *
  * Two sentences, no framework named, no adjective doing work. FR-4 caps it at three and requires it
  * to carry for a reader who cannot name a single one of the things the band lists, which is why the
- * band is not a legend for it and the claim stands with the band deleted.
+ * band is not a legend for it and the claim stands with the band deleted. It says every address
+ * below, not everything (Operator ruling 2026-09-25, DW-244): a `Complete` row may run nowhere.
  *
  * Neither the opening word nor the noun after it is here, because both follow the Registry's length.
- * `one suite` is not one of them: the suite is the thing being described and there is exactly one of
- * it however many applications it holds.
+ * `one suite` is not one of them: there is one suite however many applications it holds.
  */
 const PREMISE =
-  'became one suite. Everything below is running right now, so open it and you are using the real ' +
-  'thing, not looking at a picture of it.';
+  'became one suite. Every address below is running right now, so open one and you are using the ' +
+  'real thing, not looking at a picture of it.';
 
 export function Premise() {
   /**
