@@ -505,9 +505,10 @@ cancelled). Its first step refuses any ref but `main`; then the Capacity Gate; t
 and a last step that runs only when an earlier one failed and opens a GitHub issue naming the run
 (`issues: write` on that job alone). The deploy itself is `ops/deploy-remote.sh`, on the box. It
 refuses a target that is not 40 lowercase hex characters, fetches `main`, refuses a target that is
-not an ancestor of `origin/main`, resets the checkout to the target and runs the compose line that
-used to sit in the SSH step, `docker compose --env-file .env.production up --build -d
---remove-orphans`, unchanged.
+not an ancestor of `origin/main` or whose tree carries no `ops/deploy-remote.sh` (a commit older than
+the script, whose reset would delete the file the key's line names: DW-131, since `6e9a216`), resets
+the checkout to the target and runs the compose line that used to sit in the SSH step,
+`docker compose --env-file .env.production up --build -d --remove-orphans`, unchanged.
 
 **The one string the box is sent**, with `SHA` standing for `${{ github.sha }}`, which is the pushed
 commit, or `main`'s head on a dispatch:
@@ -643,7 +644,7 @@ then `node --test ops/deploy-remote.test.mjs`) and the deploy job needs it, so a
 deploy before the box is touched (DW-90). The Capacity Gate is read from this repository's `main` by
 sparse checkout, as it was. And the failure report is a job of its own, `needs: [test, deploy]`,
 `if: failure()`, holding `issues: write` alone, because a red suite skips the deploy job whole and a
-step inside it would never run. Its `ops/deploy-remote.sh` is the Anchor's script at `b0aeaff` with two
+step inside it would never run. Its `ops/deploy-remote.sh` is the Anchor's script at `6e9a216` with two
 lines changed: the checkout it resets, `/home/deploy/list-wheel`, and the compose line,
 `docker compose up --build -d --remove-orphans`, which names no env file because that checkout holds
 none. The one string the box is sent, with `SHA` as above:
@@ -663,10 +664,13 @@ an empty command were refused with exit 1.
 **The limits above hold here too, and two more.** Nothing compares the two repositories' scripts or
 workflows, so a change carried to one and not the other is the drift DW-93 named, and only a reader
 finds it. Each repository's `deploy` group holds its own runs only, so an Anchor deploy and a
-`list-wheel` deploy can still build on the box at the same time, as they could before. And either
-script accepts a commit on `main` older than itself: a forced call naming one resets the checkout to
-a tree without the file the key's line names, and deploys stop until the recovery above (DW-131,
-**Observed 2026-09-24** in the same container).
+`list-wheel` deploy can still build on the box at the same time, as they could before.
+**Amended 2026-09-25:** a third limit stood here. Either script accepted a commit on `main` older
+than itself, so a forced call naming one reset the checkout to a tree without the file the key's
+line names, and deploys stopped until the recovery above (DW-131, **Observed 2026-09-24** in the
+same container). Both scripts now refuse a target that carries no `ops/deploy-remote.sh`, the
+Anchor's in `6e9a216` and `list-wheel`'s in `718f194`, and each suite runs the forced command at a
+commit on `main` older than the script, a case that failed against the unguarded script first.
 
 ### Holding `list-wheel`'s deploy key to the forced command
 

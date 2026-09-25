@@ -7298,7 +7298,19 @@ status: done
 
     **Owner: unassigned; both scripts together.** **Trigger: the next edit to either
     `ops/deploy-remote.sh`, Story 3-4 or Story 4.3 at the latest.**
-  status: open
+
+    **Closed 2026-09-25, before any restrict line is applied.** Both scripts carry the closer named
+    above, one line after the ancestor check: the Anchor's in `6e9a216`, `list-wheel`'s in `718f194`,
+    which also moves that script's mirror note from `b0aeaff` to `6e9a216`, so the two stay one
+    shape. Each suite gained a case running the forced command at commit A, on `main` and older than
+    the script. Against the unguarded scripts it failed, both exiting 0; with the guard both suites
+    pass, the Anchor's 18 cases and `list-wheel`'s 27, the checkout left at B and compose never run.
+    `list-wheel`'s push deployed through the unrestricted string (Deploy run `36110098514`: test and
+    deploy green, the box logging
+    `deploy-remote: deploying 718f1943bbf9a8cf15c9ee718eaa08cfe719a2b5, read from its argument`, the
+    container recreated), so the box's copy is guarded before Pending Operator action 9 names it. The Anchor's
+    copy reaches the box with the Epic 2 merge, which action 7 already waits for.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
   id: DW-132
