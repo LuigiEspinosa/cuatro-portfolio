@@ -231,6 +231,16 @@ const FOCUS_ROLES = ['--stroke-focus', '--token-focus', '--focus-offset', '--r-h
 const SELECTION_ROLES = ['--token-accent'] as const;
 
 /**
+ * The one role the landmark ring's layer adds (Operator ruling 2026-09-25, DW-127).
+ *
+ * `main:focus-visible::after` draws the landmark's ring again above the hero's canvas and scrim,
+ * which are positioned inside `<main>` on `/`'s default door. Its ring names two of `FOCUS_ROLES`;
+ * what is new is the level it sits at, the one the panels and the scrim use, so the four lists stay
+ * disjoint and a fourth role in that layer is loud.
+ */
+const LANDMARK_LAYER_ROLES = ['--z-raised'] as const;
+
+/**
  * **`LITERAL_PROPERTIES` left on 2026-09-24 with its last member.** It held the properties the alias
  * layer deliberately left authored as literals: four until 2026-09-12 (the two Confillia names, which
  * Story 2-20's type swap retargeted and deleted), two until 2026-09-23 (`--accent-glow`, which Story
@@ -988,7 +998,7 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
     // The pinned lists are checked against the contract before they are compared against the
     // sources. A role renamed in `contracts/tokens.css` would otherwise make every list below
     // agree on a name the contract no longer declares, and a MAJOR bump is meant to be loud.
-    for (const role of [...BASE_RULE_ROLES, ...FOCUS_ROLES, ...SELECTION_ROLES]) {
+    for (const role of [...BASE_RULE_ROLES, ...FOCUS_ROLES, ...SELECTION_ROLES, ...LANDMARK_LAYER_ROLES]) {
       expect(TOKEN_NAMES, `${role} is in a pinned list but the contract no longer declares it`).toContain(role);
     }
 
@@ -1007,12 +1017,17 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
       'a selection role is also a base-rule or focus role'
     ).toEqual([]);
     expect(
+      LANDMARK_LAYER_ROLES.filter((role) => ([...BASE_RULE_ROLES, ...FOCUS_ROLES, ...SELECTION_ROLES] as readonly string[]).includes(role)),
+      'a landmark layer role is also a base-rule, focus or selection role'
+    ).toEqual([]);
+    expect(
       referencesBy.get(GLOBAL_STYLESHEET) ?? [],
       `${GLOBAL_STYLESHEET} does not reference exactly the four roles DESIGN.md § The mapping gives the ` +
-        `body, the four RESTYLE-SPEC.md § 4 names for the ring and the accent F-11 gives the selection. A ` +
+        `body, the four RESTYLE-SPEC.md § 4 names for the ring, the accent F-11 gives the selection and the ` +
+        `level the landmark ring's layer takes (DW-127). A ` +
         `base rule retargeted to a different role changes what every page paints from one line; a fifth ` +
         `role in the ring rule, or one of its four missing, changes what every focused element paints.`
-    ).toEqual([...BASE_RULE_ROLES, ...FOCUS_ROLES, ...SELECTION_ROLES].sort());
+    ).toEqual([...BASE_RULE_ROLES, ...FOCUS_ROLES, ...SELECTION_ROLES, ...LANDMARK_LAYER_ROLES].sort());
 
     // Claim two held the `--monument-bold` call sites to naming exactly `--w-black`, the weight a
     // family alias cannot carry, until Story 2-33 rebuilt the last of them on 2026-09-23. With no site

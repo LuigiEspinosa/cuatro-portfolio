@@ -35,8 +35,9 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *     the labels `DESIGN.md` places on `<p>` at the smallest step excepted by name; none of the
  *     six prose selectors under `--t-sm`; nothing italic; no weight above the family's published
  *     range except what the ledger carries; no stylesheet sets `font-size` or `font` in `px`; and
- *     no `:focus-visible` rule outside `app/app.scss`, nor any there but the global one and the
- *     landmark's, declares an `outline`.
+ *     no `:focus-visible` rule outside `app/app.scss`, nor any there but the global one, the
+ *     landmark's and, since 2026-09-25, the landmark's layer above the hero (DW-127), declares an
+ *     `outline`.
  *  5. **One level-1 heading per document, A-7** (`EXPERIENCE.md:766`), read off the accessibility
  *     tree rather than the markup. Until Story 2-27 that was what told the home route's
  *     `GlitchText` wrapper, which carried the role, from its hidden `<h1>`; the heading is a real
@@ -97,6 +98,13 @@ const RING_SELECTOR = ':focus-visible';
  * in the same file and from the same roles. Nothing else may declare an outline.
  */
 const LANDMARK_RING_SELECTOR = 'main:focus-visible';
+
+/**
+ * The second (Operator ruling 2026-09-25, DW-127): the same inset ring drawn again on a positioned
+ * layer over the landmark, because on `/`'s default door at 768 and wider the hero's canvas and scrim
+ * are positioned inside `<main>` and paint over its outline. Same file, same roles.
+ */
+const LANDMARK_LAYER_SELECTOR = 'main:focus-visible::after';
 
 /** Where Next 16 writes the built stylesheets. Never `.next/static/css/`. */
 const CHUNK_DIR = join('.next', 'static', 'chunks');
@@ -1086,14 +1094,18 @@ const pxFontSizes = (sheets: readonly [string, string][] = stylesheets()): strin
  * anywhere under `app/` or `components/` is the nine-rules shape this story deleted coming back.
  * Sass nesting (`&:focus-visible { ... }`) is read the same way, by the selector text before the
  * brace. **One exception since 2026-09-24**, the landmark's inset ring beside the global rule in the
- * same file (F-20), which is `LANDMARK_RING_SELECTOR` there and nowhere else.
+ * same file (F-20), which is `LANDMARK_RING_SELECTOR` there and nowhere else, and **a second since
+ * 2026-09-25**, the same ring on a layer above the hero, `LANDMARK_LAYER_SELECTOR` (DW-127).
  */
 const ringRulesOutsideTheGlobal = (sheets: readonly [string, string][] = stylesheets()): string[] =>
   sheets.flatMap(([path, source]) =>
     [...withoutComments(source).matchAll(/([^{};]*:focus-visible[^{;]*)\{([^{}]*)\}/g)]
       .filter((rule) => /(?<![\w-])outline(?:-[a-z]+)?\s*:/.test(rule[2]))
       .map((rule) => [path, rule[1].trim()] as const)
-      .filter(([at, selector]) => !(at === RING_FILE && (selector === RING_SELECTOR || selector === LANDMARK_RING_SELECTOR)))
+      .filter(
+        ([at, selector]) =>
+          !(at === RING_FILE && (selector === RING_SELECTOR || selector === LANDMARK_RING_SELECTOR || selector === LANDMARK_LAYER_SELECTOR))
+      )
       .map(([at, selector]) => `${at}: "${selector}" declares an outline, and the ring is painted once, by "${RING_SELECTOR}" in ${RING_FILE}`)
   );
 
@@ -2293,4 +2305,100 @@ test.describe('the muted-accent ornaments are generated content (DW-113)', () =>
     expect(found.some((line) => line.includes('home-nav-jp') && line.includes('paints none')), 'an ornament painting nothing was not named').toBe(true);
     expect(found.some((line) => line.includes('home-contact-jp') && line.includes('not hidden')), 'an exposed ornament was not named').toBe(true);
   });
+});
+
+// ---------------------------------------------------------------------------
+// The landmark's ring is painted above the hero (DW-127)
+// ---------------------------------------------------------------------------
+
+/**
+ * Where the landmark's ring is read off the screen after Enter on the skip link: one pixel inside
+ * its top, left and right edges, the middle of a ring `--stroke-focus` wide drawn inset by its own
+ * width. The top is read at the middle of the viewport's width; the sides at the middle of the part
+ * of the landmark in the viewport.
+ */
+const landmarkEdgeSamples = (page: Page) =>
+  page.evaluate(() => {
+    const main = document.querySelector('main#main');
+    if (!main) throw new Error('main#main is not on the page');
+    const box = main.getBoundingClientRect();
+    const top = Math.max(box.top, 0);
+    const bottom = Math.min(box.bottom, window.innerHeight);
+    const middle = (top + bottom) / 2;
+    return [
+      { side: 'top', x: box.left + box.width / 2, y: box.top + 1, width: 1, height: 1 },
+      { side: 'left', x: box.left + 1, y: middle, width: 1, height: 1 },
+      { side: 'right', x: box.right - 2, y: middle, width: 1, height: 1 },
+    ];
+  });
+
+/** How far a sampled pixel may sit from the focus colour and still be the ring, per channel in Euclidean terms. */
+const RING_TOLERANCE = 12;
+
+test.describe('the landmark ring is painted above the hero (DW-127)', () => {
+  const CASES = [
+    { route: '/', width: 1280, height: 800 },
+    { route: '/', width: 360, height: 800 },
+    { route: '/work', width: 1280, height: 800 },
+  ] as const;
+
+  for (const { route, width, height } of CASES) {
+    test(`after Enter on the skip link at ${width} on ${route}, a pixel just inside the top, left and right edges of main#main is the focus colour`, async ({
+      browser,
+    }) => {
+      // Operator ruling 2026-09-25 (DW-127): on `/`'s default door at 768 and wider the hero's canvas
+      // and scrim are positioned inside `<main>` and paint over its outline, so the same ring is drawn
+      // again on a positioned layer above them, `main:focus-visible::after`. Read as a raster, never
+      // as geometry: the geometry was whole all along. The default door, since the project's context
+      // asks for reduced motion and that door renders no canvas.
+      const context = await browser.newContext({
+        viewport: { width, height },
+        deviceScaleFactor: 1,
+        colorScheme: 'light',
+        reducedMotion: 'no-preference',
+      });
+      try {
+        const page = await context.newPage();
+        await goTo(page, route);
+        const surface = { route, status: 200, entrance: route === '/' };
+        if (route === '/' && width >= 768) {
+          await expect
+            .poll(() => page.evaluate(() => document.querySelector('.home-gem .scanline-overlay') !== null), {
+              timeout: 20_000,
+              message: 'the default door rendered no scrim, so nothing covers the landmark and this case proves nothing',
+            })
+            .toBe(true);
+        }
+        await settle(page, surface);
+        await page.keyboard.press('Tab');
+        expect(await page.evaluate(() => document.activeElement?.className ?? ''), 'the first Tab did not land on the skip link').toBe('skip-link');
+        await page.keyboard.press('Enter');
+        await expect.poll(() => page.evaluate(() => document.activeElement?.id ?? ''), { message: 'Enter on the skip link did not focus main#main' }).toBe('main');
+
+        const [focusRgba] = await rasterise(page, [await rootCustomPropertyValue(page, '--token-focus')]);
+        const samples = await landmarkEdgeSamples(page);
+        const read = await sampleBoxes(page, await page.screenshot(), samples, [focusRgba]);
+        const readings = samples.map((sample, index) => `${sample.side} ${read[index].modal} (${read[index].nearest[0].toFixed(1)} from ${focusRgba})`);
+        console.log(`accessibility-floor: ${route} at ${width}, main#main's edges after Enter: ${readings.join('; ')}`);
+        expect(
+          samples.filter((_, index) => read[index].nearest[0] > RING_TOLERANCE).map((sample, index) => `${sample.side}: ${readings[index]}`),
+          `on ${route} at ${width} an edge of the focused landmark does not show the ring`
+        ).toEqual([]);
+
+        // **The control**, at 1280 on `/`: the layer taken off, the hero paints over the landmark's own
+        // outline again, and the same read names the three sides. That is DW-127 as it was, and it is
+        // what proves the pixel read can see a ring the geometry says is there.
+        if (route === '/' && width >= 768) {
+          await page.addStyleTag({ content: 'main:focus-visible::after { content: none !important; }' });
+          const bare = await sampleBoxes(page, await page.screenshot(), samples, [focusRgba]);
+          expect(
+            bare.filter((sample) => sample.nearest[0] > RING_TOLERANCE).length,
+            `with the layer taken off the hero did not cover the ring on any side (${bare.map((sample) => sample.modal).join('; ')}), so the read above proves nothing`
+          ).toBe(3);
+        }
+      } finally {
+        await context.close();
+      }
+    });
+  }
 });
