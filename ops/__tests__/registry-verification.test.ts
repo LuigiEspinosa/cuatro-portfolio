@@ -232,7 +232,7 @@ describe('the committed Registry against the estate as observed', () => {
   const fetcher = planted(routesForCommittedRegistry());
   const run = verify({ registry, record, adoption, fetch: fetcher.fetch, token: TOKEN });
 
-  it('passes 35 checks: 14 exists, 10 resolves and 4 tolerated, 6 live of which 3 by 3xx, 1 token', async () => {
+  it('passes 35 checks: 14 exists, 11 resolves and 3 tolerated with no KV-2 row left to strike, 6 live of which 3 by 3xx, 1 token', async () => {
     const result = await run;
     expect(fetcher.unplanted, 'the fixture did not plant a URL the Registry carries').toEqual([]);
     expect(result.rows).toHaveLength(35);
@@ -247,6 +247,7 @@ describe('the committed Registry against the estate as observed', () => {
     expect(resolves).toHaveLength(14);
     const tolerated = resolves.filter((row) => row.detail.includes('tolerated by KV-2'));
     expect(tolerated.map((row) => row.id).sort()).toEqual(['cs-tracker', 'mutuo', 'streamvault']);
+    expect(resolves.filter((row) => row.detail.includes('can be struck')).map((row) => row.id)).toEqual([]);
     expect(resolves.filter((row) => row.detail.includes('answered 200 anonymously'))).toHaveLength(11);
 
     const live = rowsOf(result, 'live');
