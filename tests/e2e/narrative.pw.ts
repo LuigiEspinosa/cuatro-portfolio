@@ -789,6 +789,112 @@ test.describe('the wave is decoration: it takes no gesture', () => {
 });
 
 // ---------------------------------------------------------------------------
+// The wave ignores the pointer: it moves on its own clock alone (DW-123).
+// ---------------------------------------------------------------------------
+
+/**
+ * The highest any point of the wave stands above its resting fold, in the group's own space, read
+ * off the points the renderer draws. The grid and the fold are `ParticleWave.tsx`'s, restated here
+ * because nothing is exported from the component for a test: 60 by 60 points, each resting at
+ * `-(x^2 * 1.4 + y^2 * 1.4 * 0.35)` over its normalised column and row. The wave's own motion is a
+ * sine times a cosine at an amplitude of 0.28, so no point ever stands higher than that above its
+ * fold unless something else lifts it.
+ */
+const waveRise = (page: Page) =>
+  page.evaluate(() => {
+    interface Node3D {
+      isGroup?: boolean;
+      isPoints?: boolean;
+      children: Node3D[];
+      geometry?: { attributes: { position: { array: ArrayLike<number> } } };
+    }
+    const COLS = 60;
+    const ROWS = 60;
+    const FOLD_DEPTH = 1.4;
+    for (const scene of (window as unknown as { __scenes?: Node3D[] }).__scenes ?? []) {
+      const group = scene.children.find((child) => child.isGroup && child.children.some((grandchild) => grandchild.isPoints));
+      const points = group?.children.find((child) => child.isPoints);
+      const positions = points?.geometry?.attributes.position.array;
+      if (!positions || positions.length !== COLS * ROWS * 3) continue;
+      let highest = Number.NEGATIVE_INFINITY;
+      for (let r = 0; r < ROWS; r += 1) {
+        for (let c = 0; c < COLS; c += 1) {
+          const normX = (c / (COLS - 1)) * 2 - 1;
+          const normY = (r / (ROWS - 1)) * 2 - 1;
+          const fold = -(normX * normX * FOLD_DEPTH + normY * normY * FOLD_DEPTH * 0.35);
+          highest = Math.max(highest, positions[(r * COLS + c) * 3 + 2] - fold);
+        }
+      }
+      return highest;
+    }
+    return null;
+  });
+
+/** The wave's own amplitude, and a margin for the float arithmetic of a frame. */
+const WAVE_CEILING = 0.28 + 0.02;
+
+test.describe('the wave ignores the pointer', () => {
+  test('a pointer resting on the wave lifts no point above the wave its own clock draws', async ({ browser }) => {
+    // Until 2026-09-25 each frame lifted the points within 1.2 of a hovering pointer by up to 0.9 and
+    // a spring eased them back when it left: a deformation that followed the cursor, which
+    // `EXPERIENCE.md` § Motion bans as a cursor follower. The Operator ruling of 2026-09-25 (DW-123)
+    // removed it, the invisible plane that caught the pointer and the spring with it.
+    await withMotion(
+      browser,
+      async (page) => {
+        await goTo(page, ROUTE);
+        const canvas = page.locator('#gem-canvas canvas');
+        await expect(canvas, 'no canvas ever mounted, so there is no wave to hover').toBeVisible({ timeout: SETTLE_TIMEOUT });
+        await expect
+          .poll(() => waveRise(page), { timeout: SETTLE_TIMEOUT, message: 'the wave never entered a scene the recorder saw' })
+          .not.toBeNull();
+        await canvas.scrollIntoViewIfNeeded();
+
+        // Points across the canvas that the canvas itself receives, so the pointer reaches the scene
+        // rather than whatever sits over it there.
+        const spots = await canvas.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          const found: { x: number; y: number }[] = [];
+          for (const across of [0.3, 0.4, 0.5, 0.6, 0.7]) {
+            for (const down of [0.35, 0.5, 0.65]) {
+              const x = box.left + box.width * across;
+              const y = box.top + box.height * down;
+              if (document.elementFromPoint(x, y) === node) found.push({ x, y });
+            }
+          }
+          return found;
+        });
+        expect(spots.length, 'no point on the canvas receives the pointer, so a hover could not reach the scene').toBeGreaterThan(0);
+
+        // The control: before any pointer, the wave stands inside its own amplitude and above its
+        // fold, so the reading below is of the drawn points and not of a copy nothing moves.
+        let resting = Number.NEGATIVE_INFINITY;
+        for (let sample = 0; sample < 10; sample += 1) {
+          await frames(page, 2);
+          resting = Math.max(resting, (await waveRise(page)) ?? Number.NEGATIVE_INFINITY);
+        }
+        expect(resting, 'the resting wave already stands above its own amplitude, so the ceiling below is wrong').toBeLessThanOrEqual(WAVE_CEILING);
+        expect(resting, 'no point rises above its fold at rest, so the reading is not of the moving wave').toBeGreaterThan(0);
+
+        let hovered = Number.NEGATIVE_INFINITY;
+        for (const spot of spots) {
+          await page.mouse.move(spot.x, spot.y);
+          for (let sample = 0; sample < 4; sample += 1) {
+            await frames(page, 3);
+            hovered = Math.max(hovered, (await waveRise(page)) ?? Number.NEGATIVE_INFINITY);
+          }
+        }
+        console.log(`narrative: the wave's highest rise above its fold at rest ${resting.toFixed(3)}, under the pointer ${hovered.toFixed(3)}`);
+        expect(hovered, 'a point under the pointer lifted above the wave, so the wave answers the pointer again').toBeLessThanOrEqual(
+          WAVE_CEILING
+        );
+      },
+      [SCENE_RECORDER]
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // The narrative's orphaned assets are gone (ops/asset-budget.md Pending action 3).
 // ---------------------------------------------------------------------------
 

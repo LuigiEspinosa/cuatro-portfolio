@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useMemo, useEffect } from 'react';
-import { useFrame, ThreeEvent } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const COLS = 60;
@@ -12,19 +12,19 @@ const WAVE_FREQ = 1.4;
 const WAVE_AMP = 0.28;
 const WAVE_SPEED = 0.5;
 
-const MOUSE_RADIUS = 1.2;
-const MOUSE_LIFT = 0.9;
-const MOUSE_RADIUS_SQ = MOUSE_RADIUS * MOUSE_RADIUS;
-
-const SPRING_K = 0.1;
-const DAMPING = 0.82;
-
 const FOLD_DEPTH = 1.4;
 
 // The wave's pose, which nothing changes. Until 2026-09-24 it was only the starting point of a
 // pointer drag that turned the wave and let it coast at 0.92 a frame after the release, with a grab
 // cursor set on the body to advertise it. The canvas is decoration and `EXPERIENCE.md` § Pointer and
 // touch allows no gesture, so DW-119's Operator ruling of that day removed all three.
+//
+// **The wave answers no pointer at all** (Operator ruling 2026-09-25, DW-123). Until that day an
+// invisible plane caught the pointer, each frame lifted the points within 1.2 of it by up to 0.9, and
+// a spring eased them back when it left: a deformation that followed the cursor, which
+// `EXPERIENCE.md` § Motion bans as a cursor follower. The plane, the lift and the spring are gone,
+// and each point stands at its fold plus the wave on its own clock. `tests/e2e/narrative.pw.ts`
+// hovers the canvas and reads the drawn points.
 const ROT_X = -0.816;
 const ROT_Y = 15.977;
 
@@ -33,13 +33,8 @@ const V_SEGS = (ROWS - 1) * COLS;
 const LINE_VERT_COUNT = (H_SEGS + V_SEGS) * 2;
 
 export function ParticleWave() {
-  const groupRef = useRef<THREE.Group>(null);
   const linesRef = useRef<THREE.LineSegments>(null);
   const pointsRef = useRef<THREE.Points>(null);
-
-  const velZ = useRef(new Float32Array(COLS * ROWS));
-  const mouseLocal = useRef(new THREE.Vector3(999, 999, 0));
-  const _tmp = useRef(new THREE.Vector3());
 
   const { pointGeo, lineGeo, basePos } = useMemo(() => {
     const count = COLS * ROWS;
@@ -85,30 +80,16 @@ export function ParticleWave() {
     [pointGeo, lineGeo]
   );
 
-  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
-    if (!groupRef.current) return;
-    groupRef.current.worldToLocal(_tmp.current.copy(e.point));
-    mouseLocal.current.copy(_tmp.current);
-  };
-
-  const handlePointerLeave = () => {
-    mouseLocal.current.set(999, 999, 0);
-  };
-
   useFrame(({ clock }) => {
     if (!pointsRef.current || !linesRef.current) return;
 
     const pPos = pointsRef.current.geometry.attributes.position.array as Float32Array;
     const lPos = linesRef.current.geometry.attributes.position.array as Float32Array;
-    const vel = velZ.current;
     const t = clock.getElapsedTime() * WAVE_SPEED;
-    const mx = mouseLocal.current.x;
-    const my = mouseLocal.current.y;
 
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        const idx = r * COLS + c;
-        const i = idx * 3;
+        const i = (r * COLS + c) * 3;
         const bx = basePos[i];
         const by = basePos[i + 1];
         const bz = basePos[i + 2];
@@ -116,19 +97,7 @@ export function ParticleWave() {
         const waveZ =
           Math.sin(bx * WAVE_FREQ + t) * Math.cos(by * WAVE_FREQ * 0.9 + t * 0.8) * WAVE_AMP;
 
-        const dx = bx - mx;
-        const dy = by - my;
-        const dist2 = dx * dx + dy * dy;
-        let lift = 0;
-        if (dist2 < MOUSE_RADIUS_SQ) {
-          const s = 1 - Math.sqrt(dist2) / MOUSE_RADIUS;
-          lift = s * s * MOUSE_LIFT;
-        }
-
-        const targetZ = bz + waveZ + lift;
-        const spring = (targetZ - pPos[i + 2]) * SPRING_K;
-        vel[idx] = vel[idx] * DAMPING + spring;
-        pPos[i + 2] += vel[idx];
+        pPos[i + 2] = bz + waveZ;
       }
     }
 
@@ -164,12 +133,7 @@ export function ParticleWave() {
   });
 
   return (
-    <group ref={groupRef} rotation={[ROT_X, ROT_Y, 0]}>
-      <mesh onPointerMove={handlePointerMove} onPointerLeave={handlePointerLeave}>
-        <planeGeometry args={[COLS * SPACING * 1.8, ROWS * SPACING * 1.8]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
-      </mesh>
-
+    <group rotation={[ROT_X, ROT_Y, 0]}>
       <lineSegments ref={linesRef} geometry={lineGeo}>
         <lineBasicMaterial color='#3b0764' transparent opacity={0.35} />
       </lineSegments>
