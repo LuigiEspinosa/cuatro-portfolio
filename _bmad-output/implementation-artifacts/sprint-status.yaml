@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-25-2026
+last_updated: 09-25-2026 07:09
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -50,7 +50,8 @@ tracking_system: file-system
 # Corrected 2026-08-25. Read c:/Development/cuatro-portfolio until then, a path that
 # has not existed since the repository moved, so any tool resolving this key saw an
 # empty directory and reported no stories rather than failing. Filed from story 1-3.
-story_location: c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
+story_location: 
+  c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
 development_status:
   # 2026-09-24: done by Operator ruling, the day 1-16 and 1-19 closed, the last two of its
   # twenty-one stories (spec-epic-1-close.md). The 2026-08-29 retrospective's rejected verdict
@@ -484,7 +485,7 @@ development_status:
   # not independent: two patches, no loopback. Typecheck clean, 1,545 unit tests in 59 files, 325
   # e2e green in 5.9 min in the pinned image, the /work baseline unchanged.
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   epic-3: backlog
   3-1-introduce-turborepo-and-pin-the-toolchain: backlog
@@ -590,8 +591,7 @@ action_items:
   # DW-4, DW-5, DW-7, DW-13 and DW-18 stand as they were.
   - id: 'epic-1-retro-item-3-decide-what-happens-to-the-five-stories'
     epic: 1
-    action:
-      'Decide what happens to the five stories carrying an unrecorded followup_review_recommended:
+    action: 'Decide what happens to the five stories carrying an unrecorded followup_review_recommended:
       true (1-1, 1-8, 1-10, 1-16, 1-19): run the reviews or file DW entries.'
     owner: 'Cuatro'
     status: done
@@ -659,8 +659,7 @@ action_items:
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-10-extract-the-shared-probe-scaffold-into-o'
     epic: 1
-    action:
-      "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
+    action: "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
       and daisyui-route-probe.mjs, keeping the daisyUI copy's comments."
     owner: 'Cuatro'
     status: open
@@ -710,3 +709,125 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  - id: "epic-2-retro-item-1-before-the-epic-2-merge-rule-the-premise"
+    epic: 2
+    action: "Before the Epic 2 merge: rule the premise wording over a Complete row
+      (DW-244) together with the page's three counts, then add a Premise case that
+      fails when a rendered entry is not Live while the copy says running."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-2-before-the-epic-2-merge-land-ops-contrac"
+    epic: 2
+    action: "Before the Epic 2 merge: land ops/contract-adoption.md Pending Operator
+      action 8 (cs-tracker at Contract 2.0.0 pushed and deployed) so the Registry
+      verification is green, or rule in writing that the merge may ship the token_contract
+      claim ahead of it."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-3-at-the-epic-2-merge-make-the-eight-check"
+    epic: 2
+    action: "At the Epic 2 merge: make the eight checks (the seven ci.yml jobs and
+      Lighthouse) required on main with strict off, per DW-172. On 2026-09-25 main
+      read strict true with no contexts."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-4-revoke-the-twilio-api-key-found-in-mutuo"
+    epic: 2
+    action: "Revoke the Twilio API key found in Mutuo's 2021 history if it is still
+      live, review cs-tracker's two secret_key_base findings and publish it if they
+      are development and test defaults, and record both outcomes in KV-2 as tracked
+      rows."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-5-restate-ux-dr49-with-a-line-for-the-fram"
+    epic: 2
+    action: "Restate UX-DR49 with a line for the framework runtime, or record its
+      breach as a known violation with a closer: every measured route is 57,189 to
+      91,829 gzipped bytes over 140,000 and nothing owns it."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-6-correct-epics-md-2005-2010-to-thirty-one"
+    epic: 2
+    action: "Correct epics.md:2005-2010 to thirty-one stories, twenty FRs and the
+      migration steps as they shipped."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-7-correct-the-stale-registry-test-ts-621-6"
+    epic: 2
+    action: "Correct the stale registry.test.ts:621-668 citation in four components
+      and the stale counts at SuiteDirectory.scss:9-10 and useReduceMotion.ts:17-19,
+      citing the describe by name."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-8-fix-dw-21-s-strings-in-content-work-ts-n"
+    epic: 2
+    action: "Fix DW-21's strings in content/work.ts (Nests.js, Emal Development, and
+      the Javascript and Typescript spellings), with the Operator confirming the spellings."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-9-move-the-duplicated-e2e-helpers-into-tes"
+    epic: 2
+    action: "Move the duplicated e2e helpers into tests/e2e/harness.ts, probeComputed
+      first, then goTo, plantStyle and the FINGERPRINTS parse, closing DW-22, DW-232
+      and DW-49."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-10-process-use-awaiting-operator-for-a-stor"
+    epic: 2
+    action: "Process: use awaiting-operator for a story whose remaining criteria are
+      Operator checks, or record a dated override; reconcile 2-27, moved to done before
+      its screen-reader read."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-11-process-keep-an-independent-verifier-on"
+    epic: 2
+    action: "Process: keep an independent verifier on every unattended story and package;
+      it refused six deliveries the inline review layers had passed, in three days."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-12-process-plant-every-new-assertion-includ"
+    epic: 2
+    action: "Process: plant every new assertion, including guards added in review
+      and fix rounds, and record the planted failure beside it."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-13-process-cite-code-by-symbol-or-test-name"
+    epic: 2
+    action: "Process: cite code by symbol or test name, never by line number, and
+      state in a comment only a count a test holds."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-14-process-each-package-names-which-of-its"
+    epic: 2
+    action: "Process: each package names which of its new ledger entries bind the
+      next merge."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
