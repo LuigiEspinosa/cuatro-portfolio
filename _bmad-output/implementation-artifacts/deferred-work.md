@@ -693,7 +693,15 @@ the next free id, one above the highest in the file, and a status line.
     with no required check yet), so a red required check then holds the merge, and with it the push
     that fires the deploy. **Owner: the session that merges Epic 2.** The entry stays open until that
     setting is observed.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24, before the merge so that the merge itself is
+    gated.** `PATCH .../branches/main/protection/required_status_checks` set `strict` false and eight
+    checks, `test`, `tokens-contract`, `fonts-contract`, `contract-purity`, `registry-schema`,
+    `rendered-output`, `literal-conformance` and `lighthouse`, each pinned to the GitHub Actions app
+    (15368). Read back at 2026-09-25T08:22:04Z: all eight listed, `strict` false, `enforce_admins`
+    on, force pushes off, the rest unchanged. `ops/known-violations.md`, `ops/contract-adoption.md`
+    and `AGENTS.md` carry the observation.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
   id: DW-173

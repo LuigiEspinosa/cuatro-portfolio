@@ -179,8 +179,9 @@ block above so a context refresh does not replace it.
 - **Enabling automation needs a fourth condition, separate from having a suite:** the suite's
   run is a required status check on the default branch, through branch protection or a
   ruleset, so a merge nobody is watching cannot land while the run is red. Observed on
-  2026-08-27, that holds nowhere in the estate (this repository's `main` protection names no
-  check), and it cannot hold in the four private repositories on the current GitHub plan. The
+  2026-08-27, that holds nowhere in the estate (this repository's `main` has required eight
+  checks since 2026-09-25, DW-172, so the fourth condition now holds here, and no automation is
+  enabled), and it cannot hold in the four private repositories on the current GitHub plan. The
   definitions, the observed state of all eleven repositories and the method are in
   `ops/contract-adoption.md`.
 - **None is enabled here.** No Dependabot or Renovate configuration anywhere in the

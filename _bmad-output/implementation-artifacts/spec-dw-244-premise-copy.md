@@ -2,7 +2,7 @@
 title: 'DW-244: the homepage premise names every address below as running, not everything below'
 type: 'bugfix'
 created: '2026-09-25'
-status: 'in-review'
+status: 'done'
 baseline_commit: '760a3a61bd9e98b32880b4932c3233ed475e2fba'
 review_loop_iteration: 1
 context:
