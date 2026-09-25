@@ -7703,7 +7703,20 @@ status: done
 
     **Owner: the Operator.** **Trigger: before the Epic 2 merge to `main`, which ships the
     `Complete` row to production.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25.** The premise reads, word for word, "[N]
+    personal projects became one suite. Every address below is running right now, so open one and
+    you are using the real thing, not looking at a picture of it." `[N]` is derived as before.
+    `87981a0` sets it in `Premise.tsx`, amends `EXPERIENCE.md` § The premise, FR-4 with a dated note,
+    and adds a block to `Premise.test.tsx`: one case pins the words and was red on the old sentence;
+    another, the case the Epic 2 retrospective's E1 asked for, fails when a rendered entry carrying an
+    address is not `Live`, and was red with `cs-tournament` given a `live` URL in a scratch edit; a
+    third plants that shape so the read is seen firing. Neither the PRD nor `epics.md` quotes the
+    sentence, so neither is amended. Two defaults were stated to the Operator on 2026-09-25 and not
+    overruled, and stand unchanged: the Directory's count stays `Live` rows only, reading `5 running`
+    over six rows, and `cs-tournament`'s `demo` stays `not-deployed`. The footer line's count was not
+    part of the ruling: DW-246.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-vercel-removal.md`
   id: DW-245
@@ -7725,4 +7738,27 @@ status: done
     current-state mentions of Vercel.
 
     **Owner: the Operator, as the owner of the PRD.** **Trigger: the next pass over PRD § 5.1.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-244-premise-copy.md`
+  id: DW-246
+  summary: >-
+    The footer line's two figures count different sets, `Six applications` the rendered rows and
+    `five languages` the whole estate, and the Operator's premise ruling of 2026-09-25 settled the
+    premise's count and the Directory's but not this one, which the Epic 2 retrospective's action 1
+    asked to be settled with them.
+  evidence: |-
+    Found 2026-09-25 by the dw-244-premise-copy package while closing that action ("rule the premise
+    wording ... together with the page's three counts"). `SiteFooter` counts `renderedApplications`
+    (six) and `ESTATE_LANGUAGES` (five). Of the five, only TypeScript and Elixir are in a rendered
+    entry's `tech`; Python, Go and Solidity are in `In progress` entries the Directory holds back
+    (FR-35). The retrospective's A1 names the page's three denominators: `Fourteen personal projects`
+    (every entry), `5 running` (`Live` rows) and this line. The ruling kept the first two as they are
+    and did not name the third. Each figure is true of what it counts, so nothing on the page is false.
+
+    Not changed in the package: the ruling did not name the footer, and `EXPERIENCE.md` § UI strings
+    writes its line.
+
+    **Owner: the Operator.** **Trigger: the next edit to the footer line or to `ESTATE_LANGUAGES`.**
+    It does not bind the Epic 2 merge.
   status: open

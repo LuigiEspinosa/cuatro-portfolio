@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-25-2026 07:09
+last_updated: 09-25-2026 08:46
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -709,13 +709,18 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-25: done by Operator ruling 2026-09-25 (87981a0): the premise says every address
+  # below is running, and a Premise.test.tsx case fails when a rendered entry carrying an address
+  # is not Live. DW-244 closed. Of the three counts, the premise's stays derived, as ruled, and the
+  # Directory's stays Live rows only, a default stated and not overruled; the footer's was not
+  # ruled and is DW-246.
   - id: "epic-2-retro-item-1-before-the-epic-2-merge-rule-the-premise"
     epic: 2
     action: "Before the Epic 2 merge: rule the premise wording over a Complete row
       (DW-244) together with the page's three counts, then add a Premise case that
       fails when a rendered entry is not Live while the copy says running."
     owner: "Cuatro"
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-2-retro-2026-09-25.md"
   - id: "epic-2-retro-item-2-before-the-epic-2-merge-land-ops-contrac"
