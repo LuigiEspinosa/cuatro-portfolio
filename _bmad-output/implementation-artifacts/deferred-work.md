@@ -6912,7 +6912,7 @@ status: done
     and `Mutuo` read private by decision with their scan findings, the suite pins the four-row table
     with `cs-tournament` alone struck and answers its source 200 (11 by 2xx, 3 tolerated), shown red
     first against the unstruck record, and KV-2's action 5 is dated with all three dispositions and
-    the entry retired.
+    the entry retired, all in `9336330`.
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`
@@ -7201,4 +7201,58 @@ status: done
 
     **Owner: the Operator, for FR-1; Story 3.2's planning, for its own criterion.** **Trigger: Story
     3.2's planning, or any pass over FR-1.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-139
+  summary: >-
+    Four sentences still count four private repositories as a present fact, though `cs-tournament`
+    is public since the KV-2 ruling of 2026-09-24 and three are private now; one of them is the
+    dependency automation policy in `AGENTS.md`, which every agent here reads.
+  evidence: |-
+    Found 2026-09-25 by the records-and-docs package's fix round, by `grep -n -i "four private"` and
+    a read of § Sources tolerated to answer 404 anonymously, after amending the two rows its spec
+    names (`ops/registry-verification.md:55` and `:59`). Line numbers as of 2026-09-25:
+    `AGENTS.md:163`, outside the managed block ("it cannot hold in the four private repositories on
+    the current GitHub plan"); `ops/contract-adoption.md:179`, the policy sentence, which says the
+    same; and in `ops/registry-verification.md`, that section's opening (`:88`, KV-2 "records four
+    Registry `source` links that resolve for nobody but the Operator") and its striking rule
+    (`:111-112`, the suite "lists the four repositories with none struck" and its fixture "answers
+    404 for exactly those four"), while since `9336330` the suite pins `KV2_TABLE` with
+    `cs-tournament` in `STRUCK` and plants a 404 for the other three. `ops/contract-adoption.md:213`,
+    `:278` and `:781` say four under their 2026-08-27 observation and are dated readings, left as
+    they are.
+
+    Nothing is red: no test reads these sentences. The cost is a policy line telling an agent that
+    four repositories cannot carry a required check when `cs-tournament`, public, now can, and a
+    striking rule describing pins the suite no longer has. Design Note 1 of the package's spec found
+    the first two before KV-2 was applied and held them back with it. Not corrected in the package:
+    its spec named the verification record's Secret and Expected rows as the counts to amend, and a
+    further stale copy is filed rather than fixed.
+
+    **Owner: unassigned.** **Trigger: the next strike of a KV-2 row, the next edit to the dependency
+    automation policy, or the next pass over `ops/contract-adoption.md`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-140
+  summary: >-
+    `EXPERIENCE.md` § Chrome still says the shipped nav links measure roughly 16×27px, the figure
+    the Story 2-8 sweep disproved and the Operator's ruling of 2026-09-24 annotated in Story 2.32's
+    two copies only.
+  evidence: |-
+    Found 2026-09-25 by the records-and-docs package's fix round, from the verifier's reading of the
+    package. `EXPERIENCE.md:613`, as of 2026-09-25, reads "The shipped links measure roughly
+    16×27px, which is the estate's worst instance of the floor being missed while appearing to be
+    met". It is the line Story 2.32's premise and first criterion quote, and those two copies,
+    `epics.md:3624` and `:3631`, now carry the dated note that the Story 2-8 sweep measured the
+    links at 38.41 to 98.13 wide by 22.00 tall on 2026-09-06, that Story 2-32 repaired them and that
+    KV-4 retired on 2026-09-23 (commit `ffcd8aa`). The rule beside it, `min-height` plus
+    `inline-flex`, holds; only the figure is wrong.
+
+    Not corrected in the package: the ruling's brief named Story 2.32's two copies, and a further
+    stale copy is filed rather than fixed.
+
+    **Owner: the Operator, as the owner of the spines.** **Trigger: the next pass over
+    `EXPERIENCE.md` § Chrome.**
   status: open

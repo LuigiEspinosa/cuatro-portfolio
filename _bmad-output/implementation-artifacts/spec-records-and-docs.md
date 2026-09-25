@@ -103,16 +103,19 @@ rulings, then `DESIGN.md`, `EXPERIENCE.md` and `RESTYLE-SPEC.md` in that order, 
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `ops/__tests__/registry-verification.test.ts`, then `ops/registry-verification.md`: move the
+- [x] `ops/__tests__/registry-verification.test.ts`, then `ops/registry-verification.md`: move the
   pins to three private and one struck and assert no row is left to strike, red first on the
-  baseline record; then strike the row and amend the counts of four. **Withdrawn, see the Spec
-  Change Log.**
+  baseline record; then strike the row and amend the counts of four. Refused in this package's
+  session, applied by the orchestrator in `9336330`, and completed in fix round 1 by `7f6f837`
+  (the no-row-left-to-strike assertion and the Secret row's count); see the Spec Change Log.
 - [x] `components/organisms/SiteFooter/SiteFooter.tsx`: one docblock paragraph, home-only by design.
 - [x] Planning documents and `README.md`: the corrections and rulings per Design Notes.
-- [ ] Clear the future-vizion Pages custom domain with `gh`, read back once. **Refused, see the Spec
-  Change Log;** action 7 carries the Operator's exact steps instead.
+- [x] Clear the future-vizion Pages custom domain with `gh`, read back once. Refused in this
+  package's session and done by the orchestrator in its own: `cname` reads `null`, GitHub removed
+  the `CNAME` file in `360f9f1` on future-vizion's `main`, and action 7 is dated in `9336330`.
 - [x] Records: KV-1's expiry, KV-3's note, the ops rows, routing-inventory, the ledger closings, the
-  new DW entries, the board. KV-2's retirement is withdrawn with the first task.
+  new DW entries, the board. KV-2's retirement, action 5 and DW-128's closing landed with the first
+  task in `9336330`.
 
 **Acceptance Criteria:**
 - Given the baseline record, when the moved suite cases run, then each fails naming `cs-tournament`.
@@ -121,6 +124,14 @@ rulings, then `DESIGN.md`, `EXPERIENCE.md` and `RESTYLE-SPEC.md` in that order, 
   baseline is unmoved.
 - Given any ref in this package, when a reader opens where it lives, then it reads closed with the
   date, the ruling and the commit, or, for KV-3 action 6, open with exact steps.
+
+**As met, 2026-09-25.** The first criterion's edits were refused by this package's permission gate
+and applied by the orchestrator in `9336330`, after which only the real-record case failed on the
+baseline; fix round 1 adds the committed-Registry case's no-row-left-to-strike assertion in
+`7f6f837`, and both moved cases now fail on the baseline record naming `cs-tournament`
+(§ Verification). The second holds on the final tree, the container run standing from the
+implementation because nothing since has touched a file the build or the browser suite reads. The
+third holds, KV-3 action 6 open with exact steps and action 7 dated on `360f9f1`.
 
 ## Spec Change Log
 
@@ -150,6 +161,37 @@ rulings, then `DESIGN.md`, `EXPERIENCE.md` and `RESTYLE-SPEC.md` in that order, 
   Ponytail: lean. Design layer: `SiteFooter.tsx` changed in a comment alone, nothing to judge,
   approve. ECC verification loop: build, types and tests as § Verification records, lint N/A. No
   new ledger entry from the review.
+- **Applied by the orchestrator, 2026-09-24, after the gate refused the package.** In its own
+  session, where the Operator's approval reaches, the orchestrator made both refused changes in
+  `9336330`: `cs-tournament`'s row in § Sources tolerated struck, `cs-tracker` and `Mutuo` recorded
+  private by decision with their scan findings, the Expected row amended to 11 by 2xx and 3
+  tolerated, the suite's pins moved (`KV2_TABLE`, `STRUCK`, and `PRIVATE` derived from them, so the
+  committed-Registry fixture answers `cs-tournament`'s source 200), KV-2 retired with actions 5 and
+  7 dated, and DW-128 closed. It cleared the Pages custom domain with
+  `gh api -X PUT repos/LuigiEspinosa/future-vizion/pages` and a null `cname`, and GitHub removed the
+  `CNAME` file itself in `360f9f1` on future-vizion's `main`. GitHub dates that commit
+  2026-09-25T00:02:53Z, minutes into the next UTC day, while action 7's cell dates the clear
+  2026-09-24; the cell is left as the orchestrator wrote it. Action 6, the Cloudflare DNS deletes,
+  stays the Operator's. Design Notes 3 and 8 now describe work done.
+- **Fix round 1, 2026-09-25, after the verifier's stage-2 rejection.** Its failures 1 and 2 were the
+  two refusals, resolved above; this round owns 3 and 4, each re-checked before anything was ticked.
+  (3) This spec read `done` with tasks 1 and 4 open and the first criterion unmet. With the baseline
+  record swapped in, `9336330` met half of it: the real-record `kv2Rows` case failed naming
+  `cs-tournament`, but the committed-Registry case passed, since a 2xx on an unstruck row is a pass
+  that says the row can be struck and nothing asserted that none was left, which matrix row 1
+  requires. `7f6f837` adds that assertion and corrects the case's title, which still read 10 and 4,
+  so both cases fail on the baseline and pass on the struck record; it also amends the Secret row
+  (`ops/registry-verification.md:55`), the one count of four the Code Map names that `9336330`
+  left. `365a38e` names the `cs-tracker` and `Mutuo` findings by type and date in the two private
+  rows and KV-2's retirement paragraph, as the Boundaries and Design Note 4 require of a public
+  record. DW-128's closing now names `9336330` and `ops/hub-accessibility-pass.md` row 2 names
+  `ffcd8aa`, as the third criterion asks. With KV-2's records work applied, Design Note 1's
+  held-back counts of four are filed as DW-139, with two sentences of § Sources tolerated found
+  beside them, and the 16×27 figure the verifier found in `EXPERIENCE.md` § Chrome is DW-140.
+  (4) Step 2 action 5 of `ops/anchor-token-adoption.md` cited `d3cc350`, 2-22's fix round, for the
+  deletion of the alias layer; `22e5d1c` cites `201f7f2`, which deleted it from `app/app.scss`,
+  corrected in place since the row had never been pushed. Every task is now ticked and every
+  criterion met, so the status stays `done`.
 
 ## Design Notes
 
@@ -196,7 +238,8 @@ Assumptions, resolved unattended:
 
 **As run, 2026-09-24:**
 - No red-first run exists: the one behaviour change, the struck KV-2 row, was withdrawn (Spec Change
-  Log), and everything that landed is text a reader reads.
+  Log), and everything that landed is text a reader reads. *(Superseded 2026-09-25: the struck row
+  landed in `9336330`, and its red-first run is under fix round 1 below.)*
 - `corepack pnpm typecheck`: exit 0 before `2327d75` and again on the final tree.
 - `corepack pnpm test --run`, the whole suite: 63 files, 1,634 passed, at 23:36Z with every record
   edit in place, and again at 23:45Z after the review's three patches.
@@ -210,17 +253,44 @@ Assumptions, resolved unattended:
 - The unfiltered container run, the task's command verbatim: 337 passed in 6.2 minutes, exit 0, no
   failure, no retry, no snapshot written, and `git status` showed nothing under `tests/` after it.
 
+**As run, 2026-09-25, fix round 1:**
+- Red first, with `7bc305f`'s `ops/registry-verification.md` swapped in for the struck record and
+  restored byte for byte afterwards: `corepack pnpm vitest run
+  ops/__tests__/registry-verification.test.ts` under `9336330`'s suite failed 1 of 55, the
+  real-record case (`expected [] to deeply equal [ 'LuigiEspinosa/cs-tournament' ]`), and under
+  `7f6f837`'s failed 2 of 55, adding the committed-Registry case (`expected [ 'cs-tournament' ] to
+  deeply equal []`). On the struck record, 55 of 55.
+- `corepack pnpm typecheck`: exit 0 with the suite edit in place, and again on the final tree.
+- `corepack pnpm test --run`, the whole suite: 63 files, 1,634 passed, at 00:28Z with the suite edit
+  in place, and again at 00:35Z on the final tree.
+- `node ops/literal-conformance.mjs` and `node ops/registry-schema.mjs`: exit 0.
+- `corepack pnpm build` at `22e5d1c`: exit 0, build `-49NbpR6J4f7odCeoxWaV`.
+  `node ops/asset-budget.mjs`: exit 0, 2,851,998 bytes on disk and 830,256 gzipped, the figures
+  above, so no reading is filed.
+- The container run is not repeated: since it ran, `9336330` and this round changed records, the
+  ledger, this spec and one Vitest file, and no browser spec reads any of them.
+- Re-read 2026-09-25: `gh api repos/LuigiEspinosa/future-vizion/pages --jq .cname` prints `null`,
+  and `360f9f1` ("Delete CNAME") touches `CNAME` alone; `gh repo view LuigiEspinosa/cs-tournament`
+  reads `PUBLIC`, and anonymous GETs answer 200 for it and 404 for `cs-tracker` and `Mutuo`;
+  `git show --stat 201f7f2` rewrites `app/app.scss` (208 lines), which `d3cc350` does not touch.
+
 ## Suggested Review Order
 
-**The two refusals, and what the Operator now holds**
+**KV-2 and KV-3: refused in this package, applied by the orchestrator, completed in fix round 1**
 
-- KV-3's Pages domain stays open; the Operator's exact Settings steps replace the refused call.
-  [`known-violations.md:604`](../../ops/known-violations.md#L604)
+- `cs-tournament` struck; the two kept private carry their findings by type and date.
+  [`registry-verification.md:97`](../../ops/registry-verification.md#L97)
 
-- The DNS deletes, written as exact steps with the re-read of both names.
-  [`known-violations.md:603`](../../ops/known-violations.md#L603)
+- No KV-2 row left to strike: the assertion that makes the committed-Registry case fail first.
+  [`registry-verification.test.ts:250`](../../ops/__tests__/registry-verification.test.ts#L250)
 
-- Why KV-2's records work is withdrawn rather than routed around.
+- KV-2 retired on its own condition, all three repositories ruled.
+  [`known-violations.md:289`](../../ops/known-violations.md#L289)
+
+- The Pages domain cleared on `360f9f1`; the DNS deletes stay the Operator's, as exact steps.
+  [`known-violations.md:616`](../../ops/known-violations.md#L616)
+
+- What each refusal became, and what fix round 1 added.
   [`spec-records-and-docs.md`](spec-records-and-docs.md#spec-change-log)
 
 **The rulings, where each now lives**
@@ -268,4 +338,7 @@ Assumptions, resolved unattended:
   [`deferred-work.md:5586`](deferred-work.md#L5586)
 
 - Three stale copies the briefs did not name, filed rather than fixed.
-  [`deferred-work.md:7123`](deferred-work.md#L7123)
+  [`deferred-work.md:7131`](deferred-work.md#L7131)
+
+- Two more, filed in fix round 1: the counts of four KV-2 left behind, and the 16×27 figure.
+  [`deferred-work.md:7207`](deferred-work.md#L7207)
