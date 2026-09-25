@@ -4282,6 +4282,9 @@ rather than assuming one box, and AD-22's re-check scope now includes that topol
 It has grown since this story was written: the two `cs-tracker` adoption probes joined it on
 2026-09-23, and dispatching `registry-verification.yml` and confirming it green joined it on
 2026-09-24 by Operator ruling (DW-85). Re-verify the spine's list, not this copy.
+**Amended 2026-09-25:** four more joined it by Operator ruling 2026-09-24: the `cs-tracker`
+accessibility probe, the estate automation-policy sweep, the upstream font pins, and the Tailwind
+pin with `TAILWIND_NAMESPACES`, each with a narrower trigger of its own.
 
 ### Story 4.2: Traefik with Host-matched routers and DNS-01
 Stand up Traefik v3.7 as the estate's proxy, with certificate issuance over DNS-01.
