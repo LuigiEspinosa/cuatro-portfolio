@@ -481,6 +481,57 @@ The 94,489 figure agrees with `ops/font-contract.md:145` and `packages/fonts/fac
 
 ## Every route
 
+### The 2026-09-25 reading, after the home-hero-rulings package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `cyjLeQqbxyQPriFPouzNM`, written
+2026-09-25T14:45:02Z at `7b26092` with no measured input dirty. It is one reading after the
+package's three Operator rulings of 2026-09-25: `b4c4fec` holds the hero links `inert` from script
+and deletes their keyframe (DW-125), `e47d20a` draws the landmark's ring again on a layer above the
+hero in the global stylesheet (DW-127), and `7b26092` removes the particle wave's pointer lift
+(DW-123). The before is the same tool against a build of `93cf5ba`'s shipped sources,
+`kJBZ_vOo4JfTV5CCBUhxT`, taken on the host the same day with only two test files dirty.
+
+| Route | Document bytes | Gzipped on the wire | Carries WebGL | Served | Nature |
+|---|---|---|---|---|---|
+| `/work` | 21,402 | 231,870 | no | yes | **Observed** |
+| `/cv` | 22,662 | 230,461 | no | yes | **Observed** |
+| `/celeste` | 14,780 | 197,346 | no | yes | **Observed** |
+| `/_not-found` | 18,101 | 197,231 | no | **no**: Next's own document | **Observed** |
+| `/_global-error` | 9,578 | 188,762 | no | **no**: Next's own document | **Observed** |
+
+**Every route before and after, on the wire.** **Observed** on both sides, **Derived** delta. `/` was
+not fetched: it is not prerendered.
+
+| Route | Before | After, `7b26092` | Delta | Nature |
+|---|---|---|---|---|
+| `/work` | 231,831 | 231,870 | 39 heavier | **Observed**, the tool |
+| `/cv` | 230,424 | 230,461 | 37 heavier | **Observed**, the tool |
+| `/celeste` | 197,308 | 197,346 | 38 heavier | **Observed**, the tool |
+| `/_not-found` | 197,193 | 197,231 | 38 heavier | **Observed**, the tool |
+| `/_global-error` | 188,763 | 188,762 | 1 lighter | **Observed**, the tool |
+
+**What moved.** **Observed** on the host build. The stylesheets `/work` links read 4,925 gzipped where
+they read 4,885: the global stylesheet carries `main:focus-visible::after` and the `position` line
+beside the landmark's ring, and every route that links it carries the same 37 to 39.
+`/_global-error` links no Hub stylesheet and moved only by its build id. The narrative total fell
+303 gzipped, all of it in the chunk the tool attributes to `@react-three/postprocessing`, 105,544 to
+105,241, which is where `ParticleWave` is bundled; the two three.js chunks are 894,996 bytes each on
+both sides, so DW-120 is neither closed nor made worse. The inert effect and the deleted keyframe
+reach `/` alone, which is not prerendered and not weighed here.
+
+**The whole build, before and after.** **Observed**, the tool's tables on each side.
+
+| Figure | Before, `93cf5ba` | After, `7b26092` | Delta | Nature |
+|---|---|---|---|---|
+| Chunks written | 18 `.js`, 13 `.css` | 18 `.js`, 13 `.css` | 0 | **Observed** |
+| Bytes in `.next/static/chunks` | 2,851,998 on disk, 830,256 gzipped | 2,852,138 on disk, 830,233 gzipped | **140 heavier on disk, 23 lighter gzipped** | **Observed**; **Derived** delta |
+| The narrative total | 619,351 across 5 chunks | 619,048 across 5 chunks | 303 lighter | **Observed**; **Derived** delta |
+| The non-3D line | `/work`, 231,831, 91,831 over, 65.6 percent | `/work`, 231,870, 91,870 over, 65.6 percent | 39 heavier | **Observed**; **Derived** delta |
+| The budget's own decomposition | 104,114, 35,886 of margin | 104,153, 35,847 of margin | 39 heavier, all of it HTML and critical CSS | **Observed**; **Derived** delta |
+
+**Against the budget.** **Derived.** Noise: no route moves by more than 39 gzipped against Story
+2-2's 140,000, and the narrative is lighter.
+
 ### The 2026-09-24 reading, after the DW-15 contract 2.0.0 package
 
 **Verbatim**, `node ops/asset-budget.mjs` against build `8lYebNNfgiclmtAUbcLF_`, written
@@ -1801,6 +1852,28 @@ router, and `core-js` for the polyfill chunk. **Decision.** A chunk is narrative
 if a fingerprint above hits it.
 
 ## Findings
+
+### The 2026-09-25 run, after the home-hero-rulings package
+
+**Verbatim**, `node ops/asset-budget.mjs` against build `cyjLeQqbxyQPriFPouzNM`. § Every route's
+2026-09-25 reading after the home-hero-rulings package and this section were filed from this run.
+
+- The narrative bundle is 619,048 bytes gzipped across 5 chunks, against an estimate of 300,000 to
+  450,000. That is 169,048 over the top of the range.
+- 592,077 bytes of that is genuinely deferred: `0x9hgoafoipaz.js`, `0-742gw60ue7o.js`,
+  `05uhtp2q.texf.js`, `0te7gr59z3e7w.js` is referenced by no prerendered document. The other 26,971
+  is on a document at first paint, so the `next/dynamic` boundaries defer far less than their shape
+  suggests.
+- The non-3D path is over budget as measured: 231,870 against 140,000, 91,870 over, on route
+  `/work`. The largest single contributor is `.next/static/chunks/1416ak9gh4br1.js` at 70,572.
+- On the budget's own decomposition it is inside: 104,153 against 140,000, 35,847 of margin. That
+  decomposition has no line for the 221,376 of JavaScript or the 830 of preloads the document
+  actually carries.
+
+**Three lines moved.** **Observed**, against a build of `93cf5ba`'s shipped sources taken the same
+day. The narrative total reads 619,048 where it read 619,351, the particle wave's lift gone; the
+non-3D line 231,870 where it read 231,831, and the decomposition 104,153 where it read 104,114, the
+global stylesheet carrying the landmark ring's layer.
 
 ### The 2026-09-24 run, after the DW-15 contract 2.0.0 package
 

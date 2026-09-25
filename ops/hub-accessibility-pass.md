@@ -22,7 +22,7 @@ without a method is a claim. **Story ids are written hyphenated**, as `Story 2-2
 
 | Figure | Value | Nature |
 |---|---|---|
-| The focus rule | One global `:focus-visible` rule in `app/app.scss`, `RESTYLE-SPEC.md:326-341` § 4 verbatim on `--stroke-focus`, `--token-focus`, `--focus-offset` and `--r-hair`, replacing nine per-component blocks in eight stylesheets. **One deliberate exception since 2026-09-24**: `main:focus-visible` beside it draws the same ring from `--stroke-focus` and `--token-focus` inset by its own width, `calc(-1 * var(--stroke-focus))`, on the skip link's target alone (F-20) | **Decision.** Operator ruling of 2026-09-13 at this story's planning. The nine are deleted, not overridden. The exception is the Operator ruling of 2026-09-24, and `tests/e2e/accessibility-floor.pw.ts` allows an outline on that one selector in that one file and nowhere else |
+| The focus rule | One global `:focus-visible` rule in `app/app.scss`, `RESTYLE-SPEC.md:326-341` § 4 verbatim on `--stroke-focus`, `--token-focus`, `--focus-offset` and `--r-hair`, replacing nine per-component blocks in eight stylesheets. **One deliberate exception since 2026-09-24**: `main:focus-visible` beside it draws the same ring from `--stroke-focus` and `--token-focus` inset by its own width, `calc(-1 * var(--stroke-focus))`, on the skip link's target alone (F-20). **A second since 2026-09-25**: `main:focus-visible::after` draws that same ring again on a layer above the home hero, whose canvas and scrim otherwise paint over the landmark's outline on `/`'s default door at 768 and wider (DW-127) | **Decision.** Operator ruling of 2026-09-13 at this story's planning. The nine are deleted, not overridden. The exception is the Operator ruling of 2026-09-24, and `tests/e2e/accessibility-floor.pw.ts` allows an outline on that one selector in that one file and nowhere else |
 | Routes swept | 5: `/`, `/work`, `/cv`, `/celeste` and `/a-route-that-does-not-exist` (the 404), derived from `app/` rather than listed | **Decision.** `routesOnDisk` in `tests/e2e/accessibility-floor.pw.ts`, less `/api/health` |
 | Tab stops read | **39**: `/` 18, `/work` 7, `/cv` 9, the 404 5, `/celeste` 0; none inside an `aria-hidden` subtree, none disabled or inert. **Re-read 2026-09-24: 42**: `/` 18, `/work` 8, `/cv` 10, the 404 6, `/celeste` 0, the one new stop on each route with a visible header being the skip link, its first (DW-43) | **Observed 2026-09-13** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800, by tagging every tabbable in DOM order and pressing Tab once per tabbable from `body`. **Observed 2026-09-24** by the DW-43 accessibility package, the same sweep in the same image |
 | Every stop computes the ring | `2px solid lab(79.9388 18.6867 -44.8585) at 3px`, `:focus-visible` true, `transition-property` `all` over `0s` on every stop, which never animates | **Observed 2026-09-13**, same run. The `lab()` string is Chromium's computed form of `--token-focus`; rasterised through a canvas it is `rgb(198, 189, 255)`. Computed, not painted whole: the next row is what a visitor sees |
@@ -95,6 +95,14 @@ The human half of check 1.
 | Checked by | The Operator |
 | Checked on | 2026-09-14 |
 | Result | **Pass.** One keyboard-only traversal of `/` in the Operator's own browser against the production build served on this host at `acb0c55`, mouse untouched: every stop ringed the moment it landed, the six recorded fragments as described and no seventh, the main landmark ringed after Enter on the skip-link, and a mouse click on the same elements painted nothing. **The confirmation stands for its date and is not re-taken here.** It was read against the surface as Story 2-28 left it; five of its six fragments closed on 2026-09-21 with Story 2-29, which is a change in the Hub's favour and is recorded in the method above rather than by rewriting a dated reading |
+
+**Noted 2026-09-25: DW-127 changed what the Enter step shows** (Operator ruling 2026-09-25). The
+method above expects the main landmark's bottom edge to ring across the page, which is what the ring
+drawn outside the landmark showed on 2026-09-14. Since 2026-09-24 (F-20) the ring is drawn inside the
+landmark, and since 2026-09-25 it is drawn again on a layer above the hero, so after Enter on the skip
+link a visitor sees the ring on the landmark's top, left and right edges in the first viewport at
+every width, `/`'s default door at 768 and wider included, where the hero's canvas and scrim used to
+cover it. The 2026-09-14 confirmation stands for its date; a re-take would see the whole box.
 
 ## The focus standard
 
@@ -592,6 +600,32 @@ entrance's largest text was not a candidate at all; under DW-106's `visibility: 
 paint is its reveal, and that is what LCP now reports. Performance is not gated
 (`.lighthouserc.js` comments it out), and the ruling fixed the mechanism, so this is recorded and
 filed as DW-125 rather than tuned. **Observed 2026-09-24.**
+
+**Re-read 2026-09-25 by the home-hero-rulings package**, after the Operator's ruling of that day on
+DW-125 moved the hero links from `visibility: hidden` in their keyframe to `inert` set from script
+while each link's entrance waits (`b4c4fec`). The same method as the 2026-09-24 reading: in
+`mcr.microsoft.com/playwright:v1.62.1-noble`, `@lhci/cli` 0.15.1 driving Lighthouse 12.6.1 under the
+image's Chrome for Testing 151.0.7922.34, mobile emulation, three runs per URL, `lhci collect` then
+`lhci assert` against `.lighthouserc.js`, the build taken with `NEXT_PUBLIC_UMAMI_WEBSITE_ID` and
+`NEXT_PUBLIC_UMAMI_URL` empty and served by `pnpm start` on port 3000, and nothing uploaded. Build
+`U8SaExf9-z_ppyh6fagl1` at `7b26092`, the package's last code commit. `lhci assert` reported every
+assertion green. Scores per run, in the order the runs were made; performance is not gated.
+
+| URL | Accessibility | Best practices | SEO | Performance (not gated) | Largest contentful paint | LCP element | Failing audits |
+|---|---|---|---|---|---|---|---|
+| `/` | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 0.65, 0.66, 0.65 | 2,733, 2,570, 2,571ms | `a.skip-control` | none in the three gated categories |
+| `/work` | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 0.93, 0.92, 0.92 | 2,726, 2,714, 2,717ms | `h2#publicis-global-delivery-heading` | none in the three gated categories |
+| `/cv` | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 1.00, 1.00, 1.00 | 0.87, 0.90, 0.92 | 2,719, 2,420, 1,962ms | `p.cv-intro__lede` | none in the three gated categories |
+
+**What moved.** **Observed**, the same runs. `/`'s largest contentful paint is `a.skip-control` again,
+at 2,570 to 2,733ms, where the 2026-09-24 reading after DW-106 had the first hero link, `a.nav-link`,
+at 5,320 to 5,483ms, and where the reading before DW-106 had the skip control at 2,410 to 2,726ms.
+First contentful paint on `/` is 1,815 to 1,824ms, unchanged. Performance on `/` reads 0.65 to 0.66,
+back from 0.49 to where it was before DW-106 (0.65 to 0.67). Each link now paints at `opacity: 0`
+through its delay, which Chrome never reports as a candidate, while `inert` keeps it out of the tab
+order, hit-testing and the accessibility tree until its fade starts (`tests/e2e/front-door.pw.ts`,
+the DW-106 and DW-125 block). `/work` and `/cv` are not touched by the change and read as before.
+DW-125 closes on this reading. **Observed 2026-09-25.**
 
 ## Decisions
 

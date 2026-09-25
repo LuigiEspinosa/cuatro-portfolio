@@ -696,6 +696,12 @@ Durations and easings are tokens: `{motion.dur-micro}` 120ms · `{motion.dur-min
   also hold `visibility: hidden` at the start of their entrance keyframe. It does not animate: each
   link is hidden through its delay and visible from the first frame of its fade, so none is a Tab
   stop or a click target before it can be seen. Reduced motion has no entrance and is unaffected.)*
+  *(Amended 2026-09-25 by Operator ruling, DW-125: the effect stands and the mechanism changes. The
+  links no longer hold `visibility`; each paints at `opacity: 0` through its delay, as the rest of the
+  entrance does, and script sets `inert` on it only while its delay runs, lifting it when its fade
+  starts, ends or is cancelled. The served markup never carries `inert`, so a visitor with no script
+  gets live links, and reduced motion and the flat door never set it. `visibility: hidden` made a
+  link's first paint its reveal, which Chrome then reported as the route's largest contentful paint.)*
 - **Name the properties.** `transition: border-color var(--dur-micro) var(--ease-toggle)`.
   Never `transition: all`.
 - **One orchestrated entrance per page load**, then content simply exists. Universal

@@ -7047,7 +7047,19 @@ status: done
     **Owner: the Operator**, for a ruling: keep the lift as the narrative's one answer to the
     pointer, written into `EXPERIENCE.md` as a declared exception, or remove it so the wave moves on
     its own clock alone. **Trigger: that ruling, or the next change to the wave.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25.** `7b26092` removes the wave's answer to the
+    pointer from `ParticleWave.tsx`: `onPointerMove`, `onPointerLeave`, the invisible plane that
+    existed only for them, `MOUSE_RADIUS`, `MOUSE_LIFT`, the spring (`SPRING_K`, `DAMPING` and the
+    per-point velocity), and the group ref and vectors only they used. Each point now stands at its
+    fold plus the wave on its own clock. A new case in `tests/e2e/narrative.pw.ts` hovers the canvas at
+    every point it receives and reads the drawn points' height above their fold: 1.405 under the pointer
+    before the change (red, against the wave's own 0.28), 0.280 at rest and under the pointer after.
+    `CHANGELOG.md` records the removal under a dated entry beside 3.2.0's "Mouse hover repulsion",
+    which is left as history; `EXPERIENCE.md` names no lift, so it is not amended. DW-120 is unchanged,
+    not closed: the build still writes two three.js chunks of 894,996 bytes
+    (`ops/asset-budget.md` § Every route, 2026-09-25).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
   id: DW-124
@@ -7105,7 +7117,27 @@ status: done
     **Owner: the Operator**, for a ruling on the entrance's timing or on accepting the figure.
     **Trigger: that ruling, the first field reading of `/`'s LCP over 2.5s, or the next change to the
     entrance.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25.** The five hero links are held out of reach
+    by `inert` instead of `visibility: hidden`. `b4c4fec` deletes the `home-enter-link` keyframe, so
+    the links share the opacity-only `home-enter` again with their delays unchanged, and adds an effect
+    to `HomeLayout.tsx` that sets `inert` from script on a link only while its animation is still
+    inside its delay, lifts it on `animationstart`, `animationend` or `animationcancel`, and lifts every
+    one on cleanup, which covers an unmount and the door turning flat. The served markup never carries
+    it, reduced motion and the flat door never set it, and a link whose turn has passed by hydration is
+    never made inert. DW-106's ruled effect stands. Tests, each seen red first: four cases in
+    `HomeLayout.test.tsx` (held through the delay and freed per event, never stranded, nothing held
+    without an entrance, never served), the keyframe case there now refusing any `visibility`; in
+    `tests/e2e/front-door.pw.ts` the held case (each link `inert`, visible and at opacity 0, Tab past
+    all five, a click landing beneath them, none inert after), a real-time case, and a case per
+    reduced-motion and Save-Data door recording that no link is ever made inert; and
+    `tests/e2e/narrative.pw.ts` refusing any keyframe that declares `visibility`. `EXPERIENCE.md`
+    § Motion carries a dated amendment. **Observed 2026-09-25**, `ops/hub-accessibility-pass.md`
+    § Lighthouse readings, three runs in the pinned image on build `U8SaExf9-z_ppyh6fagl1` at
+    `7b26092`: LCP on `/` is `a.skip-control` at 2,570 to 2,733ms (from 5,320 to 5,483ms), performance
+    0.65 to 0.66 (from 0.49), accessibility, best practices and SEO 1.00 on every run of all three
+    URLs, `lhci assert` green.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
   id: DW-126
@@ -7171,7 +7203,23 @@ status: done
     **Owner: the Operator.** **Trigger: that ruling, the Operator's keyboard confirmation
     (`ops/hub-accessibility-pass.md` Pending Operator action 1), or the next change to the hero's
     layering.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25.** `e47d20a` draws the landmark's ring again on
+    `main:focus-visible::after` in `app/app.scss`: a layer over the whole landmark at `--z-raised` with
+    `pointer-events: none`, the same `--stroke-focus` and `--token-focus` at the same inset, present
+    only while `main` matches `:focus-visible` and never transitioned; `main` takes
+    `position: relative` only while focused. It is the second exception to `RESTYLE-SPEC.md` § 4's
+    verbatim ring, recorded with a dated amendment there and in `DESIGN.md`'s skip row, and the
+    ring guard in `tests/e2e/accessibility-floor.pw.ts` and the role pin in
+    `app/__tests__/anchor-contract.test.ts` admit its selector and its level by name. Proven as a
+    raster in the pinned image: a new case there presses Tab, then Enter on the skip link, and samples
+    a pixel just inside the top, left and right edges of `main#main`. On `/`'s default door at 1280 it
+    read `rgb(29, 27, 39)` on all three sides before the change (red) and reads `rgb(198, 189, 255)`
+    on all three after; at 360 on `/` and at 1280 on `/work` it reads the focus colour on both sides of
+    the change. A control in the same case takes the layer off and sees all three sides covered again.
+    `ops/hub-accessibility-pass.md` carries a dated note on what the keyboard confirmation's Enter step
+    now shows; the confirmation itself is left for the Operator.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`
   id: DW-128
@@ -7761,4 +7809,29 @@ status: done
 
     **Owner: the Operator.** **Trigger: the next edit to the footer line or to `ESTATE_LANGUAGES`.**
     It does not bind the Epic 2 merge.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-home-hero-rulings.md`
+  id: DW-247
+  summary: >-
+    Source files cite the three planning documents by line number (`EXPERIENCE.md:946`,
+    `DESIGN.md:758-769`, `RESTYLE-SPEC.md:326-341` and about 150 more), and every dated amendment that
+    adds lines moves the text under those numbers, so the budget citations `ops/asset-budget.mjs`
+    prints already point at the wrong lines.
+  evidence: |-
+    Found 2026-09-25 by the home-hero-rulings package, whose dated amendments added six lines to
+    `EXPERIENCE.md` § Motion and two to `DESIGN.md`'s skip row. Observed before that package:
+    `ops/asset-budget.mjs` names `EXPERIENCE.md:943` to `:947` as the budget table, while at
+    `93cf5ba` the heading `### Budget` stood at line 947, so the cited lines were the section above
+    it; after the package the heading is at 953. `grep -rhoE "(DESIGN|EXPERIENCE|RESTYLE-SPEC)\.md:[0-9]+"`
+    over `app`, `components`, `ops`, `tests`, `packages`, `lib` and `hooks` finds roughly 150 distinct
+    citations, and no test reads the line a citation names, so the drift is silent. The Operator's
+    dated-amendment style, which adds lines rather than rewriting them, guarantees it continues.
+
+    Not corrected in the package: re-pointing every citation is outside its three rulings, and
+    whether to cite by section instead of by line (as the DW-244 spec already does for new comments)
+    is a convention call.
+
+    **Owner: unassigned.** **Trigger: the next package that cites a planning document by line, or a
+    ruling on citing by section.**
   status: open

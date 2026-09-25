@@ -747,7 +747,9 @@ vocabulary: mono uppercase at `--t-2xs`, `--lh-label` leading and `--tr-meta` tr
 child, or on `/`, which has no header, the first thing in the document. It is `--token-text` on
 `--token-bg-raised`, parked above the viewport one ring-reach (`--focus-offset` plus
 `--stroke-focus`) inside the top-left corner, revealed on `:focus` at `--z-tooltip`, and it
-targets `main#main`, whose ring is drawn inset. **The skip control** (`Skip to the suite`, then
+targets `main#main`, whose ring is drawn inset *(Amended 2026-09-25 by Operator ruling, DW-127:
+and drawn again on a layer above the hero, so on `/`'s default door at 768 and wider the canvas and
+scrim no longer paint over it)*. **The skip control** (`Skip to the suite`, then
 the down arrow hidden from assistive technology) is `--token-text-secondary` on no ground, turns
 `--token-text` on hover, sits at `--z-raised`, and renders on the default door only: first in the
 hero's column below 768, centred near the hero's bottom edge at 768 and wider. It targets
