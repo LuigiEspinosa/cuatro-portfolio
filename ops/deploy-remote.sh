@@ -14,10 +14,12 @@
 #   sshd runs this file in place of whatever the client asked for and hands the request over in that
 #   variable. Its last word is read as the sha, and nothing in it is executed.
 #
-# Either way the target is refused unless it is 40 lowercase hex characters and an ancestor of
-# `origin/main` after a fetch, so a leaked key can redeploy a commit already on `main` and do nothing
-# else. The sha stays the last word of the workflow's command string, and this file stays at this
-# path, because the key's line names it. Epic 3's image-pull deploy (Story 3-4) edits this file.
+# Either way the target is refused unless it is 40 lowercase hex characters, an ancestor of
+# `origin/main` after a fetch, and a commit that carries this file, so a leaked key can redeploy a
+# commit already on `main` and do nothing else. A commit older than this file is refused because a
+# reset to it deletes the file the key's line names and stops every later deploy (DW-131). The sha
+# stays the last word of the workflow's command string, and this file stays at this path, because
+# the key's line names it. Epic 3's image-pull deploy (Story 3-4) edits this file.
 # `ops/__tests__/deploy-remote.test.ts` runs it both ways against a scratch repository.
 
 set -euo pipefail
@@ -42,6 +44,7 @@ main() {
   # checkout's fetch configuration, and without `+`, so a rewritten `main` fails the deploy.
   git fetch origin main:refs/remotes/origin/main
   git merge-base --is-ancestor "$target" origin/main || refuse "$target is not on origin/main"
+  git cat-file -e "$target:ops/deploy-remote.sh" || refuse "$target carries no ops/deploy-remote.sh"
   echo "deploy-remote: deploying $target, read from $source"
 
   # `reset --hard` rather than `pull`: a pull fails or merges if the box checkout has drifted, and a
