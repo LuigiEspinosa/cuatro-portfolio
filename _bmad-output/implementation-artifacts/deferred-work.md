@@ -7520,7 +7520,7 @@ status: done
     **Narrowed 2026-09-25 by the process-and-upkeep package**, whose estate sweep was the next pass
     over `ops/contract-adoption.md` (`ad52501`): the policy sentence there carries a dated amendment
     counting three private repositories, and the policy table records `cs-tournament` public. The
-    `AGENTS.md` dependency automation policy (`:181-182` after the refresh) and the two passages in
+    `AGENTS.md` dependency automation policy (`:181-183` after the refresh) and the two passages in
     `ops/registry-verification.md` stay as this entry describes, owner and trigger unchanged.
   status: open
 
