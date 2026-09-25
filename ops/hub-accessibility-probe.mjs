@@ -23,7 +23,8 @@
 //     viewport's pixel count as the denominator;
 //   * then plants the four Status values across the Directory's marks, one of
 //     each in turn with the dot removed from the three that do not carry one and
-//     given to a planted `Live` (only `Live` reaches the shipped page,
+//     given to a planted `Live` (the shipped page never carries all four: `Live`,
+//     and one `Complete` from Registry 1.4.0,
 //     `ops/status-mark-axes.md:254-259`), applies `html { filter: grayscale(1) }`
 //     and writes a full-page desaturated PNG to the `--out` directory, which is
 //     what the Operator's greyscale confirmation is read on. The share is
@@ -245,8 +246,9 @@ async function probe({ baseUrl, out }) {
           `${(share.share * 100).toFixed(2)}%`
       );
 
-      // The greyscale render is what O-9's human check is read on, and only `Live` reaches the
-      // shipped page (`ops/status-mark-axes.md:254-259`). So the four values are planted across the
+      // The greyscale render is what O-9's human check is read on, and the shipped page never
+      // carries all four values: `Live`, and one `Complete` from Registry 1.4.0
+      // (`ops/status-mark-axes.md:254-259`). So the four values are planted across the
       // rendered marks the way Story 2-10's check planted them, one of each in turn, the dot
       // removed from the three that do not carry one and given to a planted `Live`, so what is
       // read is the taxonomy as it would ship.

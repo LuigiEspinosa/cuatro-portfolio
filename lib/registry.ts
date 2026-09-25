@@ -9,8 +9,8 @@
  * the site it publishes to is down.
  *
  * **Why the shape is asserted rather than inferred.** TypeScript builds a JSON module's type from
- * the literal, so `status` widens to `string` and `live` is structurally absent from the eight
- * entries that do not declare it. The resulting element union is not assignable to `RegistryEntry`
+ * the literal, so `status` widens to `string` and `live` is structurally absent from the entries
+ * that do not declare it. The resulting element union is not assignable to `RegistryEntry`
  * in either direction, so a plain annotation is rejected and no honest narrowing exists in the type
  * system alone. The assertion below is what makes `status` a union worth switching on and `live` an
  * optional field worth checking.

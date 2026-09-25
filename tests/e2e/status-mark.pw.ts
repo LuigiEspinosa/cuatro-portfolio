@@ -766,7 +766,7 @@ test.describe("A-5's other half: the Status never truncates", () => {
     ).toBeGreaterThan(0);
   });
 
-  test('holds for the three values the filter never renders, in every row position', async ({ page }) => {
+  test('holds for all four values, planted into every row position', async ({ page }) => {
     // The clean read above sees only what the Registry renders, `Live` and, from Registry 1.4.0,
     // `Complete`, and never `In progress`, the longest of the four and the value that would truncate
     // first. Planting the text as well as the attribute is the only way to measure every value.
