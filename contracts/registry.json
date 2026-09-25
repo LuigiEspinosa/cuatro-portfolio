@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.3.0",
+  "contract_version": "1.4.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -53,12 +53,11 @@
       "id": "cs-tournament",
       "name": "CS Tournament",
       "description": "Runs a Counter-Strike tournament from sign-up through the bracket to a final result.",
-      "status": "Live",
-      "tech": ["Next.js", "React", "TypeScript", "Supabase", "PostgreSQL", "Vercel"],
+      "status": "Complete",
+      "tech": ["Next.js", "React", "TypeScript", "Supabase", "PostgreSQL"],
       "source": "https://github.com/LuigiEspinosa/cs-tournament",
-      "demo": "none",
-      "identity": "none",
-      "live": "https://inclusivcup.vercel.app"
+      "demo": "not-deployed",
+      "identity": "none"
     },
     {
       "id": "list-wheel",

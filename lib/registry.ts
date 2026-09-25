@@ -103,7 +103,7 @@ export function selectRendered(entries: readonly RegistryEntry[]): readonly Regi
   return entries.filter((entry) => RENDERED_STATUSES.includes(entry.status));
 }
 
-/** The entries the committed Registry marks rendered. Six as of Registry 1.2.0, all of them `Live`. */
+/** The entries the committed Registry marks rendered, `Live` and `Complete` alike. */
 export const renderedApplications: readonly RegistryEntry[] = selectRendered(applications);
 
 /**
@@ -270,9 +270,9 @@ export type DirectoryItem =
  * names no count. A family split across the page by status would not be that container, and the
  * reader's question at the group is which implementations exist, not which shipped first.
  *
- * Nothing in the committed Registry exercises this today, every rendered entry being `Live`. It
- * arrives the day `poketracker-go`, the third `tracker-family` member, changes status, so it is
- * pinned over a fixture rather than left to be discovered then.
+ * Nothing in the committed Registry exercises this today, no rendered family member being
+ * `Complete`. It arrives the day `poketracker-go`, the third `tracker-family` member, changes
+ * status, so it is pinned over a fixture rather than left to be discovered then.
  *
  * **A family of one is still a group.** The framing line names no count
  * (`EXPERIENCE.md:292`), so a family that loses a member to a status change needs no other edit; a

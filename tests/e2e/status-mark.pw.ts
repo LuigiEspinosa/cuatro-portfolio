@@ -21,9 +21,10 @@ import { resolve } from 'node:path';
  * here. Asserting the markup half in a browser would mean this file inventing a dot for the three
  * values that never render, which makes the test the author of what it asserts.
  *
- * **Only `Live` reaches the running page, and `data-status` is the seam that gets the other three
- * there.** Nothing in the committed Registry is `Complete`, and `In progress` and `Archived` are
- * held back by the FR-35 filter by design. The attribute at
+ * **The committed Registry decides which values reach the running page, and `data-status` is the
+ * seam that gets all four there.** It put only `Live` there until Registry 1.4.0 made
+ * `cs-tournament` `Complete`, and `In progress` and `Archived` are held back by the FR-35 filter by
+ * design. The attribute at
  * `components/organisms/SuiteDirectory/SuiteDirectory.tsx:93` is the contract between the component
  * and the four selectors at `SuiteDirectory.scss:192-204`, so planting it on a real mark in the
  * live page exercises the shipped stylesheet and nothing else. A fixture route or a test-only
@@ -766,9 +767,9 @@ test.describe("A-5's other half: the Status never truncates", () => {
   });
 
   test('holds for the three values the filter never renders, in every row position', async ({ page }) => {
-    // Only `Live` reaches the page, and it is the shortest of the four at four characters, so the
-    // clean read above has never seen the value that would truncate first. Planting the text as
-    // well as the attribute is the only way to measure the other three.
+    // The clean read above sees only what the Registry renders, `Live` and, from Registry 1.4.0,
+    // `Complete`, and never `In progress`, the longest of the four and the value that would truncate
+    // first. Planting the text as well as the attribute is the only way to measure every value.
     //
     // **Into every mark, not the first one.** `groupByFamily` nests the `tracker-family` members
     // inside `.suite-directory__family`, which `SuiteDirectory.scss:309-313` insets with

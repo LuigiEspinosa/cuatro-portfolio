@@ -135,7 +135,7 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * this sweep's own failure output in the pinned container before the pins were moved.
  */
 const SURFACES = [
-  { route: '/', status: 200, entrance: true, found: 18, skipped: 0, measured: 18 },
+  { route: '/', status: 200, entrance: true, found: 17, skipped: 0, measured: 17 },
   { route: '/work', status: 200, entrance: false, found: 8, skipped: 0, measured: 8 },
   { route: '/cv', status: 200, entrance: false, found: 10, skipped: 0, measured: 10 },
   { route: '/celeste', status: 200, entrance: false, found: 4, skipped: 4, measured: 0 },

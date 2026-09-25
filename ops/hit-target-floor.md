@@ -95,13 +95,13 @@ one commit.
 
 | Surface | Status | Candidates found | Skipped | Measured |
 |---|---|---|---|---|
-| `/` | 200 | 18 | 0 | 18 |
+| `/` | 200 | 17 | 0 | 17 |
 | `/work` | 200 | 8 | 0 | 8 |
 | `/cv` | 200 | 10 | 0 | 10 |
 | `/celeste` | 200 | 4 | 4 | 0 |
 | `/a-route-that-does-not-exist` | 404 | 6 | 0 | 6 |
 
-**42 elements measured across five surfaces**, 39 until 2026-09-24 (see the re-measurement of that date below).
+**41 elements measured across five surfaces**, 39 until 2026-09-24 and 42 until 2026-09-25 (see the re-measurements of those dates below).
 
 **Re-measured 2026-09-07** after Story 2-13 built the non-3D front door. `/` went from 16 to 17 and
 the other four did not move. The one new element is the A-6 skip-link, which renders on every path
@@ -188,6 +188,16 @@ element on each surface with a header is the A-6 skip link, the band's first chi
 viewport with a real box that clears the floor on both axes; on `/celeste` it is the fourth candidate
 the hidden band takes out of the sweep. `/` renders the same one link, from `Header` rather than from
 `app/page.tsx`. The whole-run total goes from 39 to 42, and the exemption ledger gains no row.
+
+**Re-measured 2026-09-25 after Vercel left the estate** (Operator ruling 2026-09-24,
+`_bmad-output/implementation-artifacts/spec-vercel-removal.md`). `/` went from 18 to 17 and the other
+four did not move. **Read off the sweep's own failure output**: the run in
+`mcr.microsoft.com/playwright:v1.62.1-noble` against the old pins failed naming `/` alone and printed
+`/: found 17, skipped 0, measured 17`, with `/work` at 8, `/cv` at 10, `/celeste` at four found and
+four skipped and the 404 at 6, unchanged, and the pins were moved to what it printed. The element that
+left is `cs-tournament`'s live link: Registry 1.4.0 made the entry `Complete` with no `live` URL, so its
+row draws its Source link alone, which `EXPERIENCE.md` § Registry Entry requires of a `Complete` row.
+The whole-run total goes from 42 to 41, and the exemption ledger gains no row.
 
 **`/projects` is in neither this table nor the non-Hub list, and that is deliberate.** A browser
 asked for it now gets a 301 to `/#suite` and lands on `/`, which is a Hub surface this sweep already

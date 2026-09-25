@@ -96,9 +96,9 @@ const familyName = (family: string): string =>
  * One entry, drawn as a row.
  *
  * **Exported so the arms the committed Registry cannot reach are testable at the rendering level.**
- * Nothing is `Complete` today, and how the filter treats a `Complete` entry is a different claim
- * from how a row draws one: the first is `selectRendered`'s and is proved over fixtures in
- * `lib/__tests__/registry.test.ts`, the second is this component's and is proved here.
+ * How the filter treats a `Complete` entry is a different claim from how a row draws one: the first
+ * is `selectRendered`'s and is proved over fixtures in `lib/__tests__/registry.test.ts`, the second
+ * is this component's and is proved here.
  *
  * This is deliberately the narrow seam. It takes one entry and returns one `<li>`, so it cannot
  * change what `SuiteDirectory` renders; an `entries` prop on the section would make "render
@@ -183,8 +183,12 @@ export function SuiteDirectory() {
         <h2 className='suite-directory__heading' id={HEADING_ID} tabIndex={-1}>
           The Suite
         </h2>
-        {/* The real rendered count, never a literal and never a rounded figure. */}
-        <p className='suite-directory__count'>{entries.length} running</p>
+        {/* The real count, never a literal and never a rounded figure (`EXPERIENCE.md` § UI
+            strings). `Live` rows only: a `Complete` row renders and may run nowhere, so counting it
+            as running would be the aspirational figure the string forbids. */}
+        <p className='suite-directory__count'>
+          {entries.filter((entry) => entry.status === 'Live').length} running
+        </p>
       </div>
 
       <ul className='suite-directory__list'>

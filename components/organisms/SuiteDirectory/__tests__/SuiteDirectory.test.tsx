@@ -103,9 +103,13 @@ describe('the Suite Directory', () => {
   });
 
   it('heads the section with the string and the real count, never a literal', () => {
+    // `EXPERIENCE.md` § UI strings: a real count, never an aspirational one. `Complete` renders
+    // (FR-35) and may run nowhere, `cs-tournament` since Registry 1.4.0, so only `Live` is counted
+    // as running, the one status that means the entry can be opened right now.
     render(<SuiteDirectory />);
     expect(screen.getByRole('heading', { level: 2, name: 'The Suite' })).toBeInTheDocument();
-    expect(screen.getByText(`${renderedApplications.length} running`)).toBeInTheDocument();
+    const running = renderedApplications.filter((application) => application.status === 'Live').length;
+    expect(screen.getByText(`${running} running`)).toBeInTheDocument();
   });
 
   it('gives the heading the fragment target and makes it focusable', () => {
@@ -252,10 +256,12 @@ describe('the Suite Directory', () => {
   });
 
   it('gives every other row two destinations, and never makes the row itself one', () => {
+    // Every other row that has somewhere to go: an entry with no `live`, `cs-tournament` since
+    // Registry 1.4.0, keeps its Source link alone (`EXPERIENCE.md` § Registry Entry).
     const { container } = render(<SuiteDirectory />);
     for (const [index, row] of rows(container).entries()) {
       const application = drawn()[index];
-      const expected = isCurrentOrigin(application) ? 1 : 2;
+      const expected = isCurrentOrigin(application) || application.live === undefined ? 1 : 2;
       expect(within(row).getAllByRole('link'), `${application.id} does not carry ${expected} links`).toHaveLength(
         expected
       );
@@ -407,10 +413,11 @@ describe('the visitor events the rows carry (Story 2-24)', () => {
   });
 });
 
-describe('a Complete entry, which the committed Registry does not hold', () => {
+describe('a Complete entry, drawn over a fixture', () => {
   /**
    * FR-35 renders `Complete` beside `Live`, and AD-5 constrains `live` neither way there, so this
-   * is the shape a row has to survive and no committed entry produces it. The claim under test is
+   * is the shape a row has to survive. The committed Registry holds one from 1.4.0, `cs-tournament`,
+   * and the fixture keeps these cases true whatever it holds. The claim under test is
    * the drawing one: **no live link at all, and not a disabled one. The slot does not render, and
    * it is never a placeholder or a dash.**
    *

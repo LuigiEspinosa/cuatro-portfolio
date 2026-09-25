@@ -197,9 +197,9 @@ describe('which entries a Visitor sees is a rule over status', () => {
 });
 
 describe('the order a Visitor reads them in is a rule over status', () => {
-  // Story 2-9. Nothing in the committed Registry is `Complete`, so every arm of this rule but the
-  // last is provable only against fixtures. That is the same reason `selectRendered` takes its
-  // list, and it is why these cases build entries rather than reading the file.
+  // Story 2-9. Every arm of this rule is proved against fixtures, for the reason `selectRendered`
+  // takes its list: what the committed Registry holds is the Registry's to change, and it held no
+  // `Complete` entry at all until 1.4.0. These cases build entries rather than reading the file.
 
   it('puts every Live before every Complete, whatever order the file holds them in', () => {
     const entries = [
@@ -222,11 +222,15 @@ describe('the order a Visitor reads them in is a rule over status', () => {
   });
 
   it('leaves a list of one status exactly where it found it', () => {
-    // Which is the committed Registry today: all six rendered entries are `Live`, so the rule has
-    // to be a no-op on it. A comparator that reordered equal ranks would show up here.
-    expect(orderByStatus(renderedApplications).map((application) => application.id)).toEqual(
-      renderedApplications.map((application) => application.id)
-    );
+    // A comparator that reordered equal ranks would show up here. This read the committed file while
+    // every rendered entry was `Live`; `cs-tournament` went `Complete` in Registry 1.4.0 (Operator
+    // ruling 2026-09-24), so the one-status list is a fixture, deliberately not in name order.
+    const entries = [
+      entry({ id: 'zulu', status: 'Live', live: 'https://zulu.cuatro.dev' }),
+      entry({ id: 'mike', status: 'Live', live: 'https://mike.cuatro.dev' }),
+      entry({ id: 'alpha', status: 'Live', live: 'https://alpha.cuatro.dev' }),
+    ];
+    expect(orderByStatus(entries).map((application) => application.id)).toEqual(['zulu', 'mike', 'alpha']);
   });
 
   it('sorts a status it does not rank last rather than throwing', () => {
@@ -725,8 +729,8 @@ describe('a family renders as one group, which is a rule over the family field',
     // sits at its first member's position. `EXPERIENCE.md:356-358` settles it in favour of the
     // group: it holds whichever members pass the filter, and its framing line names no count.
     //
-    // Not reachable from the committed Registry, every rendered entry being `Live`. It arrives the
-    // day the third `tracker-family` member changes status, which is why it is pinned here.
+    // Not reachable from the committed Registry, no rendered family member being `Complete`. It
+    // arrives the day the third `tracker-family` member changes status, which is why it is pinned here.
     const ordered = orderByStatus([
       entry({ id: 'family-live', status: 'Live', live: 'https://one.cuatro.dev', family: 'a-family' }),
       entry({ id: 'family-complete', status: 'Complete', family: 'a-family' }),
