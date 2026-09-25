@@ -156,6 +156,16 @@ application until that date; its URL became a redirect page to the new hostname 
 story's last step, after the new hostname was verified serving (`gh-pages` `52698eb`,
 2026-09-13T18:25:47Z), so the old link never dies (PRD section 5.3).
 
+**Amended 2026-09-25 by Operator ruling 2026-09-24.** The `cs-tournament` row read `Merge into the
+Anchor, and migrate off external PaaS` and `Live`: `inclusivcup.vercel.app`. The ruling removed
+Vercel from the estate, and nothing deploys there any more: the entry is `Complete` in Registry
+1.4.0, with no `live` value, no `Vercel` in its `tech` and `demo` `not-deployed`, and it runs
+nowhere until Story 3.7 merges it into the Anchor and places it on the box. `Complete` renders
+(FR-35), so it keeps its row in the Suite Directory with its Source link, the repository being public
+since 2026-09-24 (KV-2). The Vercel deployment still answered on 2026-09-25 and is deleted last,
+after the Epic 2 merge has deployed, because production's Registry links it until then: § The Vercel
+decommission, under Pending Operator actions.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |
@@ -164,7 +174,7 @@ story's last step, after the new hostname was verified serving (`gh-pages` `5269
 | `connect-four-react` | Absorb: playable demo in the Hub | `Archived` | `cuatro-portfolio` | In Registry; not rendered as a directory entry, and not rendered as an embedded demo at MVP either. It will surface as the embedded demo (PRD section 4.7) only once FR-29 is taken up, and FR-29 is deferred to v2. See the note below. |
 | `cuatro-finance` | Merge into the Anchor | `In progress` | n/a today, see note below | Not rendered until Live |
 | `cuatro-tracker` | Merge into the Anchor | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
-| `cs-tournament` | Merge into the Anchor, and migrate off external PaaS | `Live`: `inclusivcup.vercel.app` | n/a today, see note below | Rendered |
+| `cs-tournament` | Merge into the Anchor | `Complete`: deployed nowhere by the estate since the Operator ruling of 2026-09-24, until Story 3.7 places it on the box. `Live` at `inclusivcup.vercel.app` until then | n/a today, see note below | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
 | `digital-library` | Satellite: Svelte/Fastify | `Live`: `library.cuatro.dev` | n/a | Rendered |
 | `list-wheel` | Satellite: Angular | `Live`: `wheel.cuatro.dev` since 2026-09-13. On GitHub Pages until that date; the old URL became a redirect page to the new hostname as the story's last step (`gh-pages` `52698eb`, 2026-09-13T18:25:47Z) | n/a | Rendered; see PRD section 5.3. **The Registry's `live` is `https://wheel.cuatro.dev` from Story 2-25**: `ops/registry-inputs.md` |
@@ -195,6 +205,11 @@ is no longer in force.
 |---|---|---|---|
 | `cuatro-finance` | `[ASSUMPTION: built, not deployed]` | **`In progress`** | An Operator ruling on 2026-09-02, against evidence. The `dev` branch carries 98 blobs of a real Next.js and Prisma application, so "built" is closer to true than the default branch suggests, but nothing is deployed: `finance.cuatro.dev` is NXDOMAIN despite the repository's own homepage field claiming it. The Operator ruled the application early stage, which is `In progress` |
 | `cs-tournament` | `[ASSUMPTION: Live on Vercel]` | **`Live`** at `inclusivcup.vercel.app` | Observation, confirmed by the Operator. The hostname returns 200 and the repository is a substantial polyglot codebase. The assumption was right; it had simply never been checked |
+
+**Amended 2026-09-25.** The `Is` cell for `cs-tournament` is the answer of 2026-09-02 and stays as
+that day's. The Operator ruling of 2026-09-24 removed Vercel from the estate, and the entry is
+`Complete` from Registry 1.4.0 (the disposition table above). The six rendered entries below do not
+move, since `Complete` renders as `Live` does.
 
 **The consequence for the first public Suite Directory is that there is none.** Both answers
 leave the six rendered entries exactly as they were: `cuatro-finance` at `In progress` was
@@ -297,6 +312,32 @@ record still makes no claim about repositories outside the governed set.
 table above, then re-gather the observed-state table below and re-date it. A pending row
 carrying a stale date is not evidence that the action is still outstanding, only evidence
 that nobody has looked since that date.
+
+### The Vercel decommission, in its safe order
+
+**Written 2026-09-25 on the Operator ruling of 2026-09-24**, which removed Vercel from the estate:
+nothing deploys there any more. Three Vercel projects still serve, **observed 2026-09-25** by HTTPS
+request, each answering 200 with `server: Vercel`: the two behind `covidmap.cuatro.dev` and
+`future-vizion.cuatro.dev` (KV-3 in `ops/known-violations.md`), and the one behind
+`inclusivcup.vercel.app`, which was `cs-tournament`'s `live` until Registry 1.4.0. Every step is the
+Operator's, this machine holding no Cloudflare or Vercel console access, and each is confirmed by
+the name or the URL no longer answering. **The order is the point**: no name is ever left pointing
+at a deleted project, and production never links a URL that has stopped answering.
+
+| # | Action | Owner | Exact steps, and the confirmation | Completed (UTC) |
+|---|---|---|---|---|
+| 1 | **Delete the `covidmap` and `future-vizion` CNAMEs and the `_vercel` TXT** in zone `cuatro.dev` | Operator | KV-3's Pending Operator action 6 in `ops/known-violations.md` names the three records exactly. Confirmed after the 600 s TTL, when `nslookup covidmap.cuatro.dev 1.1.1.1` and `nslookup future-vizion.cuatro.dev 1.1.1.1` each answer that the name does not exist and `nslookup -type=TXT _vercel.cuatro.dev 1.1.1.1` finds no record. That lookup retires KV-3, and this row takes the same date | _not done_ |
+| 2 | **Delete the two Vercel projects behind those names**, only once step 1's lookups answer | Operator | Vercel dashboard: open the project that lists `covidmap.cuatro.dev` under Settings, Domains, note the `.vercel.app` domain listed beside it, then Settings, Advanced, Delete Project; the same for the project that lists `future-vizion.cuatro.dev`, whose `.vercel.app` domain answered at `https://future-vizion.vercel.app` on 2026-09-25 with the same ETag as the `cuatro.dev` name. **`covidmap.vercel.app` is another owner's project**, observed that day, and says nothing about this one. Confirmed when each noted `.vercel.app` URL answers 404 with `X-Vercel-Error: DEPLOYMENT_NOT_FOUND` to `curl -sI <url>`, and when `curl -s -o /dev/null -w "%{http_code}" --resolve covidmap.cuatro.dev:443:64.29.17.65 https://covidmap.cuatro.dev/`, and the same for `future-vizion.cuatro.dev`, no longer prints 200. The `--resolve` form reaches Vercel's edge after the DNS records are gone; it printed 200 for `covidmap` on 2026-09-25 | _not done_ |
+| 3 | **Delete the Vercel project behind `inclusivcup.vercel.app`**, only after the Epic 2 merge to `main` has deployed | Operator | Until that deploy, production serves Registry 1.1.0, which links the URL (**observed 2026-09-25** at `https://cuatro.dev/contracts/registry.json`), and the scheduled `registry-verification` run on `main` checks it daily, so deleting it first breaks a live link and turns that run red. First confirm the deploy: `curl -s https://cuatro.dev/contracts/registry.json` reads `"contract_version": "1.4.0"` or later and contains no `inclusivcup`. Then Vercel dashboard, the project that lists `inclusivcup.vercel.app` under Settings, Domains, then Settings, Advanced, Delete Project. Confirmed when `curl -sI https://inclusivcup.vercel.app` answers 404 with `X-Vercel-Error: DEPLOYMENT_NOT_FOUND`; it answered 200 on 2026-09-25 | _not done_ |
+
+**No monitor changes with any of it.** **Observed 2026-09-25** by UptimeRobot `list-monitors`: eight
+monitors, every one on a `cuatro.dev` host and none on a Vercel URL, as the ruling's own check of
+2026-09-24 found.
+
+**Maintaining this table.** When a step is performed, replace its `_not done_` cell with the ISO
+8601 UTC date of the check that confirmed it, and leave the row in place, unlike the archive table
+above: which name went before which project is what a later reader needs if a name is ever found
+pointing at nothing.
 
 ### Observed GitHub state, 2026-09-02
 

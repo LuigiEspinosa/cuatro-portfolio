@@ -362,7 +362,12 @@ valid Registry status and neither of which asserts a reachable hostname on `cuat
 Story `2-4-confirm-the-assumed-statuses-hostnames-and-tech-values` resolves both. **If either
 resolves to `Live` on a `cuatro.dev` subdomain, the add rule above applies and it joins the
 probe table.** If either turns out to be live on external hosting, that is a placement
-question for the Capacity Gate and not silently a monitoring gap.
+question for the Capacity Gate and not silently a monitoring gap. **Amended 2026-09-25** (Operator
+ruling 2026-09-24): Story 2-4 resolved both on 2026-09-02, `cuatro-finance` to `In progress` and
+`cs-tournament` to `Live` on external hosting at `inclusivcup.vercel.app`, which no monitor
+watched. The ruling then removed Vercel from the estate: `cs-tournament` is `Complete` from Registry
+1.4.0 and runs nowhere, so neither is monitored and neither is a gap. **Observed 2026-09-25** by
+UptimeRobot `list-monitors`: eight monitors, none on a Vercel URL, so no monitor changes.
 
 **Applications with Status `In progress` are not monitored.** `StreamVault`, `MaiCoin`,
 `poketracker-go` and `Mutuo` are early scaffolding, are not `Live`, and serve nothing to

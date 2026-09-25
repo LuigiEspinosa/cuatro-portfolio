@@ -7650,3 +7650,49 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next AD-22 refresh, which pays the rebuild.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-vercel-removal.md`
+  id: DW-244
+  summary: >-
+    The homepage premise says "Everything below is running right now", and from Registry 1.4.0 one
+    of the rows below it, `cs-tournament`, is `Complete` and runs nowhere, so the sentence is false on
+    the page the Epic 2 merge ships.
+  evidence: |-
+    Found 2026-09-25 by the vercel-removal package (Operator ruling 2026-09-24). `Premise.tsx` sets
+    `EXPERIENCE.md` § The premise verbatim: "[N] personal projects became one suite. Everything below
+    is running right now, so open it and you are using the real thing, not looking at a picture of
+    it." The Suite Directory below it renders `Live` and `Complete` (FR-35), and since `fa34f09` its
+    `cs-tournament` row is `Complete`, drawing its Source link alone. The Directory's own count moved
+    in the same commit to count `Live` rows only, as `EXPERIENCE.md` § UI strings asks of a real
+    count, so it reads `5 running` over six rows while the premise above it says everything is
+    running. The copy was written when every rendered entry was `Live`, and no document offers
+    wording for a directory that holds a `Complete` row.
+
+    Not corrected in the package: `EXPERIENCE.md` fixes the copy word for word, and new copy is a
+    ruling the package's brief did not make.
+
+    **Owner: the Operator.** **Trigger: before the Epic 2 merge to `main`, which ships the
+    `Complete` row to production.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-vercel-removal.md`
+  id: DW-245
+  summary: >-
+    PRD § 5.1's `Status today` column still holds three superseded values besides the
+    `cs-tournament` one the vercel-removal package amended: `apple-music-workspace`,
+    `cuatro-finance`'s assumption, and `list-wheel` on GitHub Pages.
+  evidence: |-
+    Found 2026-09-25 by the vercel-removal package while amending the `cs-tournament` row. Line
+    numbers as of 2026-09-25: `prd.md:598` still lists `apple-music-workspace`, removed from the
+    Estate on 2026-09-02 for having no repository; `:601` gives `cuatro-finance`
+    `[ASSUMPTION: built, not deployed]`, `In progress` by Operator ruling since 2026-09-02; `:606`
+    gives `list-wheel` `Live` on GitHub Pages, "relocating to the VPS", served from
+    `wheel.cuatro.dev` since 2026-09-13 (Story 2-25). `ops/estate.md` § Disposition of every
+    application carries each confirmed value and § 13 Q9 is struck, so a reader who follows the
+    PRD's own cross-references is not misled, but the column's heading says today.
+
+    Not corrected in the package: none of the three is Vercel's, and the ruling named the PRD's
+    current-state mentions of Vercel.
+
+    **Owner: the Operator, as the owner of the PRD.** **Trigger: the next pass over PRD § 5.1.**
+  status: open

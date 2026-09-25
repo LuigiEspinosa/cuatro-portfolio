@@ -493,6 +493,9 @@ development_status:
   3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
   3-5-merge-cuatro-finance-into-apps-finance: backlog
   3-6-merge-cuatro-tracker-into-apps-tracker: backlog
+  # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this
+  # key names is done. The key keeps its wording; the story is the merge and the placement on the box
+  # (epics.md Story 3.7's amendment, spec-vercel-removal.md).
   3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: backlog
   3-8-record-the-estate-end-state: backlog
   epic-3-retrospective: optional

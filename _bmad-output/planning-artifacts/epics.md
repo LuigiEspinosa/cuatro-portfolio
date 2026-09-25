@@ -4211,6 +4211,17 @@ Registry never presents a URL that does not resolve.
 **Then** the Vercel deployment stays live until the new hostname serves correctly, and only then
 is it retired.
 
+**Amended 2026-09-25 by Operator ruling 2026-09-24:** the leaving is done. Vercel was removed from
+the estate that day, ahead of the merge: `cs-tournament` is `Complete` in Registry 1.4.0, with no
+`live` value and no `Vercel` in its `tech`, and the Operator deletes its Vercel project once the
+Epic 2 merge has deployed (`ops/estate.md` § The Vercel decommission). The merge into
+`apps/tournament` and the placement on the box stay this story's. So the title's `and leave Vercel`
+names work already done, and the story key keeps it unchanged; the bcrypt criterion's trigger reads
+`When it is placed on the box`, its obligation unchanged; the hostname criterion takes the entry
+from `Complete` to `Live` with its `live` value in one change; and the last criterion, which kept the
+Vercel deployment live until the new hostname served, is superseded. Nothing serves the application
+in between, which FR-28 permits, the Registry naming no `live` URL for it meanwhile.
+
 ---
 
 ### Story 3.8: Record the Estate end state
@@ -5006,6 +5017,12 @@ steps rather than one
 been verified**, and lands as **its own merge**
 **And** it is **never combined with either**, because three changes failing together leaves no way to
 tell which one broke it.
+
+**Amended 2026-09-25 by Operator ruling 2026-09-24:** the Vercel exit needed no merge of its own. It
+is a Registry change, `cs-tournament` going `Complete` in 1.4.0, which ships with Epic 2's merge,
+and the Operator deletes the Vercel project once that merge deploys (Story 3.7's amendment). One
+preceding step is left, Story 3.7's merge, and the restyle opens after it and still lands as its
+own merge. `Complete` renders, so FR-38 still applies.
 
 **Given** its family is not yet verified
 **When** this story opens

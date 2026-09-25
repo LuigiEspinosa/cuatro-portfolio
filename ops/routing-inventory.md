@@ -229,6 +229,12 @@ recorded here rather than dropped, per AD-6. `_domainconnect` is proxied Squares
 scaffolding with no application behind it. The `_vercel` TXT is the domain-verification token
 for `future-vizion` and confirms that record's owner.
 
+**Amended 2026-09-25** (Operator ruling 2026-09-24): Vercel was removed from the estate that day.
+The two Vercel CNAMEs and the `_vercel` TXT are the first step of its decommission, and they go
+before the two Vercel projects behind them (`ops/estate.md` § The Vercel decommission; KV-3 in
+`ops/known-violations.md`). All three records still answered on 2026-09-25, so the rows above stand
+as the 2026-08-24 reading until a re-read after the deletes.
+
 **The four `googledomains.com` NS records are vestigial**, because the real delegation is
 `beau`/`demi.ns.cloudflare.com`. The ProtonMail TXT conflicts with the Google Workspace MX set,
 so two mail providers are half-configured in one zone. Both were already in the deferred-work
@@ -520,7 +526,7 @@ All fifteen ids from `ops/estate.md:83-99`, each against a zone hostname or an e
 | `cuatro-tracker` | `tracker.cuatro.dev` | **Observed** | A + AAAA, both proxied. Id and hostname differ, which is what AD-3 exists for |
 | `digital-library` | `library.cuatro.dev` | **Observed** | A + AAAA, both proxied |
 | `list-wheel` | **none in this zone** on 2026-08-24. **`wheel.cuatro.dev` from 2026-09-13** | **Observed absence**, then **Observed 2026-09-13** | On 2026-08-24 `ops/estate.md:95` recorded it `Live` on GitHub Pages and relocating to the VPS, its `live` value was not a `cuatro.dev` hostname, and no record in this zone pointed at GitHub Pages. Story 2-25 is the relocation: `A`, proxied, no `AAAA`, the site block and the container are in the sections that follow, and the Registry `live` value is `https://wheel.cuatro.dev`. The reading is dated on the row rather than overwritten, per this file's rule |
-| `cs-tournament` | **none in this zone** | **Observed absence** | `ops/estate.md` § Disposition of every application carried `[ASSUMPTION: Live on Vercel]` on 2026-08-24 (`:92` then). **Amended 2026-09-24:** Story 2-4 resolved it on 2026-09-02 to `Live` at `inclusivcup.vercel.app`, a hostname outside this zone (`ops/estate.md` § The two `[ASSUMPTION: ...]` Statuses are resolved, `:179` as of 2026-09-24). Two Vercel CNAMEs exist in this zone (`covidmap`, `future-vizion`) and **neither is evidence that either is `cs-tournament`**. Story 2-4 resolves it |
+| `cs-tournament` | **none in this zone** | **Observed absence** | `ops/estate.md` § Disposition of every application carried `[ASSUMPTION: Live on Vercel]` on 2026-08-24 (`:92` then). **Amended 2026-09-24:** Story 2-4 resolved it on 2026-09-02 to `Live` at `inclusivcup.vercel.app`, a hostname outside this zone (`ops/estate.md` § The two `[ASSUMPTION: ...]` Statuses are resolved, `:179` as of 2026-09-24). Two Vercel CNAMEs exist in this zone (`covidmap`, `future-vizion`) and **neither is evidence that either is `cs-tournament`**. Story 2-4 resolves it. **Amended 2026-09-25:** the Operator ruling of 2026-09-24 removed Vercel from the estate, and `cs-tournament` is `Complete` from Registry 1.4.0 with no `live` value, so no hostname answers for it anywhere until Story 3.7 places it on the box and declares one |
 | `cuatro-finance` | **none** | **Observed absence** | `[ASSUMPTION: built, not deployed]`. No hostname, correctly |
 | `Lumen` | **none** | **Observed absence** | `Archived`, empty shell. Correct absence |
 | `apple-music-workspace` | **none** | **Observed absence** | `Archived`, empty shell. Correct absence |
@@ -537,6 +543,9 @@ from 2026-09-13**, `list-wheel` being the fifth; the apex is a further hostname 
 needs one (`cs-tournament`), the value comes from Story 2-4, and this record says explicitly
 that it does not hold it. **Amended 2026-09-24:** it came on 2026-09-02,
 `https://inclusivcup.vercel.app`, outside this zone, so this file still holds no `live` value for it.
+**Amended 2026-09-25:** Registry 1.4.0 dropped that value when Vercel left the estate (Operator
+ruling 2026-09-24), so `cs-tournament` has no `live` value anywhere until Story 3.7 chooses its
+hostname.
 
 **The two directions disagree in exactly three places, and each is already tracked.**
 `analytics.cuatro.dev` serves and has no id. `covidmap.cuatro.dev` and

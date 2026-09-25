@@ -53,7 +53,10 @@ same principle as the floor being read off `--tap` rather than typed into
 `SuiteDirectory.scss:192-204` key on. Four different elements would each sit in their own grid area
 and inherit their own colour, and any of that would show up as an axis that was really a difference
 in context. **Nothing in the committed Registry is `Complete`, `In progress` or `Archived`**, so
-without this seam three of the four arms could not be measured at all.
+without this seam three of the four arms could not be measured at all. **Amended 2026-09-25:**
+Registry 1.4.0 made `cs-tournament` `Complete` (Operator ruling 2026-09-24), so that value reaches
+the page too; the seam still carries the two the FR-35 filter holds back, and every reading stays on
+one element.
 
 ## How to re-run every measurement below
 
