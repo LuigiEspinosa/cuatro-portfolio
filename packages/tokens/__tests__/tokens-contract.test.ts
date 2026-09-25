@@ -642,12 +642,14 @@ describe('the contract version in the header', () => {
   it('equals the version in packages/tokens/package.json', () => {
     expect(() => assertHeaderVersion(css, packageVersion)).not.toThrow();
     expect(css).toContain(`Contract v${packageVersion}`);
-    expect(packageVersion).toBe('1.0.0');
+    // 2.0.0 from 2026-09-24, Operator ruling: a MAJOR, for the Tailwind adapter's renamed spacing
+    // keys (DW-15), carrying the retargeted --ease-exit (DW-103) with it.
+    expect(packageVersion).toBe('2.0.0');
   });
 
   it('fails naming both values when the two disagree', () => {
-    expect(() => assertHeaderVersion(css, '1.1.0')).toThrow(
-      /the header says Contract v1\.0\.0 and packages\/tokens\/package\.json says 1\.1\.0/
+    expect(() => assertHeaderVersion(css, '2.1.0')).toThrow(
+      /the header says Contract v2\.0\.0 and packages\/tokens\/package\.json says 2\.1\.0/
     );
   });
 
@@ -798,6 +800,60 @@ describe('the published property set', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// The palette stays inside sRGB (Operator ruling 2026-09-24, on the oklch()
+// downlevelling row of ops/anchor-token-adoption.md). DESIGN.md computes every
+// contrast figure in gamma-encoded sRGB, and the Hub's build downlevels each
+// oklch() to an sRGB hex, so a value outside sRGB makes both quietly wrong.
+// ---------------------------------------------------------------------------
+
+/** `oklch(L% C H)` to linear sRGB, through Ottosson's OKLab matrices, the ones CSS Color 4 uses. */
+const linearSrgb = (value: string): number[] => {
+  const match = /^oklch\((\d+(?:\.\d+)?)% (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)(?: \/ [\d.]+)?\)$/.exec(value);
+  if (!match) throw new Error(`${value} is not an oklch(L% C H) value`);
+  const [L, C, H] = [Number(match[1]) / 100, Number(match[2]), (Number(match[3]) * Math.PI) / 180];
+  const [a, b] = [C * Math.cos(H), C * Math.sin(H)];
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+};
+
+/** Every linear channel outside 0 to 1, as `name channel reading`. */
+const outsideSrgb = (name: string, value: string): string[] =>
+  linearSrgb(value).flatMap((reading, index) =>
+    reading < 0 || reading > 1 ? [`${name} ${'rgb'[index]} ${reading.toFixed(4)}`] : []
+  );
+
+/**
+ * The two values authored before the rule that already break it, at the one channel each breaks.
+ * Admitted here and nowhere else, as named exceptions by Operator ruling 2026-09-25 (DW-129). A third
+ * value, or either of these moving, fails the case.
+ */
+const ADMITTED_OUTSIDE_SRGB = ['--c-accent-bright b 1.0762', '--c-focus b 1.2628'];
+
+describe('the palette stays inside sRGB', () => {
+  it('converts every palette value to linear sRGB and finds no channel outside 0 to 1 but the two DW-129 admits', () => {
+    const palette = namesMatching('--c-');
+    expect(palette).toHaveLength(12);
+    expect(
+      palette.flatMap((name) => outsideSrgb(name, rootValues.get(name) as string)),
+      'a palette value sits outside sRGB and DW-129 does not admit it, or an admitted one moved'
+    ).toEqual(ADMITTED_OUTSIDE_SRGB);
+  });
+
+  it('refuses a planted value past either edge, naming the channel, and passes one inside', () => {
+    expect(outsideSrgb('--c-planted', 'oklch(90% 0.3 288)')).toEqual(['--c-planted b 2.8872']);
+    expect(outsideSrgb('--c-planted', 'oklch(50% 0.3 140)')).toEqual(['--c-planted r -0.0664', '--c-planted b -0.0606']);
+    expect(outsideSrgb('--c-paper', 'oklch(12% 0.011 288)')).toEqual([]);
+    expect(() => outsideSrgb('--c-planted', '#060509')).toThrow(/is not an oklch/);
+  });
+});
+
 describe('the hit-target floor and the px rule', () => {
   it('makes --tap 44px, on both axes by the reader of the contract', () => {
     expect(rootValues.get('--tap')).toBe('44px');
@@ -863,6 +919,19 @@ describe('the reduced-motion block', () => {
 
   it('collapses no easing, because an easing has no duration to remove', () => {
     expect(mediaDeclarations.map(([name]) => name).filter((name) => name.startsWith('--ease-'))).toEqual([]);
+  });
+});
+
+describe('the exit curve (DW-103)', () => {
+  it('opens --ease-exit faster than linear, so an exit moves on the frames right after the input', () => {
+    // An ease-in holds still exactly when the user is watching, which reads as lag (Operator ruling
+    // 2026-09-24; review-apple-design-2026-09-15.md A-4). A curve's opening slope is y1 / x1 of its
+    // first control point: 1.0.0's cubic-bezier(0.7, 0, 0.84, 0) opened at 0, 2.0.0's
+    // cubic-bezier(0.33, 1, 0.68, 1), the CSS form of GSAP's power2.out, opens above 3.
+    const points = /^cubic-bezier\(([^)]+)\)$/.exec(rootValues.get('--ease-exit') ?? '')?.[1].split(',').map(Number);
+    expect(points, 'the published --ease-exit is not a cubic-bezier()').toHaveLength(4);
+    const [x1, y1] = points as number[];
+    expect(y1 / x1, `--ease-exit opens at slope ${y1 / x1}, which is an ease-in`).toBeGreaterThan(1);
   });
 });
 

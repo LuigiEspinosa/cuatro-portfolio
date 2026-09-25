@@ -14,7 +14,6 @@ My Personal portfolio, deployed at [cuatro.dev](https://cuatro.dev). High-qualit
 | 3D / WebGL    | Three.js 0.183 + React Three Fiber v9 + @react-three/drei |
 | Post FX       | @react-three/postprocessing (Bloom, chromatic aberration) |
 | Animations    | GSAP 3.14 + ScrollTrigger                                 |
-| Smooth Scroll | lenis                                                     |
 | Styles        | Sass 1.97 (SCSS)                                          |
 | Analytics     | Unami (self-hosted)                                       |
 | Reverse Proxy | Caddy (auto-HTTPS)                                        |
@@ -118,30 +117,29 @@ gave the footer the link the design assigns it, and `/celeste` declares `robots:
 The 404 offers the header's two destinations as its exits, mapped from the same list the header
 renders. **Every other route is reached only by an inbound link or by typing it.**
 
+**Hub URLs are case-sensitive, by policy** (Operator ruling 2026-09-24, DW-74 and DW-56): a route
+answers at its lowercase path alone, so `/CV`, `/WORK` and `/CELESTE` answer 404, while the one
+redirect in `next.config.js` matches its source in any case, as Next compiles every `redirects()`
+source, so `/Projects` and `/PROJECTS` answer the same 301 as `/projects`.
+
 ## Animation Architecture
 
-Lenis owns the scroll position. GSAP owns the animation timeline. ScrollTrigger bridges them.
+The page scrolls natively on every route. Lenis owned the scroll position for a visitor who allowed
+motion until 2026-09-24, when DW-36 removed it with `app/providers.tsx` on the Operator ruling of that
+day, so there is no client wrapper round the routes.
+
+Entrances are CSS keyframes on each component's own stylesheet. GSAP runs in two places, and each
+imports it itself: `WorkItem`, whose disclosure tweens its panel's height on `/work` and `/cv`, and
+`TorusCanvas`, which registers `ScrollTrigger` and binds the `/work` torus's rotation to the scroll.
+`TorusCanvas` sits behind `WorkHero`'s one `next/dynamic` boundary and is rendered only where motion
+is allowed, so `ScrollTrigger` arrives with the torus or not at all.
 
 ```mermaid
 flowchart TD
-    subgraph providers["app/providers.tsx (client, app root)"]
-        L[new Lenis]
-        T[gsap.ticker]
-        L -->|lenis.on scroll| ST[ScrollTrigger.update]
-        T -->|lenis.raf time*1000| L
-    end
-
-    subgraph hook["hooks/useGsapContext"]
-        CTX[gsap.context fn ref]
-        CTX -->|ctx.revert on unmount| CLEAN[Cleanup]
-    end
-
-    subgraph components["Animated components"]
-        HL[HomeLayout]
-        WT[WorkTimeline]
-    end
-
-    RM[useReducedMotion] -->|gates all animations| components
-    components -->|useGsapContext| hook
-    hook -->|ScrollTrigger triggers| providers
+    RM[useReduceMotion] -->|draws the torus or not| WH[WorkHero]
+    RM -->|tween duration| WI[WorkItem]
+    WH -->|next/dynamic, triggerRef| TC[TorusCanvas]
+    TC -->|useGsapContext| ST[gsap.to with ScrollTrigger, scrub]
+    ST -->|scrollRef| T[Torus useFrame]
+    WI -->|gsap.to height| P[the item's panel]
 ```

@@ -42,6 +42,17 @@
     break-inside: avoid;
   }
 
+  // Every company, on paper (DW-73, Story 2-31). A CV is the one surface in the estate a person
+  // prints, and the timeline's closed panels are held at zero height by an inline style GSAP and the
+  // first render own, so without this three of the four companies print as a heading with nothing
+  // under it. `!important` is what an author rule needs to outrank an inline one, and in print no
+  // tween is running for it to fight; the screen keeps its disclosure untouched, except with scripting
+  // off, where `WorkItem.scss` opens every panel with these two declarations (DW-76, 2026-09-24).
+  .work-item__content {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
   a[href]::after {
     content: ' (' attr(href) ')';
     font-size: 0.8em;

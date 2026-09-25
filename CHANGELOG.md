@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-09-25
+
+### Removed
+
+- `atoms/ParticleWave`: the mouse hover repulsion listed under 3.2.0. The wave no longer answers the pointer: the invisible plane that caught it, the lift within a radius of the cursor and the spring that eased the points back are gone, and the wave moves on its own clock alone (Operator ruling 2026-09-25, DW-123). The click-drag rotation listed beside it was removed on 2026-09-24 (DW-119).
+
 ## [3.2.0] - 2026-03-28
 
 ### Added

@@ -10,7 +10,8 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * this story. Nothing in the repository measured a hit target: `--tap` shipped in the contract
  * with zero consumers, and the shipped Hub is under the floor on every route that carries chrome.
  * `EXPERIENCE.md:763` books it as **A-4**, and `:764` books no-horizontal-scroll-at-360 as **A-5**;
- * this file asserts A-4 and the scroll half of A-5.
+ * this file asserts A-4 and the scroll half of A-5, the latter over every element with a box since
+ * Story 2-33 retired KV-5 (below).
  *
  * **A sweep plus a ledger, rather than a list of compliant surfaces.** A sweep scoped to what
  * already passes would match almost nothing today, go green, and prove nothing, which is the
@@ -21,9 +22,11 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  *
  *  1. An element under the floor that no row lists **fails**. A new or regressed control cannot
  *     arrive quietly.
- *  2. An element a row lists that now **clears** the floor also fails, as a stale row. Story 2-32
- *     must delete its rows in the commit that repairs the surface, so the ledger can only shrink
- *     and nothing has to remember to widen a scope later. Stories 2-9, 2-15 and 2-17 already have.
+ *  2. An element a row lists that now **clears** the floor also fails, as a stale row. A story
+ *     deletes its rows in the commit that repairs the surface, so the ledger can only shrink and
+ *     nothing has to remember to widen a scope later. Stories 2-9, 2-15, 2-17 and 2-29 did, and
+ *     Story 2-32 deleted the last row on 2026-09-23, so **the ledger is empty**: the instrument
+ *     stays, and an element under the floor that no row lists fails exactly as before (DW-68).
  *  3. A row that stops matching **on any one of the routes it lists** fails, so a row covering
  *     three surfaces cannot go half stale in silence.
  *  4. A row **covers an exact number of elements**, so a third home nav link at 320 x 23 cannot be
@@ -43,8 +46,17 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
  * viewport is what detects that. The remaining half of KV-5 is the component one, `WorkItem.scss`
  * and `WorkHero.scss` on `/work`, 28 elements booked to Stories 2-31 and 2-33. The eight that were
  * booked to Story 2-14 are gone: that story redirected `/projects` on 2026-09-07 and deleted the
- * hero that rendered them, rather than repairing it. The entry stays `Open` until the other two
- * land.
+ * hero that rendered them, rather than repairing it. Story 2-31 closed the timeline's on 2026-09-23:
+ * ten remain, every one of them the hero's, and `tests/e2e/plate-mark-and-work-item.pw.ts` holds the
+ * timeline inside the viewport on `/work` and `/cv`. Story 2-32 widened the container later the same
+ * day and that case's whole-page census reads none since; the entry stayed `Open` until its retirement,
+ * with this sweep's A-5 arm widened past interactive elements, was made (DW-116).
+ *
+ * **Widened on 2026-09-23 by Story 2-33, which retired KV-5 with it.** The sweep's A-5 arm reads every
+ * element with a box on every surface now, not only the interactive ones it measures for the floor, by
+ * the census predicate KV-5 was opened and re-read with: both edges, `EDGE_SLACK`, an element with no
+ * box skipped (`outsideTheViewport` below). Nothing on the Hub sits past either edge at 360, so a
+ * non-interactive element arriving past one fails the build rather than a register entry noticing it.
  *
  * **No screenshot is taken.** This file writes no snapshot directory, so `keeps exactly one
  * committed baseline` in `tests/e2e/rendered-output.pw.ts` stays true. Same precedent as
@@ -79,7 +91,7 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * changes what a surface renders moves the number here, in the record, and nowhere else.
  *
  * `measured: 0` on `/celeste` is a measurement rather than an omission: `celeste.scss:8-10` sets
- * `display: none` on the header, so all three of its candidates are removed by the visibility
+ * `display: none` on the header, so all four of its candidates are removed by the visibility
  * rule and none is left to measure.
  *
  * **`/` moved from 16 to 17 with Story 2-13, and only by one.** That story adds two controls and
@@ -114,13 +126,20 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * two destinations, so that surface went from 4 to 5. Both readings were taken off this sweep's
  * own failure output in the pinned container before the pins were moved. `/celeste` did not move:
  * it renders no footer and gained no exit, which `tests/e2e/secondary-surfaces.pw.ts` asserts.
+ *
+ * **Every surface with a header moved by one on 2026-09-24** (Operator ruling, DW-43). The skip link
+ * moved into `Header` as the band's first child, so `/work` went from 7 to 8, `/cv` from 9 to 10 and
+ * the 404 from 5 to 6, each new element parked above the viewport with a real box this floor measures
+ * and passes; `/celeste` from 3 found and 3 skipped to 4 and 4, the link hidden with its band. `/` did
+ * not move: it renders the same one link, from `Header` now rather than from `app/page.tsx`. Read off
+ * this sweep's own failure output in the pinned container before the pins were moved.
  */
 const SURFACES = [
-  { route: '/', status: 200, entrance: true, found: 18, skipped: 0, measured: 18 },
-  { route: '/work', status: 200, entrance: false, found: 7, skipped: 0, measured: 7 },
-  { route: '/cv', status: 200, entrance: false, found: 9, skipped: 0, measured: 9 },
-  { route: '/celeste', status: 200, entrance: false, found: 3, skipped: 3, measured: 0 },
-  { route: NOT_FOUND, status: 404, entrance: false, found: 5, skipped: 0, measured: 5 },
+  { route: '/', status: 200, entrance: true, found: 17, skipped: 0, measured: 17 },
+  { route: '/work', status: 200, entrance: false, found: 8, skipped: 0, measured: 8 },
+  { route: '/cv', status: 200, entrance: false, found: 10, skipped: 0, measured: 10 },
+  { route: '/celeste', status: 200, entrance: false, found: 4, skipped: 4, measured: 0 },
+  { route: NOT_FOUND, status: 404, entrance: false, found: 6, skipped: 0, measured: 6 },
 ] as const;
 
 /**
@@ -141,16 +160,24 @@ const NON_HUB_ROUTES = ['/api/health'] as const;
 /**
  * The entrance the home surface animates, and the selector the settle waits on.
  *
- * `HomeLayout.tsx:34,39` tweens these from `opacity: 0` at roughly t=2.0s and t=2.2s. A surface
- * that declares `entrance: true` must match at least one of these nodes, or the wait is a wait on
- * an empty NodeList, which `Array.every` answers `true` for immediately.
+ * `HomeLayout.scss` animates these from `opacity: 0` at 2000ms and 2200ms, with an 80ms stagger
+ * inside each group. A surface that declares `entrance: true` must match at least one of these
+ * nodes, or the wait is a wait on an empty NodeList, which `Array.every` answers `true` for
+ * immediately.
+ *
+ * **It was a GSAP timeline in `HomeLayout.tsx` until 2026-09-21**, positioned at t=2.0s and t=2.2s
+ * on a clock that started at hydration. Story 2-29 converted it to one `home-enter` keyframe and
+ * five `animation-delay` declarations counted from first paint. The wait below is unchanged and
+ * reads computed `opacity`, which answers the same question whatever writes it.
  *
  * **This docblock predicted that Story 2-15 renames `.nav-link`, and that prediction was wrong.**
- * Corrected 2026-09-08. `.nav-link` is `HomeLayout`'s class, on the homepage panel, and its ledger
- * row `home-nav` is `closedBy: 'Story 2-32'`; Story 2-15 reshaped the chrome nav in
+ * Corrected 2026-09-08, and again 2026-09-21: `.nav-link` is `HomeLayout`'s class, on the homepage
+ * panel, and its ledger row `home-nav` was `closedBy: 'Story 2-32'` until Story 2-29 repaired the
+ * links and deleted the row. Story 2-15 reshaped the chrome nav in
  * `Navbar.tsx`, which carries no class at all on its links and is not matched here. It repointed
  * the panel's second link and relabelled it, which moves neither the class nor this selector. The
- * guard below is still the thing that would catch the rename whenever Story 2-32 makes it.
+ * guard below is still the thing that would catch a rename. **Story 2-32 made none**: it turned the
+ * contact group into a list on 2026-09-23, and its links are still `a` inside `.contact-container`.
  */
 const ENTRANCE_SELECTOR = '.nav-link, .contact-container a';
 
@@ -229,57 +256,59 @@ interface Exemption {
  * The ledger. Held equal to the table in `ops/hit-target-floor.md` in both directions by
  * `ops/__tests__/hit-target-floor.test.ts`, so neither file is the only reader of the other.
  *
- * **Six rows at Story 2-8, three now.** The chrome logo was not on that story's own list of four
- * and was found by measuring: its `<a>` is a plain inline box, so its rect is the text line box
- * while the 66px-tall image inside it paints past the bottom. Story 2-32 names `Logo` in its title
- * and is what closes it. The home surface is carried as two rows because it is authored in two
- * files at two different sizes. Story 2-9 deleted `directory-links` in the commit that replaced
- * the card grid with the Suite Directory, whose two links meet the floor on both axes, Story
- * 2-15 deleted `chrome-nav` on 2026-09-08 in the commit that rebuilt the header's links to `--tap`
- * on both axes, and Story 2-17 deleted `error-back` on 2026-09-11 in the commit that replaced the
- * 404's single back link with the header's two destinations, each built to `--tap`; the ledger
- * can only shrink, so nothing had to remember to widen a scope afterwards.
+ * **Six rows at Story 2-8, none since 2026-09-23.** The chrome logo was not on that story's own list
+ * of four and was found by measuring: its `<a>` was a plain inline box, so its rect was the text
+ * line box while the 66px-tall image inside it painted past the bottom. Story 2-32 replaced the
+ * raster with a text wordmark held to `--tap` on both axes and deleted `chrome-logo`, the last row,
+ * in the same commit. The home surface was carried as two rows, because it is authored in two
+ * files at two different sizes, until Story 2-29 repaired both on 2026-09-21. Story 2-9 deleted
+ * `directory-links` in the commit that replaced the card grid with the Suite Directory, whose two
+ * links meet the floor on both axes, Story 2-15 deleted `chrome-nav` on 2026-09-08 in the commit
+ * that rebuilt the header's links to `--tap` on both axes, and Story 2-17 deleted `error-back` on
+ * 2026-09-11 in the commit that replaced the 404's single back link with the header's two
+ * destinations, each built to `--tap`; the ledger can only shrink, so nothing had to remember to
+ * widen a scope afterwards.
+ *
+ * **Empty by declaration, and the instrument outlives it** (DW-68, resolved by Story 2-32). The
+ * sweep's first direction does not need a row: an element under the floor that nothing lists fails
+ * on every run. The row shape stays, for a breach the Operator rules to tolerate, and the cases
+ * that need a row to exist plant a real element on a real page against `PLANTED_ROW` below instead
+ * of against a row the Hub no longer has.
  */
 const EXEMPTIONS: readonly Exemption[] = [
-  {
-    id: 'chrome-logo',
-    // Three routes since 2026-09-10, not two. Story 2-16 built `/cv`, which renders the same
-    // header, so this selector matches a third element and `covers` moves with it. The row is
-    // unchanged in every other respect: no control was repaired and none was added, the same
-    // authored link is simply rendered on one more surface.
-    selector: '.logo a',
-    source: 'components/atoms/Logo/Logo.tsx:7',
-    routes: ['/work', '/cv', '/a-route-that-does-not-exist'],
-    covers: 3,
-    measured: '184.00 x 20.00',
-    closedBy: 'Story 2-32',
-  },
-  {
-    id: 'home-nav',
-    // Corrected 2026-09-08 by Story 2-15, which edited the second of these two lines. The citation
-    // read `:64,67` from Story 2-8 onwards and was 78 lines stale by the time anything checked it:
-    // `ops/__tests__/hit-target-floor.test.ts` holds the *file* to disk and nothing holds the line
-    // numbers, so this is a citation a reader has to keep true.
-    selector: 'a.nav-link',
-    source: 'components/organisms/HomeLayout/HomeLayout.tsx:142,150',
-    routes: ['/'],
-    covers: 2,
-    // Re-read 2026-09-12 by Story 2-20, which moved both home rows onto the display face at 75%
-    // width: the line box grew from 23.00 to 32.00 with the contract's metric overrides, and the
-    // contact widths narrowed with the face. Still under the floor on height, still Story 2-32's.
-    measured: '320.00 x 32.00',
-    closedBy: 'Story 2-32',
-  },
-  {
-    id: 'home-contact',
-    selector: '.contact-container a',
-    source: 'components/molecules/ContactContainer/ContactContainer.tsx:5,8,15',
-    routes: ['/'],
-    covers: 3,
-    measured: '57.00 x 32.00 to 81.00 x 32.00',
-    closedBy: 'Story 2-32',
-  },
+  // **`chrome-logo` left on 2026-09-23 with Story 2-32**, the last row. It listed `/work`, `/cv` and
+  // the 404 and covered three elements, one authored link rendered by the header on each surface,
+  // measured at 184.00 x 20.00 since 2026-09-06. The text wordmark that replaced the raster measures
+  // at or above `--tap` on both axes on all three, so this sweep reported the row stale, which is the
+  // mechanism forcing its deletion rather than a tidy-up.
+  //
+  // **`home-nav` and `home-contact` left on 2026-09-21 with Story 2-29**, which rebuilt
+  // `HomeLayout.scss` and gave both link groups `min-block-size: var(--tap)` on a flex box, the
+  // `SkipControl.scss:12-21` idiom. **Only `home-nav` was forced.** That story did not set out to
+  // take either: its display step alone pushed the first nav link to 296.00 x 68.75, this sweep
+  // reported that row stale, and a row cannot go half stale, so both its links had to take the
+  // floor. `home-contact` was elective, and is the Operator's ruling of 2026-09-21 rather than the
+  // instrument's: nothing made those three links clear the floor. The ruling keeps both, and
+  // `ops/known-violations.md` KV-4 and Pending Operator action 9 carry it.
 ];
+
+/**
+ * An invented row, for the controls that need one to exist now that the ledger is empty.
+ *
+ * Every value is invented except the route, which is the 404 because it is swept; the story it names
+ * is not on the board, the shape the ghost row in "fails a row that has stopped matching" uses. The
+ * elements it matches are planted through the browser by the case that uses it, so the verdict is
+ * still read off a real page, and nothing here is in `EXEMPTIONS`, so the real sweep never sees it.
+ */
+const PLANTED_ROW: Exemption = {
+  id: 'planted-row',
+  selector: 'a.planted-exempt',
+  source: 'components/atoms/Nowhere/Nowhere.tsx:1',
+  routes: [NOT_FOUND],
+  covers: 1,
+  measured: '10.00 x 10.00',
+  closedBy: 'Story 9-99',
+};
 
 /**
  * Sub-pixel slack on the edge comparison alone, never on the floor.
@@ -289,6 +318,33 @@ const EXEMPTIONS: readonly Exemption[] = [
  * measured under `--tap` is under it.
  */
 const EDGE_SLACK = 0.5;
+
+/**
+ * A-5 over every element, not only the interactive ones (Story 2-33, KV-5's retirement, DW-116).
+ *
+ * Every element with a box whose edge sits past either side of the viewport, by the predicate KV-5
+ * was opened, re-read and retired with: both edges, because a negative `left` scrolls the page as
+ * surely as a wide `right`; `EDGE_SLACK`, because a third of a pixel is layout rounding; and an
+ * element with no box skipped, because `display: none` answers a zero rect. Measured on elements for
+ * the reason the docblock above gives: `overflow-x: clip` clamps what a scroll width would report.
+ */
+const outsideTheViewport = (page: Page, route: string): Promise<string[]> =>
+  page.evaluate(
+    ({ where, slack }) => {
+      const width = window.innerWidth;
+      const found: string[] = [];
+      for (const node of document.querySelectorAll('body *')) {
+        const rect = node.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) continue;
+        if (rect.right > width + slack || rect.left < -slack) {
+          const name = `${node.tagName.toLowerCase()}${[...node.classList].map((token) => `.${token}`).join('')}${node.id ? `#${node.id}` : ''}`;
+          found.push(`${where}: ${name} spans [${rect.left.toFixed(2)}, ${rect.right.toFixed(2)}] against a ${width} viewport`);
+        }
+      }
+      return found;
+    },
+    { where: route, slack: EDGE_SLACK }
+  );
 
 /** One element that was measured. */
 interface Measured {
@@ -850,14 +906,15 @@ test.describe('the hit-target floor', () => {
     await goTo(page, NOT_FOUND, 404);
     const floor = await floorFrom(page);
 
-    expect(EXEMPTIONS.length, 'the exemption ledger is empty, so the sweep exempts nothing').toBeGreaterThan(0);
-    expect(new Set(EXEMPTIONS.map((row) => row.id)).size, 'two rows share an id').toBe(EXEMPTIONS.length);
-    expect(new Set(EXEMPTIONS.map((row) => row.selector)).size, 'two rows share a selector').toBe(
-      EXEMPTIONS.length
-    );
+    // **The ledger may be empty, and has been since 2026-09-23** (DW-68). The checks below run over
+    // the real rows and over `PLANTED_ROW` too, so an empty ledger still has every one of them
+    // exercised rather than looping over nothing.
+    const rows = [...EXEMPTIONS, PLANTED_ROW];
+    expect(new Set(rows.map((row) => row.id)).size, 'two rows share an id').toBe(rows.length);
+    expect(new Set(rows.map((row) => row.selector)).size, 'two rows share a selector').toBe(rows.length);
 
     const swept = SURFACES.map((surface) => surface.route);
-    for (const row of EXEMPTIONS) {
+    for (const row of rows) {
       expect(row.routes.length, `"${row.id}" lists no route`).toBeGreaterThan(0);
       expect(new Set(row.routes).size, `"${row.id}" lists a route twice`).toBe(row.routes.length);
       for (const route of row.routes) {
@@ -894,9 +951,9 @@ test.describe('the hit-target floor', () => {
 
     // Every selector, through the browser's own parser, naming the row rather than throwing a
     // page-side SyntaxError from inside `Element.matches`.
-    await expect(assertSelectorsParse(page, EXEMPTIONS)).resolves.toBeUndefined();
+    await expect(assertSelectorsParse(page, rows)).resolves.toBeUndefined();
     await expect(
-      assertSelectorsParse(page, [{ ...EXEMPTIONS[0], id: 'planted-bad-selector', selector: 'a:::not-a-pseudo' }])
+      assertSelectorsParse(page, [{ ...PLANTED_ROW, id: 'planted-bad-selector', selector: 'a:::not-a-pseudo' }])
     ).rejects.toThrow(/planted-bad-selector/);
 
     // The floor parser, on planted controls, before any comparison rests on it. Without these an
@@ -923,6 +980,7 @@ test.describe('the hit-target floor', () => {
     const misrouted: string[] = [];
     const stale: string[] = [];
     const wide: string[] = [];
+    const outside: string[] = [];
     const counted: string[] = [];
     const summary: string[] = [];
 
@@ -950,6 +1008,8 @@ test.describe('the hit-target floor', () => {
       );
 
       const { found, skipped, measured } = await measureSurface(page);
+      const census = await outsideTheViewport(page, surface.route);
+      outside.push(...census);
 
       counted.push(
         ...countVerdict(
@@ -965,7 +1025,8 @@ test.describe('the hit-target floor', () => {
       );
 
       summary.push(
-        `${surface.route}: found ${found}, skipped ${skipped.length}, measured ${measured.length}` +
+        `${surface.route}: found ${found}, skipped ${skipped.length}, measured ${measured.length}, ` +
+          `${census.length} element(s) of any kind past an edge` +
           (skipped.length > 0 ? ` [${skipped.map((row) => `${row.at} (${row.why})`).join('; ')}]` : '')
       );
 
@@ -997,7 +1058,7 @@ test.describe('the hit-target floor', () => {
     expect(
       stale,
       `an exemption lists an element that now clears the floor. The row is what forces the ledger ` +
-        `to shrink as Stories 2-30 and 2-32 land, so it is deleted rather than ` +
+        `to shrink as a repair lands, so it is deleted in the repairing commit rather than ` +
         `kept:\n${stale.join('\n')}`
     ).toEqual([]);
 
@@ -1013,6 +1074,48 @@ test.describe('the hit-target floor', () => {
         `measured on the element because html and body carry overflow-x: clip, so the document's ` +
         `scroll width is clamped by the clipping rather than by the absence of ` +
         `overflow:\n${wide.join('\n')}`
+    ).toEqual([]);
+
+    // **A-5 over every element since Story 2-33**, which retired KV-5 on this reading: the arm above
+    // reads the interactive elements the floor measures, and this one reads everything with a box.
+    console.log(`hit-target-floor: ${summary.join('; ')}`);
+    expect(
+      outside,
+      `A-5: an element sits past a viewport edge at the pinned width. KV-5 was retired on 2026-09-23 ` +
+        `when nothing did, so this is a new breach rather than a tolerated one:\n${outside.join('\n')}`
+    ).toEqual([]);
+  });
+
+  test('A-5 reads every element with a box, where the interactive arm reads only what it measures', async ({ page }) => {
+    // The widening Story 2-33 made, shown doing what the interactive arm cannot: two plain blocks,
+    // neither a control, planted past each edge of the 404 surface, are reported by the census and
+    // are invisible to `judge`, which reads only the elements the floor measures.
+    await goTo(page, NOT_FOUND, 404);
+    await settle(page, { route: NOT_FOUND, entrance: false });
+    expect(await outsideTheViewport(page, NOT_FOUND), 'the 404 already carries an element past an edge').toEqual([]);
+
+    await page.evaluate(() => {
+      for (const [id, left] of [
+        ['planted-block-past', '300px'],
+        ['planted-block-before', '-90px'],
+      ]) {
+        const block = document.createElement('div');
+        block.id = id;
+        block.setAttribute('style', `position:absolute;top:200px;left:${left};width:120px;height:10px;`);
+        document.body.appendChild(block);
+      }
+    });
+
+    const census = await outsideTheViewport(page, NOT_FOUND);
+    expect(census.find((line) => line.includes('#planted-block-past')), 'the block past the right edge was not reported').toContain('420.00');
+    expect(census.find((line) => line.includes('#planted-block-before')), 'the block before the left edge was not reported').toContain('-90.00');
+
+    const floor = await floorFrom(page);
+    const { measured } = await measureSurface(page);
+    const verdict = judge(NOT_FOUND, measured, floor, RENDERED_VIEWPORT.width);
+    expect(
+      verdict.wide.filter((line) => line.includes('planted-block')),
+      'the interactive arm reports a plain block, so the census above adds nothing to it'
     ).toEqual([]);
   });
 
@@ -1052,8 +1155,8 @@ test.describe('the hit-target floor', () => {
   test('at least one measured element clears the floor, so the comparison separates two answers', async ({
     page,
   }) => {
-    // Without this, a floor read as some enormous number would put every element under it and the
-    // case above would still be green, because everything under the floor is on the ledger today.
+    // Without this, a floor read as some enormous number would put every element under it and a
+    // floor read as zero would put none under it, and either way the sweep would read the same.
     await goTo(page, '/work');
     await settle(page, { route: '/work', entrance: false });
     const floor = await floorFrom(page);
@@ -1066,10 +1169,29 @@ test.describe('the hit-target floor', () => {
         `target from a breach: ${measured.map((element) => `${element.at} ${size(element)}`).join('; ')}`
     ).toBeGreaterThan(0);
 
-    const breaches = measured.filter((element) => element.width < floor || element.height < floor);
-    expect(breaches.length, 'every element on /work clears the floor, so the ledger is dead weight').toBeGreaterThan(
-      0
+    // **The other answer is planted since 2026-09-23.** Until Story 2-32 the chrome logo on this
+    // surface was a real breach and gave this half its element; every control on `/work` clears the
+    // floor now (DW-68), so an undersized link planted into the same page is measured by the same
+    // sweep and has to come back on the other side of the comparison.
+    expect(
+      measured.filter((element) => element.width < floor || element.height < floor).map((element) => element.at),
+      'a shipped control on /work is under the floor, which the standing sweep should have failed'
+    ).toEqual([]);
+    await page.evaluate(() => {
+      const planted = document.createElement('a');
+      planted.href = '#planted';
+      planted.id = 'planted-under-floor';
+      planted.textContent = 'x';
+      planted.setAttribute('style', 'display:inline-flex;width:10px;height:10px;');
+      document.body.appendChild(planted);
+    });
+    const breaches = (await measureSurface(page)).measured.filter(
+      (element) => element.width < floor || element.height < floor
     );
+    expect(
+      breaches.map((element) => element.at),
+      'a planted undersized link was not measured under the floor, so the comparison cannot report a breach'
+    ).toEqual([expect.stringContaining('a#planted-under-floor')]);
   });
 
   test('fails on an unlisted element under the floor, naming the route, the selector and the box', async ({
@@ -1108,29 +1230,39 @@ test.describe('the hit-target floor', () => {
 
   test('separates an unlisted element from one whose row does not list this route', async ({ page }) => {
     // Both are "under the floor and not exempt here", and reporting them the same way sends a
-    // reader hunting for a row that exists. The planted element matches `a.nav-link`, whose row
-    // lists the home route and not the 404.
-    await goTo(page, NOT_FOUND, 404);
-    await settle(page, { route: NOT_FOUND, entrance: false });
+    // reader hunting for a row that exists. The planted element matches `PLANTED_ROW`, which lists
+    // the 404 and not the home route.
+    //
+    // **The pairing moved twice.** From `a.nav-link` planted on the 404 to `.logo a` planted on `/`
+    // on 2026-09-21, when Story 2-29 deleted both home rows, and to `PLANTED_ROW` on 2026-09-23, when
+    // Story 2-32 deleted `chrome-logo` and the ledger had no row left to demonstrate on (DW-68). The
+    // element is still real and still measured on a real page; only the row is invented.
+    await goTo(page, '/');
+    await settle(page, { route: '/', entrance: true });
     const floor = await floorFrom(page);
 
     await page.evaluate(() => {
       const planted = document.createElement('a');
       planted.href = '#misrouted';
       planted.id = 'planted-misrouted';
-      planted.className = 'nav-link';
+      planted.className = 'planted-exempt';
       planted.textContent = 'y';
-      planted.setAttribute('style', 'display:inline-flex;width:12px;height:12px;');
+      planted.setAttribute('style', 'position:absolute;top:0;left:0;display:inline-flex;width:12px;height:12px;');
       document.body.appendChild(planted);
     });
 
-    const { measured } = await measureSurface(page);
-    const verdict = judge(NOT_FOUND, measured, floor, RENDERED_VIEWPORT.width);
+    const { measured } = await measureSurface(page, [PLANTED_ROW]);
+    const verdict = judge('/', measured, floor, RENDERED_VIEWPORT.width, [PLANTED_ROW]);
 
     expect(verdict.misrouted, 'the misrouted control was not reported as such').toHaveLength(1);
     expect(verdict.misrouted[0]).toContain('a#planted-misrouted');
-    expect(verdict.misrouted[0], 'the message does not name the row that matched').toContain('"home-nav"');
+    expect(verdict.misrouted[0], 'the message does not name the row that matched').toContain(`"${PLANTED_ROW.id}"`);
     expect(verdict.under, 'the misrouted control was also reported as listed by nothing').toEqual([]);
+
+    // And the same element judged against the real ledger, which is empty, is a plain breach: the
+    // instrument still fails it with no row at all, which is what an empty ledger has to mean.
+    const unlisted = judge('/', await measureSurface(page).then((surveyed) => surveyed.measured), floor, RENDERED_VIEWPORT.width);
+    expect(unlisted.under.filter((line) => line.includes('a#planted-misrouted'))).toHaveLength(1);
   });
 
   test('fails on an element that reaches the floor only through vertical padding on a plain inline element', async ({
@@ -1174,65 +1306,50 @@ test.describe('the hit-target floor', () => {
   });
 
   test('fails a listed element that now clears the floor, naming the row to delete', async ({ page }) => {
-    // The direction that makes the ledger shrink. This is what Stories 2-30 and 2-32 will hit on
-    // the commit that repairs their surface, and what Stories 2-9 and 2-15 already did. It is why
-    // none of them can leave a row behind.
-    // Planted by injecting a compliant link into a surface a real row lists, so a real row rather
-    // than a synthetic one goes stale.
+    // The direction that makes the ledger shrink. It is what Stories 2-9, 2-15, 2-17, 2-29 and 2-32
+    // hit on the commits that repaired their surfaces, and why none of them could leave a row behind.
     //
-    // **The host moved from `nav.navbar` to the homepage panel on 2026-09-08**, because Story 2-15
-    // repaired the chrome nav and deleted `chrome-nav` with it. `home-nav` is the natural
-    // replacement: it is a live row on `/`, its two links stay in the ledger for Story 2-32, and a
-    // third link planted beside them makes `covers: 2` read 3, which is the arithmetic half this
-    // case asserts at the end. The predicate is unchanged; only the row it is demonstrated on is.
-    await goTo(page, '/');
-    await settle(page, { route: '/', entrance: true });
+    // **Demonstrated against `PLANTED_ROW` since 2026-09-23.** The host moved from `nav.navbar` to the
+    // homepage panel on 2026-09-08 and to the chrome logo on 2026-09-21, each time because the
+    // previous host's row was repaired and deleted; Story 2-32 deleted `chrome-logo`, the last, so no
+    // real row is left to go stale (DW-68). Two elements are planted on the real 404 instead: one
+    // under the floor, which is the breach the invented row lists, and one that clears it, which is
+    // the repair. The predicate is unchanged, and so is what it is read off: a real page, measured by
+    // the real sweep.
+    await goTo(page, NOT_FOUND, 404);
+    await settle(page, { route: NOT_FOUND, entrance: false });
     const floor = await floorFrom(page);
 
-    const planted = await page.evaluate(() => {
-      const host = document.querySelector('nav.home-panel--nav');
-      // Reported rather than skipped. A missing plant target would leave this case asserting that
-      // nothing was reported, which reads as the predicate failing rather than as the fixture
-      // being gone, and Story 2-32 reshapes exactly this element.
-      if (!host) return false;
-      const link = document.createElement('a');
-      link.href = '#repaired';
-      link.id = 'planted-repaired-nav-link';
-      link.className = 'nav-link';
-      link.textContent = 'Suite';
-      // Taken out of flow deliberately. The panel is a flex column whose links are 320px wide, so
-      // an in-flow child would reflow its siblings and this control would be reporting a layout
-      // side effect rather than the predicate. `opacity` is set because the entrance tweens
-      // `.nav-link` from 0 and a node appended after the timeline has run never receives it, which
-      // the visibility rule would answer as `zero area` only if the box were also empty; a
-      // transparent box is still measured, and the explicit value keeps that from being luck.
-      link.setAttribute(
-        'style',
-        'position:absolute;top:0;left:0;display:inline-flex;align-items:center;width:80px;height:80px;opacity:1;'
-      );
-      host.appendChild(link);
-      return true;
+    await page.evaluate(() => {
+      // Both out of flow, so neither reflows the page and the verdict is about the predicate rather
+      // than about a layout side effect.
+      const plant = (id: string, style: string): void => {
+        const link = document.createElement('a');
+        link.href = `#${id}`;
+        link.id = id;
+        link.className = 'planted-exempt';
+        link.textContent = 'Home';
+        link.setAttribute('style', `position:absolute;top:0;left:0;display:inline-flex;align-items:center;${style}`);
+        document.body.appendChild(link);
+      };
+      plant('planted-listed-breach', 'width:10px;height:10px;overflow:hidden;');
+      plant('planted-repaired-link', 'width:80px;height:80px;');
     });
 
-    expect(
-      planted,
-      'no nav.home-panel--nav exists on /, so the stale-row control had nothing to plant into. The ' +
-        'fixture is gone, not the predicate.'
-    ).toBe(true);
-
-    const { measured } = await measureSurface(page);
-    const verdict = judge('/', measured, floor, RENDERED_VIEWPORT.width);
+    const { measured } = await measureSurface(page, [PLANTED_ROW]);
+    const verdict = judge(NOT_FOUND, measured, floor, RENDERED_VIEWPORT.width, [PLANTED_ROW]);
 
     expect(verdict.stale, 'a repaired listed element was not reported as a stale row').toHaveLength(1);
-    expect(verdict.stale[0]).toContain('a#planted-repaired-nav-link');
-    expect(verdict.stale[0], 'the message does not name the row to delete').toContain('"home-nav"');
+    expect(verdict.stale[0]).toContain('a#planted-repaired-link');
+    expect(verdict.stale[0], 'the message does not name the row to delete').toContain(`"${PLANTED_ROW.id}"`);
     expect(verdict.stale[0], 'the message does not point at the record').toContain('ops/hit-target-floor.md');
-    expect(verdict.under, 'the repaired element was also reported as an unlisted breach').toEqual([]);
+    expect(verdict.under, 'the listed breach or the repair was reported as listed by nothing').toEqual([]);
 
     // The same plant is also a row covering more than it says it covers, which is the arithmetic
-    // half of the same defect and the reason `covers` exists.
-    const drift = ledgerDrift(verdict.hits, [EXEMPTIONS.find((row) => row.id === 'home-nav')!]);
-    expect(drift.some((line) => /covers 3 measured elements/.test(line))).toBe(true);
+    // half of the same defect and the reason `covers` exists: the row says one and matched two.
+    const drift = ledgerDrift(verdict.hits, [PLANTED_ROW]);
+    expect(drift.some((line) => /covers 2 measured elements/.test(line))).toBe(true);
+    expect(drift.some((line) => /matched 2 elements and only 1 are under the floor/.test(line))).toBe(true);
   });
 
   test('fails a row that has stopped matching on one of the routes it lists', () => {

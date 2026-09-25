@@ -7,17 +7,19 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  * The type swap, observed on the Hub's real routes (Story 2-20, migration step 5).
  *
  * Until this story the Hub self-hosted ten legacy faces through `app/scss/_fonts.scss` and served
- * their binaries from `public/fonts/`, and one rule reached one of them: `--confillia-normal`, at
- * the two hero panels on `/`. That alias now lands on the display role with `font-stretch: 75%`
- * set by hand at both call sites, the partial and the directory are gone, and the two preloads
+ * their binaries from `public/fonts/`, and one rule reached one of them: the narrow display alias, at
+ * the two hero panels on `/`. That alias then landed on the display role with `font-stretch: 75%`
+ * set by hand at both call sites (Story 2-29 later named the role there directly, and Story 2-22
+ * deleted the alias), the partial and the directory are gone, and the two preloads
  * in `app/layout.tsx` went with them (`tests/e2e/narrative.pw.ts` pins that the `/` document
  * preloads no font, against a planted preload). None of that is visible to a screenshot of
  * `/work`, which no local face ever reached, and a computed `font-family` reads the declared
  * stack whether or not the face behind it loaded (`RESTYLE-SPEC.md:648`, F-2). So five things
  * are measured here:
  *
- *  1. **The two Confillia sites** compute the display family at the narrow end of its width axis,
- *     and the alias on `:root` reads the display stack.
+ *  1. **The two Confillia sites** compute the display family, at the narrow end of its width axis
+ *     until Story 2-29 and at its default width since, read against the display role itself since
+ *     Story 2-22 deleted the alias the case also read.
  *  2. **No retired family survives in the built CSS on any surface**, no request reaches
  *     `/fonts/` from any of them, and the old binary's URL answers 404.
  *  3. **The swap holds the line box still** on every element that reaches the display face, on
@@ -30,8 +32,9 @@ import { RENDERED_VIEWPORT, computedStyleValue, rootCustomPropertyValue } from '
  *     tells a failure that is a reflow (lines moved, line box held) from one that is a metric
  *     drift (line box moved).
  *  4. **The weight distinction is a width.** `getComputedStyle().fontWeight` answers the requested
- *     value, 400 at a `--monument-regular` site, not the 700 the variable face clamps it to, so
- *     one string planted at both display aliases is measured and the two widths differ.
+ *     value, 400 where nothing asks for a weight, not the 700 the variable face clamps it to, so
+ *     one string planted at the display role's inherited weight and at `--w-black` is measured and
+ *     the two widths differ. (It was planted at the two display aliases until Story 2-22 deleted them.)
  *  5. **The width axis is a width too.** `getComputedStyle().fontStretch` answers the requested
  *     `75%` whether or not the loaded face carries a `wdth` axis, so the same string at `75%` and
  *     at `100%` is measured and the two widths differ.
@@ -81,22 +84,47 @@ const RETIRED_BINARY = '/fonts/ConfilliaNormal-Regular.woff2';
 interface DisplaySite {
   readonly selector: string;
   readonly count: number;
+  /**
+   * The axis the swap is held to, where it is not the height.
+   *
+   * `lineBox` is for a site the design sets at a narrower width than the face's default, whose
+   * fallback has no width axis to narrow to: the advance width moves across the swap, a block can
+   * wrap to a different number of lines, and its height then moves by a whole line with its line
+   * box held. That is DW-82's structural half, owned by the next `contracts/fonts.css` MINOR, and
+   * not something the four override descriptors can hold; what they do hold is the height per
+   * line, so that is what such a site is asserted on. The line counts stay printed either way.
+   */
+  readonly holds?: 'lineBox';
 }
 
-/** The two Confillia call sites, `HomeLayout.scss:120` and `:152`, and how many elements each renders. */
-const CONFILLIA_SITES: readonly DisplaySite[] = [
+/**
+ * The two hero link groups, and how many elements each renders.
+ *
+ * **They were the two call sites of the narrow display alias until 2026-09-21.** Story 2-20 retargeted
+ * that alias onto the display family and each site set `font-stretch: 75%` by hand beside
+ * `font-family`, the narrow end of the published `75% 100%`, because a family alias cannot carry
+ * width. Story 2-29 rebuilt `HomeLayout.scss` against the contract: both groups name the display
+ * family directly and neither sets a width, so they render at the face's default `100%`, which is
+ * the one width `contracts/fonts.css`'s single `size-adjust` was fitted at (DW-82).
+ */
+const HERO_DISPLAY_SITES: readonly DisplaySite[] = [
   { selector: 'a.nav-link', count: 2 },
   { selector: '.contact-container a', count: 3 },
 ];
 
-/** The width both sites set by hand beside `font-family`, the narrow end of the published `75% 100%`. */
-const CONFILLIA_STRETCH = '75%';
+/** The width both groups now compute, which is the axis default and not a value any rule sets. */
+const HERO_DISPLAY_STRETCH = '100%';
 
 /**
  * Every element that reaches the display face, per surface, and how many of each the surface
- * renders. The three `--monument-bold` sites, the two `--monument-regular` sites and the two
- * Confillia sites, which is the whole set `tests/e2e/anchor-aliases.pw.ts` tables. `/cv` and
- * `/celeste` reach no display face and are not here.
+ * renders. The two bold display alias sites, the two regular display alias sites and the two hero
+ * link groups, plus the display entrance on `/`, which reaches the face through `--f-display`
+ * directly since Story 2-27, as the two hero groups have since Story 2-29, the row names since
+ * Story 2-31, the 404's numeral and heading since Story 2-30, and `/work`'s hero heading since Story
+ * 2-33, which left no alias site at all. `/cv` and `/celeste` are not here, though both reach the face:
+ * `/cv` through its intro heading and its row names, `/celeste` through its heading, at `wdth 85` since
+ * the Operator's ruling of 2026-09-24 (DW-121), which DW-82 records as a narrowed site this file does
+ * not measure.
  *
  * The count is pinned so the swap cannot be measured over an empty selection: a renamed class
  * fails here naming itself rather than shortening the loop below to nothing.
@@ -105,37 +133,44 @@ const DISPLAY_ELEMENTS: readonly {
   route: string;
   status: number;
   selectors: readonly DisplaySite[];
-  /** A node that must be attached before either pass is measured, where the page's layout settles after `load`. */
-  settle?: string;
 }[] = [
   {
     route: '/',
     status: 200,
-    // `.glitch-text__inner` is the element the deleted preload's comment named. Under the
-    // harness's reduced motion `GlitchText.tsx:30-33` sets it visible and never splits it, so
-    // its box is a line box like the others.
-    selectors: [...CONFILLIA_SITES, { selector: '.glitch-text__inner', count: 1 }],
+    // `.glitch-text` is the heading itself since Story 2-27 (the `.glitch-text__inner` the
+    // deleted preload's comment named was its wrapped `<h1>`, and the wrapper is gone). Its
+    // characters are inline spans in one line box, present at full opacity under the harness's
+    // reduced motion, so its box is a line box like the others.
+    selectors: [...HERO_DISPLAY_SITES, { selector: '.glitch-text', count: 1 }],
   },
   {
     route: '/work',
     status: 200,
     selectors: [
       { selector: '.work-hero__heading', count: 1 },
-      { selector: '.work-item__company', count: 4 },
+      // The row name, at the display face's `wdth 85` since Story 2-31 rebuilt `WorkItem.scss` to
+      // `RESTYLE-SPEC.md` § 2's row. **Observed 2026-09-23** in the pinned image: at 360 the first
+      // company set on two lines in the fallback and on one in the face (35.19 to 17.59), its height
+      // per line held. Held to the line box for that reason; DW-82 carries the measurement.
+      { selector: '.work-item__company', count: 4, holds: 'lineBox' },
     ],
-    // The torus canvas mounts on demand after hydration and widens `.work-hero`'s grid column
-    // from 216px to 300px at 360 (**observed 2026-09-12**: the column reads 216px at `load` and at
-    // `fonts.ready`, 300px once `<canvas>` is attached), and the heading wraps differently in
-    // each. A pass measured before the mount and a pass measured after would compare two layouts
-    // rather than two faces, so both passes wait for the canvas.
-    settle: '.work-hero__canvas-wrap canvas',
+    // **No wait since Story 2-33.** The torus canvas mounted on demand after hydration and widened
+    // `.work-hero`'s grid column from 216px to 300px at 360 (**observed 2026-09-12**: 216px at `load`
+    // and at `fonts.ready`, 300px once `<canvas>` was attached), so both passes waited for it through
+    // a `settle` option this route alone set. Under this project's reduced motion the torus is never
+    // requested and its box is omitted, so the hero's layout at `load` is its layout; the option left
+    // with its one use, and a wait for a canvas would only time out.
   },
   {
     route: NOT_FOUND,
     status: 404,
+    // The numeral and the heading, which reach the display face through `--f-display` directly
+    // since Story 2-30 rebuilt the surface: the numeral in `Error404.scss`, and the heading as the
+    // display entrance, the same `.glitch-text` `/` renders (the 2023 `.error-page__title` it
+    // replaced reached the face through the regular display alias).
     selectors: [
       { selector: '.error-page__code', count: 1 },
-      { selector: '.error-page__title', count: 1 },
+      { selector: '.glitch-text', count: 1 },
     ],
   },
 ];
@@ -374,18 +409,13 @@ interface Swap {
  */
 const measureSwap = async (
   page: Page,
-  surfaces: readonly { route: string; status: number; selectors: readonly DisplaySite[]; settle?: string }[]
+  surfaces: readonly { route: string; status: number; selectors: readonly DisplaySite[] }[]
 ): Promise<Map<string, Swap>> => {
   const results = new Map<string, Swap>();
-  const settled = async (surface: { route: string; settle?: string }): Promise<void> => {
-    if (!surface.settle) return;
-    await page.locator(surface.settle).first().waitFor({ state: 'attached', timeout: 15_000 });
-  };
 
   await page.route('**/*.woff2', (candidate) => candidate.abort());
   for (const surface of surfaces) {
     await goTo(page, surface.route, surface.status);
-    await settled(surface);
     await plantStrippedFace(page);
     await fontsReady(page, [PLANTED_STRIPPED_SPEC]);
     results.set(surface.route, {
@@ -406,7 +436,6 @@ const measureSwap = async (
   for (const surface of surfaces) {
     statuses = new Map();
     await goTo(page, `${surface.route}?faces=1`, surface.status);
-    await settled(surface);
     const plantedSrc = await plantStrippedFace(page);
     await fontsReady(page, [PLANTED_STRIPPED_SPEC]);
     const available = await page.evaluate(
@@ -511,25 +540,21 @@ test('parses a real contract, so every case below measures something', () => {
   expect(DISPLAY_ELEMENTS.flatMap((surface) => surface.selectors).length, 'no display element is tabled').toBe(7);
 });
 
-test('the two Confillia sites compute the display family at 75% width, and the alias reads the display stack', async ({
-  page,
-}) => {
+test('the two hero link groups compute the display family at its default width', async ({ page }) => {
   await goTo(page, '/');
   await fontsReady(page);
 
-  // The alias itself, on `:root`, against the role it names, both read in the same page.
+  // The display role, on `:root`. Until Story 2-22 this also read the retired narrow alias against it,
+  // in the same page; the alias is deleted, and `tests/e2e/anchor-aliases.pw.ts` holds `:root` in the
+  // build to the contract's names and the Hub's one, so there is nothing left under that name to read.
   const displayStack = await rootCustomPropertyValue(page, '--f-display');
-  expect(
-    await rootCustomPropertyValue(page, '--confillia-normal'),
-    '--confillia-normal no longer resolves to what --f-display resolves to'
-  ).toBe(displayStack);
   const displayFamily = firstFamily(displayStack);
   expect(displayFamily, '--f-display declares no first family').not.toBe('');
 
   // Every element at both call sites, counted per selector so a renamed class cannot pass over
   // nothing.
   const wrong: string[] = [];
-  for (const site of CONFILLIA_SITES) {
+  for (const site of HERO_DISPLAY_SITES) {
     const elements = page.locator(site.selector);
     expect(await elements.count(), `${site.selector} does not match ${site.count} elements on /`).toBe(site.count);
     for (let index = 0; index < site.count; index += 1) {
@@ -538,24 +563,24 @@ test('the two Confillia sites compute the display family at 75% width, and the a
       if (firstFamily(family) !== displayFamily) {
         wrong.push(`${site.selector}[${index}] computes font-family "${family}", expected ${displayFamily} first`);
       }
-      if (stretch !== CONFILLIA_STRETCH) {
-        wrong.push(`${site.selector}[${index}] computes font-stretch "${stretch}", expected ${CONFILLIA_STRETCH}`);
+      if (stretch !== HERO_DISPLAY_STRETCH) {
+        wrong.push(`${site.selector}[${index}] computes font-stretch "${stretch}", expected ${HERO_DISPLAY_STRETCH}`);
       }
     }
   }
   expect(
     wrong,
-    `a Confillia call site does not render the display face at the narrow end of its width axis. The ` +
-      `alias carries the family and font-stretch is set by hand beside it, and one of the two is off:\n${wrong.join('\n')}`
+    `a hero link group does not render the display face at the default end of its width axis. Story 2-29 retired the hand-set ` +
+      `75%, so a site reading anything else has had a width put back on it:\n${wrong.join('\n')}`
   ).toEqual([]);
 
   // The width read, live: the same element reports something else once a rule overrides it, so
-  // `75%` twice above is a measurement and not a constant.
-  await plantStyle(page, '.nav-link:first-child { font-stretch: 100% !important; }');
+  // `100%` twice above is a measurement and not a constant.
+  await plantStyle(page, '.nav-link:first-child { font-stretch: 75% !important; }');
   expect(
     await computedStyleValue(page, 'a.nav-link', 'font-stretch'),
     'the width axis survived a rule that overrode it, so the read above is a constant'
-  ).toBe('100%');
+  ).toBe('75%');
 });
 
 test('every surface declares exactly the contract faces and fetches nothing under /fonts/, and the old binary answers 404', async ({
@@ -616,7 +641,7 @@ test('every surface declares exactly the contract faces and fetches nothing unde
   );
 });
 
-test('the fallback-to-face swap holds every display element within 1% in height, and the stripped control does not', async ({
+test('the fallback-to-face swap holds every display element within 1% in height, or per line where it asks for a narrow width, and the stripped control does not', async ({
   page,
 }) => {
   const breaches: string[] = [];
@@ -656,12 +681,14 @@ test('the fallback-to-face swap holds every display element within 1% in height,
     const rows = deltas(fallback, face);
     console.log(`type-swap deltas on ${surface.route}:\n${report(rows)}`);
 
-    // Height is what is asserted. The `lines` and `lineBox` rows printed above are what a failure
-    // is read against: a block that wraps to one more line when the face arrives moves its
-    // height by a whole line with its line box held, which is the advance width the overrides do
-    // not hold (DW-82), while a line box that moved is the overrides themselves drifting.
+    // Height is what is asserted, or the line box for a site that declares it holds that instead.
+    // The `lines` and `lineBox` rows printed above are what a failure is read against: a block
+    // that wraps to one more line when the face arrives moves its height by a whole line with its
+    // line box held, which is the advance width the overrides do not hold (DW-82), while a line box
+    // that moved is the overrides themselves drifting.
     for (const row of rows) {
-      if (row.axis !== 'height') continue;
+      const site = surface.selectors.find((candidate) => row.sample.startsWith(`${candidate.selector}[`));
+      if (row.axis !== (site?.holds ?? 'height')) continue;
       if (row.sample === PLANTED_STRIPPED) {
         controls += 1;
         if (row.share <= HEIGHT_TOLERANCE) {
@@ -674,7 +701,7 @@ test('the fallback-to-face swap holds every display element within 1% in height,
       }
       if (row.share > HEIGHT_TOLERANCE) {
         breaches.push(
-          `${surface.route} ${row.sample} height moved ${(row.share * 100).toFixed(2)}% across the swap ` +
+          `${surface.route} ${row.sample} ${row.axis} moved ${(row.share * 100).toFixed(2)}% across the swap ` +
             `(${row.before.toFixed(2)} to ${row.after.toFixed(2)}), above the ${(HEIGHT_TOLERANCE * 100).toFixed(0)}% ` +
             `the four override descriptors in contracts/fonts.css are tuned to hold`
         );
@@ -686,18 +713,21 @@ test('the fallback-to-face swap holds every display element within 1% in height,
   expect(breaches, `the swap moved a line box, or failed to move the control:\n${breaches.join('\n')}`).toEqual([]);
 });
 
-test('one string at the two display aliases measures two widths, which is the weight distinction', async ({ page }) => {
+test('one string at the display face’s inherited weight and at its heaviest measures two widths, which is the weight distinction', async ({
+  page,
+}) => {
   await goTo(page, NOT_FOUND, 404);
 
-  // Two spans, one string. The first asks nothing of the weight and inherits 400, which the
-  // published `700 800` range clamps up to 700 at rasterisation; the second asks for the heaviest
-  // weight the contract publishes, the way the `--monument-bold` call sites do. The twin is the
-  // second again.
+  // Two spans, one string, both on the display role. The first asks nothing of the weight and
+  // inherits 400, which the published `700 800` range clamps up to 700 at rasterisation; the second
+  // asks for the heaviest weight the contract publishes, the way the display call sites do. The twin
+  // is the second again. Until Story 2-22 the two spans read the regular and the bold display aliases,
+  // which resolved to this same role; the distinction measured is the face's, not the aliases'.
   const { first, second, twin } = await measureAxis(
     page,
     'weight',
-    'font-family: var(--monument-regular);',
-    'font-family: var(--monument-bold); font-weight: var(--w-black);'
+    'font-family: var(--f-display);',
+    'font-family: var(--f-display); font-weight: var(--w-black);'
   );
 
   // The requested weights, stated so the reader sees the computed value cannot carry the claim.
@@ -706,8 +736,8 @@ test('one string at the two display aliases measures two widths, which is the we
 
   expect(
     Math.abs(second.width - first.width),
-    `the same string measures ${first.width.toFixed(2)} at var(--monument-regular) and ${second.width.toFixed(2)} ` +
-      `at var(--monument-bold) with --w-black, so the two aliases render one weight and the distinction ` +
+    `the same string measures ${first.width.toFixed(2)} at var(--f-display) and ${second.width.toFixed(2)} ` +
+      `at var(--f-display) with --w-black, so the face renders one weight and the distinction ` +
       `the mapping names is gone`
   ).toBeGreaterThan(WIDTH_FLOOR);
 

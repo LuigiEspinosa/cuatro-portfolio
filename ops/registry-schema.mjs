@@ -815,10 +815,11 @@ const fieldOf = (entry, name) => {
  * Draft-07 cannot express a reference at all, so a value pointing at nothing
  * validates and the Registry ships a relationship to an application it does not
  * describe. AD-6 keeps an absorbed application's entry precisely so a reader can
- * follow the field to where the code went, and a dangling value breaks the one
- * guarantee the field exists to make. A self-reference is reported separately
- * because it resolves and is still wrong: it says the code moved to where it
- * already was.
+ * follow the field to the application it has been, or is set to be, folded into
+ * (widened from "where its code now lives" by the Operator ruling of 2026-09-24),
+ * and a dangling value breaks the one guarantee the field exists to make. A
+ * self-reference is reported separately because it resolves and is still wrong:
+ * it says the application folds into itself.
  *
  * @param {unknown} instance
  * @returns {Violation[]}
@@ -843,8 +844,8 @@ export function danglingAbsorbedInto(instance) {
         rule: 'absorbed_into resolves',
         schema: null,
         detail:
-          `the id ${show(target)} is this entry's own (AD-6: absorbed_into names where the code` +
-          ' now lives, which is never the entry itself)',
+          `the id ${show(target)} is this entry's own (AD-6: absorbed_into names the application` +
+          ' this one has been, or is set to be, folded into, which is never the entry itself)',
         note: BEYOND_THE_SCHEMA,
       });
       return;
@@ -857,7 +858,7 @@ export function danglingAbsorbedInto(instance) {
         schema: null,
         detail:
           `no entry in this Registry carries the id ${show(target)} (AD-6: an absorbed application` +
-          ' keeps its entry and names where its code now lives)',
+          ' keeps its entry and names the application it has been, or is set to be, folded into)',
         note: BEYOND_THE_SCHEMA,
       });
     }

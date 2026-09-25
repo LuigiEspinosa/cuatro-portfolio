@@ -1,5 +1,5 @@
 /* Cuatro Ecosystem, Tailwind v4 Adapter
- * Contract v1.0.0 · generated @theme inline · dark only
+ * Contract v2.0.0 · generated @theme inline · dark only
  * The single entry point for a Tailwind v4 consumer. Import order is fixed:
  * tailwindcss, then tokens.css, then fonts.css, then the theme block.
  * fonts.css is REQUIRED here: an adapter pulling in only tokens.css hands the
@@ -73,14 +73,14 @@
   --tracking-label:   var(--tr-label);
 
   /* ── space ─────────────────────────────────────────────── */
-  --spacing-2xs:      var(--s-2xs);
-  --spacing-xs:       var(--s-xs);
-  --spacing-sm:       var(--s-sm);
-  --spacing-md:       var(--s-md);
-  --spacing-lg:       var(--s-lg);
-  --spacing-xl:       var(--s-xl);
-  --spacing-2xl:      var(--s-2xl);
-  --spacing-3xl:      var(--s-3xl);
+  --spacing-s-2xs:    var(--s-2xs);
+  --spacing-s-xs:     var(--s-xs);
+  --spacing-s-sm:     var(--s-sm);
+  --spacing-s-md:     var(--s-md);
+  --spacing-s-lg:     var(--s-lg);
+  --spacing-s-xl:     var(--s-xl);
+  --spacing-s-2xl:    var(--s-2xl);
+  --spacing-s-3xl:    var(--s-3xl);
   --spacing-page-pad: var(--page-pad);
   --spacing-tap:      var(--tap);
 

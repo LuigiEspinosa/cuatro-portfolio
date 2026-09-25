@@ -1,15 +1,14 @@
 'use client';
 
-import { gsap } from 'gsap';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import GemComponent from '@/components/molecules/GemComponent/GemComponent';
 import ContactContainer from '@/components/molecules/ContactContainer/ContactContainer';
 import GlitchText from '@/components/molecules/GlitchText/GlitchText';
-import HudLabel from '@/components/atoms/HudLabel/HudLabel';
+import ScanlineOverlay from '@/components/atoms/ScanlineOverlay/ScanlineOverlay';
 import { SkipControl } from '@/components/atoms/SkipControl/SkipControl';
-import { useGsapContext } from '@/hooks/useGsapContext';
+import { SuiteReach } from '@/components/organisms/SuiteDirectory/SuiteReach';
 import { useNarrativePath, type ServedNarrativePath } from '@/hooks/useNarrativePath';
-import { useReduceMotion } from '@/hooks/useReduceMotion';
 import './HomeLayout.scss';
 
 interface HomeLayoutProps {
@@ -23,9 +22,24 @@ interface HomeLayoutProps {
   servedPath?: ServedNarrativePath;
 }
 
-const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
-  const reduceMotion = useReduceMotion();
+/** The five hero links: the two destinations and the three contacts. */
+const HERO_LINKS = '.home-panel--nav a, .home-panel--contact a';
 
+/** The events that end a link's wait: its fade begins, or the animation ends or is cancelled. */
+const WAIT_ENDS = ['animationstart', 'animationend', 'animationcancel'] as const;
+
+/**
+ * Whether an element's entrance is still inside its delay. A pending animation has no current time
+ * yet and has not begun either. Without `getAnimations` (a runtime with no Web Animations) nothing
+ * is held, so a link is never made unreachable by a guess.
+ */
+const waiting = (element: HTMLElement): boolean =>
+  (element.getAnimations?.() ?? []).some((animation) => {
+    const delay = Number(animation.effect?.getTiming().delay ?? 0);
+    return delay > 0 && (animation.currentTime === null || Number(animation.currentTime) < delay);
+  });
+
+const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
   /**
    * The one decision, read rather than re-derived (Story 2-13).
    *
@@ -44,53 +58,58 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
    *
    * **This is the page's only call to the hook.** `GemComponent` reads `path` as a prop rather than
    * calling it again: a second call is a second state machine, a second WebGL probe and a third
-   * `useReduceMotion` subscription, all answering a question that has already been answered.
+   * `useReduceMotion` subscription, all answering a question that has already been answered. This
+   * component reads `useReduceMotion` nowhere else since Story 2-29 moved the entrance into CSS:
+   * the preference reaches the hero through this hook and through the contract's own duration
+   * collapse, and nothing here branches on it in render output.
    */
   const path = useNarrativePath(servedPath);
   const flat = path === 'flat';
+  const container = useRef<HTMLDivElement>(null);
 
-  const containerRef = useGsapContext<HTMLDivElement>(() => {
-    const finalState = ['.home-panel--sys', '.home-role', '.nav-link', '.contact-container a'];
-
-    if (reduceMotion) {
-      gsap.set(finalState, { opacity: 1, y: 0 });
-      gsap.set('.home-gem', { opacity: 1 });
-      return;
+  /**
+   * **Each hero link is `inert` while its entrance waits, and only then** (Operator ruling
+   * 2026-09-25, DW-125). DW-106's ruled effect stands: no link is a Tab stop, a click target or in
+   * the accessibility tree before its turn. The mechanism moved out of the keyframe, whose
+   * `visibility: hidden` made a link's first paint its reveal and so moved Chrome's largest
+   * contentful paint on `/` from the skip control to the entrance; at `opacity: 0` a link is never
+   * a candidate.
+   *
+   * Set from script and never in the markup, so a visitor with no script, or before hydration, is
+   * never handed a dead link. Set only on a link whose animation is still inside its delay, which is
+   * none under reduced motion (`animation: none`) and none on a link whose turn has already come.
+   * Released when its fade starts, the moment `visibility` used to flip, or when the animation ends
+   * or is cancelled, and every link is released when this effect is cleaned up, which covers an
+   * unmount and the door turning flat. The flat door holds nothing at all.
+   */
+  useEffect(() => {
+    if (flat || !container.current) return;
+    const releases: (() => void)[] = [];
+    for (const link of container.current.querySelectorAll<HTMLElement>(HERO_LINKS)) {
+      if (!waiting(link)) continue;
+      link.setAttribute('inert', '');
+      const release = () => {
+        link.removeAttribute('inert');
+        for (const type of WAIT_ENDS) link.removeEventListener(type, onWaitEnd);
+      };
+      const onWaitEnd = (event: Event) => {
+        if (event.target === link) release();
+      };
+      for (const type of WAIT_ENDS) link.addEventListener(type, onWaitEnd);
+      releases.push(release);
     }
-
-    const tl = gsap.timeline();
-
-    // The gem's reveal. It was two `filter: brightness()` tweens until Story 2-12, against
-    // `HomeLayout.scss`'s `filter: brightness(0)`; `EXPERIENCE.md:685-699` allows `transform` and
-    // `opacity` only. The stylesheet's initial state moved with it, so this is still the reveal
-    // rather than a flourish on top of one. It is also the only shape that survives the narrative
-    // being deferred: a brightness pulse scheduled here fires against a container that may still
-    // be empty, while opacity on a transparent container is a no-op the visitor never sees.
-    tl.to('.home-gem', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.5);
-
-    // One tween, no `repeat` and no `yoyo`: `EXPERIENCE.md:693-694` allows one orchestrated
-    // entrance per page load and no loop inside it.
-    tl.to('.home-role', { opacity: 1, duration: 0.5, ease: 'power2.out' }, 1.3);
-
-    tl.to('.home-panel--sys', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 1.6);
-
-    tl.to('.nav-link', { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: 'power2.out' }, 2.0);
-
-    tl.to(
-      '.contact-container a',
-      { opacity: 1, y: 0, stagger: 0.1, duration: 0.4, ease: 'power2.out' },
-      2.2
-    );
-  }, [reduceMotion]);
+    return () => releases.forEach((release) => release());
+  }, [flat]);
 
   return (
-    <div className={flat ? 'home-container home-container--flat' : 'home-container'} ref={containerRef}>
+    <div ref={container} className={flat ? 'home-container home-container--flat' : 'home-container'}>
       {/* FR-2's one interaction, and only on the path that costs one. The flat path reaches the
           Directory by scrolling and no control at all, which is the diagram's zero interactions
           (`EXPERIENCE.md:154-169`). First inside the container, so a keyboard reader meets it
           immediately after the A-6 link rather than after the whole hero, and outside every
-          `.home-panel`, so the hover dimming at `HomeLayout.scss:80-82` and the two-second entrance
-          both leave it alone.
+          `.home-panel`, so the two-and-a-bit-second entrance leaves it alone: the panels carry
+          their own `home-enter` keyframe and this control carries none, which is the whole of why
+          it sits outside them now that the dim-siblings rule it also dodged has been retired.
 
           Rendered while the decision is still undecided, exactly as `.home-gem` is, because below
           768 it is a static item in the hero's column and one that appeared a frame after paint
@@ -110,31 +129,37 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
         <GlitchText text='Luigi Espinosa' delay={1.0} />
         <p className='home-role'>
           <span>Senior Fullstack Engineer / Team Lead</span>
-          <span className='home-role__jp' aria-hidden='true'>
-            フロントエンドエンジニア
-          </span>
+          {/* Ornament, painted from `data-ornament` by `HomeLayout.scss` rather than set as text,
+              so the contrast audit does not score what no reader needs (DW-113). Same for the
+              two below. */}
+          <span className='home-role__jp' aria-hidden='true' data-ornament='フロントエンドエンジニア' />
         </p>
-      </div>
-
-      <div className='home-panel home-panel--sys'>
-        <HudLabel label='// SYS_ONLINE ◕' align='right' />
       </div>
 
       {/* Not rendered at all on the flat path, rather than rendered empty: below 768 this box is
           `90vw` tall in flow, and an empty one is a hole in the middle of a hero whose whole point
           is that no 3D asset was requested.
 
-          **It cannot arrive after the entrance has run, which is why the timeline above needs no
-          dependency on the path.** `useGsapContext`'s effect fires on mount, when this box is in
-          the DOM: the undecided state renders it, and every trigger that removes it is a resolution
-          away from undecided. The hook's decision is terminal, so `flat` is a one-way door and this
-          element only ever goes away. Were it able to mount later, it would mount at the
-          stylesheet's `opacity: 0` with nothing left to reveal it, and the canvas would draw
-          perfectly and invisibly. Verified rather than assumed, and recorded here rather than
-          guarded against with a dependency that would restart the entrance mid-load. */}
+          **Its arrival cannot be mistimed, because nothing schedules anything against it.** Since
+          Story 2-29 the reveal is a `home-enter` keyframe on this element's own rule rather than a
+          tween positioned on a timeline that ran once at mount, so the box is revealed whenever it
+          is styled, not only if it was in the DOM at hydration. The hook's decision is terminal in
+          any case, so `flat` is a one-way door and this element only ever goes away.
+
+          `aria-hidden` here is A-14's first clause at the wrapper: the canvas is decorative, and
+          `Scene.tsx:40` already sets `aria-hidden` on the `<Canvas>` while `:49-50` sets it and
+          `tabIndex = -1` on `gl.domElement` inside `onCreated` (Story 2-13), so the subtree is out
+          of the accessibility tree and out of the tab order from two directions. **Corrected
+          2026-09-21**: this named `GemComponent`, which sets neither; it renders `GemNarrative`,
+          which renders `Scene`, and `Scene` is where both live. DW-46's closure says the same. `ScanlineOverlay` is the last child and inside this box on purpose:
+          the box is positioned at the base level and is therefore a stacking context, so the
+          scrim's own raised level is confined to it and the panels above clear the whole subtree.
+          The scrim is `aria-hidden` itself and carries no content, so putting it inside a hidden
+          subtree takes nothing away. */}
       {!flat && (
-        <div className='home-gem'>
+        <div className='home-gem' aria-hidden='true'>
           <GemComponent path={path} />
+          <ScanlineOverlay />
         </div>
       )}
 
@@ -146,21 +171,24 @@ const HomeLayout = ({ servedPath = 'undecided' }: HomeLayoutProps) => {
             2026-09-08, which booked both chrome call sites to Story 2-15. On this route the click
             is a same-route fragment navigation that never reaches the 301, so the visitor lands on
             the Directory rather than at the top of the page, which is what DW-55 and DW-58 record.
-            The link's geometry is untouched and its `home-nav` ledger row is Story 2-32's. */}
+            The link's geometry is untouched. Its `home-nav` row in the AD-19 ledger was Story
+            2-32's until Story 2-29 took both hero link groups past the hit-target floor and deleted
+            the row; see `HomeLayout.scss`'s navigation block. */}
         <Link href='/#suite' className='nav-link'>
           Suite Directory
         </Link>
-        <span className='home-nav-jp' aria-hidden='true'>
-          ナビゲーション
-        </span>
+        <span className='home-nav-jp' aria-hidden='true' data-ornament='ナビゲーション' />
       </nav>
 
       <div className='home-panel home-panel--contact'>
         <ContactContainer />
-        <span className='home-contact-jp' aria-hidden='true'>
-          接続
-        </span>
+        <span className='home-contact-jp' aria-hidden='true' data-ornament='接続' />
       </div>
+
+      {/* The Directory's reach event, rendered here because it carries this page's one decision, the
+          front door, which the server-rendered Directory cannot see (Operator ruling 2026-09-24,
+          DW-88). It renders nothing and observes the heading `/#suite` names. */}
+      <SuiteReach target='suite' door={path} />
     </div>
   );
 };

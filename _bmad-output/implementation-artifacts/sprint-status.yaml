@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-13-2026
+last_updated: 09-25-2026 08:46
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -50,9 +50,16 @@ tracking_system: file-system
 # Corrected 2026-08-25. Read c:/Development/cuatro-portfolio until then, a path that
 # has not existed since the repository moved, so any tool resolving this key saw an
 # empty directory and reported no stories rather than failing. Filed from story 1-3.
-story_location: c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
+story_location: 
+  c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts
 development_status:
-  epic-1: in-progress
+  # 2026-09-24: done by Operator ruling, the day 1-16 and 1-19 closed, the last two of its
+  # twenty-one stories (spec-epic-1-close.md). The 2026-08-29 retrospective's rejected verdict
+  # rested on three grounds, each now answered: the two unfinished stories are done; DW-15,
+  # the spacing defect behind FR-18, closed with Contract 2.0.0 (40591cd), whose cs-tracker
+  # push and deploy stay the Operator's (ops/contract-adoption.md action 8); and FR-17 is
+  # Story 2-34's, done on dev with DW-8 closed.
+  epic-1: done
   # Amended 08-16-2026 by the topology correction.
   # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-16.md
   # The estate spans two serving addresses and cuatro.dev is DOWN (NFR-2 in violation).
@@ -125,17 +132,38 @@ development_status:
   1-13-publish-contracts-tailwind-css-the-generated-theme-inline-ad: done
   1-14-ci-enforces-the-contract-boundary: done
   1-15-determine-cs-tracker-s-daisyui-adoption-route: done
-  1-16-serve-contracts-at-https-cuatro-dev-contracts: awaiting-operator
+  # 2026-09-23: 1-16 stays awaiting-operator on one Operator decision, action 3 in
+  # ops/contract-serving.md: settle Traefik versus the Hub before Epic 4 plans its work.
+  # Action 6 is closed, the AGENTS.md context refresh having landed 2026-08-27 in 4112ee8.
+  # Action 4 carries a date, but its cell says the user-agent instruction is written down
+  # and not yet delivered to any Satellite; that delivery is the Operator's too.
+  # 2026-09-24: done by Operator ruling. Action 3: the Hub keeps serving /contracts/ after
+  # Epic 4, final and not interim (epics.md 1.16 and 4.6 amended). Action 4: the user-agent
+  # instruction stays written and binds to the first story that makes a Satellite fetch.
+  # Park record removed with the closing note in the spec.
+  1-16-serve-contracts-at-https-cuatro-dev-contracts: done
   1-17-anchor-migration-step-1-add-the-contract-change-nothing: done
   1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r: done
-  1-19-cs-tracker-adopts-the-token-contract: awaiting-operator
+  # 2026-09-23: 1-19 stays awaiting-operator on three Operator actions in
+  # ops/cs-tracker-token-adoption.md. 2: the probe joined AD-22's scope today, but its
+  # re-run exits 1 on the pipeline pin DW-17 describes, which waits on the Operator's
+  # reconcile in ops/contract-adoption.md action 7. 3: decide whether --color-secondary
+  # stays on a repeated ground. 5: evaluate seam S-8 on the running application. The
+  # sibling daisyUI probe passed its re-run and closed ops/daisyui-route.md action 2.
+  # 2026-09-24: done by Operator ruling. 2: the pin follows 32a466a (048793f, DW-17) and both
+  # probes strip colour codes (b14bcbb, DW-109); from a plain shell the adoption probe exits
+  # 0 at 19 of 19 and the daisyUI probe at 7 of 7. 3: --color-secondary keeps repeating
+  # base-300, since RESTYLE-SPEC rules out filled controls. 5: S-8 moves to Story 8.1, with
+  # the 74 hit-target and 38 transition findings. Park record removed with the spec's note.
+  1-19-cs-tracker-adopts-the-token-contract: done
   1-20-record-the-adopted-contract-version-and-the-automation-polic: done
   epic-1-retrospective: done
   # REMINDER: run /bmad-project-context (refresh) before starting epic-2.
   # Epic 1 installs Playwright (1-10), enumerates the real Caddy routing table (1-7),
   # and starts the token migration, so three lines in the AGENTS.md block go stale here.
+  # 2026-09-23: done. The refresh landed 2026-08-27 in 4112ee8 and 2026-08-28 in 967abfd.
 
-  epic-2: in-progress
+  epic-2: done
   2-1-the-pre-existing-repository-defects: done
   2-2-measure-the-narrative-bundle-against-the-asset-budget: done
   2-3-the-registry-schema-and-its-blocking-ci-gate: done
@@ -166,7 +194,21 @@ development_status:
   # 2-21 DELETED 2026-08-15. A rewritten stylesheet has no call sites to rename.
   # Numbers are NOT reshuffled: the holes keep every surviving story key stable.
   2-20-migration-step-5-swap-the-type: done
-  2-22-migration-step-7-delete-the-aliases: backlog
+  # 2-22 built and pushed 2026-09-23: dev at 8ba447b, CI run 35914640345 green on seven jobs.
+  # The alias layer is deleted: app/app.scss declares --hero-height alone, and the base rule names
+  # --token-bg, --f-body at --w-regular and --token-text, the values the three aliases it read resolved
+  # to, so no computed value moved. The thirteen go (the story's ten, the two accent rows and the width
+  # alias Story 2-20 added); a unit search over every file git tracks or would track finds none of them
+  # outside Markdown, _bmad-output/ and its own list, Tailwind's --font-mono key the one allowance, and a
+  # browser read of every compiled stylesheet holds what reaches :root to the contract's 89 and
+  # --hero-height. /work was compared against Story 2-33's redesigned baseline (93a1aa4e...), not
+  # regenerated, and a unit pin holds the committed file to that row or a later one. The FR-17 gate
+  # passes; the script survey finds colour literals only in the Three.js scenes (S-1). AGENTS.md's
+  # managed alias line is corrected (DW-81 closed); DW-122 files --hero-height, read by nothing, for the
+  # Operator. Weight: the global stylesheet 112 gzipped lighter; /work 113,763 over the 140,000.
+  # Step-04 review, six layers inline (no subagent tool, so not independent): four patches, no loopback.
+  # Typecheck clean, 1,547 unit tests in 59 files, 325 e2e green in 5.8 min in the pinned image.
+  2-22-migration-step-7-delete-the-aliases: done
   # 2-23 closed 2026-09-12. Job live at d91fe09, runs 34721281941 (exit 2, mail proven) and
   # 34722748245 (35 of 35 on a GitHub-hosted runner), secret set, first SM-4 reading 80%.
   # Heartbeat refused by the UptimeRobot free plan (DW-85 open); PAT rotates before 2026-12-11.
@@ -181,23 +223,269 @@ development_status:
   # gate (list-wheel Deploy run 34771823648), the WAF, DNS, Caddy block, monitor 803983277 and
   # the gh-pages redirect are live, the Registry live and tech moved, run 34773443302 confirmed.
   # The review patch (list-wheel PR #3, Cache-Control: no-cache on the shell) merged and was
-  # verified on the host at 19:12Z. Waits on: the dev to main merge that publishes the Registry
-  # (closes DW-91), one spin in a browser by the Operator, and the DW-92 ruling on the Cloudflare
-  # beacon. Move to done after those.
-  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: review
-  2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: backlog
-  # Hub components rebuilt token-native (FR-37), added 2026-08-15.
-  # BLOCKED until the UX restyle pass lands: these eight have no design contract yet.
-  # 2-20 is a blocking predecessor of all of them (the type layer precedes any redesign).
-  2-27-redesign-glitchtext-token-native: backlog
-  2-28-redesign-scanlineoverlay-token-native-and-add-token-scrim: backlog
-  2-29-redesign-homelayout-token-native: backlog
-  2-30-redesign-error404-token-native: backlog
-  2-31-redesign-workitem-and-hudlabel-token-native: backlog
-  2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: backlog
-  2-33-redesign-workhero-and-worktimeline-token-native: backlog
-  2-34-fr-17-conformance-no-colour-literal-outside-the-contract: backlog
-  epic-2-retrospective: optional
+  # verified on the host at 19:12Z. PR #75 merged dev into main at 1e93787 (19:26:43Z): the
+  # published Registry carries live https://wheel.cuatro.dev, the Hub renders it, the gate on
+  # main lists list-wheel (DW-91 closed). The Operator spun the wheel on wheel.cuatro.dev in
+  # their own browser on 2026-09-13, the one check no agent could drive, and moved the story to
+  # done. Still open, not blocking: the DW-92 ruling on the Cloudflare beacon.
+  2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain: done
+  # 2-26 built 2026-09-13 (PR #76) and review-patched the same day (PR #77): one global
+  # :focus-visible rule replaces nine, accessibility-floor sweeps the ring (whole, not only
+  # computed), the DOM order, the landmarks after Enter, the headings, the built CSS, the type
+  # floor and autoplay on every route (14 cases, green in the pinned image), KV-6 opened with the
+  # ledger's rows, /cv joined the Lighthouse gate on a local 0.96 / 1.00 / 1.00, GlitchText's
+  # heading entered the accessibility tree, the footer line moved to --t-2xs. The Operator read the
+  # greyscale renders and made one keyboard traversal in their own browser on 2026-09-14, the two
+  # checks no agent could drive, both recorded as Pass in ops/hub-accessibility-pass.md, and moved
+  # the story to done. Still open, not blocking: DW-95 (F-11), DW-96 (two DESIGN.md lines), and
+  # the clip-skip-link ledger row booked to 2-32 by ownership alone.
+  2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass: done
+  # Hub components rebuilt token-native (FR-37), added 2026-08-15. The restyle pass landed the same
+  # day and RESTYLE-SPEC.md is final, so the block on these eight is lifted (sprint-change proposal
+  # 2026-08-15 § 2, corrected here 2026-09-14). 2-20 was the blocking predecessor of all of them
+  # (the type layer precedes any redesign) and is done.
+  # 2-27 built 2026-09-14: GlitchText is a real h1 whose words are server-rendered inline spans
+  # fading in on one CSS keyframe inside --dur-major, set from the display roles; GSAP, SplitText,
+  # the glyph pool, the six-second loop and the aria wrapper are gone. display-entrance.pw.ts reads
+  # the roles, the stagger, the reduced-motion door, the bundle-blocked document and the tree, each
+  # seen failing on its planted fixture; shadow-glitch-loop left the ledger (KV-6 reads eight depth
+  # tells), the gsap/SplitText fingerprint left the budget tool, and the weight is measured in
+  # ops/asset-budget.md (87 gzipped bytes of CSS, 3,399 of JavaScript). Waits on the Operator: the
+  # screen-reader read of / (pending action 4 in ops/hub-accessibility-pass.md), the one check no
+  # agent can drive, recorded there before this moves to done.
+  2-27-redesign-glitchtext-token-native: done
+  # 2-28 built 2026-09-14 (key renamed the same day per epics.md § 1, the role is consumed, not
+  # added): ScanlineOverlay is the scrim layer, one aria-hidden div at var(--token-scrim) and
+  # var(--z-raised) with pointer-events: none, no prop, no child; the vignette, the raster, the
+  # grain and its loop are deleted, and both call sites (the /work hero, the 404) left because
+  # neither is text over moving imagery, so no surface consumes it until 2-29 places it. The three
+  # KV-6 rows left the ledger (six literals, six depth tells, seen in the pinned image), F-7 and
+  # DW-32 are closed, DW-101 carries the composited-contrast sampling to 2-29. Weight: the raster's
+  # CSS chunk (509 gzipped bytes) left the four documents the tool weighs (it rode the not-found
+  # boundary onto /cv and /celeste too); 72 gzipped bytes of JS left the hero chunk and 66 the 404
+  # chunk. DW-102 files the three blind spots the raster's removal exposed.
+  # The /work baseline was regenerated by Operator ruling (sha256 b9961fcc...): the raster's
+  # removal is under Playwright's per-pixel threshold on every one of the 80,831 pixels it touched,
+  # so the plain run passed, the update run wrote nothing, and the update had to be forced with
+  # --update-snapshots=all, recorded as the one exception in ops/rendered-output-harness.md.
+  2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token: done
+  # 2-29 built 2026-09-21, merged 2026-09-22 (PR #79, dev at 14a6151, six CI jobs green after a
+  # cancelled fonts-contract was re-run and passed in 23s): HomeLayout.scss is rebuilt against the
+  # contract alone, with no alias,
+  # no colour literal, no rgba, no gradient, no transition: all and no bare z-index; the #0a000f
+  # ground and its two grid images are gone, the opacity: 0.2 dim-siblings rule with them, every
+  # :hover sits inside @media (hover: hover), and the GSAP timeline is one home-enter keyframe
+  # with five animation-delay literals whose base state is the final state, so a scriptless
+  # document is already finished and the heading's clock and the panels' are one clock.
+  # ScanlineOverlay is placed inside .home-gem, which takes --z-base and is therefore the stacking
+  # context that confines the scrim; the four panels and the skip control clear the gem's whole
+  # subtree at --z-raised, which is the only arrangement the contract affords. The four notch
+  # polygons are byte-identical and the panels gained padding: var(--s-sm), which closed five of
+  # the six clipped rings. Six KV-6 rows left the ledger (three z-index literals, four depth
+  # tells, one clipped ring, seen in the pinned image and in the branch build's CSS) and F-11 is
+  # annotated partly closed, /work and the 404 remaining.
+  # Not planned, measured: setting the hero links at --t-xl took the first nav link past the 44px
+  # floor and the hit-target sweep reported home-nav stale; a row cannot go half stale, so both nav
+  # links took min-block-size: var(--tap). home-contact was not forced. Nothing made the three
+  # contact links clear the floor, and the Operator ruled on 2026-09-21 to keep that repair too, so
+  # all five hero links hold the floor and both KV-4 rows are deleted. That answers pending
+  # Operator action 9 for the home pair and leaves chrome-logo open.
+  # DW-101's composited-contrast sampling is done at 1024 rather than 360, because below 768 no
+  # text overlays imagery: --token-text 17.66:1, --token-focus 11.80:1, --token-accent-hover
+  # 9.07:1, --token-text-secondary 7.07:1, --token-accent 6.24:1, all against a ground sampled at
+  # rgb(5, 4, 9), every one above the table and clear of its own floor, with the layer proved
+  # beneath by repainting it and re-sampling rather than by reading a z-index.
+  # Weight: the component's JS chunk is 225 gzipped bytes lighter with gsap gone from it, the
+  # scrim's CSS arrived in the same component's CSS chunk, and the build is 235 gzipped lighter
+  # overall. DW-33, 41, 42, 46, 48, 97, 98, 100 and 101 are closed; DW-57 and DW-82 are closed on
+  # their halves this story owns. DW-46's premise was re-verified and holds: the planning read
+  # that called it wrong had not read Scene.tsx.
+  # Audit pass 2026-09-21, 17 findings, all fixed on the same branch in one follow-up commit.
+  # Two were test-integrity defects this story introduced and both are now proved by deliberate
+  # breakage: the 1024 collapse bound had been widened to COLLAPSE_FLOOR, which heightSteps
+  # satisfies by construction, so it could not fail (now WIDE_COLLAPSE_MARGIN 88, against the
+  # measured 104.83, seen failing at 72.83); and narrative.pw.ts's reduced-motion case polled an
+  # eventual opacity the CSS entrance reaches whether or not the override exists, so nothing
+  # pinned it (now reads computed animation-name and document.getAnimations, seen failing on all
+  # five selectors with the block deleted). The matrix's below-768 row had no covering test at
+  # all and now has two, a compiled-CSS read in HomeLayout.test.tsx and a rendered read at 360 in
+  # front-door.pw.ts, for the reading order, the absent readout panel and the absent scrim. The
+  # other ten were records left stale by the repair: KV-4's breach, shape and booking cells,
+  # ops/hit-target-floor.md's tolerated-breach counts, per-element table, docblock and
+  # failure-mode row, ops/hub-accessibility-pass.md's ground row, and this component's own
+  # ledger citation.
+  # Step-04 review 2026-09-21, six layers, all findings patched on the branch by Operator ruling
+  # rather than looped back. A third assertion in this story could not fail and is the headline:
+  # the opacity guard read /opacity:0\.\d/ where Dart Sass emits opacity:.6, so it matched nothing
+  # for any value; it now collects every opacity the sheet declares and holds the set to the
+  # keyframe's from, seen failing on a planted opacity: 0.6. The hex and rgb( guards were leaky the
+  # same way (#ff0000 compiles to red) and gained a CSS named-colour check. The entrance's delays
+  # and its animation-fill-mode: both, which is the whole of DW-42's no-script guarantee, were read
+  # by nothing: narrative.pw.ts now tables all five sites and reads name, delay and fill per element
+  # on the running page. The reduced-motion case's two new reads gained a planted control. The
+  # scrim's marker read went per panel, with .home-panel--sys exempt and its distance logged. The
+  # ordersIn regex matched order:1 inside border:1px and is anchored.
+  # Behaviour: .home-panel--name lost the 500ms entrance the rebuild gave it and the retired
+  # timeline never had, so the file, DW-100 and this block all say five animated rules; the skip
+  # control's lost z-index guarantee became a tested non-overlap claim at both widths, because the
+  # contract offers no level between --z-base and --z-raised and --z-dropdown is wrong for it;
+  # SkipControl.scss's hover is gated; the nav stagger uses :nth-child like the contact group.
+  # Twelve records and comments corrected, chiefly that A-14's two halves are in Scene.tsx and not
+  # GemComponent, which the spec's own planning read got wrong. DW-106, DW-107 and DW-108 filed.
+  # Waits on the Operator: the entrance's feel played at 2x to 5x in the animation inspector, and
+  # the --t-xl reading of the nav and contact type, which is a gap in DESIGN.md rather than a
+  # value it supplied.
+  2-29-redesign-homelayout-token-native: done
+  # 2-30 built and pushed 2026-09-23: dev at cdaf966, CI run 35850154182 green on six jobs.
+  # Error404 is a server component on the documents' structure: a section Plate mark
+  # reading ERROR (plain words, no // and no code), the display entrance (GlitchText) as the
+  # page's one <h1>, one secondary line and the header's DESTINATIONS as controls, with the numeral
+  # aria-hidden and unnamed in the muted accent at --t-xl. The redundancy test ran in the pinned
+  # image and took branch A: with the numeral removed, the title (set in sentence case, Page not
+  # found), the heading and the message each say it; O-13's aria-label on a <p> is corrected as a
+  # pre-existing defect. Error404.scss replaces error-page.scss against the contract alone: no
+  # ground of its own, no grid, no z-index, content-high and start-aligned rather than a centred
+  # hero, exits bordered in the interactive role with the hover gated on (hover: hover), and one
+  # opacity keyframe (100, 300, 500ms on --dur-minor and --ease-entrance, none under reduced
+  # motion) replacing three GSAP tweens (DW-77, DW-80 closed). The alias layer lost its last
+  # --accent-dim boundary scope and its last --monument-regular site (pinned at zero, the clamp
+  # case gone with it).
+  # Records: z-error-content, gradient-error-ground and heading-404 left the ledger, KV-6 reads
+  # two, two, one, zero and zero with closers 2-32 and 2-33, F-6, F-12 and F-18 closed and F-11
+  # down to /work. Weight: 1,512 gzipped lighter overall; /cv 257,492 on the wire, 117,492 over the
+  # 140,000; the server component weighed 510 lighter on /cv than the same component as a client
+  # one. DW-114 (the 404's copy, the Operator's) and DW-115 (five ungated hovers outside any
+  # remaining story, found in review) filed.
+  # Step-04 review, six layers inline (no subagent tool, so not independent): four patches, one
+  # deferral. After it: typecheck clean, 1,393 unit tests in 55 files, the budget reproduced chunk
+  # for chunk, and 300 e2e tests green in 5.7 min in the pinned image, the /work baseline unchanged.
+  # Waits on the Operator: the spec's manual check (the 404 at 360 and 1280 on a hover-capable
+  # pointer and on a phone) and DW-114's words.
+  2-30-redesign-error404-token-native: done
+  # 2-31 built and pushed 2026-09-23: dev at 2eb0aa0, CI run 35840556081 green on six jobs.
+  # HudLabel is deleted and folded into the Plate mark as its annotated and side-ruled
+  # variants; the props are a union on variant, which refuses another variant's prop only where
+  # variant is written (corrected 2026-09-23 against TypeScript 5.9.3: a mark that omits it is a
+  # section mark and compiles with a sub, or with an align typed as its literal, dropping either;
+  # a bare align='end' there fails only by widening to string), every cell is uppercase in the
+  # DOM for RESTYLE-SPEC § 7's CSS-off check, and the subordinate line is aria-hidden in every
+  # render. WorkItem.scss is rebuilt against the contract alone, a
+  # row and not a card: the leading rule is two out-of-flow pseudo-elements switched by
+  # transform, so the widest state is reserved and nothing reflows; hover recolours that rule and
+  # nothing else, inside @media (hover: hover); the trigger inherits the page type (F-3), the
+  # initiative asks for no weight (F-4), the highlights take the secondary role (F-5), the
+  # description --lh-body (F-9), the alpha hover ground is gone (F-10), the meta line wraps
+  # (KV-5's component half) and the ring stays inside its own row (F-19). The tweens run
+  # --dur-major and --dur-exit on power2.out both ways (A-4, without reading --ease-exit,
+  # DW-103); the panel is a region named by its company, both lists carry role='list', and a
+  # print rule expands every panel (DW-73).
+  # Records: the weight-work-initiative ledger row left and KV-6 reads zero synthesised weights;
+  # KV-5 was re-read at 360, /work 10 (all the hero's, Story 2-33) and /cv 0. DW-34, 67, 72 and
+  # 73 closed; DW-76 and DW-107 re-read and left open; DW-82 and DW-103 amended; DW-110 (the
+  # readout's SYS_ONLINE wording, the Operator's), DW-111 (closed panels as regions) and DW-112
+  # (the heading inside the trigger button, from the review, predating the story) filed. The
+  # /work baseline was regenerated in the pinned image, sha256 7c059024...
+  # One gate changed what it asserts, and it is flagged: type-swap.pw.ts holds the four row names
+  # to their line box rather than their height, because at wdth 85 the first company sets on two
+  # lines in the fallback and one in the face (DW-82's structural half). The scrim read in
+  # accessibility-floor.pw.ts probes the mark's hairline rather than exempting the readout panel.
+  # Step-04 review 2026-09-23, six layers run inline because this session had no subagent tool,
+  # so the review is not independent: three patches (a constant assertion deleted, a // read
+  # added to the CSS-off case with the 404's label as its control, an inert transform-origin
+  # removed) and one deferral (DW-112). After it: typecheck clean, 1,377 unit tests in 55 files,
+  # the budget re-read on build 0KxutAmqMQuDuV6dR2omk, and 287 e2e tests green in 7.5 min in the
+  # pinned image.
+  # A local Lighthouse reading in the same image, three runs per URL: /cv and /work 1.00, / 0.96,
+  # every assertion green; /'s one failing audit is six aria-hidden ornaments in the muted accent,
+  # none of them this story's, filed as DW-113 because / clears the main gate by one hundredth.
+  # Waits on the Operator: the spec's manual checks (the hover and the greyscale read at 360 and
+  # 1280, a phone, a printed /cv) and DW-110's words.
+  2-31-redesign-workitem-and-hudlabel-token-native: done
+  # 2-32 built and pushed 2026-09-23: dev at 70cdbbd, CI run 35863809617 green on six jobs.
+  # The chrome is rebuilt against the contract. The header is a band across the whole
+  # viewport, sticky and opaque on --token-bg, closed beneath by a --stroke-hair rule in
+  # --token-border and as tall as its content (no block size anywhere, DW-62), with the wordmark
+  # and the destinations in the page's own container inside it (DW-63); html:has(.header-container)
+  # restates its height from the same four tokens as scroll padding. The two destinations are mono
+  # uppercase at --t-2xs and --tr-label, each over a hairline rule at rest that the current route
+  # widens to --stroke-emphasis in the accent and a hover recolours behind (hover: hover), with no
+  # transition (DW-69). The wordmark is the text Cuatro in the display face at wdth 75 and
+  # --w-black where the raster stood, so the chrome-logo row and public/logo.png left and the
+  # hit-target ledger is empty, its refusals exercised against a planted row (DW-68). The container
+  # is min(100%, 1920px) at --page-pad. The contact group is one list of three links naming their
+  # destinations, its stagger re-keyed on the items. The skip link parks one ring's reach inside
+  # the corner, so it rings whole, and its hover is gated (this story's half of DW-115). Celeste's
+  # suppression was already CSS on body#celeste since 681a4c6 (Story 2-1), read green here.
+  # Records: KV-4 retired 2026-09-23; KV-6 reads zero clipped rings with Story 2-33 its only
+  # closer; F-1 closed and clip-skip-link out of the accessibility ledger; KV-5's census re-read at
+  # 360, /work 0 and /cv 0, its retirement filed for Story 2-33 (DW-116). DW-62, 63, 68 and 69
+  # closed; DW-43, 71 and 106 and F-13 and F-20 re-booked unassigned under the restyle ceiling;
+  # DW-117 (the site's name and the wordmark's size and tracking, the Operator's) and DW-118 (the
+  # scroll padding's ceiling on a wrapped row) filed. Weight: 5,342 gzipped lighter overall,
+  # next/image gone with the raster; /cv 111,906 over the 140,000. The /work baseline was
+  # regenerated in the pinned image, sha256 916c5460...
+  # Step-04 review 2026-09-23, six layers run inline because this session had no subagent tool,
+  # so the review is not independent: one patch (a second probe helper and a one-caller context
+  # factory in chrome-nav.pw.ts folded into the file's own probeComputed), no deferral. After it:
+  # typecheck clean, 1,423 unit tests in 58 files, and 308 e2e tests green in 5.9 min
+  # in the pinned image, the /work baseline unchanged.
+  # A local Lighthouse reading in the same image, three runs per URL: /work and /cv 1.00, / 0.96,
+  # every assertion green; /'s one failing audit is DW-113's six ornaments, none of them this
+  # story's.
+  # Waits on the Operator: the spec's manual check (the chrome at 360 and 1280 on a hover-capable
+  # pointer and on a phone) and DW-117's words.
+  2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont: done
+  # 2-33 built and pushed 2026-09-23: dev at 802fbf4, CI run 35892351537 green on six jobs.
+  # The /work hero and the timeline are rebuilt against the contract. The hero is a grid,
+  # one minmax(0, 1fr) column at 360 and three fifths to the display line beside two to the canvas
+  # from 768 where motion is allowed, padded block-wise on --s-2xl and --s-xl and closed beneath by
+  # --stroke-boundary in --token-border-interactive; no alias, z-index, 42vh floor or overflow:
+  # hidden is left. The heading is the page's one <h1> on the display row (--f-display,
+  # --t-display, --w-black, --lh-display, --tr-display, uppercase, --token-text), and the meta line
+  # is a section Plate mark (4 POSITIONS, 2017 - PRESENT) with its // gone. The entrance is one
+  # opacity keyframe at --dur-minor on --ease-entrance, 100 and 400ms, none under reduced motion.
+  # The torus sits behind one next/dynamic boundary in the GemComponent containment shape and is
+  # rendered only once an effect knows motion is allowed, so under reduced motion no WebGL chunk is
+  # requested and its box is omitted; the binding is scrub: true (A-7). The timeline's scroll batch
+  # is deleted, the list is flush and its last separator dropped; body#work is deleted, so /work
+  # paints --token-bg. Records: KV-5 retired on a widened A-5 sweep (every element with a box, 0
+  # past an edge on five surfaces), KV-6 retired with the exemption ledger empty, F-11 closed;
+  # DW-8, 35, 37, 57, 66 and 116 closed, DW-38, 81 and 102 annotated; DW-119 (the torus's drag, the
+  # Operator's) and DW-120 (the three/R3F library emitted once per dynamic boundary) filed. FR-37's
+  # alias removal condition is met, so Story 2-22 is unblocked. Weight: /work 232,796 gzipped
+  # lighter on the wire and no longer a 3D route, the build directory 228,274 heavier (DW-120);
+  # /work 113,886 over the 140,000. The /work baseline was regenerated in the pinned image with
+  # nothing masked, sha256 93a1aa4e...
+  # Step-04 review 2026-09-23, six layers run inline because this session had no subagent tool,
+  # so the review is not independent: patches only (the composition case at 768, 1280 and 2400
+  # with the 3 to 2 split, a dead settle option, a one-caller factory, unused mocks, one message,
+  # four stale record sentences), no deferral. After it: typecheck clean, 1,446 unit tests in 58
+  # files, and 325 e2e tests green in 6.5 min in the pinned image (the new and changed specs 69
+  # of 69 three times over), the /work baseline unchanged.
+  # A local Lighthouse reading in the same image, three runs per URL: /cv 1.00, / and /work 0.96,
+  # every assertion green; /work's one failing audit is the annotated mark's aria-hidden kanji in
+  # the muted accent, exposed by body#work's deletion, which is DW-113's class and filed there.
+  # Waits on the Operator: the spec's manual checks (/work at 360 and 1280 on a phone and on a
+  # hover-capable pointer, and with reduced motion on; the entrance at 2x to 5x) and DW-119's
+  # ruling.
+  2-33-redesign-workhero-and-worktimeline-token-native: done
+  # 2-34 built and pushed 2026-09-23: dev at 809bef7, CI run 35902047573 green on seven jobs, the
+  # literal-conformance job's first real run (ops/literal-conformance.md action 1).
+  # ops/literal-conformance.mjs, run by the new blocking literal-conformance job (last in ci.yml, so
+  # the line numbers other records cite hold), reads every stylesheet git tracks and refuses a colour
+  # literal and a hand-written 44px anywhere outside contracts/ and app/scss/_print.scss, a spacing
+  # literal in a spacing property and a type literal in a type property, and any alpha but the one on
+  # --c-scrim in contracts/tokens.css. The permitted set, the alpha allowance and the four dispositions
+  # are named entries with their reasons in the gate; no comment silences it. Its first run over
+  # 802fbf4 named five literals: celeste.scss #444, #fff, system-ui and min(8vw, 5rem), now
+  # --token-bg, --token-text, --f-display and --t-display, and app.scss --accent-glow, deleted on
+  # DESIGN.md closure of O-11 (the Hub counts 14 properties now in three suites). F-2 closed; the
+  # F-8 fill grep, DW-95, DW-102 url( half and DW-115 re-booked, not taken; DW-121 filed (/celeste
+  # unredesigned). Weight: 11 gzipped lighter, the global stylesheet only. Six review layers inline,
+  # not independent: two patches, no loopback. Typecheck clean, 1,545 unit tests in 59 files, 325
+  # e2e green in 5.9 min in the pinned image, the /work baseline unchanged.
+  2-34-fr-17-conformance-no-colour-literal-outside-the-contract: done
+  epic-2-retrospective: done
 
   epic-3: backlog
   3-1-introduce-turborepo-and-pin-the-toolchain: backlog
@@ -206,6 +494,9 @@ development_status:
   3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
   3-5-merge-cuatro-finance-into-apps-finance: backlog
   3-6-merge-cuatro-tracker-into-apps-tracker: backlog
+  # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this
+  # key names is done. The key keeps its wording; the story is the merge and the placement on the box
+  # (epics.md Story 3.7's amendment, spec-vercel-removal.md).
   3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: backlog
   3-8-record-the-estate-end-state: backlog
   epic-3-retrospective: optional
@@ -270,46 +561,60 @@ development_status:
   8-6-cs-tournament-visual-restyle: backlog
   epic-8-retrospective: optional
 action_items:
+  # 2026-09-24: done by Operator ruling, Contract 2.0.0 (commit 40591cd): the keys are
+  # --spacing-s-*, a MAJOR with no alias window. DW-15 closed in deferred-work.md.
   - id: 'epic-1-retro-item-1-settle-the-shape-of-the-contracts-tailwi'
     epic: 1
     action: 'Settle the shape of the contracts/tailwind.css spacing-key fix (rename
       to --spacing-s-*, restate the container scale, or drop the named keys) and ship
       it under AD-16. DW-15.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling: ops/__tests__/tailwind-container.test.ts (40591cd)
+  # pins max-w-* to the container widths, red on 1.0.0 first for the eight the old keys
+  # shadowed. DW-19 closed.
   - id: 'epic-1-retro-item-2-add-the-dw-19-gate-a-node-test-under-ops'
     epic: 1
     action: 'Add the DW-19 gate: a Node test under ops/__tests__/ compiling the published
       adapter and pinning what max-w-sm through max-w-2xl resolve to. Polarity follows
       the item above.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling (spec-retro-3-cold-reviews.md). 1-8 and 1-16 were reviewed
+  # cold with bmad-code-review: 12 and 10 patches landed (`852f9e1`, `abf3114`) and
+  # DW-132 to DW-134 were filed. 1-1, 1-10 and 1-19 closed as superseded by use, a dated reason in
+  # each spec. The backup fix reaches the box by ops/backup-digital-library.md action 9, Luigi's.
+  # DW-4, DW-5, DW-7, DW-13 and DW-18 stand as they were.
   - id: 'epic-1-retro-item-3-decide-what-happens-to-the-five-stories'
     epic: 1
-    action:
-      'Decide what happens to the five stories carrying an unrecorded followup_review_recommended:
+    action: 'Decide what happens to the five stories carrying an unrecorded followup_review_recommended:
       true (1-1, 1-8, 1-10, 1-16, 1-19): run the reviews or file DW entries.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling (spec-records-and-docs.md, ffcd8aa). The coverage map row
+  # reads FR-17 | 1 / 2, noting Story 2.34's conformance gate, with a dated amendment.
   - id: 'epic-1-retro-item-4-respell-fr-17-as-1-2-at-epics-md-753-sto'
     epic: 1
     action: 'Respell FR-17 as 1 / 2 at epics.md:753. Story 2.34 in Epic 2 is what
       enforces it.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling (spec-records-and-docs.md, ffcd8aa). Epic 1's body reads
+  # Twenty-one stories and places 1.21 with the estate group, dated. The appendix's "Epic 1's twenty
+  # keys" is left: it is dated 2026-08-15, a day before Story 1.21 was added.
   - id: 'epic-1-retro-item-5-correct-epics-md-967-from-twenty-stories'
     epic: 1
     action: 'Correct epics.md:967 from Twenty stories to twenty-one.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-6-audit-every-deploy-secret-against-the-cu'
@@ -320,68 +625,214 @@ action_items:
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling: deploy.yml's last step runs on failure and opens a
+  # GitHub issue (b0aeaff). DW-20 closed; one live proof is ops/contract-serving.md action 8.
   - id: 'epic-1-retro-item-7-land-dw-20-a-failure-conditioned-step-in'
     epic: 1
     action: 'Land DW-20: a failure-conditioned step in deploy.yml that reaches the
       Operator on the channel ops/monitoring.md establishes.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-25: done by Operator ruling 2026-09-24 (spec-process-and-upkeep.md, 79dccf7), in place
+  # rather than by bmad-loop-sweep --migrate: the 99 id-less entries took DW-141 to DW-239 in file
+  # order, every statusless entry took a status, and the 22 the tree shows resolved closed with a dated
+  # note. No id moved and no entry was deleted.
   - id: 'epic-1-retro-item-8-run-bmad-loop-sweep-migrate-on-deferred'
     epic: 1
     action: 'Run bmad-loop-sweep --migrate on deferred-work.md so all 74 entries carry
       a status field, and mark the entries already resolved in fact.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling: spec-1-7, spec-1-8 and spec-1-10 frontmatter read
+  # done, matching the board, which closed all three on 2026-08-27.
   - id: 'epic-1-retro-item-9-advance-the-frontmatter-of-spec-1-7-spec'
     epic: 1
     action: 'Advance the frontmatter of spec-1-7, spec-1-8 and spec-1-10 from awaiting-operator
       to done, matching the board.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   - id: 'epic-1-retro-item-10-extract-the-shared-probe-scaffold-into-o'
     epic: 1
-    action:
-      "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
+    action: "Extract the shared probe scaffold into one ops/ module imported by cs-tracker-adoption-probe.mjs
       and daisyui-route-probe.mjs, keeping the daisyUI copy's comments."
     owner: 'Cuatro'
     status: open
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling: every remaining action of 1-16 and 1-19 is resolved,
+  # each named in its spec's closing note, and both park records under .bmad-loop/operator/
+  # are removed. Two were re-bound rather than performed: 1-16's user-agent delivery binds
+  # to the first fetching story, and 1-19's S-8 moves to Story 8.1.
   - id: 'epic-1-retro-item-11-close-stories-1-16-and-1-19-by-completin'
     epic: 1
     action: 'Close stories 1-16 and 1-19 by completing their remaining operator actions
       in .bmad-loop/operator/*.json.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-25: done by Operator ruling 2026-09-24 (0c88b5b): a persistent fact in
+  # _bmad/custom/bmad-build.toml halts Build at its token check for the Operator's Split or Keep on
+  # any spec over 1600 tokens, orchestrated runs included, and the spec records the answer.
   - id: 'epic-1-retro-item-12-process-act-on-the-oversized-spec-warnin'
     epic: 1
     action: 'Process: act on the oversized spec warning by splitting the story, instead
       of carrying it. It fired on 15 of 21 stories in epic 1.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-24: done by Operator ruling, found held. From the retro (f5df8c8) to 5c8a074, 179 of 192
+  # commit subjects carry a story, DW or package key, and all 41 feat: subjects do; the 13 without
+  # one are tooling and docs chores plus one fix (415e05b, DW-30's), none after 9bf4f20.
   - id: 'epic-1-retro-item-13-process-put-the-story-key-in-every-commi'
     epic: 1
     action: "Process: put the story key in every commit subject including hand-driven
       work. All eleven feat: commits in epic 1's first half carry none."
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-25: done by Operator ruling 2026-09-24 (9dfd37c): the refreshed AGENTS.md block carries a
+  # pitfall line that a host move audits SERVER_HOST, SERVER_USER and SSH_PRIVATE_KEY together.
   - id: 'epic-1-retro-item-14-process-when-a-story-moves-a-host-treat'
     epic: 1
     action: 'Process: when a story moves a host, treat the credentials that describe
       it as a set rather than a single field.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-25: done by Operator ruling 2026-09-25 (87981a0): the premise says every address
+  # below is running, and a Premise.test.tsx case fails when a rendered entry carrying an address
+  # is not Live. DW-244 closed. Of the three counts, the premise's stays derived, as ruled, and the
+  # Directory's stays Live rows only, a default stated and not overruled; the footer's was not
+  # ruled and is DW-246.
+  - id: "epic-2-retro-item-1-before-the-epic-2-merge-rule-the-premise"
+    epic: 2
+    action: "Before the Epic 2 merge: rule the premise wording over a Complete row
+      (DW-244) together with the page's three counts, then add a Premise case that
+      fails when a rendered entry is not Live while the copy says running."
+    owner: "Cuatro"
+    status: done
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-2-before-the-epic-2-merge-land-ops-contrac"
+    epic: 2
+    action: "Before the Epic 2 merge: land ops/contract-adoption.md Pending Operator
+      action 8 (cs-tracker at Contract 2.0.0 pushed and deployed) so the Registry
+      verification is green, or rule in writing that the merge may ship the token_contract
+      claim ahead of it."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-3-at-the-epic-2-merge-make-the-eight-check"
+    epic: 2
+    action: "At the Epic 2 merge: make the eight checks (the seven ci.yml jobs and
+      Lighthouse) required on main with strict off, per DW-172. On 2026-09-25 main
+      read strict true with no contexts."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-4-revoke-the-twilio-api-key-found-in-mutuo"
+    epic: 2
+    action: "Revoke the Twilio API key found in Mutuo's 2021 history if it is still
+      live, review cs-tracker's two secret_key_base findings and publish it if they
+      are development and test defaults, and record both outcomes in KV-2 as tracked
+      rows."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-5-restate-ux-dr49-with-a-line-for-the-fram"
+    epic: 2
+    action: "Restate UX-DR49 with a line for the framework runtime, or record its
+      breach as a known violation with a closer: every measured route is 57,189 to
+      91,829 gzipped bytes over 140,000 and nothing owns it."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-6-correct-epics-md-2005-2010-to-thirty-one"
+    epic: 2
+    action: "Correct epics.md:2005-2010 to thirty-one stories, twenty FRs and the
+      migration steps as they shipped."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-7-correct-the-stale-registry-test-ts-621-6"
+    epic: 2
+    action: "Correct the stale registry.test.ts:621-668 citation in four components
+      and the stale counts at SuiteDirectory.scss:9-10 and useReduceMotion.ts:17-19,
+      citing the describe by name."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-8-fix-dw-21-s-strings-in-content-work-ts-n"
+    epic: 2
+    action: "Fix DW-21's strings in content/work.ts (Nests.js, Emal Development, and
+      the Javascript and Typescript spellings), with the Operator confirming the spellings."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-9-move-the-duplicated-e2e-helpers-into-tes"
+    epic: 2
+    action: "Move the duplicated e2e helpers into tests/e2e/harness.ts, probeComputed
+      first, then goTo, plantStyle and the FINGERPRINTS parse, closing DW-22, DW-232
+      and DW-49."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-10-process-use-awaiting-operator-for-a-stor"
+    epic: 2
+    action: "Process: use awaiting-operator for a story whose remaining criteria are
+      Operator checks, or record a dated override; reconcile 2-27, moved to done before
+      its screen-reader read."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-11-process-keep-an-independent-verifier-on"
+    epic: 2
+    action: "Process: keep an independent verifier on every unattended story and package;
+      it refused six deliveries the inline review layers had passed, in three days."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-12-process-plant-every-new-assertion-includ"
+    epic: 2
+    action: "Process: plant every new assertion, including guards added in review
+      and fix rounds, and record the planted failure beside it."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-13-process-cite-code-by-symbol-or-test-name"
+    epic: 2
+    action: "Process: cite code by symbol or test name, never by line number, and
+      state in a comment only a count a test holds."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"
+  - id: "epic-2-retro-item-14-process-each-package-names-which-of-its"
+    epic: 2
+    action: "Process: each package names which of its new ledger entries bind the
+      next merge."
+    owner: "Cuatro"
+    status: open
+    ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
+      epic-2-retro-2026-09-25.md"

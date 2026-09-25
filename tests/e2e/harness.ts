@@ -29,7 +29,7 @@ export const RENDERED_VIEWPORT = { width: 360, height: 800 } as const;
  * These helpers throw instead.
  *
  * A note Story 1.18 inherits rather than rediscovers: assert both `font-family` and
- * `font-weight` at the `--monument-bold` call sites, and set the weight before reading it.
+ * `font-weight` at the bold display alias's call sites, and set the weight before reading it.
  * Three of the four sites (`WorkHero.scss:19`, `ProjectsHero.scss:19`, `error-page.scss:24`)
  * set family alone at the time this was written, so their computed `font-weight` was `400`
  * both before and after an alias that silently drops bold. The weight lives in the family name,
@@ -38,9 +38,13 @@ export const RENDERED_VIEWPORT = { width: 360, height: 800 } as const;
  * by hand at all four sites in the same commit (`epics.md:1842-1843`) before asserting it
  * (`:1844`). Read without that step, the weight assertion is green and meaningless.
  *
- * **Three call sites since 2026-09-07.** Story 2-14 redirected `/projects` and deleted
- * `ProjectsHero.scss` with the route it styled. The note above is the 2026-08-24 reading and is
- * kept as it was taken; `tests/e2e/anchor-aliases.pw.ts` carries the current table.
+ * **Three call sites since 2026-09-07, two since 2026-09-14, one since 2026-09-23, and none since
+ * later that day.** Story 2-14 redirected `/projects` and deleted `ProjectsHero.scss` with the route it
+ * styled; Story 2-27 deleted `glitch-text.scss` with the loop it carried, and `GlitchText.scss` names
+ * the display roles directly; Story 2-30 deleted `error-page.scss`, and `Error404.scss` does the same;
+ * Story 2-33 rebuilt `WorkHero.scss`, whose heading was the last, against the contract. The note above
+ * is the 2026-08-24 reading and is kept as it was taken. Story 2-22 deleted the alias with the rest
+ * of the layer, and `app/__tests__/anchor-contract.test.ts` holds the tree free of its name.
  */
 
 interface ScreenshotOptions {
@@ -87,10 +91,11 @@ export async function expectRouteScreenshot(
     );
   }
 
-  // Not `networkidle`. The Hub never reaches it: Lenis plus the GSAP ticker keep the page
-  // busy indefinitely, so a wait for network idle times out rather than settling. What the
-  // baseline actually needs is the web fonts resolved, because a fallback face rendered for
-  // one frame is a different image. Everything after that is handled by `toHaveScreenshot`,
+  // Not `networkidle`. Story 1-10 found the Hub never reached it with Lenis and the GSAP ticker
+  // running, so a wait for network idle timed out rather than settling. DW-36 deleted Lenis on
+  // 2026-09-24; the wait stays off, so a capture does not depend on which scripts a route runs.
+  // What the baseline actually needs is the web fonts resolved, because a fallback face rendered
+  // for one frame is a different image. Everything after that is handled by `toHaveScreenshot`,
   // which retries until two consecutive captures agree.
   await page.evaluate(async () => {
     await document.fonts.ready;
@@ -155,6 +160,30 @@ export async function computedStyleValue(
   }
 
   return trimmed;
+}
+
+/**
+ * Whether React has hydrated the hero's container on `/`.
+ *
+ * The signal is React's own mark. React attaches an own property named `__reactFiber$<key>` to
+ * every host node it hydrates, and the server writes none, so its presence on `.home-container`
+ * means React hydrated. The mark lands during React's render phase, before passive effects, so
+ * this says "hydrated" and not "effects ran"; the cases that read it go on to read layout, which
+ * does not depend on an effect having fired.
+ *
+ * **Until 2026-09-14 the signal was `GlitchText`'s inline opacity**, which its `useGsapContext`
+ * callback wrote on mount on every path; Story 2-27 moved that entrance into CSS over
+ * server-rendered spans, so nothing writes an inline style any more and the application has no
+ * artifact of its own that says "hydrated". This is a library mark, stated as such, chosen over
+ * adding an effect to the application whose only reader would be a test. Verified in the running
+ * page on all four front doors on 2026-09-14: absent at `commit` and at `load`, present after
+ * hydration, and never present with the client bundle blocked.
+ */
+export function hydrated(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const container = document.querySelector('.home-container');
+    return container !== null && Object.getOwnPropertyNames(container).some((name) => name.startsWith('__reactFiber$'));
+  });
 }
 
 /**

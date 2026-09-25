@@ -95,7 +95,9 @@ declared per entry.
 The token contract is `Contract v1.0.0` and **Epic 2 does not move it**: `--token-scrim` and
 `--tap` (44px, the only `px` length in the contract, never hand-written) already ship in v1.0.0,
 so the scrim story consumes the role rather than adding it. An older change proposal says v1.1.0
-and is superseded.
+and is superseded. One published easing role, the exit curve, is itself a pure ease-in and is
+therefore a recorded contract defect for a later minor, not a stylesheet fix: an exit that needs an
+ease-out states the curve by hand and does not reach for that role.
 
 The colour-literal gate needs four dispositions written in with their reasons or it meets them at
 scale on its first run: `opacity` keyframes, `font-variation-settings` axis literals and
@@ -128,6 +130,19 @@ existing underline or border, never adding one and never changing ground, scale 
 Focus is `:focus-visible` only, painted instantly and never transitioned, on a token distinct from
 hover.
 
+**Motion and touch rules added 2026-09-15, binding across the redesign stories.** Touch is the
+primary user, so **every** `:hover` rule is gated on a hover-capable pointer query, or a tap paints
+hover and leaves it painted until the next tap lands elsewhere. No UI element runs an ease-in:
+an exit runs an ease-out at the exit duration, because starting slow reads as lag in exactly the
+frames after the input. Scroll-triggered fade-up on entry is banned outright and its rows simply
+exist; a route gets one entrance, and scroll-linked motion tracks the scroll rather than trailing
+it. Any script-driven entrance either reads the motion preference and runs nothing under `reduce`,
+or becomes a CSS keyframe on `opacity` alone with `animation: none` under the query; a JS duration
+literal is out of the contract's reduced-motion reach, so the CSS form is preferred where it costs
+no more. Sticky chrome closes on a hairline in the border token, never an alpha edge, a shadow or a
+blur. Each redesign also sweeps its own legacy literals: hard-coded tracking values, the browser
+default easing on legacy transitions, and a fixed header height with a literal scroll padding.
+
 Excluded structurally: filled controls, shadows, gradients, rounded corners, card-in-card,
 icon-tile grids, full-viewport centred heroes, glassmorphism, emoji as icons, invented metrics,
 skeletons, spinners and placeholder states. Accent is at most 3% of the viewport as intent, and
@@ -141,20 +156,28 @@ mono uppercase signage on a hairline, the readout register, the corner-notched `
 silhouette, the leading-edge nav rule, and the scrim's legibility job as one flat layer at one
 value, present or absent, never faint.
 
+**Deliberate divergences, recorded so they are not re-filed as defects:** no pointer-down feedback
+(the action is the feedback), no drag, swipe or gesture anywhere, no springs, bounce, elastic or
+overshoot, opaque chrome rather than translucent because alpha is barred outside the scrim, no
+modals and no focus trap, and the published brand faces rather than the system font.
+
 ## Cross-Story Dependencies
 
-The Registry chain is strictly serial: schema and gate, Operator confirmation, authoring,
-editorial pass, retiring the TypeScript module, then the Directory. `/projects` is repointed at
-the JSON before it is redirected away, so it never spends a commit broken.
+The Registry chain is serial from authoring onward: the schema gate and the Operator confirmation
+are independent of each other, then authoring, the editorial pass, retiring the TypeScript module,
+then the Directory. `/projects` is repointed at the JSON before it is redirected away, so it never
+spends a commit broken.
 
-Epic 1 gates this epic three times: bot mitigation before the Directory ships, the capacity
-threshold before the `list-wheel` placement, and the routing inventory supplying the hostnames the
-Registry declares. Instrumentation needs the Umami database to survive Epic 1's host
-consolidation. Relocating `list-wheel` and restyling it are separate shipped steps in different
-epics.
+Epic 1's three prerequisite gates all bind here: external monitoring before the scheduled Registry
+verification, bot mitigation before the Directory ships, and the capacity threshold before the
+`list-wheel` placement. The routing inventory supplies the hostnames the Registry declares, and
+instrumentation needs the Umami database to survive Epic 1's host consolidation. Relocating
+`list-wheel` and restyling it are separate shipped steps in different epics.
 
 The type swap blocks all seven component redesigns, the conformance gate depends on all of them,
-and the alias deletion on the last. The scrim redesign precedes the home surface, which carries
-the z-level trap: a sticky header above the scrim computes against the imagery, verified by
-sampling the rendered ground rather than reading z-index values. Epic 8 is blocked on this epic,
-which produces the vocabulary it copies.
+and the alias deletion on the last. The scrim redesign precedes the home surface, which carries the
+z-level trap: a sticky header above the scrim computes against the imagery, verified by sampling
+the rendered ground rather than reading z-index values. Deleting the timeline's scroll batch is
+ruled a presentation change, so it does not breach the criterion preserving the `/cv` story's
+structure, props and behaviour. Epic 8 is blocked on this epic, which produces the vocabulary it
+copies.

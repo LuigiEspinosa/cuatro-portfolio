@@ -9,7 +9,8 @@ import { REACH_EVENT, ROOT_MARGIN, SuiteReach, TRACKER_POLL_LIMIT, TRACKER_POLL_
  * is already there and waits for it otherwise, asks for the root extended upward so a jump past the
  * heading is a crossing it can see, counts a heading in view and a heading already scrolled past,
  * sends once and remembers that in `sessionStorage`, stops polling at the bound, survives a storage
- * or a tracker that throws, and leaves no timer or observer behind on unmount. Whether a real
+ * or a tracker that throws, and leaves no timer or observer behind on unmount. Since DW-88 it also
+ * sends the front door it is handed as the event's data, and starts nothing while that is undecided. Whether a real
  * browser's observer fires on a real scroll, and on a real jump, is
  * `tests/e2e/visitor-instrumentation.pw.ts`.
  *
@@ -64,7 +65,10 @@ const tick = (): void => {
   vi.advanceTimersByTime(TRACKER_POLL_MS);
 };
 
-const mount = () => render(<SuiteReach target={HEADING_ID} />);
+/** The door the case hands the component unless it says otherwise: the default door's, decided. */
+const DOOR = 'narrative';
+
+const mount = () => render(<SuiteReach target={HEADING_ID} door={DOOR} />);
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -100,7 +104,9 @@ describe('SuiteReach', () => {
 
     observer.notify({ isIntersecting: true, bottom: 300 });
     expect(track).toHaveBeenCalledTimes(1);
-    expect(track, 'the event carries a name or data other than the bare reach name').toHaveBeenCalledWith(REACH_EVENT);
+    expect(track, 'the event carries a name other than reach, or data other than the door').toHaveBeenCalledWith(REACH_EVENT, {
+      door: DOOR,
+    });
     expect(sessionStorage.getItem(REACH_EVENT), 'the send left no flag behind').not.toBeNull();
     // Disconnected, so the browser delivers nothing more: `disconnect()` empties the queue as well
     // as the target list, which is what makes one send per observer a platform fact.
@@ -121,7 +127,7 @@ describe('SuiteReach', () => {
     // The crossing, as a browser reports it under that root: intersecting, rect above the viewport.
     observers[0].notify({ isIntersecting: true, bottom: -10 });
     expect(track).toHaveBeenCalledTimes(1);
-    expect(track).toHaveBeenCalledWith(REACH_EVENT);
+    expect(track).toHaveBeenCalledWith(REACH_EVENT, { door: DOOR });
   });
 
   it('counts a heading already scrolled past, which is bottom below zero and not intersecting', () => {
@@ -132,7 +138,7 @@ describe('SuiteReach', () => {
     mount();
     observers[0].notify({ isIntersecting: false, bottom: -10 });
     expect(track).toHaveBeenCalledTimes(1);
-    expect(track).toHaveBeenCalledWith(REACH_EVENT);
+    expect(track).toHaveBeenCalledWith(REACH_EVENT, { door: DOOR });
   });
 
   it('waits for the tracker, then observes, so the initial notification covers a heading already in view', () => {
@@ -259,6 +265,37 @@ describe('SuiteReach', () => {
     expect(observers[0].disconnected).toBe(false);
     unmount();
     expect(observers[0].disconnected, 'the observer survives the component').toBe(true);
+  });
+
+  it('sends the front door it was handed, flat or narrative, as the one key of its data (DW-88)', () => {
+    // Operator ruling 2026-09-24: SM-1 read per door. The door is `HomeLayout`'s decided path,
+    // handed down as a prop, so the event says which hero the visitor had in front of them.
+    for (const door of ['flat', 'narrative'] as const) {
+      sessionStorage.clear();
+      track.mockReset();
+      observers.length = 0;
+      installTracker();
+      const { unmount } = render(<SuiteReach target={HEADING_ID} door={door} />);
+      observers[0].notify({ isIntersecting: true, bottom: 200 });
+      expect(track.mock.calls, `the ${door} door sent something other than one reach with its door`).toEqual([
+        [REACH_EVENT, { door }],
+      ]);
+      unmount();
+    }
+  });
+
+  it('observes nothing and polls nothing while the door is undecided, and starts once it is decided', () => {
+    // An undecided door is neither answer, and an event sent then would carry no door. The decision
+    // is `HomeLayout`'s first effect, so the wait is one render, and it is terminal.
+    installTracker();
+    const { rerender } = render(<SuiteReach target={HEADING_ID} door='undecided' />);
+    expect(observers, 'an undecided door observed the heading').toHaveLength(0);
+    expect(vi.getTimerCount(), 'an undecided door started the poll').toBe(0);
+
+    rerender(<SuiteReach target={HEADING_ID} door='flat' />);
+    expect(observers, 'the decided door did not start the observer').toHaveLength(1);
+    observers[0].notify({ isIntersecting: true, bottom: 200 });
+    expect(track.mock.calls).toEqual([[REACH_EVENT, { door: 'flat' }]]);
   });
 
   it('observes nothing when the heading is not in the document', () => {

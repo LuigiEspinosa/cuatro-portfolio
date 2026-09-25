@@ -102,10 +102,39 @@ sha256_file() {
   openssl dgst -sha256 -r < "$1" | _digest
 }
 
+# The `\xHH` escapes that make printf emit the bytes a hex string spells. The
+# hex reaches sed on a pipe, so the bytes never become a process's arguments.
+bytes_escaped() {
+  printf '%s' "$1" | sed 's/../\\x&/g'
+}
+
 # HMAC-SHA256 with a hex key, printing a hex digest, so the whole derivation
 # chain stays in hex and never passes raw bytes through a shell variable.
+#
+# Built from RFC 2104 on `openssl dgst -sha256` over a pipe, not with
+# `-mac HMAC -macopt hexkey:`, because an argument is readable in
+# `/proc/<pid>/cmdline` by every account on the box, and the first key in the
+# SigV4 chain is `AWS4` plus the secret access key itself. The key only ever
+# passes through builtins and a pipe, the same way the passphrase reaches gpg.
 hmac_hex() {
-  printf '%s' "$2" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:$1" -r | _digest
+  local key="$1" message="$2" ipad='' opad='' byte escape i inner
+  # A key longer than the 64 byte block is hashed first. An R2 secret is 64
+  # characters, so `AWS4` plus it always takes this branch.
+  if [ "${#key}" -gt 128 ]; then
+    key="$(printf "$(bytes_escaped "${key}")" | openssl dgst -sha256 -r | _digest)" || return 1
+  fi
+  while [ "${#key}" -lt 128 ]; do
+    key="${key}00"
+  done
+  for (( i = 0; i < 128; i += 2 )); do
+    byte=$(( 16#${key:i:2} ))
+    printf -v escape '\\x%02x' $(( byte ^ 0x36 ))
+    ipad+="${escape}"
+    printf -v escape '\\x%02x' $(( byte ^ 0x5c ))
+    opad+="${escape}"
+  done
+  inner="$({ printf "${ipad}"; printf '%s' "${message}"; } | openssl dgst -sha256 -r | _digest)" || return 1
+  { printf "${opad}"; printf "$(bytes_escaped "${inner}")"; } | openssl dgst -sha256 -r | _digest
 }
 
 hex_of_string() {
@@ -191,8 +220,12 @@ require_config() {
 
   S3_CONNECT_TIMEOUT="${S3_CONNECT_TIMEOUT:-15}"
   S3_MAX_TIME="${S3_MAX_TIME:-300}"
+  # At least 1, not only a number: `curl --max-time 0` means no limit at all,
+  # which is the hang these two exist to prevent.
   case "${S3_CONNECT_TIMEOUT}" in ''|*[!0-9]*) die "S3_CONNECT_TIMEOUT must be a whole number of seconds, got: ${S3_CONNECT_TIMEOUT}" ;; esac
   case "${S3_MAX_TIME}" in ''|*[!0-9]*) die "S3_MAX_TIME must be a whole number of seconds, got: ${S3_MAX_TIME}" ;; esac
+  [ "${S3_CONNECT_TIMEOUT}" -ge 1 ] || die "S3_CONNECT_TIMEOUT must be at least 1 second, got: ${S3_CONNECT_TIMEOUT}"
+  [ "${S3_MAX_TIME}" -ge 1 ] || die "S3_MAX_TIME must be at least 1 second, got: ${S3_MAX_TIME}"
 }
 
 endpoint_host() {

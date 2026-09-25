@@ -183,10 +183,8 @@ const documentScriptUrls = (html: string, base: string): string[] => {
 };
 
 const goTo = async (page: Page, route: string): Promise<void> => {
-  // Not `networkidle`. The Hub never reaches it: Lenis plus the GSAP ticker keep the page busy
-  // indefinitely, so a wait for network idle times out rather than settling
-  // (`tests/e2e/harness.ts:86-90`). That matters more than usual on a route whose whole subject is
-  // loading.
+  // Not `networkidle`, for the reason `expectRouteScreenshot` in `tests/e2e/harness.ts` gives. That
+  // matters more than usual on a route whose whole subject is loading.
   const response = await page.goto(route, { waitUntil: 'load' });
   expect(response, `navigating to ${route} produced no response`).toBeTruthy();
   expect(response?.status(), `${route} did not answer 200`).toBe(200);
@@ -426,6 +424,48 @@ test.describe('the narrative is not in what the browser fetches before it can pa
         'is not discriminating and the clean result above proves nothing'
     ).toBeGreaterThan(0);
   });
+
+  test("and no route's document carries a narrative library but GSAP, where the Work item uses it", async ({
+    request,
+    baseURL,
+  }) => {
+    // **`EXPERIENCE.md` Rule 1 on every route, not only `/` (DW-36).** Until 2026-09-24
+    // `app/providers.tsx` put `lenis`, `gsap` and `ScrollTrigger` on every document through the root
+    // layout, so a route with no motion of its own shipped a scroll library at first paint. The
+    // Operator ruling of that day deleted it: `ScrollTrigger` loads with the `/work` torus, behind its
+    // boundary, and GSAP's core is on the two documents whose Work item runs its disclosure tween,
+    // which `EXPERIENCE.md` § Secondary surfaces names and which is not narrative. Every fingerprint in
+    // the table is read here, WebGL or not, so a library put back on a document is named.
+    //
+    // The control is in the expectation: `/work` and `/cv` must be seen carrying GSAP's core, so a
+    // scan that read nothing anywhere fails there. `tests/e2e/work-hero.pw.ts` shows the
+    // `ScrollTrigger` mark firing on the chunk `/work` fetches once the torus is drawn.
+    const expected: Record<string, string[]> = {
+      '/': [],
+      '/work': ['gsap'],
+      '/cv': ['gsap'],
+      '/celeste': [],
+      [NOT_FOUND]: [],
+    };
+    const found: Record<string, string[]> = {};
+    for (const route of NAVIGABLE_ROUTES) {
+      const document = await request.get(new URL(route, baseURL).href);
+      expect([200, 404], `${route} answered ${document.status()}`).toContain(document.status());
+      const urls = documentScriptUrls(await document.text(), baseURL as string);
+      expect(urls.length, `the ${route} document references no script, so the scan reads nothing`).toBeGreaterThan(0);
+      const libraries = new Set<string>();
+      for (const url of urls) {
+        const response = await request.get(url);
+        expect(response.status(), `${url} is referenced by ${route} and answered ${response.status()}`).toBe(200);
+        const text = await response.text();
+        for (const entry of FINGERPRINTS) if (text.includes(entry.mark)) libraries.add(entry.library);
+      }
+      found[route] = [...libraries].sort();
+    }
+
+    console.log(`narrative: fingerprinted libraries per document, ${JSON.stringify(found)}`);
+    expect(found, 'a document carries a narrative library it has no use for, or lost the one it uses').toEqual(expected);
+  });
 });
 
 /** The marks that belong to the gem's boundary and to nothing else the Hub imports. */
@@ -572,8 +612,9 @@ test.describe('the narrative still runs', () => {
     //
     // **Measured as a difference between two loads rather than as an absence on one.** `/` is not
     // free of narrative requests on either path: the App Router prefetches the route bundles behind
-    // the hero's two `<Link>`s, and `/work` still carries `three` eagerly, so a flat "no narrative
-    // chunk is requested" assertion fails on something this story does not own. The second link
+    // the hero's two `<Link>`s, and `/work` carried `three` eagerly until Story 2-33 moved its torus
+    // behind one boundary on 2026-09-23, so a flat "no narrative chunk is requested" assertion failed
+    // on something this story does not own. The second link
     // pointed at `/projects`, which carried `three-stdlib` through `TorusKnotCanvas` until Story
     // 2-14 deleted the route on 2026-09-07; it now prefetches a redirect, and repointing the chrome
     // at `/#suite` is Story 2-15's job. That prefetch is filed in
@@ -607,6 +648,272 @@ test.describe('the narrative still runs', () => {
       'a device with no WebGL downloaded the gem post-processing chunk anyway, so the probe is not ' +
         'gating the dynamic import'
     ).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The wave is decoration: it takes no gesture (DW-119).
+// ---------------------------------------------------------------------------
+
+/**
+ * An init script that keeps every three.js `Scene` the page constructs.
+ *
+ * three.js announces each new `Scene` to `window.__THREE_DEVTOOLS__` when that object exists
+ * (`node_modules/three/src/scenes/Scene.js:115-117`), the hook its browser extension reads, and the
+ * production build keeps the check. Defining it before the page's own scripts is how the wave's pose
+ * is read off the object the renderer draws, with nothing exported from the component for a test.
+ */
+const SCENE_RECORDER = `
+  window.__scenes = [];
+  window.__THREE_DEVTOOLS__ = new EventTarget();
+  window.__THREE_DEVTOOLS__.addEventListener('observe', (event) => {
+    if (event.detail && event.detail.isScene) window.__scenes.push(event.detail);
+  });
+`;
+
+/**
+ * The wave's rotation, read off the group that holds its points in whichever recorded scene has it,
+ * and that group's world matrix, which the renderer recomputes only for a scene it is drawing.
+ * `turnBy` adds to the group's rotation about y before the read, which is how the control plants a turn.
+ */
+const wavePose = (page: Page, turnBy = 0) =>
+  page.evaluate((planted) => {
+    interface Node3D {
+      isGroup?: boolean;
+      isPoints?: boolean;
+      children: Node3D[];
+      rotation: { x: number; y: number; z: number };
+      matrixWorld: { elements: ArrayLike<number> };
+    }
+    for (const scene of (window as unknown as { __scenes?: Node3D[] }).__scenes ?? []) {
+      const group = scene.children.find((child) => child.isGroup && child.children.some((grandchild) => grandchild.isPoints));
+      if (!group) continue;
+      group.rotation.y += planted;
+      return {
+        rotation: { x: group.rotation.x, y: group.rotation.y, z: group.rotation.z },
+        world: Array.from(group.matrixWorld.elements),
+      };
+    }
+    return null;
+  }, turnBy);
+
+/** Wait `count` animation frames in the page. */
+const frames = (page: Page, count: number) =>
+  page.evaluate(
+    (wanted) =>
+      new Promise<void>((done) => {
+        let left = wanted;
+        const tick = () => (--left <= 0 ? done() : requestAnimationFrame(tick));
+        requestAnimationFrame(tick);
+      }),
+    count
+  );
+
+test.describe('the wave is decoration: it takes no gesture', () => {
+  test('a drag across it turns nothing, and no grab cursor is offered on hover or on press', async ({ browser }) => {
+    // Until 2026-09-24 `ParticleWave` turned under a pointer drag, kept turning after the release at
+    // 0.92 a frame, and set a grab cursor on the body to advertise it. `EXPERIENCE.md` § Pointer and
+    // touch allows no gesture, and DW-119's Operator ruling of that day removed all three. The pose
+    // is read off the rendered group rather than off pixels, because the wave moves every frame on
+    // its own clock and a pixel comparison could not tell a drag from the wave.
+    await withMotion(
+      browser,
+      async (page) => {
+        await goTo(page, ROUTE);
+        const canvas = page.locator('#gem-canvas canvas');
+        await expect(canvas, 'no canvas ever mounted, so there is no wave to drag').toBeVisible({ timeout: SETTLE_TIMEOUT });
+        await expect
+          .poll(() => wavePose(page), { timeout: SETTLE_TIMEOUT, message: 'the wave never entered a scene the recorder saw' })
+          .not.toBeNull();
+        await canvas.scrollIntoViewIfNeeded();
+
+        // A point the canvas itself receives, so the drag below reaches the scene rather than whatever
+        // sits over the canvas there.
+        const point = await canvas.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          for (const [across, down] of [
+            [0.5, 0.5],
+            [0.35, 0.5],
+            [0.65, 0.5],
+            [0.5, 0.35],
+            [0.5, 0.65],
+          ]) {
+            const x = box.left + box.width * across;
+            const y = box.top + box.height * down;
+            if (document.elementFromPoint(x, y) === node) return { x, y };
+          }
+          return null;
+        });
+        expect(point, 'no point on the canvas receives the pointer, so a drag could not reach the scene').not.toBeNull();
+        if (!point) return;
+
+        const cursor = () => page.evaluate(() => getComputedStyle(document.body).cursor);
+        const before = await wavePose(page);
+        await page.mouse.move(point.x, point.y);
+        await frames(page, 4);
+        const onHover = await cursor();
+        await page.mouse.down();
+        await frames(page, 2);
+        const onPress = await cursor();
+        await page.mouse.move(point.x + 150, point.y + 60, { steps: 12 });
+        await page.mouse.up();
+        // Long enough for a release to coast, which the drag this replaced did for dozens of frames.
+        await frames(page, 30);
+        const after = await wavePose(page);
+
+        console.log(
+          `narrative: the wave's rotation before ${JSON.stringify(before?.rotation)}, after a drag ${JSON.stringify(after?.rotation)}`
+        );
+        expect(after?.rotation, 'the wave turned under a drag, which EXPERIENCE.md § Pointer and touch rules out').toEqual(
+          before?.rotation
+        );
+        expect({ onHover, onPress }, 'the wave offers a grab cursor, a hover-only affordance for a gesture').toEqual({
+          onHover: 'auto',
+          onPress: 'auto',
+        });
+
+        // The control: a turn planted on the group is drawn. The renderer recomputes a group's world
+        // matrix only while it draws its scene, so a matrix that follows the planted turn a few frames
+        // later proves the rotation read above is the pose on screen, not a copy nothing draws.
+        await wavePose(page, 0.5);
+        await frames(page, 4);
+        const planted = await wavePose(page);
+        expect(planted?.rotation.y, 'the planted turn did not hold').toBeCloseTo((before?.rotation.y ?? 0) + 0.5, 6);
+        expect(planted?.world, 'the renderer never drew the planted turn, so the group read is not the drawn wave').not.toEqual(
+          after?.world
+        );
+      },
+      [SCENE_RECORDER]
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The wave ignores the pointer: it moves on its own clock alone (DW-123).
+// ---------------------------------------------------------------------------
+
+/**
+ * The highest any point of the wave stands above its resting fold, in the group's own space, read
+ * off the points the renderer draws. The grid and the fold are `ParticleWave.tsx`'s, restated here
+ * because nothing is exported from the component for a test: 60 by 60 points, each resting at
+ * `-(x^2 * 1.4 + y^2 * 1.4 * 0.35)` over its normalised column and row. The wave's own motion is a
+ * sine times a cosine at an amplitude of 0.28, so no point ever stands higher than that above its
+ * fold unless something else lifts it.
+ */
+const waveRise = (page: Page) =>
+  page.evaluate(() => {
+    interface Node3D {
+      isGroup?: boolean;
+      isPoints?: boolean;
+      children: Node3D[];
+      geometry?: { attributes: { position: { array: ArrayLike<number> } } };
+    }
+    const COLS = 60;
+    const ROWS = 60;
+    const FOLD_DEPTH = 1.4;
+    for (const scene of (window as unknown as { __scenes?: Node3D[] }).__scenes ?? []) {
+      const group = scene.children.find((child) => child.isGroup && child.children.some((grandchild) => grandchild.isPoints));
+      const points = group?.children.find((child) => child.isPoints);
+      const positions = points?.geometry?.attributes.position.array;
+      if (!positions || positions.length !== COLS * ROWS * 3) continue;
+      let highest = Number.NEGATIVE_INFINITY;
+      for (let r = 0; r < ROWS; r += 1) {
+        for (let c = 0; c < COLS; c += 1) {
+          const normX = (c / (COLS - 1)) * 2 - 1;
+          const normY = (r / (ROWS - 1)) * 2 - 1;
+          const fold = -(normX * normX * FOLD_DEPTH + normY * normY * FOLD_DEPTH * 0.35);
+          highest = Math.max(highest, positions[(r * COLS + c) * 3 + 2] - fold);
+        }
+      }
+      return highest;
+    }
+    return null;
+  });
+
+/** The wave's own amplitude, and a margin for the float arithmetic of a frame. */
+const WAVE_CEILING = 0.28 + 0.02;
+
+test.describe('the wave ignores the pointer', () => {
+  test('a pointer resting on the wave lifts no point above the wave its own clock draws', async ({ browser }) => {
+    // Until 2026-09-25 each frame lifted the points within 1.2 of a hovering pointer by up to 0.9 and
+    // a spring eased them back when it left: a deformation that followed the cursor, which
+    // `EXPERIENCE.md` § Motion bans as a cursor follower. The Operator ruling of 2026-09-25 (DW-123)
+    // removed it, the invisible plane that caught the pointer and the spring with it.
+    await withMotion(
+      browser,
+      async (page) => {
+        await goTo(page, ROUTE);
+        const canvas = page.locator('#gem-canvas canvas');
+        await expect(canvas, 'no canvas ever mounted, so there is no wave to hover').toBeVisible({ timeout: SETTLE_TIMEOUT });
+        await expect
+          .poll(() => waveRise(page), { timeout: SETTLE_TIMEOUT, message: 'the wave never entered a scene the recorder saw' })
+          .not.toBeNull();
+        await canvas.scrollIntoViewIfNeeded();
+
+        // Points across the canvas that the canvas itself receives, so the pointer reaches the scene
+        // rather than whatever sits over it there.
+        const spots = await canvas.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          const found: { x: number; y: number }[] = [];
+          for (const across of [0.3, 0.4, 0.5, 0.6, 0.7]) {
+            for (const down of [0.35, 0.5, 0.65]) {
+              const x = box.left + box.width * across;
+              const y = box.top + box.height * down;
+              if (document.elementFromPoint(x, y) === node) found.push({ x, y });
+            }
+          }
+          return found;
+        });
+        expect(spots.length, 'no point on the canvas receives the pointer, so a hover could not reach the scene').toBeGreaterThan(0);
+
+        // The control: before any pointer, the wave stands inside its own amplitude and above its
+        // fold, so the reading below is of the drawn points and not of a copy nothing moves.
+        let resting = Number.NEGATIVE_INFINITY;
+        for (let sample = 0; sample < 10; sample += 1) {
+          await frames(page, 2);
+          resting = Math.max(resting, (await waveRise(page)) ?? Number.NEGATIVE_INFINITY);
+        }
+        expect(resting, 'the resting wave already stands above its own amplitude, so the ceiling below is wrong').toBeLessThanOrEqual(WAVE_CEILING);
+        expect(resting, 'no point rises above its fold at rest, so the reading is not of the moving wave').toBeGreaterThan(0);
+
+        let hovered = Number.NEGATIVE_INFINITY;
+        for (const spot of spots) {
+          await page.mouse.move(spot.x, spot.y);
+          for (let sample = 0; sample < 4; sample += 1) {
+            await frames(page, 3);
+            hovered = Math.max(hovered, (await waveRise(page)) ?? Number.NEGATIVE_INFINITY);
+          }
+        }
+        console.log(`narrative: the wave's highest rise above its fold at rest ${resting.toFixed(3)}, under the pointer ${hovered.toFixed(3)}`);
+        expect(hovered, 'a point under the pointer lifted above the wave, so the wave answers the pointer again').toBeLessThanOrEqual(
+          WAVE_CEILING
+        );
+      },
+      [SCENE_RECORDER]
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The narrative's orphaned assets are gone (ops/asset-budget.md Pending action 3).
+// ---------------------------------------------------------------------------
+
+test.describe('the orphaned narrative assets are not served', () => {
+  /**
+   * The four files `ops/asset-budget.md` § The narrative assets found reached by nothing since
+   * 2026-08-29, deleted on 2026-09-24 with `Gem.tsx`, the one module that named two of them.
+   */
+  const ORPHANS = ['gem.glb', 'gem.gltf', 'gem_data.bin', 'environment_D.hdr'].map((name) => `/assets/home/${name}`);
+
+  test('each answers 404, where a file still under public/assets answers 200', async ({ request, baseURL }) => {
+    // The control first: the Open Graph image is served from the same directory tree, so a 404 below
+    // is the file's absence and not a path this request cannot reach.
+    const control = await request.get(new URL('/assets/og/og-image.png', baseURL).href);
+    expect(control.status(), 'a file under public/assets does not answer 200, so a 404 below proves nothing').toBe(200);
+    for (const path of ORPHANS) {
+      const response = await request.get(new URL(path, baseURL).href);
+      expect(response.status(), `${path} is still served, 1.2 MB that no route asks for`).toBe(404);
+    }
   });
 });
 
@@ -714,9 +1021,10 @@ test.describe('the page is whole with the narrative blocked', () => {
       ).toBeVisible();
       await expect(page.locator('footer.site-footer'), 'the footer is gone with the narrative blocked').toBeVisible();
 
-      // `toBeInViewport` retries, which is what handles Lenis taking ownership of the scroll
-      // position a moment after hydration. Same concern as `tests/e2e/suite-directory.pw.ts:326-336`,
-      // without the fixed wait.
+      // `toBeInViewport` retries, so hydration landing a moment after the jump cannot fail this
+      // read early. It was written for Lenis taking the scroll position after hydration on this
+      // `withMotion` context, which DW-36 deleted on 2026-09-24; `landsOnHeading` in
+      // `tests/e2e/suite-directory.pw.ts` reads the same landing after a fixed window.
       await expect(
         page.locator(`#${HEADING_ID}`),
         `#${HEADING_ID} is off screen after the fragment navigation`
@@ -840,9 +1148,13 @@ test.describe("the / document's preload set", () => {
     // **Two distinct faces until 2026-09-12, zero since.** `app/layout.tsx` preloaded two local
     // binaries, and Next emitted each link twice, which is why this read is over the distinct set
     // rather than the element count. Story 2-20 deleted both preloads with the faces they named
-    // and replaced them with nothing: `GlitchText.tsx` gates `SplitText` on `document.fonts.ready`,
-    // so a preload bought latency, not correctness, and a preload of a contract face would put
-    // `contracts/` in a scanned source. The read stays, so a preload put back fails here naming it.
+    // and replaced them with nothing: `GlitchText.tsx` then gated `SplitText` on
+    // `document.fonts.ready`, so a preload bought latency, not correctness, and a preload of a
+    // contract face would put `contracts/` in a scanned source. Story 2-27 removed that gate on
+    // 2026-09-14: the entrance now runs at `--delay` on whichever face is present, and
+    // `font-display: swap` swaps Bricolage in when it arrives, so the refusal's first premise is
+    // gone and its second stands; whether a preload is worth that trade is DW-99, deferred. The
+    // read stays, so a preload put back fails here naming it.
     const fonts = distinctFonts(links);
     expect(
       fonts.length,
@@ -930,7 +1242,8 @@ test.describe("the gem's reveal", () => {
     ).toBeLessThan(1);
     expect(samples.at(-1)?.opacity, 'the gem never reaches full opacity').toBe(1);
 
-    // `filter: brightness(0)` at `HomeLayout.scss:190` is what the reveal used to undo. Read on
+    // `filter: brightness(0)`, once at `HomeLayout.scss:190` as the file stood before Story 2-26
+    // deleted the ring blocks above it, is what the reveal used to undo. Read on
     // every frame rather than at three chosen moments, because a filter that appears mid-entrance
     // and is gone by the end is the same breach as one that stays.
     const filtered = [...new Set(samples.map((sample) => sample.filter))].filter((value) => value !== 'none');
@@ -941,20 +1254,83 @@ test.describe("the gem's reveal", () => {
     ).toEqual([]);
   });
 
+  /**
+   * Every element `HomeLayout.scss`'s reduced-motion block names, and the one it cannot: the gem,
+   * which this path does not render at all.
+   *
+   * A selector that matches nothing is reported rather than skipped, so a renamed class reads as a
+   * fixture failure instead of as a hero with no animation on it.
+   */
+  const REDUCED_MOTION_SELECTORS = [
+    '.home-panel--name',
+    '.home-role',
+    'a.nav-link',
+    '.home-panel--contact .contact-container a',
+  ] as const;
+
+  /**
+   * What each selector's elements compute for the entrance, and whether anything is animating.
+   *
+   * Shared by the reduced-motion cases and by the control below them, so the control exercises the
+   * same code path rather than a second read that happens to agree with it.
+   */
+  const heroMotionState = (page: Page, selectors: readonly string[]) =>
+    page.evaluate((list: string[]) => {
+      const animated: string[] = [];
+      for (const selector of list) {
+        const nodes = [...document.querySelectorAll<HTMLElement>(selector)];
+        if (nodes.length === 0) {
+          animated.push(`${selector} matched nothing, so the fixture is gone rather than the claim`);
+          continue;
+        }
+        nodes.forEach((node, index) => {
+          const name = getComputedStyle(node).animationName;
+          if (name !== 'none') animated.push(`${selector}[${index}] computes animation-name "${name}"`);
+        });
+      }
+
+      const hero = document.querySelector('.home-container');
+      const running = hero
+        ? document.getAnimations().filter((animation) => {
+            const target = (animation as unknown as { effect?: { target?: Element | null } }).effect?.target ?? null;
+            return target !== null && hero.contains(target);
+          }).length
+        : -1;
+
+      const role = document.querySelector('.home-role');
+      return {
+        animated,
+        running,
+        roleOpacity: role ? Number.parseFloat(getComputedStyle(role).opacity) : -1,
+      };
+    }, [...selectors]);
+
   for (const webgl of [true, false]) {
     test(`the reduced-motion hero is at its final state immediately, WebGL ${
       webgl ? 'present' : 'absent'
     }`, async ({ page }) => {
-      // **What this case measures changed with Story 2-13, and the reason it still exists did
-      // not.** `HomeLayout.scss` opens the role line, the sys panel, the nav links and the contact
-      // links at `opacity: 0`, and the timeline that lifts them never runs for a reduced-motion
-      // visitor: `gsap.set(finalState, { opacity: 1, y: 0 })` in `HomeLayout`'s reduced-motion
-      // branch is the one thing that ever does. Delete that line and this visitor gets a
-      // permanently blank hero, while every `no-preference` case above stays green. `toBeVisible`
-      // would not catch it either: an element at `opacity: 0` is visible to Playwright.
+      // **What this case reads changed with Story 2-29, and the reason it exists did not.** Until
+      // then `HomeLayout.scss` opened the role line, the sys panel and the five links at
+      // `opacity: 0` and only `gsap.set(finalState, { opacity: 1, y: 0 })` in `HomeLayout`'s
+      // reduced-motion branch ever lifted them, so deleting that branch left this visitor with a
+      // permanently blank hero and an eventual-opacity poll caught it.
+      //
+      // **That poll stopped being able to fail.** The entrance is now a `home-enter` keyframe with
+      // `animation-fill-mode: both`, whose base state is the final state, so with the reduced-motion
+      // block deleted the hero is blank for the delay, between 1.3s and 2.36s, and then at full
+      // opacity: a poll with a 15s budget passes either way and nothing would pin the override.
+      // Corrected 2026-09-21 in the same commit as the entrance, after the audit named it.
+      //
+      // **So this reads what reduced motion actually changes.** `HomeLayout.scss`'s block under the
+      // query sets `animation: none` on every animated element in the hero, in the
+      // `GlitchText.scss:50-58` shape, because the contract's duration collapse to 1ms does not
+      // touch `animation-delay` and a 1ms run still waits it out. Computed `animation-name` answers
+      // that at any moment on any run, and `document.getAnimations()` says the same thing one level
+      // down: on this path nothing in the hero is animating at all. Delete the block and both fail
+      // immediately, by name.
       //
       // The gem half of it is gone rather than moved: reduced motion is one of the four non-3D
-      // triggers, so this hero has no `.home-gem` to reveal, which is asserted here as the second
+      // triggers, so this hero has no `.home-gem` to reveal, which is asserted here as the last
       // half of the same read. The WebGL stub is carried through both values to show that: on this
       // context it changes nothing, because the motion preference has already decided the path.
       //
@@ -963,21 +1339,26 @@ test.describe("the gem's reveal", () => {
       if (!webgl) await page.addInitScript(NO_WEBGL);
       await goTo(page, ROUTE);
 
-      await expect
-        .poll(
-          () =>
-            page.evaluate(() => {
-              const role = document.querySelector('.home-role');
-              return role ? Number.parseFloat(getComputedStyle(role).opacity) : -1;
-            }),
-          {
-            timeout: SETTLE_TIMEOUT,
-            message:
-              'a reduced-motion visitor never sees the hero: the stylesheet holds it at opacity 0 ' +
-              "and HomeLayout's reduced-motion branch is the only thing that undoes it",
-          }
-        )
-        .toBe(1);
+      const read = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+
+      expect(
+        read.animated,
+        `a reduced-motion visitor's hero still carries the entrance. HomeLayout.scss's ` +
+          `prefers-reduced-motion block sets animation: none on every one of these, and without it ` +
+          `the hero is blank for the delay before the keyframe fills it:\n${read.animated.join('\n')}`
+      ).toEqual([]);
+
+      expect(
+        read.running,
+        'an animation is running inside the hero on a reduced-motion context, which is the same ' +
+          'defect one level down from the computed read above'
+      ).toBe(0);
+
+      expect(
+        read.roleOpacity,
+        'the role line is not at full opacity on the frame this was read, so the base state is no ' +
+          'longer the final state and a reduced-motion visitor waits for it'
+      ).toBe(1);
 
       expect(
         await page.locator('.home-gem').count(),
@@ -987,22 +1368,48 @@ test.describe("the gem's reveal", () => {
     });
   }
 
-  test('and that reduced-motion read fires, measured against the state it is asserting away', async ({ page }) => {
-    // The control. It plants exactly the failure the case above exists for, the hero left at the
-    // stylesheet's initial state, and shows the read reporting it rather than answering 1 always.
+  test('and all three reduced-motion reads fire, measured against the states they assert away', async ({ page }) => {
+    // The control, and since 2026-09-21 it covers **all three** reads rather than the opacity one.
+    // The Step-04 review found the two added that day, `animated` and `running`, with nothing
+    // showing they could fire; this plants the state each exists to catch and shows it reported,
+    // then takes it away and shows it gone, in the `display-entrance.pw.ts:300-302,352-357` shape.
     await goTo(page, ROUTE);
-    await page.evaluate(() => {
-      const style = document.createElement('style');
-      style.textContent = '.home-role { opacity: 0 !important; }';
-      document.head.append(style);
-    });
 
-    const read = await page.evaluate(() => {
-      const role = document.querySelector('.home-role');
-      return role ? Number.parseFloat(getComputedStyle(role).opacity) : -1;
-    });
+    const clean = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect(clean.animated, 'the surface under the plants already carries the entrance').toEqual([]);
+    expect(clean.running, 'the surface under the plants is already animating').toBe(0);
+    expect(clean.roleOpacity, 'the surface under the plants is already dimmed').toBe(1);
 
-    expect(read, 'a hero planted at opacity 0 still read as 1, so the read is a constant').toBe(0);
+    // One: an animation put back on the role line, which is exactly what deleting the
+    // reduced-motion block would leave. Five seconds and no delay, so it is running rather than
+    // waiting, which is what `getAnimations()` is asked about.
+    const unplantMotion = await page.addStyleTag({
+      content: '.home-role { animation: home-enter 5s linear 0s both !important; }',
+    });
+    const animating = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect(
+      animating.animated,
+      'a planted entrance on the role line was not reported by the computed read'
+    ).toEqual(['.home-role[0] computes animation-name "home-enter"']);
+    expect(animating.running, 'a planted running animation was not seen by getAnimations()').toBeGreaterThan(0);
+    await unplantMotion.evaluate((node) => (node as Element).remove());
+
+    const afterMotion = await heroMotionState(page, REDUCED_MOTION_SELECTORS);
+    expect([afterMotion.animated.length, afterMotion.running], 'the planted animation outlived its case').toEqual([0, 0]);
+
+    // Two: the hero left at the stylesheet's old initial state, which is the failure this case has
+    // existed for since Story 2-12.
+    const unplantDim = await page.addStyleTag({ content: '.home-role { opacity: 0 !important; }' });
+    expect(
+      (await heroMotionState(page, REDUCED_MOTION_SELECTORS)).roleOpacity,
+      'a hero planted at opacity 0 still read as 1, so the read is a constant'
+    ).toBe(0);
+    await unplantDim.evaluate((node) => (node as Element).remove());
+
+    expect(
+      (await heroMotionState(page, REDUCED_MOTION_SELECTORS)).roleOpacity,
+      'the planted opacity outlived its case'
+    ).toBe(1);
   });
 });
 
@@ -1061,28 +1468,205 @@ test.describe('the entrance touches only opacity and transform, and does not loo
       { probe: selector }
     );
 
+  /**
+   * What the stylesheets declare and what the running hero asks of them.
+   *
+   * **The entrance stopped writing inline styles on 2026-09-21.** Story 2-29 replaced
+   * `HomeLayout.tsx`'s GSAP timeline with one `home-enter` keyframe and five `animation-delay`
+   * declarations, so the inline sweep above now legitimately observes nothing and can no longer be
+   * the thing that proves the entrance ran. It is kept, because a tween returning to this component
+   * is exactly what it catches. What the entrance animates is read here instead: every property any
+   * `@keyframes` block on this route declares, and the iteration count and direction every animated
+   * element in the hero computes, which is where a loop or a yoyo would show up in a CSS entrance.
+   *
+   * The `#gem-canvas` subtree is skipped for the reason the sweep above gives.
+   */
+  const declaredEntrance = (page: Page, selectors: readonly string[]) =>
+    page.evaluate((list: string[]) => {
+      const selectors = list;
+      const properties = new Set<string>();
+      // Every keyframe that declares `visibility`, as `name key value`. DW-106 put one there on
+      // 2026-09-24 and DW-125 took it out on 2026-09-25, so on this route the list is empty.
+      const visibilityFrames: string[] = [];
+      const walk = (rules: readonly CSSRule[]): void => {
+        for (const rule of rules) {
+          const keyframes = rule as CSSKeyframesRule;
+          if (typeof keyframes.name === 'string' && keyframes.cssRules) {
+            for (const frame of [...keyframes.cssRules] as CSSKeyframeRule[]) {
+              for (let index = 0; index < frame.style.length; index += 1) properties.add(frame.style[index]);
+              const visibility = frame.style.getPropertyValue('visibility');
+              if (visibility !== '') visibilityFrames.push(`${keyframes.name} ${frame.keyText} ${visibility}`);
+            }
+            continue;
+          }
+          const group = rule as CSSGroupingRule;
+          if (group.cssRules) walk([...group.cssRules]);
+        }
+      };
+      for (const sheet of [...document.styleSheets]) {
+        // A stylesheet this document cannot read is not one this repository wrote.
+        try {
+          walk([...sheet.cssRules]);
+        } catch {
+          continue;
+        }
+      }
+
+      const animated: string[] = [];
+      const iterations = new Set<string>();
+      const directions = new Set<string>();
+      for (const node of document.querySelectorAll<HTMLElement>('.home-container, .home-container *')) {
+        if (node.closest('#gem-canvas')) continue;
+        const style = getComputedStyle(node);
+        if (style.animationName === 'none' || style.animationName === '') continue;
+        animated.push(style.animationName);
+        iterations.add(style.animationIterationCount);
+        directions.add(style.animationDirection);
+      }
+
+      const sites = (selectors as string[]).map((selector) => ({
+        selector,
+        elements: [...document.querySelectorAll<HTMLElement>(selector)].map((node) => {
+          const style = getComputedStyle(node);
+          return {
+            name: style.animationName,
+            delay: Math.round(Number.parseFloat(style.animationDelay) * 1000),
+            fill: style.animationFillMode,
+          };
+        }),
+      }));
+
+      return {
+        properties: [...properties].sort(),
+        visibilityFrames: visibilityFrames.sort(),
+        animated: [...new Set(animated)].sort(),
+        iterations: [...iterations].sort(),
+        directions: [...directions].sort(),
+        sites,
+      };
+    }, [...selectors]);
+
+  /**
+   * The four rules `HomeLayout.scss` animates, each with the delays its elements carry, in the
+   * order the entrance plays them. Five until 2026-09-24, when the readout panel's 1600ms rule left
+   * with the panel (Operator ruling 2026-09-24, DW-110).
+   *
+   * **Nothing read the delays or the fill until 2026-09-21.** The settle in
+   * `hit-target-floor.pw.ts` and `accessibility-floor.pw.ts` waits on `ENTRANCE_SELECTOR`, which is
+   * the two link groups only, so the readout panel, `.home-role` and `.home-gem` were observed by
+   * nothing on the default door: dropping a delay, or dropping `both` from any of the five, shipped
+   * green. `both` is not a detail. It is the whole of the no-script guarantee the spec's No-script
+   * row and DW-42 rest on: the keyframe supplies only the `from`, so `backwards` is what holds an
+   * element absent through its delay and `forwards` is what leaves it present afterwards. Without
+   * it the hero flickers to its base state and back. Found by the Step-04 review.
+   *
+   * **Five, not six.** `.home-panel--name` carried a sixth until the same day; the retired timeline
+   * never named it and the 2023 stylesheet gave it no initial state, so it had been painting
+   * immediately and the entrance had started hiding the hero's name for 500ms.
+   *
+   * A selector matching a different number of elements is reported as a fixture failure rather than
+   * skipped, the way `REDUCED_MOTION_SELECTORS` above is read.
+   */
+  const ENTRANCE_SITES = [
+    { selector: '.home-gem', name: 'home-enter', delays: [500] },
+    { selector: '.home-role', name: 'home-enter', delays: [1300] },
+    // The five links took their own keyframe from 2026-09-24 (DW-106) and share this one again
+    // since 2026-09-25 (Operator ruling, DW-125): `inert` from script holds them now.
+    { selector: 'a.nav-link', name: 'home-enter', delays: [2000, 2080] },
+    { selector: '.home-panel--contact .contact-container a', name: 'home-enter', delays: [2200, 2280, 2360] },
+  ] as const;
+
   /** `transform` plus `opacity`, and the spellings a browser may echo back for either. */
   const ALLOWED = new Set(['opacity', 'transform', '-webkit-transform', 'translate', 'rotate', 'scale']);
+
+  /**
+   * No keyframe on the route declares `visibility` (Operator ruling 2026-09-25, DW-125). From
+   * 2026-09-24 the links keyframe's `from` held it (DW-106), and a link first painted at its reveal
+   * became Chrome's largest contentful paint on `/`; the links are held out of reach by `inert` from
+   * script now, and paint at `opacity: 0` through their delay, which LCP never counts.
+   */
+  const ALLOWED_VISIBILITY: string[] = [];
 
   test('writes no property outside opacity and transform, and no opacity ever goes back down', async ({
     browser,
   }) => {
-    const observed = await withMotion(browser, async (page) => {
+    const { declared, ...observed } = await withMotion(browser, async (page) => {
       await goTo(page, ROUTE);
-      return sweep(page, '.home-role');
+      const fromCss = await declaredEntrance(page, ENTRANCE_SITES.map((site) => site.selector));
+      const fromInline = await sweep(page, '.home-role');
+      return { ...fromInline, declared: fromCss };
     });
 
     expect(
-      observed.properties.length,
-      'the entrance wrote no inline property at all over four seconds, so either it did not run ' +
-        'or this sweep is reading the wrong subtree'
+      declared.animated.length,
+      'no element in the hero declares an animation at all, so either the entrance did not run or ' +
+        'this sweep is reading the wrong subtree'
     ).toBeGreaterThan(0);
+    expect(declared.animated, `the hero entrance is not the home-enter keyframe: ${declared.animated.join(', ')}`).toContain(
+      'home-enter'
+    );
+
+    const declaredOffending = declared.properties.filter((property) => !ALLOWED.has(property));
+    expect(
+      declaredOffending,
+      `a @keyframes block on ${ROUTE} animates a property EXPERIENCE.md:685-699 does not allow: ` +
+        `${declaredOffending.join(', ')}. The whole set declared was ${declared.properties.join(', ')}`
+    ).toEqual([]);
+    expect(
+      declared.visibilityFrames,
+      `a @keyframes block on ${ROUTE} declares visibility, which since DW-125 no keyframe there may, ` +
+        `because a link first painted at its reveal is what Chrome reports as the largest contentful paint`
+    ).toEqual(ALLOWED_VISIBILITY);
+
+    // **Every animated rule, with its delay and its fill.** This is the read the Step-04 review
+    // found missing: `both` is the no-script guarantee and three of the five sites were observed by
+    // nothing at all on this door.
+    const offSequence: string[] = [];
+    for (const site of ENTRANCE_SITES) {
+      const read = declared.sites.find((entry) => entry.selector === site.selector);
+      if (!read || read.elements.length !== site.delays.length) {
+        offSequence.push(
+          `${site.selector} matched ${read?.elements.length ?? 0} elements and the table names ${site.delays.length}, ` +
+            `so the fixture moved rather than the entrance`
+        );
+        continue;
+      }
+      read.elements.forEach((element, index) => {
+        if (element.name !== site.name) offSequence.push(`${site.selector}[${index}] animates "${element.name}" and the table says "${site.name}"`);
+        if (element.delay !== site.delays[index]) {
+          offSequence.push(`${site.selector}[${index}] waits ${element.delay}ms and the table says ${site.delays[index]}ms`);
+        }
+        if (element.fill !== 'both') {
+          offSequence.push(
+            `${site.selector}[${index}] fills "${element.fill}" rather than "both", so the keyframe's from is not held ` +
+              `through the delay and a document with no script flickers`
+          );
+        }
+      });
+    }
+    console.log(
+      `narrative: entrance sites ${declared.sites
+        .map((site) => `${site.selector} [${site.elements.map((element) => `${element.delay}ms ${element.fill}`).join(', ')}]`)
+        .join('; ')}`
+    );
+    expect(offSequence, `the entrance is off the sequence this file tables:\n${offSequence.join('\n')}`).toEqual([]);
+
+    // A loop and a yoyo, read where a CSS entrance would carry them. `EXPERIENCE.md:693-694` allows
+    // one orchestrated entrance per page load and nothing inside it that repeats.
+    expect(
+      declared.iterations,
+      `an animation in the hero repeats: iteration counts ${declared.iterations.join(', ')}`
+    ).toEqual(['1']);
+    expect(
+      declared.directions,
+      `an animation in the hero alternates, which is a yoyo by another name: ${declared.directions.join(', ')}`
+    ).toEqual(['normal']);
 
     const offending = observed.properties.filter((property) => !ALLOWED.has(property));
     expect(
       offending,
-      `the entrance animates a property EXPERIENCE.md:685-699 does not allow: ${offending.join(', ')}. ` +
-        `The whole set observed was ${observed.properties.join(', ')}`
+      `something in the hero writes an inline property EXPERIENCE.md:685-699 does not allow: ` +
+        `${offending.join(', ')}. The whole set observed was ${observed.properties.join(', ')}`
     ).toEqual([]);
 
     // A `yoyo` shows up here and nowhere else: the value walks back down between samples. The role
@@ -1129,10 +1713,21 @@ test.describe('the entrance touches only opacity and transform, and does not loo
         const looping = document.createElement('div');
         looping.className = 'planted-yoyo';
         container.append(looping);
+
+        // A keyframe declaring `visibility`, which no keyframe on the route may since DW-125.
+        const hiding = document.createElement('style');
+        hiding.textContent = '@keyframes planted-visibility { from { visibility: hidden } }';
+        document.head.append(hiding);
       });
 
-      return sweep(page, '.planted-yoyo');
+      const planted = await declaredEntrance(page, ENTRANCE_SITES.map((site) => site.selector));
+      return { ...(await sweep(page, '.planted-yoyo')), visibilityFrames: planted.visibilityFrames };
     });
+
+    expect(
+      observed.visibilityFrames,
+      'a planted keyframe declaring visibility was not seen, so the one-place read above reports a clean entrance for the wrong reason'
+    ).toContain('planted-visibility 0% hidden');
 
     expect(
       observed.properties,
@@ -1213,11 +1808,13 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
   /**
    * Every `.ts` and `.tsx` file under one of the Hub's own source roots, tests excluded.
    *
-   * Read from disk rather than from the browser deliberately. `app/providers.tsx` installs Lenis and
-   * `ScrollTrigger`, both of which register native `scroll` listeners of their own from inside
-   * `node_modules`, so a browser-side count of listeners cannot answer the question the rule asks,
-   * which is whether the Hub's own components do scroll work. `tests/e2e/hit-target-floor.pw.ts`
-   * already reads the tree from a spec file for the same kind of claim.
+   * Read from disk rather than from the browser deliberately. `TorusCanvas` registers `ScrollTrigger`
+   * on `/work` where motion is allowed, and `ScrollTrigger` registers native `scroll` listeners of
+   * its own from inside `node_modules`, so a browser-side count of listeners cannot answer the
+   * question the rule asks, which is whether the Hub's own components do scroll work. Until
+   * 2026-09-24 `app/providers.tsx` registered it on every route beside Lenis, which did the same;
+   * DW-36 deleted both. `tests/e2e/hit-target-floor.pw.ts` already reads the tree from a spec file
+   * for the same kind of claim.
    *
    * A missing root is reported rather than thrown on, and the caller is told how many roots existed,
    * so a rename cannot turn this sweep into a pass over nothing.
@@ -1272,9 +1869,9 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
 
     const hits = files.filter((file) => SCROLL_LISTENER.test(readFileSync(join(REPO_ROOT, file), 'utf8')));
 
-    // Named for what it measures. Lenis and ScrollTrigger both register native `scroll` listeners
-    // from `node_modules`, so this is not a claim that no listener exists on the page; it is the
-    // claim `EXPERIENCE.md:696` actually makes, that the Hub's own code registers none.
+    // Named for what it measures. `ScrollTrigger` registers native `scroll` listeners from
+    // `node_modules`, so this is not a claim that no listener exists on the page; it is the claim
+    // `EXPERIENCE.md:696` actually makes, that the Hub's own code registers none.
     expect(hits, `EXPERIENCE.md:696 forbids a raw scroll listener:\n${hits.join('\n')}`).toEqual([]);
   });
 
@@ -1300,6 +1897,8 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
     // And it does not fire on the things that merely read like it, which is what makes a clean
     // sweep meaningful rather than merely narrow, and which is why the case above is titled for
     // `addEventListener` rather than for scroll work in general.
+    // The second needle is the call `app/providers.tsx` made until 2026-09-24, kept as the shape of
+    // a library's own scroll event, which the rule does not ask about.
     expect(SCROLL_LISTENER.test("element.addEventListener('wheel', onWheel)")).toBe(false);
     expect(SCROLL_LISTENER.test("lenis.on('scroll', ScrollTrigger.update)")).toBe(false);
   });

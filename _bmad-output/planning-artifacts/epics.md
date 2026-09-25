@@ -298,7 +298,9 @@ structure in the Structural Seed (`apps/`, `packages/`, `contracts/`) does not e
   is stale until its next rebuild, deliberately.
 - **AD-5**: The Registry entry shape (see corrected FR-6). `status` accepts exactly four
   strings. The envelope carries `contract_version`; value change = minor bump, field rename =
-  major.
+  major *(amended 2026-09-24 by Operator ruling: a wording-only edit to a `description` or a
+  `name` is a patch, any other value change a minor, a field rename or removal a major; the
+  Registry moved to `1.2.0` that day)*.
 - **AD-6**: Registry membership is by application, not by repository.
 - **AD-7**: Each application is one independent deploy unit, addressed by host. One Dockerfile,
   one GHCR image, one compose service, one Traefik router per id, including the four inside the
@@ -537,7 +539,7 @@ the site working)
 - **UX-DR20**: **Framework band.** Bricolage `wdth 75`/700 uppercase at `--t-3xs`, framework
   names alternating `--token-text-secondary` and `--token-accent-muted`, bounded above and below
   by hairlines. Decorative rhythm; carries no state and is not a legend.
-- **UX-DR21**: **Plate mark.** Mono `--t-3xs`, `+0.16em` tracking, uppercase,
+- **UX-DR21**: **Plate mark.** Mono `--t-3xs`, ~~`+0.16em`~~ `--tr-label` tracking *(amended 2026-09-24 by Operator ruling: `DESIGN.md` sets the plate mark at `--tr-label`, `0.14em`, and the shipped mark follows it)*, uppercase,
   `--token-text-secondary`, sitting on a hairline. Section identity top-left, position or domain
   top-right. Appears on section heads carrying a genuine ordinal or domain, never by default.
 - **UX-DR22**: **Nav.** Wordmark left in Bricolage `wdth 75`/800; **two** mono uppercase links
@@ -565,7 +567,7 @@ the site working)
 
 - **UX-DR26**: `/projects` **301-redirects permanently to `/#suite`**, not deleted, this keeps
   every inbound link working and satisfies FR-2's "stable anchor **or** route" for free.
-  `ProjectCard` and `ProjectsHero` are retired with it.
+  `ProjectCard` and `ProjectsHero` are retired with it *(amended 2026-09-24 by Operator ruling: `ProjectCard` and its stylesheet were retired by Story 2-9, `ProjectsHero` by Story 2-14 with `/projects`)*.
 - **UX-DR27**: Header carries exactly two destinations: `Suite` (primary) and `CV` (secondary).
   Every header link competes with SM-1's ≥60% target.
 - **UX-DR28**: `/cv` is **built around the existing `WorkTimeline` component**, reused unchanged
@@ -666,7 +668,7 @@ the site working)
   background fill, a large block or a button ground; **no `#000` and no `#fff`** anywhere outside
   the print stylesheet; **no shadows at all**: depth is lightness (+4 step), then a hairline,
   then a strong rule, then type weight; **no gradients** anywhere; alpha is not a colour;
-  **opacity never expresses state**; six named z-levels only and an ad-hoc `z-index` is a defect.
+  **opacity never expresses state**; seven *(amended 2026-09-24 by Operator ruling, DW-96: this read "six"; the contract declares seven)* named z-levels only and an ad-hoc `z-index` is a defect.
 - **UX-DR45**: Typography rules: weight gap ≥300 units between any two roles; line-heights
   display `0.95–1.0`, headings `1.1`, body `1.6`, lede `1.55`; tracking display `-0.05em` through
   mono labels `+0.14em`, body never above `+0.05em`; measure `46ch` on descriptions and lede;
@@ -750,7 +752,7 @@ which the spine already names), and none is unaccounted for.
 | FR-14 | **deferred** | Spine § Deferred: v2 |
 | FR-15 | **deferred** | Spine § Deferred: v2 |
 | FR-16 | 1 | Token contract published |
-| FR-17 | 1 | Anchor consumes its own tokens (migration steps 1–2) |
+| FR-17 | 1 / 2 | Anchor consumes its own tokens (migration steps 1–2) · enforced by Story 2.34's conformance gate (2) *(amended 2026-09-24 by Operator ruling, Epic 1 retro action 4: the Epic cell read `1`)* |
 | FR-18 | 1 | **Epic 1's acceptance condition**: Anchor + `cs-tracker` |
 | FR-19 | 1 / 2 / 6 | Policy + versioned header (1) · `token_contract` + drift check (2) · machinery (6) |
 | FR-20 | 5 | |
@@ -813,7 +815,7 @@ product family. The Estate drops from 15 repositories to 11.
 **FRs covered:** FR-16, FR-17, FR-18, FR-31, FR-33, FR-19 *(policy and versioned header only)*
 **Also carries:** §5 archiving to the 11 waypoint · C-2 `digital-library` backup gap ·
 C-9 routing enumeration *(prerequisite of Epic 4, done here because it is cheap and de-risks the
-rebuild)* · C-8 standing AD-8 violation, tracked explicitly · O-3 daisyUI `var()` gate ·
+rebuild)* · C-8 standing AD-8 violation, tracked explicitly · O-3 daisyUI `var()` gate *(answered 2026-08-25 by Story 1-15, route A, `ops/daisyui-route.md`; amended 2026-09-24 by Operator ruling)* ·
 C-7 Playwright installation *(here rather than in Epic 2, because this epic's migration stories
 assert rendered output and AD-19 forbids claiming it)*
 **O-10: DECIDED 2026-08-15: the contract palette wins.** Cybercore's hardcoded values map to
@@ -964,7 +966,7 @@ writing what the box can hold, and a Visitor moving between `cuatro.dev` and
 `cs-tracker.cuatro.dev` sees two applications on different frameworks that visibly belong to one
 product family. The Estate drops from 15 repositories to 11.
 
-Twenty stories in four ordered groups: AD-17 gates and estate (1.1–1.6), discovery and defect
+Twenty-one stories *(amended 2026-09-24 by Operator ruling, Epic 1 retro action 5: this read "Twenty")* in four ordered groups: AD-17 gates and estate (1.1–1.6, and 1.21, added 2026-08-16 and executed first), discovery and defect
 prerequisites (1.7–1.10), the token contract (1.11–1.16), adoption (1.17–1.20). No story depends
 on a later one.
 
@@ -1555,7 +1557,7 @@ line-heights, six tracking values, `--measure`, nine spacing steps, **the `--tap
 floor**, three shape values, five stroke values, three elevation values, seven motion values and
 seven z-index values
 **And** it carries the header `Contract v1.0.0`
-**And** `--tap` is `44px` and is **the only length in the contract authored in `px`**, deliberately,
+**And** `--tap` is `44px` and is **the one length in the contract authored in `px` as a physical-size guarantee** *(amended 2026-09-24 by Operator ruling, `ops/token-contract.md` action 1: this read "the only length in the contract authored in `px`"; shape and stroke values are `px` as fixed geometry, and no reader-scaled length is `px`)*, deliberately,
 because a target floor is a physical-size guarantee that must not shrink when a reader reduces their
 root font size *(minted 2026-08-16, after three reference renders each invented it locally; review
 finding LOW-2)*
@@ -1739,7 +1741,9 @@ So that consuming the contract requires nothing but an HTTP GET from any languag
 serves a repository-root directory at that path. The mechanism below is the least-coupled option
 it survives the Epic 3 move to `apps/hub` and the Epic 4 proxy change without either of them
 re-deciding it. **If the Operator prefers Traefik serving `contracts/` directly in Epic 4, this
-story's mechanism is the interim and should say so.**
+story's mechanism is the interim and should say so.** *(amended 2026-09-24 by Operator ruling: the
+Operator does not. The Hub keeps serving `contracts/` after Epic 4, and this story's mechanism is
+final, not interim. `ops/contract-serving.md` § What Epic 3 and Epic 4 each do to this records it.)*
 
 **Acceptance Criteria:**
 
@@ -1826,7 +1830,8 @@ stylesheets
 → `--token-border-interactive`, `--page-padding` → `--page-pad`, `--font-mono` → `--f-mono`, and
 the five font aliases onto `--f-*` plus `--w-*`
 **And** `--hero-height` stays local, because a viewport height is a layout constant and the
-contract carries none
+contract carries none *(amended 2026-09-24 by Operator ruling, DW-122: nothing read it after
+2026-08-26, and it is deleted from `app/app.scss`; see Story 2.22)*
 **And** `--accent` → `--token-accent`, per **O-10, decided in favour of the contract palette**
 **And** `--accent-dim` is resolved **per call site across its fifteen**: `--token-accent-muted`
 where it is ornament, `--token-border-interactive` where it is a boundary a person reads state
@@ -1908,7 +1913,9 @@ than partially carried.
 (S-2), form controls take `border-radius: 0` (S-3), and the framework's control defaults are
 mapped onto the token roles (S-9)
 **And** if LiveView DOM patching visibly interrupts a transition, `phx-update="ignore"` is
-applied to the affected containers (S-8).
+applied to the affected containers (S-8). *(amended 2026-09-24 by Operator ruling: S-8 was not
+evaluated in this story and moves to Story 8.1, whose own criterion carries it, so Story 1.19 closes
+without it. `ops/cs-tracker-token-adoption.md` action 5 records the move.)*
 
 **Given** FR-18 is the acceptance condition for "the Ecosystem is visible"
 **When** a Visitor moves between `cuatro.dev` and `cs-tracker.cuatro.dev`
@@ -2110,8 +2117,10 @@ value validates.
 **And** a fixture entry violating either half fails validation, demonstrated rather than
 asserted.
 
-**Given** AD-3 makes the public hostname declared rather than derived, because three live
-hostnames already diverge from their ids
+**Given** AD-3 makes the public hostname declared rather than derived, because live hostnames
+already diverge from their ids *(amended 2026-09-24 by Operator ruling: this read "three live
+hostnames", a count dropped rather than updated, since five of the six `Live` entries diverged by
+then)*
 **When** the schema is written
 **Then** nothing in it derives a hostname from an id, and `live` is a free URL field.
 
@@ -2199,11 +2208,17 @@ now lives
 **And** the entry count and the repository count are different numbers, and nothing in the file
 or its validation treats either as validating the other.
 
-**Given** AD-3 gives each application exactly one kebab-case id equal to its repository name
+**Given** AD-3 gives each application exactly one kebab-case id, being its repository name
+lowercased, keeping exactly the hyphens that name carries and adding none
 **When** the ids are authored
-**Then** each id matches its repository name exactly
-**And** the public hostname is declared in `live`, never derived from the id: the three live
-hostnames that diverge from their ids are the reason the rule exists.
+**Then** each id is its repository name lowercased, so `StreamVault` gives `streamvault`, and
+`source` keeps the repository's real capitalisation so it resolves
+**And** the public hostname is declared in `live`, never derived from the id: live hostnames
+that diverge from their ids are the reason the rule exists *(amended 2026-09-24 by Operator
+ruling, recording AD-3's narrowing of 2026-09-03 here: this criterion read "exactly one
+kebab-case id equal to its repository name" and "each id matches its repository name exactly",
+which `Lumen`, `StreamVault`, `MaiCoin` and `Mutuo` cannot satisfy while ids stay lowercase; and
+it counted "the three live hostnames", a count dropped rather than updated)*.
 
 **Given** FR-10 makes the drill-through path the Registry's contract with Marcus
 **When** `source` is authored
@@ -2339,7 +2354,7 @@ and closes the automated half of open item **O-8**.
 `boundingBox()` measures at least 44×44
 **And** it fails against an element that meets the floor only through vertical padding on a plain
 inline element: the ~29px case that reads as compliant in the CSS and is not
-**And** A-5 is asserted alongside it: no horizontal scroll at 360px.
+**And** A-5 is asserted alongside it: no horizontal scroll at 360px. *(amended 2026-09-24 by Operator ruling, recording the rulings of 2026-09-06 in `ops/hit-target-floor.md`, KV-4 and KV-5: what shipped held each element at 44x44 or to a dated ledger row, and A-5 on elements rather than on `scrollWidth`. The 44x44 half holds exactly as written since 2026-09-23, when the ledger emptied and KV-4 retired; A-5 is still asserted on elements, and KV-5 retired with Story 2-33.)*
 
 **Given** `EXPERIENCE.md` says this floor is the single easiest one to miss while appearing to
 meet it, and must be verified by measurement rather than by reading the CSS
@@ -2505,7 +2520,7 @@ UX-DR45, so a changing figure does not shift the characters beside it.
 
 **Given** the plate mark is section identity, not decoration
 **When** section heads are authored
-**Then** a plate mark renders in mono `--t-3xs` at `+0.16em` tracking, uppercase, in
+**Then** a plate mark renders in mono `--t-3xs` at ~~`+0.16em`~~ `--tr-label` tracking *(amended 2026-09-24 by Operator ruling, as UX-DR21)*, uppercase, in
 `--token-text-secondary`, sitting on a hairline, with section identity top-left and position or
 domain top-right
 **And** it appears only on section heads carrying a genuine ordinal or domain: **not by
@@ -2613,7 +2628,7 @@ inbound link, bookmark and search result working
 
 **Given** two renderings of the same data violate NFR-9 the moment they disagree
 **When** the redirect ships
-**Then** `ProjectCard` and `ProjectsHero` are retired along with their stylesheets
+**Then** `ProjectCard` and `ProjectsHero` are retired along with their stylesheets *(amended 2026-09-24 by Operator ruling: `ProjectCard` and its stylesheet went earlier, with Story 2-9; `ProjectsHero` went here)*
 **And** no component outside the Suite Directory renders Registry data.
 
 **Given** `.lighthouserc.js` collects `http://localhost:3000/projects`
@@ -2711,7 +2726,7 @@ So that nothing on the site reads as a placeholder.
 **When** `/recommendation` is assessed
 **Then** it either ships **loaded with an attributed quote**, or the route is **not linked at
 all** from `/cv` or the footer
-**And** no unattributed and no placeholder state ships.
+**And** no unattributed and no placeholder state ships. *(amended 2026-09-24: `/recommendation` was retired outright by Operator ruling on 2026-09-11, Story 2-17, a third state beside these two; the route answers 404 and the PDF stays at its own URL)*
 
 **Given** `/celeste` is personal and converts nobody
 **When** it is placed
@@ -2733,7 +2748,7 @@ suppressed by the mechanism Story 2.1 installed
 ### Story 2.18: DELETED 2026-08-15 (migration step 3, retire the violet hairlines)
 
 **Deleted by the restyle scope change.** This story replaced four hairline values across two files.
-`ProjectCard.scss` is retired by Story 2.14 with `/projects`, and `WorkItem.scss` is redesigned by
+`ProjectCard.scss` is retired by Story 2.14 with `/projects` *(amended 2026-09-24 by Operator ruling: by Story 2-9, which retired `ProjectCard`)*, and `WorkItem.scss` is redesigned by
 Story 2.31, which absorbs the replacements. There is nothing left for the story to do: tokenizing a
 value in a file that is about to be rewritten is the wasted motion the scope change removes.
 
@@ -2741,7 +2756,7 @@ value in a file that is about to be rewritten is the wasted motion the scope cha
 in `sprint-status.yaml` changes meaning.
 
 **Where the work went:** `WorkItem.scss`'s two hairline values are acceptance criteria on Story
-2.31. `ProjectCard.scss` needs nothing, being retired.
+2.31. `ProjectCard.scss` needs nothing, being retired *(by Story 2-9; amended 2026-09-24 by Operator ruling)*.
 
 ---
 
@@ -2821,7 +2836,9 @@ Two of its constraints survive, relocated rather than lost:
 - **Every call site consumes a `--token-*` semantic role and never a raw `--c-*` palette value.**
   Now an acceptance criterion on each redesign story, and enforced permanently by Story 2.34's gate.
 - **`--hero-height` stays local**, being a layout constant rather than a design token; the contract
-  carries no viewport heights. Now a criterion on Story 2.29, which owns `HomeLayout`.
+  carries no viewport heights. Now a criterion on Story 2.29, which owns `HomeLayout`. *(Amended
+  2026-09-24 by Operator ruling, DW-122: deleted instead, having no reader; the contract still
+  carries no viewport height.)*
 
 **Number retained as a tombstone**, so no existing story key changes meaning.
 
@@ -2856,7 +2873,8 @@ consequence.
 **When** the site renders
 **Then** Story 2.34's conformance gate passes
 **And** `:root` in the compiled stylesheet carries only the contract's properties plus
-`--hero-height`
+`--hero-height` *(amended 2026-09-24 by Operator ruling, DW-122: `--hero-height` is deleted, so
+`:root` carries the contract's properties alone)*
 **And** the rendered result is asserted against the redesigned baseline captured by Story 1.10's
 harness, **not** against the pre-redesign build: the site is deliberately different by this point,
 so a byte-identical comparison would be asserting the wrong thing.
@@ -3057,7 +3075,7 @@ card-in-card, no full-viewport centred hero, no shadow anywhere, no gradient any
 or orb or glass layer, no four-column footer, no emoji used as an icon, no invented metric
 **And** accent occupies **≤3% of the viewport**, measured on the rendered homepage rather than
 inferred from the rules
-**And** per UX-DR44 every `z-index` in the tree resolves to one of the six named levels: an
+**And** per UX-DR44 every `z-index` in the tree resolves to one of the seven *(amended 2026-09-24 by Operator ruling, DW-96: this read "six")* named levels: an
 ad-hoc value is a defect, not a style choice.
 
 **Given** A-16 governs autoplay
@@ -3325,6 +3343,14 @@ system-wide and silently takes contrast with it
 **Then** the **dim-siblings-on-hover behaviour is retired**, and a panel that is not hovered is
 simply not hovered.
 
+**Given** touch is the primary user (NFR-5), and on a touch device a tap paints `:hover` and leaves
+it painted until the next tap lands elsewhere, so the nav and contact links at
+`HomeLayout.scss:131` and `:160` hold their hover colour after being tapped
+**When** hover is rebuilt
+**Then** every `:hover` rule in this component is gated on **`@media (hover: hover)`**, so a tap
+never leaves a stuck hover state
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-5)*.
+
 **Given** the 3D canvas is decorative and its content is stated in prose (A-14)
 **When** the canvas is rendered
 **Then** it is **`aria-hidden` and not focusable**.
@@ -3333,7 +3359,9 @@ simply not hovered.
 **When** the surface renders below 768px
 **Then** the panels **stack in reading order**: name, then imagery, then navigation, then contact
 **And** the readout panel is **omitted rather than rendered empty**, per § Empty edge, because an
-empty section reads as unfinished while an absent one reads as scoped.
+empty section reads as unfinished while an absent one reads as scoped
+*(amended 2026-09-24 by Operator ruling, DW-110: the readout panel is removed from the surface at
+every width, so this clause has no subject; the three panels that remain stack as above)*.
 
 **Given** the notch is a `clip-path` polygon of length literals and the contract mints no token for
 the notch size
@@ -3345,7 +3373,8 @@ does not reject the silhouette the design told it to keep *(review finding HIGH-
 from deleted Story 2.21)*
 **When** the redesign lands
 **Then** it stays local and is not moved into the contract, because the contract carries no
-viewport heights.
+viewport heights *(amended 2026-09-24 by Operator ruling, DW-122: nothing read it, so it is deleted
+rather than kept local, and the contract still carries none)*.
 
 **Given** the Three.js narrative's colours are JS values a custom property cannot reach
 **When** FR-37 coverage is assessed
@@ -3452,6 +3481,17 @@ transitioned, on `:focus-visible` only.
 `clamp(3.5rem, 14vw, 7rem)` being both off-scale and 56% above § Typography's `4.5rem` display cap,
 which Story 2.34's gate would reject as a type literal *(review finding LOW-6)*.
 
+**Given** the shipped entrance at `Error404.tsx:34-55` runs three `gsap.from` tweens, two of them
+spatial (`y: 20`, `y: 10`), with no read of the motion preference, and a GSAP duration is a JS
+literal the contract's 1ms collapse cannot reach
+**When** the entrance is rebuilt
+**Then** **either** it reads `useReduceMotion` and runs nothing under `reduce`, as `WorkHero.tsx:25`
+does, **or** it becomes a CSS keyframe on `opacity` alone at `--dur-minor` and `--ease-entrance`
+with `animation: none` under the query, as `GlitchText.scss` does, which takes reduced motion from
+the contract and GSAP off the surface; the second is preferred where it costs no more
+**And** every `:hover` rule on the exits is gated on **`@media (hover: hover)`**
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-2 and A-5)*.
+
 ---
 
 ### Story 2.31: Redesign `WorkItem`, and retire `HudLabel` into the Plate mark
@@ -3538,9 +3578,24 @@ and it **stays out of the accessible name**
 **And** this is recorded as the **single named exception** to "only `transform` and `opacity`
 animate", because a disclosure that jumps is worse than one that eases.
 
+**Given** the shipped close tween at `WorkItem.tsx:90-94` runs `power2.in` over 0.3s, which
+delays visible movement to exactly the frames after the click and reads as lag, and the review
+standard bars an ease-in on any UI element
+**When** the disclosure's tweens are rebuilt
+**Then** the close runs on an **ease-out** whose duration matches **`--dur-exit`** (165ms), and the
+open keeps its ease-out at a duration matching `--dur-major`
+**And** the height tween itself stays, as the single named exception above
+**And** every `:hover` rule on the trigger is gated on **`@media (hover: hover)`**, so a tapped row
+does not hold its hover border
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-4 and A-5. The contract's own
+`--ease-exit` is an ease-in too; that is DW-103, a contract change, and not this story's to make.)*
+*(amended 2026-09-24 by Operator ruling: the contract's `--ease-exit` is the same curve now,
+`cubic-bezier(0.33, 1, 0.68, 1)`, the CSS form of `power2.out`, published in Contract 2.0.0, so the
+close could read the token; nothing here requires it to.)*
+
 **Given** `rgba(91, 33, 182, 0.06)` at `WorkItem.scss:35` and `rgba(91, 33, 182, 0.3)` at
 `WorkItem.scss:145` are alpha values used as hairlines *(criteria relocated from deleted Story
-2.18; `ProjectCard.scss`'s three values need nothing, the file being retired by Story 2.14)*
+2.18; `ProjectCard.scss`'s three values need nothing, the file being retired by Story 2.14)* *(amended 2026-09-24 by Operator ruling: the file was retired by Story 2-9)*
 **When** the component is rebuilt
 **Then** each becomes a **flat token, never an `rgba()` with alpha**, because § Colors bars opacity
 from expressing state and both of these are alpha values doing exactly that
@@ -3566,15 +3621,15 @@ So that the suite framing holds on the secondary routes and not only on the home
 **Sequenced after Story 2.15, never inside it.** 2.15 reshapes the nav to two destinations, which is
 a structural change; this restyles the result. Absorbs `#fff` at `navbar.scss:10`.
 **The 44px floor is this story's acceptance condition, and it is measured rather than read off the
-CSS.** The shipped nav links measure roughly **16×27px**, which is the estate's worst instance of
+CSS.** The shipped nav links measure roughly **16×27px** *(amended 2026-09-24 by Operator ruling: the Story 2-8 sweep measured them at 38.41 to 98.13 wide by 22.00 tall on 2026-09-06; Story 2-32 repaired them and KV-4 retired on 2026-09-23)*, which is the estate's worst instance of
 the floor being missed while appearing to be met (§ Accessibility Floor, A-4).
 **Measured against:** `EXPERIENCE.md` § Chrome, `DESIGN.md` § Components → Nav and → The redesigned
 Hub surfaces, `RESTYLE-SPEC.md` § 1b Link.
 
 **Acceptance Criteria:**
 
-**Given** the shipped links measure ~16×27px, and **vertical padding on a plain inline element
-paints outward without growing the hit area**
+**Given** the shipped links measure ~16×27px *(38.41 to 98.13 by 22.00 when measured, as above)*, and **vertical padding on a plain inline element
+grows its box but not its line** *(amended 2026-09-24 by Operator ruling: this read that the padding "paints outward without growing the hit area"; the Story 2-8 probe measured 29.00 at `0.25rem` and 44.00 at `0.75rem`, and reaching 44px takes padding that overlaps the lines around it, `ops/hit-target-floor.md`)*
 **When** the nav links are rebuilt
 **Then** every nav link reaches **`≥44×44px` on both axes**, via `min-height` plus
 `display: inline-flex` plus `padding-inline` where the label is narrower than 44px
@@ -3595,7 +3650,18 @@ instantly and never transitioned, on `:focus-visible` only
 **Given** an underline that appears on hover is a width change and it reflows the row
 **When** hover is implemented
 **Then** hover **recolours the existing underline** to `--token-accent-hover` and **does not add
-one**, and nothing else moves.
+one**, and nothing else moves
+**And** every `:hover` rule in the chrome is gated on **`@media (hover: hover)`**, so a tapped nav
+link does not hold its hover state after the route changes
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-5)*.
+
+**Given** the sticky header sits on opaque `--token-bg` with nothing on its block-end edge, so
+content scrolling beneath it is cut by an invisible line
+**When** the header is rebuilt
+**Then** it closes beneath with a **`1px solid var(--token-border)` hairline**, which is the depth
+vocabulary `DESIGN.md` § Rules allows (lightness, then a hairline, then a rule), never an alpha
+edge, a shadow or a blur
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-6)*.
 
 **Given** the shipped `Container` uses `min(80%, 1920px)`, which spends 20% of a 360px viewport on
 margin before any padding applies, and is what makes the mobile floor fail
@@ -3685,6 +3751,18 @@ behaviour, so 2.16's work is not redone
 **When** the restyle lands
 **Then** the first entry still opens on load without a collapsed-height flash and the
 `useReduceMotion` hook still drops the GSAP height tween to zero duration.
+
+**Given** `WorkTimeLine.tsx:18-30` batches every row into a `y: 40` fade-up on scroll entry, which
+is the universal scroll-triggered fade-up `EXPERIENCE.md` § Motion bans, and it reads no motion
+preference
+**When** the timeline is restyled
+**Then** the batch is **deleted** and the rows simply exist, the route's one entrance being the
+hero's
+**And** this is ruled a **presentation change**, so the criterion above that preserves 2.16's
+structure, props and behaviour is not breached by it *(ruled 2026-09-15)*
+**And** the torus's scroll binding at `WorkHero.tsx:48` drops `scrub: 1.5` to **`scrub: true`**, so
+scroll-linked motion tracks the scroll rather than trailing it by up to 1.5s
+*(booked 2026-09-15 from `review-apple-design-2026-09-15.md` A-3 and A-7)*.
 
 **Given** this is the last redesign in the group
 **When** it closes
@@ -3918,6 +3996,14 @@ behind the proxy and are now requirements rather than accidents
 **Then** an image exists in GHCR built entirely in CI, with no compilation having occurred on the
 VPS.
 
+**Amended 2026-09-25 by Operator ruling 2026-09-24:** this story also answers
+`ops/token-contract.md` actions 4 and 5, closed pointing here. The pruned context scopes the
+install to the Hub's workspace, so the token generator's 62 packages the `deps` layer installs
+today, and nothing consumes, stay out of the image unless the Hub depends on them (action 4); and
+the image built in CI on every push runs the `deps` stage for real, the executing check
+`docker/__tests__/deps-stage.test.ts` cannot give by reading the Dockerfile as text (action 5).
+Record both as observed when the story closes.
+
 ---
 
 ### Story 3.4: Deploy by pulling a tag with `docker-rollout`
@@ -3938,6 +4024,11 @@ So that AD-8's standing violation is retired rather than tolerated.
 version
 **And** it **never runs a build**: no `--build` flag and no compile step reaches the box
 **And** the misleading step name is corrected, since the box is Hostinger.
+*(amended 2026-09-24 by Operator ruling, DW-94: the compose line now lives in `ops/deploy-remote.sh`,
+which the workflow's SSH step runs and which is the deploy key's forced command on the box, so this
+rewrite edits that script rather than the step. The sha stays the last word of the step's command
+string and the script keeps its path, so the `authorized_keys` line needs no change;
+`ops/contract-serving.md` § The deploy runs one script records the contract.)*
 
 **Given** AD-9 makes the Capacity Gate a mechanical check inside the deploy path
 **When** the workflow runs
@@ -4120,6 +4211,17 @@ Registry never presents a URL that does not resolve.
 **Then** the Vercel deployment stays live until the new hostname serves correctly, and only then
 is it retired.
 
+**Amended 2026-09-25 by Operator ruling 2026-09-24:** the leaving is done. Vercel was removed from
+the estate that day, ahead of the merge: `cs-tournament` is `Complete` in Registry 1.4.0, with no
+`live` value and no `Vercel` in its `tech`, and the Operator deletes its Vercel project once the
+Epic 2 merge has deployed (`ops/estate.md` § The Vercel decommission). The merge into
+`apps/tournament` and the placement on the box stay this story's. So the title's `and leave Vercel`
+names work already done, and the story key keeps it unchanged; the bcrypt criterion's trigger reads
+`When it is placed on the box`, its obligation unchanged; the hostname criterion takes the entry
+from `Complete` to `Live` with its `live` value in one change; and the last criterion, which kept the
+Vercel deployment live until the new hostname served, is superseded. Nothing serves the application
+in between, which FR-28 permits, the Registry naming no `live` URL for it meanwhile.
+
 ---
 
 ### Story 3.8: Record the Estate end state
@@ -4195,6 +4297,13 @@ was expected GA in September 2026. **Amended 2026-08-16:** two serving addresses
 existed on that date, so the temporary-second-box question has a partial answer in reality;
 this story records the observed topology from `ops/routing-inventory.md` as its starting point
 rather than assuming one box, and AD-22's re-check scope now includes that topology.
+**Amended 2026-09-24:** the list above is a copy and AD-22's own list in the spine is the scope.
+It has grown since this story was written: the two `cs-tracker` adoption probes joined it on
+2026-09-23, and dispatching `registry-verification.yml` and confirming it green joined it on
+2026-09-24 by Operator ruling (DW-85). Re-verify the spine's list, not this copy.
+**Amended 2026-09-25:** four more joined it by Operator ruling 2026-09-24: the `cs-tracker`
+accessibility probe, the estate automation-policy sweep, the upstream font pins, and the Tailwind
+pin with `TAILWIND_NAMESPACES`, each with a narrower trigger of its own.
 
 ### Story 4.2: Traefik with Host-matched routers and DNS-01
 Stand up Traefik v3.7 as the estate's proxy, with certificate issuance over DNS-01.
@@ -4216,6 +4325,12 @@ Move the estate's only application with no server-side component onto the new pr
 **Acceptance intent:** addendum §G names this the natural first candidate precisely because it
 verifies static serving without an application runtime in the way; the hostname keeps serving
 across the move.
+*(amended 2026-09-24 by Operator ruling, DW-94 and DW-90: `list-wheel`'s compose line now lives in
+that repository's `ops/deploy-remote.sh`, which its workflow's SSH step runs and which is its deploy
+key's forced command on the box, and a `test` job the deploy needs runs its suite first. A move that
+changes how `list-wheel` deploys edits that script rather than the step: the sha stays the last word
+of the step's command string and the script keeps its path, so the `authorized_keys` line needs no
+change. `ops/contract-serving.md` § `list-wheel`'s deploy, the same shape records the contract.)*
 
 ### Story 4.4: One Postgres, one database and one role per consumer
 Stand up the estate's single Postgres instance and migrate each consumer onto its own database.
@@ -4241,7 +4356,9 @@ Move the flagship onto the new proxy.
 1.21, so this story moves `cuatro.dev` onto Traefik on the rebuilt topology and does not repeat
 the host migration. `https://cuatro.dev/contracts/` still serves the published surface, since
 Satellites fetch it at build time; Story 1.16's serving mechanism is revisited here if Traefik
-should serve `contracts/` directly rather than the interim mechanism.
+should serve `contracts/` directly rather than the interim mechanism. *(amended 2026-09-24 by
+Operator ruling: Traefik does not serve `contracts/`. Story 1.16's mechanism is final, the Hub keeps
+serving the surface behind the new proxy, and this story revisits nothing there.)*
 
 ### Story 4.7: Migrate `analytics.cuatro.dev` and pin Umami
 Move the analytics instance and retire the estate's one inherited floating tag.
@@ -4627,6 +4744,14 @@ paints outward without growing the hit area.
 **Then** **seam S-8** applies: `phx-update="ignore"` on animated containers if patching visibly
 interrupts a transition
 **And** **seam S-7 stands**, the light theme having been dropped at adoption.
+*(amended 2026-09-24 by Operator ruling: three items from Epic 1 are booked here. S-8 was never
+evaluated in Story 1.19, so it is evaluated here first (`ops/cs-tracker-token-adoption.md` action 5).
+The AD-19 pass's 74 hit-target findings, F-1 to F-74, are this restyle's geometry. Its 38 transition
+findings, T-1 to T-38, are controls whose focus ring eases in, under Tailwind's `transition-colors`
+and the quick-link cards' `transition-all`, against `EXPERIENCE.md`'s rule that the ring is never
+transitioned (`ops/cs-tracker-accessibility-pass.md` action 1, mirrored as `ops/contract-adoption.md`
+action 3). All three are fixed here rather than earlier, and the accessibility probe's re-run after
+this story is the check.)*
 
 **Given** the vendored contract version must still be correct after the restyle
 **When** it is re-checked
@@ -4634,7 +4759,12 @@ interrupts a transition
 `token_contract` declaration still reads `1.0.0`, and **both are expected to be unchanged**
 **And** **Epic 2 does not move the contract**: `--token-scrim` ships inside `v1.0.0` and Story 2.28
 consumes it, so **no re-vendor is required and no version drift is expected here** *(corrected
-2026-08-15; this story previously anticipated a `v1.1.0` bump that does not occur)*.
+2026-08-15; this story previously anticipated a `v1.1.0` bump that does not occur)*. *(amended
+2026-09-24 by Operator ruling: the contract moved after all, to `v2.0.0`, which renamed the Tailwind
+adapter's spacing keys (DW-15) and retargeted `--ease-exit` (DW-103). `cs-tracker` was re-vendored at
+`v2.0.0` and its Registry `token_contract` reads `2.0.0`, so this criterion expects `v2.0.0` and
+`2.0.0`, unchanged by the restyle. The re-vendor is committed in `cs-tracker` and its push is the
+Operator's; the restyle has nothing to migrate, since `cs-tracker` wrote none of the renamed keys.)*
 
 ### Story 8.2: `digital-library` adopts the contract and is restyled (Svelte, SvelteKit)
 **Wave:** 1. **Depends on:** Epic 2, the Restyle Specification.
@@ -4887,6 +5017,12 @@ steps rather than one
 been verified**, and lands as **its own merge**
 **And** it is **never combined with either**, because three changes failing together leaves no way to
 tell which one broke it.
+
+**Amended 2026-09-25 by Operator ruling 2026-09-24:** the Vercel exit needed no merge of its own. It
+is a Registry change, `cs-tournament` going `Complete` in 1.4.0, which ships with Epic 2's merge,
+and the Operator deletes the Vercel project once that merge deploys (Story 3.7's amendment). One
+preceding step is left, Story 3.7's merge, and the restyle opens after it and still lands as its
+own merge. `Complete` renders, so FR-38 still applies.
 
 **Given** its family is not yet verified
 **When** this story opens

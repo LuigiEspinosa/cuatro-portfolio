@@ -91,14 +91,14 @@
     {
       "title": "space",
       "entries": [
-        { "key": "--spacing-2xs", "token": "--s-2xs" },
-        { "key": "--spacing-xs", "token": "--s-xs" },
-        { "key": "--spacing-sm", "token": "--s-sm" },
-        { "key": "--spacing-md", "token": "--s-md" },
-        { "key": "--spacing-lg", "token": "--s-lg" },
-        { "key": "--spacing-xl", "token": "--s-xl" },
-        { "key": "--spacing-2xl", "token": "--s-2xl" },
-        { "key": "--spacing-3xl", "token": "--s-3xl" },
+        { "key": "--spacing-s-2xs", "token": "--s-2xs" },
+        { "key": "--spacing-s-xs", "token": "--s-xs" },
+        { "key": "--spacing-s-sm", "token": "--s-sm" },
+        { "key": "--spacing-s-md", "token": "--s-md" },
+        { "key": "--spacing-s-lg", "token": "--s-lg" },
+        { "key": "--spacing-s-xl", "token": "--s-xl" },
+        { "key": "--spacing-s-2xl", "token": "--s-2xl" },
+        { "key": "--spacing-s-3xl", "token": "--s-3xl" },
         { "key": "--spacing-page-pad", "token": "--page-pad" },
         { "key": "--spacing-tap", "token": "--tap" }
       ]

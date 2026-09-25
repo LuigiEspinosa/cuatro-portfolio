@@ -278,12 +278,13 @@ describe('the policy table lists the estate', () => {
 // ---------------------------------------------------------------------------
 
 describe('the propagation counter', () => {
-  it('equals the number of event rows, 0 today', () => {
+  it('equals the number of event rows, 1 today', () => {
     // The literal is a pin: an event moves the row, the count line and this
-    // number in one change, as the record's runbook says.
+    // number in one change, as the record's runbook says. 1 from 2026-09-24,
+    // Contract 2.0.0 re-vendored into `cs-tracker` (Operator ruling, DW-15).
     const { count, events } = ledger(record);
     expect(count).toBe(events);
-    expect(count).toBe(0);
+    expect(count).toBe(1);
   });
 
   it('fails naming both when they disagree, and on a count that is not an integer', () => {

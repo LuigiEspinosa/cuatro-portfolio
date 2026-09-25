@@ -3,7 +3,15 @@
 Findings surfaced incidentally by a build run, real but not caused by the story that
 found them. Append only. Each entry names the spec that surfaced it.
 
+**Amended 2026-09-25 by Operator ruling 2026-09-24 (Epic 1 retrospective action 8):** every entry
+carries an id and a status. The 99 entries that had no id took DW-141 to DW-239 in file order, in
+place, as an `id:` line under `source_spec:`; every entry with no status took one; and each open or
+statusless entry was checked against the tree, those found resolved closing with a dated note. No
+id moved and no entry was deleted. Append only still holds for everything else: a new entry takes
+the next free id, one above the highest in the file, and a status line.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-141
   summary: >-
     `cuatro.dev` is not serving the Anchor. It presents a self-signed
     `CN=TRAEFIK DEFAULT CERT` and returns 404 at `/api/health`, so every browser
@@ -30,7 +38,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     the migration lands, which is the condition `ops/monitoring.md` covers under what
     closes the gate: an outage alert is not the induced test alert.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 1-21's move ended the outage on 2026-08-17, as DW-154 records: the apex serves
+    the Hub over a valid certificate and `/api/health` answers 200 with `"status":"ok"`.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-142
   summary: >-
     The estate does not serve from one address, which the AGENTS.md "one Hetzner
     box" framing and Story 1-7's routing enumeration both assume.
@@ -49,7 +63,15 @@ found them. Append only. Each entry names the spec that surfaced it.
     which is no longer true of the estate and is a `/bmad-project-context` refresh
     item rather than an edit to make by hand.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Since 2026-08-17 every `cuatro.dev` A and AAAA record points at `177.7.52.248`
+    (`ops/routing-inventory.md`), AD-22 has re-checked the serving topology since its 2026-08-16
+    amendment, and the `AGENTS.md` block has named one Hostinger KVM 2 box since the refresh of
+    2026-08-28 (`967abfd`).
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-143
   summary: >-
     AD-17a has no mechanical enforcement. The gate exists only as prose in a file
     that no script, workflow or source file reads.
@@ -62,8 +84,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     needs a check that reads the line, or the epic should state that it is an
     honour-system gate. This is an architectural question spanning several stories,
     not a defect in this record.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-144
   summary: >-
     `app/api/health/route.ts` is now a monitored contract, and neither the route nor
     its tests know it.
@@ -78,8 +102,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     monitor would report the Anchor down while it is healthy. A comment on the route
     and a test asserting the serialized form would close it. Left out of this story
     because its task list is confined to `ops/monitoring.md`.
+  status: open
 
 - source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  id: DW-145
   summary: >-
     Two live applications serve from `cuatro.dev` subdomains and appear nowhere in
     `ops/estate.md`, so the Estate record's fifteen applications is wrong and AD-6's
@@ -98,7 +124,15 @@ found them. Append only. Each entry names the spec that surfaced it.
     and that exclusion needs writing down. Story 2-4 confirms assumed statuses and is
     the natural place to land it, but the Estate record is wrong today.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The exclusion this entry asked to have written down is written: the Operator ruled
+    `covidmap` and `future-vizion` out of the Estate and the Registry on 2026-09-02, `ops/estate.md`
+    records the ruling and its reason (Story 2-4, `d21f0c7`), and retiring both subdomains is KV-3
+    in `ops/known-violations.md`.
+  status: done
+
 - source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  id: DW-146
   summary: >-
     `n8n.cuatro.dev` resolves to the box being decommissioned, is not in any planning
     artifact, and is the leading suspect for the `cuatro.dev` outage.
@@ -116,7 +150,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     automation running in an estate whose AD-17a gate reads `not-satisfied`, which is
     either a governance gap or evidence that n8n is personal rather than Ecosystem.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), closed by
+    disappearance.** The record had left the zone by 2026-08-17 and its box was decommissioned, as
+    DW-154 records, so the hypothesis can no longer be tested; `ops/routing-inventory.md` found the
+    name absent again on 2026-08-24.
+  status: done
+
 - source_spec: none, found during the Story 1.7 DNS pass on 2026-08-16
+  id: DW-147
   summary: >-
     The `cuatro.dev` zone carries several leftovers from previous providers that
     nothing in the plan accounts for.
@@ -131,8 +172,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     receiving. Confirm it receives before relying on it. Certificate Transparency
     also shows retired `pokemon.cuatro.dev` and `api.pokemon.cuatro.dev` names with
     no current DNS record, probably `poketracker-go`.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-148
   summary: >-
     Two containers answer to the DNS name `app` on the shared ingress network, and
     `cs-tracker.cuatro.dev` is reverse-proxied to `app:4000`. Pre-existing, not
@@ -150,8 +193,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     or an explicit unique alias in the shared Caddyfile, in the `cuatro-tracker`
     repository rather than this one. Story 1.21 avoided adding a third claimant by
     naming every Anchor service `anchor-*`, which is pinned in `docker-compose.yml`.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-149
   summary: >-
     Every hostname in the estate depends on a Caddyfile that lives inside another
     project's git checkout, where a routine `git reset --hard` would discard it.
@@ -166,8 +211,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     with Traefik and per-application routers, which dissolves the problem; until
     then the cheap mitigation is to move the shared Caddyfile out of any project
     checkout, or to add its blocks to a directory Caddy imports.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-150
   summary: >-
     No host in the estate sends Strict-Transport-Security, and Story 1.21
     deliberately did not add it.
@@ -181,8 +228,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     HTTP is strippable. Worth a small dedicated story covering the whole estate at
     once, including whether `includeSubDomains` is safe from the apex, which it is
     not while any Satellite could need to serve over HTTP for a challenge.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-151
   summary: >-
     `cuatro.dev`, `www.cuatro.dev` and `analytics.cuatro.dev` have no AAAA record
     while the three Satellites on the same box do.
@@ -197,8 +246,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     IPv6, by verifying a Satellite over IPv6 first and then adding the three records.
     **2026-09-13:** `wheel.cuatro.dev` joined the group, `A` only, placed by Story 2-25
     mirroring the Anchor's three by its own Ask First rule, so the close is four records.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-152
   summary: >-
     The `AGENTS.md` context block is stale in two ways that a `/bmad-project-context`
     refresh would fix.
@@ -215,7 +266,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     assigns this; it is repeated here because Story 1.21 changed the deployment model
     that the block describes.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 14).** Both
+    points are gone: the refresh of 2026-08-28 (`967abfd`) replaced the Hetzner line and the suite
+    figure, and the refresh of 2026-09-25 (`9dfd37c`) describes `docker/Caddyfile` as the Anchor's
+    fragment of the shared Caddyfile on the box, which no process here reads.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
+  id: DW-153
   summary: >-
     RESOLVED 2026-08-16 by AD-26. The spec's deferred item, that Story 4.2 must
     confirm Traefik's ACME renewal trigger is relative rather than a fixed day
@@ -231,7 +289,12 @@ found them. Append only. Each entry names the spec that surfaced it.
     here rather than by editing the closed spec, since a done spec is a record of
     what was known then.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8).** A record of
+    AD-26's narrowing, complete as written; the check it leaves is Story 4.2's DNS-01 proof.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-154
   summary: >-
     RESOLVED 2026-08-17. Three earlier entries are closed by the Anchor's move: the
     `cuatro.dev` outage, the estate spanning two serving addresses, and
@@ -262,7 +325,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     `ops/estate.md` still stands. Both were re-confirmed present in the zone on
     2026-08-17. Story 2-4 owns it.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8).** A record of
+    three closures, complete as written. The thread it left open, `covidmap` and `future-vizion`,
+    was ruled on 2026-09-02 and closes with DW-145.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-155
   summary: >-
     No test or CI job observes the serialized body of `/api/health`, which is the
     contract an external keyword monitor asserts, and no job reads a monitor's
@@ -280,8 +349,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     and a Vitest render of `RootLayout` with both env values stubbed asserting the
     script `src` and `data-website-id`. This is the same class of gap that produced
     incident 3 in Story 1-21 and hid the inverted monitor.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-156
   summary: >-
     `docker/Caddyfile` is a mirror of the file that actually serves, and nothing
     compares the two, so the repository's claim to describe the running system
@@ -298,8 +369,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     records that a `git reset --hard` in the `cs-tracker` checkout would erase every
     appended block, and Story 1-21 made `deploy.yml` do exactly that in the Anchor's
     own directory.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-157
   summary: >-
     The `www.cuatro.dev` monitor asserts a 301 status but cannot see the `Location`
     header, so a redirect to the wrong target, or a loop, reads UP.
@@ -312,8 +385,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     and no schedule. Closing it needs either a probe that can assert a response
     header, or the re-gather step proposed for the Caddyfile drift item above,
     capturing the observed `Location` alongside the status code.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-158
   summary: >-
     A Cloudflare API token with zone DNS edit rights on `cuatro.dev` was created for
     the Story 1-21 cutover and must be revoked. It is tracked only in a spec
@@ -330,7 +405,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     place. Until then it is an unrevoked standing credential with no consumer, the
     exact condition that story calls out as an unnecessary key.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), superseded.**
+    The Operator retained the token on 2026-08-17, as the next entry (DW-160) records, and the
+    live-credentials table in `ops/routing-inventory.md` carries it; the revoke instruction is
+    withdrawn.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-159
   summary: >-
     `analytics.cuatro.dev` is unmonitored, and Story 1-21 made that a worse trade
     than when the exclusion was written.
@@ -342,8 +424,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     silent metric loss with no baseline against which the gap would look anomalous,
     and the Hub's tracking script fails quietly when its host is down. One more
     monitor costs nothing on a free tier holding 6 of 50.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-21-restore-cuatro-dev-onto-the-hostinger-vps.md`
+  id: DW-160
   summary: >-
     SUPERSEDED 2026-08-17 by Operator decision. The entry above asking for the
     Cloudflare zone-edit token to be revoked is withdrawn: the token is retained
@@ -367,8 +451,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     living forever, and note that a token in a developer machine's `.env` has a
     different exposure profile from one in a secret store, which is a reasonable
     trade at this estate's size but should be a knowing one.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-161
   summary: >-
     The estate now has a hard dependency on Cloudflare for all ingress, and the
     documented recovery path runs through a firewall rule rather than DNS.
@@ -385,7 +471,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     `ops/routing-inventory.md` or a dedicated story, since the person needing it
     will be under time pressure.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The recovery is written down: `ops/bot-mitigation.md` § Recovering from this
+    firewall gives the two commands and why `systemctl stop` alone leaves every rule in place, and
+    `ops/routing-inventory.md` repeats the flush.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-162
   summary: >-
     Cloudflare's IP ranges are hardcoded into the origin firewall script and nothing
     refreshes them, so a new Cloudflare range silently breaks the estate.
@@ -398,8 +491,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     hardest shapes to diagnose. The cheap closure is a scheduled job that re-fetches
     the list, compares the etag, and either rewrites the script or alerts. It must
     run off the box per AD-18, or it shares the failure it is watching for.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-163
   summary: >-
     The estate now depends on a TLS certificate it does not control and cannot
     renew, and the one rule that would warn about it is still not configured.
@@ -414,8 +509,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     cycle, which is genuinely gone. It did not cover the edge certificate, which is
     new. `ops/monitoring.md` records this under the observed-state section. Worth
     deciding deliberately rather than discovering at expiry.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-164
   summary: >-
     Bot rule 2 matches self-declared user agents, so a crawler that lies is not
     caught, and the native controls that would not rely on self-declaration were
@@ -431,8 +528,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     protection is weaker than it reads, and Cloudflare retires the legacy single
     toggle on 2026-09-15 in favour of independent Search, Agent and Training
     categories, so this should be revisited before that date rather than after.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-165
   summary: >-
     Authenticated Origin Pulls was never considered as an alternative to the
     hardcoded Cloudflare IP allowlist, and it removes the maintenance problem the
@@ -450,8 +549,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     is simply absent from the record. Worth evaluating alongside the range-refresh
     job rather than instead of it, since Caddy would need `client_auth` configured
     and that touches the shared ingress.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-166
   summary: >-
     The Origin CA private key has no backup, no recorded fingerprint, and no
     reprovisioning procedure, and losing it now takes every hostname down with no
@@ -469,8 +570,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     secrets, and write the reissue procedure next to the recovery commands. Note the
     certificate is valid for fifteen years, so the person who needs this will not be
     the person who set it up.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-167
   summary: >-
     Proxy defaults were checked ad hoc rather than swept, and one payload-altering
     feature was found only by accident.
@@ -487,8 +590,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     of this kind carries nothing else. A recorded sweep of what the proxy turns on by
     default, with the current value of each, belongs in `ops/` before Epic 2 ships
     anything that depends on the rendered payload.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-168
   summary: >-
     Three dated commitments now exist with no mechanism that will surface them, in a
     file the repository itself records as read by nothing.
@@ -501,8 +606,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     The nearest one is four weeks out. AD-22 already establishes a bounded re-check
     for settled inputs and would be the natural home for the first two, which is a
     smaller change than building a reminder mechanism.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-bot-mitigation-on-the-four-live-subdomains.md`
+  id: DW-169
   summary: >-
     `sprint-status.yaml` carries a `story_location` pointing at a directory that does
     not exist in this checkout.
@@ -514,7 +621,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     only for its own status transitions. Left unfixed here because the spec's frozen
     boundaries forbid this story writing that file beyond the workflow's own sync.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** `d4404ee` corrected it on 2026-08-25, and `sprint-status.yaml:53` reads
+    `c:/CuatroEcosystem/cuatro-portfolio/_bmad-output/implementation-artifacts`.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-170
   summary: >-
     The Capacity Gate binds only the Anchor's own deploy workflow, so it is not
     reachable at the moment a genuinely new application is placed.
@@ -539,8 +652,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     `ops/capacity-threshold.md` § What this record does not claim. The three Satellites still
     deploy from their own repositories and never call the checker, so every id Epic 4 places
     is still outside its reach, and that is the half this entry now waits on.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-171
   summary: >-
     `status: open` means yes to every id, and nothing ever compares `reading` against
     `threshold`.
@@ -552,7 +667,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     `threshold: banana` would open it. Story 1-6 must define what `open` actually checks
     and what shape a threshold takes, rather than inheriting this placeholder.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 1-6 defined both: `ops/capacity-gate.mjs` refuses an open gate whose
+    `threshold` names no positive load15 figure and one whose recorded `baseline` does not sit below
+    it, and its header says why no live reading is compared (`:33-47`).
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-172
   summary: >-
     A red CI run does not stop a deploy, because `ci.yml` and `deploy.yml` trigger in
     parallel on a push to `main`.
@@ -564,7 +686,25 @@ found them. Append only. Each entry names the spec that surfaced it.
     caused by story 1-4, which added a gate inside `deploy.yml` precisely because a check
     in `ci.yml` would not have blocked anything.
 
+    **Ruled 2026-09-24, Operator ruling 2026-09-24 (`ops/known-violations.md` Pending Operator
+    action 2): not a violation to admit, and it closes when the eight checks, the seven `ci.yml` jobs
+    and Lighthouse, are made required status checks on `main` at the Epic 2 merge.** `main` takes a
+    change only through a pull request with admins included (observed through the API on 2026-09-24,
+    with no required check yet), so a red required check then holds the merge, and with it the push
+    that fires the deploy. **Owner: the session that merges Epic 2.** The entry stays open until that
+    setting is observed.
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24, before the merge so that the merge itself is
+    gated.** `PATCH .../branches/main/protection/required_status_checks` set `strict` false and eight
+    checks, `test`, `tokens-contract`, `fonts-contract`, `contract-purity`, `registry-schema`,
+    `rendered-output`, `literal-conformance` and `lighthouse`, each pinned to the GitHub Actions app
+    (15368). Read back at 2026-09-25T08:22:04Z: all eight listed, `strict` false, `enforce_admins`
+    on, force pushes off, the rest unchanged. `ops/known-violations.md`, `ops/contract-adoption.md`
+    and `AGENTS.md` carry the observation.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-173
   summary: >-
     `placements` is self-serve: the same commit can add an id and deploy it, with no
     review requirement.
@@ -575,7 +715,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     on `ops/capacity-gate.yml` would make widening the gate a reviewed act, which is what
     a fail-closed control needs on a one-operator estate.
 
+    **Closed 2026-09-24 as tolerated, on the Operator ruling of that day (`ops/known-violations.md`
+    Pending Operator action 2), in the DW-94 package's records commit.** One Operator merges every
+    change to `main`, through a pull request, so widening `placements` is already a reviewed act, and
+    no `CODEOWNERS` entry is added. It reopens the day a second person can merge to `main`.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-174
   summary: >-
     `deploy.yml` has no `concurrency` group, so two pushes to `main` can race the same
     `git reset --hard` on the box.
@@ -587,7 +734,18 @@ found them. Append only. Each entry names the spec that surfaced it.
     cheap fix in the meantime is a `concurrency` group plus pinning the reset to
     `github.sha`.
 
+    **Closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`, commit `b0aeaff`.**
+    `deploy.yml` carries `concurrency: deploy` with `cancel-in-progress: false`, so runs queue rather
+    than overlap, and the reset moved into `ops/deploy-remote.sh`, which resets the box to the sha the
+    run was given rather than to `origin/main`, so each run deploys the commit its own gate step
+    checked. `ops/__tests__/deploy-remote.test.ts` pins the group and resets a scratch checkout to a
+    commit behind `origin/main`, where it stays. `list-wheel`'s workflow keeps the hazard until its
+    own half of DW-93 lands.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  id: DW-175
   summary: >-
     The capacity CSV records no core count and no `MemTotal`, so a box resize mid-week would
     silently change what every "share of the box" figure means, and container RSS has no
@@ -603,8 +761,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     incompatible halves. The cheap version, if this recurs, is a `note` row carrying
     `cores=$(nproc)` once per run, which is schema-compatible, plus a close-out assertion that
     the run saw exactly one distinct value.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  id: DW-176
   summary: >-
     The sampler's append is unguarded by any lock, and the day-file header is a check-then-write,
     so two runs meeting at a UTC midnight boundary could truncate a file that already holds
@@ -619,8 +779,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     header creation and the append. Left alone because changing the sampler mid-week means
     reinstalling the thing being measured, and the observed risk over one week on one timer is
     very low.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-capacity-measurement-week.md`
+  id: DW-177
   summary: >-
     The sampler assumes every container cgroup lives under `system.slice`, and silently counts a
     container as vanished if it does not.
@@ -634,8 +796,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     that is missing an application without anything looking wrong. A fallback search across
     plausible parents, or an explicit assertion at install time that every running container
     resolves to a cgroup, would close it.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-the-capacity-gate-exists-and-fails-closed.md`
+  id: DW-178
   summary: >-
     The capacity gate has no entry in the estate record, no README or AGENTS.md line, and
     `AGENTS.md` still states a test count of 38.
@@ -647,7 +811,15 @@ found them. Append only. Each entry names the spec that surfaced it.
     story 1-4 against the 38 recorded in the AGENTS.md block, which is managed by
     `bmad-project-context` and refreshed by it rather than edited here.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The `AGENTS.md` block has named the Capacity Gate and pointed at
+    `ops/capacity-threshold.md` since the refresh of 2026-08-28 (`967abfd`), `ops/estate.md` names
+    the gate where `list-wheel` was placed through it, and the suite figure is a dated measurement.
+    `README.md` still says nothing, which this entry counted as documentation debt only.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
+  id: DW-179
   summary: >-
     `anchor-umami` carries no healthcheck, which is a second live AD-8 breach in this
     repository, and `ARCHITECTURE-SPINE.md` asserts the opposite is already true.
@@ -666,8 +838,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     breach is tolerated, and no story has taken that ruling. Either it is ruled and promoted
     to the register, or the healthcheck is added, or `ARCHITECTURE-SPINE.md:128` stops
     claiming it is already true. Story 3.4 is the natural forcing point.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
+  id: DW-180
   summary: >-
     Two of the four places that mention the AD-8 violation still resolve it through the
     string "Story 1-9" rather than through `ops/known-violations.md`, so the register is
@@ -687,8 +861,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     anyway, and have the `bmad:context` refresh replace "tracked in story 1-9" with the
     register path. That refresh is already queued by the earlier entry about the stale
     "one Hetzner box" line.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-181
   summary: >-
     RESOLVED 2026-08-24 by observation. The Cloudflare edge certificate renewed. The
     earlier entry asking whether the estate would find out if it did not renew is
@@ -727,7 +903,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     be the same job. Recorded here because a dated observation that renewal works is
     worth more than the open question it replaces.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8).** A dated
+    record of one renewal, complete as written. The question it leaves, whether the estate would
+    notice a failed renewal, stays with DW-163.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-182
   summary: >-
     `library-backup.sh` has aborted on line 13 every night since 2026-07-31. A valid
     snapshot is still written, so `digital-library` does have a nightly local backup,
@@ -765,7 +947,13 @@ found them. Append only. Each entry names the spec that surfaced it.
     test, which is where that gets settled. Not fixed here because Story 1-7's pass is
     read-only.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Closed in full on 2026-08-24 by Story 1-8, as DW-192 records:
+    `ops/library-backup.sh` replaced the script and both bugs were fixed.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-183
   summary: >-
     No backup anywhere in the estate is offsite, and two of the four compose projects
     have no logical backup at all. Story 1.8 scopes only `digital-library`.
@@ -788,8 +976,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     comment rather than an observation. If it is real it is the estate's only offsite
     copy and it should be written into `ops/` with its retention and its restore
     procedure; if it is not real the estate has no offsite copy of anything.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-184
   summary: >-
     `analytics.cuatro.dev` is a live hostname with no application id, which AD-3 and
     AD-6 together do not allow for, and no Estate row. Story 2-4 territory.
@@ -807,7 +997,14 @@ found them. Append only. Each entry names the spec that surfaced it.
     current state is that a hostname the estate depends on maps to nothing. Story 2-4
     already owns the two Vercel hostnames and is the natural place to land this too.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The exclusion is written down: `ops/estate.md` records `analytics.cuatro.dev` as
+    self-hosted Umami, infrastructure the estate runs rather than an application the Registry
+    describes, so it takes no id (Story 2-4, `d21f0c7`).
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-185
   summary: >-
     The build-on-the-box breach is estate-wide, not Anchor-only. All four compose
     projects build their images on the serving two-core box, while KV-1 records only
@@ -854,8 +1051,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     image on 2026-09-13, so KV-1's scope paragraph and table were widened to carry it as a
     second half, retired by Story 4-3. The three Satellites are where they were, observed
     building and ruled on by nobody, and this entry stays open on them.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-186
   summary: >-
     A BitTorrent client and a third-party security agent both run on the serving box and
     appear in no planning artifact.
@@ -875,8 +1074,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     Hostinger's bundled agent, reachable from nowhere outside the box, so it does not
     reach a hostname. It is third-party software with host-level visibility that nobody
     in the planning record chose, which is worth a knowing decision rather than silence.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-187
   summary: >-
     `digital-library`'s box-only ingress override is untracked and NOT gitignored,
     unlike `cuatro-tracker`'s, so it is protected by nobody having run `git clean`
@@ -892,8 +1093,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     network and take `library.cuatro.dev` off the air with no error until the next
     request. One line in that repository's `.gitignore` closes it. This belongs in the
     `digital-library` repository rather than here.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-188
   summary: >-
     `cs-tracker.cuatro.dev` is the only live hostname whose Caddy site block sends no
     security headers, and its site label is an unresolved environment variable.
@@ -911,8 +1114,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     that indirection across or resolve it deliberately rather than discovering it. Both
     fixes belong in the `cs-tracker` repository. Recorded here because Story 1-7 is
     read-only and because `ops/routing-inventory.md` is the file Epic 4 rebuilds from.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-189
   summary: >-
     Two live third-party credentials sit in project `.env` files on the box that nothing
     in the estate had recorded: a `CLOUDFLARE_API_TOKEN` in `cuatro-tracker` and a
@@ -946,8 +1151,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     that exist only on this box, are in no repository and are backed up nowhere; losing
     the box loses all of them. Full list of names in `ops/routing-inventory.md` under
     "The variable names each project needs".
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-190
   summary: >-
     qBittorrent's WebUI is running on an auto-generated temporary password printed to
     the container log, with `WebUI\Address=*`. It is safe only because no port is
@@ -972,8 +1179,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     `QBITTORRENT_USER` and `QBITTORRENT_PASS` in that project's `.env` are static, so it
     is not obvious the application's own credentials still match. Belongs in the
     `cuatro-tracker` repository. Not touched here: Story 1-7 is read-only.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`
+  id: DW-191
   summary: >-
     Every service in the estate runs on a floating image tag, and no image on the box
     carries a registry manifest digest that a rebuild could pin to. Epic 4 rebuilds from
@@ -998,8 +1207,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     auditable after the fact. Making it reproducible needs either digests read from the
     registry, or the GHCR path AD-8 requires, which is Epic 3. Recorded so Epic 4 does
     not discover it while rebuilding.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  id: DW-192
   summary: >-
     RESOLVED IN CODE. Closes the code half of two entries from
     `spec-1-7-enumerate-the-deployed-routing-table-on-the-box.md`, identified below by
@@ -1058,7 +1269,12 @@ found them. Append only. Each entry names the spec that surfaced it.
     anywhere is offsite, and `cuatro-backup.sh`'s claim to complement a Hostinger weekly
     snapshot is still an unverified comment in a script.
 
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8).** A record of
+    Story 1-8's closure, complete as written. The estate-wide half it names stays with DW-183.
+  status: done
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  id: DW-193
   summary: >-
     No cron job on the box has its exit status monitored by anything. That is the actual
     reason the `library-backup.sh` failure survived 25 nights, and fixing one script does
@@ -1079,8 +1295,10 @@ found them. Append only. Each entry names the spec that surfaced it.
     proposed in this ledger: a scheduled job that reads the last line of each backup log,
     or a healthcheck ping the job makes on exit 0. It is `ops/monitoring.md`'s file and
     another story's decision, so it is recorded rather than taken here.
+  status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-an-offsite-backup-path-for-digital-library.md`
+  id: DW-194
   summary: >-
     The box now runs two different backup idioms, and `cuatro-backup.sh` is the one still
     uncommitted, unencrypted, unpruned by any reviewed code and local only. The three
@@ -1101,6 +1319,7 @@ found them. Append only. Each entry names the spec that surfaced it.
     `digital-library` and only `digital-library`, and because the same argument applies to
     `cs-tracker`'s and the Anchor's Postgres, neither of which has any backup at all. That
     is one story, not three, and it is not this one.
+  status: open
 
 ### DW-1: Nothing under `contracts/` identifies the folder to a repository that vendors it: no README, no source repository or commit, and no licence line.
 origin: spec-deferred 3a3801b1c64f
@@ -1115,16 +1334,35 @@ origin: spec-deferred 591fb1589fe3
 location: AGENTS.md:52-57
 source_spec: `spec-1-14-ci-enforces-the-contract-boundary.md`
 severity: low
-reason: AGENTS.md:52-53 reads "CI (.github/workflows/ci.yml) runs typecheck and tests only" against a file that now carries five jobs, "The full suite is 38 tests in roughly 45 seconds" against a suite this story leaves at 474, and AGENTS.md:55-57 reads "Playwright is not installed" against a rendered-output job that runs pnpm test:e2e. Pre-existing: stale since Stories 1-10 and 1-11. Every story since has recorded it as a Pending Operator action rather than fixing it, because the block is managed by bmad-project-context and edits inside it are replaced on refresh, which is why this story's boundaries forbid touching it. It needs one bmad-project-context refresh, not a per-story note.
-status: open
+reason: |-
+  AGENTS.md:52-53 reads "CI (.github/workflows/ci.yml) runs typecheck and tests only" against a file that now carries five jobs, "The full suite is 38 tests in roughly 45 seconds" against a suite this story leaves at 474, and AGENTS.md:55-57 reads "Playwright is not installed" against a rendered-output job that runs pnpm test:e2e. Pre-existing: stale since Stories 1-10 and 1-11. Every story since has recorded it as a Pending Operator action rather than fixing it, because the block is managed by bmad-project-context and edits inside it are replaced on refresh, which is why this story's boundaries forbid touching it. It needs one bmad-project-context refresh, not a per-story note.
+
+  Closed 2026-09-23, found done: the refresh this entry asks for ran twice. `4112ee8` (2026-08-27)
+  replaced all three claims: CI was named as its five jobs, the suite figure became 600 tests across
+  26 files, and "Playwright is not installed" became "Playwright is installed and `rendered-output`
+  is a blocking CI job". The `bmad-project-context` refresh of 2026-08-28, `967abfd`, rewrote the
+  block again (`Verified 2026-08-28 against c490f33`). Observed 2026-09-23 in `AGENTS.md` at
+  `304767f`: nothing describes CI as typecheck and tests only, Playwright is in the stack line
+  (`:9`) with the rendered-output job at `:64-67`, and the suite figure (`:53-56`, 890 tests across
+  34 files, measured 2026-08-29) is dated and says it is a rough expectation, not a number to assert
+  on; the suite ran 1,549 tests in 59 files on 2026-09-23. The same refresh stood as a Pending
+  Operator action in six `ops/` records, closed the same day as `ops/contract-serving.md` action 6
+  was: `token-contract.md`, `font-contract.md`, `rendered-output-harness.md`, `tailwind-adapter.md`,
+  `contract-purity.md` and `anchor-token-adoption.md`.
+status: done
 
 ### DW-3: No job in ci.yml declares a permissions block, so all five inherit the repository default GITHUB_TOKEN scope rather than the contents:read they each need.
 origin: spec-deferred 96247ee3936d
 location: .github/workflows/ci.yml
 source_spec: `spec-1-14-ci-enforces-the-contract-boundary.md`
 severity: low
-reason: .github/workflows/ci.yml declares no `permissions:` key at the top level and none on any of the five jobs. Every job here only reads the tree and runs a command, so `contents: read` is the whole requirement, and a single top-level block would close it for all five at once. The new contract-purity job's own comment claims that "nothing reaching this runner can redirect it", which is true of argv and of `env:` and says nothing about the token the runner hands the process. Pre-existing: the four jobs at b1e02da have the same gap, and this story's boundaries forbid touching them or any line of the file outside the job it adds, so closing it properly means one top-level key, which is a change to the file as a whole rather than to one job.
-status: open
+reason: |-
+  .github/workflows/ci.yml declares no `permissions:` key at the top level and none on any of the five jobs. Every job here only reads the tree and runs a command, so `contents: read` is the whole requirement, and a single top-level block would close it for all five at once. The new contract-purity job's own comment claims that "nothing reaching this runner can redirect it", which is true of argv and of `env:` and says nothing about the token the runner hands the process. Pre-existing: the four jobs at b1e02da have the same gap, and this story's boundaries forbid touching them or any line of the file outside the job it adds, so closing it properly means one top-level key, which is a change to the file as a whole rather than to one job.
+
+  **Closed 2026-09-24 with DW-87, on the Operator ruling of that day, commit `b589228`.** `ci.yml`
+  declares `permissions: contents: read` at the top, the one key this entry asked for, and it now
+  covers seven jobs. `ops/__tests__/workflow-hardening.test.ts` holds it there.
+status: done
 
 ### DW-4: Follow-up review still recommended for 1-14-ci-enforces-the-contract-boundary after the damping cap was spent
 origin: review-budget-followup
@@ -1163,8 +1401,8 @@ origin: spec-deferred a79a806f0a61
 location: app/app.scss:107
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: medium
-reason: app/app.scss:107 (body#work, body#projects), HomeLayout.scss:2 and error-page.scss:7 each paint #0a000f as a literal at a higher specificity than the base body rule, so the --token-bg this story wires onto --black-color is visible on the 404 surface and nowhere else. ProjectCard.scss:27,36,67, WorkItem.scss:35,145 and error-page.scss:9-10,28 carry the same shape of literal. Their mapping is rebaseline-2026-08-15.md section O-10 and it is assigned to UX-DR10 and the Epic 2 redesign, not to this migration step, so this is recorded rather than fixed. It matters because the story's user story is written at the pixel surface and the aliases are asserted at the custom-property surface, which is exactly the gap between "the Hub renders in the Ecosystem's visual identity" and what a visitor sees after this commit.
-status: open
+reason: app/app.scss:107 (body#work, body#projects), HomeLayout.scss:2 and error-page.scss:7 each paint #0a000f as a literal at a higher specificity than the base body rule, so the --token-bg this story wires onto --black-color is visible on the 404 surface and nowhere else. ProjectCard.scss:27,36,67, WorkItem.scss:35,145 and error-page.scss:9-10,28 carry the same shape of literal. Their mapping is rebaseline-2026-08-15.md section O-10 and it is assigned to UX-DR10 and the Epic 2 redesign, not to this migration step, so this is recorded rather than fixed. It matters because the story's user story is written at the pixel surface and the aliases are asserted at the custom-property surface, which is exactly the gap between "the Hub renders in the Ecosystem's visual identity" and what a visitor sees after this commit. Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`, the last of the surfaces this entry names: body#projects left with Story 2-14, WorkItem.scss's literals with Story 2-31, HomeLayout.scss's ground with Story 2-29 and error-page.scss with Story 2-30, and Story 2-33 deleted body#work, so no route paints #0a000f and every route paints the base rule's --token-bg. Observed 2026-09-23 in mcr.microsoft.com/playwright:v1.62.1-noble: tests/e2e/accessibility-floor.pw.ts lists no ring ground outside the three tokens on any route, and tests/e2e/cv.pw.ts and tests/e2e/contract-anchor.pw.ts read /work's body at --token-bg with no image.
+status: done
 
 ### DW-9: The retired display face is still preloaded on every route and the face that replaced it is not, so each page fetches roughly 20 KB it never paints and the first-paint width guarantee the preload exis
 origin: spec-deferred 295c0abf8f2c
@@ -1189,8 +1427,8 @@ origin: spec-deferred bc3c95f49531
 location: components/organisms/WorkItem/WorkItem.scss:144
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: medium
-reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord Amended 2026-09-06 by Story 2-9: half of this defect is gone with the component that carried it. ProjectCard.scss:66 was deleted when the Suite Directory replaced the card grid, so the location above moves to the surviving half, WorkItem.scss:144 on /work, which is unchanged and still at 2.56:1. The entry stays open on that half. The Suite Directory renders no tech chip at all: its tech line is unfilled mono text at --token-text-secondary, so the replacement did not reproduce the defect.
-status: open
+reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord Amended 2026-09-06 by Story 2-9: half of this defect is gone with the component that carried it. ProjectCard.scss:66 was deleted when the Suite Directory replaced the card grid, so the location above moves to the surviving half, WorkItem.scss:144 on /work, which is unchanged and still at 2.56:1. The entry stays open on that half. The Suite Directory renders no tech chip at all: its tech line is unfilled mono text at --token-text-secondary, so the replacement did not reproduce the defect. Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found resolved: Story 2-31 (`780e586`, 2026-09-23) rebuilt the chip outlined and unfilled (`components/atoms/WorkItem/WorkItem.scss:209-230`), so its label reads `--token-text-secondary` on the page's ground, which `DESIGN.md` gives at 7.03:1, and `--accent-dim` left with Story 2-22's alias layer. The 7.03:1 is the design pair, not a reading of the rendered chip.
+status: done
 
 ### DW-11: Eight local @font-face declarations are resolved by nothing after this commit, not the one the record previously named, and the story that retires the local faces inherits that inventory plus the publ
 origin: spec-deferred 268fa6aabf8d
@@ -1242,8 +1480,8 @@ location: C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker
 source_spec: `spec-1-19-cs-tracker-adopts-the-token-contract.md`
 severity: medium
 reason: Observed 2026-08-27. `cs-tracker` has no `.github` directory; `mix precommit` is its only gate, and every case in `test/cs_tracker_web/token_contract_test.exs` asserts against the text of `assets/css/app.css` rather than against a compiled or rendered stylesheet. `ops/cs-tracker-adoption-probe.mjs` is deliberately not a CI job, because it needs a browser and a checkout of the other repository and neither is on a runner. So a route-A regression that leaves the source text untouched, which is exactly the shape a Tailwind or daisyUI bump takes, ships with everything green. This is the standing shape of the verification rather than a defect this story introduced, and it is the reason both probes' re-run is handed to the Operator. It is recorded here because the estate now has two adopted applications and one un-gated hand-run check between them, which is a growing exposure rather than a fixed one.
-note: Narrowed, not closed, 2026-09-12 by `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. The scheduled job now reads `cs-tracker`'s vendored `tokens.css` header off the remote daily and holds it to the Registry's `token_contract`, so a re-vendor that forgets the declaration is caught off the box. What stays open is the half above it, the rendered output: the job reads one header line over HTTPS and compiles nothing, so a Tailwind or daisyUI bump that leaves the source text untouched still ships green in `cs-tracker`, and the hand-run probe remains the only instrument for it.
-status: open
+note: Narrowed, not closed, 2026-09-12 by `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. The scheduled job now reads `cs-tracker`'s vendored `tokens.css` header off the remote daily and holds it to the Registry's `token_contract`, so a re-vendor that forgets the declaration is caught off the box. What stays open is the half above it, the rendered output: the job reads one header line over HTTPS and compiles nothing, so a Tailwind or daisyUI bump that leaves the source text untouched still ships green in `cs-tracker`, and the hand-run probe remains the only instrument for it. **Closed 2026-09-25 on Operator ruling 2026-09-24**, accepted as a stated limit: `cs-tracker` has no dependency automation, so a Tailwind or daisyUI bump there is always a hand edit, and a hand edit is already the adoption probes' re-run trigger in AD-22. `ops/cs-tracker-token-adoption.md` § Stated limits carries the row (`ad52501`) and the `AGENTS.md` pitfall names it (`9dfd37c`). The estate sweep AD-22 schedules from 2026-09-25 reads `cs-tracker`'s configuration paths, so it is what would see automation arrive. Reopen this entry if dependency automation is ever enabled in `cs-tracker`.
+status: done
 
 ### DW-15: `contracts/tailwind.css` maps the spacing scale onto named keys, which silently redefines Tailwind's `max-w-sm` through `max-w-2xl` from container widths to spacing values in every consumer.
 origin: operator-observed 2026-08-27
@@ -1280,7 +1518,21 @@ reason: |-
   restate the container scale explicitly beside the spacing scale, or drop the named
   spacing keys and require the numeric scale. Choosing between those is a contract
   decision, and the contract is versioned under AD-16.
-status: open
+
+  **Closed 2026-09-24 on the Operator ruling of that day, by
+  `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`, commit `40591cd`.** The
+  first shape: the eight keys are `--spacing-s-2xs` to `--spacing-s-3xl`, published as Contract
+  2.0.0, a MAJOR with no alias window, because an alias would have kept the collision. Compiled
+  with the pinned `tailwindcss`, `max-w-2xs` to `max-w-3xl` now read `var(--container-*)` at 18rem
+  to 48rem, where on the 1.0.0 adapter every one read `var(--s-*)` (DW-19's gate, red first, which
+  also holds the five container sizes no 1.0.0 key shadowed).
+  `cs-tracker` is re-vendored as its local commit `991d0f6`, and its own Tailwind 4.1.12 now
+  compiles `max-w-md` and `max-w-sm` to `var(--container-md)` and `var(--container-sm)`; the
+  Registry followed in `ae7ffb2`. What is left is the Operator's: pushing and deploying
+  `cs-tracker` and moving its Elixir version pin (`ops/contract-adoption.md` action 8), after which
+  the empty-state card this entry was found on wraps at 28rem on `cs-tracker.cuatro.dev`. Epic 1
+  retrospective action 1 closes with it.
+status: done
 
 ### DW-16: `bandit 1.11.1`, the HTTP server in front of `cs-tracker.cuatro.dev`, carries two HIGH advisories that are both remote-triggerable resource exhaustion.
 origin: operator-observed 2026-08-27
@@ -1321,8 +1573,20 @@ origin: spec-deferred dd2c45a1f4b2
 location: ops/cs-tracker-adoption-probe.mjs
 source_spec: `spec-1-20-record-the-adopted-contract-version-and-the-automation-polic.md`
 severity: medium
-reason: Observed 2026-08-27T22:47:57Z by `node ops/cs-tracker-adoption-probe.mjs` against `cs-tracker` at `32a466a`: 19 cases, 18 PASS, 1 FAIL, the failure reading `It runs in assets.setup: false`. `git -C cs-tracker show 32a466a -- mix.exs` removes `"cuatro.fonts"` from `"assets.setup"` and says why: the Dockerfile runs `assets.setup` before `COPY lib lib` and `COPY assets assets`, so the task could not be found there and the container build broke on 2026-08-27, while `setup` still reaches `assets.build`, which runs it. Not caused by this story and not its to reconcile: the pin, the record row and the `cs-tracker/AGENTS.md` lines are Story 1-19's, which is awaiting-operator. Recorded in `ops/contract-adoption.md` as Pending Operator action 7 and the pin left red deliberately rather than moved.
-status: open
+reason: |-
+  Observed 2026-08-27T22:47:57Z by `node ops/cs-tracker-adoption-probe.mjs` against `cs-tracker` at `32a466a`: 19 cases, 18 PASS, 1 FAIL, the failure reading `It runs in assets.setup: false`. `git -C cs-tracker show 32a466a -- mix.exs` removes `"cuatro.fonts"` from `"assets.setup"` and says why: the Dockerfile runs `assets.setup` before `COPY lib lib` and `COPY assets assets`, so the task could not be found there and the container build broke on 2026-08-27, while `setup` still reaches `assets.build`, which runs it. Not caused by this story and not its to reconcile: the pin, the record row and the `cs-tracker/AGENTS.md` lines are Story 1-19's, which is awaiting-operator. Recorded in `ops/contract-adoption.md` as Pending Operator action 7 and the pin left red deliberately rather than moved.
+
+  **Closed 2026-09-24 on the Operator ruling of that day, by
+  `_bmad-output/implementation-artifacts/spec-epic-1-close.md`, commit `048793f`.** The pin follows
+  the commit. `The build pipeline places them` requires `cuatro.fonts` in `assets.build`, and in
+  `assets.deploy` ahead of `phx.digest`, and no longer reads `assets.setup`. The rule is now the
+  exported `pipelineVerdict`, whose unit case holds `cs-tracker`'s post-`32a466a` alias block to a
+  pass and was red on the old rule first. `node ops/cs-tracker-adoption-probe.mjs` from a plain shell,
+  against `cs-tracker` at `991d0f6`, exited 0 at 19 of 19, closing `ops/contract-adoption.md` action 7
+  and `ops/cs-tracker-token-adoption.md` action 2. What is left is the Operator's: `cs-tracker`'s
+  committed `AGENTS.md:36-39` still says the task runs in `assets.setup`, and the Operator's
+  uncommitted rewrite of that file drops the line.
+status: done
 
 ### DW-18: Follow-up review still recommended for 1-20-record-the-adopted-contract-version-and-the-automation-polic after the damping cap was spent
 origin: review-budget-followup
@@ -1358,7 +1622,18 @@ reason: |-
   and that ordering belongs to DW-15's contract decision under AD-16 rather than here.
   Either shape is a Node test under `ops/__tests__/` running the same compile, with no
   browser, so it fits the runners the way `contract-purity` already does.
-status: open
+
+  **Closed 2026-09-24 on the Operator ruling of that day, by
+  `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`, commit `40591cd`.** The
+  second polarity, since DW-15's fix landed in the same commit:
+  `ops/__tests__/tailwind-container.test.ts` compiles one `@import` of the published adapter with
+  the pinned `tailwindcss` through its own `compile()` and holds `max-w-2xs` to `max-w-3xl`, and
+  since the review (`1a94020`) the rest of the container scale with them, `max-w-3xs` to `max-w-7xl`, to
+  `var(--container-*)` at Tailwind 4.3.3's widths. Run against the 1.0.0 adapter before the rename
+  the eight failed, each naming `var(--s-<size>)`, the five the old keys never shadowed passed, and
+  all thirteen pass on 2.0.0. It sits in the blocking `test` job, so no `ci.yml` job name moved. The transcript is in
+  `ops/tailwind-adapter.md` § The container-width gate. Epic 1 retrospective action 2 closes with it.
+status: done
 
 ### DW-20: A failed deploy is reported to nobody, and the monitoring that exists watches the site rather than the pipeline.
 origin: operator-approved 2026-08-28
@@ -1382,7 +1657,28 @@ reason: |-
   rather than done because this refresh's boundary was the AGENTS.md block, and a change
   to `deploy.yml` is a deploy path change that deserves its own story and its own
   verification.
-status: open
+
+  **Closed 2026-09-24 on the Operator ruling of that day (option B: a last `if: failure()` step that
+  opens a GitHub issue), by `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`,
+  commit `b0aeaff`.** Any failed step before it, the ref refusal and the Capacity Gate included,
+  runs `gh issue create` with the run's link, event, ref, sha and actor, under `issues: write` on the
+  deploy job alone; the issue reaches the Operator through the repository's watch notifications.
+  `ops/__tests__/deploy-remote.test.ts` pins it as the last step and the only condition in the file,
+  and a case there shows a failed compose failing the SSH session, which is what fails the job. **What
+  it does not do**: notice a deploy that never runs, which this entry's twelve days were. The one live
+  proof waits on the merge, since a dispatch needs the workflow on `main`: `ops/contract-serving.md`
+  Pending Operator action 8, a dispatch on `dev` that the first step refuses. Epic 1 retrospective
+  action 7 closes with this entry.
+
+  **Amended 2026-09-24 for `list-wheel`**, on the same ruling, by
+  `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+  `30e5e8b`. That repository's deploy reports the same way through a `report` job (`needs: [test,
+  deploy]`, `if: failure()`, `issues: write` on that job alone) rather than a last step, because a red
+  suite skips its deploy job whole and a step inside it would never run. So a red suite, the ref
+  refusal, the gate and a failed deploy each open an issue there, and the job that runs `npm ci`
+  holds no write scope. `ops/deploy-remote.test.mjs` there pins the job's wiring; its one live proof
+  is `ops/contract-serving.md` Pending Operator action 10.
+status: done
 ### DW-21: Four content defects of the same class as the one story 2-1 fixed still ship to the page from `content/work.ts`.
 origin: spec-deferred 2026-08-29
 location: content/work.ts:44
@@ -1456,7 +1752,13 @@ reason: |-
   that file is where a reader goes to run this harness. Deferred rather than done because the
   story 2-1 spec's scope was the two defects and their tests, and `ops/` is the estate's
   operational record rather than story output.
-status: open
+
+  Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found resolved:
+  `ops/rendered-output-harness.md` records the invocation beside the tolerance, `corepack enable`
+  first and `node_modules` and `.next` masked by named volumes, each with its reason, since
+  `cc03c0c` (2026-08-24), five days before this entry was filed. A plain run differs only in the
+  script name, `pnpm test:e2e` for `pnpm run test:e2e:update`.
+status: done
 
 ### DW-24: The font reachability pass reads `font-family` declarations only, so a family named through the `font` shorthand or defined only under a theme selector would read as unreachable.
 origin: spec-deferred 2026-08-29
@@ -1577,7 +1879,12 @@ reason: |-
   `application/json`, so the file's behaviour was right before the comment went stale. It is one
   line, and the natural place to take it is the next story that touches this spec for another
   reason, or Story 2.5 when the file stops being an empty envelope.
-status: open
+
+  **Closed 2026-09-24 on the Operator ruling of that day, by
+  `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commit `2e011d6`**, with the
+  ledger entry Story 2-5 filed beside it: the comment now says the `.json` row serves
+  `contracts/registry.json` and its schema (AD-4). No behaviour moved.
+status: done
 
 ### DW-30: The `test` job has been red on every CI run since 2026-08-28, on one case that asserts Windows path semantics and therefore cannot pass on the runner.
 origin: spec-deferred 2026-08-31
@@ -1619,6 +1926,7 @@ reason: |-
   about the separator rather than about `..`.
 status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  id: DW-195
   summary: >-
     AD-3 asserts an application id is lowercase kebab-case AND equal to its repository name.
     Four repositories are not lowercase, so both halves cannot hold and Story 2-5 must
@@ -1651,6 +1959,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  id: DW-196
   summary: >-
     `ops/routing-inventory.md` still carries four handovers to Story 2-4 as open questions, and
     one citation into `ops/estate.md` that Story 2-4 made false in both its line number and its
@@ -1669,9 +1978,20 @@ status: done
     diff to four files, so the repair belongs to a story that owns that file. The repair itself
     is what that file already prescribes for drifting citations: name the heading, give the
     dated line number second.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the not-operator doc items), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, in the package's records
+    commit.** Each handover in `ops/routing-inventory.md` keeps its 2026-08-24 text and gains a dated
+    amendment: the `covidmap` and `future-vizion` rows, the operator-actions row and the paragraph
+    that moved the question to Story 2-4 now point at KV-3 in `ops/known-violations.md`; the
+    `analytics` paragraph says Story 2-4 decided it on 2026-09-02 as infrastructure outside the
+    Registry; and the `cs-tournament` row's citation names the heading first, `ops/estate.md`
+    § Disposition of every application (`:92` then), and its dated amendment states `Live` at
+    `inclusivcup.vercel.app` with the resolving section at `:179` as of 2026-09-24.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  id: DW-197
   summary: >-
     `epics.md:2141` says Story 2-4 closes open items O-4, O-5 and PRD section 13 Q9. The
     decisions were taken and recorded, but none of the three registers that carry those items
@@ -1686,9 +2006,19 @@ status: done
     takes `wheel.cuatro.dev`, and both Statuses are confirmed. What is missing is the
     bookkeeping in the planning artifacts, which Story 2-4's Tasks did not cover and which its
     acceptance criteria forbid it from touching.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (mark O-4, O-5 and Q9 closed, in the
+    mechanical batch), by `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit
+    `ffcd8aa`.** `EXPERIENCE.md`'s open-items rows O-4 and O-5 are struck and read **Closed 2026-09-02
+    by Story 2-4**, `prd.md` § 13 Q9 is struck the same way, and the spine's deferred bullet on the two
+    hostnames records the closing, each with a dated note. **`ops/registry-inputs.md` is not edited**,
+    though the ruling's brief asked for its "open item O-5" to move to the past tense: the Operator's
+    ruling of the same day froze that file's body as a dated record, and its `:286` already says O-5
+    was closed there on 2026-09-02.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4-confirm-the-assumed-statuses-hostnames-and-tech-values.md`
+  id: DW-198
   summary: >-
     The `ops/registry-inputs.md` pointer Story 2-4 added to AGENTS.md sits inside the managed
     `bmad:context` block and will be dropped by the next `/bmad-project-context` refresh, with
@@ -1705,9 +2035,15 @@ status: done
     problem and a `/bmad-project-context` refresh is already booked as a reminder in
     `sprint-status.yaml` before epic 3. Filed so the two record pointers are re-checked after
     that refresh runs, not before.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24**, by the `bmad-project-context` refresh this
+    entry waited for (`9dfd37c`): the refreshed block keeps both Registry pointers,
+    `registry-schema.md` and `registry-inputs.md`, in the wording the Registry package gave them on
+    2026-09-24.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-199
   summary: >-
     `epics.md:2202-2204` still states Story 2.5's acceptance as "each id matches its repository name
     exactly", which four shipped entries deliberately do not satisfy after AD-3 was narrowed. The
@@ -1725,9 +2061,20 @@ status: done
 
     The substance is settled and recorded in `ARCHITECTURE-SPINE.md` and in stated limit 0 of
     `ops/registry-inputs.md`. What is missing is the bookkeeping in the planning artifact.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (Story 2.5 states the narrowed id rule),
+    by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's records
+    commit.** Story 2.5's id criterion in `epics.md` now gives each application one kebab-case id,
+    its repository name lowercased with exactly the hyphens that name carries, says `StreamVault`
+    gives `streamvault` and that `source` keeps the repository's real capitalisation, and carries a
+    dated amendment quoting both superseded phrases. The same pass dropped the hostname count from
+    that criterion and from Story 2.3's (the "three live hostnames" entry below). Story 2.4's
+    `list-wheel` hostname criterion, which this entry pairs with, is not touched here: no ruling of
+    the day covers it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-200
   summary: >-
     Nothing holds `contracts/registry.json` equal to `ops/registry-inputs.md`, and the Operator
     deferred the check on 2026-09-03. Filed here because the same argument DW-26 makes says an
@@ -1753,7 +2100,22 @@ status: done
     invisible. What stays open is the equality this entry is about: nothing reads
     `ops/registry-inputs.md` against the Registry, so a `tech` value corrected in one file and not the
     other is still invisible, and the job cannot see it either.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (`contracts/registry.json` is the only
+    source of Registry values; `ops/registry-inputs.md` is frozen as a dated historical record), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's records
+    commit.** The duplication is removed rather than guarded: `ops/registry-inputs.md` opens with a
+    dated banner saying it is frozen, that the Registry is the only source and wins where the two
+    differ, that a later value change edits the Registry alone with its evidence in its story record
+    and ledger closing, and that its stated limit 1 closes by the freeze; the banner names what
+    changed that day. The `AGENTS.md` pointer says the same, and `ops/estate.md`,
+    `ops/registry-schema.md` and `ops/registry-verification.md` carry dated notes where they sent a
+    reader to that record or cited the limit; `lib/__tests__/registry.test.ts` says the same in its
+    header, commit `2e011d6`. The first value changes made under the rule, the `poketracker-go` and
+    `mutuo` arrays, touched `contracts/registry.json` alone (`d9dbff6`). `ops/estate.md`'s disposition
+    table still lists the fourteen applications beside the Registry, held equal by nothing; it states
+    disposition, not Registry values, and the ruling does not reach it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   id: DW-83
@@ -1789,6 +2151,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-201
   summary: >-
     Story 2.6 inherits three description problems Story 2-5 found and was ruled not to fix: two of
     the six `EXPERIENCE.md` drafts contradict their repositories, a third contradicts the Registry
@@ -1821,6 +2184,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-202
   summary: >-
     `list-wheel` ships `RxJS` in its `tech` array against a README that states signals-first state
     and no source file that imports it. Found while confirming the description; not repaired,
@@ -1857,6 +2221,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-203
   summary: >-
     A description and the entry's own `absorbed_into` can contradict each other, and nothing reads
     the two together. `tcg-tracker` says the idea "is set to fold into" Cuatro Tracker while its
@@ -1886,9 +2251,24 @@ status: done
     entries as a set, the same shape as the three rules the gate already applies. The cheap first step
     is deciding whether `absorbed_into` means "has moved" or "will move", because the schema
     description says the first and two of the two entries carrying it mean the second.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (`absorbed_into` means "has been, or is set
+    to be, folded into"; no data change), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commit `5cea4f7`.** The
+    `absorbed_into` node in `contracts/registry.schema.json` says the field names the application
+    this one has been, or is set to be, folded into, that it alone does not say the code has moved,
+    and that `source` says where the code sits today; the gate's two refusals, dangling and
+    self-reference, say the same where they said "where its code now lives", since they cite AD-6
+    to the author at the moment of refusal. `ops/__tests__/registry-schema.test.ts` holds the node and
+    both refusals to the widened meaning (red on the pre-ruling tree for exactly that). AD-6 in the
+    spine carries a dated amendment, and `ops/estate.md` and `ops/registry-schema.md` carry dated
+    notes, in the package's records commit. Both carriers are now true as they stand, so no entry
+    changed and no gate rule was added. `cuatro-tracker`'s "five kinds" stays true of today, since
+    the `tcg-tracker` fold is intent.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-204
   summary: >-
     `contract_version` stayed at `1.1.0` while nine of the fourteen `description` values changed, and
     the field's own rule says a value change is a minor bump.
@@ -1908,9 +2288,22 @@ status: done
     Filed as pending Operator action 6 in `ops/registry-schema.md`. Worth settling once as a rule
     rather than per story. A standing case in `ops/__tests__/registry-schema.test.ts` pins the value
     as a literal, so whichever way it is settled the change is one line there beside the Registry.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (a wording-only edit to a `description` or
+    a `name` is a patch, any other value change a minor, a field rename or removal a major; bump to
+    `1.2.0`), by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commits `5cea4f7`
+    and `d9dbff6`.** The `contract_version` node in `contracts/registry.schema.json` states the
+    three-way rule, which the gate prints beside a refused version, held by a new case (`5cea4f7`).
+    `contracts/registry.json` reads `1.2.0`, one minor covering every value change since `1.1.0`:
+    Story 2-25's `list-wheel` `live` and `tech` and the day's `poketracker-go` and `mutuo` arrays,
+    with `lumen`'s trim, a patch on its own, riding in it; the standing pin moved with it
+    (`d9dbff6`). AD-5 in the spine carries a dated amendment, the conventions row and `epics.md`'s
+    AD-5 summary dated notes, and `ops/registry-schema.md` action 6 its Completed date, in the
+    package's records commit.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-205
   summary: >-
     Two descriptions still restate what `status` already carries, and were left because they were
     outside the set Story 2-6 was scoped to change.
@@ -1927,9 +2320,20 @@ status: done
 
     Left as a note for the next editorial pass rather than as a repair. Recorded so it is found named
     rather than rediscovered.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (Lumen drops its restatement of the
+    Archived status; connect-four-react keeps its clause), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commit `d9dbff6`.** `lumen` now
+    ends "It was never built: the repository holds no code." `connect-four-react` is unchanged, its
+    "retired as a standalone application" being what its next clause parses against. A new case in
+    `ops/__tests__/registry-schema.test.ts` refuses an `Archived` description that says "archived",
+    beside planted controls, one of them the retired clause it must let through; it failed on the
+    pre-ruling tree naming `lumen`. It reads the status word alone and leaves out `Live` and
+    `Complete`, whose words have honest uses in a description.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6-the-editorial-voice-pass.md`
+  id: DW-206
   summary: >-
     `tcg-tracker`'s description still rests on its id and nothing else, and Story 2-6 confirmed that
     there is no source anywhere to confirm it against.
@@ -1949,9 +2353,17 @@ status: done
     weakest values in the file, but they are inferences from different things: the array from PRD
     section 5.2's disposition, the description from the name. The Operator should overwrite either if
     the intent was something else, and nothing else will surface the question.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the description is confirmed as it
+    stands), by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's
+    records commit.** No Registry value changed. The description's source is now the Operator's
+    confirmation of 2026-09-24, recorded in the freeze banner of `ops/registry-inputs.md` beside the
+    table row that says it rests on nothing. The entry's `tech` array, stated limit 2 of that record,
+    was not part of the ruling and stays an inference from PRD section 5.2's disposition.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-207
   summary: >-
     Three `tech` arrays in `contracts/registry.json` are materially thinner than their projects'
     architecture guides, and none was changed because changing one is a change to
@@ -1969,9 +2381,26 @@ status: done
 
     FR-9 makes a wrong `tech` value a defect rather than a cosmetic issue, and stated limit 8 of
     `ops/registry-inputs.md` already records that the granularity ruling is applied unevenly.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (poketracker-go gains Python and
+    discord.py, Mutuo gains PostgreSQL, each proven from its repository's code; Lumen unchanged;
+    within the six-item guide), by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`,
+    commit `d9dbff6`.** `poketracker-go` reads `Go, PostgreSQL, pgx, sqlc, Python, discord.py`:
+    **observed 2026-09-24** by `gh api`, its `dev` branch at `67dc182` (the branch carrying the code,
+    as for the rest of the array) holds `bot/requirements.txt` declaring `discord.py==2.6.4`, there
+    since `3f1ea4c` (2026-07-16), and eight Python files under `bot/`, `bot/parser.py` the bot's
+    announcement parser among them; no `pubspec.yaml` exists, so the guide's Flutter is still a
+    plan and is not added. `mutuo` reads `Bun, Vue, Drizzle ORM, PostgreSQL, Caddy, Docker`:
+    **observed** the same day, `main` at `abd3b2d` holds `docker-compose.yml` with a `postgres`
+    service on `postgres:16-alpine`, there since `4cd0f3a` (2026-03-27), beside the `drizzle-kit`
+    scripts in `package.json` and a `DATABASE_URL` in `.env.example`. Its compose also runs Redis,
+    which is not added: the ruling names PostgreSQL, and a seventh value would break the guide.
+    `lumen` stays `Markdown, WSL2`. Both are In progress, so FR-35 renders neither and nothing on the
+    Hub moved.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-208
   summary: >-
     DW-29's stale comment at `tests/e2e/contract-serving.pw.ts:68-72` got staler: it says
     `contracts/registry.json` arrives in Story 2-5, which has now happened, and Story 2-5 was
@@ -1984,9 +2413,18 @@ status: done
 
     The comment is now wrong twice rather than once. Nothing fails because of it. Filed as a pointer
     so DW-29 is not read as still waiting on Story 2.5, which cannot take it.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the comment says the `.json` row serves
+    `contracts/registry.json`, which also closes DW-29), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, commit `2e011d6`.** The comment
+    above `EXPECTED_TYPE` in `tests/e2e/contract-serving.pw.ts` now says the `.json` row serves
+    `contracts/registry.json`, the estate's only App Registry, and its schema
+    `contracts/registry.schema.json` (AD-4), and keeps why the row has to exist. A comment only: the
+    spec's behaviour and the served surface are unchanged.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-209
   summary: >-
     AD-3 and `contracts/registry.schema.json` both say "three live hostnames already diverge from
     their ids". Against the Registry Story 2-5 shipped, five of the six `Live` entries diverge.
@@ -2003,9 +2441,21 @@ status: done
 
     Worth fixing when Epic 2's planning text is reconciled, since the count appears in the published
     schema as well as in the spine and is now checkable against a shipped file.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the places that say three live hostnames
+    diverge drop the count), by `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in
+    the package's records commit.** The count is dropped rather than updated, so it cannot go stale
+    again: AD-3's rule in `ARCHITECTURE-SPINE.md` (with a dated amendment), the `live`, `source` row
+    of `ops/registry-schema.md` (struck and labelled), and the criteria of Stories 2.3 and 2.5 in
+    `epics.md` (each with a dated amendment) now say live hostnames already diverge. **Corrected
+    here**: the published schema never carried the count, as this entry said it did; its `live` and
+    `id` descriptions say only that no hostname is derived. `ops/routing-inventory.md` keeps its own
+    count, which is dated ("three ... on 2026-08-24", "four on 2026-09-13") and scoped to the
+    `cuatro.dev` hostnames that table maps, so it stays true as written.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
+  id: DW-210
   summary: >-
     One case in the unit suite failed once and passed on three other runs of the same tree, and it
     was not identified because the run that failed had its output truncated. The suite gates
@@ -2030,6 +2480,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-211
   summary: >-
     Deleting `content/projects.ts` leaves three records citing it by line number, so each now
     points at a file that does not exist.
@@ -2050,6 +2501,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-212
   summary: >-
     `ProjectCard` labels every `source` link "// Github", but the Registry schema requires only that
     `source` resolve to a repository.
@@ -2071,6 +2523,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-213
   summary: >-
     `/projects` went from one card to six with no rendered-output coverage. The Playwright harness
     holds a baseline for `/work` only.
@@ -2083,8 +2536,14 @@ status: done
     Not worth a baseline of its own: Story 2.14 redirects `/projects` to `/#suite`, and Story 2.9
     builds the surface that replaces it. Filed so the gap is a known one rather than an assumed
     coverage.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 2-14 (`d75193e`, 2026-09-07) redirected `/projects` permanently to `/#suite`
+    and deleted `app/projects`, so no surface is left to baseline;
+    `tests/e2e/projects-redirect.pw.ts` holds the redirect.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-214
   summary: >-
     The projects hero reads "{count} PROJECTS" over data that can now be 1 or 0, so "1 PROJECTS" and
     "0 PROJECTS // ONGOING" are both reachable strings.
@@ -2097,9 +2556,14 @@ status: done
     `RESTYLE-SPEC.md`, and this story's boundary is the data source rather than the wording. Pick it
     up there, or when the hero is redesigned, rather than pluralising a line that is about to be
     replaced.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 2-14 (`d75193e`) deleted `ProjectsHero` with the route, so neither string is
+    reachable.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-215
   summary: >-
     `/projects` has no empty state. With no rendered entry it draws an empty `<ul>` under a hero
     reading zero.
@@ -2110,9 +2574,15 @@ status: done
 
     Filed rather than built because an empty state is a designed surface, and the surface that
     replaces this route is Story 2.9's Suite Directory. Deciding it twice is the waste.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** The route left with Story 2-14 (`d75193e`), and the Suite Directory that replaced it
+    treats zero rendered entries as a defect its suite fails on rather than a state to design
+    (`components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx:84`).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-216
   summary: >-
     `AGENTS.md` should record that exactly two sources may name `contracts/`, and that the Registry
     module may name only the Registry pair.
@@ -2125,9 +2595,15 @@ status: done
     Not written here because that list sits inside the `bmad:context` block, which is managed by
     `bmad-project-context` and replaced on refresh. It belongs in the refresh the board already
     schedules before epic 3, not in a hand edit that the next run deletes.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24**, by the `bmad-project-context` refresh
+    (`9dfd37c`): the block's Known pitfalls name the two sources, `app/scss/_index.scss` and
+    `lib/registry.ts`, and the Registry pair the second is held to, beside the other two
+    pinned-listing guards.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
+  id: DW-217
   summary: >-
     `SCANNED_EXTENSIONS` in `app/__tests__/anchor-contract.test.ts` carries no `.json`, so a JSON
     module under a shipped source root is invisible to both the consumer scan and the new
@@ -2144,6 +2620,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-218
   summary: >-
     `app/app.scss:92-102` breaches `DESIGN.md:558`: `width: 100vw` with `overflow-x: hidden` where
     the contract says widths are `100%` and the clip is `clip`. Thirty-six elements really do sit
@@ -2210,6 +2687,7 @@ status: done
   status: promoted to KV-5 in `ops/known-violations.md` on 2026-09-06
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-219
   summary: `DESIGN.md:645-648` states something the Story 2-8 probe measured to be false, and four
     later stories will read it as guidance.
   evidence: The passage says vertical padding on a plain inline element "paints outward without
@@ -2219,9 +2697,19 @@ status: done
     survives, since the real-world case really is ~29px, but the stated mechanism is wrong and
     Stories 2-9, 2-15, 2-30 and 2-32 all repair hit targets against it. Correcting a UX spine is
     outside a story that ships an instrument and changes no component.
-  status: open
+  note: |-
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** The
+    passage in `DESIGN.md` § Components now says vertical padding on a plain inline element grows its
+    box but not its line, that `0.25rem` measures about 29px, and that reaching 44px takes padding that
+    overlaps the lines around it, citing `ops/hit-target-floor.md`, with a dated note quoting what it
+    replaces; the rule to use `inline-flex` and `min-height` stands. The matching clause of Story
+    2.32's criterion in `epics.md` takes the same wording. Six more copies of the old mechanism, in
+    `EXPERIENCE.md`, `RESTYLE-SPEC.md` and two further `epics.md` lines, are filed as DW-136.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-220
   summary: `epics.md:3576` premises a Story 2.32 acceptance criterion on a measurement the Story
     2-8 sweep disproved.
   evidence: The criterion reads that the shipped links measure ~16x27px. The sweep measured the
@@ -2229,9 +2717,16 @@ status: done
     story is the first instrument in the repository positioned to correct that number, and it is
     left standing in the criterion that four surfaces are repaired against. Editing `epics.md` is a
     planning-artifact change, not an implementation one.
-  status: open
+  note: |-
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** Both
+    places Story 2.32 quotes the ~16x27px figure, its premise and its first criterion, keep the figure
+    and carry a dated note: the Story 2-8 sweep measured the links at 38.41 to 98.13 wide by 22.00 tall
+    on 2026-09-06, Story 2-32 repaired them, and KV-4 retired on 2026-09-23.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-221
   summary: `tests/e2e/harness.ts:24` still names only the Epic 1 consumers of the harness, now that
     a sixth spec imports it.
   evidence: The docstring reads "Stories 1.12, 1.17, 1.18 and 1.19 import this file", and
@@ -2242,6 +2737,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-222
   summary: The hit-target sweep does not skip controls inside an `inert` subtree or at
     `opacity: 0`, and whether it should is an Ask First decision the story did not take.
   evidence: `hit-target-floor.pw.ts` skips `aria-hidden`, `display: none` and zero-area nodes. An
@@ -2253,6 +2749,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-223
   summary: What shipped departs from the literal wording of Story 2.8's acceptance criteria in two
     places, and nothing records that where `epics.md` is read.
   evidence: `epics.md:2337-2338` requires that for every interactive element the assertion asserts
@@ -2263,9 +2760,17 @@ status: done
     follow from Operator rulings of 2026-09-06 and are argued in `ops/hit-target-floor.md`, KV-4 and
     KV-5, but no sprint change proposal or `epics.md` annotation carries them, so a later reader of
     the epic sees criteria that were not met verbatim and a board row reading done.
-  status: open
+  note: |-
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** Story 2.8's
+    first criterion in `epics.md` carries a dated note recording both departures and the rulings of
+    2026-09-06 behind them (`ops/hit-target-floor.md`, KV-4, KV-5), and where each stands: the 44x44
+    half holds exactly as written since 2026-09-23, when the ledger emptied and KV-4 retired, and A-5
+    is still asserted on elements rather than on `scrollWidth`, with KV-5 retired by Story 2-33.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-8-assert-the-44-44-hit-target-floor.md`
+  id: DW-224
   summary: `tests/e2e/contract-anchor.pw.ts:903` flakes on a live HTTP fetch and takes the blocking
     `rendered-output` gate red with it.
   evidence: CI run 34020245249, on commit `9f71fba`, failed with `Error: apiRequestContext.get:
@@ -2281,6 +2786,7 @@ status: done
     `test.retry` on the whole case, which would hide a real 404 as readily as a hang up.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-225
   summary: The `Live` status dot fills 4px with `--token-accent`, which F-8's gate greps for and
     expects zero of. It needs a named exemption in Story 2.34 exactly as `::selection` has one at
     F-11, or that gate fails on the taxonomy's load-bearing element.
@@ -2323,8 +2829,36 @@ status: done
     against the dot's selector rather than against `--token-accent`, for the same reason the alpha
     exception is written against the palette entry: an exemption naming the role would readmit
     accent fills everywhere.
-  status: open
+
+
+    **Not taken by Story 2-34, 2026-09-23, and re-booked.** That story built the gate its criteria
+    name, `ops/literal-conformance.mjs` in the blocking `literal-conformance` job, and it refuses
+    literals: a colour, a hand-written `44px`, a spacing or type value. F-8 is a rule about where a
+    role is used, `var(--token-accent)` as a fill, which no literal scan sees; it is in none of Story
+    2.34's acceptance criteria; and those criteria say the literal gate's permitted set "carries no
+    component-level entry at all", so the dot's exemption has no place in that list. The advice
+    above stands for whoever builds F-8: exempt the dot's selector, never the role.
+    **Owner: unassigned**, for an Operator ruling on which story carries F-8, with DW-95's
+    `::selection` beside it. **Trigger: that ruling.**
+
+
+    **Closed 2026-09-24 on the Operator ruling of that day (a unit test refusing an accent role as a
+    fill, the dot and `::selection` exempt by selector, never by role), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `81f4078`.**
+    `ops/__tests__/accent-fill.test.ts` reads every stylesheet git tracks, each `.scss` compiled by
+    Sass so a fill reached through nesting, a mixin or a variable is read under the selector that
+    ships, and refuses `--token-accent`, `--token-accent-hover` or `--token-accent-muted` as a
+    `background`, `background-color` or `fill`. Its two exemptions are a file and an exact selector,
+    `.suite-directory__dot` in `SuiteDirectory.scss` and `::selection` in `app/app.scss`, and each
+    has to be found exactly once, so an exemption cannot outlive its fill. A planted fixture shows it
+    refusing a fill in each of those shapes, at a state, in a keyframe, behind a `var()` fallback,
+    and on either exempt selector written in another file or in a list. It runs in the existing
+    `test` job, so no job name in `.github/workflows/ci.yml` moved. On the pre-ruling tree it failed,
+    the `::selection` exemption finding no fill. **Stated limit**: it reads the three roles the
+    ruling names; a palette name written into a component is not a role and is not read.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-226
   summary: >-
     `epics.md` books `ProjectCard` and `ProjectCard.scss` retirement to Story 2.14 in five places.
     Story 2-9 retired them, so five planning statements now describe work that is already done.
@@ -2342,9 +2876,17 @@ status: done
     `ProjectsHero` is **not** retired: it still renders on `/projects` above the directory, so the
     2.14 criterion is half true rather than wholly stale. Editing `epics.md` is a planning-artifact
     change and Story 2-8 set the precedent of filing rather than making one from inside a build.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** All five
+    places in `epics.md` keep their text and carry a dated note naming the story that did the work:
+    UX-DR26, Story 2.14's criterion, the Story 2.18 tombstone's two lines and the relocated criterion
+    in Story 2.31. `ProjectCard` and its stylesheet went with Story 2-9; `ProjectsHero` went with
+    `/projects` in Story 2-14, which since 2026-09-07 has made the criterion wholly true.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-227
   summary: >-
     On `/projects` the hero and the Suite Directory start at different left edges, because one is
     inside `Container` and the other deliberately is not.
@@ -2361,9 +2903,14 @@ status: done
     because its geometry is Story 2-33's. Filed rather than fixed because Story 2-14 redirects
     `/projects` to `/#suite`, after which the surface renders nothing and the misalignment cannot
     be seen. If 2-14 is descoped or delayed, this becomes visible work.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** Story 2-14 (`d75193e`) redirected `/projects`, so the two sections no longer share a
+    page, as this entry expected.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-228
   summary: >-
     Every Suite Directory link opens a new tab and none carries the external-navigation mark the
     contract declares as one of its three glyphs.
@@ -2379,9 +2926,21 @@ status: done
     states it: `DESIGN.md:658-663` specifies the Registry Entry as name, status, description, tech
     and links, and lists no mark. The alternative resolution is to drop `target='_blank'`
     altogether, which is a behaviour change `EXPERIENCE.md` does not ask for either.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (keep `target="_blank"`, add the
+    external-navigation glyph, hidden, and `opens in a new tab` in each link's accessible name), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `786e676`.** Both the
+    live and the source link end in the north-east arrow, U+2197 with the text-presentation selector
+    so no platform paints an emoji, in an `aria-hidden` span after the underlined label, in the link's
+    own colour and face; each is named by its visible label followed by `, opens in a new tab`, the
+    source link keeping A-10's `Source: <name>`. `SuiteDirectory.test.tsx` reads the markup and the
+    names beside a planted link carrying neither; `tests/e2e/suite-directory.pw.ts` reads the mark
+    painted, after and clear of the underline, in the link's colour and face, and each name off the
+    accessibility tree. `DESIGN.md`'s Registry Entry row and `EXPERIENCE.md`'s A-10 carry dated notes.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-9-the-suite-directory.md`
+  id: DW-229
   summary: >-
     `list-wheel`'s live link renders as `luigiespinosa.github.io`, which names the operator rather
     than the application and would collide with any second GitHub Pages entry.
@@ -2414,6 +2973,7 @@ status: done
   status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  id: DW-230
   summary: >-
     `DESIGN.md:310-314` attributes the 1.13:1 greyscale figure to the `Live` and `Complete` border
     pair, and the shipped border pair measures 1.773:1. The 1.13 is the text pair, exactly.
@@ -2434,9 +2994,18 @@ status: done
     Filed rather than fixed because editing `DESIGN.md` is outside Story 2-10 and the design
     documents are a spine: a value in one is changed deliberately, not as a side effect of a story
     that was measuring something else.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** The
+    sentence in `DESIGN.md` § Colors now gives the border pair **1.77:1**, with a dated note that it
+    read 1.13:1, which is the text pair, citing `ops/status-mark-axes.md`; the argument for the dot is
+    unchanged. The same figure beside the same claim in `EXPERIENCE.md` § Status mark, Story 2.10's
+    criterion in `epics.md` and AD-19 in the spine was outside the ruling's brief and is filed as
+    DW-137.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  id: DW-231
   summary: >-
     The Status mark is unasserted under `forced-colors`, where a user stylesheet or a high-contrast
     mode can override the border colour and the dot's fill together.
@@ -2452,9 +3021,16 @@ status: done
     deliberately does not cover, with no owner, rather than booking it to a story that does not
     exist. Story 2-26, the Hub's focus standard and manual accessibility pass, is the natural place
     to decide whether the estate makes a claim there at all.
-  status: open
+
+    Closed 2026-09-13 by Story 2-26, with the decision it asked for: the estate makes no claim
+    under `forced-colors` or a user stylesheet, because no requirement names the medium and a
+    claim nobody asked for is a gate nobody agreed to. Recorded in `ops/hub-accessibility-pass.md`
+    § Decisions, which is where the question restarts the day a requirement names it, and the
+    `ops/status-mark-axes.md` cell that booked it here now points there.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-10-assert-the-status-mark-s-three-structural-axes.md`
+  id: DW-232
   summary: >-
     Three Playwright spec files now carry their own copy of `goTo`, `plantStyle` and
     `EDGE_SLACK = 0.5` instead of importing them from `tests/e2e/harness.ts`.
@@ -2478,6 +3054,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-233
   summary: >-
     `epics.md:2508` specifies the plate mark's tracking one step wider than `DESIGN.md:686` does,
     and the reference mockup follows `epics.md` on its plate marks while following `DESIGN.md` on
@@ -2499,9 +3076,17 @@ status: done
     rather than fixed because `epics.md` is a planning artifact under a frozen approval and the
     design documents are a spine: a value in one is changed deliberately, through a sprint change,
     and not as a side effect of a story that was implementing it.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the mechanical batch; `DESIGN.md` wins on
+    values), by `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit
+    `ffcd8aa`.** UX-DR21 and Story 2.11's criterion in `epics.md` name `--tr-label` in place of the
+    struck `+0.16em`, each with a dated note, so the epic and the design agree with the shipped mark.
+    The mockup's `.plate` at `mockups/key-screens.html:117` is left at the wider figure: the brief
+    made it optional, and `EXPERIENCE.md` has the spines win over every mock.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-234
   summary: >-
     `EXPERIENCE.md:276` writes the premise opening as `Fifteen personal projects`, and
     `contracts/registry.json` holds fourteen entries. The shipped premise derives its number, so
@@ -2522,9 +3107,19 @@ status: done
     once across `ops/estate.md`, the Registry and `EXPERIENCE.md`, or to rewrite the canonical
     copy so it names no number and points at the derivation instead. Story 2-4 owns the
     reconciliation; this is filed as a sprint-change item rather than a silent correction.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the copy states no fixed count and says
+    the page derives it from the Registry), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** The
+    canonical copy in `EXPERIENCE.md` § The premise opens `[N] personal projects`, and a dated note
+    says it opened `Fifteen personal projects`, that the page derives `[N]` from
+    `contracts/registry.json` spelled out with the noun agreeing, and that it read `Fourteen` that
+    day. No second copy of the number is kept, and `Premise.tsx`'s "verbatim from its third word on"
+    still holds.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-235
   summary: >-
     `GlitchText.tsx:72` puts `aria-label` on a plain `<div>`, which is the one ARIA attribute that
     role prohibits, and hides the `<h1>` inside it. The home route therefore ships a page heading
@@ -2557,9 +3152,27 @@ status: done
     not evidence that the gate is red on `main`; it is a reason to look at `/work`'s accessibility
     score deliberately. Story 2-26, the Hub's focus standard and manual accessibility pass, is the
     natural owner of both.
-  status: open
+
+    Closed 2026-09-13 by Story 2-26. `GlitchText.tsx` now gives the wrapper `role='heading'` with
+    `aria-level` derived from its tag (`h1` 1, `h2` 2; `p` and `span` get neither), the label and
+    the inner `aria-hidden` untouched, so the home route carries a level-1 heading in the
+    accessibility tree and `aria-prohibited-attr` passes: Lighthouse 12.6.1 scores `/` at 1.00 on
+    accessibility over three runs. The `/work` observation is superseded by the same reading, 1.00
+    on all three runs, taken the way the gate takes it; the environments differ and the earlier
+    0.94 is left as the reading it was. Both are in `ops/hub-accessibility-pass.md` § Lighthouse
+    readings. The 404 carries the same defect on `.error-page__code`, a `<p>` with an `aria-label`,
+    which Lighthouse cannot audit on a 404 and which is finding F-12 there, Story 2-30's.
+
+    2026-09-14: the interim wrapper role is gone. Story 2-27 rebuilt `GlitchText` as a real `<h1>`
+    whose accessible name is its own text content, with no `aria-label`, `aria-hidden`, `role` or
+    `aria-level` on any node, which is the shape `EXPERIENCE.md:452-453` asked for and the fix
+    above stood in for. `tests/e2e/display-entrance.pw.ts` reads the tree as one level-1 heading
+    named `Luigi Espinosa` with nothing generic named; the screen-reader read is the Operator's,
+    pending action 4 in `ops/hub-accessibility-pass.md`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-236
   summary: >-
     `SiteFooter` is mounted in `app/page.tsx`, so the component named for the site ships on the home
     route only. Every other route still ends without a footer, and the next story to touch the region
@@ -2577,9 +3190,18 @@ status: done
     decide the mount point, and the placement cases in `app/__tests__/page.test.tsx` and
     `tests/e2e/premise.pw.ts` both pin the fragment shape that a move would change. Recording the
     decision now costs one docblock; rediscovering it costs a story.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (home-only by design), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `2327d75`.** The
+    docblock of `SiteFooter.tsx` now says `app/page.tsx` alone mounts it, by design, because
+    `EXPERIENCE.md` § The homepage: two paths, one destination draws the footer under the homepage's
+    Directory and nowhere else, so `/work`, `/cv`, `/celeste` and the 404 end without one, and that
+    `app/layout.tsx` would put the control on every route. A comment only: no rendered byte and no
+    per-surface count moved.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-237
   summary: >-
     `tests/e2e/premise.pw.ts`'s `outsideViewport` sweeps `document.querySelectorAll('*')`, so any
     overflow anywhere on the home route fails the premise suite, duplicating the A-5 sweep
@@ -2601,6 +3223,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-238
   summary: >-
     `ESTATE_FRAMEWORKS` and `ESTATE_LANGUAGES` cite `DESIGN.md:208`, `EXPERIENCE.md:79` and the
     reference mockup for their names, order and counts, and nothing holds the constants against those
@@ -2626,6 +3249,7 @@ status: done
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-11-the-premise-block-and-the-framework-band.md`
+  id: DW-239
   summary: >-
     The Plate mark's `label` is documented as section identity above a section head, and its only
     caller passes the Hub application's own name above a block that deliberately renders no heading.
@@ -2666,7 +3290,21 @@ status: done
     real breach, and both belong to the story that owns the component. The `prefers-reduced-motion`
     guard at `:17-19` is present and correct, so a visitor who asks for stillness gets it; the
     breach is for everyone else.
-  status: open
+
+    Closed 2026-09-14 by Story 2-27, which is that story: `glitch-text.scss` is deleted with the
+    loop, and `GlitchText.scss` beside the component carries one `@keyframes` on `opacity` alone,
+    one iteration per character, staggered by DOM index inside `--dur-major`, with `animation:
+    none` under `prefers-reduced-motion: reduce`. `tests/e2e/display-entrance.pw.ts` reads every
+    span's `animation-iteration-count` as `1` and the heading's `text-shadow`, `clip-path` and
+    `transform` as `none` on the running page, and was seen failing against a planted `infinite`
+    and a planted `text-shadow` in the source before each was removed; the instrument limit this
+    entry named (a CSS animation writes no inline declaration for `narrative.pw.ts`'s sweep to
+    see) is why that spec reads computed style rather than inline style. The seven `text-shadow`
+    steps left the built CSS with it: the `shadow-glitch-loop` ledger row is deleted in
+    `ops/hub-accessibility-pass.md` and `tests/e2e/accessibility-floor.pw.ts`, and KV-6 reads
+    eight depth tells. The measured weight, 87 gzipped bytes of CSS and 3,399 of JavaScript with
+    `gsap/SplitText`, is in `ops/asset-budget.md`, the 2026-09-14 reading.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-32
@@ -2682,7 +3320,23 @@ status: done
     Same shape as the `glitch-text` entry above: a CSS animation rather than a tween, so it is
     invisible to the inline-declaration sweep `tests/e2e/narrative.pw.ts` runs, and the component is
     outside Story 2-12's boundaries by name.
-  status: open
+
+    Closed 2026-09-14 by Story 2-28, which is that story: the grain, its `feTurbulence` data URI,
+    the `grain-shift` keyframes and the loop are deleted with the raster, not tokenised, and
+    `ScanlineOverlay.scss` is five declarations on one selector, `var(--token-scrim)` at
+    `var(--z-raised)` with `pointer-events: none`, carrying no `animation`, `@keyframes`, `url(`,
+    `opacity` or gradient. `components/atoms/ScanlineOverlay/__tests__/ScanlineOverlay.test.tsx`
+    compiles the stylesheet with `sass` and holds the compressed output equal to exactly those five
+    declarations on that one selector, so any of those tokens, a second rule or a sixth declaration
+    fails as a different string; it was seen failing against the old file before the rewrite. The
+    estate's two repeating animations
+    are both gone: `glitch-text.scss`'s with DW-31 and this one with this entry. The two call sites
+    left with it (`WorkHero.tsx`, `Error404.tsx`), so no surface consumes the layer until Story 2-29
+    places it across the home canvas; the three KV-6 rows it carried are deleted in
+    `ops/hub-accessibility-pass.md` and `tests/e2e/accessibility-floor.pw.ts`, F-7 is annotated
+    closed, and the measured weight is in `ops/asset-budget.md`, the 2026-09-14 reading after
+    Story 2-28.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-33
@@ -2702,7 +3356,18 @@ status: done
     `color` is neither `transform` nor `opacity`. All three were explicitly outside Story 2-12's
     boundaries, which permitted exactly one declaration in this file to move, `filter: brightness(0)`
     to `opacity: 0` at `:190`.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29**, which rebuilt `HomeLayout.scss` against the contract. The
+    dim-siblings rule and the `transition: opacity 0.4s ease` that drove it are deleted, which is
+    the retirement `epics.md:3322-3326` books to this story: opacity no longer expresses state on
+    this surface at all. The two `color` transitions are kept and tokenised as
+    `transition: color var(--dur-micro) var(--ease-toggle)`, and on reading it again that half was
+    not the breach this entry called it: `EXPERIENCE.md:689-691` bars layout properties and names
+    `transition: border-color var(--dur-micro) var(--ease-toggle)` as its own example of the
+    conformant shape, so a named colour transition on contract duration and easing is the pattern
+    rather than an exception to it. Both hover blocks also moved inside `@media (hover: hover)`, so
+    on a coarse pointer no hover colour is computed and none can stick (review A-5).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-34
@@ -2720,7 +3385,16 @@ status: done
     transform-based reveal, which is a rebuild of the component's open state rather than a tweak, and
     Story 2-31 is the rebuild. The reduced-motion path is handled at `:36`, which sets the duration
     to zero rather than skipping the tween.
-  status: open
+
+    Closed 2026-09-23 by Story 2-31, by ruling rather than by repair. That story's criteria keep
+    the height tween and record it as the single named exception to "only transform and opacity
+    animate" (`epics.md` Story 2.31, `EXPERIENCE.md` § Work item): a disclosure that jumps is
+    worse than one that eases. What the rebuild changed is the tween's timing, not its property:
+    the open runs `power2.out` over the contract's major duration and the close `power2.out`
+    over its exit duration, both taken to zero under reduced motion, and
+    `components/atoms/WorkItem/__tests__/WorkItem.test.tsx` holds both durations to the
+    published contract and both curves to an ease-out measured on the curve itself.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-35
@@ -2738,7 +3412,15 @@ status: done
     and `WorkHero` as Story 2-33's and forbid touching them, and because `/work` is a route Story
     2-12 was required to leave byte-identical in shape: its R3F boundary carries the same static
     import defect the homepage's did and is deliberately still standing.
-  status: open
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`.** The batch, its imports and the list ref are deleted from
+    `WorkTimeLine.tsx` (ruled a presentation change on 2026-09-15), so the rows simply exist and the
+    route's one entrance is the hero's, a CSS opacity keyframe. `WorkTimeline.test.tsx` fails if a
+    batch or a from-tween comes back, and `tests/e2e/work-hero.pw.ts` reads every row on `/work` and
+    `/cv` at opacity 1 with no transform, no animation and no inline style in the six frames after
+    each scroll that reveals it, a planted CSS fade reported by the same read. The R3F static import
+    this entry mentions is closed too: DW-37.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-36
@@ -2759,7 +3441,26 @@ status: done
     own rules falsifies. The cheap version is a client boundary that mounts `Providers` only where
     something needs it; the honest version needs to decide whether Lenis belongs on `/celeste` and
     the 404 at all, which is a design decision rather than a bundling one.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (remove Lenis, register `ScrollTrigger`
+    only where `/work` uses it, make Rule 1 true), by
+    `_bmad-output/implementation-artifacts/spec-dw-36-narrative-weight.md`, commit `237772c`.** Lenis
+    is gone from the Hub and from `package.json`, `app/providers.tsx` is deleted with its suite, and
+    `app/layout.tsx` wraps no route in a client component, so every visitor scrolls natively. GSAP's
+    two remaining uses import it themselves: `WorkItem`'s disclosure tween on `/work` and `/cv`, and
+    `TorusCanvas`, which now holds the torus's scroll binding and registers `ScrollTrigger` behind
+    `WorkHero`'s one dynamic boundary, so the plugin arrives with the torus or not at all.
+    `lagSmoothing(0)` left with Lenis, whose own GSAP recipe it was. **Observed 2026-09-24** by
+    `node ops/asset-budget.mjs` against build `ysPv_iPVOqc9Sc90vXp_1` at `d91a34f`: no document
+    references `lenis` or `ScrollTrigger`, `gsap` (26,971 gzipped) is on `/cv` and `/work` alone, and
+    `/celeste` and the 404 are 49,561 and 49,580 gzipped lighter on the wire than build
+    `h9ihC9KUuEQ39XtLfRn2X` at `9bf4f20`; the reading is `ops/asset-budget.md` § Every route, its
+    2026-09-24 section. `tests/e2e/narrative.pw.ts` holds the fingerprinted libraries on every
+    route's document, `tests/e2e/work-hero.pw.ts` holds `ScrollTrigger` unrequested under reduced
+    motion and requested where the torus is drawn, and `tests/e2e/suite-directory.pw.ts` holds
+    `/#suite` landing by the native jump with no `lenis` class on a context that allows motion; all
+    three failed on the pre-ruling tree.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-37
@@ -2786,14 +3487,25 @@ status: done
     visits `/` only. The fix is three lines each.
 
     **Owners, which no other entry in this cluster leaves unnamed.** `TorusCanvas` is rendered by
-    `WorkHero.tsx:71` on `/work`, and **Story 2-33** redesigns `WorkHero` and `WorkTimeline`, so it
+    `WorkHero.tsx:71` (`:68` since 2026-09-14, when Story 2-28 took the `ScanlineOverlay` out of the
+    hero) on `/work`, and **Story 2-33** redesigns `WorkHero` and `WorkTimeline`, so it
     is the story with that file open. `TorusKnotCanvas` is rendered by `ProjectsHero.tsx:70` on
     `/projects`, and **Story 2-14** redirects that route to `/#suite`, which retires the surface
     rather than the component: if 2-14 leaves `ProjectsHero` mounted anywhere the defect outlives
     the redirect and needs an owner of its own. Whichever lands first should take both, because the
     change is identical and a route that shows an error page instead of its content after one
     dropped request is the most user-visible item in this cluster.
-  status: open
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`**, which took the `/work` half because it wrote that boundary: the
+    `TorusKnotCanvas` half had already ceased to exist, deleted with `/projects` by Story 2-14.
+    `WorkHero` now imports `TorusCanvas` through one `next/dynamic` boundary in the `GemComponent`
+    shape, a module resolving without the export or a chunk that never arrives resolving to a component
+    that draws nothing, logged; `TorusCanvas` imports `Scene` statically behind it. **Observed
+    2026-09-23** in the pinned image by `tests/e2e/work-hero.pw.ts`: with every WebGL-carrying script
+    aborted on a context that allows motion, `/work` renders its heading, both marks and four rows,
+    throws no page error, mounts no canvas and logs the containment; `WorkHero.test.tsx` drives the
+    loader against a module that resolves, one missing the export and one that throws.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-38
@@ -2817,6 +3529,13 @@ status: done
     homepage's real transfer as well as those two routes'. Worth a line in
     `ops/asset-budget.md` § Stated limits when that file is next re-measured, and worth knowing
     before anyone reads `/` at 295,123 gzipped as the whole story.
+
+    **Half of it moved on 2026-09-23 with `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`**, which put `/work`'s whole WebGL
+    stack behind one dynamic boundary: `ops/asset-budget.mjs` reads `/work` as carrying no WebGL
+    chunk from that build on, so a prefetch of `/work`'s route bundle from `/` can no longer pull
+    `three` with it. **Not re-measured on `/`**: the request recording this entry was made with was
+    not repeated, and the `§ Stated limits` line it asks for is still unwritten, so the entry stays
+    open on both.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
@@ -2903,7 +3622,20 @@ status: done
     `HomeLayout.tsx`, its stylesheet and two test files, and rewriting a fifth file's mocking
     strategy is a change with its own failure modes. Story 2-29 redesigns `HomeLayout` and is the
     natural owner.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29, by dissolving rather than by fixing.** `HomeLayout.tsx`
+    imports neither `gsap` nor `useGsapContext`; the entrance is one `home-enter` keyframe and five
+    `animation-delay` declarations in `HomeLayout.scss`; both mocks are deleted from
+    `HomeLayout.test.tsx`. Nothing in that file reads as coverage of motion any more, because there
+    is no motion in its subject to cover. What the entrance does is asserted where it lives: the
+    same file compiles the stylesheet and holds it to one keyframe whose only declaration is
+    `opacity: 0` in the `from`, no `infinite`, no `opacity: 0.x`, and every `:hover` inside
+    `@media (hover: hover)`; `tests/e2e/narrative.pw.ts` was rewritten in the same commit to read
+    the running page's `animation-name`, `animation-iteration-count` and `animation-direction` and
+    every `@keyframes` property on the route, because its inline-declaration sweep saw GSAP and can
+    see nothing now. The hazard the entry names is gone as well as the hole: the base state is the
+    final state, so deleting a line can no longer leave a permanently blank hero.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-12-the-narrative-resolves-into-the-suite-directory.md`
   id: DW-42
@@ -2925,7 +3657,17 @@ status: done
     that line change and should be able to find out that the question was asked and deliberately not
     answered. Story 2-29 rebuilds this stylesheet and is where the decision belongs; Story 2-13,
     which builds the non-3D front door, is the other candidate.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29.** The no-script floor is the entrance's shape rather than a
+    rule beside it: every panel, the role line, the five links and the gem box are at full opacity
+    in the base state, and `@keyframes home-enter` supplies only the `from`, held through the delay
+    by `animation-fill-mode: both`. A visitor with scripting off, or one whose bundle never
+    arrives, sees the finished hero. Neither of the two shapes this entry floated was needed: no
+    `<noscript>` rule and no `html.no-js` class.
+    `components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx` holds the compiled stylesheet to
+    exactly `@keyframes home-enter{from{opacity:0}}`, which is the assertion that fails if a `to`
+    or a base `opacity: 0` comes back.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-43
@@ -2956,7 +3698,45 @@ status: done
     every story assumed someone else owned survived to the thirteenth story of the epic. Story 2-26
     is the Hub's accessibility pass and is the natural place to sweep the rest of the A-numbers for
     the same shape before it starts.
-  status: open
+
+    Corrected 2026-09-13 by Story 2-26; this entry stays open. The paragraph above that calls the other
+    four surfaces' skip-link and `<main>` "Story 2-26's work" was wrong about the owner: the
+    Operator's condition for doing it in that story was one change in the shared layout, and
+    `<main id='main' tabIndex={-1}>` is not one, because a layout-level `<main>` would wrap the
+    footer `/` keeps outside it by design (`app/page.tsx:79-81`, pinned at `page.test.tsx:89`). It
+    is four per-page edits plus four `SURFACES` pins in `tests/e2e/hit-target-floor.pw.ts` and the
+    `/celeste` no-control case in `tests/e2e/secondary-surfaces.pw.ts`, which is the chrome change
+    `app/cv/page.tsx:41-45` already booked to Story 2-32. That story owns it; this entry records
+    the finding until it lands (`ops/hub-accessibility-pass.md`, F-13). The A-number sweep this
+    entry asked for was made: A-1, the traversal, A-11, A-12 and A-16 are asserted on every route
+    by `tests/e2e/accessibility-floor.pw.ts`, and the record lists what stays manual.
+
+    **Re-read 2026-09-23 by Story 2-32, and re-booked rather than done.** The paragraph above books
+    the non-home `<main>` and skip link to that story as a chrome change. Its criteria in `epics.md`
+    ask for neither, and both put on four routes what `RESTYLE-SPEC.md` § The ceiling keeps out of a
+    restyle, a new control and a landmark; the story's spec records the call under Design Notes,
+    "Re-booked rather than taken". The work is still what the paragraph above says: four per-page
+    `<main id='main' tabIndex={-1}>` edits, the `SURFACES` pins in `tests/e2e/hit-target-floor.pw.ts`
+    and the `/celeste` case in `tests/e2e/secondary-surfaces.pw.ts`. One shape is worth knowing: the
+    header renders on exactly the four routes that lack a skip link, and `#celeste header` hides it
+    where no control should show, so a skip link carried as the header's first child would be one
+    change rather than four. **Owner: unassigned, for an Operator ruling**, the story it was
+    booked to having kept to its criteria. **Trigger: that ruling.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (a `<main id="main" tabIndex={-1}>` on
+    every route, the skip link moved into the Header as its first child), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `ddb63b7`.** `/work`,
+    `/celeste` and the 404 gained the landmark and `/cv`'s gained its `id` and `tabIndex`; `/` keeps
+    its own. `Header` renders `SkipLink` as the band's first child on every route that renders a
+    band, and alone on `/`, which renders none, so `app/page.tsx` no longer renders it and the link
+    has one call site; `/celeste` hides the band, and the link with it, so that page still shows no
+    control. `tests/e2e/accessibility-floor.pw.ts` reads every route: one `main#main` at tabindex -1,
+    and on each route with a visible header, `/` included, the first Tab lands on the skip link and
+    Enter moves focus to the landmark, which rings whole (F-20); on the pre-ruling tree the same read
+    named `/work`, `/cv`, `/celeste` and the 404. The hit-target pins moved by one on each surface with
+    a header, read off the sweep's own failure output (`ops/hit-target-floor.md`), and
+    `tests/e2e/secondary-surfaces.pw.ts` reads the link hidden with `/celeste`'s band.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-44
@@ -2981,7 +3761,14 @@ status: done
     The consequence is that a reviewer has nothing to compare the shipped controls against, and the
     next story that touches either has nothing to preserve. Closing it is a `DESIGN.md` edit, which
     is a planning artifact under a frozen approval and not a thing a story may amend on its own.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (a `DESIGN.md` row describing what
+    shipped), by `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, in the
+    package's records commit.** `DESIGN.md` § Components carries a dated row, **Skip link and skip
+    control**, giving both controls' type, colour, underline, hover, ring, floor and placement as
+    `SkipLink.scss` and `SkipControl.scss` ship them, the skip link since that day as the header's
+    first child. `review-rubric.md:40`'s finding on the skip control is annotated closed with it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-45
@@ -3007,7 +3794,13 @@ status: done
     PRD is under a frozen approval and a story does not edit one as a side effect of implementing it.
     The closure is a one-line strike-through in the shape `prd.md:809` and `:813` already use for the
     two questions that closed on 2026-08-15.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (strike Q7 in the mechanical batch), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** `prd.md`
+    § 13 Q7 is struck in the shape Q2 and Q6 use and reads **Closed 2026-08-15** in `EXPERIENCE.md`
+    § The homepage: two paths, one destination, shipped by Story 2-13 on 2026-09-07, with a dated
+    note. The PRD and `EXPERIENCE.md` agree again, and the code already agreed with both.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-46
@@ -3036,7 +3829,24 @@ status: done
     **Corrected 2026-09-07 after review: this entry describes two of A-14's three clauses.**
     `EXPERIENCE.md:773` and `epics.md:2591` read "aria-hidden, not focusable, **and its content is
     stated in prose**". The third is not shipped and is filed separately as DW-52.
-  status: open
+
+    **Re-verified 2026-09-21 by Story 2-29, and this entry's premise holds.** That story's planning
+    read claimed no `aria-hidden` and no `tabIndex` exists anywhere on the gem canvas subtree,
+    having looked at `GemComponent.tsx`, `GemNarrative.tsx`, `Gem.tsx` and `CanvasOrbitControls.tsx`.
+    **That claim is wrong**, and it is wrong because it did not read the file this entry names: both
+    halves are in `components/atoms/Scene/Scene.tsx`, `aria-hidden='true'` on the `<Canvas>` at
+    `:40` and `canvas.setAttribute('aria-hidden', 'true')` with `canvas.tabIndex = -1` inside
+    `onCreated` at `:49-50`. `GemNarrative` renders `Scene`, so the canvas on `/` is covered on both
+    the wrapper and the element, exactly as Story 2-13 shipped it.
+
+    **Closed 2026-09-21 by Story 2-29**, which did what this entry asked: verified rather than
+    re-implemented, dropped neither half, and added a third at the level it owns,
+    `aria-hidden='true'` on `.home-gem`, so the box that now holds the canvas and the scrim is out
+    of the accessibility tree whatever the library does inside it.
+    `components/organisms/HomeLayout/__tests__/HomeLayout.test.tsx` reads that attribute and asserts
+    no focusable descendant inside it; `tests/e2e/front-door.pw.ts` still reads the other two. The
+    third A-14 clause is still not shipped and is still DW-52's.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-47
@@ -3077,7 +3887,17 @@ status: done
     Chromium stable, which would answer the slow-connection case in CSS for free. Neither is Story
     2-13's to decide, and the residual shift is a shrink of a hero on a path that is otherwise
     strictly cheaper, so it is recorded with its numbers rather than papered over.
-  status: open
+
+    **Closed 2026-09-24 as accepted, on the Operator ruling of that day, in the package's records
+    commit (`_bmad-output/implementation-artifacts/spec-records-and-docs.md`).** The shift stays: a
+    blocking WebGL probe in `app/layout.tsx` would put a synchronous context creation on every load
+    of every route to spare a rare visitor one downward step on a path that is otherwise cheaper. It
+    stays asserted rather than tolerated: `tests/e2e/front-door.pw.ts` still requires exactly one
+    collapse on the two script-only doors, 104.83px at 1024 as that file measured it on 2026-09-21
+    (279.30px when this entry was written; later hero changes shrank it), and zero on the
+    doors answered before paint. **The future fix** is `prefers-reduced-data` reaching the browsers
+    the Hub serves, which would answer the slow-connection door in CSS; the no-WebGL door has none.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-48
@@ -3102,7 +3922,14 @@ status: done
 
     Story 2-29 rebuilds this component and is the natural owner. DW-41 and DW-42 are the two related
     entries on the same four lines.
-  status: open
+
+    **Closed 2026-09-21 by Story 2-29.** The line went with the timeline: `HomeLayout.tsx` carries
+    no `gsap.set`, no `useReduceMotion` call and no reduced-motion branch, because the reveal is a
+    CSS keyframe whose base state is the final state. The coupling this entry warned about is now
+    harmless rather than load-bearing: a future story that let a reduced-motion visitor onto the
+    narrative path would find `.home-gem` already at full opacity, with `animation: none` under that
+    media query, and would need no line put back.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-49
@@ -3157,7 +3984,14 @@ status: done
     fetching in it, so the cost is React SSR on the box rather than anything remote. Worth an
     Operator eye against `ops/capacity-threshold.md` before Epic 3, and worth knowing if `/` ever
     reads slow in production.
-  status: open
+
+    **Closed 2026-09-24 as accepted, on the Operator ruling of that day, in the package's records
+    commit (`_bmad-output/implementation-artifacts/spec-records-and-docs.md`).** `/` stays rendered
+    per request: the 2026-09-07 ruling that moved `Save-Data` to the server was deliberate, the page
+    fetches no data, so the cost is React rendering on the box, and reverting it would give
+    data-saving visitors the hero collapse DW-47 records. The package's own build still prints `ƒ /`.
+    DW-51, the `Vary` header, stays open.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-51
@@ -3219,7 +4053,21 @@ status: done
     that forbids invented facts. Story 2-29 rebuilds the hero and Story 2-26 is the Hub's
     accessibility pass; either can carry it, and whichever does needs a sentence from the Operator
     or a decision that a decorative canvas needs no prose, which would be an `EXPERIENCE.md` change.
-  status: open
+
+    Closed 2026-09-13 by Story 2-26, by the second of the two routes above: the Operator ruled the
+    canvas decorative and the third clause withdrawn, and `EXPERIENCE.md:773` carries the dated
+    amendment in place. `ScanlineOverlay.tsx:8` (`:16` since 2026-09-14, when Story 2-28 rebuilt the
+    component as the scrim layer; the element is still `aria-hidden` and nothing else) is the
+    precedent, a decorative layer whose whole accessibility is `aria-hidden`. The two met clauses
+    stay asserted in `tests/e2e/front-door.pw.ts`
+    and nothing in the tree changes. Recorded in `ops/hub-accessibility-pass.md` § Decisions.
+
+    The withdrawn clause survives in four places that story did not edit, its Never boundary
+    allowing one `EXPERIENCE.md` line only: `EXPERIENCE.md:527-528`, `epics.md:644`,
+    `epics.md:2591` and `epics.md:3328`, the last of them Story 2-29's own acceptance criterion,
+    so that story would inherit "content stated in prose" unknowingly. Named here so it does not;
+    the deferred entry that carries the four corrections is filed separately.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-13-the-non-3d-front-door-and-the-skip-control.md`
   id: DW-53
@@ -3362,7 +4210,15 @@ status: done
     `next.config.js` nor `README.md` § Routing. Naming it the owner was a guess at the board, not
     at the subject. **Owner: whichever story next takes a routing decision for the Hub**, which
     by the reading above is no remaining Epic 2 story; the trigger list above stands.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day, the third trigger (the Hub states a case
+    policy), by `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.**
+    The forgiving redirect is accepted as it stands: `README.md` § Routing says Hub URLs are
+    case-sensitive by policy and that the one redirect in `next.config.js` folds case, as Next
+    compiles every `redirects()` source, so `/Projects` and `/PROJECTS` answer the same 301 as
+    `/projects`. `tests/e2e/projects-redirect.pw.ts` already asserts that behaviour as Next's; no
+    `has` condition and no middleware is added. DW-74 closes on the same sentence.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-57
@@ -3406,7 +4262,25 @@ status: done
     `/projects` row is the trigger, because that reader is the person the staleness costs. The
     `TorusKnotCanvas` half of Operator action 6 is closed by arithmetic already and can be struck in
     the same pass without a measurement.
-  status: open
+
+    **The `ops/asset-budget.md` half closed 2026-09-21 by Story 2-29**, in the shape this entry
+    asked for: a re-run of `ops/asset-budget.mjs` against a before build and an after build, filed
+    as `### The 2026-09-21 reading, after Story 2-29` under § Every route and
+    `### The 2026-09-21 run, after Story 2-29` under § Findings. Neither names `/projects`, because
+    no such route exists in either build, and **no dated reading that does name it was edited**,
+    which is the correction this entry insisted on. The `TorusKnotCanvas` half of Pending Operator
+    action 6 is struck in the same pass by arithmetic and without a measurement: that file and
+    `TorusKnot.tsx` were deleted with the route, so what remains is `TorusCanvas.tsx:8` on `/work`
+    and `app/providers.tsx` on every route.
+
+    **KV-5's title is untouched**, and its owner and trigger stand: whichever of Stories 2-31 and
+    2-33 lands second, at the KV-5 retirement. This entry stays open on that half alone.
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`**, the second of the two to land, at the KV-5 retirement
+    as this entry asked: the heading and the index row read "No element sits past either viewport edge
+    at 360px", the statement of what holds, KV-4's shape on retiring, and the entry's first paragraph
+    records the old title, so an inbound citation that quotes it still finds it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-14-projects-redirects-permanently-to-suite.md`
   id: DW-58
@@ -3612,7 +4486,16 @@ status: done
     entry closes on a re-measurement rather than on an edit. If Story 2-32 is descoped past Epic 2,
     the fallback trigger is any complaint about vertical room on a small viewport, which is the
     person the 17.5% costs.
-  status: open
+
+    **Closed 2026-09-23 by Story 2-32, on the re-measurement.** `Header.scss` declares no block size:
+    the band is `padding-block: var(--s-lg)`, one row of controls each held to `--tap`, and a
+    `--stroke-hair` rule beneath. **Observed 2026-09-23** in `mcr.microsoft.com/playwright:v1.62.1-noble`
+    at 360 x 800 by `tests/e2e/chrome-nav.pw.ts`: the header measures **93.00** on `/work`, `/cv` and
+    the 404, which is the four tokens' sum and **11.6%** of the viewport where it was 17.5%, and a child
+    planted taller than the floor grows it, which a declared height would not. The scroll padding the
+    `140px` was also spent on is the same four tokens in a `calc()`, and reads **93px** on all three,
+    equal to the box; its ceiling (a row that wraps) is filed as DW-118.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-63
@@ -3639,7 +4522,15 @@ status: done
     **Owner: Story 2-32**, which redesigns `Header` and `Container` together. **Trigger: that
     story's first look at the header box**, or, earlier, any visual review of `/work` scrolled past
     the hero, which is where it is visible.
-  status: open
+
+    **Closed 2026-09-23 by Story 2-32**, by the shape this entry named. The `<header>` is a band that
+    carries the ground and the hairline at the document's full width, with the page's `.container`
+    inside it for the wordmark and the destinations, and `.container` itself is `min(100%, 1920px)`
+    at `--page-pad`. **Observed 2026-09-23** in the pinned image by `tests/e2e/chrome-nav.pw.ts`: the
+    band starts at 0 and spans the document on `/work`, `/cv` and the 404 at 360, and on `/work` and
+    `/cv` at 1280 and at 2400, where the container caps at 1920 and centres at x 240 while the band
+    runs on either side of it; the hairline row reads the border role on every column at 360.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-64
@@ -3708,7 +4599,13 @@ status: done
     writing a dated paragraph in the same section and the correction belongs beside it. On today's
     board that is Story 2-30 or Story 2-32, both of which delete a ledger row and move a count.
     **Trigger: the next dated paragraph added to that section.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found
+    resolved.** `ddb63b7` (the DW-43 accessibility package, 2026-09-24) made the skip link the
+    header's first child (`components/molecules/Header/Header.tsx`), and `app/layout.tsx` renders
+    the header on every route, so the sentence at `ops/hit-target-floor.md:107` now describes the
+    markup.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-66
@@ -3742,7 +4639,12 @@ status: done
     title, the index row and the closing list all have to move anyway. **Fallback trigger: KV-5
     staying open past Epic 2**, at which point the count and the story list should be corrected
     rather than left.
-  status: open
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`**, at the trigger: KV-5 is retired, its index row names the story
+    that retired it (Story 2-33), and `ops/__tests__/hit-target-floor.test.ts` pins the retirement,
+    the date and the title's move in the index row and the entry, with the entry keeping "Stories
+    2-31, 2-33 and 2-14" in its history.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-67
@@ -3774,7 +4676,15 @@ status: done
     **Owner: whichever of Stories 2-31 and 2-33 lands first**, since both exist to remove elements
     from that census and neither can claim a figure without re-reading it. **Trigger: the next time
     KV-5's per-surface breakdown is read for a decision**, or either of those stories starting.
-  status: open
+
+    Closed 2026-09-23 by Story 2-31, the first of the two to land, on this entry's second
+    trigger. The census was re-read in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800
+    by `tests/e2e/plate-mark-and-work-item.pw.ts`, which compares both edges of every element
+    with a box against the viewport and prints the whole page on every run: `/work` 10, every
+    one of them the hero's, and `/cv` 0, the timeline contributing none on either. Recorded as a
+    dated paragraph in `ops/hit-target-floor.md` § The overflow this assertion does not cover
+    and in KV-5's cells.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-68
@@ -3806,7 +4716,23 @@ status: done
     **Owner: whichever of Stories 2-30 and 2-32 lands second**, because that is the commit on which
     the ledger empties and the case cannot be left as it stands. **Trigger: the last ledger row
     being deleted**, which is also when KV-4 retires, so the two are one act.
-  status: open
+
+    **Closed 2026-09-23 by Story 2-32**, on the trigger: Story 2-17 had already taken Story 2-30's
+    row, so 2-32 landed second, and `chrome-logo`, the last row, left with the repair of the chrome
+    logo; KV-4 retired in the same commit. **The resolution is the first shape combined with the
+    third's premise.** The instrument outlives the breaches, because its first direction needs no
+    row: an element under the floor that nothing lists fails on every run, and the row shape stays
+    for a breach the Operator rules to tolerate. So `EXEMPTIONS` may be empty and is, and the cases
+    that need a row to exist plant a real element on a real page against an invented row,
+    `PLANTED_ROW`, through `measureSurface`'s and `judge`'s own `exemptions` parameter, the shape
+    "fails a row that has stopped matching" already used. Every predicate stays demonstrated: the
+    stale-row case plants a listed breach and a repair side by side and reads the repair stale and
+    the row covering two where it says one; the misrouted case reads the same element as a plain
+    breach against the real, empty ledger; the separates-two-answers case plants its breach, since
+    no shipped control is under the floor. `ops/__tests__/hit-target-floor.test.ts` accepts a ledger
+    empty by declaration (an empty literal, a header-only table) and still refuses one it cannot
+    read, and `ops/hit-target-floor.md` states the emptiness in a dated sentence that suite reads.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-15-nav-reshape-to-two-destinations.md`
   id: DW-69
@@ -3843,7 +4769,16 @@ status: done
     and Story 2-16's forbid restyling the chrome. What changed is the severity, not the owner: the
     accent half of the mark is asserted on the real surface by `tests/e2e/cv.pw.ts` and the hover
     half is asserted nowhere, so a rebuild that dropped the collision would not be noticed by a gate.
-  status: open
+
+    **Closed 2026-09-23 by Story 2-32.** `Navbar.scss` draws one rule on each label: a hairline in
+    the interactive border role at rest, the accent emphasis on the current route, and a hover that
+    recolours that rule to the hover role at its own width, inside `@media (hover: hover)`. The text
+    underline is gone, so there is no second rule to paint. Both halves are asserted now:
+    `components/molecules/Header/__tests__/Header.test.tsx` holds the compiled hover to exactly that
+    recolour and refuses a `text-decoration: underline`, and `tests/e2e/chrome-nav.pw.ts` hovers a
+    destination on `/work` in the pinned image and finds every changed pixel inside the label's own
+    rule, where a planted text recolour is seen outside it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-70
@@ -3873,7 +4808,15 @@ status: done
     pass, which is where a local reading of a new surface would be taken anyway. **Trigger: a local
     `lhci autorun` against `/cv` clearing the three thresholds**, after which the URL and the reading
     land in one commit.
-  status: open
+
+    Closed 2026-09-13 by Story 2-26, on the trigger. `lhci collect` then `lhci assert` (never
+    `autorun`, whose upload target is public storage) with `@lhci/cli` 0.15.1 and Lighthouse 12.6.1
+    against `corepack pnpm build` and `corepack pnpm start`, three runs per URL: `/cv` at
+    accessibility 0.96, best practices 1.00 and SEO 1.00 on every run, which clears 0.95 / 0.9 /
+    0.9. The URL is in `.lighthouserc.js` and the readings for all three surfaces are in
+    `ops/hub-accessibility-pass.md` § Lighthouse readings. The one failing audit on `/cv`,
+    `color-contrast` on the timeline highlights at 3.49:1, is finding F-5 there, Story 2-31's.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-71
@@ -3896,7 +4839,21 @@ status: done
     **Owner: Story 2-32**, which redesigns `Header`, `Logo`, `ContactContainer` and `Container`
     together. **Trigger: that story's first look at the header box**, which is the same trigger
     DW-63 carries for the band around it.
-  status: open
+
+    **The trigger fired on 2026-09-23 and the entry is re-booked rather than closed.** Story 2-32
+    rebuilt the header box (DW-63 closed with it) and did not add the landmarks: they are page
+    structure on four routes rather than the chrome's presentation, a skip link is a new control,
+    and `RESTYLE-SPEC.md` § The ceiling keeps both out of a restyle, which is the reading that
+    story's spec records. What changed under this entry is the height it names: the header is as
+    tall as its content since that story, measured in the pinned image, rather than 140px. **Owner:
+    unassigned, for an Operator ruling**, together with DW-43 and F-13 in
+    `ops/hub-accessibility-pass.md`, which are the same work. **Trigger: that ruling.**
+
+    **Closed 2026-09-24 with DW-43, on the Operator ruling of that day, commit `ddb63b7`.** Every
+    route carries one `<main id="main" tabIndex={-1}>`, and the landmark wraps the page's content, not
+    the header, which stays the root layout's; `/`'s footer stays outside its landmark as it was. DW-43's
+    closing paragraph names the reads.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-72
@@ -3928,7 +4885,14 @@ status: done
     both exist to remove elements from this census and neither can claim a figure without re-reading
     it, and 2-31 owns `WorkItem`, which is the component that produces every one of the 28.
     **Trigger: the next time KV-5's per-surface breakdown is read for a decision.**
-  status: open
+
+    Closed 2026-09-23 by Story 2-31, with DW-67 and by the same reading: `/cv` measures 0
+    elements past either edge at 360, and the timeline measures none on `/work` either. The 10
+    left on `/work` are the hero's, KV-5's half booked to Story 2-33. The read is a standing
+    case now rather than a census taken once: `tests/e2e/plate-mark-and-work-item.pw.ts` fails
+    if any element inside `.work-timeline` sits past either edge on either route, and is seen
+    reporting a planted meta line that will not wrap.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-73
@@ -3957,7 +4921,17 @@ status: done
     **Owner: Story 2-31**, which rebuilds `WorkItem` and already owns the height animation DW-34
     records. **Trigger: that rebuild choosing its open-state mechanism**, since a
     `grid-template-rows` or transform reveal makes the print rule a one-liner rather than a fight.
-  status: open
+
+    Closed 2026-09-23 by Story 2-31, on the trigger. The rebuild chose its open-state mechanism
+    by its own criteria, which keep the height tween, so the print rule was going to be the one
+    this entry expected to be a fight: `app/scss/_print.scss` now sets `.work-item__content` to
+    `height: auto` and `overflow: visible`, each `!important`, which is what an author rule
+    needs to outrank an inline one and the idiom that file already uses throughout. In the print
+    medium nothing is tweening, so there is no moving target. **Observed 2026-09-23** in the
+    pinned image by `tests/e2e/plate-mark-and-work-item.pw.ts`: under `emulateMedia({ media:
+    'print' })` all four panels on `/cv` have height, and the same page in the screen medium
+    keeps three of them at zero.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-74
@@ -4001,7 +4975,15 @@ status: done
     `middleware.ts` for any reason**, at which point the marginal cost of covering the cased routes
     is a few lines rather than a new mechanism. If the answer is that it does not matter, the honest
     close is to say so here and note that `/WORK` and `/CELESTE` have the same shape.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (Hub URLs are case-sensitive by policy,
+    while config redirects fold case; one sentence in `README.md` § Routing), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** It does not
+    matter, by ruling rather than by default: `README.md` § Routing says a route answers at its
+    lowercase path alone, so `/CV`, `/WORK` and `/CELESTE` answer 404, while the one redirect in
+    `next.config.js` matches its source in any case. No middleware is added and nothing about the
+    routes changed. DW-56 closes on the same sentence.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-16-cv-built-around-the-existing-worktimeline.md`
   id: DW-75
@@ -4069,7 +5051,32 @@ status: done
     **Owner: Story 2-31**, which rebuilds `WorkItem` token-native and already owns the open-state
     mechanism through DW-34 and DW-73. **Trigger: that rebuild choosing its open-state mechanism**,
     which is the one moment the no-script and the print behaviour are both cheap to get right.
-  status: open
+
+    Re-read 2026-09-23 by Story 2-31, on the trigger, and not closed. The rebuild kept the
+    height tween by its own criteria, so the cheap shape this entry hoped for, a mechanism that
+    is open-able without script, did not arrive. What remains is a CSS rule under `@media
+    (scripting: none)` that forces the panels open, the same two declarations the print rule
+    uses. It was not made, because it is a behaviour decision rather than a restyle: with script
+    off, three triggers would announce themselves collapsed over content that is visible, and do
+    nothing when pressed, and `tests/e2e/cv.pw.ts`'s standing no-script reading, which Story
+    2-16 wrote with the three closed panels as its control, would invert. **Owner: unassigned.**
+    **Trigger: an Operator ruling on whether a scriptless `/cv` shows every company with inert
+    triggers, or keeps the one open company it shows today.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (every panel open with scripting off, on
+    `/cv` and `/work`, through `@media (scripting: none)` reusing the print declarations), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `1b4fe66`.**
+    `WorkItem.scss` opens `.work-item__content` under that query with the two declarations
+    `app/scss/_print.scss` uses, `height: auto !important` and `overflow: visible !important`, so the
+    inline zero height the first render writes no longer holds a scriptless page shut; the three
+    triggers stay inert and announce themselves collapsed, the cost the ruling accepted.
+    `tests/e2e/cv.pw.ts`'s scriptless block is inverted: with `javaScriptEnabled: false`, every panel
+    on `/cv` and on `/work` has height and text, where the pre-ruling tree read 900.30, 0, 0 and 0 on
+    both; a context running script is the control, the first entry open and every other at zero.
+    `WorkItem.test.tsx` holds the compiled rule to the print sheet's two declarations. **Stated
+    limit**: a browser without the `scripting` media feature (Safari before 17, Firefox before 113)
+    matches nothing and keeps the one open company without script.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
   id: DW-77
@@ -4077,14 +5084,17 @@ status: done
     The 404's entrance tween runs under `prefers-reduced-motion: reduce`. `useGsapContext` reads no
     preference, and `Error404.tsx` is the one caller that does not guard its tweens itself.
   evidence: |-
-    `components/organisms/ErrorPage/Error404.tsx:32-53` runs three `gsap.from` tweens on mount, on
-    the numeral, the message and the exits, with `opacity: 0` and a translate on two of them.
+    `components/organisms/ErrorPage/Error404.tsx:32-53` (`:34-55` since 2026-09-14, when Story 2-28
+    took the `ScanlineOverlay` import and element out and dated the docblock) runs three `gsap.from`
+    tweens on mount, on the numeral, the message and the exits, with `opacity: 0` and a translate on
+    two of them.
     `hooks/useGsapContext.ts` wraps `gsap.context` in an effect and reads nothing about motion.
     The other callers in the tree sit behind a guard of their own: `HomeLayout.tsx:55-57` writes the
     final state on mount when `useReduceMotion` answers true, and `WorkTimeline` keeps its entrance
     tweens behind `if (!reduceMotion)`. The 404 has neither, so a visitor who has asked for reduced
     motion gets the numeral rising, the message fading and both exits sliding up, over 0.4 to 0.6
-    seconds each, on the one surface that also carries a `ScanlineOverlay`.
+    seconds each, on the one surface that also carried a `ScanlineOverlay` (until Story 2-28 took
+    it out on 2026-09-14; the tweens are unchanged).
 
     **Observed 2026-09-11** by reading the three files against each other while Story 2-17 gave
     the surface its two exits. The browser suite runs `reducedMotion: 'reduce'`
@@ -4103,7 +5113,21 @@ status: done
     **Owner: Story 2-30**, which redesigns `Error404` token-native and owns its motion. **Trigger:
     that story's first edit to the entrance**, at which point the guard is one line beside the
     tween it already has to rewrite.
-  status: open
+
+    Closed 2026-09-23 by Story 2-30, on the trigger, and by the second shape rather than either
+    guard this entry weighed. The three `gsap.from` tweens are gone with the hook call and the
+    `gsap` import: the numeral, the supporting line and the exits run one CSS keyframe on opacity
+    alone, at `--dur-minor` on `--ease-entrance` at 100, 300 and 500ms, the order the tweens had,
+    and `@media (prefers-reduced-motion: reduce)` sets `animation: none` on all three, so a
+    visitor who asked for stillness gets the surface at full opacity on first paint rather than a
+    1ms run that still waits out its delay. The heading is the display entrance, whose own
+    reduced-motion rule does the same. `Error404` is a server component now, so nothing on the
+    surface hydrates at all, and `useGsapContext` has no caller left that does not guard itself.
+    **Observed 2026-09-23** in the pinned image by `tests/e2e/error-surface.pw.ts`: every animated
+    element computes `animation-name: none` at full opacity at the first read on the project's
+    reduced-motion context, the keyframe runs on a `no-preference` context and animates nothing
+    but opacity, and with every script aborted the surface ends whole at full opacity.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
   id: DW-78
@@ -4160,7 +5184,16 @@ status: done
 
     **Owner: the Epic 2 retrospective.** **Trigger: that retrospective's action items**, where the
     2-8 departures are already queued for the same treatment.
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (record the retirement in the plans, in the
+    mechanical batch), by `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit
+    `ffcd8aa`.** The four places the ruling's brief names carry a dated note that the route was
+    retired on 2026-09-11 by Operator ruling, Story 2-17, answers 404 and keeps the PDF at its own URL:
+    `EXPERIENCE.md`'s Hub tree and its placement table (the authority `chrome-nav.pw.ts`, `Navbar.tsx`
+    and `SiteFooter.tsx` cite), its secondary-surfaces row, and Story 2.17's criterion in `epics.md`.
+    The other planning lines that still place `/recommendation` or list it among the routes that
+    survive, FR-1 in the PRD and its restatements, are filed as DW-138.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-17-secondary-surface-states.md`
   id: DW-80
@@ -4180,7 +5213,16 @@ status: done
 
     **Owner: Story 2-30**, which redesigns `Error404` token-native and rewrites this block.
     **Trigger: that story's first edit to `.error-page__back`.**
-  status: open
+
+    Closed 2026-09-23 by Story 2-30, on the trigger: `error-page.scss` is deleted and the block
+    with it. `Error404.scss` gives the exits one transition, `border-color var(--dur-micro)
+    var(--ease-toggle)`, a valid declaration on the one property the hover changes, and the hover
+    rule sits behind `@media (hover: hover)`; `components/organisms/ErrorPage/__tests__/Error404.test.tsx` reads it
+    off the compiled stylesheet as the only transition the file declares, and
+    `tests/e2e/error-surface.pw.ts` watches a fine pointer's hover change the border's pixels and
+    no others, and a tap start no border transition at all. F-6 in
+    `ops/hub-accessibility-pass.md` is closed in the same commit.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
   id: DW-81
@@ -4216,7 +5258,39 @@ status: done
     the `AGENTS.md` lines, count and citation both, go in the same change or in the next
     `bmad-project-context` refresh, whichever lands first. **Trigger: the first edit to
     `app/app.scss:49-58`.**
-  status: open
+
+    **Counted again 2026-09-14** by Story 2-27, which deleted `glitch-text.scss` with its
+    `--monument-bold` call site: `WEIGHT_SITES` in `tests/e2e/anchor-aliases.pw.ts` has two rows
+    (`error-page.scss:24`, `WorkHero.scss:19`) and `WEIGHT_CALL_SITES` in the unit suite one
+    (`WorkHero.scss`), so `app/app.scss:49-56`'s "four" and `AGENTS.md`'s "four existing sites"
+    are now stale by four stories. Neither comment was edited, for the reasons above; the owner
+    and the trigger stand.
+
+    **Counted again 2026-09-23** by Story 2-30, which deleted `error-page.scss` with its
+    `--monument-bold` call site (`:24`) and its `--monument-regular` one (`:40`): `WEIGHT_SITES` in
+    `tests/e2e/anchor-aliases.pw.ts` has one row (`WorkHero.scss:19`), and `--monument-regular` has
+    no call site at all, so that file pins it at zero in the `--confillia-normal` shape and the clamp
+    precondition case left with the last site it protected. `app/app.scss:49-56`'s "four" and
+    "three" and `AGENTS.md`'s "four existing sites" are stale by five stories. Story 2-30 edited
+    `app/app.scss` below that block, where the `--accent-dim` scope was, and not `:49-58`, so the
+    trigger has not fired; the owner and the trigger stand.
+
+    **Counted again 2026-09-23** by Story 2-33, which rebuilt `WorkHero.scss` against the contract:
+    no `--monument-bold` call site is left anywhere. `tests/e2e/anchor-aliases.pw.ts` retired
+    `WEIGHT_SITES` and pins the alias at zero, and `app/__tests__/anchor-contract.test.ts` retired
+    `WEIGHT_CALL_SITES`. The two comments now overstate by four sites, and Story 2-33 edited
+    `app/app.scss` below that block (the `body#work` rule) and not `:49-58`, so the trigger has not
+    fired; the owner and the trigger stand, and Story 2-22 is unblocked.
+
+    Closed 2026-09-23 by
+    `_bmad-output/implementation-artifacts/spec-2-22-migration-step-7-delete-the-aliases.md`, the
+    owner, in the same commit as both halves: the `app/app.scss` comment left with the alias layer it
+    described, and the `AGENTS.md` convention line, inside the managed `bmad:context` block, now states
+    the deletion instead of the two aliases and their call-site count. Its one remaining instruction, a
+    family role carrying no weight, is stated against the role (`font-weight: var(--w-black)` beside
+    `font-family: var(--f-display)`) rather than against an alias. The next `bmad-project-context`
+    refresh regenerates that block and should keep the corrected line rather than restore the old one.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-20-migration-step-5-swap-the-type.md`
   id: DW-82
@@ -4257,7 +5331,57 @@ status: done
 
     **Owner: whichever of Story 2-29 and the next `contracts/fonts.css` MINOR lands first.**
     **Trigger: the first edit to `packages/fonts/faces.json`, or to `HomeLayout.scss:119-160`.**
-  status: open
+
+    **The `HomeLayout.scss` half closed 2026-09-21 by Story 2-29**, by the second of the two shapes
+    of fix this entry sets out. That story rebuilt the file against the contract: both hero link
+    groups name the display family directly, neither sets `font-stretch` at all, and both render at
+    the published face's default 100% width, which is the one width `contracts/fonts.css`'s single
+    `size-adjust` was fitted at. **Re-measured 2026-09-21** in the pinned container by the same
+    `tests/e2e/type-swap.pw.ts` comparison that took the original reading, fallback then face:
+    `.contact-container a[0]` 95.94 to 101.39 (**5.68 percent**, where it was 18.57),
+    `[1]` 119.67 to 123.52 (**3.21 percent**, where it was 19.59) and `[2]` 83.17 to 86.33
+    (**3.79 percent**, where it was 19.17). The two `a.nav-link` elements read 296.00 both ways,
+    the panel's full width less its new padding. Heights held at 0.00 percent on all five, as
+    before. What is left is the ordinary swap movement `ops/font-contract.md` records for arbitrary
+    text rather than a width-axis fault. `--confillia-normal` has zero call sites,
+    `tests/e2e/type-swap.pw.ts` reads `100%` at both groups and `tests/e2e/anchor-aliases.pw.ts`
+    pins the alias at zero call sites in the shape `--hero-height` already used.
+
+    **The structural half stands and is what this entry is now about.** `contracts/fonts.css` still
+    publishes one `@font-face` for Bricolage Grotesque with `font-stretch: 75% 100%` and one
+    `size-adjust` fitted at the default width, and `Premise.scss:68` still asks for `75%`, so the
+    same shift exists on the framework band and has still never been measured. **Owner: the next
+    `contracts/fonts.css` MINOR.** **Trigger: the first edit to `packages/fonts/faces.json`, or to
+    `Premise.scss`'s display rule.**
+
+    **Measured on the Work item's row name on 2026-09-23 by Story 2-31**, and it is the first
+    time the structural half has shown as a height rather than a width. That story set
+    `.work-item__company` in the display face at `font-stretch: 85%`, the row name
+    `RESTYLE-SPEC.md` § 2 specifies for a work-history item, and in the pinned image at 360 the
+    first company set on two lines in the fallback and on one in the face (35.19 to 17.59), its
+    height per line held. The swap moved a whole line because the fallback has no width axis to
+    narrow to, which is this entry's cause exactly. `tests/e2e/type-swap.pw.ts` now holds the
+    four row names to their line box rather than their height, with the reason at the site, and
+    still holds every element at the default width to its height; the line counts stay printed.
+    The Suite Directory's row names carry the same `85%` and are still not measured. **Owner and
+    trigger unchanged: the next `contracts/fonts.css` MINOR, the first edit to
+    `packages/fonts/faces.json`.**
+
+    **One more narrowed site from 2026-09-24**, by the Operator ruling of that day on DW-121
+    (`spec-dw-121-secondary-surfaces.md`, commit `8e98285`): `/celeste`'s heading sets the display
+    face at `font-stretch: 85%`, at `--t-display`, where it took the default width before. It is the
+    first display-size line this entry reaches, and `tests/e2e/type-swap.pw.ts` does not measure
+    `/celeste` at all, which its comment on the display sites now says. At 360 in the pinned image,
+    with the face loaded, the heading sets three lines in a `14ch` box 252 wide; whether the fallback
+    wraps it differently across the swap is unmeasured. **Owner and trigger unchanged.**
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24**, accepted as a stated limit: a separate face
+    per condensed width, each with its own `size-adjust`, would scale height as well as width, so
+    the contract publishes one face and the Hub keeps the widths `DESIGN.md` sets. The limit row in
+    `ops/font-contract.md` carries the ruling (`ad52501`). What it accepts stays true: the display
+    face's swap moves text set at 75% and 85%, and `tests/e2e/type-swap.pw.ts` holds the Work item
+    row names to their line box.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
   id: DW-84
@@ -4281,7 +5405,17 @@ status: done
     committed file on a branch that never deploys, which is a new decision against the
     no-bot-commit rule and is not this story's. **Trigger: the first month whose reading is missed,
     or the first time a red run older than 90 days is needed and gone.**
-  status: open
+
+    **Closed 2026-09-24 as accepted, on the Operator ruling of that day (the monthly reading taken
+    from `gh run list` is the accepted history), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's records
+    commit.** Nothing more durable is built. `ops/registry-verification.md` § Readings says any
+    session takes a month's row from `gh run list --workflow registry-verification.yml` and the
+    chosen run's summary or log within 90 days of the month's end, and its stated limit on the
+    90-day expiry is marked accepted with the date. **Observed 2026-09-24** by that command: all
+    twelve scheduled runs on `main` from 2026-09-13 to 2026-09-24 concluded `success`, the last
+    35994948290. September's row exists; October's falls due in early November.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
   id: DW-85
@@ -4314,7 +5448,19 @@ status: done
     The fallback stands: a `workflow_dispatch` run on AD-22's refresh schedule. Reopens if the
     account moves to a tier that offers the type. Recorded in `ops/registry-verification.md`
     action 5 and § Stated limits, and in `ops/monitoring.md` beneath the reopened note.
-  status: open
+
+    **Closed 2026-09-24 as mitigated, on the Operator ruling of that day (AD-22's fixed refresh
+    scope gains "dispatch `registry-verification.yml` and confirm it is green"), by
+    `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, in the package's records
+    commit.** AD-22's rule in `ARCHITECTURE-SPINE.md` names the dispatch as a dated clause of its
+    fixed scope, so the fallback is a step of every refresh check rather than a practice nobody is
+    bound to. `epics.md` Story 4.1, which restates AD-22's list as "exactly", carries a dated
+    amendment pointing at the spine's list, since the copy would otherwise run the check without the
+    dispatch. `ops/registry-verification.md` (action 5 and the stated limit) and `ops/monitoring.md`
+    (beneath the refused note) say the same. **What stays true**: it is not a dead-man's switch; a
+    quiet spell can still leave the schedule off until the next check, and GitHub's one mail is the
+    only notice in between. Reopens with a heartbeat-capable plan, as before.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
   id: DW-86
@@ -4360,7 +5506,31 @@ status: done
     **Owner: unassigned; the natural home is Epic 3, which rewrites `deploy.yml` for GHCR
     images (AD-8) and can set the pinning rule for all four files at once.** **Trigger: the
     first edit to any `uses:` line in `.github/workflows/`, or Story 3-3.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (option B: `permissions: contents: read`
+    everywhere, and only third-party actions pinned by commit), by
+    `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`, commits `b0aeaff` and
+    `b589228`.** `ci.yml`, `deploy.yml`, `lighthouse.yml` and `registry-verification.yml` declare
+    `permissions: contents: read` at the top, and the deploy job alone widens it, by `issues: write`
+    for DW-20's report. `appleboy/ssh-action` is pinned to `0ff4204d59e8e51228ff73bce53f80d53301dee2`
+    (`v1.2.5`, where `v1` pointed) and `pnpm/action-setup` to
+    `0977fd99725f1db4007ccb2928dbb4e90d06cc86` (`v6.0.10`, where `v6` pointed; `v6.1.0` existed and
+    was not taken), both read with `git ls-remote` on 2026-09-24, so nothing the jobs run changed.
+    GitHub's own actions stay on tags. `ops/__tests__/workflow-hardening.test.ts` holds every
+    workflow in the directory to both rules, so a fifth inherits them. The pin stops a moved tag and
+    not what the pinned `ssh-action` downloads when it runs, which is DW-130. The repository's
+    default token permission is still `write` (observed through the API that day), and every
+    workflow now overrides it. `list-wheel`'s `deploy.yml` is outside this entry and this package.
+
+    **Amended 2026-09-24 for `list-wheel`**, on the same ruling, by
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+    `30e5e8b`. Its `deploy.yml` declares `permissions: contents: read` at the top (that repository's
+    own default is already `read`, observed through the API that day), only its `report` job widens
+    it, by `issues: write`, and `appleboy/ssh-action` is pinned to the same
+    `0ff4204d59e8e51228ff73bce53f80d53301dee2` (`v1.2.5`, where `v1` still pointed by `git ls-remote`
+    that day). GitHub's own actions stay on tags. `ops/deploy-remote.test.mjs` there holds both rules
+    for its one workflow, with planted controls.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-24-hub-visitor-instrumentation.md`
   id: DW-88
@@ -4379,7 +5549,23 @@ status: done
     **Owner: the first story that needs the split, after 2-29 lands the hero it would read.**
     **Trigger: the first monthly reading whose SM-1 share is under the 60% target, or Story
     2-29's close, whichever comes first.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (split suite-reach by front door), by
+    `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`, commit `9e49b88`.**
+    `suite-reach` carries one key, `door`, `flat` or `narrative`. `HomeLayout` now renders
+    `SuiteReach` and hands it the path `useNarrativePath` already decided, because the Directory is a
+    server component that cannot see it, and nothing is polled or observed while the door is
+    undecided. No new event and no new dependency. `ops/visitor-instrumentation.md` § How each
+    metric is read carries the SM-1 by-door query, a left join on `event_data` that reads
+    `unrecorded` for events sent before the change, and § Stated limits says what the split cannot
+    do: it divides the reached visits, and the Hub sessions stay undivided because a page view
+    carries no door. Held by `SuiteReach.test.tsx`, `HomeLayout.test.tsx`, `SuiteDirectory.test.tsx`
+    and `ops/__tests__/visitor-instrumentation.test.ts`, whose record case reads the key off the
+    component; `tests/e2e/visitor-instrumentation.pw.ts` reads `{ door: 'narrative' }` on the
+    default door and `{ door: 'flat' }` on the reduced-motion one, where the pre-ruling tree sent no
+    data on either. The door reaches production at the Epic 2 merge to `main`, so the first monthly
+    reading to split is the first whole month after that merge.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-24-hub-visitor-instrumentation.md`
   id: DW-89
@@ -4433,7 +5619,24 @@ status: done
     and `npm test` against a Chrome the runner provides, plus the wiring test for the deploy
     workflow, which is a decision about that repository and not this one. **Trigger: the first CI
     job added to `list-wheel` for any reason, or the first edit to its `deploy.yml`.**
-  status: open
+
+    **Closed 2026-09-24 on the Operator ruling of that day (option A: a test job the deploy needs), by
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+    `30e5e8b`, committed in a clone that day and left for the session that verifies the package to
+    push, which redeploys `wheel.cuatro.dev` once.** That repository's `.github/workflows/deploy.yml`
+    gains a `test` job (checkout, `setup-node` 22, `npm ci`, `npm test`, which `karma.conf.js` runs in
+    `ChromeHeadlessNoSandbox`, then `node --test ops/deploy-remote.test.mjs`), and `deploy` carries
+    `needs: test`, so a red suite stops the deploy before the box is touched; with `main` unprotected,
+    that `needs:` is the gate. The wiring test this entry asked for is `ops/deploy-remote.test.mjs`
+    there, on the standard library's runner, so no dependency is added: it holds the test job's steps,
+    the `needs:`, the Capacity Gate before the SSH step, no `continue-on-error`, no `|| true` and no
+    condition but the failure report's. Rehearsed on Node 22 with a Chromium in a container from the
+    committed tree: `npm test` 145 of 145, the new file 26 of 26, and a planted failing spec made
+    `npm test` exit 1. `ops/contract-adoption.md` moves the repository's real-test-suite verdict to yes
+    from the push; the fourth condition still fails, since `main` is unprotected, so no automation may
+    be enabled there. **What it does not do**: run the suite on a pull request, which the ruling did not
+    ask for, so a branch is tested when it reaches `main` and not before.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-91
@@ -4464,7 +5667,13 @@ status: done
     edit.** If a re-block lands first, the Operator either merges early or waits, as the spec's
     matrix says. **Trigger: `status: blocked` or a crossed `baseline` reaching `main` before the
     `placements` entry does.**
-  status: open
+
+    Closed 2026-09-13 by Story 2-25 itself, the same day it was filed: the Operator merged `dev`
+    into `main` (`cuatro-portfolio#75`, merge commit `1e93787` at 19:26:43Z), so
+    `ops/capacity-gate.yml` on `main` lists `list-wheel` and its deploy passes as an incumbent
+    from that commit on. The window existed for 1 h 55 min (17:31:32Z to 19:26:43Z) and no
+    re-block landed in it.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-92
@@ -4532,7 +5741,32 @@ status: done
     `concurrency` group, `paths-ignore` and `workflow_dispatch` added to one and not the other
     would be the drift the mirror exists to avoid. **Trigger: the first edit to either
     `deploy.yml`.**
-  status: open
+
+    **Half-closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`, commit `b0aeaff`, and
+    the entry stays open on the `list-wheel` half.** The Anchor's `deploy.yml` runs one deploy at a
+    time (`concurrency: deploy`, `cancel-in-progress: false`), resets to the pushed sha through
+    `ops/deploy-remote.sh`, ignores a push that changes only Markdown (`paths-ignore: '**.md'`, since
+    `.dockerignore` keeps every Markdown file but `README.md` out of the image and nothing the build
+    reads is Markdown), and takes `workflow_dispatch`, refused at its first step on any ref but
+    `main`. The ruling orders the same shape in `list-wheel`, whose `deploy.yml` is unchanged at
+    `00f5957` (read through the API on 2026-09-24); until that lands the two files differ by exactly
+    these additions, which is the drift this entry names. **Owner: the `list-wheel` half of the same
+    ruling.**
+
+    **Closed 2026-09-24 on the `list-wheel` half, on the same ruling, by
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+    `30e5e8b`, pushed by the session that verifies that package.** That repository's `deploy.yml` now
+    carries the Anchor's `concurrency: deploy` without cancellation, `paths-ignore: '**.md'` (its
+    `.dockerignore` keeps every Markdown file out of the image, and neither the build nor either suite
+    reads one) and `workflow_dispatch`, refused at the deploy job's first step on any ref but `main`, and
+    it resets to the pushed sha through its own `ops/deploy-remote.sh`, the Anchor's script at `b0aeaff`
+    with the checkout (`~/list-wheel`) and the compose line (no env file) changed. The two files are one
+    shape again, apart from what DW-90's test job adds and the failure report that moves into a job of
+    its own with it (DW-20). `ops/deploy-remote.test.mjs` there runs the Anchor's matrix against the
+    script. Nothing compares the two repositories' files, so the next edit to either carries the other
+    by hand, as this entry already said.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-25-relocate-list-wheel-onto-a-cuatro-dev-subdomain.md`
   id: DW-94
@@ -4559,4 +5793,2053 @@ status: done
 
     **Owner: the Operator's ruling, Epic 4's rebuild at the latest.** **Trigger: the ruling, or
     the first story that rewrites either SSH step.**
+
+    **Half-closed 2026-09-24 on the Operator ruling of that day for the Anchor's key, by
+    `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`, commit `b0aeaff`, and
+    the entry stays open on the rest.** `ops/deploy-remote.sh` holds the deploy and accepts only a
+    40-character lowercase sha that is an ancestor of `origin/main` after a fetch, read from its
+    argument or from the last word of `SSH_ORIGINAL_COMMAND`. The workflow sends one command string
+    that an unrestricted shell runs to bring the script in from the target commit, and that the
+    script parses under a forced command, so the workflow deploys before and after the key's line
+    changes, the first deploy after the merge included; `ops/__tests__/deploy-remote.test.ts` runs
+    it both ways. **What is open**: the line itself, `ops/contract-serving.md` Pending Operator action
+    7, which is the Operator's since no session here reaches the box, with its verification and
+    rollback written there; until it is dated the Anchor's key still opens a shell. And `list-wheel`'s
+    key, which waits for that repository's own script under the same ruling. Epic 3's image-pull
+    deploy edits the script (`epics.md` Story 3.4, amended).
+
+    **Amended 2026-09-24: `list-wheel`'s script landed, by
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`, `list-wheel` commit
+    `30e5e8b`, pushed by the session that verifies that package.** That repository's
+    `ops/deploy-remote.sh` holds the same contract, resets `~/list-wheel` and runs its own compose
+    line, and its workflow sends the same one-string shape; `ops/deploy-remote.test.mjs` there runs
+    the Anchor's matrix against it on every run of its test job. Rehearsed against the real history in
+    a container that day: a checkout cloned at `00f5957`, the box's commit, took the unrestricted
+    string to `50691bd` and then the forced command, and refused `id` and an empty command. **What is
+    open**: the two lines on the box, `ops/contract-serving.md` Pending Operator actions 7 (the
+    Anchor's key) and 9 (`list-wheel`'s), each due after the first deploy that brings its script.
+    Until both are dated, each key still opens a shell. Story 4.3 edits `list-wheel`'s script
+    (`epics.md`, amended).
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
+  id: DW-95
+  summary: >-
+    F-11 of `RESTYLE-SPEC.md:657` is unmet on the Hub: `:root` declares no `color-scheme`, and no
+    `::selection` rule sets both `background` and `color`. Nothing owns it.
+  evidence: |-
+    Observed 2026-09-13 by `git grep -n "color-scheme\|::selection" -- app components contracts`,
+    which returns one comment (`SuiteDirectory.scss`, which mentions the rule as F-8's named
+    exemption) and no declaration. `RESTYLE-SPEC.md:657` names F-11 as a check every application
+    meets: `color-scheme: dark` on `:root`, and `::selection` with an accent ground and
+    `--token-bg` text, the one permitted accent fill. The Hub renders a browser-default selection
+    and tells the user agent nothing about its colour scheme, so form controls and scrollbars take
+    the light default on a dark page.
+
+    Filed rather than done because Story 2-26's boundaries name F-11 as filed, not swept, and
+    because where it lands is a real question: `color-scheme` on `:root` is one line in
+    `app/app.scss`, but `RESTYLE-SPEC.md` § 4's own logic says a rule every Satellite copies by
+    hand belongs beside the focus rule, and `::selection`'s accent fill needs the exemption Story
+    2-34's F-8 grep is required to carry (`SuiteDirectory.scss` already argues the same for the
+    dot). Recorded as finding F-15 in `ops/hub-accessibility-pass.md`.
+
+    **Owner: unassigned.** **Trigger: the Operator's ruling on which story carries it**, Story
+    2-34 being the one whose gate has to know about the `::selection` fill either way.
+
+    **Read by Story 2-34, 2026-09-23, and not taken.** Its gate is a literal gate: a `::selection`
+    rule naming `var(--token-accent)` and `var(--token-bg)` passes it, and one naming a literal is
+    refused like any other declaration, so the gate needs no exemption for F-11. The exemption this
+    entry anticipates belongs to F-8's fill grep, which Story 2-34 did not build (see the Story 2-9
+    entry on the status dot). Owner and trigger unchanged.
+
+    **Closed 2026-09-24 on the Operator ruling of that day (`color-scheme: dark` on `:root`, and a
+    `::selection` rule on `--token-accent` with `--token-bg` text), by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `81f4078`.** Both are
+    in `app/app.scss` beside the focus rule, the scheme in its own `:root` block. The same commit
+    built F-8's check with this selection as one of its two exemptions (the Story 2-9 entry on the
+    dot). `tests/e2e/contract-anchor.pw.ts` reads F-11 the way `RESTYLE-SPEC.md` states its method, as
+    computed style: the root computes `color-scheme: dark`, and the heading's `::selection` computes
+    the accent ground and the `--token-bg` text, each against the role resolved in the same page,
+    beside a planted control; on the pre-ruling tree the root read `normal`. `app/__tests__/anchor-contract.test.ts`
+    admits `--token-accent` to the global stylesheet as `SELECTION_ROLES`. **Seen on the build**: the
+    minifier, Lightning CSS, writes `--lightningcss-light` and `--lightningcss-dark` beside the scheme,
+    its `light-dark()` polyfill, and `tests/e2e/anchor-aliases.pw.ts` admits that pair on the rule that
+    declares `color-scheme` and nowhere else. Finding F-15 and Pending Operator action 3 in
+    `ops/hub-accessibility-pass.md` close with this entry.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
+  id: DW-96
+  summary: >-
+    `DESIGN.md` disagrees with itself about the tech array's size and with the contract about the
+    number of z-levels. The shipped Hub follows the component section and the contract; the two
+    stale lines are a design-document correction nobody owns.
+  evidence: |-
+    Observed 2026-09-13 by reading. First, `DESIGN.md:468` places "Metadata, tech arrays, footer"
+    at `--t-2xs` in the scale table, and `:660` places the Registry Entry's "tech array in mono
+    `--t-3xs` uppercase" in the component section; `SuiteDirectory.scss` follows `:660`, and the
+    paragraph floor in `tests/e2e/accessibility-floor.pw.ts` excepts `.suite-directory__tech` by
+    name on that citation. Second, `DESIGN.md:565-568` and `:1295` say six named z-levels and
+    `epics.md:669` repeats "six", while `contracts/tokens.css:129-135` declares seven (`--z-base`,
+    `--z-raised`, `--z-dropdown`, `--z-sticky`, `--z-modal`, `--z-toast`, `--z-tooltip`); the
+    sweep derives the set from the contract and never types the count.
+
+    Neither is a defect in the Hub, and Story 2-26 corrected neither: `DESIGN.md` is a spine, a
+    value in it is changed deliberately, and choosing which of two lines is right is the design
+    owner's call. Recorded as findings F-14 and F-17 in `ops/hub-accessibility-pass.md`, and as
+    pending Operator action 2 there. Related: the paragraph floor met four `<p>` labels the design
+    places at `--t-3xs` (the count, the tech array, the Status mark, the Family label), which the
+    story's matrix had written as "every `p` at least `--t-2xs`" on a census that saw one; the
+    exception is a Decision in the same record and is flagged in the story's completion report as
+    the one narrowing of the matrix's wording.
+
+    **Owner: unassigned, the design owner.** **Trigger: the ruling**, after which one line in each
+    pair is corrected and, if the tech array moves to `--t-2xs`, `SuiteDirectory.scss:152` and the
+    exception move with it in one change.
+
+    **Closed 2026-09-24 on the Operator ruling of that day (tech arrays stay at `--t-3xs`, 11px, and
+    `DESIGN.md`'s `--t-2xs` row is the line corrected), by
+    `_bmad-output/implementation-artifacts/spec-records-and-docs.md`, commit `ffcd8aa`.** Both
+    halves. F-14: the scale table lists tech arrays on the `--t-3xs` row with a dated note and keeps
+    them struck on the `--t-2xs` row, so the table and § Components → Registry Entry agree with the
+    shipped `.suite-directory__tech`; no build byte moved and the paragraph floor's exception stands.
+    F-17: the four places that said six z-levels, `DESIGN.md` § Z-index scale and its Don'ts line and
+    `epics.md`'s UX-DR44 and hallmark criterion, say seven with a dated note, as the contract declares.
+    `ops/hub-accessibility-pass.md` closes F-14, F-17 and Pending Operator action 2.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-26-the-hub-s-focus-standard-and-the-manual-accessibility-pass.md`
+  id: DW-97
+  summary: >-
+    The A-14 clause the Operator withdrew on 2026-09-13 ("its content stated in prose") survives in
+    four planning lines the amendment did not reach, one of them Story 2-29's own acceptance
+    criterion, so that story inherits a requirement that no longer exists.
+  evidence: |-
+    Observed 2026-09-13 by the review pass of Story 2-26. The ruling landed as one dated amendment
+    at `EXPERIENCE.md:773`, the only planning-document edit the story's boundaries allowed. The
+    same clause still reads unamended at `EXPERIENCE.md:527-528` ("It is decorative and its content
+    is stated in prose"), `epics.md:644` (the A-list summary, "its content stated in prose"),
+    `epics.md:2591` (Story 2.13's criterion, "and its content is stated in prose") and
+    `epics.md:3328` (Story 2.29's criterion, "**Given** the 3D canvas is decorative and its content
+    is stated in prose (A-14)"). The first three are stale restatements; the fourth is live: Story
+    2-29 rebuilds the hero and would read that Given as a requirement to write prose the ruling says
+    is not owed. The Decision in `ops/hub-accessibility-pass.md` and the DW-52 closure name the four
+    places so a reader of either finds them; none was edited.
+
+    **Owner: Story 2-29**, which reaches `epics.md:3328` when it opens and can carry the other three
+    lines in the same dated amendment. **Trigger: Story 2-29's planning**, before its criteria are
+    frozen.
+
+    **Closed 2026-09-21 by Story 2-29**, whose planning is this entry's trigger. **The finding
+    stands and the withdrawn clause is not implemented.** `epics.md:3336-3338` was read as A-14's
+    `aria-hidden` and not-focusable half only: the canvas is `aria-hidden` on its `<Canvas>` wrapper
+    (`Scene.tsx:40`), on the element itself (`:49-50`) and now on `.home-gem` as well, and nothing
+    in that story writes prose describing the scene. So the requirement the stale Given states was
+    read against the ruling rather than against its own text, and was not inherited.
+
+    **The four lines are left unamended, deliberately.** `EXPERIENCE.md` and `epics.md` are frozen
+    planning artifacts under an approval, and a story does not edit one as a side effect of
+    implementing it, which is the same reason the ruling landed as one dated amendment at
+    `EXPERIENCE.md:773` rather than as four edits. The three restatements at
+    `EXPERIENCE.md:527-528`, `epics.md:644` and `epics.md:2591` describe a clause the Operator
+    withdrew on 2026-09-13 and are harmless; the live one at `epics.md:3328` is now spent, because
+    the story it addressed has read it. The withdrawal is recorded at `EXPERIENCE.md:773`, in
+    `ops/hub-accessibility-pass.md` and in DW-52's closure, and now here.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
+  id: DW-98
+  summary: >-
+    `tests/e2e/front-door.pw.ts` measures the no-shift claims at the wide viewport only, for a
+    reason that no longer exists: the below-768 rewrap `GlitchText`'s font-gated split caused
+    left with Story 2-27, and the narrow viewport is now measurable.
+  evidence: |-
+    Observed 2026-09-14 by reading. `front-door.pw.ts`'s default-path no-shift case (its comment
+    at the `and the default path does not move either` test) and the every-frame case under
+    `the running page settles at one height` both state that they measure at `WIDE_VIEWPORT`
+    because below 768 `GlitchText` re-split the display line into per-character inline blocks
+    once the fonts resolved, which could rewrap it, and that reflow belonged to the component
+    rather than to the decision being measured. Story 2-27 rebuilt the component as inline spans in
+    the served markup with no split and no font gate, so at 360 the hero's height is its content's
+    from first paint and nothing in the heading moves it afterwards. Both comments were reworded
+    as history in that story; the scope was left at the wide viewport.
+
+    Not widened by Story 2-27, whose spec names the widening as a question for the Operator and
+    books it here otherwise: the two cases are Story 2-13's instrument for the hero's geometry,
+    the narrow viewport is the one `HomeLayout.scss` stacks the panels on, and a 360 measurement
+    that finds movement would be finding the hero's, which is Story 2-29's file. The measurement
+    is cheap once that story owns the answer: the same two cases with `RENDERED_VIEWPORT` beside
+    `WIDE_VIEWPORT`, and `SETTLING_SLACK` re-read against what the stacked hero actually does.
+
+    **Owner: Story 2-29**, which rebuilds `HomeLayout` and owns the hero's height at every width.
+    **Trigger: that story's first edit to `HomeLayout.scss`'s below-768 block**, or the Operator
+    saying otherwise.
+
+    **Closed 2026-09-21 by Story 2-29**, whose first edit to `HomeLayout.scss`'s below-768 block is
+    this entry's trigger. Both cases run at `RENDERED_VIEWPORT` beside `WIDE_VIEWPORT` now: `and the
+    default path does not move either at 360` and `at 1024`, and, for each of the three doors
+    answered before paint, `... never moves at 360, sampled every frame` and `at 1024`. Eight cases
+    where there were four.
+
+    `SETTLING_SLACK` was re-read against what the stacked hero actually does and did not move: the
+    narrow readings came back inside it on the first run, which is what the entry expected but could
+    not assert. The measurement was worth taking anyway, because it is the width the panels stack on
+    and the one this story reshaped.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
+  id: DW-99
+  summary: >-
+    The display face preload question reopens. The `fonts.ready` gate that made a preload
+    "latency, not correctness" is gone with Story 2-27; the entrance now runs at `--delay` on
+    whichever face is present and swaps under `font-display: swap`, and nothing measures when
+    Bricolage arrives against the one-second delay.
+  evidence: |-
+    Observed 2026-09-14 by reading. Story 2-20 deleted the two `app/layout.tsx` preloads and
+    refused a contract-face preload on two grounds (`ops/asset-budget.md` § What this reads
+    against the budget's own rules, Rule 4, and DW-9's closure): `GlitchText.tsx` gated
+    `SplitText` on `document.fonts.ready`, so the first-paint width guarantee a preload claimed
+    was never the preload's to give; and a preload of a contract face puts `contracts/` in a
+    scanned source, which `app/__tests__/anchor-contract.test.ts` refuses. Story 2-27 rebuilt the
+    component with no gate: the fourteen spans are in the served markup and the CSS animation
+    starts at first style resolution, so a character fades in at `--delay` plus its stagger in
+    whichever face the browser has, and Bricolage Grotesque, published at `font-display: swap`,
+    replaces it when the woff2 lands. On a cold cache that swap can fall inside or after the
+    entrance, and nothing in the repository measures where: `tests/e2e/type-swap.pw.ts` measures
+    the swap's geometry, not its timing, and `tests/e2e/narrative.pw.ts` pins the preloaded-face
+    count on `/` at zero. The first premise of the refusal is therefore gone and the second
+    stands.
+
+    Not measured by Story 2-27, whose boundaries name `app/layout.tsx` for nothing and whose
+    spec pins the entrance's shape, not the face it runs in. A reading would be a `fonts.ready`
+    timestamp against the first span's `animationstart` on a throttled connection, in the pinned
+    image, before any preload is argued for; the `contracts/` scan is the constraint any answer
+    has to satisfy.
+
+    **Owner: unassigned.** **Trigger: any story that touches the `app/layout.tsx` preloads or the
+    type contract.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-27-redesign-glitchtext-token-native.md`
+  id: DW-100
+  summary: >-
+    The heading's clock moved. `HomeLayout.tsx`'s GSAP timeline runs from hydration and the
+    heading's CSS `animation-delay` runs from first style resolution, so the `1.0` passed as
+    `delay` no longer sits on the same clock as the `1.3`, `1.6`, `2.0` and `2.2` beside it, and a
+    document with no script shows the heading a second later than it did.
+  evidence: |-
+    Observed 2026-09-14 by reading. `HomeLayout.tsx:61-83` builds one `gsap.timeline()` inside
+    `useGsapContext`, which runs on mount after hydration, and positions the gem at `0.5`, the
+    role line at `1.3`, the system panel at `1.6`, the nav links at `2.0` and the contact links at
+    `2.2` seconds on that timeline's clock. `<GlitchText delay={1.0} />` at `:110` used to hand
+    its `1.0` to a GSAP tween inside the same component's `useGsapContext`, so the heading and the
+    rest of the hero counted from the same moment, hydration. Since Story 2-27 the `1.0` is
+    `--delay` on a CSS animation whose delay counts from the moment the stylesheet first applies
+    to the served spans, which is first paint. The two clocks differ by the hydration time: on a
+    fast load a few hundred milliseconds, on a slow one seconds, and the heading now lands that
+    much earlier relative to the role line than the numbers beside each other say.
+
+    The other face of the same change: with no script at all (a blocked bundle, a reader that
+    runs none), the old component showed the heading at first paint, because its `opacity: 0`
+    was written by script that never ran; the new one holds every span at `opacity: 0` through
+    `--delay` plus its stagger, so a scriptless document is without its heading for the first
+    1.0 to 1.42 seconds. `tests/e2e/display-entrance.pw.ts` asserts the heading arrives on that
+    document; it does not assert when.
+
+    Story 2-27's spec forbade re-sequencing `HomeLayout.tsx:52-84`'s timeline and kept the
+    `delay` prop and its `1.0`, and both are met to the letter: no line of the timeline moved and
+    the number is the same. What moved is what the number is relative to. Recorded rather than
+    fixed because the fix is a re-orchestration, either the heading's delay counted from
+    hydration (an inline `--delay` written by the client boundary, which puts an effect back into
+    the entrance) or the timeline's offsets counted from first paint, and that is the hero's
+    entrance as a whole.
+
+    **Owner: Story 2-29**, which re-orchestrates the hero's entrance when it rebuilds
+    `HomeLayout`. **Trigger: that story's first edit to the timeline.**
+
+    **Closed 2026-09-21 by Story 2-29.** The two clocks are one clock. `HomeLayout.tsx`'s timeline
+    is gone and the five delays are `animation-delay` literals in `HomeLayout.scss`, counted from
+    the moment the stylesheet first applies to the served markup, which is the moment `GlitchText`'s
+    `--delay: 1s` has counted from since Story 2-27. So the `1.0`, `1.3`, `1.6`, `2.0` and `2.2` of
+    the shipped sequence sit on one clock for the first time, and the gap between the heading's
+    reveal and the panels' is what the numbers say rather than that plus the hydration time.
+
+    **Five rules animate, and `.home-panel--name` is not one of them.** The `1.0` above is
+    `GlitchText`'s own `--delay`, passed as an inline style on the heading inside that panel; the
+    stylesheet's five are the gem at 500ms, the role line at 1300, the readout panel at 1600 and
+    the two link groups at 2000 and 2200, with three `animation-delay` overrides for the staggers.
+    The rebuild briefly gave the name panel a sixth at 500ms, which the retired timeline never had:
+    its `finalState` was `['.home-panel--sys', '.home-role', '.nav-link', '.contact-container a']`
+    and the 2023 stylesheet gave `--name` no `opacity: 0`, so it had always painted immediately.
+    That hid the hero's name for 500ms and ran `GlitchText`'s delay inside a parent that was itself
+    ramping, a composite nobody specified. **Removed 2026-09-21** by the Step-04 review, which is
+    also when `tests/e2e/narrative.pw.ts` started reading every site's delay and fill on the running
+    page: until then nothing did, and `both`, which is the whole of DW-42's no-script guarantee,
+    could have been dropped from any of the five without a failure.
+
+    The other face closes with DW-42: a scriptless document now shows the whole hero, heading
+    included, because every base state is the final state and the keyframes supply only the `from`.
+
+    **What is not closed is whether the sequence still feels right.** The five delays were tuned
+    against a clock that started later than this one, so the order is correct by construction and
+    the rhythm is not asserted by anything. That is carried into Story 2-29's own § Verification as
+    a manual check, to be played at 2x to 5x in the animation inspector with fresh eyes.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token.md`
+  id: DW-101
+  summary: >-
+    The scrim's composited-contrast guarantee is verified by sampling the rendered ground beneath
+    text, and no surface composites the layer beneath text until Story 2-29 places it.
+  evidence: |-
+    `epics.md:3254-3261` gives the contrast table for the five roles over `--token-scrim`, worst
+    case over a pure white backdrop (`--token-text` 13.51:1, `--token-focus` 9.02:1,
+    `--token-accent-hover` 6.94:1, `--token-text-secondary` 5.41:1, `--token-accent` 4.77:1), and
+    asks for the guarantee to be verified by screenshotting the composited surface, sampling the
+    rendered ground beneath the text and computing the ratio by hand, never by trusting the table.
+
+    Story 2-28 rebuilt the component as that layer on 2026-09-14 and removed both shipped call
+    sites, because neither was text over moving imagery (`/work`'s hero separates the display line
+    from the canvas, and the 404 has nothing moving). After it the layer has a contract and no
+    consumer, the way `--token-scrim` itself sat in the contract with no consumer since Story 1-11.
+    A probe over an element injected for the measurement would sample the token's arithmetic
+    rather than the site, so the verification is carried rather than performed.
+
+    **Owner: Story 2-29**, which places the layer across the home canvas beneath the corner
+    panels (`epics.md:3286-3361`) and already carries the stack constraint `epics.md:3272` names
+    (an element above the scrim's z-level computes against the imagery, not the scrim). **Trigger:
+    that story's first placement of the layer.** The method: screenshot the composited surface in
+    the pinned image at 360 x 800, sample the ground beneath each of the five roles where it sits
+    over the scrim, and compute the ratio from the sampled sRGB, recording each beside the table's
+    figure.
+
+    **Closed 2026-09-21 by Story 2-29**, which placed the layer inside `.home-gem` across the home
+    canvas and added the sampling case this entry asks for to
+    `tests/e2e/accessibility-floor.pw.ts`. **Observed 2026-09-21** in
+    `mcr.microsoft.com/playwright:v1.62.1-noble`, on a `no-preference` context so the default door
+    renders, with the composited surface screenshotted and read through a canvas in the page.
+
+    **Read at 1024 x 800 rather than at the 360 x 800 this entry states.** Below 768 the hero is a
+    flex column, the gem is a static item between the name and the nav, and `HomeLayout.scss` hides
+    the scrim there because no text overlays imagery; at 360 there is no composited surface to
+    sample. 1024 is the narrowest width at which the four panels sit over the canvas.
+
+    The ground beneath every panel's text sampled `rgb(5, 4, 9)`, the modal colour of each panel's
+    box, covering 60.8 to 75.8 percent of it. Against that ground, each role's rasterised sRGB, with
+    the figure `epics.md:3254-3256` tables beside it: `--token-text` **17.66:1** against 13.51;
+    `--token-focus` **11.80:1** against 9.02; `--token-accent-hover` **9.07:1** against 6.94;
+    `--token-text-secondary` **7.07:1** against 5.41; `--token-accent` **6.24:1** against 4.77.
+    Every one clears its own floor, 4.5:1 for the four text roles and 3:1 for the ring.
+
+    **Every measured ratio is above the tabled one, and that is the table being read correctly
+    rather than a disagreement.** The table is the worst case, the scrim over a pure white backdrop;
+    the real backdrop is the near-black canvas over `--token-bg`, so the composite is darker than
+    the worst case and every role contrasts better against it. The guarantee is the floor, and the
+    table is the floor's worst case.
+
+    **That the scrim is genuinely beneath is proved by sampling, not by reading a z-index.** The
+    layer is repainted an unmistakable colour and the surface screenshotted again: beneath every
+    panel the ground becomes that colour, which says the scrim covers the imagery there, and each
+    panel still paints its own text over it, which says the panel is above the scrim. Neither half
+    depends on what the WebGL canvas draws. The z-level trap `epics.md:3300-3304` names is resolved
+    by the header not being there at all: the same case reads zero `.header-container` on `/`,
+    because `Header.tsx:12` returns `null` on that route.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-28-redesign-scanlineoverlay-as-the-scrim-layer-consuming-token.md`
+  id: DW-102
+  summary: >-
+    A faint overlay returning to `/work` or the 404 passes every gate but two unit assertions: the
+    rendered-output comparator cannot see a change under its per-pixel threshold, the KV-6 depth
+    sweep does not count a `url()` grain or a flat low-alpha layer, and `AGENTS.md`'s baseline
+    line does not cover an update run that declines to write.
+  evidence: |-
+    Observed 2026-09-14 by Story 2-28, in `mcr.microsoft.com/playwright:v1.62.1-noble`, when the
+    hero's `light` raster and grain left `/work` and nothing failed.
+
+    **The comparator.** `tests/e2e/rendered-output.pw.ts` compares `/work` at 360 x 800 through
+    Playwright's pixelmatch at the default per-pixel `threshold` of 0.2, and `maxDiffPixelRatio`
+    counts only the pixels that threshold has already called different. The raster's removal
+    changed 80,831 of 288,000 pixels, the largest YIQ distance among them 662.5 against the 1,408.6
+    the threshold allows, so the comparator counted zero, the plain run passed against the old
+    baseline and `pnpm test:e2e:update` wrote nothing; the Operator ruled the update forced
+    (`ops/rendered-output-harness.md` § Regenerating the baseline, and the amendments under § The
+    tolerance). `node ops/baseline-diff.mjs <a.png> <b.png>` is what states the number. A change
+    spread thin across a region is invisible to the ratio however many pixels it touches, and a
+    scrim at `--c-scrim`'s 0.88 alpha over a near-black ground is exactly that shape.
+
+    **The sweep.** `tests/e2e/accessibility-floor.pw.ts` counts `z-index` literals, `box-shadow`,
+    `text-shadow` and the four gradient functions in the built CSS and nothing else; a `url()`
+    grain and a flat low-alpha `background-color` are neither, which F-7's own note in
+    `ops/hub-accessibility-pass.md` recorded on 2026-09-13 ("neither a shadow nor a gradient, so the
+    depth sweep does not count it").
+
+    **The pitfall line.** `AGENTS.md:64-66` says to regenerate the baselines with
+    `corepack pnpm test:e2e:update` inside the pinned image only, and that invocation is
+    `--update-snapshots` in `changed` mode, which declines to write a capture that matches. The
+    line is right about where and wrong about when, and the managed block is not a story's to edit.
+
+    What catches the return today: the two assertions Story 2-28 added, `Error404.test.tsx`
+    (no `.scanline-overlay` in the 404's markup) and `WorkHero.test.tsx` (none in the hero's), and
+    the component test's exact equality on the compiled stylesheet, which refuses a `url(` or an
+    `opacity` there. A new call site elsewhere, or a second component painting the same thing,
+    passes all three.
+
+    **Owners and triggers.** The `url(` and low-alpha tell for the sweep: **Story 2-34** (the
+    colour-literal gate, which is where a tell on the built CSS belongs), with **Story 2-33** as the
+    surface (the hero's rebuild); trigger, 2-34's first edit to the sweep or 2-33's first edit to
+    `WorkHero.scss`. The `threshold` question, whether the comparator keeps the default or takes a
+    second, tighter comparison for the compared region: **unassigned**; trigger, the next baseline
+    change the comparator measures as none. The `AGENTS.md` line: the next `bmad-project-context`
+    refresh, which owns the managed block; trigger, that refresh.
+
+    **Story 2-33's first edit to `WorkHero.scss` fired the surface half on 2026-09-23**, and it was
+    taken there: the rebuilt stylesheet is held by `WorkHero.test.tsx` to naming its fourteen pinned
+    roles and nothing else, with no `url(`, no colour function, no `transition`, no `z-index`, no
+    `overflow: hidden`, and no opacity but the entrance keyframe's `from`, so a grain, a raster or a
+    faint layer written back into the hero fails there. **The sweep's `url(` and low-alpha tell is
+    not taken**: it is a change to `tests/e2e/accessibility-floor.pw.ts`'s built-CSS tally, which is
+    where Story 2-34's colour-literal gate belongs, and that owner and trigger stand. The `threshold`
+    question and the `AGENTS.md` line are unchanged. **Seen on the day**: the `/work` baseline was
+    regenerated by Story 2-33 on a change the comparator did count (85,590 differing pixels), not one
+    it measured as none.
+
+    **Story 2-34, 2026-09-23: the low-alpha half taken at the source, the `url(` half not.** Its gate
+    reads every stylesheet git tracks, not the built CSS, and refuses any alpha outside the one on
+    `--c-scrim` in `contracts/tokens.css`: `rgba(`, `hsla(`, a four or eight digit hex, a slash alpha,
+    `color-mix()` with `transparent`, in every file the permitted set included. A flat low-alpha
+    layer written into any stylesheet now fails a blocking job before a build exists. A layer
+    painted with `var(--token-scrim)` is a role, which no literal scan can tell from the scrim's
+    legitimate use. A `url()` grain is not a literal and the story's criteria do not name one, so
+    that tell is not taken: **owner unassigned**, trigger the next edit to the built-CSS tally. The
+    `threshold` question and the `AGENTS.md` line are unchanged.
+
+    **The `url(` half closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`, commit `1af8569`.** The
+    built-CSS tally in `tests/e2e/accessibility-floor.pw.ts` counts every `url(` outside an
+    `@font-face` block as the depth tell `url` and expects none, a ledger row being the only way to
+    admit one. On the build it reads the three face `src` urls, all inside `@font-face`, and counts
+    nothing; a planted face beside a planted `background-image` grain and a `background` shorthand is
+    reported as two, and with the counting lines taken out the same case failed in the pinned image
+    before it passed. The `threshold` question and the `AGENTS.md` line are what this entry still
+    holds, owners and triggers unchanged, so it stays open.
+
+    **The `AGENTS.md` half closed 2026-09-25 on Operator ruling 2026-09-24**, by the
+    `bmad-project-context` refresh (`9dfd37c`): the block's rendered-output line says a change under
+    the per-pixel threshold makes the update run write nothing, and points at the forced form in
+    `ops/rendered-output-harness.md` § Regenerating the baseline. The `threshold` question is what
+    this entry still holds, owner and trigger unchanged, so it stays open.
+  status: open
+
+- source_spec: `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/review-apple-design-2026-09-15.md`
+  id: DW-103
+  summary: >-
+    The published `--ease-exit` is a pure ease-in, `cubic-bezier(0.7, 0, 0.84, 0)` at
+    `contracts/tokens.css:125`, so every Satellite that adopts the token inherits an exit that
+    delays visible movement to the frames the user watches most; retargeting it is an AD-16
+    contract change for the next minor, not a stylesheet fix.
+  evidence: |-
+    Found 2026-09-15 by the apple-design review (A-4). Apple's § 1 and the review-animations
+    standard both bar an ease-in on a UI element: it starts slow, which reads as lag at exactly
+    the moment after the input. The smallest change is `--ease-exit` retargeted to the
+    `--ease-entrance` curve, `cubic-bezier(0.16, 1, 0.3, 1)`, at the existing `--dur-exit`
+    (165ms). No Hub stylesheet reads `--ease-exit` today (`grep -r "ease-exit" app components`
+    answers nothing), so the Hub carries no defect from it yet; the Satellites' vendored copies
+    do, and that is what makes it a contract change rather than a local one. Story 2-31 books the
+    Hub's one ease-in close (`WorkItem.tsx:90-94`) separately, as a JS literal.
+
+    **Owner and trigger.** The next contract minor under the AD-16 runbook (Story 1.20's
+    propagation procedure), which is where a published value changes and propagates; trigger,
+    the first contract change that opens a minor for any other reason, so the curve rides with
+    it rather than costing a propagation of its own.
+
+    Story 2-31 made the Hub's half of this on 2026-09-23 without touching the contract:
+    `WorkItem`'s close tween runs `power2.out` over the exit duration, stated by hand in
+    `components/atoms/WorkItem/WorkItem.tsx`, and its unit suite measures the curve as an
+    ease-out on GSAP's own parser. `contracts/tokens.css` still publishes the ease-in, and no
+    Hub stylesheet reads it. Owner and trigger unchanged.
+
+    **Closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`, commit `40591cd`.** The
+    published `--ease-exit` is `cubic-bezier(0.33, 1, 0.68, 1)`, the CSS form of the `power2.out`
+    WorkItem already runs, rather than the entrance curve, set in both places `DESIGN.md` states it
+    and in `packages/tokens/tokens/motion.json`. It rode in Contract 2.0.0, the MAJOR DW-15 opened,
+    so `cs-tracker` re-vendored once for both (`991d0f6`). A tokens-contract case holds the curve's
+    opening slope above linear; on the 1.0.0 file it failed reading a slope of 0. No Hub stylesheet
+    and nothing in `cs-tracker` reads the token, so nothing renders differently today.
+  status: done
+- source_spec: `_bmad-output/implementation-artifacts/spec-a-17-lenis-scoped-to-reduced-motion.md`
+  id: DW-104
+  summary: >-
+    A-17 (smooth scroll initialised only when the motion preference is not `reduce`, and torn
+    down if it flips) is now built, but it exists as a row nowhere: `EXPERIENCE.md`'s
+    Accessibility Floor stops at A-16 and `review-accessibility.md:343` only proposed it, so the
+    code and eight comments cite a requirement the spine does not carry, and no Satellite can
+    check itself against it.
+  evidence: |-
+    Surfaced 2026-09-15 by the blind-hunter layer in both review loops of the A-17 build.
+    `EXPERIENCE.md:769-775` is the floor table and ends at A-16; `:656` still describes reduced
+    motion as "Non-3D path" only. `review-accessibility.md:343-350` proposed A-17 through A-20 on
+    2026-08-15 as "named requirements the satellites can check", and O-17 books the residual
+    findings of that review to a triage pass before Epic 8 (`EXPERIENCE.md:1063`). A-17 is
+    pre-existing planning debt the build closed in code without closing in the spine.
+
+    **Owner and trigger.** The O-17 triage pass, which is where the accessibility review's
+    residual findings are dispositioned together; trigger, that pass opening. Until then the
+    definition is `review-accessibility.md:343`, which every citation names.
+
+    **Closed 2026-09-24 on the Operator ruling of that day (DW-36: remove Lenis, "a-17 moot"),
+    commit `237772c`.** There is no smooth scroll left to scope: Lenis and `app/providers.tsx` are
+    deleted and every visitor scrolls natively, so A-17 has no subject and no row is added to
+    `EXPERIENCE.md`'s Accessibility Floor. `spec-a-17-lenis-scoped-to-reduced-motion.md` records
+    itself superseded, and the code and the eight comments that cited A-17 as a live requirement now
+    cite it as history. `review-accessibility.md:343` stays the record of what was proposed. The
+    same proposal's A-18 delegates keyboard scrolling "to lenis", a target that no longer exists;
+    that item is the O-17 triage pass's, and nothing here decides it.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-a-17-lenis-scoped-to-reduced-motion.md`
+  id: DW-105
+  summary: >-
+    Two e2e line citations were already pointing at the wrong code before A-17 and were left
+    alone by it: `tests/e2e/front-door.pw.ts:257` cites `narrative.pw.ts:280-298` for
+    `withMotion`, which sits at `:289-307`, and `tests/e2e/visitor-instrumentation.pw.ts:158`
+    cites `front-door.pw.ts:665-669` for the heading `toBeInViewport`, which sits at `:661-664`.
+  evidence: |-
+    Found 2026-09-15 while re-deriving every citation the A-17 edit shifted in
+    `tests/e2e/suite-directory.pw.ts`; both of these point into files that edit did not shift
+    (`front-door.pw.ts` is net unshifted from baseline), so the drift predates it. Comment-only;
+    no assertion reads them.
+
+    **Owner and trigger.** The next story that edits either citing file; trigger, that edit.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-106
+  summary: >-
+    The five hero links are `opacity: 0` for up to 2.36 seconds while focusable and clickable, so a
+    keyboard visitor who tabs during the entrance takes a focus ring onto an invisible target. The
+    shape is pre-existing and slightly better than it was; it is filed because nothing else stands
+    between a tab press and an invisible link.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. `HomeLayout.scss` animates the two
+    link groups from `opacity: 0` with `animation-fill-mode: both`, so the `from` is held through
+    the delay: the first nav link is invisible until 2000ms, the second until 2080, and the three
+    contact links until 2200, 2280 and 2360. Nothing removes them from the tab order or from the
+    hit-testing tree while they are transparent, so `Tab` lands on them and the global
+    `:focus-visible` ring paints around a link the visitor cannot read, and a click at the right
+    coordinates activates it.
+
+    **Pre-existing, and marginally improved by that story rather than caused by it.** The 2023
+    stylesheet opened the same elements at `opacity: 0` and the GSAP timeline lifted them on the
+    same schedule; what changed is the clock. GSAP's ran from hydration, CSS's runs from first
+    paint, so the window is now shorter by the hydration time and, more to the point, deterministic.
+    A reduced-motion visitor never sees it at all, because `HomeLayout.scss`'s
+    `prefers-reduced-motion` block sets `animation: none` and that door renders the flat hero.
+
+    **Not Story 2-29's to fix**, whose frozen criteria fix the entrance's shape and its five delays
+    and name no focus behaviour during it. The conformant repairs are all bigger than a line: shorten
+    the sequence so the window closes before a visitor could plausibly tab, give the links
+    `pointer-events: none` and `visibility: hidden` until their turn, which changes what the
+    entrance is, or move the whole orchestration behind a "has the visitor interacted yet" gate.
+    Each is a design decision about the hero rather than a defect in the stylesheet.
+
+    **Owner: Story 2-32**, which rebuilds the chrome and the contact links and already owns the
+    hit-target and focus behaviour of two of the five. **Trigger: the next change to the entrance's
+    delays, or any accessibility pass that tabs `/` inside the first 2.4 seconds.**
+
+    **Re-read 2026-09-23 by Story 2-32; the trigger did not fire, and the entry is re-booked.** That
+    story made the contact group a list and moved its stagger from `a:nth-child()` to
+    `li:nth-child() a` with the same three delays, which is not a change to them:
+    `tests/e2e/narrative.pw.ts` reads 2200, 2280 and 2360 on the three links as before. Every repair
+    set out above changes what the entrance does, which is behaviour, and `RESTYLE-SPEC.md` § The
+    ceiling keeps behaviour out of a restyle; no design document states focus during the entrance.
+    **Owner: unassigned, for an Operator ruling on the entrance.** **Trigger: unchanged.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (visibility hidden until each hero link's
+    turn), by `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`, commits `123b723`
+    and `57593b9`.** The five links take their own keyframe, `home-enter-link`, whose `from` holds
+    `visibility: hidden` beside `opacity: 0`: hidden through the delay the `both` fill holds and
+    visible from the fade's first frame, so a link joins the tab order and hit-testing exactly when
+    it starts to appear, on the same five delays. The role line and the gem keep the opacity-only
+    `home-enter`, and reduced motion is untouched, its block setting `animation: none`.
+    `tests/e2e/front-door.pw.ts` holds every animation at its start and tabs from the top: the
+    skip-link, the skip control, then the Directory, with no hero link reached and no click at a
+    link's centre landing on it. Played to its end, the same reads find all five in order, and on the
+    reduced-motion door all five are Tab stops from the first frame. On the pre-ruling tree the same
+    Tab landed on all five while each was at `opacity: 0`. `tests/e2e/narrative.pw.ts` allows
+    `visibility` in exactly one place, the links keyframe's `from`, beside a planted control, and
+    `EXPERIENCE.md` § Motion carries the dated note.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-107
+  summary: >-
+    `.home-panel--sys` is `display: none` below 768, so a viewport crossing upward after the
+    entrance has run re-displays it with its `animation-delay` restarting, leaving the readout panel
+    blank for 1.6 seconds on a surface that has otherwise finished arriving.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. `HomeLayout.scss`'s
+    `@media (max-width: 767px)` block sets `.home-panel--sys { display: none }`, and the panel's own
+    rule animates `home-enter` at a 1600ms delay with `animation-fill-mode: both`. An element with
+    no box runs no animation; when the viewport crosses 768 upward the box appears and the animation
+    starts then, from its delay, so the panel is held at the keyframe's `opacity: 0` for 1.6 seconds
+    while the four panels around it are already at rest.
+
+    Reachable by rotating a tablet, by dragging a desktop window across the breakpoint, and by any
+    responsive-design-mode session. Not reachable by a normal load at either width: below 768 the
+    panel is never shown and above it the delay runs with everything else.
+
+    The same shape exists for `.home-gem` and `.skip-control` across the flat modifier, and does not
+    matter there: both are removed from the DOM by `HomeLayout.tsx` on that path rather than hidden,
+    and the path is a one-way door.
+
+    **Not fixed here** because the conformant repairs both cost more than the defect: rendering the
+    panel conditionally puts a viewport read into React, which is the layout thrashing Story 2-13's
+    hook exists to avoid, and dropping the delay on a re-display needs a class toggled by a resize
+    listener, which `EXPERIENCE.md` bars in favour of `IntersectionObserver` and which would be a
+    script for a cosmetic case. Recorded so a reader who sees a blank corner mark after a rotation
+    knows it is this and not a regression.
+
+    **Owner: Story 2-31**, which rebuilds `HudLabel`, the component that panel renders. **Trigger:
+    that rebuild, or any story that gives the readout panel a responsive rule of its own.**
+
+    Re-read 2026-09-23 by Story 2-31, on the trigger, and not closed. The rebuild moved the
+    readout's label onto the Plate mark's side-ruled variant and changed nothing about the panel
+    that holds it: the `display: none` below 768 and the 1600ms `home-enter` delay are both in
+    `HomeLayout.scss`, Story 2-29's file, and the label is a child of the box that restarts, not
+    the box. The two conformant repairs this entry names are unchanged and still cost more than
+    a blank corner after a rotation. A third was considered and is recorded so it is not
+    rediscovered: holding the panel at `visibility: hidden` rather than `display: none` below
+    768 keeps its box and lets the entrance finish unseen, but it moves two pinned below-768
+    readings (`HomeLayout.test.tsx` and `tests/e2e/front-door.pw.ts`) on a surface this story
+    does not own. **Owner: unassigned.** **Trigger: this entry's second one, any story that
+    gives the readout panel a responsive rule of its own.**
+
+    **Closed 2026-09-24 as moot, on the Operator ruling of that day on DW-110, commit `04b3f4a`.**
+    The readout panel this entry describes is removed from the Home surface at every width, with its
+    1600ms entrance and its `display: none` below 768, so there is no box to re-display after a
+    rotation and no corner left blank while it waits.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-29-redesign-homelayout-token-native.md`
+  id: DW-108
+  summary: >-
+    Every figure in `ops/asset-budget.md` is pinned by nothing. `ops/__tests__/asset-budget.test.ts`
+    runs the model against a synthetic fixture root, so the recorded readings can drift from the
+    tool's output, from each other and from the build without a failure anywhere.
+  evidence: |-
+    Observed 2026-09-21 by the Step-04 review of Story 2-29. That suite builds a fixture tree and
+    asserts the model's arithmetic on it, which is the right thing to test and is not the question:
+    nothing reads `ops/asset-budget.md`'s tables back and compares them with anything. Contrast the
+    two ledgers that are held both ways, `ops/hit-target-floor.md` against
+    `tests/e2e/hit-target-floor.pw.ts` by `ops/__tests__/hit-target-floor.test.ts`, and
+    `ops/hub-accessibility-pass.md` against `tests/e2e/accessibility-floor.pw.ts` by
+    `ops/__tests__/hub-accessibility-pass.test.ts`, each of which fails when a row and its record
+    disagree.
+
+    **Pre-existing, and noted because Story 2-29 moved those numbers.** That story added a dated
+    reading and a dated run, and its arithmetic (a 235-byte gzipped delta decomposed into a 225-byte
+    chunk movement and two rebuild-variance renames) is held true by a reader alone. So is the
+    cross-reading claim that the before build reproduces an earlier story's after figures, which it
+    did not, for a reason that had to be found by hand.
+
+    **A cheap first step, short of a full harness**: a unit case that parses the build table out of
+    the most recent `### The ... reading` section and asserts its own totals are self-consistent,
+    which would have caught nothing here but costs little and can only tighten. The full version
+    needs a build, which puts it outside the `test` job.
+
+    **Owner: unassigned.** **Trigger: the next story that records a reading in that file, or the
+    first time a figure in it is found wrong.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-19-cs-tracker-adopts-the-token-contract.md`
+  id: DW-109
+  summary: >-
+    Both `cs-tracker` probes stop at exit 3 on this Windows host unless the shell sets `NO_COLOR`,
+    because the Tailwind 4.1.12 CLI colours its `--help` banner and the version match cannot read
+    through the escape codes. The Block If fires on a colour code, not on a wrong compiler.
+  evidence: |-
+    Observed 2026-09-23, re-running both probes for AD-22 (Pending Operator action 2 in Story 1-15's
+    `ops/daisyui-route.md` and in Story 1-19's `ops/cs-tracker-token-adoption.md`).
+    `node ops/daisyui-route-probe.mjs` and `node ops/cs-tracker-adoption-probe.mjs` each exited 3
+    with "the Tailwind binary reports no version at all, not v4.1.12", and each completed once
+    `NO_COLOR=1` was set: exit 0 and exit 1 respectively, the 1 being DW-17's known pin. Spawned
+    directly with `--help` through a pipe, `cs-tracker`'s own 4.1.12 binary prints
+    `tailwindcss \x1b[34mv4.1.12\x1b[39m`, coloured with `TERM` unset and with `TERM=dumb` alike and
+    plain only under `NO_COLOR=1`. The matches are `/(tailwindcss v[\d.]+)/` at
+    `ops/daisyui-route-probe.mjs:748` and `ops/cs-tracker-adoption-probe.mjs:1052`. The recorded runs
+    of 2026-08-25 to 2026-08-29 read a plain banner on the same host; what their shells set is not
+    recorded.
+
+    Both records now tell the Operator to set `NO_COLOR=1`, so the scheduled re-run is not blocked.
+    The repair is to strip ANSI escape sequences from the `--help` output before matching, in both
+    probes, with a unit case feeding the coloured banner to the match. That is a code change to two
+    Epic 1 deliverables and outside the documentation-only closure of those actions, so it is filed
+    rather than made.
+
+    **Owner: unassigned.** **Trigger: the next change to either probe, or the next re-run that stops
+    at exit 3 on the banner.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day, by
+    `_bmad-output/implementation-artifacts/spec-epic-1-close.md`, commit `b14bcbb`.** Both probes
+    read the banner through an exported `tailwindBanner`, which strips every escape sequence with
+    `node:util`'s `stripVTControlCharacters` before the match. Each probe's unit suite feeds it the
+    coloured bytes `cs-tracker`'s 4.1.12 binary printed on 2026-09-24, and both cases were red on the
+    old match first. From Git Bash with `NO_COLOR` unset, `node ops/daisyui-route-probe.mjs` exited 0
+    at 7 of 7 and `node ops/cs-tracker-adoption-probe.mjs` at 19 of 19. The `NO_COLOR` instructions in
+    `ops/daisyui-route.md` and `ops/cs-tracker-token-adoption.md` are withdrawn by dated notes.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
+  id: DW-110
+  summary: >-
+    The home readout's label reads `SYS_ONLINE`, a code rather than words, and no planning
+    document supplies the words it should read; a label is read aloud, so the Plate mark's own
+    rule asks for real words there.
+  evidence: |-
+    Found 2026-09-23 by Story 2-31, moving the readout from `HudLabel` onto the Plate mark's
+    side-ruled variant (`components/organisms/HomeLayout/HomeLayout.tsx`). `EXPERIENCE.md` §
+    Plate mark says the label is read, so its text is real words and not a decorative code, and
+    names `// ERR_NOT_FOUND` as the example. The shipped readout was `// SYS_ONLINE ◕`. Story
+    2-31 took out the two pieces of decoration, the `//` and the `◕`, because the Plate mark
+    carries no marker (`DESIGN.md` § Components, Plate mark) and decoration inside a read string
+    is the defect the rule describes; it changed no word, because a restyle does not rewrite
+    copy (`RESTYLE-SPEC.md` § The ceiling) and no document says what the readout should say. The
+    mockup that rendered a side-ruled mirror used a location and a time zone, and a mockup loses
+    to all three documents, so that is not a source either.
+
+    The panel is also not an obvious genuine ordinal or domain, which is the other condition
+    `RESTYLE-SPEC.md` § 7 puts on a label; the Home surface's composition still asks for a Plate
+    mark in every panel, so the two rules meet here and neither yields. **Owner: the Operator,
+    as the author of the site's copy.** **Trigger: any story that edits the readout panel, or a
+    copy pass over the hero.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (remove the readout panel), by
+    `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`, commit `04b3f4a`.**
+    `.home-panel--sys` and its side-ruled Plate mark are deleted from `HomeLayout.tsx`, with its
+    notch, its 1600ms entrance and its two `display: none` rules in `HomeLayout.scss`, so no string
+    on the hero reads a code and the composition's Plate mark rule has no panel left to ask it of.
+    Three panels remain. On the default door at 768 and 1280 the point the readout covered resolves
+    to the imagery beneath, which `tests/e2e/front-door.pw.ts` reads beside a planted box the same
+    read reports; on the pre-ruling tree it resolved to `div.home-panel--sys` at both widths. At 360
+    the stacked hero is unchanged, the panel having been `display: none` there. `HomeLayout.test.tsx`
+    reads three panels and no Plate mark on either door and no rule naming the panel. The Plate
+    mark's side-ruled variant, whose one call site this was, stays as `DESIGN.md`'s vocabulary and
+    is read on planted marks (DW-124). `EXPERIENCE.md`, `DESIGN.md` and `epics.md` carry dated notes;
+    `RESTYLE-SPEC.md` does not describe the panel.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
+  id: DW-111
+  summary: >-
+    A collapsed work item's panel stays in the accessibility tree, and since Story 2-31 each is
+    a named region, so a landmark list on `/work` or `/cv` offers four regions of which three
+    are closed.
+  evidence: |-
+    Observed 2026-09-23 by Story 2-31, which gave each panel `role='region'` named by its
+    company, as `EXPERIENCE.md` § Work item asks. The panel collapses to `height: 0; overflow:
+    hidden`, which hides it from sight and from nothing else: its text has always been read by a
+    screen reader whether the row is open or not, and the region role now lists it as a landmark
+    too. The disclosure pattern expects collapsed content to be hidden, which here means
+    `hidden` or `inert` set when the close tween completes and cleared before the open one
+    starts.
+
+    Not done by Story 2-31, because it changes the disclosure's behaviour rather than its look:
+    GSAP owns the panel's box, the first render's collapsed style is frozen on purpose (Story
+    2-16), and hiding closed panels from the tree would also hide them from the no-script and
+    print readings DW-76 and DW-73 are about. **Owner: unassigned.** **Trigger: the next change
+    to the disclosure's mechanism, or an accessibility pass that reads `/cv` with a screen
+    reader.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
+  id: DW-112
+  summary: >-
+    Each work item's company heading sits inside its trigger `<button>`, wrapped in a `<div>`,
+    so the markup breaks the button's content model and the four companies are not expected to
+    be headings a screen reader can move between.
+  evidence: |-
+    Found 2026-09-23 by Story 2-31's review, and it predates that story: the nesting at
+    `components/atoms/WorkItem/WorkItem.tsx:135-145` (`div.work-item__meta` holding the `h2` and
+    `div.work-item__sub`, inside `button.work-item__header`) is the same at the story's
+    baseline, `460230c`, and the story only gave the `h2` an `id` so the panel's region can be
+    named by it. A `<button>` admits phrasing content only, and `<div>` and `<h2>` are flow
+    content, so a conformance checker reports both. WAI-ARIA 1.2 gives the `button` role
+    presentational children, which a browser should not expose, so the heading role beneath the
+    trigger is not expected to reach a screen reader; not measured with one. The region's name
+    is unaffected: `aria-labelledby` reads the text of the node it points at whatever that
+    node's role is, and `tests/e2e/plate-mark-and-work-item.pw.ts` reads each region named by
+    its company.
+
+    The pattern that keeps both is a heading that holds the button, `<h2><button
+    aria-expanded>`, with the meta line set in phrasing elements. That moves the trigger's box,
+    the focus ring's reach that the same spec measures (F-19) and the `/work` baseline, and it
+    is a change to the disclosure's markup rather than its look, so Story 2-31 did not make it.
+    **Owner: unassigned.** **Trigger: DW-111's, the next change to the disclosure's mechanism,
+    since both entries are the same component's semantics.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-31-redesign-workitem-and-hudlabel-token-native.md`
+  id: DW-113
+  summary: >-
+    Lighthouse reads `/` at 0.96 on accessibility against the 0.95 gate, because axe scores
+    colour contrast on `aria-hidden` ornament: three of the home surface's Japanese lines and
+    three of the premise band's names, all in the muted accent at 2.74:1.
+  evidence: |-
+    Observed 2026-09-23 by Story 2-31, on a local reading taken the way
+    `.github/workflows/lighthouse.yml` takes it (`@lhci/cli` 0.15.1, Lighthouse 12.6.1, mobile
+    emulation, three runs per URL, the Umami variables empty, nothing uploaded) in
+    `mcr.microsoft.com/playwright:v1.62.1-noble`: `/` 0.96 on every run with `color-contrast`
+    its one failing audit, `/work` and `/cv` 1.00. A further run itemised the audit as
+    `.home-role__jp`, `.home-nav-jp`, `.home-contact-jp` and three `.premise__framework` names,
+    each hidden from assistive technology and each `#564c91` on `#060509`. `DESIGN.md` and
+    `EXPERIENCE.md` settle that colour as ornament that may carry nothing a reader needs, so no
+    reader loses a word here; the gate's instrument and a design decision disagree. None of the
+    six nodes is Story 2-31's, and the last recorded reading of `/`, 2026-09-14 in
+    `ops/hub-accessibility-pass.md`, was 1.00.
+
+    **Why it is worth an entry.** The job runs on push to `main` only, so this first gates at
+    the Epic 2 merge, and `/` clears the line by one hundredth: a second failing audit on that
+    route would very likely take it under. **Owner: unassigned.** **Trigger: the Epic 2 merge to
+    `main`, or any story that sets new text in the muted accent on `/`.**
+
+    **Widened 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`, observed rather than predicted.**
+    The same local reading, taken after that story deleted `body#work`, reads `/work` at 0.96 on
+    all three runs, where the Story 2-31 reading put it at 1.00: its one failing audit is
+    `color-contrast` on the annotated Plate mark's subordinate line, `span.plate-mark__sub`
+    (`経験`), `aria-hidden` ornament in the muted accent, `#564c91` on `#060509` at 2.74:1. The node
+    is Story 2-31's and did not move; what moved is the ground beneath it. Until that story `/work`
+    painted the cybercore grid as two `linear-gradient` images on `body`, and the change in the
+    reading is consistent with axe setting a node over a background image aside for review rather
+    than failing it; on the plain `--token-bg` it computes the ratio. `/cv` reads 1.00 (its section
+    mark carries no subordinate line), `/` 0.96 as above, best practices and SEO 1.00 everywhere,
+    and every assertion is green. **The margin is one hundredth on two routes now**, so the trigger
+    widens: the Epic 2 merge to `main`, or any story that sets new text in the muted accent on `/`
+    or on `/work`.
+
+    **Closed 2026-09-24 on the Operator ruling of that day (move the aria-hidden ornament strings
+    into CSS generated content), by `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`,
+    commit `f97267b`.** The three Japanese lines, every name in the framework band and the Plate
+    mark's subordinate line are empty `aria-hidden` spans whose string is their `data-ornament`,
+    painted by `content: attr(data-ornament)` on `::before` in the colour, face and size each had.
+    axe scores contrast only on an element with text nodes of its own, so nothing a reader does not
+    need is scored and the audit sees each route's real text again. **Observed 2026-09-24** in the
+    pinned image, three runs per URL, the way `.github/workflows/lighthouse.yml` takes it:
+    accessibility 1.00 on every run of `/`, `/work` and `/cv`, `color-contrast` passing with no item,
+    best practices and SEO 1.00, every assertion green, where the package's baseline read `/` and
+    `/work` at 0.96 on all three runs in the same image with the seven ornaments as the audit's only
+    items. The recolouring fallback was not needed and `DESIGN.md` is unchanged. The reading is in
+    `ops/hub-accessibility-pass.md` § Lighthouse readings; `tests/e2e/accessibility-floor.pw.ts` holds
+    each ornament empty, hidden and painted from its attribute beside planted controls. `/`'s
+    ungated performance score moved in the same reading for DW-106's reason, not this one's (DW-125).
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-30-redesign-error404-token-native.md`
+  id: DW-114
+  summary: >-
+    The 404's supporting line restates the heading (`Page not found.`, then `The page you’re
+    looking for does not exist.`), and no design document supplies either string or the Plate
+    mark's label, so the page says one thing twice and its label is a reading of a code.
+  evidence: |-
+    Found 2026-09-23 by Story 2-30, whose user story asks the 404 to say one thing once.
+    `EXPERIENCE.md` § Error surface, `DESIGN.md` § The redesigned Hub surfaces and
+    `RESTYLE-SPEC.md` § 8 fix the structure (a Plate mark, the display line, one line of secondary
+    text, the exits) and none of them gives the words; § UI strings in `EXPERIENCE.md` has no row
+    for this surface. The story kept the shipped line verbatim, with its apostrophe typeset per
+    `DESIGN.md` § Typography, because rewriting copy is the Operator's act rather than a
+    stylesheet's, and set the label to `Error`, the plain word the shipped `// ERR_NOT_FOUND`
+    abbreviated, because its criteria required real words and the rest of the code is what the
+    heading already says. Both are recorded in the story's Design Notes as assumptions. The line
+    could carry something the heading does not (where the reader might go instead, or why the
+    address may be wrong), and the label could be a different domain word; either is a copy
+    decision. `tests/e2e/error-surface.pw.ts` reads the title, the heading and the message for the
+    redundancy test and pins all three as saying the page was not found, so a new line either keeps
+    saying it or moves that pin in the same change; branch A of O-12 item 3 holds while at least one
+    of the three does, and the numeral stops being ornament the day none does.
+
+    **Owner: the Operator, as the author of the site's copy**, the DW-110 precedent. **Trigger:
+    any copy pass over the Hub, or a `§ UI strings` row added for the error surface.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (the line reads `Check the address, or use
+    one of the links below.` and the label stays `Error`), by
+    `_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`, commit `e03a380`.**
+    `Error404.tsx` sets the ruled line verbatim, so the heading says the page was not found and the
+    line says what to do about it: the page says one thing once. `Error404.test.tsx` pins the new line
+    exactly. `tests/e2e/error-surface.pw.ts` moved its pin as this entry anticipated: with the numeral
+    removed, branch A is carried by exactly the title and the heading, where the pre-ruling tree read
+    the title, the heading and the message (**observed** in the pinned image, the moved case failing
+    on the baseline with the message as a third carrier), so branch A of O-12 item 3 holds on two
+    carriers and the numeral stays ornament. `EXPERIENCE.md` § UI strings carries the error surface's
+    row with the label, the heading and the line; `ops/hub-accessibility-pass.md` and
+    `ops/rendered-output-harness.md` carry dated notes on the carriers. The page's `description`
+    metadata (`This page does not exist.`) is not the supporting line and is unchanged, and
+    `mockups/redesigned-components.html` keeps the old line as a mock.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-30-redesign-error404-token-native.md`
+  id: DW-115
+  summary: >-
+    Five `:hover` rules outside the files the redesign stories rebuild are still not gated on a
+    hover-capable pointer, so on a phone a tap paints them and leaves them painted, which the
+    2026-09-15 rule binding every redesign story forbids and no story owns for these files.
+  evidence: |-
+    Found 2026-09-23 by Story 2-30's review, reading the built stylesheets for the 404 (the skip
+    link's rules now ship in their own chunk beside the display entrance's). A grep of
+    `components/` for `:hover` outside `@media (hover: hover)` names
+    `components/atoms/SkipLink/SkipLink.scss:62`, `components/organisms/CvIntro/CvIntro.scss:122`,
+    `components/organisms/SiteFooter/SiteFooter.scss:89` and
+    `components/organisms/SuiteDirectory/SuiteDirectory.scss:294-295`, besides
+    `components/atoms/Navbar/navbar.scss:44`, which is Story 2-32's file and its criterion.
+    `review-apple-design-2026-09-15.md` A-5 booked the gate to the four restyle stories by file
+    ownership and listed the files it read; these four were not among them, and each was built by a
+    story that is `done` (2-13, 2-16, 2-11 with the footer link from 2-17, and 2-9), so the binding rule in
+    `_bmad-output/implementation-artifacts/epic-2-context.md` reaches them through no story. Each is
+    a recolour of an underline or a border, so what sticks is a colour rather than a layout, and the
+    fix is the one line per file the review proposed: wrap the block in the query, as
+    `Error404.scss`, `WorkItem.scss`, `HomeLayout.scss` and `SkipControl.scss` do. Not done by Story
+    2-30, whose scope is the 404's own stylesheet.
+
+    **Owner:** Story 2-32 for `SkipLink.scss`, by the same ownership of the top-of-page chrome that
+    books `clip-skip-link` to it; **unassigned** for the other three, with Story 2-34's conformance
+    gate the natural place for a check that would find the next one. **Trigger: Story 2-32's first
+    edit to the chrome, or Story 2-34's first edit to the sweep.**
+
+    **The `SkipLink.scss` half closed 2026-09-23 by Story 2-32**, on the first trigger. The link's
+    hover sits inside `@media (hover: hover)`, read off the compiled sheet by
+    `components/atoms/SkipLink/__tests__/SkipLink.test.tsx`, and `clip-skip-link` closed in the same
+    commit. `navbar.scss:44` left disk with the file: `Navbar.scss` gates its one hover (DW-69). The
+    other three files are untouched and this entry stays open for them: `CvIntro.scss:122`,
+    `SiteFooter.scss:89` and `SuiteDirectory.scss:294-295`, **unassigned**, Story 2-34's sweep still
+    the natural home for the check.
+
+    **Read by Story 2-34, 2026-09-23, and not taken.** Its gate refuses literals, and an ungated
+    `:hover` is a rule's condition, not a literal: the story's criteria do not name it, and a check
+    for it is a different gate with its own false-positive question (a `:hover` inside
+    `@media (hover: hover)` written in another file, or reached through a mixin). The three files are
+    untouched; **owner unassigned**, trigger the first edit to any of the three.
+
+    **The `SuiteDirectory.scss` half closed 2026-09-23 by Story 2-22**, on that trigger: the story
+    rewrote the file's header comment, and its independent verifier refused it for leaving the hover
+    below that comment ungated. The live and source links' recolour sits inside
+    `@media (hover: hover)` (`SuiteDirectory.scss:296-301`), read off the compiled sheet by
+    `components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx` on the `SkipLink`
+    precedent, and `tests/e2e/suite-directory.pw.ts` still sees both links recolour under a pointer
+    that can hover. The other two files are untouched and still ship their hover ungated, so this
+    entry stays open for them: `CvIntro.scss:122` and `SiteFooter.scss:89`, **owner unassigned**,
+    trigger the first edit to either.
+
+    **The last two halves closed 2026-09-23 by
+    `_bmad-output/implementation-artifacts/spec-dw-115-cv-intro-and-footer-hovers-gated.md`**, a fix
+    made for this entry alone. Each rule is unchanged and now sits inside `@media (hover: hover)`,
+    `CvIntro.scss:123-127` and `SiteFooter.scss:90-94`, read off the compiled sheet by
+    `components/organisms/CvIntro/__tests__/CvIntro.test.tsx` and
+    `components/organisms/SiteFooter/__tests__/SiteFooter.test.tsx` on the `SkipLink` and
+    `SuiteDirectory` precedent. `tests/e2e/secondary-surfaces.pw.ts` still sees the footer link
+    recolour under a pointer that can hover. No browser case reads the `/cv` intro links' recolour
+    (`tests/e2e/accessibility-floor.pw.ts` hovers them only to find no ring), so the rule pinned
+    verbatim in their suite is what holds it. **Observed 2026-09-23**: every tracked stylesheet,
+    compiled with `sass` and stripped of its `@media (hover: hover)` blocks as those suites strip
+    them, has no `:hover` left, so no hover in the Hub sits outside the gate the 2026-09-15 rule
+    asks for. Nothing gates the next one: each suite reads its own file, and the repository-wide
+    check this entry offered Story 2-34 was not taken.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
+  id: DW-116
+  summary: >-
+    KV-5 has nothing measured in breach since Story 2-32 widened the container, so its retirement is
+    due: the whole-page census reads no element past either edge at 360 on `/work` or `/cv`, and the
+    act of retiring it has not been made.
+  evidence: |-
+    **Observed 2026-09-23** in `mcr.microsoft.com/playwright:v1.62.1-noble` at 360 x 800 by
+    `tests/e2e/plate-mark-and-work-item.pw.ts`, which compares both edges of every element with a box
+    against the viewport and prints the whole page's count with the torus canvas mounted: `/work` 0
+    and `/cv` 0, where Story 2-31's reading earlier the same day was `/work` 10, every one of them the
+    hero's. No hero stylesheet changed. Story 2-32 rebuilt `.container` from `min(80%, 1920px)` to
+    `min(100%, 1920px)` at `--page-pad`, which `DESIGN.md` names as what made the 360 floor fail, and
+    at 360 the page's content box grew from 256 to 320, which the hero's column fits.
+
+    `ops/known-violations.md` KV-5 fills `Retired on` "when no element sits outside the viewport at
+    360", and its own paragraph under the halves table asks whoever closes the last half to widen the
+    Story 2-8 sweep's A-5 arm past interactive elements and retire the entry. That is a change to an
+    instrument, `tests/e2e/hit-target-floor.pw.ts` and its record, and a retirement that moves the
+    entry's status, date, title, index row and the literal pins in
+    `ops/__tests__/hit-target-floor.test.ts`, with DW-57 and DW-66's title and closing-list
+    corrections due at the same moment. None of it is Story 2-32's chrome, whose spec records the
+    measurement and books the act here rather than taking it. KV-5's cells carry the re-read, dated.
+
+    **Owner: Story 2-33**, the last closing story KV-5 names, which rebuilds `WorkHero` and can
+    retire the entry on its own hero reading. **Trigger: that story starting**, or any earlier
+    reading of KV-5 for a decision.
+
+    **Closed 2026-09-23 by `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`.** The Story 2-8 sweep's A-5 arm reads every element with a box on
+    every surface (`outsideTheViewport` in `tests/e2e/hit-target-floor.pw.ts`, both edges at the same
+    slack), and a standing case shows it reporting two planted blocks that the interactive arm misses.
+    **Observed 2026-09-23** in the pinned image: 0 elements of any kind past an edge on `/`, `/work`,
+    `/cv`, `/celeste` and the 404. KV-5 is retired in its entry and index row, `ops/hit-target-floor.md`
+    records the widening and the reading, and DW-57 and DW-66 closed with it.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
+  id: DW-117
+  summary: >-
+    No design document states the wordmark's string, size or tracking, or the underline a
+    non-current nav link carries at rest, and "the site name" has three candidate strings in the
+    repository. Story 2-32 took values by precedence and the mock; the Operator should confirm them.
+  evidence: |-
+    `DESIGN.md` § Components, Nav gives the wordmark the display face at `wdth 75` and `--w-black`,
+    and `EXPERIENCE.md` § Chrome says its accessible name is the site name. Neither states which
+    string that is, what size it sets at, or its tracking, and `RESTYLE-SPEC.md` is silent too. What
+    Story 2-32 shipped, and why:
+
+    - **The string `Cuatro`**, as the link's whole content, so its accessible name is its text with no
+      `alt` or `aria-label`, uppercased by the stylesheet. It is the word the retired raster drew
+      (`CU4TRO`) and the word the design's mock sets (`mockups/redesigned-components.html`, § C5), and
+      `RESTYLE-SPEC.md` § The ceiling keeps a restyle's copy as it was. **The other two candidates**:
+      the Registry names the Hub `Cuatro Ecosystem` (`contracts/registry.json`, `cuatro-portfolio`),
+      and `app/layout.tsx` declares `openGraph.siteName: 'Luigi Espinosa'`, which the page titles'
+      `%s | Luigi Espinosa` template repeats. The three disagree, and which one "the site name" means
+      is the Operator's.
+    - **`--t-sm`**, the size the mock sets, and **`--tr-name`**, the name role nearest the mock's
+      hand-written `-0.02em`; `--lh-heading` is `RESTYLE-SPEC.md` § 6's for non-display type. Measured
+      in the pinned image, the word sets **37.75** wide at `wdth 75` and 49.75 at 100, so its link is
+      held to `--tap` on the inline axis by `min-inline-size`.
+    - **The rest underline on a non-current destination**: `--stroke-hair` in
+      `--token-border-interactive`, the Source link's and the footer link's, because `DESIGN.md` says
+      hover recolours "the existing underline" and `RESTYLE-SPEC.md` § 1b gives every link one at
+      rest that never appears on hover. The mock draws a transparent 2px rule at rest instead, which
+      loses on precedence and would appear on hover.
+
+    **Owner: the Operator**, for a ruling on each; a change is one line in `Logo.tsx` or in
+    `Logo.scss` or `Navbar.scss`, with the pins in `components/molecules/Header/__tests__/Header.test.tsx`,
+    `components/atoms/Logo/__tests__/Logo.test.tsx` and `tests/e2e/chrome-nav.pw.ts`. **Trigger:
+    the Operator's next look at the chrome.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (keep `Cuatro`; `--t-sm`, `--tr-name` and
+    the rest underline confirmed as shipped), by
+    `_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`, in the package's records
+    commit.** No value moves: the ruling confirms what Story 2-32 shipped. `EXPERIENCE.md` § UI strings
+    carries a dated wordmark row naming the string, its size and tracking and the underline a
+    non-current destination keeps at rest. The four comments that called the values filed for the
+    Operator (`Logo.tsx`, `Logo.scss`, `Logo.test.tsx`, `tests/e2e/chrome-nav.pw.ts`) say they are
+    confirmed, commit `bc23bab`. The other two candidate names stay where they are, the Registry's
+    `Cuatro Ecosystem` and the page metadata's `Luigi Espinosa`, since neither is the wordmark.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-32-redesign-the-chrome-navbar-header-logo-contactcontainer-cont.md`
+  id: DW-118
+  summary: >-
+    The header's scroll padding restates its one-row block size from four tokens, so it is exact
+    while the row does not wrap and short by a line when it does; and it also applies on `/celeste`,
+    where the header is rendered and hidden.
+  evidence: |-
+    `Header.scss` declares `scroll-padding-block-start: calc(var(--s-lg) + var(--tap) + var(--s-lg) +
+    var(--stroke-hair))` on `html:has(.header-container)`. **Observed 2026-09-23** in the pinned image
+    at 360 x 800: it reads **93px** on `/work`, `/cv` and the 404, equal to the rendered header, which
+    `tests/e2e/chrome-nav.pw.ts` holds on every run. The row is one line at 360 and above, which is
+    what that equality observes on all three surfaces: a wrapped row would make the box taller than
+    the padding. Two ceilings, stated so neither is found by surprise:
+
+    1. **A row that wraps**, under the supported 360 floor or with text zoomed until a label is taller
+       than `--tap`, grows the band by a line the padding does not know about, so a fragment target
+       lands that much under the header. Measuring the band from script would close it and would write
+       onto the root element from a component, which `AGENTS.md` rules out; container queries cannot
+       reach the scroll container. Nothing in the Hub's supported range wraps today.
+    2. **`/celeste` carries the padding with no visible header**, because `#celeste header` hides the
+       header by `display: none` while `html:has(.header-container)` still matches the element. The
+       page has no fragment target, so nothing lands anywhere; the 2023 `140px` had the same shape.
+
+    **Owner: unassigned.** **Trigger: a header that has to wrap at a supported width, a fragment
+    target added to `/celeste`, or the next change to the header's contents.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`
+  id: DW-119
+  summary: >-
+    The `/work` torus can still be dragged: `CanvasOrbitControls` gives a decorative canvas a pointer
+    rotation that `EXPERIENCE.md` rules out ("no gesture"), which Story 2-33 left in place because the
+    restyle ceiling keeps interactions. The homepage's `ParticleWave` drag has the same shape.
+  evidence: |-
+    `components/molecules/TorusCanvas/TorusCanvas.tsx` renders `<CanvasOrbitControls />` inside the
+    scene, drei's `OrbitControls` with zoom and pan off and rotation on, so a mouse or a finger can turn
+    the torus. `EXPERIENCE.md` § Pointer and touch says "No long-press, no swipe, no gesture. Everything
+    is a tap or a click", § Work hero and work timeline calls the canvas decorative, and `Scene.tsx`'s
+    own comment says there is "nothing inside it to operate", which is true of the gem and not of the
+    torus. `RESTYLE-SPEC.md` § The ceiling keeps "the same interactions" through a restyle, so Story
+    2-33 recorded the conflict rather than removing an interaction, the way Story 2-32 re-booked the
+    new controls it was not asked for. **Observed 2026-09-23** in `mcr.microsoft.com/playwright:v1.62.1-noble`
+    on a context that allows motion: the canvas computes `touch-action: auto` at 360, 768 and 1280, so a
+    touch that starts on it still scrolls the page; the gesture costs a phone nothing but a drag that
+    rotates the torus. The home's `ParticleWave` (CHANGELOG 3.2.0: "Click-drag rotation with inertia")
+    is the same question on the other canvas.
+
+    A consequence worth knowing before ruling: the orbit controls are what pull `three-stdlib` and the
+    `three` namespace into `/work`'s WebGL chunk group, which is why Turbopack emits that group's large
+    chunk separately from the homepage's (DW-120). Removing them is likely, not verified, to let the two
+    groups share one file.
+
+    **Owner: the Operator**, for a ruling: keep the rotation as a deliberate divergence written into
+    `EXPERIENCE.md`, or remove it from both canvases in a story that owns them. **Trigger: that ruling,
+    or the next change to either scene.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (remove drag-to-rotate from both
+    canvases), by `_bmad-output/implementation-artifacts/spec-dw-36-narrative-weight.md`, commit
+    `16412d1`.** `CanvasOrbitControls` is deleted, `TorusCanvas` draws a light and the torus and
+    nothing else, and `three-stdlib` left `package.json` with its only importer (drei keeps its own
+    copy). `ParticleWave` lost its pointer drag, the inertia it coasted on after a release and the
+    grab cursor it set on the body, and holds its pose as a static rotation. The torus turns with the
+    scroll and with nothing else, and the wave moves on its own clock.
+
+    **The touch evidence above was incomplete, and the correction is observed.** On the pre-ruling
+    build `BU9kM-lGaB456wSGuYMN5`, in the pinned image at 1280 with motion allowed, the canvas does
+    compute `touch-action: auto`, but connecting the orbit controls wrote an inline `touch-action:
+    none` on the renderer's outer wrapper, which R3F makes its event source
+    (`three-stdlib`'s `OrbitControls.js:300`, `react-three-fiber.esm.js:86`). The effective touch
+    action is the intersection up the chain, so a swipe that started on the torus could not scroll
+    the page. `tests/e2e/work-hero.pw.ts` now reads every box from the canvas to the root, and drags
+    the torus and compares the canvas byte for byte, each against a planted control;
+    `tests/e2e/narrative.pw.ts` drags the wave, reads its pose off the scene the renderer draws and
+    reads the body cursor on hover and on press; `TorusCanvas.test.tsx` pins the scene's contents.
+    On the pre-ruling tree the torus's pixels moved under the drag and the wave turned from
+    (-0.816, 15.977) to (-0.244, 17.407). The wave's answer to a hovering pointer, a lift under the
+    cursor, is not a drag and stays; DW-123 files it for a ruling. DW-120 is re-read below.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-33-redesign-workhero-and-worktimeline-token-native.md`
+  id: DW-120
+  summary: >-
+    The build now carries the three.js, R3F and drei library code twice, once per dynamic boundary,
+    so the narrative total reads 634,829 gzipped against the 450,000 top of the estimate, and a visitor
+    who loads `/` and then `/work` with motion allowed downloads it twice.
+  evidence: |-
+    **Observed 2026-09-23** by `node ops/asset-budget.mjs` against the Story 2-33 branch build `3khZaamuAoVzhg3IZI1ZP`: two
+    chunks of 895,063 bytes on disk, 234,553 and 234,552 gzipped, both "three, @react-three/fiber,
+    @react-three/drei", both loaded on demand. They are byte-identical for their first 870,361
+    characters and differ in the last 24,702, where the `/work` group's copy also carries the `three`
+    namespace re-export and a `useThree` re-export that drei's orbit controls reach for. Before the
+    story `/work` imported the torus statically, its library chunk was referenced by the `/work`
+    document and happened to be the same file the homepage's gem boundary loaded; with both scenes
+    behind their own `next/dynamic` boundary, Turbopack emits one large chunk per boundary.
+
+    **What it costs, and what it does not.** Per route, nothing: `/work`'s document stopped carrying the
+    WebGL stack (486,682 to 253,886 gzipped on the wire, the chunk requested only when motion is
+    allowed), and `/`'s gem loads one copy as it loaded one before. What it costs is the build's total
+    (the directory is 228,274 gzipped heavier) and a session that visits both scenes, which fetches
+    the library twice where one cached file used to serve both. The estimate at `EXPERIENCE.md:946`
+    is crossed by this duplication and not by any narrative growing; the trade it names
+    (`@react-three/postprocessing`) was not weighed on a figure that counts one library twice.
+
+    **Owner: unassigned.** Candidates: DW-119's ruling (without the orbit controls the two groups are
+    likely to share one file, not verified), or a story that owns the build tooling (Epic 3 introduces
+    Turborepo). **Trigger: either of those, or the next change to either scene's boundary.**
+
+    **Re-read 2026-09-24, after DW-119's ruling removed the orbit controls: the two groups still do
+    not share one file, so this entry stays open.** **Observed** by `node ops/asset-budget.mjs`
+    against build `ysPv_iPVOqc9Sc90vXp_1` at `d91a34f`: two chunks of 894,996 bytes, 234,536 and
+    234,535 gzipped, both "three, @react-three/fiber, @react-three/drei", both loaded on demand.
+    Evaluating each chunk's pushed module array shows the same entries in both, the module ids and
+    their factories alike, where the pre-ruling pair differed by the `three` namespace and `useThree`
+    re-exports the orbit controls reached for; the two files differ only in the order of two
+    modules, from character 870,360 on. So the controls were not what split them: Turbopack writes
+    one chunk per `next/dynamic` boundary even when the contents match. The narrative total is 619,351
+    gzipped, 169,351 over the top of `EXPERIENCE.md:946`'s estimate, and a session that visits both
+    scenes still downloads the library twice. **Owner: unassigned**, the build-tooling story the
+    only candidate left. **Trigger: that story, or the next change to either scene's boundary.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-34-fr-17-conformance-no-colour-literal-outside-the-contract.md`
+  id: DW-121
+  summary: >-
+    `/celeste` is on the contract but not redesigned: its heading takes the display family and the
+    display size from their roles and keeps the user agent's weight, case and leading, where
+    `DESIGN.md`'s display row is 800, uppercase and `--lh-display`, and the S10 mockup draws a
+    restyle no story owns.
+  evidence: |-
+    Story 2-34 replaced `celeste.scss`'s four literals with the roles the design documents give each
+    property, so the FR-17 conformance gate lands green: `#444` to `--token-bg` (`RESTYLE-SPEC.md`
+    F-1, "Ground is `var(--token-bg)`"), `#fff` to `--token-text` (`DESIGN.md` § The mapping), and
+    `system-ui` and `min(8vw, 5rem)` to `--f-display` and `--t-display` (`DESIGN.md` § Typography and
+    § Scale, "the one display line per page"). Its boundaries keep the page otherwise as it was, so
+    the heading sets no weight, case or leading of its own: it takes the user agent's `h1` bold, 700,
+    which the display face publishes (read by `tests/e2e/celeste-header.pw.ts`), in mixed case at the
+    face's normal leading.
+
+    `mockups/secondary-screens.html` S10 draws the page restyled: the display face at `wdth 85` and
+    800, uppercase, a tight leading and tracking, a `14ch` measure, and the two emoji on a mono line
+    of their own. No story owns it: the Epic 2 redesign group names seven Hub components and Story
+    2.34 names this file's literals; AD-25 ties a restyle to an application the Suite Directory
+    renders, and `/celeste` is a Hub route reachable from the footer alone, personal and deliberately
+    without an exit (`EXPERIENCE.md` § Information Architecture).
+
+    **Owner: the Operator**, for a ruling: keep `/celeste` token-coloured and unrestyled as a
+    personal surface, or book its restyle against S10. **Trigger: that ruling, or the next edit to
+    `celeste.scss`.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (restyle to S10), by
+    `_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`, commit `8e98285`.**
+    `celeste.scss` sets the heading in the display row's roles, `--t-display`, `--w-black`, uppercase,
+    `--lh-display` and `--tr-display` in `--token-text`, at `wdth 85` through `font-stretch: 85%`,
+    capped at `14ch` and centred. `Celeste.tsx` puts the two emoji in `span.celeste__emoji` inside the
+    heading, set on a mono line of their own: `--f-mono` at `--t-2xs`, `--w-regular`, `--lh-label` and
+    `--tr-label`, `--s-md` above. The heading's text content is unchanged byte for byte. Where S10
+    writes a size, a leading, a tracking and an accent on the emoji line by hand, the roles win (the
+    spec's Design Notes 1 to 5); the regular weight is load-bearing, since the mono face publishes
+    400 alone and the accessibility floor's sweep refuses a synthesised weight. The page stays footer-only,
+    `noindex` and without an exit, and `node ops/literal-conformance.mjs` stays green. **Observed** in
+    the pinned image: at 320 and 360 the heading is 252 wide, `14ch` at 36px, and sets three lines, the
+    widest 153; at 1280 it is 518 wide and sets two; nothing sits past either edge.
+    `tests/e2e/celeste-header.pw.ts` reads each value against its role beside planted controls (the
+    700 pin moved to `--w-black`; the pre-ruling tree read 700), and `Celeste.test.tsx` reads the
+    emoji's own element. `DESIGN.md` § The redesigned Hub surfaces carries a dated `/celeste` entry.
+    The width makes `/celeste` a narrowed display site `tests/e2e/type-swap.pw.ts` does not measure,
+    noted under DW-82.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-22-migration-step-7-delete-the-aliases.md`
+  id: DW-122
+  summary: >-
+    `--hero-height` is the Hub's one custom property and nothing reads it: it has had no call site
+    since at least 2026-08-26, and it survives the alias deletion only because Story 2.22's second
+    criterion names it.
+  evidence: |-
+    Story 2-22 deleted the thirteen aliases from `app/app.scss` and left `--hero-height: 40vh`, as
+    `epics.md` Story 2.22 requires (":root in the compiled stylesheet carries only the contract's
+    properties plus `--hero-height`") and `DESIGN.md` § The mapping records ("stays local", a layout
+    constant the contract carries no viewport height for). **Observed 2026-09-23**:
+    `git grep -n -e "var(--hero-height" -- app components hooks content lib ':(exclude)**/__tests__/**'`
+    returns nothing (exit 1), and `ops/anchor-token-adoption.md` § Stated limits of step 2 already
+    counted it among four properties with zero call sites on 2026-08-26. So the
+    property is declared, pinned by three suites (`app/__tests__/anchor-contract.test.ts`,
+    `tests/e2e/anchor-aliases.pw.ts`, `tests/e2e/contract-anchor.pw.ts`) and read by nothing.
+
+    Not deleted here: the story's own criterion names it as the one survivor, and a criterion is not
+    this story's to rewrite. Deleting it is one line in `app/app.scss` and the three pins moving to
+    zero, and it would make `:root` in the compiled stylesheet the contract's properties alone.
+
+    **Owner: the Operator**, for a ruling: keep the constant for a hero that may want it, or delete it
+    and amend `epics.md` Story 2.22's criterion and `DESIGN.md` § The mapping's row in the same
+    change. **Trigger: that ruling, or the next story that needs a viewport height in the Hub.**
+
+    **Closed 2026-09-24 on the Operator ruling of that day (delete it, and amend Story 2.22's
+    criterion and the mapping row), by `_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`,
+    commit `2cbbccf`.** `app/app.scss` declares no custom property, so `:root` in the compiled
+    stylesheet carries the contract's properties alone, beside the minifier's two scheme switches on
+    the `color-scheme` rule as before. The three pins moved to zero: `app/__tests__/anchor-contract.test.ts`
+    holds the file to declaring none on any selector; `tests/e2e/anchor-aliases.pw.ts` derives the
+    allowed root set from the contract alone, so a Hub name put back fails as extra rather than being
+    admitted from the file that declares it, and its kept-literal case left with the literal;
+    `tests/e2e/contract-anchor.pw.ts` reads the Hub's list empty. **Observed** on the baseline tree:
+    the unit suite on the host and both browser suites in the pinned image failed naming the property,
+    the build's `:root` still carrying it. Nothing rendered moved, nothing having read it. `epics.md` (Stories 1.18, 2.21, 2.22 and 2.29) and
+    `DESIGN.md` § The mapping carry dated amendments; `ops/anchor-token-adoption.md`,
+    `ops/rendered-output-harness.md` and `ops/literal-conformance.md` carry dated notes; and the
+    `AGENTS.md` convention line says the file declares none, in the same commit.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-36-narrative-weight.md`
+  id: DW-123
+  summary: >-
+    The homepage's particle wave still answers the pointer: points under a hovering cursor lift
+    toward the camera. With the drag beside it gone that is the canvas's one response to input, and
+    it reads against `EXPERIENCE.md` § Motion's ban on cursor followers.
+  evidence: |-
+    `components/atoms/ParticleWave/ParticleWave.tsx` keeps `onPointerMove` and `onPointerLeave` on
+    its invisible plane: a pointer over the wave sets a local target, each frame lifts the points
+    within `MOUSE_RADIUS` (1.2) of it by up to `MOUSE_LIFT` (0.9), and a spring eases them back when
+    the pointer leaves. CHANGELOG 3.2.0 names it "Mouse hover repulsion". The Operator ruling of
+    2026-09-24 on DW-119 removed the wave's drag and its inertia and named nothing else, so the lift
+    stays (`spec-dw-36-narrative-weight.md`, Design Notes, assumption 3). It is neither a gesture nor
+    an affordance, so § Pointer and touch does not bar it, but § Motion bans "cursor followers", and
+    a deformation that follows the cursor across the canvas is arguably one.
+
+    **Owner: the Operator**, for a ruling: keep the lift as the narrative's one answer to the
+    pointer, written into `EXPERIENCE.md` as a declared exception, or remove it so the wave moves on
+    its own clock alone. **Trigger: that ruling, or the next change to the wave.**
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25.** `7b26092` removes the wave's answer to the
+    pointer from `ParticleWave.tsx`: `onPointerMove`, `onPointerLeave`, the invisible plane that
+    existed only for them, `MOUSE_RADIUS`, `MOUSE_LIFT`, the spring (`SPRING_K`, `DAMPING` and the
+    per-point velocity), and the group ref and vectors only they used. Each point now stands at its
+    fold plus the wave on its own clock. A new case in `tests/e2e/narrative.pw.ts` hovers the canvas at
+    every point it receives and reads the drawn points' height above their fold: 1.405 under the pointer
+    before the change (red, against the wave's own 0.28), 0.280 at rest and under the pointer after.
+    `CHANGELOG.md` records the removal under a dated entry beside 3.2.0's "Mouse hover repulsion",
+    which is left as history; `EXPERIENCE.md` names no lift, so it is not amended. DW-120 is unchanged,
+    not closed: the build still writes two three.js chunks of 894,996 bytes
+    (`ops/asset-budget.md` § Every route, 2026-09-25).
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
+  id: DW-124
+  summary: >-
+    The Plate mark's side-ruled variant and its end-aligned mirror have no call site on the Hub
+    since the readout panel's removal, so a variant `DESIGN.md` specifies ships in the component and
+    its stylesheet and is read only on planted marks.
+  evidence: |-
+    Found 2026-09-24 by the DW-113 home-surface package, whose Operator ruling of that day removed
+    the readout panel (DW-110), the variant's one call site. `PlateMark.tsx` keeps the `side-ruled`
+    arm and its `align` prop, and `PlateMark.scss` keeps `.plate-mark--side-ruled` and
+    `.plate-mark--end`; the component's importers are `CvIntro`, `Error404`, `Premise` and
+    `WorkHero`, each on the section or the annotated variant. `DESIGN.md` § Components tables three
+    variants and `EXPERIENCE.md` § Plate mark names them, so the variant is the design system's rather
+    than the panel's, and the ruling named the panel. The package kept it, moved its two painted reads
+    in `tests/e2e/plate-mark-and-work-item.pw.ts` onto marks planted in `/cv`'s intro, and noted the
+    state in `DESIGN.md` § The redesigned Hub surfaces. Removing it would take the arm, the prop, two
+    rules, their unit cases and the planted reads, and amend both documents' variant lists.
+
+    **Owner: the Operator**, for a ruling: keep the variant as vocabulary for a later call site, or
+    remove it from the component and from both documents. **Trigger: that ruling, or the next call
+    site that wants a label hanging beside content.**
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25: keep.** The variant stays as design-system
+    vocabulary, read on the planted marks in `/cv`'s intro until a call site returns. Nothing in the
+    component, its stylesheet or its tests changes; `DESIGN.md` carries the ruling as a dated
+    amendment beside the DW-110 note and in its front matter.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
+  id: DW-125
+  summary: >-
+    Since DW-106's ruling the home route's largest contentful paint is the first hero link at its
+    entrance reveal rather than the skip control, which moves Lighthouse's mobile LCP on `/` from
+    2.4 to 2.7s to 5.3 to 5.5s and its ungated performance score from 0.65 to 0.67 down to 0.49.
+  evidence: |-
+    Observed 2026-09-24 by the DW-113 home-surface package, in `mcr.microsoft.com/playwright:v1.62.1-noble`
+    with `@lhci/cli` 0.15.1, three runs per URL, on build `bmBRmKwdT9BiS8QM-RfyU` at `d911028` and
+    `WQ5nO0gJ8OYY3W0IYbvh5` at `1a5ada5` (`ops/hub-accessibility-pass.md` § Lighthouse readings). The
+    LCP element was `a.skip-control` at 2,410 to 2,726ms and is `a.nav-link` at 5,320 to 5,483ms under
+    the simulated mobile throttling; first contentful paint, total blocking time and layout shift did
+    not move, and neither did `/work` or `/cv`. The link is invisible until 2.0s after first paint
+    either way. Chrome never reports an element first painted at `opacity: 0`, so the old LCP left the
+    entrance's largest text out; under the ruled `visibility: hidden` the link's first paint is its
+    reveal, so LCP now measures the entrance. Real-user LCP on `/` will count the same reveal, which
+    sits near the 2.5s line field data calls good.
+
+    Nothing gates it: `.lighthouserc.js` comments performance out. The package did not tune it,
+    because the ruling fixed the mechanism and the package's spec kept the delays, and the ways to
+    move the number are design decisions: shorten the links' delays (Story 2-29's sequence), bring the display links in
+    first, or accept that LCP now reports what the visitor sees. Revealing the links from an
+    `opacity: 0` first paint would restore the old figure only by hiding the entrance from the
+    metric, which is not a fix.
+
+    **Owner: the Operator**, for a ruling on the entrance's timing or on accepting the figure.
+    **Trigger: that ruling, the first field reading of `/`'s LCP over 2.5s, or the next change to the
+    entrance.**
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25.** The five hero links are held out of reach
+    by `inert` instead of `visibility: hidden`. `b4c4fec` deletes the `home-enter-link` keyframe, so
+    the links share the opacity-only `home-enter` again with their delays unchanged, and adds an effect
+    to `HomeLayout.tsx` that sets `inert` from script on a link only while its animation is still
+    inside its delay, lifts it on `animationstart`, `animationend` or `animationcancel`, and lifts every
+    one on cleanup, which covers an unmount and the door turning flat. The served markup never carries
+    it, reduced motion and the flat door never set it, and a link whose turn has passed by hydration is
+    never made inert. DW-106's ruled effect stands. Tests, each seen red first: four cases in
+    `HomeLayout.test.tsx` (held through the delay and freed per event, never stranded, nothing held
+    without an entrance, never served), the keyframe case there now refusing any `visibility`; in
+    `tests/e2e/front-door.pw.ts` the held case (each link `inert`, visible and at opacity 0, Tab past
+    all five, a click landing beneath them, none inert after), a real-time case, and a case per
+    reduced-motion and Save-Data door recording that no link is ever made inert; and
+    `tests/e2e/narrative.pw.ts` refusing any keyframe that declares `visibility`. `EXPERIENCE.md`
+    § Motion carries a dated amendment. **Observed 2026-09-25**, `ops/hub-accessibility-pass.md`
+    § Lighthouse readings, three runs in the pinned image on build `U8SaExf9-z_ppyh6fagl1` at
+    `7b26092`: LCP on `/` is `a.skip-control` at 2,570 to 2,733ms (from 5,320 to 5,483ms), performance
+    0.65 to 0.66 (from 0.49), accessibility, best practices and SEO 1.00 on every run of all three
+    URLs, `lhci assert` green.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-113-home-surface.md`
+  id: DW-126
+  summary: >-
+    A visitor whose reduced-motion preference turns off mid-session replays the home entrance, and
+    since DW-106 the five hero links are hidden for its first 2.0 to 2.36s, so a link that holds focus
+    at that moment loses it to the body and does not get it back.
+  evidence: |-
+    Observed 2026-09-24 by the DW-113 home-surface package's review, a scratch probe in
+    `mcr.microsoft.com/playwright:v1.62.1-noble` at 1280 (not committed): on a context with reduced
+    motion, the first nav link focused, then `page.emulateMedia({ reducedMotion: 'no-preference' })`.
+    Before the switch the link computed `animation-name: none` and held focus; 300ms after it, the
+    link computed `home-enter-link` and `visibility: hidden` and `document.activeElement` was the
+    body; 2.6s later the link was visible and focus was still on the body.
+
+    **The replay predates this package.** `HomeLayout.scss` cancels the entrance under
+    `prefers-reduced-motion: reduce` with `animation: none`, so when the query stops matching the
+    animations start from their delays on a hero that had already arrived, which Story 2-29's CSS
+    entrance has done since 2026-09-21 at `opacity: 0`. What is new is the focus: the Operator's ruling
+    of 2026-09-24 on DW-106 hides each link through its delay, and the browser's focus fixup moves
+    focus off an element that stops being focusable. No document rules on a preference switched
+    mid-session, and the conformant repairs are design decisions: cancel the entrance on the terminal
+    flat door as well (the flat modifier outlives the switch, but the other flat doors would lose
+    their entrance), or accept that an OS setting switched mid-visit replays the hero.
+
+    **Owner: the Operator.** **Trigger: that ruling, or the next change to the entrance or to the
+    reduced-motion block.**
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25: accept.** An OS reduced-motion setting switched
+    off mid-visit replays the entrance, and a hero link focused at that moment loses focus; it needs
+    the setting flipped while the page is open, so it is rare. The DW-125 ruling of the same day
+    changes how the links are held out of focus during the entrance, not whether, so this acceptance
+    covers the replay under either mechanism.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-43-accessibility.md`
+  id: DW-127
+  summary: >-
+    On `/`'s default door at 768 and wider, the landmark's inset focus ring is painted beneath the
+    hero's canvas and scrim, so after Enter on the skip link a keyboard visitor sees no ring in the
+    first viewport there; it reads whole everywhere else.
+  evidence: |-
+    Observed 2026-09-24 by the DW-43 accessibility package, a scratch probe in
+    `mcr.microsoft.com/playwright:v1.62.1-noble` against `pnpm start` (not committed): Tab, then
+    Enter, then a screenshot, sampling one pixel inside each edge of `main#main`. On `/` at 360 on both
+    doors, and on `/work`, `/cv` and the 404 at 360, the top, left and right edges read the focus
+    colour, `rgb(198, 189, 255)`. On `/`'s default door at 1280 all three read `rgb(29, 27, 39)`,
+    which is that colour under the scrim's 88% paper (0.12 of it over `#060509` computes to
+    28.3, 27.1, 38.5), and the hero fills the viewport there.
+
+    **Why, and why the ruled rule cannot reach it.** The Operator's ruling of 2026-09-24 on F-20 draws
+    the ring inside the landmark with `main:focus-visible`, an outline inset by its own width, which
+    is what took the three sides off the document's edge. An element's outline is painted before its
+    positioned descendants, and on the default door at 768 and wider the hero's canvas and its scrim
+    are positioned descendants of `<main>` that cover its edges; `tests/e2e/accessibility-floor.pw.ts`
+    reads the ring's geometry, which is whole, and no raster. Before the ruling the same ring was
+    drawn outside the landmark and the document's edge took those sides, so nothing was visible there
+    either. The conformant repairs are design decisions: draw the landmark's ring on a positioned
+    layer above the hero (a second exception to `RESTYLE-SPEC.md` § 4's verbatim ring), keep the hero
+    outside `<main>` on `/` so the landmark begins below it, or accept that on the 3D door the skip
+    link's target is a landmark whose first viewport is imagery.
+
+    **Owner: the Operator.** **Trigger: that ruling, the Operator's keyboard confirmation
+    (`ops/hub-accessibility-pass.md` Pending Operator action 1), or the next change to the hero's
+    layering.**
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25.** `e47d20a` draws the landmark's ring again on
+    `main:focus-visible::after` in `app/app.scss`: a layer over the whole landmark at `--z-raised` with
+    `pointer-events: none`, the same `--stroke-focus` and `--token-focus` at the same inset, present
+    only while `main` matches `:focus-visible` and never transitioned; `main` takes
+    `position: relative` only while focused. It is the second exception to `RESTYLE-SPEC.md` § 4's
+    verbatim ring, recorded with a dated amendment there and in `DESIGN.md`'s skip row, and the
+    ring guard in `tests/e2e/accessibility-floor.pw.ts` and the role pin in
+    `app/__tests__/anchor-contract.test.ts` admit its selector and its level by name. Proven as a
+    raster in the pinned image: a new case there presses Tab, then Enter on the skip link, and samples
+    a pixel just inside the top, left and right edges of `main#main`. On `/`'s default door at 1280 it
+    read `rgb(29, 27, 39)` on all three sides before the change (red) and reads `rgb(198, 189, 255)`
+    on all three after; at 360 on `/` and at 1280 on `/work` it reads the focus colour on both sides of
+    the change. A control in the same case takes the layer off and sees all three sides covered again.
+    `ops/hub-accessibility-pass.md` carries a dated note on what the keyboard confirmation's Enter step
+    now shows; the confirmation itself is left for the Operator.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`
+  id: DW-128
+  summary: >-
+    `cs-tournament` is public since the KV-2 ruling of 2026-09-24, while the Registry
+    verification's tolerated table, its suite's pins and KV-2's own record still hold it private,
+    so the next run reports that its KV-2 row can be struck and nothing records why.
+  evidence: |-
+    Observed 2026-09-24 by the Registry 1.2.0 package while reading the verification record it was
+    editing: `gh repo view LuigiEspinosa/cs-tournament --json visibility` reads `PUBLIC`, and an
+    anonymous GET of `https://github.com/LuigiEspinosa/cs-tournament` with the job's user agent
+    answered 200 at 13:37Z. The Operator's ruling of that day on KV-2 published it after a clean
+    history scan. Three records have not caught up: `ops/registry-verification.md` § Sources
+    tolerated to answer 404 anonymously still reads `Private. Repairable` for it,
+    `ops/__tests__/registry-verification.test.ts` pins it in `PRIVATE` (and plants a 404 for it in
+    the committed-Registry fixture), and `ops/known-violations.md` KV-2 lists it among the three
+    offending repositories with Pending Operator action 5 undated.
+
+    Nothing is red. The job answers a 2xx on a tolerated row with a pass and a note that the row can
+    be struck, and the unit suite plants its own answers. The cost is a record that says private
+    about a public repository, and a pass line nobody acts on. Not fixed in the Registry package:
+    striking a row is an edit to the table and to the suite's pins together, by that record's own
+    rule, and KV-2's disposition is the KV-2 ruling's records work, not the Registry's.
+
+    **Owner: the package that records the KV-2 ruling.** Strike the row as `Struck 2026-09-24:
+    published by Operator ruling`, move the suite's `PRIVATE` pin and fixture to three, and date
+    KV-2's action 5 with all three dispositions. **Trigger: that package, or the next Registry
+    verification run that reports the row can be struck.**
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24.** The records package's edits to the
+    suite were refused by its permission gate, so the orchestrator made them in its own session:
+    `cs-tournament`'s row in `ops/registry-verification.md` reads `Struck 2026-09-24`, `cs-tracker`
+    and `Mutuo` read private by decision with their scan findings, the suite pins the four-row table
+    with `cs-tournament` alone struck and answers its source 200 (11 by 2xx, 3 tolerated), shown red
+    first against the unstruck record, and KV-2's action 5 is dated with all three dispositions and
+    the entry retired, all in `9336330`.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-15-contract-2-0-0.md`
+  id: DW-129
+  summary: >-
+    Two published palette values sit outside sRGB, `--c-accent-bright` and `--c-focus`, so the
+    Operator's ruling of 2026-09-24 that the palette stays inside sRGB holds for ten of twelve, their
+    hex entries in `DESIGN.md` are clipped rather than computed, and whether to bring them inside is
+    a value decision nobody has taken.
+  evidence: |-
+    Found 2026-09-24 by the Contract 2.0.0 package while writing the case the ruling asked for. The
+    ruling rested on the brief's reading that no contract value changes, and it does not hold:
+    converting each `--c-*` value to linear sRGB through Ottosson's OKLab matrices, cross-checked
+    with `colorjs.io` 0.5.2's `inGamut('srgb')`, `oklch(76% 0.145 288)` reads blue 1.0762 and
+    `oklch(84% 0.130 288)` blue 1.2628. The other ten sit inside 0 to 1. Both are already vendored
+    into `cs-tracker`, and `ops/anchor-token-adoption.md` said on 2026-08-26 that no v1.0.0 token was
+    outside sRGB.
+
+    **What it costs today.** On an sRGB display both render as the clipped colour the hex column
+    already records (`#ada1ff`, `#c6bdff`), and the contrast figures `DESIGN.md` gives, 9.00:1 and
+    11.70:1, match that clipped hex (9.02 and 11.73 by this package's arithmetic). A display wider
+    than sRGB may render more of the authored colour; no instrument here has observed one. The accent
+    is hover only and the focus colour is the focus ring only, so no resting pixel on the Hub reads
+    either.
+
+    **Not fixed in the package**, because `DESIGN.md` is the value authority and authors both, and
+    the same ruling has the Hub render unchanged. The in-gamut chroma at each value's own lightness
+    and hue is 0.1304 for `--c-accent-bright` (authored 0.145) and 0.0841 for `--c-focus` (authored
+    0.130), so bringing the focus ring inside is a visible desaturation rather than a rounding. The
+    case in `packages/tokens/__tests__/tokens-contract.test.ts` admits exactly these two by name at
+    those readings, so no third value can join them and neither can drift.
+
+    **Owner: the Operator**, choosing between bringing both inside (a value change, a MINOR, with
+    `DESIGN.md`'s palette and contrast rows, the focus pins in
+    `ops/__tests__/cs-tracker-accessibility-probe.test.ts` and a `cs-tracker` re-vendor) and
+    accepting both as named exceptions to the rule. **Trigger: the next contract release that opens
+    for any other reason**, so the choice rides in it rather than costing a propagation of its own.
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25: accept both as named exceptions.** No value
+    changes, so there is no contract release, no pin moves and no `cs-tracker` re-vendor. The
+    tokens-contract case already admits exactly these two at their readings and fails on a third or
+    on either moving, so the rule binds every value authored from here on; its doc comment now cites
+    the ruling. `DESIGN.md` § Colors and its front matter, and `ops/anchor-token-adoption.md` (the
+    corrected downlevelling note and Pending Operator action 2), carry dated amendments.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-94-deploy-hardening.md`
+  id: DW-130
+  summary: >-
+    `appleboy/ssh-action`, pinned by commit since DW-87, still downloads its `drone-ssh` binary at
+    run time by version from GitHub releases with no checksum, so the step that holds the deploy key
+    runs a binary no pin covers.
+  evidence: |-
+    Read 2026-09-24 by the DW-94 package at `0ff4204d59e8e51228ff73bce53f80d53301dee2`:
+    `entrypoint.sh` sets `DRONE_SSH_VERSION` to `1.8.2`, fetches `drone-ssh-1.8.2-linux-amd64` from
+    `https://github.com/appleboy/drone-ssh/releases/download/v1.8.2` with `curl -fsSL`, marks it
+    executable and runs it with the key in its environment; nothing compares a digest. A release's
+    assets can be replaced by its owner, so the commit pin stops a moved tag and not a replaced
+    asset. Until `ops/contract-serving.md` Pending Operator action 7 is done that binary holds a
+    shell with passwordless sudo on the box; after it, a deploy of a commit already on `main` and
+    nothing else. `lighthouse.yml`'s `npx @lhci/cli autorun` and `npx wait-on` resolve unpinned
+    packages the same way, in a job with a read-only token and no secret.
+
+    Not fixed in the package: the ruling pinned the action, and replacing it is a different change.
+    The cheap closer is a plain `ssh` from the runner, which `ubuntu-latest` carries, with the key
+    written to a file, a pinned `known_hosts` line and the same command string, which retires the
+    third-party action altogether.
+
+    **Owner: Story 3-4, which rewrites the deploy step for image pulls.** **Trigger: that story, or
+    the next edit to the `ssh-action` pin.**
+
+    **Amended 2026-09-24:** `list-wheel`'s deploy step runs the same pinned action since
+    `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md` (`list-wheel` commit
+    `30e5e8b`), and ran `@v1` before it, which pointed at that commit when read on 2026-09-24, so the
+    same unverified binary holds that repository's key. The same closer applies there, and Story 4.3 is
+    the story booked to rewrite that step.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`
+  id: DW-131
+  summary: >-
+    Either repository's forced-command script accepts a commit on `main` that predates the script
+    itself, and resetting to it deletes the file the key's `authorized_keys` line names, so one such
+    call leaves every later deploy failing until the Operator repairs the checkout by hand.
+  evidence: |-
+    Found 2026-09-24 by the DW-90 package's edge-case review and **Observed** that day in a `node:22`
+    container: a checkout at `/home/deploy/list-wheel` holding the new script ran the forced command
+    with an `SSH_ORIGINAL_COMMAND` whose last word was `00f595709348f7684cabcb5b0c8e7830561c1754`,
+    logged `deploying 00f595709348f7684cabcb5b0c8e7830561c1754, read from SSH_ORIGINAL_COMMAND`, exited
+    0 and reset to `00f5957`, which carries no `ops/deploy-remote.sh`; the next forced call, naming
+    `main`'s head, printed
+    `/bin/bash: /home/deploy/list-wheel/ops/deploy-remote.sh: No such file or directory` and exited 127.
+    The Anchor's script at `b0aeaff` has the same shape: every commit on its `main` before `b0aeaff`
+    passes `git merge-base --is-ancestor` and carries no script. The workflows never send such a sha,
+    since a push or a dispatch deploys a commit that carries it, so the path needs a leaked key or a
+    forced call made by hand. The rollback itself is the accepted "redeploy a commit already on
+    `main`"; what goes beyond it is that deploys then stop until the recovery in
+    `ops/contract-serving.md` § "If a broken script reaches `main`", and that the report opens an
+    issue for each failed run meanwhile.
+
+    Not fixed in the package: the Operator ruled the two scripts one shape, so a guard in one would be
+    the drift DW-93 names, and the Anchor's script is outside that package. The cheap closer is one
+    line after the ancestor check in both scripts, `git cat-file -e "$target:ops/deploy-remote.sh" ||
+    refuse "$target carries no ops/deploy-remote.sh"`, with a case each running the forced command at a
+    pre-script commit.
+
+    **Owner: unassigned; both scripts together.** **Trigger: the next edit to either
+    `ops/deploy-remote.sh`, Story 3-4 or Story 4.3 at the latest.**
+
+    **Closed 2026-09-25, before any restrict line is applied.** Both scripts carry the closer named
+    above, one line after the ancestor check: the Anchor's in `6e9a216`, `list-wheel`'s in `718f194`,
+    which also moves that script's mirror note from `b0aeaff` to `6e9a216`, so the two stay one
+    shape. Each suite gained a case running the forced command at commit A, on `main` and older than
+    the script. Against the unguarded scripts it failed, both exiting 0; with the guard both suites
+    pass, the Anchor's 18 cases and `list-wheel`'s 27, the checkout left at B and compose never run.
+    `list-wheel`'s push deployed through the unrestricted string (Deploy run `36110098514`: test and
+    deploy green, the box logging
+    `deploy-remote: deploying 718f1943bbf9a8cf15c9ee718eaa08cfe719a2b5, read from its argument`, the
+    container recreated), so the box's copy is guarded before Pending Operator action 9 names it. The Anchor's
+    copy reaches the box with the Epic 2 merge, which action 7 already waits for.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
+  id: DW-132
+  summary: >-
+    `ops/verify-backup-passphrase.ps1`, the workstation check that proved the escrowed backup
+    passphrase, can leave the decrypted archive in WSL's `/tmp`, reports one `DECRYPT: FAILED` for
+    several different causes, and does not clean up after an exception.
+  evidence: |-
+    Found 2026-09-24 by the cold review of Story 1-8 (Epic 1 retrospective action 3) and read in the
+    file as `4112ee8` left it. Its WSL command is `gpg ... --output /tmp/pm-verify.tar.gz ...
+    2>/dev/null && echo 'DECRYPT: ok' && tar -tzf /tmp/pm-verify.tar.gz && rm -f
+    /tmp/pm-verify.tar.gz || echo 'DECRYPT: FAILED'`, so a decrypt that succeeds followed by a listing
+    that fails prints both verdicts and leaves the plaintext archive, which holds a user row and a
+    session row, on the workstation. gpg's stderr is discarded, so nothing separates a wrong
+    passphrase from a WSL, download or listing failure, the same false negative named limit 5 of
+    `ops/backup-digital-library.md` records costing an investigation on 2026-08-27. Nothing is in a
+    `try` and `finally`, the exit status of `aws s3api get-object` is never read, and a stale
+    `pm-verify.tar.gz` from an earlier run would then be the file decrypted. The `gpg` call carries no
+    `--pinentry-mode loopback`, unlike both box scripts, and the endpoint, the bucket and the WSL
+    distribution are literals in the file.
+
+    Not fixed in the package: the script needs the AWS CLI, WSL and gpg on the Operator's
+    workstation, so no CI case can run it, and a rewrite nobody has run would replace a proof that
+    worked on 2026-08-27 with one that never has. The closer is a `try` and `finally` around
+    everything after the download, an exit-status check on `get-object`, and a WSL command that
+    removes the plaintext on every path and prints gpg's own error.
+
+    **Owner: the Operator.** **Trigger: the next time the passphrase is verified or rotated.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
+  id: DW-133
+  summary: >-
+    Three of the nightly backup's orchestration paths are never executed by its suite: the signal
+    traps, the `sudo test -e` second opinion that separates an unreadable config from an absent one,
+    and the `tar` retry, whose `tar=` field also reads `first-attempt` when a first attempt failed for
+    another reason.
+  evidence: |-
+    Found 2026-09-24 by the cold review of Story 1-8 (verification-gap and edge-case layers) and
+    confirmed against `ops/__tests__/library-backup.test.ts`. The signal case matches
+    `trap '...' TERM` in the source text only, so replacing `exit 143` with a command that returns
+    stays green while a killed run leaves no summary line and a plaintext snapshot in its scratch
+    directory. The unreadable-config case uses a directory as the config, where `[ -e ]` is already
+    true, so deleting `|| sudo test -e "${CONFIG_FILE}"` stays green; on the box that would turn an
+    untraversable `/etc/cuatro` into exit 75 and advice to create a file that exists. No case makes
+    `tar` fail, so the `changed as we read it` retry and both of its fields are unexercised, and a
+    first failure for another reason reports `tar=first-attempt` beside `archive=failed`; the exit
+    status and the `archive` field are right, the `tar` field is not.
+
+    Not fixed in the package: each needs a fixture the harness does not build. A signal has to reach
+    bash while it waits on a child, which bash defers until the child exits; an untraversable
+    directory does not survive the Windows drive mount this suite also runs on; and failing `tar` on
+    demand needs a stub that delegates to the real `tar` on every other call. All three are
+    loud-failure or cleanup paths, and none reports a backup that did not happen.
+
+    **Owner: unassigned.** **Trigger: the next edit to `ops/library-backup.sh`, or Story 4.5, which
+    carries this path onto the rebuilt box.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
+  id: DW-134
+  summary: >-
+    The backup record says the R2 token cannot remove offsite history, and nothing verifies it: an S3
+    `PUT` to an existing key replaces the object, and the token was created with Object Read and
+    Write, so a compromised box can overwrite every retained backup whether or not it may delete.
+  evidence: |-
+    Found 2026-09-24 by the cold review of Story 1-8, while rating the finding that the secret access
+    key reached `openssl`'s argv. `ops/backup-digital-library.md` says under "Why a bash SigV4 client
+    and not `restic` or `rclone`" that the lifecycle rule "keeps the token's blast radius at
+    write-only: a compromised box can add objects and cannot remove the history", and Pending
+    Operator action 3's note says "the token still cannot delete". Neither was observed: the record
+    carries no read of the token's permission set, and the scripts' own restraint (no `list`, no
+    `delete`) says nothing about what the same token allows another client. Overwriting needs no
+    delete permission at all, since a `put` to an existing key is an overwrite, and every key is
+    predictable from the local archive names.
+
+    Not fixed in the package: the token's permissions and any retention protection live in the
+    Cloudflare console, which only the Operator can read or set. The closer is to read the token's
+    permission set, to add an R2 bucket lock rule on `digital-library/` covering at least the 30 day
+    lifecycle window if the console offers one for this bucket, to record both as Observed, and to
+    correct the two sentences.
+
+    **Owner: the Operator.** **Trigger: the next Cloudflare console session, or the next rotation of
+    the token.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`
+  id: DW-135
+  summary: >-
+    On the Windows authoring host a full `corepack pnpm test --run` sometimes fails two cases that
+    spawn WSL's bash, each getting an empty answer after about 30 seconds, and the next run passes, so
+    a local red run can be the host rather than the change.
+  evidence: |-
+    Observed 2026-09-24 by the retro-3 cold-review package, which ran the full suite six times on one
+    unchanged tree: four runs passed 1634 of 1634, and two each failed two cases. The failing run that
+    was captured had `ops/__tests__/deploy-remote.test.ts` "deploys from a checkout that has no script
+    yet, through an unrestricted shell" throw `the scratch box could not be prepared (exit 1):` with
+    nothing after the colon at 30008 ms, and `ops/__tests__/library-backup.test.ts` "refuses a key
+    holding a space before any network call" read an empty stderr from a spawn that returned non-zero
+    at 30125 ms. Neither case changed in that package, and the same two passed on the next run. Both
+    files spawn `C:\WINDOWS\system32\bash.exe`, which is WSL's; CI runs `ubuntu-latest`'s own bash and
+    has no WSL layer to stall.
+
+    Not fixed in the package: the cause is outside the repository, and no code there changed. The
+    cheap closer is for the two harnesses to name a spawn that returns non-zero with empty output as
+    "WSL did not answer" rather than as the assertion that follows it, so a reader of a red local run
+    knows to re-run before debugging.
+
+    **Owner: unassigned.** **Trigger: the next time a local full run fails a WSL-spawning case that
+    then passes, or the next edit to either harness's spawn helper.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-136
+  summary: >-
+    Six planning lines still say vertical padding on a plain inline element does not grow the hit
+    area, the mechanism the Story 2-8 probe disproved and the Operator's ruling of 2026-09-24
+    corrected in `DESIGN.md` and in Story 2.32's criterion only.
+  evidence: |-
+    Found 2026-09-24 by the records-and-docs package, by `grep -rn "paints outward\|does not grow its
+    hit\|without growing the hit"` over the planning artifacts after correcting the two places the
+    ruling's brief names (commit `ffcd8aa`). Still reading the old mechanism: `EXPERIENCE.md`
+    § Registry Entry (`:326`, "does not grow its hit area") and § Pointer and touch (`:737`);
+    `RESTYLE-SPEC.md` § 1b Link (`:196`) and
+    § The floor (`:662-663`, "~29px tall no matter what the padding says"); and `epics.md`'s UX-DR25
+    (`:561`) and Story 8.1's criterion (`:4718`), line numbers as of 2026-09-24. The probe in
+    `ops/hit-target-floor.md` measured 29.00 at `0.25rem` and 44.00 at `0.75rem`: the padding grows
+    the box and not the line, so the practical rule, `inline-flex` with `min-height`, is right in every
+    copy and only the stated mechanism is wrong. `validation-report.md:77` quotes it too and is a dated
+    review, left as it is.
+
+    Not corrected in the package: the ruling approved the corrections its briefs named, and editing
+    four more places in three spines is a planning change nobody ruled. `RESTYLE-SPEC.md` is the one
+    that matters most, since Epic 8 restyles every Satellite against it.
+
+    **Owner: the Operator, as the owner of the spines.** **Trigger: Story 8.1's planning, or the next
+    pass over `RESTYLE-SPEC.md`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-137
+  summary: >-
+    Three planning lines give `Live` and `Complete` 1.13:1 apart in greyscale beside a claim about
+    their shared `1px solid` border, the figure the Operator's ruling of 2026-09-24 corrected in
+    `DESIGN.md` because it belongs to the text pair, while the border pair measures 1.773:1.
+  evidence: |-
+    Found 2026-09-24 by the records-and-docs package, by `grep -rn "1\.13:1"` over the planning
+    artifacts and `ops/` after correcting `DESIGN.md` § Colors (commit `ffcd8aa`). The same figure
+    sits in `EXPERIENCE.md` § Status mark (`:345-346`), Story 2.10's criterion in `epics.md`
+    (`:2463`) and AD-19 in `ARCHITECTURE-SPINE.md` (`:199`), as of 2026-09-24. Each says the two
+    marks are both `1px solid` and 1.13:1 apart without the dot, which reads as the border pair;
+    `ops/status-mark-axes.md` measured the text pair at 1.133:1 and the border pair at 1.773:1 on
+    2026-09-06. Both sit far under
+    3:1, so every argument built on the figure holds, and `tests/e2e/status-mark.pw.ts` asserts the
+    bound rather than a number. The review and memlog files that also carry it are dated records.
+
+    Not corrected in the package: the ruling's brief named `DESIGN.md` alone.
+
+    **Owner: the Operator, as the owner of the spines.** **Trigger: the next pass over any of the
+    three documents.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-138
+  summary: >-
+    FR-1 still lists `/recommendation` among the routes that remain reachable, and six more planning
+    lines place it or require it to render, though Story 2-17 retired it on the Operator ruling of
+    2026-09-11; one of them is a criterion of Story 3.2, which has not run.
+  evidence: |-
+    Found 2026-09-24 by the records-and-docs package while recording DW-79's correction, which the
+    ruling's brief limited to `EXPERIENCE.md` and Story 2.17's criterion (commit `ffcd8aa`). Still
+    naming the route as surviving or linked, line numbers as of 2026-09-24: FR-1's acceptance in
+    `prd.md` (`:141`, "The pre-existing `/cv`, `/work`, `/recommendation` and `/celeste` routes remain
+    reachable and functional"); its restatement in `epics.md`'s requirements inventory (`:62`);
+    UX-DR28 (`:576`, "linked from `/cv` and the footer") and UX-DR35 (`:598`); Story 1.18's criterion
+    (`:1863`) and Story 2.12's (`:2547`), both done; and **Story 3.2's criterion** (`:3952`, "every
+    route still renders: `/`, `/cv`, `/work`, `/recommendation`, ..."), which the story will read as a
+    requirement when it opens and cannot meet, the route answering 404 by design. The retirement is
+    recorded in `next.config.js`'s docblock, `README.md` § Routing, Story 2-17's spec, DW-79 and now
+    `EXPERIENCE.md`.
+
+    Not corrected in the package: FR-1 is the PRD's, and a route leaving a requirement is a planning
+    change the ruling did not make.
+
+    **Owner: the Operator, for FR-1; Story 3.2's planning, for its own criterion.** **Trigger: Story
+    3.2's planning, or any pass over FR-1.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-139
+  summary: >-
+    Four sentences still count four private repositories as a present fact, though `cs-tournament`
+    is public since the KV-2 ruling of 2026-09-24 and three are private now; one of them is the
+    dependency automation policy in `AGENTS.md`, which every agent here reads.
+  evidence: |-
+    Found 2026-09-25 by the records-and-docs package's fix round, by `grep -n -i "four private"` and
+    a read of § Sources tolerated to answer 404 anonymously, after amending the two rows its spec
+    names (`ops/registry-verification.md:55` and `:59`). Line numbers as of 2026-09-25:
+    `AGENTS.md:163`, outside the managed block ("it cannot hold in the four private repositories on
+    the current GitHub plan"); `ops/contract-adoption.md:179`, the policy sentence, which says the
+    same; and in `ops/registry-verification.md`, that section's opening (`:88`, KV-2 "records four
+    Registry `source` links that resolve for nobody but the Operator") and its striking rule
+    (`:111-112`, the suite "lists the four repositories with none struck" and its fixture "answers
+    404 for exactly those four"), while since `9336330` the suite pins `KV2_TABLE` with
+    `cs-tournament` in `STRUCK` and plants a 404 for the other three. `ops/contract-adoption.md:213`,
+    `:278` and `:781` say four under their 2026-08-27 observation and are dated readings, left as
+    they are.
+
+    Nothing is red: no test reads these sentences. The cost is a policy line telling an agent that
+    four repositories cannot carry a required check when `cs-tournament`, public, now can, and a
+    striking rule describing pins the suite no longer has. Design Note 1 of the package's spec found
+    the first two before KV-2 was applied and held them back with it. Not corrected in the package:
+    its spec named the verification record's Secret and Expected rows as the counts to amend, and a
+    further stale copy is filed rather than fixed.
+
+    **Owner: unassigned.** **Trigger: the next strike of a KV-2 row, the next edit to the dependency
+    automation policy, or the next pass over `ops/contract-adoption.md`.**
+
+    **Narrowed 2026-09-25 by the process-and-upkeep package**, whose estate sweep was the next pass
+    over `ops/contract-adoption.md` (`ad52501`): the policy sentence there carries a dated amendment
+    counting three private repositories, and the policy table records `cs-tournament` public. The
+    `AGENTS.md` dependency automation policy (`:181-183` after the refresh) and the two passages in
+    `ops/registry-verification.md` stay as this entry describes, owner and trigger unchanged.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
+  id: DW-140
+  summary: >-
+    `EXPERIENCE.md` § Chrome still says the shipped nav links measure roughly 16×27px, the figure
+    the Story 2-8 sweep disproved and the Operator's ruling of 2026-09-24 annotated in Story 2.32's
+    two copies only.
+  evidence: |-
+    Found 2026-09-25 by the records-and-docs package's fix round, from the verifier's reading of the
+    package. `EXPERIENCE.md:613`, as of 2026-09-25, reads "The shipped links measure roughly
+    16×27px, which is the estate's worst instance of the floor being missed while appearing to be
+    met". It is the line Story 2.32's premise and first criterion quote, and those two copies,
+    `epics.md:3624` and `:3631`, now carry the dated note that the Story 2-8 sweep measured the
+    links at 38.41 to 98.13 wide by 22.00 tall on 2026-09-06, that Story 2-32 repaired them and that
+    KV-4 retired on 2026-09-23 (commit `ffcd8aa`). The rule beside it, `min-height` plus
+    `inline-flex`, holds; only the figure is wrong.
+
+    Not corrected in the package: the ruling's brief named Story 2.32's two copies, and a further
+    stale copy is filed rather than fixed.
+
+    **Owner: the Operator, as the owner of the spines.** **Trigger: the next pass over
+    `EXPERIENCE.md` § Chrome.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
+  id: DW-240
+  summary: >-
+    The published Geist Mono face carries the 69 programming ligatures Geist 1.7.0 put under `liga`,
+    which upstream removed in 1.7.1, so mono text set with `--`, `==`, `!=`, `->` or `...` renders
+    as one ligature glyph, and moving the pin to upstream's `main` would not take the fix.
+  evidence: |-
+    Found 2026-09-25 by the process-and-upkeep package, checking the upstream pins for AD-22 by
+    Operator ruling 2026-09-24 (`ops/font-contract.md` § The upstream pins, re-checked 2026-09-25).
+    `contracts/fonts/geist-mono-latin.woff2` holds one `liga` lookup of 69 substitutions, among them
+    `hyphen hyphen`, `equal equal`, `exclam equal`, `hyphen greater` and `period period period`,
+    because `packages/fonts/sources.json` keeps `liga` for all three faces and the pinned
+    `GeistMono[wght].ttf` at `a0a06a3` carries upstream's 1.7.0 feature code. No stylesheet here
+    sets `font-variant-ligatures` or `font-feature-settings`, so a browser applies them. Upstream's
+    changelog for 1.7.1 (2026-05-20) names exactly this: programming ligatures under `liga`, which
+    every renderer turns on, broke monospace alignment in code, and that release "ships the rebuilt
+    binaries".
+
+    Those binaries are in the release zip and the npm package, not in the repository: the pinned
+    path, `fonts/GeistMono/variable/GeistMono[wght].ttf`, is the same blob at `main`, so moving the
+    commit in `sources.json` changes nothing. Through `subset.py`'s steps the v1.7.2 zip's file
+    gives 240 glyphs and 8,708 bytes where the published face has 309 and 11,284, with no `liga`
+    feature and every mapped glyph identical; the record gives the zip's URL and both full digests.
+    No Registry value and no string under `content/` carries one of the sequences, nor does a JSX
+    text node under `app/` or `components/` or a CSS `content` string, by a pattern sweep of
+    2026-09-25 rather than a rendered read; `cs-tracker`, which vendors the same face, was not read.
+
+    Not fixed here: the ruling allowed no fonts release. Two shapes, each a contract release
+    `cs-tracker` re-vendors: pin Geist Mono to the release zip's file by its own URL and sha256, a
+    new kind of pin, since every source is a repository path at a commit today; or publish Geist
+    Mono without `liga`, which needs a per-face feature list, since `sources.json` names one list
+    for all three. Either moves the face's bytes, glyph count and sha256 in `faces.json`, the three
+    listing pins and the figures in `ops/font-contract.md`.
+
+    **Owner: the Operator**, choosing the shape. **Trigger: the next contract release that opens for
+    any other reason, or the first string found ligated on a surface.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
+  id: DW-241
+  summary: >-
+    The four ledger templates the Build workflow ships append an entry with no `id:` and no
+    `status:` line, so the invariant Epic 1 retrospective action 8 set on 2026-09-25, every entry
+    numbered and statused, decays with the next split or deferral written to the template's letter.
+  evidence: |-
+    Read 2026-09-25 in `.claude/skills/bmad-build/`: step 1's split, step 2's token-check split,
+    step 4's `defer` triage and the one-shot route's `defer` each append `- source_spec:`,
+    `summary:` and `evidence:` and nothing else. The 99 entries the package numbered, DW-141 to
+    DW-239, were in that shape; agents since DW-31 have added an `id:` and a `status:` by
+    convention, which is what kept the later entries numbered.
+
+    Not changed here: the ruling for action 8 named the ledger, and the step files are the installed
+    skill's, overwritten on update. The cheap closer is one persistent fact in
+    `_bmad/custom/bmad-build.toml`, beside the oversized-spec rule this package added (`0c88b5b`):
+    an appended entry takes the next free `DW-` id as an `id:` line under `source_spec:` and ends
+    with `status: open`, whatever the template shows. A unit case over the ledger that fails an
+    entry lacking either is the other shape, and a gate on a planning file is a ruling too.
+
+    **Owner: the Operator**, for a ruling on the fact or the case. **Trigger: the next entry
+    appended without an id.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
+  id: DW-242
+  summary: >-
+    `epics.md`'s requirements inventory still gives AD-22's re-check scope as the 2026-08-15 list
+    and says "Nothing outside that list re-opens", while the spine's list has grown four times
+    since, the last on 2026-09-25.
+  evidence: |-
+    Found 2026-09-25 by the process-and-upkeep package while amending AD-22 (`2ec24c1`). The
+    inventory entry (`epics.md:380-384`) names the Traefik, PostgreSQL, restic and `docker-rollout`
+    versions, Clerk and Railway pricing, the Style Dictionary floor and the Let's Encrypt schedule,
+    and stops. The spine added the serving topology on 2026-08-16, the two `cs-tracker` adoption
+    probes on 2026-09-23, the Registry verification dispatch on 2026-09-24 and four re-checks on
+    2026-09-25. Story 4.1, which runs the check, has said since 2026-09-24 that its own copy is not
+    the scope and the spine's is, so the story that acts on the list reads the right one; the
+    inventory line is the one a reader of the AD summary meets first.
+
+    Not corrected here: the ruling amended the spine and the package gave Story 4.1 a dated
+    sentence, and a third copy is filed rather than rewritten, as DW-136 to DW-140 were.
+
+    **Owner: the Operator, as the owner of the spines.** **Trigger: the next pass over `epics.md`'s
+    requirements inventory, or Story 4.1's planning.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
+  id: DW-243
+  summary: >-
+    AD-22 now schedules the estate automation-policy sweep and the upstream font-pin check, and
+    neither script that ran them on 2026-09-25 is committed, so each refresh rebuilds its tooling
+    from the method `ops/contract-adoption.md` and `ops/font-contract.md` describe in prose.
+  evidence: |-
+    Found 2026-09-25 by the package's own review. Both scripts ran from the session scratchpad, as
+    the 2026-08-27 sweep's did, and both records say so. The sweep's calls are listed one by one,
+    and the font check states its control, the pinned sources reproducing the published faces byte
+    for byte, so a rebuilt script can prove itself. What a rebuild risks is counting differently:
+    this sweep excluded `list-wheel`'s `tsconfig.spec.json`, a compiler configuration, by reading.
+
+    Not committed here: tooling for a check that runs once per epic is a new file with its own
+    tests, and the ruling asked for the checks to be scheduled and run once, not scripted.
+
+    **Owner: unassigned.** **Trigger: the next AD-22 refresh, which pays the rebuild.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-vercel-removal.md`
+  id: DW-244
+  summary: >-
+    The homepage premise says "Everything below is running right now", and from Registry 1.4.0 one
+    of the rows below it, `cs-tournament`, is `Complete` and runs nowhere, so the sentence is false on
+    the page the Epic 2 merge ships.
+  evidence: |-
+    Found 2026-09-25 by the vercel-removal package (Operator ruling 2026-09-24). `Premise.tsx` sets
+    `EXPERIENCE.md` § The premise verbatim: "[N] personal projects became one suite. Everything below
+    is running right now, so open it and you are using the real thing, not looking at a picture of
+    it." The Suite Directory below it renders `Live` and `Complete` (FR-35), and since `fa34f09` its
+    `cs-tournament` row is `Complete`, drawing its Source link alone. The Directory's own count moved
+    in the same commit to count `Live` rows only, as `EXPERIENCE.md` § UI strings asks of a real
+    count, so it reads `5 running` over six rows while the premise above it says everything is
+    running. The copy was written when every rendered entry was `Live`, and no document offers
+    wording for a directory that holds a `Complete` row.
+
+    Not corrected in the package: `EXPERIENCE.md` fixes the copy word for word, and new copy is a
+    ruling the package's brief did not make.
+
+    **Owner: the Operator.** **Trigger: before the Epic 2 merge to `main`, which ships the
+    `Complete` row to production.**
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-25.** The premise reads, word for word, "[N]
+    personal projects became one suite. Every address below is running right now, so open one and
+    you are using the real thing, not looking at a picture of it." `[N]` is derived as before.
+    `87981a0` sets it in `Premise.tsx`, amends `EXPERIENCE.md` § The premise, FR-4 with a dated note,
+    and adds a block to `Premise.test.tsx`: one case pins the words and was red on the old sentence;
+    another, the case the Epic 2 retrospective's E1 asked for, fails when a rendered entry carrying an
+    address is not `Live`, and was red with `cs-tournament` given a `live` URL in a scratch edit; a
+    third plants that shape so the read is seen firing. Neither the PRD nor `epics.md` quotes the
+    sentence, so neither is amended. Two defaults were stated to the Operator on 2026-09-25 and not
+    overruled, and stand unchanged: the Directory's count stays `Live` rows only, reading `5 running`
+    over six rows, and `cs-tournament`'s `demo` stays `not-deployed`. The footer line's count was not
+    part of the ruling: DW-246.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-vercel-removal.md`
+  id: DW-245
+  summary: >-
+    PRD § 5.1's `Status today` column still holds three superseded values besides the
+    `cs-tournament` one the vercel-removal package amended: `apple-music-workspace`,
+    `cuatro-finance`'s assumption, and `list-wheel` on GitHub Pages.
+  evidence: |-
+    Found 2026-09-25 by the vercel-removal package while amending the `cs-tournament` row. Line
+    numbers as of 2026-09-25: `prd.md:598` still lists `apple-music-workspace`, removed from the
+    Estate on 2026-09-02 for having no repository; `:601` gives `cuatro-finance`
+    `[ASSUMPTION: built, not deployed]`, `In progress` by Operator ruling since 2026-09-02; `:606`
+    gives `list-wheel` `Live` on GitHub Pages, "relocating to the VPS", served from
+    `wheel.cuatro.dev` since 2026-09-13 (Story 2-25). `ops/estate.md` § Disposition of every
+    application carries each confirmed value and § 13 Q9 is struck, so a reader who follows the
+    PRD's own cross-references is not misled, but the column's heading says today.
+
+    Not corrected in the package: none of the three is Vercel's, and the ruling named the PRD's
+    current-state mentions of Vercel.
+
+    **Owner: the Operator, as the owner of the PRD.** **Trigger: the next pass over PRD § 5.1.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-244-premise-copy.md`
+  id: DW-246
+  summary: >-
+    The footer line's two figures count different sets, `Six applications` the rendered rows and
+    `five languages` the whole estate, and the Operator's premise ruling of 2026-09-25 settled the
+    premise's count and the Directory's but not this one, which the Epic 2 retrospective's action 1
+    asked to be settled with them.
+  evidence: |-
+    Found 2026-09-25 by the dw-244-premise-copy package while closing that action ("rule the premise
+    wording ... together with the page's three counts"). `SiteFooter` counts `renderedApplications`
+    (six) and `ESTATE_LANGUAGES` (five). Of the five, only TypeScript and Elixir are in a rendered
+    entry's `tech`; Python, Go and Solidity are in `In progress` entries the Directory holds back
+    (FR-35). The retrospective's A1 names the page's three denominators: `Fourteen personal projects`
+    (every entry), `5 running` (`Live` rows) and this line. The ruling kept the first two as they are
+    and did not name the third. Each figure is true of what it counts, so nothing on the page is false.
+
+    Not changed in the package: the ruling did not name the footer, and `EXPERIENCE.md` § UI strings
+    writes its line.
+
+    **Owner: the Operator.** **Trigger: the next edit to the footer line or to `ESTATE_LANGUAGES`.**
+    It does not bind the Epic 2 merge.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-home-hero-rulings.md`
+  id: DW-247
+  summary: >-
+    Source files cite the three planning documents by line number (`EXPERIENCE.md:946`,
+    `DESIGN.md:758-769`, `RESTYLE-SPEC.md:326-341` and about 150 more), and every dated amendment that
+    adds lines moves the text under those numbers, so the budget citations `ops/asset-budget.mjs`
+    prints already point at the wrong lines.
+  evidence: |-
+    Found 2026-09-25 by the home-hero-rulings package, whose dated amendments added six lines to
+    `EXPERIENCE.md` § Motion and two to `DESIGN.md`'s skip row. Observed before that package:
+    `ops/asset-budget.mjs` names `EXPERIENCE.md:943` to `:947` as the budget table, while at
+    `93cf5ba` the heading `### Budget` stood at line 947, so the cited lines were the section above
+    it; after the package the heading is at 953. `grep -rhoE "(DESIGN|EXPERIENCE|RESTYLE-SPEC)\.md:[0-9]+"`
+    over `app`, `components`, `ops`, `tests`, `packages`, `lib` and `hooks` finds roughly 150 distinct
+    citations, and no test reads the line a citation names, so the drift is silent. The Operator's
+    dated-amendment style, which adds lines rather than rewriting them, guarantees it continues.
+
+    Not corrected in the package: re-pointing every citation is outside its three rulings, and
+    whether to cite by section instead of by line (as the DW-244 spec already does for new comments)
+    is a convention call.
+
+    **Owner: unassigned.** **Trigger: the next package that cites a planning document by line, or a
+    ruling on citing by section.**
   status: open

@@ -101,6 +101,9 @@ export S3_REGION="${S3_REGION:-auto}"
 export S3_BUCKET="${S3_BUCKET:-}"
 export S3_ACCESS_KEY_ID="${S3_ACCESS_KEY_ID:-}"
 export S3_SECRET_ACCESS_KEY="${S3_SECRET_ACCESS_KEY:-}"
+# Tuning the config may carry. Exported as they are, so an unset one stays
+# unset and the object client takes its default.
+export S3_CONNECT_TIMEOUT S3_MAX_TIME
 
 # --- which object -------------------------------------------------------------
 

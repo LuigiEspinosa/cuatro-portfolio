@@ -2,12 +2,13 @@
 title: '`cs-tracker` adopts the token contract'
 type: 'feature'
 created: '2026-08-27'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '1b7cc1c41e002128ae0718c204047003991eda53'
 baseline_revision: '1b7cc1c41e002128ae0718c204047003991eda53'
 cs_tracker_baseline_revision: 'ff7667b86c4b9a65acc42c89982eaa29d022d2be'
 review_loop_iteration: 0
 followup_review_recommended: true
+followup_review_closed_on: '2026-09-24'
 context:
   - '{project-root}/AGENTS.md'
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -645,3 +646,51 @@ In `cuatro-portfolio`, commits `2d508e3` and `7fef4a5` against `1b7cc1c`:
   separate border role, so the two applications still paint different borders while the FR-18 table
   reports every role equal. Recorded as a stated limit for Story 8.1.
 
+## Closing note, 2026-09-24
+
+Closed on 2026-09-24 by Operator ruling 2026-09-24, in
+`_bmad-output/implementation-artifacts/spec-epic-1-close.md`. Each of the six `operator_actions`
+above is resolved below, in the frontmatter's order. The rows cited are Pending Operator actions in
+`ops/cs-tracker-token-adoption.md` unless another file is named:
+
+1. **Push and deploy `3f37cce` and `8adb8e2`: done 2026-08-27.** The first container build failed
+   and needed the Operator's `32a466a`, recorded in "The fonts task could not run in the container".
+   Row 1.
+2. **Read the roles on both deployed origins: done 2026-08-27.** "Read a third time, on the two
+   deployed origins" found 25 of 25 equal on `cuatro.dev` and `cs-tracker.cuatro.dev`.
+3. **Look at both side by side: done 2026-08-27.** The Operator judged the family resemblance sound
+   and the `--depth: 0` flattening correct. The pass found DW-15, which Contract 2.0.0 closed on
+   2026-09-24. Deploying `cs-tracker`'s re-vendor of that contract is `ops/contract-adoption.md`
+   action 8, which is the Operator's. Row 4.
+4. **Evaluate seam S-8: moved to Story 8.1 on 2026-09-24 and not evaluated here.** `epics.md`
+   Stories 1.19 and 8.1 carry the move as dated amendments. The AD-19 pass's 74 hit-target findings
+   and 38 transition findings went with it (`ops/contract-adoption.md` action 3 and its mirror,
+   `ops/cs-tracker-accessibility-pass.md` action 1). Row 5.
+5. **Decide `--color-secondary`: ruled 2026-09-24.** It keeps repeating `--color-base-300`, because
+   `RESTYLE-SPEC.md` § 1 Control rules out a filled control anywhere and § Family A step 2 retires
+   daisyUI's component classes. Row 3.
+6. **Put both probes on AD-22's scope and re-run them: done 2026-09-24.** Both were added on
+   2026-09-23. Re-run from a plain shell on 2026-09-24, `ops/daisyui-route-probe.mjs` exited 0 at 7 of
+   7 and `ops/cs-tracker-adoption-probe.mjs` at 19 of 19. That was after `048793f` moved the pipeline
+   pin onto `32a466a` (DW-17, which also closes `ops/contract-adoption.md` action 7) and `b14bcbb`
+   stripped the banner's colour codes (DW-109). Row 2 here, and row 2 of `ops/daisyui-route.md`.
+
+The park record `.bmad-loop/operator/1-19-cs-tracker-adopts-the-token-contract.json` is removed in
+the same commit, which is the end state `bmad-loop confirm` reaches. The tool was not used, because
+its audit section would say every action above "was carried out", and action 4 was moved rather than
+carried out. `followup_review_recommended: true` stays unspent. That is Epic 1 retrospective action
+3's to settle, not this closure's.
+
+## Follow-up review recommendation, closed 2026-09-24
+
+Closed on 2026-09-24 as superseded by use, by Operator ruling 2026-09-24 (Epic 1 retrospective
+action 3), in `_bmad-output/implementation-artifacts/spec-retro-3-cold-reviews.md`. No review was run.
+
+The reason, dated. The change lives in `cs-tracker`, and its result has been measured three times
+since it was written: on the two deployed origins on 2026-08-27, where 25 of 25 roles read equal; by
+the side-by-side pass that found DW-15, which Contract 2.0.0 closed on 2026-09-24 with a re-vendor of
+this adoption into `cs-tracker` (its push and deploy are `ops/contract-adoption.md` action 8, the
+Operator's); and by both probes from a plain shell on 2026-09-24, `ops/cs-tracker-adoption-probe.mjs`
+at 19 of 19 and `ops/daisyui-route-probe.mjs` at 7 of 7, which AD-22's refresh scope now re-runs. A
+cold review of the 2026-08-27 diff would re-read code whose output has been measured since, on the
+box and by two probes that keep measuring it.

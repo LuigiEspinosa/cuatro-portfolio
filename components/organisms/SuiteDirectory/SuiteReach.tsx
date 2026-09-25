@@ -1,16 +1,24 @@
 'use client';
 
 import { useEffect } from 'react';
+import type { NarrativePath } from '@/hooks/useNarrativePath';
 
 /**
  * The `suite-reach` event, SM-1's numerator (Story 2-24, FR-34, AD-18).
  *
- * **This is the only client boundary the Directory has, and it renders nothing.** The two link
- * events cost two attributes on anchors `SuiteDirectory` already renders, because the deployed
- * tracker fires a custom event on any click inside `[data-umami-event]`; reach has no click to hang
- * on, so it is the one event that needs script. It imports nothing from `@/lib/registry`, which is
- * what `lib/__tests__/registry.test.ts` refuses of a client file, and it takes the heading's id as a
- * prop rather than knowing it.
+ * **The Directory's one piece of script, and it renders nothing.** The two link events cost two
+ * attributes on anchors `SuiteDirectory` already renders, because the deployed tracker fires a
+ * custom event on any click inside `[data-umami-event]`; reach has no click to hang on, so it is the
+ * one event that needs script. It imports nothing from `@/lib/registry`, which is what
+ * `lib/__tests__/registry.test.ts` refuses of a client file, and it takes the heading's id as a prop
+ * rather than knowing it.
+ *
+ * **It carries the front door, and `HomeLayout` renders it** (Operator ruling 2026-09-24, DW-88).
+ * The event's one key, `door`, is `flat` or `narrative`, the hero's decided path, so SM-1 can be read
+ * per door. The decision is `HomeLayout`'s state and the Directory is a server component that cannot
+ * see it, so the hero mounts this and hands the answer down. Nothing is polled or observed while the
+ * door is `undecided`: the decision is the hero's first effect and terminal, so the wait is one
+ * render, and no event goes out without a door.
  *
  * **Reach means the heading entered the viewport or is already above it.** `isIntersecting` is the
  * ordinary arrival; `boundingClientRect.bottom < 0` is a visitor who flicked past the heading before
@@ -68,8 +76,9 @@ declare global {
 
 const trackerReady = (): boolean => typeof window.umami?.track === 'function';
 
-export function SuiteReach({ target }: { target: string }) {
+export function SuiteReach({ target, door }: { target: string; door: NarrativePath }) {
   useEffect(() => {
+    if (door === 'undecided') return;
     if (typeof IntersectionObserver === 'undefined') return;
     try {
       if (sessionStorage.getItem(REACH_EVENT) !== null) return;
@@ -82,7 +91,7 @@ export function SuiteReach({ target }: { target: string }) {
     const send = () => {
       observer?.disconnect();
       try {
-        window.umami?.track(REACH_EVENT);
+        window.umami?.track(REACH_EVENT, { door });
       } catch {
         // A throwing tracker is the tracker's defect, and it must not escape a callback.
       }
@@ -124,7 +133,7 @@ export function SuiteReach({ target }: { target: string }) {
       clearInterval(poll);
       observer?.disconnect();
     };
-  }, [target]);
+  }, [target, door]);
 
   return null;
 }

@@ -7,6 +7,15 @@ amended-2026-08-16: >-
   the two redesigned-Hub entries that still carried it (H-10 residue). Minted --tap: 44px into
   the contract (LOW-2). Added the addition and removal categories to Versioning (MED-2). Stated
   that typeset punctuation governs rendered UI copy while the house rule governs repository prose.
+amended-2026-09-24: >-
+  Operator ruling, Contract 2.0.0. Retargeted motion.ease-exit from cubic-bezier(0.7, 0, 0.84, 0), an
+  ease-in, to the ease-out cubic-bezier(0.33, 1, 0.68, 1) (DW-103). Renamed the Tailwind adapter's
+  eight spacing keys to --spacing-s-* with no deprecation window (DW-15). Held the palette inside sRGB
+  by rule, with the two values that already break it named (DW-129).
+amended-2026-09-25: >-
+  Operator ruling. Accepted --c-accent-bright and --c-focus as the palette's two named exceptions to
+  the sRGB rule, with no value change and no contract bump (DW-129). Kept the Plate mark's side-ruled
+  variant as design-system vocabulary with no Hub call site (DW-124).
 theme: dark-only
 anchor-hue: 288
 colors:
@@ -148,7 +157,7 @@ motion:
   dur-major: 420ms
   dur-exit: 165ms
   ease-entrance: cubic-bezier(0.16, 1, 0.3, 1)
-  ease-exit: cubic-bezier(0.7, 0, 0.84, 0)
+  ease-exit: cubic-bezier(0.33, 1, 0.68, 1)
   ease-toggle: cubic-bezier(0.65, 0, 0.35, 1)
 z:
   base: '1'
@@ -241,6 +250,15 @@ perceptually uniform, so the lightness number *is* the perceived lightness, whic
 makes the elevation ladder below a reliable ladder rather than a guess. The hex column is
 the computed sRGB fallback, not a second source of truth.
 
+**The palette is held inside sRGB by rule, so that a hex fallback is the colour itself and a
+contrast figure computed in gamma-encoded sRGB is exact.** *(Amended 2026-09-24 by Operator ruling, on
+the `oklch()` downlevelling row of `ops/anchor-token-adoption.md`. `packages/tokens/__tests__/tokens-contract.test.ts`
+converts each `--c-*` value to linear sRGB and fails on a channel outside 0 to 1. Two values authored
+before the rule break it on blue: `--c-accent-bright` reads 1.0762 and `--c-focus` 1.2628, so their
+hex entries below are clipped, not computed. The case admits those two by name at those readings and
+nothing else. Amended 2026-09-25 by Operator ruling, DW-129: both stay as named exceptions, with no
+value change, so the rule binds every value authored from here on.)*
+
 ### The palette
 
 | Token | Authored | sRGB | Contrast on `paper` | Role |
@@ -309,7 +327,7 @@ Four values, three structural axes, no two alike in greyscale.
 
 This is stated explicitly because the obvious version of this table is wrong. If `Live` and
 `Complete` were distinguished only by border *colour* (both `1px solid`, one accent and one
-neutral) they would sit **1.13:1 apart in greyscale**, and the taxonomy would be carried
+neutral) they would sit **1.77:1 apart in greyscale** *(Amended 2026-09-24 by Operator ruling: this read 1.13:1, which is the two marks' text pair; the border pair measures 1.773:1 in `ops/status-mark-axes.md`, and both sit far under 3:1, so the argument stands)*, and the taxonomy would be carried
 entirely by reading the word. Only `Live` earns accent, because it is the one value that means
 *you can click this right now*; but the accent is confirmation, never the signal.
 
@@ -444,7 +462,7 @@ and a monospace makes them scannable in a way a proportional face does not.
 
 | Family | Role | Licence | Axes used |
 |---|---|---|---|
-| **Bricolage Grotesque** | Display, headings, entry names | OFL | `wdth` 75–100, `opsz` 10–48, `wght` 700–800 |
+| **Bricolage Grotesque** | Display, headings, entry names | OFL | `wdth` 75–100, `opsz` 12 to 48 (pinned at 24 in the contract, `ops/font-contract.md`), `wght` 700–800 *(Amended 2026-09-24 by Operator ruling, `ops/font-contract.md` action 1: the `opsz` floor read 10, which no instance of the family has, since upstream's axis runs 12 to 96)* |
 | **Geist** | Body, lede, UI copy | OFL | `wght` 300–600 |
 | **Geist Mono** | Metadata, status, plate marks, tech arrays | OFL | `wght` 400 |
 
@@ -456,7 +474,9 @@ operation.
 **Bricolage's width axis is the identity.** It does what Monument Extended did on the
 current site, variably and for free. Display sets at `wdth 100`; headings and entry names at
 `wdth 85`; the framework band and wordmark compress to `wdth 75`. That single axis is
-carrying most of the visual continuity with the site being reshaped.
+carrying most of the visual continuity with the site being reshaped. *(Amended 2026-09-24 by
+Operator ruling, DW-121: one display line sets at `wdth 85`, `/celeste`'s, as § The redesigned Hub
+surfaces records.)*
 
 ### Scale
 
@@ -464,8 +484,8 @@ Ratio-based at **1.25 (major third)** from a 16px base. Not arbitrary jumps.
 
 | Token | Value | Used for |
 |---|---|---|
-| `--t-3xs` | `0.6875rem` / 11px | Status marks, plate marks. **Labels only, never prose** |
-| `--t-2xs` | `0.75rem` / 12px | Metadata, tech arrays, footer |
+| `--t-3xs` | `0.6875rem` / 11px | Status marks, plate marks, tech arrays *(Amended 2026-09-24 by Operator ruling, DW-96: tech arrays were listed on the `--t-2xs` row as well; they set at this step, as § Components → Registry Entry and the shipped Suite Directory have them)*. **Labels only, never prose** |
+| `--t-2xs` | `0.75rem` / 12px | Metadata, ~~tech arrays,~~ footer |
 | `--t-xs` | `0.8125rem` / 13px | UI copy floor |
 | `--t-sm` | `0.875rem` / 14px | **Body floor.** No prose sets smaller. |
 | `--t-base` | `1rem` / 16px | Lede, entry names |
@@ -537,7 +557,7 @@ locally** when the contract did not carry it. Three implementations reaching for
 value is the strongest available evidence that a contract is short one, and every restyled control
 in five frameworks needs it.
 
-**It is authored in `px`, deliberately, and it is the only length in the contract that is.** A
+**It is authored in `px`, deliberately, and it is the one length in the contract that is a physical-size guarantee.** *(Amended 2026-09-24 by Operator ruling, `ops/token-contract.md` action 1: this read "the only length in the contract that is", which is false. The shape and stroke values are `px` too, as fixed geometry rather than as a guarantee, and no reader-scaled length is `px`, as `contracts/tokens.css` says beside `--tap`.)* A
 target floor is a physical-size guarantee about a fingertip. Expressed in `rem` it would shrink for
 any user who reduces their root font size, which is precisely the user least able to afford a
 smaller target. Every other length here scales with the reader; this one must not.
@@ -561,7 +581,7 @@ Hit targets for why `inline-flex` is named alongside the number.
 
 ### Z-index scale
 
-Six named levels. An ad-hoc z-value anywhere is a defect.
+Seven named levels *(Amended 2026-09-24 by Operator ruling, DW-96: this read "Six"; the block below and `contracts/tokens.css` declare seven)*. An ad-hoc z-value anywhere is a defect.
 
 ```
 --z-base: 1;  --z-raised: 10;   --z-dropdown: 100;
@@ -642,9 +662,9 @@ expressed with opacity. Not interactive, so the target floor below does not appl
 
 **Hit targets, every interactive element.** `min-height: var(--tap)`, `display: inline-flex`,
 `align-items: center`, with `padding-block` making up the difference. **Vertical padding on a
-plain inline element does not grow its hit area.** It paints outward without affecting layout
-or hit-testing, so an inline link with `padding: 0.25rem 0` measures ~29px tall no matter what
-the padding says. This is the single easiest way to miss the floor while appearing to meet it,
+plain inline element grows its box but not its line.** It paints outward without affecting layout,
+so an inline link with `padding: 0.25rem 0` measures ~29px tall, and reaching 44px takes padding that overlaps the lines around it
+*(Amended 2026-09-24 by Operator ruling: this read that the padding does not grow the hit area and that the link measures ~29px "no matter what the padding says"; the Story 2-8 probe measured 29.00 at `0.25rem` and 44.00 at `0.75rem`, `ops/hit-target-floor.md`)*. This is the single easiest way to miss the floor while appearing to meet it,
 and it is why the rule names `inline-flex` rather than just naming a number.
 
 Where two targets sit on one line (the live and source links on an entry) they take
@@ -660,7 +680,12 @@ uppercase; status hanging right; description at `--t-sm` in `--token-text-second
 at `46ch`; tech array in mono `--t-3xs` uppercase; links in mono `--t-2xs` uppercase.
 Separated from its neighbour by a `1px` hairline. **No containing box**, so card-in-card
 cannot occur. The Tracker Family group is the only containment layer in the entire
-directory.
+directory. *(Amended 2026-09-24 by Operator ruling, the ledger entry on new-tab links: both
+links open a new tab and each ends in the external-navigation mark, the north-east arrow
+(U+2197, with the text-presentation selector so it is never an emoji), `--s-2xs` after the
+underlined label and outside its underline, in the link's own colour, face and size, so it spends
+no accent. The mark is `aria-hidden`; the link's accessible name is its visible label followed by
+`, opens in a new tab`.)*
 
 **Tracker Family group.** `1px solid var(--token-border)` on all four sides, the only
 containment layer in the directory, and the only place a box is drawn around entries. Group
@@ -711,6 +736,24 @@ current route carries a **`--stroke-emphasis` (2px) accent underline**, the same
 active link underline everywhere else in the system, so "current" reads identically wherever
 it appears. **Two destinations only.** The AI-nav tell is five inline links plus a CTA
 button, and this is structurally the opposite.
+
+**Skip link and skip control.** *(Added 2026-09-24 by Operator ruling, DW-44. This row describes
+what Story 2-13 shipped, so a later change has something to preserve.)* Two controls with one
+vocabulary: mono uppercase at `--t-2xs`, `--lh-label` leading and `--tr-meta` tracking; a
+`--stroke-hair` underline in `--token-border-interactive` that hover recolours to
+`--token-accent-hover`, on a pointer that can hover, and never adds; the global focus ring; and
+`--tap` on both axes through `inline-flex`, with `padding-inline: --s-md`. **The skip link**
+(`Skip to main content`, A-6) is the first tabbable element on every route: the header's first
+child, or on `/`, which has no header, the first thing in the document. It is `--token-text` on
+`--token-bg-raised`, parked above the viewport one ring-reach (`--focus-offset` plus
+`--stroke-focus`) inside the top-left corner, revealed on `:focus` at `--z-tooltip`, and it
+targets `main#main`, whose ring is drawn inset *(Amended 2026-09-25 by Operator ruling, DW-127:
+and drawn again on a layer above the hero, so on `/`'s default door at 768 and wider the canvas and
+scrim no longer paint over it)*. **The skip control** (`Skip to the suite`, then
+the down arrow hidden from assistive technology) is `--token-text-secondary` on no ground, turns
+`--token-text` on hover, sits at `--z-raised`, and renders on the default door only: first in the
+hero's column below 768, centred near the hero's bottom edge at 768 and wider. It targets
+`h2#suite`.
 
 **Suite Switcher panel.** `--token-bg-raised` ground, `1px` `--token-border-interactive`
 boundary, rows separated by hairlines, hover ground `--token-bg-raised-2`. Each row: app name
@@ -765,7 +808,13 @@ over the scrim. *(Corrected 2026-08-16; this previously read "that panel carries
 element" and followed from the same withdrawn contrast table.)* **What the panel must not do is sit
 at a z-level above the scrim**: the sticky header at `--z-sticky` over a scrim at `--z-raised` is
 over the imagery rather than the scrim, and computes against the imagery. Nav items keep their
-**side-ruled** leading edge, at `--token-border` for the rule.
+**side-ruled** leading edge, at `--token-border` for the rule. *(Amended 2026-09-24 by Operator
+ruling, DW-110: the readout panel, the one home panel that carried a Plate mark, is removed. The
+surface has three panels, the name, the navigation and the contact, none of which carries a Plate
+mark, and on the default door at 768 and wider the corner the readout held shows the imagery
+beneath. The Plate mark's side-ruled variant stays in § Components; it has no call site on the Hub
+since. Amended 2026-09-25 by Operator ruling, DW-124: the variant stays as design-system vocabulary,
+read on planted marks until a call site returns.)*
 
 **Work item (`WorkItem`).** A **row** per § Components → Registry Entry, not a card. Separator
 `1px solid var(--token-border)`. The left indicator rule becomes `--stroke-emphasis`
@@ -792,6 +841,18 @@ content-driven with `padding-block: --s-lg`, not a fixed `140px`. `Container` is
 `width: min(100%, 1920px)` with `padding-inline: var(--page-pad)`, never a percentage width, which
 is what makes the 360px floor fail. `Logo` sets in the display face at `wdth 75` / `--w-black` as a
 wordmark; the raster image is retired.
+
+**Personal surface (`/celeste`).** *(Added 2026-09-24 by Operator ruling, DW-121, which restyles the
+page to [`mockups/secondary-screens.html`](mockups/secondary-screens.html) S10. This entry records
+what shipped, so a later change has something to preserve.)* Ground `--token-bg`, the header
+suppressed, no exit, and one display line centred in the viewport, the only centred display type in
+the system. The line takes the display row's roles, `--t-display`, `--w-black`, uppercase,
+`--lh-display` and `--tr-display` in `--token-text`, **at `wdth 85` rather than 100**, as S10 sets
+it, capped at `14ch` so the words stack. The two emoji sit on a mono line of their own beneath the
+words and inside the heading, so its name keeps them: `--f-mono` at `--t-2xs`, `--w-regular`,
+`--lh-label` and `--tr-label`, `--s-md` above, and no colour of their own. Where S10 writes the size,
+the leading and the tracking by hand and gives the emoji line the accent, the roles win: the accent
+is spent as § Colors, Rules says and nowhere else.
 
 **`ProjectCard` and `ProjectsHero` are not respecified.** They retire with `/projects` at Story
 2.14 and the Registry Entry pattern replaces them.
@@ -825,7 +886,7 @@ wherever the folder lands.
 
 ```css
 /* Cuatro Ecosystem, Design Tokens
- * Contract v1.0.0 · dark only · anchor hue 288
+ * Contract v2.0.0 · dark only · anchor hue 288
  * Values only. Font files: see fonts.css (same folder).
  * A value change or an addition is a MINOR bump. A rename or a removal is MAJOR.
  */
@@ -943,7 +1004,7 @@ wherever the folder lands.
   --dur-major: 420ms;
   --dur-exit:  165ms;                              /* ~75% of minor */
   --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-exit:     cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-exit:     cubic-bezier(0.33, 1, 0.68, 1);
   --ease-toggle:   cubic-bezier(0.65, 0, 0.35, 1);
 
   /* ── layer ─────────────────────────────────────────────── */
@@ -965,6 +1026,12 @@ wherever the folder lands.
   }
 }
 ```
+
+*(Amended 2026-09-24 by Operator ruling, DW-103: `--ease-exit` read `cubic-bezier(0.7, 0, 0.84, 0)`,
+an ease-in, which holds still on exactly the frames after the input and reads as lag. It is now
+`cubic-bezier(0.33, 1, 0.68, 1)`, the CSS form of GSAP's `power2.out` that `WorkItem`'s close already
+runs. It ships in Contract 2.0.0, the MAJOR the adapter rename below opened, which is the version
+the header above now reads.)*
 
 **The `prefers-reduced-motion` block is inside the contract on purpose.** It is the one piece
 of *behaviour* the token layer can genuinely federate: a Satellite that adopts the tokens
@@ -997,11 +1064,18 @@ SCSS. Mechanical output from Style Dictionary: a build-step cost, not an authori
   --font-display:      var(--f-display);
   --font-sans:         var(--f-body);
   --font-mono:         var(--f-mono);
-  --spacing-lg:        var(--s-lg);
-  --radius-DEFAULT:    var(--r-none);
+  --spacing-s-lg:      var(--s-lg);
+  --radius-none:       var(--r-none);   /* amended 2026-09-24, ops/tailwind-adapter.md action 1: read --radius-DEFAULT, a Tailwind v3 key that mints .rounded-DEFAULT in v4 */
   /* … one line per token that should mint a utility */
 }
 ```
+
+*(Amended 2026-09-24 by Operator ruling, DW-15: the spacing keys are `--spacing-s-*`, so the
+utilities read `p-s-md` and `gap-s-lg`. Contract 1.0.0 named them `--spacing-2xs` to `--spacing-3xl`,
+and a named spacing key outranks Tailwind's container key of the same size, so `max-w-md` compiled to
+`var(--s-md)`, 16px rather than 28rem, in every consumer. `ops/__tests__/tailwind-container.test.ts`
+now compiles the adapter and holds every `max-w-*` size, `3xs` to `7xl`, to Tailwind's container
+widths (DW-19).)*
 
 **`tailwind.css` must import `fonts.css` too.** An adapter that pulls in only `tokens.css`
 gives the cluster three named font families and **no `@font-face` for any of them**, so every
@@ -1036,11 +1110,15 @@ Per NL Design System convention, inherited from research §D2:
   adopted the new token is unaffected, and nothing it already reads changes value. **A token present
   at first publication is not an addition and bumps nothing**, which is why `--token-scrim` ships
   inside `v1.0.0` rather than as a `v1.1.0` release.
-- A **rename** is **major**, including fixing a typo in a token name. Contracts break.
+- A **rename** is **major**, including fixing a typo in a token name. Contracts break. *(Amended
+  2026-09-24 by Operator ruling, DW-15: a key in the generated `tailwind.css` is a published name
+  too, so renaming one is major. Contract 2.0.0 is that release.)*
 - A **removal** is **major**, for the same reason a rename is: a consumer's `var()` silently falls
   back. This is why `--r-pill` stays declared but unused rather than being deleted.
 - With no atomic commits across eight repositories, the only workable model is
-  **deprecate → migrate → remove**.
+  **deprecate → migrate → remove**. *(Waived once, 2026-09-24, by Operator ruling: Contract 2.0.0
+  renamed the eight spacing keys with no deprecation step, because an alias would have published the
+  collision it removes, and the one adopter read none of the old names.)*
 - Adoption is **explicit and reviewed** in every Satellite. No unattended dependency merge in
   any repository without a real test suite (FR-19, NFR-10).
 
@@ -1133,7 +1211,7 @@ sweep is cheap and the file has changed once already.
 | `--light-gray-color: #b3b0aa` | `--token-text-secondary` → `#98979f` | **Warm → violet-tinted.** The most visible single change in the migration |
 | `--gray-color: #545454` | `--token-border-interactive` → `#656471` | Was untinted and below 3:1; now tinted and compliant |
 | `--page-padding` | `--page-pad` | Retuned; survives by intent |
-| `--hero-height: 40vh` | *stays local* | Layout constant, not a design token. Contract carries no viewport heights |
+| `--hero-height: 40vh` | *stays local* | Layout constant, not a design token. Contract carries no viewport heights. *(Amended 2026-09-24 by Operator ruling, DW-122: **deleted** instead. Nothing had read it since at least 2026-08-26, so `app/app.scss` declares no custom property and `:root` carries the contract's properties alone.)* |
 | `--font-regular` | `--f-body` + `--w-regular` | General Sans retired |
 | `--font-bold` | `--f-body` + `--w-bold` | **Weight, not family.** A family-only alias silently drops bold, see below |
 | `--monument-regular` | `--f-display` + `--w-bold` | Monument Extended → Bricolage Grotesque |
@@ -1292,6 +1370,6 @@ print stylesheet is outside the contract by nature. R8's grep excludes it explic
 - Don't fade every section in on scroll. One orchestrated entrance, then content simply exists.
 - Don't invent a metric. If the number was not supplied, the slot does not exist.
 - Don't reach for an emoji as an icon.
-- Don't write an ad-hoc `z-index`. Six named levels exist.
+- Don't write an ad-hoc `z-index`. Seven named levels exist *(amended 2026-09-24 by Operator ruling, DW-96: this read "Six")*.
 - Don't set prose below `--t-sm`, or anything below `--t-3xs`.
 - Don't rename a token casually. A rename is a **major** contract break across eight repos.

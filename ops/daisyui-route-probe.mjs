@@ -83,6 +83,7 @@ import { createRequire } from 'node:module';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { stripVTControlCharacters } from 'node:util';
 
 const require_ = createRequire(import.meta.url);
 
@@ -280,6 +281,18 @@ function describeRun(result) {
 function firstMatch(text, pattern) {
   const match = pattern.exec(text);
   return match === null ? null : match[1].trim();
+}
+
+/**
+ * The `tailwindcss vX.Y.Z` banner out of the binary's `--help` output, or null.
+ *
+ * The 4.1.12 CLI colours its banner through a pipe as well as on a terminal,
+ * unless `NO_COLOR` is set, and one escape sits between the name and the
+ * version. So every escape sequence is stripped before the match, and the pin
+ * reads the same from any shell (DW-109).
+ */
+export function tailwindBanner(helpText) {
+  return firstMatch(stripVTControlCharacters(helpText ?? ''), /(tailwindcss v[\d.]+)/);
 }
 
 /** Read a file, or return null rather than throwing an ENOENT with no context. */
@@ -745,7 +758,7 @@ function buildApplication(root) {
         `This is the Block If condition.`
     );
   }
-  const banner = firstMatch(run(binary, ['--help'], { cwd: appDir }).stdout, /(tailwindcss v[\d.]+)/);
+  const banner = tailwindBanner(run(binary, ['--help'], { cwd: appDir }).stdout);
   if (banner === null || !banner.endsWith(` v${PINNED_TAILWIND}`)) {
     throw new BlockedError(
       `the Tailwind binary reports ${banner ?? 'no version at all'}, not v${PINNED_TAILWIND}. The finding ` +

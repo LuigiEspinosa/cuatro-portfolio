@@ -1,94 +1,98 @@
 @use './scss/' as *;
 
-// The alias layer (Story 1-18, Anchor migration step 2, UX-DR9 and FR-17).
+// No custom property of its own (Story 2-22, Anchor migration step 7, UX-DR14; Operator ruling
+// 2026-09-24, DW-122).
 //
-// Every custom property the Hub already had keeps its name and gains a new value: a var()
-// reference to a role the published token contract puts on :root. All fifteen component
-// stylesheets go on reading the old names, so the whole site changes appearance from one file.
+// Story 1-18 put an alias layer here: thirteen old names redefined as var() references to the roles
+// the published token contract puts on :root, so the fifteen 2023 component stylesheets could go on
+// reading them while Epic 2 rebuilt each against the contract. Story 2-33 rebuilt the last of them,
+// which is FR-37's removal condition, and Story 2-22 deleted the layer: every stylesheet names its
+// roles directly, and nothing in the repository names an old one (`app/__tests__/anchor-contract.test.ts`
+// searches the tree for all thirteen). The mapping they followed is DESIGN.md section "The mapping",
+// and ops/anchor-token-adoption.md keeps the record of each.
 //
-// This is deliberate scaffolding rather than a destination. UX-DR14 deletes this layer once the
-// components are rebuilt token-native; until then the old name is the only thing a component
-// stylesheet says, and this is the one place the old name means anything.
-//
-// The mapping is epics.md:1821-1836 and DESIGN.md section "The mapping", whose value-by-value
-// half for the cybercore properties is rebaseline-2026-08-15.md section O-10. Follow the table,
-// do not invent a row. Two properties are deliberately left as literals, each with its reason
-// written beside it rather than left to read as an oversight.
-
-:root {
-  // Colors
-  --white-color: var(--token-text);
-  --black-color: var(--token-bg);
-  --light-gray-color: var(--token-text-secondary);
-  --gray-color: var(--token-border-interactive);
-  --accent: var(--token-accent);
-  // The ornament value, which is eleven of the fifteen call sites. The other four take the
-  // boundary role through the scoped redefinitions below.
-  --accent-dim: var(--token-accent-muted);
-  // Left alone pending O-11, which is open. Zero call sites either way, so this costs nothing.
-  --accent-glow: rgba(139, 92, 246, 0.4);
-
-  // Spacing
-  --page-padding: var(--page-pad);
-
-  // Hero
-  // Stays local: a viewport height is a layout constant and the contract carries none.
-  --hero-height: 40vh;
-
-  // General Sans, retired. Both aliases land on the body family; weight is a separate axis and
-  // --font-bold has had zero call sites since the cybercore rebrand.
-  --font-regular: var(--f-body);
-  --font-bold: var(--f-body);
-
-  // Confillia, retired by the type swap (Story 2-20, UX-DR12). The alias carries the family only:
-  // the narrow width Confillia Normal had is a font-stretch line set by hand beside font-family
-  // at each of its two call sites, because a family alias cannot carry width any more than it
-  // can carry weight. --confillia-bold had zero call sites and is deleted rather than retargeted.
-  --confillia-normal: var(--f-display);
-
-  // Monument Extended, retired. The old names bake weight into the family name, which a family
-  // alias cannot carry, so font-weight is set by hand beside font-family at the four
-  // --monument-bold call sites in this same commit. --monument-regular needs no hand edit: its
-  // three call sites ask for a weight below the 700 800 range the published display face
-  // declares, which the variable face clamps to 700, which is exactly the display family at bold
-  // that the mapping assigns them. Neither the family nor the weight role is named in this
-  // comment on purpose: the consumer scan reads this file whole, so a role named in prose would
-  // read as a reference. Both are written out in ops/anchor-token-adoption.md instead.
-  --monument-regular: var(--f-display);
-  --monument-bold: var(--f-display);
-
-  --font-mono: var(--f-mono);
-}
-
-// --accent-dim resolves per call site, across fifteen of them when Story 1-18 wrote this rule and
-// twelve since Story 2-9 (epics.md:1831-1834). A custom property is inherited and can be
-// redeclared on any selector, so the resolution happens here rather than at a call site. That is
-// what reconciles "resolved per call site" with epics.md:1836, "every one of the fifteen component
-// stylesheets keeps working with no edit", which otherwise read as contradictory, and it is why
-// component selectors appear in a global file at all.
-//
-// The rule that decides a site, stated so it can be falsified: a declaration is a boundary a
-// person reads state from when some selector repaints that same property under :hover,
-// :focus-visible or a data-state attribute, or when it is the only visual indicator of a
-// component's state. Everything else is ornament. The per-site table is in
-// ops/anchor-token-adoption.md and every row is asserted on the real element by
-// tests/e2e/anchor-aliases.pw.ts.
-//
-// Story 2-9 removed the third selector and the counter-scope beneath it. The card the Suite
-// Directory replaced is gone, and so is the counter-scope that existed only to take that card's
-// boundary value back off the chips inheriting it. Both selectors lost their subject when the
-// component was deleted, and their call sites went with it. `.work-item::before` declares on a
-// pseudo-element, which its siblings do not inherit from, so nothing else needs the value taken
-// back.
-.work-item::before,
-.error-page__back {
-  --accent-dim: var(--token-border-interactive);
-}
+// `--hero-height: 40vh`, the one property that was never an alias, outlived the layer by a day. Nothing
+// had read it since at least Story 1-18's count on 2026-08-26, and the Operator's ruling of 2026-09-24
+// deleted it and amended Story 2.22's criterion, so `:root` in the compiled stylesheet carries the
+// contract's properties alone. `app/__tests__/anchor-contract.test.ts` holds this file to declaring none.
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+// The focus standard, `RESTYLE-SPEC.md:326-341` § 4 verbatim, and the one rule in the Hub that
+// paints a ring (Story 2-26, Operator ruling of 2026-09-13), with the landmark's inset beneath it the
+// first deliberate exception since 2026-09-24 and its layer above the hero the second since
+// 2026-09-25. It replaced nine per-component rules
+// in eight stylesheets, four of which (three files, three at a 4px offset and one inset at -2px)
+// painted it in the hover colour at 1px. Global on purpose: `:focus-visible`, never `:focus`, so
+// a mouse click paints nothing; never transitioned, so the ring is at full strength the frame
+// focus lands; never removed; and at specificity (0,1,0), so a planted `!important` control in a
+// spec can still take it off to prove the reading is of this rule. The reset above does not touch
+// `outline`, so nothing has to reinstate it. `tests/e2e/accessibility-floor.pw.ts` reads the ring
+// on every interactive element on every route, and the four roles named below, the four the base
+// rule names, the accent the selection adds and the level the landmark's layer takes are the only
+// contract names this file is allowed to reference (`app/__tests__/anchor-contract.test.ts`,
+// `FOCUS_ROLES`, `BASE_RULE_ROLES`, `SELECTION_ROLES` and `LANDMARK_LAYER_ROLES`).
+:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-hair);
+}
+
+// **The first deliberate exception to § 4 verbatim** (Operator ruling 2026-09-24, F-20). The skip link
+// puts focus on `<main>`, which is as wide as the document, so the ring drawn `--focus-offset` outside
+// it fell past the document's edge on three sides and a visitor saw a line at the bottom. On the
+// landmark alone the same ring is drawn inside the box, inset by its own width, so no edge takes any of
+// it on any route. A positioned layer inside the landmark still paints over it: on `/`'s default door
+// at 768 and wider the hero's canvas and scrim cover it within the hero, which the layer below
+// answers (DW-127). The same two roles, and no length: the `-1` is the sign, not a value.
+// `tests/e2e/accessibility-floor.pw.ts` allows an outline here, on the layer below and on the global
+// rule, and on no other selector.
+main:focus-visible {
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: calc(-1 * var(--stroke-focus));
+  // The layer below is positioned against the landmark. Only while focused, so at any other time
+  // nothing about `<main>` changes; no positioned descendant resolves against it either way, since
+  // every one on every route sits inside a nearer positioned box.
+  position: relative;
+}
+
+// **The second deliberate exception to § 4 verbatim** (Operator ruling 2026-09-25, DW-127). An
+// element's outline paints before its positioned descendants, and on `/`'s default door at 768 and
+// wider the hero's canvas and scrim are positioned inside `<main>` and cover its edges, so the ring
+// above read as the scrim over it. This draws the same ring again, in the same colour and width and
+// at the same inset, on a layer over the whole landmark: `--z-raised` clears the canvas box, a
+// stacking context at the base level that holds the scrim, and ties the hero's panels, a tie this box
+// wins because `::after` follows them in tree order.
+// It exists only while `main` matches `:focus-visible` (no `content`, no box), is never transitioned,
+// and takes no pointer, so it neither intercepts a click nor covers anything at any other time.
+// `tests/e2e/accessibility-floor.pw.ts` allows an outline on this selector beside the two above and
+// reads it as a raster on `/` at 1280 and 360 and on `/work`.
+main:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-raised);
+  pointer-events: none;
+  outline: var(--stroke-focus) solid var(--token-focus);
+  outline-offset: calc(-1 * var(--stroke-focus));
+}
+
+// **RESTYLE-SPEC F-11** (Operator ruling 2026-09-24, DW-95, finding F-15). The page tells the user
+// agent it is dark, so scrollbars and form controls are drawn for a dark ground, and selected text is
+// the accent ground under `--token-bg` text. That ground is the one accent fill F-8 permits, and
+// `ops/__tests__/accent-fill.test.ts` exempts this selector by name. The file's one `:root` block since
+// `--hero-height`'s left with it on the same day (DW-122).
+:root {
+  color-scheme: dark;
+}
+
+::selection {
+  background: var(--token-accent);
+  color: var(--token-bg);
 }
 
 // `clip`, not `hidden`, and on both elements (`DESIGN.md:558-559`). The two clip identically; what
@@ -100,23 +104,22 @@ body {
   overflow-x: clip;
 }
 
+// The base rule, naming the roles DESIGN.md section "The mapping" gives the body: the ground, the
+// body family at the regular weight, and the text. Until Story 2-22 it read the three aliases that
+// resolved to the same ground, family and text, with the weight left at the initial 400 the regular
+// role equals, so no computed value moved when the aliases went.
 body {
-  background: var(--black-color);
-  font-family: var(--font-regular);
-  color: var(--white-color);
+  background: var(--token-bg);
+  font-family: var(--f-body);
+  font-weight: var(--w-regular);
+  color: var(--token-text);
   width: 100%;
   // A minimum rather than a height. `height: 100vh` clamped the document to one viewport, which is
   // the reason a homepage section below the hero could not be scrolled to at all.
   min-height: 100vh;
 }
 
-// `body#projects` left this list with Story 2-14. `Container.tsx:12-16` derives the id from
-// `usePathname()`, and `/projects` now answers a 301 rather than rendering, so no request can
-// match it again.
-body#work {
-  background-color: #0a000f;
-  background-image:
-    linear-gradient(rgba(140, 90, 210, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(140, 90, 210, 0.06) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
+// **No route overrides the ground since Story 2-33**, which deleted `body#work`: the cybercore literal
+// and its two-gradient grid, the last of the three surfaces that painted them (the home's left with
+// Story 2-29 and the 404's with Story 2-30). `body#projects` had left the same rule with Story 2-14.
+// Every route now paints the base rule above.

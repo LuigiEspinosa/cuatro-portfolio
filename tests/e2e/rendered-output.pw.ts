@@ -11,11 +11,20 @@ import {
 /**
  * One test per harness capability, against `/work` (Story 1-10).
  *
- * `/work` is the chosen route because it is the only one that combines a `--monument-bold`
+ * `/work` is the chosen route because it is the only one that combines a bold display alias
  * call site (`.work-hero__heading`), the `body#work` background rule keyed off
  * `<body id={route}>`, and server-rendered content whose entrance tweens sit behind
  * `if (!reduceMotion)`. Its `TorusCanvas` is WebGL driven by `useFrame` and can never be
  * stable, so it is masked.
+ *
+ * **None of the three holds since Story 2-33 (2026-09-23), and the route stays.** The heading names
+ * the display family directly, `body#work` is deleted, and the entrance is one CSS keyframe that the
+ * pinned `reducedMotion: 'reduce'` turns off; the baseline is `/work`'s history, and a new route
+ * would be a second instrument rather than this one. **Nothing is masked any more.** Under that same
+ * pinned preference the torus is never requested and its box is omitted, so the whole frame is
+ * compared, and the capture asserts there is no canvas to mask rather than trusting it. The two
+ * capability reads below read what the heading declares, `--f-display`, rather than the alias it
+ * used to, which Story 2-22 deleted with the rest of the layer.
  */
 
 const ROUTE = '/work';
@@ -49,7 +58,7 @@ const exercised = new Set<string>();
  * The computed `font-family` of a throwaway element declared `font-family: <value>`.
  *
  * Added by Story 1-18. The two capability tests below used to compare against the literal
- * `MonumentExtended-Bold`, which that story retired by aliasing `--monument-bold` onto a
+ * `MonumentExtended-Bold`, which that story retired by aliasing the bold display name onto a
  * published family. Reading the expectation off a probe in the same page keeps both tests
  * measuring the capability rather than a font name, and keeps them from having to restate a value
  * the contract is free to retune under a MINOR bump.
@@ -71,7 +80,7 @@ const probeFamily = async (page: Page, value: string): Promise<string> => {
  *
  * This is the failure the plain read had. `font-family` is inherited, so a probe declared
  * `font-family: var(--undeclared)` does not go blank: it falls back to whatever `body` sets, which
- * is exactly what `.work-hero__heading` would also fall back to if `var(--monument-bold)` stopped
+ * is exactly what `.work-hero__heading` would also fall back to if the reference it declares stopped
  * resolving. The two would then compare **equal**, and `not.toMatch(/MonumentExtended/)` would pass
  * as well, so the capability test would be green while the display family reached no heading. The
  * inherited family is measured through a name nothing declares, and the two are required to differ.
@@ -102,16 +111,21 @@ const normaliseFamilyStack = (value: string): string =>
 
 test.describe('rendered-output harness', () => {
   test('captures /work at 360x800 and matches the committed baseline', async ({ page }) => {
-    await expectRouteScreenshot(page, ROUTE, SNAPSHOT, { mask: [CANVAS] });
+    await expectRouteScreenshot(page, ROUTE, SNAPSHOT);
 
-    // The baseline is only comparable to a render taken at the size it was captured at, and
-    // the mask is only honest if the region it covers is really there. Both are asserted here
-    // rather than assumed from the config.
+    // The baseline is only comparable to a render taken at the size it was captured at, which is
+    // asserted here rather than assumed from the config.
     expect(page.viewportSize()).toEqual({ ...RENDERED_VIEWPORT });
 
-    const canvasBox = await page.locator(CANVAS).boundingBox();
-    expect(canvasBox?.width ?? 0).toBeGreaterThan(0);
-    expect(canvasBox?.height ?? 0).toBeGreaterThan(0);
+    // **No mask since Story 2-33, and that is asserted rather than assumed.** Until then the torus
+    // was masked because a WebGL frame driven by `useFrame` can never be stable between two
+    // captures, and the mask was only honest while its region was really there. Under the pinned
+    // reduced motion the torus is never requested and its box is omitted, so the frame holds no
+    // canvas and every pixel of it is compared: a canvas arriving here would make the gate flaky,
+    // and this fails first, naming it.
+    expect(await page.locator('canvas').count(), 'a canvas is on the page under reduced motion').toBe(0);
+    expect(await page.locator(CANVAS).count(), 'the canvas box left the markup').toBe(1);
+    expect(await page.locator(CANVAS).boundingBox(), 'the canvas box is drawn under reduced motion').toBeNull();
 
     exercised.add('route-screenshot');
   });
@@ -121,13 +135,16 @@ test.describe('rendered-output harness', () => {
 
     const family = await computedStyleValue(page, HEADING, 'font-family');
 
-    // **Amended by Story 1-18**, which aliased `--monument-bold` onto the published display
+    // **Amended by Story 1-18**, which aliased the bold display name onto the published display
     // family and retired `MonumentExtended-Bold` from this call site. The expectation is read
     // through a probe in the same page rather than restated as a literal, so a MINOR bump that
     // retunes the family stack moves both sides together instead of failing the harness's own
     // capability test for a reason that has nothing to do with the harness.
-    const aliased = await probedFamily(page, 'var(--monument-bold)');
-    expect(family, `${HEADING} no longer resolves to what var(--monument-bold) resolves to`).toBe(aliased);
+    //
+    // **Amended again by Story 2-33**, which rebuilt the heading to name `--f-display` directly, so
+    // the probe reads that and not the alias the heading no longer declares (Story 2-22 deletes it).
+    const declared = await probedFamily(page, 'var(--f-display)');
+    expect(family, `${HEADING} no longer resolves to what var(--f-display) resolves to`).toBe(declared);
     expect(family, 'the retired Monument Extended family still reaches the heading').not.toMatch(/MonumentExtended/);
 
     exercised.add('computed-property');
@@ -136,7 +153,9 @@ test.describe('rendered-output harness', () => {
   test('reads the computed value of a custom property on :root', async ({ page }) => {
     await page.goto(ROUTE);
 
-    const declared = await rootCustomPropertyValue(page, '--monument-bold');
+    // The bold display alias until Story 2-33 moved the heading onto the display role itself; the pair
+    // of shapes this reads is the same, and it no longer depends on an alias, which Story 2-22 deleted.
+    const declared = await rootCustomPropertyValue(page, '--f-display');
 
     // Two capabilities, two different shapes of the same family, which is why both are asserted
     // rather than one. A custom property carries its declared token stream through to the
@@ -145,9 +164,9 @@ test.describe('rendered-output harness', () => {
     // shapes were `"MonumentExtended-Bold"` and `MonumentExtended-Bold`; the alias layer changed
     // the family, not the pair of shapes, so what is asserted is the pair rather than the
     // literals it used to produce.
-    expect(declared, '--monument-bold is no longer a quoted family stack').toMatch(/"/);
+    expect(declared, '--f-display is no longer a quoted family stack').toMatch(/"/);
     expect(normaliseFamilyStack(declared), 'the two shapes of the family no longer agree').toBe(
-      normaliseFamilyStack(await probedFamily(page, 'var(--monument-bold)'))
+      normaliseFamilyStack(await probedFamily(page, 'var(--f-display)'))
     );
     expect(declared, 'the retired Monument Extended family is still on :root').not.toMatch(/MonumentExtended/);
 
@@ -179,7 +198,6 @@ test.describe('rendered-output harness', () => {
     await page.addStyleTag({ content: `${HEADING} { transform: translateX(1px); }` });
 
     const comparison = expect(page).toHaveScreenshot(SNAPSHOT, {
-      mask: [page.locator(CANVAS)],
       // The comparison retries until it matches or this elapses, and it will never match, so
       // this is a deliberate spend rather than a timeout to be generous with.
       timeout: 10_000,
@@ -206,7 +224,6 @@ test.describe('rendered-output harness', () => {
     const absent = `work-${RENDERED_VIEWPORT.width}x${RENDERED_VIEWPORT.height}-absent-baseline.png`;
 
     const comparison = expect(page).toHaveScreenshot(absent, {
-      mask: [page.locator(CANVAS)],
       timeout: 10_000,
     });
 

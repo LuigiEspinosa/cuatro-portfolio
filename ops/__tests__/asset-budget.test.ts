@@ -115,10 +115,13 @@ function scratchBuild(root: string, options: BuildOptions = {}): void {
 
   // Every fingerprint has to hit something or `collect` refuses, which is
   // itself asserted further down. They are split the way the real build splits
-  // them: the WebGL stack in one chunk, `gsap` and `lenis` in another that the
-  // routes with no 3D on them still pull. Without that split every route here
-  // would carry WebGL and there would be no non-3D path to measure. The last
-  // mark lives alone in `orphan.js` when the case wants a deferred chunk.
+  // them: the WebGL stack in one chunk, `gsap` and `gsap/ScrollTrigger` in
+  // another that routes with no 3D on them still pull (`/cv` and `/work` carry
+  // `gsap` for the Work item since 2026-09-24). Without that split every route
+  // here would carry WebGL and there would be no non-3D path to measure. The
+  // last mark, `ScrollTrigger`'s since `lenis` left, lives alone in `orphan.js`
+  // when the case wants a deferred chunk, which is where the real build has put
+  // that library since DW-36.
   const webglMarks = FINGERPRINTS.filter((entry) => entry.webgl).map((entry) => entry.mark);
   const plainMarks = FINGERPRINTS.filter((entry) => !entry.webgl).map((entry) => entry.mark);
   const shared = deferred ? plainMarks.slice(0, -1) : plainMarks;
@@ -176,8 +179,9 @@ function scratchBuild(root: string, options: BuildOptions = {}): void {
     '<link rel="preload" href="/fonts/reached.woff2?v=2" as="font"/>',
     '</head><body></body></html>',
   ].join('\n');
-  // No WebGL chunk here, and `gsap` and `lenis` on it regardless: this is the
-  // shape the real non-3D routes have.
+  // No WebGL chunk here, and `gsap` and `gsap/ScrollTrigger` on it regardless:
+  // the shape every real non-3D route had until 2026-09-24, and the `gsap` half
+  // is still the shape of `/cv` and `/work`.
   const plain = [
     '<!DOCTYPE html><html><head>',
     '<script src="/_next/static/chunks/shell.js" async=""></script>',
@@ -267,8 +271,8 @@ describe('collect over a whole scratch build', () => {
       // The four partitions are exactly the wire total, with nothing counted
       // twice and nothing left out.
       expect(plain.gzip + plain.scriptGzip + plain.styleGzip + plain.preloadOnlyGzip).toBe(plain.wireGzip);
-      // `gsap` and `lenis` are on it and no WebGL chunk is, which is what makes
-      // it a non-3D route rather than a route with no narrative on it.
+      // `gsap` and `gsap/ScrollTrigger` are on it and no WebGL chunk is, which is
+      // what makes it a non-3D route rather than a route with no narrative on it.
       expect(plain.webgl).toBe(false);
       expect(must(model.chunks.find((chunk) => chunk.name === 'narrative.js'), 'narrative.js').routes).toContain('/plain');
     });
@@ -780,18 +784,19 @@ describe('classifying a chunk by fingerprint', () => {
   it('keeps the fingerprint table exactly as the record states it', () => {
     // The record publishes these marks and the proof that each discriminates.
     // Adding, removing or loosening one moves a published figure, so it moves
-    // this list in the same commit or it does not land.
+    // this list in the same commit or it does not land. Ten rows until
+    // 2026-09-14: Story 2-27 dropped the `gsap/SplitText` import with the
+    // component that carried it, and the row left in the same commit. Nine until
+    // 2026-09-24: DW-36 deleted `lenis`, and DW-119 the orbit controls that were
+    // `three-stdlib`'s only importer, and both rows left with them.
     expect(FINGERPRINTS.map((entry) => [entry.library, entry.mark, entry.webgl])).toEqual([
       ['three', 'WebGLRenderer', true],
       ['@react-three/fiber', 'react-three-fiber', true],
       ['@react-three/drei', 'onIncline', true],
-      ['three-stdlib', 'OrbitControls.js encountered', true],
       ['@react-three/postprocessing', '@react-three/postprocessing', true],
       ['postprocessing', 'KawaseBlurPass', true],
       ['gsap', 'GSAP target ', false],
       ['gsap/ScrollTrigger', 'scrollerProxy', false],
-      ['gsap/SplitText', 'SplitText called before fonts loaded', false],
-      ['lenis', 'lenisVersion', false],
     ]);
     expect(SHELL_MARKS.map((entry) => entry.mark)).toEqual(['react-dom', 'flightRouterState', 'core-js']);
   });
@@ -802,20 +807,20 @@ describe('classifying a chunk by fingerprint', () => {
 // ---------------------------------------------------------------------------
 
 describe('which declared faces a font-family rule can reach', () => {
-  // Two hops, which is what the real build carries: `--monument-bold` holds
-  // `var(--f-display)`, which holds the family. A resolver that stopped after
-  // one hop would call Bricolage Grotesque unreachable and hand a later story a
-  // reason to delete a face that is on every page.
+  // Two hops, which is what the real build carried until Story 2-22 deleted the
+  // aliases: an alias held `var(--f-display)`, which holds the family. A resolver
+  // that stopped after one hop would call Bricolage Grotesque unreachable and hand
+  // a later story a reason to delete a face that is on every page.
   const css = `
 @font-face{font-family:"Bricolage Grotesque";src:url(../media/bricolage.woff2) format("woff2")}
 @font-face{font-family:'Confillia Normal';src:url(../media/confillia.woff2) format("woff2")}
 @font-face{font-family:MonumentExtended-Bold;src:url(../media/monument.woff2) format("woff2")}
 @font-face{font-family:"Fallback Only";src:url(../media/fallback.woff2) format("woff2")}
 @font-face{font-family:"Cased";src:url(../media/cased.woff2) format("woff2")}
-:root{--f-display:"Bricolage Grotesque","Archivo",system-ui,sans-serif;--monument-bold:var(--f-display);
---confillia-normal:"Confillia Normal"}
-h1{font-family:var(--monument-bold);font-weight:900}
-p{font-family:var(--confillia-normal)!important}
+:root{--f-display:"Bricolage Grotesque","Archivo",system-ui,sans-serif;--display-alias:var(--f-display);
+--narrow-alias:"Confillia Normal"}
+h1{font-family:var(--display-alias);font-weight:900}
+p{font-family:var(--narrow-alias)!important}
 aside{font-family:var(--never-defined, "Fallback Only"),sans-serif}
 b{font-family:  cased  }
 figcaption{font-family:var(--never-defined)}
@@ -835,7 +840,7 @@ figcaption{font-family:var(--never-defined)}
 
   it('follows a two-hop var() chain to the family it names', () => {
     const properties = parseFontUses(css).properties;
-    expect(resolveFontValue('var(--monument-bold)', properties).families[0]).toBe('Bricolage Grotesque');
+    expect(resolveFontValue('var(--display-alias)', properties).families[0]).toBe('Bricolage Grotesque');
   });
 
   it('follows the fallback arm, so a face reached only through one is reached', () => {
@@ -872,8 +877,8 @@ figcaption{font-family:var(--never-defined)}
     // would look reachable and the reachability column would say nothing.
     expect(parseFontUses(css).uses).toEqual([
       'cased',
-      'var(--confillia-normal)',
-      'var(--monument-bold)',
+      'var(--display-alias)',
+      'var(--narrow-alias)',
       'var(--never-defined)',
       'var(--never-defined, "Fallback Only"),sans-serif',
     ]);

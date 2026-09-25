@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createElement } from 'react';
 import { render } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { section, table, unticked } from '../contract-adoption.mjs';
 import { LIVE_EVENT, SOURCE_EVENT, SuiteDirectoryRow } from '@/components/organisms/SuiteDirectory/SuiteDirectory';
-import { REACH_EVENT, TRACKER_POLL_LIMIT, TRACKER_POLL_MS } from '@/components/organisms/SuiteDirectory/SuiteReach';
+import { REACH_EVENT, SuiteReach, TRACKER_POLL_LIMIT, TRACKER_POLL_MS } from '@/components/organisms/SuiteDirectory/SuiteReach';
 import type { RegistryEntry } from '@/lib/registry';
 
 /**
@@ -55,6 +55,42 @@ const recordEvents = (markdown: string): { event: string; data: string }[] => {
 const fencedBlocks = (markdown: string): string[] =>
   [...markdown.matchAll(/^[ \t]*```[^\n]*\n([\s\S]*?)\n[ \t]*```[ \t]*$/gm)].map((match) => match[1]);
 
+/**
+ * The data one `suite-reach` carries, read off the component rather than restated: a fake observer,
+ * a stub tracker and one notification, the way the record's Data column is about what a visitor's
+ * event carries and not about a string in a source file.
+ */
+const reachData = (): Record<string, unknown> => {
+  const sent: unknown[][] = [];
+  const callbacks: IntersectionObserverCallback[] = [];
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      constructor(callback: IntersectionObserverCallback) {
+        callbacks.push(callback);
+      }
+      observe() {}
+      disconnect() {}
+    }
+  );
+  window.umami = { track: (...args: unknown[]) => void sent.push(args) };
+  const heading = document.createElement('h2');
+  heading.id = 'reach-probe';
+  document.body.append(heading);
+  try {
+    const { unmount } = render(createElement(SuiteReach, { target: 'reach-probe', door: 'flat' }));
+    callbacks[0]?.([{ isIntersecting: true, boundingClientRect: { bottom: 1 } } as unknown as IntersectionObserverEntry], {} as IntersectionObserver);
+    unmount();
+  } finally {
+    heading.remove();
+    sessionStorage.clear();
+    delete window.umami;
+    vi.unstubAllGlobals();
+  }
+  if (sent.length !== 1) throw new Error(`${HERE}: the reach component sent ${sent.length} events to a stub, so its data cannot be read`);
+  return (sent[0][1] ?? {}) as Record<string, unknown>;
+};
+
 /** One Live row with a hostname, so both anchors render. */
 const probe: RegistryEntry = {
   id: 'probe',
@@ -75,13 +111,27 @@ describe('the record names the events the components export', () => {
     expect(events.map((row) => row.event)).toEqual([REACH_EVENT, LIVE_EVENT, SOURCE_EVENT]);
   });
 
-  it('states no data on reach and app on both link events', () => {
-    // The tracker reads `data-umami-event-app`, so `app` is the key SM-2 and SM-3 group by, and
-    // reach carries nothing: the narrative path as reach data is an Ask First of the story.
+  it('states the door on reach and app on both link events, each the key the component sends', () => {
+    // The tracker reads `data-umami-event-app`, so `app` is the key SM-2 and SM-3 group by. Reach
+    // carried nothing until the Operator's ruling of 2026-09-24 (DW-88), and carries the front door
+    // since: its key is read off the component, so a rename there fails here by name.
+    const keys = Object.keys(reachData());
+    expect(keys, 'the reach event carries some other data than the one door').toEqual(['door']);
     const byName = new Map(events.map((row) => [row.event, row.data]));
-    expect(byName.get(REACH_EVENT)).toBe('none');
+    expect(byName.get(REACH_EVENT)).toMatch(new RegExp(`^${keys[0]}:`));
     expect(byName.get(LIVE_EVENT)).toMatch(/^app:/);
     expect(byName.get(SOURCE_EVENT)).toMatch(/^app:/);
+  });
+
+  it('joins the door onto reach in a fenced SM-1 query, on the key the component sends (DW-88)', () => {
+    // The split SM-1 exists for: which front door the reaching visits came through. A query that
+    // named a key the component does not send would read every visit as unrecorded, forever.
+    const [key] = Object.keys(reachData());
+    const joined = fencedBlocks(record).filter(
+      (block) => block.includes(`'${REACH_EVENT}'`) && block.includes(`d.data_key = '${key}'`) && /\bleft join event_data\b/.test(block)
+    );
+    expect(joined, `no fenced block in ${RECORD_REL} joins '${key}' onto '${REACH_EVENT}'`).toHaveLength(1);
+    expect(joined[0], 'the joined query counts something other than distinct visits').toContain('count(distinct e.visit_id)');
   });
 
   it('matches the attributes a rendered row carries', () => {

@@ -2,7 +2,7 @@
 title: 'Enumerate the deployed routing table on the box'
 type: 'chore'
 created: '2026-08-24'
-status: 'awaiting-operator'
+status: 'done'
 baseline_commit: '7e57ed2643d281a5fc5a3004ba4d82725f0ce507'
 baseline_revision: '7e57ed2643d281a5fc5a3004ba4d82725f0ce507'
 review_loop_iteration: 0

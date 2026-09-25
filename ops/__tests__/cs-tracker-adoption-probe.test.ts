@@ -40,12 +40,14 @@ import {
   hubFixtureHtml,
   namesInNamespace,
   oklchLiterals,
+  pipelineVerdict,
   preflightCount,
   recordedVersionVerdict,
   retiredLiterals,
   routeVerdict,
   selectionRule,
   shapeMapping,
+  tailwindBanner,
   themeBlocks,
   themeDeclarations,
   unreadableRows,
@@ -751,6 +753,105 @@ describe('the verdict function', () => {
   it('pins daisyUI 5.0.35\'s own default primary, which the components must differ from', () => {
     expect(DAISYUI_DEFAULT_PRIMARY).toBe('oklch(0.45 0.24 277.023)');
     expect(COMPONENT_IDS).toEqual(['btn', 'badge']);
+  });
+});
+
+describe('the Tailwind banner', () => {
+  // The first bytes of `--help` from `cs-tracker`'s own Tailwind 4.1.12 binary, spawned through a
+  // pipe with `NO_COLOR` unset, verbatim. Observed 2026-09-24: the CLI colours its banner whether or
+  // not it has a terminal, and one escape sits between the name and the version, which is what
+  // stopped this probe at exit 3 on 2026-09-23 (DW-109).
+  const COLOURED =
+    '\x1b[3m\x1b[1m\x1b[34m≈\x1b[39m\x1b[22m\x1b[23m tailwindcss \x1b[34mv4.1.12\x1b[39m\n\n' +
+    '\x1b[2mUsage:\x1b[22m\n';
+
+  it('reads the version through the colour codes the CLI prints without NO_COLOR', () => {
+    expect(tailwindBanner(COLOURED)).toBe('tailwindcss v4.1.12');
+  });
+
+  it('reads the plain banner NO_COLOR produces, and no banner as null', () => {
+    expect(tailwindBanner('≈ tailwindcss v4.1.12\n\nUsage:\n')).toBe('tailwindcss v4.1.12');
+    // null is what the Block If turns into "no version at all", so an empty or missing stdout
+    // must reach it rather than throw.
+    expect(tailwindBanner('')).toBeNull();
+    expect(tailwindBanner(undefined as unknown as string)).toBeNull();
+  });
+});
+
+describe('the build pipeline case', () => {
+  // `cs-tracker`'s alias block as its `32a466a` left it, cut to what the case reads: `cuatro.fonts`
+  // runs in `assets.build` and in `assets.deploy` ahead of `phx.digest`, and not in `assets.setup`,
+  // because the Dockerfile runs that alias before the task's source and the faces are in the image.
+  const AFTER_32A466A = `
+  defp aliases do
+    [
+      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
+      # cuatro.fonts deliberately does NOT run here, though Story 1.19 first put it here
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
+      "assets.build": ["compile", "tailwind cs_tracker", "esbuild cs_tracker", "cuatro.fonts"],
+      "assets.deploy": [
+        "tailwind cs_tracker --minify",
+        "esbuild cs_tracker --minify",
+        "cuatro.fonts",
+        "phx.digest"
+      ]
+    ]
+  end
+`;
+  const FONTS_TASK = '  @target_rel "priv/static/assets/css/fonts"\n';
+  const CONFIG_EXS = '      --input=assets/css/app.css\n      --output=priv/static/assets/css/app.css\n';
+
+  const verdict = (mixExs: string, fontsTask = FONTS_TASK, configExs = CONFIG_EXS) =>
+    pipelineVerdict(mixExs, fontsTask, configExs);
+
+  it('passes cs-tracker as 32a466a left it, with cuatro.fonts out of assets.setup (DW-17)', () => {
+    const { pass, detail } = verdict(AFTER_32A466A);
+
+    expect(pass, detail).toBe(true);
+    expect(detail).toContain('It runs in assets.build: true, in assets.deploy: true, and there before phx.digest');
+  });
+
+  it('does not care whether assets.setup runs it too', () => {
+    const before = AFTER_32A466A.replace(
+      '"esbuild.install --if-missing"]',
+      '"esbuild.install --if-missing", "cuatro.fonts"]'
+    );
+    expect(before).not.toBe(AFTER_32A466A);
+
+    expect(verdict(before).pass).toBe(true);
+  });
+
+  it('fails when cuatro.fonts leaves assets.build', () => {
+    const noBuild = AFTER_32A466A.replace('"esbuild cs_tracker", "cuatro.fonts"]', '"esbuild cs_tracker"]');
+    expect(noBuild).not.toBe(AFTER_32A466A);
+
+    expect(verdict(noBuild).pass).toBe(false);
+  });
+
+  it('fails when cuatro.fonts leaves assets.deploy, or runs there after phx.digest', () => {
+    const noDeploy = AFTER_32A466A.replace('"esbuild cs_tracker --minify",\n        "cuatro.fonts",', '"esbuild cs_tracker --minify",');
+    const afterDigest = AFTER_32A466A.replace(
+      '"cuatro.fonts",\n        "phx.digest"',
+      '"phx.digest",\n        "cuatro.fonts"'
+    );
+    expect(noDeploy).not.toBe(AFTER_32A466A);
+    expect(afterDigest).not.toBe(AFTER_32A466A);
+
+    expect(verdict(noDeploy).pass).toBe(false);
+    const late = verdict(afterDigest);
+    expect(late.pass).toBe(false);
+    expect(late.detail).toContain('NOT before phx.digest');
+  });
+
+  it('fails when the task writes somewhere the compiled url() values do not resolve', () => {
+    const elsewhere = verdict(AFTER_32A466A, '  @target_rel "priv/static/fonts"\n');
+
+    expect(elsewhere.pass).toBe(false);
+    expect(elsewhere.detail).toContain('DISAGREE');
+  });
+
+  it('fails, rather than throwing, on files it could not read', () => {
+    expect(pipelineVerdict('', '', '').pass).toBe(false);
   });
 });
 

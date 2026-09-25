@@ -61,6 +61,18 @@ of the published contract, not a copy fault, and it is stated here so a later re
 as one. `ops/__tests__/cs-tracker-adoption-probe.test.ts` pins both that equality and the inequality
 of two woff2 faces, so a walk that never descended into `fonts/` fails there as well as here.
 
+**Re-vendored at 2.0.0 on 2026-09-24**, by Operator ruling, as `cs-tracker` commit `991d0f6` on
+`main`, which stages `assets/css/cuatro-contracts/` and nothing else and is not pushed (Pending
+Operator action 8 in `ops/contract-adoption.md`). Three hashes moved and the other six are
+byte-identical to the table above. **Observed 2026-09-24** by `sha256sum` on both sides after the
+copy, and by the probe's verbatim-copy case:
+
+| Path under `assets/css/cuatro-contracts/` | sha256 at 2.0.0 |
+|---|---|
+| `tokens.css` | `dd7bf3c2ab826c8480e1fdca1ea51ba0d5377d202b4024976b9f9a6dc0e43e32` |
+| `fonts.css` | `c2c0a2f78e32b233b307d07424faa270648b50f4a51115c7de3217aea2f14f19` |
+| `tailwind.css` | `14bce2d5d11c28d8d8ce4fc74fb1854dc6bc6c08cf708a474a077659a6463a8c` |
+
 **The byte-identity survives git, which is the half that matters.** `cuatro-portfolio/.gitattributes`
 forces `contracts/**/*.css|json|txt` to LF and deliberately leaves `.woff2` alone;
 `cs-tracker/.gitattributes` is `* text=auto eol=lf`. **Observed 2026-08-27**, by hashing the staged
@@ -75,6 +87,7 @@ copy rather than in the folder itself, so not even one assertion writes to a pub
 |---|---|---|
 | Folder name | `cuatro-contracts/`, exactly, under `assets/css/` | **Decision.** AD-14 and AD-16: a scheduled drift check needs a target rather than a search |
 | Contract version | **v1.0.0**, from the `Contract v1.0.0` header `tokens.css` carries | **Observed 2026-08-27**, asserted by the Elixir suite |
+| Contract version, re-vendored | **v2.0.0** on the local `main` at `991d0f6`; the remote `main` reads v1.0.0 until the Operator pushes | **Observed 2026-09-24** by the probe's recorded-version case. The Elixir suite still asserts v1.0.0 at `test/cs_tracker_web/token_contract_test.exs:342`, and that is its one failure: 26 tests, 1 failure, run against a throwaway `postgres:16` |
 | Import form | `@import "./cuatro-contracts/tailwind.css";` in `assets/css/app.css`, after the `@source` lines and before the `@plugin` lines | **Decision.** AD-14 names `cs-tracker` in bold among the Tailwind consumers that import the adapter rather than the plain pair |
 | Scan exclusion | `@source not "../css/cuatro-contracts";` | **Decision**, and measured below: it works, and today it is precautionary |
 
@@ -332,6 +345,10 @@ removed. Nothing this story did adds a transition or changes a `phx-update` attr
 the survivors visibly snaps under patching falls to the Operator's visual pass, and it is Pending
 action 5 below rather than an unstated gap.
 
+**Moved to Story 8.1 on 2026-09-24**, by Operator ruling 2026-09-24. S-8 is evaluated there, where
+Family A's restyle already names it, and `epics.md` Story 8.1 carries a dated note pointing back here.
+Story 1-19 closed without it, and action 5 below records the move rather than an evaluation.
+
 ## Seam S-7, taken whole
 
 `contracts/tokens.css` publishes one palette and it is dark. `EXPERIENCE.md` S-7's mitigation is
@@ -448,6 +465,7 @@ binaries and nothing else.
 | Source | `assets/css/cuatro-contracts/fonts/*.woff2` | **Decision** |
 | Target | `priv/static/assets/css/fonts/` | **Decision.** Exactly where the compiled `url()` values point |
 | Wired into | `assets.setup`, `assets.build`, and `assets.deploy` **before** `phx.digest` | **Decision.** `assets.setup` as well, because the dev watchers at `config/dev.exs:27-30` call Tailwind and esbuild directly and never reach `assets.build`, so a tree that has only ever run `mix setup` would serve a stylesheet whose faces 404 |
+| Wired into, **from 2026-09-24** | `assets.build`, and `assets.deploy` **before** `phx.digest`. Not `assets.setup` | **Decision**, Operator ruling 2026-09-24 (DW-17). The row above was this story's decision, and `cs-tracker`'s `32a466a` reversed it on 2026-08-27 because the Dockerfile runs `assets.setup` before the task's source and the faces are in the image (see "The fonts task could not run in the container"). `setup` still reaches the task through `assets.build`. The probe's pin follows the commit from `048793f` |
 | Committed | **No.** `cs-tracker/.gitignore:29` ignores `/priv/static/assets/`, so the copied faces are a build step | **Observed 2026-08-27** |
 | Refuses to copy nothing | Yes, `Mix.raise` on a missing directory and on a directory with no `.woff2` | **Decision.** Missing this step is the one adoption instruction that fails silently: every face 404s and the page falls back to a system stack that looks almost right |
 | Converges rather than adds | Yes. Any `.woff2` in the target the source no longer carries is pruned | **Decision.** A face renamed by a contract MINOR would otherwise survive as a stale file, be fingerprinted by `phx.digest`, and ship for ever |
@@ -518,6 +536,14 @@ case, added after that story's rehearsal: it parses the `cs-tracker` row of `ops
 through `ops/contract-adoption.mjs` and holds the adopted version recorded there equal to the
 `Contract vX.Y.Z` header of the vendored `tokens.css`, failing naming both values. The transcript
 below predates it and shows eighteen cases.
+
+**It needs no `NO_COLOR`, from 2026-09-24.** On 2026-09-23 a shell that did not set `NO_COLOR=1`
+stopped the run at exit 3, because `cs-tracker`'s Tailwind 4.1.12 binary colours its `--help` banner
+and the version match could not read through the escape codes (DW-109). Commit `b14bcbb` strips every
+escape sequence before the match, and a unit case feeds it the coloured banner. The instruction to set
+`NO_COLOR` is withdrawn: the plain command above is the whole invocation. The runs of both days are
+under "Re-run 2026-09-23, when the probe joined AD-22's scope" and "Re-run 2026-09-24, from a plain
+shell" below.
 
 **Read the exit code, not just the word non-zero:**
 
@@ -753,11 +779,13 @@ four distinct findings rather than flattening them into one failure.
 | **The 44x44 hit-target pass was not made here** | `epics.md:1955-1962` puts the manual accessibility pass in Story 1.20. The contract's `--tap` is vendored and reachable; nothing in this story measures a hit target. Made by Story 1.20 on 2026-08-27 against the running application at 360px and recorded, findings included, in `ops/cs-tracker-accessibility-pass.md` | **Decision.** Story 1.20 |
 | **The probe reads a compiled stylesheet, not a running Phoenix server** | `mix test` needs a Postgres and `mix phx.server` needs the whole stack, and neither renders CSS differently from the compiler. What was NOT exercised is LiveView actually serving those class strings; that is what `mix test`'s LiveView suites cover, separately | **Decision**, with the split disclosed |
 | **The FR-18 reading is one host, one Chromium, one viewport** | Windows 11 development host, Chromium 151.0.7922.34, 1280x720. No other operating system, browser engine or viewport has run it, and nothing re-runs it on a schedule | **Decision.** Pending Operator action 2 |
+| **In AD-22's scope from 2026-09-23, and not yet green there** | AD-22's refresh scope names this probe from 2026-09-23, with the two narrower triggers, so the "nothing re-runs it on a schedule" half of the row above is retired. The rest of it stands: that day's re-run used the same host, the same Chromium 151.0.7922.34 and the same 1280x720, and read the FR-18 table at 25 of 25 again. It exits 1, on the one pipeline case DW-17 describes, until the Operator reconciles that pin | **Observed 2026-09-23.** Pending Operator action 2, still open |
 | **`DAISYUI_DEFAULT_PRIMARY` is hand-copied** | The value the components must DIFFER from, `oklch(0.45 0.24 277.023)`, comes from `ops/daisyui-route.md`'s `unmapped` control rather than from a build made here. Under `cs-tracker`'s real `themes: false` there is no daisyUI default at `:root` to measure. Every "equal to the token value" claim is measured against a probe element in the same page, so the hand-copied value carries only the negative half of the comparison | **Decision**, disclosed |
 | **The `@source not` exclusion is precautionary** | Measured: with it removed and nothing planted, the build mints the identical 366 selectors. It stops a planted candidate, so it works; it stops nothing today | **Observed 2026-08-27** |
 | **DW-1 will turn two gates red when it is fixed** | `contracts/` is exactly nine files today, and that count is pinned twice: by `@expected_files` in `cs-tracker`'s Elixir suite and by the probe's whole-tree comparison. The folder-identifying file DW-1 asks for is a tenth file, so adding it fails both **in `cs-tracker`** until that repository re-vendors. That is the correct behaviour for a drift check and it is a real coordination cost, so it is written down rather than discovered | **Decision.** `_bmad-output/implementation-artifacts/deferred-work.md` |
 | **The `mix assets.deploy --minify` figure is unknown** | Both compiled-byte figures here are unminified. The deploy path adds `--minify`, and no run recorded here used it | **Observed 2026-08-27**, by reading `mix.exs` |
 | **Deployed 2026-08-27** | `cs-tracker.cuatro.dev` now serves this adoption, verified on the live origin at 25 of 25 rows. The limit as written is retired; what replaces it is narrower: the deployed reading is still one host, one Chromium and one viewport, and nothing re-runs it | **Observed.** Pending Operator action 1, closed |
+| **No CI in `cs-tracker`, accepted** | Nothing that runs on a schedule or in a gate sees the token mapping stop resolving there, because the repository has no workflow and its token contract test reads source text (DW-14). The Operator accepted it on 2026-09-24: `cs-tracker` has no dependency automation, so a Tailwind or daisyUI bump is always a hand edit, and a hand edit is already the probes' re-run trigger in AD-22. Reopen DW-14 if automation is ever enabled there | **Decision.** Operator ruling 2026-09-24, recorded 2026-09-25 |
 
 ## The fonts task could not run in the container
 
@@ -832,6 +860,289 @@ The DW-1 row in "Stated limits" still stands and is now narrower than it reads: 
 pins in `cs-tracker`'s own Elixir suite is the **token contract's** nine, which the Registry pair does
 not change. A tenth **token-contract** file is still the coordination cost that row describes.
 
+## Re-run 2026-09-23, when the probe joined AD-22's scope
+
+**Observed 2026-09-23** on the Windows 11 development host, from this repository's root at `81984db`
+with the Hub built from it by `corepack pnpm build` first, against `cs-tracker` at
+`ae34619c32e28e9f15a1ed4bdcb887b7faaa4248`, read by
+`git -C ../cs-tracker-workspace/cs-tracker rev-parse HEAD`. That checkout carried uncommitted edits
+to its `AGENTS.md` and `CLAUDE.md` only, neither of which the probe reads, and its
+`git status --porcelain` was byte-identical before and after both runs. These are the runs Pending
+Operator action 2 asks for, made the day AD-22's Rule bullet was amended to name this probe.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-09-23T05:10:39.484Z` | Git Bash, `NO_COLOR` unset | **3** | none, blocked before compiling | not printed |
+| `2026-09-23T05:10:48.080Z` | Git Bash, `NO_COLOR=1` | **1** | 19, 18 PASS, 1 FAIL | 11.8s |
+
+**The first run observed nothing.** Verbatim:
+
+```
+# cs-tracker token adoption probe, Story 1-19, FR-18 and SM-6
+# started 2026-09-23T05:10:39.484Z
+
+# BLOCKED: cs-tracker's Tailwind binary reports no version at all, not v4.1.12. The finding would be about a different compiler from the one cs-tracker runs, so nothing was compiled.
+```
+
+It stopped on the same colour-coded banner as `ops/daisyui-route-probe.mjs` the same morning. The
+match at `ops/cs-tracker-adoption-probe.mjs:1052` is `/(tailwindcss v[\d.]+)/`, and `cs-tracker`'s
+binary, spawned directly with `--help` through a pipe, prints `tailwindcss \x1b[34mv4.1.12\x1b[39m`
+unless `NO_COLOR` is set. The method is in `ops/daisyui-route.md` under the same heading. Filed as
+**DW-109**.
+
+**The second run failed one case, and it is the known one.** `The build pipeline places them` reads
+`It runs in assets.setup: false`. That is the pin DW-17 describes and `ops/contract-adoption.md`
+Pending Operator action 7 hands to the Operator: `cs-tracker`'s `32a466a` took `cuatro.fonts` out of
+`assets.setup` so the container build can run, `assets.build` and `assets.deploy` still run it, and
+the probe still requires it in all three. It was first observed failing at 2026-08-27T22:47:57Z and
+has not been reconciled, so it is not a regression, and neither the probe nor `cs-tracker` was
+edited to make it pass.
+
+Every other case passed. Compared with `diff` against the 2026-08-27 transcript above, the only
+other lines that moved are the timestamps and the elapsed time, the scratch directory, the Hub
+chunk's hashed name (`07pbhe.gtum3m.css` in this build), the first case's wording, which Story
+2-3's narrowing changed on 2026-08-29, the nineteenth case Story 1-20 added, which passed, and the
+case count that follows from both. The FR-18 side by side read **25 of 25 equal**, every row
+identical to the 2026-08-27 reading, the compiled stylesheet is 131,265 bytes with two Preflights
+again, and Chromium is 151.0.7922.34. The run, verbatim:
+
+```
+# cs-tracker token adoption probe, Story 1-19, FR-18 and SM-6
+# started 2026-09-23T05:10:48.080Z
+
+# scratch tree: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-cs-tracker-adoption-1xeUqY
+# cs-tracker:   C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker
+# tailwind:     C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker\_build\tailwind-windows-x64.exe (tailwindcss v4.1.12)
+# daisyui:      5.0.35
+# hub css:      .next\static\chunks\07pbhe.gtum3m.css
+
+PASS  The folder is a verbatim copy: 9 file(s) (pinned at 9, the token contract's own paths rather than everything under contracts/) under assets/css/cuatro-contracts are byte-identical to contracts/ by sha256: fonts.css 4c954f73c713a01023e2bb22b56b73f343f17bf9d0a8beeb5ea844f8ea19872f, fonts/OFL-bricolage-grotesque.txt 4b5a7d8f37f5602621c8a8d7358a6a2e71317e6c231c661e15aef0275d3e07ba, fonts/OFL-geist-mono.txt c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90, fonts/OFL-geist.txt c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90, fonts/bricolage-grotesque-latin.woff2 f27b91934aa5559116b55e670d5d0e0c00d4408b0e1a44c3d0b59ab20afb792c, fonts/geist-latin.woff2 db540d97a0afd5f39a8f331c2b4aa259c56e943e05acfae752637fcf1976e336, fonts/geist-mono-latin.woff2 14bf6b01f51a5172bc24327b63ee2a3b3e04d87329fccba275dc9789e7cbb89c, tailwind.css 1b0e3c609f0a2851885801d5fc0a75e31d9754fa30ead847c4e5b3d80d3fdc5f, tokens.css 319a825597995cbecacc43f08da9b24b48db636abc2b1e023ea4387a5cb38462
+PASS  The record states the version the vendored header carries: the record states 1.0.0 and the vendored tokens.css header reads Contract v1.0.0 (ops/contract-adoption.md against assets/css/cuatro-contracts/tokens.css)
+PASS  It compiles at all: cs-tracker's real assets/css/app.css compiled with its own pinned tailwindcss v4.1.12 to 131265 bytes, Preflight emitted 2 time(s)
+PASS  Route A resolves in the real stylesheet: LIVE: .btn.btn-primary computed rgba(143, 126, 240, 1.000) and .badge.badge-primary computed rgba(143, 126, 240, 1.000), against var(--token-accent) declared inline in the same page computing rgba(143, 126, 240, 1.000), and against daisyUI 5.0.35's own default primary oklch(0.45 0.24 277.023)
+PASS  The whole daisyUI colour family: 12 of the 20 --color-* names the theme block declares are mapped onto a contract role (pinned at 12), and 8 keep a literal (pinned at 8: --color-info, --color-info-content, --color-success, --color-success-content, --color-warning, --color-warning-content, --color-error, --color-error-content). Every mapped name computes the value of its role: --color-base-100 = --token-bg = rgba(6, 5, 9, 1.000); --color-base-200 = --token-bg-raised = rgba(13, 12, 19, 1.000); --color-base-300 = --token-bg-raised-2 = rgba(22, 21, 28, 1.000); --color-base-content = --token-text = rgba(238, 238, 242, 1.000); --color-primary = --token-accent = rgba(143, 126, 240, 1.000); --color-primary-content = --token-bg = rgba(6, 5, 9, 1.000); --color-secondary = --token-bg-raised-2 = rgba(22, 21, 28, 1.000); --color-secondary-content = --token-text = rgba(238, 238, 242, 1.000); --color-neutral = --token-accent-muted = rgba(86, 76, 145, 1.000); --color-neutral-content = --token-text = rgba(238, 238, 242, 1.000); --color-accent = --token-accent = rgba(143, 126, 240, 1.000); --color-accent-content = --token-bg = rgba(6, 5, 9, 1.000)
+PASS  Shape and stroke come from the contract: 4 shape and stroke rows (pinned at 4), each read off :root through a probe declaring the daisyUI name beside one declaring the role: --radius-selector = --r-none = 0px; --radius-field = --r-none = 0px; --radius-box = --r-none = 0px; --border = --stroke-boundary = 1px
+PASS  No surface left on the previous theme: 27 oklch() literals (pinned at 27) were retired between ff7667b and now, derived from git rather than transcribed, and the pinned list agrees with the derivation. 0 survive in the compiled stylesheet. 1 of them (oklch(0% 0 0)) are also emitted by a daisyUI only build carrying no theme block at all, so they are daisyUI's own and are not attributed to the retired theme. 1 @plugin "../vendor/daisyui-theme" block(s) remain in app.css, name dark
+PASS  Hand-fix 1, S-11: :root computed color-scheme: dark
+PASS  Hand-fix 2, S-12: ::selection declares { background-color: var(--token-accent); color: var(--token-bg); }, which reads the accent and the ground rather than a literal, and computed background rgba(143, 126, 240, 1.000) against --token-accent rgba(143, 126, 240, 1.000), foreground rgba(6, 5, 9, 1.000) against --token-bg rgba(6, 5, 9, 1.000)
+PASS  Hand-fix 3, S-2: button#btn under :focus-visible computed outline-width 2px against --stroke-focus 2px, outline-style solid, outline-color rgba(198, 189, 255, 1.000) against --token-focus rgba(198, 189, 255, 1.000), outline-offset 3px against --focus-offset 3px, and transition-property "color, background-color, border-color, box-shadow"
+PASS  Hand-fix 4, S-3: 4 controls read: input = 0px, select = 0px, textarea = 0px, btn = 0px
+PASS  Type comes from the contract: 3 of 3 --f-* families are declared on :root (--f-display = "Bricolage Grotesque", "Archivo", system-ui, sans-serif; --f-body = "Geist", ui-sans-serif, system-ui, sans-serif; --f-mono = "Geist Mono", ui-monospace, SFMono-Regular, monospace), and the shell's computed font-family is Geist, ui-sans-serif, system-ui, sans-serif
+PASS  The font faces resolve: 3 non-data url() value(s) in the compiled stylesheet, each answering 200 from a directory this probe staged itself beside the output: ./fonts/bricolage-grotesque-latin.woff2 -> 200, ./fonts/geist-latin.woff2 -> 200, ./fonts/geist-mono-latin.woff2 -> 200. This proves the PLACEMENT ROUTE, that faces sitting beside the compiled file resolve, and NOT the pipeline: the probe copied them there, so it reads identically whether mix cuatro.fonts exists or not. The pipeline is the next case.
+FAIL  The build pipeline places them: mix cuatro.fonts writes to priv/static/assets/css/fonts, and the Tailwind profile writes its stylesheet to priv/static/assets/css/app.css, whose url() values therefore resolve in priv/static/assets/css/fonts. The two agree. It runs in assets.setup: false, in assets.build: true, in assets.deploy: true, and there before phx.digest, which rewrites the url() values onto the digested names and needs the files present to do it
+PASS  Automatic source detection stays off: m-[13px] planted at cuatro_probe_source_marker.ex, which no @source line in app.css names. The real build did not mint .m-\[13px\], and a control stylesheet that names that file did mint it, so the negative is calibrated rather than a marker nothing would ever have minted. The adapter's own bare @import "tailwindcss" therefore does not re-enable detection: the outer source(none) governs
+PASS  The vendored contract is excluded from the scan: p-[7px] planted inside the vendored folder. The real build did not mint .p-\[7px\], and a control with only the @source not line removed did mint it, so the exclusion is what stops it rather than the candidate never being reachable. Measured before anything was planted, the two builds mint the same 366 selectors and the unexcluded one adds 0 (none), so the published contract contributes no candidate of its own today and the exclusion is precautionary rather than load bearing
+
+# FR-18, the shared contract read in one browser, canonicalised to 8-bit sRGB where it is a colour
+  name                       cuatro.dev (built)                                     cs-tracker (compiled)
+  --token-bg                 rgba(6, 5, 9, 1.000)                                   rgba(6, 5, 9, 1.000)
+  --token-bg-raised          rgba(13, 12, 19, 1.000)                                rgba(13, 12, 19, 1.000)
+  --token-bg-raised-2        rgba(22, 21, 28, 1.000)                                rgba(22, 21, 28, 1.000)
+  --token-text               rgba(238, 238, 242, 1.000)                             rgba(238, 238, 242, 1.000)
+  --token-text-secondary     rgba(152, 151, 159, 1.000)                             rgba(152, 151, 159, 1.000)
+  --token-border             rgba(40, 40, 48, 1.000)                                rgba(40, 40, 48, 1.000)
+  --token-border-interactive rgba(101, 100, 113, 1.000)                             rgba(101, 100, 113, 1.000)
+  --token-accent             rgba(143, 126, 240, 1.000)                             rgba(143, 126, 240, 1.000)
+  --token-accent-hover       rgba(173, 161, 255, 1.000)                             rgba(173, 161, 255, 1.000)
+  --token-accent-muted       rgba(86, 76, 145, 1.000)                               rgba(86, 76, 145, 1.000)
+  --token-focus              rgba(198, 189, 255, 1.000)                             rgba(198, 189, 255, 1.000)
+  --token-scrim              rgba(6, 6, 9, 0.878)                                   rgba(6, 6, 9, 0.878)
+  --f-display                "Bricolage Grotesque", Archivo, system-ui, sans-serif  "Bricolage Grotesque", Archivo, system-ui, sans-serif
+  --f-body                   Geist, ui-sans-serif, system-ui, sans-serif            Geist, ui-sans-serif, system-ui, sans-serif
+  --f-mono                   "Geist Mono", ui-monospace, SFMono-Regular, monospace  "Geist Mono", ui-monospace, SFMono-Regular, monospace
+  --t-3xs                    11px                                                   11px
+  --t-2xs                    12px                                                   12px
+  --t-xs                     13px                                                   13px
+  --t-sm                     14px                                                   14px
+  --t-base                   16px                                                   16px
+  --t-md                     20px                                                   20px
+  --t-lg                     25px                                                   25px
+  --t-xl                     31.2496px                                              31.2496px
+  --t-2xl                    39.0624px                                              39.0624px
+  --t-display                72px                                                   72px
+
+PASS  FR-18 side by side: 12 --token-* roles (pinned 12), 3 --f-* families (pinned 3) and 10 --t-* sizes (pinned 10) were read off :root in the Hub's built stylesheet and in cs-tracker's compiled stylesheet, in one browser at 1280x720. 25 of 25 are equal across them.
+# contrast, WCAG 2.1 over the 8-bit sRGB values read above
+  --color-base-100 on --color-base-content             17.56:1
+  --color-base-200 on --color-base-content             16.82:1
+  --color-base-300 on --color-base-content             15.67:1
+  --color-primary on --color-primary-content           6.20:1
+  --color-secondary on --color-secondary-content       15.67:1
+  --color-neutral on --color-neutral-content           6.39:1
+  --color-accent on --color-accent-content             6.20:1
+  --token-bg on --token-focus                          11.73:1
+  --token-bg-raised on --token-focus                   11.24:1
+  --token-bg-raised-2 on --token-focus                 10.47:1
+
+PASS  Every pair clears its contrast floor: 10 pairs computed from the values this run read, 3 grounds against --color-base-content, 4 fill-and-content pairs and 3 focus-ring readings. All clear their floor (4.5:1 for text, 3:1 for the ring).
+# diagnostics, which never carry a verdict
+  compiled bytes                      = 131265
+  Preflight emitted                   = 2 time(s)
+  --color-primary as EMITTED          = var(--token-accent)
+  --color-accent as EMITTED           = var(--token-accent)
+  --color-* names in the compiled css = 23
+  shell                              background-color = rgba(13, 12, 19, 1.000)
+  navbar                             background-color = rgba(6, 5, 9, 1.000)
+  wordmark                           background-color = rgba(143, 126, 240, 1.000)
+  btn                                background-color = rgba(143, 126, 240, 1.000)
+  btn-ghost                          background-color = rgba(0, 0, 0, 0.000)
+  badge                              background-color = rgba(143, 126, 240, 1.000)
+  badge-neutral                      background-color = rgba(86, 76, 145, 1.000)
+  badge-success                      background-color = rgba(0, 150, 137, 1.000)
+  card                               background-color = rgba(6, 5, 9, 1.000)
+  alert                              background-color = rgba(13, 12, 19, 1.000)
+  spinner                            background-color = rgba(238, 238, 242, 1.000)
+  chromium                            = 151.0.7922.34
+
+PASS  cs-tracker's tree is unchanged: 5 file(s) were planted inside it for the scan and control builds and 5 were removed, and git status --porcelain is byte-identical to what it was before the run
+# scratch tree removed: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-cs-tracker-adoption-1xeUqY (exists afterwards: false)
+
+# 19 cases, 18 PASS, 1 FAIL
+# elapsed 11.8s
+# finished 2026-09-23T05:10:59.869Z
+```
+
+**So Pending Operator action 2 stays open.** The probe is in AD-22's scope, but the re-run the row
+asks for exits 1, and the case that fails it waits on a decision that is the Operator's: whether the
+pin and this record follow `32a466a`, or `32a466a` is revisited. The row closes on the first re-run
+that exits 0.
+
+## Re-run 2026-09-24, from a plain shell
+
+**Observed 2026-09-24** on the Windows 11 development host, from this repository's root at `048793f`
+with the Hub built from it by `corepack pnpm build` first, against `cs-tracker` at
+`991d0f631a0b07817a538d689d80cd3cc4f836e2`, read by
+`git -C ../cs-tracker-workspace/cs-tracker rev-parse HEAD`. That checkout carried uncommitted edits
+to its `AGENTS.md` and `CLAUDE.md` only, neither of which the probe reads, and its
+`git status --porcelain` was byte-identical before and after the run. The shell was Git Bash with
+`NO_COLOR` and `FORCE_COLOR` both unset, which is the shell that stopped at exit 3 on 2026-09-23.
+This is the re-run Pending Operator action 2 closes on, made under Operator ruling 2026-09-24.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-09-24T17:00:41.953Z` | Git Bash, `NO_COLOR` unset | **0** | 19, 19 PASS | 11.2s |
+
+**Two commits in this repository made it green, and neither touched `cs-tracker`.** `b14bcbb` strips
+escape sequences from the banner before the version match (DW-109), so an unset `NO_COLOR` no longer
+blocks the run. `048793f` moves the pipeline pin onto `32a466a` (DW-17), so `The build pipeline places
+them` passes, reading `It runs in assets.build: true, in assets.deploy: true, and there before
+phx.digest`.
+
+**Four PASS lines moved against the 2026-09-23 run above, compared case by case by their text:**
+
+- `The folder is a verbatim copy`: the digests of `fonts.css`, `tailwind.css` and `tokens.css`, the
+  three files `cs-tracker`'s `991d0f6` re-vendored at Contract 2.0.0. Still 9 files, byte-identical.
+- `The record states the version the vendored header carries`: `2.0.0` against `Contract v2.0.0`,
+  where it read `1.0.0` against `Contract v1.0.0`.
+- `It compiles at all`: **131,336 bytes**, 71 more than 131,265, with two Preflights again. The one
+  input to that compile that moved since 2026-09-23 is `991d0f6`'s three files. Neither commit here
+  touches an input to it. The diagnostics line carrying the same figure moved with it.
+- `The build pipeline places them`: FAIL to PASS, on the ruling's reading.
+
+The FR-18 side by side is **25 of 25 equal**, its block identical line for line to the 2026-09-23
+reading, and so is the contrast block. Chromium is 151.0.7922.34. The timestamps, the scratch
+directory and the Hub chunk's hashed name (`0ld-hsjub8o27.css` in this build) moved as they do on
+every run. The run, verbatim:
+
+```
+# cs-tracker token adoption probe, Story 1-19, FR-18 and SM-6
+# started 2026-09-24T17:00:41.953Z
+
+# scratch tree: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-cs-tracker-adoption-8ghHdr
+# cs-tracker:   C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker
+# tailwind:     C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker\_build\tailwind-windows-x64.exe (tailwindcss v4.1.12)
+# daisyui:      5.0.35
+# hub css:      .next\static\chunks\0ld-hsjub8o27.css
+
+PASS  The folder is a verbatim copy: 9 file(s) (pinned at 9, the token contract's own paths rather than everything under contracts/) under assets/css/cuatro-contracts are byte-identical to contracts/ by sha256: fonts.css c2c0a2f78e32b233b307d07424faa270648b50f4a51115c7de3217aea2f14f19, fonts/OFL-bricolage-grotesque.txt 4b5a7d8f37f5602621c8a8d7358a6a2e71317e6c231c661e15aef0275d3e07ba, fonts/OFL-geist-mono.txt c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90, fonts/OFL-geist.txt c683bfbcc7e087f5d37a54ef628f10387c451a83ddc459b151403a164ac46c90, fonts/bricolage-grotesque-latin.woff2 f27b91934aa5559116b55e670d5d0e0c00d4408b0e1a44c3d0b59ab20afb792c, fonts/geist-latin.woff2 db540d97a0afd5f39a8f331c2b4aa259c56e943e05acfae752637fcf1976e336, fonts/geist-mono-latin.woff2 14bf6b01f51a5172bc24327b63ee2a3b3e04d87329fccba275dc9789e7cbb89c, tailwind.css 14bce2d5d11c28d8d8ce4fc74fb1854dc6bc6c08cf708a474a077659a6463a8c, tokens.css dd7bf3c2ab826c8480e1fdca1ea51ba0d5377d202b4024976b9f9a6dc0e43e32
+PASS  The record states the version the vendored header carries: the record states 2.0.0 and the vendored tokens.css header reads Contract v2.0.0 (ops/contract-adoption.md against assets/css/cuatro-contracts/tokens.css)
+PASS  It compiles at all: cs-tracker's real assets/css/app.css compiled with its own pinned tailwindcss v4.1.12 to 131336 bytes, Preflight emitted 2 time(s)
+PASS  Route A resolves in the real stylesheet: LIVE: .btn.btn-primary computed rgba(143, 126, 240, 1.000) and .badge.badge-primary computed rgba(143, 126, 240, 1.000), against var(--token-accent) declared inline in the same page computing rgba(143, 126, 240, 1.000), and against daisyUI 5.0.35's own default primary oklch(0.45 0.24 277.023)
+PASS  The whole daisyUI colour family: 12 of the 20 --color-* names the theme block declares are mapped onto a contract role (pinned at 12), and 8 keep a literal (pinned at 8: --color-info, --color-info-content, --color-success, --color-success-content, --color-warning, --color-warning-content, --color-error, --color-error-content). Every mapped name computes the value of its role: --color-base-100 = --token-bg = rgba(6, 5, 9, 1.000); --color-base-200 = --token-bg-raised = rgba(13, 12, 19, 1.000); --color-base-300 = --token-bg-raised-2 = rgba(22, 21, 28, 1.000); --color-base-content = --token-text = rgba(238, 238, 242, 1.000); --color-primary = --token-accent = rgba(143, 126, 240, 1.000); --color-primary-content = --token-bg = rgba(6, 5, 9, 1.000); --color-secondary = --token-bg-raised-2 = rgba(22, 21, 28, 1.000); --color-secondary-content = --token-text = rgba(238, 238, 242, 1.000); --color-neutral = --token-accent-muted = rgba(86, 76, 145, 1.000); --color-neutral-content = --token-text = rgba(238, 238, 242, 1.000); --color-accent = --token-accent = rgba(143, 126, 240, 1.000); --color-accent-content = --token-bg = rgba(6, 5, 9, 1.000)
+PASS  Shape and stroke come from the contract: 4 shape and stroke rows (pinned at 4), each read off :root through a probe declaring the daisyUI name beside one declaring the role: --radius-selector = --r-none = 0px; --radius-field = --r-none = 0px; --radius-box = --r-none = 0px; --border = --stroke-boundary = 1px
+PASS  No surface left on the previous theme: 27 oklch() literals (pinned at 27) were retired between ff7667b and now, derived from git rather than transcribed, and the pinned list agrees with the derivation. 0 survive in the compiled stylesheet. 1 of them (oklch(0% 0 0)) are also emitted by a daisyUI only build carrying no theme block at all, so they are daisyUI's own and are not attributed to the retired theme. 1 @plugin "../vendor/daisyui-theme" block(s) remain in app.css, name dark
+PASS  Hand-fix 1, S-11: :root computed color-scheme: dark
+PASS  Hand-fix 2, S-12: ::selection declares { background-color: var(--token-accent); color: var(--token-bg); }, which reads the accent and the ground rather than a literal, and computed background rgba(143, 126, 240, 1.000) against --token-accent rgba(143, 126, 240, 1.000), foreground rgba(6, 5, 9, 1.000) against --token-bg rgba(6, 5, 9, 1.000)
+PASS  Hand-fix 3, S-2: button#btn under :focus-visible computed outline-width 2px against --stroke-focus 2px, outline-style solid, outline-color rgba(198, 189, 255, 1.000) against --token-focus rgba(198, 189, 255, 1.000), outline-offset 3px against --focus-offset 3px, and transition-property "color, background-color, border-color, box-shadow"
+PASS  Hand-fix 4, S-3: 4 controls read: input = 0px, select = 0px, textarea = 0px, btn = 0px
+PASS  Type comes from the contract: 3 of 3 --f-* families are declared on :root (--f-display = "Bricolage Grotesque", "Archivo", system-ui, sans-serif; --f-body = "Geist", ui-sans-serif, system-ui, sans-serif; --f-mono = "Geist Mono", ui-monospace, SFMono-Regular, monospace), and the shell's computed font-family is Geist, ui-sans-serif, system-ui, sans-serif
+PASS  The font faces resolve: 3 non-data url() value(s) in the compiled stylesheet, each answering 200 from a directory this probe staged itself beside the output: ./fonts/bricolage-grotesque-latin.woff2 -> 200, ./fonts/geist-latin.woff2 -> 200, ./fonts/geist-mono-latin.woff2 -> 200. This proves the PLACEMENT ROUTE, that faces sitting beside the compiled file resolve, and NOT the pipeline: the probe copied them there, so it reads identically whether mix cuatro.fonts exists or not. The pipeline is the next case.
+PASS  The build pipeline places them: mix cuatro.fonts writes to priv/static/assets/css/fonts, and the Tailwind profile writes its stylesheet to priv/static/assets/css/app.css, whose url() values therefore resolve in priv/static/assets/css/fonts. The two agree. It runs in assets.build: true, in assets.deploy: true, and there before phx.digest, which rewrites the url() values onto the digested names and needs the files present to do it. assets.setup is not required since cs-tracker's 32a466a, which took the task out of it so the container build can run
+PASS  Automatic source detection stays off: m-[13px] planted at cuatro_probe_source_marker.ex, which no @source line in app.css names. The real build did not mint .m-\[13px\], and a control stylesheet that names that file did mint it, so the negative is calibrated rather than a marker nothing would ever have minted. The adapter's own bare @import "tailwindcss" therefore does not re-enable detection: the outer source(none) governs
+PASS  The vendored contract is excluded from the scan: p-[7px] planted inside the vendored folder. The real build did not mint .p-\[7px\], and a control with only the @source not line removed did mint it, so the exclusion is what stops it rather than the candidate never being reachable. Measured before anything was planted, the two builds mint the same 366 selectors and the unexcluded one adds 0 (none), so the published contract contributes no candidate of its own today and the exclusion is precautionary rather than load bearing
+
+# FR-18, the shared contract read in one browser, canonicalised to 8-bit sRGB where it is a colour
+  name                       cuatro.dev (built)                                     cs-tracker (compiled)
+  --token-bg                 rgba(6, 5, 9, 1.000)                                   rgba(6, 5, 9, 1.000)
+  --token-bg-raised          rgba(13, 12, 19, 1.000)                                rgba(13, 12, 19, 1.000)
+  --token-bg-raised-2        rgba(22, 21, 28, 1.000)                                rgba(22, 21, 28, 1.000)
+  --token-text               rgba(238, 238, 242, 1.000)                             rgba(238, 238, 242, 1.000)
+  --token-text-secondary     rgba(152, 151, 159, 1.000)                             rgba(152, 151, 159, 1.000)
+  --token-border             rgba(40, 40, 48, 1.000)                                rgba(40, 40, 48, 1.000)
+  --token-border-interactive rgba(101, 100, 113, 1.000)                             rgba(101, 100, 113, 1.000)
+  --token-accent             rgba(143, 126, 240, 1.000)                             rgba(143, 126, 240, 1.000)
+  --token-accent-hover       rgba(173, 161, 255, 1.000)                             rgba(173, 161, 255, 1.000)
+  --token-accent-muted       rgba(86, 76, 145, 1.000)                               rgba(86, 76, 145, 1.000)
+  --token-focus              rgba(198, 189, 255, 1.000)                             rgba(198, 189, 255, 1.000)
+  --token-scrim              rgba(6, 6, 9, 0.878)                                   rgba(6, 6, 9, 0.878)
+  --f-display                "Bricolage Grotesque", Archivo, system-ui, sans-serif  "Bricolage Grotesque", Archivo, system-ui, sans-serif
+  --f-body                   Geist, ui-sans-serif, system-ui, sans-serif            Geist, ui-sans-serif, system-ui, sans-serif
+  --f-mono                   "Geist Mono", ui-monospace, SFMono-Regular, monospace  "Geist Mono", ui-monospace, SFMono-Regular, monospace
+  --t-3xs                    11px                                                   11px
+  --t-2xs                    12px                                                   12px
+  --t-xs                     13px                                                   13px
+  --t-sm                     14px                                                   14px
+  --t-base                   16px                                                   16px
+  --t-md                     20px                                                   20px
+  --t-lg                     25px                                                   25px
+  --t-xl                     31.2496px                                              31.2496px
+  --t-2xl                    39.0624px                                              39.0624px
+  --t-display                72px                                                   72px
+
+PASS  FR-18 side by side: 12 --token-* roles (pinned 12), 3 --f-* families (pinned 3) and 10 --t-* sizes (pinned 10) were read off :root in the Hub's built stylesheet and in cs-tracker's compiled stylesheet, in one browser at 1280x720. 25 of 25 are equal across them.
+# contrast, WCAG 2.1 over the 8-bit sRGB values read above
+  --color-base-100 on --color-base-content             17.56:1
+  --color-base-200 on --color-base-content             16.82:1
+  --color-base-300 on --color-base-content             15.67:1
+  --color-primary on --color-primary-content           6.20:1
+  --color-secondary on --color-secondary-content       15.67:1
+  --color-neutral on --color-neutral-content           6.39:1
+  --color-accent on --color-accent-content             6.20:1
+  --token-bg on --token-focus                          11.73:1
+  --token-bg-raised on --token-focus                   11.24:1
+  --token-bg-raised-2 on --token-focus                 10.47:1
+
+PASS  Every pair clears its contrast floor: 10 pairs computed from the values this run read, 3 grounds against --color-base-content, 4 fill-and-content pairs and 3 focus-ring readings. All clear their floor (4.5:1 for text, 3:1 for the ring).
+# diagnostics, which never carry a verdict
+  compiled bytes                      = 131336
+  Preflight emitted                   = 2 time(s)
+  --color-primary as EMITTED          = var(--token-accent)
+  --color-accent as EMITTED           = var(--token-accent)
+  --color-* names in the compiled css = 23
+  shell                              background-color = rgba(13, 12, 19, 1.000)
+  navbar                             background-color = rgba(6, 5, 9, 1.000)
+  wordmark                           background-color = rgba(143, 126, 240, 1.000)
+  btn                                background-color = rgba(143, 126, 240, 1.000)
+  btn-ghost                          background-color = rgba(0, 0, 0, 0.000)
+  badge                              background-color = rgba(143, 126, 240, 1.000)
+  badge-neutral                      background-color = rgba(86, 76, 145, 1.000)
+  badge-success                      background-color = rgba(0, 150, 137, 1.000)
+  card                               background-color = rgba(6, 5, 9, 1.000)
+  alert                              background-color = rgba(13, 12, 19, 1.000)
+  spinner                            background-color = rgba(238, 238, 242, 1.000)
+  chromium                            = 151.0.7922.34
+
+PASS  cs-tracker's tree is unchanged: 5 file(s) were planted inside it for the scan and control builds and 5 were removed, and git status --porcelain is byte-identical to what it was before the run
+# scratch tree removed: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-cs-tracker-adoption-8ghHdr (exists afterwards: false)
+
+# 19 cases, 19 PASS, 0 FAIL
+# elapsed 11.2s
+# finished 2026-09-24T17:00:53.183Z
+```
+
+**So Pending Operator action 2 is closed.** AD-22 names the probe and its two triggers, and the
+re-run it asks for exits 0 from a plain shell.
+
 ## Pending Operator actions
 
 This file hands the Operator work Story 1-19 may not do, in the shape `ops/token-contract.md`,
@@ -840,10 +1151,10 @@ This file hands the Operator work Story 1-19 may not do, in the shape `ops/token
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
 | 1 | **Push and deploy `cs-tracker`** | Operator | Pushing to a remote and deploying are Operator acts and neither is a story's. Until it happens, `cs-tracker.cuatro.dev` serves the Story 7.1 warm-orange palette and a Visitor moving between the two applications still sees two products, which is the very thing FR-18 measures | **2026-08-27.** Commits `3f37cce`, `8adb8e2`, `6807f7a` pushed to `origin/main`, then `32a466a`. Deployed by the `docs/deployment.md` redeploy path: `migrate` exited 0 with "Migrations already up", `app` restarted, only `caddy` publishes 80/443. **The first build failed** and needed `32a466a`: see "The fonts task could not run in the container" below |
-| 2 | **Add this probe to AD-22's refresh scope**, then re-run `node ops/cs-tracker-adoption-probe.mjs` on that schedule | Operator | The real trigger is narrower than the schedule and matters more: **any Tailwind or daisyUI bump reaching `cs-tracker`**, and **any contract MINOR**. Nothing in CI can catch either, since nothing in CI runs this. The probe exits non-zero if the mapping stops resolving or the two stylesheets stop agreeing, so re-running it is the whole check. `ops/daisyui-route.md`'s own action 2 asks for the same thing for the sibling probe, and the two should go into the scope together | _not done_ |
-| 3 | **Decide whether `--color-secondary` should stay on a repeated ground** | Operator | The contract has three grounds and daisyUI wants five fills. `--color-neutral` was moved off a ground in this story because it is live; `--color-secondary` is not used anywhere in `cs-tracker` today, so it was left repeating `--color-base-300`. The first surface that wants a secondary fill will need this decided, and both alternatives cost something a story may not spend: publishing a fourth ground is a contract MINOR, and mapping it onto an accent role changes what the word means | _not done_ |
+| 2 | **Add this probe to AD-22's refresh scope**, then re-run `node ops/cs-tracker-adoption-probe.mjs` on that schedule | Operator | The real trigger is narrower than the schedule and matters more: **any Tailwind or daisyUI bump reaching `cs-tracker`**, and **any contract MINOR**. Nothing in CI can catch either, since nothing in CI runs this. The probe exits non-zero if the mapping stops resolving or the two stylesheets stop agreeing, so re-running it is the whole check. `ops/daisyui-route.md`'s own action 2 asks for the same thing for the sibling probe, and the two should go into the scope together | **2026-09-24.** Re-run from Git Bash with `NO_COLOR` unset, against `cs-tracker` at `991d0f6`: exit 0, 19 cases, 19 PASS, FR-18 at 25 of 25, after `048793f` moved the pipeline pin onto `32a466a` (DW-17) and `b14bcbb` stripped the banner's colour codes (DW-109), both by Operator ruling 2026-09-24. See "Re-run 2026-09-24, from a plain shell". Before that, **2026-09-23**: added to AD-22's scope beside the sibling probe, by a clause dated 2026-09-23 with the two narrower triggers, and re-run the same day against `cs-tracker` at `ae34619`: exit 1, 19 cases, 18 PASS, FR-18 at 25 of 25, the one failure being `The build pipeline places them`, the pin DW-17 describes. It stays open until a re-run exits 0, which waits on the Operator's reconcile in `ops/contract-adoption.md` action 7. See "Re-run 2026-09-23, when the probe joined AD-22's scope" |
+| 3 | **Decide whether `--color-secondary` should stay on a repeated ground** | Operator | The contract has three grounds and daisyUI wants five fills. `--color-neutral` was moved off a ground in this story because it is live; `--color-secondary` is not used anywhere in `cs-tracker` today, so it was left repeating `--color-base-300`. The first surface that wants a secondary fill will need this decided, and both alternatives cost something a story may not spend: publishing a fourth ground is a contract MINOR, and mapping it onto an accent role changes what the word means | **2026-09-24.** Operator ruling 2026-09-24: keep the repeat. `--color-secondary` goes on repeating `--color-base-300`. `RESTYLE-SPEC.md` § 1 Control says there is no filled control anywhere in this system, its ground transparent at rest, on hover and when current, and § Family A step 2 retires daisyUI's component classes on restyled surfaces, so no restyled surface will ask for a secondary fill. No contract change. Nothing in `cs-tracker` paints one today: a grep of its `lib/` for `btn-`, `bg-`, `badge-`, `text-` and `border-secondary` answers nothing (**Observed 2026-09-24** at `991d0f6`) |
 | 4 | **Record the visual check of the deployed application**, once action 1 lands | Operator | Every figure here is read off a compiled stylesheet in a fixture page. What no probe here has seen is the application's own screens at their own widths, and the seam list is explicit that S-6, dense data UI, is where a token contract's reach ends. This is the pass that would find a surface the fixture never rendered. **Watch the `--depth: 0` change in particular**: buttons, inputs, menus and tabs lose daisyUI's shadow and gradient overlay, which is the intended outcome and is also the largest single change to how a control looks | **2026-08-27. Passed, and it found exactly what this row existed to find.** The Operator judged the family resemblance sound and the `--depth: 0` flattening correct. It also surfaced a layout defect no probe here could see: an empty-state card wrapping to one word per line, traced to `contracts/tailwind.css` naming its spacing keys so that `max-w-md` resolves to `--spacing-md` (`1rem`) instead of `--container-md` (`28rem`). Filed as **DW-15**, and it is a defect in the published contract rather than in `cs-tracker` |
-| 5 | **Evaluate seam S-8 on the running application**, during the same pass | Operator | S-8 is the one seam whose antecedent, "if LiveView DOM patching visibly interrupts a transition", cannot be observed anywhere this story reaches. The transitions that survive are enumerated above. If one snaps under `phx-update`, the fix is `phx-update="ignore"` on the animated container, and it is cheap once known | _not done_ |
+| 5 | **Evaluate seam S-8 on the running application**, during the same pass | Operator | S-8 is the one seam whose antecedent, "if LiveView DOM patching visibly interrupts a transition", cannot be observed anywhere this story reaches. The transitions that survive are enumerated above. If one snaps under `phx-update`, the fix is `phx-update="ignore"` on the animated container, and it is cheap once known | **2026-09-24.** Moved to Story 8.1 by Operator ruling 2026-09-24, and not evaluated here. `epics.md` Story 8.1 carries S-8 as its own criterion and a dated note naming this row. The surviving transitions are enumerated in "Seam S-8, which was not evaluated" above |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row

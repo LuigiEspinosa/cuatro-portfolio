@@ -45,6 +45,14 @@ same Style Dictionary run that writes `tokens.css`, driven by the committed tran
 | Line endings | LF, one trailing newline | **Observed**, asserted by `packages/tokens/__tests__/tailwind-adapter.test.ts`. Pinned by `.gitattributes` rule `contracts/**/*.css` |
 | Executable content | none, and none anywhere under `contracts/` | **Decision.** AD-1, asserted by three unit cases |
 
+**Contract 2.0.0, 2026-09-24.** By Operator ruling, a MAJOR: the eight spacing-scale keys are
+`--spacing-s-2xs` to `--spacing-s-3xl`, so the utilities read `p-s-md` and `gap-s-lg`, and no key
+collides with Tailwind's container scale (DW-15, § The mapping table). No alias of an old key ships:
+the old names are the defect. The header reads `Contract v2.0.0`, the mappings stay **55**, and the
+file is still **4,522 bytes over 3,862 characters and 94 lines**, because each renamed key is shorter
+than `--spacing-page-pad` and fills the alignment padding it used to leave (**observed 2026-09-24**,
+by reading the file; sha256 `14bce2d5d11c28d8d8ce4fc74fb1854dc6bc6c08cf708a474a077659a6463a8c`).
+
 **The `inline` keyword is mandatory rather than stylistic.** Without it a `var()` reference resolves
 where the theme variable is defined rather than where it is used. This system has no `[data-theme]`
 override today, so nothing breaks now, but the moment one is added a non-`inline` block fails
@@ -95,7 +103,8 @@ The `Utility` column names the class the browser check probes, and the property 
 
 | Tailwind theme key | Contract token | Utility probed | Nature |
 |---|---|---|---|
-| `--spacing-2xs` … `--spacing-3xl` | `--s-2xs` … `--s-3xl` | `p-*`, `padding` | **Decision.** Eight scale steps |
+| ~~`--spacing-2xs` … `--spacing-3xl`~~ | `--s-2xs` … `--s-3xl` | `p-*`, `padding` | **Decision.** Eight scale steps. **Renamed 2026-09-24**, struck rather than deleted: each named key outranked Tailwind's `--container-*` of the same size, so `max-w-md` compiled to `var(--s-md)`, 16px, in every consumer (DW-15) |
+| `--spacing-s-2xs` … `--spacing-s-3xl` | `--s-2xs` … `--s-3xl` | `p-s-*`, `padding` | **Decision**, Operator ruling 2026-09-24, Contract 2.0.0. The same eight steps under names no Tailwind namespace shares, the `s-` taken from the tokens they read. `ops/__tests__/tailwind-container.test.ts` holds `max-w-3xs` to `max-w-7xl` to the container widths |
 | `--spacing-page-pad` | `--page-pad` | `p-page-pad` | **Decision.** The page gutter is a spacing value even though its name carries no `--s-` prefix |
 | `--spacing-tap` | `--tap` | `p-tap`, and `min-w-tap` and `min-h-tap` | **Decision.** The 44px hit-target floor. **Observed 2026-08-25**: all three compile to `var(--tap)`, and the harness asserts the two beyond the namespace's own probe rule, so the reachability claim in this row is exercised rather than stated |
 | `--radius-none`, `--radius-hair`, `--radius-pill` | `--r-none`, `--r-hair`, `--r-pill` | `rounded-*`, `border-radius` | **Decision.** Three radii |
@@ -253,6 +262,46 @@ no new job and no edit to that file at all.
 **Verified rather than assumed**, **observed 2026-08-25**: `git diff` against `c07038d` leaves
 `.github/workflows/ci.yml` byte-identical.
 
+### The container-width gate, 2026-09-24 (DW-19)
+
+**What the file means to a consumer now has a gate, and it is still not a new job.** The drift gate
+proves the adapter is what the generator makes; nothing proved what `max-w-*` resolves to, which is
+how DW-15 shipped. `ops/__tests__/tailwind-container.test.ts` compiles one `@import "./tailwind.css"`
+with the pinned `tailwindcss` through its own `compile()`, handing it a stylesheet resolver rather
+than spawning the CLI, so it needs no scratch tree, and asks for Tailwind's whole container scale,
+`max-w-3xs` to `max-w-7xl`. Each rule must read `var(--container-<size>)`, and each
+`--container-<size>` must be the width Tailwind 4.3.3 declares, 16rem to 80rem. The ruling names
+`max-w-2xs` to `max-w-3xl`, the eight the 1.0.0 keys shadowed; the review added the other five, so a
+spacing key added later at any container size fails too. It runs inside the blocking `test` job, so
+the set of `ci.yml` job names the two pin suites hold did not move. By Operator ruling 2026-09-24.
+
+**Red against the 1.0.0 adapter first**, as the ruling asked. **Observed 2026-09-24T14:42:15Z**,
+`corepack pnpm vitest --run ops/__tests__/tailwind-container.test.ts` on the committed adapter,
+before the rename, each message verbatim up to Vitest's own `expected` clause:
+
+```
+AssertionError: max-w-2xs compiles to max-width: var(--s-2xs), where Tailwind means var(--container-2xs). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-xs compiles to max-width: var(--s-xs), where Tailwind means var(--container-xs). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-sm compiles to max-width: var(--s-sm), where Tailwind means var(--container-sm). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-md compiles to max-width: var(--s-md), where Tailwind means var(--container-md). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-lg compiles to max-width: var(--s-lg), where Tailwind means var(--container-lg). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-xl compiles to max-width: var(--s-xl), where Tailwind means var(--container-xl). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-2xl compiles to max-width: var(--s-2xl), where Tailwind means var(--container-2xl). A spacing key in the adapter is shadowing the container scale (DW-15).
+AssertionError: max-w-3xl compiles to max-width: var(--s-3xl), where Tailwind means var(--container-3xl). A spacing key in the adapter is shadowing the container scale (DW-15).
+ Test Files  1 failed (1)
+      Tests  8 failed (8)
+```
+
+After `tokens:build` on the renamed map, the same command: 8 passed (8), in 458 ms. **With the
+five sizes the review added**, the same run against the 1.0.0 adapter at 15:10Z read 8 failed, 5
+passed (13): the same eight, and `max-w-3xs` and `max-w-4xl` to `max-w-7xl` passing, since no 1.0.0
+key carried those names. On 2.0.0, 13 passed (13).
+
+**The adopter reads the same**: `cs-tracker`'s own `assets/css/app.css`, compiled with its own
+Tailwind 4.1.12 at the re-vendor commit `991d0f6` into a scratch file, emits `.max-w-md { max-width:
+var(--container-md); }` and `.max-w-sm { max-width: var(--container-sm); }` beside `--container-md:
+28rem` and `--container-sm: 24rem`, the two utilities it writes (**observed 2026-09-24**).
+
 ## Probe output
 
 ### Probe 1: the drift gate over the adapter
@@ -404,6 +453,25 @@ against the fixture's own font. All three are the browser's resolution of the sa
 sides of the comparison, which is why the check compares against a control element rather than
 against a number written here.
 
+**At Contract 2.0.0**, **observed 2026-09-24** in the same pinned image by the unfiltered run of
+`pnpm test:e2e` (337 passed), the ten spacing rows read, verbatim:
+
+```
+--spacing-s-2xs -> .p-s-2xs { padding } = 4px
+--spacing-s-xs -> .p-s-xs { padding } = 8px
+--spacing-s-sm -> .p-s-sm { padding } = 12px
+--spacing-s-md -> .p-s-md { padding } = 16px
+--spacing-s-lg -> .p-s-lg { padding } = 24px
+--spacing-s-xl -> .p-s-xl { padding } = 40px
+--spacing-s-2xl -> .p-s-2xl { padding } = 64px
+--spacing-s-3xl -> .p-s-3xl { padding } = 96px
+--spacing-page-pad -> .p-page-pad { padding } = 20px
+--spacing-tap -> .p-tap { padding } = 44px
+```
+
+The other 45 rows are unchanged, the count is still 55, and the negative control below still reads
+42 absent and the same 13 stock names: no renamed utility is a name stock Tailwind ships.
+
 ### Probe 4: the same fixture with no `@theme` block
 
 **Observed 2026-08-25**, same run. Verbatim:
@@ -503,7 +571,7 @@ one Playwright spec.
 | The default Tailwind colour palette is still present | `@theme inline` adds to the default theme rather than replacing it, so `bg-red-500` still exists beside `bg-accent`. Clearing it is `--color-*: initial`, which is a consumer decision about its own build and not a property of the contract | **Observed 2026-08-25** |
 | The unit suite reads `DESIGN.md` out of a dated planning directory | `packages/tokens/__tests__/tailwind-adapter.test.ts` compares the published mappings against the authored block. That couples a test to a planning artefact this story does not own. Every way the coupling can break throws naming the coupling rather than failing obscurely | **Decision**, inherited from Story 1-11 |
 | The browser check's scratch tree is built inside the repository | The Tailwind CLI resolves `@import "tailwindcss"` by walking up from the input file for `node_modules`, so a tree under `tmpdir()` cannot find the pinned compiler. The tree is removed in `afterAll`, which Playwright runs on failure as well as on success, but a hard kill of the process would leave one behind | **Decision**, with the residual risk stated |
-| No CI job builds a Tailwind bundle | The adapter's real verification lives in the `rendered-output` job, which runs the whole Playwright suite in the pinned container. If that job is ever narrowed, the adapter loses its only executing check | **Observed 2026-08-25**, by reading `.github/workflows/ci.yml` |
+| No CI job builds a Tailwind bundle | The adapter's real verification lives in the `rendered-output` job, which runs the whole Playwright suite in the pinned container. If that job is ever narrowed, the adapter loses its only executing check | **Observed 2026-08-25**, by reading `.github/workflows/ci.yml`. **Narrowed 2026-09-24**: the `test` job now compiles the adapter too, through `ops/__tests__/tailwind-container.test.ts`, for the container widths alone; every other mapping's executing check is still the `rendered-output` job |
 
 ## Pending Operator actions
 
@@ -513,11 +581,11 @@ than left in prose, in the shape `ops/token-contract.md`, `ops/font-contract.md`
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Correct `--radius-DEFAULT` in `DESIGN.md:1001`** to `--radius-none`, or delete the line | Operator | The authored block names a key that mints `.rounded-DEFAULT` in Tailwind v4 rather than the bare `.rounded` it was clearly meant to produce. A v3 idiom carried into a v4 design. This story may not edit a planning artefact, and the adapter records the exclusion instead | _not done_ |
-| 2 | **Re-check the Tailwind pin on the settled-inputs schedule** (AD-22), and re-check `TAILWIND_NAMESPACES` against the installed compiler at the same time | Operator | `tailwindcss` and `@tailwindcss/cli` are pinned exact at 4.3.3. Two things in this repository are hand-copied facts about that version and will drift silently from it. The pinned set of stock utility names in `tests/e2e/contract-tailwind.pw.ts` fails loudly when it moves, which is the easy half. `TAILWIND_NAMESPACES` in `packages/tokens/build.mjs` does not: it is a transcription of v4's theme namespace list, nothing compares it to the compiler, and a namespace **added** upstream would be refused here as one Tailwind does not theme, while a namespace **removed** upstream would be accepted here and mint nothing. Bump both packages together, read the negative control's output, and diff the list against the release notes | _not done_ |
-| 3 | **Tell each Tailwind Satellite where to compile its output**, when Stories 1.16 and 1.19 hand them the folder | Operator | The unrebased-`url()` rule above is the one adoption instruction that fails silently if it is missed: the page renders, looks almost right, and every face has 404'd | _not done_ |
-| 4 | **Record the first real CI run of the `rendered-output` job with the new spec**, from the Actions run summary | Operator | The four new browser checks have only ever run in the pinned container on a Windows development host. The runner figure is unknown until the job runs once | _not done_ |
-| 5 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10 and 1-12, and this story widens it twice more. `AGENTS.md:55-57` says Playwright is not installed and that no acceptance criterion may claim a browser check, which is now false for three spec files. `AGENTS.md:52-53` still describes CI as typecheck and tests only, against a file with four jobs. And `AGENTS.md:7` now reads "Sass (no Tailwind)", which is inaccurate at the toolchain level: the Hub's styling is still Sass and no Tailwind reaches `app/`, but `tailwindcss` and `@tailwindcss/cli` are root devDependencies and one Playwright spec compiles with them. An agent reading that line would reasonably conclude the packages are not installed | _not done_ |
+| 1 | **Correct `--radius-DEFAULT` in `DESIGN.md:1001`** to `--radius-none`, or delete the line | Operator | The authored block names a key that mints `.rounded-DEFAULT` in Tailwind v4 rather than the bare `.rounded` it was clearly meant to produce. A v3 idiom carried into a v4 design. This story may not edit a planning artefact, and the adapter records the exclusion instead | **2026-09-24.** Operator ruling 2026-09-24: the line in `DESIGN.md`'s authored block reads `--radius-none: var(--r-none);`, as the shipped adapter does at `contracts/tailwind.css:88`, with a dated comment on the same line naming the v3 key it replaced |
+| 2 | **Re-check the Tailwind pin on the settled-inputs schedule** (AD-22), and re-check `TAILWIND_NAMESPACES` against the installed compiler at the same time | Operator | `tailwindcss` and `@tailwindcss/cli` are pinned exact at 4.3.3. Two things in this repository are hand-copied facts about that version and will drift silently from it. The pinned set of stock utility names in `tests/e2e/contract-tailwind.pw.ts` fails loudly when it moves, which is the easy half. `TAILWIND_NAMESPACES` in `packages/tokens/build.mjs` does not: it is a transcription of v4's theme namespace list, nothing compares it to the compiler, and a namespace **added** upstream would be refused here as one Tailwind does not theme, while a namespace **removed** upstream would be accepted here and mint nothing. Bump both packages together, read the negative control's output, and diff the list against the release notes | **2026-09-25.** Operator ruling 2026-09-24: AD-22's refresh scope names the Tailwind pin with `TAILWIND_NAMESPACES` from 2026-09-25 (`2ec24c1`), re-checked on any Tailwind bump as well, so the schedule lives in the spine. Checked the same day at 02:35Z: the pin is current, `corepack pnpm view` reading 4.3.3 as the latest of both `tailwindcss` and `@tailwindcss/cli`, and the latest GitHub release being v4.3.3 of 2026-07-16. `TAILWIND_NAMESPACES` needs no diff while the installed compiler is the version it was transcribed against: the list and the 4.3.3 pin arrived together in `dd490c5` (Story 1-13, 2026-08-25); the next bump diffs it against the release notes |
+| 3 | **Tell each Tailwind Satellite where to compile its output**, when Stories 1.16 and 1.19 hand them the folder | Operator | The unrebased-`url()` rule above is the one adoption instruction that fails silently if it is missed: the page renders, looks almost right, and every face has 404'd | **2026-09-24**, done for the one Satellite handed the folder, on the Operator ruling of that day. `cs-tracker` is the only consumer Stories 1-16 and 1-19 reached, and its build places the faces beside the compiled stylesheet itself: its committed `mix.exs` runs `cuatro.fonts` in `assets.build` and in `assets.deploy` ahead of `phx.digest` (read at `991d0f6`, `:117-128`), and its committed `AGENTS.md` carries the instruction. The other Tailwind applications, `cuatro-finance`, `cuatro-tracker` and `cs-tournament`, have adopted nothing and move into this repository in Stories 3-5 to 3-7. **One risk, read the same day:** the Operator's uncommitted rewrite of `cs-tracker`'s `AGENTS.md` no longer carries the instruction, so committing it as it stands leaves the build's own ordering as the only record there |
+| 4 | **Record the first real CI run of the `rendered-output` job with the new spec**, from the Actions run summary | Operator | The four new browser checks have only ever run in the pinned container on a Windows development host. The runner figure is unknown until the job runs once | **2026-08-25.** Run 32882858751 on `53863be` (`dev` push), the first run carrying Story 1-13's commits (`dd490c5`, `016613a` and `ba111a2` are ancestors of `53863be` and not of `c07038d`, the run before): `rendered-output: success`, 18:17:11Z to 18:18:25Z, **74 s**, 21 passed, the four `contract-tailwind.pw.ts` cases green. Read from the run and its log on 2026-09-24 and closed on the Operator ruling of that day |
+| 5 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10 and 1-12, and this story widens it twice more. `AGENTS.md:55-57` says Playwright is not installed and that no acceptance criterion may claim a browser check, which is now false for three spec files. `AGENTS.md:52-53` still describes CI as typecheck and tests only, against a file with four jobs. And `AGENTS.md:7` now reads "Sass (no Tailwind)", which is inaccurate at the toolchain level: the Hub's styling is still Sass and no Tailwind reaches `app/`, but `tailwindcss` and `@tailwindcss/cli` are root devDependencies and one Playwright spec compiles with them. An agent reading that line would reasonably conclude the packages are not installed | **2026-08-27**, found done and closed here on 2026-09-23. The refresh landed in `4112ee8`, which replaced the Playwright and CI lines, and the `bmad-project-context` refresh of 2026-08-28, `967abfd`, rewrote the block again (`Verified 2026-08-28 against c490f33`) and dropped "(no Tailwind)" from the stack line. **Observed 2026-09-23** in `AGENTS.md` at `304767f`: the stack line names Sass with no Tailwind claim (`:8-9`), Tailwind's `--color-*` namespace and the container-scale shadowing are stated at `:74-76` and `:94-97`, and nothing says Playwright is not installed or describes CI as typecheck and tests only |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row

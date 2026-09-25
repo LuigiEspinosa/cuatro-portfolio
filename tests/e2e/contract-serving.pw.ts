@@ -65,11 +65,11 @@ const FACES = JSON.parse(readFileSync(join(REPO_ROOT, 'packages', 'fonts', 'face
  * of that entry a checked fact rather than a lucky default: a Next version that
  * started serving a stylesheet as `application/octet-stream` fails here.
  *
- * `.json` is listed before anything publishes one. `contracts/registry.json`
- * arrives in Story 2-5 (AD-4), and without the row the first case would fail
- * with "carries an extension this spec has no expected type for", which is the
- * right failure for an unknown format and the wrong one for the file this whole
- * mechanism exists to serve.
+ * The `.json` row serves `contracts/registry.json`, the estate's only App
+ * Registry, and its schema `contracts/registry.schema.json` (AD-4). Without the
+ * row the first case would fail with "carries an extension this spec has no
+ * expected type for", which is the right failure for an unknown format and the
+ * wrong one for the file this whole mechanism exists to serve.
  *
  * Compared on the essence, so the `; charset=UTF-8` parameter Next appends to
  * the text types is not pinned as a value this story decided.

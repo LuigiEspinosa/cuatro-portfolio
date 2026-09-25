@@ -73,11 +73,26 @@ const adoption = read(resolve(REPO_ROOT, ADOPTION_REL));
 
 const TOKEN = 'github_pat_planted_never_printed';
 const TOKENS_CSS = '/* Cuatro Ecosystem, Design Tokens\n * Contract v1.0.0 · dark only · anchor hue 288\n */\n:root {}\n';
+
+/**
+ * `cs-tracker`'s vendored header at the version the committed Registry declares: 2.0.0 from
+ * 2026-09-24, when Contract 2.0.0 was re-vendored as `cs-tracker` commit `991d0f6` and the Registry
+ * moved with it (Operator ruling, DW-15). The remote `main` reads it once the Operator pushes
+ * (`ops/contract-adoption.md` action 8); until then the scheduled job fails naming both versions,
+ * which is the mismatch case under `token_contract` below.
+ */
+const TOKENS_CSS_AT_REGISTRY = TOKENS_CSS.replace('v1.0.0', 'v2.0.0');
 const CS_TRACKER_TOKENS = 'assets/css/cuatro-contracts/tokens.css';
 const SLUG = 'LuigiEspinosa/cs-tracker';
 
-/** The four KV-2 repositories, pinned: the record's table and the planted run both name exactly these. */
-const PRIVATE = ['LuigiEspinosa/cs-tracker', 'LuigiEspinosa/cs-tournament', 'LuigiEspinosa/StreamVault', 'LuigiEspinosa/Mutuo'];
+/**
+ * The record's four KV-2 rows, pinned in table order. cs-tournament's row is struck (published
+ * 2026-09-24 by Operator ruling), so it stays in the table as history and tolerates nothing.
+ */
+const KV2_TABLE = ['LuigiEspinosa/cs-tracker', 'LuigiEspinosa/cs-tournament', 'LuigiEspinosa/StreamVault', 'LuigiEspinosa/Mutuo'];
+const STRUCK = ['LuigiEspinosa/cs-tournament'];
+/** The repositories that still answer 404 anonymously: the table less its struck rows. */
+const PRIVATE = KV2_TABLE.filter((slug) => !STRUCK.includes(slug));
 const ARCHIVED = ['LuigiEspinosa/Lumen', 'LuigiEspinosa/tcg-tracker'];
 /** The three `live` URLs that answer 3xx at the first hop, as observed 2026-09-12. */
 const REDIRECTING: Record<string, number> = {
@@ -124,7 +139,10 @@ const repos = (slug: string, archived = false): { status: number; body: string }
 const contents = (slug: string, path: string, ref = 'main'): string =>
   `${API}/repos/${slug}/contents/${path}?ref=${encodeURIComponent(ref)}`;
 
-/** The routes the committed Registry needs, answered as the estate answered on 2026-09-12. */
+/**
+ * The routes the committed Registry needs, answered as the estate answered on 2026-09-12, but for
+ * `cs-tracker`'s vendored header, which answers at the version the Registry declares.
+ */
 const routesForCommittedRegistry = (): Record<string, Answer | Answer[]> => {
   const routes: Record<string, Answer | Answer[]> = {};
   for (const entry of registry.applications) {
@@ -135,7 +153,7 @@ const routesForCommittedRegistry = (): Record<string, Answer | Answer[]> => {
     routes[entry.source] = PRIVATE.includes(slug) ? 404 : 200;
     if (entry.live !== undefined) routes[entry.live] = REDIRECTING[entry.live] ?? 200;
   }
-  routes[contents(SLUG, CS_TRACKER_TOKENS)] = { status: 200, body: TOKENS_CSS };
+  routes[contents(SLUG, CS_TRACKER_TOKENS)] = { status: 200, body: TOKENS_CSS_AT_REGISTRY };
   return routes;
 };
 
@@ -214,11 +232,13 @@ describe('the committed Registry against the estate as observed', () => {
   const fetcher = planted(routesForCommittedRegistry());
   const run = verify({ registry, record, adoption, fetch: fetcher.fetch, token: TOKEN });
 
-  it('passes 35 checks: 14 exists, 10 resolves and 4 tolerated, 6 live of which 3 by 3xx, 1 token', async () => {
+  it('passes 34 checks: 14 exists, 11 resolves and 3 tolerated with no KV-2 row left to strike, 5 live of which 3 by 3xx, 1 token', async () => {
+    // 35 and 6 live until 2026-09-25, when Vercel left the estate (Operator ruling 2026-09-24) and
+    // `cs-tournament` went `Complete` with no `live` to check.
     const result = await run;
     expect(fetcher.unplanted, 'the fixture did not plant a URL the Registry carries').toEqual([]);
-    expect(result.rows).toHaveLength(35);
-    expect(result.lines).toHaveLength(35);
+    expect(result.rows).toHaveLength(34);
+    expect(result.lines).toHaveLength(34);
     expect(result.ok, result.lines.filter((line) => line.startsWith('FAIL')).join('\n')).toBe(true);
 
     const exists = rowsOf(result, 'source exists');
@@ -228,26 +248,27 @@ describe('the committed Registry against the estate as observed', () => {
     const resolves = rowsOf(result, 'source resolves');
     expect(resolves).toHaveLength(14);
     const tolerated = resolves.filter((row) => row.detail.includes('tolerated by KV-2'));
-    expect(tolerated.map((row) => row.id).sort()).toEqual(['cs-tournament', 'cs-tracker', 'mutuo', 'streamvault']);
-    expect(resolves.filter((row) => row.detail.includes('answered 200 anonymously'))).toHaveLength(10);
+    expect(tolerated.map((row) => row.id).sort()).toEqual(['cs-tracker', 'mutuo', 'streamvault']);
+    expect(resolves.filter((row) => row.detail.includes('can be struck')).map((row) => row.id)).toEqual([]);
+    expect(resolves.filter((row) => row.detail.includes('answered 200 anonymously'))).toHaveLength(11);
 
     const live = rowsOf(result, 'live');
-    expect(live).toHaveLength(6);
+    expect(live).toHaveLength(5);
     expect(live.filter((row) => /answered 30[27]$/.test(row.detail))).toHaveLength(3);
-    expect(live.filter((row) => row.detail.endsWith('answered 200'))).toHaveLength(3);
+    expect(live.filter((row) => row.detail.endsWith('answered 200'))).toHaveLength(2);
 
     const token = rowsOf(result, 'token_contract');
     expect(token).toHaveLength(1);
     expect(token[0].id).toBe('cs-tracker');
-    expect(token[0].detail).toBe(`the Registry declares 1.0.0 and ${SLUG}:${CS_TRACKER_TOKENS}@main reads Contract v1.0.0`);
+    expect(token[0].detail).toBe(`the Registry declares 2.0.0 and ${SLUG}:${CS_TRACKER_TOKENS}@main reads Contract v2.0.0`);
   });
 
   it('prints one PASS or FAIL line per check in the probe shape, and the same rows as a table', async () => {
     const result = await run;
     for (const line of result.lines) expect(line).toMatch(/^(PASS|FAIL) {2}[a-z0-9-]+ (source exists|source resolves|live|token_contract): \S/);
     const summary = summaryTable(result.rows);
-    expect(summary).toContain('## Registry verification: 35 of 35 checks passed');
-    expect(summary.split('\n').filter((line) => /^\| [a-z0-9-]+ \| /.test(line))).toHaveLength(35);
+    expect(summary).toContain('## Registry verification: 34 of 34 checks passed');
+    expect(summary.split('\n').filter((line) => /^\| [a-z0-9-]+ \| /.test(line))).toHaveLength(34);
     expect(summaryTable([{ id: 'x', check: 'live', pass: false, detail: 'a | b' }])).toContain('| a \\| b |');
     expect(summaryTable([])).toContain('0 of 0 checks passed');
   });
@@ -255,7 +276,7 @@ describe('the committed Registry against the estate as observed', () => {
   it('makes exactly one request per check with the named user agent, no redirect, a 15 s signal, and the token only to api.github.com', async () => {
     await run;
     expect(TIMEOUT_MS).toBe(15_000);
-    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(35);
+    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(34);
     for (const { url, init } of fetcher.calls) {
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['User-Agent'], url).toBe(USER_AGENT);
@@ -290,8 +311,8 @@ describe('main', () => {
       const file = join(dir, 'summary.md');
       const result = await main(planted(routesForCommittedRegistry()).fetch, { [SECRET]: TOKEN, GITHUB_STEP_SUMMARY: file });
       expect(result.code, result.message).toBe(0);
-      expect(result.message.split('\n')).toHaveLength(36);
-      expect(result.message.split('\n').at(-1)).toBe('# 35 of 35 checks passed');
+      expect(result.message.split('\n')).toHaveLength(35);
+      expect(result.message.split('\n').at(-1)).toBe('# 34 of 34 checks passed');
       const { rows } = await verify({ registry, record, adoption, fetch: planted(routesForCommittedRegistry()).fetch, token: TOKEN });
       expect(readFileSync(file, 'utf8')).toBe(`${summaryTable(rows)}\n`);
     });
@@ -301,7 +322,7 @@ describe('main', () => {
     const routes = { ...routesForCommittedRegistry(), 'https://github.com/LuigiEspinosa/list-wheel': 404 };
     const result = await main(planted(routes).fetch, { [SECRET]: TOKEN });
     expect(result.code).toBe(1);
-    expect(result.message.endsWith('# 34 of 35 checks passed')).toBe(true);
+    expect(result.message.endsWith('# 33 of 34 checks passed')).toBe(true);
     expect(result.message).toContain('FAIL  list-wheel source resolves: absent:');
   });
 
@@ -310,7 +331,7 @@ describe('main', () => {
       const file = join(dir, 'missing', 'summary.md');
       const result = await main(planted(routesForCommittedRegistry()).fetch, { [SECRET]: TOKEN, GITHUB_STEP_SUMMARY: file });
       expect(result.code).toBe(2);
-      expect(result.message).toContain('# 35 of 35 checks passed');
+      expect(result.message).toContain('# 34 of 34 checks passed');
       expect(result.message).toContain(`the job summary at ${file.replace(/\\/g, '\\\\')} could not be written`);
       expect(existsSync(file)).toBe(false);
     });
@@ -714,10 +735,10 @@ describe('an entry whose check throws', () => {
 // ---------------------------------------------------------------------------
 
 describe('kv2Rows', () => {
-  it('reads the four tolerated repositories out of the real record, none struck', () => {
+  it('reads the four KV-2 rows out of the real record, cs-tournament alone struck', () => {
     const rows = kv2Rows(record);
-    expect(rows.map((row) => row.repository)).toEqual(PRIVATE);
-    expect(rows.every((row) => !row.struck)).toBe(true);
+    expect(rows.map((row) => row.repository)).toEqual(KV2_TABLE);
+    expect(rows.filter((row) => row.struck).map((row) => row.repository)).toEqual(STRUCK);
     expect(rows.every((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.since))).toBe(true);
     expect(rows.every((row) => row.ruling !== '')).toBe(true);
   });
@@ -868,7 +889,7 @@ describe('the workflow', () => {
 
   it('triggers on the daily schedule, dispatch, and push on exactly the four paths', () => {
     expect(fileInstructions).toMatch(
-      /^on:\n {2}schedule:\n {4}- cron: '17 6 \* \* \*'\n {2}workflow_dispatch:\n {2}push:\n {4}paths:\n {6}- '\.github\/workflows\/registry-verification\.yml'\n {6}- 'ops\/registry-verification\.mjs'\n {6}- 'ops\/registry-verification\.md'\n {6}- 'contracts\/registry\.json'\n\njobs:$/m
+      /^on:\n {2}schedule:\n {4}- cron: '17 6 \* \* \*'\n {2}workflow_dispatch:\n {2}push:\n {4}paths:\n {6}- '\.github\/workflows\/registry-verification\.yml'\n {6}- 'ops\/registry-verification\.mjs'\n {6}- 'ops\/registry-verification\.md'\n {6}- 'contracts\/registry\.json'\n\npermissions:\n {2}contents: read\n\njobs:$/m
     );
     expect(existsSync(SCRIPT)).toBe(true);
     expect(existsSync(resolve(REPO_ROOT, RECORD_REL))).toBe(true);
@@ -897,11 +918,15 @@ describe('the workflow', () => {
     expect(fileInstructions).not.toContain('HEARTBEAT');
   });
 
-  it('never downgrades to a warning, never skips, never widens permissions, never writes (AD-21, AD-16)', () => {
+  // The token was the repository's default, `write`, until DW-87 narrowed every workflow to
+  // `contents: read` at the top (Operator ruling 2026-09-24). This job reads its checkout and nothing
+  // else, so no job-level block widens it.
+  it('never downgrades to a warning, never skips, reads with a read-only token, never writes (AD-21, AD-16, DW-87)', () => {
     expect(fileInstructions).not.toMatch(/continue-on-error\s*:/);
     expect(fileInstructions).not.toContain('|| true');
     expect(fileInstructions).not.toMatch(/^\s+if\s*:/m);
-    expect(fileInstructions).not.toMatch(/^\s*permissions\s*:/m);
+    expect(fileInstructions.match(/^[ \t]*permissions[ \t]*:.*$/gm)).toEqual(['permissions:']);
+    expect(fileInstructions).toMatch(/^permissions:\n {2}contents: read\n\njobs:$/m);
     expect(fileInstructions).not.toMatch(/^\s+needs\s*:/m);
     expect(fileInstructions).not.toMatch(/git (commit|push)|gh (issue|pr) create|upload-artifact/);
   });

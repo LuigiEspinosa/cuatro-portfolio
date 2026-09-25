@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { render, screen } from '@testing-library/react';
+import { compile } from 'sass';
 import { Premise } from '../Premise';
 import {
   ESTATE_FRAMEWORKS,
@@ -130,9 +131,12 @@ describe("the plate mark names the Hub from the Hub's own entry", () => {
     const hub = hubEntry();
     expect(hub, `no committed entry serves ${HUB_ORIGIN}, so this case is vacuous`).toBeDefined();
 
-    expect(container.querySelector('.plate-mark__label')?.textContent).toBe(hub?.name);
+    // Uppercase in the document since Story 2-31, which made the mark uppercase every cell it draws so a
+    // label reads the same with CSS turned off (`RESTYLE-SPEC.md` § 7). The fact is the Registry's; the
+    // case is the mark's.
+    expect(container.querySelector('.plate-mark__label')?.textContent).toBe(hub?.name.toUpperCase());
     expect(container.querySelector('.plate-mark__domain')?.textContent).toBe(
-      new URL(hub?.live ?? HUB_ORIGIN).hostname
+      new URL(hub?.live ?? HUB_ORIGIN).hostname.toUpperCase()
     );
   });
 
@@ -141,7 +145,7 @@ describe("the plate mark names the Hub from the Hub's own entry", () => {
     // reader is already on this application, and a second lookup could disagree with the first.
     const { container } = render(<Premise />);
     const hub = renderedApplications.find((application) => application.live === hubEntry()?.live);
-    expect(container.querySelector('.plate-mark__label')?.textContent).toBe(hub?.name);
+    expect(container.querySelector('.plate-mark__label')?.textContent).toBe(hub?.name.toUpperCase());
   });
 
   it('states no count in the mark', () => {
@@ -153,8 +157,20 @@ describe("the plate mark names the Hub from the Hub's own entry", () => {
 describe('the framework band is ornament, and it is made of real facts', () => {
   it('draws every declared framework, in the declared order and once each', () => {
     const { container } = render(<Premise />);
-    const names = [...container.querySelectorAll('.premise__framework')].map((span) => span.textContent);
+    const names = [...container.querySelectorAll('.premise__framework')].map((span) => span.getAttribute('data-ornament'));
     expect(names, 'the band draws something other than the declared list').toEqual([...ESTATE_FRAMEWORKS]);
+  });
+
+  it('carries every name in data-ornament rather than as text (DW-113)', () => {
+    // Operator ruling 2026-09-24: axe scores contrast on a text node whatever `aria-hidden` says, and
+    // the even names are the muted accent at 2.74:1, so as text they failed Lighthouse's audit on
+    // `/`. Every name moves, odd and even, so the alternation stays the stylesheet's alone.
+    const { container } = render(<Premise />);
+    expect(container.querySelector('.premise__band')?.textContent, 'a band name is still page text').toBe('');
+    const css = compile(resolve(REPO_ROOT, 'components', 'organisms', 'Premise', 'Premise.scss'), { style: 'compressed' }).css;
+    expect([...css.matchAll(/([^{}]+)\{content:attr\(data-ornament\)\}/g)].map((match) => match[1])).toEqual([
+      '.premise__framework::before',
+    ]);
   });
 
   it('is hidden from assistive technology, every name in it being on a row below', () => {
@@ -182,6 +198,50 @@ describe('the framework band is ornament, and it is made of real facts', () => {
     expect(
       container.querySelectorAll('a, button, input, select, textarea, summary, [tabindex], [contenteditable="true"]')
     ).toHaveLength(0);
+  });
+});
+
+describe("the running claim is the Operator's words, and true of the rows below it (DW-244)", () => {
+  /**
+   * Every rendered entry that carries an address and is not `Live`.
+   *
+   * `SuiteDirectoryRow` draws an address from `live` alone, and the schema lets a `Complete` entry
+   * carry one. So this is how "every address below is running" turns false with the copy unchanged,
+   * the way Registry 1.4.0 made "Everything below is running" false with every suite green (Epic 2
+   * retrospective, E1).
+   */
+  const addressedButNotLive = (entries: typeof renderedApplications) =>
+    entries.filter((application) => application.live !== undefined && application.status !== 'Live');
+
+  it('sets the ruled copy after the count, word for word', () => {
+    // Operator ruling 2026-09-25. Planted: red on the sentence it replaced, 2026-09-25.
+    const { container } = render(<Premise />);
+    expect(lede(container)).toBe(
+      `${opening()} became one suite. Every address below is running right now, so open one and you ` +
+        'are using the real thing, not looking at a picture of it.'
+    );
+  });
+
+  it('holds every rendered entry that carries an address to Live', () => {
+    // Planted: red with `cs-tournament`, a `Complete` entry, given a `live` URL in a scratch edit of
+    // the Registry, 2026-09-25.
+    expect(
+      renderedApplications.some((application) => application.live !== undefined),
+      'no rendered entry carries an address, so this case is vacuous'
+    ).toBe(true);
+    expect(
+      addressedButNotLive(renderedApplications).map(
+        (application) => `${application.id} is ${application.status}`
+      ),
+      'an entry below carries an address and is not Live, so "every address below is running" is false'
+    ).toEqual([]);
+  });
+
+  it('and that read fires on a Complete entry planted with an address', () => {
+    const planted = renderedApplications.find((application) => application.live !== undefined);
+    if (planted === undefined) throw new Error('no rendered entry carries an address to plant');
+    const found = addressedButNotLive([{ ...planted, status: 'Complete' }]);
+    expect(found.map((application) => application.id)).toEqual([planted.id]);
   });
 });
 

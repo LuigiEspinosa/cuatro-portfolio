@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
+import { RENDERED_VIEWPORT, hydrated, rootCustomPropertyValue } from './harness';
 
 /**
  * The non-3D front door and the two skips, measured in a browser (Story 2-13).
@@ -281,8 +281,7 @@ const onPath = async <T>(
 /**
  * Navigate, refuse to read anything off a page that did not answer 200, and wait for the fonts.
  *
- * Not `networkidle`: the Hub never reaches it, because Lenis and the GSAP ticker keep the page busy
- * indefinitely (`tests/e2e/harness.ts:86-90`).
+ * Not `networkidle`, for the reason `expectRouteScreenshot` in `tests/e2e/harness.ts` gives.
  */
 const goTo = async (page: Page, route: string = ROUTE): Promise<void> => {
   const response = await page.goto(route, { waitUntil: 'load' });
@@ -302,24 +301,19 @@ const goTo = async (page: Page, route: string = ROUTE): Promise<void> => {
  * no-shift comparison on that door then read two pre-hydration states and would have passed with
  * the client bundle blocked entirely.
  *
- * The signal is `GlitchText`'s inline opacity. Its `useGsapContext` callback writes one on mount on
- * every path, `0` where the entrance will run and `1` where reduced motion stops it, and the server
- * writes no inline style at all, so its presence means React hydrated. It is the application's own
- * artifact rather than a library's class name, and it is the earliest one that exists on all four
- * doors.
+ * The hydration signal is `hydrated` in `tests/e2e/harness.ts`, React's own mark on the hero's
+ * container, and the reasoning for it is there.
  */
 const settled = async (page: Page): Promise<void> => {
   await expect
     .poll(
-      () =>
-        page.evaluate(() => {
-          const glitch = document.querySelector<HTMLElement>('.glitch-text__inner');
-          const hydrated = glitch !== null && glitch.style.opacity !== '';
-          const decided =
+      async () =>
+        (await hydrated(page)) &&
+        (await page.evaluate(
+          () =>
             document.querySelector('.home-container--flat') !== null ||
-            document.querySelector('#gem-canvas canvas') !== null;
-          return hydrated && decided;
-        }),
+            document.querySelector('#gem-canvas canvas') !== null
+        )),
       {
         timeout: SETTLE_TIMEOUT,
         message:
@@ -865,6 +859,33 @@ const heroHeights = (page: Page): Promise<HeightSamples> =>
  */
 const COLLAPSE_FLOOR = 64;
 
+/**
+ * The canary bound on the wide viewport's collapse, and why it is neither the floor nor twice it.
+ *
+ * The case at the foot of this file asserts that the collapse is **far enough above
+ * `COLLAPSE_FLOOR`** that the floor is a separation rather than a coincidence. That assertion is
+ * the reason the three no-movement cases beside it are measurements, so it has to be able to fail.
+ *
+ * **A bound at `COLLAPSE_FLOOR` cannot fail.** `heightSteps` only pushes a step into `drops` when
+ * it is steeper than the floor, so every member of `drops` clears a bound set at the floor by
+ * construction. That is what this line read from 2026-09-21 until it was corrected the same day,
+ * and it made the 1024 arm of the case tautological.
+ *
+ * **88 is the bound that can fail.** **Measured 2026-09-21** in
+ * `mcr.microsoft.com/playwright:v1.62.1-noble`: the collapse at 1024 is **104.83px** on both
+ * script-only doors and on two independent runs, where it was 152.95px before Story 2-29 set the
+ * hero's link groups in the display face and padded the panels. 88 sits 24px above the floor, so a
+ * collapse that decayed toward the floor fails here before it can be mistaken for type settling;
+ * 16.83px below the measurement, which is more headroom than the 13.00px of type settling the
+ * floor exists to exclude; and it is a real bound rather than a restatement of `heightSteps`.
+ * Verified by pushing the flat hero 32px taller, which took the gap to 72.83 and failed this
+ * assertion while `drops.length` stayed at one.
+ *
+ * The narrow viewport keeps `COLLAPSE_FLOOR * 2`, its collapse being 416.00px on the same runs:
+ * the flat door drops the gem's `90vw` box there, so the gap is several times the bound.
+ */
+const WIDE_COLLAPSE_MARGIN = 88;
+
 /** Every step between consecutive samples that is larger than the collapse floor, signed. */
 const heightSteps = (samples: readonly number[]): { drops: number[]; rises: number[] } => {
   const drops: number[] = [];
@@ -963,29 +984,34 @@ test.describe('resolving the path does not move the page', () => {
     });
   }
 
-  test('and the default path does not move either, its geometry being what the document renders', async ({
-    browser,
-  }) => {
-    // The undecided state renders the default path's geometry, so resolving to `'narrative'`
-    // changes nothing: the canvas mounts inside a container that was already the size it is, and
-    // the skip control is in the served markup rather than added a frame later.
-    //
-    // **Measured at the wider viewport, and only there.** Below 768 this hero's height is its
-    // content's, and `GlitchText` re-splits the display line into per-character inline blocks once
-    // the fonts resolve, which can rewrap it. That reflow predates this story and belongs to the
-    // component that does it; measuring here at 360 would attribute it to the decision. At 768 and
-    // wider the panels are absolutely positioned and the container is the lock itself, so what is
-    // compared is exactly what this story changes.
-    const served = await servedHeroHeight(browser, DEFAULT_PATH, WIDE_VIEWPORT);
-    const settledHeight = await settledHeroHeight(browser, DEFAULT_PATH, WIDE_VIEWPORT);
-    console.log(`front-door: default path served ${served.toFixed(2)}, settled ${settledHeight.toFixed(2)}`);
+  for (const viewport of [RENDERED_VIEWPORT, WIDE_VIEWPORT]) {
+    test(`and the default path does not move either at ${viewport.width}, its geometry being what the document renders`, async ({
+      browser,
+    }) => {
+      // The undecided state renders the default path's geometry, so resolving to `'narrative'`
+      // changes nothing: the canvas mounts inside a container that was already the size it is, and
+      // the skip control is in the served markup rather than added a frame later.
+      //
+      // **Widened to 360 on 2026-09-21 by Story 2-29, closing DW-98.** This ran at the wider
+      // viewport alone for a reason that had already expired: when it was written `GlitchText`
+      // re-split the display line into per-character inline blocks once the fonts resolved, which
+      // could rewrap it, and that reflow belonged to the component rather than to the decision being
+      // measured. Story 2-27 removed the split on 2026-09-14 and Story 2-29 owns the hero's geometry
+      // at every width, so the narrow viewport is measurable and is the one the panels stack on. At
+      // 768 and wider the panels are absolutely positioned and the container is the lock itself.
+      const served = await servedHeroHeight(browser, DEFAULT_PATH, viewport);
+      const settledHeight = await settledHeroHeight(browser, DEFAULT_PATH, viewport);
+      console.log(
+        `front-door: default path at ${viewport.width} served ${served.toFixed(2)}, settled ${settledHeight.toFixed(2)}`
+      );
 
-    expect(
-      Math.abs(served - settledHeight),
-      `the hero is ${served.toFixed(2)} in the served document and ${settledHeight.toFixed(2)} once ` +
-        `the narrative mounts, so the canvas arriving moves the page`
-    ).toBeLessThanOrEqual(SETTLING_SLACK);
-  });
+      expect(
+        Math.abs(served - settledHeight),
+        `the hero is ${served.toFixed(2)} in the served document and ${settledHeight.toFixed(2)} once ` +
+          `the narrative mounts, so the canvas arriving moves the page`
+      ).toBeLessThanOrEqual(SETTLING_SLACK);
+    });
+  }
 
   test('and that comparison fires, measured on a trigger only script can read', async ({ browser }) => {
     // **The control, and it is a real artifact rather than a planted one.** A slow `effectiveType`
@@ -1027,68 +1053,329 @@ test.describe('resolving the path does not move the page', () => {
 
 test.describe('the running page settles at one height', () => {
   for (const door of ANSWERED_BEFORE_PAINT) {
-    test(`${door.name} never moves, sampled every frame`, async ({ browser }) => {
-      // The matrix asks for this recorded from the running page rather than argued from the
-      // effect's position, and a two-point comparison cannot see a collapse that happened and was
-      // undone. Measured at the wider viewport for the reason the default-path case states: below
-      // 768 `GlitchText` rewraps the display line when the fonts resolve, which is a real movement
-      // this story does not own.
-      const samples = await heightsOn(browser, door, WIDE_VIEWPORT);
-      const { drops, rises } = heightSteps(samples);
+    for (const viewport of [RENDERED_VIEWPORT, WIDE_VIEWPORT]) {
+      test(`${door.name} never moves at ${viewport.width}, sampled every frame`, async ({ browser }) => {
+        // The matrix asks for this recorded from the running page rather than argued from the
+        // effect's position, and a two-point comparison cannot see a collapse that happened and was
+        // undone.
+        //
+        // **Widened to 360 on 2026-09-21 by Story 2-29, closing DW-98**, for the reason the
+        // default-path case above states: the `GlitchText` rewrap that made the narrow viewport
+        // unmeasurable left with Story 2-27 on 2026-09-14, and 360 is the width these panels stack
+        // on.
+        const samples = await heightsOn(browser, door, viewport);
+        const { drops, rises } = heightSteps(samples);
 
-      expect(samples.length, `no frame was sampled on ${door.name}, so this case measures nothing`).toBeGreaterThan(4);
-      expect(
-        [...drops, ...rises],
-        `the hero collapsed on ${door.name}, which is answered before the document paints and must ` +
-          `therefore never collapse: ${samples.map((height) => height.toFixed(2)).join(', ')}`
-      ).toEqual([]);
-    });
+        expect(samples.length, `no frame was sampled on ${door.name}, so this case measures nothing`).toBeGreaterThan(4);
+        expect(
+          [...drops, ...rises],
+          `the hero collapsed on ${door.name} at ${viewport.width}, which is answered before the ` +
+            `document paints and must therefore never collapse: ${samples.map((height) => height.toFixed(2)).join(', ')}`
+        ).toEqual([]);
+      });
+    }
   }
 
   for (const door of SCRIPT_ONLY_PATHS) {
-    test(`${door.name} collapses exactly once, and only downward`, async ({ browser }) => {
-      // The other half of the same instrument, and the control for the three cases above: a sampler
-      // that reported no movement anywhere would pass them by never firing. These two doors are
-      // knowable only in the browser, so they take one collapse, and both facts about it are
-      // asserted rather than tolerated: exactly one step, and it shrinks.
-      const samples = await heightsOn(browser, door, WIDE_VIEWPORT);
-      const { drops, rises } = heightSteps(samples);
+    for (const viewport of [RENDERED_VIEWPORT, WIDE_VIEWPORT]) {
+      test(`${door.name} collapses exactly once at ${viewport.width}, and only downward`, async ({ browser }) => {
+        // The other half of the same instrument, and the control for the three cases above: a
+        // sampler that reported no movement anywhere would pass them by never firing. These two
+        // doors are knowable only in the browser, so they take one collapse, and both facts about
+        // it are asserted rather than tolerated: exactly one step, and it shrinks.
+        //
+        // **Read at both widths since 2026-09-21**, with the cases above (DW-98).
+        const samples = await heightsOn(browser, door, viewport);
+        const { drops, rises } = heightSteps(samples);
 
-      console.log(
-        `front-door: ${door.name} moved ${drops.map((step) => step.toFixed(2)).join(', ') || '(not at all)'}`
+        console.log(
+          `front-door: ${door.name} at ${viewport.width} moved ` +
+            `${drops.map((step) => step.toFixed(2)).join(', ') || '(not at all)'}`
+        );
+
+        // **The slice did not eat the collapse.** `heightsOn` starts counting at
+        // `document.fonts.ready`, and nothing in the platform orders that against hydration: on a
+        // cold container the fonts could settle after the hero had already collapsed, leaving a
+        // sampler that saw only the flat state and a case that failed for a reason it does not own.
+        // The first sample on these doors is the tall one, or this case says so rather than
+        // blaming the collapse count below.
+        expect(
+          samples[0] - samples[samples.length - 1],
+          `${door.name} was already collapsed by the first sample. The frame window starts at ` +
+            `document.fonts.ready, so the fonts settled later than hydration on this run and the ` +
+            `collapse happened outside the window rather than not happening`
+        ).toBeGreaterThan(COLLAPSE_FLOOR);
+
+        expect(
+          drops.length,
+          `${door.name} did not collapse exactly once at ${viewport.width}. It is decided after ` +
+            `hydration, so it collapses once: ${samples.map((height) => height.toFixed(2)).join(', ')}`
+        ).toBe(1);
+
+        // And the collapse is far enough above the floor that the floor is a separation rather than
+        // a coincidence. If this ever fails, the cases above have stopped being measurements.
+        //
+        // **Two bounds since 2026-09-21, and neither is `COLLAPSE_FLOOR` itself.** Story 2-29 set
+        // the hero's two link groups in the display face at `--t-xl` and gave the panels padding,
+        // which made the flat hero taller and narrowed the gap the collapse crosses at 1024 from
+        // 152.95 to 104.83, so `COLLAPSE_FLOOR * 2` no longer fits under it. The correction was
+        // first written as `COLLAPSE_FLOOR`, which `heightSteps` satisfies by construction and
+        // which therefore could not fail; `WIDE_COLLAPSE_MARGIN` above is the bound that can, with
+        // the measurement it is derived from. At 360 the flat door also drops the gem's `90vw`
+        // box, so the gap is 416.00 and the doubled floor still holds there.
+        const margin = viewport.width === WIDE_VIEWPORT.width ? WIDE_COLLAPSE_MARGIN : COLLAPSE_FLOOR * 2;
+        expect(
+          Math.abs(drops[0] ?? 0),
+          `${door.name} collapsed by ${Math.abs(drops[0] ?? 0).toFixed(2)} at ${viewport.width}, ` +
+            `which is close enough to the ${COLLAPSE_FLOOR} floor that type settling and a collapse ` +
+            `are no longer separable`
+        ).toBeGreaterThan(margin);
+        expect(
+          rises,
+          `${door.name} grew the hero mid-load, which pushes the Directory down under a reader who ` +
+            `had already started reading`
+        ).toEqual([]);
+      });
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// The hero below 768, where the corners become a column.
+// ---------------------------------------------------------------------------
+
+/** Each element the stacked hero's matrix row names, with what the browser gave it. */
+const stackedHero = (page: Page) =>
+  page.evaluate(() => {
+    const read = (selector: string) => {
+      const node = document.querySelector(selector);
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      return {
+        top: rect.top + window.scrollY,
+        boxes: node.getClientRects().length,
+        position: getComputedStyle(node).position,
+      };
+    };
+
+    return {
+      name: read('.home-panel--name'),
+      gem: read('.home-gem'),
+      nav: read('.home-panel--nav'),
+      contact: read('.home-panel--contact'),
+      readouts: document.querySelectorAll('.home-panel--sys').length,
+      scrim: read('.home-gem .scanline-overlay'),
+      scrimsInDom: document.querySelectorAll('.home-gem .scanline-overlay').length,
+    };
+  });
+
+/** Every box the skip control's guarantee is about, at whatever width the page is open at. */
+const skipControlAgainstPanels = (page: Page) =>
+  page.evaluate(() => {
+    const control = document.querySelector('.skip-control');
+    if (!control) return null;
+    const box = (node: Element) => {
+      const rect = node.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+    };
+
+    return {
+      control: box(control),
+      controlZ: getComputedStyle(control).zIndex,
+      panels: [...document.querySelectorAll('.home-panel')].map((panel) => ({
+        at: panel.className,
+        box: box(panel),
+        z: getComputedStyle(panel).zIndex,
+      })),
+      controlIsFirst: [...(control.parentElement?.children ?? [])].indexOf(control) === 0,
+    };
+  });
+
+test.describe('the skip control is never under a panel', () => {
+  for (const viewport of [RENDERED_VIEWPORT, WIDE_VIEWPORT]) {
+    test(`its box intersects no panel at ${viewport.width}`, async ({ browser }) => {
+      // **FR-2's only interaction, and the one element on this surface whose stacking is not
+      // decided by a z-index.** Until Story 2-29 the panels were `z-index: 5` and this control was
+      // `10`. Both are `var(--z-raised)` now, and `HomeLayout.tsx` renders the control before all
+      // three panels, so on that tie a panel paints over it. The contract offers nothing between
+      // `--z-base` and `--z-raised`, and `--z-dropdown` is a role a skip control has no claim to,
+      // so the guarantee this surface makes is that the two never overlap. That is a layout fact,
+      // which is measurable, where "it is above" would have been a reading of a value that no
+      // longer distinguishes them.
+      //
+      // Added 2026-09-21 by the Step-04 review, which found the guarantee lost and nothing testing
+      // it.
+      const read = await onPath(
+        browser,
+        DEFAULT_PATH,
+        async (page) => {
+          await goTo(page);
+          await settled(page);
+          return skipControlAgainstPanels(page);
+        },
+        viewport
       );
 
-      // **The slice did not eat the collapse.** `heightsOn` starts counting at
-      // `document.fonts.ready`, and nothing in the platform orders that against hydration: on a
-      // cold container the fonts could settle after the hero had already collapsed, leaving a
-      // sampler that saw only the flat state and a case that failed for a reason it does not own.
-      // The first sample on these doors is the tall one, or this case says so rather than blaming
-      // the collapse count below.
+      expect(read, `the default door rendered no .skip-control at ${viewport.width}`).not.toBeNull();
+      // Three since the readout panel's removal (Operator ruling 2026-09-24, DW-110).
+      expect(read?.panels.length, 'the hero rendered some other number of panels than its three').toBe(3);
       expect(
-        samples[0] - samples[samples.length - 1],
-        `${door.name} was already collapsed by the first sample. The frame window starts at ` +
-          `document.fonts.ready, so the fonts settled later than hydration on this run and the ` +
-          `collapse happened outside the window rather than not happening`
-      ).toBeGreaterThan(COLLAPSE_FLOOR);
+        read?.control.width ?? 0,
+        'the skip control has no box, so an overlap could not be seen'
+      ).toBeGreaterThan(0);
 
-      expect(
-        drops.length,
-        `${door.name} did not collapse exactly once. It is decided after hydration, so it collapses ` +
-          `once: ${samples.map((height) => height.toFixed(2)).join(', ')}`
-      ).toBe(1);
+      // The tie itself, recorded rather than asserted away: if these ever differ the guarantee
+      // below stops being the only thing holding the control visible, and this line says so.
+      console.log(
+        `front-door: skip control at ${viewport.width} is z ${read?.controlZ}, rendered first ${read?.controlIsFirst}, ` +
+          `panels z ${[...new Set(read?.panels.map((panel) => panel.z))].join(', ')}`
+      );
 
-      // And the collapse is far enough above the floor that the floor is a separation rather than a
-      // coincidence. If this ever fails, the three cases above have stopped being measurements.
+      const overlapping = (read?.panels ?? [])
+        .filter((panel) => {
+          const a = read!.control;
+          const b = panel.box;
+          return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+        })
+        .map(
+          (panel) =>
+            `${panel.at} at [${panel.box.left.toFixed(1)}, ${panel.box.top.toFixed(1)}, ${panel.box.right.toFixed(1)}, ` +
+              `${panel.box.bottom.toFixed(1)}] overlaps the control at [${read!.control.left.toFixed(1)}, ` +
+              `${read!.control.top.toFixed(1)}, ${read!.control.right.toFixed(1)}, ${read!.control.bottom.toFixed(1)}]`
+        );
       expect(
-        Math.abs(drops[0] ?? 0),
-        `${door.name} collapsed by ${Math.abs(drops[0] ?? 0).toFixed(2)}, which is close enough to ` +
-          `the ${COLLAPSE_FLOOR} floor that type settling and a collapse are no longer separable`
-      ).toBeGreaterThan(COLLAPSE_FLOOR * 2);
-      expect(
-        rises,
-        `${door.name} grew the hero mid-load, which pushes the Directory down under a reader who ` +
-          `had already started reading`
+        overlapping,
+        `a panel's box intersects the skip control's at ${viewport.width}. Both sit at the same z-level and the control ` +
+          `is rendered first, so the panel paints over FR-2's one interaction:\n${overlapping.join('\n')}`
       ).toEqual([]);
+    });
+  }
+});
+
+test.describe('the hero below 768 on the default front door', () => {
+  test('stacks in reading order, carries no readout panel and paints no scrim', async ({ browser }) => {
+    // **The matrix's below-768 row, measured rather than read off the stylesheet.** This is the
+    // default door at 360: the gem is a static item in the column between the name and the nav,
+    // which is exactly why the scrim is hidden there. The reduced-motion door is a different row
+    // and is measured by `the fold on the non-3D path` above, which renders no gem at all.
+    const hero = await onPath(
+      browser,
+      DEFAULT_PATH,
+      async (page) => {
+        await goTo(page);
+        await settled(page);
+        return stackedHero(page);
+      },
+      RENDERED_VIEWPORT
+    );
+
+    for (const [label, box] of [
+      ['.home-panel--name', hero.name],
+      ['.home-gem', hero.gem],
+      ['.home-panel--nav', hero.nav],
+      ['.home-panel--contact', hero.contact],
+    ] as const) {
+      expect(box, `${label} is not on the stacked hero at ${RENDERED_VIEWPORT.width}`).not.toBeNull();
+      expect(box?.position, `${label} is still positioned at ${RENDERED_VIEWPORT.width}, so the corners survived`).toBe('static');
+      expect(box?.boxes, `${label} has no box at ${RENDERED_VIEWPORT.width}`).toBeGreaterThan(0);
+    }
+
+    // Reading order, `EXPERIENCE.md:529-530`: name, imagery, navigation, contact. Measured as
+    // position down the page rather than as the `order` property, because that is what a visitor
+    // and a screen reader following the flow actually meet.
+    const order = [
+      ['name', hero.name?.top ?? -1],
+      ['imagery', hero.gem?.top ?? -1],
+      ['navigation', hero.nav?.top ?? -1],
+      ['contact', hero.contact?.top ?? -1],
+    ] as const;
+    console.log(`front-door: stacked hero at 360 ${order.map(([label, top]) => `${label} ${top.toFixed(2)}`).join(', ')}`);
+    expect(
+      [...order].sort((one, two) => one[1] - two[1]).map(([label]) => label),
+      `the stacked hero is not in reading order: ${order.map(([label, top]) => `${label} at ${top.toFixed(2)}`).join(', ')}`
+    ).toEqual(['name', 'imagery', 'navigation', 'contact']);
+
+    // The readout panel was omitted here by `display: none` until 2026-09-24, when the Operator's
+    // ruling removed it from the hero altogether (DW-110): not a hidden box, no element at all.
+    expect(hero.readouts, 'the readout panel is back in the document').toBe(0);
+
+    // And the scrim: in the document, so this is a rule rather than a missing element, and with no
+    // box, so nothing is painted over imagery that no text overlays.
+    expect(hero.scrimsInDom, 'the gem carries no scrim at all, so its absence here proves nothing').toBe(1);
+    expect(hero.scrim?.boxes, 'the scrim paints at 360, where no text overlays the imagery').toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The corner the readout panel held, at the widths where the hero has corners.
+// ---------------------------------------------------------------------------
+
+/** The two widths the Operator's ruling names beside 360, both past the 768 breakpoint. */
+const CORNER_WIDTHS = [
+  { width: 768, height: 800 },
+  { width: 1280, height: 800 },
+] as const;
+
+/**
+ * The panels on the page, and what a point 10px inside the corner the readout panel held resolves
+ * to. The panel sat at `top: 2%; right: 2%` of the viewport-tall container, so that point was inside
+ * its box at every width it rendered at.
+ */
+const cornerRead = (page: Page) =>
+  page.evaluate(() => {
+    const container = document.querySelector('.home-container');
+    if (!container) throw new Error('no .home-container on the page');
+    const box = container.getBoundingClientRect();
+    const x = box.right - box.width * 0.02 - 10;
+    const y = box.top + box.height * 0.02 + 10;
+    const hit = document.elementFromPoint(x, y);
+    return {
+      at: `${Math.round(x)},${Math.round(y)}`,
+      hit: hit ? `${hit.tagName.toLowerCase()}.${String(hit.getAttribute('class') ?? '').split(' ').join('.')}` : '(nothing)',
+      inImagery: hit !== null && hit.closest('.home-gem') !== null,
+      panels: [...document.querySelectorAll('.home-panel')].map((panel) => panel.className),
+    };
+  });
+
+test.describe('the hero holds its corners without the readout panel', () => {
+  for (const viewport of CORNER_WIDTHS) {
+    test(`the corner it held shows the imagery, with no hole, at ${viewport.width}`, async ({ browser }) => {
+      // Operator ruling 2026-09-24 (DW-110) removed the readout panel. The panels are positioned
+      // over the canvas rather than laid out around each other, so nothing reflows into the corner
+      // and nothing is left there: the point the panel covered is the imagery's. The control plants
+      // a box where the panel sat, and the same read has to report it.
+      const read = await onPath(
+        browser,
+        DEFAULT_PATH,
+        async (page) => {
+          await goTo(page);
+          await settled(page);
+          const clean = await cornerRead(page);
+          await page.evaluate(() => {
+            const planted = document.createElement('div');
+            planted.className = 'planted-corner';
+            planted.style.cssText = 'position:absolute;top:2%;right:2%;width:120px;height:40px;z-index:var(--z-raised)';
+            document.querySelector('.home-container')?.append(planted);
+          });
+          return { clean, planted: await cornerRead(page) };
+        },
+        viewport
+      );
+      console.log(`front-door: at ${viewport.width} the readout's corner ${read.clean.at} resolves to ${read.clean.hit}`);
+
+      expect(read.clean.panels, `the hero at ${viewport.width} carries some other set of panels`).toEqual([
+        'home-panel home-panel--name',
+        'home-panel home-panel--nav',
+        'home-panel home-panel--contact',
+      ]);
+      expect(
+        read.clean.inImagery,
+        `the point ${read.clean.at} where the readout panel sat resolves to ${read.clean.hit} at ${viewport.width}, not to the imagery`
+      ).toBe(true);
+      expect(read.planted.hit, 'a box planted in the corner is not what the read reports, so it cannot see one').toContain(
+        'planted-corner'
+      );
+      expect(read.planted.inImagery, 'the planted box read as the imagery').toBe(false);
     });
   }
 });
@@ -1220,7 +1507,7 @@ test.describe('the skip control', () => {
   test('moves focus to the Directory heading, not merely the scroll position', async ({ browser }) => {
     // `EXPERIENCE.md:723` says moves focus, not only scroll. A control that scrolled alone leaves a
     // keyboard reader at the top of the document, tabbing through the whole hero again to reach
-    // what they just asked to skip to. Same shape as `suite-directory.pw.ts:365-371`, on a click
+    // what they just asked to skip to. Same shape as `suite-directory.pw.ts:317-328`, on a click
     // rather than on hash arrival.
     await onPath(browser, DEFAULT_PATH, async (page) => {
       await goTo(page);
@@ -1451,6 +1738,18 @@ test.describe('the narrative canvas', () => {
       await goTo(page);
       await settled(page);
       await expect(page.locator('#gem-canvas canvas')).toBeVisible({ timeout: SETTLE_TIMEOUT });
+      // **The canvas's own two attributes are written when the renderer is created**, a moment after
+      // the element is visible (`Scene.tsx`, `onCreated`); the wrapper is hidden from the start. So
+      // the renderer is waited for, the way `tests/e2e/work-hero.pw.ts` waits for the torus's, and a
+      // canvas that never gets there fails here, named. Read straight after `toBeVisible`, this case
+      // saw `aria-hidden` null once on a warm server on 2026-09-24 (the DW-36 package's full run) and
+      // passed five repeats in a row cold.
+      await expect
+        .poll(() => page.evaluate(() => document.querySelector('#gem-canvas canvas')?.getAttribute('tabindex') ?? null), {
+          timeout: SETTLE_TIMEOUT,
+          message: 'the canvas was never taken out of the tab order, so the renderer never finished creating',
+        })
+        .toBe('-1');
 
       const semantics = await page.evaluate(() => {
         const canvas = document.querySelector('#gem-canvas canvas');
@@ -1492,4 +1791,220 @@ test.describe('the narrative canvas', () => {
       expect(visited, 'a Tab landed on the narrative canvas, which has nothing to operate').not.toContain('CANVAS');
     });
   });
+});
+
+// ---------------------------------------------------------------------------
+// The five hero links during the entrance (DW-106, DW-125).
+// ---------------------------------------------------------------------------
+
+/**
+ * Hold every animation on the page at its start, from the first frame the document is styled in.
+ *
+ * An init script, so it runs before anything paints: each frame it pauses whatever animation has
+ * appeared, which catches every entrance inside its delay (the earliest link waits 2000ms). A read on
+ * a held page is a read of the entrance's start however long the runner takes to reach it, which a
+ * real-time Tab against a two-second window on a loaded container could not promise.
+ * `window.__releaseEntrance` stops the hold, so a control can play the entrance to its end.
+ */
+const HOLD_ENTRANCE = `
+  window.__entranceHeld = true;
+  window.__releaseEntrance = () => { window.__entranceHeld = false; };
+  const hold = () => {
+    if (!window.__entranceHeld) return;
+    for (const animation of document.getAnimations()) if (animation.playState === 'running') animation.pause();
+    requestAnimationFrame(hold);
+  };
+  requestAnimationFrame(hold);
+`;
+
+/** The five hero links: the two destinations, then the three contacts. */
+const HERO_LINKS = '.home-panel--nav a.nav-link, .home-panel--contact .contact-container a';
+
+/** The five, in the order the hero renders them. */
+const HERO_LINK_NAMES = ['Professional Experience', 'Suite Directory', 'Github', 'LinkedIn', 'Email'];
+
+/** Every Tab stop from wherever focus is now, until one lands in the Directory or the presses run out. */
+const tabUntilDirectory = async (page: Page, presses = 12): Promise<string[]> => {
+  const stops: string[] = [];
+  for (let press = 0; press < presses; press += 1) {
+    await page.keyboard.press('Tab');
+    const at = await page.evaluate(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body) return '(body)';
+      const where = active.closest('.suite-directory') ? 'directory' : active.closest('.home-panel') ? 'hero link' : 'page';
+      return `${where}: ${active.tagName.toLowerCase()}.${active.getAttribute('class') ?? ''} "${(active.textContent ?? '').trim()}"`;
+    });
+    stops.push(at);
+    if (at.startsWith('directory')) break;
+  }
+  return stops;
+};
+
+/** The names of the hero links among some Tab stops, in the order they were reached. */
+const heroStops = (stops: readonly string[]): string[] =>
+  stops.filter((stop) => stop.startsWith('hero link')).map((stop) => /"(.*)"$/.exec(stop)?.[1] ?? stop);
+
+/** Each hero link's visibility, opacity and `inert`, and whether a click at its centre would land on it. */
+const heroLinkState = (page: Page) =>
+  page.evaluate(
+    (selector) =>
+      [...document.querySelectorAll<HTMLElement>(selector)].map((link) => {
+        const box = link.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        const style = getComputedStyle(link);
+        return {
+          name: (link.textContent ?? '').trim(),
+          visibility: style.visibility,
+          opacity: style.opacity,
+          inert: link.inert,
+          takesTheClick: hit !== null && link.contains(hit),
+        };
+      }),
+    HERO_LINKS
+  );
+
+/**
+ * An init script that records every hero link that is ever made `inert`, from before the first
+ * script runs, so a door where the attribute must never appear is read over the whole load rather
+ * than at one moment after it.
+ */
+const RECORD_INERT = `
+  window.__everInert = [];
+  new MutationObserver((records) => {
+    for (const record of records) {
+      const node = record.target;
+      if (node.hasAttribute('inert') && node.closest('.home-panel')) window.__everInert.push((node.textContent || '').trim());
+    }
+  }).observe(document, { subtree: true, attributes: true, attributeFilter: ['inert'] });
+`;
+
+/** The hero links the recorder above saw made `inert` at any point of the load. */
+const everInert = (page: Page) => page.evaluate(() => (window as unknown as { __everInert: string[] }).__everInert);
+
+test.describe('the hero links wait for their turn in the entrance (DW-106, DW-125)', () => {
+  test('held at the start of the entrance each link is inert at opacity 0, Tab skips all five and a click lands beneath them, and after it none is inert', async ({
+    browser,
+  }) => {
+    // Operator ruling 2026-09-24 (DW-106): no link is a Tab stop or a click target before its turn.
+    // Operator ruling 2026-09-25 (DW-125): the mechanism is `inert`, set from script while a link's
+    // entrance waits, and never `visibility: hidden`, whose first paint at the reveal became `/`'s
+    // largest contentful paint. 1280, so all five sit inside the viewport and each centre can be
+    // hit-tested.
+    await onPath(
+      browser,
+      { ...DEFAULT_PATH, inits: [HOLD_ENTRANCE] },
+      async (page) => {
+        await goTo(page);
+        await settled(page);
+
+        const held = await heroLinkState(page);
+        expect(held.map((link) => link.name), 'the hero carries some other set of links').toEqual(HERO_LINK_NAMES);
+        expect(
+          held.filter((link) => link.opacity !== '0').map((link) => link.name),
+          'a link is past the start of its fade, so the hold did not catch the entrance and this read is not at its start'
+        ).toEqual([]);
+        expect(
+          held.filter((link) => !link.inert).map((link) => link.name),
+          'a link is open to the keyboard and the pointer while its fade has not begun'
+        ).toEqual([]);
+        expect(
+          held.filter((link) => link.visibility !== 'visible').map((link) => link.name),
+          'a link is hidden with visibility, so its first paint is its reveal and LCP measures the entrance (DW-125)'
+        ).toEqual([]);
+
+        const stops = await tabUntilDirectory(page);
+        console.log(`front-door: Tab at the start of the entrance: ${stops.join(' | ')}`);
+        expect(heroStops(stops), 'Tab landed on a hero link before its turn').toEqual([]);
+        expect(stops.at(-1) ?? '', 'Tab never reached the Directory, so the read did not cross the hero').toMatch(/^directory/);
+        expect(
+          stops.slice(0, -1).map((stop) => /skip-(link|control)/.exec(stop)?.[0] ?? stop),
+          'Tab stopped somewhere other than the two skips before the Directory'
+        ).toEqual(['skip-link', 'skip-control']);
+        expect(held.filter((link) => link.takesTheClick).map((link) => link.name), 'a click at a waiting link lands on it').toEqual([]);
+
+        // The control, on the same page: the entrance played to its end, and the same reads now find
+        // all five released, in order, each taking the click at its centre. Back at the top first,
+        // because the Tab above ended in the Directory and scrolled the hero out of the viewport,
+        // where no point hit-tests at all.
+        await page.evaluate(() => {
+          (window as unknown as { __releaseEntrance: () => void }).__releaseEntrance();
+          for (const animation of document.getAnimations()) {
+            try {
+              animation.finish();
+            } catch {
+              // An animation with no end cannot finish; the hero declares none.
+            }
+          }
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        });
+        await expect
+          .poll(async () => (await heroLinkState(page)).filter((link) => link.inert).map((link) => link.name), {
+            message: 'a link is still inert after its entrance finished, stranded out of reach',
+          })
+          .toEqual([]);
+        const played = await heroLinkState(page);
+        expect(
+          played.filter((link) => link.visibility !== 'visible' || link.opacity !== '1').map((link) => link.name),
+          'the entrance did not finish, so the control reads a page mid-entrance'
+        ).toEqual([]);
+        expect(
+          played.filter((link) => !link.takesTheClick).map((link) => link.name),
+          'a finished link does not take a click at its centre, so the hit-test above proves nothing'
+        ).toEqual([]);
+        await page.evaluate(() => (document.querySelector('.skip-link') as HTMLElement | null)?.focus());
+        expect(
+          heroStops(await tabUntilDirectory(page)),
+          'with the entrance finished Tab does not reach the five links in order, so the skip above proves nothing'
+        ).toEqual(HERO_LINK_NAMES);
+      },
+      { width: 1280, height: 800 }
+    );
+  });
+
+  test('played in real time, the links are made inert and none is still inert once the entrance is over', async ({ browser }) => {
+    // Nothing held: the page runs its own clock. The recorder proves the links were made inert at
+    // all on this door, so the release read before it is not vacuous.
+    await onPath(
+      browser,
+      { ...DEFAULT_PATH, inits: [RECORD_INERT] },
+      async (page) => {
+        await goTo(page);
+        await settled(page);
+        await expect
+          .poll(async () => (await heroLinkState(page)).filter((link) => link.inert || link.opacity !== '1').map((link) => link.name), {
+            timeout: 15_000,
+            message: 'a link is still inert, or never arrived, after the entrance should have finished',
+          })
+          .toEqual([]);
+        const recorded = await everInert(page);
+        console.log(`front-door: links made inert during the real-time entrance: ${recorded.join(', ')}`);
+        expect(recorded, 'no link was ever inert on the default door, so the entrance held nothing out of reach').not.toEqual([]);
+      },
+      { width: 1280, height: 800 }
+    );
+  });
+
+  for (const id of ['reduced-motion', 'save-data'] as const) {
+    test(`on the ${id} door no link is ever inert, and the five are Tab stops from the first frame`, async ({ browser }) => {
+      // Reduced motion sets `animation: none` on every animated rule in the hero, and the Save-Data
+      // door is flat from the server, so no entrance waits and the ruling holds nothing out of reach.
+      await onPath(
+        browser,
+        { ...doorNamed(id), inits: [RECORD_INERT, HOLD_ENTRANCE] },
+        async (page) => {
+          await goTo(page);
+          await settled(page);
+          expect(await everInert(page), `a link was made inert on the ${id} door`).toEqual([]);
+          expect(
+            (await heroLinkState(page)).filter((link) => link.visibility !== 'visible').map((link) => link.name),
+            `a link is hidden on the ${id} door`
+          ).toEqual([]);
+          expect(heroStops(await tabUntilDirectory(page)), `Tab on the ${id} door does not reach the five in order`).toEqual(
+            HERO_LINK_NAMES
+          );
+        },
+        { width: 1280, height: 800 }
+      );
+    });
+  }
 });

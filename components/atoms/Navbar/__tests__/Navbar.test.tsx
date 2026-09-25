@@ -9,7 +9,7 @@ import { Navbar } from '../Navbar';
  * `usePathname` stub, and nothing here asserts a value it supplied to the assertion itself.
  *
  * **`aria-current` had no live instance on the shipped Hub until 2026-09-10.** `Suite` is current
- * only on `/`, where `Header.tsx:12` renders no header at all, and `CV` is current only on `/cv`,
+ * only on `/`, where `Header.tsx:18` renders no header at all, and `CV` is current only on `/cv`,
  * which answered a 308 to a PDF until Story 2-16 built the page. So the mechanism was asserted here
  * at the unit level and again as a planted browser control in `tests/e2e/chrome-nav.pw.ts`, and the
  * first live instance arrived needing nothing here to change: `tests/e2e/cv.pw.ts` reads it on the
@@ -105,9 +105,11 @@ describe('Navbar', () => {
 
   it('wraps each label in the span the current-route rule is drawn on', () => {
     // `RESTYLE-SPEC.md:198-199`: the underline is drawn on an inner span, not on the `--tap` box,
-    // or it floats away from the text by the height of the padding. `navbar.scss` selects
-    // `.navbar__label`, so a label rendered as a bare text node leaves that rule matching nothing
-    // and the current route unmarked while every assertion above stays green.
+    // or it floats away from the text by the height of the padding. `Navbar.scss` draws both the
+    // rule every destination carries at rest and the current route's mark on `.navbar__label`
+    // (Story 2-32), so a label rendered as a bare text node leaves both matching nothing, with no
+    // underline for hover to recolour and the current route unmarked, while every assertion above
+    // stays green.
     const { container } = render(<Navbar pathname='/cv' />);
 
     const labels = [...container.querySelectorAll('.navbar__label')];

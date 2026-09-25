@@ -6,13 +6,18 @@ on:
   pull_request:
     branches: [main]
 
+# Every job here reads the checkout and runs a command, so the token is narrowed to that. The
+# repository's own default is `write`, and no job in this file widens it (DW-87).
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - uses: actions/setup-node@v7
         with:
@@ -40,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - uses: actions/setup-node@v7
         with:
@@ -100,7 +105,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - uses: actions/setup-node@v7
         with:
@@ -231,7 +236,7 @@ jobs:
     timeout-minutes: 20
 
     # The baseline PNG in `tests/e2e/rendered-output.pw.ts-snapshots/` was generated inside
-    # this exact image. Glyph rasterization is not portable, and `--font-mono` has no Courier
+    # this exact image. Glyph rasterization is not portable, and the 2023 mono stack had no Courier
     # New on Linux, so pinning both sides to one image is what makes the tolerance a real
     # number. Bump the image tag and the `@playwright/test` pin in `package.json` together,
     # then regenerate the baseline. See `ops/rendered-output-harness.md`.
@@ -246,7 +251,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       # Pinned 2026-08-27, Story 1-10 Operator action 3. Without this the job
       # takes whatever Node the Playwright image ships, which was v24.18.1 while
@@ -286,3 +291,41 @@ jobs:
           # An install or build failure fails before any report exists. Warning about the
           # missing artifact would bury the real cause under a second, unrelated complaint.
           if-no-files-found: ignore
+
+  literal-conformance:
+    runs-on: ubuntu-latest
+
+    # FR-17 says no colour, spacing or type value in the Hub's own styling bypasses the token
+    # contract, and `DESIGN.md` names the check that holds it R8. This job is that check (Story
+    # 2-34): it reads every stylesheet git tracks and refuses a colour literal, a hand-written
+    # `44px`, a spacing literal in a spacing property or a type literal in a type property outside
+    # `contracts/` and `app/scss/_print.scss`, and any alpha but the one on `--c-scrim`. It is
+    # blocking and carries no `continue-on-error`, no `|| true` and no skip condition: AD-21 names
+    # the FR-17 conformance check among the gates that may never become warnings, and there is one
+    # environment and no staging.
+    #
+    # It declares no `on:` of its own, so it runs on this file's triggers, `push` to `**` and
+    # `pull_request` to `main`, and the two can never drift.
+    #
+    # It installs nothing and uses no pnpm cache, as `contract-purity` and `registry-schema` do.
+    # The gate imports only `node:` builtins and lists the tree with the `git` the checkout
+    # already carries, so the conformance check still reports on the run where
+    # `pnpm install --frozen-lockfile` fails. It sits last so the line numbers other records cite
+    # in the jobs above it did not move.
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same reason as the `contract-purity` job above: from v5 `setup-node` caches automatically
+      # off the `packageManager` field in `package.json`, and this job has no pnpm for it to find.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      # No argument and no `env:`. What the gate reads is fixed in its source and resolved beside
+      # the module, and every allowance it makes is a named entry there with its reason, so nothing
+      # reaching this runner can redirect or silence it. See `ops/literal-conformance.md`.
+      - name: Literal conformance
+        run: node ops/literal-conformance.mjs

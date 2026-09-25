@@ -229,6 +229,12 @@ recorded here rather than dropped, per AD-6. `_domainconnect` is proxied Squares
 scaffolding with no application behind it. The `_vercel` TXT is the domain-verification token
 for `future-vizion` and confirms that record's owner.
 
+**Amended 2026-09-25** (Operator ruling 2026-09-24): Vercel was removed from the estate that day.
+The two Vercel CNAMEs and the `_vercel` TXT are the first step of its decommission, and they go
+before the two Vercel projects behind them (`ops/estate.md` § The Vercel decommission; KV-3 in
+`ops/known-violations.md`). All three records still answered on 2026-09-25, so the rows above stand
+as the 2026-08-24 reading until a re-read after the deletes.
+
 **The four `googledomains.com` NS records are vestigial**, because the real delegation is
 `beau`/`demi.ns.cloudflare.com`. The ProtonMail TXT conflicts with the Google Workspace MX set,
 so two mail providers are half-configured in one zone. Both were already in the deferred-work
@@ -479,8 +485,8 @@ definitions from it.
 | `tracker.cuatro.dev` | `cuatro-tracker` | **Observed.** Hostname and id differ, which is exactly the divergence AD-3 exists for | none |
 | `library.cuatro.dev` | `digital-library` | **Observed.** Hostname and id differ | Two containers serve one hostname, split by path |
 | `wheel.cuatro.dev` | `list-wheel` | **Observed 2026-09-13.** The site block proxies `list-wheel:80`, the compose service named for the id (AD-3), and the Registry `live` is declared as `https://wheel.cuatro.dev` | Hostname and id differ. **Row added 2026-09-13** by Story 2-25, the first hostname placed since this table was gathered |
-| `covidmap.cuatro.dev` | **unknown** | **Observed absence** | Live, in the zone, in no planning artifact. Story 2-4 owns it |
-| `future-vizion.cuatro.dev` | **unknown** | **Observed absence** | Same |
+| `covidmap.cuatro.dev` | **unknown** | **Observed absence** | Live, in the zone, in no planning artifact. Story 2-4 owns it. **Amended 2026-09-24:** Story 2-4 took it on 2026-09-02, and the Operator ruled it out of the Estate and the Registry with its subdomain to be retired: KV-3 in `ops/known-violations.md` |
+| `future-vizion.cuatro.dev` | **unknown** | **Observed absence** | Same. **Amended 2026-09-24:** the same ruling, KV-3 |
 | `_domainconnect.cuatro.dev` | **none** | **Observed** | Vendor scaffolding, not an application |
 | `google._domainkey.cuatro.dev` | **none** | **Observed** | TXT only. Not a serving hostname, so AD-3 does not reach it |
 | `_vercel.cuatro.dev` | **none** | **Observed** | TXT only. Not a serving hostname |
@@ -490,13 +496,18 @@ table.** AD-3 says the Registry is the only hostname mapping, and AD-6 says no a
 ever dropped by omission. A live hostname the estate depends on for SM-1 through SM-3 currently
 maps to nothing the Registry will contain. Either Umami gets an Estate row, or the record says
 in writing that infrastructure hostnames sit outside the Registry. That is a Registry decision
-and belongs to Story 2-4, so it is appended to the ledger rather than decided here.
+and belongs to Story 2-4, so it is appended to the ledger rather than decided here. **Amended
+2026-09-24:** Story 2-4 decided it on 2026-09-02: Umami is infrastructure the estate runs, not an
+application the Registry describes, so the hostname stays outside the Registry (`ops/estate.md`
+§ Counts, and KV-3's scope paragraph in `ops/known-violations.md`).
 
 **Eleven hostnames, five with an id, six without, and only three of those six are gaps** on
 2026-08-24. **Twelve hostnames and six with an id from 2026-09-13**, with `wheel.cuatro.dev`;
 the six without and the three gaps are unchanged. `_domainconnect` and the two TXT names are
 not serving hostnames and AD-3 does not reach them. `covidmap` and `future-vizion` breach AD-6
-and were already in the ledger from 2026-08-16. `analytics` is the one this pass found.
+and were already in the ledger from 2026-08-16. `analytics` is the one this pass found. **Amended
+2026-09-24:** Story 2-4 settled all three on 2026-09-02, `analytics` as infrastructure outside the
+Registry and the other two by KV-3.
 
 ### The reverse pass: every application id against a hostname
 
@@ -515,7 +526,7 @@ All fifteen ids from `ops/estate.md:83-99`, each against a zone hostname or an e
 | `cuatro-tracker` | `tracker.cuatro.dev` | **Observed** | A + AAAA, both proxied. Id and hostname differ, which is what AD-3 exists for |
 | `digital-library` | `library.cuatro.dev` | **Observed** | A + AAAA, both proxied |
 | `list-wheel` | **none in this zone** on 2026-08-24. **`wheel.cuatro.dev` from 2026-09-13** | **Observed absence**, then **Observed 2026-09-13** | On 2026-08-24 `ops/estate.md:95` recorded it `Live` on GitHub Pages and relocating to the VPS, its `live` value was not a `cuatro.dev` hostname, and no record in this zone pointed at GitHub Pages. Story 2-25 is the relocation: `A`, proxied, no `AAAA`, the site block and the container are in the sections that follow, and the Registry `live` value is `https://wheel.cuatro.dev`. The reading is dated on the row rather than overwritten, per this file's rule |
-| `cs-tournament` | **none in this zone** | **Observed absence** | `ops/estate.md:92` carries `[ASSUMPTION: Live on Vercel]`. Two Vercel CNAMEs exist in this zone (`covidmap`, `future-vizion`) and **neither is evidence that either is `cs-tournament`**. Story 2-4 resolves it |
+| `cs-tournament` | **none in this zone** | **Observed absence** | `ops/estate.md` § Disposition of every application carried `[ASSUMPTION: Live on Vercel]` on 2026-08-24 (`:92` then). **Amended 2026-09-24:** Story 2-4 resolved it on 2026-09-02 to `Live` at `inclusivcup.vercel.app`, a hostname outside this zone (`ops/estate.md` § The two `[ASSUMPTION: ...]` Statuses are resolved, `:179` as of 2026-09-24). Two Vercel CNAMEs exist in this zone (`covidmap`, `future-vizion`) and **neither is evidence that either is `cs-tournament`**. Story 2-4 resolves it. **Amended 2026-09-25:** the Operator ruling of 2026-09-24 removed Vercel from the estate, and `cs-tournament` is `Complete` from Registry 1.4.0 with no `live` value, so no hostname answers for it anywhere until Story 3.7 places it on the box and declares one |
 | `cuatro-finance` | **none** | **Observed absence** | `[ASSUMPTION: built, not deployed]`. No hostname, correctly |
 | `Lumen` | **none** | **Observed absence** | `Archived`, empty shell. Correct absence |
 | `apple-music-workspace` | **none** | **Observed absence** | `Archived`, empty shell. Correct absence |
@@ -530,7 +541,11 @@ All fifteen ids from `ops/estate.md:83-99`, each against a zone hostname or an e
 from 2026-09-13**, `list-wheel` being the fifth; the apex is a further hostname on one of them.
 **Epic 2 must not author a `live` value for any other id from this file.** Where an id still
 needs one (`cs-tournament`), the value comes from Story 2-4, and this record says explicitly
-that it does not hold it.
+that it does not hold it. **Amended 2026-09-24:** it came on 2026-09-02,
+`https://inclusivcup.vercel.app`, outside this zone, so this file still holds no `live` value for it.
+**Amended 2026-09-25:** Registry 1.4.0 dropped that value when Vercel left the estate (Operator
+ruling 2026-09-24), so `cs-tournament` has no `live` value anywhere until Story 3.7 chooses its
+hostname.
 
 **The two directions disagree in exactly three places, and each is already tracked.**
 `analytics.cuatro.dev` serves and has no id. `covidmap.cuatro.dev` and
@@ -1577,8 +1592,8 @@ Already in the ledger.
 | `QBITTORRENT_USER`, `QBITTORRENT_PASS` in `/home/deploy/cuatro-tracker/.env` | The qBittorrent WebUI on the project network | **Observed 2026-08-24** by name. See [How qBittorrent is administered](#how-qbittorrent-is-administered). The WebUI itself is running on an auto-generated temporary password printed to the container log |
 | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` in `/home/deploy/digital-library/.env` | Outbound mail from the box | **Newly recorded 2026-08-24**, by name. The estate sends mail and no planning artifact says so |
 | Umami admin password | `analytics.cuatro.dev` | Set by the Operator on 2026-08-17. The agent-written `.umami-admin` file was shredded from the box the same day. **Reset by the Operator on 2026-09-13** after the value was lost: Umami 3.3.0 stores a bcrypt hash (`src/lib/password.ts`, 10 rounds) and the standalone image carries no `bcryptjs` a shell can load, so the hash was made off the box (`uv run --with bcrypt python`, `getpass`, only the `$2b$10$` hash printed) and written with `update "user" set password = ... where username = 'admin'` over `psql`. The one account is still `admin`. Sessions already signed in survive a password change, since Umami signs its tokens with `UMAMI_APP_SECRET` |
-| `deploy` SSH key, GitHub `SSH_PRIVATE_KEY` | Shell on `177.7.52.248`, passwordless sudo | In use by `deploy.yml`. `SERVER_HOST` repointed 2026-08-17 |
-| `list-wheel` deploy key, ed25519, comment `github-actions-deploy@list-wheel`, fingerprint `SHA256:w24gXBJVlcbMOKWYk1Qr7LsFXD7TbPEumAkVYoreldI` | The same shell on `177.7.52.248`, the same `deploy` account, from `LuigiEspinosa/list-wheel`'s `deploy.yml` | **Created 2026-09-13 by Story 2-25 on an Operator ruling**, one key per consumer. Public half appended to `/home/deploy/.ssh/authorized_keys` at 17:29Z, now three keys (`luigi@cuatro.dev`, `github-actions-deploy@cuatro-portfolio`, this one), backup `authorized_keys.bak-2-25` with the previous two. Private half set as `SSH_PRIVATE_KEY` on that repository at 17:24:59Z and kept on the workstation at the path the gitignored `.env` names as `LIST_WHEEL_DEPLOY_KEY_FILE`; no value is recorded anywhere. `SERVER_HOST` and `SERVER_USER` on the same repository, set 17:02:09Z and 17:02:10Z, hold the two public facts in the box table above. **Observed 2026-09-13 at review:** the key carries no `restrict` and no `command=` option in `authorized_keys`, the same as the Anchor's deploy key, so it opens a shell with passwordless sudo rather than a deploy of one application. DW-94 files the hardening decision (a forced command per key) |
+| `deploy` SSH key, GitHub `SSH_PRIVATE_KEY` | Shell on `177.7.52.248`, passwordless sudo | In use by `deploy.yml`. `SERVER_HOST` repointed 2026-08-17. **Amended 2026-09-24:** `deploy.yml` now sends this key's session one command string that `ops/deploy-remote.sh` validates (DW-94, `b0aeaff`), and the key's line gains `restrict,command=` under `ops/contract-serving.md` Pending Operator action 7, after which it deploys a commit already on `main` and opens no shell. Until that action is dated the scope cell stands |
+| `list-wheel` deploy key, ed25519, comment `github-actions-deploy@list-wheel`, fingerprint `SHA256:w24gXBJVlcbMOKWYk1Qr7LsFXD7TbPEumAkVYoreldI` | The same shell on `177.7.52.248`, the same `deploy` account, from `LuigiEspinosa/list-wheel`'s `deploy.yml` | **Created 2026-09-13 by Story 2-25 on an Operator ruling**, one key per consumer. Public half appended to `/home/deploy/.ssh/authorized_keys` at 17:29Z, now three keys (`luigi@cuatro.dev`, `github-actions-deploy@cuatro-portfolio`, this one), backup `authorized_keys.bak-2-25` with the previous two. Private half set as `SSH_PRIVATE_KEY` on that repository at 17:24:59Z and kept on the workstation at the path the gitignored `.env` names as `LIST_WHEEL_DEPLOY_KEY_FILE`; no value is recorded anywhere. `SERVER_HOST` and `SERVER_USER` on the same repository, set 17:02:09Z and 17:02:10Z, hold the two public facts in the box table above. **Observed 2026-09-13 at review:** the key carries no `restrict` and no `command=` option in `authorized_keys`, the same as the Anchor's deploy key, so it opens a shell with passwordless sudo rather than a deploy of one application. DW-94 files the hardening decision (a forced command per key). **Amended 2026-09-24:** ruled that day by the Operator, a forced command per key. The Anchor's half ships with DW-94 (`ops/contract-serving.md` Pending Operator action 7); this key waits for `list-wheel`'s own deploy script, under the same ruling. **Amended 2026-09-24 again:** that script is `list-wheel` commit `30e5e8b` (DW-90 package), and the first deploy after its push brings it into `/home/deploy/list-wheel`; the key's line then gains `restrict,command=` under `ops/contract-serving.md` Pending Operator action 9, after which it deploys a commit already on `main` and opens no shell. Until that action is dated the scope cell stands |
 | `github_deploy`, `cuatro_tracker_deploy` | Read on one GitHub repository each | In use by the sibling stacks. Neither can clone `cuatro-portfolio`, which is why that repository is cloned over HTTPS |
 | Cloudflare Origin CA private key | The origin's TLS identity for every hostname, valid to 2041-08-13 | On the box in two places and **nowhere else**. Losing it takes every hostname down with no ACME fallback. Already in the ledger |
 
@@ -1599,7 +1614,7 @@ reaches `main`; KV-1 stays open until Epic 3.
 | `SERVER_HOST` before 2026-08-17 | Not this box | **Observed, by absence.** `.github/workflows/deploy.yml` ran `cd ~/projects/cuatro-portfolio`, and no `~/projects` directory has ever existed on `177.7.52.248`. **Re-confirmed absent 2026-08-24** |
 | `SERVER_HOST` after | `177.7.52.248` | **Operator action, completed 2026-08-17** |
 | Checkout path | `/home/deploy/cuatro-portfolio` | **Decided 2026-08-17**, matching the sibling convention |
-| Deploy mechanism | `docker compose up --build -d` over SSH | A standing AD-8 violation. **Status derived from KV-1**, which is the single place to edit it |
+| Deploy mechanism | `docker compose up --build -d` over SSH | A standing AD-8 violation. **Status derived from KV-1**, which is the single place to edit it. **Amended 2026-09-24:** the compose line runs in `ops/deploy-remote.sh`, which the SSH step runs on the box and which resets to the pushed sha first (DW-93, DW-94); `ops/contract-serving.md` § The deploy runs one script describes it |
 
 **All four projects build their images on the box**, not just the Anchor, and this is no longer
 a lower bound. `cuatro-portfolio-anchor-app`, `cuatro-tracker-app`, `cuatro-tracker-worker`,
@@ -1806,7 +1821,7 @@ perform it.
 | Confirm `analytics.cuatro.dev` passes the managed challenge in a real browser | Playwright arrives in Story 1-10 and no acceptance criterion may claim a rendered-output result before it. Already `ops/bot-mitigation.md` action 3. **Re-tested 2026-08-27 now that Playwright exists: a headed Chromium did not clear the challenge.** See "The challenge does not clear for an automated browser" in `ops/bot-mitigation.md`. One load in an ordinary browser is still owed |
 | Confirm the Hostinger weekly whole-box snapshot exists | It is claimed in a script comment and appears nowhere on the box. Confirming it needs the Hostinger console, which the agent cannot reach. **Answered 2026-08-27: it exists.** See "The Hostinger whole-box snapshot, confirmed" below |
 | Verify IPv6 serving and the v6 `DOCKER-USER` path | One `curl` from a vantage point with IPv6 closes it. See [The IPv6 caveat, stated once](#the-ipv6-caveat-stated-once) for what is and is not claimed. **Half answered 2026-08-27: v6 serving confirmed for all three Satellites.** The direct-to-origin DROP test is still owed. See "IPv6 serving, confirmed" below |
-| Decide whether `analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows | A Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration |
+| Decide whether `analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows | A Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration. **Decided 2026-09-02 at Story 2-4** (amended here 2026-09-24): `analytics.cuatro.dev` is infrastructure outside the Registry (`ops/estate.md` § Counts); `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` are excluded and their subdomains are to be retired, KV-3 in `ops/known-violations.md` |
 | Read the zone's legacy Page Rules, and the `http_request_dynamic_redirect`, `http_request_transform`, `http_response_headers_transform` and `http_config_settings` ruleset phases | The zone-scoped token returns HTTP 403 code 9109 on `pagerules` and `request is not authorized` on each phase entrypoint. **Observed 2026-08-24.** The zone-level `GET /rulesets` listing shows no redirect or transform ruleset, and the `www` 301 is settled independently by a direct origin probe, so nothing depends on this. It is listed so the unknown is a known one |
 
 ### The Hostinger whole-box snapshot, confirmed
@@ -1898,7 +1913,9 @@ provider the estate left on 2026-08-17.
 whether infrastructure hostnames are declared outside the Registry entirely, is an AD-6 membership
 decision. A routing enumeration has no mandate to take it and this record should not hold it open
 as though it were owed here. The AD-3 table above already names all three as gaps rather than as
-correct absences, which is the part this story does own.
+correct absences, which is the part this story does own. **Amended 2026-09-24:** Story 2-4 took it
+on 2026-09-02, as the operator-actions row above now records; KV-3 in `ops/known-violations.md`
+carries the two retirements, and their DNS deletes are its Pending Operator action 6.
 
 **The IPv6 verification stays open and stays the Operator's.** Confirmed again 2026-08-27: the
 workstation driving this work has **no IPv6 egress**, so the v6 `DOCKER-USER` DROP path against

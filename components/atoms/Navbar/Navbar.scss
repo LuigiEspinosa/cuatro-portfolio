@@ -1,0 +1,68 @@
+// The header's two destinations (Story 2-15), rebuilt against the contract by Story 2-32.
+//
+// **Contract roles and nothing else**, which is why this file is listed in
+// `TOKEN_NATIVE_STYLESHEETS` in `app/__tests__/anchor-contract.test.ts`: no alias, no literal and no
+// custom property of its own. The 2023 `sans-serif` at `1.2em`, weight 300 and `#fff`, which the
+// type swap never reached (F-1 in `ops/hub-accessibility-pass.md`), left with the lowercase file.
+
+.navbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  // Two `--tap` boxes on one line take `--s-lg` of gap so they cannot overlap and become one target
+  // by touch (`RESTYLE-SPEC.md` § 1b).
+  gap: var(--s-lg);
+}
+
+// A Link in `RESTYLE-SPEC.md` § 1b's sense, so unboxed, set as `DESIGN.md` § The redesigned Hub
+// surfaces gives the chrome: mono, uppercase, `--t-2xs`, `--tr-label`, `--token-text`. The mono face
+// publishes one weight, so none is asked for and none can be synthesised.
+.navbar a {
+  // `min-block-size` with `inline-flex`, never vertical padding on a plain inline element, which
+  // paints outward without growing the hit area (`EXPERIENCE.md` § Pointer and touch).
+  // `min-inline-size` carries the other axis, because `CV` is two characters. Both axes are measured
+  // in a browser by `tests/e2e/hit-target-floor.pw.ts` and `tests/e2e/chrome-nav.pw.ts`.
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+  padding-inline: var(--s-md);
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--token-text);
+}
+
+// The underline, drawn on the inner span rather than on the `--tap` box, or it floats away from the
+// text by the height of the padding (`RESTYLE-SPEC.md` § 1b). **Every destination carries one at
+// rest**, so hover always has a rule to recolour and never one to add: the hairline in the
+// interactive border role, the Source link's underline (`DESIGN.md` § Components, Links) and the
+// footer link's (`SiteFooter.scss`).
+.navbar__label {
+  border-block-end: var(--stroke-hair) solid var(--token-border-interactive);
+}
+
+// The current route's mark: `--stroke-emphasis` in `--token-accent`, the Emphasis row of `DESIGN.md`
+// § Border and stroke treatments, so "current" reads as it does everywhere else. Keyed on
+// `aria-current` rather than a class, so the mark cannot paint on a link that does not announce
+// itself as the current page. It is wider than the rule at rest as well as a different hue, so the
+// current route survives a greyscale render.
+.navbar a[aria-current='page'] .navbar__label {
+  border-block-end: var(--stroke-emphasis) solid var(--token-accent);
+}
+
+// **One signal, and it is a recolour of the rule already drawn, at its own width**, so nothing
+// reflows. The 2023 hover added a text underline, which on the current route painted a second rule
+// under the mark (DW-69). Gated on a pointer that can hover, or a tap paints it and leaves it
+// painted until the next tap lands elsewhere (review A-5). No transition: a Link recolours
+// instantly, as every other Link on the Hub does; the `border-color` transition in `RESTYLE-SPEC.md`
+// § 1 is a Control's.
+@media (hover: hover) {
+  .navbar a:hover .navbar__label {
+    border-block-end-color: var(--token-accent-hover);
+  }
+}

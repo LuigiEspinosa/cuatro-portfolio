@@ -77,4 +77,22 @@ describe('CelesteComponent', () => {
 
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(HEADING);
   });
+
+  it('sets the two emoji in an element of their own, after the words and inside the heading', () => {
+    // The S10 restyle (Operator ruling 2026-09-24, DW-121) puts the emoji on a mono line of their own,
+    // which a stylesheet can only do to an element. It stays inside the `<h1>`, as the mock draws it,
+    // so the heading's name is still the words and the emoji, and the copy above is unchanged byte for
+    // byte: the words, one space, then the two emoji with no space between them.
+    render(<CelesteComponent />);
+    const heading = screen.getByRole('heading', { level: 1 });
+
+    const elements = [...heading.children];
+    expect(
+      elements.map((child) => `${child.tagName.toLowerCase()}.${[...child.classList].join('.')}`),
+      'the heading does not carry exactly one element, the emoji line'
+    ).toEqual(['span.celeste__emoji']);
+    expect(elements[0].textContent, 'the emoji line does not hold the two emoji alone').toBe('\u{1F499}\u{1F98B}');
+    expect(heading.lastChild, 'something follows the emoji line inside the heading').toBe(elements[0]);
+    expect(heading.firstChild?.textContent, 'the words before the emoji line changed').toBe(' Te amo much\u00EDsimo hermosa ');
+  });
 });

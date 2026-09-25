@@ -199,7 +199,13 @@ the 360px blind spot visible.
    one of the twelve palette entries to the same 8-bit sRGB pixel from either form. **A browser
    that supports neither gets the hex fallback, which is sRGB and cannot carry a wide-gamut
    value.** No token in v1.0.0 is outside sRGB, so nothing is lost today. It is recorded because
-   the day a token is authored outside sRGB, this is where the value quietly narrows.
+   the day a token is authored outside sRGB, this is where the value quietly narrows. *(Corrected
+   2026-09-24: two v1.0.0 tokens were already outside sRGB, `--c-accent-bright` at a linear blue of
+   1.0762 and `--c-focus` at 1.2628, so the hex fallback clips both. The pixel comparison above could
+   not see it, because a canvas in sRGB clips the `lab()` form to the same pixel as the hex. DW-129
+   held the value decision, ruled 2026-09-25: both stay as named exceptions, with no value change.
+   Pending Operator action 2 below records the rule that now guards the
+   rest.)*
 2. **A consumer reading `https://cuatro.dev/contracts/tokens.css` gets the authored file, not
    this.** The rewrite happens in the Hub's own bundle. `tests/e2e/contract-serving.pw.ts`
    compares the served bytes against the authored file for all nine published paths, so the two
@@ -500,6 +506,35 @@ ornament now, and the `--monument-bold` set falls from four call sites to three;
 2-9: a table pinned above what the tree holds fails as a missing call site, which is the opposite of
 what happened.
 
+**Two since 2026-09-23, and the table above is still kept as the Story 1-18 reading.** Story 2-29
+rebuilt `HomeLayout.scss` against the contract on 2026-09-21, and its three rows (`:121`, `:154`,
+`:234`) left the tests without a note here, which this paragraph supplies; eight remained. Story 2-31
+then deleted `hud-label.scss` with the atom it styled and rebuilt `WorkItem.scss` against the contract,
+taking six more: the label's two side rules, and the row's separator, open-state bar, highlight marker
+and chip fill. The bar was the second boundary, so `app/app.scss` now scopes `--accent-dim` on
+`.error-page__back` alone, and `.work-item::before` left that block in the same commit. One boundary
+and one ornament remain, `error-page.scss:59` and `WorkHero.scss:8`, which is still what keeps a single
+global alias from passing `tests/e2e/anchor-aliases.pw.ts`; that file's counts moved in the same
+commit, and its pseudo-element read left with the last row that needed it.
+
+**One since later on 2026-09-23, and the table above is still kept as the Story 1-18 reading.**
+Story 2-30 rebuilt the 404 against the contract, deleted `error-page.scss` and wrote `Error404.scss`
+beside the component, whose exits are controls bordered in the interactive role named directly.
+That took the last boundary, `error-page.scss:59`, so `app/app.scss` scopes `--accent-dim` on no
+selector at all and the block that held `.error-page__back` left in the same commit. The one call
+site left, `WorkHero.scss:8`, is ornament and reads the `:root` value; the mapping's boundary half
+has no subject until Story 2-22 deletes the layer. `tests/e2e/anchor-aliases.pw.ts` tables one call
+site and no boundary, and `app/__tests__/anchor-contract.test.ts` pins both scoped readings empty.
+
+**None since later still on 2026-09-23, and the table above is kept as the Story 1-18 reading.**
+Story 2-33 rebuilt `WorkHero.scss` against the contract: the hero's section divider, `WorkHero.scss:8`,
+is the boundary rule in `--token-border-interactive` named directly, which is the treatment
+`DESIGN.md` § Work hero and timeline gives it, so the last `--accent-dim` call site left with the
+alias. `tests/e2e/anchor-aliases.pw.ts` retired its call-site table and the per-site case with the last
+row and pins the alias at zero call sites, and `app/__tests__/anchor-contract.test.ts` holds every
+stylesheet but `app/app.scss` to reading none of the Hub's fifteen properties, which is FR-37's
+removal condition for this layer (Story 2-22).
+
 **One row is read in a second browser context at 1024 wide**, and it is worth writing down rather
 than discovering later. `HomeLayout.scss:154` is the desktop `border-right` on the contact links.
 At the harness's pinned 360 viewport, `HomeLayout.scss:233` sets `border-right: none` on the same
@@ -529,6 +564,28 @@ kept as the Story 1-18 record of what was repaired; `WEIGHT_CALL_SITES` in
 `app/__tests__/anchor-contract.test.ts` and `WEIGHT_SITES` in `tests/e2e/anchor-aliases.pw.ts` are
 the current lists, and both fell to three in the same commit.
 
+**Two rows since 2026-09-14.** Story 2-27 deleted `components/molecules/GlitchText/glitch-text.scss`
+with the loop it carried and wrote `GlitchText.scss` beside the component, which names `--f-display`
+and `--w-black` directly and reaches no alias, so the one row above that was never the trap is gone
+too. `WEIGHT_SITES` in `tests/e2e/anchor-aliases.pw.ts` fell to two (`error-page.scss:24`,
+`WorkHero.scss:19`); `WEIGHT_CALL_SITES` in `app/__tests__/anchor-contract.test.ts` fell to one,
+because `error-page.scss` had already moved to that suite's `TOKEN_NATIVE_STYLESHEETS` with Story
+2-17 and `GlitchText.scss` joined it there. The table is kept as taken.
+
+**One row since 2026-09-23.** Story 2-30 deleted `components/organisms/ErrorPage/error-page.scss`, the
+second row above that was trapped, with the rest of the 2023 404: the numeral takes the display
+family and the heaviest weight by their roles in `Error404.scss`, which is on the token-native list
+in its place. `WEIGHT_SITES` in `tests/e2e/anchor-aliases.pw.ts` fell to one (`WorkHero.scss:19`), and
+`WEIGHT_CALL_SITES` in `app/__tests__/anchor-contract.test.ts` was already that one. The table is kept
+as taken.
+
+**No row since later on 2026-09-23.** Story 2-33 rebuilt `components/organisms/WorkHero/WorkHero.scss`
+against the contract, the last of the three that were trapped: the heading names the display family
+and the heaviest weight by their roles, so no alias is in its path. `WEIGHT_SITES` and its case left
+`tests/e2e/anchor-aliases.pw.ts`, which pins `--monument-bold` at zero call sites, and
+`WEIGHT_CALL_SITES` and claim two left `app/__tests__/anchor-contract.test.ts`, the file joining
+`TOKEN_NATIVE_STYLESHEETS`. The table is kept as taken.
+
 **The order is the point, for the three that were trapped.**
 `ops/rendered-output-harness.md` § "The finding Story 1-18 inherits" records that a `font-weight`
 read against a tree where the weight was not set is green and meaningless, because those three
@@ -543,6 +600,18 @@ face clamps to 700, which is exactly the `--f-display` plus `--w-bold` the mappi
 **Two since 2026-09-06**: Story 2-9 deleted `ProjectCard.scss` with the component it styled, and
 `tests/e2e/anchor-aliases.pw.ts` moved its `DISPLAY_REGULAR_SITES` table from three rows to two in
 the same commit. The argument is unchanged for the two that remain.
+
+**One since 2026-09-23.** Story 2-31 rebuilt `WorkItem.scss` against the contract, and
+`.work-item__company` names the display family and the bold weight directly rather than asking the
+alias for a clamped 500. `error-page.scss:40` is the one call site left, until Story 2-30, and the
+argument is unchanged for it.
+
+**None since later on 2026-09-23.** Story 2-30 deleted `error-page.scss` and `.error-page__title`
+with it: the 404's heading is the display entrance, which names the display family and its weight
+directly. With no call site left for the clamp to reach, the precondition case in
+`tests/e2e/anchor-aliases.pw.ts` that asserted it went too, since a check over no call site passes
+whatever `contracts/fonts.css` publishes, and the alias is pinned at zero call sites in the shape
+`--confillia-normal` has had since Story 2-29.
 
 **Those four lines are the only place outside `app/app.scss` that names a contract role**, and the
 consumer scan in `app/__tests__/anchor-contract.test.ts` is written to say exactly that rather
@@ -709,7 +778,7 @@ family the contract is free to retune under a MINOR bump. Nothing else in that f
 | A twelfth `var(--accent-dim)` call site appears under `components/`, or one of the eleven moves (fifteen until Story 2-9 deleted `ProjectCard.scss` on 2026-09-06, twelve until Story 2-14 deleted `ProjectsHero.scss` on 2026-09-07) | `tests/e2e/anchor-aliases.pw.ts` counts `var(--accent-dim)` across the component stylesheets **on disk** and compares that per-file count against its table, so a new call site fails naming the file it appeared in. Until that count existed the table was pinned against a literal declared beside it and read no stylesheet at all, and a new call site would have taken the ornament role in silence. The same counter holds `--monument-bold` at three (four until Story 2-14) and `--monument-regular` at two (three until Story 2-9). **The counter walks `components/` and only `components/`**, which is where all three sets of call sites live today (**Observed 2026-08-26**, by `git grep` for each of the three over `app`, `components`, `hooks` and `content`). A call site added under `app/`, `hooks/` or `content/` is outside its reach and would take the `:root` role in silence, so this row promises `components/` rather than the repository. The Vitest consumer scan in `app/__tests__/anchor-contract.test.ts` walks all four roots, but it partitions contract names rather than counting Hub-property call sites, so it does not close that gap either |
 | One of the scoped `--accent-dim` selectors is renamed in its component stylesheet | The scope silently stops applying and that call site falls back to the ornament role. Two things catch it: `app/__tests__/anchor-contract.test.ts` pins the scoped selectors present in `app/app.scss` as an exact sorted array, two of them since Story 2-9 and four before it, and the per-call-site case in the browser fails naming the file, the line and both values |
 | A `font-weight` line is removed from one of the call sites | That site computes `400` and the weight assertion fails naming it. This is the exact regression those lines exist to prevent |
-| `contracts/fonts.css` republishes the display face with a lower bound at or below 500 | The clamp `--monument-regular` relies on stops happening, and `.error-page__title` and `.work-item__company` quietly stop being bold. `tests/e2e/anchor-aliases.pw.ts` parses the published range and asserts its lower bound is above the heaviest weight those call sites request, so this fails as a named precondition rather than as a silent lightening on routes no screenshot covers. The third site named here until 2026-09-06 was the card heading, deleted with its component by Story 2-9 |
+| `contracts/fonts.css` republishes the display face with a lower bound at or below 500 | The clamp `--monument-regular` relies on stops happening, and `.error-page__title` and `.work-item__company` quietly stop being bold. `tests/e2e/anchor-aliases.pw.ts` parses the published range and asserts its lower bound is above the heaviest weight those call sites request, so this fails as a named precondition rather than as a silent lightening on routes no screenshot covers. The third site named here until 2026-09-06 was the card heading, deleted with its component by Story 2-9. **No call site is left since 2026-09-23**: Story 2-31 rebuilt the row names and Story 2-30 the 404's heading, so a republished range now reaches nothing, the precondition case left with its last site, and `tests/e2e/anchor-aliases.pw.ts` pins `--monument-regular` at zero call sites instead |
 | `--accent-glow`, `--hero-height` or either Confillia name is aliased or deleted | The literals case fails naming the property, and whichever open question holds it (O-11, O-6, UX-DR12) has been closed without being recorded |
 | `next.config.js` stops redirecting `/cv` or `/recommendation`, or stops redirecting `/projects` | The route sweep's redirect pin in `tests/e2e/anchor-aliases.pw.ts` fails for the first two, and the corrected body-ground table above is stale: those two routes would become surfaces the base rule paints. **Three routes redirect since 2026-09-07**, Story 2-14 having added `/projects` as a 301 to `/#suite`. That row is deliberately outside the pin above, which names exactly the two that land on a PDF: `/projects` lands on a Hub document instead, and `tests/e2e/projects-redirect.pw.ts` asserts its status and `Location` without following either. **Both of the first two have happened, deliberately, and this row said what it would cost.** Story 2-16 stopped redirecting `/cv` on 2026-09-10 and built the page; Story 2-17 stopped redirecting `/recommendation` on 2026-09-11 and retired the route. The pin failed each time in the commit that changed the config and was narrowed with it, to one member and then to `[]`, and the body-ground table was amended each time rather than left stale. **One route redirects since 2026-09-11**, `/projects`, and the pin now reads empty: the direction it is allowed to move in, and a redirect added back fails it |
 | The contract retunes a role's value under a MINOR bump | **The blocking `rendered-output` job fails, and that is new as of this story.** Every assertion is still read from the role rather than restated, so none of those fail. The committed baseline PNG is the exception: a baseline is a restated pixel value, and step 2 is what coupled it to the contract. Before this commit the Hub painted cybercore literals and a retune moved nothing in the frame; after it, `--c-ink`, `--c-accent`, `--c-line-strong`, `--c-accent-quiet` and `--f-display` all reach `/work`, against a `maxDiffPixelRatio` of 0.001, which is 288 of 288,000 pixels. A retune is then case 1 of `ops/rendered-output-harness.md` § `When regenerating is legitimate` and the baseline is regenerated deliberately by the story that takes the bump. The `rgb(...)` column and the contrast table above go stale at the same moment and are re-measured by the method each states |
@@ -718,11 +787,11 @@ family the contract is free to retune under a MINOR bump. Nothing else in that f
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 5 | **Look at `cuatro.dev` after the merge to `main` and confirm the new appearance is the intended one** | Operator | This is the commit the whole two-step split exists to make reviewable, and it is the one worth a careful visual check. A deploy fires only on a push to `main` and this work is committed on `dev`, so nothing here has been rendered by the deployed container, behind Caddy, behind Cloudflare. The regenerated baseline and the 49,381 differing pixels are the machine's half of the answer; a person looking at the site is the other half. **If something is wrong, the revert is the whole commit**, by `git revert`. An earlier version of this row said it was `app/app.scss` plus the four `font-weight` lines plus the baseline PNG "and nothing else", which is **wrong and would revert red**: three test files in the same commit assert the alias layer exists, so reverting only the sources leaves `app/__tests__/anchor-contract.test.ts`, `tests/e2e/anchor-aliases.pw.ts` and `tests/e2e/contract-anchor.pw.ts` demanding it. Story 1-17's revert really is two lines, which is what the two-step split bought; Story 1-18's is one commit, which is the smallest unit that leaves a working system | _not done_ |
-| 6 | **Decide whether `--gray-color` may keep carrying text at 3.54:1** | Operator | It maps to `--token-border-interactive`, which is a boundary role, and `error-page.scss:48`, `ProjectCard.scss:50`, `:79`, `WorkItem.scss:71` and `:116` use it for body copy and icons. That is below 4.5:1 both before and after this story, so it is inherited rather than caused here, and UX-DR10 and the Epic 2 rebuild are where a text role replaces it. Recorded so the number is not rediscovered as a surprise | _not done_ |
-| 7 | **Close or carry O-11 explicitly** | Operator | `--accent-glow` survives this story on the strength of `epics.md:1835` against two planning documents that both say to delete it at step 2. It has zero call sites, so nothing renders differently either way, and the cost of the disagreement is one dead declaration and this row | _not done_ |
-| 8 | **Record the first real CI run of the `rendered-output` job with the new spec and the new baseline**, from the Actions run summary | Operator | The nine new browser checks and the regenerated baseline have only ever run in a container on a Windows development host. Same open item as action 3, which is in this file's § "Pending Operator actions", the step 1 list, which sits below this section rather than above it, and `ops/rendered-output-harness.md` action 1 | _not done_ |
-| 9 | **Decide who fixes the tech chip label at 2.56:1**, and whether it waits for UX-DR10 | Operator | Unlike action 6, this one is **caused by this commit** rather than inherited: `--accent-dim` lost its `0.22` alpha to two opaque roles, so the label at `ProjectCard.scss:66` and `WorkItem.scss:144` fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor. The measurement and its method are in § "The contrast direction of each colour change". No fix was available inside this story: the mapping is to be followed rather than invented, and a third scoped value or a label colour means inventing one or editing a component stylesheet. The cheapest real fix is a chip fill of `--token-bg-raised` with the border keeping `--accent-dim`, which is a UX-DR10 shaped decision and not this step's to take. It is also below the `.lighthouserc.js` floor on `/work`, which that config asserts at 0.95 severity error, so a Lighthouse run is where it surfaces next. **Narrowed 2026-09-07**: the surviving chip is `WorkItem.scss:144` alone and `/projects` left the collect list with the route, so `/work` is the only audited surface the pair reaches | _not done_ |
+| 5 | **Look at `cuatro.dev` after the merge to `main` and confirm the new appearance is the intended one** | Operator | This is the commit the whole two-step split exists to make reviewable, and it is the one worth a careful visual check. A deploy fires only on a push to `main` and this work is committed on `dev`, so nothing here has been rendered by the deployed container, behind Caddy, behind Cloudflare. The regenerated baseline and the 49,381 differing pixels are the machine's half of the answer; a person looking at the site is the other half. **If something is wrong, the revert is the whole commit**, by `git revert`. An earlier version of this row said it was `app/app.scss` plus the four `font-weight` lines plus the baseline PNG "and nothing else", which is **wrong and would revert red**: three test files in the same commit assert the alias layer exists, so reverting only the sources leaves `app/__tests__/anchor-contract.test.ts`, `tests/e2e/anchor-aliases.pw.ts` and `tests/e2e/contract-anchor.pw.ts` demanding it. Story 1-17's revert really is two lines, which is what the two-step split bought; Story 1-18's is one commit, which is the smallest unit that leaves a working system | 2026-09-24, moot, on the Operator ruling of that day. The 1-18 appearance went live with PR #72, deploy run 33104210047 on `cb51ed9` (2026-08-27), and was replaced by Epic 2's merges, deploy runs 34728299598 (PR #74) and 34777712895 (PR #75) on 2026-09-13; Story 2-22 then deleted the alias layer (`201f7f2`). That appearance can no longer be looked at, so no check was made; the successor is the look at the live site after Epic 2's merge |
+| 6 | **Decide whether `--gray-color` may keep carrying text at 3.54:1** | Operator | It maps to `--token-border-interactive`, which is a boundary role, and `error-page.scss:48`, `ProjectCard.scss:50`, `:79`, `WorkItem.scss:71` and `:116` use it for body copy and icons (none of them is left since 2026-09-23: `ProjectCard.scss` was deleted by Story 2-9, `WorkItem.scss` rebuilt by Story 2-31 and `error-page.scss` replaced by Story 2-30, and the two rebuilt surfaces set that text in `--token-text-secondary`). That is below 4.5:1 both before and after this story, so it is inherited rather than caused here, and UX-DR10 and the Epic 2 rebuild are where a text role replaces it. Recorded so the number is not rediscovered as a surprise | 2026-09-23, moot, by Story 2-22: `--gray-color` is deleted and no call site was left to carry text, the rebuilt surfaces setting it in `--token-text-secondary`. No ruling was taken or needed. See § Story 2-22 deletes the alias layer |
+| 7 | **Close or carry O-11 explicitly** | Operator | `--accent-glow` survives this story on the strength of `epics.md:1835` against two planning documents that both say to delete it at step 2. It has zero call sites, so nothing renders differently either way, and the cost of the disagreement is one dead declaration and this row | 2026-09-23, by Story 2-34: `--accent-glow` deleted on `DESIGN.md` § The mapping's closure of O-11, because the FR-17 conformance gate refuses its `rgba()`. See § Story 2-34 closes O-11, action 7 and the `/celeste` ground rows |
+| 8 | **Record the first real CI run of the `rendered-output` job with the new spec and the new baseline**, from the Actions run summary | Operator | The nine new browser checks and the regenerated baseline have only ever run in a container on a Windows development host. Same open item as action 3, which is in this file's § "Pending Operator actions", the step 1 list, which sits below this section rather than above it, and `ops/rendered-output-harness.md` action 1 | **2026-08-27.** Run 33103987782 on `f104202` (`dev` push), `rendered-output: success`, 18:32:39Z to 18:34:17Z, **98 s**, 39 passed, `anchor-aliases.pw.ts` cases 1 to 9 green with the regenerated baseline in the tree. Read from the run and its log on 2026-09-24 and closed on the Operator ruling of that day |
+| 9 | **Decide who fixes the tech chip label at 2.56:1**, and whether it waits for UX-DR10 | Operator | Unlike action 6, this one is **caused by this commit** rather than inherited: `--accent-dim` lost its `0.22` alpha to two opaque roles, so the label at `ProjectCard.scss:66` and `WorkItem.scss:144` fell from 9.16:1 to 2.56:1, across the 4.5:1 text floor. The measurement and its method are in § "The contrast direction of each colour change". No fix was available inside this story: the mapping is to be followed rather than invented, and a third scoped value or a label colour means inventing one or editing a component stylesheet. The cheapest real fix is a chip fill of `--token-bg-raised` with the border keeping `--accent-dim`, which is a UX-DR10 shaped decision and not this step's to take. It is also below the `.lighthouserc.js` floor on `/work`, which that config asserts at 0.95 severity error, so a Lighthouse run is where it surfaces next. **Narrowed 2026-09-07**: the surviving chip is `WorkItem.scss:144` alone and `/projects` left the collect list with the route, so `/work` is the only audited surface the pair reaches | 2026-09-23, moot, by Story 2-22: the filled chip left disk with Story 2-31's rebuild of `WorkItem.scss` and `--accent-dim` left with this story, so no label sits on that fill. No ruling was taken or needed. See § Story 2-22 deletes the alias layer |
 
 ### Step 5, the type swap, closes six rows across four of the sections above
 
@@ -800,6 +869,118 @@ pinning that the `/` document preloads no font. `tests/e2e/anchor-aliases.pw.ts`
 `--confillia-normal` call sites on disk to two, each with its `font-stretch: 75%` line, the way it
 holds `--monument-bold` to its weight lines. `ops/rendered-output-harness.md` carries the row.
 
+### Story 2-34 closes O-11, action 7 and the `/celeste` ground rows
+
+**2026-09-23, Story 2-34.** Every record above is left as written but action 7's completion cell;
+this section says which rows stopped being true on this date. The FR-17 conformance gate, `ops/literal-conformance.mjs` run by the
+blocking `literal-conformance` job (`ops/literal-conformance.md`), refuses a colour literal in any
+stylesheet outside `contracts/` and `app/scss/_print.scss`. **Observed 2026-09-23**, its first run
+over the tree at `802fbf4` named five: `app/app.scss:29`, `--accent-glow: rgba(139, 92, 246, 0.4)`,
+and `/celeste`'s four. Both were cleared in the same commit so the gate lands green.
+
+**§ The four properties deliberately left alone, a third row closed.** `--accent-glow` is deleted.
+`DESIGN.md` § The mapping drops it and closed O-11 on 2026-08-15 ("one occurrence in the whole
+repository, its own declaration"); Story 1-18 kept it on `epics.md:1835`, the later and more
+specific instruction at the time; and the gate cannot pass over its `rgba()`, which is both a colour
+and an alpha outside the permitted set. It had zero call sites, so nothing renders differently.
+**O-11 is closed in the tree as it was in the design.** `--hero-height` is the one literal the layer
+keeps, and the three suites that count the Hub's properties, `app/__tests__/anchor-contract.test.ts`,
+`tests/e2e/anchor-aliases.pw.ts` and `tests/e2e/contract-anchor.pw.ts`, pin fourteen: thirteen
+aliased and one literal. Action 7 below is done on the design document's own closure rather than on
+a new ruling, and its row says so.
+
+**§ What would invalidate the step 2 record, the literals row narrowed again.** It names
+`--hero-height` alone now. The literals case failed on the deletion, in both suites, as the row said
+it would, and the question is recorded here rather than closed in silence.
+
+**The `/celeste` rows in § A second finding and § Two corrections to step 1's record.** `/celeste`
+no longer paints `rgb(68, 68, 68)` from a hardcoded `#444`: its own rule names `--token-bg`, which is
+the base rule's ground too, and its heading names `--token-text`, `--f-display` and `--t-display`
+where it read `#fff`, `system-ui` and `min(8vw, 5rem)`. `tests/e2e/celeste-header.pw.ts` reads each
+against its role in the pinned image, with a planted `#444` ground and a planted family reported by
+the same reads, and `app/__tests__/anchor-contract.test.ts` lists `celeste.scss` among the stylesheets
+that name contract roles directly.
+
+### Story 2-22 deletes the alias layer, migration step 7
+
+**2026-09-23, Story 2-22.** Every record above is left as written but two completion cells; this
+section says which of step 2's sections stopped being true on this date. Story 2-33 rebuilt the last
+component stylesheet that read an alias, which is FR-37's removal condition, and this story deleted the
+thirteen from `app/app.scss`: `--white-color`, `--black-color`, `--light-gray-color`, `--gray-color`,
+`--accent`, `--accent-dim`, `--page-padding`, `--font-regular`, `--font-bold`, `--monument-regular`,
+`--monument-bold`, `--confillia-normal` and `--font-mono`. `epics.md` names ten of them; the other
+three, the two accent rows this record's step 2 wrote and the width alias Story 2-20 added, go by the
+story's second criterion, which admits nothing on `:root` beyond the contract and `--hero-height`.
+`--hero-height` is the Hub's one custom property, authored `40vh`. It has had no call site since at
+least this record's count of 2026-08-26, and it stays because that criterion names it (DW-122).
+
+**§ The mapping as applied: no row is live.** The base `body` rule was the layer's last reader, and it
+names the roles its three aliases resolved to, `--token-bg`, `--f-body` and `--token-text`, plus
+`--w-regular`, the weight `DESIGN.md` § The mapping gives the body family, which the initial 400 had
+supplied until now and which that role equals. No computed value moved: the rendered comparison ran
+against the `/work` baseline Story 2-33 captured after the last redesign and did not regenerate it
+(`ops/rendered-output-harness.md` § Regenerating the baseline). § `--accent-dim` per call site and
+§ The four hand-set weights are history: neither has had a call site since Story 2-33, and the scoped
+redefinitions left with Story 2-30.
+
+**§ What is asserted, and by which gate: all four rows replaced.** Source half, the blocking `test` job,
+`app/__tests__/anchor-contract.test.ts`: `app/app.scss` declares `--hero-height` alone on `:root` and no
+custom property on any other selector, and names exactly the eight roles of its base and focus rules;
+no file git tracks or would track names any of the thirteen, read as raw text with comments, Markdown
+and `_bmad-output/` excluded as the dated record and the suite itself as the list's holder, and
+Tailwind's own `--font-mono` theme key in its three adapter files the one allowance, claimed back; and
+the committed `/work` baseline is the capture the harness record names, on the Story 2-33 row or a later
+one. Browser half, the blocking `rendered-output` job: `tests/e2e/anchor-aliases.pw.ts` parses every
+stylesheet the build writes with the browser's own parser and holds what reaches `:root` to the
+contract's properties plus `--hero-height`, reads the kept literal, and reads the base rule's ground,
+copy, family and weight on the 404; `tests/e2e/contract-anchor.pw.ts` reads `/work`'s body against the
+two colour roles; `tests/e2e/type-swap.pw.ts` measures the weight distinction on `--f-display` where it
+measured the two display aliases. Planted controls show each claim firing.
+
+**§ What would invalidate the step 2 record: every row names the layer, and none can fire now.** Its
+successors:
+
+| If this changes | This record is wrong until it is re-read |
+|---|---|
+| A stylesheet, spec, config, workflow or comment names one of the thirteen again | The unit search fails naming the path and the name. A new name standing in for a role is not caught by name; a build that puts one on `:root` is caught by the row below, and one declared elsewhere is a declaration the collision case refuses outside `app/app.scss` |
+| The build puts a custom property on a rule reaching `:root` that is neither the contract's nor `--hero-height` | `tests/e2e/anchor-aliases.pw.ts` fails naming the chunk, the selector and the name |
+| The contract gains, loses or renames a `:root` name | Both counts of eighty-nine fail as before, and the root read reports the name missing or extra |
+| `/work`'s baseline is regenerated without its row, or an earlier capture is put back | The baseline pin fails naming both values |
+
+**§ Pending Operator actions, step 2: actions 6 and 9 have no subject left**, and their completion cells
+say so. Neither was performed and no ruling was taken: the property action 6 asked about is deleted with
+no call site left, and the chip label action 9 asked about left disk with Story 2-31's rebuild before its
+fill's alias left with this story.
+
+**DW-81 is closed.** The stale counts it filed sat in the alias layer's comment, which left with the
+layer, and in the convention line of `AGENTS.md`'s managed block, corrected in the same commit to state
+the deletion.
+
+### The Operator's ruling deletes `--hero-height`, 2026-09-24
+
+**2026-09-24, Operator ruling on DW-122**, applied by
+`_bmad-output/implementation-artifacts/spec-dw-121-secondary-surfaces.md`, commit `2cbbccf`. Every
+record above is left as written; this section says which of the step 7 section's statements stopped
+being true on this date. `--hero-height` is deleted from `app/app.scss`, which now declares no custom
+property, and Story 2.22's second criterion is amended in `epics.md`, dated, to the contract's
+properties alone. Nothing rendered moved: the property had no reader since at least this record's
+count of 2026-08-26.
+
+**§ What is asserted, and by which gate: two claims narrowed, one gone.** Source half,
+`app/__tests__/anchor-contract.test.ts`: `app/app.scss` declares no custom property on any selector,
+the Hub's count pinned at zero. Browser half, `tests/e2e/anchor-aliases.pw.ts`: the allowed root set
+is derived from the contract alone, where it also admitted the Hub's one name read off `app/app.scss`,
+and what reaches `:root` is held to it, the minifier's two scheme switches admitted on the
+`color-scheme` rule as before; the read of the kept literal left with the literal.
+`tests/e2e/contract-anchor.pw.ts` reads the Hub's `:root` list empty. **Observed** on the baseline tree
+in the pinned image: the build's `:root` carried `--hero-height`, and the root read failed naming it
+as extra.
+
+**§ What would invalidate the step 2 record, the second row restated.** It reads: the build puts a
+custom property on a rule reaching `:root` that is not the contract's, the minifier's scheme pair
+beside `color-scheme` excepted, and `tests/e2e/anchor-aliases.pw.ts` fails naming the chunk, the
+selector and the name.
+
 ## What Story 1-20 will record here
 
 `epics.md` closes Epic 1 with Story 1-20, "Record the adopted contract version and the automation
@@ -852,10 +1033,10 @@ and `ops/contract-serving.md` use.
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Confirm `cuatro.dev` looks unchanged after the merge to `main`** | Operator | A deploy fires only on a push to `main`, and this story's work is committed on `dev`, so nothing here has been rendered by the deployed container, behind Caddy, behind Cloudflare. The claim being confirmed is narrow and easy to check: the site should look exactly as it did before. **If anything moved, the revert is the two `@use` lines in `app/scss/_index.scss` and nothing else**, which is the whole reason this story was split from Story 1-18. Revert them, redeploy, and hand the difference back as a Block If on Story 1-17: it would mean adding the contract is not appearance-neutral, and choosing between weakening the gate and changing the plan is the Operator's call. Do **not** refresh the committed baseline | _not done_ |
-| 2 | **Decide whether the `oklch()` downlevelling is acceptable before a wide-gamut token is authored** | Operator | Turbopack emits an sRGB hex fallback plus a `lab()` override for every `oklch()` in the contract. Faithful today, because no v1.0.0 token is outside sRGB. The day one is, the fallback silently clips it and the only visible symptom is a colour that looks slightly wrong on a display that could have shown it. The options are to accept it, to pin a browserslist target that keeps `oklch()`, or to keep the contract inside sRGB by rule | _not done_ |
-| 3 | **Record the first real CI run of the `rendered-output` job with the new spec**, from the Actions run summary | Operator | The six new browser checks have only ever run in a container on a Windows development host. Same open item as `ops/contract-serving.md` action 5 and `ops/rendered-output-harness.md` action 1 | _not done_ |
-| 4 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10, 1-12, 1-13 and 1-16, and this story widens it again. `AGENTS.md:52-53` describes CI as typecheck and tests only, against a file with five jobs, and `AGENTS.md:55-57` says Playwright is not installed and that no acceptance criterion may claim a browser check, which is now false for five spec files. Nothing in `AGENTS.md` yet says that the Hub's stylesheet graph loads `contracts/` directly, which is the first thing an agent editing `app/scss/` needs to know | _not done_ |
+| 1 | **Confirm `cuatro.dev` looks unchanged after the merge to `main`** | Operator | A deploy fires only on a push to `main`, and this story's work is committed on `dev`, so nothing here has been rendered by the deployed container, behind Caddy, behind Cloudflare. The claim being confirmed is narrow and easy to check: the site should look exactly as it did before. **If anything moved, the revert is the two `@use` lines in `app/scss/_index.scss` and nothing else**, which is the whole reason this story was split from Story 1-18. Revert them, redeploy, and hand the difference back as a Block If on Story 1-17: it would mean adding the contract is not appearance-neutral, and choosing between weakening the gate and changing the plan is the Operator's call. Do **not** refresh the committed baseline | 2026-09-24, moot, on the Operator ruling of that day. PR #72 took Story 1-17 (`3e9bb25`) to `main` on 2026-08-27 together with Story 1-18 (`f104202`), which changed the look on purpose, so an unchanged site was never a state that could be checked; deploy run 33104210047 on `cb51ed9` shipped both, and Epic 2's merges replaced that appearance on 2026-09-13 (deploy runs 34728299598 and 34777712895). No check was made or needed, as with rows 6 and 9 of the step 2 list |
+| 2 | **Decide whether the `oklch()` downlevelling is acceptable before a wide-gamut token is authored** | Operator | Turbopack emits an sRGB hex fallback plus a `lab()` override for every `oklch()` in the contract. Faithful today, because no v1.0.0 token is outside sRGB. The day one is, the fallback silently clips it and the only visible symptom is a colour that looks slightly wrong on a display that could have shown it. The options are to accept it, to pin a browserslist target that keeps `oklch()`, or to keep the contract inside sRGB by rule | **2026-09-24.** Ruled by the Operator: keep the contract inside sRGB by rule, the third option. `DESIGN.md` § Colors states the rule, and `packages/tokens/__tests__/tokens-contract.test.ts` converts every `--c-*` value to linear sRGB and fails on any channel outside 0 to 1, with a planted value past each edge (`40591cd`). **This row's premise did not hold**: `--c-accent-bright` reads blue 1.0762 and `--c-focus` 1.2628, so the fallback already clipped two tokens. The case admits exactly those two at those readings, so a third cannot join them and neither can drift, and whether to bring them inside is DW-129's. No build setting changed. **Amended 2026-09-25:** DW-129 ruled by the Operator: both stay as named exceptions, with no value change |
+| 3 | **Record the first real CI run of the `rendered-output` job with the new spec**, from the Actions run summary | Operator | The six new browser checks have only ever run in a container on a Windows development host. Same open item as `ops/contract-serving.md` action 5 and `ops/rendered-output-harness.md` action 1 | **2026-08-27.** Run 33103987782 on `f104202`, the first CI run carrying Story 1-17's commits (pushed together with Story 1-18's), `rendered-output: success`, 18:32:39Z to 18:34:17Z, **98 s**, 39 passed, `contract-anchor.pw.ts` cases 10 to 15 green. The same commit on `main` is run 33104210025, which `ops/contract-serving.md` action 5 cites. Read from the run and its log on 2026-09-24 and closed on the Operator ruling of that day |
+| 4 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10, 1-12, 1-13 and 1-16, and this story widens it again. `AGENTS.md:52-53` describes CI as typecheck and tests only, against a file with five jobs, and `AGENTS.md:55-57` says Playwright is not installed and that no acceptance criterion may claim a browser check, which is now false for five spec files. Nothing in `AGENTS.md` yet says that the Hub's stylesheet graph loads `contracts/` directly, which is the first thing an agent editing `app/scss/` needs to know | **2026-08-27**, found done and closed here on 2026-09-23. The refresh landed in `4112ee8`, which replaced the CI and Playwright lines, and the `bmad-project-context` refresh of 2026-08-28, `967abfd`, rewrote the block again (`Verified 2026-08-28 against c490f33`). **Observed 2026-09-23** in `AGENTS.md` at `304767f`: Playwright is in the stack line (`:9`), the rendered-output job is at `:64-67`, and nothing describes CI as typecheck and tests only. **The third line this note asks for is still absent**: nothing in the block says that `app/scss/_index.scss:35-36` loads `contracts/` by `@use`, and `:87-90` says only that every stylesheet names contract roles directly. That line is the next refresh's to add, because an edit inside the block is replaced on refresh |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row

@@ -12,9 +12,9 @@
 // here. Nothing below restyles `WorkItem` or `WorkTimeline`, which are Stories 2-31 and 2-33.
 
 .cv-intro {
-  // The block pads itself in the block axis only. It sits inside `.container`, exactly as the
-  // timeline beneath it does on `/work`, so the inline gutter is already paid for once and paying
-  // it twice would narrow a 256px content area further.
+  // The block pads itself in the block axis only. It sits inside `.container`, as the timeline does
+  // on `/work`, so the inline gutter is paid for once, and paying it twice would narrow the content
+  // area further (320px at 360 since Story 2-32 rebuilt the container at `--page-pad`, 256 before).
   padding-block: var(--s-2xl) var(--s-xl);
 }
 
@@ -32,9 +32,9 @@
   line-height: var(--lh-display);
   letter-spacing: var(--tr-display);
   // Uppercase is structural here rather than emphatic (`DESIGN.md:500`), and the clamp's floor is
-  // 36px against a 256px content area, so the two words wrap onto two lines at 360. The break is
-  // what keeps them inside it; a long single word would otherwise paint past the edge, which is
-  // A-5 outright rather than a typographic preference.
+  // 36px against the content area at 360 (320px since Story 2-32; at 256 the two words wrapped). The
+  // break is what keeps a long word inside it; one that could not break would paint past the edge,
+  // which is A-5 outright rather than a typographic preference.
   text-transform: uppercase;
   overflow-wrap: break-word;
   color: var(--token-text);
@@ -106,7 +106,7 @@
 
 // **The rule is drawn on the inner span, not on the `--tap` box.** A border on the box sits at the
 // bottom of the padding that gets the box to the floor, which floats it away from the text
-// (`RESTYLE-SPEC.md:198-199`). Same shape as `navbar.scss:58-60` and `SuiteDirectory.scss:267-285`.
+// (`RESTYLE-SPEC.md:198-199`). Same shape as `Navbar.scss`'s label and `SuiteDirectory.scss:267-285`.
 .cv-intro__link--primary .cv-intro__rule {
   border-block-end: var(--stroke-emphasis) solid var(--token-accent);
 }
@@ -119,17 +119,15 @@
 
 // One signal, and it is a recolour. The underline never appears on hover and never changes width:
 // both are layout changes and both reflow the line (`RESTYLE-SPEC.md:200-201`).
-.cv-intro__link:hover .cv-intro__rule {
-  border-block-end-color: var(--token-accent-hover);
+// Gated on a pointer that can hover (DW-115): a tap paints it and leaves it painted (review A-5).
+@media (hover: hover) {
+  .cv-intro__link:hover .cv-intro__rule {
+    border-block-end-color: var(--token-accent-hover);
+  }
 }
 
-// The standard ring (`RESTYLE-SPEC.md:202`, § 4). An outline rather than a border, so it costs no
-// layout and appears in one frame rather than over a duration, and it is not the hover colour.
-.cv-intro__link:focus-visible {
-  outline: var(--stroke-focus) solid var(--token-focus);
-  outline-offset: var(--focus-offset);
-  border-radius: var(--r-hair);
-}
+// The standard ring (`RESTYLE-SPEC.md:202`, § 4) is the global `:focus-visible` rule in
+// `app/app.scss` since Story 2-26, and this file paints none of its own.
 
 // `min-inline-size: 0` is the same finding `SuiteDirectory.scss:261-266` records: the span is a flex
 // item of the `inline-flex` link above, so its automatic minimum is its min-content width and a

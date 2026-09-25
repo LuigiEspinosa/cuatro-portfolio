@@ -4,7 +4,7 @@ import { work } from '../work';
  * The period strings in `content/work.ts`.
  *
  * Story 2-1 closed a typo that had shipped to the page: `content/work.ts:18` read `Dev. 2025`
- * where it meant `Dec.`, and `WorkItem.tsx:76` renders `period` inside the `work-item__header`
+ * where it meant `Dec.`, and `WorkItem.tsx:142` renders `period` inside the `work-item__header`
  * button, so the typo was part of that button's accessible name. The other three entries were
  * verified by reading in the same pass, and a reading does not survive the next edit.
  *
@@ -45,7 +45,7 @@ const MONTHS: readonly string[] = [
   'Dec.',
 ];
 
-/** The closing form an ongoing role takes. `WorkItem.tsx:76` renders it like any other. */
+/** The closing form an ongoing role takes. `WorkItem.tsx:142` renders it like any other. */
 const PRESENT = 'Present';
 
 const MONTH_YEAR = /^([A-Z][a-z]{2}\.) (\d{4})$/;
@@ -145,7 +145,7 @@ describe('work entry periods', () => {
 
     expect(
       wrong,
-      `a period string in content/work.ts is wrong. This reaches the page: WorkItem.tsx:76 ` +
+      `a period string in content/work.ts is wrong. This reaches the page: WorkItem.tsx:142 ` +
         `renders it inside the work-item__header button, so it is part of that button's ` +
         `accessible name:\n${wrong.join('\n')}`
     ).toEqual([]);

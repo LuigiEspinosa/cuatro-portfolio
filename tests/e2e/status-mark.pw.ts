@@ -21,9 +21,10 @@ import { resolve } from 'node:path';
  * here. Asserting the markup half in a browser would mean this file inventing a dot for the three
  * values that never render, which makes the test the author of what it asserts.
  *
- * **Only `Live` reaches the running page, and `data-status` is the seam that gets the other three
- * there.** Nothing in the committed Registry is `Complete`, and `In progress` and `Archived` are
- * held back by the FR-35 filter by design. The attribute at
+ * **The committed Registry decides which values reach the running page, and `data-status` is the
+ * seam that gets all four there.** It put only `Live` there until Registry 1.4.0 made
+ * `cs-tournament` `Complete`, and `In progress` and `Archived` are held back by the FR-35 filter by
+ * design. The attribute at
  * `components/organisms/SuiteDirectory/SuiteDirectory.tsx:93` is the contract between the component
  * and the four selectors at `SuiteDirectory.scss:192-204`, so planting it on a real mark in the
  * live page exercises the shipped stylesheet and nothing else. A fixture route or a test-only
@@ -200,7 +201,7 @@ const plantStyle = (page: Page, css: string): Promise<void> =>
 /**
  * A duration token's value in milliseconds, resolved through a probe rather than written down.
  *
- * Same helper and same reason as `tests/e2e/suite-directory.pw.ts:173-182`: a duration that governs
+ * Same helper and same reason as `tests/e2e/suite-directory.pw.ts:174-191`: a duration that governs
  * the interface comes from the contract, and a hand-written millisecond figure drifts from
  * `--dur-major` the day it moves. `transition-duration` computes to seconds, which is what the
  * probe reads back.
@@ -765,13 +766,13 @@ test.describe("A-5's other half: the Status never truncates", () => {
     ).toBeGreaterThan(0);
   });
 
-  test('holds for the three values the filter never renders, in every row position', async ({ page }) => {
-    // Only `Live` reaches the page, and it is the shortest of the four at four characters, so the
-    // clean read above has never seen the value that would truncate first. Planting the text as
-    // well as the attribute is the only way to measure the other three.
+  test('holds for all four values, planted into every row position', async ({ page }) => {
+    // The clean read above sees only what the Registry renders, `Live` and, from Registry 1.4.0,
+    // `Complete`, and never `In progress`, the longest of the four and the value that would truncate
+    // first. Planting the text as well as the attribute is the only way to measure every value.
     //
     // **Into every mark, not the first one.** `groupByFamily` nests the `tracker-family` members
-    // inside `.suite-directory__family`, which `SuiteDirectory.scss:312-316` insets with
+    // inside `.suite-directory__family`, which `SuiteDirectory.scss:309-313` insets with
     // `padding-inline: var(--s-md)` and a hairline on each side, so a nested mark has strictly less
     // room than a top-level one. `document.querySelector` returns a top-level mark, the Hub's own
     // entry being first in file order, so planting into it measures the roomiest position and calls
@@ -888,7 +889,7 @@ test.describe('the Status mark is not interactive', () => {
       });
 
     // The settle, read from the contract rather than written here, the same way
-    // `suite-directory.pw.ts:507` reads it. A hard-coded wait is a wait that drifts from
+    // `suite-directory.pw.ts:557` reads it. A hard-coded wait is a wait that drifts from
     // `--dur-major` the day the token moves, and a transition landing after the read would make
     // this case pass on the values it took before hovering.
     const settle = await durationMs(page, '--dur-major');

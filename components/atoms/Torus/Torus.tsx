@@ -8,8 +8,9 @@ interface TorursProps {
   scrollRef: RefObject<{ value: number }>;
 }
 
-// R3F's useScroll (drei ScrollControls) creates its own scroll container
-// that conflicts with the Lenis instance.
+// R3F's useScroll (drei ScrollControls) creates its own scroll container,
+// which would take the scroll off the page; the torus reads the page's own
+// scroll instead, through the binding `TorusCanvas` writes into `scrollRef`.
 export function Torus({ scrollRef }: TorursProps) {
   const meshRef = useRef<Mesh>(null!);
 

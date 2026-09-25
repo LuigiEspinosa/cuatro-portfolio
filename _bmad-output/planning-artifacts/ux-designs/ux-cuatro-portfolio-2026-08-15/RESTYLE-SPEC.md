@@ -343,6 +343,17 @@ the one every Satellite copies by hand, and it is the highest-value hand-fix in 
   case, it computes to **9.02:1**, comfortably above 1.4.11's 3:1 non-text floor rather than
   marginally above it.
 
+*(Amended 2026-09-25 by Operator ruling, DW-127: the Hub carries two deliberate exceptions to the
+verbatim ring above, both on the skip link's target, `main#main`. The first, by Operator ruling
+2026-09-24 (F-20), draws the landmark's ring inside its box, `outline-offset: calc(-1 *
+var(--stroke-focus))`, because the landmark is as wide as the document and the document's edge took
+three sides of a ring drawn outside it. The second draws that same ring again on
+`main:focus-visible::after`, a positioned layer over the landmark at `--z-raised` with
+`pointer-events: none`, because on `/`'s default door at 768 and wider the hero's canvas and scrim are
+positioned inside `<main>` and an outline paints beneath its positioned descendants. Same colour,
+width and inset, present only while the landmark matches `:focus-visible`, never transitioned, and
+never taking a click. Both are held in the Hub's `app/app.scss` and nowhere else.)*
+
 **Focus is never trapped.** There are no modals in this vocabulary. An application that has its own
 modals keeps its own trap behaviour, that is seam S-5, accepted permanently, and this
 specification does not invent a cross-framework overlay convention.

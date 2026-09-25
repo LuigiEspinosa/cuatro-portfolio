@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -10,10 +11,11 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import type { SpawnSyncReturns } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { publish, main, SOURCE, DESTINATION, SERVED_AT } from '../publish.mjs';
 
 // One standing case per row of Story 1-16's I/O matrix, plus one per refusal
@@ -99,6 +101,24 @@ const treeOf = (directory: string, prefix = '', found: string[] = []): string[] 
   }
   found.sort();
   return found;
+};
+
+const sha256 = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
+
+/**
+ * The paths among `candidates` that carry a published file's name or its exact
+ * bytes. Bytes as well as names, so a copy renamed on the way in is caught. A
+ * candidate that is not a file on disk, such as a tracked file deleted in the
+ * working tree, has no bytes to compare and is matched by name alone.
+ */
+const copiesOfTheSurface = (surface: string, candidates: string[]): string[] => {
+  const files = treeOf(surface);
+  const names = new Set(files.map((file) => file.split('/').pop() as string));
+  const digests = new Set(files.map((file) => sha256(readFileSync(join(surface, ...file.split('/'))))));
+  const isFile = (path: string) => existsSync(path) && statSync(path).isFile();
+  return candidates.filter(
+    (path) => names.has(basename(path)) || (isFile(path) && digests.has(sha256(readFileSync(path))))
+  );
 };
 
 const refusalFrom = (act: () => unknown): string => {
@@ -371,6 +391,27 @@ describe('the publish refuses', () => {
       const message = refusalFrom(() => publish(source, destination));
       expect(message).toContain('one contains the other');
       expect(treeOf(source)).toEqual(['fonts.css', 'fonts/geist-latin.woff2', 'tokens.css']);
+    });
+  });
+
+  it('a destination that is the source on disk, reached through a linked parent', () => {
+    // The check compared the two paths as text. With `public` a directory link
+    // to the root, `public/contracts` is `contracts` on disk, the text differs,
+    // and the recursive removal deleted the authored surface before the copy
+    // failed on it. Observed 2026-09-24 by the cold review of Story 1-16.
+    withRoot((root) => {
+      const source = surfaceWith(root, THREE_FILES);
+      expect(
+        () => linkDirectory(root, join(root, 'public')),
+        `${HERE}: this host could not create a directory link, so the linked-parent refusal has no fixture`
+      ).not.toThrow();
+      const message = refusalFrom(() => publish(source, destinationIn(root)));
+      expect(message).toContain('one contains the other');
+      expect(treeOf(source), 'the authored surface was removed through the linked parent').toEqual([
+        'fonts.css',
+        'fonts/geist-latin.woff2',
+        'tokens.css',
+      ]);
     });
   });
 
@@ -717,14 +758,22 @@ describe('the publish as the build runs it', () => {
     // A textual comparison of `process.argv[1]` against the module's own path
     // answers no for a differing drive-letter case, an 8.3 short path or a
     // linked invocation, the publish is skipped, and `pnpm build` exits 0
-    // having shipped a site that serves 404s at /contracts/. On Windows the
-    // lower-cased drive letter is the cheap, always-available version of that.
+    // having shipped a site that serves 404s at /contracts/. The script is run
+    // through a linked directory, which Node resolves for the module and not
+    // for `process.argv[1]`, so the two differ on every host, the Linux runner
+    // that gates `main` included; until 2026-09-24 only a Windows host saw them
+    // differ. On Windows the lower-cased drive letter is added on top.
     const run = withRoot((root) => {
       surfaceWith(root, THREE_FILES);
       const home = join(root, 'packages', 'contracts-serve');
       mkdirSync(home, { recursive: true });
-      const copy = join(home, 'publish.mjs');
-      writeFileSync(copy, readFileSync(SCRIPT, 'utf8'), 'utf8');
+      writeFileSync(join(home, 'publish.mjs'), readFileSync(SCRIPT, 'utf8'), 'utf8');
+      const linked = join(root, 'linked');
+      expect(
+        () => linkDirectory(home, linked),
+        `${HERE}: this host could not create a directory link, so the invoked-directly guard has no fixture`
+      ).not.toThrow();
+      const copy = join(linked, 'publish.mjs');
       const spelled = /^[A-Za-z]:/.test(copy) ? `${copy[0].toLowerCase()}${copy.slice(1)}` : copy;
       const result = spawned(spawnSync(process.execPath, [spelled], { encoding: 'utf8' }));
       return { result, tree: treeOf(join(root, 'public', 'contracts')) };
@@ -884,8 +933,10 @@ describe('the working tree', () => {
 
   it('holds no second copy of a contract file in anything the Hub serves or renders', () => {
     // The rule stated as a search rather than as a single path, so a copy that
-    // landed under another name in the served tree is caught rather than only
-    // the one path `.gitignore` covers.
+    // landed anywhere in the served tree is caught rather than only the one
+    // path `.gitignore` covers. By name and by bytes: until 2026-09-24 this
+    // matched names only while saying a copy under another name was caught,
+    // and a renamed byte-identical copy passed.
     //
     // Scoped to what the Hub serves and renders. `packages/` is deliberately
     // outside it: `packages/fonts/sources/OFL-bricolage-grotesque.txt` and
@@ -899,15 +950,27 @@ describe('the working tree', () => {
     expect(run.status, `git ls-files said: ${run.stderr}`).toBe(0);
     const tracked = run.stdout.split('\n').map((line) => line.trim()).filter(Boolean);
     expect(tracked.length, 'git listed no tracked files, so this case passed over nothing').toBeGreaterThan(0);
-    const names = new Set(treeOf(SOURCE).map((file) => file.split('/').pop() as string));
-    expect(names.size, 'the published surface enumerated no file names').toBeGreaterThan(0);
-    const elsewhere = tracked.filter(
-      (path) => SERVED_OR_RENDERED.some((where) => path.startsWith(where)) && names.has(path.split('/').pop() as string)
-    );
+    expect(treeOf(SOURCE).length, 'the published surface enumerated no files').toBeGreaterThan(0);
+    const candidates = tracked
+      .filter((path) => SERVED_OR_RENDERED.some((where) => path.startsWith(where)))
+      .map((path) => resolve(REPO_ROOT, path));
     expect(
-      elsewhere,
-      'these tracked paths under app/, components/ or public/ share a file name with the published surface, and' +
-        ' contracts/ is its one authored location (AD-4)'
+      copiesOfTheSurface(SOURCE, candidates),
+      'these tracked paths under app/, components/ or public/ carry a file name or the exact bytes of a file in the' +
+        ' published surface, and contracts/ is its one authored location (AD-4)'
     ).toEqual([]);
+  });
+
+  it('is observed catching a copy that was renamed on the way in', () => {
+    withRoot((root) => {
+      const surface = surfaceWith(root, THREE_FILES);
+      const renamed = join(root, 'app', 'theme.css');
+      mkdirSync(dirname(renamed), { recursive: true });
+      writeFileSync(renamed, THREE_FILES['tokens.css'], 'utf8');
+      const unrelated = join(root, 'app', 'page.css');
+      writeFileSync(unrelated, 'body {}\n', 'utf8');
+      const deleted = join(root, 'public', 'gone.css');
+      expect(copiesOfTheSurface(surface, [renamed, unrelated, deleted])).toEqual([renamed]);
+    });
   });
 });

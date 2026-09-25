@@ -28,7 +28,7 @@ import './CvIntro.scss';
  * the heading on `/work` and mounts a WebGL canvas; putting it on a second route would give two
  * surfaces the same `<h1>` and pay for a 3D scene on a document that is a reading surface.
  *
- * **There is no section heading above the timeline, and that is a decision.** `WorkItem.tsx:103`
+ * **There is no section heading above the timeline, and that is a decision.** `WorkItem.tsx:136`
  * renders each company as an `<h2>`, so a label such as `Experience` could only be another `<h2>`
  * and would tell a screen reader the four companies are peers of the word rather than inside it.
  * On a CV the companies are the sections, so the label is dropped rather than the outline bent.

@@ -1,0 +1,30 @@
+// The wordmark (Story 2-32), which replaced a 184 x 66 raster inside a 20px-tall link.
+//
+// **Contract roles and nothing else**, listed in `TOKEN_NATIVE_STYLESHEETS` in
+// `app/__tests__/anchor-contract.test.ts`. `DESIGN.md` § Components, Nav sets the wordmark in the
+// display face at `wdth 75` and `--w-black`. It states no size and no tracking: `--t-sm` is the size
+// the design's own mock sets it at, and `--tr-name` is the name role, the nearest to the mock's
+// hand-written tracking. The Operator confirmed both, with the string, on 2026-09-24 (DW-117), and
+// `EXPERIENCE.md` § UI strings records them.
+.logo {
+  // `min-block-size` with `inline-flex`, the hit-target idiom every link on the Hub uses: the raster
+  // painted 66px past a 20px line box, and that line box is what was measured (the `chrome-logo`
+  // row in `ops/hit-target-floor.md`, deleted with this rebuild).
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap);
+  min-inline-size: var(--tap);
+  font-family: var(--f-display);
+  font-size: var(--t-sm);
+  font-weight: var(--w-black);
+  // The `wdth 75` axis coordinate, selected through font matching as `Premise.scss` sets the
+  // framework band's, rather than through `font-variation-settings`, which bypasses it.
+  font-stretch: 75%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-name);
+  // Uppercase is structural for display type (`DESIGN.md` § Typography), and it is set here rather
+  // than in the markup, so a screen reader reads the site's name as a word rather than as letters.
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--token-text);
+}

@@ -1,4 +1,6 @@
+import { resolve } from 'node:path';
 import { render, screen } from '@testing-library/react';
+import { compile } from 'sass';
 import { SiteFooter } from '../SiteFooter';
 import { SuiteDirectoryRow } from '@/components/organisms/SuiteDirectory/SuiteDirectory';
 import { ESTATE_LANGUAGES, renderedApplications, type RegistryEntry } from '@/lib/registry';
@@ -199,5 +201,33 @@ describe('both figures on the line are lengths', () => {
     // upstream and not an empty state to design for.
     expect(renderedApplications.length, 'the Registry renders nothing at all').toBeGreaterThan(0);
     expect(ESTATE_LANGUAGES.length, 'no language is declared, so the line counts nothing').toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The stylesheet's hover gate (DW-115), read as it compiles, which is what ships.
+ *
+ * Whether the underline still recolours under a pointer that can hover is the browser's question:
+ * `tests/e2e/secondary-surfaces.pw.ts` hovers the link and reads it. What is settled here is that the
+ * recolour sits behind the query at all, since on a touch device a tap paints `:hover` and leaves it
+ * painted until the next tap lands elsewhere (review A-5).
+ */
+describe('SiteFooter.scss', () => {
+  const css = compile(resolve(__dirname, '..', 'SiteFooter.scss'), { style: 'compressed' }).css;
+
+  /** A compiled sheet with every `@media (hover: hover)` block cut out. */
+  const ungated = (source: string): string => source.replace(/@media\(hover: hover\)\{(?:[^{}]*\{[^{}]*\})*\}/g, '');
+
+  it('gates its hover on a pointer that can hover, and still has one to gate', () => {
+    expect(ungated(css), 'a :hover rule sits outside @media (hover: hover) (DW-115)').not.toContain(':hover');
+    expect(css).toContain(
+      '@media(hover: hover){.site-footer__link:hover .site-footer__label{border-block-end-color:var(--token-accent-hover)}}'
+    );
+    // The control: an ungated rule on either side of a gated block survives the strip, and only the
+    // gated one goes, so the first expectation is not reading a sheet the strip emptied.
+    expect(
+      ungated('.a:hover{color:red}@media(hover: hover){.b:hover{color:red}}.c:hover{color:red}'),
+      'the gate strip does not remove exactly the gated block'
+    ).toBe('.a:hover{color:red}.c:hover{color:red}');
   });
 });

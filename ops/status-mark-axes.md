@@ -53,7 +53,10 @@ same principle as the floor being read off `--tap` rather than typed into
 `SuiteDirectory.scss:192-204` key on. Four different elements would each sit in their own grid area
 and inherit their own colour, and any of that would show up as an axis that was really a difference
 in context. **Nothing in the committed Registry is `Complete`, `In progress` or `Archived`**, so
-without this seam three of the four arms could not be measured at all.
+without this seam three of the four arms could not be measured at all. **Amended 2026-09-25:**
+Registry 1.4.0 made `cs-tournament` `Complete` (Operator ruling 2026-09-24), so that value reaches
+the page too; the seam still carries the two the FR-35 filter holds back, and every reading stays on
+one element.
 
 ## How to re-run every measurement below
 
@@ -73,8 +76,8 @@ docker run --rm --ipc=host ^
 ```
 
 Drop the trailing `exec playwright test status-mark` for `pnpm test:e2e` and the whole suite runs.
-The image is pinned because glyph rasterization is not portable and `--font-mono` falls back to a
-different face on Linux than on Windows (`ops/rendered-output-harness.md`).
+The image is pinned because glyph rasterization is not portable, even for `--f-mono`, whose Geist
+Mono the contract serves to Linux and Windows alike (`ops/rendered-output-harness.md`).
 
 ## The four values, measured
 
@@ -216,7 +219,7 @@ suite inherits from Story 2-8, a branch never observed to fail is not known to w
 | and the print read is a live read, not the screen read under another name | `emulateMedia` really applied the print rules | **Observed 2026-09-06** |
 | at 360 on the homepage, where the row has least room | A-5's Status clause on every rendered mark on the homepage | **Observed 2026-09-06** |
 | and the same measurement fires against a mark clamped too narrow to hold its value | The truncation read follows the layout | **Observed 2026-09-06** |
-| holds for the three values the filter never renders, in every row position | The values only a plant can reach, measured in **both** row positions. `groupByFamily` nests two rows inside `.suite-directory__family`, which is inset by `--s-md` on each side, so a nested mark has strictly less room than a top-level one and planting into the first mark alone would measure the roomiest | **Observed 2026-09-06** |
+| holds for all four values, planted into every row position | The values only a plant can reach, measured in **both** row positions. `groupByFamily` nests two rows inside `.suite-directory__family`, which is inset by `--s-md` on each side, so a nested mark has strictly less room than a top-level one and planting into the first mark alone would measure the roomiest. **Amended 2026-09-25:** retitled from "holds for the three values the filter never renders, in every row position". The FR-35 filter renders `Complete`, and Registry 1.4.0 put one on the page (`cs-tournament`, Operator ruling 2026-09-24), so `In progress` and `Archived` are the values only a plant reaches; the case plants all four, as it always did | **Observed 2026-09-06** |
 | carries no tooltip, no popover, no hover affordance and no place in the tab order | The mark is outside the 44 by 44 floor by property, not by omission | **Observed 2026-09-06** |
 | and changes nothing at all when the pointer rests on it | Thirteen properties compared as one object before and after `hover()`, waiting on `--dur-major` read from the contract rather than a written figure | **Observed 2026-09-06** |
 | and that comparison fires, measured against a hover state planted on the mark | A real `:hover` rule of the kind `EXPERIENCE.md:351` forbids, planted, and both the property comparison and the cursor read seen reacting to it | **Observed 2026-09-06** |
@@ -231,10 +234,10 @@ that covers everything.
 | That a person can tell the four apart | A machine can prove the values differ structurally and cannot prove a reader perceives the difference. That is the half O-9 asks a person for, and it is recorded below rather than claimed here | **Decision.** The Operator check below |
 | Any viewport other than 360 by 800 | AD-19 states the floor at 360, and a second Playwright project is a change to the harness rather than to this assertion | **Decision.** Story 2-10 scope, same limit `ops/hit-target-floor.md` takes |
 | The axes on any route but `/` | The stylesheet is global and `data-status` is the only seam, so the border treatment cannot differ by route. The **width** can, which is why the truncation case was run on both routes while there were two | **Decision.** Story 2-10 scope. **Closed by arithmetic on 2026-09-07**: Story 2-14 redirected `/projects` to `/#suite` and deleted the page, so `/` is the only route that renders the Directory and the second truncation case left this record with it |
-| The mark under `forced-colors` or a user stylesheet | A different medium with different rules, and no requirement in this plan states one. The dashed and dropped borders survive it, being structural; the dot is a filled box and a fill is what that mode reassigns | **Decision.** No owner, because no requirement exists to own. Filed in `deferred-work.md`, which names Story 2-26 (the manual accessibility pass) as the natural place to decide whether the estate makes a claim there at all |
+| The mark under `forced-colors` or a user stylesheet | A different medium with different rules, and no requirement in this plan states one. The dashed and dropped borders survive it, being structural; the dot is a filled box and a fill is what that mode reassigns | **Decision, taken 2026-09-13 by Story 2-26: the estate makes no claim under `forced-colors`.** Recorded in `ops/hub-accessibility-pass.md` § Decisions, which is where the question restarts the day a requirement names the medium. The `deferred-work.md` entry that booked the decision to that story is closed |
 | Contrast of the mark against the ground as a gate | Measured here at 6.286:1 and 3.544:1 and used to prove the colour conversion works, but not asserted as a floor. `.lighthouserc.js:15` asserts accessibility at 0.95, severity error, and was not touched | **Decision.** Unchanged by this story (AD-19, AD-21) |
 | The dot's colour as a contract role | It fills with `--token-accent`, which `RESTYLE-SPEC.md:654` states F-8 as a binary grep expecting zero of. The dot needs a named exemption there rather than a softened predicate | **Decision.** Story 2-34, filed in `deferred-work.md` by Story 2-9 |
-| Focus, keyboard reachability, and the manual accessibility pass | A different requirement with a different instrument | **Decision.** Story 2-26 |
+| Focus, keyboard reachability, and the manual accessibility pass | A different requirement with a different instrument | **Decision.** Story 2-26, **landed 2026-09-13**: `tests/e2e/accessibility-floor.pw.ts` asserts the ring, the DOM-order traversal, the type floor, the depth tells and autoplay on every route, and `ops/hub-accessibility-pass.md` records the four manual checks, with the greyscale confirmation of this file confirmed alongside rather than replaced |
 
 ## The greyscale check O-9 asks a person for
 

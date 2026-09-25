@@ -1,150 +1,230 @@
+// The work item, one row of the timeline on `/work` and `/cv` (Story 2-31, `DESIGN.md` § The
+// redesigned Hub surfaces, `EXPERIENCE.md` § Work item, `RESTYLE-SPEC.md` § 2 Row).
+//
+// Rebuilt against the published token contract alone: every colour, length, family, size, weight,
+// tracking, duration and easing here is a contract role, and the file declares no custom property of
+// its own, because `app/__tests__/anchor-contract.test.ts` holds every declared `--name` to
+// `app/app.scss`. The 2023 file read five aliases and wrote its lengths and tracking by hand.
+//
+// What left with it, deleted rather than tokenised: the alpha hover ground (a fill, and a second
+// signal on top of the rule), the alpha chip border and the filled chip, the ungated `:hover` that a
+// tap left painted, the synthesised mono bold on the initiative line (F-4), the border colour the
+// highlights were set in (F-5, 3.49:1), the `1.7` leading (F-9), the `nowrap` meta line that pushed
+// 28 elements past the 360 viewport (KV-5's half), the button face the meta line fell back to (F-3),
+// and every browser-default `ease`.
+//
+// **A row, not a card.** No containing box, no ground, no radius, no shadow: a separator beneath and
+// a leading rule are the only lines the row draws, and the rule is what says open or closed.
+
 .work-item {
-  border-bottom: 1px solid var(--accent-dim);
   position: relative;
+  // **The ring stays inside its own row (F-19).** The global focus ring reaches 5px past the trigger,
+  // its offset plus its stroke. 8px of padding above and below keeps it off the neighbouring rows,
+  // 8px at the end keeps it inside the row, and 16px at the start keeps it clear of the leading
+  // rule, which it used to paint over.
+  padding-block: var(--s-xs);
+  padding-inline: var(--s-md) var(--s-xs);
+  border-block-end: var(--stroke-hair) solid var(--token-border);
+
+  // **The leading rule, built from two layers so no width is ever written as a ratio.** `::before`
+  // is the closed state, a hairline; `::after` is the open state, the emphasis stroke in the accent,
+  // held at zero width by `transform` until the item opens. Both are out of flow and `::after`
+  // always occupies its full width, so the widest state is reserved and opening reflows nothing; the
+  // state change is `transform`, a non-layout property; and both draw with `border`, never a
+  // background, so the accent is never a fill (RESTYLE-SPEC F-8).
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    // Hover recolours the rule, and this is that recolour's pace. The state change itself is not
+    // transitioned: the disclosure's height tween is the motion, and a 2px stroke easing in beside it
+    // would be a second animation nobody asked for.
+    transition: border-color var(--dur-micro) var(--ease-toggle);
+  }
 
   &::before {
-    content: ' ';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--accent-dim);
-    transition: background 0.3s ease;
+    border-inline-start: var(--stroke-hair) solid var(--token-border);
   }
 
-  &[data-open='true']::before {
-    background: var(--accent);
+  &::after {
+    border-inline-start: var(--stroke-emphasis) solid var(--token-accent);
+    transform: scaleX(0);
   }
 
-  &__header {
-    width: 100%;
+  &[data-open='true']::after {
+    transform: none;
+  }
+}
+
+// **Hover recolours the trigger's border, and the trigger's border is the row's leading rule.** The
+// header draws no box of its own (`DESIGN.md` § Work item lists two rules on the item and neither is
+// round the header), so the one line beside it is what a pointer lights, and nothing else moves: not
+// the ground, not the text, not a width. Gated on a hover-capable pointer, because a tap paints
+// `:hover` and leaves it painted until the next tap lands elsewhere (review A-5).
+@media (hover: hover) {
+  .work-item:has(> .work-item__header:hover)::before,
+  .work-item:has(> .work-item__header:hover)::after {
+    border-inline-start-color: var(--token-accent-hover);
+  }
+}
+
+// **The trigger is a control with no box.** It keeps the target floor and gives the row its vertical
+// rhythm, and it inherits the page's type rather than the user agent's button face (F-3). The ring is
+// the global `:focus-visible` rule in `app/app.scss`, unchanged.
+.work-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-md);
+  inline-size: 100%;
+  min-block-size: var(--tap);
+  padding-block: var(--s-md);
+  padding-inline: 0;
+  border: 0;
+  border-radius: var(--r-none);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.work-item__meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--s-2xs);
+  min-inline-size: 0;
+}
+
+// The row's name (`RESTYLE-SPEC.md` § 2 and § 6): the display face at `wdth 85`, through the property
+// that selects it rather than through `font-variation-settings` (the `SuiteDirectory.scss:46-48`
+// idiom).
+.work-item__company {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: var(--t-base);
+  font-weight: var(--w-bold);
+  font-stretch: 85%;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tr-name);
+  text-transform: uppercase;
+  color: var(--token-text);
+}
+
+// Metadata, and it wraps. The 2023 line was `white-space: nowrap` in a column that could not shrink,
+// which pushed the meta and the icon past the 360 viewport on every row (KV-5's component half).
+.work-item__sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2xs) var(--s-md);
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--token-text-secondary);
+}
+
+// The state glyph is ornament beside the rule, which carries the state; it is `aria-hidden` in the
+// markup and takes no accent, the accent belonging to the open rule alone.
+.work-item__icon {
+  flex: none;
+  font-size: var(--t-3xs);
+  color: var(--token-text-secondary);
+}
+
+// **`.work-item__content` has no rule here but the scriptless one below, and must not gain vertical
+// padding.** GSAP owns its `height` and `overflow` inline, and with `box-sizing: border-box` a
+// collapsed panel would still paint its padding. The spacing inside it is its children's margins.
+
+// **With scripting off, every panel is open** (Operator ruling 2026-09-24, DW-76). No handler runs, so
+// a panel the first render closed would keep that render's inline zero height and a scriptless `/cv`
+// would show one company of four. These are the two declarations `app/scss/_print.scss` opens the
+// panels with on paper; `!important` is what outranks the inline style, and under this query no tween
+// is running for it to fight. The triggers stay inert and announce themselves collapsed over visible
+// text, the cost the ruling accepted over a rebuild on `<details>`.
+@media (scripting: none) {
+  .work-item__content {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+.work-item__initiative {
+  margin: 0 0 var(--s-sm);
+  font-family: var(--f-mono);
+  font-size: var(--t-2xs);
+  line-height: var(--lh-label);
+  letter-spacing: var(--tr-meta);
+  text-transform: uppercase;
+  color: var(--token-text-secondary);
+}
+
+.work-item__description {
+  max-inline-size: var(--measure);
+  margin: 0 0 var(--s-md);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+  color: var(--token-text-secondary);
+}
+
+.work-item__highlights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-xs);
+  margin: 0 0 var(--s-md);
+  padding: 0;
+  list-style: none;
+
+  // A flex row on the baseline, so the marker lines up with the first line of the text it marks
+  // with no offset written by hand.
+  li {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 1rem 1.5rem 1.25rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: inherit;
-    text-align: left;
-    gap: 1rem;
-    transition: background 0.2s ease;
-
-    &:hover {
-      background: rgba(91, 33, 182, 0.06);
-    }
-
-    &:focus-visible {
-      outline: 1px solid var(--accent);
-      outline-offset: -2px;
-    }
+    align-items: baseline;
+    gap: var(--s-xs);
+    max-inline-size: var(--measure);
+    font-size: var(--t-sm);
+    line-height: var(--lh-body);
+    color: var(--token-text-secondary);
   }
 
-  &__meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    flex: 1;
+  // **The `//` is generated content and stays out of the accessible name.** The second `content` gives
+  // it empty alternative text where that syntax is supported; the first is what a browser without it
+  // keeps, which is the marker read aloud as it was before, never a missing one. In the secondary role
+  // rather than the muted accent, because a list marker is read (`DESIGN.md` § Work item).
+  li::before {
+    content: '//';
+    content: '//' / '';
+    flex: none;
+    font-family: var(--f-mono);
+    font-size: var(--t-3xs);
+    color: var(--token-text-secondary);
   }
+}
 
-  &__company {
-    font-family: var(--monument-regular);
-    font-size: clamp(1rem, 1.8vw, 1.2rem);
-    font-weight: 500;
-    margin: 0;
-    color: var(--light-gray-color);
-  }
+// **Chips are outlined, never filled, and they are metadata**: no ground, no hover, no focus and no
+// target floor, square, in mono at the smallest step.
+.work-item__tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-xs);
+  margin: 0 0 var(--s-md);
+  padding: 0;
+  list-style: none;
 
-  &__sub {
-    display: flex;
-    gap: 1.5rem;
-    font-size: 0.85rem;
-    color: var(--accent);
-    white-space: nowrap;
-    align-self: center;
-    flex-shrink: 0;
-  }
-
-  &__icon {
-    font-size: 0.65rem;
-    color: var(--gray-color);
-    flex-shrink: 0;
-    transition:
-      transform 0.2s ease,
-      color 0.2s ease;
-  }
-
-  &[data-open='true'] &__icon {
-    color: var(--accent);
-  }
-
-  &__content {
-    // height and overflow managed by GSAP
-    padding: 0 1rem 0 1.25rem;
-  }
-
-  &__initiative {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    font-weight: 600;
+  li {
+    padding: var(--s-2xs) var(--s-xs);
+    border: var(--stroke-hair) solid var(--token-border-interactive);
+    border-radius: var(--r-none);
+    font-family: var(--f-mono);
+    font-size: var(--t-3xs);
+    line-height: var(--lh-label);
+    letter-spacing: var(--tr-meta);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--accent);
-    margin: 0 0 0.75rem;
-    padding-top: 1rem;
-  }
-
-  &__description {
-    font-size: 0.95rem;
-    line-height: 1.7;
-    color: var(--light-gray-color);
-    margin: 0 0 1.25rem;
-  }
-
-  &__highlights {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-
-    li {
-      font-size: 0.88rem;
-      line-height: 1.6;
-      color: var(--gray-color);
-      padding-left: 1rem;
-      position: relative;
-
-      &::before {
-        content: '//';
-        position: absolute;
-        left: 0;
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-        color: var(--accent-dim);
-        top: 0.2em;
-      }
-    }
-  }
-
-  &__tech {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-
-    li {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      padding: 0.2rem 0.5rem;
-      background: var(--accent-dim);
-      border: 1px solid rgba(91, 33, 182, 0.3);
-      color: var(--light-gray-color);
-      letter-spacing: 0.04em;
-    }
+    color: var(--token-text-secondary);
   }
 }

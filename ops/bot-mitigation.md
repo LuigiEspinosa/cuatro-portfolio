@@ -81,7 +81,9 @@ keyed on client-supplied text is a bypass, and this reader needs no bypass.
 the Registry entry's `live` was changed: `https://wheel.cuatro.dev/` answered **200** to it
 through Cloudflare at 17:37Z to 17:38Z. `list-wheel`'s `live` moves from `luigiespinosa.github.io` to
 `https://wheel.cuatro.dev`, so **five** `live` hostnames sit behind these rules from that date,
-and `inclusivcup.vercel.app` is the one `live` URL they never see.
+and `inclusivcup.vercel.app` is the one `live` URL they never see. **Amended 2026-09-25**
+(Operator ruling 2026-09-24): there is none now. Registry 1.4.0 dropped `inclusivcup.vercel.app`
+when Vercel left the estate, so every `live` URL the job fetches is one of the five these rules see.
 
 ### Rule order is load-bearing, and the first ordering was wrong
 

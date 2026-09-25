@@ -5,7 +5,6 @@ import './app.scss';
 
 import { Header } from '@/components/molecules/Header/Header';
 import { Body } from '@/components/atoms/Container/Container';
-import { Providers } from '@/app/providers';
 import { HUB_ORIGIN } from '@/lib/registry';
 
 export const metadata: Metadata = {
@@ -39,19 +38,21 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang='en'>
+      {/* **No client wrapper round the routes since 2026-09-24.** `app/providers.tsx` stood here and
+          put Lenis, GSAP and `ScrollTrigger` on every document; DW-36 deleted it on the Operator
+          ruling of that day, so the page scrolls natively and each GSAP module is imported only
+          where it is used. */}
       <Body>
-        <Providers>
-          <Header />
-          {children}
+        <Header />
+        {children}
 
-          {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && process.env.NEXT_PUBLIC_UMAMI_URL && (
-            <Script
-              src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
-              data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
-              strategy='afterInteractive'
-            />
-          )}
-        </Providers>
+        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && process.env.NEXT_PUBLIC_UMAMI_URL && (
+          <Script
+            src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+            strategy='afterInteractive'
+          />
+        )}
       </Body>
     </html>
   );

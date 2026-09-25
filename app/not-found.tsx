@@ -6,10 +6,15 @@ import Error404 from '@/components/organisms/ErrorPage/Error404';
 // path shared as a link previewed under another route's name. Next resolves `openGraph.title` from
 // `title` when none is declared, and the layout template supplies the rest.
 export const metadata: Metadata = {
-  title: 'Page not Found',
+  title: 'Page not found',
   description: 'This page does not exist.',
 };
 
+// The skip-link's target, as on every route (Operator ruling 2026-09-24, DW-43).
 export default function NotFound() {
-  return <Error404 />;
+  return (
+    <main id='main' tabIndex={-1}>
+      <Error404 />
+    </main>
+  );
 }

@@ -1,54 +1,14 @@
+// The scrim layer (Story 2-28, `DESIGN.md:366-429` and `:739-748`, `EXPERIENCE.md:471-490`): one
+// flat `--token-scrim` at `--z-raised` between moving imagery and the text over it, covering the
+// positioned box it is placed in. `--token-scrim` is the contract's one alpha value (`tokens.css:38`,
+// onto the palette's scrim at `:24`) and this is the one place it is consumed. The 2023 raster this
+// file replaced (the vignette, the scanlines, the grain and its loop, the `light` and `full`
+// modifiers) is deleted, not tokenised: a scrim that varies is a scrim whose guarantee varies, so
+// there is one state and no second declaration.
 .scanline-overlay {
   position: absolute;
   inset: 0;
-  z-index: 10;
+  z-index: var(--z-raised);
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.65) 100%);
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 2px,
-      rgba(0, 0, 0, 0.12) 2px,
-      rgba(0, 0, 0, 0.12) 3px
-    );
-  }
-
-  &__light {
-    background: none;
-
-    &::before {
-      opacity: 0.35;
-    }
-
-    .scanline-overlay__grain {
-      opacity: 0.2;
-    }
-  }
-
-  &__grain {
-    position: absolute;
-    inset: 0;
-    opacity: 0.55;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 200px 200px;
-    animation: grain-shift 0.4s steps(2) infinite;
-
-    @media (prefers-reduced-motion: reduce) {
-      animation: none;
-    }
-  }
-}
-
-@keyframes grain-shift {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 200px 200px;
-  }
+  background-color: var(--token-scrim);
 }

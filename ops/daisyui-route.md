@@ -369,6 +369,7 @@ daisyUI does not name 5.0.35, so these two are enforced rather than merely recor
 | esbuild | **0.25.4** | configured in the scratch `config.exs`, matching `cs-tracker/config/config.exs:200`. Not exercised: no JavaScript is compiled by this probe |
 | Phoenix, required | `~> 1.8.7` | the scratch `mix.exs`, which `phx_new-1.8.7` generated, matching `cs-tracker/mix.exs` |
 | Phoenix, resolved | **1.8.13** in the scratch application, against **1.8.7** in `cs-tracker/mix.lock` | both `mix.lock` files. The difference cannot reach the observation: `mix tailwind` shells out to the standalone Tailwind binary and Phoenix contributes nothing to CSS compilation |
+| Phoenix, resolved, re-read 2026-09-23 | **1.8.14** in that day's scratch application, against **1.8.7** still in `cs-tracker/mix.lock` at `ae34619` | the probe's `# versions` block and `cs-tracker/mix.lock`. **Observed 2026-09-23.** The one figure in this table that moved, and the row above says why it cannot reach the observation: every computed value reproduced |
 | `phx_new` archive | `phx_new-1.8.7` | `mix archive` |
 | Elixir and OTP | `Elixir 1.19.5`, `Erlang/OTP 28` | `elixir --version` |
 | Asset profile args | `--input=assets/css/app.css --output=priv/static/assets/css/app.css` | the scratch `config.exs`, matching `cs-tracker/config/config.exs:212-215` |
@@ -415,6 +416,14 @@ It takes no argument and reads no environment variable that selects what it test
 produced the output above is the run anyone else gets. It prints its own elapsed figure on the last
 lines: **110.6s** on the development host for the run recorded here, most of it
 `mix phx.new --install`.
+
+**It needs no `NO_COLOR`, from 2026-09-24.** On 2026-09-23 a shell that did not set `NO_COLOR=1`
+stopped the run at exit 3, because the Tailwind 4.1.12 CLI colours its `--help` banner and the
+version match could not read through the escape codes (DW-109). Commit `b14bcbb` strips every escape
+sequence before the match, and a unit case feeds it the coloured banner. The instruction to set
+`NO_COLOR` is withdrawn: the plain command above is the whole invocation. The runs of both days are
+under "Re-run 2026-09-23, when the probe joined AD-22's scope" and "Re-run 2026-09-24, from a plain
+shell" below.
 
 Beyond the install it needs Elixir with the `hex` and `phx_new` archives, network reach to `hex.pm`
 and to the Tailwind release the `tailwind` mix task fetches, `cs-tracker` checked out beside this
@@ -475,7 +484,182 @@ cannot quietly make it unable to fail.
 | **Nothing was adopted** | This story changes no application file, in this repository or in `cs-tracker`. The outcome gates the step and not the contract, which is what AD-15 says | **Decision.** Story 1-15 scope |
 | **The probe pins the Tailwind CLI through the mix task, not through this repository's `node_modules`** | The scratch application downloads the standalone 4.1.12 binary the `tailwind` hex package fetches, which is the compiler `cs-tracker` actually runs. It is a different compiler from the `@tailwindcss/cli` 4.3.3 that `tests/e2e/contract-tailwind.pw.ts` pins, deliberately: this finding is about `cs-tracker`'s toolchain | **Decision** |
 | **Five runs, one host, one Chromium** | Every figure is from the Windows 11 development host, three runs on 2026-08-25 and two on 2026-08-26. The composition figures quoted here were produced by three of the five, the two earliest predating the change that moved the composition variant onto route A; the four route variants' figures are reproduced by all five. No other operating system, Chromium build or Elixir release has run it. The probe is committed so the run is repeatable, but nothing re-runs it on a schedule | **Decision.** Pending Operator action 2 |
+| **Six runs that observed, and a schedule from 2026-09-23** | AD-22's refresh scope names this probe from 2026-09-23, with the two narrower triggers, so the "nothing re-runs it on a schedule" half of the row above is retired. The rest of it stands. Two runs were made that day: the first observed nothing, stopping at exit 3 on the banner DW-109 describes, and the second, the sixth to observe anything, used the same host and the same Chromium 151.0.7922.34 and reproduced every computed value, verdict and compiled byte count quoted in this file | **Observed 2026-09-23.** Pending Operator action 2, closed |
+| **Seven runs that observed, the seventh from a plain shell on 2026-09-24** | The seventh ran from Git Bash with `NO_COLOR` unset and exited 0 once `b14bcbb` stripped the banner's colour codes. It reproduced every computed value and verdict quoted in this file on the same host and Chromium. Each compiled byte count is **one more** than quoted (18131, 18174, 18173, 18238, 23426), because Contract 2.0.0's `--ease-exit` value is one character longer and every variant imports `tokens.css`, which went from 6,225 to 6,226 bytes. The rest of the row above stands: one host, one Chromium | **Observed 2026-09-24.** See "Re-run 2026-09-24, from a plain shell" |
 | **The run populates the host's hex package cache** | `mix phx.new --install` fetches into `~/.hex` and `~/.mix`, outside the scratch tree, which no cleanup removes. Nothing is created or modified in any estate repository | **Observed 2026-08-25** |
+
+## Re-run 2026-09-23, when the probe joined AD-22's scope
+
+**Observed 2026-09-23** on the Windows 11 development host, from this repository's root at `81984db`,
+against `cs-tracker` at `ae34619c32e28e9f15a1ed4bdcb887b7faaa4248`, read by
+`git -C ../cs-tracker-workspace/cs-tracker rev-parse HEAD`. That checkout carried uncommitted edits
+to its `AGENTS.md` and `CLAUDE.md` only, neither of which the probe reads, and its
+`git status --porcelain` was byte-identical before and after both runs. These are the runs Pending
+Operator action 2 asks for, made the day AD-22's Rule bullet was amended to name this probe.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-09-23T05:06:30.325Z` | Git Bash, `NO_COLOR` unset | **3** | 1, the leftover sweep, then blocked | 53.9s |
+| `2026-09-23T05:09:15.592Z` | Git Bash, `NO_COLOR=1` | **0** | 7, 7 PASS | 72.8s |
+
+**The first run observed nothing.** Verbatim:
+
+```
+# daisyUI adoption route probe, Story 1-15, AD-15 open item O-3
+# started 2026-09-23T05:06:30.325Z
+
+PASS  Leftover sweep: 1 scratch directory swept, and the planted one is gone, this sweep having removed it
+# scratch tree: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-daisyui-probe-RSEsK3
+# scratch tree removed: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-daisyui-probe-RSEsK3 (exists afterwards: false)
+
+# 1 cases, 1 PASS, 0 FAIL
+# elapsed 53.9s
+# finished 2026-09-23T05:07:24.268Z
+# BLOCKED: the Tailwind binary reports no version at all, not v4.1.12. The finding would be about a different toolchain from the one cs-tracker runs, so nothing was compiled.
+```
+
+The binary was the right one, and what stopped the run was its banner. Spawned directly with `--help`
+and captured through a pipe, the 4.1.12 standalone CLI (the copy under `cs-tracker`'s `_build`)
+prints `tailwindcss \x1b[34mv4.1.12\x1b[39m`, coloured with `TERM` unset and with `TERM=dumb` alike,
+and plain only under `NO_COLOR=1`. The match at `ops/daisyui-route-probe.mjs:748` is
+`/(tailwindcss v[\d.]+)/`, which cannot see a version through the escape code, so the Block If fired
+on a colour code rather than on a wrong compiler. `NO_COLOR` selects nothing the probe tests. Why the
+runs of 2026-08-25 and 2026-08-26 read a plain banner on the same host is not known, because what
+their shells set is not recorded. Filed as **DW-109**, together with
+`ops/cs-tracker-adoption-probe.mjs:1052`, which carries the same match and stopped the same way the
+same morning.
+
+**The second run reproduced the record.** Its computed-value table and its whole diagnostics block
+are byte-identical to the two under "The observed values", compared with `diff`, all five compiled
+byte counts (18130, 18173, 18172, 18237, 23425) included, and its seven PASS lines are the seven
+quoted in this file. Chromium was 151.0.7922.34 again. One `# versions` line moved, `phoenixLocked`
+from `1.8.13` to `1.8.14`, and it is recorded as a new row in the pin table. The run's frame,
+verbatim:
+
+```
+# daisyUI adoption route probe, Story 1-15, AD-15 open item O-3
+# started 2026-09-23T05:09:15.592Z
+
+PASS  Leftover sweep: 1 scratch directory swept, and the planted one is gone, this sweep having removed it
+# scratch tree: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-daisyui-probe-shVO0e
+
+# versions
+  elixir               Elixir 1.19.5
+  otp                  Erlang/OTP 28
+  phxNew               phx_new-1.8.7
+  phoenixRequired      ~> 1.8.7
+  phoenixLocked        1.8.14
+  tailwindConfigured   4.1.12
+  tailwindGenerated    4.1.12
+  tailwindBanner       tailwindcss v4.1.12
+  esbuildConfigured    0.25.4
+  esbuildGenerated     0.25.4
+  daisyui              5.0.35
+  profileArgs          --input=assets/css/app.css --output=priv/static/assets/css/app.css
+  playwright           1.62.1
+  node                 v24.15.0
+
+# compile unmapped     ok
+# compile literal      ok
+# compile plugin-var   ok
+# compile css-var      ok
+# compile composition  ok
+```
+
+Its verdict, verbatim:
+
+```
+PASS  Verdict: plugin-var, route A and css-var, route B are live. The two routes produce the same rendered result.
+```
+
+And its closing lines, verbatim:
+
+```
+# scratch tree removed: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-daisyui-probe-shVO0e (exists afterwards: false)
+
+# 7 cases, 7 PASS, 0 FAIL
+# elapsed 72.8s
+# finished 2026-09-23T05:10:28.364Z
+```
+
+**So Pending Operator action 2 is closed.** AD-22 names the probe and its triggers, and the re-run it
+asks for exits 0.
+
+## Re-run 2026-09-24, from a plain shell
+
+**Observed 2026-09-24** on the Windows 11 development host, from this repository's root at `048793f`,
+against `cs-tracker` at `991d0f631a0b07817a538d689d80cd3cc4f836e2`, read by
+`git -C ../cs-tracker-workspace/cs-tracker rev-parse HEAD`. That checkout carried uncommitted edits
+to its `AGENTS.md` and `CLAUDE.md` only, neither of which the probe reads, and its
+`git status --porcelain` was byte-identical before and after the run. The shell was Git Bash with
+`NO_COLOR` and `FORCE_COLOR` both unset, the shell that stopped at exit 3 on 2026-09-23. The run is
+the one Operator ruling 2026-09-24 asks for once DW-109 is fixed.
+
+| Started (UTC) | Shell | Exit | Cases | Elapsed |
+|---|---|---|---|---|
+| `2026-09-24T17:01:05.390Z` | Git Bash, `NO_COLOR` unset | **0** | 7, 7 PASS | 73.0s |
+
+**The banner reads through its colour now.** `b14bcbb` strips escape sequences before the version
+match, so the `# versions` block records `tailwindcss v4.1.12` from a binary that still printed it in
+colour.
+
+**It reproduced the record, with one difference, and the difference is explained.** Its
+computed-value table is byte-identical to the one under "The observed values". Its seven PASS lines
+are the seven quoted in this file. Its `# versions` block matches the 2026-09-23 run's line for line,
+with `phoenixLocked` still at `1.8.14` and Chromium at 151.0.7922.34. Of the diagnostics block's 46
+lines, 5 moved: each compiled byte count is **one more** than quoted, 18131, 18174, 18173, 18238 and
+23426 against 18130, 18173, 18172, 18237 and 23425. Every variant imports the contract's
+`tokens.css`, the composition through `tailwind.css`'s `@import "./tokens.css"`, and Contract 2.0.0
+made that file one byte longer, 6,225 to 6,226 bytes. Its `--ease-exit` became
+`cubic-bezier(0.33, 1, 0.68, 1)` where it was `cubic-bezier(0.7, 0, 0.84, 0)`, and the header's
+version is the same length. The blocks were compared line by line by a script. The run's frame,
+verbatim:
+
+```
+# daisyUI adoption route probe, Story 1-15, AD-15 open item O-3
+# started 2026-09-24T17:01:05.390Z
+
+PASS  Leftover sweep: 1 scratch directory swept, and the planted one is gone, this sweep having removed it
+# scratch tree: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-daisyui-probe-gUHsam
+
+# versions
+  elixir               Elixir 1.19.5
+  otp                  Erlang/OTP 28
+  phxNew               phx_new-1.8.7
+  phoenixRequired      ~> 1.8.7
+  phoenixLocked        1.8.14
+  tailwindConfigured   4.1.12
+  tailwindGenerated    4.1.12
+  tailwindBanner       tailwindcss v4.1.12
+  esbuildConfigured    0.25.4
+  esbuildGenerated     0.25.4
+  daisyui              5.0.35
+  profileArgs          --input=assets/css/app.css --output=priv/static/assets/css/app.css
+  playwright           1.62.1
+  node                 v24.15.0
+
+# compile unmapped     ok
+# compile literal      ok
+# compile plugin-var   ok
+# compile css-var      ok
+# compile composition  ok
+```
+
+Its verdict, verbatim:
+
+```
+PASS  Verdict: plugin-var, route A and css-var, route B are live. The two routes produce the same rendered result.
+```
+
+And its closing lines, verbatim:
+
+```
+# scratch tree removed: C:\Users\NUMCUA~1\AppData\Local\Temp\cuatro-daisyui-probe-gUHsam (exists afterwards: false)
+
+# 7 cases, 7 PASS, 0 FAIL
+# elapsed 73.0s
+# finished 2026-09-24T17:02:18.410Z
+```
 
 ## Pending Operator actions
 
@@ -484,8 +668,8 @@ This file hands the Operator work Story 1-15 may not do, in the shape `ops/token
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Amend the three places that still say O-3 is open**, pointing each at this file: `EXPERIENCE.md:1048` (the open-items table row), `epics.md:816` (Epic 1's "Also carries" list, "O-3 daisyUI `var()` gate") and AD-15's Binds line at `ARCHITECTURE-SPINE.md:168` | Operator | O-3 is answered: both routes are live, they render identically, and AD-15's own conditional therefore selects route A. The answer is recorded at the `ops/` surface because that is where this estate records observations, and amending a frozen planning record is an Operator act rather than a story's. Until those three lines move, a reader of the planning artefacts is told the question is open | _not done_ |
-| 2 | **Add `ops/daisyui-route.md` and its probe to AD-22's refresh scope**, then re-run `node ops/daisyui-route-probe.mjs` on that schedule | Operator | As things stand AD-22's scope does not include this probe, so no schedule picks it up and the action would name a review that never happens. `ops/routing-inventory.md` was written into that scope explicitly (`ARCHITECTURE-SPINE.md:325`) and is the pattern to copy. The real trigger is narrower than the schedule and matters more: **any Tailwind or daisyUI bump reaching `cs-tracker`**, because route A is a fact about Tailwind's `@plugin` option parser at 4.1.12. Nothing in CI can catch it moving, since nothing in CI runs this. The probe exits non-zero if any route stops being live, so re-running it is the whole check | _not done_ |
+| 1 | **Amend the three places that still say O-3 is open**, pointing each at this file: `EXPERIENCE.md:1048` (the open-items table row), `epics.md:816` (Epic 1's "Also carries" list, "O-3 daisyUI `var()` gate") and AD-15's Binds line at `ARCHITECTURE-SPINE.md:168` | Operator | O-3 is answered: both routes are live, they render identically, and AD-15's own conditional therefore selects route A. The answer is recorded at the `ops/` surface because that is where this estate records observations, and amending a frozen planning record is an Operator act rather than a story's. Until those three lines move, a reader of the planning artefacts is told the question is open | **2026-09-24.** Operator ruling 2026-09-24: all three now say O-3 was answered on 2026-08-25 by Story 1-15 and point here. The `EXPERIENCE.md` open-items row is struck and marked Closed, Epic 1's "Also carries" list in `epics.md` notes the answer beside O-3, and AD-15's Binds line in `ARCHITECTURE-SPINE.md` records it, each dated |
+| 2 | **Add `ops/daisyui-route.md` and its probe to AD-22's refresh scope**, then re-run `node ops/daisyui-route-probe.mjs` on that schedule | Operator | As things stand AD-22's scope does not include this probe, so no schedule picks it up and the action would name a review that never happens. `ops/routing-inventory.md` was written into that scope explicitly (`ARCHITECTURE-SPINE.md:325`) and is the pattern to copy. The real trigger is narrower than the schedule and matters more: **any Tailwind or daisyUI bump reaching `cs-tracker`**, because route A is a fact about Tailwind's `@plugin` option parser at 4.1.12. Nothing in CI can catch it moving, since nothing in CI runs this. The probe exits non-zero if any route stops being live, so re-running it is the whole check | **2026-09-23.** AD-22's Rule bullet now names this probe and this record in a clause dated 2026-09-23, beside `ops/cs-tracker-adoption-probe.mjs`, with the two narrower triggers: any Tailwind or daisyUI bump reaching `cs-tracker`, and any contract MINOR. Re-run the same day against `cs-tracker` at `ae34619`: exit 0, 7 cases, 7 PASS, every computed value and compiled byte count reproduced. On this host the run needs `NO_COLOR=1`, which DW-109 files. See "Re-run 2026-09-23, when the probe joined AD-22's scope". **2026-09-24**: it no longer does. DW-109 is closed by `b14bcbb`, and the re-run from a plain shell exited 0 at 7 of 7. See "Re-run 2026-09-24, from a plain shell" |
 | 3 | **Decide what `--color-accent` means in `cs-tracker`**, when Story 1.19 lands | Operator | It is the one name daisyUI's theme and the contract adapter both own, and the composed build gives it two different colours in one page: daisyUI's teal on `.btn-accent`, the contract's violet on `.bg-accent`. Nothing errors, nothing warns, and the page looks almost right | **2026-08-27.** Story 1-19 maps daisyUI's `--color-accent` onto `--token-accent`, so one word gives one colour and the collision is closed rather than documented. The decision, and the computed values on both sides after it, are in `ops/cs-tracker-token-adoption.md` § What `--color-accent` means now |
 | 4 | **Confirm the adapter import for `cs-tracker` against AD-14, with the two measured costs in hand** | Operator | AD-14 assigns `cs-tracker` `tailwind.css` by name, and this story does not overturn that: the route works identically under either import, measured. What the composition build adds is the price, so the decision is informed rather than reversed. The two costs are a duplicated Preflight (2 emissions, 23,425 bytes against 18,173) and the `--color-accent` collision in action 3. If the adapter is imported, `ops/tailwind-adapter.md:176-178`'s two placement routes apply and one of them has to be chosen, because `cs-tracker` compiles to `priv/static/assets/css/app.css` and not into the vendored folder | **2026-08-27.** Confirmed: `cs-tracker` imports `cuatro-contracts/tailwind.css` and keeps its own `@import "tailwindcss" source(none)` line, so the second Preflight is absorbed deliberately. Both costs were re-measured against the real stylesheet rather than the scratch one, at 131,265 bytes with the import against 123,631 without, and the placement question is answered by the second of `ops/tailwind-adapter.md`'s two routes, a new `mix cuatro.fonts` task. The composition build's other worry is also closed there: that the adapter's bare `@import "tailwindcss"` leaves `source(none)` governing is now a calibrated negative rather than a marker nothing would ever have minted. See `ops/cs-tracker-token-adoption.md` § The two measured costs of the adapter import |
 

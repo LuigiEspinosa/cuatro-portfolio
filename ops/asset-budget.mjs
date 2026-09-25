@@ -57,30 +57,37 @@ export const FONT_BUDGET_BYTES = 120 * KB;
 export const NARRATIVE_ESTIMATE_BYTES = [300 * KB, 450 * KB];
 
 /**
- * The libraries `EXPERIENCE.md:946` names as the narrative bundle, plus the two
- * transitive ones that carry most of the bytes those names imply
- * (`three-stdlib` under drei, `postprocessing` under
- * `@react-three/postprocessing`).
+ * The libraries `EXPERIENCE.md:946` names as the narrative bundle, plus the
+ * transitive one that carries most of the bytes those names imply
+ * (`postprocessing` under `@react-three/postprocessing`).
  *
  * `mark` is a literal string from the library's own source that no other source
  * in this tree produces. `webgl` marks the WebGL stack, which is what makes a
- * route a 3D route: `gsap` and `lenis` are narrative libraries too, and they are
- * on every route, which is the whole finding.
+ * route a 3D route: `gsap` and `gsap/ScrollTrigger` are narrative libraries by
+ * that line too, and until 2026-09-24 they rode on every route with `lenis`.
  *
  * Every mark is checked against every chunk on every run, and a mark that
  * matches nothing stops the run. See `proveFingerprints`.
+ *
+ * Ten rows until 2026-09-14, nine until 2026-09-24, seven since. Each row left
+ * with the last import that put its library in the build, and is deleted rather
+ * than kept, because a mark that matches nothing stops the run:
+ * `gsap/SplitText` (mark `SplitText called before fonts loaded`) with Story
+ * 2-27, which rebuilt `GlitchText` as server-rendered spans over one CSS
+ * keyframe; `lenis` (mark `lenisVersion`) with DW-36, which deleted
+ * `app/providers.tsx` and smooth scroll with it; and `three-stdlib` (mark
+ * `OrbitControls.js encountered`) with DW-119, which deleted the torus's orbit
+ * controls, the only thing that pulled it in. Both on the Operator ruling of
+ * 2026-09-24.
  */
 export const FINGERPRINTS = [
   { library: 'three', mark: 'WebGLRenderer', webgl: true },
   { library: '@react-three/fiber', mark: 'react-three-fiber', webgl: true },
   { library: '@react-three/drei', mark: 'onIncline', webgl: true },
-  { library: 'three-stdlib', mark: 'OrbitControls.js encountered', webgl: true },
   { library: '@react-three/postprocessing', mark: '@react-three/postprocessing', webgl: true },
   { library: 'postprocessing', mark: 'KawaseBlurPass', webgl: true },
   { library: 'gsap', mark: 'GSAP target ', webgl: false },
   { library: 'gsap/ScrollTrigger', mark: 'scrollerProxy', webgl: false },
-  { library: 'gsap/SplitText', mark: 'SplitText called before fonts loaded', webgl: false },
-  { library: 'lenis', mark: 'lenisVersion', webgl: false },
 ];
 
 /**
@@ -607,7 +614,7 @@ export const MAX_VAR_HOPS = 8;
  * Follow `var()` through the custom properties until the value names families
  * rather than properties.
  *
- * The design's own aliases are two hops deep (`--monument-bold` holds
+ * The design's own aliases were two hops deep until Story 2-22 deleted them (one held
  * `var(--f-display)`, which holds the family), so stopping at one would report a
  * reachable face as unreachable. A property with no definition and no fallback
  * arm is returned as unresolved rather than as naming nothing: "we could not

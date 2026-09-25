@@ -5,7 +5,8 @@ import { test, expect, type Browser, type Locator, type Page } from '@playwright
  *
  * Both are rows of that story's I/O matrix and neither is visible to jsdom, which applies no
  * stylesheets: one is about what happens to a long unbroken token, the other about what changes on
- * `:hover` and, more to the point, about everything that must not.
+ * `:hover` and, more to the point, about everything that must not. A third since 2026-09-24: each link
+ * opening a new tab says so, with a painted mark after its underline and in its accessible name.
  *
  * **Separate from `tests/e2e/hit-target-floor.pw.ts` on purpose.** That file is the A-4 floor and
  * the A-5 edge sweep, and its `EXEMPTIONS` and `SURFACES` literals are parsed as text by
@@ -41,6 +42,9 @@ const ROUTE = '/';
 
 /** The fragment `/#suite` resolves to, which the directory heading carries. */
 const HEADING_ID = 'suite';
+
+/** Sub-pixel slack on the fragment landing's top edge alone. See `landsOnHeading` below. */
+const LANDING_SLACK = 1;
 
 /**
  * The tightest width at which the three-column layout applies.
@@ -258,6 +262,71 @@ const pastTheBreakpoint = async <T>(browser: Browser, read: (page: Page) => Prom
   }
 };
 
+/**
+ * Navigate to `/#suite` and assert the heading is in view and focused, on the browser's own scroll.
+ *
+ * Shared by the two runs of the fragment case below, one per motion preference. Until 2026-09-24
+ * `app/providers.tsx` constructed Lenis for a visitor who allows motion (A-17 kept it off the pinned
+ * `reduce` context), and Lenis owned the scroll position and could refuse or undo a native fragment
+ * jump. DW-36 removed it on the Operator ruling of that day, so both runs read the same native jump,
+ * and each also reads the `lenis` class Lenis wrote onto `<html>` on construct: the library put back
+ * fails the run that allows motion, by name.
+ */
+const landsOnHeading = async (page: Page): Promise<void> => {
+  const response = await page.goto(`${ROUTE}#${HEADING_ID}`, { waitUntil: 'load' });
+  expect(response?.status(), 'the home route did not answer 200').toBe(200);
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+
+  // Long enough for hydration to have had its chance to take the scroll position back, which a poll
+  // cannot prove absent. A snap back would land inside this window, not after it.
+  await page.waitForTimeout(2000);
+
+  const landed = await page.evaluate((id) => {
+    const heading = document.getElementById(id);
+    if (!heading) return null;
+    const box = heading.getBoundingClientRect();
+    return {
+      top: box.top,
+      innerHeight: window.innerHeight,
+      scrollY: window.scrollY,
+      focused: document.activeElement === heading,
+      activeElement: document.activeElement?.tagName ?? 'none',
+      lenis: document.documentElement.classList.contains('lenis'),
+    };
+  }, HEADING_ID);
+
+  expect(landed, `nothing on the home route carries id="${HEADING_ID}"`).not.toBeNull();
+
+  expect(landed?.lenis, 'Lenis mounted, so something smooth-scrolls the page again (DW-36)').toBe(false);
+
+  expect(
+    landed && landed.scrollY > 0,
+    `navigating to #${HEADING_ID} left the page at the top. The heading exists, so the fragment did ` +
+      `not resolve, or something took the position back after the jump`
+  ).toBe(true);
+  // **Sub-pixel slack on the top edge alone, added 2026-09-21.** A fragment jump lands on the
+  // element's offset position and layout produces fractional ones: after Story 2-29 gave the hero
+  // fractional heights (a display link that wraps measures 68.75) the landing reads **-0.31**, a
+  // third of a pixel above the fold on an 800px viewport. That is a rounding artifact, not a
+  // heading out of view, and it is the same slack `hit-target-floor.pw.ts` takes on an edge
+  // comparison and never on a floor. The lower bound is the only side it applies to; being past
+  // the bottom is still a failure with no slack at all.
+  expect(
+    landed && landed.top >= -LANDING_SLACK && landed.top < landed.innerHeight,
+    `the heading is not in view after navigating to #${HEADING_ID}: its top is at ` +
+      `${landed?.top.toFixed(2)} in a ${landed?.innerHeight}px viewport`
+  ).toBe(true);
+  expect(
+    landed?.focused,
+    `the heading is not focused after navigating to #${HEADING_ID}, so a keyboard reader lands ` +
+      `at the top of the document and tabs through the whole hero again. ` +
+      `EXPERIENCE.md:420 moves focus, not only scroll position. Active element was ` +
+      `${landed?.activeElement}`
+  ).toBe(true);
+};
+
 test.describe('the home route can be scrolled to the directory', () => {
   test('carries overflow-x: clip on both elements and a document taller than the viewport', async ({ page }) => {
     // **The story's central claim, and until this case nothing read it.** Story 2-9 repaired the
@@ -328,53 +397,22 @@ test.describe('the home route can be scrolled to the directory', () => {
 
   test('resolves /#suite to the heading, in view and focused', async ({ page }) => {
     // The fragment is the payload Story 2-14 redirects to and the target Story 2-13's skip control
-    // moves focus to, and nothing navigated to it. Two things could break it and neither shows up
-    // anywhere else: the heading could stop being focusable, and `app/providers.tsx` installs Lenis
-    // globally, which owns the scroll position and could refuse or undo a native fragment jump.
-    const response = await page.goto(`${ROUTE}#${HEADING_ID}`, { waitUntil: 'load' });
-    expect(response?.status(), 'the home route did not answer 200').toBe(200);
-    await page.evaluate(async () => {
-      await document.fonts.ready;
+    // moves focus to, and nothing navigated to it. The heading could stop being focusable, and until
+    // 2026-09-24 a smooth-scroll library owned the scroll position and could refuse or undo a native
+    // fragment jump. This run is on the pinned `reduce` context; the run below allows motion.
+    await landsOnHeading(page);
+  });
+
+  test.describe('on a context that has not asked for reduced motion', () => {
+    // `playwright.config.ts:79` pins `reducedMotion: 'reduce'`. This block differs in that one
+    // context option and in nothing else, the shape `tests/e2e/cv.pw.ts:504` uses for scripting.
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('resolves /#suite the same way on native scroll, where motion is allowed', async ({ page }) => {
+      // The visitor Lenis was constructed for until DW-36 removed it (Operator ruling 2026-09-24),
+      // and so the run that fails if a smooth-scroll library comes back.
+      await landsOnHeading(page);
     });
-
-    // Long enough for hydration to install Lenis and for anything it does to the scroll position
-    // to have happened. A snap back would land inside this window, not after it.
-    await page.waitForTimeout(2000);
-
-    const landed = await page.evaluate((id) => {
-      const heading = document.getElementById(id);
-      if (!heading) return null;
-      const box = heading.getBoundingClientRect();
-      return {
-        top: box.top,
-        bottom: box.bottom,
-        innerHeight: window.innerHeight,
-        scrollY: window.scrollY,
-        focused: document.activeElement === heading,
-        activeElement: document.activeElement?.tagName ?? 'none',
-      };
-    }, HEADING_ID);
-
-    expect(landed, `nothing on the home route carries id="${HEADING_ID}"`).not.toBeNull();
-
-    expect(
-      landed && landed.scrollY > 0,
-      `navigating to #${HEADING_ID} left the page at the top. The heading exists, so either the ` +
-        `fragment did not resolve or the smooth-scroll library in app/providers.tsx took the ` +
-        `position back after the jump`
-    ).toBe(true);
-    expect(
-      landed && landed.top >= 0 && landed.top < landed.innerHeight,
-      `the heading is not in view after navigating to #${HEADING_ID}: its top is at ` +
-        `${landed?.top.toFixed(2)} in a ${landed?.innerHeight}px viewport`
-    ).toBe(true);
-    expect(
-      landed?.focused,
-      `the heading is not focused after navigating to #${HEADING_ID}, so a keyboard reader lands ` +
-        `at the top of the document and tabs through the whole hero again. ` +
-        `EXPERIENCE.md:420 moves focus, not only scroll position. Active element was ` +
-        `${landed?.activeElement}`
-    ).toBe(true);
   });
 });
 
@@ -574,5 +612,85 @@ test.describe('the Suite Directory on hover', () => {
       Number.parseFloat(live.underlineWidth),
       'the live underline is not heavier than the source one, so the two read as one rank'
     ).toBeGreaterThan(Number.parseFloat(source.underlineWidth));
+  });
+});
+
+test.describe('the Suite Directory links say they open a new tab', () => {
+  /**
+   * Operator ruling 2026-09-24 (the ledger entry on new-tab links). Both links keep `target="_blank"`
+   * and say so twice: to the eye, the system's external-navigation mark after the underlined label,
+   * in the link's own colour and face, so it spends no accent (`DESIGN.md` § Colors → Rules); to a
+   * reader, the words at the end of the accessible name, the mark itself hidden from the tree.
+   */
+  const MARK = '\u2197\uFE0E';
+
+  /** What each Directory link on the open page carries, in document order. */
+  const readLinks = (page: Page) =>
+    page.locator('.suite-directory__live, .suite-directory__source').evaluateAll((nodes: Element[]) =>
+      nodes.map((link) => {
+        const mark = link.querySelector('.suite-directory__external');
+        const rule = link.querySelector('.suite-directory__rule');
+        const markBox = mark?.getBoundingClientRect();
+        const ruleBox = rule?.getBoundingClientRect();
+        return {
+          at: `${link.className} "${rule?.textContent ?? ''}"`,
+          target: link.getAttribute('target'),
+          name: link.getAttribute('aria-label') ?? '',
+          marks: link.querySelectorAll('.suite-directory__external').length,
+          hidden: mark?.getAttribute('aria-hidden') ?? null,
+          text: mark?.textContent ?? null,
+          colour: mark ? window.getComputedStyle(mark).color : '',
+          linkColour: window.getComputedStyle(link).color,
+          family: mark ? window.getComputedStyle(mark).fontFamily : '',
+          linkFamily: window.getComputedStyle(link).fontFamily,
+          painted: markBox !== undefined && markBox.width > 0 && markBox.height > 0,
+          after: markBox !== undefined && ruleBox !== undefined && markBox.left >= ruleBox.right,
+          ruled: mark ? window.getComputedStyle(mark).borderBottomStyle !== 'none' : false,
+        };
+      })
+    );
+
+  /** The verdict on those reads. Pure, so a planted link drives the same predicate. */
+  const newTabFindings = (reads: Awaited<ReturnType<typeof readLinks>>): string[] =>
+    reads.flatMap((read) => {
+      const found: string[] = [];
+      if (read.target !== '_blank') found.push(`${read.at} does not open a new tab`);
+      if (read.marks !== 1) found.push(`${read.at} carries ${read.marks} external marks`);
+      if (read.marks === 1 && read.hidden !== 'true') found.push(`${read.at}'s mark is in the accessibility tree`);
+      if (read.marks === 1 && read.text !== MARK) found.push(`${read.at}'s mark reads "${read.text}"`);
+      if (read.marks === 1 && (read.colour !== read.linkColour || read.family !== read.linkFamily)) found.push(`${read.at}'s mark is not in its link's colour and face`);
+      if (read.marks === 1 && !read.painted) found.push(`${read.at}'s mark paints nothing`);
+      if (read.marks === 1 && (!read.after || read.ruled)) found.push(`${read.at}'s mark is not after its underline, clear of it`);
+      if (!read.name.endsWith(', opens in a new tab')) found.push(`${read.at} is named "${read.name}"`);
+      return found;
+    });
+
+  test('each ends in the external mark, hidden, in its own type, and its name says a new tab opens', async ({ page }) => {
+    await goTo(page, ROUTE);
+    const reads = await readLinks(page);
+    expect(reads.length, 'the Directory drew no link, so this reads nothing').toBeGreaterThan(0);
+    expect(newTabFindings(reads)).toEqual([]);
+
+    // The names as the accessibility tree computes them, the mark contributing nothing.
+    const links = page.locator('.suite-directory__live, .suite-directory__source');
+    for (let index = 0; index < reads.length; index += 1) {
+      await expect(links.nth(index)).toHaveAccessibleName(/^(Source: .+|[a-z0-9.-]+), opens in a new tab$/);
+    }
+
+    // **The control.** A link planted beside them with its mark and its name taken off is what the
+    // same read names, so an empty list above is a measurement.
+    await page.evaluate(() => {
+      const source = document.querySelector('.suite-directory__source');
+      const planted = source?.cloneNode(true) as HTMLElement | undefined;
+      if (!source || !planted) return;
+      planted.querySelector('.suite-directory__external')?.remove();
+      planted.removeAttribute('aria-label');
+      source.after(planted);
+    });
+    const planted = newTabFindings(await readLinks(page));
+    expect(planted).toEqual([
+      'suite-directory__source "Source" carries 0 external marks',
+      'suite-directory__source "Source" is named ""',
+    ]);
   });
 });

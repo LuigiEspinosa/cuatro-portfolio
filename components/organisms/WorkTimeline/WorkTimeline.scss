@@ -1,8 +1,18 @@
+// The work timeline, rebuilt token-native (Story 2-33, `DESIGN.md` § Components → Work hero and
+// timeline, `RESTYLE-SPEC.md` § 2). A list of work-item rows; each row's own treatment is
+// `WorkItem.scss` (Story 2-31).
+//
+// **Flush in the container, padded in the block axis only.** The 2023 rule padded inline with the
+// page-padding alias inside `.container`, which already pads, so the rows sat two gutters in: the row
+// is flush and the page is padded (§ 2). 2rem and 8rem have no step on the scale; these are the
+// nearest, the mapping Story 2-29 used. The zero-gap flex column it also set was block flow.
 .work-timeline {
   list-style: none;
-  padding: 2rem var(--page-padding) 8rem;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  padding-block: var(--s-xl) var(--s-3xl);
+}
+
+// **The last row drops its separator** (`DESIGN.md` § Work hero and timeline): the list ends on its
+// content, and the page's next rule is its own.
+.work-timeline > li:last-child > .work-item {
+  border-block-end: 0;
 }

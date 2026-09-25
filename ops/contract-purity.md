@@ -383,10 +383,10 @@ than left in prose, in the shape `ops/token-contract.md`, `ops/font-contract.md`
 
 | # | Action | Owner | Note | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Record the first real run of the `contract-purity` job**, from the Actions run summary | Operator | The job has only ever run as a local command. The runner figure and the real behaviour of `setup-node` without a cache are unknown until it runs once. Same shape as the actions Stories 1-11 and 1-13 left open for their own jobs | _not done_ |
+| 1 | **Record the first real run of the `contract-purity` job**, from the Actions run summary | Operator | The job has only ever run as a local command. The runner figure and the real behaviour of `setup-node` without a cache are unknown until it runs once. Same shape as the actions Stories 1-11 and 1-13 left open for their own jobs | **2026-08-26.** Run 32930827956 on `6b134d3` (`dev` push), the first run carrying the job: `contract-purity: success`, 04:36:01Z to 04:36:07Z, **6 s**, with all five jobs green. Read from the run on 2026-09-24 and closed on the Operator ruling of that day |
 | 2 | **Make `contract-purity` a required status check on `main`**, in the branch protection settings | Operator | Until it is, AD-21's "blocking" means the job goes red and nothing stops. A merge is not held, and `deploy.yml` fires on the same push with no `needs:`, so a deploy is not held either. The same is true of the four existing jobs, so this is worth doing for all five in one sitting; the purity gate is the one that guards a folder seven repositories copy | _not done_ |
-| 3 | **When Story 1.16 serves `contracts/` at `https://cuatro.dev/contracts/`, confirm the served path is the committed folder and not a link to it** | Operator | This gate refuses a link under the surface in the repository and cannot see one on the box. A serving path that is a link is the same defect one deploy further along | _not done_ |
-| 4 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10, 1-12 and 1-13, and this story moves it again. `AGENTS.md:52-53` describes CI as "typecheck and tests only" against a file that now has five jobs. `AGENTS.md:64-66` states the purity rule as a fact, which this story finally makes true, so that line is now correct and was not edited | _not done_ |
+| 3 | **When Story 1.16 serves `contracts/` at `https://cuatro.dev/contracts/`, confirm the served path is the committed folder and not a link to it** | Operator | This gate refuses a link under the surface in the repository and cannot see one on the box. A serving path that is a link is the same defect one deploy further along | 2026-09-24, closed by construction, on the Operator ruling of that day. Story 1-16 serves `contracts/` by copying files into the image at build time, not by linking: `packages/contracts-serve/publish.mjs:133` copies each file, `:193-194` refuse an entry under the surface that is a link, and `:242-256` read the root with `lstat` and refuse a linked root (line numbers as of 2026-09-24), which are guards 3 and 5 in `ops/contract-serving.md`. The live surface answered over HTTPS on 2026-08-27 (`ops/contract-serving.md` action 1). So a link cannot reach the box |
+| 4 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10, 1-12 and 1-13, and this story moves it again. `AGENTS.md:52-53` describes CI as "typecheck and tests only" against a file that now has five jobs. `AGENTS.md:64-66` states the purity rule as a fact, which this story finally makes true, so that line is now correct and was not edited | **2026-08-27**, found done and closed here on 2026-09-23. The refresh landed in `4112ee8`, which named CI's five jobs, `contract-purity` among them, where the block had said "typecheck and tests only", and the `bmad-project-context` refresh of 2026-08-28, `967abfd`, rewrote the block again (`Verified 2026-08-28 against c490f33`). **Observed 2026-09-23** in `AGENTS.md` at `304767f`: nothing describes CI as typecheck and tests only, and the purity rule stands at `:77-81` |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row
@@ -408,3 +408,16 @@ no `pnpm/action-setup` step, so the automatic path would have looked for a pnpm 
 installed. `package-manager-cache: false` is now written into the job by name, which is both the fix
 and the record of the decision, and a standing case in `ops/__tests__/contract-purity.test.ts` pins
 it. The job still installs nothing, and the claim is now held by an input rather than by an absence.
+
+## Third-party actions pinned by commit, and the token narrowed, 2026-09-24
+
+**Changed 2026-09-24** for the whole file, by Operator ruling 2026-09-24 (DW-87, commit `b589228`).
+`pnpm/action-setup` is pinned to `0977fd99725f1db4007ccb2928dbb4e90d06cc86` with `# v6.0.10` beside
+it on all four jobs that use it, the commit `v6` pointed at that day (**Observed** with
+`git ls-remote https://github.com/pnpm/action-setup`; `v6.1.0` existed and was not taken, so nothing
+the jobs run changed). GitHub's own actions stay on their tags. The file declares
+`permissions: contents: read` at the top, and no job widens it. This job's two actions are GitHub's
+own, so its table above is unchanged. `ops/__tests__/workflow-hardening.test.ts` holds every workflow
+in the directory to both rules and each third-party action to one commit across all of them, so a
+bump is one hand edit of every sha and comment together; nothing automates it (`AGENTS.md`,
+Dependency automation policy).

@@ -5,7 +5,6 @@ import {
   renderedApplications,
   type RegistryEntry,
 } from '@/lib/registry';
-import { SuiteReach } from './SuiteReach';
 import './SuiteDirectory.scss';
 
 /**
@@ -22,7 +21,9 @@ import './SuiteDirectory.scss';
  * `[data-umami-event]` and reads `data-umami-event-*` as the event's data, so no handler runs here
  * and the Directory stays on the server. The one event with no click to hang on, reach, is
  * `SuiteReach`, a client component that renders nothing, imports no Registry value and is handed
- * the heading's id; it is the last child of the section and the only client file in this folder.
+ * the heading's id; it is the only client file in this folder. **`HomeLayout` renders it since
+ * 2026-09-24** (Operator ruling, DW-88): the event carries the front door, the hero's decision, which
+ * this server component cannot see, so the heading below is observed from the hero.
  *
  * **Every decision here is a rule over data.** What renders is `selectRendered` (Story 2-7),
  * unchanged. The order, the `You are here` mark and the family grouping are the three exported
@@ -46,6 +47,22 @@ export const SOURCE_EVENT = 'source-open';
 
 /** Already the product's own separator in the footer line at `EXPERIENCE.md:295`. */
 const TECH_SEPARATOR = ' · ';
+
+/**
+ * Both links open a new tab, and say so (Operator ruling 2026-09-24, the ledger entry on new-tab
+ * links). To the eye, the external-navigation mark, one of the system's three glyphs
+ * (`RESTYLE-SPEC.md` § Icons): the north-east arrow, U+2197, then U+FE0E, which asks for the text form
+ * so no platform paints it as an emoji. It is decoration, hidden from assistive technology, whose
+ * accessible name ends in the same fact as words. One element, drawn after each link's underline.
+ */
+const EXTERNAL_MARK = (
+  <span className='suite-directory__external' aria-hidden='true'>
+    {'\u2197\uFE0E'}
+  </span>
+);
+
+/** What each link's accessible name ends with, after its visible label (WCAG 2.5.3). */
+const NEW_TAB = 'opens in a new tab';
 
 /**
  * The live link's text: the bare domain, never "View Live" (`EXPERIENCE.md:289`).
@@ -79,9 +96,9 @@ const familyName = (family: string): string =>
  * One entry, drawn as a row.
  *
  * **Exported so the arms the committed Registry cannot reach are testable at the rendering level.**
- * Nothing is `Complete` today, and how the filter treats a `Complete` entry is a different claim
- * from how a row draws one: the first is `selectRendered`'s and is proved over fixtures in
- * `lib/__tests__/registry.test.ts`, the second is this component's and is proved here.
+ * How the filter treats a `Complete` entry is a different claim from how a row draws one: the first
+ * is `selectRendered`'s and is proved over fixtures in `lib/__tests__/registry.test.ts`, the second
+ * is this component's and is proved here.
  *
  * This is deliberately the narrow seam. It takes one entry and returns one `<li>`, so it cannot
  * change what `SuiteDirectory` renders; an `entries` prop on the section would make "render
@@ -101,6 +118,7 @@ export function SuiteDirectoryRow({ entry }: { entry: RegistryEntry }) {
    * behaves like a broken one. A presence check on the key alone would let it through.
    */
   const live = entry.live?.trim() ?? '';
+  const domain = bareDomain(live);
 
   return (
     <li className='suite-directory__row'>
@@ -128,10 +146,12 @@ export function SuiteDirectoryRow({ entry }: { entry: RegistryEntry }) {
             href={live}
             target='_blank'
             rel='noopener noreferrer'
+            aria-label={`${domain}, ${NEW_TAB}`}
             data-umami-event={LIVE_EVENT}
             data-umami-event-app={entry.id}
           >
-            <span className='suite-directory__rule'>{bareDomain(live)}</span>
+            <span className='suite-directory__rule'>{domain}</span>
+            {EXTERNAL_MARK}
           </a>
         )}
 
@@ -140,11 +160,12 @@ export function SuiteDirectoryRow({ entry }: { entry: RegistryEntry }) {
           href={entry.source}
           target='_blank'
           rel='noopener noreferrer'
-          aria-label={`Source: ${entry.name}`}
+          aria-label={`Source: ${entry.name}, ${NEW_TAB}`}
           data-umami-event={SOURCE_EVENT}
           data-umami-event-app={entry.id}
         >
           <span className='suite-directory__rule'>Source</span>
+          {EXTERNAL_MARK}
         </a>
       </div>
     </li>
@@ -162,8 +183,12 @@ export function SuiteDirectory() {
         <h2 className='suite-directory__heading' id={HEADING_ID} tabIndex={-1}>
           The Suite
         </h2>
-        {/* The real rendered count, never a literal and never a rounded figure. */}
-        <p className='suite-directory__count'>{entries.length} running</p>
+        {/* The real count, never a literal and never a rounded figure (`EXPERIENCE.md` § UI
+            strings). `Live` rows only: a `Complete` row renders and may run nowhere, so counting it
+            as running would be the aspirational figure the string forbids. */}
+        <p className='suite-directory__count'>
+          {entries.filter((entry) => entry.status === 'Live').length} running
+        </p>
       </div>
 
       <ul className='suite-directory__list'>
@@ -188,10 +213,6 @@ export function SuiteDirectory() {
           )
         )}
       </ul>
-
-      {/* Renders nothing. Last as a reading choice, the instrument after the thing it measures; its
-          effect runs after React commits the whole tree, so the order guarantees nothing. */}
-      <SuiteReach target={HEADING_ID} />
     </section>
   );
 }

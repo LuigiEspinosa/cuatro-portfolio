@@ -8,7 +8,7 @@ import { RENDERED_VIEWPORT } from './tests/e2e/harness';
  * the device scale factor and the motion preference. The CI job runs inside
  * `mcr.microsoft.com/playwright:v1.62.1-noble` and the committed baseline PNG is generated
  * inside that same image, because glyph rasterization is not portable across platforms and
- * `--font-mono` falls back to a different face on Linux than on Windows.
+ * the 2023 monospace stack fell back to a different face on Linux than on Windows.
  *
  * See `ops/rendered-output-harness.md` for the tolerance and its reasoning.
  */
@@ -73,10 +73,12 @@ export default defineConfig({
         deviceScaleFactor: 1,
         colorScheme: 'light',
         // As of Playwright 1.62 `reducedMotion` is a context option rather than a top-level
-        // test option. The Hub's GSAP entrance tweens sit behind `if (!reduceMotion)` and the
-        // ScanlineOverlay grain animation behind a `prefers-reduced-motion` query, so this is
-        // what stops both at source rather than waiting them out.
+        // test option. The Hub's GSAP entrance tweens sit behind `if (!reduceMotion)`, so this is
+        // what stops them at source rather than waiting them out (until 2026-09-14 it also stopped
+        // the ScanlineOverlay grain behind its reduced-motion query; Story 2-28 deleted the grain).
         contextOptions: { reducedMotion: 'reduce' },
+        // Every context scrolls natively. Lenis ran where this preference was not `reduce` (A-17)
+        // until 2026-09-24, when DW-36 deleted it with `app/providers.tsx`.
       },
     },
   ],

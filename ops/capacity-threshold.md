@@ -131,7 +131,11 @@ the threshold with the build inside the window, which is the cost KV-1 tolerates
 
 **`cs-tournament` is charged at its analogue and not below it.** Its Status in `ops/estate.md` is
 still the unresolved `[ASSUMPTION: Live on Vercel]`, resolved by Story 2-4, so its real footprint is
-not known here. The Anchor pair is the closest shape in the observed data.
+not known here. The Anchor pair is the closest shape in the observed data. **Amended 2026-09-25**
+(Operator ruling 2026-09-24): Story 2-4 resolved it on 2026-09-02 to `Live` on Vercel, and the
+ruling removed Vercel from the estate, so `cs-tournament` is `Complete` and runs nowhere until Story
+3.7 places it on the box. The charge stands for that placement, and there is still no footprint to
+observe before it.
 
 ### Step 3. Multiply by the week's own observed volatility
 
@@ -335,7 +339,9 @@ The named limits. Each is a real bound on what the number above can be trusted f
   presented as a measurement.
 - **`cs-tournament`'s footprint is assumed from an analogue, not observed.** Its Status is still an
   open assumption resolved by Story 2-4. If it arrives materially heavier than an Anchor-shaped
-  pair, Step 2 is the step to redo.
+  pair, Step 2 is the step to redo. **Amended 2026-09-25:** its Status is `Complete` since the
+  Operator ruling of 2026-09-24 removed Vercel, and it runs nowhere, so the analogue is all there is
+  until Story 3.7 records the load after placement.
 - **No rendered-output or browser check is claimed anywhere.** Playwright arrives in Story 1-10.
 
 ## What re-blocks the gate
@@ -368,7 +374,7 @@ at February 2027 in any case, since Let's Encrypt certificate lifetimes fall tha
 |---|---|---|---|
 | 1 | Derive the threshold from the closed week and write it into `ops/capacity-gate.yml` | `load15 0.60 on 2 vCPU`, derived above | **2026-08-25** |
 | 2 | Move `status` to `open`, the measured baseline being below the threshold | Baseline load15 0.08 against a threshold of 0.60 | **2026-08-25** |
-| 3 | Confirm `cs-tournament`'s real footprint once Story 2-4 resolves its Status | Step 2 charges it from an analogue. If it lands heavier, Step 2 is redone | _not done_ |
+| 3 | Confirm `cs-tournament`'s real footprint once Story 2-4 resolves its Status | Step 2 charges it from an analogue. If it lands heavier, Step 2 is redone | **2026-09-25**, closed on the Operator ruling of 2026-09-24. Story 2-4 resolved the Status on 2026-09-02 to `Live` on Vercel, and the ruling removed Vercel from the estate, so `cs-tournament` is `Complete`, runs nowhere, and has no footprint to confirm until Story 3.7 places it on the box. That story's AD-9 criterion records the load reading after placement against the threshold, and § What re-blocks the gate still answers an addition that arrives heavier than its charge |
 | 4 | **Review this derivation on 2027-02-25** | Six months from derivation. Re-derive if the estate or the box has changed, and otherwise move the date on rather than leaving it passed | _not done_ |
 | 5 | Check `list-wheel`'s real footprint against its Step 2 charge once it is placed | Charged at 1.3% of one core as an Anchor-shaped pair. Observed 2026-09-13 at 17:32:05Z, one sample: 0.00% CPU, 10.4 MiB RSS, `(healthy)`; the build 27 s and load15 0.14 after it. Under the charge, so Step 2 is not redone. The first pass through the gate as a new id is quoted under "What this record does not claim" | **2026-09-13** |
 

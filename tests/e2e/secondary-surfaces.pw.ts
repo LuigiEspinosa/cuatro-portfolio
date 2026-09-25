@@ -84,7 +84,7 @@ const SURFACES = [
  *
  * The same seven element types `tests/e2e/cv.pw.ts:60` reads, for the same reason: the universal
  * instrument with its full role list is `tests/e2e/hit-target-floor.pw.ts`, which already sweeps
- * `/celeste` and pins that all three of its candidates are hidden. This is the local claim.
+ * `/celeste` and pins that all four of its candidates are hidden. This is the local claim.
  */
 const INTERACTIVE = 'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
@@ -254,11 +254,17 @@ const ogTitleOn = (page: Page): Promise<string> =>
  * `/celeste?x` or the absolute `https://cuatro.dev/celeste` is exactly the accidental link this
  * exists to catch, and an attribute-equality locator sees none of those. A trailing slash is
  * stripped because Next answers `/celeste/` with a 308 to `/celeste`, so it is the same entrance.
+ *
+ * **A same-document fragment is not an entrance** (since 2026-09-24). The skip link, `href="#main"`,
+ * is in the header on every route (DW-43), and on `/celeste` it resolves to `/celeste#main`, a link
+ * from the page to itself. So an anchor whose attribute is only a fragment is left out; a path
+ * carrying one, `/celeste#x`, is still read.
  */
 const celesteLinksOn = (page: Page): Promise<string[]> =>
   page.evaluate(
     (route) =>
       [...document.querySelectorAll('a[href]')]
+        .filter((node) => !(node.getAttribute('href') ?? '').startsWith('#'))
         .filter((node) => {
           const pathname = new URL((node as HTMLAnchorElement).href).pathname;
           return (pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname) === route;
@@ -400,7 +406,7 @@ test.describe('the footer link', () => {
     // `--token-border-interactive` on an inner span, hover to `--token-accent-hover`, the standard
     // ring on focus. `SiteFooter.scss` declares all four and nothing read any of them back in a
     // browser until this case. Every expectation is a probe resolved in the same page, never a
-    // literal, on the shape `tests/e2e/cv.pw.ts:678-731` and `tests/e2e/suite-directory.pw.ts:503`
+    // literal, on the shape `tests/e2e/cv.pw.ts:678-731` and `tests/e2e/suite-directory.pw.ts:547`
     // set.
     await goTo(page, '/');
     await page.evaluate(async () => {
@@ -445,7 +451,7 @@ test.describe('the footer link', () => {
     await link.scrollIntoViewIfNeeded();
     await link.hover();
     // Past the longest duration the contract declares, under reduced motion. Same wait
-    // `tests/e2e/suite-directory.pw.ts:531-535` takes.
+    // `tests/e2e/suite-directory.pw.ts:575-579` takes.
     await page.waitForTimeout(100);
     const hovered = await label.evaluate((node) => ({
       width: window.getComputedStyle(node).borderBottomWidth,
@@ -477,7 +483,9 @@ test.describe('the footer link', () => {
 
     // **The control for the ring.** Take the rule off through the browser, reach the link the same
     // way, and the read has to report no ring, or `outlineStyle` is answering `solid` for something
-    // other than the declaration in `SiteFooter.scss`.
+    // other than the global `:focus-visible` declaration in `app/app.scss`, where Story 2-26 moved
+    // it from `SiteFooter.scss`. The planted rule is scoped and `!important`, which is why the
+    // global rule has to stay at specificity (0,1,0).
     await goTo(page, '/');
     await page.addStyleTag({ content: '.site-footer__link:focus-visible { outline: none !important; }' });
     expect(await tabTo(page, link), 'the footer link left the keyboard order').toBe(true);
@@ -529,6 +537,21 @@ test.describe('the footer link', () => {
       'elsewhere',
     ]);
     expect(seen[1], 'the absolute trailing-slash form was not the second link seen').toContain('planted absolute');
+
+    // **And the fragment exclusion, both ways, on `/celeste` itself.** The skip link's `#main` there
+    // is left out, and a planted path carrying a fragment is still read, so the exclusion is of a
+    // fragment alone and never of a path.
+    await goTo(page, CELESTE);
+    await page.evaluate((route) => {
+      const pathed = document.createElement('a');
+      pathed.href = `${route}#planted`;
+      pathed.textContent = 'planted pathed fragment';
+      document.body.append(pathed);
+    }, CELESTE);
+    const onCeleste = await celesteLinksOn(page);
+    expect(onCeleste.map((line) => line.replace(/^elsewhere: /, '')), 'the fragment exclusion is wrong in one direction').toEqual([
+      expect.stringContaining('planted pathed fragment'),
+    ]);
   });
 });
 
@@ -543,13 +566,23 @@ test.describe('/celeste has no exit', () => {
     await expect(page.locator('header')).toHaveCount(1);
     expect(await page.locator('header').evaluate((node) => window.getComputedStyle(node).display)).toBe('none');
 
-    // Zero visible interactive elements. The header's three are in the DOM and hidden, which is
-    // what `hit-target-floor.pw.ts` pins as `found: 3, skipped: 3`; a visitor can reach none of
+    // Zero visible interactive elements. The header's four are in the DOM and hidden, which is
+    // what `hit-target-floor.pw.ts` pins as `found: 4, skipped: 4`; a visitor can reach none of
     // them, and nothing outside the header is interactive at all.
     const visible = await page.locator(INTERACTIVE).evaluateAll((nodes: Element[]) =>
       nodes.filter((node) => (node as HTMLElement).getClientRects().length > 0).map((node) => node.outerHTML.slice(0, 80))
     );
     expect(visible, `/celeste renders a visible control:\n${visible.join('\n')}`).toEqual([]);
+
+    // **The skip link is the fourth, and it hides with the band** (Operator ruling 2026-09-24,
+    // DW-43). Every route with a header carries it as the header's first child, so here it is inside
+    // the one element `celeste.scss` hides, and the page still shows no control; the landmark it
+    // would target is there all the same.
+    expect(
+      await page.locator('header > .skip-link:first-child').evaluateAll((nodes: Element[]) => nodes.map((node) => node.getClientRects().length)),
+      'the skip link is not the hidden header\'s first child, or it has a box'
+    ).toEqual([0]);
+    await expect(page.locator('main#main[tabindex="-1"]')).toHaveCount(1);
 
     // `robots: { index: false }` in `app/celeste/page.tsx`, rendered by Next as `noindex`.
     expect(await robotsOn(page), '/celeste does not decline indexing').toEqual(['noindex']);
@@ -630,9 +663,10 @@ test.describe('the 404 exits', () => {
       0
     );
 
-    // Each at or above `--tap` on both axes. The entrance tween in `Error404.tsx` fades the exits
-    // in and translates them; neither changes a box's size, and `hit-target-floor.pw.ts` measures
-    // the same elements in the same way without waiting on it.
+    // Each at or above `--tap` on both axes. The entrance in `Error404.scss` fades the exits'
+    // wrapper in on opacity alone (a GSAP tween that also translated each exit until Story 2-30),
+    // which changes no box's size, and `hit-target-floor.pw.ts` measures the same elements in the
+    // same way without waiting on it.
     const floor = await floorFrom(page);
     const boxes = await measure(page, EXITS);
     expect(boxes, 'no exit was measured').toHaveLength(2);
@@ -695,7 +729,7 @@ test.describe('the 404 exits', () => {
     ).toBeGreaterThanOrEqual(apartBy - EDGE_SLACK);
 
     // **The control.** Take the gap off through the browser and the same comparison has to report
-    // the pair as too close, or deleting `gap: var(--s-lg)` from `error-page.scss` would leave the
+    // the pair as too close, or deleting `gap: var(--s-lg)` from `Error404.scss` would leave the
     // reading above green.
     await page.addStyleTag({ content: '.error-page__exits { gap: 0 !important; }' });
     expect(
@@ -822,7 +856,8 @@ test.describe('A-13 on every surface', () => {
     // a page gone since Story 2-14, so every unrouted path shared as a link previewed under another
     // route's name. The block is dropped and Next resolves `og:title` from `title`; measured
     // 2026-09-11 against the local build, that is `Page not Found | Luigi Espinosa`, the document
-    // title with the layout's template applied. `app/__tests__/not-found.test.tsx` pins the export;
+    // title with the layout's template applied, and `Page not found | Luigi Espinosa` since Story
+    // 2-30 set the title in sentence case. `app/__tests__/not-found.test.tsx` pins the export;
     // this reads what the document says.
     await goTo(page, NOT_FOUND, 404);
     const title = await page.title();

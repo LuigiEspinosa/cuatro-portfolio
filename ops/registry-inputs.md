@@ -1,5 +1,24 @@
 # Registry inputs
 
+**Frozen 2026-09-24, by Operator ruling.** `contracts/registry.json` is the only source of Registry
+values. This file is kept as a dated historical record of how those values were first chosen and
+confirmed, from Story 2-4 on 2026-09-02 to Story 2-25 on 2026-09-13, and it is no longer updated:
+nothing holds it equal to the Registry, where the two differ the Registry is right, and a later
+value change edits the Registry alone, its evidence going in that change's story record and ledger
+closing. Stated limit 1, that nothing held this file equal to the Registry, is closed by the freeze
+rather than by a check. Everything below is unchanged and reads as of the date it carries.
+
+At the freeze the Registry already differed from what follows, all by the package that froze this
+file (`_bmad-output/implementation-artifacts/spec-registry-1-2-0.md`, Registry `1.2.0`):
+
+- `poketracker-go`'s `tech` gained `Python` and `discord.py`, and `mutuo`'s gained `PostgreSQL`,
+  each read from that repository's own code, which the spec cites by file and commit.
+- `lumen`'s `description` dropped its closing "and it is archived", which restated `status`.
+- `tcg-tracker`'s description, which the table under "The descriptions were confirmed" records as
+  resting on nothing, was confirmed by the Operator as it stands. That confirmation is its source.
+- `contract_version` moved to `1.2.0` under AD-5 as split that day, which answers the question this
+  file's last paragraph leaves open.
+
 The confirmed field values Story 2.5 transcribes into `contracts/registry.json`: `status`,
 `live`, `source`, `tech`, `demo` and `identity` for every application in the Estate, with the
 method or the reason behind each one. **Since 2026-09-03 it also carries the per-entry

@@ -112,22 +112,18 @@ const probeComputed = (page: Page, declaration: string, property: string): Promi
   );
 
 /**
- * The one control on this surface the AD-19 ledger still exempts.
+ * One measured box, labelled by what it is, so a failure names the control rather than an index.
  *
- * `ops/hit-target-floor.md` carries the row as `chrome-logo` and Story 2-32 closes it: the link is
- * a plain inline `<a>` around a 184 x 66 image, so its own box is the 20px text line box. It is
- * excluded by name here rather than by loosening the floor, and the count of what it excludes is
- * asserted, so a second undersized control cannot inherit the exclusion.
+ * **No control on this surface is exempt since 2026-09-23.** The chrome logo was, as the `chrome-logo`
+ * row in `ops/hit-target-floor.md`: a plain inline `<a>` around a 184 x 66 image, whose own box was
+ * the 20px text line box. Story 2-32 replaced it with a text wordmark held to the floor and deleted
+ * the row, so the exclusion this file carried by name, and the count that stopped a second control
+ * inheriting it, went with it.
  */
-const LEDGER_EXEMPT = '.logo a';
-
-/** One measured box, labelled by what it is, so a failure names the control rather than an index. */
 interface Box {
   readonly label: string;
   readonly width: number;
   readonly height: number;
-  /** Whether the AD-19 exemption ledger already covers this element on this surface. */
-  readonly exempt: boolean;
 }
 
 /** Which of a set of boxes fails the floor, and by how much. A predicate, so a plant can drive it. */
@@ -146,18 +142,17 @@ const measure = async (page: Page): Promise<Box[]> => {
   const boxes: Box[] = [];
 
   for (const target of targets) {
-    const meta = await target.evaluate((node: Element, exemptSelector: string) => {
+    const meta = await target.evaluate((node: Element) => {
       const tag = node.tagName.toLowerCase();
       const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 30);
       const href = node.getAttribute('href');
       return {
         label: `${tag}${href ? `[href=${href}]` : ''}${text ? ` "${text}"` : ''}`,
-        exempt: node.matches(exemptSelector),
       };
-    }, LEDGER_EXEMPT);
+    });
     const box = await target.boundingBox();
     expect(box, `${meta.label} on ${page.url()} has no box at all, so it cannot be hit`).toBeTruthy();
-    boxes.push({ label: meta.label, width: box?.width ?? 0, height: box?.height ?? 0, exempt: meta.exempt });
+    boxes.push({ label: meta.label, width: box?.width ?? 0, height: box?.height ?? 0 });
   }
 
   return boxes;
@@ -220,9 +215,10 @@ test.describe('/cv answers a document', () => {
 
   test('paints the base body rule, which no id override reaches on this surface', async ({ page }) => {
     // `Body` writes the stripped pathname onto `<body id>`, and `body#cv` matches none of
-    // `body#work` (`app/app.scss`), `body[id='']` (`HomeLayout.scss`) or `#celeste`
-    // (`celeste.scss`), so the base rule paints. The 404 was the only such surface until this story
-    // and three records said so; this is the reading that makes the correction a measurement.
+    // `body[id='']` (`HomeLayout.scss`) or `#celeste` (`celeste.scss`), so the base rule paints. It
+    // matched no `body#work` either, the rule `app/app.scss` carried until Story 2-33 deleted it. The
+    // 404 was the only such surface until this story and three records said so; this is the reading
+    // that makes the correction a measurement.
     await goTo(page, ROUTE);
 
     expect(await page.evaluate(() => document.body.id), '/cv no longer derives its own body id').toBe('cv');
@@ -239,13 +235,28 @@ test.describe('/cv answers a document', () => {
       await probeComputed(page, 'background-color:var(--token-bg);', 'background-color')
     );
 
-    // **The control**, and it is the surface next door. `/work` really does override the base rule,
-    // so the same two reads have to answer differently there, or this says nothing about `/cv`.
+    // **`/work` is read the same way since Story 2-33**, which deleted `body#work`, the cybercore
+    // literal and its grid; until then it was this read's control, the surface next door answering
+    // differently. Every route now paints the base rule.
     await goTo(page, WORK);
+    expect(await page.evaluate(() => document.body.id), '/work no longer derives its own body id').toBe('work');
+    expect(
+      await page.evaluate(() => window.getComputedStyle(document.body).backgroundImage),
+      'body on /work paints a background image, so a grid-ground rule matches it again'
+    ).toBe('none');
     expect(
       await page.evaluate(() => window.getComputedStyle(document.body).backgroundColor),
-      'body#work no longer overrides the base ground, so the reading on /cv is not about an override'
+      'the ground /work paints is not the base rule\'s --token-bg'
+    ).toBe(ground);
+
+    // **The control**, planted for this surface's id: an override the reads have to see, or the
+    // agreement above says nothing about overrides.
+    await page.addStyleTag({ content: 'body#work { background-color: rgb(10, 0, 15); background-image: linear-gradient(red, blue); }' });
+    expect(
+      await page.evaluate(() => window.getComputedStyle(document.body).backgroundColor),
+      'a planted body#work override is not read, so the agreement above is not about overrides'
     ).not.toBe(ground);
+    expect(await page.evaluate(() => window.getComputedStyle(document.body).backgroundImage)).not.toBe('none');
   });
 });
 
@@ -294,14 +305,21 @@ test.describe('the header marks this surface as the current page', () => {
       'the mark is drawn on the --tap box rather than on the inner span'
     ).toBe('0px');
 
-    // **The control for the rule.** The unmarked destination's label carries no such border, so the
-    // three comparisons above are about `aria-current` and not about every label in the nav.
-    expect(
-      await page
-        .locator(`${SUITE_LINK} .navbar__label`)
-        .evaluate((node) => window.getComputedStyle(node).borderBottomStyle),
-      'the unmarked destination is underlined too, so the rule is not keyed on the current route'
-    ).toBe('none');
+    // **The control for the rule.** The unmarked destination's label carries the rule every
+    // destination has at rest since Story 2-32 (the hairline in the interactive border role, so
+    // hover recolours an underline rather than adding one), which is narrower than the mark and not
+    // the accent, so the three comparisons above are about `aria-current` and not about every label
+    // in the nav. It read `none` until that story, when the unmarked label drew no rule at all.
+    const rest = await page.locator(`${SUITE_LINK} .navbar__label`).evaluate((node) => ({
+      width: window.getComputedStyle(node).borderBottomWidth,
+      color: window.getComputedStyle(node).borderBottomColor,
+    }));
+    expect(rest.width, 'the unmarked destination carries the mark too, so it is not keyed on the current route').toBe(
+      await probeComputed(page, 'border-bottom:var(--stroke-hair) solid red;', 'border-bottom-width')
+    );
+    expect(rest.color, 'the unmarked destination is underlined in the accent, so the mark is not keyed on the current route').toBe(
+      await probeComputed(page, 'color:var(--token-border-interactive);', 'color')
+    );
 
     // **And the control for the probe**, which would make either colour comparison vacuous if it
     // answered the same string for every input. A different token from the same family has to
@@ -501,73 +519,72 @@ test.describe('with scripting off, which is the medium the collapsed-height defe
   // `app/cv/__tests__/page.test.tsx` asserts the same thing on `renderToStaticMarkup` output. That
   // reads the string; this reads the boxes a browser lays out from it, which is the claim the
   // acceptance criterion is written about.
+  //
+  // **Inverted on 2026-09-24** (Operator ruling, DW-76). Until then this block read the open entry
+  // open and the other three at zero, the reading DW-76 was filed on: a scriptless `/cv` showed one
+  // company of four. `WorkItem.scss` opens every panel under `@media (scripting: none)` now, with the
+  // two declarations the print sheet uses, so the whole CV reads without script, on `/work` too, and
+  // the three triggers stay inert over visible text, the cost the ruling accepted.
   test.use({ javaScriptEnabled: false });
 
-  test('serves the open entry already open, and leaves the page inside the viewport', async ({ page }) => {
-    await goTo(page, ROUTE);
-
-    const panels = page.locator('.work-item__content');
-    const count = await panels.count();
-    expect(count, '/cv rendered no panel with scripting off').toBeGreaterThan(0);
-
-    const heights = await panels.evaluateAll((nodes: Element[]) =>
-      nodes.map((node) => node.getBoundingClientRect().height)
-    );
-
-    expect(
-      heights[0],
-      'the entry that is open on arrival has no height with scripting off, so its detail is ' +
-        'unreachable: nothing can expand it and the markup shipped it collapsed'
-    ).toBeGreaterThan(0);
-
-    // The detail is really there rather than the box merely being tall.
-    const detail = (await panels.first().innerText()).trim();
-    expect(detail.length, 'the open panel has a box and no text in it').toBeGreaterThan(200);
-
-    // **The control, and it is the other three panels.** They are closed, they measure zero, and
-    // nothing on this page can open them, which is the reading DW-73 is filed on. Without it,
-    // "taller than zero" above is a statement about every panel rather than about the open one.
-    expect(
-      heights.slice(1).filter((height) => height > 0),
-      'a closed panel has height with scripting off, so the reading above is not about the open entry'
-    ).toEqual([]);
-
-    // A-5 holds on this path too: nothing that only runs with scripting on is what keeps the
-    // document inside the viewport.
-    const width = await page.evaluate(() => ({
-      scroll: document.documentElement.scrollWidth,
-      inner: window.innerWidth,
-    }));
-    expect(width.scroll, `/cv scrolls horizontally with scripting off: ${JSON.stringify(width)}`).toBeLessThanOrEqual(
-      width.inner
-    );
-  });
-
-  test('and the same reading reports a collapsed panel, so it is measuring the markup', async ({ page }) => {
-    // **The counterpart.** With scripting off there is nothing to plant a defect with, so the
-    // control is the surface that still ships every panel collapsed: `/work` renders the identical
-    // component, and its first entry is open for the same reason. If both routes read the same, the
-    // measurement above is about `WorkItem` and not about a page that happens to work.
-    await goTo(page, WORK);
-
-    const heights = await page
+  /** Every panel's height and text length on the open page, in document order. */
+  const panelsOn = (page: Page) =>
+    page
       .locator('.work-item__content')
-      .evaluateAll((nodes: Element[]) => nodes.map((node) => node.getBoundingClientRect().height));
+      .evaluateAll((nodes: Element[]) =>
+        nodes.map((node) => ({ height: node.getBoundingClientRect().height, text: (node as HTMLElement).innerText.trim().length }))
+      );
 
-    expect(heights.length, '/work rendered no panel with scripting off').toBeGreaterThan(0);
-    expect(heights[0], '/work ships its open entry collapsed, so the fix reached only one route').toBeGreaterThan(0);
-    expect(
-      heights.slice(1).filter((height) => height > 0),
-      '/work leaves a closed panel open, so a zero on /cv is not the collapsed style being read'
-    ).toEqual([]);
+  for (const route of [ROUTE, WORK]) {
+    test(`serves every entry open on ${route}, and leaves the page inside the viewport`, async ({ page }) => {
+      await goTo(page, route);
+      expect(await page.evaluate(() => matchMedia('(scripting: none)').matches), 'this context is running script').toBe(true);
+
+      const panels = await panelsOn(page);
+      expect(panels.length, `${route} rendered fewer than two panels with scripting off, so "every" is over nothing`).toBeGreaterThan(1);
+      // Every company's detail is really there, not only a tall box: none is a heading with nothing under it.
+      expect(
+        panels.flatMap((panel, index) => (panel.height === 0 || panel.text < 100 ? [index] : [])),
+        `${route} leaves a company closed with scripting off: ${JSON.stringify(panels)}`
+      ).toEqual([]);
+
+      // A-5 holds on this path too: nothing that only runs with scripting on is what keeps the
+      // document inside the viewport, now that every panel is open.
+      const width = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        inner: window.innerWidth,
+      }));
+      expect(width.scroll, `${route} scrolls horizontally with scripting off: ${JSON.stringify(width)}`).toBeLessThanOrEqual(
+        width.inner
+      );
+    });
+  }
+
+  test('and with script the same read finds every other entry closed, so the open panels are that one rule', async ({ browser }) => {
+    // **The control.** The same component, the same read, a context that runs script: the first entry
+    // open and every other at the zero height the first render writes, which is what the rule above
+    // overrides and the disclosure keeps owning wherever a handler can run.
+    const context = await browser.newContext({ viewport: { ...RENDERED_VIEWPORT }, deviceScaleFactor: 1, javaScriptEnabled: true });
+    try {
+      const page = await context.newPage();
+      await goTo(page, ROUTE);
+      expect(await page.evaluate(() => matchMedia('(scripting: none)').matches), 'the control context is not running script').toBe(false);
+      const panels = await panelsOn(page);
+      expect(panels.length, '/cv rendered fewer than two panels with scripting on').toBeGreaterThan(1);
+      expect(panels[0].height, 'the entry open on arrival is closed with script').toBeGreaterThan(0);
+      expect(panels.slice(1).filter((panel) => panel.height > 0), 'a closed entry is open with script, so the rule is not scoped').toEqual([]);
+    } finally {
+      await context.close();
+    }
   });
 });
 
 test.describe('every control on /cv is a real target', () => {
   test('measures each interactive element at or above --tap on both axes', async ({ page }) => {
     // A-4 (`EXPERIENCE.md:763`), re-measured here on this surface alone so a failure names the page
-    // rather than a sweep. `tests/e2e/hit-target-floor.pw.ts` is the universal instrument and
-    // carries the one authored control still under the floor, the chrome logo, in its ledger.
+    // rather than a sweep. `tests/e2e/hit-target-floor.pw.ts` is the universal instrument; its ledger
+    // carried the chrome logo until Story 2-32 took the wordmark to the floor, so every control here,
+    // the header's three included, is measured with none excused.
     await goTo(page, ROUTE);
     await page.evaluate(async () => {
       await document.fonts.ready;
@@ -579,15 +596,13 @@ test.describe('every control on /cv is a real target', () => {
     const boxes = await measure(page);
     expect(boxes.length, '/cv yielded no interactive element, so this loop is over nothing').toBeGreaterThan(0);
 
-    const swept = boxes.filter((box) => !box.exempt);
     expect(
-      boxes.length - swept.length,
-      `the ledger exemption ${LEDGER_EXEMPT} no longer matches exactly one element on this surface, ` +
-        `so either the logo stopped rendering or a second control is being excused for free`
-    ).toBe(1);
+      boxes.map((box) => box.label).filter((label) => label.startsWith('a[href=/]')),
+      'the wordmark is not among the controls measured here, so the header is only partly swept'
+    ).toHaveLength(1);
 
     expect(
-      underFloor(swept, floor),
+      underFloor(boxes, floor),
       `a control on ${ROUTE} is under the AD-19 floor. The intro block's links are built with ` +
         `min-block-size, min-inline-size and inline-flex for exactly this reason, and vertical ` +
         `padding on a plain inline element would read as compliant here and measure otherwise`
@@ -657,7 +672,6 @@ test.describe('every control on /cv is a real target', () => {
           label: 'planted unfloored link',
           width: plantedBox?.width ?? 0,
           height: plantedBox?.height ?? 0,
-          exempt: false,
         },
       ],
       floor
@@ -723,7 +737,9 @@ test.describe('every control on /cv is a real target', () => {
 
     // **The control.** Take the rule off through the browser, reach the same link the same way, and
     // the read has to report no ring, or `outlineStyle` is answering `solid` for something other
-    // than the declaration in `CvIntro.scss` and the readings above are about a browser default.
+    // than the global `:focus-visible` declaration in `app/app.scss` (Story 2-26 moved it there
+    // from `CvIntro.scss`) and the readings above are about a browser default. The planted rule is
+    // scoped and `!important`, which is why the global rule has to stay at specificity (0,1,0).
     await goTo(page, ROUTE);
     await page.addStyleTag({ content: '.cv-intro__link:focus-visible { outline: none !important; }' });
     expect(await tabTo(page, links.first()), 'the first intro link left the keyboard order').toBe(true);

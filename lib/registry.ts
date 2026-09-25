@@ -9,8 +9,8 @@
  * the site it publishes to is down.
  *
  * **Why the shape is asserted rather than inferred.** TypeScript builds a JSON module's type from
- * the literal, so `status` widens to `string` and `live` is structurally absent from the eight
- * entries that do not declare it. The resulting element union is not assignable to `RegistryEntry`
+ * the literal, so `status` widens to `string` and `live` is structurally absent from the entries
+ * that do not declare it. The resulting element union is not assignable to `RegistryEntry`
  * in either direction, so a plain annotation is rejected and no honest narrowing exists in the type
  * system alone. The assertion below is what makes `status` a union worth switching on and `live` an
  * optional field worth checking.
@@ -103,7 +103,7 @@ export function selectRendered(entries: readonly RegistryEntry[]): readonly Regi
   return entries.filter((entry) => RENDERED_STATUSES.includes(entry.status));
 }
 
-/** The entries the committed Registry marks rendered. Six as of Contract v1.1.0, all of them `Live`. */
+/** The entries the committed Registry marks rendered, `Live` and `Complete` alike. */
 export const renderedApplications: readonly RegistryEntry[] = selectRendered(applications);
 
 /**
@@ -270,9 +270,9 @@ export type DirectoryItem =
  * names no count. A family split across the page by status would not be that container, and the
  * reader's question at the group is which implementations exist, not which shipped first.
  *
- * Nothing in the committed Registry exercises this today, every rendered entry being `Live`. It
- * arrives the day `poketracker-go`, the third `tracker-family` member, changes status, so it is
- * pinned over a fixture rather than left to be discovered then.
+ * Nothing in the committed Registry exercises this today, no rendered family member being
+ * `Complete`. It arrives the day `poketracker-go`, the third `tracker-family` member, changes
+ * status, so it is pinned over a fixture rather than left to be discovered then.
  *
  * **A family of one is still a group.** The framing line names no count
  * (`EXPERIENCE.md:292`), so a family that loses a member to a status change needs no other edit; a

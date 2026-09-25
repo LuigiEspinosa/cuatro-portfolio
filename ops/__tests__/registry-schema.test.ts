@@ -214,16 +214,52 @@ describe('the committed Registry', () => {
     expect(repeated, 'a sentence is carried verbatim by more than one entry').toEqual([]);
   });
 
+  it('lets no Archived description say it is archived, which its status already carries', () => {
+    // Operator ruling 2026-09-24 on the ledger entry Story 2-6 filed: `lumen`
+    // ended "the repository holds no code, and it is archived", restating the
+    // `status` beside it. The state is the Status mark's job, never the prose's.
+    //
+    // It reads the status word itself and nothing else. `connect-four-react`'s
+    // "retired as a standalone application" stays by the same ruling, because
+    // its next clause does not parse without it. `Live` and `Complete` are out
+    // of it: "live" and "complete" have honest uses in a description, which is
+    // why the gate carries no status-synonym rule (`ops/registry-schema.md`).
+    type Described = { id: string; status: string; description: string };
+    const restating = (applications: Described[]): string[] =>
+      applications
+        .filter((application) => application.status === 'Archived' && /\barchived\b/i.test(application.description))
+        .map((application) => application.id);
+
+    const committed = JSON.parse(registryText);
+    expect(restating(committed.applications), 'an Archived description restates its status').toEqual([]);
+    // Planted controls, so an empty result is a measurement rather than a dead matcher.
+    expect(
+      restating([{ id: 'planted', status: 'Archived', description: 'It was never built, and it is archived.' }])
+    ).toEqual(['planted']);
+    expect(
+      restating([{ id: 'planted', status: 'Archived', description: 'It is retired as a standalone application.' }])
+    ).toEqual([]);
+  });
+
   it('carries the envelope AD-4 and AD-5 fix, and the entries Story 2.5 authored', () => {
     const committed = JSON.parse(registryText);
 
     expect(committed.$schema).toBe('./registry.schema.json');
-    // 1.1.0 from Story 2.5, not the 1.0.0 Story 2-3's empty envelope carried.
-    // The field's own rule is that a value change is a minor bump, and going
-    // from zero entries to fourteen while narrowing `applications` is the
-    // largest value change the file will ever see. A Satellite fetches this
-    // over HTTPS at build time and has no other way to tell the two apart.
-    expect(committed.contract_version).toBe('1.1.0');
+    // 1.2.0 from 2026-09-24, after the 1.1.0 Story 2.5 set and the 1.0.0 of
+    // Story 2-3's empty envelope. The rule was split three ways that day by
+    // Operator ruling: a wording-only edit to a `description` or a `name` is a
+    // patch, any other value change a minor, a field renamed or removed a major.
+    // This minor covers every value change since 1.1.0: Story 2-25's `list-wheel`
+    // `live` and `tech`, and the `poketracker-go` and `mutuo` `tech` of the
+    // ruling, with `lumen`'s trim riding in it. A Satellite fetches this over
+    // HTTPS at build time and has no other signal that an entry changed.
+    // 1.3.0 from later the same day: `cs-tracker`'s `token_contract` moved to
+    // 2.0.0 with its re-vendor (Operator ruling 2026-09-24, DW-15), a value
+    // change and so a minor. 1.4.0 from 2026-09-25: Vercel left the estate
+    // (Operator ruling 2026-09-24), so `cs-tournament` moved to `Complete`,
+    // lost its `live` and its `Vercel`, and its `demo` became `not-deployed`,
+    // value changes and so a minor.
+    expect(committed.contract_version).toBe('1.4.0');
     expect(Array.isArray(committed.applications)).toBe(true);
     expect(committed.applications.length).toBeGreaterThan(0);
     // The one entry rule the schema deliberately left open until there were
@@ -387,6 +423,38 @@ describe('the shipped schema', () => {
       );
       for (const text of property.enumDescriptions) expect(String(text).length).toBeGreaterThan(0);
     }
+  });
+
+  it('states the version rule AD-5 splits three ways, and the gate prints it beside a refused version', () => {
+    // Operator ruling 2026-09-24. The node read "A value change is a minor bump;
+    // any field rename is major", which made every editorial correction a minor
+    // bump, so the version sat at 1.1.0 through two stories of value changes. The
+    // description is what the editor shows an author and what the gate prints
+    // beside a refused `contract_version`, so the rule has to live in it and not
+    // only in the spine.
+    const rule = shippedSchema.properties.contract_version.description;
+
+    expect(rule).toContain('A wording-only edit to a "description" or a "name" is a patch bump');
+    expect(rule).toContain('any other value change is a minor bump');
+    expect(rule).toContain('a field renamed or removed is a major bump');
+
+    const refused = against(
+      JSON.stringify({ $schema: './registry.schema.json', contract_version: '1.2', applications: [entry()] })
+    );
+    expect(refused.ok).toBe(false);
+    expect(refused.message).toContain('/contract_version');
+    expect(refused.message, 'the refusal no longer teaches the rule a bump follows').toContain(rule);
+  });
+
+  it('says absorbed_into names a fold that has happened or is set to happen (AD-6)', () => {
+    // Operator ruling 2026-09-24. The node read "The id of the application this
+    // one's code now lives in", and neither entry carrying the field has moved:
+    // `tcg-tracker` and `connect-four-react` both describe their fold as intent.
+    // The field now covers both, and `source` is what says where the code sits.
+    const meaning = shippedSchema.definitions.application.properties.absorbed_into.description;
+
+    expect(meaning).toContain('has been, or is set to be, folded into');
+    expect(meaning, 'the node still says every fold has already happened').not.toContain('now lives');
   });
 
   it('uses only keywords the validator implements, so a schema edit cannot outrun it', () => {
@@ -747,6 +815,10 @@ describe('the gate refuses', () => {
     expect(result.message).toContain('"ghost-app"');
     expect(result.message).toContain('AD-6');
     expect(result.message).toContain(BEYOND_THE_SCHEMA);
+    // AD-6 as widened by the Operator ruling of 2026-09-24: the refusal teaches
+    // the meaning in force, not "where its code now lives".
+    expect(result.message).toContain('has been, or is set to be, folded into');
+    expect(result.message).not.toContain('now lives');
   });
 
   it('an entry absorbing itself, which resolves and is still wrong', () => {
@@ -758,6 +830,8 @@ describe('the gate refuses', () => {
       "this entry's own"
     );
     expect(result.message).toContain(BEYOND_THE_SCHEMA);
+    expect(result.message).toContain('has been, or is set to be, folded into');
+    expect(result.message).not.toContain('now lives');
   });
 
   it('a family carried by one entry alone, because a family groups (FR-11)', () => {
@@ -1714,22 +1788,34 @@ describe('the CI wiring', () => {
   });
 
   it('sits after contract-purity, and adds no other job', () => {
+    // Six jobs until Story 2-34 added `literal-conformance` after this one,
+    // FR-17's blocking gate (AD-21), whose wiring is asserted in
+    // `ops/__tests__/literal-conformance.test.ts` beside the module it runs.
     expect(
       jobNames,
       'the order is a reader convenience, since jobs run in parallel. The set is not: a job added or removed' +
         ' here changes what holds AD-4 and AD-1 and what this suite has been told to expect'
-    ).toEqual(['test', 'tokens-contract', 'fonts-contract', 'contract-purity', JOB, 'rendered-output']);
+    ).toEqual([
+      'test',
+      'tokens-contract',
+      'fonts-contract',
+      'contract-purity',
+      JOB,
+      'rendered-output',
+      'literal-conformance',
+    ]);
   });
 
-  it('leaves the five pre-existing jobs carrying the steps they carried', () => {
+  it('leaves the six other jobs carrying the steps they carried', () => {
     // Not a byte comparison against the baseline commit, which the story
-    // verified once by hand. This is the standing half: the five jobs still do
-    // the five things they exist to do.
+    // verified once by hand. This is the standing half: the six jobs still do
+    // the six things they exist to do.
     expect(instructionsOf('test')).toContain('pnpm test --run');
     expect(instructionsOf('test')).toContain('pnpm typecheck');
     expect(instructionsOf('tokens-contract')).toContain('pnpm tokens:build');
     expect(instructionsOf('fonts-contract')).toContain('pnpm fonts:build');
     expect(instructionsOf('contract-purity')).toContain('node ops/contract-purity.mjs');
+    expect(instructionsOf('literal-conformance')).toContain('node ops/literal-conformance.mjs');
     expect(instructionsOf('rendered-output')).toContain('pnpm test:e2e');
   });
 });
