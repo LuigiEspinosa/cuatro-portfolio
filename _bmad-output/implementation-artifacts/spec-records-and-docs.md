@@ -131,7 +131,8 @@ baseline; fix round 1 adds the committed-Registry case's no-row-left-to-strike a
 `7f6f837`, and both moved cases now fail on the baseline record naming `cs-tournament`
 (§ Verification). The second holds on the final tree, the container run standing from the
 implementation because nothing since has touched a file the build or the browser suite reads. The
-third holds, KV-3 action 6 open with exact steps and action 7 dated on `360f9f1`.
+third holds, KV-3 action 6 open with exact steps and action 7 dated on `360f9f1`, though only
+since fix round 2 corrected five record dates to the UTC day (Spec Change Log).
 
 ## Spec Change Log
 
@@ -161,7 +162,7 @@ third holds, KV-3 action 6 open with exact steps and action 7 dated on `360f9f1`
   Ponytail: lean. Design layer: `SiteFooter.tsx` changed in a comment alone, nothing to judge,
   approve. ECC verification loop: build, types and tests as § Verification records, lint N/A. No
   new ledger entry from the review.
-- **Applied by the orchestrator, 2026-09-24, after the gate refused the package.** In its own
+- **Applied by the orchestrator, 2026-09-25, after the gate refused the package.** In its own
   session, where the Operator's approval reaches, the orchestrator made both refused changes in
   `9336330`: `cs-tournament`'s row in § Sources tolerated struck, `cs-tracker` and `Mutuo` recorded
   private by decision with their scan findings, the Expected row amended to 11 by 2xx and 3
@@ -170,8 +171,8 @@ third holds, KV-3 action 6 open with exact steps and action 7 dated on `360f9f1`
   7 dated, and DW-128 closed. It cleared the Pages custom domain with
   `gh api -X PUT repos/LuigiEspinosa/future-vizion/pages` and a null `cname`, and GitHub removed the
   `CNAME` file itself in `360f9f1` on future-vizion's `main`. GitHub dates that commit
-  2026-09-25T00:02:53Z, minutes into the next UTC day, while action 7's cell dates the clear
-  2026-09-24; the cell is left as the orchestrator wrote it. Action 6, the Cloudflare DNS deletes,
+  2026-09-25T00:02:53Z, so action 7's cell dates the clear 2026-09-25, its UTC day; the cell first
+  read the host's local 2026-09-24, corrected by fix round 2. Action 6, the Cloudflare DNS deletes,
   stays the Operator's. Design Notes 3 and 8 now describe work done.
 - **Fix round 1, 2026-09-25, after the verifier's stage-2 rejection.** Its failures 1 and 2 were the
   two refusals, resolved above; this round owns 3 and 4, each re-checked before anything was ticked.
@@ -192,6 +193,23 @@ third holds, KV-3 action 6 open with exact steps and action 7 dated on `360f9f1`
   deletion of the alias layer; `22e5d1c` cites `201f7f2`, which deleted it from `app/app.scss`,
   corrected in place since the row had never been pushed. Every task is now ticked and every
   criterion met, so the status stays `done`.
+- **Fix round 2, 2026-09-25, after the verifier's second stage-2 rejection.** Both failures are one
+  error: dates written after 00:00Z on 2026-09-25 took the host's local day, 2026-09-24 (the host
+  runs at UTC-5), where records take the UTC date. (1) Action 7's Completed (UTC) cell dated the
+  Pages clear 2026-09-24, though GitHub dates `360f9f1` 2026-09-25T00:02:53Z and its Pages build
+  00:02:56Z; the cell reads 2026-09-25 and gives the commit's time, its ruling citation unchanged,
+  and the sentence above that kept the old date is corrected. (2) `9336330` wrote four stamps
+  between 00:04Z and 00:06Z reading 2026-09-24: `Amended` in the Expected row
+  (`ops/registry-verification.md:59`), KV-2's two `Amended` stamps (`ops/known-violations.md:246`
+  and `:250`) and DW-128's `Closed`. Each now reads 2026-09-25, its row still citing the ruling of
+  2026-09-24, and the heading fix round 1 gave the orchestrator's entry above reads 2026-09-25 too.
+  To reach every copy of the error, not only the ones named, every date the five commits after
+  00:00Z added was swept: no other write stamp reads 2026-09-24, and the event dates stay, since
+  the rulings, KV-2's retirement, action 5 and `cs-tournament`'s publication (04:48Z) and strike
+  all fall on 2026-09-24. Re-checking action 7's evidence also found the cell saying
+  `gh api ... --jq .cname` printed `null`: that form prints an empty line, gh's rendering of a JSON
+  null, and the orchestrator's read used a different filter, so the cell now says the Pages API
+  read `cname` back as `null`.
 
 ## Design Notes
 
@@ -273,6 +291,19 @@ Assumptions, resolved unattended:
   and `360f9f1` ("Delete CNAME") touches `CNAME` alone; `gh repo view LuigiEspinosa/cs-tournament`
   reads `PUBLIC`, and anonymous GETs answer 200 for it and 404 for `cs-tracker` and `Mutuo`;
   `git show --stat 201f7f2` rewrites `app/app.scss` (208 lines), which `d3cc350` does not touch.
+
+**As run, 2026-09-25, fix round 2:**
+- Re-read: `gh api repos/LuigiEspinosa/future-vizion/commits/360f9f1` gives author and
+  committer date 2026-09-25T00:02:53Z, and `.../pages/builds` its build at 00:02:56Z;
+  `gh api repos/LuigiEspinosa/future-vizion/pages` returns `"cname": null`, whose `--jq .cname`
+  form prints an empty line (the reading above says `null`). The orchestrator's session transcript
+  times the `gh repo edit` that published `cs-tournament` at 2026-09-24T04:48Z, the Pages `PUT` at
+  2026-09-25T00:02:59Z, and the five dated edits from 00:04:10Z to 00:05:47Z.
+- `corepack pnpm typecheck`: exit 0 with every record edit in place.
+- `corepack pnpm test --run`, the whole suite: 63 files, 1,634 passed, at 01:13Z.
+- `node ops/literal-conformance.mjs` and `node ops/registry-schema.mjs`: exit 0.
+- The build and the container run are not repeated: this round changed two ops records, the
+  ledger and this spec, and neither the build nor any browser spec reads them.
 
 ## Suggested Review Order
 

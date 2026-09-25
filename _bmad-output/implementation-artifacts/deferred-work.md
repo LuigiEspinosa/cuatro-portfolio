@@ -6906,7 +6906,7 @@ status: done
     KV-2's action 5 with all three dispositions. **Trigger: that package, or the next Registry
     verification run that reports the row can be struck.**
 
-    **Closed 2026-09-24 on the Operator ruling of that day.** The records package's edits to the
+    **Closed 2026-09-25 on Operator ruling 2026-09-24.** The records package's edits to the
     suite were refused by its permission gate, so the orchestrator made them in its own session:
     `cs-tournament`'s row in `ops/registry-verification.md` reads `Struck 2026-09-24`, `cs-tracker`
     and `Mutuo` read private by decision with their scan findings, the suite pins the four-row table
