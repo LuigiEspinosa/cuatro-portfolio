@@ -3996,6 +3996,14 @@ behind the proxy and are now requirements rather than accidents
 **Then** an image exists in GHCR built entirely in CI, with no compilation having occurred on the
 VPS.
 
+**Amended 2026-09-25 by Operator ruling 2026-09-24:** this story also answers
+`ops/token-contract.md` actions 4 and 5, closed pointing here. The pruned context scopes the
+install to the Hub's workspace, so the token generator's 62 packages the `deps` layer installs
+today, and nothing consumes, stay out of the image unless the Hub depends on them (action 4); and
+the image built in CI on every push runs the `deps` stage for real, the executing check
+`docker/__tests__/deps-stage.test.ts` cannot give by reading the Dockerfile as text (action 5).
+Record both as observed when the story closes.
+
 ---
 
 ### Story 3.4: Deploy by pulling a tag with `docker-rollout`
