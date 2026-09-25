@@ -8,7 +8,7 @@ carries an id and a status. The 99 entries that had no id took DW-141 to DW-239 
 place, as an `id:` line under `source_spec:`; every entry with no status took one; and each open or
 statusless entry was checked against the tree, those found resolved closing with a dated note. No
 id moved and no entry was deleted. Append only still holds for everything else: a new entry takes
-the next free id and a status line.
+the next free id, one above the highest in the file, and a status line.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
   id: DW-141
@@ -1419,7 +1419,7 @@ origin: spec-deferred bc3c95f49531
 location: components/organisms/WorkItem/WorkItem.scss:144
 source_spec: `spec-1-18-anchor-migration-step-2-alias-the-old-names-onto-the-token-r.md`
 severity: medium
-reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord Amended 2026-09-06 by Story 2-9: half of this defect is gone with the component that carried it. ProjectCard.scss:66 was deleted when the Suite Directory replaced the card grid, so the location above moves to the surviving half, WorkItem.scss:144 on /work, which is unchanged and still at 2.56:1. The entry stays open on that half. The Suite Directory renders no tech chip at all: its tech line is unfilled mono text at --token-text-secondary, so the replacement did not reproduce the defect. Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found resolved: Story 2-31 (`780e586`, 2026-09-23) rebuilt the chip outlined and unfilled (`components/atoms/WorkItem/WorkItem.scss:209-230`), so its label reads `--token-text-secondary` on the page's ground, which `DESIGN.md` gives at 7.03:1, and `--accent-dim` left with Story 2-22's alias layer.
+reason: ProjectCard.scss:66 and WorkItem.scss:144 set background: var(--accent-dim) on a tech chip and color: var(--light-gray-color) on its label. Before this commit --accent-dim was rgba(91, 33, 182, 0.22), so the chip barely lifted the #0a000f ground and the label kept most of its 10.14:1. Both roles the mapping assigns are opaque. Measured 2026-08-26: the two after ratios already rasterised against #0a000f in ops/anchor-token-adoption.md give the label-on-fill ratio as their quotient, 0.3630 / 0.1418 = 2.56:1; the before figure composites rgba(91, 33, 182, 0.22) over #0a000f to rgb(28, 7, 52) against the pre-change #b4b4cc, giving 9.16:1. It is caused by this commit and every route to a fix is closed to it: the mapping is to be followed rather than invented, a chip-scoped third value would be an invented mapping, and giving the label its own colour means editing a component stylesheet beyond the four font-weight lines. The cheapest real fix is a chip fill of --token-bg-raised with the bord Amended 2026-09-06 by Story 2-9: half of this defect is gone with the component that carried it. ProjectCard.scss:66 was deleted when the Suite Directory replaced the card grid, so the location above moves to the surviving half, WorkItem.scss:144 on /work, which is unchanged and still at 2.56:1. The entry stays open on that half. The Suite Directory renders no tech chip at all: its tech line is unfilled mono text at --token-text-secondary, so the replacement did not reproduce the defect. Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 8), found resolved: Story 2-31 (`780e586`, 2026-09-23) rebuilt the chip outlined and unfilled (`components/atoms/WorkItem/WorkItem.scss:209-230`), so its label reads `--token-text-secondary` on the page's ground, which `DESIGN.md` gives at 7.03:1, and `--accent-dim` left with Story 2-22's alias layer. The 7.03:1 is the design pair, not a reading of the rendered chip.
 status: done
 
 ### DW-11: Eight local @font-face declarations are resolved by nothing after this commit, not the one the record previously named, and the story that retires the local faces inherits that inventory plus the publ
@@ -1472,7 +1472,7 @@ location: C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker
 source_spec: `spec-1-19-cs-tracker-adopts-the-token-contract.md`
 severity: medium
 reason: Observed 2026-08-27. `cs-tracker` has no `.github` directory; `mix precommit` is its only gate, and every case in `test/cs_tracker_web/token_contract_test.exs` asserts against the text of `assets/css/app.css` rather than against a compiled or rendered stylesheet. `ops/cs-tracker-adoption-probe.mjs` is deliberately not a CI job, because it needs a browser and a checkout of the other repository and neither is on a runner. So a route-A regression that leaves the source text untouched, which is exactly the shape a Tailwind or daisyUI bump takes, ships with everything green. This is the standing shape of the verification rather than a defect this story introduced, and it is the reason both probes' re-run is handed to the Operator. It is recorded here because the estate now has two adopted applications and one un-gated hand-run check between them, which is a growing exposure rather than a fixed one.
-note: Narrowed, not closed, 2026-09-12 by `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. The scheduled job now reads `cs-tracker`'s vendored `tokens.css` header off the remote daily and holds it to the Registry's `token_contract`, so a re-vendor that forgets the declaration is caught off the box. What stays open is the half above it, the rendered output: the job reads one header line over HTTPS and compiles nothing, so a Tailwind or daisyUI bump that leaves the source text untouched still ships green in `cs-tracker`, and the hand-run probe remains the only instrument for it. **Closed 2026-09-25 on Operator ruling 2026-09-24**, accepted as a stated limit: `cs-tracker` has no dependency automation, so a Tailwind or daisyUI bump there is always a hand edit, and a hand edit is already the adoption probes' re-run trigger in AD-22. `ops/cs-tracker-token-adoption.md` § Stated limits carries the row (`ad52501`) and the `AGENTS.md` pitfall names it (`9dfd37c`). Reopen this entry if dependency automation is ever enabled in `cs-tracker`.
+note: Narrowed, not closed, 2026-09-12 by `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. The scheduled job now reads `cs-tracker`'s vendored `tokens.css` header off the remote daily and holds it to the Registry's `token_contract`, so a re-vendor that forgets the declaration is caught off the box. What stays open is the half above it, the rendered output: the job reads one header line over HTTPS and compiles nothing, so a Tailwind or daisyUI bump that leaves the source text untouched still ships green in `cs-tracker`, and the hand-run probe remains the only instrument for it. **Closed 2026-09-25 on Operator ruling 2026-09-24**, accepted as a stated limit: `cs-tracker` has no dependency automation, so a Tailwind or daisyUI bump there is always a hand edit, and a hand edit is already the adoption probes' re-run trigger in AD-22. `ops/cs-tracker-token-adoption.md` § Stated limits carries the row (`ad52501`) and the `AGENTS.md` pitfall names it (`9dfd37c`). The estate sweep AD-22 schedules from 2026-09-25 reads `cs-tracker`'s configuration paths, so it is what would see automation arrive. Reopen this entry if dependency automation is ever enabled in `cs-tracker`.
 status: done
 
 ### DW-15: `contracts/tailwind.css` maps the spacing scale onto named keys, which silently redefines Tailwind's `max-w-sm` through `max-w-2xl` from container widths to spacing values in every consumer.
@@ -7569,9 +7569,10 @@ status: done
     path, `fonts/GeistMono/variable/GeistMono[wght].ttf`, is the same blob at `main`, so moving the
     commit in `sources.json` changes nothing. Through `subset.py`'s steps the v1.7.2 zip's file
     gives 240 glyphs and 8,708 bytes where the published face has 309 and 11,284, with no `liga`
-    feature and every mapped glyph identical. No Registry value and no string under `content/`
-    carries one of the sequences, nor does a JSX text node under `app/` or `components/`, by a
-    pattern sweep of 2026-09-25 rather than a rendered read; `cs-tracker` was not read.
+    feature and every mapped glyph identical; the record gives the zip's URL and both full digests.
+    No Registry value and no string under `content/` carries one of the sequences, nor does a JSX
+    text node under `app/` or `components/` or a CSS `content` string, by a pattern sweep of
+    2026-09-25 rather than a rendered read; `cs-tracker`, which vendors the same face, was not read.
 
     Not fixed here: the ruling allowed no fonts release. Two shapes, each a contract release
     `cs-tracker` re-vendors: pin Geist Mono to the release zip's file by its own URL and sha256, a
@@ -7601,10 +7602,11 @@ status: done
     skill's, overwritten on update. The cheap closer is one persistent fact in
     `_bmad/custom/bmad-build.toml`, beside the oversized-spec rule this package added (`0c88b5b`):
     an appended entry takes the next free `DW-` id as an `id:` line under `source_spec:` and ends
-    with `status: open`, whatever the template shows.
+    with `status: open`, whatever the template shows. A unit case over the ledger that fails an
+    entry lacking either is the other shape, and a gate on a planning file is a ruling too.
 
-    **Owner: the Operator**, for a ruling on the fact. **Trigger: the next entry appended without an
-    id.**
+    **Owner: the Operator**, for a ruling on the fact or the case. **Trigger: the next entry
+    appended without an id.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
@@ -7628,4 +7630,23 @@ status: done
 
     **Owner: the Operator, as the owner of the spines.** **Trigger: the next pass over `epics.md`'s
     requirements inventory, or Story 4.1's planning.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
+  id: DW-243
+  summary: >-
+    AD-22 now schedules the estate automation-policy sweep and the upstream font-pin check, and
+    neither script that ran them on 2026-09-25 is committed, so each refresh rebuilds its tooling
+    from the method `ops/contract-adoption.md` and `ops/font-contract.md` describe in prose.
+  evidence: |-
+    Found 2026-09-25 by the package's own review. Both scripts ran from the session scratchpad, as
+    the 2026-08-27 sweep's did, and both records say so. The sweep's calls are listed one by one,
+    and the font check states its control, the pinned sources reproducing the published faces byte
+    for byte, so a rebuilt script can prove itself. What a rebuild risks is counting differently:
+    this sweep excluded `list-wheel`'s `tsconfig.spec.json`, a compiler configuration, by reading.
+
+    Not committed here: tooling for a check that runs once per epic is a new file with its own
+    tests, and the ruling asked for the checks to be scheduled and run once, not scripted.
+
+    **Owner: unassigned.** **Trigger: the next AD-22 refresh, which pays the rebuild.**
   status: open

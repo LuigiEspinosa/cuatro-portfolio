@@ -68,7 +68,7 @@ how the estate actually runs is in `ops/`.
   commented out in `.lighthouserc.js`.
 - The rendered-output suite runs only inside `mcr.microsoft.com/playwright:v1.62.1-noble`, never on
   this host: glyph rasterization is not portable, so a host run fails and a baseline written here
-  fails CI. From the repository root:
+  fails CI. From the repository root, the first `-v` naming this checkout:
   `docker run --rm --ipc=host -v C:/CuatroEcosystem/cuatro-portfolio:/w -v pw-node-modules:/w/node_modules -v pw-next:/w/.next -w /w -e CI=1 mcr.microsoft.com/playwright:v1.62.1-noble bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm test:e2e"`.
   Regenerate a baseline with `pnpm run test:e2e:update` in that command, only in the cases
   `ops/rendered-output-harness.md` § Regenerating the baseline allows, and record the new sha256
@@ -87,8 +87,9 @@ how the estate actually runs is in `ops/`.
   `.jsx`, `.mjs`, or `.cjs` under it, ever. Generators and schema tooling go in `packages/`,
   which is never published (AD-1). `contracts/registry.json` and
   `contracts/registry.schema.json` are the only hand-authored files there (AD-4); everything
-  else is generated (`tokens:build`, `fonts:prepare`, `fonts:build`), and the
-  `tokens-contract` and `fonts-contract` drift jobs fail a hand edit.
+  else is generated (`tokens:build`, `fonts:prepare`, `fonts:build`), so the next generation
+  overwrites a hand edit, and the `tokens-contract` and `fonts-contract` drift jobs fail one made to
+  a generated stylesheet.
 - A consumer's vendored contract folder is named `cuatro-contracts/` exactly. The scheduled
   Registry verification locates each adopter's tokens by that fixed path (AD-14, AD-16).
 - Name a new component stylesheet for its component in PascalCase, beside the component, as
