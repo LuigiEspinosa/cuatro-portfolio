@@ -94,10 +94,10 @@ still runs on all four, so a tolerated repository that is deleted or renamed sti
 
 | Repository | Ruling | Since |
 |---|---|---|
-| `LuigiEspinosa/cs-tracker` | Private by decision, Operator ruling 2026-09-24: kept private because a gitleaks scan of its full history found two hits, the `secret_key_base` values in `config/dev.exs` and `config/test.exs` (commit `3470a8be`); publishing waits on the Operator's own review of them | 2026-09-02 |
+| `LuigiEspinosa/cs-tracker` | Private by decision, Operator ruling 2026-09-24: kept private because a gitleaks scan of its full history found two hits, its dev and test `secret_key_base` values (committed 2026-05-23); publishing waits on the Operator's own review of them | 2026-09-02 |
 | `LuigiEspinosa/cs-tournament` | Struck 2026-09-24: published by Operator ruling 2026-09-24 after a clean gitleaks scan of its full history; it answers 200 anonymously | 2026-09-02 |
 | `LuigiEspinosa/StreamVault` | Private by decision, a personal tool never to be published. Excluded from repair, not from the breach | 2026-09-02 |
-| `LuigiEspinosa/Mutuo` | Private by decision, Operator ruling 2026-09-24: kept private because a gitleaks scan of its full history found a Twilio API key and a JWT (`twilio-integration/TwilioVideo/src/App.vue`, commit `72c7edf1`, 2021) and hard-coded test passwords | 2026-09-02 |
+| `LuigiEspinosa/Mutuo` | Private by decision, Operator ruling 2026-09-24: kept private because a gitleaks scan of its full history found a Twilio API key and a JWT (committed 2021-04-16) and hard-coded test passwords (2021) | 2026-09-02 |
 
 **Observed 2026-09-12** by `gh api repos/LuigiEspinosa/<name>`: all four read `"private": true`, and
 `github.com/LuigiEspinosa/cs-tracker` answered 404 to the anonymous GET above. The `Since` column is

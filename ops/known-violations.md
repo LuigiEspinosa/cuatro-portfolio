@@ -291,10 +291,10 @@ repository's full history for secrets and publish the clean ones. gitleaks 8.30.
 commit on every ref of full mirrors, beside a read of every sensitive path ever added.
 `cs-tournament` was clean (its one hit is a file hash in a BMAD manifest) and was **published**; it
 answers 200 anonymously, and its row in `ops/registry-verification.md` is struck. `cs-tracker` (two
-hits, the `secret_key_base` values in `config/dev.exs` and `config/test.exs`, commit `3470a8be`) and
-`Mutuo` (a Twilio API key and a JWT in `twilio-integration/TwilioVideo/src/App.vue`, commit
-`72c7edf1`, 2021, and hard-coded test passwords) stay **private by decision**, their rows carrying
-those reasons; publishing either waits on the Operator's own review of its findings, and the Twilio
+hits, its dev and test `secret_key_base` values, both committed 2026-05-23) and `Mutuo` (a Twilio
+API key and a JWT committed 2021-04-16, and hard-coded test passwords from 2021) stay **private by
+decision**, their rows carrying those reasons by finding type and date, as this public record must;
+publishing either waits on the Operator's own review of its findings, and the Twilio
 key should be revoked if it is still live. With all three ruled, the breach stands only where the
 Operator chose it, like `StreamVault`, so the entry retires.
 
