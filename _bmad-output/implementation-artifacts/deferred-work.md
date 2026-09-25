@@ -265,7 +265,12 @@ the next free id and a status line.
     refresh item and not an edit to make by hand. The sprint change proposal already
     assigns this; it is repeated here because Story 1.21 changed the deployment model
     that the block describes.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24 (Epic 1 retrospective action 14).** Both
+    points are gone: the refresh of 2026-08-28 (`967abfd`) replaced the Hetzner line and the suite
+    figure, and the refresh of 2026-09-25 (`9dfd37c`) describes `docker/Caddyfile` as the Anchor's
+    fragment of the shared Caddyfile on the box, which no process here reads.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-external-uptime-and-certificate-age-monitoring.md`
   id: DW-153
@@ -1467,8 +1472,8 @@ location: C:\CuatroEcosystem\cs-tracker-workspace\cs-tracker
 source_spec: `spec-1-19-cs-tracker-adopts-the-token-contract.md`
 severity: medium
 reason: Observed 2026-08-27. `cs-tracker` has no `.github` directory; `mix precommit` is its only gate, and every case in `test/cs_tracker_web/token_contract_test.exs` asserts against the text of `assets/css/app.css` rather than against a compiled or rendered stylesheet. `ops/cs-tracker-adoption-probe.mjs` is deliberately not a CI job, because it needs a browser and a checkout of the other repository and neither is on a runner. So a route-A regression that leaves the source text untouched, which is exactly the shape a Tailwind or daisyUI bump takes, ships with everything green. This is the standing shape of the verification rather than a defect this story introduced, and it is the reason both probes' re-run is handed to the Operator. It is recorded here because the estate now has two adopted applications and one un-gated hand-run check between them, which is a growing exposure rather than a fixed one.
-note: Narrowed, not closed, 2026-09-12 by `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. The scheduled job now reads `cs-tracker`'s vendored `tokens.css` header off the remote daily and holds it to the Registry's `token_contract`, so a re-vendor that forgets the declaration is caught off the box. What stays open is the half above it, the rendered output: the job reads one header line over HTTPS and compiles nothing, so a Tailwind or daisyUI bump that leaves the source text untouched still ships green in `cs-tracker`, and the hand-run probe remains the only instrument for it.
-status: open
+note: Narrowed, not closed, 2026-09-12 by `spec-2-23-scheduled-registry-verification-external-to-the-box.md`. The scheduled job now reads `cs-tracker`'s vendored `tokens.css` header off the remote daily and holds it to the Registry's `token_contract`, so a re-vendor that forgets the declaration is caught off the box. What stays open is the half above it, the rendered output: the job reads one header line over HTTPS and compiles nothing, so a Tailwind or daisyUI bump that leaves the source text untouched still ships green in `cs-tracker`, and the hand-run probe remains the only instrument for it. **Closed 2026-09-25 on Operator ruling 2026-09-24**, accepted as a stated limit: `cs-tracker` has no dependency automation, so a Tailwind or daisyUI bump there is always a hand edit, and a hand edit is already the adoption probes' re-run trigger in AD-22. `ops/cs-tracker-token-adoption.md` § Stated limits carries the row (`ad52501`) and the `AGENTS.md` pitfall names it (`9dfd37c`). Reopen this entry if dependency automation is ever enabled in `cs-tracker`.
+status: done
 
 ### DW-15: `contracts/tailwind.css` maps the spacing scale onto named keys, which silently redefines Tailwind's `max-w-sm` through `max-w-2xl` from container widths to spacing values in every consumer.
 origin: operator-observed 2026-08-27
@@ -2022,7 +2027,12 @@ status: done
     problem and a `/bmad-project-context` refresh is already booked as a reminder in
     `sprint-status.yaml` before epic 3. Filed so the two record pointers are re-checked after
     that refresh runs, not before.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24**, by the `bmad-project-context` refresh this
+    entry waited for (`9dfd37c`): the refreshed block keeps both Registry pointers,
+    `registry-schema.md` and `registry-inputs.md`, in the wording the Registry package gave them on
+    2026-09-24.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-author-contracts-registry-json.md`
   id: DW-199
@@ -2577,7 +2587,12 @@ status: done
     Not written here because that list sits inside the `bmad:context` block, which is managed by
     `bmad-project-context` and replaced on refresh. It belongs in the refresh the board already
     schedules before epic 3, not in a hand edit that the next run deletes.
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24**, by the `bmad-project-context` refresh
+    (`9dfd37c`): the block's Known pitfalls name the two sources, `app/scss/_index.scss` and
+    `lib/registry.ts`, and the Registry pair the second is held to, beside the other two
+    pinned-listing guards.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-7-retire-content-projects-ts-the-hub-imports-the-published-reg.md`
   id: DW-217
@@ -5351,7 +5366,14 @@ status: done
     `/celeste` at all, which its comment on the display sites now says. At 360 in the pinned image,
     with the face loaded, the heading sets three lines in a `14ch` box 252 wide; whether the fallback
     wraps it differently across the swap is unmeasured. **Owner and trigger unchanged.**
-  status: open
+
+    **Closed 2026-09-25 on Operator ruling 2026-09-24**, accepted as a stated limit: a separate face
+    per condensed width, each with its own `size-adjust`, would scale height as well as width, so
+    the contract publishes one face and the Hub keeps the widths `DESIGN.md` sets. The limit row in
+    `ops/font-contract.md` carries the ruling (`ad52501`). What it accepts stays true: the display
+    face's swap moves text set at 75% and 85%, and `tests/e2e/type-swap.pw.ts` holds the Work item
+    row names to their line box.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-23-scheduled-registry-verification-external-to-the-box.md`
   id: DW-84
@@ -6193,6 +6215,12 @@ status: done
     reported as two, and with the counting lines taken out the same case failed in the pinned image
     before it passed. The `threshold` question and the `AGENTS.md` line are what this entry still
     holds, owners and triggers unchanged, so it stays open.
+
+    **The `AGENTS.md` half closed 2026-09-25 on Operator ruling 2026-09-24**, by the
+    `bmad-project-context` refresh (`9dfd37c`): the block's rendered-output line says a change under
+    the per-pixel threshold makes the update run write nothing, and points at the forced form in
+    `ops/rendered-output-harness.md` § Regenerating the baseline. The `threshold` question is what
+    this entry still holds, owner and trigger unchanged, so it stays open.
   status: open
 
 - source_spec: `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/review-apple-design-2026-09-15.md`
@@ -7488,6 +7516,12 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next strike of a KV-2 row, the next edit to the dependency
     automation policy, or the next pass over `ops/contract-adoption.md`.**
+
+    **Narrowed 2026-09-25 by the process-and-upkeep package**, whose estate sweep was the next pass
+    over `ops/contract-adoption.md` (`ad52501`): the policy sentence there carries a dated amendment
+    counting three private repositories, and the policy table records `cs-tournament` public. The
+    `AGENTS.md` dependency automation policy (`:181-182` after the refresh) and the two passages in
+    `ops/registry-verification.md` stay as this entry describes, owner and trigger unchanged.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
@@ -7511,4 +7545,87 @@ status: done
 
     **Owner: the Operator, as the owner of the spines.** **Trigger: the next pass over
     `EXPERIENCE.md` § Chrome.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
+  id: DW-240
+  summary: >-
+    The published Geist Mono face carries the 69 programming ligatures Geist 1.7.0 put under `liga`,
+    which upstream removed in 1.7.1, so mono text set with `--`, `==`, `!=`, `->` or `...` renders
+    as one ligature glyph, and moving the pin to upstream's `main` would not take the fix.
+  evidence: |-
+    Found 2026-09-25 by the process-and-upkeep package, checking the upstream pins for AD-22 by
+    Operator ruling 2026-09-24 (`ops/font-contract.md` § The upstream pins, re-checked 2026-09-25).
+    `contracts/fonts/geist-mono-latin.woff2` holds one `liga` lookup of 69 substitutions, among them
+    `hyphen hyphen`, `equal equal`, `exclam equal`, `hyphen greater` and `period period period`,
+    because `packages/fonts/sources.json` keeps `liga` for all three faces and the pinned
+    `GeistMono[wght].ttf` at `a0a06a3` carries upstream's 1.7.0 feature code. No stylesheet here
+    sets `font-variant-ligatures` or `font-feature-settings`, so a browser applies them. Upstream's
+    changelog for 1.7.1 (2026-05-20) names exactly this: programming ligatures under `liga`, which
+    every renderer turns on, broke monospace alignment in code, and that release "ships the rebuilt
+    binaries".
+
+    Those binaries are in the release zip and the npm package, not in the repository: the pinned
+    path, `fonts/GeistMono/variable/GeistMono[wght].ttf`, is the same blob at `main`, so moving the
+    commit in `sources.json` changes nothing. Through `subset.py`'s steps the v1.7.2 zip's file
+    gives 240 glyphs and 8,708 bytes where the published face has 309 and 11,284, with no `liga`
+    feature and every mapped glyph identical. No Registry value and no string under `content/`
+    carries one of the sequences, nor does a JSX text node under `app/` or `components/`, by a
+    pattern sweep of 2026-09-25 rather than a rendered read; `cs-tracker` was not read.
+
+    Not fixed here: the ruling allowed no fonts release. Two shapes, each a contract release
+    `cs-tracker` re-vendors: pin Geist Mono to the release zip's file by its own URL and sha256, a
+    new kind of pin, since every source is a repository path at a commit today; or publish Geist
+    Mono without `liga`, which needs a per-face feature list, since `sources.json` names one list
+    for all three. Either moves the face's bytes, glyph count and sha256 in `faces.json`, the three
+    listing pins and the figures in `ops/font-contract.md`.
+
+    **Owner: the Operator**, choosing the shape. **Trigger: the next contract release that opens for
+    any other reason, or the first string found ligated on a surface.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
+  id: DW-241
+  summary: >-
+    The four ledger templates the Build workflow ships append an entry with no `id:` and no
+    `status:` line, so the invariant Epic 1 retrospective action 8 set on 2026-09-25, every entry
+    numbered and statused, decays with the next split or deferral written to the template's letter.
+  evidence: |-
+    Read 2026-09-25 in `.claude/skills/bmad-build/`: step 1's split, step 2's token-check split,
+    step 4's `defer` triage and the one-shot route's `defer` each append `- source_spec:`,
+    `summary:` and `evidence:` and nothing else. The 99 entries the package numbered, DW-141 to
+    DW-239, were in that shape; agents since DW-31 have added an `id:` and a `status:` by
+    convention, which is what kept the later entries numbered.
+
+    Not changed here: the ruling for action 8 named the ledger, and the step files are the installed
+    skill's, overwritten on update. The cheap closer is one persistent fact in
+    `_bmad/custom/bmad-build.toml`, beside the oversized-spec rule this package added (`0c88b5b`):
+    an appended entry takes the next free `DW-` id as an `id:` line under `source_spec:` and ends
+    with `status: open`, whatever the template shows.
+
+    **Owner: the Operator**, for a ruling on the fact. **Trigger: the next entry appended without an
+    id.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-process-and-upkeep.md`
+  id: DW-242
+  summary: >-
+    `epics.md`'s requirements inventory still gives AD-22's re-check scope as the 2026-08-15 list
+    and says "Nothing outside that list re-opens", while the spine's list has grown four times
+    since, the last on 2026-09-25.
+  evidence: |-
+    Found 2026-09-25 by the process-and-upkeep package while amending AD-22 (`2ec24c1`). The
+    inventory entry (`epics.md:380-384`) names the Traefik, PostgreSQL, restic and `docker-rollout`
+    versions, Clerk and Railway pricing, the Style Dictionary floor and the Let's Encrypt schedule,
+    and stops. The spine added the serving topology on 2026-08-16, the two `cs-tracker` adoption
+    probes on 2026-09-23, the Registry verification dispatch on 2026-09-24 and four re-checks on
+    2026-09-25. Story 4.1, which runs the check, has said since 2026-09-24 that its own copy is not
+    the scope and the spine's is, so the story that acts on the list reads the right one; the
+    inventory line is the one a reader of the AD summary meets first.
+
+    Not corrected here: the ruling amended the spine and the package gave Story 4.1 a dated
+    sentence, and a third copy is filed rather than rewritten, as DW-136 to DW-140 were.
+
+    **Owner: the Operator, as the owner of the spines.** **Trigger: the next pass over `epics.md`'s
+    requirements inventory, or Story 4.1's planning.**
   status: open

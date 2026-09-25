@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-24-2026
+last_updated: 09-25-2026
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -632,12 +632,16 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-25: done by Operator ruling 2026-09-24 (spec-process-and-upkeep.md, 79dccf7), in place
+  # rather than by bmad-loop-sweep --migrate: the 99 id-less entries took DW-141 to DW-239 in file
+  # order, every statusless entry took a status, and the 22 the tree shows resolved closed with a dated
+  # note. No id moved and no entry was deleted.
   - id: 'epic-1-retro-item-8-run-bmad-loop-sweep-migrate-on-deferred'
     epic: 1
     action: 'Run bmad-loop-sweep --migrate on deferred-work.md so all 74 entries carry
       a status field, and mark the entries already resolved in fact.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   # 2026-09-24: done by Operator ruling: spec-1-7, spec-1-8 and spec-1-10 frontmatter read
@@ -671,12 +675,15 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-25: done by Operator ruling 2026-09-24 (0c88b5b): a persistent fact in
+  # _bmad/custom/bmad-build.toml halts Build at its token check for the Operator's Split or Keep on
+  # any spec over 1600 tokens, orchestrated runs included, and the spec records the answer.
   - id: 'epic-1-retro-item-12-process-act-on-the-oversized-spec-warnin'
     epic: 1
     action: 'Process: act on the oversized spec warning by splitting the story, instead
       of carrying it. It fired on 15 of 21 stories in epic 1.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
   # 2026-09-24: done by Operator ruling, found held. From the retro (f5df8c8) to 5c8a074, 179 of 192
@@ -690,11 +697,13 @@ action_items:
     status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
+  # 2026-09-25: done by Operator ruling 2026-09-24 (9dfd37c): the refreshed AGENTS.md block carries a
+  # pitfall line that a host move audits SERVER_HOST, SERVER_USER and SSH_PRIVATE_KEY together.
   - id: 'epic-1-retro-item-14-process-when-a-story-moves-a-host-treat'
     epic: 1
     action: 'Process: when a story moves a host, treat the credentials that describe
       it as a set rather than a single field.'
     owner: 'Cuatro'
-    status: open
+    status: done
     ref: "c:\\CuatroEcosystem\\cuatro-portfolio\\_bmad-output\\implementation-artifacts\\\
       epic-1-retro-2026-08-29.md"
