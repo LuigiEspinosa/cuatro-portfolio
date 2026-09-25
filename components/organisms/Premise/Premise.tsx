@@ -18,9 +18,9 @@ import './Premise.scss';
  *
  * **Nothing on this block states a fact of its own.** The opening number is the length of the
  * published Registry, the mark's identity and its trailing cell are the Hub's own entry read through
- * `hubEntry`, and a test holds both the band's names, the estate's declared list, and the copy's one
- * claim, that every address below is running (DW-244), against that same Registry. A count is never
- * typed (`EXPERIENCE.md` § Rules), so none of it can go stale in a way no test would notice.
+ * `hubEntry`, and the band's names are the estate's declared list. A test holds that list and the
+ * copy's one claim, that every address below is running (DW-244), against that same Registry. A
+ * count is never typed (`EXPERIENCE.md` § Rules), so none of it can go stale unseen by a test.
  *
  * **No heading.** The reference mockup puts a display line here and the page already has one, which
  * `HomeLayout` renders above this block. A second would be a heading-structure defect, and the

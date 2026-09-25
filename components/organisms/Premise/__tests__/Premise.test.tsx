@@ -222,7 +222,7 @@ describe("the running claim is the Operator's words, and true of the rows below 
     );
   });
 
-  it('draws no address on a rendered entry that is not Live', () => {
+  it('holds every rendered entry that carries an address to Live', () => {
     // Planted: red with `cs-tournament`, a `Complete` entry, given a `live` URL in a scratch edit of
     // the Registry, 2026-09-25.
     expect(
