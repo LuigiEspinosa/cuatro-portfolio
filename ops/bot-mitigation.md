@@ -313,6 +313,17 @@ only. Each rule was then proven to fire on the hostname by a request, in the dat
 is still the box's only port publisher, so the hostname is reached only through the ports the
 `DOCKER-USER` rules already cover. Seven hostnames are behind the rules from that date.
 
+**Noted 2026-09-26: two `Live` hostnames are not on the line, and the gap is a recorded breach.**
+Operator ruling 2026-09-25 listed `covidmap` and `future-vizion` in the Registry as `Live`, at
+`covidmap.cuatro.dev` and `future-vizion.cuatro.dev`. Both are DNS-only CNAMEs to Vercel, so no
+request to them reaches Cloudflare and none of the four rules can fire on them (**observed
+2026-09-26**: both resolve to Vercel's `216.198.79.1` and `64.29.17.1` and answer with
+`Server: Vercel` and no `cf-ray`). The Operator kept both where they serve, so the breach of AD-17b
+for these two is tolerated as **KV-7** in `ops/known-violations.md`, whose Pending Operator action 10
+asks whether to proxy them. The status line above is left as it is, because later stories parse its
+shape: it lists where the rules are live, which is still true, and KV-7 is where the two exceptions
+are written. Neither host reaches the box, which is the capacity NFR-7 protects.
+
 **Why this reads `satisfied`, and what that claim is actually resting on.** Rules are live on
 every live hostname, and each was proven to fire by a request rather than inferred from the
 configuration. The direct-to-origin bypass that would have made the whole thing decorative was

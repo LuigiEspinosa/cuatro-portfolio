@@ -7817,6 +7817,14 @@ status: done
 
     **Owner: the Operator.** **Trigger: the next edit to the footer line or to `ESTATE_LANGUAGES`.**
     It does not bind the Epic 2 merge.
+
+    **Noted 2026-09-26 by the registry-1-5-0 package (Operator ruling 2026-09-25), still open.**
+    Registry 1.5.0 listed `covidmap` and `future-vizion` as `Live`, so the line reads `Eight
+    applications · five languages · one operator` with no edit to the footer, and the premise reads
+    `Sixteen personal projects` and the Directory `7 running`. The three denominators still count
+    three different sets. Neither the footer source nor `ESTATE_LANGUAGES` was edited, so the trigger
+    has not fired; what the package adds is that JavaScript, which `covidmap`'s server routes and
+    `future-vizion` are written in, is in neither list, since the list is a declared editorial one.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-home-hero-rulings.md`
@@ -7842,4 +7850,59 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next package that cites a planning document by line, or a
     ruling on citing by section.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-registry-1-5-0.md`
+  id: DW-248
+  summary: >-
+    `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` are `Live` Registry entries from 1.5.0 and
+    no external monitor watches either, which FR-31 requires of every `Live` application.
+  evidence: |-
+    Found 2026-09-26 by the registry-1-5-0 package. UptimeRobot `list-monitors`, observed that day:
+    eight monitors, none on either name. `ops/monitoring.md` § Why the monitored set is what it is
+    says a `cuatro.dev` subdomain that goes live gets its monitor in the same change; creating one is
+    a console act the package did not take. Both certificates are Vercel's Let's Encrypt ones, so the
+    expected-issuer setting differs from the Cloudflare-fronted hosts. The steps are
+    `ops/monitoring.md` Pending Operator action 7.
+
+    **Owner: the Operator.** **Trigger: now; closes when `list-monitors` shows both and the probe
+    table carries their rows.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-registry-1-5-0.md`
+  id: DW-249
+  summary: >-
+    The repository count at the waypoint is 13 since Operator ruling 2026-09-25, over SM-7's MVP
+    target of 12, and nothing decides whether `covidmap` and `future-vizion` are part of the end
+    state, which `ops/estate.md` therefore reads as 10 rather than SM-7's 8.
+  evidence: |-
+    Found 2026-09-26 by the registry-1-5-0 package while moving the counts. PRD § 9 SM-7: "Target 12
+    at MVP, 8 at end state"; `ops/estate.md` § 11 against the MVP target argued 11 was under a
+    ceiling. Admitting two public repositories took the waypoint to 13 (14 observed, until
+    `connect-four-react` is archived). SM-C2 warns against adding entries to fill the grid; the two
+    were admitted to end an AD-6 breach, not to fill it, which `ops/estate.md` records. The ruling
+    wins over the target, and the target itself is the Operator's: amend SM-7, archive one or both
+    repositories while keeping their entries under AD-6 (which would need their `live` removed, since
+    `Archived` forbids one), or accept the miss.
+
+    **Owner: the Operator, as owner of the PRD.** **Trigger: the next pass over PRD § 9 or the
+    `connect-four-react` archive, whichever is first.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-registry-1-5-0.md`
+  id: DW-250
+  summary: >-
+    `covidmap` and `future-vizion` render in the Suite Directory from Registry 1.5.0, so AD-25 gives
+    each a restyle obligation and AD-19 a hand-measured accessibility pass after it, and Epic 8 has
+    no story for either.
+  evidence: |-
+    Found 2026-09-26 by the registry-1-5-0 package. AD-25: an application earns a restyle when its
+    Registry `status` becomes `Live` or `Complete`, by that declarative rule and no second list.
+    `epics.md` § Epic 8 lists the rendered applications of 2026-08-15 and names the unrendered ones
+    that have no story; these two are in neither list. Both are pre-Ecosystem code on Vercel (a Nuxt
+    application and a static jQuery page) that the Operator kept for sentimental value, so restyling
+    them may not be what the ruling intended; that is a scope call, and AD-25 leaves no judgement
+    call to make silently, so it is written here rather than decided.
+
+    **Owner: the Operator.** **Trigger: Epic 8's planning, or a ruling that exempts the two.**
   status: open

@@ -276,7 +276,7 @@ stack list:
 > [N] personal projects became one suite. Every address below is running right now, so open one
 > and you are using the real thing, not looking at a picture of it.
 
-Two sentences, no framework named, no adjective doing work. *(Amended 2026-09-24 by Operator ruling: the copy opened `Fifteen personal projects` and names no number now. The page derives `[N]` from `contracts/registry.json`, the count of its applications spelled out and capitalised with the noun agreeing, so the copy cannot go stale against the Registry; the page read `Fourteen` that day.)* *(Amended 2026-09-25 by Operator ruling, DW-244: the second sentence read `Everything below is running right now, so open it`. From Registry 1.4.0 the Directory renders a `Complete` row that runs nowhere, `cs-tournament`, with its Source link and no address, so that was false. An address, the bare domain of § UI strings' Live link, is drawn on `Live` rows only, so every address below is running, and `Premise.test.tsx` fails if a rendered entry carrying one is not `Live`. `[N]` is derived as before.)*
+Two sentences, no framework named, no adjective doing work. *(Amended 2026-09-24 by Operator ruling: the copy opened `Fifteen personal projects` and names no number now. The page derives `[N]` from `contracts/registry.json`, the count of its applications spelled out and capitalised with the noun agreeing, so the copy cannot go stale against the Registry; the page read `Fourteen` that day.)* *(Amended 2026-09-25 by Operator ruling, DW-244: the second sentence read `Everything below is running right now, so open it`. From Registry 1.4.0 the Directory renders a `Complete` row that runs nowhere, `cs-tournament`, with its Source link and no address, so that was false. An address, the bare domain of § UI strings' Live link, is drawn on `Live` rows only, so every address below is running, and `Premise.test.tsx` fails if a rendered entry carrying one is not `Live`. `[N]` is derived as before.)* *(Noted 2026-09-26: Registry 1.5.0 lists `covidmap` and `future-vizion` as `Live` (Operator ruling 2026-09-25), so the page reads `Sixteen personal projects`, and both rows carry an address that is running. No copy changed.)*
 
 ### UI strings
 
@@ -285,14 +285,14 @@ Two sentences, no framework named, no adjective doing work. *(Amended 2026-09-24
 | Header nav | `Suite` · `CV` | Two only |
 | Skip control | `Skip to the suite ↓` | Above the fold |
 | Directory heading | `The Suite` | Not "Projects," not "Portfolio" |
-| Directory count | `6 running` | Real count. Never a rounded or aspirational figure |
+| Directory count | `6 running` | Real count. Never a rounded or aspirational figure. *(Noted 2026-09-26: derived from `Live` rows, the page reads `7 running` from Registry 1.5.0, Operator ruling 2026-09-25.)* |
 | Live link | The bare domain, `library.cuatro.dev` | The URL *is* the evidence. Never "View Live" |
 | Source link | `Source` | Not "GitHub," not "Code" |
 | Self-reference | `You are here` | |
 | Family framing | `One product family, distinct implementations, deliberately not merged.` | Names no count |
 | Switcher trigger | `Suite` | |
 | Switcher header | `Part of the Cuatro Ecosystem` | |
-| Footer line | `Six applications · five languages · one operator` | **Update when the count changes, or delete it** |
+| Footer line | `Six applications · five languages · one operator` | **Update when the count changes, or delete it** *(Noted 2026-09-26: both figures are derived since Story 2-11, and from Registry 1.5.0, Operator ruling 2026-09-25, the page reads `Eight applications · five languages · one operator`; the five languages are the declared list in `lib/registry.ts`, which this change left as it was. That the two figures count different sets is DW-246.)* |
 | Wordmark | `Cuatro` | The header link's whole content and its accessible name, uppercased by the stylesheet, set at `--t-sm` and `--tr-name`; a nav destination that is not the current route keeps its `--stroke-hair` underline in `--token-border-interactive` at rest, which hover recolours. *(Added 2026-09-24 by Operator ruling, DW-117: confirmed as Story 2-32 shipped it. The Registry's `Cuatro Ecosystem` and the page titles' `Luigi Espinosa` are other names, not the wordmark.)* |
 | Error surface | `Error` · `Page not found.` · `Check the address, or use one of the links below.` | The Plate mark label, the heading and the one supporting line. The title and the heading say the page was not found; the line says what to do next, so the page says one thing once and branch A of O-12 item 3 holds on the title and the heading. *(Added 2026-09-24 by Operator ruling, DW-114; the line read `The page you’re looking for does not exist.` until then.)* |
 

@@ -235,6 +235,11 @@ before the two Vercel projects behind them (`ops/estate.md` § The Vercel decomm
 `ops/known-violations.md`). All three records still answered on 2026-09-25, so the rows above stand
 as the 2026-08-24 reading until a re-read after the deletes.
 
+**Amended 2026-09-26** (Operator ruling 2026-09-25): the deletes will not happen. The Operator kept
+both names live on Vercel on 2026-09-25 and then listed both applications in the Registry, so the two
+CNAMEs are the `live` hostnames of two `Live` Registry entries (1.5.0) and the `_vercel` TXT keeps
+verifying one of them. All three stay, DNS-only, which is KV-7 in `ops/known-violations.md`.
+
 **The four `googledomains.com` NS records are vestigial**, because the real delegation is
 `beau`/`demi.ns.cloudflare.com`. The ProtonMail TXT conflicts with the Google Workspace MX set,
 so two mail providers are half-configured in one zone. Both were already in the deferred-work
@@ -485,8 +490,8 @@ definitions from it.
 | `tracker.cuatro.dev` | `cuatro-tracker` | **Observed.** Hostname and id differ, which is exactly the divergence AD-3 exists for | none |
 | `library.cuatro.dev` | `digital-library` | **Observed.** Hostname and id differ | Two containers serve one hostname, split by path |
 | `wheel.cuatro.dev` | `list-wheel` | **Observed 2026-09-13.** The site block proxies `list-wheel:80`, the compose service named for the id (AD-3), and the Registry `live` is declared as `https://wheel.cuatro.dev` | Hostname and id differ. **Row added 2026-09-13** by Story 2-25, the first hostname placed since this table was gathered |
-| `covidmap.cuatro.dev` | **unknown** | **Observed absence** | Live, in the zone, in no planning artifact. Story 2-4 owns it. **Amended 2026-09-24:** Story 2-4 took it on 2026-09-02, and the Operator ruled it out of the Estate and the Registry with its subdomain to be retired: KV-3 in `ops/known-violations.md` |
-| `future-vizion.cuatro.dev` | **unknown** | **Observed absence** | Same. **Amended 2026-09-24:** the same ruling, KV-3 |
+| `covidmap.cuatro.dev` | `covidmap` since 2026-09-26 | **Observed absence** until then | Live, in the zone, in no planning artifact. Story 2-4 owns it. **Amended 2026-09-24:** Story 2-4 took it on 2026-09-02, and the Operator ruled it out of the Estate and the Registry with its subdomain to be retired: KV-3 in `ops/known-violations.md`. **Amended 2026-09-26:** Operator ruling 2026-09-25 reversed that; the id is `covidmap`, the Registry's `live` is `https://covidmap.cuatro.dev` (1.5.0), hostname and id differ, and it is served by Vercel, not the box (KV-7). KV-3 retired |
+| `future-vizion.cuatro.dev` | `future-vizion` since 2026-09-26 | **Observed absence** until then | Same. **Amended 2026-09-24:** the same ruling, KV-3. **Amended 2026-09-26:** the same reversal; the id is `future-vizion` and the Registry's `live` is `https://future-vizion.cuatro.dev` (1.5.0), served by Vercel (KV-7) |
 | `_domainconnect.cuatro.dev` | **none** | **Observed** | Vendor scaffolding, not an application |
 | `google._domainkey.cuatro.dev` | **none** | **Observed** | TXT only. Not a serving hostname, so AD-3 does not reach it |
 | `_vercel.cuatro.dev` | **none** | **Observed** | TXT only. Not a serving hostname |
@@ -507,7 +512,9 @@ the six without and the three gaps are unchanged. `_domainconnect` and the two T
 not serving hostnames and AD-3 does not reach them. `covidmap` and `future-vizion` breach AD-6
 and were already in the ledger from 2026-08-16. `analytics` is the one this pass found. **Amended
 2026-09-24:** Story 2-4 settled all three on 2026-09-02, `analytics` as infrastructure outside the
-Registry and the other two by KV-3.
+Registry and the other two by KV-3. **Amended 2026-09-26:** `covidmap` and `future-vizion` are not
+gaps any more: both carry an id and a Registry `live` from 1.5.0 (Operator ruling 2026-09-25), so
+eight of the twelve hostnames have an id and `analytics` is the one serving name without one.
 
 ### The reverse pass: every application id against a hostname
 
@@ -550,6 +557,8 @@ hostname.
 **The two directions disagree in exactly three places, and each is already tracked.**
 `analytics.cuatro.dev` serves and has no id. `covidmap.cuatro.dev` and
 `future-vizion.cuatro.dev` serve and are in no Estate row. Nothing else fails to reconcile.
+**Amended 2026-09-26:** one place since Operator ruling 2026-09-25, `analytics.cuatro.dev`, which is
+infrastructure outside the Registry by decision; the other two are Estate rows and Registry entries.
 
 ## Ingress: one shared Caddy, and nothing else
 
@@ -1821,7 +1830,7 @@ perform it.
 | Confirm `analytics.cuatro.dev` passes the managed challenge in a real browser | Playwright arrives in Story 1-10 and no acceptance criterion may claim a rendered-output result before it. Already `ops/bot-mitigation.md` action 3. **Re-tested 2026-08-27 now that Playwright exists: a headed Chromium did not clear the challenge.** See "The challenge does not clear for an automated browser" in `ops/bot-mitigation.md`. One load in an ordinary browser is still owed |
 | Confirm the Hostinger weekly whole-box snapshot exists | It is claimed in a script comment and appears nowhere on the box. Confirming it needs the Hostinger console, which the agent cannot reach. **Answered 2026-08-27: it exists.** See "The Hostinger whole-box snapshot, confirmed" below |
 | Verify IPv6 serving and the v6 `DOCKER-USER` path | One `curl` from a vantage point with IPv6 closes it. See [The IPv6 caveat, stated once](#the-ipv6-caveat-stated-once) for what is and is not claimed. **Half answered 2026-08-27: v6 serving confirmed for all three Satellites.** The direct-to-origin DROP test is still owed. See "IPv6 serving, confirmed" below |
-| Decide whether `analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows | A Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration. **Decided 2026-09-02 at Story 2-4** (amended here 2026-09-24): `analytics.cuatro.dev` is infrastructure outside the Registry (`ops/estate.md` § Counts); `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` are excluded and their subdomains are to be retired, KV-3 in `ops/known-violations.md` |
+| Decide whether `analytics.cuatro.dev`, `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` get Estate rows | A Registry membership decision under AD-6, owned by Story 2-4, not by an enumeration. **Decided 2026-09-02 at Story 2-4** (amended here 2026-09-24): `analytics.cuatro.dev` is infrastructure outside the Registry (`ops/estate.md` § Counts); `covidmap.cuatro.dev` and `future-vizion.cuatro.dev` are excluded and their subdomains are to be retired, KV-3 in `ops/known-violations.md`. **Reversed 2026-09-25** by Operator ruling 2026-09-25 (amended here 2026-09-26): both get Estate rows and `Live` Registry entries, KV-3 retired by membership, and both subdomains stay |
 | Read the zone's legacy Page Rules, and the `http_request_dynamic_redirect`, `http_request_transform`, `http_response_headers_transform` and `http_config_settings` ruleset phases | The zone-scoped token returns HTTP 403 code 9109 on `pagerules` and `request is not authorized` on each phase entrypoint. **Observed 2026-08-24.** The zone-level `GET /rulesets` listing shows no redirect or transform ruleset, and the `www` 301 is settled independently by a direct origin probe, so nothing depends on this. It is listed so the unknown is a known one |
 
 ### The Hostinger whole-box snapshot, confirmed
@@ -1916,6 +1925,8 @@ as though it were owed here. The AD-3 table above already names all three as gap
 correct absences, which is the part this story does own. **Amended 2026-09-24:** Story 2-4 took it
 on 2026-09-02, as the operator-actions row above now records; KV-3 in `ops/known-violations.md`
 carries the two retirements, and their DNS deletes are its Pending Operator action 6.
+**Amended 2026-09-26:** Operator ruling 2026-09-25 listed both in the Registry instead; KV-3 retired
+by membership and action 6 is superseded, so no delete is owed.
 
 **The IPv6 verification stays open and stays the Operator's.** Confirmed again 2026-08-27: the
 workstation driving this work has **no IPv6 egress**, so the v6 `DOCKER-USER` DROP path against

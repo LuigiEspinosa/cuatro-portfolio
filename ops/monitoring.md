@@ -369,6 +369,16 @@ watched. The ruling then removed Vercel from the estate: `cs-tournament` is `Com
 1.4.0 and runs nowhere, so neither is monitored and neither is a gap. **Observed 2026-09-25** by
 UptimeRobot `list-monitors`: eight monitors, none on a Vercel URL, so no monitor changes.
 
+**Amended 2026-09-26: two `Live` applications are unmonitored, and that is an FR-31 gap.** Operator
+ruling 2026-09-25 listed `covidmap` and `future-vizion` in the Registry as `Live`, at
+`https://covidmap.cuatro.dev` and `https://future-vizion.cuatro.dev`, both served by Vercel and left
+there by the Operator's choice. FR-31 requires every application with Status `Live` to be monitored
+externally, and the add rule above applies to a `cuatro.dev` subdomain that goes live, so both belong
+in the probe table. **Observed 2026-09-26** by UptimeRobot `list-monitors`: eight monitors, none on
+either name. Adding a monitor is a console act this package did not take; it is Pending Operator
+action 7 below and DW-248. Their certificates are Vercel's Let's Encrypt ones, not Cloudflare's edge
+certificate, so Rule 1's expected issuer differs for these two (KV-7 in `ops/known-violations.md`).
+
 **Applications with Status `In progress` are not monitored.** `StreamVault`, `MaiCoin`,
 `poketracker-go` and `Mutuo` are early scaffolding, are not `Live`, and serve nothing to
 probe. FR-31 scopes external monitoring to applications with Status `Live`.
@@ -1091,7 +1101,8 @@ cannot find itself in the table has not thereby been exempted.
 Buying and configuring a monitor was web console work outside this repository. **All six are
 now settled.** Actions 1, 2 and 5 were completed on 2026-08-16 through the UptimeRobot v3 API,
 action 4 the same day. Action 3 was dissolved rather than completed, and **action 6 was
-completed on 2026-08-17 by Story 1.3**. The gate is open.
+completed on 2026-08-17 by Story 1.3**. The gate is open. **Amended 2026-09-26:** action 7 is
+new and open, two monitors FR-31 asks for since Operator ruling 2026-09-25.
 
 | # | Action | Constraint | Completed (ISO 8601 UTC) |
 |---|---|---|---|
@@ -1101,6 +1112,7 @@ completed on 2026-08-17 by Story 1.3**. The gate is open.
 | 4 | Confirm the alert path reaches a channel the Operator actually reads | **Superseded 2026-08-16.** Telegram dropped; email confirmed receiving real `cuatro.dev` down alerts, which exercises the same chain end to end | **2026-08-16.** Confirmed by the Operator |
 | 5 | Record the actual recurring cost | Write it against the $100 per month ceiling as a named decision, including if it is zero. If the required tier would breach the ceiling, stop and raise it rather than configuring | **2026-08-16.** $0 per month, free tier, read from the account: no payment processor, no active subscription |
 | 6 | Flip the status line above to the positive form with the ISO 8601 UTC date | **Reassigned to Story 1.3 on 2026-08-16.** It flips in the same change that installs Origin CA and disables ACME, which is when the certificate-age requirement becomes moot rather than unmet | **2026-08-17.** Flipped by Story 1.3 in the same change that issued the Origin CA certificate and disabled ACME on all six site blocks |
+| 7 | **Add HTTPS monitors for `covidmap.cuatro.dev` and `future-vizion.cuatro.dev`** (FR-31), and a probe-table row for each | Added 2026-09-26 on Operator ruling 2026-09-25, which made both `Live`. UptimeRobot, New monitor, HTTP(s), URL `https://covidmap.cuatro.dev/` and then `https://future-vizion.cuatro.dev/`, interval 5 minutes, alert contact 8726805 as the other monitors use; expect HTTP 200, redirects not followed (both answered 200 directly on 2026-09-26). The certificate each presents is Vercel's single-name Let's Encrypt certificate, so the expected issuer is Let's Encrypt, not Cloudflare. Then add both rows to § What is probed and date this cell. Confirmed when `list-monitors` shows ten monitors and both read UP | _not done_ |
 
 **Maintaining this file.** When an Operator action is performed, **strike its row by replacing
 the `_not done_` cell with the ISO 8601 UTC completion date, and leave the row in place.**
