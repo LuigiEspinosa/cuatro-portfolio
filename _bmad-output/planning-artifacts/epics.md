@@ -926,6 +926,7 @@ is the harder and more interesting version of it.
 
 **FRs covered:** FR-36, FR-38. *(FR-37 is Epic 2's; the Anchor is not a Satellite.)*
 **Governing ADs:** AD-14, AD-16, AD-19, AD-20, AD-24, AD-25
+*Amended 2026-09-26 by Operator ruling (DW-250): `covidmap` and `future-vizion`, rendered since Registry 1.5.0, are exempt from this epic's restyle and from token adoption. No story is written for either. The exemption breaches AD-25 and lowers SM-6 and SM-12, recorded as KV-8 in `ops/known-violations.md`.*
 **Blocked by:** Epic 2, which must first produce the Hub's component vocabulary. **The Restyle
 Specification now exists** *(`RESTYLE-SPEC.md`, final, 2026-08-15)*, so this epic is written against
 a target rather than toward one, and its stories carry full acceptance criteria.

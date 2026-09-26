@@ -87,6 +87,10 @@ number of repositories carried, not a quota to fill, and the end state target of
 the direction of travel is downward. 11 is below 12 and therefore ahead of the target, not
 short of it. A later reader must not read the gap between 11 and 12 as an error.
 
+**Amended 2026-09-26 by Operator ruling (DW-249):** SM-7 now targets **13 at MVP and 10 at end
+state**, up from 12 and 8, because Registry 1.5.0 listed `covidmap` and `future-vizion`, two
+repositories the Operator keeps permanently. The waypoint's 13 meets the amended target exactly.
+
 **On the second apparent mismatch, against PRD section 9.1.** That section scopes MVP as
 "Estate reduction to the 12-repository waypoint: three empty shells archived", which is
 three archived and 12, while this record reaches 11. The epic is the tie break and it

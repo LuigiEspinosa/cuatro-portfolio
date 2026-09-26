@@ -7867,7 +7867,12 @@ status: done
 
     **Owner: the Operator.** **Trigger: now; closes when `list-monitors` shows both and the probe
     table carries their rows.**
-  status: open
+
+    **Closed 2026-09-26 on Operator instruction.** Monitors 804092499 (`covidmap.cuatro.dev`) and
+    804092500 (`future-vizion.cuatro.dev`) exist with the settings `ops/monitoring.md` Pending
+    Operator action 7 fixes, and both read UP after their first check; `list-monitors` shows ten.
+    The probe table and the monitor table carry both rows, and action 7 is dated.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-registry-1-5-0.md`
   id: DW-249
@@ -7887,7 +7892,11 @@ status: done
 
     **Owner: the Operator, as owner of the PRD.** **Trigger: the next pass over PRD § 9 or the
     `connect-four-react` archive, whichever is first.**
-  status: open
+
+    **Closed 2026-09-26 on Operator ruling 2026-09-26: amend SM-7.** PRD § 9 SM-7 now reads target
+    13 at MVP and 10 at end state, with a dated amendment giving the reason: the two repositories
+    the 2026-09-25 ruling listed are kept permanently, so both targets rise by two.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-registry-1-5-0.md`
   id: DW-250
@@ -7905,4 +7914,10 @@ status: done
     call to make silently, so it is written here rather than decided.
 
     **Owner: the Operator.** **Trigger: Epic 8's planning, or a ruling that exempts the two.**
-  status: open
+
+    **Closed 2026-09-26 on Operator ruling 2026-09-26: exempt both.** No Epic 8 story is written for
+    `covidmap` or `future-vizion`; `epics.md` § Epic 8 carries a dated note. Because AD-25 forbids a
+    second list or a judgement call at the gate, the exemption is a breach, recorded as KV-8 in
+    `ops/known-violations.md` (AD-25, SM-6, SM-12), accepted as standing. The architecture is not
+    amended.
+  status: done
