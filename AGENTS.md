@@ -182,8 +182,8 @@ block above so a context refresh does not replace it.
   2026-08-27, that holds nowhere in the estate (this repository's `main` has required eight
   checks since 2026-09-25, DW-172, so the fourth condition now holds here, and no automation is
   enabled), and it cannot hold in the four private repositories on the current GitHub plan. The
-  definitions, the observed state of all eleven repositories and the method are in
-  `ops/contract-adoption.md`.
+  definitions, the observed state of all thirteen repositories (eleven until 2026-09-26) and the
+  method are in `ops/contract-adoption.md`.
 - **None is enabled here.** No Dependabot or Renovate configuration anywhere in the
   repository (fifteen file locations under the root, `.github/` and `.gitlab/`, plus a
   `renovate` key in `package.json`, all listed in `ops/contract-adoption.mjs`),

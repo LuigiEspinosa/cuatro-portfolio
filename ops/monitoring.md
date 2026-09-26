@@ -52,6 +52,8 @@ Recorded **2026-08-16** (ISO 8601 UTC).
 | 803756083 | `www.cuatro.dev (301 to apex)` | HTTP | status code **301**, redirects **not** followed | **UP** | **UP** |
 | 803750027 | **RETIRED 2026-08-17**, paused | Keyword | alerted when `"status":"ok"` was **present**. Inverted | **DOWN** | **paused** |
 | 803983277 | `wheel.cuatro.dev` | HTTP | status code | **UP**, created 2026-09-13T17:38:14Z | did not exist. **UP** 2026-09-13 |
+| 804092499 | `covidmap.cuatro.dev` | HTTP | status code **2xx**, redirects **not** followed | **UP**, created 2026-09-26T01:43Z | did not exist. **UP** 2026-09-26 |
+| 804092500 | `future-vizion.cuatro.dev` | HTTP | status code **2xx**, redirects **not** followed | **UP**, created 2026-09-26T01:43Z | did not exist. **UP** 2026-09-26 |
 
 **Row 803983277 added 2026-09-13 by Story 2-25**, which relocated `list-wheel` onto
 `wheel.cuatro.dev`. Created through the UptimeRobot API with the settings this record fixes for
@@ -213,6 +215,8 @@ The monitored set is **every live `cuatro.dev` subdomain**.
 | `tracker.cuatro.dev` | `/` | HTTP 200 | **Decided.** Another repository, same reason |
 | `library.cuatro.dev` | `/` | HTTP 200 | **Decided.** Another repository, same reason |
 | `wheel.cuatro.dev` | `/` | HTTP 200 | **Decided 2026-09-13.** Another repository, so no health endpoint is assumed. Added by Story 2-25, monitor 803983277 |
+| `covidmap.cuatro.dev` | `/` | HTTP 200, redirects not followed | **Decided 2026-09-26.** Served by Vercel, not the box (KV-7), so its certificate is Vercel's Let's Encrypt one. Added on Operator ruling 2026-09-25, monitor 804092499 |
+| `future-vizion.cuatro.dev` | `/` | HTTP 200, redirects not followed | **Decided 2026-09-26.** Served by Vercel, not the box (KV-7), same certificate note. Added on Operator ruling 2026-09-25, monitor 804092500 |
 
 **The keyword assertion was decided from source and has now been observed passing.** It is
 read off `app/api/health/route.ts`, which returns `{"status":"ok", version, uptime}`. On
@@ -368,6 +372,16 @@ ruling 2026-09-24): Story 2-4 resolved both on 2026-09-02, `cuatro-finance` to `
 watched. The ruling then removed Vercel from the estate: `cs-tournament` is `Complete` from Registry
 1.4.0 and runs nowhere, so neither is monitored and neither is a gap. **Observed 2026-09-25** by
 UptimeRobot `list-monitors`: eight monitors, none on a Vercel URL, so no monitor changes.
+
+**Amended 2026-09-26: two `Live` applications are unmonitored, and that is an FR-31 gap.** Operator
+ruling 2026-09-25 listed `covidmap` and `future-vizion` in the Registry as `Live`, at
+`https://covidmap.cuatro.dev` and `https://future-vizion.cuatro.dev`, both served by Vercel and left
+there by the Operator's choice. FR-31 requires every application with Status `Live` to be monitored
+externally, and the add rule above applies to a `cuatro.dev` subdomain that goes live, so both belong
+in the probe table. **Observed 2026-09-26** by UptimeRobot `list-monitors`: eight monitors, none on
+either name. Adding a monitor is a console act this package did not take; it is Pending Operator
+action 7 below and DW-248. Their certificates are Vercel's Let's Encrypt ones, not Cloudflare's edge
+certificate, so Rule 1's expected issuer differs for these two (KV-7 in `ops/known-violations.md`).
 
 **Applications with Status `In progress` are not monitored.** `StreamVault`, `MaiCoin`,
 `poketracker-go` and `Mutuo` are early scaffolding, are not `Live`, and serve nothing to
@@ -1091,7 +1105,8 @@ cannot find itself in the table has not thereby been exempted.
 Buying and configuring a monitor was web console work outside this repository. **All six are
 now settled.** Actions 1, 2 and 5 were completed on 2026-08-16 through the UptimeRobot v3 API,
 action 4 the same day. Action 3 was dissolved rather than completed, and **action 6 was
-completed on 2026-08-17 by Story 1.3**. The gate is open.
+completed on 2026-08-17 by Story 1.3**. The gate is open. **Amended 2026-09-26:** action 7 is
+new and open, two monitors FR-31 asks for since Operator ruling 2026-09-25.
 
 | # | Action | Constraint | Completed (ISO 8601 UTC) |
 |---|---|---|---|
@@ -1101,6 +1116,7 @@ completed on 2026-08-17 by Story 1.3**. The gate is open.
 | 4 | Confirm the alert path reaches a channel the Operator actually reads | **Superseded 2026-08-16.** Telegram dropped; email confirmed receiving real `cuatro.dev` down alerts, which exercises the same chain end to end | **2026-08-16.** Confirmed by the Operator |
 | 5 | Record the actual recurring cost | Write it against the $100 per month ceiling as a named decision, including if it is zero. If the required tier would breach the ceiling, stop and raise it rather than configuring | **2026-08-16.** $0 per month, free tier, read from the account: no payment processor, no active subscription |
 | 6 | Flip the status line above to the positive form with the ISO 8601 UTC date | **Reassigned to Story 1.3 on 2026-08-16.** It flips in the same change that installs Origin CA and disables ACME, which is when the certificate-age requirement becomes moot rather than unmet | **2026-08-17.** Flipped by Story 1.3 in the same change that issued the Origin CA certificate and disabled ACME on all six site blocks |
+| 7 | **Add HTTPS monitors for `covidmap.cuatro.dev` and `future-vizion.cuatro.dev`** (FR-31), and a probe-table row for each | Added 2026-09-26 on Operator ruling 2026-09-25, which made both `Live`. UptimeRobot, New monitor, HTTP(s), URL `https://covidmap.cuatro.dev/` and then `https://future-vizion.cuatro.dev/`, interval 5 minutes, alert contact 8726805 as the other monitors use; expect HTTP 200, redirects not followed (both answered 200 directly on 2026-09-26). The certificate each presents is Vercel's single-name Let's Encrypt certificate, so the expected issuer is Let's Encrypt, not Cloudflare. Then add both rows to § What is probed and date this cell. Confirmed when `list-monitors` shows ten monitors and both read UP | **2026-09-26.** Created by the orchestrator through the UptimeRobot API on the Operator's instruction: 804092499 (`https://covidmap.cuatro.dev/`) and 804092500 (`https://future-vizion.cuatro.dev/`), HTTP, interval 300 s, timeout 30 s, `checkSSLErrors` true, `followRedirections` false, success `2xx`, alert contact 8726805. `list-monitors` then showed ten monitors and both read **UP** after their first check. Both rows added to § What is probed and to the monitor table |
 
 **Maintaining this file.** When an Operator action is performed, **strike its row by replacing
 the `_not done_` cell with the ISO 8601 UTC completion date, and leave the row in place.**

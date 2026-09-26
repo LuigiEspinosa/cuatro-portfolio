@@ -95,7 +95,7 @@ one commit.
 
 | Surface | Status | Candidates found | Skipped | Measured |
 |---|---|---|---|---|
-| `/` | 200 | 17 | 0 | 17 |
+| `/` | 200 | 21 | 0 | 21 |
 | `/work` | 200 | 8 | 0 | 8 |
 | `/cv` | 200 | 10 | 0 | 10 |
 | `/celeste` | 200 | 4 | 4 | 0 |
@@ -198,6 +198,16 @@ four skipped and the 404 at 6, unchanged, and the pins were moved to what it pri
 left is `cs-tournament`'s live link: Registry 1.4.0 made the entry `Complete` with no `live` URL, so its
 row draws its Source link alone, which `EXPERIENCE.md` § Registry Entry requires of a `Complete` row.
 The whole-run total goes from 42 to 41, and the exemption ledger gains no row.
+
+**Re-measured 2026-09-26 after Registry 1.5.0 listed `covidmap` and `future-vizion`** (Operator ruling
+2026-09-25, `_bmad-output/implementation-artifacts/spec-registry-1-5-0.md`). `/` went from 17 to 21
+and the other four did not move. **Read off the sweep's own failure output**: the run in
+`mcr.microsoft.com/playwright:v1.62.1-noble` against the old pins failed naming `/` alone and printed
+`/: found 21, skipped 0, measured 21, 0 element(s) of any kind past an edge`, with `/work` at 8, `/cv`
+at 10, `/celeste` at four found and four skipped and the 404 at 6, and the pin was moved to what it
+printed. The four new elements are the two rows' live links and Source links, each `Live` row drawing
+both. Every one clears the floor, so the whole-run total goes from 41 to 45 and the exemption ledger
+gains no row.
 
 **`/projects` is in neither this table nor the non-Hub list, and that is deliberate.** A browser
 asked for it now gets a 301 to `/#suite` and lands on `/`, which is a Hub surface this sweep already

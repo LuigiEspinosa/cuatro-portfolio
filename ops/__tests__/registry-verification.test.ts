@@ -225,37 +225,39 @@ const withScratch = async <T>(use: (dir: string) => Promise<T>): Promise<T> => {
 };
 
 // ---------------------------------------------------------------------------
-// Matrix row 1: all fourteen, PAT present
+// Matrix row 1: all sixteen, PAT present
 // ---------------------------------------------------------------------------
 
 describe('the committed Registry against the estate as observed', () => {
   const fetcher = planted(routesForCommittedRegistry());
   const run = verify({ registry, record, adoption, fetch: fetcher.fetch, token: TOKEN });
 
-  it('passes 34 checks: 14 exists, 11 resolves and 3 tolerated with no KV-2 row left to strike, 5 live of which 3 by 3xx, 1 token', async () => {
+  it('passes 40 checks: 16 exists, 13 resolves and 3 tolerated with no KV-2 row left to strike, 7 live of which 3 by 3xx, 1 token', async () => {
     // 35 and 6 live until 2026-09-25, when Vercel left the estate (Operator ruling 2026-09-24) and
-    // `cs-tournament` went `Complete` with no `live` to check.
+    // `cs-tournament` went `Complete` with no `live` to check. 34 until later that day, when
+    // Registry 1.5.0 listed `covidmap` and `future-vizion` as `Live` (Operator ruling 2026-09-25):
+    // three checks each, both sources public and both `live` URLs answering 200 from Vercel.
     const result = await run;
     expect(fetcher.unplanted, 'the fixture did not plant a URL the Registry carries').toEqual([]);
-    expect(result.rows).toHaveLength(34);
-    expect(result.lines).toHaveLength(34);
+    expect(result.rows).toHaveLength(40);
+    expect(result.lines).toHaveLength(40);
     expect(result.ok, result.lines.filter((line) => line.startsWith('FAIL')).join('\n')).toBe(true);
 
     const exists = rowsOf(result, 'source exists');
-    expect(exists).toHaveLength(14);
+    expect(exists).toHaveLength(16);
     expect(exists.filter((row) => row.detail.endsWith(', archived')).map((row) => row.id).sort()).toEqual(['lumen', 'tcg-tracker']);
 
     const resolves = rowsOf(result, 'source resolves');
-    expect(resolves).toHaveLength(14);
+    expect(resolves).toHaveLength(16);
     const tolerated = resolves.filter((row) => row.detail.includes('tolerated by KV-2'));
     expect(tolerated.map((row) => row.id).sort()).toEqual(['cs-tracker', 'mutuo', 'streamvault']);
     expect(resolves.filter((row) => row.detail.includes('can be struck')).map((row) => row.id)).toEqual([]);
-    expect(resolves.filter((row) => row.detail.includes('answered 200 anonymously'))).toHaveLength(11);
+    expect(resolves.filter((row) => row.detail.includes('answered 200 anonymously'))).toHaveLength(13);
 
     const live = rowsOf(result, 'live');
-    expect(live).toHaveLength(5);
+    expect(live).toHaveLength(7);
     expect(live.filter((row) => /answered 30[27]$/.test(row.detail))).toHaveLength(3);
-    expect(live.filter((row) => row.detail.endsWith('answered 200'))).toHaveLength(2);
+    expect(live.filter((row) => row.detail.endsWith('answered 200'))).toHaveLength(4);
 
     const token = rowsOf(result, 'token_contract');
     expect(token).toHaveLength(1);
@@ -267,8 +269,8 @@ describe('the committed Registry against the estate as observed', () => {
     const result = await run;
     for (const line of result.lines) expect(line).toMatch(/^(PASS|FAIL) {2}[a-z0-9-]+ (source exists|source resolves|live|token_contract): \S/);
     const summary = summaryTable(result.rows);
-    expect(summary).toContain('## Registry verification: 34 of 34 checks passed');
-    expect(summary.split('\n').filter((line) => /^\| [a-z0-9-]+ \| /.test(line))).toHaveLength(34);
+    expect(summary).toContain('## Registry verification: 40 of 40 checks passed');
+    expect(summary.split('\n').filter((line) => /^\| [a-z0-9-]+ \| /.test(line))).toHaveLength(40);
     expect(summaryTable([{ id: 'x', check: 'live', pass: false, detail: 'a | b' }])).toContain('| a \\| b |');
     expect(summaryTable([])).toContain('0 of 0 checks passed');
   });
@@ -276,7 +278,7 @@ describe('the committed Registry against the estate as observed', () => {
   it('makes exactly one request per check with the named user agent, no redirect, a 15 s signal, and the token only to api.github.com', async () => {
     await run;
     expect(TIMEOUT_MS).toBe(15_000);
-    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(34);
+    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(40);
     for (const { url, init } of fetcher.calls) {
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['User-Agent'], url).toBe(USER_AGENT);
@@ -311,8 +313,8 @@ describe('main', () => {
       const file = join(dir, 'summary.md');
       const result = await main(planted(routesForCommittedRegistry()).fetch, { [SECRET]: TOKEN, GITHUB_STEP_SUMMARY: file });
       expect(result.code, result.message).toBe(0);
-      expect(result.message.split('\n')).toHaveLength(35);
-      expect(result.message.split('\n').at(-1)).toBe('# 34 of 34 checks passed');
+      expect(result.message.split('\n')).toHaveLength(41);
+      expect(result.message.split('\n').at(-1)).toBe('# 40 of 40 checks passed');
       const { rows } = await verify({ registry, record, adoption, fetch: planted(routesForCommittedRegistry()).fetch, token: TOKEN });
       expect(readFileSync(file, 'utf8')).toBe(`${summaryTable(rows)}\n`);
     });
@@ -322,7 +324,7 @@ describe('main', () => {
     const routes = { ...routesForCommittedRegistry(), 'https://github.com/LuigiEspinosa/list-wheel': 404 };
     const result = await main(planted(routes).fetch, { [SECRET]: TOKEN });
     expect(result.code).toBe(1);
-    expect(result.message.endsWith('# 33 of 34 checks passed')).toBe(true);
+    expect(result.message.endsWith('# 39 of 40 checks passed')).toBe(true);
     expect(result.message).toContain('FAIL  list-wheel source resolves: absent:');
   });
 
@@ -331,7 +333,7 @@ describe('main', () => {
       const file = join(dir, 'missing', 'summary.md');
       const result = await main(planted(routesForCommittedRegistry()).fetch, { [SECRET]: TOKEN, GITHUB_STEP_SUMMARY: file });
       expect(result.code).toBe(2);
-      expect(result.message).toContain('# 34 of 34 checks passed');
+      expect(result.message).toContain('# 40 of 40 checks passed');
       expect(result.message).toContain(`the job summary at ${file.replace(/\\/g, '\\\\')} could not be written`);
       expect(existsSync(file)).toBe(false);
     });

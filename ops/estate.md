@@ -20,12 +20,14 @@ Source of truth for every row below: PRD section 5.1, Disposition of every repos
 
 Recorded **2026-08-16** (ISO 8601 UTC). **Re-examined 2026-09-02 by story
 `2-4-confirm-the-assumed-statuses-hostnames-and-tech-values`. The repository count is
-unchanged. The application count fell from 15 to 14.**
+unchanged. The application count fell from 15 to 14.** **Re-examined 2026-09-26 on Operator ruling
+2026-09-25**, which listed `covidmap` and `future-vizion` in the Registry: both figures rose by two,
+the repository count at the waypoint from 11 to 13 and the application count from 14 to 16.
 
 | Count | Value | Nature of the figure |
 |---|---|---|
-| Repository count under Ecosystem governance | **11** | **Decided waypoint, not an observation.** The observed figure is **12** as of 2026-09-02, stated exactly for the first time. One archive action is outstanding. See Pending Operator actions. |
-| Application count in the Estate record | **14** | Fixed by this record. By AD-6 it does not fall as repositories are archived, and it did not fall for that reason here: one row was never an application. See below |
+| Repository count under Ecosystem governance | **13** | **Decided waypoint, not an observation.** The observed figure is **14** as of 2026-09-26: the **12** stated exactly on 2026-09-02, plus `covidmap` and `future-vizion`, both public and neither archived, **observed 2026-09-26** by `gh api repos/LuigiEspinosa/<name>`. One archive action is outstanding. See Pending Operator actions. **Was 11** until 2026-09-26 (Operator ruling 2026-09-25) |
+| Application count in the Estate record | **16** | Fixed by this record. By AD-6 it does not fall as repositories are archived, and it did not fall for that reason here: one row was never an application. See below. **Was 14** until 2026-09-26, when the two applications KV-3 had kept out were admitted (Operator ruling 2026-09-25) |
 
 **Why the application count fell, and why AD-6 is not weakened by it.** `apple-music-workspace`
 was removed from this record on **2026-09-02**, by an Operator ruling. It has no repository,
@@ -48,6 +50,13 @@ Estate and out of the Registry on 2026-09-02, and their subdomains are to be ret
 That ruling, its reasoning and the DNS work it requires are **KV-3** in
 `ops/known-violations.md`.
 
+**Amended 2026-09-26: the figures did move, by the ruling that reversed that one.** On 2026-09-25 the
+Operator first kept both hostnames live on Vercel for sentimental value, then ruled them into the
+Registry (Operator ruling 2026-09-25). Both are `Live` entries in Registry 1.5.0 and rows in the
+disposition table below, and each figure gained exactly the two this paragraph said admitting them
+would add. KV-3 retired by membership, not by DNS deletion, and the DNS work above will not be done.
+The paragraph is left as written because it was true of 2026-09-02.
+
 Two further candidates were considered and are not in either figure, for different reasons.
 `analytics.cuatro.dev` serves self-hosted Umami, which is infrastructure this estate runs
 rather than an application the Registry describes. `ad-analysis.cuatro.dev` is NXDOMAIN on an
@@ -65,7 +74,8 @@ repositories the Operator carries. Application count measures how many applicati
 Registry describes. AD-6 keeps archived and absorbed applications in the Registry
 precisely so that the count of entries does not fall as the count of repositories does. A
 later reader who finds 11 in one place and 14 in another has found the intended state, and
-must not reconcile one number against the other.
+must not reconcile one number against the other. **Amended 2026-09-26**: the two numbers are 13
+and 16 since the Operator ruling of 2026-09-25, and the same holds of them.
 
 ### 11 against the MVP target
 
@@ -77,6 +87,10 @@ number of repositories carried, not a quota to fill, and the end state target of
 the direction of travel is downward. 11 is below 12 and therefore ahead of the target, not
 short of it. A later reader must not read the gap between 11 and 12 as an error.
 
+**Amended 2026-09-26 by Operator ruling (DW-249):** SM-7 now targets **13 at MVP and 10 at end
+state**, up from 12 and 8, because Registry 1.5.0 listed `covidmap` and `future-vizion`, two
+repositories the Operator keeps permanently. The waypoint's 13 meets the amended target exactly.
+
 **On the second apparent mismatch, against PRD section 9.1.** That section scopes MVP as
 "Estate reduction to the 12-repository waypoint: three empty shells archived", which is
 three archived and 12, while this record reaches 11. The epic is the tie break and it
@@ -85,6 +99,16 @@ directs 11 (`epics.md`, Story 1.1, third acceptance block). The difference is
 exactly what turns the 12 waypoint into the 11 waypoint. Both documents describe the same
 timeline at different points. This record sits at 11. A later reader hitting the section
 9.1 wording has already found the answer here.
+
+**Amended 2026-09-26: the waypoint is 13, and 13 is over SM-7's MVP ceiling of 12.** The Operator
+ruling of 2026-09-25 admitted `covidmap` and `future-vizion`, two public repositories that predate
+the Ecosystem, so the waypoint count rose from 11 to 13 and the observed count from 12 to 14. The
+argument above, that 11 is under a ceiling rather than short of a quota, now cuts the other way: 13
+is one over the ceiling, and it stays over it after `connect-four-react` is archived. The ruling wins
+over the target, and SM-C2's warning against adding entries to fill the grid does not describe it:
+both are real applications serving on the estate's own domain, admitted to end an AD-6 breach.
+Whether SM-7's MVP figure moves, or either repository is archived, is the Operator's to rule and is
+filed as DW-249.
 
 **Amended 2026-09-02, and the coincidence here is a trap.** Both documents now say *three*
 archive actions, and they are not the same three. PRD section 9.1 counts three empty shells,
@@ -107,8 +131,14 @@ performed, not when it was decided.
 |---|---|---|---|
 | Start | 14 | n/a | superseded |
 | After archiving | 12 | `Lumen` and `tcg-tracker` archived | **yes, by 2026-09-02** |
-| After absorption | **11** | `connect-four-react` absorbed into the Anchor | not yet |
-| End state | 8 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor | not yet |
+| After listing | 14 | `covidmap` and `future-vizion` admitted by Operator ruling 2026-09-25 | **yes, 2026-09-26** |
+| After absorption | **13** | `connect-four-react` absorbed into the Anchor | not yet |
+| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor | not yet |
+
+**Amended 2026-09-26.** The `After listing` row is new, and the two rows below it each carry two more
+than they did (11 and 8 until that date): the ruling admitted two repositories and changed nothing
+about the absorption or the merge. **The end state reads 10, not SM-7's 8**, because nothing yet
+decides whether `covidmap` and `future-vizion` are part of it; that is DW-249 with the MVP figure.
 
 **The estate sits on the second row today**, at an observed 12. The first row is labelled `Start`
 rather than `Today` for that reason: it was true until the two archives landed and is now
@@ -129,14 +159,20 @@ never moved. Only the starting count and the archiving row were wrong, and a rea
 this table against PRD section 5's "15, 12, 11 and 8" should expect the first number to
 differ and the rest to agree.
 
-The 11 repositories at this waypoint are `cuatro-portfolio`, `cuatro-finance`,
+The 13 repositories at this waypoint are `cuatro-portfolio`, `cuatro-finance`,
 `cuatro-tracker`, `cs-tournament`, `cs-tracker`, `digital-library`, `list-wheel`,
-`StreamVault`, `MaiCoin`, `poketracker-go` and `Mutuo`.
+`StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo`, `covidmap` and `future-vizion`.
+
+**Amended 2026-09-26 (Operator ruling 2026-09-25).** The sentence named 11 and ended at `Mutuo`.
+`ops/contract-adoption.mjs` parses it and pins its count, and both tables in
+`ops/contract-adoption.md` carry a row for each name, the two new ones observed that day by the same
+`gh api` sweep the record describes.
 
 ## Disposition of every application
 
-Fourteen applications. The Status column is the Status recorded in PRD section 5.1, except
-where story 2-4 confirmed it on 2026-09-02 and it differs. For the three applications whose
+Sixteen applications (fourteen until 2026-09-26). The Status column is the Status recorded in PRD
+section 5.1, except where story 2-4 confirmed it on 2026-09-02 and it differs, and for the two rows
+the Operator ruling of 2026-09-25 added, which PRD section 5.1 does not carry. For the three applications whose
 Status reads `Archived`, that is the decided disposition: two are archived in fact and
 `connect-four-react` is not yet. See Pending Operator actions below.
 
@@ -166,6 +202,13 @@ since 2026-09-24 (KV-2). The Vercel deployment still answered on 2026-09-25 and 
 after the Epic 2 merge has deployed, because production's Registry links it until then: § The Vercel
 decommission, under Pending Operator actions.
 
+**Amended 2026-09-26 by Operator ruling 2026-09-25.** Two rows are added at the foot of the table,
+`covidmap` and `future-vizion`, which the Operator ruled out of the Estate on 2026-09-02 (KV-3) and
+into it and the Registry on 2026-09-25. Both are `Live` in Registry 1.5.0 and both **stay on Vercel by
+Operator choice**, the keep-live decision of 2026-09-25, their DNS records and Vercel projects
+untouched. That is a deliberate exception to the ruling of 2026-09-24 that removed Vercel from the
+estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |
@@ -182,9 +225,13 @@ decommission, under Pending Operator actions.
 | `MaiCoin` | Satellite: Solidity/Web3 | `In progress`: early scaffolding | n/a | Not rendered; declared non-participating in identity (FR-24) |
 | `poketracker-go` | Satellite: Go | `In progress`: early scaffolding | n/a | Not rendered; Tracker Family |
 | `Mutuo` | Satellite | `In progress`: early scaffolding | n/a | Not rendered; already carries demo accounts, a pre-existing asset for FR-25 |
+| `covidmap` | Stay Live on Vercel by Operator choice (Operator ruling 2026-09-25); predates the Ecosystem | `Live`: `covidmap.cuatro.dev`, served by Vercel | n/a | Rendered since Registry 1.5.0; KV-7 |
+| `future-vizion` | Stay Live on Vercel by Operator choice (Operator ruling 2026-09-25); predates the Ecosystem | `Live`: `future-vizion.cuatro.dev`, served by Vercel | n/a | Rendered since Registry 1.5.0; KV-7 |
 
 End state is the Anchor plus seven Satellites: `cs-tracker`, `digital-library`,
-`StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and `list-wheel`.
+`StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and `list-wheel`. **Amended 2026-09-26:**
+`covidmap` and `future-vizion` are neither Satellites nor merge candidates; whether they belong to the
+end state is undecided (DW-249).
 
 ### The two `[ASSUMPTION: ...]` Statuses are resolved
 
@@ -234,7 +281,8 @@ Registry values, and `ops/registry-inputs.md` is frozen as a dated record of how
 chosen: author an entry against the Registry and its schema, and read that record only for a
 value's history. Its stated limit 1 closed with the freeze. The disposition table below is not a
 copy of Registry values, but it lists the same fourteen applications, and nothing holds the two
-lists equal.
+lists equal. **Amended 2026-09-26:** sixteen on both sides since Registry 1.5.0 (Operator ruling
+2026-09-25), and still nothing holds them equal.
 
 ### `connect-four-react`, absorbed with its code still in place
 
@@ -298,7 +346,9 @@ below confirms both were archived public rather than made private.
 **The count of 11 above is the decided waypoint, not the observed GitHub state, and the two
 still differ.** The observed count of non-archived repositories under Ecosystem governance is
 **12**, as of 2026-09-02. It reaches the decided 11 when `connect-four-react` is archived,
-which is the single outstanding action.
+which is the single outstanding action. **Amended 2026-09-26:** 13 decided and 14 observed since the
+Operator ruling of 2026-09-25 admitted `covidmap` and `future-vizion`; the one outstanding action
+is unchanged.
 
 **That figure can be stated exactly for the first time**, which it could not be on
 2026-08-16. The obstacle then was that `apple-music-workspace` could not be located, so the
@@ -315,6 +365,11 @@ that nobody has looked since that date.
 
 ### The Vercel decommission, in its safe order
 
+**Superseded in part 2026-09-26 by listing** (Operator ruling 2026-09-25): `covidmap` and
+`future-vizion` are Registry members that stay on Vercel, so steps 1 and 2 have nothing to retire and
+are closed as superseded, not performed. Step 3 was performed. The text below is as written on
+2026-09-25.
+
 **Written 2026-09-25 on the Operator ruling of 2026-09-24**, which removed Vercel from the estate:
 nothing deploys there any more. Three Vercel projects still serve, **observed 2026-09-25** by HTTPS
 request, each answering 200 with `server: Vercel`: the two behind `covidmap.cuatro.dev` and
@@ -326,9 +381,9 @@ at a deleted project, and production never links a URL that has stopped answerin
 
 | # | Action | Owner | Exact steps, and the confirmation | Completed (UTC) |
 |---|---|---|---|---|
-| 1 | **Delete the `covidmap` and `future-vizion` CNAMEs and the `_vercel` TXT** in zone `cuatro.dev` | Operator | KV-3's Pending Operator action 6 in `ops/known-violations.md` names the three records exactly. Confirmed after the 600 s TTL, when `nslookup covidmap.cuatro.dev 1.1.1.1` and `nslookup future-vizion.cuatro.dev 1.1.1.1` each answer that the name does not exist and `nslookup -type=TXT _vercel.cuatro.dev 1.1.1.1` finds no record. That lookup retires KV-3, and this row takes the same date | _not done_ |
-| 2 | **Delete the two Vercel projects behind those names**, only once step 1's lookups answer | Operator | Vercel dashboard: open the project that lists `covidmap.cuatro.dev` under Settings, Domains, note the `.vercel.app` domain listed beside it, then Settings, Advanced, Delete Project; the same for the project that lists `future-vizion.cuatro.dev`, whose `.vercel.app` domain answered at `https://future-vizion.vercel.app` on 2026-09-25 with the same ETag as the `cuatro.dev` name. **`covidmap.vercel.app` is another owner's project**, observed that day, and says nothing about this one. Confirmed when each noted `.vercel.app` URL answers 404 with `X-Vercel-Error: DEPLOYMENT_NOT_FOUND` to `curl -sI <url>`, and when `curl -s -o /dev/null -w "%{http_code}" --resolve covidmap.cuatro.dev:443:64.29.17.65 https://covidmap.cuatro.dev/`, and the same for `future-vizion.cuatro.dev`, no longer prints 200. The `--resolve` form reaches Vercel's edge after the DNS records are gone; it printed 200 for `covidmap` on 2026-09-25 | _not done_ |
-| 3 | **Delete the Vercel project behind `inclusivcup.vercel.app`**, only after the Epic 2 merge to `main` has deployed | Operator | Until that deploy, production serves Registry 1.1.0, which links the URL (**observed 2026-09-25** at `https://cuatro.dev/contracts/registry.json`), and the scheduled `registry-verification` run on `main` checks it daily, so deleting it first breaks a live link and turns that run red. First confirm the deploy: `curl -s https://cuatro.dev/contracts/registry.json` reads `"contract_version": "1.4.0"` or later and contains no `inclusivcup`. Then Vercel dashboard, the project that lists `inclusivcup.vercel.app` under Settings, Domains, then Settings, Advanced, Delete Project. Confirmed when `curl -sI https://inclusivcup.vercel.app` answers 404 with `X-Vercel-Error: DEPLOYMENT_NOT_FOUND`; it answered 200 on 2026-09-25 | _not done_ |
+| 1 | **Delete the `covidmap` and `future-vizion` CNAMEs and the `_vercel` TXT** in zone `cuatro.dev` | Operator | KV-3's Pending Operator action 6 in `ops/known-violations.md` names the three records exactly. Confirmed after the 600 s TTL, when `nslookup covidmap.cuatro.dev 1.1.1.1` and `nslookup future-vizion.cuatro.dev 1.1.1.1` each answer that the name does not exist and `nslookup -type=TXT _vercel.cuatro.dev 1.1.1.1` finds no record. That lookup retires KV-3, and this row takes the same date | **Superseded 2026-09-26 by listing.** Operator ruling 2026-09-25 put both applications in the Registry as `Live` (1.5.0), which retired KV-3 by membership, so there is no hostname to retire and this step will never be taken. Before that: **Not to be done.** Operator decision 2026-09-25: both stay live for sentimental value, so the DNS records and the two Vercel projects are kept and the retirement will not be made (KV-3 stays open as a standing exception) |
+| 2 | **Delete the two Vercel projects behind those names**, only once step 1's lookups answer | Operator | Vercel dashboard: open the project that lists `covidmap.cuatro.dev` under Settings, Domains, note the `.vercel.app` domain listed beside it, then Settings, Advanced, Delete Project; the same for the project that lists `future-vizion.cuatro.dev`, whose `.vercel.app` domain answered at `https://future-vizion.vercel.app` on 2026-09-25 with the same ETag as the `cuatro.dev` name. **`covidmap.vercel.app` is another owner's project**, observed that day, and says nothing about this one. Confirmed when each noted `.vercel.app` URL answers 404 with `X-Vercel-Error: DEPLOYMENT_NOT_FOUND` to `curl -sI <url>`, and when `curl -s -o /dev/null -w "%{http_code}" --resolve covidmap.cuatro.dev:443:64.29.17.65 https://covidmap.cuatro.dev/`, and the same for `future-vizion.cuatro.dev`, no longer prints 200. The `--resolve` form reaches Vercel's edge after the DNS records are gone; it printed 200 for `covidmap` on 2026-09-25 | **Superseded 2026-09-26 by listing**, for the same ruling: both projects serve Registry `live` URLs, so deleting either would break a published link and turn the scheduled Registry verification red. Before that: **Not to be done**, for the same decision: step 1 is not taken, so the projects stay |
+| 3 | **Delete the Vercel project behind `inclusivcup.vercel.app`**, only after the Epic 2 merge to `main` has deployed | Operator | Until that deploy, production serves Registry 1.1.0, which links the URL (**observed 2026-09-25** at `https://cuatro.dev/contracts/registry.json`), and the scheduled `registry-verification` run on `main` checks it daily, so deleting it first breaks a live link and turns that run red. First confirm the deploy: `curl -s https://cuatro.dev/contracts/registry.json` reads `"contract_version": "1.4.0"` or later and contains no `inclusivcup`. Then Vercel dashboard, the project that lists `inclusivcup.vercel.app` under Settings, Domains, then Settings, Advanced, Delete Project. Confirmed when `curl -sI https://inclusivcup.vercel.app` answers 404 with `X-Vercel-Error: DEPLOYMENT_NOT_FOUND`; it answered 200 on 2026-09-25 | **2026-09-25.** Deleted by the Operator after the Epic 2 merge deploy (run 36156753065, `bd21c5d`); production's `https://cuatro.dev/contracts/registry.json` read `"contract_version": "1.4.0"` with no `inclusivcup` beforehand. At 16:41:13Z `https://inclusivcup.vercel.app` answered 404 with `X-Vercel-Error: DEPLOYMENT_NOT_FOUND` |
 
 **No monitor changes with any of it.** **Observed 2026-09-25** by UptimeRobot `list-monitors`: eight
 monitors, every one on a `cuatro.dev` host and none on a Vercel URL, as the ruling's own check of
@@ -393,6 +448,12 @@ breach of FR-10 and SM-4. It is recorded as **KV-2** in `ops/known-violations.md
 `StreamVault` named there as deliberately private and excluded from repair. Read that entry
 rather than re-deriving the problem here.
 
+**Noted 2026-09-26: two repositories joined the governed set** (Operator ruling 2026-09-25).
+`LuigiEspinosa/covidmap` (default branch `master`) and `LuigiEspinosa/future-vizion` (default branch
+`main`) are both public and neither is archived, **observed 2026-09-26** by
+`gh api repos/LuigiEspinosa/<name>`. The paragraphs above describe the fourteen of 2026-09-02 and are
+left as written.
+
 ## Planned, and not yet an application
 
 **Nothing in this section is an Estate application, is counted anywhere in this file, or is
@@ -400,7 +461,8 @@ eligible for a Registry entry.** It exists so that a decided intention is writte
 than remembered. An entry here graduates into the disposition table above on the day a
 repository exists for it, and not before. Until then it changes no count: the governed set
 stays fourteen repositories, the waypoint stays eleven, and the Registry stays at fourteen
-entries.
+entries. **Amended 2026-09-26:** sixteen repositories, a waypoint of thirteen and sixteen entries
+since the Operator ruling of 2026-09-25, and this section still changes none of them.
 
 **Why the bar is a repository and not an idea.** AD-5 accepts exactly `Live`, `Complete`,
 `In progress` and `Archived`, and a thing not yet started is none of them. `source` is

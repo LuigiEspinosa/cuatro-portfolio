@@ -186,7 +186,10 @@ describe('the adopter rows', () => {
     expect(anchor?.path).toBe(ANCHOR_TOKENS);
   });
 
-  it('carry one row for every one of the eleven repositories, adopted or not', () => {
+  it('carry one row for every one of the thirteen repositories, adopted or not', () => {
+    // Eleven until 2026-09-25, when Registry 1.5.0 listed `covidmap` and `future-vizion`
+    // (Operator ruling 2026-09-25) and `ops/estate.md` named both at the waypoint.
+    expect(ESTATE_COUNT).toBe(13);
     expect(names).toHaveLength(ESTATE_COUNT);
     const listed = rows.map((row) => row.application);
     expect(() => assertEstateCovered(listed, names)).not.toThrow();
@@ -237,7 +240,7 @@ describe('the policy table lists the estate', () => {
   const rows = policyRows(record);
   const names = estateNames(estate);
 
-  it('names exactly the eleven repositories ops/estate.md names, no more and no fewer', () => {
+  it('names exactly the thirteen repositories ops/estate.md names, no more and no fewer', () => {
     expect(names).toHaveLength(ESTATE_COUNT);
     expect(() => assertEstateCovered(rows.map((row) => row.repository), names)).not.toThrow();
   });
@@ -250,11 +253,13 @@ describe('the policy table lists the estate', () => {
     }
   });
 
-  it('refuses an estate parse that yields anything but eleven names before comparing', () => {
-    expect(() => estateNames(`${ESTATE_SENTENCE} \`a\`, \`b\` and \`c\`.`)).toThrow(/names 3 repositories at the waypoint, not the 11 pinned/);
-    const twelve = `${ESTATE_SENTENCE} ${[...names, 'one-more'].map((name) => `\`${name}\``).join(', ')}.`;
-    expect(() => estateNames(twelve)).toThrow(/names 12 repositories at the waypoint, not the 11 pinned/);
-    expect(() => estateNames('nothing here')).toThrow(/no "The 11 repositories/);
+  it('refuses an estate parse that yields anything but thirteen names before comparing', () => {
+    expect(() => estateNames(`${ESTATE_SENTENCE} \`a\`, \`b\` and \`c\`.`)).toThrow(/names 3 repositories at the waypoint, not the 13 pinned/);
+    const oneMore = `${ESTATE_SENTENCE} ${[...names, 'one-more'].map((name) => `\`${name}\``).join(', ')}.`;
+    expect(() => estateNames(oneMore)).toThrow(/names 14 repositories at the waypoint, not the 13 pinned/);
+    expect(() => estateNames('nothing here')).toThrow(/no "The 13 repositories/);
+    expect(estateNames(estate)).toContain('covidmap');
+    expect(estateNames(estate)).toContain('future-vizion');
     expect(estateNames(estate)).toContain('cs-tracker');
     expect(estateNames(estate)).toContain(ANCHOR);
   });
@@ -263,7 +268,7 @@ describe('the policy table lists the estate', () => {
     const short = policyRows(fragment({ policy: [['`cuatro-portfolio`', 'yes', 'none', 'none required']] })).map((row) => row.repository);
     // Named in name order, not in the order `ops/estate.md` happens to list
     // them, so a reordered sentence there cannot turn this case red.
-    expect(() => assertEstateCovered(short, names)).toThrow(/missing cs-tournament, cs-tracker, cuatro-finance, cuatro-tracker, digital-library, list-wheel, MaiCoin, Mutuo, poketracker-go, StreamVault; extra none/);
+    expect(() => assertEstateCovered(short, names)).toThrow(/missing covidmap, cs-tournament, cs-tracker, cuatro-finance, cuatro-tracker, digital-library, future-vizion, list-wheel, MaiCoin, Mutuo, poketracker-go, StreamVault; extra none/);
 
     const extra = policyRows(fragment({ policy: [['`not-in-the-estate`', 'yes', 'none', 'none required']] })).map((row) => row.repository);
     expect(() => assertEstateCovered([...names, ...extra], names)).toThrow(/missing none; extra not-in-the-estate/);

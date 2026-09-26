@@ -1,7 +1,7 @@
 // The parsers over `ops/contract-adoption.md`, Story 1-20's record.
 //
 // The record states the published contract version, the version every estate
-// application has adopted, the automation policy over the eleven repositories
+// application has adopted, the automation policy over the thirteen repositories
 // `ops/estate.md` names, and the propagation counter Epic 6 reads. Each is a
 // statement about something else in this repository or in the estate, and a
 // statement nobody checks drifts. These functions read the record's tables so
@@ -23,11 +23,15 @@ import { join } from 'node:path';
 /** Where the record lives, relative to the repository root. */
 export const RECORD_REL = 'ops/contract-adoption.md';
 
-/** The eleven repositories, pinned, so the estate parse has something to disagree with. */
-export const ESTATE_COUNT = 11;
+/**
+ * The thirteen repositories, pinned, so the estate parse has something to disagree with. Eleven
+ * until 2026-09-25, when Registry 1.5.0 listed `covidmap` and `future-vizion` (Operator ruling
+ * 2026-09-25) and both joined the waypoint.
+ */
+export const ESTATE_COUNT = 13;
 
 /** The sentence in `ops/estate.md` the estate names are read out of. */
-export const ESTATE_SENTENCE = 'The 11 repositories at this waypoint are';
+export const ESTATE_SENTENCE = 'The 13 repositories at this waypoint are';
 
 /** AD-14's fixed folder name, and the one file the Epic 2 drift check reads out of it. */
 export const VENDORED_TOKENS = 'cuatro-contracts/tokens.css';
@@ -199,7 +203,7 @@ export function recordedAdoptedVersion(record, application) {
   return row.version;
 }
 
-/** The eleven-row policy table. Throws on zero rows. */
+/** The policy table, one row per waypoint repository. Throws on zero rows. */
 export function policyRows(record) {
   const parsed = table(section(record, 'The automation policy'), 'Repository');
   const repository = parsed.headers.indexOf('Repository');
@@ -220,7 +224,7 @@ export function policyRows(record) {
   }));
 }
 
-/** The eleven names `ops/estate.md` gives at the waypoint. Throws when anything but the pinned count is read: pinned, not bounded. */
+/** The names `ops/estate.md` gives at the waypoint. Throws when anything but the pinned count is read: pinned, not bounded. */
 export function estateNames(estate) {
   const match = new RegExp(`${ESTATE_SENTENCE} ([\\s\\S]*?)\\.`).exec(String(estate ?? ''));
   if (match === null) throw new Error(`ops/estate.md carries no "${ESTATE_SENTENCE} ..." sentence`);
