@@ -133,9 +133,14 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * and passes; `/celeste` from 3 found and 3 skipped to 4 and 4, the link hidden with its band. `/` did
  * not move: it renders the same one link, from `Header` now rather than from `app/page.tsx`. Read off
  * this sweep's own failure output in the pinned container before the pins were moved.
+ *
+ * **`/` moved by four on 2026-09-26** (Operator ruling 2026-09-25). Registry 1.5.0 listed `covidmap`
+ * and `future-vizion` as `Live`, two more rows each drawing a live link and a Source link, so `/` went
+ * from 17 to 21. Read off this sweep's own failure output in the pinned container before the pin
+ * moved; the other four surfaces did not move.
  */
 const SURFACES = [
-  { route: '/', status: 200, entrance: true, found: 17, skipped: 0, measured: 17 },
+  { route: '/', status: 200, entrance: true, found: 21, skipped: 0, measured: 21 },
   { route: '/work', status: 200, entrance: false, found: 8, skipped: 0, measured: 8 },
   { route: '/cv', status: 200, entrance: false, found: 10, skipped: 0, measured: 10 },
   { route: '/celeste', status: 200, entrance: false, found: 4, skipped: 4, measured: 0 },

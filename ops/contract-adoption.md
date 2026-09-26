@@ -24,7 +24,9 @@ and they are the same story. Stories in later epics have no key in that file yet
 `ops/contract-adoption.mjs`. `ops/__tests__/contract-adoption.test.ts` runs them under the blocking
 `test` job and fails if the published version stated here disagrees with the `Contract vX.Y.Z`
 header of `contracts/tokens.css` or the version in `packages/tokens/package.json`, if the
-adopted-versions or policy table stops naming the eleven repositories `ops/estate.md` names, if the
+adopted-versions or policy table stops naming the repositories `ops/estate.md` names at its waypoint
+(eleven until 2026-09-26, thirteen since: Operator ruling 2026-09-25 listed `covidmap` and
+`future-vizion`), if the
 propagation count stops equalling the number of ledger rows, or if the Anchor's automation cell and
 the dependency-automation configuration present in this repository stop agreeing, in either
 direction. `ops/cs-tracker-adoption-probe.mjs`, the hand-run drift detector, runs them too and holds
@@ -56,7 +58,9 @@ the same reading, until Contract 2.0.0 by Operator ruling 2026-09-24: the Tailwi
 spacing keys renamed to `--spacing-s-*` (DW-15), a MAJOR, with `--ease-exit` retargeted to an ease-out
 (DW-103) in the same release. § The propagation ledger carries it as event 1.
 
-One row per application `ops/estate.md:73-75` names at the eleven-repository waypoint. **Adopted**
+One row per application `ops/estate.md` names at the waypoint, in its sentence "The 13 repositories
+at this waypoint are" (eleven, cited as `ops/estate.md:73-75`, until 2026-09-26; the two rows at the
+foot joined on Operator ruling 2026-09-25). **Adopted**
 means the application renders from the contract; **loaded** would mean it merely has the file. For
 the Anchor the two are one version, because it loads `contracts/` in place and vendors nothing; for
 every Satellite the adopted version is the header of its vendored copy and nothing else.
@@ -74,6 +78,8 @@ every Satellite the adopted version is the header of its vendored copy and nothi
 | `MaiCoin` | none | none | none | not adopted | **Observed 2026-08-27** by the same call: 43 blobs, none under a `cuatro-contracts` path. Declared non-participating in identity (FR-24) |
 | `poketracker-go` | none | none | none | not adopted | **Observed 2026-08-27** by the same call: the default branch holds one blob, `LICENSE`. A `dev` branch exists and was not inspected |
 | `Mutuo` | none | none | none | not adopted | **Observed 2026-08-27** by the same call: 7 blobs. `frontend/assets/css/tokens.css` is there and is **Mutuo's own** token file (header `Mutuo Design Tokens`, `--color-bg-base: #0f0b1f`), not the vendored folder and not an adoption |
+| `covidmap` | none | none | none | not adopted | **Observed 2026-09-26T00:04:51Z** by `gh api repos/LuigiEspinosa/covidmap/git/trees/master?recursive=1`, the default branch being `master`, at `3438d1d`: 39 blobs, none under a `cuatro-contracts` path. Its styles are its own `assets/global.css` and Tailwind. Joined the waypoint on Operator ruling 2026-09-25 |
+| `future-vizion` | none | none | none | not adopted | **Observed 2026-09-26T00:04:52Z** by `gh api repos/LuigiEspinosa/future-vizion/git/trees/main?recursive=1` at `360f9f1`: 28 blobs, none under a `cuatro-contracts` path. Its styles are five minified stylesheets under `assets/css/`. Joined the waypoint on Operator ruling 2026-09-25 |
 
 **`cs-tracker`'s adoption is local until it is pushed.** **Observed 2026-08-27** by
 `gh api repos/LuigiEspinosa/cs-tracker/git/trees/main?recursive=1`: the remote default branch, last
@@ -225,7 +231,7 @@ observation.
 |---|---|---|
 | `AGENTS.md` in this repository, § Dependency automation policy, outside the managed `bmad:context` block so a refresh keeps it | The rule, the definition with its fourth condition, that none is enabled here, and that enabling one is a recorded decision that lands in one commit with the configuration, the unit test holding the row and the tree equal. `ops/__tests__/contract-adoption.test.ts` holds the section present after the managed block and pointing here | **Decision.** Story 1-20 |
 | `cs-tracker/AGENTS.md`, the bullet beside the Cuatro entries, at `:42-50` among the entries at `:32-50` | None is enabled there, none may be while nothing runs `mix test` on a push nor while that run is not a required check on `main`, which cannot hold on the current plan, and this file governs it, the decision landing here before any configuration there | **Decision.** Story 1-20; the only file this story edits in `cs-tracker` |
-| This file | The rule, the definition, the eleven-row observation and the method | **Decision** |
+| This file | The rule, the definition, the observation with one row per waypoint repository (eleven until 2026-09-26, thirteen since) and the method | **Decision** |
 
 ### The estate, observed
 
@@ -272,6 +278,14 @@ endpoints answer `404 Branch not protected` where they answered `403`; `list-whe
 and the Anchor's `main` carries the merge of 2026-09-13. No configuration file, `renovate` key,
 security fix, auto-merge setting or bot-authored pull request appeared anywhere.
 
+**Observed 2026-09-26 between 00:04:02Z and 00:04:52Z for the two repositories that joined the
+waypoint** on Operator ruling 2026-09-25, `covidmap` and `future-vizion`: the same calls as the
+re-observation above, as `LuigiEspinosa`, one repository at a time, from this session's shell and not
+a committed script. Each was read for `default_branch` and `allow_auto_merge`, security fixes,
+alerts and every pull request, and each default branch for all fifteen configuration paths, the
+`package.json` key, its protection, rules and rulesets, and its recursive tree. The eleven rows above
+were not re-read. Neither repository carries a configuration, a workflow or a test-shaped path.
+
 | Repository | Test suite (files, runner) | CI runs it on push | Required check on the default branch | Dependency automation (config files) | Security updates | Auto-merge | Bot-authored PRs | Real test suite | Nature and method |
 |---|---|---|---|---|---|---|---|---|---|
 | `cuatro-portfolio` | 74 test-shaped files on `main` at `1e93787`: 53 under `__tests__/` across `app/`, `components/`, `content/`, `docker/`, `hooks/`, `lib/`, `ops/` and `packages/`, plus 21 under `tests/e2e/`, being 19 Playwright specs, their `harness.ts` and the committed baseline. Vitest (`"test": "vitest"`), `corepack pnpm test --run`: **1634 tests across 63 files at `935df26`** (on `dev`, 2026-09-25; `main` carries the tree of 2026-09-13 until Epic 2 merges) | **yes**: `ci.yml` on `push` to `**` and `pull_request` to `main`; on `main` at `1e93787` its `test` job runs `pnpm test --run` and `rendered-output` runs `pnpm test:e2e`, with `tokens-contract`, `fonts-contract`, `contract-purity` and `registry-schema` beside them (`dev` adds `literal-conformance`). No `continue-on-error`, no soft fail: the only matches for either string are three comments forbidding them (`ci.yml:150`, `:194`, `deploy.yml:26`) | **none required**: `main` is protected, `required_status_checks` has `strict: true` with `contexts` and `checks` both empty, so no check is named; `enforce_admins` on; pull request reviews required with `required_approving_review_count` 0, `dismiss_stale_reviews` off, `require_code_owner_reviews` off; `allow_force_pushes` off; `allow_deletions` off; `required_linear_history` off; no rules and no rulesets. **Observed 2026-08-27T22:38:57Z**, unchanged at the **re-observation of 2026-09-25T02:03:02Z**. **Amended 2026-09-25:** the eight checks are required on `main` since 2026-09-25T08:22:04Z (`test`, `tokens-contract`, `fonts-contract`, `contract-purity`, `registry-schema`, `rendered-output`, `literal-conformance` and `lighthouse`, each pinned to the GitHub Actions app, `strict` false), read back through the API (DW-172) | none | off (`{"enabled":false,"paused":false}`) | off (`allow_auto_merge=false`) | 0 of 25 | **yes** | Dependabot **alerts** are on (`vulnerability-alerts` `204`), which is notification and not automation. Public. **Re-observed 2026-09-25T02:03:02Z to 02:03:21Z** by the same calls (AD-22, Operator ruling 2026-09-24): the test-shaped count moved from 34 on 2026-08-27 to 74, the case count from 649 in 27 files at `b1ab824` to 1634 in 63 at `935df26`, and the pull requests from 0 of 18 to 0 of 25; the protection, the automation cells and the verdict did not move |
@@ -285,6 +299,8 @@ security fix, auto-merge setting or bot-authored pull request appeared anywhere.
 | `MaiCoin` | 1 file, `test/MaiCoin.test.ts`, a Hardhat test | **no workflow** | none: `404 Branch not protected`, no rules, no rulesets. **Observed 2026-08-27T22:40:33Z**, unchanged at the **re-observation of 2026-09-25T02:05:13Z** | none | off | off | 0 of 1 | **no** | Public. **Re-observed 2026-09-25T02:05:13Z** by the same calls: nothing moved |
 | `poketracker-go` | none: the default branch `main` holds one blob, `LICENSE` | no workflow | none: `404 Branch not protected`, no rules, no rulesets. **Observed 2026-08-27T22:40:44Z**, unchanged at the **re-observation of 2026-09-25T02:05:29Z** | none | off | off | 0 of 0 | **no** | A `dev` branch exists and was not inspected. Public. **Re-observed 2026-09-25T02:05:29Z** by the same calls: nothing moved. The `dev` branch stays uninspected by Operator ruling 2026-09-24 (Pending Operator action 6) |
 | `Mutuo` | none: 7 blobs, no test-shaped path | no workflow | not available: `403 Upgrade to GitHub Pro or make this repository public` on protection, rules and rulesets. **Observed 2026-08-27T22:40:56Z**, unchanged at the **re-observation of 2026-09-25T02:05:45Z** | none | off | off | 0 of 1 | **no** | Private. **Re-observed 2026-09-25T02:05:45Z** by the same calls: nothing moved |
+| `covidmap` | none: 39 blobs on `master` at `3438d1d`, no test-shaped path, and `package.json` declares no `test` script (`build`, `dev`, `dev:local`, `generate`, `preview`, `postinstall`) | **no workflow**: no `.github/` in 39 blobs | none: `404 Branch not protected`, no rules, no rulesets. **Observed 2026-09-26T00:04:02Z** | none | off (`{"enabled":false,"paused":false}`) | off (`allow_auto_merge=false`) | 0 of 6 | **no** | Dependabot **alerts** are on (`vulnerability-alerts` `204`), which is notification and not automation. All fifteen configuration paths `404` on `master`, and `package.json` carries no `renovate` key. The six pull requests are all authored by `LuigiEspinosa`. Public, default branch `master`. Deployed by Vercel, outside this policy's reach: nothing merges there unattended because nothing merges there but the Operator. **Observed 2026-09-26T00:04:02Z to 00:04:51Z**, joined on Operator ruling 2026-09-25 |
+| `future-vizion` | none: 28 blobs on `main` at `360f9f1`, no test-shaped path, no `package.json` | **no workflow**: no `.github/` in 28 blobs | none: `404 Branch not protected`, no rules, no rulesets. **Observed 2026-09-26T00:04:20Z** | none | off (`{"enabled":false,"paused":false}`) | off (`allow_auto_merge=false`) | 0 of 0 | **no** | `vulnerability-alerts` answered `404`, so alerts are off. All fifteen configuration paths `404` on `main`. Public. A static page with no build step, deployed by Vercel. **Observed 2026-09-26T00:04:20Z to 00:04:52Z**, joined on Operator ruling 2026-09-25 |
 
 **Which repositories have a real test suite:** `cuatro-portfolio`, `cuatro-tracker` and
 `digital-library`, three of eleven. Four more carry a suite that nothing runs on a push
@@ -298,7 +314,10 @@ suite and leaves three whose suite nothing runs on a push (`cs-tracker`, `cs-tou
 Its `main` is unprotected, so it does not meet the fourth condition either, and automation stays
 enabled nowhere. **Amended 2026-09-25**, re-observed: that push landed on 2026-09-24, so the four
 hold on the remote as well as in the record, and none has its run as a required check.
-`cs-tournament`, public since 2026-09-24, could now carry one but has no workflow.
+`cs-tournament`, public since 2026-09-24, could now carry one but has no workflow. **Amended
+2026-09-26** (Operator ruling 2026-09-25): the waypoint is thirteen, and the two that joined,
+`covidmap` and `future-vizion`, carry no suite and no workflow, so four of thirteen have a real test
+suite, three carry one nothing runs on a push, and six carry none. Automation stays enabled nowhere.
 
 **The "CI runs it on push" and "Real test suite" cells are held by reading.** They are conclusions
 drawn from the workflow text and the tree listing the sweep fetched, written by hand. `policyRows`

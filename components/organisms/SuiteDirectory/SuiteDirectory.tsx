@@ -11,9 +11,10 @@ import './SuiteDirectory.scss';
  * The Suite Directory (Story 2-9, FR-11, FR-35).
  *
  * **A server component, and that is load-bearing rather than incidental.** A client component that
- * value-imported the Registry would ship all fourteen entries to a visitor who is shown six, which
- * is what `lib/__tests__/registry.test.ts:621-668` refuses. Rendering on the server satisfies that
- * by construction rather than by a mock, and the directory has no state to justify a boundary:
+ * value-imported the Registry would ship every entry to a visitor who is shown only the rendered
+ * ones (sixteen and eight in Registry 1.5.0), which is what `lib/__tests__/registry.test.ts:621-668`
+ * refuses. Rendering on the server satisfies that by construction rather than by a mock, and the
+ * directory has no state to justify a boundary:
  * hover and focus are CSS, and the orchestrated entrance belongs to Story 2-12.
  *
  * **Story 2-24 instrumented it without giving it a boundary of its own.** The two link events are

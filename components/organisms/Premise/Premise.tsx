@@ -36,12 +36,15 @@ import './Premise.scss';
  * what keeps the contrast audit honest rather than suppressed.
  *
  * **What is *not* true, and was claimed here in an earlier pass, is that every name in the band is
- * also on a row of the Directory below.** Measured against the committed Registry: four of the six
- * appear verbatim in a rendered entry's `tech`, one appears only inside a longer meta-framework
- * value on a rendered row, and one appears on no rendered row at all, its only application being
- * held back by the FR-35 filter. So the band is not a restatement of what is on the page, and an
- * argument that leaned on it being one would be leaning on a coincidence that the next status flip
- * changes. It is ornament, and ornament is hidden because it is ornament.
+ * also on a row of the Directory below.** Measured against the committed Registry until 2026-09-25:
+ * four of the six appeared verbatim in a rendered entry's `tech`, one only inside a longer
+ * meta-framework value on a rendered row, and one, `Vue`, on no rendered row at all, its only
+ * application being held back by the FR-35 filter. Registry 1.5.0 listed `covidmap` as `Live`
+ * (Operator ruling 2026-09-25), so today `Vue` renders and every name is on some row, which
+ * `lib/__tests__/registry.test.ts` measures. That is the coincidence this paragraph warned about, in
+ * the other direction: an argument that leaned on the band being, or not being, a restatement would
+ * lean on whatever the last status flip left. It is ornament, and ornament is hidden because it is
+ * ornament.
  */
 
 /**

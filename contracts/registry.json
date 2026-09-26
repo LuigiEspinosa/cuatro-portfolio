@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.4.0",
+  "contract_version": "1.5.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -69,6 +69,28 @@
       "demo": "open",
       "identity": "none",
       "live": "https://wheel.cuatro.dev"
+    },
+    {
+      "id": "covidmap",
+      "name": "Covidmap",
+      "description": "A world map of COVID-19 cases, deaths and recoveries by country, held at the figures of 24 June 2021, beside a feed of news headlines about the virus.",
+      "status": "Live",
+      "tech": ["Nuxt", "Vue", "Tailwind CSS", "amCharts", "Vercel"],
+      "source": "https://github.com/LuigiEspinosa/covidmap",
+      "demo": "open",
+      "identity": "none",
+      "live": "https://covidmap.cuatro.dev"
+    },
+    {
+      "id": "future-vizion",
+      "name": "Future Vizion",
+      "description": "The information page for Future_Vizion Photo New Tab, a Chrome extension that shows a photograph by Guillermo Alarcor on every new tab, covering the photographer, how to order a print and how the extension works.",
+      "status": "Live",
+      "tech": ["HTML", "CSS", "JavaScript", "jQuery", "Vercel"],
+      "source": "https://github.com/LuigiEspinosa/future-vizion",
+      "demo": "open",
+      "identity": "none",
+      "live": "https://future-vizion.cuatro.dev"
     },
     {
       "id": "cuatro-finance",

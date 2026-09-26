@@ -27,10 +27,10 @@ import { capitalise, pluralise, spellOut } from '../words';
 /**
  * The Hub's read of the published Registry (Story 2.7).
  *
- * This file asserts the **rule**, not the data. What the fourteen entries say is
+ * This file asserts the **rule**, not the data. What the entries say (sixteen in Registry 1.5.0) is
  * `contracts/registry.json`'s alone, its only source since 2026-09-24 (`ops/registry-inputs.md` is
  * a frozen record), held to its shape by `ops/__tests__/registry-schema.test.ts`'s gate; a case
- * here that pinned six rendered entries by name would fail on the day an application ships, which
+ * here that pinned the rendered entries by name would fail on the day an application ships, which
  * is the day AD-4 says nothing should have to change.
  *
  * It does read two committed files for two things a rule test cannot see on its own: that the
@@ -533,22 +533,26 @@ describe('the band and the footer name only things the estate actually runs (Sto
     expect(isSomeTech(TECH[0]), 'the language scan does not fire on a real tech value').toBe(true);
   });
 
-  it('does not claim the band restates what the Directory renders, because it does not', () => {
+  it('measures which of the band the Directory renders, so Premise.tsx states it as a measurement and not as a design claim', () => {
     // **The claim an earlier pass made in `Premise.tsx` and had to withdraw.** The band was
     // described as a decorative restatement of names already visible on the rows below, which would
-    // have been a second argument for hiding it. Measured here instead of asserted in prose: some
-    // of the band resolves only against entries the FR-35 filter holds back, so the band is not a
-    // restatement and the `aria-hidden` decision rests on FR-4 alone.
+    // have been a second argument for hiding it. Measured here instead of asserted in prose, and the
+    // measurement moves with the Registry: until 2026-09-25 `Vue` resolved only against entries the
+    // FR-35 filter holds back, so some of the band was on no rendered row. Registry 1.5.0 listed
+    // `covidmap` as `Live` (Operator ruling 2026-09-25), which renders `Vue`, so today every name is
+    // on some row. That is a fact about this Registry and not about the design: the `aria-hidden`
+    // decision rests on FR-4 alone, and `Premise.tsx` records the measurement with its date rather
+    // than arguing from it. When this fails, a status flip moved a framework off the page, and the
+    // docblock's measured sentence moves with the pin.
     const rendered = renderedApplications.flatMap((application) => application.tech);
     const notOnThePage = ESTATE_FRAMEWORKS.filter((framework) => !resolves(framework, rendered));
     expect(
-      notOnThePage.length,
-      'every framework the band names is now on a rendered row, so the band really is a restatement ' +
-        'today. That is a fact about this Registry and not about the design: the comment in ' +
-        'Premise.tsx must not start claiming it, because the next status flip takes it away'
-    ).toBeGreaterThan(0);
-    // And each of those still resolves against the estate as a whole, which is the rule that matters.
-    for (const framework of notOnThePage) {
+      notOnThePage,
+      'a framework the band names is on no rendered row any more; update the measured sentence in ' +
+        'Premise.tsx with this pin'
+    ).toEqual([]);
+    // And each name still resolves against the estate as a whole, which is the rule that matters.
+    for (const framework of ESTATE_FRAMEWORKS) {
       expect(resolves(framework, TECH), `${framework} resolves against no entry at all`).toBe(true);
     }
   });
@@ -767,7 +771,7 @@ describe('the Registry stays out of the browser bundle', () => {
    * Why this is a test and not a comment.
    *
    * `ProjectsHero` took its count as a prop precisely so a client component never imported this
-   * module: doing so would ship all fourteen entries to the browser to render one number, against
+   * module: doing so would ship every entry to the browser to render one number, against
    * the non-3D budget Story 2.2 measures. Nothing enforced that, so the invariant lived on the
    * memory of whoever read the comment. This is the enforcement, and it outlives its example:
    * Story 2-14 deleted that component on 2026-09-07 with the `/projects` route, and the rule binds
