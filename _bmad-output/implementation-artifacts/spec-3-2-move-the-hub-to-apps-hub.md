@@ -242,6 +242,42 @@ Implemented inline (a workflow sub-agent has no Agent tool), from this spec.
 
 ## Spec Change Log
 
+**2026-09-28, fix round 1, after the independent verification.** The verifier passed the story with
+three minor findings, all taken; each was a record or a board row saying less than, or other than, the
+tree it sits in, and no code, test, workflow or gate changed.
+
+1. AC5's live proof waits on the Operator, and neither this spec nor the board said how AD-20's own
+   shipped step is taken while `dev` carries Story 3-1's unshipped commits beneath this story's.
+   Verification now ends with the steps, and the board's 3-2 row carries them, as 3-1's row carries
+   its own.
+2. `ops/hub-accessibility-pass.md` Pending Operator action 4 told the Operator to open `/` on
+   `corepack pnpm build && corepack pnpm start`, which fails at the root since `bc9cd25`; its Method
+   now names `corepack pnpm --filter hub build && corepack pnpm --filter hub start`. Three rows that
+   describe the harness's server as `pnpm build && pnpm start` in the present tense carry a dated
+   amendment: that record's Environment row and `ops/contract-serving.md`'s stated limit, which the
+   verifier named, and the same stated limit in `ops/anchor-token-adoption.md`, found by searching
+   for the claim.
+3. `ops/rendered-output-harness.md` § Regenerating the baseline still called the 2026-08-24 container
+   command, with `-v pw-next:/w/.next`, the supported way to run the harness; a dated amendment beside
+   it names `-v pw-next:/w/apps/hub/.next`. The same search found three more present-tense container
+   commands with the pre-move volume, in `ops/hub-accessibility-pass.md` § How to re-run,
+   `ops/status-mark-axes.md` § How to re-run and `ops/hit-target-floor.md` § Running it, each amended
+   the same way; the one in `ops/status-mark-axes.md` joins an existing line, because
+   `ops/hub-accessibility-pass.md` and `ops/hub-accessibility-probe.mjs` cite that record's later
+   lines by number. Two commands stay as they were run: `ops/font-contract.md`'s `fonts:measure`
+   run, which builds no Hub, and `ops/anchor-token-adoption.md`'s Story 1-17 run.
+
+The record amendments land after the move's commit, against the Always rule that a record naming a
+moved path changes in the move's own commit. **The split stays in the history and is logged here; the
+rule is not amended**, as Story 3-1's round did: neither `bc9cd25` nor `b5c4dd1` was pushed
+(`origin/dev` read `857ac6b` on 2026-09-28), so a push of `dev` carries them with this round, and
+nothing deploys from `dev`. Re-run on this tree: `corepack pnpm typecheck` exit 0;
+`corepack pnpm --filter hub build` exit 0 (11 files published, Next.js 16.2.1, the same six routes),
+and the root's `corepack pnpm build` exit 1, "Command "build" not found", as designed; action 4's
+commands as amended, `corepack pnpm --filter hub start` answering `/` 200 and `/api/health` 3.0.0
+on port 3000; `corepack pnpm test --run` exit 0, "Test Files 64 passed (64)", "Tests 1659 passed
+(1659)".
+
 ## Review Triage Log
 
 Pass 1, 2026-09-28, over a 163.2 kB diff (Blind Hunter floor 10). Every layer ran inline in this
@@ -327,6 +363,7 @@ what the Hub renders or what a gate asserts.
 | `ops/__tests__/workflow-hardening.test.ts` | DW-252's guard |
 | `turbo.json`, `ops/__tests__/turborepo.test.ts` | Three descriptions and a comment that forecast the move |
 | `AGENTS.md`, `README.md`, seven `ops/` records | Present-tense commands and paths: `contract-serving`, `literal-conformance`, `rendered-output-harness`, `asset-budget`, `cs-tracker-token-adoption`, `hub-accessibility-pass`, `status-mark-axes` |
+| `ops/anchor-token-adoption.md`, `ops/hit-target-floor.md` (fix round 1) | A present-tense harness server command and a present-tense container command the move left stale; the same round amended four of the seven records above (Spec Change Log) |
 
 ## Verification
 
@@ -399,3 +436,24 @@ the working tree, unless a line says otherwise.
   assigning a string to a `number`, root `corepack pnpm typecheck` exit 2 ("error TS2322") and
   `corepack pnpm --filter hub build` exit 1 ("Type error: Type 'string' is not assignable to type
   'number'").
+
+**Remaining, the Operator's: AC5's live proof.** AD-20 makes the move its own shipped step with
+nothing else changing, and Story 3.1's so-that keeps it from also being a build-system introduction,
+so Epic 3 cannot reach `main` as one merge. On 2026-09-28 `origin/main` read `bda92cc`, and `dev`
+carries Story 3-1's four commits (`e9f77a1` to `857ac6b`) beneath this story's. In order, and none of
+it done by this run:
+
+1. After the rulings 3-1's board row names, merge `857ac6b`, 3-1's last commit, into `main` alone: a
+   pull request into `main` whose head is a branch at that commit, since `dev` carries later work. See
+   its checks, the Deploy run and `lighthouse.yml` green, and cuatro.dev serving.
+2. Probe cuatro.dev (before): `/`, `/cv`, `/work`, `/celeste` and `/api/health` 200, `/projects` 301
+   to `/#suite`, `/recommendation` and an unknown path 404, and every file under
+   `https://cuatro.dev/contracts/` 200.
+3. Merge 3-2's last commit (the last one scoped `3-2`, before Story 3-3's first) alone the same way,
+   before any later Epic 3 story reaches `main`, polling `/api/health` through the Deploy run
+   (during).
+4. Probe again (after): the same answers, `/api/health` reporting version 3.0.0, and all eleven files
+   under `/contracts/` byte-identical to `contracts/` at that commit.
+
+Where this spec and the records it amends say "live at the Epic 3 merge", for the move that merge is
+step 3.

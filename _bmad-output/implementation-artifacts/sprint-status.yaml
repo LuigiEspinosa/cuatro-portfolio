@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-28-2026 15:55
+last_updated: 09-28-2026 17:16
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -515,6 +515,23 @@ development_status:
   # Decision 1 (DW-251), DW-253 and the oversized spec's Keep are open rulings that gate no criterion.
   # lighthouse.yml runs only against main, so its first Actions run on Node 24 is the Epic 3 merge.
   3-1-introduce-turborepo-and-pin-the-toolchain: awaiting-operator
+  # 3-2 built and committed on dev 2026-09-28, bc9cd25 and b5c4dd1 plus the verification's fix round:
+  # the Hub is the workspace hub in apps/hub, moved by git mv (103 renames, git log --follow intact),
+  # AD-20's five files rewritten and deploy.yml shown to name no moved path, the lockfile gaining
+  # apps/hub: {} alone, DW-252 closed by a workflow-hardening case. 1,659 unit tests in 64 files, 343
+  # e2e in the pinned image against the unchanged /work baseline, Lighthouse accessibility, best
+  # practices and SEO 1 on all nine runs; the image built as production builds it served every route
+  # and /contracts/ byte for byte. The independent verification passed with three minor findings,
+  # all taken (the spec's Spec Change Log).
+  # Waits on the Operator: AC5's live proof. AD-20 ships the move as its own step with nothing else
+  # changing, and each history merge after it the same way, so Epic 3 cannot reach main as one merge:
+  # origin/main is bda92cc, and dev carries 3-1's four commits beneath this story's. In order: after
+  # the rulings 3-1's row names, merge 857ac6b (3-1's last commit) into main alone, by a PR whose head
+  # is a branch at it, and see Deploy and lighthouse.yml green; probe cuatro.dev (before); merge 3-2's
+  # last commit alone the same way, before any later Epic 3 story reaches main, polling /api/health
+  # through the Deploy run (during); probe again (after): /, /cv, /work, /celeste and /api/health 200,
+  # /projects 301 to /#suite, /recommendation and an unknown path 404, every file under /contracts/
+  # 200 and byte-identical to contracts/. The spec's Verification carries the same steps.
   3-2-move-the-hub-to-apps-hub: review
   3-3-build-the-hub-image-in-ci-and-push-to-ghcr: backlog
   3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
