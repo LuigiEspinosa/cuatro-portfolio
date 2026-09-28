@@ -49,6 +49,7 @@
     "eslint-plugin-vitest-globals": "^1.5.0",
     "jsdom": "^28.1.0",
     "tailwindcss": "4.3.3",
+    "turbo": "2.10.13",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },

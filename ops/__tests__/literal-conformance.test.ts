@@ -716,7 +716,7 @@ describe('the CI wiring', () => {
   it('runs where the record says it runs, on the Node the record says, within its ceiling', () => {
     const job = instructionsOf(JOB);
     expect(job, 'ops/literal-conformance.md tables ubuntu-latest').toMatch(/^\s+runs-on: ubuntu-latest$/m);
-    expect(job, 'ops/literal-conformance.md tables Node 22').toMatch(/^\s+node-version: 22$/m);
+    expect(job, 'ops/literal-conformance.md tables Node 24').toMatch(/^\s+node-version: 24$/m);
     expect(job, 'a container: would change what the recorded run means').not.toMatch(/^\s+container\s*:/m);
     expect(job, 'ops/literal-conformance.md tables timeout-minutes: 5').toMatch(/^\s+timeout-minutes: 5$/m);
   });

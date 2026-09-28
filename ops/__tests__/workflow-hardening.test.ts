@@ -51,6 +51,20 @@ const unpinned = (text: string): string[] =>
     .filter(([, ref, rest]) => !EXEMPT.test(ref) && !(/@[0-9a-f]{40}$/.test(ref) && /^ # v\d+\.\d+\.\d+$/.test(rest)))
     .map(([, ref]) => ref);
 
+// Story 3-1 pinned Node 24 LTS, the stack's runtime, in `ci.yml` and `lighthouse.yml`, the two workflows its
+// criterion names. Two more copied Node 22 after the story was written and keep it until their owners move
+// them (DW-251). When one moves, delete its entry here and close its half of DW-251.
+const STACK_NODE = '24';
+const STILL_ON_NODE_22: Record<string, string> = {
+  'deploy.yml': 'Story 3.4, which rewrites the deploy',
+  'registry-verification.yml': 'no story yet',
+};
+
+const setupNodeSteps = (text: string): number =>
+  (text.match(/^\s*(?:- )?uses: actions\/setup-node@/gm) ?? []).length;
+const nodeVersions = (text: string): string[] =>
+  [...text.matchAll(/^\s+node-version:\s*([^\s#]+)\s*(?:#.*)?$/gm)].map(([, version]) => version);
+
 describe('every workflow', () => {
   it('reads at least the four workflows this repository carries', () => {
     expect(FILES).toEqual(
@@ -81,10 +95,30 @@ describe('every workflow', () => {
     expect(pins.size, 'no third-party action is pinned anywhere').toBeGreaterThan(0);
     for (const [action, found] of pins) expect([...found], action).toHaveLength(1);
   });
+
+  it.each(FILES)('%s pins every setup-node step to Node 24, or to the Node 22 DW-251 defers', (name) => {
+    const text = read(name);
+    const versions = nodeVersions(text);
+    expect(versions, `${name} has a setup-node step with no node-version, which runs the runner's Node`).toHaveLength(
+      setupNodeSteps(text)
+    );
+    const owner = STILL_ON_NODE_22[name];
+    const expected = owner === undefined ? STACK_NODE : '22';
+    expect(
+      versions.filter((version) => version !== expected),
+      owner === undefined
+        ? `${name} pins a Node other than the stack's ${STACK_NODE}`
+        : `${name} left Node 22 (owner: ${owner}). Delete its STILL_ON_NODE_22 entry and close its half of DW-251`
+    ).toEqual([]);
+  });
+
+  it('finds a Node pin in both workflows the story names, so an empty read cannot pass', () => {
+    for (const name of ['ci.yml', 'lighthouse.yml']) expect(nodeVersions(read(name)), name).toContain(STACK_NODE);
+  });
 });
 
-// The two readers above decide every case, so each is shown refusing a planted file as well as passing
-// the real ones; a reader that returned nothing would otherwise read as a clean directory.
+// The readers above decide every case, so each is shown refusing a planted file as well as passing the
+// real ones; a reader that returned nothing would otherwise read as a clean directory.
 describe('the readers, on planted text', () => {
   it('finds no top-level block in a workflow that declares none, and does not mistake a job block for one', () => {
     const planted = ['on: push', '', 'jobs:', '  build:', '    permissions:', '      contents: write', ''].join('\n');
@@ -110,5 +144,21 @@ describe('the readers, on planted text', () => {
       'appleboy/ssh-action@v1',
       'pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86',
     ]);
+  });
+
+  it('counts a setup-node step that names no node-version, so it cannot pass as pinned', () => {
+    const planted = [
+      '      - uses: actions/setup-node@v7',
+      '        with:',
+      '          node-version: 24',
+      '      - uses: actions/setup-node@v7',
+      '        with:',
+      '          package-manager-cache: false',
+      '      - uses: actions/setup-node@v7',
+      '        with:',
+      '          node-version: 22 # a trailing comment still names the version',
+    ].join('\n');
+    expect(setupNodeSteps(planted)).toBe(3);
+    expect(nodeVersions(planted)).toEqual(['24', '22']);
   });
 });

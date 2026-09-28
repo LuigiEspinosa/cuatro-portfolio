@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -49,7 +49,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -109,7 +109,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -180,7 +180,7 @@ jobs:
       # absence of a `cache:` line.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           package-manager-cache: false
 
       # No argument and no `env:`. The directory the checker opens is fixed in
@@ -218,7 +218,7 @@ jobs:
       # and this job installs nothing and has no pnpm for it to find.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           package-manager-cache: false
 
       # No argument and no `env:`. Both files the validator opens are fixed in
@@ -253,13 +253,14 @@ jobs:
 
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
-      # Pinned 2026-08-27, Story 1-10 Operator action 3. Without this the job
-      # takes whatever Node the Playwright image ships, which was v24.18.1 while
-      # every other job here pins 22. Two Node majors across one workflow means a
-      # browser check can pass on one runtime and fail on the other, and catching
-      # real rendered output is the entire point of this job. The image tag still
-      # governs the browser and the fonts, so the committed baseline PNG is
-      # unaffected: this pins the runtime, not the renderer.
+      # Pinned 2026-08-27 to Node 22 (Story 1-10 Operator action 3), and moved to
+      # 24 with every other job here on 2026-09-28 (Story 3-1). Without it the job
+      # takes whatever Node the Playwright image ships, v24.18.1 when read, which
+      # need not be the major the other jobs pin. Two Node majors across one
+      # workflow means a browser check can pass on one runtime and fail on the
+      # other, and catching real rendered output is the entire point of this job.
+      # The image tag still governs the browser and the fonts, so the committed
+      # baseline PNG is unaffected: this pins the runtime, not the renderer.
       #
       # Deliberately no `cache: pnpm` here, unlike the other jobs. Caching would
       # change the install timings that `ops/rendered-output-harness.md` records
@@ -272,7 +273,7 @@ jobs:
       # timing would be measuring a warm one.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           package-manager-cache: false
 
       - name: Install dependencies
@@ -321,7 +322,7 @@ jobs:
       # off the `packageManager` field in `package.json`, and this job has no pnpm for it to find.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           package-manager-cache: false
 
       # No argument and no `env:`. What the gate reads is fixed in its source and resolved beside

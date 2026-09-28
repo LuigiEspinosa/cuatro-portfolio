@@ -156,7 +156,12 @@ describe('the Dockerfile deps stage', () => {
   });
 
   it('reads the workspace globs out of pnpm-workspace.yaml rather than assuming them', () => {
-    expect(globs, 'pnpm-workspace.yaml no longer declares the globs this check expands').toEqual(['packages/*']);
+    // `apps/*` since Story 3-1, ahead of the directory: Story 3-2 moves the Hub to `apps/hub`, and the
+    // manifest it lands there must then be copied into this stage like any other.
+    expect(globs, 'pnpm-workspace.yaml no longer declares the globs this check expands').toEqual([
+      'apps/*',
+      'packages/*',
+    ]);
     expect(
       workspaceDirectories.length,
       'no workspace package was found, so every manifest assertion below would pass over an empty list'
