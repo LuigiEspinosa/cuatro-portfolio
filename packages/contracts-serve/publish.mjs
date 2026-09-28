@@ -1,6 +1,6 @@
-// Publishes `contracts/` into `public/contracts/`, which is what makes the whole
-// published surface answer an HTTP GET at `https://cuatro.dev/contracts/`
-// (Story 1-16, AD-1, AD-4).
+// Publishes `contracts/` into the Hub's `apps/hub/public/contracts/`, which is
+// what makes the whole published surface answer an HTTP GET at
+// `https://cuatro.dev/contracts/` (Story 1-16, AD-1, AD-4).
 //
 // AD-1: this script lives in `packages/` and is never published. What it writes
 // is a copy of the published surface, not a second authored copy of it.
@@ -14,17 +14,17 @@
 // `ops/contract-serving.md`.
 //
 // **Why the copy is generated and never committed.** AD-4's rule is one
-// authored location. A committed `public/contracts/` would be a second copy a
+// authored location. A committed `apps/hub/public/contracts/` would be a second copy a
 // reviewer has to keep in step by hand, and the first time it drifted,
 // `https://cuatro.dev/contracts/tokens.css` would serve a value no generator
-// produced. `.gitignore` ignores `/public/contracts/` for exactly that reason.
+// produced. `.gitignore` ignores `/apps/hub/public/contracts/` for exactly that reason.
 //
 // **Why this is wired into the `build` script itself** rather than into a pnpm
 // `prebuild` lifecycle hook: `enable-pre-post-scripts` is a pnpm setting this
 // repository does not pin, and a build that quietly skipped the copy would ship
 // a working site serving 404s at `/contracts/`. `docker/Dockerfile` runs
-// `pnpm build` in its builder stage and its runner stage copies `public`, so
-// the served image carries this with no Dockerfile change and no new layer.
+// `pnpm --filter hub build` in its builder stage and its runner stage copies
+// `apps/hub/public`, so the served image carries this with no layer of its own.
 // `docker/__tests__/runner-stage.test.ts` is what holds that second half.
 //
 // **The destination is removed before it is written.** A contract file that was
@@ -81,7 +81,7 @@ const SURFACE = 'contracts';
  * than a pair it wrote out a second time.
  */
 export const SOURCE = join(REPO_ROOT, SURFACE);
-export const DESTINATION = join(REPO_ROOT, 'public', SURFACE);
+export const DESTINATION = join(REPO_ROOT, 'apps', 'hub', 'public', SURFACE);
 
 /**
  * The public path the destination answers at, once Next is serving `public/`.

@@ -32,7 +32,7 @@ job would fail the two suites that pin the job names as an exact set.
 
 | Assertion | What it answers | Nature |
 |---|---|---|
-| Axis one, the dot | Does every `Live` mark paint a 4 by 4 square, at `--r-none`, with a real fill | **Decision.** `DESIGN.md:298-314`. **Half the axis, and deliberately so:** that `Complete` has no dot is markup and is asserted in `components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx`, because a browser only ever sees `Live` dots and a case that made a `Complete` one would be fabricating its own subject |
+| Axis one, the dot | Does every `Live` mark paint a 4 by 4 square, at `--r-none`, with a real fill | **Decision.** `DESIGN.md:298-314`. **Half the axis, and deliberately so:** that `Complete` has no dot is markup and is asserted in `apps/hub/components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx`, because a browser only ever sees `Live` dots and a case that made a `Complete` one would be fabricating its own subject |
 | Axis two, the dash | Is `Complete` solid on all four sides where `In progress` is dashed, at the same width | **Decision.** AD-19, `EXPERIENCE.md:339-340` |
 | Axis three, the border | Does `In progress` carry a non-zero border on all four sides that `Archived` drops to zero | **Decision.** AD-19, `DESIGN.md:316-320` |
 | The forbidden shortcut | Are `Live` and `Complete` **identical** in border treatment, so a border-only assertion is demonstrably insufficient | **Decision.** AD-19 states this as a prohibition; it is recorded here as a measured property rather than a convention |

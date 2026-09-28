@@ -1018,7 +1018,7 @@ function serve(root) {
 }
 
 /**
- * The Hub's built stylesheet: the one chunk under `.next/static` that declares
+ * The Hub's built stylesheet: the one chunk under `apps/hub/.next/static` that declares
  * the contract's own `--c-paper`, a name nothing else in the estate declares.
  */
 export function findHubStylesheet(nextStatic) {
@@ -1115,11 +1115,11 @@ async function probe() {
         `ops/daisyui-route.md's finding is pinned to that version, so nothing was compiled.`
     );
   }
-  const hubStylesheets = findHubStylesheet(join(REPO_ROOT, '.next', 'static'));
+  const hubStylesheets = findHubStylesheet(join(REPO_ROOT, 'apps', 'hub', '.next', 'static'));
   if (hubStylesheets.length === 0) {
     throw new BlockedError(
-      `no built Hub stylesheet under .next/static declares the contract's own --c-paper, so the FR-18 ` +
-        `side-by-side has nothing to read on the Anchor's side. Run corepack pnpm build first.`
+      `no built Hub stylesheet under apps/hub/.next/static declares the contract's own --c-paper, so the ` +
+        `FR-18 side-by-side has nothing to read on the Anchor's side. Run corepack pnpm --filter hub build first.`
     );
   }
   if (hubStylesheets.length > 1) {

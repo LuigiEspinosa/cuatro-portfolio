@@ -91,6 +91,8 @@ const SETTLE_TIMEOUT = 15_000;
  * Same as `tests/e2e/hit-target-floor.pw.ts:58-61` and `anchor-aliases.pw.ts:42`.
  */
 const REPO_ROOT = resolve(__dirname, '..', '..');
+/** The Hub's own tree, since Story 3-2, where its sources are. */
+const HUB_ROOT = join(REPO_ROOT, 'apps', 'hub');
 
 /** The tool that publishes the fingerprint table, and the one place it is written down. */
 const BUDGET_TOOL = join(REPO_ROOT, 'ops', 'asset-budget.mjs');
@@ -1824,7 +1826,7 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
     const missing: string[] = [];
 
     const walk = (directory: string) => {
-      for (const entry of readdirSync(join(REPO_ROOT, directory), { withFileTypes: true })) {
+      for (const entry of readdirSync(join(HUB_ROOT, directory), { withFileTypes: true })) {
         const next = `${directory}/${entry.name}`;
         if (entry.isDirectory()) {
           if (entry.name === '__tests__' || entry.name === 'node_modules') continue;
@@ -1836,7 +1838,7 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
     };
 
     for (const root of roots) {
-      if (!existsSync(join(REPO_ROOT, root))) {
+      if (!existsSync(join(HUB_ROOT, root))) {
         missing.push(root);
         continue;
       }
@@ -1867,7 +1869,7 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
     expect(missing, `a source root this sweep names does not exist: ${missing.join(', ')}`).toEqual([]);
     expect(files.length, 'the source sweep found no file, so it measures nothing').toBeGreaterThan(0);
 
-    const hits = files.filter((file) => SCROLL_LISTENER.test(readFileSync(join(REPO_ROOT, file), 'utf8')));
+    const hits = files.filter((file) => SCROLL_LISTENER.test(readFileSync(join(HUB_ROOT, file), 'utf8')));
 
     // Named for what it measures. `ScrollTrigger` registers native `scroll` listeners from
     // `node_modules`, so this is not a claim that no listener exists on the page; it is the claim
@@ -1880,7 +1882,7 @@ test.describe('no raw scroll listener is registered in the Hub source', () => {
     expect(missing, `a file this story owns is not where this sweep looks: ${missing.join(', ')}`).toEqual([]);
     expect(files.length, 'the owned-file sweep found no file, so it measures nothing').toBeGreaterThan(0);
 
-    const hits = files.filter((file) => OBSERVER.test(readFileSync(join(REPO_ROOT, file), 'utf8')));
+    const hits = files.filter((file) => OBSERVER.test(readFileSync(join(HUB_ROOT, file), 'utf8')));
 
     // This story adds no scroll work, so it adds no observer either: asserting a mechanism nothing
     // uses would be a test of nothing. What is asserted is that this story did not quietly add one.

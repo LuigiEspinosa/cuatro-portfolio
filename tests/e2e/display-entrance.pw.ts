@@ -52,7 +52,9 @@ const SETTLE_SLACK_MS = 250;
 
 /** `__dirname` rather than `import.meta.url`: Playwright transpiles to CommonJS (`front-door.pw.ts:64-67`). */
 const REPO_ROOT = resolve(__dirname, '..', '..');
-const BUILT_CHUNKS = join(REPO_ROOT, '.next', 'static', 'chunks');
+/** The Hub's own tree, since Story 3-2: its stylesheets and its build. */
+const HUB_ROOT = join(REPO_ROOT, 'apps', 'hub');
+const BUILT_CHUNKS = join(HUB_ROOT, '.next', 'static', 'chunks');
 
 /**
  * The three traces the deleted loop carried and nothing under `app/` or `components/`, nor the
@@ -225,14 +227,14 @@ const waitOutTheEntrance = async (page: Page, delay: number, major: number): Pro
   await page.waitForTimeout((delay + major) * 1000 + SETTLE_SLACK_MS);
 };
 
-/** Everything a `.scss` under `root` says, by repository-relative path (`accessibility-floor.pw.ts:427-432`). */
+/** Everything a `.scss` under the Hub's `root` says, by path from the Hub's root (`accessibility-floor.pw.ts:427-432`). */
 const stylesheetsUnder = (root: string): Map<string, string> =>
   new Map(
-    (readdirSync(join(REPO_ROOT, root), { recursive: true }) as string[])
+    (readdirSync(join(HUB_ROOT, root), { recursive: true }) as string[])
       .map((relative) => relative.replace(/\\/g, '/'))
       .filter((relative) => relative.endsWith('.scss'))
       .sort()
-      .map((relative) => [`${root}/${relative}`, readFileSync(join(REPO_ROOT, root, relative), 'utf8')])
+      .map((relative) => [`${root}/${relative}`, readFileSync(join(HUB_ROOT, root, relative), 'utf8')])
   );
 
 // ---------------------------------------------------------------------------

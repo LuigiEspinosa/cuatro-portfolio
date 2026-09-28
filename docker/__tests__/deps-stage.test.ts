@@ -156,8 +156,8 @@ describe('the Dockerfile deps stage', () => {
   });
 
   it('reads the workspace globs out of pnpm-workspace.yaml rather than assuming them', () => {
-    // `apps/*` since Story 3-1, ahead of the directory: Story 3-2 moves the Hub to `apps/hub`, and the
-    // manifest it lands there must then be copied into this stage like any other.
+    // `apps/*` since Story 3-1, ahead of the directory: Story 3-2 moved the Hub to `apps/hub`, and the
+    // manifest it landed there is copied into this stage like any other.
     expect(globs, 'pnpm-workspace.yaml no longer declares the globs this check expands').toEqual([
       'apps/*',
       'packages/*',
@@ -224,7 +224,7 @@ describe('the Dockerfile deps stage', () => {
     const withoutManifest = copiesIn(
       stage
         .split('\n')
-        .filter((line) => !/packages\/[^\s]+\/package\.json/.test(line))
+        .filter((line) => !/(?:apps|packages)\/[^\s]+\/package\.json/.test(line))
         .join('\n')
     );
     expect(withoutManifest.flatMap((copy) => copy.sources)).toContain('package.json');
@@ -239,7 +239,7 @@ describe('the Dockerfile deps stage', () => {
     const flattened = copiesIn(
       stage
         .split('\n')
-        .map((line) => (/packages\/[^\s]+\/package\.json/.test(line) ? line.replace(/\S+\s*$/, './') : line))
+        .map((line) => (/(?:apps|packages)\/[^\s]+\/package\.json/.test(line) ? line.replace(/\S+\s*$/, './') : line))
         .join('\n')
     );
     for (const directory of workspaceDirectories) {
@@ -256,6 +256,6 @@ describe('the Dockerfile deps stage', () => {
     expect(
       workspaceDirectories,
       'the workspace gained or lost a package. Add its manifest to the deps stage COPY lines in the same change, then update this list.'
-    ).toEqual(['packages/tokens']);
+    ).toEqual(['apps/hub', 'packages/tokens']);
   });
 });

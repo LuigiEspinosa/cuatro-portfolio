@@ -300,7 +300,7 @@ jobs:
     # contract, and `DESIGN.md` names the check that holds it R8. This job is that check (Story
     # 2-34): it reads every stylesheet git tracks and refuses a colour literal, a hand-written
     # `44px`, a spacing literal in a spacing property or a type literal in a type property outside
-    # `contracts/` and `app/scss/_print.scss`, and any alpha but the one on `--c-scrim`. It is
+    # `contracts/` and `apps/hub/app/scss/_print.scss`, and any alpha but the one on `--c-scrim`. It is
     # blocking and carries no `continue-on-error`, no `|| true` and no skip condition: AD-21 names
     # the FR-17 conformance check among the gates that may never become warnings, and there is one
     # environment and no staging.

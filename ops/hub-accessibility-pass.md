@@ -703,18 +703,22 @@ passes or fails, so a re-run is a re-reading.
 The renders and the accent share, against a running production server:
 
 ```
-corepack pnpm build
-corepack pnpm start --port 3100
+corepack pnpm --filter hub build
+corepack pnpm --filter hub start --port 3100
 node ops/hub-accessibility-probe.mjs --base-url http://127.0.0.1:3100 --out test-results/hub-accessibility-probe
 ```
 
 Lighthouse, against a server on port 3000, collecting and asserting without the public upload:
 
 ```
-corepack pnpm start --port 3000
+corepack pnpm --filter hub start --port 3000
 npx @lhci/cli@0.15.1 collect
 npx @lhci/cli@0.15.1 assert
 ```
+
+*(Amended 2026-09-28: the Hub's `build` and `start` run by filter since Story 3-2 moved it to
+`apps/hub/`, committed on `dev` and live at the Epic 3 merge. The probe and Lighthouse still run from
+the repository root, where `.lighthouserc.js` is.)*
 
 The version is pinned to the one the reading was taken at (`@lhci/cli` 0.15.1 driving Lighthouse
 12.6.1), so a re-run compares like with like; `.github/workflows/lighthouse.yml:39`'s own

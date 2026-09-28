@@ -50,6 +50,14 @@ The Hub's own Next server serves the directory. `packages/contracts-serve/publis
 `public/` as static files at the document root, so `public/contracts/tokens.css` answers at
 `/contracts/tokens.css`.
 
+*(Amended 2026-09-28, Story 3-2, committed on `dev` and live at the Epic 3 merge to `main`: the Hub
+is the workspace `hub` in `apps/hub/`, so the served copy is `apps/hub/public/contracts/`, written at
+the start of `pnpm --filter hub build`, which runs
+`node ../../packages/contracts-serve/publish.mjs && next build` from `apps/hub/`, and
+`apps/hub/public/contracts/tokens.css` answers at `/contracts/tokens.css`.
+`contracts/` stays at the repository root. `.gitignore` ignores `/apps/hub/public/contracts/`, and
+the runner stage copies `/app/apps/hub/public`. The table below reads the same way.)*
+
 | Property | Value | Nature |
 |---|---|---|
 | Publish step | `packages/contracts-serve/publish.mjs`, Node builtins only, no `package.json` in the directory | **Decision.** AD-1: generators live in `packages/` and are never published |
@@ -390,6 +398,15 @@ carried the caveat `epics.md` Story 1.16 raised: had the Operator preferred Trae
 `contracts/` directly, this mechanism would have been the interim. The ruling retires the caveat, so
 the Epic 4 row above stands as written. `epics.md` Stories 1.16 and 4.6 carry the ruling as dated
 amendments.
+
+*(Done 2026-09-28 by Story 3-2, committed on `dev` and live at the Epic 3 merge: all five, as the
+table says. `DESTINATION` is `apps/hub/public/contracts`; `build` and `dev` are `apps/hub/package.json`'s
+and reach the publish as `node ../../packages/contracts-serve/publish.mjs`, while the root's
+`contracts:publish` keeps the root's spelling and the suite pins both to the one script; `.gitignore`
+carries `/apps/hub/public/contracts/`; every literal the table names moved in the suite; and the
+runner stage copies `/app/apps/hub/public`, with `docker/__tests__/runner-stage.test.ts` moved beside
+it. Thing 3's hazard arrived as predicted: `git mv public apps/hub/public` carried the ignored served
+copy along, and it showed as untracked until the entry was re-anchored.)*
 
 ## Stated limits
 

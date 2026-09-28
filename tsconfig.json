@@ -27,14 +27,14 @@
     ],
     "paths": {
       "@/*": [
-        "./*"
+        "./apps/hub/*"
       ]
     }
   },
   "include": [
-    "next-env.d.ts",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
+    "apps/hub/next-env.d.ts",
+    "apps/hub/.next/types/**/*.ts",
+    "apps/hub/.next/dev/types/**/*.ts",
     "**/*.mts",
     "**/*.ts",
     "**/*.tsx"

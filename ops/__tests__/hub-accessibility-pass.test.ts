@@ -440,7 +440,7 @@ describe('the thresholds are read off the contract, never typed', () => {
   it('takes no screenshot and derives its routes from app/', () => {
     expect(spec, `${SPEC_REL} takes a screenshot`).not.toContain('toHaveScreenshot');
     expect(spec).not.toContain('expectRouteScreenshot');
-    expect(spec).toContain("routesOnDisk(join(REPO_ROOT, 'app'))");
+    expect(spec).toContain("routesOnDisk(join(HUB_ROOT, 'app'))");
   });
 });
 

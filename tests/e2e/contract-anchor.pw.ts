@@ -58,7 +58,8 @@ const CONTRACTS = join(REPO_ROOT, 'contracts');
 /** Read off disk rather than restated. A value written here twice is a value that can drift. */
 const TOKENS_CSS = readFileSync(join(CONTRACTS, 'tokens.css'), 'utf8');
 const FONTS_CSS = readFileSync(join(CONTRACTS, 'fonts.css'), 'utf8');
-const APP_SCSS = readFileSync(join(REPO_ROOT, 'app', 'app.scss'), 'utf8');
+/** The Hub's global stylesheet, under `apps/hub` since Story 3-2. */
+const APP_SCSS = readFileSync(join(REPO_ROOT, 'apps', 'hub', 'app', 'app.scss'), 'utf8');
 
 /** The only URL any assertion in this file visits. */
 const ROUTE = '/work';

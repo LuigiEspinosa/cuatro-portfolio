@@ -68,7 +68,7 @@ three.
 | Permitted | Reason | Nature |
 |---|---|---|
 | `contracts/` | The contract defines the values. Every literal in the estate is authored there once and consumed everywhere else as a role (AD-1, AD-14) | **Decision.** Story 2.34 |
-| `app/scss/_print.scss` | Paper is genuinely white and toner genuinely black, so the print stylesheet is outside the contract by nature (`DESIGN.md` § Sequence) | **Decision.** Story 2.34 |
+| `apps/hub/app/scss/_print.scss` | Paper is genuinely white and toner genuinely black, so the print stylesheet is outside the contract by nature (`DESIGN.md` § Sequence) | **Decision.** Story 2.34. The path is `app/scss/_print.scss` until Story 3-2 moved the Hub (committed 2026-09-28, live at the Epic 3 merge) |
 
 **No component-level entry exists at all.** Story 2.27 dropped the chromatic aberration rather than
 excepting it, so the set is exactly these two, and an entry is a path rather than a basename: a

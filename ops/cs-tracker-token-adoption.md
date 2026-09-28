@@ -520,12 +520,14 @@ against what it was before the run as a named case.
 
 ```
 corepack pnpm install
-corepack pnpm build
+corepack pnpm --filter hub build
 node ops/cs-tracker-adoption-probe.mjs
 ```
 
 The build line is not decoration: the FR-18 row reads the Hub's **built** stylesheet, and a tree with
-no `.next/static` reports the named Block If condition and reads nothing. Beyond that it needs
+no `apps/hub/.next/static` reports the named Block If condition and reads nothing. *(Amended
+2026-09-28: the build and its output are under `apps/hub/` since Story 3-2, committed on `dev` and
+live at the Epic 3 merge.)* Beyond that it needs
 `cs-tracker` checked out beside this repository with its pinned Tailwind binary installed
 (`mix assets.setup`), its git history reachable at `ff7667b`, and a Playwright Chromium build on the
 host (`corepack pnpm exec playwright install chromium`).

@@ -5,7 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-// Story 3-1 introduced Turborepo. CI invokes the Hub's scripts directly rather than through turbo,
+// Story 3-1 introduced Turborepo. CI invokes the root's scripts directly rather than through turbo,
 // because `turbo run` exits 0 with "No tasks were executed" when a task resolves to no script, so a gate
 // routed through it could pass having run nothing (DW-252). That leaves this suite as what keeps
 // `turbo.json` valid and resolving on every run of the blocking `test` job: it asks turbo for a dry run
@@ -57,9 +57,10 @@ describe('the Turborepo pipelines', () => {
 
   it("resolve build, test and typecheck to a workspace's own scripts, and lint to nothing", () => {
     // A task no workspace defines resolves to a placeholder command and runs nothing, and `turbo run`
-    // then exits 0, so each of the three must resolve somewhere. Today they are the Hub's scripts run as
-    // the root tasks `//#build`, `//#test` and `//#typecheck`; when Story 3.2 moves the Hub to
-    // `apps/hub` they resolve there, and nothing here changes. `packages/tokens` declares no scripts.
+    // then exits 0, so each of the three must resolve somewhere. Since Story 3.2 moved the Hub to
+    // `apps/hub`, `build` is its own script there (`hub#build`), while `test` and `typecheck` stay the
+    // root tasks `//#test` and `//#typecheck`, because the unit suite reads the tree from the root.
+    // `packages/tokens` declares no scripts.
     const runnable = dry.tasks.filter((task) => task.command !== NONE);
     for (const task of runnable) expect(task.command, task.taskId).toBe(manifest(task.directory).scripts?.[task.task]);
     for (const name of ['build', 'test', 'typecheck']) {

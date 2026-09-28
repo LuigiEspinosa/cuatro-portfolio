@@ -1,0 +1,9 @@
+{
+  "name": "hub",
+  "private": true,
+  "scripts": {
+    "dev": "node ../../packages/contracts-serve/publish.mjs && next dev",
+    "build": "node ../../packages/contracts-serve/publish.mjs && next build",
+    "start": "next start"
+  }
+}

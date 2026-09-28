@@ -33,7 +33,7 @@ const HERE = 'ops/__tests__/literal-conformance.test.ts';
 
 /** A stylesheet outside the permitted set, and the two kinds inside it. */
 const COMPONENT = 'components/organisms/Probe/Probe.scss';
-const PRINT = 'app/scss/_print.scss';
+const PRINT = 'apps/hub/app/scss/_print.scss';
 const CONTRACT = 'contracts/tokens.css';
 
 type Allowance = { path: string; property: string };
@@ -89,11 +89,11 @@ const REAL_TOKENS = atCollection('could not read contracts/tokens.css:', () => r
 // ---------------------------------------------------------------------------
 
 describe('the configuration', () => {
-  it('permits exactly contracts/ and app/scss/_print.scss, each with its reason', () => {
+  it('permits exactly contracts/ and apps/hub/app/scss/_print.scss, each with its reason', () => {
     expect(
       PERMITTED.map((entry) => entry.path),
       'the permitted set is exactly two entries (Story 2.34); a third is a reviewed edit, never a quiet one'
-    ).toEqual(['contracts/', 'app/scss/_print.scss']);
+    ).toEqual(['contracts/', 'apps/hub/app/scss/_print.scss']);
     for (const entry of PERMITTED) expect(entry.reason.trim(), `${entry.path} carries no reason`).not.toBe('');
   });
 
@@ -220,7 +220,7 @@ describe('the permitted set', () => {
   it('matches a path, never a basename or a prefix without its separator', () => {
     expect(findingsIn(opaque, 'components/organisms/Probe/_print.scss')).toHaveLength(3);
     expect(findingsIn(opaque, 'contracts-extra/probe.css')).toHaveLength(3);
-    expect(findingsIn(opaque, 'app/scss/_print.scss.bak.scss')).toHaveLength(3);
+    expect(findingsIn(opaque, 'apps/hub/app/scss/_print.scss.bak.scss')).toHaveLength(3);
   });
 
   it('keeps every other check off the permitted set: spacing, type and 44px are the contract\'s own', () => {

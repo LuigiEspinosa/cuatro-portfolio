@@ -21,11 +21,14 @@ My Personal portfolio, deployed at [cuatro.dev](https://cuatro.dev). High-qualit
 
 ## Local Development
 
+The Hub is the workspace `hub` in `apps/hub/`, its unit suites beside its components; the contracts,
+the tooling, the browser suite and every gate's configuration stay at the repository root.
+
 ```bash
 pnpm install
-pnpm dev        # http://localhost:3000
+pnpm --filter hub dev     # http://localhost:3000
 pnpm typecheck
-pnpm build
+pnpm --filter hub build
 ```
 
 ## Docker
@@ -34,7 +37,7 @@ pnpm build
 locally. It publishes no ports and joins `cs-tracker_default`, an external network owned by
 another stack on that box, so `docker compose up` fails immediately anywhere else. That is
 deliberate: the shared Caddy on the VPS is the sole ingress, and a second process binding 80
-or 443 there is what took `cuatro.dev` down in August 2026. Use `pnpm dev` for local work.
+or 443 there is what took `cuatro.dev` down in August 2026. Use `pnpm --filter hub dev` for local work.
 
 To build the image alone, without the stack:
 
@@ -51,11 +54,11 @@ deps to builder to runner (Node 22-slim)
 
 ```mermaid
 flowchart LR
-    A[deps<br/>node:22-slim<br/>pnpm install] --> B[builder<br/>node:22-slim<br/>pnpm build]
-    B --> C[runner<br/>node:22-slim<br/>node server.js]
-    B -- .next/standalone --> C
-    B -- .next/static --> C
-    B -- public/ --> C
+    A[deps<br/>node:22-slim<br/>pnpm install] --> B[builder<br/>node:22-slim<br/>pnpm --filter hub build]
+    B --> C[runner<br/>node:22-slim<br/>node apps/hub/server.js]
+    B -- apps/hub/.next/standalone --> C
+    B -- apps/hub/.next/static --> C
+    B -- apps/hub/public/ --> C
 ```
 
 ## One-command deploy

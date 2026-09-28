@@ -17,15 +17,15 @@
     },
     "//#build": {
       "cache": false,
-      "description": "The Hub, while it is the root package. Inert once Story 3.2 moves it to apps/hub."
+      "description": "Inert: the root has no build script since Story 3.2 moved the Hub to apps/hub, whose build is hub#build."
     },
     "//#test": {
       "cache": false,
-      "description": "The Hub's Vitest, while it is the root package. Pass --run through: turbo run test -- --run."
+      "description": "The repository's Vitest, the Hub's suites under apps/hub among them. Pass --run through: turbo run test -- --run."
     },
     "//#typecheck": {
       "cache": false,
-      "description": "The Hub, while it is the root package."
+      "description": "The repository's tsc, the Hub's sources under apps/hub among them."
     }
   }
 }

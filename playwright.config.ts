@@ -84,7 +84,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `pnpm build && pnpm start --port ${PORT}`,
+    command: `pnpm --filter hub build && pnpm --filter hub start --port ${PORT}`,
     url: BASE_URL,
     // Never reuse. A server already on this port is not known to be this build, and a baseline
     // is only worth what the build behind it was.
