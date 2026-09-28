@@ -23,7 +23,7 @@ services:
   anchor-app:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: apps/hub/Dockerfile
       args:
         # Both are baked into the client bundle at build time, and the tracking
         # script renders only if both are present. The `:?` guards are deliberate:

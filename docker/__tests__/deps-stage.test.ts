@@ -4,7 +4,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// `docker/Dockerfile` is not TypeScript, so `tsconfig.json:34-41` cannot
+// `apps/hub/Dockerfile` is not TypeScript, so `tsconfig.json:34-41` cannot
 // typecheck it and no import can reach it. This file is where its one standing
 // obligation is asserted, on the same precedent as
 // `ops/__tests__/library-backup.test.ts`, which reads shell scripts off disk.
@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
-const DOCKERFILE = join(REPO_ROOT, 'docker', 'Dockerfile');
+const DOCKERFILE = join(REPO_ROOT, 'apps', 'hub', 'Dockerfile');
 const WORKSPACE = join(REPO_ROOT, 'pnpm-workspace.yaml');
 const INSTALL = 'pnpm install --frozen-lockfile';
 
@@ -80,7 +80,7 @@ const expandGlob = (glob: string): string[] => {
 const depsStage = (dockerfile: string): string => {
   const lines = dockerfile.split(/\r?\n/);
   const start = lines.findIndex((line) => /^FROM\s.+\sAS\s+deps\s*$/i.test(line));
-  if (start === -1) throw new Error('docker/Dockerfile has no stage named deps');
+  if (start === -1) throw new Error('apps/hub/Dockerfile has no stage named deps');
   const rest = lines.slice(start + 1);
   const next = rest.findIndex((line) => /^FROM\s/i.test(line));
   return (next === -1 ? rest : rest.slice(0, next)).join('\n');
@@ -118,7 +118,7 @@ const copiesIn = (stage: string): Copy[] => {
     const rest = copy[1].trim();
     if (rest.endsWith('\\') || rest.startsWith('[')) {
       throw new Error(
-        `docker/Dockerfile deps stage line ${index + 1} uses a COPY form this check cannot read: ${line.trim()}. ` +
+        `apps/hub/Dockerfile deps stage line ${index + 1} uses a COPY form this check cannot read: ${line.trim()}. ` +
           `Teach docker/__tests__/deps-stage.test.ts about it rather than leaving the workspace-manifest ` +
           `obligation unchecked.`
       );
@@ -172,7 +172,7 @@ describe('the Dockerfile deps stage', () => {
     const copy = copyOf(copies, 'pnpm-workspace.yaml');
     expect(
       copy,
-      'docker/Dockerfile deps stage does not COPY pnpm-workspace.yaml, so `pnpm install --frozen-lockfile` resolves against a different workspace than the lockfile records'
+      'apps/hub/Dockerfile deps stage does not COPY pnpm-workspace.yaml, so `pnpm install --frozen-lockfile` resolves against a different workspace than the lockfile records'
     ).toBeDefined();
     expect(copy!.destination, 'pnpm-workspace.yaml must land beside the root manifest at /app').toBe('.');
   });
@@ -183,13 +183,13 @@ describe('the Dockerfile deps stage', () => {
       const copy = copyOf(copies, posix(manifest));
       expect(
         copy,
-        `docker/Dockerfile deps stage does not COPY ${manifest}. The lockfile carries ${directory} as an importer, ` +
+        `apps/hub/Dockerfile deps stage does not COPY ${manifest}. The lockfile carries ${directory} as an importer, ` +
           `so \`pnpm install --frozen-lockfile\` fails in that stage and the deploy from main breaks. ` +
           `Add a COPY line for it in the same change that adds the package.`
       ).toBeDefined();
       expect(
         copy!.destination,
-        `docker/Dockerfile deps stage copies ${manifest} to "${copy!.destination}" rather than to "${directory}". ` +
+        `apps/hub/Dockerfile deps stage copies ${manifest} to "${copy!.destination}" rather than to "${directory}". ` +
           `A destination of "." flattens it onto /app/package.json and clobbers the root manifest, and any other ` +
           `path leaves pnpm unable to find the importer. The install fails and the deploy from main breaks.`
       ).toBe(directory);
@@ -202,7 +202,7 @@ describe('the Dockerfile deps stage', () => {
       expect(copy, `${source} is not copied in the deps stage at all`).toBeDefined();
       expect(
         copy!.line,
-        `docker/Dockerfile copies ${source} after \`${INSTALL}\`, so the install runs without it`
+        `apps/hub/Dockerfile copies ${source} after \`${INSTALL}\`, so the install runs without it`
       ).toBeLessThan(installLine);
     }
     for (const directory of workspaceDirectories) {
@@ -210,7 +210,7 @@ describe('the Dockerfile deps stage', () => {
       const copy = copyOf(copies, posix(manifest));
       expect(
         copy!.line,
-        `docker/Dockerfile copies ${manifest} after \`${INSTALL}\`, so the install still cannot see the importer ` +
+        `apps/hub/Dockerfile copies ${manifest} after \`${INSTALL}\`, so the install still cannot see the importer ` +
           `and the deploy from main breaks`
       ).toBeLessThan(installLine);
     }

@@ -42,7 +42,7 @@ or 443 there is what took `cuatro.dev` down in August 2026. Use `pnpm --filter h
 To build the image alone, without the stack:
 
 ```bash
-docker build -f docker/Dockerfile \
+docker build -f apps/hub/Dockerfile \
   --build-arg NEXT_PUBLIC_UMAMI_WEBSITE_ID=local \
   --build-arg NEXT_PUBLIC_UMAMI_URL=https://analytics.cuatro.dev \
   -t cuatro-portfolio-app .
