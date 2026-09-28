@@ -6945,6 +6945,15 @@ status: done
     gzipped, 169,351 over the top of `EXPERIENCE.md:946`'s estimate, and a session that visits both
     scenes still downloads the library twice. **Owner: unassigned**, the build-tooling story the
     only candidate left. **Trigger: that story, or the next change to either scene's boundary.**
+
+    **Re-read 2026-09-28 by Story 3-1, the build-tooling story the trigger names, and the entry stays
+    open.** Turborepo orchestrates the Hub's own `build` script and nothing beneath it: a build run
+    through `turbo run build` wrote a `.next/static` byte-identical to a direct `corepack pnpm build`
+    of the same tree (35 files compared by sha256, on Node v24.15.0), and both still emit the two
+    894,996-byte library chunks read on 2026-09-24. The duplication is Turbopack's, one chunk per
+    `next/dynamic` boundary, and a workspace orchestrator does not reach it, so no Epic 3 story is a
+    candidate owner any longer. **Owner: unassigned.** **Trigger: the next change to either scene's
+    boundary, or a Next.js upgrade.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-34-fr-17-conformance-no-colour-literal-outside-the-contract.md`
@@ -7921,3 +7930,121 @@ status: done
     `ops/known-violations.md` (AD-25, SM-6, SM-12), accepted as standing. The architecture is not
     amended.
   status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
+  id: DW-251
+  summary: >-
+    Three places still pin Node 22 after Story 3-1 moved `ci.yml` and `lighthouse.yml` to Node 24:
+    `docker/Dockerfile`, which is the production runtime, `deploy.yml` and
+    `registry-verification.yml`. From the Epic 3 merge the Hub is verified on 24 and served on 22
+    until the image story replaces the Dockerfile.
+  evidence: |-
+    Observed 2026-09-28 by reading the tree at `716ba42`. `docker/Dockerfile` builds and runs on
+    `node:22-slim` in all three stages (since `c8ea05c`, 2026-03-07); `.github/workflows/deploy.yml:50`
+    pins `node-version: 22` for the Capacity Gate step (since `454f031`, 2026-08-17); and
+    `.github/workflows/registry-verification.yml:57` pins it for the scheduled check (since `d91fe09`,
+    2026-09-12). Story 3-1's criterion names `ci.yml` and `lighthouse.yml`, the two workflows that
+    pinned a Node when the story was written on 2026-08-15; the other two copied the estate's shape
+    afterwards. None was moved, by the Operator's rule that adjacent work waits for the story that
+    owns it.
+
+    What it costs: CI runs the unit suite, the build and the browser suite on Node 24 while
+    `cuatro.dev` serves an image built and run on Node 22, so a difference between the two majors
+    would pass every gate and show only in production. The Capacity Gate and the Registry check are
+    scripts on Node builtins whose suites run on 24, while their deploy-time and scheduled runs stay
+    on 22. `ops/__tests__/workflow-hardening.test.ts` holds every other `node-version` at 24 and names
+    these two workflows as its exceptions, and `ops/__tests__/registry-verification.test.ts:903` pins
+    the second's 22, so moving either fails a case whose message says what to flip.
+
+    **Owners: Story 3.3 for the Dockerfile**, which writes `apps/hub/Dockerfile`, the image CI builds
+    (Story 3.2 moves `docker/Dockerfile` for paths only and changes no dependency); **Story 3.4 for
+    `deploy.yml`**, which rewrites the deploy; **unassigned for `registry-verification.yml`**.
+    **Trigger: each owner's story, or the next edit to the file.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
+  id: DW-252
+  summary: >-
+    Once Story 3.2 moves the Hub out of the root manifest, the two obvious ways to run the unit gate
+    both pass having run nothing: `pnpm test --run` at a workspace root with no `test` script, and
+    `turbo run test` when no workspace defines the task, each exit 0.
+  evidence: |-
+    Observed 2026-09-28 in scratch workspaces with pnpm 10.31.0 and turbo 2.10.13. At a workspace root
+    whose manifest has no `test` script, `pnpm test --run` printed nothing and exited 0, even with a
+    workspace below it defining `test`; `pnpm run test` in the same place exited 1
+    (`ERR_PNPM_NO_SCRIPT`), and so did `pnpm test` outside a workspace. `pnpm typecheck` with no such
+    script exited 1 (`Command "typecheck" not found`). `turbo run test` where no workspace defines
+    `test` printed "No tasks were executed as part of this run" and exited 0. Vitest itself exits 1
+    when no test file matches (observed on this repository the same day), so an invocation that
+    reaches Vitest fails closed and one that can stop short of it does not.
+
+    Today the root manifest is the Hub and carries both scripts, so the `test` job's `pnpm typecheck`
+    and `pnpm test --run` run the real suite; Story 3-1 kept that job off turbo for this reason (its
+    spec, Decision 2). Story 3.2 rewrites `ci.yml` for the new paths, and the root manifest it leaves
+    behind no longer carries the Hub's scripts, so whatever it invokes (the root script, a `--filter`
+    or turbo) must be shown failing on a run that executes no test before it ships.
+
+    **Owner: Story 3.2.** **Trigger: its `ci.yml` rewrite.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
+  id: DW-253
+  summary: >-
+    Turborepo, like Next.js, sends anonymous usage telemetry by default, and nothing in the Anchor
+    turns either off; whether NFR-8's "no third-party analytics anywhere in the Ecosystem" reaches build
+    tools is unruled.
+  evidence: |-
+    Observed 2026-09-28: `turbo telemetry status` on this host printed "Status: Enabled" and
+    "Turborepo telemetry is completely anonymous", and a search of the repository finds no
+    `TURBO_TELEMETRY_DISABLED` or `NEXT_TELEMETRY_DISABLED` anywhere (the only `TELEMETRY` matches are
+    the lockfile's unrelated `@opentelemetry` entries). NFR-8 and `AGENTS.md` § Policy are written
+    about measuring Visitors, and Next.js's telemetry has run in every build of the estate without a
+    finding, so Story 3-1 followed that precedent and turned nothing off. `ops/__tests__/turborepo.test.ts`
+    disables it for its own dry run only, because a unit case makes no network call.
+
+    If the ruling is that NFR-8 covers tooling: set `TURBO_TELEMETRY_DISABLED: '1'` and
+    `NEXT_TELEMETRY_DISABLED: '1'` on the steps that run either (a workflow-level `env:` in `ci.yml` is
+    refused by `ops/__tests__/registry-schema.test.ts`), and run `turbo telemetry disable` and
+    `next telemetry disable` once on each development host.
+
+    **Owner: the Operator, a ruling.** **Trigger: the next pass over NFR-8, or Story 3.3, whose image
+    build is the first to run turbo tasks in CI.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
+  id: DW-254
+  summary: >-
+    `.dockerignore` keeps neither `.pnpm-store/` nor `.turbo/` out of the build context, so a local
+    `docker build -f docker/Dockerfile .` sends the container e2e command's pnpm store and `COPY . .`
+    copies it into the builder layer.
+  evidence: |-
+    Found 2026-09-28 by Story 3-1's review. The container e2e command in `AGENTS.md` keeps its pnpm
+    store at the repository root on the bind mount, and one run after the lockfile gained `turbo` left
+    ten files and 44 MB in `.pnpm-store/` (deleted afterwards; the directory is a skeleton of empty
+    folders again). Story 3-1 put `/.pnpm-store/` and `/.turbo/` in `.gitignore`, so neither can be
+    committed, but `.dockerignore` lists neither, and the builder stage's `COPY . .` takes whatever the
+    context carries. The runner stage copies `.next/standalone` alone, so the served image is not
+    affected, and the box never runs the container command, so its builds are not either: the cost is
+    a local build's context and builder layer, growing with every dependency a later merge adds.
+
+    **Owner: Story 3.3**, whose image is built from the root narrowed by `turbo prune --docker`, a
+    context that never holds either directory, which leaves only the local root-context build of
+    `docker/Dockerfile` to settle. **Trigger: Story 3.3, or the next edit to `.dockerignore`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
+  id: DW-255
+  summary: >-
+    `AGENTS.md`'s Turborepo line tells an agent to run `corepack enable --install-directory <dir> pnpm`
+    without saying `<dir>` must be outside the repository, where the six shims it writes would show as
+    untracked files a `git add -A` commits.
+  evidence: |-
+    Found 2026-09-28 by Story 3-1's review. `corepack enable --install-directory <dir> pnpm` writes
+    `pnpm`, `pnpm.CMD`, `pnpm.ps1`, `pnpx`, `pnpx.CMD` and `pnpx.ps1` into `<dir>` (observed on this host in a
+    scratch directory, 2026-09-28); none of those names is ignored. The fix is a few words in the
+    managed block ("a directory outside the repository, such as the session's scratchpad"), and the
+    review triage sends every edit to an agent-context file to deferred work rather than patching it.
+
+    **Owner: the `/bmad-project-context` refresh the board schedules before Epic 4**, or whichever story
+    next edits that block. **Trigger: either.**
+  status: open

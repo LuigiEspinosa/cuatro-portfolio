@@ -579,3 +579,18 @@ install above measures a cold one, and that omission would have silently stopped
 `package-manager-cache: false` is now written into the job, so the recorded figure still describes
 what the job does. Anyone re-measuring the install should check that line is still there first: a
 warm cache would move the number without moving anything this file says.
+
+## The Node pin moved to 24, 2026-09-28
+
+**Changed 2026-09-28 by Story 3-1, committed on `dev` and live from the Epic 3 merge.** Pending
+Operator action 2's ruling pinned this job to Node 22 so every job in `ci.yml` ran one Node major.
+Story 3-1 moved every job in the file to the stack's Node 24 LTS in one change, so the ruling's
+reason holds as it was written: one major across the workflow. That major is now also the image's
+own (v24.18.1, read inside the container on 2026-08-24 and again on 2026-09-28), although
+`setup-node` still installs its own 24.x rather than taking the image's. The timings above were taken
+on the image's Node or on Node 22 and are left as observed; none was re-measured on the new pin.
+
+**Observed before the commit, 2026-09-28**, with the documented container command, which takes the
+image's own Node (v24.18.1) rather than a `setup-node` step: `pnpm install --frozen-lockfile` added
+the two packages the lockfile gained (`turbo` and its Linux binary), and the whole suite ran, **343
+passed in 7.7 min**, with no snapshot written and the `/work` baseline still `93a1aa4e...`.

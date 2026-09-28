@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-25-2026 08:46
+last_updated: 09-28-2026 12:39
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -487,8 +487,20 @@ development_status:
   2-34-fr-17-conformance-no-colour-literal-outside-the-contract: done
   epic-2-retrospective: done
 
-  epic-3: backlog
-  3-1-introduce-turborepo-and-pin-the-toolchain: backlog
+  epic-3: in-progress
+  # 3-1 built 2026-09-28, committed on dev and not pushed. turbo 2.10.13 (exact) and a turbo.json of
+  # build, test, typecheck and lint, all uncached in loose env mode; the Hub's three scripts run as root
+  # tasks while it is the root package, and the generic tasks take over in apps/hub with no edit.
+  # pnpm-workspace.yaml lists apps/* and packages/* (AD-2; every workspace manifest private). Node 24 in
+  # all seven ci.yml jobs and lighthouse.yml; deploy.yml, registry-verification.yml and node:22-slim
+  # stay on 22 (DW-251). CI keeps invoking the scripts directly: turbo exits 0 when a task resolves to no
+  # script (DW-252, Story 3.2's hazard). Prune: @cuatro/tokens prunes and installs frozen; the root Hub
+  # cannot be pruned ("Invalid scope") and every pruned tree carries its dependencies, so 3.2's move is
+  # what makes AD-8's context narrow. Turbo runs matched direct ones (1652 tests, byte-identical
+  # .next/static); 1,653 unit tests in 64 files, 343 e2e in the pinned image, Lighthouse 1.00 on all
+  # nine runs, all on Node 24. Five review layers inline (no UI surface for the sixth), not independent:
+  # four patches, DW-254 and DW-255 filed, no loopback. Waits on the Operator: DW-253 and the Decisions.
+  3-1-introduce-turborepo-and-pin-the-toolchain: review
   3-2-move-the-hub-to-apps-hub: backlog
   3-3-build-the-hub-image-in-ci-and-push-to-ghcr: backlog
   3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
