@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-28-2026 12:39
+last_updated: 09-28-2026 13:56
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -488,7 +488,8 @@ development_status:
   epic-2-retrospective: done
 
   epic-3: in-progress
-  # 3-1 built 2026-09-28, committed on dev and not pushed. turbo 2.10.13 (exact) and a turbo.json of
+  # 3-1 built and pushed 2026-09-28: dev at 3c7c647, CI run 36467318613 green on seven jobs, every one
+  # on Node 24.21.0. turbo 2.10.13 (exact) and a turbo.json of
   # build, test, typecheck and lint, all uncached in loose env mode; the Hub's three scripts run as root
   # tasks while it is the root package, and the generic tasks take over in apps/hub with no edit.
   # pnpm-workspace.yaml lists apps/* and packages/* (AD-2; every workspace manifest private). Node 24 in
@@ -500,7 +501,20 @@ development_status:
   # .next/static); 1,653 unit tests in 64 files, 343 e2e in the pinned image, Lighthouse 1.00 on all
   # nine runs, all on Node 24. Five review layers inline (no UI surface for the sixth), not independent:
   # four patches, DW-254 and DW-255 filed, no loopback. Waits on the Operator: DW-253 and the Decisions.
-  3-1-introduce-turborepo-and-pin-the-toolchain: review
+  # 2026-09-28: awaiting-operator. Run 36467318613 was the first Actions run of the Node 24 pin and of
+  # ops/__tests__/turborepo.test.ts: 5 of 5 there, 1,653 unit tests in 64 files, 343 e2e in 7.7 min.
+  # Every criterion is met in the repository, two of them only under a reading the spec's Decisions
+  # ask the Operator to confirm, so exactly two actions remain:
+  # Decision 2, epics.md's fifth criterion ("when the pipelines run in CI"): CI's test job runs
+  # pnpm typecheck and pnpm test --run directly and never through turbo, which exits 0 when a task
+  # resolves to no script (DW-252). Confirm, or rule that CI gates through turbo behind a guard
+  # against an empty run.
+  # Decision 3, the second criterion ("the configuration expresses" AD-2): the pnpm-workspace.yaml
+  # globs apps/* and packages/* plus every workspace manifest private, held by turborepo.test.ts,
+  # rather than turbo boundaries. Confirm the reading.
+  # Decision 1 (DW-251), DW-253 and the oversized spec's Keep are open rulings that gate no criterion.
+  # lighthouse.yml runs only against main, so its first Actions run on Node 24 is the Epic 3 merge.
+  3-1-introduce-turborepo-and-pin-the-toolchain: awaiting-operator
   3-2-move-the-hub-to-apps-hub: backlog
   3-3-build-the-hub-image-in-ci-and-push-to-ghcr: backlog
   3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
