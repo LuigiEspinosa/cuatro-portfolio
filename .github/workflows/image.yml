@@ -1,0 +1,70 @@
+name: Image
+
+# AD-8: the Hub's image is built here, in GitHub Actions, and pushed to GHCR tagged with the commit it
+# was built from, so the box never has to compile it once Story 3-4 deploys by pulling that tag. It is
+# its own workflow rather than a job in `ci.yml`, because two suites pin that file's seven-job set, and
+# because this job writes to a registry, which no job there may do (DW-87).
+#
+# Every push builds, `dev` included, so the image for a commit exists before that commit reaches
+# `main`. The tag is the full commit sha and nothing else, since no estate application runs a floating
+# tag (AD-3). The build context is the repository root, which `apps/hub/Dockerfile`'s first stage
+# narrows to the `hub` workspace with `turbo prune --docker` (AD-7, AD-8). No third-party action is
+# used: the runner's own `docker` builds, logs in and pushes. `docker/__tests__/image-workflow.test.ts`
+# holds the trigger, the tag and the two build inputs.
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  hub:
+    runs-on: ubuntu-latest
+
+    # A cold build installs about 530 packages and compiles the Hub. The ceiling turns a hung install
+    # into a failure with a cause, the argument `ci.yml` makes for its own jobs.
+    timeout-minutes: 20
+
+    # `packages: write` is for the push alone: it lets the token write this repository's packages.
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE: ghcr.io/luigiespinosa/hub:${{ github.sha }}
+      # Both are public, since every page the Hub serves carries them in its markup, and both are build
+      # inputs, since Next inlines `NEXT_PUBLIC_*` at build time: an image built without either serves a
+      # working site that measures nothing (`apps/hub/app/layout.tsx`). The id is the one the box's
+      # `.env.production` holds, recorded by Story 1-21 and read off cuatro.dev on 2026-09-28.
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: b5e26621-88fa-4746-98a0-f045a131163c
+      NEXT_PUBLIC_UMAMI_URL: https://analytics.cuatro.dev
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        run: |
+          docker build --file apps/hub/Dockerfile \
+            --build-arg NEXT_PUBLIC_UMAMI_WEBSITE_ID --build-arg NEXT_PUBLIC_UMAMI_URL \
+            --tag "$IMAGE" .
+
+      # The image is pushed only once it has served: one that builds and cannot answer the endpoint its
+      # compose healthcheck asks never reaches GHCR. The server binds the container's own address, which
+      # the published port reaches. While it starts, Docker's port proxy accepts the connection and then
+      # drops it, an error curl does not count as transient, so every error is retried.
+      - name: Answer /api/health
+        run: |
+          docker run --detach --name hub --publish 3000:3000 "$IMAGE"
+          curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-all-errors \
+            http://127.0.0.1:3000/api/health || { docker logs hub; exit 1; }
+
+      # The token reaches `docker login` on stdin, never on its command line.
+      - name: Log in to GHCR
+        run: printf '%s' "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          TOKEN: ${{ github.token }}
+
+      - name: Push
+        run: docker push "$IMAGE"

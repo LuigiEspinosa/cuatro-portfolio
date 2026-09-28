@@ -49,13 +49,17 @@ docker build -f apps/hub/Dockerfile \
 docker run --rm -p 3000:3000 cuatro-portfolio-app   # http://localhost:3000
 ```
 
-Both build args are required by the stack and are inlined at build time. Three-stage build:
-deps to builder to runner (Node 22-slim)
+Both build args are required by the stack and are inlined at build time. The context must be the
+repository root: the first of four stages, all on `node:24-slim`, narrows it to the Hub's workspace
+with `turbo prune hub --docker`, and an `apps/hub` context fails there. CI builds the same image on
+every push and pushes it to `ghcr.io/luigiespinosa/hub:<commit sha>` (`.github/workflows/image.yml`).
 
 ```mermaid
 flowchart LR
-    A[deps<br/>node:22-slim<br/>pnpm install] --> B[builder<br/>node:22-slim<br/>pnpm --filter hub build]
-    B --> C[runner<br/>node:22-slim<br/>node apps/hub/server.js]
+    P[prune<br/>node:24-slim<br/>turbo prune hub --docker] -- out/json --> A[deps<br/>node:24-slim<br/>pnpm install]
+    A --> B[builder<br/>node:24-slim<br/>pnpm --filter hub build]
+    P -- out/full, contracts/, contracts-serve --> B
+    B --> C[runner<br/>node:24-slim<br/>node apps/hub/server.js]
     B -- apps/hub/.next/standalone --> C
     B -- apps/hub/.next/static --> C
     B -- apps/hub/public/ --> C

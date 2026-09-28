@@ -143,9 +143,10 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - `ops/deploy-remote.sh`, which `deploy.yml` runs over SSH, runs `docker compose up --build -d`,
   so the serving two-core box compiles. This is a recorded standing violation of AD-8, not an
   oversight: it is in `ops/known-violations.md` and closes in Epic 3. Do not fix it out of
-  sequence, because the replacement needs GHCR images that do not exist yet. The script is also the
-  deploy key's forced command: keep the sha the last word of the workflow's command string, and
-  never move the file.
+  sequence: Story 3-4 replaces it with a pull of the sha-tagged image `.github/workflows/image.yml`
+  builds on every push from `apps/hub/Dockerfile` (Story 3-3), whose context must be the repository
+  root. The script is also the deploy key's forced command: keep the sha the last word of the
+  workflow's command string, and never move the file.
 - `docker/Caddyfile` is the Anchor's fragment of the one shared Caddyfile on the box
   (`/home/deploy/cs-tracker/Caddyfile`), and no process here reads it: editing it changes nothing
   live, and the box's copy is not in git. Read `ops/routing-inventory.md` for the real routing

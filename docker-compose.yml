@@ -22,6 +22,9 @@ name: cuatro-portfolio
 services:
   anchor-app:
     build:
+      # The root is the context: the Dockerfile's first stage prunes it to the Hub's workspace (AD-8).
+      # CI builds this Dockerfile on every push (Story 3-3), and the box builds it here until Story 3-4
+      # deploys by pulling CI's image instead.
       context: .
       dockerfile: apps/hub/Dockerfile
       args:
@@ -44,6 +47,12 @@ services:
       # The Hub is the hostname this whole stack exists to serve, and it has a
       # purpose-built endpoint. Without this, a build that produces a broken
       # server still reports as running and only the external probe notices.
+      #
+      # It is also a requirement now, and so are the absent `container_name` and
+      # published ports. `docker-rollout` (Story 3-4) starts a second container
+      # beside the first and waits for this check before it removes the old one,
+      # and a second container could take neither a fixed name nor a host port.
+      # `docker/__tests__/compose.test.ts` holds all three (Story 3-3).
       #
       # The probe reads `process.env.HOSTNAME` inside node, never 127.0.0.1.
       # Next's standalone `server.js` binds to `process.env.HOSTNAME`, which Docker
