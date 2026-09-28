@@ -196,6 +196,23 @@ Implemented inline (a workflow sub-agent has no Agent tool), from this spec.
 
 ## Spec Change Log
 
+**2026-09-28, fix round 1, after the independent verification.** The verifier passed the story with
+one minor finding against the Always rule above. `ci.yml` and `lighthouse.yml` moved to Node 24 in
+`e9f77a1`, but the four Runner rows (`ops/contract-purity.md:53`, `ops/registry-schema.md:67`,
+`ops/literal-conformance.md:106`, `ops/token-contract.md:335`) were amended, and the dated section of
+`ops/rendered-output-harness.md` added, in `5ec73f6`, the docs commit after it. Read back from both
+trees: at `e9f77a1` all eight `node-version` pins in the two workflows are 24 while the four rows say
+Node 22 and the dated section is absent; at `5ec73f6` every one of them agrees. **The split stays in
+the history and is logged here; the rule is not amended.** The verifier's first repair, folding the
+five amendments into `e9f77a1` while neither commit was pushed, needs a commit amend, and this
+unattended run's permission check refused it as a destructive git action. What holds instead: both
+commits are unpushed (`origin/dev` read `716ba42` on 2026-09-28), and a push of `dev` carries them
+together with this entry, so no pushed head of `dev` pairs Node 24 jobs with Node 22 rows; nothing
+deploys from `dev`; and the verifier read `e9f77a1` green on its own (typecheck exit 0, 64 files and
+1,653 tests). KEEP: the five amendments as committed; a re-derivation puts them in the pin's commit.
+Re-run on this tree: `corepack pnpm typecheck` exit 0; `corepack pnpm build` exit 0 (Next.js 16.2.1,
+the same six routes); `corepack pnpm test --run` exit 0, 64 files and 1,653 tests, all passed.
+
 ## Review Triage Log
 
 Pass 1, 2026-09-28, over a 73.1 kB diff (Blind Hunter floor 9). Every layer ran inline in this
