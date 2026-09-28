@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-28-2026 17:28
+last_updated: 09-28-2026 18:49
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -551,7 +551,24 @@ development_status:
   # Decisions 2 to 5 and 7, DW-259 and the oversized spec's Keep are open rulings that gate no
   # criterion.
   3-2-move-the-hub-to-apps-hub: awaiting-operator
-  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: backlog
+  # 3-3 built 2026-09-28, committed on dev and not pushed. apps/hub/Dockerfile (git mv from
+  # docker/Dockerfile, then rewritten) builds from the repository root, whose first stage runs turbo
+  # prune hub --docker, on node:24-slim in all four stages; .github/workflows/image.yml builds it on
+  # every push, needs /api/health to answer, and pushes ghcr.io/luigiespinosa/hub:<sha> with the job
+  # token (packages: write). Tests hold the tag, the trigger, the two Umami inputs, the pruned install,
+  # docker-rollout's requirements on docker-compose.yml and the image's Node. Observed on this host:
+  # the pruned deps stage +526 packages against the base commit's +588 (action 4), an app-directory
+  # context failing at the prune, the image holding apps/hub and node_modules alone and serving every
+  # route and /contracts/ byte for byte, the healthcheck unhealthy for a container serving nothing and
+  # healthy as built; 1,667 unit tests in 66 files, 343 e2e in the pinned image. Six review layers ran
+  # inline, not independent (no UI surface for the Design Review): nine patches, DW-262 deferred, no
+  # loopback. DW-254 and DW-257 closed, DW-251's Dockerfile half closed, DW-260 to DW-262 filed.
+  # Waits on the Operator: the push, whose Image run is where criterion 6 and action 5's CI half are
+  # read; the GHCR package's visibility after that first push (private by default: the box needs it
+  # public, or a read token, before Story 3.4 pulls); Decisions 1 and 2 (the service keeps its name
+  # anchor-app, and the Umami inputs live in the workflow); DW-261 (.env.example names the old path,
+  # and this session may not touch .env files).
+  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: review
   3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
   3-5-merge-cuatro-finance-into-apps-finance: backlog
   3-6-merge-cuatro-tracker-into-apps-tracker: backlog

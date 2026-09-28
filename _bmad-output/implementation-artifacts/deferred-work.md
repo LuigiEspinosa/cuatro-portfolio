@@ -7966,6 +7966,12 @@ status: done
     (Story 3.2 moves `docker/Dockerfile` for paths only and changes no dependency); **Story 3.4 for
     `deploy.yml`**, which rewrites the deploy; **unassigned for `registry-verification.yml`**.
     **Trigger: each owner's story, or the next edit to the file.**
+
+    **The Dockerfile half closed 2026-09-28 by Story 3-3, committed on `dev` and live at the Epic 3
+    merge.** `apps/hub/Dockerfile` builds and runs on `node:24-slim` in all four stages, and a new
+    `ops/__tests__/workflow-hardening.test.ts` case holds every `FROM node:` stage to the major the
+    workflows pin, so the next Node move in CI fails until the image moves with it. `deploy.yml`
+    (Story 3.4) and `registry-verification.yml` (unassigned) stay on 22 and keep the entry open.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
@@ -8024,6 +8030,13 @@ status: done
 
     **Owner: the Operator, a ruling.** **Trigger: the next pass over NFR-8, or Story 3.3, whose image
     build is the first to run turbo tasks in CI.**
+
+    **Trigger reached 2026-09-28 by Story 3-3, committed on `dev`.** `.github/workflows/image.yml`
+    builds `apps/hub/Dockerfile` on every push, whose prune stage runs `turbo prune` and whose builder
+    runs `next build`, each with its telemetry at the default, as every build before it ran; the build
+    logs print both notices. The ruling is still the Operator's. If it is to turn both off, the image's
+    half is `ENV TURBO_TELEMETRY_DISABLED=1` in the prune stage and `ENV NEXT_TELEMETRY_DISABLED=1` in
+    the builder.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
@@ -8045,7 +8058,13 @@ status: done
     **Owner: Story 3.3**, whose image is built from the root narrowed by `turbo prune --docker`, a
     context that never holds either directory, which leaves only the local root-context build of
     `docker/Dockerfile` to settle. **Trigger: Story 3.3, or the next edit to `.dockerignore`.**
-  status: open
+
+    **Closed 2026-09-28 by Story 3-3, committed on `dev` and live at the Epic 3 merge.** The prune runs
+    inside the image build rather than before it, so the context is still the whole root and the
+    prune stage's `COPY . .` still takes whatever it carries; `.dockerignore` now lists `.pnpm-store`
+    and `**/.turbo`, so neither enters it. The final image carries neither in any case: it holds
+    `apps/hub/` and the traced `node_modules` alone (observed in the spec's Verification).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
   id: DW-255
@@ -8110,7 +8129,16 @@ status: done
     3-2's review, row 13), and the box builds them first at the Epic 3 merge.
 
     **Owner: Story 3.3**, whose image is built from that context (AD-8). **Trigger: Story 3.3.**
-  status: open
+
+    **Closed 2026-09-28 by Story 3-3, committed on `dev` and live at the Epic 3 merge.**
+    `apps/hub/Dockerfile`'s builder copies `contracts/` and `packages/contracts-serve/` from the prune
+    stage beside turbo's `full/`, because neither is a workspace (the spec's Decision 3). Built that way
+    on this host, the image published 11 files, served every route as Story 3-2's image did and every
+    file under `/contracts/` byte for byte, and its `deps` stage installed 526 packages against the
+    base commit's 588, with no `style-dictionary`. `.github/workflows/image.yml` builds and starts the
+    image on every push and pushes it only once `/api/health` answers, which gives the runner stage's
+    command and standalone copies the executing check this entry said nothing gave them.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
   id: DW-258
@@ -8146,4 +8174,63 @@ status: done
 
     **Owner: the Operator**, or the `/bmad-project-context` refresh the board schedules before Epic 4.
     **Trigger: the next edit to `_bmad/custom/bmad-build.toml`, or Story 3.3's Build run.**
+
+    **Trigger reached 2026-09-28 by Story 3-3's Build run,** whose ECC layer ran
+    `corepack pnpm --filter hub build`, the command `AGENTS.md` verifies, as Story 3-2's did. The
+    customization file still names the retired one, and the fix is still the Operator's.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
+  id: DW-260
+  summary: >-
+    The Hub's compose service is `anchor-app`, while AD-3 derives a service name from the
+    application id and Story 3.3's criterion calls it "the `hub` service", so the Hub carries three
+    names: Registry `cuatro-portfolio`, workspace and image `hub`, and service `anchor-app`.
+  evidence: |-
+    Decided 2026-09-28 by Story 3-3 (its Decision 1): the service keeps its name. `docker-compose.yml`
+    records the `anchor-*` names as load-bearing, because a service name is also a DNS alias on the
+    shared `cs-tracker_default` network, where `app` already collides (`ops/routing-inventory.md`
+    § The shared network), and the box's Caddyfile reverse-proxies `anchor-app:3000`. A rename changes
+    the live container name at the next deploy, and every record naming `anchor-app` with it. Nothing
+    fails today: the image name does not depend on the service's, and `docker-rollout` rolls a service
+    by whatever name it has.
+
+    **Owner: Story 3.4**, whose `docker-rollout` invocation names the service, or an Operator ruling on
+    the Hub's one id (AD-3). **Trigger: Story 3.4.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
+  id: DW-261
+  summary: >-
+    `.env.example` still names `docker/Dockerfile` as where the Umami website id is a build argument,
+    and Story 3-3 moved that file to `apps/hub/Dockerfile`.
+  evidence: |-
+    Found 2026-09-28 by Story 3-3, whose recursive search for `docker/Dockerfile` matched
+    `.env.example:4`. The session's permissions refuse any command that names an `.env` file, the
+    example included, so the one-path fix was not made, and not worked around. The comment is
+    otherwise right: the id is baked in at build time. Nothing reads the comment.
+
+    **Owner: the Operator.** **Trigger: the next edit to `.env.example`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
+  id: DW-262
+  summary: >-
+    That the Hub's compose healthcheck fails when the application is not serving is shown by one
+    demonstration on 2026-09-28 and held by no gate, so an edit that makes it always pass would ship
+    green, and `docker-rollout` would then drain the old container for a new one that serves nothing.
+  evidence: |-
+    Found 2026-09-28 by Story 3-3's verification-gap review. `docker/__tests__/compose.test.ts` reads
+    the healthcheck as text: it holds that the Hub's service has one, that it requests `/api/health`
+    and that it is not disabled, and it cannot see what the command does with the answer. A probe
+    rewritten to exit 0 on a refused connection (`.catch(()=>process.exit(0))`) passes every suite.
+    The failing half was observed once, on this host: the service run from `docker-compose.yml` with a
+    process that serves nothing turned `unhealthy` after 107 s, and the real image turned `healthy`
+    after 8 s (Story 3-3's Verification). `.github/workflows/image.yml` checks that the image answers
+    `/api/health`, which is the endpoint, not the healthcheck's handling of it. Story 3.4 is the first
+    story whose deploy depends on the healthcheck failing, since `docker-rollout` removes the old
+    container only once the new one reports healthy.
+
+    **Owner: Story 3.4**, which adopts `docker-rollout`, for instance by running the rollout's own
+    failure path against a container that serves nothing. **Trigger: Story 3.4.**
   status: open
