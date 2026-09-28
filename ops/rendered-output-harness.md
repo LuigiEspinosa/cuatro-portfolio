@@ -340,6 +340,13 @@ docker run --rm --ipc=host ^
   bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm run test:e2e:update"
 ```
 
+*(Amended 2026-09-28: Story 3-2 moved the Hub to `apps/hub/`, committed on `dev`, so its build writes
+`apps/hub/.next` and the build volume is `-v pw-next:/w/apps/hub/.next`, which masks the host's
+`apps/hub/.next` as `-v pw-next:/w/.next` masked the root's before the move. Where this section calls
+the docker command above the supported way to run or refresh the harness, it is this command with
+that volume, as `AGENTS.md` § Running and verifying carries it; the command above is left as it was
+run, and § The Hub moved to apps/hub, 2026-09-28 records the change.)*
+
 The two named volumes matter. `node_modules` and `.next` on the Windows host hold Windows
 binaries (`sharp`, `@next/swc`), which a Linux container cannot execute, so both are masked with
 container-local volumes rather than read through the bind mount. `corepack enable` is needed

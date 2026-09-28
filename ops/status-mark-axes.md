@@ -75,7 +75,7 @@ docker run --rm --ipc=host ^
   bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm exec playwright test status-mark"
 ```
 
-Drop the trailing `exec playwright test status-mark` for `pnpm test:e2e` and the whole suite runs.
+Drop the trailing `exec playwright test status-mark` for `pnpm test:e2e` and the whole suite runs. *(Amended 2026-09-28: Story 3-2 moved the Hub to `apps/hub/`, committed on `dev`, so its build writes `apps/hub/.next` and the build volume is `-v pw-next:/w/apps/hub/.next`, which masks the host's `apps/hub/.next` as `-v pw-next:/w/.next` masked the root's before the move. `AGENTS.md` § Running and verifying carries the command in that form.)*
 The image is pinned because glyph rasterization is not portable, even for `--f-mono`, whose Geist
 Mono the contract serves to Linux and Windows alike (`ops/rendered-output-harness.md`).
 
