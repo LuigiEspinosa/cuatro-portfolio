@@ -47,12 +47,17 @@ export const API = 'https://api.github.com';
 export const TOLERATED_HEADING = 'Sources tolerated to answer 404 anonymously';
 
 /**
- * A `source` on github.com in the one shape the API can look up: owner and
- * repository, a trailing slash allowed, no `.git`, no deeper path, no query and
- * no fragment. A github.com URL of any other shape fails `source exists` by
- * name rather than being skipped.
+ * A `source` on github.com in one of the two shapes the API can look up: owner
+ * and repository, or those followed by `/tree/<branch>/<path>` (DW-285, Operator
+ * ruling 2026-09-29), which names a directory of the Anchor an absorbed
+ * application's code now lives in. A trailing slash is allowed; no `.git`, no
+ * branch with a slash, no `.` or `..` segment (a fetch would normalise it into
+ * another URL), no query and no fragment. A github.com URL of any other shape
+ * fails `source exists` by name rather than being skipped. Groups: owner,
+ * repository, then branch and path when the URL names a tree.
  */
-export const GITHUB_SOURCE = /^https:\/\/github\.com\/([A-Za-z0-9-]+)\/(?!.*\.git\/?$)([A-Za-z0-9_.-]+)\/?$/;
+export const GITHUB_SOURCE =
+  /^https:\/\/github\.com\/([A-Za-z0-9-]+)\/(?![^/]*\.git(?:\/|$))([A-Za-z0-9_.-]+)(?:\/tree\/(?!\.\.?(?:\/|$))([A-Za-z0-9_.-]+)\/((?:(?!\.\.?(?:\/|$))[A-Za-z0-9_.-]+\/)*(?!\.\.?\/?$)[A-Za-z0-9_.-]+))?\/?$/;
 const ON_GITHUB = /^https:\/\/github\.com(\/|$)/;
 
 /**
@@ -92,7 +97,11 @@ export function kv2Rows(record) {
   }));
 }
 
-/** The last path segment of a `source` URL, which is the repository name `ops/contract-adoption.md` keys its rows on. */
+/**
+ * The last path segment of a `source` URL, which is the repository name `ops/contract-adoption.md` keys its
+ * rows on. A tree source (DW-285) yields its directory, which no row names, so a `token_contract` declared on
+ * one fails as "no recorded target" rather than reading the repository's own header.
+ */
 const repositoryName = (source) => String(source).replace(/\/+$/, '').split('/').pop() ?? '';
 
 /**
@@ -196,6 +205,7 @@ async function checkEntry(entry, { fetch, token, tolerated, adopters }) {
 
   const github = GITHUB_SOURCE.exec(entry.source);
   const slug = github === null ? null : `${github[1]}/${github[2]}`;
+  const tree = github === null || github[3] === undefined ? null : { branch: github[3], path: github[4] };
   /** @type {{ defaultBranch: string } | null} */
   let repository = null;
 
@@ -204,11 +214,29 @@ async function checkEntry(entry, { fetch, token, tolerated, adopters }) {
     const body = got.response?.status === 200 ? await got.response.json().catch(() => null) : null;
     if (body !== null && typeof body.default_branch === 'string') {
       repository = { defaultBranch: body.default_branch };
-      row(
-        'source exists',
-        true,
-        `${slug} answered 200 authenticated, default branch ${body.default_branch}` + (body.archived === true ? ', archived' : '')
-      );
+      const found = `${slug} answered 200 authenticated, default branch ${body.default_branch}` + (body.archived === true ? ', archived' : '');
+      if (tree === null) {
+        row('source exists', true, found);
+      } else {
+        // The repository existing proves nothing about the directory: the path is read on the branch
+        // the URL names, so a renamed directory or a branch that lost it fails here by name.
+        // `GITHUB_SOURCE` admits only URL-safe segments, so neither part needs encoding.
+        const where = `${slug}:${tree.path}@${tree.branch}`;
+        const at = await get(fetch, `${API}/repos/${slug}/contents/${tree.path}?ref=${tree.branch}`, {
+          ...authenticated,
+          Accept: 'application/vnd.github+json',
+        });
+        const status = at.response?.status ?? null;
+        if (status === 200) {
+          row('source exists', true, `${found}, and ${where} answered 200`);
+        } else if (status === 404) {
+          row('source exists', false, `absent: ${slug} answered 200 and ${where} answered 404, so the path is not on that branch`);
+        } else if (status === 401 || status === 403) {
+          row('source exists', false, `${where} answered ${status}; check ${SECRET} has Contents read on ${slug}`);
+        } else {
+          row('source exists', false, `unreachable: ${slug} answered 200 and ${where} ${answered(at)}`);
+        }
+      }
     } else if (got.response?.status === 200) {
       row('source exists', false, `${slug} answered 200 authenticated but no default_branch was read`);
     } else {

@@ -1,7 +1,7 @@
 // The parsers over `ops/contract-adoption.md`, Story 1-20's record.
 //
 // The record states the published contract version, the version every estate
-// application has adopted, the automation policy over the thirteen repositories
+// application has adopted, the automation policy over the ten repositories
 // `ops/estate.md` names, and the propagation counter Epic 6 reads. Each is a
 // statement about something else in this repository or in the estate, and a
 // statement nobody checks drifts. These functions read the record's tables so
@@ -24,14 +24,16 @@ import { join } from 'node:path';
 export const RECORD_REL = 'ops/contract-adoption.md';
 
 /**
- * The thirteen repositories, pinned, so the estate parse has something to disagree with. Eleven
- * until 2026-09-25, when Registry 1.5.0 listed `covidmap` and `future-vizion` (Operator ruling
- * 2026-09-25) and both joined the waypoint.
+ * The ten repositories of the end state, pinned, so the estate parse has something to disagree with.
+ * Eleven until 2026-09-25, when Registry 1.5.0 listed `covidmap` and `future-vizion` (Operator ruling
+ * 2026-09-25) and both joined the waypoint; thirteen until 2026-09-29, when `cuatro-finance`,
+ * `cuatro-tracker` and `cs-tournament` were archived into the Anchor and Registry 1.6.0 recorded it
+ * (DW-285).
  */
-export const ESTATE_COUNT = 13;
+export const ESTATE_COUNT = 10;
 
 /** The sentence in `ops/estate.md` the estate names are read out of. */
-export const ESTATE_SENTENCE = 'The 13 repositories at this waypoint are';
+export const ESTATE_SENTENCE = 'The 10 repositories at the end state are';
 
 /** AD-14's fixed folder name, and the one file the Epic 2 drift check reads out of it. */
 export const VENDORED_TOKENS = 'cuatro-contracts/tokens.css';

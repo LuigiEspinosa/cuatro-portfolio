@@ -150,6 +150,8 @@ const routesForCommittedRegistry = (): Record<string, Answer | Answer[]> => {
     if (match === null) throw new Error(`${HERE}: ${entry.id} has a source off github.com, which this fixture does not plant`);
     const slug = `${match[1]}/${match[2]}`;
     routes[`${API}/repos/${slug}`] = repos(slug, ARCHIVED.includes(slug));
+    // A tree source (DW-285) is proven by its path on the named branch, one more call.
+    if (match[3] !== undefined) routes[contents(slug, match[4], match[3])] = { status: 200, body: '[]' };
     routes[entry.source] = PRIVATE.includes(slug) ? 404 : 200;
     if (entry.live !== undefined) routes[entry.live] = REDIRECTING[entry.live] ?? 200;
   }
@@ -246,6 +248,12 @@ describe('the committed Registry against the estate as observed', () => {
     const exists = rowsOf(result, 'source exists');
     expect(exists).toHaveLength(16);
     expect(exists.filter((row) => row.detail.endsWith(', archived')).map((row) => row.id).sort()).toEqual(['lumen', 'tcg-tracker']);
+    // Registry 1.6.0 (DW-285): the three absorbed entries name the Anchor's tree, each proven on `main`.
+    const absorbed = exists.filter((row) => row.detail.includes('/cuatro-portfolio:apps/'));
+    expect(absorbed.map((row) => row.id).sort()).toEqual(['cs-tournament', 'cuatro-finance', 'cuatro-tracker']);
+    for (const row of absorbed) {
+      expect(row.detail).toMatch(/^LuigiEspinosa\/cuatro-portfolio answered 200 authenticated, default branch main, and LuigiEspinosa\/cuatro-portfolio:apps\/(finance|tracker|tournament)@main answered 200$/);
+    }
 
     const resolves = rowsOf(result, 'source resolves');
     expect(resolves).toHaveLength(16);
@@ -278,7 +286,9 @@ describe('the committed Registry against the estate as observed', () => {
   it('makes exactly one request per check with the named user agent, no redirect, a 15 s signal, and the token only to api.github.com', async () => {
     await run;
     expect(TIMEOUT_MS).toBe(15_000);
-    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(40);
+    // 43, not 40: the three tree sources Registry 1.6.0 carries (DW-285) are each probed once more,
+    // inside their `source exists` row.
+    expect(fetcher.calls, 'the happy path has no retries, so a doubled request is a defect').toHaveLength(43);
     for (const { url, init } of fetcher.calls) {
       const headers = (init?.headers ?? {}) as Record<string, string>;
       expect(headers['User-Agent'], url).toBe(USER_AGENT);
@@ -292,8 +302,12 @@ describe('the committed Registry against the estate as observed', () => {
       }
     }
     const contentsCalls = fetcher.calls.filter(({ url }) => url.includes('/contents/'));
-    expect(contentsCalls).toHaveLength(1);
-    expect((contentsCalls[0].init?.headers as Record<string, string>).Accept).toBe('application/vnd.github.raw');
+    expect(contentsCalls).toHaveLength(4);
+    const accept = (call: Call): string => (call.init?.headers as Record<string, string>).Accept;
+    expect(contentsCalls.filter((call) => accept(call) === 'application/vnd.github.raw').map((call) => call.url)).toEqual([contents(SLUG, CS_TRACKER_TOKENS)]);
+    expect(contentsCalls.filter((call) => accept(call) === 'application/vnd.github+json').map((call) => call.url).sort()).toEqual(
+      ['finance', 'tournament', 'tracker'].map((dir) => contents('LuigiEspinosa/cuatro-portfolio', `apps/${dir}`))
+    );
   });
 
   it('never prints the token', async () => {
@@ -500,6 +514,12 @@ describe('the authenticated half of source', () => {
   it('fails a github.com source of any other shape by name rather than skipping it, the anonymous half still run', async () => {
     const shapes = [
       'https://github.com/LuigiEspinosa/cs-tracker/tree/main',
+      'https://github.com/LuigiEspinosa/cs-tracker/tree/main/../other',
+      'https://github.com/LuigiEspinosa/cs-tracker/tree/main/apps/..',
+      'https://github.com/LuigiEspinosa/cs-tracker/tree/../apps',
+      'https://github.com/LuigiEspinosa/cs-tracker/blob/main/README.md',
+      'https://github.com/LuigiEspinosa/cs-tracker.git/tree/main/apps',
+      'https://github.com/LuigiEspinosa/cs-tracker/tree/main/apps?x=1',
       'https://github.com/LuigiEspinosa/cs-tracker.git',
       'https://github.com/LuigiEspinosa/cs-tracker?tab=readme',
       'https://github.com/LuigiEspinosa/cs-tracker#readme',
@@ -516,8 +536,74 @@ describe('the authenticated half of source', () => {
       expect(rowsOf(result, 'source resolves')[0].pass, source).toBe(true);
       expect(fetcher.calls.map((call) => call.url)).toEqual([source]);
     }
-    expect(GITHUB_SOURCE.exec('https://github.com/LuigiEspinosa/cs-tracker/')?.slice(1)).toEqual(['LuigiEspinosa', 'cs-tracker']);
-    expect(GITHUB_SOURCE.exec('https://github.com/LuigiEspinosa/tcg.tracker')?.slice(1)).toEqual(['LuigiEspinosa', 'tcg.tracker']);
+    expect(GITHUB_SOURCE.exec('https://github.com/LuigiEspinosa/cs-tracker/')?.slice(1)).toEqual(['LuigiEspinosa', 'cs-tracker', undefined, undefined]);
+    expect(GITHUB_SOURCE.exec('https://github.com/LuigiEspinosa/tcg.tracker')?.slice(1)).toEqual(['LuigiEspinosa', 'tcg.tracker', undefined, undefined]);
+    expect(GITHUB_SOURCE.exec('https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/finance/')?.slice(1)).toEqual(['LuigiEspinosa', 'cuatro-portfolio', 'main', 'apps/finance']);
+  });
+
+  describe('a tree source (DW-285): the path is proven on the branch the URL names', () => {
+    const TREE = 'https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/finance';
+    const ANCHOR_SLUG = 'LuigiEspinosa/cuatro-portfolio';
+    const at = contents(ANCHOR_SLUG, 'apps/finance');
+    const base = { [`${API}/repos/${ANCHOR_SLUG}`]: repos(ANCHOR_SLUG), [TREE]: 200 };
+    const finance = (source = TREE) => entry({ id: 'cuatro-finance', source });
+
+    it('passes when the repository and the path both answer 200, reading the path through the API with the token', async () => {
+      const fetcher = planted({ ...base, [at]: { status: 200, body: '[]' } });
+      const result = await one(finance(), { fetch: fetcher.fetch });
+      expect(result.ok, result.lines.join('\n')).toBe(true);
+      expect(rowsOf(result, 'source exists')[0].detail).toBe(`${ANCHOR_SLUG} answered 200 authenticated, default branch main, and ${ANCHOR_SLUG}:apps/finance@main answered 200`);
+      expect(rowsOf(result, 'source resolves')[0].detail).toBe(`${TREE} answered 200 anonymously`);
+      const probe = fetcher.calls.find((call) => call.url === at);
+      expect((probe?.init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${TOKEN}`);
+      expect(fetcher.unplanted).toEqual([]);
+    });
+
+    it('reads the branch the URL names, not the default branch', async () => {
+      const other = 'https://github.com/LuigiEspinosa/cuatro-portfolio/tree/dev/apps/finance';
+      const fetcher = planted({ ...base, [other]: 200, [contents(ANCHOR_SLUG, 'apps/finance', 'dev')]: { status: 200, body: '[]' } });
+      const result = await one(finance(other), { fetch: fetcher.fetch });
+      expect(rowsOf(result, 'source exists')[0].detail).toContain(`${ANCHOR_SLUG}:apps/finance@dev answered 200`);
+      expect(fetcher.unplanted).toEqual([]);
+    });
+
+    it('fails by name when the path is absent on that branch, although the repository exists', async () => {
+      const [exists] = rowsOf(await one(finance(), { fetch: planted({ ...base, [at]: 404 }).fetch }), 'source exists');
+      expect(exists.pass).toBe(false);
+      expect(exists.detail).toBe(`absent: ${ANCHOR_SLUG} answered 200 and ${ANCHOR_SLUG}:apps/finance@main answered 404, so the path is not on that branch`);
+    });
+
+    it('fails naming the secret on 401 or 403, and as unreachable on a 5xx twice or a network error', async () => {
+      for (const status of [401, 403]) {
+        const [exists] = rowsOf(await one(finance(), { fetch: planted({ ...base, [at]: status }).fetch }), 'source exists');
+        expect(exists.pass, String(status)).toBe(false);
+        expect(exists.detail).toBe(`${ANCHOR_SLUG}:apps/finance@main answered ${status}; check ${SECRET} has Contents read on ${ANCHOR_SLUG}`);
+      }
+      const failing = planted({ ...base, [at]: [503, 503] });
+      const [down] = rowsOf(await one(finance(), { fetch: failing.fetch }), 'source exists');
+      expect(down.pass).toBe(false);
+      expect(down.detail).toBe(`unreachable: ${ANCHOR_SLUG} answered 200 and ${ANCHOR_SLUG}:apps/finance@main answered 503`);
+      expect(failing.calls.filter((call) => call.url === at)).toHaveLength(2);
+      const [cut] = rowsOf(await one(finance(), { fetch: planted({ ...base, [at]: [new Error('ECONNRESET'), new Error('ECONNRESET')] }).fetch }), 'source exists');
+      expect(cut.pass).toBe(false);
+      expect(cut.detail).toBe(`unreachable: ${ANCHOR_SLUG} answered 200 and ${ANCHOR_SLUG}:apps/finance@main did not answer (ECONNRESET)`);
+    });
+
+    it('keys a token_contract on the directory, which no adoption row names, so it fails as no recorded target', async () => {
+      const fetcher = planted({ ...base, [at]: { status: 200, body: '[]' } });
+      const result = await one(entry({ id: 'cuatro-finance', source: TREE, token_contract: '2.0.0' }), { fetch: fetcher.fetch });
+      const [token] = rowsOf(result, 'token_contract');
+      expect(token.pass).toBe(false);
+      expect(token.detail).toBe(`2.0.0 is declared but no recorded target: ${ADOPTION_REL} carries no adopted-versions row for finance`);
+      expect(fetcher.calls.filter((call) => call.url.includes('/contents/'))).toHaveLength(1);
+    });
+
+    it('never probes the path when the repository itself does not answer', async () => {
+      const fetcher = planted({ [`${API}/repos/${ANCHOR_SLUG}`]: 404, [TREE]: 404 });
+      const [exists] = rowsOf(await one(finance(), { fetch: fetcher.fetch }), 'source exists');
+      expect(exists.pass).toBe(false);
+      expect(fetcher.calls.some((call) => call.url.includes('/contents/'))).toBe(false);
+    });
   });
 
   it('retries once on a 5xx and on a network error, and the last answer decides', async () => {

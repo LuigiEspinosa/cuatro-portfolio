@@ -154,6 +154,16 @@ Suite Directory's data) for no reader gain; DW-285 writes it with the `source` m
 
 **Independent verifier, 2026-09-29.** It found three stale sentences in § The waypoint sequence ("14 to 8 is the decision", "sits on the second row today, at an observed 12", "heading to 8 regardless") and the merge candidates paragraph's "from 11 to 8", all left unamended by the first pass. Each now carries a dated Story 3-8 amendment naming 10 as the decision, the `After listing` row at an observed 14, 13 as the next station and 13 to 10 for the merge; the parsed waypoint sentence is untouched. A second verifier pass found the dated 2026-09-02 paragraph's "The end state of 8 never moved" unamended; it now carries a Story 3-8 amendment saying the end state moved to 10 on 2026-09-26.
 
+## Closure, 2026-09-29
+
+The one criterion left open, criterion 2's `absorbed_into` and `source` for the three merged
+applications, conditional on their archive, is met by DW-285
+(`spec-dw-285-absorb-the-three-merged-entries.md`): the Operator archived `cuatro-finance` and
+`cs-tournament` at 21:43:05Z and `cuatro-tracker` at 21:53:16Z, and Registry 1.6.0 gives each
+`absorbed_into: cuatro-portfolio` and a `source` in the Anchor's `tree/main/apps/<dir>`, which answered
+200 anonymously that day. The observed count is 10, the end state this spec recorded as not yet reached;
+`ops/estate.md` records it reached, and the board moves 3-8 to `done`.
+
 ## Verification
 
 **Commands (final tree, 2026-09-29):**

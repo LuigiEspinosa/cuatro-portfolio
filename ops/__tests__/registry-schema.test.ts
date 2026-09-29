@@ -261,8 +261,11 @@ describe('the committed Registry', () => {
     // value changes and so a minor. 1.5.0 from later on 2026-09-25: `covidmap`
     // and `future-vizion` joined as `Live` (Operator ruling 2026-09-25, which
     // reversed the 2026-09-02 exclusion recorded as KV-3), two entries added
-    // and so a minor.
-    expect(committed.contract_version).toBe('1.5.0');
+    // and so a minor. 1.6.0 from 2026-09-29: `cuatro-finance`, `cuatro-tracker`
+    // and `cs-tournament` took `absorbed_into: cuatro-portfolio` and a `source`
+    // in the Anchor's tree once their repositories were archived (DW-285,
+    // Operator ruling 2026-09-29), value changes and so a minor.
+    expect(committed.contract_version).toBe('1.6.0');
     expect(Array.isArray(committed.applications)).toBe(true);
     expect(committed.applications.length).toBeGreaterThan(0);
     // The one entry rule the schema deliberately left open until there were

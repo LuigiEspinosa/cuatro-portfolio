@@ -801,7 +801,12 @@ development_status:
   # absorbed_into on the three entries and the source shape the Operator ruled on 2026-09-29 (the
   # Anchor tree URL, with Story 2.23's check widened to accept it), moving ESTATE_COUNT, the
   # waypoint sentence and both ops/contract-adoption.md tables to 10.
-  3-8-record-the-estate-end-state: awaiting-operator
+  # 3-8 done 2026-09-29: DW-285 built as Registry 1.6.0 (absorbed_into: cuatro-portfolio and a source of
+  # the Anchor's tree/main/apps/<dir> on cuatro-finance, cuatro-tracker and cs-tournament); Story 2.23's
+  # job accepts a tree URL and proves its path on the named branch; ESTATE_COUNT, the estate sentence and
+  # both ops/contract-adoption.md tables at 10; ops/estate.md records the end state reached. Committed on
+  # dev, not pushed; the push run of registry-verification.yml is the first runner to read the sources.
+  3-8-record-the-estate-end-state: done
   epic-3-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
   # Epic 3 introduces Turborepo, moves the app to apps/hub, and retires the

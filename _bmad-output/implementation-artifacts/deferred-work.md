@@ -8808,4 +8808,35 @@ status: done
     exists` check in `ops/registry-verification.mjs`, with its suite) is widened to accept and probe a
     `tree/<branch>/<path>` URL. `apps/finance`, `apps/tracker` and `apps/tournament` are on `main`
     since PR #84 (`5117673`), so the URLs resolve now.
+
+    **Done 2026-09-29.** The trigger came that evening: the Operator archived `cuatro-tracker` at
+    21:53:16Z without the week's wait. Registry 1.6.0 gives `cuatro-finance`, `cuatro-tracker` and
+    `cs-tournament` `absorbed_into: cuatro-portfolio` and `source:
+    https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/<dir>`, `<dir>` being the workspace
+    directory (`finance`, `tracker`, `tournament`) since the ruling's `apps/<id>` names these three paths;
+    the schema did not move. `GITHUB_SOURCE` accepts `/tree/<branch>/<path>` (no dot segment, no slash in
+    the branch) and `source exists` proves the path with `repos/<owner>/<repo>/contents/<path>?ref=<branch>`
+    after the repository answers, failing by name on a 404, naming the secret on a 401 or 403, and as
+    unreachable on anything else; the suite holds each. `ESTATE_COUNT`, the estate sentence and both `ops/contract-adoption.md` tables moved to 10, and
+    every record that promised this is amended. Spec:
+    `spec-dw-285-absorb-the-three-merged-entries.md`. Not pushed: the push run of
+    `registry-verification.yml` on `dev`, which a change to `contracts/registry.json` triggers, is the
+    first runner to read the new sources.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-285-absorb-the-three-merged-entries.md`
+  id: DW-286
+  summary: >-
+    `ops/estate.md` § Pending Operator actions still reads as if archives were outstanding: its intro
+    says only `connect-four-react` is outstanding, that row is not struck, and the observed-state table
+    the section says to re-gather after an archive still reads 2026-09-02.
+  evidence: |-
+    Found 2026-09-29 by DW-285's review. The four archives of 2026-09-29 (21:43:05Z and 21:53:16Z) are
+    recorded in § The waypoint sequence and § The end state, and DW-285 dated the three merge-candidate
+    rows done, but § Maintaining this section asks each performed row be struck and the observed table
+    re-gathered by `gh api` and re-dated, which no change has done. Pre-existing since `2a4ca40`; a
+    record-only change, left out of DW-285 to keep its diff to what the Registry release moves.
+
+    **Owner: the next story that edits `ops/estate.md`.** **Trigger: that edit, or AD-22's next
+    refresh check, whichever comes first.**
   status: open
