@@ -186,7 +186,7 @@ async function probe({ baseUrl, out }) {
       try {
         response = await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
       } catch (error) {
-        throw new BlockedError(`nothing answered at ${baseUrl}. Start the server with corepack pnpm build && corepack pnpm start --port 3100. ${error instanceof Error ? error.message : String(error)}`);
+        throw new BlockedError(`nothing answered at ${baseUrl}. Start the server with corepack pnpm --filter hub build && corepack pnpm --filter hub start --port 3100. ${error instanceof Error ? error.message : String(error)}`);
       }
       if (!response || response.status() !== 200) throw new BlockedError(`${baseUrl}/ answered ${response ? response.status() : 'nothing'}`);
       await page.evaluate(async () => {

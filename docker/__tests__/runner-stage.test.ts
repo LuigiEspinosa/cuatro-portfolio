@@ -12,11 +12,11 @@ import { fileURLToPath } from 'node:url';
 // stages have two independent readers: a change that breaks one reader cannot
 // silently take the other obligation with it.
 //
-// The obligation (Story 1-16). `pnpm build` publishes `contracts/` into
-// `/app/public/contracts` in the builder stage, and
-// `COPY --from=builder /app/public ./public` is the single hop that carries it
-// into the deployed image. Nothing else in the repository notices if that line
-// is dropped or repointed: typecheck, the whole Vitest suite, all three
+// The obligation (Story 1-16). The Hub's build publishes `contracts/` into
+// `/app/apps/hub/public/contracts` in the builder stage (since Story 3-2), and
+// `COPY --from=builder /app/apps/hub/public ./apps/hub/public` is the single hop
+// that carries it into the deployed image. Nothing else in the repository
+// notices if that line is dropped or repointed: typecheck, the whole Vitest suite, all three
 // contract jobs and the `rendered-output` harness stay green, because every one
 // of them reads the builder's own tree rather than the image. The deploy from
 // `main` then ships a working site answering 404 at every `/contracts/` URL,
@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 // Three properties, not one. Naming `public` on a COPY line is not enough: it
 // has to come from the builder stage, since that is the only stage that ran the
 // publish, and it has to land at the path the server reads, since `WORKDIR` is
-// what makes a relative destination mean `/app/public`.
+// what makes a relative destination mean `/app/apps/hub/public`.
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
@@ -36,8 +36,8 @@ const DOCKERFILE = join(REPO_ROOT, 'docker', 'Dockerfile');
 const BUILDER = 'builder';
 const RUNNER = 'runner';
 
-/** What the builder stage must run, because it is what writes `public/contracts`. */
-const BUILD = 'pnpm build';
+/** What the builder stage must run, because it is what writes the Hub's `public/contracts`. */
+const BUILD = 'pnpm --filter hub build';
 
 /**
  * The line that runs `BUILD` as an instruction. A `RUN` line, not the text
@@ -46,8 +46,11 @@ const BUILD = 'pnpm build';
 const BUILD_LINE = new RegExp(String.raw`^[ \t]*RUN[ \t][^\n]*\b${BUILD}(?=\s|$)[^\n]*`, 'm');
 const runsBuild = (stage: string): boolean => BUILD_LINE.test(stage);
 
-/** The directory Next serves as the document root, relative to the image's working directory. */
-const PUBLIC = 'public';
+/**
+ * The Hub's public directory, which Next serves as the document root, relative
+ * to the image's working directory.
+ */
+const PUBLIC = 'apps/hub/public';
 
 interface Copy {
   /** The stage named by `--from=`, or null for a copy out of the build context. */
@@ -217,12 +220,12 @@ describe('the Dockerfile runner stage', () => {
     // word, which is what the deps-stage reader does because it has no use for
     // one, would match a `COPY public ./public` out of the build context and
     // report the obligation met by a line that copies the repository's own
-    // committed `public/` rather than the builder's published one.
-    const [copy] = copiesIn('COPY --from=builder /app/public ./public');
+    // committed `apps/hub/public/` rather than the builder's published one.
+    const [copy] = copiesIn('COPY --from=builder /app/apps/hub/public ./apps/hub/public');
     expect(copy.from).toBe(BUILDER);
-    expect(copy.sources).toEqual(['/app/public']);
+    expect(copy.sources).toEqual(['/app/apps/hub/public']);
     expect(copy.destination).toBe(PUBLIC);
-    expect(copiesIn('COPY public ./public')[0].from).toBeNull();
-    expect(copyOfDirectory(copiesIn('COPY public ./public'), BUILDER, 'public')).toBeUndefined();
+    expect(copiesIn('COPY apps/hub/public ./apps/hub/public')[0].from).toBeNull();
+    expect(copyOfDirectory(copiesIn('COPY apps/hub/public ./apps/hub/public'), BUILDER, 'apps/hub/public')).toBeUndefined();
   });
 });

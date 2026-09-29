@@ -46,14 +46,14 @@ const ACCENT_REFERENCE = new RegExp(`var\\(\\s*(${ACCENT_ROLES.join('|')})\\s*[,
  */
 const EXEMPTIONS = [
   {
-    path: 'components/organisms/SuiteDirectory/SuiteDirectory.scss',
+    path: 'apps/hub/components/organisms/SuiteDirectory/SuiteDirectory.scss',
     selector: '.suite-directory__dot',
     reason:
       'DESIGN.md § Colors: the Live mark is a 4px filled square, the element that carries Live apart ' +
       'from Complete in greyscale, where the two borders sit 1.13:1 apart.',
   },
   {
-    path: 'app/app.scss',
+    path: 'apps/hub/app/app.scss',
     selector: '::selection',
     reason: 'RESTYLE-SPEC F-11: an accent selection ground is the one permitted accent fill, and F-8 excludes it by name.',
   },

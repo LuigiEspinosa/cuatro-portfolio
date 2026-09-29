@@ -6,11 +6,12 @@ import { extname, join, resolve } from 'node:path';
  * The published surface served over HTTP (Story 1-16, AD-1, AD-4).
  *
  * This spec runs against the harness's own server, which
- * `playwright.config.ts` starts with `pnpm build && pnpm start`. The publish
- * step is the first half of `build`, so the tree under test is the one a deploy
- * ships rather than a scratch copy this file assembled: `docker/Dockerfile`
- * runs the same `pnpm build` in its builder stage and copies `public` into the
- * runner stage, which `docker/__tests__/runner-stage.test.ts` holds.
+ * `playwright.config.ts` starts with the Hub's `build` and `start` (by
+ * `--filter hub` since Story 3-2). The publish step is the first half of
+ * `build`, so the tree under test is the one a deploy ships rather than a
+ * scratch copy this file assembled: `docker/Dockerfile` runs the same build in
+ * its builder stage and copies `apps/hub/public` into the runner stage, which
+ * `docker/__tests__/runner-stage.test.ts` holds.
  *
  * Two things a unit test over the copied files cannot establish, and this can:
  *

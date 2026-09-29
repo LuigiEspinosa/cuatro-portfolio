@@ -50,6 +50,14 @@ The Hub's own Next server serves the directory. `packages/contracts-serve/publis
 `public/` as static files at the document root, so `public/contracts/tokens.css` answers at
 `/contracts/tokens.css`.
 
+*(Amended 2026-09-28, Story 3-2, committed on `dev` and live at the Epic 3 merge to `main`: the Hub
+is the workspace `hub` in `apps/hub/`, so the served copy is `apps/hub/public/contracts/`, written at
+the start of `pnpm --filter hub build`, which runs
+`node ../../packages/contracts-serve/publish.mjs && next build` from `apps/hub/`, and
+`apps/hub/public/contracts/tokens.css` answers at `/contracts/tokens.css`.
+`contracts/` stays at the repository root. `.gitignore` ignores `/apps/hub/public/contracts/`, and
+the runner stage copies `/app/apps/hub/public`. The table below reads the same way.)*
+
 | Property | Value | Nature |
 |---|---|---|
 | Publish step | `packages/contracts-serve/publish.mjs`, Node builtins only, no `package.json` in the directory | **Decision.** AD-1: generators live in `packages/` and are never published |
@@ -391,6 +399,15 @@ carried the caveat `epics.md` Story 1.16 raised: had the Operator preferred Trae
 the Epic 4 row above stands as written. `epics.md` Stories 1.16 and 4.6 carry the ruling as dated
 amendments.
 
+*(Done 2026-09-28 by Story 3-2, committed on `dev` and live at the Epic 3 merge: all five, as the
+table says. `DESTINATION` is `apps/hub/public/contracts`; `build` and `dev` are `apps/hub/package.json`'s
+and reach the publish as `node ../../packages/contracts-serve/publish.mjs`, while the root's
+`contracts:publish` keeps the root's spelling and the suite pins both to the one script; `.gitignore`
+carries `/apps/hub/public/contracts/`; every literal the table names moved in the suite; and the
+runner stage copies `/app/apps/hub/public`, with `docker/__tests__/runner-stage.test.ts` moved beside
+it. Thing 3's hazard arrived as predicted: `git mv public apps/hub/public` carried the ignored served
+copy along, and it showed as untracked until the entry was re-anchored.)*
+
 ## Stated limits
 
 | Limit | Why it stands | Nature |
@@ -401,7 +418,7 @@ amendments.
 | **`pnpm start` on its own does not publish** | `dev` and `build` both run the publish; `start` is unchanged and serves whatever `public/contracts/` is already on disk. So a developer who pulls a commit that changed `contracts/` and then runs `pnpm start` without rebuilding gets 200s carrying the previous surface. **The deploy path is unaffected**, because `docker/Dockerfile`'s builder stage always runs `pnpm build` and the runner stage copies the result of that build into a fresh image, so a deployed container cannot serve a surface its own build did not write. `start` was left alone deliberately: prepending the publish to it would mean a command whose job is to serve an existing build silently rewriting part of it, which is a worse property than the stale read it would prevent, and `next start` already warns that it is not how this `output: 'standalone'` application runs in production | **Decision.** Story 1-16 |
 | **A build-time fetch with an empty user agent is blocked at the edge** | `ops/bot-mitigation.md` rule 3 issues a managed challenge to requests with an empty user agent that are not verified bots, on all five application hostnames. A non-browser client cannot solve one, so it reads as a 403. AD-4 has Satellites fetch the Registry at build time, and a fetch library that sends no user agent will fail against a mechanism that is working perfectly. Rule 1 blocks a list of crawler user agents outright, `Scrapy` among them | **Observed 2026-08-26** against the live apex on `/logo.png`, which is served by the same Next `public/` path this story publishes into: a normal user agent answered **200**, an explicitly empty one **403**, and `GPTBot/1.0` **403**. Pending Operator action 4 |
 | **Nothing consumes the served URL yet** | Publishing is not adopting. Story 1.19 is where `cs-tracker` first vendors the folder, and `contracts/registry.json` arrives in Story 2-5. The URL is proved reachable, not proved used | **Decision.** Story 1-16 scope. *(Amended 2026-09-24: `contracts/registry.json` arrived on 2026-08-29 and is served, and still nothing fetches it: `cs-tracker` vendors the folder, and `ops/registry-verification.mjs` reads the committed file and names the URL only in its user agent)* |
-| **The served result is only ever asserted against the harness's own server** | `playwright.config.ts` starts `pnpm build && pnpm start` on `127.0.0.1:3100`. That is the same build the Docker builder stage runs, but it is not the deployed container, not behind Caddy, and not behind Cloudflare. Everything between the Hub and a Visitor is asserted by the Operator's live confirmation and by nothing in CI | **Decision**, with the residual risk stated. Pending Operator action 1 |
+| **The served result is only ever asserted against the harness's own server** | `playwright.config.ts` starts `pnpm build && pnpm start` on `127.0.0.1:3100`. That is the same build the Docker builder stage runs, but it is not the deployed container, not behind Caddy, and not behind Cloudflare. Everything between the Hub and a Visitor is asserted by the Operator's live confirmation and by nothing in CI. *(Amended 2026-09-28: the harness starts `pnpm --filter hub build && pnpm --filter hub start` since Story 3-2 moved the Hub to `apps/hub/`, committed on `dev`; the limit stands.)* | **Decision**, with the residual risk stated. Pending Operator action 1 |
 | **`next start` is not how production runs** | `next.config.js` sets `output: 'standalone'`, and `next start` prints a warning saying so. The harness uses it anyway because the alternative is running `.next/standalone/server.js`, which the config was not written for here, and because the file serving under test is the same static handler in both. A deploy runs `node server.js` in the runner stage | **Observed 2026-08-26**, in the harness's own web server output. Pre-existing, inherited from Story 1-10 |
 | **Three Playwright specs fail on a Windows development host** *(corrected 2026-09-24: five cases in two specs, `contract-fonts.pw.ts:334` and four in `rendered-output.pw.ts`, as the Epic 1 retrospective lists them)* | Unrelated to this story and pre-existing: one font-swap tolerance and the screenshot baselines, which were captured in `mcr.microsoft.com/playwright:v1.62.1-noble` and are not portable. Verified pre-existing by running the whole suite against `6b134d3` with this story's files stashed: the same five cases failed, 16 passed, against 19 passing with this story's three added | **Observed 2026-08-26**, by the stashed comparison run |
 

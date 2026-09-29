@@ -21,7 +21,7 @@ import { publish, main, SOURCE, DESTINATION, SERVED_AT } from '../publish.mjs';
 // One standing case per row of Story 1-16's I/O matrix, plus one per refusal
 // the publish makes that no matrix row names, plus the working tree's own
 // obligations: the `build` script's content and ordering, the `.gitignore`
-// entry, and that nothing under `public/contracts` is tracked.
+// entry, and that nothing under `apps/hub/public/contracts` is tracked.
 //
 // This suite rides the already-blocking `test` job. No new CI job was added by
 // this story: the publish runs inside `pnpm build`, which the `rendered-output`
@@ -35,15 +35,20 @@ import { publish, main, SOURCE, DESTINATION, SERVED_AT } from '../publish.mjs';
 const REPO_ROOT = process.cwd();
 const SCRIPT = resolve(REPO_ROOT, 'packages/contracts-serve/publish.mjs');
 const MANIFEST = resolve(REPO_ROOT, 'package.json');
+/** The Hub's own manifest since Story 3-2, which carries its `build`, `dev` and `start`. */
+const HUB_MANIFEST = resolve(REPO_ROOT, 'apps/hub/package.json');
 const GITIGNORE = resolve(REPO_ROOT, '.gitignore');
 const BROWSER_SPEC = resolve(REPO_ROOT, 'tests/e2e/contract-serving.pw.ts');
 const HERE = 'packages/contracts-serve/__tests__/contracts-serve.test.ts';
 
 /** The ignore rule, written once. Every case below reads this rather than a second literal. */
-const IGNORED_PATH = '/public/contracts/';
+const IGNORED_PATH = '/apps/hub/public/contracts/';
 
-/** What the publish step is spelled as wherever a script runs it. */
+/** What the publish step is spelled as from the repository root, where `contracts:publish` runs it. */
 const PUBLISH_COMMAND = 'node packages/contracts-serve/publish.mjs';
+
+/** The same step spelled from the Hub's directory, where its `build` and `dev` run it. */
+const HUB_PUBLISH_COMMAND = 'node ../../packages/contracts-serve/publish.mjs';
 
 /** What it must precede in `build`. */
 const NEXT_BUILD = 'next build';
@@ -67,7 +72,7 @@ const spawned = <T>(run: SpawnSyncReturns<T>): SpawnSyncReturns<T> => {
 };
 
 // Every case builds its own tree under `tmpdir()`, so neither the committed
-// `contracts/` nor the real `public/contracts/` is touched by a test run, and a
+// `contracts/` nor the real `apps/hub/public/contracts/` is touched by a test run, and a
 // killed run leaves nothing under the repository.
 const withRoot = <T>(use: (root: string) => T): T => {
   const root = mkdtempSync(join(tmpdir(), 'contracts-serve-'));
@@ -668,9 +673,9 @@ describe('every refusal', () => {
 // ---------------------------------------------------------------------------
 
 describe('the publish as the build runs it', () => {
-  it('reads the repository root contracts/ and writes public/contracts/, both fixed', () => {
+  it('reads the repository root contracts/ and writes apps/hub/public/contracts/, both fixed', () => {
     expect(SOURCE).toBe(resolve(REPO_ROOT, 'contracts'));
-    expect(DESTINATION).toBe(resolve(REPO_ROOT, 'public', 'contracts'));
+    expect(DESTINATION).toBe(resolve(REPO_ROOT, 'apps', 'hub', 'public', 'contracts'));
     expect(SERVED_AT).toBe('/contracts/');
     expect(typeof main, 'main() is the entry point and takes nothing').toBe('function');
     expect(main.length, 'main() takes an argument, so a caller can point the publish somewhere else').toBe(0);
@@ -738,7 +743,7 @@ describe('the publish as the build runs it', () => {
       mkdirSync(home, { recursive: true });
       const copy = join(home, 'publish.mjs');
       writeFileSync(copy, readFileSync(SCRIPT, 'utf8'), 'utf8');
-      const destination = join(root, 'public', 'contracts');
+      const destination = join(root, 'apps', 'hub', 'public', 'contracts');
       const result = spawned(spawnSync(process.execPath, [copy], { encoding: 'utf8' }));
       return { result, tree: treeOf(destination), source, destination };
     });
@@ -776,7 +781,7 @@ describe('the publish as the build runs it', () => {
       const copy = join(linked, 'publish.mjs');
       const spelled = /^[A-Za-z]:/.test(copy) ? `${copy[0].toLowerCase()}${copy.slice(1)}` : copy;
       const result = spawned(spawnSync(process.execPath, [spelled], { encoding: 'utf8' }));
-      return { result, tree: treeOf(join(root, 'public', 'contracts')) };
+      return { result, tree: treeOf(join(root, 'apps', 'hub', 'public', 'contracts')) };
     });
     expect(run.result.status, `${run.result.stdout}${run.result.stderr}`).toBe(0);
     expect(
@@ -816,11 +821,16 @@ describe('the served path', () => {
 // ---------------------------------------------------------------------------
 
 describe('the build script', () => {
-  const scripts = atCollection(`${MANIFEST} could not be read, and it is the file this block asserts.`, () => {
-    const parsed = JSON.parse(readFileSync(MANIFEST, 'utf8')) as { scripts?: Record<string, string> };
-    if (!parsed.scripts) throw new Error('it declares no "scripts" block');
-    return parsed.scripts;
-  });
+  const scriptsOf = (manifest: string) =>
+    atCollection(`${manifest} could not be read, and it is a file this block asserts.`, () => {
+      const parsed = JSON.parse(readFileSync(manifest, 'utf8')) as { scripts?: Record<string, string> };
+      if (!parsed.scripts) throw new Error('it declares no "scripts" block');
+      return parsed.scripts;
+    });
+  // The Hub's `build`, `dev` and `start` live in its own manifest since Story 3-2; the repository's
+  // tooling, `contracts:publish` among it, stays in the root one.
+  const scripts = scriptsOf(HUB_MANIFEST);
+  const rootScripts = scriptsOf(MANIFEST);
 
   /**
    * Why a script is wrong, or `null` when it is right. Written as a function so
@@ -833,9 +843,9 @@ describe('the build script', () => {
    * the Docker runner stage that copies `public`.
    */
   const wrongAbout = (script: string): string | null => {
-    const publishes = script.indexOf(PUBLISH_COMMAND);
+    const publishes = script.indexOf(HUB_PUBLISH_COMMAND);
     const builds = script.indexOf(NEXT_BUILD);
-    if (publishes === -1) return `it does not run "${PUBLISH_COMMAND}", so a build would ship nothing at ${SERVED_AT}`;
+    if (publishes === -1) return `it does not run "${HUB_PUBLISH_COMMAND}", so a build would ship nothing at ${SERVED_AT}`;
     if (builds === -1) return `it does not run "${NEXT_BUILD}"`;
     if (publishes > builds) {
       return `it publishes after "${NEXT_BUILD}", and Next reads its public directory when the server starts`;
@@ -844,7 +854,7 @@ describe('the build script', () => {
   };
 
   it('runs the publish step, and runs it before next build', () => {
-    expect(wrongAbout(scripts.build ?? ''), `package.json "build" is ${JSON.stringify(scripts.build)}`).toBeNull();
+    expect(wrongAbout(scripts.build ?? ''), `apps/hub/package.json "build" is ${JSON.stringify(scripts.build)}`).toBeNull();
   });
 
   it('is read by a check that is observed rejecting a wrong script on every run', () => {
@@ -853,8 +863,8 @@ describe('the build script', () => {
     // running it afterwards, and wiring it to a pnpm lifecycle hook that
     // `enable-pre-post-scripts` may not run at all.
     expect(wrongAbout(NEXT_BUILD)).toContain('would ship nothing');
-    expect(wrongAbout(`${NEXT_BUILD} && ${PUBLISH_COMMAND}`)).toContain('publishes after');
-    expect(wrongAbout(PUBLISH_COMMAND)).toContain(`does not run "${NEXT_BUILD}"`);
+    expect(wrongAbout(`${NEXT_BUILD} && ${HUB_PUBLISH_COMMAND}`)).toContain('publishes after');
+    expect(wrongAbout(HUB_PUBLISH_COMMAND)).toContain(`does not run "${NEXT_BUILD}"`);
   });
 
   it('wires the publish into build itself rather than into a prebuild hook', () => {
@@ -862,12 +872,12 @@ describe('the build script', () => {
     // A `prebuild` script would be silently skipped wherever it is off, and the
     // symptom is a working site serving 404s at /contracts/.
     expect(scripts, 'a prebuild hook is not run unless enable-pre-post-scripts is on').not.toHaveProperty('prebuild');
-    expect(scripts.build).toContain(PUBLISH_COMMAND);
+    expect(scripts.build).toContain(HUB_PUBLISH_COMMAND);
   });
 
   it('publishes for dev too, so every path that starts a server has the served copy in place', () => {
-    expect(scripts.dev ?? '', `package.json "dev" is ${JSON.stringify(scripts.dev)}`).toContain(PUBLISH_COMMAND);
-    expect((scripts.dev ?? '').indexOf(PUBLISH_COMMAND)).toBeLessThan((scripts.dev ?? '').indexOf('next dev'));
+    expect(scripts.dev ?? '', `apps/hub/package.json "dev" is ${JSON.stringify(scripts.dev)}`).toContain(HUB_PUBLISH_COMMAND);
+    expect((scripts.dev ?? '').indexOf(HUB_PUBLISH_COMMAND)).toBeLessThan((scripts.dev ?? '').indexOf('next dev'));
   });
 
   it('spells the step the same way everywhere it appears', () => {
@@ -875,8 +885,13 @@ describe('the build script', () => {
     // `packages/<name>/<verb>.mjs` plus `<name>:<verb>` convention
     // `packages/tokens` and `packages/fonts` set. `build` invokes the script
     // file directly rather than nesting a package manager, so the two spellings
-    // are pinned equal here and cannot drift into two different steps.
-    expect(scripts['contracts:publish']).toBe(PUBLISH_COMMAND);
+    // are pinned equal here and cannot drift into two different steps. Since Story 3-2 the Hub's scripts
+    // run from `apps/hub`, so there the same file is named two levels up: each spelling is resolved from
+    // where it runs, and both must name the one script.
+    expect(rootScripts['contracts:publish']).toBe(PUBLISH_COMMAND);
+    const named = (from: string, command: string) => resolve(REPO_ROOT, from, command.replace(/^node /, ''));
+    expect(named('.', PUBLISH_COMMAND)).toBe(SCRIPT);
+    expect(named('apps/hub', HUB_PUBLISH_COMMAND)).toBe(SCRIPT);
   });
 
   it('names a script file that is actually in the tree', () => {
@@ -885,9 +900,9 @@ describe('the build script', () => {
 
   it('leaves the other scripts doing what they did', () => {
     expect(scripts.start).toBe('next start');
-    expect(scripts['test:e2e']).toBe('playwright test');
-    expect(scripts['tokens:build']).toBe('node packages/tokens/build.mjs');
-    expect(scripts['fonts:build']).toBe('node packages/fonts/build.mjs');
+    expect(rootScripts['test:e2e']).toBe('playwright test');
+    expect(rootScripts['tokens:build']).toBe('node packages/tokens/build.mjs');
+    expect(rootScripts['fonts:build']).toBe('node packages/fonts/build.mjs');
   });
 });
 
@@ -911,7 +926,7 @@ describe('the working tree', () => {
     // the line actually takes effect on the path the publish writes, which is
     // what a negation or an ordering mistake elsewhere in the file could undo.
     const run = spawned(
-      spawnSync('git', ['check-ignore', '-v', 'public/contracts/tokens.css'], {
+      spawnSync('git', ['check-ignore', '-v', 'apps/hub/public/contracts/tokens.css'], {
         cwd: REPO_ROOT,
         encoding: 'utf8',
       })
@@ -920,9 +935,9 @@ describe('the working tree', () => {
     expect(run.stdout).toContain(IGNORED_PATH);
   });
 
-  it('tracks nothing under public/contracts, which is the AD-4 drift rule', () => {
+  it('tracks nothing under apps/hub/public/contracts, which is the AD-4 drift rule', () => {
     const run = spawned(
-      spawnSync('git', ['ls-files', '--', 'public/contracts'], { cwd: REPO_ROOT, encoding: 'utf8' })
+      spawnSync('git', ['ls-files', '--', 'apps/hub/public/contracts'], { cwd: REPO_ROOT, encoding: 'utf8' })
     );
     expect(run.status, `git ls-files said: ${run.stderr}`).toBe(0);
     expect(
@@ -945,7 +960,7 @@ describe('the working tree', () => {
     // the directory AD-1 names as never published, which is where an input
     // belongs, and a rule that called them drift would be telling this
     // repository to delete the source of a published file.
-    const SERVED_OR_RENDERED = ['app/', 'components/', 'public/'];
+    const SERVED_OR_RENDERED = ['apps/hub/app/', 'apps/hub/components/', 'apps/hub/public/'];
     const run = spawned(spawnSync('git', ['ls-files'], { cwd: REPO_ROOT, encoding: 'utf8' }));
     expect(run.status, `git ls-files said: ${run.stderr}`).toBe(0);
     const tracked = run.stdout.split('\n').map((line) => line.trim()).filter(Boolean);
@@ -956,7 +971,7 @@ describe('the working tree', () => {
       .map((path) => resolve(REPO_ROOT, path));
     expect(
       copiesOfTheSurface(SOURCE, candidates),
-      'these tracked paths under app/, components/ or public/ carry a file name or the exact bytes of a file in the' +
+      'these tracked paths under apps/hub/app/, components/ or public/ carry a file name or the exact bytes of a file in the' +
         ' published surface, and contracts/ is its one authored location (AD-4)'
     ).toEqual([]);
   });

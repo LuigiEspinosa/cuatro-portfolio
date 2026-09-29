@@ -7,8 +7,10 @@ The Anchor of the Cuatro Ecosystem: the portfolio at cuatro.dev, plus the contra
 `contracts/`, published at `https://cuatro.dev/contracts/`: the design token contract, which a
 second application, `cs-tracker`, renders, and the App Registry the Hub's Suite Directory reads.
 Next.js 16 / React 19 / TypeScript, Sass, pnpm, Turborepo, Vitest, Playwright, deployed by Docker
-Compose over SSH to one Hostinger KVM 2 box. Planning artifacts are in
-`_bmad-output/planning-artifacts/`; how the estate actually runs is in `ops/`.
+Compose over SSH to one Hostinger KVM 2 box. The Hub is the workspace `hub` in `apps/hub/`; the
+contracts, `packages/`, `ops/`, the browser suite and every gate's configuration stay at the root.
+Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually runs is in
+`ops/`.
 
 ## Policy
 
@@ -39,6 +41,10 @@ Compose over SSH to one Hostinger KVM 2 box. Planning artifacts are in
   `registry-schema.md` (the App Registry's shape and its blocking gate),
   `registry-inputs.md` (how the Registry's values were first chosen, frozen 2026-09-24:
   `contracts/registry.json` is the only source of Registry values).
+- The Hub moved to `apps/hub/` in Story 3-2 (committed 2026-09-28, live at the Epic 3 merge). A
+  record, spec or comment written before then names the Hub's paths from the repository root: read
+  `app/`, `components/`, `content/`, `hooks/`, `lib/`, `public/` and `next.config.js` under
+  `apps/hub/`.
 - Token contract, and the restyle specification the Hub was rebuilt against in Epic 2:
   `_bmad-output/planning-artifacts/ux-designs/ux-cuatro-portfolio-2026-08-15/DESIGN.md` and
   `RESTYLE-SPEC.md` beside it.
@@ -50,10 +56,13 @@ Compose over SSH to one Hostinger KVM 2 box. Planning artifacts are in
 ## Running and verifying
 
 - `pnpm` is not on PATH on this host. Prefix every command with `corepack`, as in
-  `corepack pnpm build`.
+  `corepack pnpm typecheck`. The Hub's own scripts run by filter, `corepack pnpm --filter hub build`
+  and likewise `start` and `dev`; the root keeps `test`, `typecheck`, `test:e2e` and the contract
+  generators, and has no `build`.
 - Turborepo 2.10.13 (`turbo.json`) defines `build`, `test`, `typecheck` and `lint`, all uncached.
-  While the Hub is the root package its scripts run as the root tasks `//#build`, `//#test` and
-  `//#typecheck`, and no workspace defines `lint`. turbo spawns `pnpm` itself, so
+  `build` resolves to the Hub's own script (`hub#build`), while `test` and `typecheck` stay the root
+  tasks `//#test` and `//#typecheck`, because the unit suite reads the tree from the repository root;
+  no workspace defines `lint`. turbo spawns `pnpm` itself, so
   `corepack pnpm turbo ...` fails here with "Unable to find package manager binary": run
   `corepack enable --install-directory <dir> pnpm` once, put `<dir>` first on PATH, then
   `pnpm turbo run test -- --run`. A task that resolves to no script exits 0 with "No tasks were
@@ -76,14 +85,14 @@ Compose over SSH to one Hostinger KVM 2 box. Planning artifacts are in
 - The rendered-output suite runs only inside `mcr.microsoft.com/playwright:v1.62.1-noble`, never on
   this host: glyph rasterization is not portable, so a host run fails and a baseline written here
   fails CI. From the repository root, the first `-v` naming this checkout:
-  `docker run --rm --ipc=host -v C:/CuatroEcosystem/cuatro-portfolio:/w -v pw-node-modules:/w/node_modules -v pw-next:/w/.next -w /w -e CI=1 mcr.microsoft.com/playwright:v1.62.1-noble bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm test:e2e"`.
+  `docker run --rm --ipc=host -v C:/CuatroEcosystem/cuatro-portfolio:/w -v pw-node-modules:/w/node_modules -v pw-next:/w/apps/hub/.next -w /w -e CI=1 mcr.microsoft.com/playwright:v1.62.1-noble bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm test:e2e"`.
   Regenerate a baseline with `pnpm run test:e2e:update` in that command, only in the cases
   `ops/rendered-output-harness.md` § Regenerating the baseline allows, and record the new sha256
   in its table. A change under the per-pixel threshold makes that run write nothing; the same
   section gives the forced form.
-- `corepack pnpm build` runs `packages/contracts-serve/publish.mjs` first, which copies
-  `contracts/` into the generated, never committed `public/contracts/`. Editing
-  `public/contracts/` changes nothing.
+- `corepack pnpm --filter hub build` runs `packages/contracts-serve/publish.mjs` first, which copies
+  `contracts/` into the generated, never committed `apps/hub/public/contracts/`. Editing that copy
+  changes nothing.
 
 ## Conventions that differ from defaults
 
@@ -103,10 +112,11 @@ Compose over SSH to one Hostinger KVM 2 box. Planning artifacts are in
   in `WorkTimeline.scss`. The lowercase `celeste.scss` is 2023 legacy; do not copy it, and do
   not rename it in an unrelated story.
 - Story 2-22 deleted the Story 1-18 alias layer and the Operator's ruling of 2026-09-24 deleted
-  `--hero-height` (DW-122): `app/app.scss` declares no custom property of its own, and every
+  `--hero-height` (DW-122): `apps/hub/app/app.scss` declares no custom property of its own, and every
   stylesheet names contract roles directly. A family role carries no
   weight: a call site that wants the display face at its heaviest sets `font-weight: var(--w-black)`
-  beside `font-family: var(--f-display)`. `app/__tests__/anchor-contract.test.ts` refuses an old name.
+  beside `font-family: var(--f-display)`. `apps/hub/app/__tests__/anchor-contract.test.ts` refuses an
+  old name.
 
 ## Known pitfalls
 
@@ -162,11 +172,12 @@ Compose over SSH to one Hostinger KVM 2 box. Planning artifacts are in
   They are `ops/__tests__/contract-purity.test.ts` and `ops/__tests__/registry-schema.test.ts`,
   each of which reads the file for its own gate. Update both, and give the new job its own
   wiring cases beside the module it runs rather than adding them to one of those two.
-- Two sources may name `contracts/`, and no third: `app/scss/_index.scss`, which loads the token
-  and font stylesheets, and `lib/registry.ts`, which may name only `contracts/registry.json` and
-  `contracts/registry.schema.json`. `app/__tests__/anchor-contract.test.ts` fails a third source
-  and any other `contracts/` path in the Registry module. Read Registry data through
-  `lib/registry.ts`.
+- Two sources may name `contracts/`, and no third: `apps/hub/app/scss/_index.scss`, which loads the
+  token and font stylesheets, and `apps/hub/lib/registry.ts`, which may name only
+  `contracts/registry.json` and `contracts/registry.schema.json`, by relative path since the `@/`
+  alias points into `apps/hub/`. `apps/hub/app/__tests__/anchor-contract.test.ts` fails a third
+  source and any other `contracts/` path in the Registry module. Read Registry data through
+  `apps/hub/lib/registry.ts`.
 - On the 404, `usePathname()` answers `/_not-found` during the prerender and the requested path
   on the client, so `<body id>` differs across hydration and settles on whichever side ran last.
   Assert on markup both sides render identically (`.error-page`), never on that id. A chrome

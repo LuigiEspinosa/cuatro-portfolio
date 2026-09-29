@@ -7580,6 +7580,12 @@ status: done
 
     **Owner: the Operator, for FR-1; Story 3.2's planning, for its own criterion.** **Trigger: Story
     3.2's planning, or any pass over FR-1.**
+
+    **Story 3.2's half answered 2026-09-28** in `spec-3-2-move-the-hub-to-apps-hub.md` (Decision 6):
+    its criterion is read as every route answering as it did before the move, so `/recommendation`
+    answers 404, as retired. Observed the same day: fourteen probes, `/recommendation` among them, gave
+    identical status, type and redirect on the base commit's image and on the moved one. FR-1's half
+    stays open for the Operator.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-records-and-docs.md`
@@ -7985,7 +7991,16 @@ status: done
     or turbo) must be shown failing on a run that executes no test before it ships.
 
     **Owner: Story 3.2.** **Trigger: its `ci.yml` rewrite.**
-  status: open
+
+    **Closed 2026-09-28 by Story 3-2, committed on `dev` and live at the Epic 3 merge.** The root keeps
+    `test` and `typecheck`, because the unit suite reads the tree from the repository root, so the
+    `test` job's `pnpm typecheck` and `pnpm test --run` still reach `tsc` and Vitest, unchanged. Shown
+    failing on a run that executes no test: `corepack pnpm test --run no-such-test-file-anywhere` exit 1,
+    "No test files found". Held on every run by a new `ops/__tests__/workflow-hardening.test.ts` case:
+    every `pnpm <script>` a workflow runs must name a script in the manifest it runs against. With the
+    root's `test` removed (planted, then restored byte for byte) `pnpm test --run` printed nothing and
+    exited 0, and that case failed naming `ci.yml`'s `//#test`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
   id: DW-253
@@ -8047,4 +8062,88 @@ status: done
 
     **Owner: the `/bmad-project-context` refresh the board schedules before Epic 4**, or whichever story
     next edits that block. **Trigger: either.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
+  id: DW-256
+  summary: >-
+    `ops/asset-budget.mjs` reads the Hub's build and sources from the same root it reads
+    `contracts/fonts/` from, and Story 3-2 split that root in two, so a hand run finds no build and no
+    asset-budget reading can be taken.
+  evidence: |-
+    Observed 2026-09-28, with `corepack pnpm --filter hub build` having written `apps/hub/.next/`:
+    `node ops/asset-budget.mjs` exit 1, "no production build to measure: .next/BUILD_ID is not there".
+    `collect(root)` reads `.next/`, `public/`, `app/` and `components/`, the Hub's and now under
+    `apps/hub/`, and `contracts/fonts/`, the repository's, from one `root`, and `readProvenance` hands
+    `git status` the pathspecs `app components contracts packages public next.config.js package.json`
+    from that root. Pointing the default at `apps/hub/` loses `contracts/fonts/`; the fix is a second
+    root through `collect`, `readProvenance`, `main` and the suite's scratch trees, a refactor Story
+    3-2's rule keeps out of the move. Nothing gates on the tool: it runs by hand, and its suite builds
+    scratch trees and stays green. Its refusals still name `corepack pnpm build`, which its suite pins
+    (`ops/__tests__/asset-budget.test.ts:531`), so they move with the fix. `ops/asset-budget.md` carries a
+    dated note.
+
+    **Owner: the next story or package that takes an asset-budget reading**, none scheduled in Epic 3.
+    **Trigger: that reading, or the next edit to `ops/asset-budget.mjs`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
+  id: DW-257
+  summary: >-
+    `turbo prune hub --docker` succeeds since Story 3-2, but the pruned tree carries neither
+    `contracts/` nor `packages/contracts-serve/`, both of which the Hub's build reads, so an image built
+    from that context alone cannot compile the stylesheets or publish `/contracts/`.
+  evidence: |-
+    Observed 2026-09-28 on the tree Story 3-2 committed: `turbo prune hub --docker` exit 0, `json/`
+    holding the root manifest, the lockfile, the workspace file and `apps/hub/package.json`, and `full/`
+    holding `apps/hub/`, the root manifest, `pnpm-workspace.yaml` and `turbo.json`, with no
+    `contracts/` and no `packages/`. The Hub reads `contracts/tokens.css` and `fonts.css` through
+    `apps/hub/app/scss/_index.scss`, `contracts/registry.json` through `apps/hub/lib/registry.ts`, and
+    `packages/contracts-serve/publish.mjs` through its `build` script, and turbo copies workspaces and
+    their workspace dependencies only. The pruned lockfile keeps the root importer, which declares the
+    Hub's dependencies (Story 3-2's Decision 2), so its install is 645 of 707 packages with
+    `style-dictionary` and the rest of the token generator's out, `ops/token-contract.md` action 4's
+    figure. The image's runner starts `apps/hub/server.js`, observed serving every route on a local
+    build; nothing in CI builds or starts the image until Story 3.3. The runner stage's `CMD` and its
+    standalone copies, which Story 3-2 rewrote for the workspace layout, are held by no test either:
+    `docker/__tests__/runner-stage.test.ts` reads the public copy and the builder command alone (Story
+    3-2's review, row 13), and the box builds them first at the Epic 3 merge.
+
+    **Owner: Story 3.3**, whose image is built from that context (AD-8). **Trigger: Story 3.3.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
+  id: DW-258
+  summary: >-
+    The root Vitest run collects every test file in the repository under the Hub's `@` alias and jsdom
+    setup, so an application merged into `apps/*` has its suite run as if it were the Hub's.
+  evidence: |-
+    Decided 2026-09-28 by Story 3-2 (its Decisions 1 and 4): the unit suite stays one run from the root,
+    because seventeen `ops/` suites and the contracts-serve suite read the tree from `process.cwd()`,
+    and `vitest.config.ts` maps `@` to `apps/hub` and loads `vitest.setup.ts` for every file. Vitest's
+    default include reaches `apps/*/**`, so the first merge (`apps/finance`, Story 3.5) either passes
+    under the Hub's alias by coincidence or fails on its first `@/` import, and neither says why.
+    Nothing is wrong today: `apps/hub` is the only application.
+
+    **Owner: Story 3.5**, the first merge. **Trigger: its first unit run.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
+  id: DW-259
+  summary: >-
+    The Build workflow's ECC verification layer hands the `verification-loop` skill `corepack pnpm build`
+    as this repository's build command, which Story 3-2 retired, so that phase run literally now fails
+    with "Command "build" not found".
+  evidence: |-
+    Observed 2026-09-28 in Story 3-2's review (row 19): `_bmad/custom/bmad-build.toml:93` names "build
+    `corepack pnpm build`", and at the root that exits 1, `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command
+    "build" not found`, because the Hub builds by `corepack pnpm --filter hub build` since the move
+    (`AGENTS.md` § Running and verifying). The Build run's persistent facts already let `AGENTS.md`'s
+    verified commands win over a layer's, which is how Story 3-2's review ran the phase, but the layer
+    text still names the retired command, so a run that follows it literally reports a FAIL for a
+    command that no longer exists. The fix is one command in a BMAD customization file, which a story
+    does not edit.
+
+    **Owner: the Operator**, or the `/bmad-project-context` refresh the board schedules before Epic 4.
+    **Trigger: the next edit to `_bmad/custom/bmad-build.toml`, or Story 3.3's Build run.**
   status: open

@@ -340,6 +340,13 @@ docker run --rm --ipc=host ^
   bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm run test:e2e:update"
 ```
 
+*(Amended 2026-09-28: Story 3-2 moved the Hub to `apps/hub/`, committed on `dev`, so its build writes
+`apps/hub/.next` and the build volume is `-v pw-next:/w/apps/hub/.next`, which masks the host's
+`apps/hub/.next` as `-v pw-next:/w/.next` masked the root's before the move. Where this section calls
+the docker command above the supported way to run or refresh the harness, it is this command with
+that volume, as `AGENTS.md` § Running and verifying carries it; the command above is left as it was
+run, and § The Hub moved to apps/hub, 2026-09-28 records the change.)*
+
 The two named volumes matter. `node_modules` and `.next` on the Windows host hold Windows
 binaries (`sharp`, `@next/swc`), which a Linux container cannot execute, so both are masked with
 container-local volumes rather than read through the bind mount. `corepack enable` is needed
@@ -594,3 +601,23 @@ on the image's Node or on Node 22 and are left as observed; none was re-measured
 image's own Node (v24.18.1) rather than a `setup-node` step: `pnpm install --frozen-lockfile` added
 the two packages the lockfile gained (`turbo` and its Linux binary), and the whole suite ran, **343
 passed in 7.7 min**, with no snapshot written and the `/work` baseline still `93a1aa4e...`.
+
+## The Hub moved to apps/hub, 2026-09-28
+
+**Changed 2026-09-28 by Story 3-2, committed on `dev` and live from the Epic 3 merge.** The Hub moved
+to the workspace `hub` in `apps/hub/`; the harness did not. `playwright.config.ts`, `tests/e2e/` and
+the committed baseline stay at the repository root, and `pnpm test:e2e` still runs from there. What
+changed is what the harness points at. Its `webServer` builds and starts the Hub by filter,
+`pnpm --filter hub build && pnpm --filter hub start --port 3100`, and the six specs that read the
+Hub's own files (`accessibility-floor`, `anchor-aliases`, `contract-anchor`, `display-entrance`,
+`hit-target-floor`, `narrative`) read its routes, stylesheets and build output under `apps/hub/`,
+through a `HUB_ROOT` beside the `REPO_ROOT` they keep for `contracts/`, `packages/` and `ops/`. The
+container command's build volume moved with the build, to `-v pw-next:/w/apps/hub/.next`, which masks
+the host's `apps/hub/.next` as `-v pw-next:/w/.next` masked the root's; the command of 2026-08-24
+above is left as it was run.
+
+**Observed before the commit, 2026-09-28**, with the documented container command:
+`pnpm install --frozen-lockfile` had nothing to do ("Already up to date": the lockfile's one new
+importer, `apps/hub`, declares no dependency), the harness's server ran `hub@ build` in
+`/w/apps/hub`, and the whole suite ran, **343 passed in 6.6 min**, with no snapshot written and the
+`/work` baseline still `93a1aa4e...`, byte-identical at its path.

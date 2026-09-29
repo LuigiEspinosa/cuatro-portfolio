@@ -883,6 +883,11 @@ docker run --rm --ipc=host ^
   bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm test:e2e"
 ```
 
+*(Amended 2026-09-28: Story 3-2 moved the Hub to `apps/hub/`, committed on `dev`, so its build writes
+`apps/hub/.next` and the build volume is `-v pw-next:/w/apps/hub/.next`, which masks the host's
+`apps/hub/.next` as `-v pw-next:/w/.next` masked the root's before the move. `AGENTS.md` § Running and
+verifying carries the command in that form.)*
+
 `corepack enable` is needed because `playwright.config.ts:85` calls `pnpm` by name and only
 `corepack` is on the image's PATH. The two named volumes mask the Windows host's `node_modules`
 and `.next`, which hold binaries a Linux container cannot execute. `--ipc=host` is not optional:

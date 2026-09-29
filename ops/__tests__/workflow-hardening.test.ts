@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 // DW-87, Operator ruling 2026-09-24. Every workflow narrows its `GITHUB_TOKEN` to `contents: read` at the
@@ -65,6 +65,36 @@ const setupNodeSteps = (text: string): number =>
 const nodeVersions = (text: string): string[] =>
   [...text.matchAll(/^\s+node-version:\s*([^\s#]+)\s*(?:#.*)?$/gm)].map(([, version]) => version);
 
+// DW-252 (Story 3-2). At a workspace root whose manifest has no `test` script, `pnpm test --run` prints
+// nothing and exits 0, so a unit gate invoked that way passes having run nothing. Every `pnpm <script>` a
+// workflow runs must name a script in the manifest it runs against: the root's, or that of the workspace
+// `--filter` names. `install` is pnpm's own command, not a script.
+type Manifest = { name?: string; scripts?: Record<string, string> };
+const manifestAt = (path: string): Manifest => JSON.parse(readFileSync(resolve(process.cwd(), path), 'utf8'));
+const ROOT_MANIFEST = manifestAt('package.json');
+// The two globs `pnpm-workspace.yaml` declares. A workspace outside them fails its filter as unknown.
+const WORKSPACES = new Map(
+  ['apps', 'packages'].flatMap((parent) =>
+    readdirSync(resolve(process.cwd(), parent), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && existsSync(resolve(process.cwd(), parent, entry.name, 'package.json')))
+      .map((entry) => manifestAt(`${parent}/${entry.name}/package.json`))
+      .map((manifest) => [manifest.name ?? '', manifest] as const)
+  )
+);
+
+/** Every `pnpm [--filter <name>] <script>` on one line, as `//#<script>` at the root or `<name>#<script>`. */
+const pnpmSteps = (text: string): string[] =>
+  [...text.matchAll(/\bpnpm(?:[ \t]+--filter[ \t=]+(\S+))?[ \t]+([\w:-]+)/g)]
+    .filter(([, , script]) => script !== 'install')
+    .map(([, filter, script]) => `${filter ?? '//'}#${script}`);
+
+/** The steps whose script the manifest they run against does not define. */
+const unresolved = (steps: string[], root: Manifest, workspaces: Map<string, Manifest>): string[] =>
+  steps.filter((step) => {
+    const [owner, script] = step.split('#');
+    return (owner === '//' ? root : workspaces.get(owner))?.scripts?.[script] === undefined;
+  });
+
 describe('every workflow', () => {
   it('reads at least the four workflows this repository carries', () => {
     expect(FILES).toEqual(
@@ -115,6 +145,15 @@ describe('every workflow', () => {
   it('finds a Node pin in both workflows the story names, so an empty read cannot pass', () => {
     for (const name of ['ci.yml', 'lighthouse.yml']) expect(nodeVersions(read(name)), name).toContain(STACK_NODE);
   });
+
+  it.each(FILES)('%s runs only pnpm scripts the manifest it runs against defines (DW-252)', (name) => {
+    expect(unresolved(pnpmSteps(read(name)), ROOT_MANIFEST, WORKSPACES)).toEqual([]);
+  });
+
+  it('finds the unit gate and the Hub build it reads, so an empty read cannot pass', () => {
+    expect(pnpmSteps(read('ci.yml'))).toEqual(expect.arrayContaining(['//#typecheck', '//#test']));
+    expect(pnpmSteps(read('lighthouse.yml'))).toEqual(expect.arrayContaining(['hub#build', 'hub#start']));
+  });
 });
 
 // The readers above decide every case, so each is shown refusing a planted file as well as passing the
@@ -160,5 +199,24 @@ describe('the readers, on planted text', () => {
     ].join('\n');
     expect(setupNodeSteps(planted)).toBe(3);
     expect(nodeVersions(planted)).toEqual(['24', '22']);
+  });
+
+  it('reads a pnpm step with its filter, skips install, and refuses a script its manifest lacks', () => {
+    const planted = [
+      '        run: pnpm install --frozen-lockfile',
+      '        run: pnpm test --run',
+      '        run: pnpm --filter hub build',
+      '          cache: pnpm',
+      '      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10',
+    ].join('\n');
+    expect(pnpmSteps(planted)).toEqual(['//#test', 'hub#build']);
+    // The DW-252 shape, a root with no `test`, beside a filter to a workspace without the script and a
+    // filter naming no workspace.
+    const workspaces = new Map<string, Manifest>([['hub', { scripts: { build: 'next build' } }]]);
+    expect(unresolved(['//#test', 'hub#test', 'nobody#build', 'hub#build'], { scripts: {} }, workspaces)).toEqual([
+      '//#test',
+      'hub#test',
+      'nobody#build',
+    ]);
   });
 });

@@ -32,7 +32,7 @@ job would fail the two suites that pin the job names as an exact set.
 
 | Assertion | What it answers | Nature |
 |---|---|---|
-| Axis one, the dot | Does every `Live` mark paint a 4 by 4 square, at `--r-none`, with a real fill | **Decision.** `DESIGN.md:298-314`. **Half the axis, and deliberately so:** that `Complete` has no dot is markup and is asserted in `components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx`, because a browser only ever sees `Live` dots and a case that made a `Complete` one would be fabricating its own subject |
+| Axis one, the dot | Does every `Live` mark paint a 4 by 4 square, at `--r-none`, with a real fill | **Decision.** `DESIGN.md:298-314`. **Half the axis, and deliberately so:** that `Complete` has no dot is markup and is asserted in `apps/hub/components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx`, because a browser only ever sees `Live` dots and a case that made a `Complete` one would be fabricating its own subject |
 | Axis two, the dash | Is `Complete` solid on all four sides where `In progress` is dashed, at the same width | **Decision.** AD-19, `EXPERIENCE.md:339-340` |
 | Axis three, the border | Does `In progress` carry a non-zero border on all four sides that `Archived` drops to zero | **Decision.** AD-19, `DESIGN.md:316-320` |
 | The forbidden shortcut | Are `Live` and `Complete` **identical** in border treatment, so a border-only assertion is demonstrably insufficient | **Decision.** AD-19 states this as a prohibition; it is recorded here as a measured property rather than a convention |
@@ -75,7 +75,7 @@ docker run --rm --ipc=host ^
   bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm exec playwright test status-mark"
 ```
 
-Drop the trailing `exec playwright test status-mark` for `pnpm test:e2e` and the whole suite runs.
+Drop the trailing `exec playwright test status-mark` for `pnpm test:e2e` and the whole suite runs. *(Amended 2026-09-28: Story 3-2 moved the Hub to `apps/hub/`, committed on `dev`, so its build writes `apps/hub/.next` and the build volume is `-v pw-next:/w/apps/hub/.next`, which masks the host's `apps/hub/.next` as `-v pw-next:/w/.next` masked the root's before the move. `AGENTS.md` § Running and verifying carries the command in that form.)*
 The image is pinned because glyph rasterization is not portable, even for `--f-mono`, whose Geist
 Mono the contract serves to Linux and Windows alike (`ops/rendered-output-harness.md`).
 

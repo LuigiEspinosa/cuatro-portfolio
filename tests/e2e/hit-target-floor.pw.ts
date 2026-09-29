@@ -71,6 +71,8 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
 // repository declares no `"type": "module"`, so `import.meta` is a syntax error at run time here.
 // Same as `tests/e2e/anchor-aliases.pw.ts:42`.
 const REPO_ROOT = resolve(__dirname, '..', '..');
+/** The Hub's own tree, since Story 3-2, where its routes are. */
+const HUB_ROOT = join(REPO_ROOT, 'apps', 'hub');
 
 /**
  * A path the Hub does not route, which renders `app/not-found.tsx` through the root layout.
@@ -874,7 +876,7 @@ test.describe('the hit-target floor', () => {
     // writing that the floor is enforced on every route and that a new undersized control fails on
     // arrival. Story 2-9, the next on the board, adds a surface. Without this case that surface is
     // simply never visited, and every count above it stays green.
-    const onDisk = routesOnDisk(join(REPO_ROOT, 'app'));
+    const onDisk = routesOnDisk(join(HUB_ROOT, 'app'));
     const registered: string[] = [...SURFACES.map((surface) => surface.route), ...NON_HUB_ROUTES].sort();
 
     expect(onDisk.length, 'no route was derived from app/, so this comparison is over nothing').toBeGreaterThan(0);

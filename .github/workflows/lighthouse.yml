@@ -29,13 +29,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm build
+        run: pnpm --filter hub build
         env:
           NEXT_PUBLIC_UMAMI_WEBSITE_ID: ''
           NEXT_PUBLIC_UMAMI_URL: ''
 
       - name: Start production server
-        run: pnpm start &
+        run: pnpm --filter hub start &
 
       - name: Wait for server
         run: npx wait-on http://localhost:3000 --timeout 30000

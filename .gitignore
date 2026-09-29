@@ -81,7 +81,7 @@ Temporary Items
 /coverage
 
 # next.js
-/.next/
+.next/
 /out/
 
 # production
@@ -207,6 +207,10 @@ capacity-week/
 # Hub's own Next server answers /contracts/. AD-4's rule is one authored
 # location: `contracts/` at the repository root is it, and a committed second
 # copy here is the drift that rule forbids. Generated output, never committed.
+/apps/hub/public/contracts/
+# And where it sat until Story 3-2 moved the Hub: a checkout built before the
+# move still holds that copy, and unignored it would be a second authored copy
+# no gate reads, since the checks above list the Hub's tree alone.
 /public/contracts/
 
 # Graphify knowledge graph, rebuilt from the tree by `graphify update .` (see

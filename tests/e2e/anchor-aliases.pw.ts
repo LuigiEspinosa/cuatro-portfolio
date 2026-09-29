@@ -47,12 +47,14 @@ import { RENDERED_VIEWPORT, computedStyleValue } from './harness';
 // repository declares no `"type": "module"`, so `import.meta` is a syntax error at run time here
 // even though TypeScript accepts it. Same as `tests/e2e/contract-anchor.pw.ts`.
 const REPO_ROOT = resolve(__dirname, '..', '..');
+/** The Hub's own tree, since Story 3-2. */
+const HUB_ROOT = join(REPO_ROOT, 'apps', 'hub');
 
-const APP_SCSS = readFileSync(join(REPO_ROOT, 'app', 'app.scss'), 'utf8');
+const APP_SCSS = readFileSync(join(HUB_ROOT, 'app', 'app.scss'), 'utf8');
 const TOKENS_CSS = readFileSync(join(REPO_ROOT, 'contracts', 'tokens.css'), 'utf8');
 
 /** Where Next 16 writes the built stylesheets, the directory `accessibility-floor.pw.ts` reads too. */
-const CHUNK_DIR = join(REPO_ROOT, '.next', 'static', 'chunks');
+const CHUNK_DIR = join(HUB_ROOT, '.next', 'static', 'chunks');
 
 /**
  * Every route the Hub serves. NFR-2 binds every migration step, so all five are swept.
@@ -145,7 +147,7 @@ const MINIFIER_SCHEME_SWITCHES = ['--lightningcss-light', '--lightningcss-dark']
  */
 const builtStylesheets = (directory = CHUNK_DIR): { name: string; text: string }[] => {
   if (!existsSync(directory)) {
-    throw new Error(`Alias deletion: ${directory} is not there. Run corepack pnpm build first; an absent build proves nothing.`);
+    throw new Error(`Alias deletion: ${directory} is not there. Run corepack pnpm --filter hub build first; an absent build proves nothing.`);
   }
   const found = (readdirSync(directory, { recursive: true }) as string[])
     .map((relative) => relative.replace(/\\/g, '/'))

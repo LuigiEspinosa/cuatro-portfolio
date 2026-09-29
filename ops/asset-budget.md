@@ -84,6 +84,13 @@ corepack pnpm build          # writes .next/BUILD_ID
 node ops/asset-budget.mjs    # prints this record's block, exit 0
 ```
 
+*(Amended 2026-09-28: since Story 3-2 moved the Hub to `apps/hub/`, committed on `dev` and live at
+the Epic 3 merge, the build is `corepack pnpm --filter hub build` and writes `apps/hub/.next/`, while
+the tool reads `.next/`, `app/`, `components/` and `public/` from the same root it reads
+`contracts/fonts/` from, the repository's. So it finds no build to measure, and no reading can be
+taken until DW-256 gives it the Hub's root beside the repository's. Nothing gates on it, and its
+suite, which builds scratch trees, is unaffected.)*
+
 `ops/__tests__/asset-budget.test.ts` writes whole scratch `.next/` trees with known byte counts and
 holds the per-route arithmetic to them, plus every refusal and every pure function. It reads no
 `.next/` of this repository's, because the CI unit job has no build and a suite that needed one would

@@ -32,7 +32,7 @@ const RECORD_REL = 'ops/status-mark-axes.md';
 const SPEC_REL = 'tests/e2e/status-mark.pw.ts';
 const SCHEMA_REL = 'contracts/registry.schema.json';
 const HARNESS_RECORD_REL = 'ops/rendered-output-harness.md';
-const COMPONENT_SPEC_REL = 'components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx';
+const COMPONENT_SPEC_REL = 'apps/hub/components/organisms/SuiteDirectory/__tests__/SuiteDirectory.test.tsx';
 
 /**
  * Read a tracked file, with line endings normalised to `\n`.

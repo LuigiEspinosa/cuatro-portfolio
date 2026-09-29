@@ -53,7 +53,7 @@ without a method is a claim. **Story ids are written hyphenated**, as `Story 2-2
 |---|---|---|
 | Image | `mcr.microsoft.com/playwright:v1.62.1-noble`, the `rendered-output` job's | **Decision.** `ops/rendered-output-harness.md` |
 | Viewport | 360 x 800 at device scale factor 1, `reducedMotion: 'reduce'`, `colorScheme: 'light'` | **Decision.** `playwright.config.ts`, the project's context. The skip control's case opens its own `no-preference` context because that control renders on the animated door only |
-| Server | `pnpm build && pnpm start --port 3100`, started by Playwright's `webServer` | **Decision.** Same as every other spec |
+| Server | `pnpm build && pnpm start --port 3100`, started by Playwright's `webServer`. *(Amended 2026-09-28: `pnpm --filter hub build && pnpm --filter hub start --port 3100` since Story 3-2 moved the Hub to `apps/hub/`, committed on `dev`.)* | **Decision.** Same as every other spec |
 | Probe host | Windows 11, Playwright's Chromium 151.0.7922.34, Node 24.15.0, `sharp` 0.34 | **Observed 2026-09-13**. The probe writes renders a person looks at and is not a gate, so it ran on the authoring host |
 | Lighthouse | `@lhci/cli` 0.15.1 driving Lighthouse 12.6.1 under headless Chrome 152.0.0.0, mobile emulation 412 x 823 at 1.75, against `corepack pnpm build` and `corepack pnpm start` on port 3000, `numberOfRuns: 3` | **Observed 2026-09-13**. `lhci collect` then `lhci assert`, never `autorun`, because `upload.target` is public storage and a local reading has no business there |
 
@@ -694,6 +694,11 @@ docker run --rm --ipc=host ^
   bash -lc "corepack enable && pnpm install --frozen-lockfile && pnpm exec playwright test accessibility-floor"
 ```
 
+*(Amended 2026-09-28: Story 3-2 moved the Hub to `apps/hub/`, committed on `dev`, so its build writes
+`apps/hub/.next` and the build volume is `-v pw-next:/w/apps/hub/.next`, which masks the host's
+`apps/hub/.next` as `-v pw-next:/w/.next` masked the root's before the move. `AGENTS.md` § Running and
+verifying carries the command in that form.)*
+
 Drop the trailing `exec playwright test accessibility-floor` for `pnpm test:e2e` and the whole
 suite runs. The sweep prints its readings (stops per route, the ring, the grounds and their
 contrast, the clipped stops side by side, the two skip targets after Enter, the level-1 headings
@@ -703,18 +708,22 @@ passes or fails, so a re-run is a re-reading.
 The renders and the accent share, against a running production server:
 
 ```
-corepack pnpm build
-corepack pnpm start --port 3100
+corepack pnpm --filter hub build
+corepack pnpm --filter hub start --port 3100
 node ops/hub-accessibility-probe.mjs --base-url http://127.0.0.1:3100 --out test-results/hub-accessibility-probe
 ```
 
 Lighthouse, against a server on port 3000, collecting and asserting without the public upload:
 
 ```
-corepack pnpm start --port 3000
+corepack pnpm --filter hub start --port 3000
 npx @lhci/cli@0.15.1 collect
 npx @lhci/cli@0.15.1 assert
 ```
+
+*(Amended 2026-09-28: the Hub's `build` and `start` run by filter since Story 3-2 moved it to
+`apps/hub/`, committed on `dev` and live at the Epic 3 merge. The probe and Lighthouse still run from
+the repository root, where `.lighthouserc.js` is.)*
 
 The version is pinned to the one the reading was taken at (`@lhci/cli` 0.15.1 driving Lighthouse
 12.6.1), so a re-run compares like with like; `.github/workflows/lighthouse.yml:39`'s own
@@ -749,7 +758,7 @@ committed.
 | 1 | **Perform the two confirmations**, greyscale and keyboard, and fill the two tables above | Operator | The renders come from the probe command under § How to re-run; the traversal is a browser and a Tab key. Fill `Checked by`, `Checked on` and `Result` together, never one of them, and then move the story to `done` | **2026-09-14.** Both tables above read `Checked on` 2026-09-14 and `Result` **Pass**, recorded in `6f031ea` with the story moved to `done` on the board; only this cell was never filled. Closed on the Operator ruling of 2026-09-24 |
 | 2 | **Rule on F-14 and F-17**, the two places `DESIGN.md` disagrees with itself or with the contract | Operator | DW-96. Neither is a defect in the Hub: the tech array follows `:660`, and the sweep follows the contract's seven layers. One line in each pair wants correcting | **2026-09-24.** Operator ruling 2026-09-24. F-14: tech arrays stay at `--t-3xs`, and `DESIGN.md`'s scale table is corrected rather than the shipped Directory. F-17: the four places that said six z-levels say seven. Both are dated amendments in the planning documents, made in `ffcd8aa`, and DW-96 closes with them (F-14 and F-17 above) |
 | 3 | **Rule on F-15**, whether the Hub takes `color-scheme` and a `::selection` rule, and which story | Operator | DW-95. `RESTYLE-SPEC.md:657` names it as a check every application meets; nothing on the Hub does today. **Ruled 2026-09-24**: both, in `app/app.scss`, with F-8's check in the same package; landed in commit `81f4078` (F-15 above) | 2026-09-24 |
-| 4 | **Read `/` with a screen reader** and record whether the page heading is announced once as a level-1 heading reading "Luigi Espinosa", not letter by letter and not with a pause between letters | Operator | Story 2-27, added 2026-09-14. **Method**: open `/` against a production build (`corepack pnpm build && corepack pnpm start`) in the browser the reader pairs with, on a context with no motion preference so the entrance runs, and navigate to the first heading by the reader's heading key (NVDA and JAWS `H`, VoiceOver `VO-Cmd-H`, TalkBack the headings granularity). The heading is fourteen inline `<span>` elements inside one `<h1>`; Chromium's and Playwright's name computation read them as one string, which is what the machine half asserts, and whether a reader speaks them as one word is the half only a person can answer. **Result and date go here**, beside the reader and browser used; the board moves to `done` after it. A read that finds letters or pauses is a renegotiation of the markup, not a fix, per the story's spec | _not done_ |
+| 4 | **Read `/` with a screen reader** and record whether the page heading is announced once as a level-1 heading reading "Luigi Espinosa", not letter by letter and not with a pause between letters | Operator | Story 2-27, added 2026-09-14. **Method**: open `/` against a production build (`corepack pnpm --filter hub build && corepack pnpm --filter hub start`, by filter since Story 3-2 moved the Hub to `apps/hub/`; amended 2026-09-28) in the browser the reader pairs with, on a context with no motion preference so the entrance runs, and navigate to the first heading by the reader's heading key (NVDA and JAWS `H`, VoiceOver `VO-Cmd-H`, TalkBack the headings granularity). The heading is fourteen inline `<span>` elements inside one `<h1>`; Chromium's and Playwright's name computation read them as one string, which is what the machine half asserts, and whether a reader speaks them as one word is the half only a person can answer. **Result and date go here**, beside the reader and browser used; the board moves to `done` after it. A read that finds letters or pauses is a renegotiation of the markup, not a fix, per the story's spec | _not done_ |
 
 **Maintaining this file.** When a story repairs a file a ledger row points at, it deletes the row
 here and in `EXEMPTIONS` in the same commit, moves the surface named in KV-6's "What is in breach"

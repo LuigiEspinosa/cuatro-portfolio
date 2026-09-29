@@ -74,6 +74,8 @@ import { RENDERED_VIEWPORT, rootCustomPropertyValue } from './harness';
 // `__dirname` rather than `import.meta.url`: Playwright transpiles a spec to CommonJS and the
 // repository declares no `"type": "module"`. Same as `tests/e2e/hit-target-floor.pw.ts:61`.
 const REPO_ROOT = resolve(__dirname, '..', '..');
+/** The Hub's own tree, since Story 3-2: its routes, its stylesheets and its build. */
+const HUB_ROOT = join(REPO_ROOT, 'apps', 'hub');
 
 /** A path the Hub does not route, which renders `app/not-found.tsx` through the root layout. */
 const NOT_FOUND = '/a-route-that-does-not-exist';
@@ -353,7 +355,7 @@ interface Surface {
  * Every Hub surface, derived: the routes on disk less the declared non-Hub ones. The 404 stand-in
  * answers 404 and the home surface is the one with an animated entrance.
  */
-const SURFACES: readonly Surface[] = routesOnDisk(join(REPO_ROOT, 'app'))
+const SURFACES: readonly Surface[] = routesOnDisk(join(HUB_ROOT, 'app'))
   .filter((route) => !(NON_HUB_ROUTES as readonly string[]).includes(route))
   .map((route) => ({ route, status: route === NOT_FOUND ? 404 : 200, entrance: route === '/' }));
 
@@ -822,9 +824,9 @@ const traversalVerdict = (
  * Every built stylesheet under `directory`, as text. Throws naming the directory on an empty or
  * absent build, so the tally never passes vacuously (`ops/asset-budget.mjs:993-998`).
  */
-const builtStyles = (directory = join(REPO_ROOT, CHUNK_DIR)): { name: string; text: string }[] => {
+const builtStyles = (directory = join(HUB_ROOT, CHUNK_DIR)): { name: string; text: string }[] => {
   if (!existsSync(directory)) {
-    throw new Error(`Accessibility floor: ${directory} is not there. Run corepack pnpm build first; an absent build proves nothing.`);
+    throw new Error(`Accessibility floor: ${directory} is not there. Run corepack pnpm --filter hub build first; an absent build proves nothing.`);
   }
   const found = filesUnder(directory, ['.css']).map((name) => ({ name, text: readFileSync(join(directory, name), 'utf8') }));
   if (found.length === 0) {
@@ -1073,10 +1075,10 @@ const withoutComments = (source: string): string =>
 /** A `font-size`, or a `font` shorthand, whose value carries a `px` length. */
 const PX_TYPE = /(?<![\w-])font(?:-size)?\s*:[^;]*\d(px)\b/;
 
-/** Every stylesheet under `app/` and `components/`, as `[repository-relative path, text]`. */
+/** Every stylesheet under the Hub's `app/` and `components/`, as `[path from the Hub's root, text]`. */
 const stylesheets = (): [string, string][] =>
   (['app', 'components'] as const).flatMap((root) =>
-    filesUnder(join(REPO_ROOT, root), ['.scss']).map((relative): [string, string] => [`${root}/${relative}`, readFileSync(join(REPO_ROOT, root, relative), 'utf8')])
+    filesUnder(join(HUB_ROOT, root), ['.scss']).map((relative): [string, string] => [`${root}/${relative}`, readFileSync(join(HUB_ROOT, root, relative), 'utf8')])
   );
 
 /** Every `font-size` or `font` under `app/` and `components/` whose value carries `px`, by path and line. */
@@ -1119,7 +1121,7 @@ const levelOneHeadings = (page: Page): Promise<string[]> =>
 
 test.describe('the accessibility floor', () => {
   test('sweeps every route app/ serves, and the ledger is well formed before anything is measured', () => {
-    const onDisk = routesOnDisk(join(REPO_ROOT, 'app'));
+    const onDisk = routesOnDisk(join(HUB_ROOT, 'app'));
     expect(onDisk.length, 'no route was derived from app/, so the sweep below is over nothing').toBeGreaterThan(0);
     expect(onDisk, 'the derived route set no longer carries the home route').toContain('/');
     expect(onDisk, 'the derived route set no longer carries the 404 surface').toContain(NOT_FOUND);
@@ -1136,7 +1138,7 @@ test.describe('the accessibility floor', () => {
       expect(row.closedBy, `"${row.id}" names no closing story`).toMatch(/^Story \d+-\d+$/);
       expect(row.source, `"${row.id}" does not match SOURCE_SHAPE`).toMatch(SOURCE_SHAPE);
       expect(row.count, `"${row.id}" claims no occurrence`).toBeGreaterThan(0);
-      expect(existsSync(join(REPO_ROOT, row.source.split(':')[0])), `"${row.id}" names ${row.source}, which is not on disk`).toBe(true);
+      expect(existsSync(join(HUB_ROOT, row.source.split(':')[0])), `"${row.id}" names ${row.source}, which is not on disk`).toBe(true);
       if (row.check === 'z-index') expect(row.match, `"${row.id}" is a z-index row whose match is not an integer`).toMatch(/^-?\d+$/);
       if (row.check === 'depth') {
         expect([...DEPTH_PROPERTIES, ...DEPTH_FUNCTIONS, DEPTH_URL] as readonly string[], `"${row.id}" names a depth tell this sweep does not count`).toContain(row.match);

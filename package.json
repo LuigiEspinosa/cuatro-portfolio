@@ -7,9 +7,6 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "node packages/contracts-serve/publish.mjs && next dev",
-    "build": "node packages/contracts-serve/publish.mjs && next build",
-    "start": "next start",
     "test": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",

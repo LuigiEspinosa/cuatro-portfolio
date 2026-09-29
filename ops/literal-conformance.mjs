@@ -42,7 +42,7 @@ export const PERMITTED = [
       'consumed everywhere else as a role (AD-1, AD-14).',
   },
   {
-    path: 'app/scss/_print.scss',
+    path: 'apps/hub/app/scss/_print.scss',
     reason:
       'Paper is genuinely white and toner genuinely black, so the print stylesheet is outside the ' +
       'contract by nature (DESIGN.md, Sequence, "Print keeps #fff and #000").',

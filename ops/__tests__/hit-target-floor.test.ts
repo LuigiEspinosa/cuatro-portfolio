@@ -33,7 +33,7 @@ const RECORD_REL = 'ops/hit-target-floor.md';
 const SPEC_REL = 'tests/e2e/hit-target-floor.pw.ts';
 const BOARD_REL = '_bmad-output/implementation-artifacts/sprint-status.yaml';
 const LIGHTHOUSE_REL = '.lighthouserc.js';
-const NEXT_CONFIG_REL = 'next.config.js';
+const NEXT_CONFIG_REL = 'apps/hub/next.config.js';
 const HARNESS_RECORD_REL = 'ops/rendered-output-harness.md';
 const VIOLATIONS_REL = 'ops/known-violations.md';
 
@@ -662,7 +662,7 @@ describe('the assertion is sourced and scoped the way the record says', () => {
     // KV-4 states in writing that the floor is enforced on every route. That is only true while
     // something checks the route set against the filesystem, and Story 2-9 adds a surface.
     expect(spec, `${SPEC_REL} no longer derives its routes from the filesystem`).toContain('routesOnDisk');
-    expect(spec).toContain("routesOnDisk(join(REPO_ROOT, 'app'))");
+    expect(spec).toContain("routesOnDisk(join(HUB_ROOT, 'app'))");
     expect(record, `${RECORD_REL} does not record that the route set is derived`).toContain(
       'The route set itself is derived from `app/`'
     );
