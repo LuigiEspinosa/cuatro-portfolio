@@ -112,6 +112,56 @@ services:
     # from this project's own network.
     restart: unless-stopped
 
+  # The finance application (`apps/finance`, Story 3-5): merged into the Anchor and imaged by
+  # `.github/workflows/image-finance.yml`, NOT placed on the box. Placement is a separate decision under
+  # AD-9, and nothing starts these two today. `finance` sits under a profile no deploy activates;
+  # `finance-migrate` sits under `migrate`, which `ops/deploy-remote.sh` lists and from which it runs
+  # only `anchor-app-migrate`, and the script rolls `anchor-app` alone.
+  #
+  # FINANCE_TAG is the commit sha to run (AD-3). It carries `-` rather than the Hub's `:?`, because
+  # compose interpolates every service, profiled ones included, whatever command runs: a `:?` here would
+  # fail every compose command the Hub's deploy runs. Unset, the reference ends in `:`, which Docker
+  # refuses as invalid, so finance still never starts on a floating tag.
+  #
+  # AD-10: database and role `finance` in `anchor-db`, which `apps/finance/prisma/provision.sql`
+  # creates with CONNECTION LIMIT 10: the app pools five per container (`apps/finance/lib/db.ts`) and a
+  # rollout runs two. No router and no `cs-tracker_default` alias until it is placed.
+  finance:
+    image: ghcr.io/luigiespinosa/finance:${FINANCE_TAG-}
+    profiles: [finance]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://finance:${FINANCE_DB_PASSWORD-}@anchor-db:5432/finance
+    depends_on:
+      anchor-db:
+        condition: service_healthy
+    healthcheck:
+      # The Hub's probe, for the same reason: the standalone server binds the container's own address.
+      # `/api/health` answers 200 only when the database answers.
+      test:
+        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # AD-23: migrations run here, as a discrete step before a rollout, and never on the server's boot. The
+  # `<service>-migrate` name under the `migrate` profile is the one `ops/deploy-remote.sh` runs before
+  # it rolls a service. `apps/finance/prisma/__tests__/migrations.test.ts` refuses a migration that
+  # both expands and contracts the schema, so each one works with the version still serving.
+  finance-migrate:
+    image: ghcr.io/luigiespinosa/finance:${FINANCE_TAG-}
+    profiles: [migrate]
+    working_dir: /app/migrate
+    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
+    environment:
+      - DATABASE_URL=postgresql://finance:${FINANCE_DB_PASSWORD-}@anchor-db:5432/finance
+    depends_on:
+      anchor-db:
+        condition: service_healthy
+    restart: 'no'
+
 networks:
   cs-tracker_default:
     external: true

@@ -33,6 +33,14 @@ jobs:
       - name: Unit tests
         run: pnpm test --run
 
+      # `apps/finance` is its own workspace with its own `@` alias and test environment, which the root
+      # `tsc` and Vitest above exclude, so it runs its own here (Story 3-5, DW-258).
+      - name: Finance type check
+        run: pnpm --filter finance typecheck
+
+      - name: Finance unit tests
+        run: pnpm --filter finance test
+
   tokens-contract:
     runs-on: ubuntu-latest
 

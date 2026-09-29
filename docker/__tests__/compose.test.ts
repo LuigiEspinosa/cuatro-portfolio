@@ -174,3 +174,42 @@ describe("the Hub's healthcheck probe, run (DW-262)", () => {
     expect(await runProbe(planted)).toBe(0);
   });
 });
+
+// Story 3-5: the finance application, merged and imaged but not placed. Its two services sit under
+// profiles no deploy activates, run its image by the sha in FINANCE_TAG, and reach database and role
+// `finance` in `anchor-db` (AD-10). The migration is its own one-off service under the `migrate` profile,
+// the name `ops/deploy-remote.sh` runs before a rollout (AD-23), and the server's probe is the Hub's,
+// which the cases above run against a live server.
+describe('the finance services', () => {
+  const service = (name: string): string => parts(compose, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
+  const finance = service('finance');
+  const migrate = service('finance-migrate');
+  const IMAGE = '    image: ghcr.io/luigiespinosa/finance:${FINANCE_TAG-}';
+  const DATABASE = '      - DATABASE_URL=postgresql://finance:${FINANCE_DB_PASSWORD-}@anchor-db:5432/finance';
+
+  it('runs the image by the sha in FINANCE_TAG, under a profile no deploy activates', () => {
+    expect(finance.split('\n')).toEqual(expect.arrayContaining([IMAGE, '    profiles: [finance]', DATABASE]));
+  });
+
+  it("probes /api/health with the Hub's probe, so the runs above cover it", () => {
+    expect(probeOf(finance)).toBe(probeOf(compose));
+    expect(probeOf(finance)).toContain(HEALTH);
+  });
+
+  it('migrates as a one-off under the migrate profile, never on the server', () => {
+    expect(migrate.split('\n')).toEqual(
+      expect.arrayContaining([
+        IMAGE,
+        '    profiles: [migrate]',
+        "    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']",
+        DATABASE,
+      ])
+    );
+    expect(finance).not.toContain('migrate');
+  });
+
+  it('joins no network the shared proxy reaches, since it has no router until it is placed', () => {
+    expect(finance).not.toContain('cs-tracker_default');
+    expect(migrate).not.toContain('cs-tracker_default');
+  });
+});

@@ -6,6 +6,10 @@
 .env
 .env.*
 !.env.example
+# At any depth too: an application directory under apps/ can hold its own env file (Story 3-5).
+**/.env
+**/.env.*
+!**/.env.example
 .umami-admin
 
 .git
