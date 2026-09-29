@@ -9,6 +9,7 @@ import {
   ALPHA_ALLOWANCE,
   DISPOSITIONS,
   NAMED_COLOURS,
+  OTHER_APPLICATIONS,
   PERMITTED,
   SCALE_UNITS,
   TYPE_PROPERTIES,
@@ -95,6 +96,14 @@ describe('the configuration', () => {
       'the permitted set is exactly two entries (Story 2.34); a third is a reviewed edit, never a quiet one'
     ).toEqual(['contracts/', 'apps/hub/app/scss/_print.scss']);
     for (const entry of PERMITTED) expect(entry.reason.trim(), `${entry.path} carries no reason`).not.toBe('');
+  });
+
+  it('leaves exactly apps/finance/ unread, as another application, with its reason (Story 3-5)', () => {
+    expect(
+      OTHER_APPLICATIONS.map((entry) => entry.path),
+      'the gate reads every stylesheet but these; a new entry is a reviewed edit'
+    ).toEqual(['apps/finance/']);
+    for (const entry of OTHER_APPLICATIONS) expect(entry.reason.trim(), `${entry.path} carries no reason`).not.toBe('');
   });
 
   it('writes the one alpha allowance against the palette declaration, never against the role', () => {
@@ -569,6 +578,15 @@ describe('the listing', () => {
     expect(ok).toBe(false);
     expect(message).toContain('literal conformance: REFUSED');
     expect(message).toContain('The stylesheets could not be listed');
+  });
+
+  it('never reads another application, and still refuses the same literal in the Hub (Story 3-5)', () => {
+    const literal = rule('color: #fff;');
+    withRepo({ [CONTRACT]: REAL_TOKENS, 'apps/finance/app/tokens.css': literal, 'apps/hub/app/Probe.scss': literal }, (root) => {
+      const inspection = inspect(root);
+      expect(inspection.findings.map((finding) => finding.path)).toEqual(['apps/hub/app/Probe.scss']);
+      expect(inspection.outside, 'the finance stylesheet was read').toBe(1);
+    });
   });
 
   it('refuses when nothing outside the permitted set was read', () => {

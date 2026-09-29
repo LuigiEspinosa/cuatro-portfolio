@@ -7,3 +7,10 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - unrs-resolver
+
+# apps/finance brings these with install scripts, and none runs: `prisma generate` and the image's
+# migration toolchain fetch what they need, so no Hub job depends on Prisma's download host.
+ignoredBuiltDependencies:
+  - '@prisma/engines'
+  - msw
+  - prisma

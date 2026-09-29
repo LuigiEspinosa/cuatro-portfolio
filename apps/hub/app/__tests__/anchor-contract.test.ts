@@ -5,6 +5,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import type { SpawnSyncReturns } from 'node:child_process';
 import { dirname, join, relative, resolve } from 'node:path';
+import { OTHER_APPLICATIONS } from '../../../../ops/literal-conformance.mjs';
 
 /**
  * The source half of Anchor migration step 1 (Story 1-17).
@@ -406,6 +407,15 @@ const DELETED_ALIASES = [
 ] as const;
 
 /**
+ * Another application merged under `apps/` beside the Hub (Story 3-5), from the one list the literal
+ * gate keeps (`ops/literal-conformance.mjs`). These checks are the Hub's: such an application keeps
+ * its own names until it adopts the contract whole (AD-14), and is neither a Hub source root nor a
+ * place the Hub's deleted aliases could return to.
+ */
+const isOtherApplication = (path: string): boolean =>
+  OTHER_APPLICATIONS.some((entry: { path: string }) => path.startsWith(entry.path));
+
+/**
  * What the repository search does not read, by reason rather than by pattern.
  *
  * Markdown, wherever it sits, and everything under `_bmad-output/`: the dated record and the planning
@@ -413,7 +423,7 @@ const DELETED_ALIASES = [
  * 2.22's own criterion, so a search that read it could not pass). And this file, which holds the list.
  */
 const isSearchExcluded = (path: string): boolean =>
-  path.endsWith('.md') || path.startsWith('_bmad-output/') || path === HERE;
+  path.endsWith('.md') || path.startsWith('_bmad-output/') || path === HERE || isOtherApplication(path);
 
 /**
  * A different property sharing one of the thirteen names: Tailwind's own `--font-mono` theme key, which
@@ -913,6 +923,7 @@ describe('the Anchor consumes the contract in its global stylesheet and its toke
     // rather than silently escaping the scan below.
     const roots = new Set(
       gitLsFiles(['.'])
+        .filter((path) => !isOtherApplication(path))
         // The Hub's paths from `apps/hub`, so its roots read as they did at the repository root.
         .map(fromHub)
         .filter((path) => path.includes('/'))
@@ -1356,6 +1367,8 @@ describe('the migration is closed (Story 2-22, migration step 7)', () => {
     expect(isSearchExcluded(HERE)).toBe(true);
     expect(isSearchExcluded('tests/e2e/anchor-aliases.pw.ts')).toBe(false);
     expect(isSearchExcluded('app/app.scss')).toBe(false);
+    expect(isSearchExcluded('apps/finance/app/tokens.css')).toBe(true);
+    expect(isSearchExcluded('apps/hub/app/app.scss')).toBe(false);
   });
 
   it('compares /work against the redesigned baseline, the capture the record names, never an earlier one', () => {
