@@ -27,6 +27,9 @@ the tooling, the browser suite and every gate's configuration stay at the reposi
 `cuatro-finance`; it runs its own `pnpm --filter finance typecheck`, `test` and `build`.
 `apps/tracker/` is the tracker, the workspace `tracker`, merged with its history from `cuatro-tracker`;
 it runs its own `pnpm --filter tracker typecheck`, `test` (with a Redis on `localhost:6379`) and `build`.
+`apps/tournament/` is the tournament manager, the workspace `tournament`, merged with its history from
+`cs-tournament`; it runs its own `pnpm --filter tournament typecheck`, `test` and `build`, and its Go
+worker runs `go test ./...` in `apps/tournament/worker/`.
 
 ```bash
 pnpm install

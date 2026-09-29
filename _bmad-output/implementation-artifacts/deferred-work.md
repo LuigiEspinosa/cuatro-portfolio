@@ -8658,3 +8658,94 @@ status: done
 
     **Owner: the Operator.** **Trigger: the first Image (tracker) push, or a GHCR quota message.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-279
+  summary: >-
+    `apps/tournament` keeps its own palette (65 colour literals in `app/globals.css` and its CSS modules)
+    and is listed in `OTHER_APPLICATIONS`, so neither the FR-17 gate nor the alias search reads it; its
+    token adoption is deferred whole.
+  evidence: |-
+    Merged by Story 3-7 on 2026-09-29. AD-14 names `cs-tournament` a Tailwind consumer, but the merged
+    source uses CSS modules and no Tailwind at all, so adoption is the plain `tokens.css` and
+    `fonts.css` pair rather than `tailwind.css`, or a Tailwind setup first. AD-14 makes adoption
+    all-or-nothing and AD-25 gives it no restyle until Epic 8 wave 2, which restyles it after its merge.
+    The change that adopts the contract deletes the `apps/tournament/` entry in
+    `ops/literal-conformance.mjs` and its pins in `ops/__tests__/literal-conformance.test.ts` and
+    `apps/hub/app/__tests__/anchor-contract.test.ts`.
+
+    **Owner: Epic 8 wave 2 (the `cs-tournament` restyle).** **Trigger: that story.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-280
+  summary: >-
+    Where the tournament's data lives once it is placed is undecided: it is Supabase (Auth, PostgREST,
+    Realtime, RLS on `auth.jwt()`, Postgres 17) plus Cloudflare R2 for demos, and AD-10 wants one
+    Postgres on the box with other stores declared and backed up offsite. Its health route is liveness
+    only until this is decided.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7 in the merged source: `lib/supabase/{admin,server,browser}.ts`,
+    `supabase/migrations/0002_rls.sql` (`is_admin()`, `jwt_steamid64()`), the browser's Realtime channel,
+    and the Go worker's direct owner connection (`worker/config/config.go`). Keeping Supabase makes it a
+    declared external store (`Supabase` is in its Registry `tech` already) that needs its own offsite
+    backup path under AD-10, and the placement can then proceed with the images as built. Moving onto
+    the box replaces Supabase Auth, PostgREST and Realtime, a rewrite of the data layer, which is a story
+    of its own, not a placement step. Either way the compose healthcheck probes
+    `apps/tournament/app/api/health/route.ts`, which asks nothing of the data, so a rollout could drain
+    a serving container for one that cannot reach Supabase; the readiness probe is written with the
+    answer. `anchor-db` holds no `tournament` database and no `tournament-migrate` service exists until then.
+
+    **Owner: the Operator, then the story that places `cs-tournament`.** **Trigger: that placement.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-281
+  summary: >-
+    The tournament image is built without `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+    which Next inlines into the browser bundle at build time, so the browser's Realtime client refuses to
+    start in the image `image-tournament.yml` pushes.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7: `lib/supabase/browser.ts` reads both from `process.env` in a client
+    module and throws at first use when either is absent. The server reads the same two at runtime
+    through `lib/env.ts`, which compose supplies. Both values are public by design (the anon key is
+    meant for the browser), but they belong to whichever Supabase project DW-280 settles on, so no
+    value is committed here. The shape is finance's `NEXT_PUBLIC_BETTER_AUTH_URL` (DW-269): build
+    arguments in the workflow, set at placement.
+
+    **Owner: the story that places `cs-tournament`.** **Trigger: that placement.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-282
+  summary: >-
+    `tsc --noEmit` over all of `apps/tournament` reports 21 errors, every one in a test file (nine
+    `lib/**/*.test.ts`), so its `typecheck` script checks the application's sources only, through
+    `apps/tournament/tsconfig.typecheck.json`.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7, identically in an untouched clone of the source installed from its
+    own `package-lock.json`: the source repository had no `typecheck` script and never ran `tsc` over its
+    tests, and `next build`, which it did run, checks the application only and passes. The errors are
+    stale fixture shapes (`revealedSpins` on `RevealModelInput`), `Dirent.path`, empty-tuple mock calls
+    and `Uint8Array` against `BufferSource`. The suite itself passes (1980 tests), since Vitest strips
+    types. Fixing them edits the application's tests, which the merge does not. The change that clears
+    them deletes `tsconfig.typecheck.json` and points `typecheck` at `tsconfig.json`.
+
+    **Owner: unassigned, or Epic 8 wave 2.** **Trigger: the next change to a tournament test file.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-283
+  summary: >-
+    `apps/tournament` carries its repository's own delivery files, kept untouched by the merge and run by
+    nothing here: `.claude/` (BMAD skills), `_bmad/`, `_bmad-output/`, `docs/`, `vercel.json`,
+    `eslint.config.mjs`, a README describing a kickoff phase, and `worker/cmd/qa54`.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7. `vercel.json` describes the host the Operator left on 2026-09-24.
+    `lint` went from `package.json` because CI runs no lint (`AGENTS.md`, DW-271), leaving
+    `eslint.config.mjs`. The worker's README names Railway as its host, which it never reached. The
+    BMAD tree is that project's planning history. None is fixed here, since the merge moves code
+    without rewriting it; the README carries a note that it is now part of the Anchor.
+
+    **Owner: Epic 8 wave 2, or Story 3.8's end-state record.** **Trigger: either.**
+  status: open

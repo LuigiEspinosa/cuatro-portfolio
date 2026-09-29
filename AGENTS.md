@@ -15,6 +15,9 @@ literal and alias gates exclude it; it runs `corepack pnpm --filter finance type
 `apps/tracker/` is the workspace `tracker`, merged from `cuatro-tracker` in Story 3-6 (Next.js 15,
 Prisma 6, BullMQ): imaged in CI, and serving `tracker.cuatro.dev` only once the Operator runs
 `ops/tracker-cutover.md`. Excluded the same way; its suite needs a Redis on `localhost:6379`.
+`apps/tournament/` is the workspace `tournament`, merged from `cs-tournament` in Story 3-7 (Next.js 16
+on Supabase), with its Go demo worker in `apps/tournament/worker/`, a module of its own that Turborepo
+never runs (AD-2): two images in CI, neither placed. Excluded the same way; its suite runs Python 3.
 Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually runs is in
 `ops/`.
 

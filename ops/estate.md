@@ -217,7 +217,7 @@ estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 | `connect-four-react` | Absorb: playable demo in the Hub | `Archived` | `cuatro-portfolio` | In Registry; not rendered as a directory entry, and not rendered as an embedded demo at MVP either. It will surface as the embedded demo (PRD section 4.7) only once FR-29 is taken up, and FR-29 is deferred to v2. See the note below. |
 | `cuatro-finance` | Merge into the Anchor: **merged into `apps/finance` on `dev` by Story 3-5 (2026-09-29), imaged in CI, not placed**. See the note below | `In progress` | n/a today, see note below | Not rendered until Live |
 | `cuatro-tracker` | Merge into the Anchor: **merged into `apps/tracker` on `dev` by Story 3-6 (2026-09-29) and imaged in CI; still served by the box's own build until the Operator runs `ops/tracker-cutover.md`**. See the note below | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
-| `cs-tournament` | Merge into the Anchor | `Complete`: deployed nowhere by the estate since the Operator ruling of 2026-09-24, until Story 3.7 places it on the box. `Live` at `inclusivcup.vercel.app` until then | n/a today, see note below | Rendered |
+| `cs-tournament` | Merge into the Anchor: **merged into `apps/tournament` on `dev` by Story 3-7 (2026-09-29), with its Go worker; both imaged in CI, neither placed**. See the note below | `Complete`: deployed nowhere by the estate since the Operator ruling of 2026-09-24, until Story 3.7 places it on the box. `Live` at `inclusivcup.vercel.app` until then | n/a today, see note below | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
 | `digital-library` | Satellite: Svelte/Fastify | `Live`: `library.cuatro.dev` | n/a | Rendered |
 | `list-wheel` | Satellite: Angular | `Live`: `wheel.cuatro.dev` since 2026-09-13. On GitHub Pages until that date; the old URL became a redirect page to the new hostname as the story's last step (`gh-pages` `52698eb`, 2026-09-13T18:25:47Z) | n/a | Rendered; see PRD section 5.3. **The Registry's `live` is `https://wheel.cuatro.dev` from Story 2-25**: `ops/registry-inputs.md` |
@@ -329,6 +329,9 @@ and Story 3.8 writes it once the Operator archives it.
 **Amended 2026-09-29 by Story 3-6.** `cuatro-tracker`'s code has moved too, on the same terms: no
 `absorbed_into` while its repository is unarchived, which now waits on the cutover as well.
 
+**Amended 2026-09-29 by Story 3-7.** `cs-tournament`'s code has moved too, the last of the three, on
+the same terms: no `absorbed_into` while its repository is unarchived.
+
 ### `cuatro-finance`, merged on `dev` and not placed
 
 **Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
@@ -395,6 +398,39 @@ already holds `cuatro-tracker` (AD-9).
 - **Still the Operator's:** the four actions at the end of `ops/tracker-cutover.md`, the archive among
   them, after which Story 3.8 writes `absorbed_into: cuatro-portfolio` and moves `source`.
 
+### `cs-tournament`, merged on `dev` and not placed
+
+**Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
+it: it has served nowhere since the Operator removed Vercel on 2026-09-24, and placing it is a new
+placement the Capacity Gate decides (AD-9), which Story 3.7 left to the Operator.
+
+- **History.** `git filter-repo --to-subdirectory-filter apps/tournament` ran on a scratch clone of
+  `LuigiEspinosa/cs-tournament` at `main` `0d3e856f20c9d686b77d7a8ed001dafa123fed36`, its only branch,
+  and merge `b98dabb219b144084d8e95d4c73610a21f1d2ca7` brought its 102 commits into the Anchor with
+  `--allow-unrelated-histories`. `git log --follow` on `apps/tournament/lib/auth/session.ts` lists its
+  three source commits. The repository was published on 2026-09-24 after a clean full-history scan
+  (`ops/known-violations.md` KV-2), so the merge exposes nothing that was not public.
+- **Workspace.** The workspace `tournament` under the one root lockfile, every exact pin at the
+  version its npm lockfile named, with its typecheck and suite in `ci.yml`'s `test` job. The root
+  `tsc` and Vitest exclude it, and so do the Hub's literal and alias gates.
+- **Two deploy units (AD-7).** `apps/tournament/Dockerfile` over `turbo prune tournament --docker`
+  gives `ghcr.io/luigiespinosa/tournament:<git-sha>`; the Go demo worker, a module Turborepo never
+  runs (AD-2), gives `ghcr.io/luigiespinosa/tournament-worker:<git-sha>` from `apps/tournament/worker/`,
+  its `go vet` and `go test` in `ci.yml`. `.github/workflows/image-tournament.yml` pushes each only
+  after it answered its probe. `docker-compose.yml` declares `tournament` and `tournament-worker`
+  under a profile no deploy activates.
+- **Data (AD-10).** It stays where it was: Supabase (Auth, PostgREST, Realtime and Postgres) and
+  Cloudflare R2 for the demos. Where it lives once placed is the Operator's (DW-280). Its SQL
+  migrations are `supabase db push`, a discrete step; nothing migrates on boot (AD-23).
+- **Users.** None has a password: login is Steam OpenID, keyed by steamid64. `ops/tournament-identity.mjs`
+  exports and maps every Auth user, refusing a password hash, and verifies an existing user can
+  authenticate after the move; the Operator runs both at placement.
+- **Hostname and Registry.** None chosen. The Registry entry stays `Complete` with no `live`, and
+  moves to `Live` with its hostname in the change that places it (FR-28).
+- **Tokens (AD-14).** Adoption deferred whole to its Epic 8 restyle (DW-279).
+- **Still the Operator's:** every placement step, listed under Pending Operator actions, and the
+  archive, after which Story 3.8 writes `absorbed_into: cuatro-portfolio` and moves `source`.
+
 ## Pending Operator actions
 
 Archiving a repository is a GitHub console action outside this repository. Of the four
@@ -407,6 +443,7 @@ afterwards.
 |---|---|---|
 | `connect-four-react` | Archive on GitHub | Must stay publicly readable |
 | `cuatro-finance` | Archive on GitHub | Must stay publicly readable, so its `source` resolves; Story 3.8 then writes `absorbed_into` and moves `source` |
+| `cs-tournament` | Archive on GitHub | Stays public, so its `source` resolves (published 2026-09-24, KV-2); Story 3.8 then writes `absorbed_into` and moves `source` |
 | `cuatro-tracker` | Archive on GitHub, a week after `ops/tracker-cutover.md` has run | Must stay publicly readable, so its `source` resolves; the box keeps its checkout, which runs the stores until Story 4.8; Story 3.8 then writes `absorbed_into` and moves `source` |
 
 The `apple-music-workspace` row is gone rather than struck, because the action dissolved
@@ -420,6 +457,27 @@ action the counts above name is still `connect-four-react`'s.
 
 **Amended 2026-09-29 by Story 3-6.** The `cuatro-tracker` row is added on the same terms, and waits on
 the cutover (§ `cuatro-tracker`, merged on `dev`, served by the old build until the cutover).
+
+**Amended 2026-09-29 by Story 3-7.** The `cs-tournament` row is added on the same terms (§ `cs-tournament`,
+merged on `dev` and not placed). Its placement is separate from the archive, and is the Operator's,
+in this order, each step after the Epic 3 merge has deployed:
+
+1. **Decide where its data lives** (DW-280): Supabase kept as a declared store with its own offsite
+   backup (AD-10's exception, declared in `tech` already), or moved onto the box, which replaces
+   Supabase Auth, PostgREST and Realtime and is a story of its own.
+2. **Choose its hostname**, and the worker's if MatchZy and the admin upload are to reach it; create
+   the DNS records and the routes on the box's shared Caddy.
+3. **Rebuild the server image with the public Supabase URL and anon key** (DW-281), set the
+   `TOURNAMENT_` values `docker-compose.yml` names in `.env.production`, and point `STEAM_REALM` and
+   `STEAM_RETURN_URL` at the hostname.
+4. **Move the data if it moves**, then run `node ops/tournament-identity.mjs export` against the
+   source and `verify` against the target for an admin and a viewer; both must exit 0.
+5. **Place it** under AD-9: the deploy refuses unless `ops/capacity-gate.yml` reads `status: open`;
+   on success append `cs-tournament` to `placements` (the gate lists applications, not deploy units,
+   so its two services are one entry), and record the load reading after placement against the
+   threshold, since SM-C4 wins every conflict with any other metric.
+6. **In the same change**, take the Registry entry from `Complete` to `Live` with its `live` value.
+7. **Delete the Vercel project**, if not already deleted (§ The Vercel decommission).
 
 `connect-four-react` stays **public**, not private. AD-6 keeps its Registry entry, and SM-4
 requires every Registry link to resolve, so making an archived repository private would
