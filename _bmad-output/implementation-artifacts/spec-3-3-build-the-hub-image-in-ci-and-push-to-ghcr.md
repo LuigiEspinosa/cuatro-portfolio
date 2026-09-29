@@ -112,9 +112,9 @@ reversible, keeps every gate green, and is an Operator item):
   lockfile, workspace file and manifests; reused, unchanged.
 - `turbo prune hub --docker`, turbo 2.10.13, observed: `json/` holds the root manifest, the pruned
   lockfile, the workspace file (`onlyBuiltDependencies` kept) and `apps/hub/package.json`; `full/`
-  holds `apps/hub/`, the root manifest, the workspace file and `turbo.json`; neither holds
-  `contracts/` or `packages/`. Pruned lockfile: importers `.` and `apps/hub`, 645 package entries
-  against 707, no `style-dictionary`.
+  holds `apps/hub/`, the root manifest, the workspace file, `turbo.json` and `.gitattributes`;
+  neither holds `contracts/` or `packages/`. Pruned lockfile: importers `.` and `apps/hub`, 645
+  package entries against 707, no `style-dictionary`.
 - The Hub's build reads outside its workspace: its `build` script runs
   `../../packages/contracts-serve/publish.mjs`; `apps/hub/app/scss/_index.scss` loads
   `contracts/tokens.css` and `fonts.css`; `apps/hub/lib/registry.ts` imports
@@ -170,7 +170,8 @@ reversible, keeps every gate green, and is an Operator item):
 - Given AD-8, when the image is built, then its context is the repository root pruned by
   `turbo prune hub --docker` with the Dockerfile at `apps/hub/Dockerfile`, an app-directory context
   is shown failing, and listings of the image and of the builder's tree show no part of the monorepo
-  the Hub does not build from.
+  the Hub does not build from, save the two root files the prune itself writes into `out/full/`,
+  `.gitattributes` and `turbo.json`, which reach the builder's tree and not the image.
 - Given AD-7, when the workflow runs, then it names one id, the install reaches the root and `hub`
   importers alone, and the build compiles the `hub` workspace alone.
 - Given `docker-rollout`, when the compose file is read, then the Hub's service has a healthcheck on
@@ -354,7 +355,12 @@ files, is Story 3-2's recorded figure; CI run 36492681112 on `0aec0fb` read succ
   `.github`, `.lighthouserc.js`, `.markdownlint.json`, `.prettierrc.js`, `README.md`, `docker`,
   `packages` with `fonts` and `tokens`, `playwright.config.ts`, `tests`, `tsconfig.json`,
   `vitest.config.ts`, `vitest.setup.ts` and this host's ignored `capacity-week`, `graphify-out`,
-  `playwright-report`, `test-results` and `tsconfig.tsbuildinfo`.
+  `playwright-report`, `test-results` and `tsconfig.tsbuildinfo`. Of the builder's files,
+  `.gitattributes` and `turbo.json` are the two the Hub does not build from, and both are the prune's
+  own output (criterion 2). In fix round 2, over `d69fd33`: a `--target prune` build from the root
+  held them in `out/full/` beside `apps` (`hub` alone), `package.json` and `pnpm-workspace.yaml`,
+  `.gitattributes` byte-identical to the root's; the image, built with the workflow's two inputs, held
+  neither anywhere under `/app`, whose `ls -A` read `apps` and `node_modules` alone.
 - Actions 4 and 5: the base commit's `deps` stage (`docker/Dockerfile` at `0aec0fb`), `docker build
   --no-cache --target deps` from the root, exit 0: "Scope: all 3 workspace projects", "Packages: +588",
   "Done in 22.1s using pnpm v10.31.0", a store of 590 entries with `style-dictionary` in it. This tree's,
