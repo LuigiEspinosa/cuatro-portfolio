@@ -171,7 +171,7 @@ then `$C --profile tracker up -d tracker-worker`.
 | 1 | **Let the box pull `ghcr.io/luigiespinosa/tracker`.** Make the package public, as `hub` is, or log `deploy` in to GHCR with a `read:packages` token | A new package is private. Changing its visibility or creating a token is the Operator's | _not done_ |
 | 2 | **Merge Epic 3 into `main`** and let the deploy run | The compose services and both scripts reach the box only this way | _not done_ |
 | 3 | **Run steps 1 to 8 above**, on a day the Operator can watch the probe | Step 2's two exit codes and summary lines, step 7's count and step 1's two files go into this record | _not done_ |
-| 4 | **Archive `cuatro-tracker`** once action 3 has held for a week | Story 3.8 then writes `absorbed_into` and moves `source` to the Anchor (AD-6). The box's `/home/deploy/cuatro-tracker` checkout stays: it runs the stores until Story 4.8 | _not done_ |
+| 4 | **Archive `cuatro-tracker`** once action 3 has held for a week | DW-285 then writes `absorbed_into` and moves `source` to the Anchor (AD-6); Story 3.8 left it there, no source repository being archived on 2026-09-29. The box's `/home/deploy/cuatro-tracker` checkout stays: it runs the stores until Story 4.8 | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

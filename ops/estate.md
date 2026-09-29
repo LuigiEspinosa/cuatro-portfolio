@@ -129,16 +129,18 @@ performed, not when it was decided.
 
 | Point in sequence | Count | What changed | Reached |
 |---|---|---|---|
-| Start | 14 | n/a | superseded |
+| Start | 14 | n/a | superseded; recorded 2026-08-16 as 15, corrected 2026-09-02 |
 | After archiving | 12 | `Lumen` and `tcg-tracker` archived | **yes, by 2026-09-02** |
 | After listing | 14 | `covidmap` and `future-vizion` admitted by Operator ruling 2026-09-25 | **yes, 2026-09-26** |
-| After absorption | **13** | `connect-four-react` absorbed into the Anchor | not yet |
-| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor | not yet |
+| After absorption | **13** | `connect-four-react` absorbed into the Anchor | not yet: unarchived at 2026-09-29T17:02:30Z |
+| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor and their repositories archived | not yet: merged on `dev` 2026-09-29, none archived at 2026-09-29T17:02:30Z |
 
 **Amended 2026-09-26.** The `After listing` row is new, and the two rows below it each carry two more
 than they did (11 and 8 until that date): the ruling admitted two repositories and changed nothing
 about the absorption or the merge. **The end state reads 10, not SM-7's 8**, because nothing yet
 decides whether `covidmap` and `future-vizion` are part of it; that is DW-249 with the MVP figure.
+**Amended 2026-09-29 by Story 3-8:** it is decided. DW-249 closed on 2026-09-26 with SM-7 amended to 13
+and 10, both repositories kept permanently, so 10 is SM-7's end state; § The end state below.
 
 **The estate sits on the second row today**, at an observed 12. The first row is labelled `Start`
 rather than `Today` for that reason: it was true until the two archives landed and is now
@@ -167,6 +169,63 @@ The 13 repositories at this waypoint are `cuatro-portfolio`, `cuatro-finance`,
 `ops/contract-adoption.mjs` parses it and pins its count, and both tables in
 `ops/contract-adoption.md` carry a row for each name, the two new ones observed that day by the same
 `gh api` sweep the record describes.
+
+### The end state
+
+**Recorded 2026-09-29 by Story 3-8 (ISO 8601 UTC).** The destination is **10 repositories** under
+Ecosystem governance, decided **2026-09-26** when the Operator amended PRD section 9's SM-7 to 13 at MVP
+and 10 at end state (DW-249, closed that day). It is a decision, not an observation, and it is **not
+reached**: the observed count is **14**, read at **2026-09-29T17:02:30Z** by
+`gh api repos/LuigiEspinosa/<name>` for each of the sixteen governed repositories, which found `Lumen`
+and `tcg-tracker` archived and every other one, `connect-four-react` and the three merged applications
+among them, not archived.
+
+The ten are the Anchor, `cuatro-portfolio`; the seven Satellites, `cs-tracker`, `digital-library`,
+`StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and `list-wheel`; and `covidmap` and
+`future-vizion`, which are neither Satellites nor merge candidates and which the Operator keeps
+permanently (the same ruling of 2026-09-26). The PRD's end state of the Anchor plus seven Satellites
+is these ten less those two.
+
+**The sequence is the table in § The waypoint sequence above**, where Story 3-8 dated every undated cell.
+A later reader must not mistake a waypoint for the destination, nor a decision for a performed act:
+the count falls when a repository is archived, never when its code is merged, which is why the
+merges of 2026-09-29 (Stories 3-5, 3-6 and 3-7) moved no figure.
+
+**The epic's own numbers are superseded, not copied.** Story 3.8 in `epics.md` asks for an end state
+of 8 and a sequence of 15, 11 and 8. The 15 counted a repository that does not exist (2026-09-02); the
+11 and the 8 each rose by two when the Operator listed `covidmap` and `future-vizion` (2026-09-25) and
+then raised SM-7 to match (2026-09-26). 13 and 10 are those same stations after the rulings.
+
+**No `absorbed_into` is written yet, on purpose.** The three merged applications keep their Registry
+entries under their own ids, as AD-6 requires, and this record promised `absorbed_into:
+cuatro-portfolio` once each source repository is archived. None is, so the Registry is unchanged at
+1.5.0 and each `source` still names the application's own repository, which resolves (200 to an
+anonymous request, and 40 of 40 checks passing in Story 2.23's Registry verification, run on `dev`
+at 2026-09-29T17:08:27Z; its scheduled run on `main` that day, 36571142029, was green too). Writing
+the field, and moving `source` to where the code now lives, is DW-285. The move is not a one-line
+edit: that job accepts only a `https://github.com/<owner>/<repository>` URL, and the Anchor's
+`tree/main/apps/<id>` pages answer 404 until the Epic 3 merge reaches `main`.
+
+**The Registry entry count and the repository count stay different numbers.** The Registry carries
+**16** entries today and will carry 16 at the end state: an archived or absorbed application keeps its
+entry (AD-6), so the end state's 10 repositories sit beside 16 entries, and neither number checks the
+other.
+
+**The Estate is shrinking on purpose, and more entries is not better.** SM-C2 counts Registry entries
+as a figure not to optimise: an entry is added because an application exists, never to fill the Suite
+Directory's grid, and a falling repository count is the goal of this record rather than a loss.
+
+**What moves the count from here is the Operator's**, in this order:
+
+1. Archive `connect-four-react`, kept public. That reaches the waypoint of 13 in fact, and the
+   observed-state reading and the tables above are re-dated in the same change.
+2. Merge Epic 3's `dev` into `main` and let the deploy run, so the merged code is public on `main`.
+3. Run `ops/tracker-cutover.md`.
+4. Archive `cuatro-finance` and `cs-tournament`, and `cuatro-tracker` a week after the cutover holds,
+   each kept public, recording each date at the time since GitHub does not keep it.
+5. Then DW-285: `absorbed_into` and `source` for the three, in one Registry change. With all four
+   archives done the count is 10, and the sentence naming the thirteen above moves to ten together with
+   `ESTATE_COUNT` and both tables of `ops/contract-adoption.md`, as `ops/contract-adoption.mjs` requires.
 
 ## Disposition of every application
 
@@ -231,7 +290,8 @@ estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 End state is the Anchor plus seven Satellites: `cs-tracker`, `digital-library`,
 `StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and `list-wheel`. **Amended 2026-09-26:**
 `covidmap` and `future-vizion` are neither Satellites nor merge candidates; whether they belong to the
-end state is undecided (DW-249).
+end state is undecided (DW-249). **Amended 2026-09-29 by Story 3-8:** they belong to it, since DW-249
+closed on 2026-09-26, and the end state is 10 repositories (§ The end state).
 
 ### The two `[ASSUMPTION: ...]` Statuses are resolved
 
@@ -332,6 +392,10 @@ and Story 3.8 writes it once the Operator archives it.
 **Amended 2026-09-29 by Story 3-7.** `cs-tournament`'s code has moved too, the last of the three, on
 the same terms: no `absorbed_into` while its repository is unarchived.
 
+**Amended 2026-09-29 by Story 3-8.** Story 3.8 did not write the field, because no source repository
+was archived when it ran (§ The end state). The promise moves to DW-285, which writes `absorbed_into`
+and moves `source` for all three in one Registry change once the archives are done.
+
 ### `cuatro-finance`, merged on `dev` and not placed
 
 **Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
@@ -365,7 +429,7 @@ it: merging is not placing.
 - **Tokens (AD-14).** Adoption is deferred whole, not half-applied: `apps/finance/app/tokens.css` keeps
   its own palette, and `app/layout.tsx` its own fonts (DW-267). The application is `In progress` and
   unrendered, and AD-25 gives it no restyle until it renders.
-- **Still the Operator's:** archiving `cuatro-finance`, after which Story 3.8 writes `absorbed_into:
+- **Still the Operator's:** archiving `cuatro-finance`, after which DW-285 writes `absorbed_into:
   cuatro-portfolio` and moves `source`; and every placement step (DW-269).
 
 ### `cuatro-tracker`, merged on `dev`, served by the old build until the cutover
@@ -396,7 +460,7 @@ already holds `cuatro-tracker` (AD-9).
 - **Hostname.** `tracker.cuatro.dev`, declared in the Registry, which this story does not change.
 - **Tokens (AD-14).** Adoption deferred whole to its Epic 8 restyle (DW-273).
 - **Still the Operator's:** the four actions at the end of `ops/tracker-cutover.md`, the archive among
-  them, after which Story 3.8 writes `absorbed_into: cuatro-portfolio` and moves `source`.
+  them, after which DW-285 writes `absorbed_into: cuatro-portfolio` and moves `source`.
 
 ### `cs-tournament`, merged on `dev` and not placed
 
@@ -429,7 +493,7 @@ placement the Capacity Gate decides (AD-9), which Story 3.7 left to the Operator
   moves to `Live` with its hostname in the change that places it (FR-28).
 - **Tokens (AD-14).** Adoption deferred whole to its Epic 8 restyle (DW-279).
 - **Still the Operator's:** every placement step, listed under Pending Operator actions, and the
-  archive, after which Story 3.8 writes `absorbed_into: cuatro-portfolio` and moves `source`.
+  archive, after which DW-285 writes `absorbed_into: cuatro-portfolio` and moves `source`.
 
 ## Pending Operator actions
 
@@ -442,9 +506,9 @@ afterwards.
 | Repository | Action | Constraint |
 |---|---|---|
 | `connect-four-react` | Archive on GitHub | Must stay publicly readable |
-| `cuatro-finance` | Archive on GitHub | Must stay publicly readable, so its `source` resolves; Story 3.8 then writes `absorbed_into` and moves `source` |
-| `cs-tournament` | Archive on GitHub | Stays public, so its `source` resolves (published 2026-09-24, KV-2); Story 3.8 then writes `absorbed_into` and moves `source` |
-| `cuatro-tracker` | Archive on GitHub, a week after `ops/tracker-cutover.md` has run | Must stay publicly readable, so its `source` resolves; the box keeps its checkout, which runs the stores until Story 4.8; Story 3.8 then writes `absorbed_into` and moves `source` |
+| `cuatro-finance` | Archive on GitHub | Must stay publicly readable, so its `source` resolves; DW-285 then writes `absorbed_into` and moves `source` |
+| `cs-tournament` | Archive on GitHub | Stays public, so its `source` resolves (published 2026-09-24, KV-2); DW-285 then writes `absorbed_into` and moves `source` |
+| `cuatro-tracker` | Archive on GitHub, a week after `ops/tracker-cutover.md` has run | Must stay publicly readable, so its `source` resolves; the box keeps its checkout, which runs the stores until Story 4.8; DW-285 then writes `absorbed_into` and moves `source` |
 
 The `apple-music-workspace` row is gone rather than struck, because the action dissolved
 rather than completing: there is no repository to archive, and the application was removed

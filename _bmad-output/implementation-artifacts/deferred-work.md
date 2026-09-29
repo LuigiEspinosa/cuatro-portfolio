@@ -8597,6 +8597,10 @@ status: done
 
     **Owner: Story 3.8 or Epic 4 (Story 4.8 moves the tracker onto the rebuilt topology).** **Trigger:
     the cutover, or the first tracker change that needs to ship.**
+
+    **Passed to Epic 4 on 2026-09-29 by Story 3-8.** Story 3.8 records the end state and changes no
+    deploy path, and its orchestration forbids wiring a merged application into `deploy.yml` or the
+    gate's placements (AD-9), so the owner is now Story 4.8 alone.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
@@ -8748,6 +8752,9 @@ status: done
     without rewriting it; the README carries a note that it is now part of the Anchor.
 
     **Owner: Epic 8 wave 2, or Story 3.8's end-state record.** **Trigger: either.**
+
+    **Passed to Epic 8 wave 2 on 2026-09-29 by Story 3-8.** Removing files from `apps/tournament` edits
+    the merged application, which a record story does not, so the owner is now Epic 8 wave 2 alone.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
@@ -8766,4 +8773,29 @@ status: done
 
     **Owner: unassigned.** **Trigger: the next change to `EXPORT_SQL`, or the Operator's placement of
     `cs-tournament`, whichever comes first.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-8-record-the-estate-end-state.md`
+  id: DW-285
+  summary: >-
+    Once the Operator archives `cuatro-finance`, `cuatro-tracker` and `cs-tournament`, their Registry
+    entries take `absorbed_into: cuatro-portfolio` and a `source` that names where the code now lives,
+    and the Story 2.23 verification job cannot yet accept the obvious value for that `source`.
+  evidence: |-
+    Found 2026-09-29 by Story 3-8. `gh api repos/LuigiEspinosa/<name>` at 2026-09-29T17:02:30Z found
+    all three unarchived, so the story wrote no `absorbed_into` (its criterion is conditional on the
+    archive) and left Registry 1.5.0 untouched. `ops/estate.md` (seven places) and `ops/tracker-cutover.md`
+    action 4 promised "Story 3.8 then writes `absorbed_into` and moves `source`"; they now name this item. The `source` half is not a one-line
+    edit: `GITHUB_SOURCE` in `ops/registry-verification.mjs` accepts only
+    `https://github.com/<owner>/<repository>` and fails any deeper path by name, and
+    `https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/finance` answered 404 on
+    2026-09-29 because `apps/` reaches `main` only at the Epic 3 merge. The options: point `source` at
+    `https://github.com/LuigiEspinosa/cuatro-portfolio` (passes the job, loses the application's
+    directory); widen `GITHUB_SOURCE` and the `source exists` check to a `tree/<branch>/<path>` URL
+    and point at `apps/<id>` (a change to Story 2.23's job and its suite); or keep the archived
+    repository as `source` (resolves, but names frozen history rather than the code). The change is a
+    Registry MINOR release carrying all three entries at once, after the Epic 3 merge has deployed.
+
+    **Owner: the Operator for the archives, then whichever story next edits the Registry.** **Trigger:
+    the last of the three archives.**
   status: open
