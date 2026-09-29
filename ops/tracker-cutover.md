@@ -125,7 +125,8 @@ C='docker compose --env-file .env.production'
    done | tee tracker-cutover-probe.log
    ```
 4. **Give the new containers their inputs.** The secrets are the old project's, copied with a `TRACKER_`
-   prefix and never printed: `grep -E '^(ADMIN_PASS|DB_PASS|DOWNLOAD_PATH|IGDB_CLIENT_ID|IGDB_CLIENT_SECRET|LOG_LEVEL|NEXTAUTH_SECRET|NEXTAUTH_URL|QBITTORRENT_PASS|QBITTORRENT_USER|STEAM_API_KEY|STEAM_USER_ID|TMDB_API_KEY|TMDB_WATCH_PROVIDER_COUNTRY)=' ../cuatro-tracker/.env | sed 's/^/TRACKER_/' >> .env.production`,
+   prefix and never printed. First `sed -i '/^TRACKER_/d' .env.production`, so a re-run after a partial
+   attempt replaces the copy rather than doubling it; then `grep -E '^(ADMIN_PASS|DB_PASS|DOWNLOAD_PATH|IGDB_CLIENT_ID|IGDB_CLIENT_SECRET|LOG_LEVEL|NEXTAUTH_SECRET|NEXTAUTH_URL|QBITTORRENT_PASS|QBITTORRENT_USER|STEAM_API_KEY|STEAM_USER_ID|TMDB_API_KEY|TMDB_WATCH_PROVIDER_COUNTRY)=' ../cuatro-tracker/.env | sed 's/^/TRACKER_/' >> .env.production`,
    then `grep -c '^TRACKER_' .env.production` prints 14 (the fifteenth name, `CLOUDFLARE_API_TOKEN`,
    belongs to the old project's dormant Caddy and is not copied). Then `docker pull
    ghcr.io/luigiespinosa/tracker:$TRACKER_TAG`, which needs the package public or this account logged
