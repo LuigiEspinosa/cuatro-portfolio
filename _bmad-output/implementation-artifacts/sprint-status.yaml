@@ -783,10 +783,11 @@ development_status:
   # ops/tournament-placement.md and records the Operator's rulings (Supabase Cloud kept, DW-280 closed;
   # the pooler; the hostname; no worker hostname, DW-287; DW-278 settled public). 9099973 is Registry
   # 1.7.0, cs-tournament Live at https://tournament.cuatro.dev, which reaches main only after the URL
-  # serves (FR-28). Suite 1761 of 1761 on each. The identity export refused on the one admin holding a
+  # serves (FR-28). Suite 1761 of 1761 on each. 6d72963 holds 1.7.0 back so dev pushes whole (the Registry
+  # at 1.6.0); the release is the revert of 6d72963 after the URL serves (runbook step 10). The identity export refused on the one admin holding a
   # password hash, so the merge spec's premise is off by one; the proof is the Operator's Steam sign-in.
-  # Remaining, all the runbook's: merge 93949e6 to main, run its steps 1 to 8 on the box, the Steam
-  # sign-in, then merge 9099973.
+  # Remaining, all the runbook's: push dev and merge it to main, run its steps 1 to 8 on the box, the
+  # Steam sign-in, then revert 6d72963 and merge that release.
   3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: awaiting-operator
   # 3-8 review 2026-09-29: ops/estate.md § The end state records 10 repositories (decided 2026-09-26,
   # SM-7 amended, DW-249), the ten named, observed 14 at 2026-09-29T17:02:30Z, the waypoint table dated,

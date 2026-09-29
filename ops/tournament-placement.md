@@ -49,11 +49,12 @@ times UTC). None of these is repeated by the sequence; step 1 re-reads the ones 
   already says a host without IPv6 must use it.
 - **By hand, from the checkout.** No deploy starts the `tournament` profile; wiring it into `deploy.yml`
   is DW-275's, in Epic 4. Placement is the tracker's pattern (DW-275 names both now).
-- **Two commits reach `main` in order.** The first carries the compose networks, the build inputs, the
-  gate's placement, the Caddyfile fragment, this file and the records. The second is Registry 1.7.0,
-  `cs-tournament` `Live` at `https://tournament.cuatro.dev`. The second merges only after step 6 has
-  answered from off the box, so no Registry on `main` points at a URL that does not serve (FR-28), and
-  the Suite Directory never renders a dead link.
+- **The Registry release lands after the placement.** `dev` carries the compose networks, the build
+  inputs, the gate's placement, the Caddyfile fragment, this file and the records, with the Registry at
+  1.6.0: Registry 1.7.0 (`9099973`, `cs-tournament` `Live` at `https://tournament.cuatro.dev`) was
+  committed and then held back by `6d72963`, so `dev` pushes whole at any time. The release is
+  `git revert 6d72963`, made only after step 6 has answered from off the box, so no Registry on `main`
+  points at a URL that does not serve (FR-28), and the Suite Directory never renders a dead link.
 - **Containers before Caddy.** The site block is added once both containers are healthy, so the
   hostname never proxies to nothing for longer than the reload.
 
@@ -72,7 +73,7 @@ Operator dates it in action 4.
 ## The sequence
 
 On the box as `deploy`, in `/home/deploy/cuatro-portfolio` unless a step says otherwise.
-**Preconditions:** the first commit above is on `main` and the Deploy workflow has run, so this checkout
+**Preconditions:** `dev` through `6d72963` or later, without the release, is on `main` and the Deploy workflow has run, so this checkout
 holds it; and a commit on `main` carrying it has a green **Image (tournament)** run (both jobs), whose
 sha is `TOURNAMENT_TAG`. An image from before that commit was built without the public Supabase values.
 
@@ -120,8 +121,8 @@ C='docker compose --env-file .env.production'
    docker exec cs-tracker-caddy-1 caddy validate --config /etc/caddy/Caddyfile
    docker exec cs-tracker-caddy-1 caddy reload --config /etc/caddy/Caddyfile
    ```
-   `validate` prints `Valid configuration` before the reload; if it does not, restore the backup and
-   stop. The block is the one `docker/Caddyfile` carries, copied rather than retyped.
+   `validate` prints `Valid configuration` before the reload; if it does not, restore the backup as
+   the rollback below says and stop. The block is the one `docker/Caddyfile` carries, copied rather than retyped.
 6. **Probe from off the box**, from the workstation, with a browser user agent:
    `https://tournament.cuatro.dev/api/health` answers 200 `{"status":"ok"}` with a `cf-ray` header and
    the three origin headers; `https://tournament.cuatro.dev/` answers 200. The rules, as
@@ -140,13 +141,19 @@ C='docker compose --env-file .env.production'
    `cuatro.dev` subdomain.
 9. **The identity proof.** The Operator signs in through Steam on `https://tournament.cuatro.dev` and
    lands as the admin (action 4).
-10. **Release the Registry.** Push and merge the second commit, Registry 1.7.0, into `main`. The next
-    Registry verification reads `PASS  cs-tournament live: https://tournament.cuatro.dev`. A push of that
-    commit to any branch starts `registry-verification.yml`, which fetches the URL, so until step 6 has
-    answered push the first commit alone (`git push origin <its sha>:dev`) or expect that run red.
+10. **Release the Registry.** On the workstation, on `dev`: `git revert --no-commit 6d72963`, which
+    restores Registry 1.7.0 and its pins exactly as `9099973` and `28bc579` left them, then one
+    subject-only `git commit -m "feat(3-7): release Registry 1.7.0 ..."`; run the suite; push `dev` and
+    merge it into `main`. The next Registry verification reads
+    `PASS  cs-tournament live: https://tournament.cuatro.dev`. A push that changes
+    `contracts/registry.json` starts `registry-verification.yml`, which fetches the URL, so this commit
+    is made only after step 6 has answered; before it, `dev` holds Registry 1.6.0 and a push of `dev`
+    verifies only what already serves.
 
-**Rollback, at any step:** remove the site block by restoring
-`/home/deploy/cs-tracker/Caddyfile.bak-3-7` over the Caddyfile and reloading as in step 5, then
+**Rollback, at any step:** remove the site block by restoring the backup in place,
+`cp /home/deploy/cs-tracker/Caddyfile.bak-3-7 /home/deploy/cs-tracker/Caddyfile`, never `mv`: the
+Caddyfile is a single-file read-only bind mount into `cs-tracker-caddy-1` (`ops/routing-inventory.md`),
+so a new inode leaves the container reading the old file across the reload. Reload as in step 5, then
 `$C --profile tournament stop tournament tournament-worker`. The data never moved, so nothing is
 restored. If Registry 1.7.0 is already on `main`, the same change that rolls back takes the entry to
 `Complete` and removes its `live` (FR-28). If the placement is abandoned rather than retried, that change
@@ -171,11 +178,11 @@ server up across it, as Story 3-4 proved for the Hub alone.
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Merge the first commit into `main`** and let the Deploy run | The compose networks, the gate's placement and the build inputs reach the box and GHCR only this way. The Registry commit stays behind it | |
+| 1 | **Push `dev` and merge it into `main`** without the release, and let the Deploy run | The compose networks, the gate's placement and the build inputs reach the box and GHCR only this way. The Registry stays at 1.6.0 (`6d72963`) | |
 | 2 | **Note the green Image (tournament) run** on a `main` sha carrying it | Its sha is `TOURNAMENT_TAG` | |
 | 3 | **Run steps 1 to 8 above** | Step 1's and step 7's readings and step 6's codes go into this record | |
 | 4 | **Sign in through Steam** on `https://tournament.cuatro.dev` as the admin | The identity proof (§ Identity) | |
-| 5 | **Merge Registry 1.7.0 into `main`** after step 6 answered | FR-28 | |
+| 5 | **Release Registry 1.7.0** (step 10: the revert of `6d72963`) and merge it into `main` after step 6 answered | FR-28 | |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

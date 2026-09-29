@@ -583,7 +583,8 @@ Observations below were made by the Operator and the orchestrator and relayed; t
   step 4 falls away under the ruling; step 5 (the gate: `cs-tournament` is in `placements` from this
   change, one entry for both deploy units, the load reading after placement written by the runbook) and
   step 6 (Registry 1.7.0, `Live` at `https://tournament.cuatro.dev`) follow the runbook, the Registry
-  merging to `main` only after the URL has served (FR-28). Step 7 was done on 2026-09-25.
+  merging to `main` only after the URL has served (FR-28): `dev` holds it back at 1.6.0 (`6d72963`) and
+  the runbook's step 10 releases it by reverting that commit. Step 7 was done on 2026-09-25.
 
 ## Pending Operator actions
 

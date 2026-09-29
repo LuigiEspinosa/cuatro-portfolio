@@ -98,7 +98,8 @@ at `https://tournament.cuatro.dev` in a separate commit that reaches `main` only
 - [x] `docker/Caddyfile`: tournament block; mirror of the box file.
 - [x] `ops/tournament-placement.md`: the runbook with rollback and Pending Operator actions.
 - [x] Records listed in the Code Map: dated facts and rulings.
-- [x] Commit B: `contracts/registry.json`, `ops/registry-schema.md`, pins: Registry 1.7.0.
+- [x] Commit B: `contracts/registry.json`, `ops/registry-schema.md`, pins: Registry 1.7.0, then held
+  back on `dev` by `6d72963` (Spec Change Log), released by its revert.
 
 **Acceptance Criteria:**
 
@@ -129,6 +130,13 @@ at `https://tournament.cuatro.dev` in a separate commit that reaches `main` only
   `cs-tournament` records.
 
 ## Spec Change Log
+
+- 2026-09-29, after verification (finding 21 below): commits `2053c87` and `28bc579` landed after B, so
+  "A reaches `main` first" could not be pushed without rewriting history, and pushing `dev` whole put
+  1.7.0 on origin before the URL served. `6d72963` restores B's six files as A left them, so `dev`
+  carries A, the records and the fixes with the Registry at 1.6.0 and pushes whole; commit B's release
+  becomes `git revert 6d72963` (runbook step 10), which reproduces B plus `28bc579`'s count fix.
+  Decision 3's intent (the Registry reaches `main` only after the probe) holds unchanged.
 
 ## Review Triage Log
 
@@ -165,6 +173,15 @@ returned four findings, all patched in one follow-up commit:
 | 19 | Verifier | `ops/registry-verification.md`'s expected-count row kept 40 checks and 7 `live` in its value cell under the 1.7.0 amendment | minor: real | patch: the cell reads 41 and 8 (5 by 2xx), the amendment names the old value |
 | 20 | Verifier | `ops/estate.md` called the four public GHCR packages "the four merged applications'" | minor: four packages of three merged applications | patch |
 
+A second verifier pass over those commits returned four minor findings:
+
+| # | Layer | Finding | Verdict | Route |
+|---|---|---|---|---|
+| 21 | Verifier | The records and fix commits sit after B, so step 10's `git push origin <A sha>:dev` left the spec, the sprint-status row and the corrected step 2 local, and `main` would carry the old step 2; pushing `dev` whole put 1.7.0 on origin before the URL served | minor: real | patch: `6d72963` holds the Registry back; step 10 releases by reverting it (Spec Change Log) |
+| 22 | Verifier | The rollback restores the Caddyfile backup without saying `cp`; the file is a single-file read-only bind mount, so `mv` leaves Caddy reading the old inode | minor: real | patch: the rollback names `cp`, never `mv`, and why; step 5's failed-validate path points at it |
+| 23 | Verifier | `demo: none` against public viewer pages (row 11) | not a defect in this diff | rejected: already the Operator's item |
+| 24 | Verifier | The `placements` entry and its "serving" note precede the placement (rows 1, 2) | minor: mitigated by the rollback's removal and the date-move rule | rejected: moving it would reopen the gate pins A settled, for a record the runbook already corrects |
+
 ## Design Notes
 
 **Oversized, kept.** The draft measured about 1,902 tokens (7,608 characters over four; 997 words) against the SCOPE STANDARD's 1600. Answer **Keep**, relayed by the
@@ -186,6 +203,9 @@ of 2026-09-29; 3 to 7 answer gaps from FR-28, the Registry schema's `demo` enum,
   "16 applications, valid", exit 0; `node ops/contract-purity.mjs` "11 files, none executable and no
   link", exit 0.
 - Commit B (`9099973`, Registry 1.7.0): the same five, the same totals, each exit 0.
+- `dev` at the findings 21 and 22 patch (Registry 1.6.0 after `6d72963`): typecheck exit 0; the suite "Test
+  Files  71 passed (71)", "Tests  1761 passed (1761)", exit 0; the Hub build exit 0; `registry-schema`
+  "16 applications, valid" and `contract-purity` exit 0.
 - `HUB_TAG=abc TOURNAMENT_TAG=def docker compose --profile tournament config`: exit 0; services
   `anchor-app anchor-db anchor-umami tournament tournament-worker`; resolved networks: `tournament`
   `{"cs-tracker_default":{"aliases":["tournament"]},"default":null}`, `tournament-worker`
