@@ -9,6 +9,9 @@ second application, `cs-tracker`, renders, and the App Registry the Hub's Suite 
 Next.js 16 / React 19 / TypeScript, Sass, pnpm, Turborepo, Vitest, Playwright, deployed by Docker
 Compose over SSH to one Hostinger KVM 2 box. The Hub is the workspace `hub` in `apps/hub/`; the
 contracts, `packages/`, `ops/`, the browser suite and every gate's configuration stay at the root.
+`apps/finance/` is the workspace `finance`, merged from `cuatro-finance` in Story 3-5 (Next.js 16,
+Prisma 7, Tailwind 4): imaged in CI, not placed on the box. The root `tsc`, Vitest and the Hub's
+literal and alias gates exclude it; it runs `corepack pnpm --filter finance typecheck` and `test`.
 Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually runs is in
 `ops/`.
 

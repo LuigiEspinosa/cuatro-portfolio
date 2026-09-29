@@ -215,7 +215,7 @@ estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 | `Lumen` | Archive: empty shell | `Archived` | n/a | In Registry, not rendered |
 | `tcg-tracker` | Archive, then fold as a domain inside `cuatro-tracker` | `Archived` | `cuatro-tracker` | In Registry, not rendered |
 | `connect-four-react` | Absorb: playable demo in the Hub | `Archived` | `cuatro-portfolio` | In Registry; not rendered as a directory entry, and not rendered as an embedded demo at MVP either. It will surface as the embedded demo (PRD section 4.7) only once FR-29 is taken up, and FR-29 is deferred to v2. See the note below. |
-| `cuatro-finance` | Merge into the Anchor | `In progress` | n/a today, see note below | Not rendered until Live |
+| `cuatro-finance` | Merge into the Anchor: **merged into `apps/finance` on `dev` by Story 3-5 (2026-09-29), imaged in CI, not placed**. See the note below | `In progress` | n/a today, see note below | Not rendered until Live |
 | `cuatro-tracker` | Merge into the Anchor | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
 | `cs-tournament` | Merge into the Anchor | `Complete`: deployed nowhere by the estate since the Operator ruling of 2026-09-24, until Story 3.7 places it on the box. `Live` at `inclusivcup.vercel.app` until then | n/a today, see note below | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
@@ -320,6 +320,47 @@ Anchor, which takes the Estate from 11 to 8. That merge is deferred beyond MVP, 
 has not moved, and each stays rendered under its own application id. PRD section 5.1
 deliberately assigns them no `absorbed_into`, and this record follows it. They acquire one
 when the merge actually lands, and not before.
+
+**Amended 2026-09-29 by Story 3-5.** The merge was brought forward into Epic 3 (AD-20), and
+`cuatro-finance`'s code has now moved; the other two have not. The paragraph above holds for all
+three otherwise: `cuatro-finance` keeps no `absorbed_into`, because its repository is not archived,
+and Story 3.8 writes it once the Operator archives it.
+
+### `cuatro-finance`, merged on `dev` and not placed
+
+**Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
+it: merging is not placing.
+
+- **History.** `git filter-repo --to-subdirectory-filter apps/finance` ran on a scratch clone of
+  `LuigiEspinosa/cuatro-finance` at `dev` `bcf7369e89d72af9cd34140ee6756ed700907edb` (whose root
+  commit is `main`, a lone `LICENSE`), and merge `6d5929f684472e37b64a36c87f2940b2dd5148a4` brought its
+  37 commits into the Anchor with `--allow-unrelated-histories`. `git log --follow` on
+  `apps/finance/lib/money.ts` lists its two source commits.
+- **Workspace.** It is the workspace `finance` under the one root lockfile, with its own typecheck and
+  suite in `ci.yml`'s `test` job. The root `tsc` and Vitest exclude it, and so do the Hub's literal and
+  alias gates (`OTHER_APPLICATIONS` in `ops/literal-conformance.mjs`).
+- **Deploy unit (AD-3, AD-8).** `apps/finance/Dockerfile` over `turbo prune finance --docker` gives
+  `ghcr.io/luigiespinosa/finance:<git-sha>`, built, provisioned, migrated and health-checked by
+  `.github/workflows/image-finance.yml` before it is pushed. The first push of these commits is what
+  puts the first tag in GHCR. `docker-compose.yml` declares `finance` and `finance-migrate` under
+  profiles no deploy activates, with no router, hostname or `ops/capacity-gate.yml` placement: whether
+  it runs on the box is a separate decision under AD-9.
+- **Migrations (AD-23).** Never on boot. The one-off `finance-migrate` runs `prisma migrate deploy`
+  from the image before a rollout, and the finance suite refuses a migration that both expands and
+  contracts the schema.
+- **Data (AD-10).** Database and role `finance` in `anchor-db`, created by
+  `apps/finance/prisma/provision.sql` with `CONNECTION LIMIT 10` on both; the application pools five
+  per container (`apps/finance/lib/db.ts`), two containers across a rollout. **The Anchor Postgres'
+  sum:** `anchor-db` sets no `max_connections`, so it runs Postgres 16's default of 100. Its one other
+  consumer is Umami, whose `umami` role carries no limit and whose URL names no `connection_limit`,
+  so it pools Prisma's documented default of twice the core count plus one (five on the two-core
+  box; a documented default, not an observed figure). With Postgres' three reserved superuser slots
+  that is at most 18 of 100.
+- **Tokens (AD-14).** Adoption is deferred whole, not half-applied: `apps/finance/app/tokens.css` keeps
+  its own palette, and `app/layout.tsx` its own fonts (DW-267). The application is `In progress` and
+  unrendered, and AD-25 gives it no restyle until it renders.
+- **Still the Operator's:** archiving `cuatro-finance`, after which Story 3.8 writes `absorbed_into:
+  cuatro-portfolio` and moves `source`; and every placement step (DW-269).
 
 ## Pending Operator actions
 

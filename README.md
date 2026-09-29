@@ -23,6 +23,8 @@ My Personal portfolio, deployed at [cuatro.dev](https://cuatro.dev). High-qualit
 
 The Hub is the workspace `hub` in `apps/hub/`, its unit suites beside its components; the contracts,
 the tooling, the browser suite and every gate's configuration stay at the repository root.
+`apps/finance/` is the finance application, the workspace `finance`, merged with its history from
+`cuatro-finance`; it runs its own `pnpm --filter finance typecheck`, `test` and `build`.
 
 ```bash
 pnpm install

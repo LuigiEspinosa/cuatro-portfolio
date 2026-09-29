@@ -2,6 +2,12 @@
 
 A self-hosted personal finance web app for my personal finances.
 
+> **Now part of the Anchor.** This application was merged with its history into
+> `cuatro-portfolio` at `apps/finance/` (Story 3-5, 2026-09-29) and is the pnpm workspace `finance`.
+> Install from the repository root, then run `pnpm --filter finance dev`, `test`, `typecheck` or
+> `build`. It is imaged in CI and not deployed: the links below name a hostname that does not resolve
+> yet (`ops/estate.md`).
+
 - **Live:** [finance.cuatro.dev](https://finance.cuatro.dev)
 - **Demo (public, read-only):** [finance.cuatro.dev/demo](https://finance.cuatro.dev/demo)
 - **Design:** [Figma](https://www.figma.com/design/A6U0zXRsnRkzeCSevTc0mT/Cuatro-Finance?m=auto&t=NJ1NWELZaDxdanzU-1)

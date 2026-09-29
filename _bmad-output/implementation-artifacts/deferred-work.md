@@ -8058,6 +8058,11 @@ status: done
     logs print both notices. The ruling is still the Operator's. If it is to turn both off, the image's
     half is `ENV TURBO_TELEMETRY_DISABLED=1` in the prune stage and `ENV NEXT_TELEMETRY_DISABLED=1` in
     the builder.
+
+    **Widened 2026-09-29 by Story 3-5, committed on `dev`.** `apps/finance/Dockerfile`, built by
+    `.github/workflows/image-finance.yml` on every push, runs `turbo prune` and `next build` the same
+    way, and its build runs `prisma generate` first. The ruling is still the Operator's, and if it is to
+    turn telemetry off, the finance image takes the same two `ENV` lines as the Hub's.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
@@ -8175,7 +8180,14 @@ status: done
     Nothing is wrong today: `apps/hub` is the only application.
 
     **Owner: Story 3.5**, the first merge. **Trigger: its first unit run.**
-  status: open
+
+    **Closed 2026-09-29 by Story 3-5, committed on `dev`.** The root `vitest.config.ts` excludes
+    `apps/finance/**` and the root `tsconfig.json` excludes `apps/finance`, and `ci.yml`'s `test` job
+    runs `pnpm --filter finance typecheck` and `pnpm --filter finance test` after the root's, each under
+    finance's own `@` alias and node environment. `ops/__tests__/workflow-hardening.test.ts` holds both
+    steps and resolves each to a script the `finance` manifest defines. The next merge (Story 3.6) adds
+    its own exclusion and its own two steps the same way.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
   id: DW-259
@@ -8225,6 +8237,13 @@ status: done
     leave the old container running beside it, since the deploy no longer removes orphans.
     **Owner: an Operator ruling on the Hub's one id (AD-3), or Epic 4's rebuild, whose Traefik routers
     are named afresh.** **Trigger: either.**
+
+    **Noted 2026-09-29 by Story 3-5.** The finance application follows AD-3 where the Hub cannot:
+    workspace, image, compose service, database and role are all `finance`, and its migration service
+    is `finance-migrate`. Its Registry id stays `cuatro-finance`, as the Hub's stays
+    `cuatro-portfolio`. `finance` joins only the stack's own network today, so the shared-network
+    collision that keeps `anchor-app` does not arise until it is placed, when its alias there is chosen
+    with its router (DW-269).
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
@@ -8375,4 +8394,106 @@ status: done
     that run.
 
     **Owner: the Operator, at the Epic 3 merge.** **Trigger: that merge.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-267
+  summary: >-
+    `apps/finance` has not adopted the token contract: it keeps its own shadcn palette in
+    `app/tokens.css` and its own fonts in `app/layout.tsx`, and the Hub's literal and alias gates do not
+    read it until it does.
+  evidence: |-
+    Decided 2026-09-29 by Story 3-5 (its Decision 3), which the story's criterion allows in so many
+    words: AD-14 makes adoption all-or-nothing, so the story records the deferral rather than
+    half-applying `contracts/tailwind.css`. `app/tokens.css` carries 78 `oklch` literals and names
+    `--accent` and `--font-mono`, two of the names Story 2-22 deleted from the Hub. That is why
+    `OTHER_APPLICATIONS` in `ops/literal-conformance.mjs` lists `apps/finance/`, and why
+    `apps/hub/app/__tests__/anchor-contract.test.ts` skips it. The application is `In progress` and
+    unrendered, and AD-25 gives it no restyle until it renders. Adoption means importing
+    `contracts/tailwind.css`, replacing the palette and the fonts with contract roles, and deleting the
+    `OTHER_APPLICATIONS` entry in the same change, so the gate reads finance from then on.
+
+    **Owner: the Epic 8 wave that restyles finance, or an Operator ruling to adopt earlier.**
+    **Trigger: finance moving towards `Live`, or its first placement.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-268
+  summary: >-
+    The finance image installs its migration toolchain (the Prisma CLI and `dotenv`) with `npm` from
+    the registry at pinned versions, outside `pnpm-lock.yaml`'s integrity hashes.
+  evidence: |-
+    Decided 2026-09-29 by Story 3-5 (its Decision 8). The traced standalone server carries no Prisma
+    CLI, and `finance-migrate` needs one (AD-23). `npm install prisma@7.6.0 dotenv@17.3.1` in the
+    Dockerfile's `migrate` stage is the smallest working form, and
+    `docker/__tests__/finance-image.test.ts` holds both versions equal to what the lockfile resolves
+    for `apps/finance`. What it does not hold: npm resolves the CLI's own dependencies afresh on every
+    build, and verifies them against the registry rather than the lockfile. The lockfile-faithful
+    alternative is `pnpm --filter finance deploy --prod` into that stage, at the cost of copying every
+    production dependency beside the traced output. Low: the versions are exact, the stage never
+    serves traffic, and CI runs the toolchain against a real database before any push.
+
+    **Owner: finance's placement story.** **Trigger: that story, or a Prisma upgrade.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-269
+  summary: >-
+    Placing finance on the box needs inputs the merge deliberately did not create: a hostname and
+    router, runtime secrets, the provision run, and a build input the image inlines.
+  evidence: |-
+    Recorded 2026-09-29 by Story 3-5, which merges and images finance and places nothing (AD-9). The
+    placement story owns, in one change: an `ops/capacity-gate.yml` placement for `finance` and its
+    wiring into `deploy.yml`; a hostname in the Registry and a `Host` router on the shared Caddy (never
+    a `PathPrefix`), with a `cs-tracker_default` alias chosen against `ops/routing-inventory.md`;
+    `NEXT_PUBLIC_BETTER_AUTH_URL` as a build argument of `apps/finance/Dockerfile`, since
+    `lib/auth-client.ts` reads it at build time and falls back to `http://localhost:3000` without it;
+    the runtime `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and `ENCRYPTION_KEY` (64 hex characters,
+    `lib/crypto.ts`) in the `finance` service, and `FINANCE_DB_PASSWORD` in the box's
+    `.env.production`, each an Operator item set through the gitignored env-file route; running
+    `apps/finance/prisma/provision.sql` once against `anchor-db` as its superuser
+    (`psql -U umami -d umami -v password=...`); and the first admin seed. Observed 2026-09-29: the image
+    started without `BETTER_AUTH_SECRET` logs Better Auth's default-secret error and keeps serving.
+
+    **Owner: finance's placement story.** **Trigger: an AD-9 decision to place finance.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-270
+  summary: >-
+    One lockfile links optional peers of the Hub's packages that finance brings: `next` now links
+    `@opentelemetry/api`, and `vitest` and `jsdom` link `msw` and `@noble/hashes`.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-5. pnpm links an optional peer wherever the workspace carries a
+    matching version, so the root importer's `next` snapshot gained `(@opentelemetry/api@1.9.1)`. No
+    version the Hub declares or resolves changed (every root importer entry compared before and after).
+    The Hub's build changed in form only: its `.next/static` chunks embed the pnpm directory name of
+    `next`, which the peer suffix changes, and after masking that name, the chunk names and the module
+    ids, 28 of 31 chunks are byte-identical and the other three differ only in minifier-chosen local
+    names. The Hub's traced server now carries `@opentelemetry/api`, which Next loads when present;
+    with no SDK registered its tracer is a no-op. Nothing fails. If the Operator wants the Hub's
+    closure unchanged by a merge, pnpm's `peerDependencyRules` is the lever.
+
+    **Owner: unassigned.** **Trigger: an unexplained change in the Hub's server bundle, or Story 3.6's
+    merge, which will move peers the same way.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-271
+  summary: >-
+    `apps/finance` carries four leftovers from its own repository that the merge kept untouched: an
+    `eslint.config.mjs` no script runs, its local-development `docker-compose.yml` and
+    `docker/Caddyfile`, and a Prisma seed path that names a missing file.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-5. The `lint` script (`next lint`) went, because `next lint` left
+    Next 16 and `ops/__tests__/turborepo.test.ts` refuses any lint script while CI runs no lint
+    (`AGENTS.md`); `eslint.config.mjs` stays for the lint gate a later story may land.
+    `apps/finance/docker-compose.yml` publishes Postgres, Redis and Caddy ports for local development
+    and is not the Anchor's compose file; nothing reads it in CI or on the box. `prisma.config.ts`
+    names `seed: "tsx prisma/seed.ts"` while the seed is `prisma/seed/admin.ts`, which
+    `package.json`'s `prisma.seed` names correctly. None is fixed here, since the merge moves code
+    without rewriting it.
+
+    **Owner: finance's placement story (the seed path), and the story that lands a lint gate.**
+    **Trigger: either.**
   status: open
