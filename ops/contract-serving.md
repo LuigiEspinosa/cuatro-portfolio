@@ -301,6 +301,10 @@ not `public/contracts/`. So a served copy left in that checkout by an earlier bu
 into the builder stage by `COPY . .`, gitignored or not. Overwriting it in place would leave a
 contract file that was deleted upstream still being served from the apex. Replacing the directory
 is what makes the deployed tree a function of `contracts/` at that commit and of nothing else.
+*(Amended 2026-09-28: from the Epic 3 merge the box builds nothing, Story 3-4, committed on `dev`. CI
+builds the image from a fresh checkout, which holds no served copy, so the removal stops being
+load-bearing on the deploy path and stays so for a build from a long-lived checkout, a developer's
+included.)*
 
 **Nothing redirects the publish at runtime.** No environment variable and no argument selects
 either path; both are fixed in the module and resolved beside it. `ci.yml` had to pin two build
@@ -582,7 +586,62 @@ Operator's key beside a running one can interleave a reset with a build.
 **Epic 3.** Story 3-4's image-pull deploy edits `ops/deploy-remote.sh`, not the workflow's string:
 the compose line becomes a pull of the sha tag and `docker-rollout`, the path and the
 sha-last-word contract stay, and the key's line does not change. `epics.md` Story 3.4 carries it as
-a dated amendment.
+a dated amendment. *(Done 2026-09-28 by Story 3-4, committed on `dev`: § The deploy pulls a tag and
+rolls it, below.)*
+
+### The deploy pulls a tag and rolls it
+
+**Written 2026-09-28** by `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`,
+**committed on `dev`** (`b3b72d6`): the workflow is live at the Epic 3 merge, and the script from the dispatch
+after it (below). Everything here is a **Decision** of that story unless it is marked **Observed**.
+
+**What changes.** `.github/workflows/deploy.yml` is one chain of four jobs. `gate` refuses any ref
+but `main` and runs the Capacity Gate, on Node 24 (DW-251). `image` needs the gate and calls
+`.github/workflows/image.yml`, which builds `apps/hub/Dockerfile` from the root, needs `/api/health`
+to answer and pushes `ghcr.io/luigiespinosa/hub:<sha>`, with `packages: write` on that job alone.
+`deploy` needs the image and holds the SSH step and its string, unchanged. `report` needs all three,
+runs only when one failed and opens the issue, with `issues: write` on that job alone. So a refused
+ref or placement builds nothing, and no deploy starts before its image is in GHCR. `image.yml` no
+longer runs on a push to `main`, so no push builds its image twice; a dispatch builds it again.
+
+`ops/deploy-remote.sh` keeps its path, its refusals and its two ways of reading the sha. After them it
+makes sure `docker rollout --version` reads `docker-rollout version v0.14`, the stack's pin, and
+otherwise installs the release asset into `~/.docker/cli-plugins/` only if its sha256 is
+`cdeaba6ae9eee3b0b606286e585bbda6787283d801a6ad6d9b9d2bc347fda05b`; then pulls
+`ghcr.io/luigiespinosa/hub:<sha>`; and only then resets the checkout, so a bad download or a sha with
+no image leaves the box as it was. It then exports `HUB_TAG`, runs `<service>-migrate` when the
+compose file declares one under the `migrate` profile (AD-23; the Hub declares none), runs
+`docker rollout --env-file .env.production --timeout 120 anchor-app`, and refuses unless `anchor-app`
+then runs the sha's image alone, logging `deploy-remote: anchor-app runs ghcr.io/luigiespinosa/hub:<sha>`
+when it does. `docker-compose.yml` names the Hub's image `ghcr.io/luigiespinosa/hub:${HUB_TAG:?...}`
+and declares no `build:`, so nothing on the box can compile it, and compose refuses to start without the
+tag rather than run a floating one.
+
+**What a deploy no longer does.** It rolls `anchor-app` alone, the one id it names (AD-7), and runs no
+`up` over the stack: `anchor-umami` and `anchor-db` keep running as they are, a change to either in
+`docker-compose.yml` reaches the box only by the Operator's own `docker compose up -d <service>`, and
+`--remove-orphans` went with the line that carried it. A compose command run by hand on the box needs
+`HUB_TAG` set: `ps` and `logs` take any value, and whatever starts a container is the deploy's.
+
+**Observed on this host, 2026-09-28,** with Docker 29.8.1 and Compose v5.5.1 through a `docker:29-cli`
+client holding no credentials, the real `docker-compose.yml`, a local `cs-tracker_default` network and
+`caddy:2` proxying `anchor-app:3000` as the box's `cuatro.dev` block does. The script, run as the box
+runs it against a scratch origin, downloaded the asset, which hashed to the pin, installed it, read
+v0.14, and stopped at the pull of a sha with no image ("not found") with the checkout where it was; a
+second run fetched nothing. The two CI-built tags `38f9a28` and `7cad084` pulled with no credentials.
+A rollout from the first to the second exited 0 in 7 s and the service ran the second; a rollout to an
+image that serves nothing exited 1 after 134 s, "New containers are not healthy. Rolling back.", with
+the serving container untouched; and 2,506 requests through Caddy across both, on `/api/health` and
+`/`, all answered 200. The Epic 2 script's compose line against the new compose file exited 1 at
+`HUB_TAG` and touched no container.
+
+**The first deploy after the Epic 3 merge fails, by design.** Under the forced command sshd runs the
+checkout's copy of the script, the one the last deploy left: the Epic 2 script. It resets the checkout
+to the merge, runs its `up --build` line against the new compose file, and exits 1 at `HUB_TAG` before
+touching a container, so `cuatro.dev` keeps serving the Epic 2 image and the report job opens an
+issue. The dispatch in Pending Operator action 11 then runs the new script. Lifting the forced command
+for that one run would avoid the failure and weaken the key meanwhile, so it is not the path. DW-264
+records the lag, which delays every later change to the script by one deploy.
 
 ### Holding the deploy key to the forced command
 
@@ -821,9 +880,10 @@ rather than left in prose, in the shape `ops/token-contract.md`, `ops/font-contr
 | 5 | **Record the first real CI run of the `rendered-output` job with the new spec**, from the Actions run summary | Operator | The three new browser checks have only ever run against a server started on a Windows development host. The runner figures, and the content types Next sends on Linux, are unknown until the job runs once. Same open item as `ops/tailwind-adapter.md` action 4 | **2026-08-27.** Run `33104210025` on `main`, `rendered-output: success`, 18:35:14Z to 18:36:51Z, **97 s**. All five jobs in that run passed: `test`, `tokens-contract`, `fonts-contract`, `contract-purity`, `rendered-output`. The Linux content types the spec asserts are separately confirmed against the live edge under "Live over HTTPS, 2026-08-27" |
 | 6 | **Run `/bmad-project-context` to refresh the `bmad:context` block in `AGENTS.md`** | Operator | Still open from Stories 1-10, 1-12 and 1-13, and this story widens it again. `AGENTS.md:52-53` describes CI as typecheck and tests only, against a file with five jobs, and `AGENTS.md:55-57` says Playwright is not installed and that no acceptance criterion may claim a browser check, which is now false for four spec files. Nothing in `AGENTS.md` yet says that `pnpm build` publishes into `public/contracts/`, which is the first thing an agent editing the build script needs to know | **2026-08-27**, found done and closed here on 2026-09-23. The refresh landed in `4112ee8` and replaced all three claims: CI was named as its five jobs, "Playwright is not installed" became "Playwright is installed and `rendered-output` is a blocking CI job", and a new line said `corepack pnpm build` runs `packages/contracts-serve/publish.mjs` first, copying `contracts/` into the generated, never committed `public/contracts/`. The `bmad-project-context` refresh of 2026-08-28, `967abfd`, rewrote the block again (`Verified 2026-08-28 against c490f33`) and no longer lists the jobs. **Observed 2026-09-23** in `AGENTS.md` at `81984db`: Playwright is in the stack line (`:9`), the rendered-output job is run with `corepack pnpm test:e2e` and its baselines are regenerated only in the pinned image (`:64-67`), the publish into `public/contracts/` is stated (`:68-70`), and nothing describes CI as typecheck and tests only. The row was not updated when the refresh landed, although the board's 1-10 comment already counted the item closed for 1-16 |
 | 7 | **Hold the Anchor's deploy key to the forced command** (DW-94) | Operator | Operator ruling 2026-09-24. The precondition, the exact `authorized_keys` edit, both verifications (a dispatch deploy that succeeds and logs `read from SSH_ORIGINAL_COMMAND`, and an interactive ssh held to the line that fails) and the rollback are under "Holding the deploy key to the forced command". Due after the first deploy that follows the Epic 2 merge, never before it, since the line names a file that deploy brings. Until this cell is dated the key opens a shell with passwordless sudo, as `ops/routing-inventory.md` records | **2026-09-25.** Applied by the orchestrator on the Operator's instruction, over the Operator's key, after the Epic 2 merge deploy (run 36156753065, `bd21c5d`) brought the script: the edit ran once, both counts read `1`, mode `600`, `sshd -T` read `acceptenv LANG`, `acceptenv LC_*` and `permituserenvironment no`. The dispatch run 36160902460 on `main` logged `deploying bd21c5da6f9784e1a14eb7306d30415a5df2d3a0, read from SSH_ORIGINAL_COMMAND` and the box's HEAD equals it. Verified both halves the same day: an interactive `ssh -tt` with a throwaway key given the identical options printed `PTY allocation request failed on channel 0` and exited 255 with no shell (the record expected the refusal line and exit 1 as well; the PTY refusal alone showed), and the same key asking for `id` printed `deploy-remote: refused: the target read from SSH_ORIGINAL_COMMAND is not a full lowercase commit sha` and exited 1; the throwaway lines and files were removed, leaving three lines, two restricted, the Operator key untouched. |
-| 8 | **Prove the failure report once, after the Epic 2 merge** (DW-20) | Operator, or the session that merges Epic 2 | A dispatch needs the workflow on `main`, so this cannot run before the merge. With no Deploy run in progress or waiting (`gh run list --repo LuigiEspinosa/cuatro-portfolio --workflow deploy.yml --limit 3`), since a dispatch on another ref would replace a waiting one, `gh workflow run deploy.yml --repo LuigiEspinosa/cuatro-portfolio --ref dev` fails at "Refuse any ref but main", before anything reaches the box, and its last step opens an issue titled `Deploy failed at <sha7>`. Confirm it with `gh issue list --repo LuigiEspinosa/cuatro-portfolio --search "Deploy failed"`, confirm the notification reached the mailbox `ops/monitoring.md` names, then close the issue with `gh issue close <number>`. That proves the ref refusal and the report without a deploy | _not done_ |
+| 8 | **Prove the failure report once, after the Epic 2 merge** (DW-20) | Operator, or the session that merges Epic 2 | A dispatch needs the workflow on `main`, so this cannot run before the merge. With no Deploy run in progress or waiting (`gh run list --repo LuigiEspinosa/cuatro-portfolio --workflow deploy.yml --limit 3`), since a dispatch on another ref would replace a waiting one, `gh workflow run deploy.yml --repo LuigiEspinosa/cuatro-portfolio --ref dev` fails at "Refuse any ref but main", before anything reaches the box, and its last step opens an issue titled `Deploy failed at <sha7>`. Confirm it with `gh issue list --repo LuigiEspinosa/cuatro-portfolio --search "Deploy failed"`, confirm the notification reached the mailbox `ops/monitoring.md` names, then close the issue with `gh issue close <number>`. That proves the ref refusal and the report without a deploy. **Amended 2026-09-28** (Story 3-4, committed on `dev`, live at the Epic 3 merge): the refusal is the first step of the `gate` job, nothing is built, and the `report` job, not a last step, opens the issue | _not done_ |
 | 9 | **Hold `list-wheel`'s deploy key to the forced command** (DW-94, the `list-wheel` half) | Operator | Operator ruling 2026-09-24. The precondition, the exact `authorized_keys` edit, both verifications (a dispatch deploy that succeeds and logs `read from SSH_ORIGINAL_COMMAND`, and an interactive ssh held to the line that fails) and the rollback are under "Holding `list-wheel`'s deploy key to the forced command". Due after the first `list-wheel` deploy that follows the push of its commit `30e5e8b`, never before it, since the line names a file that deploy brings; independent of action 7, which waits on the Epic 2 merge instead. Until this cell is dated the key, `github-actions-deploy@list-wheel`, opens a shell with passwordless sudo, as `ops/routing-inventory.md` records | **2026-09-25.** Applied in the same session as action 7, after `list-wheel`'s deploy of `718f194` (run 36110098514) brought the guarded script: both counts `1`, mode `600`, `sshd -T` as action 7. The dispatch run 36160905951 logged `deploying 718f1943bbf9a8cf15c9ee718eaa08cfe719a2b5, read from SSH_ORIGINAL_COMMAND` and the box's HEAD equals it. Verified both halves the same day: an interactive `ssh -tt` with a throwaway key given the identical options printed `PTY allocation request failed on channel 0` and exited 255 with no shell (the record expected the refusal line and exit 1 as well; the PTY refusal alone showed), and the same key asking for `id` printed `deploy-remote: refused: the target read from SSH_ORIGINAL_COMMAND is not a full lowercase commit sha` and exited 1; the throwaway lines and files were removed, leaving three lines, two restricted, the Operator key untouched. |
 | 10 | **Prove `list-wheel`'s failure report once, after its push** (DW-20, the `list-wheel` half) | Operator | A dispatch needs the workflow on the default branch, and its ref needs a copy of the workflow: `list-wheel` has only `main` and `gh-pages`, which carries none, so this uses a throwaway branch at `main`'s head. With no Deploy run in progress or waiting (`gh run list --repo LuigiEspinosa/list-wheel --workflow deploy.yml --limit 3`), since a dispatch on another ref would replace a waiting one, run from any clone of that repository: `git fetch origin`, `git push origin origin/main:refs/heads/dw-20-check`, which names the remote's `main` whatever the clone has checked out, then `gh workflow run deploy.yml --repo LuigiEspinosa/list-wheel --ref dw-20-check`. The test job runs and passes, the deploy job fails at "Refuse any ref but main" before anything reaches the box, and the report job opens an issue titled `Deploy failed at <sha7>`. Confirm it with `gh issue list --repo LuigiEspinosa/list-wheel --search "Deploy failed"`, confirm the notification reached the mailbox `ops/monitoring.md` names, then `gh issue close <number> --repo LuigiEspinosa/list-wheel` and `git push origin --delete dw-20-check`. A red suite reaching the report the same way is held by the wiring test, not by this proof | _not done_ |
+| 11 | **Complete the first pull-based deploy at the Epic 3 merge, and watch `cuatro.dev` through it** (Story 3-4) | Operator | Nothing on the box is needed first: the package pulls without credentials (observed 2026-09-28), and the script installs `docker-rollout` itself. (1) Merge. The push's Deploy run fails in its `deploy` job, "required variable HUB_TAG is missing a value", and opens an issue, as § The deploy pulls a tag and rolls it says; `cuatro.dev` keeps serving. If it fails in its `image` job instead, GitHub refused the call itself (DW-266): read that job's log before going on. (2) From the workstation, start a probe that records every answer, with a real user agent (action 4): `while :; do echo "$(date -u +%T) $(curl -s -A 'Mozilla/5.0 (rollout check)' -w ' %{http_code}' https://cuatro.dev/api/health)"; sleep 0.5; done >> rollout-check.log`. (3) `gh workflow run deploy.yml --repo LuigiEspinosa/cuatro-portfolio --ref main`, and wait until `gh run list --repo LuigiEspinosa/cuatro-portfolio --workflow deploy.yml --limit 1` reads `completed success`. Its `deploy` job logs `deploying <sha>, read from SSH_ORIGINAL_COMMAND`, the pull, docker-rollout's `Scaling 'anchor-app' to '2' instances` and `Stopping and removing old containers`, then `deploy-remote: anchor-app runs ghcr.io/luigiespinosa/hub:<sha>`, and no build output. (4) Stop the probe: every line ends in 200, and `uptime` drops once, where the new container took over; write the count here. (5) On the box, `docker ps --filter label=com.docker.compose.service=anchor-app --format '{{.Image}}'` prints the sha's image. (6) Close the issue from (1), and date KV-1's Anchor half with this run (`ops/known-violations.md` Pending Operator action 3). Optional afterwards: `docker image rm cuatro-portfolio-anchor-app` and `docker builder prune -f` reclaim what the box built | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its `_not done_` cell with the ISO
 8601 UTC completion date and leave the row in place. When a figure is re-measured, add the new row

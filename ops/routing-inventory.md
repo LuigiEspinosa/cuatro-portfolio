@@ -1117,7 +1117,8 @@ identity table below is still the 2026-08-24 set.
 is an HTTPS clone of a public repository, and a rebuild recreates it with one `git clone` and
 one `docker compose up --build`. The deploy is a second build on the serving box by the same
 mechanism as the Anchor's, which is what widens KV-1: see
-[Where the deploy goes](#where-the-deploy-goes).
+[Where the deploy goes](#where-the-deploy-goes). *(Amended 2026-09-28: the Anchor's deploy stops
+building at the Epic 3 merge, Story 3-4, committed on `dev`; this one builds until Story 4-3.)*
 
 ### Image identity, so the rebuild is reproducible
 
@@ -1153,7 +1154,10 @@ rebuild that wants a real registry digest has to read it from the registry, not 
 **What this means for a rebuild, stated as a decision rather than an observation.** Six of the
 thirteen distinct images cannot be pulled from anywhere: they exist only in this daemon's image
 store. Epic 4 must either rebuild them from their repositories at a named commit or push them to
-GHCR first, and the image ids above are how a rebuild proves it got the same thing.
+GHCR first, and the image ids above are how a rebuild proves it got the same thing. **Amended
+2026-09-28** (Story 3-4, committed on `dev`): from the Epic 3 merge the Hub runs
+`ghcr.io/luigiespinosa/hub:<sha>`, pulled from GHCR, so `cuatro-portfolio-anchor-app:latest` stops being
+used and the Hub's image leaves that set; its container's name changes with each rollout.
 
 #### `cs-tracker:latest` is built on the box, and the estate-wide claim is now exact
 
@@ -1623,7 +1627,7 @@ reaches `main`; KV-1 stays open until Epic 3.
 | `SERVER_HOST` before 2026-08-17 | Not this box | **Observed, by absence.** `.github/workflows/deploy.yml` ran `cd ~/projects/cuatro-portfolio`, and no `~/projects` directory has ever existed on `177.7.52.248`. **Re-confirmed absent 2026-08-24** |
 | `SERVER_HOST` after | `177.7.52.248` | **Operator action, completed 2026-08-17** |
 | Checkout path | `/home/deploy/cuatro-portfolio` | **Decided 2026-08-17**, matching the sibling convention |
-| Deploy mechanism | `docker compose up --build -d` over SSH | A standing AD-8 violation. **Status derived from KV-1**, which is the single place to edit it. **Amended 2026-09-24:** the compose line runs in `ops/deploy-remote.sh`, which the SSH step runs on the box and which resets to the pushed sha first (DW-93, DW-94); `ops/contract-serving.md` § The deploy runs one script describes it |
+| Deploy mechanism | `docker compose up --build -d` over SSH | A standing AD-8 violation. **Status derived from KV-1**, which is the single place to edit it. **Amended 2026-09-24:** the compose line runs in `ops/deploy-remote.sh`, which the SSH step runs on the box and which resets to the pushed sha first (DW-93, DW-94); `ops/contract-serving.md` § The deploy runs one script describes it. **Amended 2026-09-28** (Story 3-4, committed on `dev`): from the Epic 3 merge the script pulls `ghcr.io/luigiespinosa/hub:<sha>` and rolls `anchor-app` with `docker-rollout` v0.14, and the box builds nothing; the first run that does so is the dispatch after the merge's own run (`ops/contract-serving.md` § The deploy pulls a tag and rolls it), and KV-1's Anchor half retires then |
 
 **All four projects build their images on the box**, not just the Anchor, and this is no longer
 a lower bound. `cuatro-portfolio-anchor-app`, `cuatro-tracker-app`, `cuatro-tracker-worker`,
@@ -1683,6 +1687,25 @@ Dockerfile copies `apps/hub/package.json`, which a `main` checkout does not have
 and then `0aec0fb` (`origin/dev` that day) as the source. The block stays as written: Story 3.4
 replaces the deploy whose configuration it recovers, so the replacement procedure is Story 3.4's
 (DW-263).
+
+**Amended 2026-09-28 by Story 3-4, committed on `dev` (DW-263): recovering the box's configuration is
+a deploy.** Every file the Anchor runs from is in git at the commit a deploy resets to, save
+`/home/deploy/cuatro-portfolio/.env.production`, which § Configuration that exists only on the box
+lists. So either dispatch the deploy of `main` from the workstation,
+`gh workflow run deploy.yml --repo LuigiEspinosa/cuatro-portfolio --ref main`, or run the script by
+hand on the box over the Operator's own key, with `main`'s head as its argument:
+
+```
+git -C /home/deploy/cuatro-portfolio fetch origin main
+/bin/bash /home/deploy/cuatro-portfolio/ops/deploy-remote.sh "$(git -C /home/deploy/cuatro-portfolio rev-parse origin/main)"
+```
+
+A checkout that is gone altogether is cloned first,
+`git clone https://github.com/LuigiEspinosa/cuatro-portfolio.git /home/deploy/cuatro-portfolio`, and
+its `.env.production` restored. The script this runs is the checkout's copy, so until the first
+deploy after the Epic 3 merge brings the new one it builds on the box (KV-1); from then it pulls the
+sha's image and rolls it, and `.env.production`'s two `NEXT_PUBLIC_UMAMI_*` values are unread, since
+the image carries them from CI.
 
 ## The address the estate left
 
@@ -2115,6 +2138,14 @@ done
 (cd /home/deploy/cuatro-portfolio && docker compose --env-file .env.production config --services)
 cat /home/deploy/cuatro-tracker/docker-compose.override.yml
 cat /home/deploy/digital-library/docker-compose.override.yml
+```
+
+**Amended 2026-09-28** (Story 3-4, committed on `dev`): from the Epic 3 merge the Anchor's compose
+file also needs `HUB_TAG`, so both Anchor lines above stop at it, "required variable HUB_TAG is missing
+a value". Any value serves `config`, and the checkout's `HEAD` is the last sha a deploy reset to:
+
+```bash
+(cd /home/deploy/cuatro-portfolio && HUB_TAG="$(git rev-parse HEAD)" docker compose --env-file .env.production config --services)
 ```
 
 **Watch for the `edge` profile.** Two projects declare a `caddy` service that must never start

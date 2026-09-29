@@ -49,10 +49,11 @@ docker build -f apps/hub/Dockerfile \
 docker run --rm -p 3000:3000 cuatro-portfolio-app   # http://localhost:3000
 ```
 
-Both build args are required by the stack and are inlined at build time. The context must be the
-repository root: the first of four stages, all on `node:24-slim`, narrows it to the Hub's workspace
-with `turbo prune hub --docker`, and an `apps/hub` context fails there. CI builds the same image on
-every push and pushes it to `ghcr.io/luigiespinosa/hub:<commit sha>` (`.github/workflows/image.yml`).
+Both build args are required and are inlined at build time. The context must be the repository
+root: the first of four stages, all on `node:24-slim`, narrows it to the Hub's workspace with
+`turbo prune hub --docker`, and an `apps/hub` context fails there. CI builds the same image, with
+both build args, and pushes it to `ghcr.io/luigiespinosa/hub:<commit sha>`
+(`.github/workflows/image.yml`), on a push to any branch but `main` and before every deploy.
 
 ```mermaid
 flowchart LR
@@ -65,11 +66,12 @@ flowchart LR
     B -- apps/hub/public/ --> C
 ```
 
-## One-command deploy
+## Deploy
 
-```bash
-docker compose --env-file .env.production up --build -d
-```
+A push to `main` that changes more than Markdown deploys itself, and the VPS never builds. `.github/workflows/deploy.yml` runs the
+Capacity Gate, builds and pushes the image, then runs `ops/deploy-remote.sh` on the VPS over SSH,
+which pulls `ghcr.io/luigiespinosa/hub:<commit sha>` and rolls the Hub onto it with `docker-rollout`.
+`ops/contract-serving.md` describes the deploy.
 
 ```mermaid
 graph LR

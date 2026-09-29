@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-28-2026 20:37
+last_updated: 09-28-2026 22:15
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -598,7 +598,26 @@ development_status:
   # (the Image run's build log prints both telemetry notices), DW-259, DW-261 and the oversized
   # spec's Keep are open rulings that gate no criterion.
   3-3-build-the-hub-image-in-ci-and-push-to-ghcr: awaiting-operator
-  3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
+  # 3-4 built 2026-09-28 on dev, not pushed (the orchestrator pushes): b3b72d6 (code, workflows,
+  # suites) and the docs commit carrying this line. deploy.yml is one chain: gate (the ref refusal,
+  # then the Capacity Gate on Node 24), then image (calls image.yml, which no longer runs on a push to
+  # main), then deploy (the SSH step and its string unchanged), then report (the issue, on failure).
+  # ops/deploy-remote.sh keeps its path and refusals, installs docker-rollout v0.14 from its release
+  # asset against sha256 cdeaba6a..., pulls ghcr.io/luigiespinosa/hub:<sha> before the reset, runs a
+  # declared <service>-migrate (AD-23; the Hub has none), rolls anchor-app with docker rollout
+  # --timeout 120 and refuses unless the service then runs that image. docker-compose.yml names the
+  # image by HUB_TAG and builds nothing. Observed on this host: the real asset installed by the real
+  # script, a sha with no image refused before the reset, a rollout between two CI-built tags in 7 s
+  # and one to an image serving nothing rolled back after 134 s, 2,506 requests through Caddy across
+  # both, all 200; 1,683 unit tests in 66 files. Six review layers ran inline, not independent: eight
+  # patches, DW-265 and DW-266 deferred, no loopback. DW-262, DW-263 and DW-251's deploy half closed;
+  # DW-264 to DW-266 filed.
+  # Awaiting the Operator at the Epic 3 merge, ops/contract-serving.md Pending Operator action 11: the
+  # merge's own Deploy run fails by design at HUB_TAG, since the box runs its old script (DW-264); a
+  # dispatch runs the new one; watch cuatro.dev through it, then date KV-1's Anchor half from that run
+  # (ops/known-violations.md action 3). Open rulings: Decisions 1, 2 and 5 (the step name, anchor-app,
+  # DW-130) and the oversized spec's Keep.
+  3-4-deploy-by-pulling-a-tag-with-docker-rollout: review
   3-5-merge-cuatro-finance-into-apps-finance: backlog
   3-6-merge-cuatro-tracker-into-apps-tracker: backlog
   # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this

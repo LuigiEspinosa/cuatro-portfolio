@@ -140,13 +140,14 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - A story that moves the host changes the three secrets `deploy.yml` reads together:
   `SERVER_HOST`, `SERVER_USER` and `SSH_PRIVATE_KEY`. Audit all three against the new box, never
   one; Story 1-21 repointed `SERVER_HOST` alone, and that is the twelve days above.
-- `ops/deploy-remote.sh`, which `deploy.yml` runs over SSH, runs `docker compose up --build -d`,
-  so the serving two-core box compiles. This is a recorded standing violation of AD-8, not an
-  oversight: it is in `ops/known-violations.md` and closes in Epic 3. Do not fix it out of
-  sequence: Story 3-4 replaces it with a pull of the sha-tagged image `.github/workflows/image.yml`
-  builds on every push from `apps/hub/Dockerfile` (Story 3-3), whose context must be the repository
-  root. The script is also the deploy key's forced command: keep the sha the last word of the
-  workflow's command string, and never move the file.
+- `ops/deploy-remote.sh`, which `deploy.yml` runs over SSH, pulls `ghcr.io/luigiespinosa/hub:<sha>`
+  and rolls `anchor-app` with `docker-rollout` v0.14 (Story 3-4). It never builds, and
+  `docker-compose.yml` declares no `build:` and refuses to start without `HUB_TAG`. `deploy.yml`'s
+  `image` job builds that tag first by calling `.github/workflows/image.yml`, whose context must be
+  the repository root. Until the Epic 3 merge the box still runs the old `up --build` line (KV-1 in
+  `ops/known-violations.md`). The script is the deploy key's forced command, so the box runs the
+  checkout's copy and a change to it first runs one deploy late (DW-264): keep the sha the last word
+  of the workflow's command string, and never move the file.
 - `docker/Caddyfile` is the Anchor's fragment of the one shared Caddyfile on the box
   (`/home/deploy/cs-tracker/Caddyfile`), and no process here reads it: editing it changes nothing
   live, and the box's copy is not in git. Read `ops/routing-inventory.md` for the real routing

@@ -838,6 +838,13 @@ the next free id, one above the highest in the file, and a status line.
     breach is tolerated, and no story has taken that ruling. Either it is ruled and promoted
     to the register, or the healthcheck is added, or `ARCHITECTURE-SPINE.md:128` stops
     claiming it is already true. Story 3.4 is the natural forcing point.
+
+    **Not forced by Story 3-4, 2026-09-28.** Its deploy rolls `anchor-app` alone, the one id it names
+    (AD-7), and runs no `up` over the stack, so nothing rolls `anchor-umami` and a deploy changes
+    nothing about it: the gap is as it was, and `docker-rollout` needs the healthcheck only once
+    something rolls that service. It stays open for the ruling above: add the healthcheck, record the
+    breach, or stop `ARCHITECTURE-SPINE.md` claiming it is true. Epic 4's rebuild is the next point at
+    which a rollout could reach it.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
@@ -7349,6 +7356,15 @@ status: done
     `30e5e8b`), and ran `@v1` before it, which pointed at that commit when read on 2026-09-24, so the
     same unverified binary holds that repository's key. The same closer applies there, and Story 4.3 is
     the story booked to rewrite that step.
+
+    **Not taken by Story 3-4, 2026-09-28** (its Decision 5). The owner line assumed that story rewrites
+    the SSH step, and the DW-94 amendment of 2026-09-24 moved the compose line into
+    `ops/deploy-remote.sh` so that it would not: the step and its string are unchanged. The closer's
+    pinned `known_hosts` line needs the box's host key, which no session here can read, and since
+    `ops/contract-serving.md` Pending Operator action 7 (2026-09-25) the key this binary holds deploys a
+    commit already on `main` and nothing else. **Owner: Epic 4's rebuild, whose new box brings the host
+    key a pin needs, or an Operator ruling before it.** **Trigger: either, or the next edit to the
+    `ssh-action` pin.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`
@@ -7972,6 +7988,11 @@ status: done
     `ops/__tests__/workflow-hardening.test.ts` case holds every `FROM node:` stage to the major the
     workflows pin, so the next Node move in CI fails until the image moves with it. `deploy.yml`
     (Story 3.4) and `registry-verification.yml` (unassigned) stay on 22 and keep the entry open.
+
+    **The deploy half closed 2026-09-28 by Story 3-4, committed on `dev` and live at the Epic 3
+    merge.** `deploy.yml`'s `gate` job sets up Node 24, and `deploy.yml` left `STILL_ON_NODE_22` in
+    `ops/__tests__/workflow-hardening.test.ts`, so a return to 22 fails there.
+    `registry-verification.yml` (unassigned) stays on 22 and keeps the entry open.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
@@ -8197,6 +8218,13 @@ status: done
 
     **Owner: Story 3.4**, whose `docker-rollout` invocation names the service, or an Operator ruling on
     the Hub's one id (AD-3). **Trigger: Story 3.4.**
+
+    **Not taken by Story 3-4, 2026-09-28** (its Decision 2). Its rollout names the service, and the
+    service keeps `anchor-app`: the box's Caddyfile reverse-proxies `anchor-app:3000`, which no session
+    here can read or edit, and a rename would start the Hub under a new name outside any rollout and
+    leave the old container running beside it, since the deploy no longer removes orphans.
+    **Owner: an Operator ruling on the Hub's one id (AD-3), or Epic 4's rebuild, whose Traefik routers
+    are named afresh.** **Trigger: either.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
@@ -8211,6 +8239,13 @@ status: done
     otherwise right: the id is baked in at build time. Nothing reads the comment.
 
     **Owner: the Operator.** **Trigger: the next edit to `.env.example`.**
+
+    **Amended 2026-09-28 by Story 3-4, committed on `dev`:** from the Epic 3 merge the box no longer
+    builds the image, so `.env.example`'s account of the two `NEXT_PUBLIC_UMAMI_*` values as build
+    inputs on the box goes stale with its Dockerfile path: CI's `.github/workflows/image.yml` carries
+    both, and the box's `.env.production` copies become unread. `docker-compose.yml` now also needs
+    `HUB_TAG`, which `ops/deploy-remote.sh` sets and no env file holds. This session's permissions
+    refuse `.env*` files too, so the entry stays the Operator's.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
@@ -8233,7 +8268,18 @@ status: done
 
     **Owner: Story 3.4**, which adopts `docker-rollout`, for instance by running the rollout's own
     failure path against a container that serves nothing. **Trigger: Story 3.4.**
-  status: open
+
+    **Closed 2026-09-28 by Story 3-4, committed on `dev`.** `docker/__tests__/compose.test.ts` reads the
+    probe out of the healthcheck and runs it under node against a server on `127.0.0.2:3000` that
+    answers 200, one that answers 503 and a port nothing serves, and holds that it passes the first and
+    fails the other two. The probe this entry names, rewritten to exit 0 on a refused connection, is
+    shown passing the refused port, so the suite fails it: planted in the real file that day, 2 of the
+    suite's 8 cases failed, and the file was restored byte for byte. The rollout's own failure path ran
+    the same day on this host, against an image that serves nothing: `docker rollout` exited 1 after
+    134 s, "New containers are not healthy. Rolling back.", removed the new container and left the
+    serving one untouched, while 2,506 requests through Caddy across it and the rollout before it all
+    answered 200 (`_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`, Verification).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
   id: DW-263
@@ -8255,4 +8301,78 @@ status: done
 
     **Owner: Story 3.4**, which replaces that deploy and retires KV-1, the violation the section
     records. **Trigger: Story 3.4.**
+
+    **Closed 2026-09-28 by Story 3-4, committed on `dev`.** `ops/routing-inventory.md` § Where the
+    deploy goes carries the replacement as a dated amendment below the old block: recovering the box's
+    configuration is a deploy, since every file the Anchor runs from is in git at the commit a deploy
+    resets to, save `.env.production`, which that record's § Configuration that exists only on the box
+    lists. The procedure is a dispatch of `deploy.yml` on `main`, or the script run by hand over the
+    Operator's own key with `main`'s head as its argument, after a clone if the checkout is gone.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
+  id: DW-264
+  summary: >-
+    Under the deploy key's forced command a change to `ops/deploy-remote.sh` first runs on the deploy
+    after the one that brings it, so the first Deploy run after the Epic 3 merge runs the Epic 2 script
+    against the new compose file and fails, by design.
+  evidence: |-
+    Designed and observed 2026-09-28 by Story 3-4 (its Decision 3). sshd runs the checkout's copy of
+    the script, the one the previous deploy left, and that copy's reset brings a new one in only for
+    the next run. At the Epic 3 merge the copy is the Epic 2 script, whose compose line
+    `docker compose --env-file .env.production up --build -d --remove-orphans` exits 1 at `HUB_TAG`
+    against the new `docker-compose.yml` before touching a container (observed on this host with
+    Docker 29.8.1 and Compose v5.5.1: "required variable HUB_TAG is missing a value", the running
+    container's id unchanged). A dispatch then runs the new script, as `ops/contract-serving.md`
+    Pending Operator action 11 says. The same lag delays every later change to the script by one
+    deploy, and a script that breaks before its reset blocks the deploy of its own fix, which that
+    record's "If a broken script reaches `main`" already names.
+
+    A closer would have the script, once its refusals pass, hand over to the target commit's copy
+    before doing anything else, so a deploy always runs the script of the commit it deploys; it needs a
+    guard against handing over twice, and a case in `ops/__tests__/deploy-remote.test.ts` for each way
+    in.
+
+    **Owner: unassigned.** **Trigger: the next edit to `ops/deploy-remote.sh`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
+  id: DW-265
+  summary: >-
+    If GitHub concludes a job that passes its `timeout-minutes` as cancelled rather than failed, a Deploy
+    run whose image job hangs past its 20 minutes ends with no issue, because the report job runs on
+    `failure()` alone.
+  evidence: |-
+    Unverified. Found 2026-09-28 by Story 3-4's review (Blind Hunter). `deploy.yml`'s `report` job runs
+    `if: failure()`, which holds when an ancestor job failed, and the `image` job it needs carries
+    `image.yml`'s `timeout-minutes: 20`; GitHub documents that a job past its timeout is cancelled.
+    Whether that job's conclusion then counts for `failure()` was not settled here: no run in this
+    repository has timed out, and this session cannot push a throwaway workflow. If it does not, a hung
+    build ends the run with no issue, the silence DW-20 ended for a failed deploy. One throwaway run
+    settles it: a job with `timeout-minutes: 1` running `sleep 120` and a job that needs it under
+    `if: failure()`. If the second is skipped, widen the report to `if: failure() || cancelled()`,
+    accepting an issue for a run the Operator cancels by hand, and move the one-condition case in
+    `ops/__tests__/capacity-gate.test.ts` with it. Medium if true.
+
+    **Owner: unassigned.** **Trigger: the first Deploy run that times out, or the next edit to the report
+    job.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
+  id: DW-266
+  summary: >-
+    The Deploy chain's `image` job, `image.yml` run through `workflow_call`, first executes at the Epic 3
+    merge, so a runtime refusal of the call would show only there.
+  evidence: |-
+    Found 2026-09-28 by Story 3-4's verification-gap review. `deploy.yml` runs on `main` alone and its
+    gate job refuses any other ref before the image job starts, so no push or dispatch on `dev` reaches
+    the call, and `image.yml`'s own push trigger builds `dev` directly, not through `workflow_call`.
+    Checked before the merge: actionlint 1.7.7 over both files, 0 errors; the suites holding the chain,
+    the call, the trigger and both token grants; and GitHub's documented rule that a called workflow may
+    only narrow the caller's token, which the `image` job grants exactly as the `hub` job asks. If
+    GitHub refuses the call anyway, the merge's run fails at the image job, deploys nothing and opens an
+    issue, and `cuatro.dev` keeps serving. `ops/contract-serving.md` Pending Operator action 11 reads
+    that run.
+
+    **Owner: the Operator, at the Epic 3 merge.** **Trigger: that merge.**
   status: open
