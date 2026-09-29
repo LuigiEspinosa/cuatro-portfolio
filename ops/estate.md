@@ -121,7 +121,8 @@ this: the archives it performed were the real ones, and the fourth was never per
 ### The waypoint sequence
 
 14 to 8 is the decision. 12 and 11 are sequenced stations on the way, not competing
-decisions.
+decisions. **Amended 2026-09-29 by Story 3-8:** 10 is the decision, not 8, since the SM-7 amendment
+of 2026-09-26, and 13 is the next station on the way to it (the table below).
 
 **The Count column is governed repositories that are not archived**, which is the definition
 under "What the repository count counts" above. A row is reached when its change has been
@@ -144,13 +145,15 @@ and 10, both repositories kept permanently, so 10 is SM-7's end state; § The en
 
 **The estate sits on the second row today**, at an observed 12. The first row is labelled `Start`
 rather than `Today` for that reason: it was true until the two archives landed and is now
-history.
+history. **Amended 2026-09-29 by Story 3-8:** the estate sits on the `After listing` row, at an
+observed 14 at 2026-09-29T17:02:30Z, and 13 is the next station; the second row is history too.
 
 **The two 12s in this file are different numbers and it is a coincidence that they match.** One
 is SM-7's MVP target of 12 repositories, discussed above as a ceiling. The other is the observed
 count on this row. That they are equal today says nothing: the target is a decision about what
 the estate may carry, the row is an observation of what it does carry, and the estate is heading
-to 8 regardless.
+to 8 regardless. **Amended 2026-09-29 by Story 3-8:** SM-7's target is 13 and the destination is
+10 (Operator ruling 2026-09-26), so the estate is heading to 10, not 8.
 
 **Amended 2026-09-02.** This table read `15` today and named three repositories in the
 archiving row, the third being `apple-music-workspace`. That repository does not exist, so
@@ -379,7 +382,9 @@ repository** and that link resolves there today.
 Anchor, which takes the Estate from 11 to 8. That merge is deferred beyond MVP, their code
 has not moved, and each stays rendered under its own application id. PRD section 5.1
 deliberately assigns them no `absorbed_into`, and this record follows it. They acquire one
-when the merge actually lands, and not before.
+when the merge actually lands, and not before. **Amended 2026-09-29 by Story 3-8:** the merge takes
+the Estate from 13 to 10, not 11 to 8, since the Operator rulings of 2026-09-25 and 2026-09-26
+(§ The waypoint sequence).
 
 **Amended 2026-09-29 by Story 3-5.** The merge was brought forward into Epic 3 (AD-20), and
 `cuatro-finance`'s code has now moved; the other two have not. The paragraph above holds for all

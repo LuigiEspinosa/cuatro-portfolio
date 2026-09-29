@@ -152,12 +152,14 @@ criterion is conditional on the archive, and the orchestrator's instruction limi
 claims to what is true today. Writing it now is a Registry release (`contract_version` bump, the
 Suite Directory's data) for no reader gain; DW-285 writes it with the `source` move in one change.
 
+**Independent verifier, 2026-09-29.** It found three stale sentences in § The waypoint sequence ("14 to 8 is the decision", "sits on the second row today, at an observed 12", "heading to 8 regardless") and the merge candidates paragraph's "from 11 to 8", all left unamended by the first pass. Each now carries a dated Story 3-8 amendment naming 10 as the decision, the `After listing` row at an observed 14, 13 as the next station and 13 to 10 for the merge; the parsed waypoint sentence is untouched.
+
 ## Verification
 
 **Commands (final tree, 2026-09-29):**
 - `corepack pnpm typecheck`: `> tsc --noEmit`, exit 0.
 - `corepack pnpm --filter hub build`: `Compiled successfully in 3.3s`, `Generating static pages using 9 workers (8/8)`, exit 0.
-- `corepack pnpm test --run`: `Test Files  71 passed (71)`, `Tests  1752 passed (1752)`, exit 0 (run twice, before and after the review patches).
+- `corepack pnpm test --run`: `Test Files  71 passed (71)`, `Tests  1752 passed (1752)`, exit 0 (run twice, before and after the review patches, and again after the verifier's fixes).
 - `corepack pnpm vitest run ops/__tests__/contract-adoption.test.ts`: `Tests  30 passed (30)`, the waypoint parse of the edited `ops/estate.md`.
 - `node ops/registry-verification.mjs` on `dev`, with the Operator's `gh` credential in `REGISTRY_VERIFICATION_TOKEN` (never printed; the log holds no token): exit 0, `# 40 of 40 checks passed` at 2026-09-29T17:08:27Z, among them `PASS  cuatro-finance source resolves: https://github.com/LuigiEspinosa/cuatro-finance answered 200 anonymously`, the same for `cs-tournament` and `cuatro-tracker`, and `PASS  cuatro-tracker live: https://tracker.cuatro.dev answered 307`. Its scheduled run on `main`, 36571142029 at 2026-09-29T12:53:12Z, concluded `success`. The story does not touch the workflow's `push` paths, so no push run of it follows these commits.
 - `gh api repos/LuigiEspinosa/<name> --jq '[.name,.visibility,.archived]|@tsv'` for the sixteen governed repositories at 2026-09-29T17:02:30Z: `Lumen` and `tcg-tracker` `public true`; `cs-tracker`, `StreamVault` and `Mutuo` `private false`; the other eleven `public false`. Observed 14.
