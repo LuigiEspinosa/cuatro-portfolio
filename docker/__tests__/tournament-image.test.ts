@@ -36,6 +36,20 @@ describe('apps/tournament/Dockerfile', () => {
     expect(SERVER).toContain('RUN pnpm --filter tournament build');
   });
 
+  // DW-281: Next inlines both into the browser bundle at build time, and an image built without either
+  // passes every probe while its Realtime client throws in the browser. So the builder refuses an empty
+  // one, by name, before the build that would inline it.
+  it('takes both public Supabase values as build arguments and refuses to build without either', () => {
+    const build = SERVER.indexOf('RUN pnpm --filter tournament build');
+    for (const name of ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY']) {
+      const arg = SERVER.indexOf(`ARG ${name}`);
+      const check = SERVER.findIndex((line) => line.startsWith(`RUN test -n "$${name}" || {`) && line.includes('exit 1'));
+      const env = SERVER.findIndex((line) => line.startsWith('ENV ') && line.includes(`${name}=$${name}`));
+      expect([arg, check, env].every((index) => index >= 0), name).toBe(true);
+      expect(arg < check && check < env && env < build, name).toBe(true);
+    }
+  });
+
   it('boots the traced server alone, as the unprivileged node user: nothing migrates on start (AD-23)', () => {
     expect(SERVER.filter((line) => /^(CMD|ENTRYPOINT)\b/.test(line))).toEqual(['CMD ["node", "apps/tournament/server.js"]']);
     expect(SERVER).toContain('USER node');
@@ -63,11 +77,21 @@ describe('.github/workflows/image-tournament.yml', () => {
 
   it('tags each image with the commit sha and nothing else, one job per deploy unit (AD-3, AD-7)', () => {
     expect(job('tournament')).toMatch(/^ {6}IMAGE: ghcr\.io\/luigiespinosa\/tournament:\$\{\{ github\.sha \}\}$/m);
-    expect(job('tournament')).toContain('docker build --file apps/tournament/Dockerfile --tag "$IMAGE" .');
+    expect(job('tournament')).toMatch(
+      /docker build --file apps\/tournament\/Dockerfile \\\n\s+--build-arg NEXT_PUBLIC_SUPABASE_URL --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY \\\n\s+--tag "\$IMAGE" \.\n/
+    );
     expect(job('tournament-worker')).toMatch(/^ {6}IMAGE: ghcr\.io\/luigiespinosa\/tournament-worker:\$\{\{ github\.sha \}\}$/m);
     expect(job('tournament-worker')).toContain(
       'docker build --file apps/tournament/worker/Dockerfile --tag "$IMAGE" apps/tournament/worker'
     );
+  });
+
+  // Repository variables, never secrets and never literals: public by design, set once per repository.
+  it('passes the two public Supabase values from repository variables (DW-281)', () => {
+    for (const name of ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY']) {
+      expect(job('tournament')).toMatch(new RegExp(`^ {6}${name}: \\$\\{\\{ vars\\.${name} \\}\\}$`, 'm'));
+    }
+    expect(job('tournament-worker')).not.toContain('SUPABASE');
   });
 
   it('pushes each image only after it answered its probe', () => {

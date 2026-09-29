@@ -1,14 +1,16 @@
 # The tournament's image (AD-8), built the way `apps/finance/Dockerfile` builds finance's: the context is
 # the repository root, narrowed to the `tournament` workspace with `turbo prune --docker`.
 # `.github/workflows/image-tournament.yml` builds it and pushes it to GHCR tagged with the commit sha.
-# It is merged and imaged, not placed on the box: placement is a separate decision under AD-9 (Story 3-7).
+# It is placed by hand on the box under AD-9 (`ops/tournament-placement.md`, Story 3-7).
 #
 # The Go demo worker under `worker/` is another deploy unit with its own image (`worker/Dockerfile`);
 # nothing here builds it (AD-2, AD-7).
 #
 # `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are inlined into the browser bundle at
-# build time and are not set here, so the browser's Realtime client refuses to start in this image
-# until the placement builds with them (DW-281). The server reads every other value at runtime.
+# build time, so they are build arguments, which `.github/workflows/image-tournament.yml` passes from the
+# repository variables of the same names (DW-281). Both are public by design. Without either, the
+# browser's Realtime client throws at first use in an image that otherwise passes every probe, so the
+# builder refuses to build rather than ship that image. The server reads every other value at runtime.
 FROM node:24-slim AS prune
 WORKDIR /app
 COPY . .
@@ -26,6 +28,11 @@ WORKDIR /app
 COPY --from=deps /app ./
 COPY --from=prune /app/out/full/ ./
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+RUN test -n "$NEXT_PUBLIC_SUPABASE_URL" || { echo 'NEXT_PUBLIC_SUPABASE_URL is empty: pass it with --build-arg (DW-281)' >&2; exit 1; }
+RUN test -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" || { echo 'NEXT_PUBLIC_SUPABASE_ANON_KEY is empty: pass it with --build-arg (DW-281)' >&2; exit 1; }
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 RUN pnpm --filter tournament build
 
 FROM node:24-slim AS runner

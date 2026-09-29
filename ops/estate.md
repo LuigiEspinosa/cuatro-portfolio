@@ -315,7 +315,7 @@ estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 | `connect-four-react` | Absorb: playable demo in the Hub | `Archived` | `cuatro-portfolio` | In Registry; not rendered as a directory entry, and not rendered as an embedded demo at MVP either. It will surface as the embedded demo (PRD section 4.7) only once FR-29 is taken up, and FR-29 is deferred to v2. See the note below. |
 | `cuatro-finance` | Merge into the Anchor: **merged into `apps/finance` on `dev` by Story 3-5 (2026-09-29), imaged in CI, not placed**. See the note below | `In progress` | `cuatro-portfolio`, since Registry 1.6.0 (2026-09-29, DW-285) | Not rendered until Live |
 | `cuatro-tracker` | Merge into the Anchor: **merged into `apps/tracker` on `dev` by Story 3-6 (2026-09-29) and imaged in CI; still served by the box's own build until the Operator runs `ops/tracker-cutover.md`**. See the note below. **Amended 2026-09-29, evening:** the cutover ran; the CI image serves it (§ `cuatro-tracker` below) | `Live`: `tracker.cuatro.dev` | `cuatro-portfolio`, since Registry 1.6.0 (2026-09-29, DW-285) | Rendered; Tracker Family member |
-| `cs-tournament` | Merge into the Anchor: **merged into `apps/tournament` on `dev` by Story 3-7 (2026-09-29), with its Go worker; both imaged in CI, neither placed**. See the note below | `Complete`: deployed nowhere since the Operator ruling of 2026-09-24. Its Vercel deployment at `inclusivcup.vercel.app` was deleted on 2026-09-25 (§ The Vercel decommission, step 3), and Story 3.7 placed it nowhere: placing it on the box is the Operator's (§ Pending Operator actions) | `cuatro-portfolio`, since Registry 1.6.0 (2026-09-29, DW-285) | Rendered |
+| `cs-tournament` | Merge into the Anchor: **merged into `apps/tournament` on `dev` by Story 3-7 (2026-09-29), with its Go worker; both imaged in CI, neither placed**. See the note below. **Amended 2026-09-29, evening:** made ready for placement at `tournament.cuatro.dev` by hand from `ops/tournament-placement.md`; the Registry moves to `Live` in 1.7.0 once the URL serves (§ `cs-tournament` below) | `Complete`: deployed nowhere since the Operator ruling of 2026-09-24. Its Vercel deployment at `inclusivcup.vercel.app` was deleted on 2026-09-25 (§ The Vercel decommission, step 3), and Story 3.7 placed it nowhere: placing it on the box is the Operator's (§ Pending Operator actions) | `cuatro-portfolio`, since Registry 1.6.0 (2026-09-29, DW-285) | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
 | `digital-library` | Satellite: Svelte/Fastify | `Live`: `library.cuatro.dev` | n/a | Rendered |
 | `list-wheel` | Satellite: Angular | `Live`: `wheel.cuatro.dev` since 2026-09-13. On GitHub Pages until that date; the old URL became a redirect page to the new hostname as the story's last step (`gh-pages` `52698eb`, 2026-09-13T18:25:47Z) | n/a | Rendered; see PRD section 5.3. **The Registry's `live` is `https://wheel.cuatro.dev` from Story 2-25**: `ops/registry-inputs.md` |
@@ -550,6 +550,40 @@ placement the Capacity Gate decides (AD-9), which Story 3.7 left to the Operator
 - **Still the Operator's:** every placement step, listed under Pending Operator actions, and the
   archive, after which DW-285 writes `absorbed_into: cuatro-portfolio` and moves `source`. **Amended
   2026-09-29:** archived at 21:43:05Z and written in Registry 1.6.0 (DW-285); the placement steps remain.
+
+**The placement, amended 2026-09-29 (evening) by Story 3-7's placement half.** The Operator's rulings of
+that day settle what the list under Pending Operator actions left open, and the repository half is
+committed on `dev`; the box half is `ops/tournament-placement.md`, which the orchestrator runs.
+Observations below were made by the Operator and the orchestrator and relayed; times UTC.
+
+- **Data, the AD-10 exception.** It stays in Supabase Cloud (DW-280, option one, Operator ruling), declared
+  as the tournament's store with its offsite backup the Operator's, on Supabase's side; the demos stay in
+  Cloudflare R2. Nothing moves and `anchor-db` gains nothing. The project was paused when first probed;
+  the Operator restored it, and its auth endpoint answers 401 (alive) from the box and elsewhere.
+- **The pooler, a decision.** `TOURNAMENT_DATABASE_URL` is Supabase's session pooler
+  (`postgres.<ref>@aws-0-us-east-1.pooler.supabase.com:5432`, `sslmode=require`), because the direct host
+  `db.<ref>.supabase.co` answers on IPv6 only and `cuatro-portfolio_default` has no IPv6 (`EnableIPv6`
+  false); proved from a container on the box, PostgreSQL 17.6 answering. `worker/config/config.go`
+  already names the pooler for such a host.
+- **Hostname.** `tournament.cuatro.dev`, declared in the Registry and never derived (AD-3). WAF rules 1 and
+  3 list it from 22:03:32Z (`ops/bot-mitigation.md`), and its proxied `A` record exists from 22:03:33Z
+  (`ops/routing-inventory.md`), both before anything serves it. The Go worker has no public hostname
+  (Operator ruling); what that leaves unrouted is DW-287.
+- **Build inputs and images.** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are
+  repository variables the image workflow passes as build arguments (DW-281, closed); the four merged
+  applications' GHCR packages are public (DW-278, settled); fifteen `TOURNAMENT_` values sit in the box's
+  `.env.production`, moved without printing.
+- **Identity, and a premise corrected.** The merge said no user holds a password; the export refused, by
+  design, on the project's only Auth user, the admin (created 2026-07-02, a Steam-style synthetic email),
+  because it holds a password hash. The script is unchanged. The data does not move, so no hash is
+  touched and no reset can be forced; step 4 of the list above (export and verify) has nothing to carry,
+  and the proof that an existing user authenticates after the placement is the Operator's Steam sign-in
+  on `tournament.cuatro.dev`, which the Operator dates in the runbook.
+- **Placement steps, where they stand.** Steps 1, 2 and 3 of the list above are done as recorded here;
+  step 4 falls away under the ruling; step 5 (the gate: `cs-tournament` is in `placements` from this
+  change, one entry for both deploy units, the load reading after placement written by the runbook) and
+  step 6 (Registry 1.7.0, `Live` at `https://tournament.cuatro.dev`) follow the runbook, the Registry
+  merging to `main` only after the URL has served (FR-28). Step 7 was done on 2026-09-25.
 
 ## Pending Operator actions
 

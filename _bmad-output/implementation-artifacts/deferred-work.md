@@ -8601,6 +8601,11 @@ status: done
     **Passed to Epic 4 on 2026-09-29 by Story 3-8.** Story 3.8 records the end state and changes no
     deploy path, and its orchestration forbids wiring a merged application into `deploy.yml` or the
     gate's placements (AD-9), so the owner is now Story 4.8 alone.
+
+    **Widened 2026-09-29 by Story 3-7's placement.** The tournament is placed the same way, by hand from
+    the checkout on the box (`ops/tournament-placement.md`), and no deploy activates its profile, so a
+    deploy path per id now owes `tournament` and `tournament-worker` as well as the tracker's two. The
+    gate's `cs-tournament` entry has the same id question as `cuatro-tracker`'s. Still Epic 4's.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
@@ -8661,7 +8666,13 @@ status: done
     for it), or pushing only from `main`, or a retention job.
 
     **Owner: the Operator.** **Trigger: the first Image (tracker) push, or a GHCR quota message.**
-  status: open
+
+    **Settled 2026-09-29 by the Operator:** the `finance`, `tracker`, `tournament` and
+    `tournament-worker` packages were made public, as `hub` is, and anonymous manifest pulls answered
+    200. GitHub documents public packages as free of storage charges (the billing page was still not
+    read), and the box pulls with no read token. Nothing prunes
+    old tags, which is a tidiness question and no longer a quota one.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-279
@@ -8701,7 +8712,16 @@ status: done
     answer. `anchor-db` holds no `tournament` database and no `tournament-migrate` service exists until then.
 
     **Owner: the Operator, then the story that places `cs-tournament`.** **Trigger: that placement.**
-  status: open
+
+    **Closed 2026-09-29 on Operator ruling 2026-09-29: option one.** The data stays in Supabase Cloud,
+    declared as the tournament's store, an AD-10 exception whose offsite backup is the Operator's on
+    Supabase's side; nothing moves, so `anchor-db` gains nothing and no migrate service exists. The worker
+    reaches Postgres through the session pooler (`aws-0-us-east-1.pooler.supabase.com:5432`,
+    `sslmode=require`), because the direct host answers on IPv6 only and `cuatro-portfolio_default` has
+    no IPv6; proved from a container on the box (PostgreSQL 17.6 answered). The health route stays
+    liveness only, filed as DW-288. Recorded in `ops/estate.md` § `cs-tournament` and
+    `ops/tournament-placement.md`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-281
@@ -8718,7 +8738,14 @@ status: done
     arguments in the workflow, set at placement.
 
     **Owner: the story that places `cs-tournament`.** **Trigger: that placement.**
-  status: open
+
+    **Closed 2026-09-29 by Story 3-7's placement.** The Operator set the repository variables
+    `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (public by design);
+    `image-tournament.yml` passes both as build arguments, and `apps/tournament/Dockerfile` refuses to
+    build when either is empty, naming it, so no image without them reaches GHCR.
+    `docker/__tests__/tournament-image.test.ts` holds both halves. Spec:
+    `spec-3-7-placement-tournament-on-the-box.md`.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
   id: DW-282
@@ -8839,4 +8866,50 @@ status: done
 
     **Owner: the next story that edits `ops/estate.md`.** **Trigger: that edit, or AD-22's next
     refresh check, whichever comes first.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-placement-tournament-on-the-box.md`
+  id: DW-287
+  summary: >-
+    The tournament's Go worker has no public route, so MatchZy's demo upload and the admin's manual demo
+    upload, both of which reach the worker from outside the box, cannot work once the tournament is placed.
+  evidence: |-
+    Operator ruling 2026-09-29: the worker gets no public hostname and stays on the project's own compose
+    network. The merged source sends demo bytes from the browser to R2 through a presigned URL the
+    worker mints (`apps/tournament/lib/ingest.ts`), and MatchZy posts to the worker directly; nothing in
+    the Next.js server proxies to it. Closing this is a route the Operator chooses: a hostname and site
+    block for the worker (with the WAF rules widened first, AD-17b), or a proxy path on
+    `tournament.cuatro.dev`, which is an application change.
+
+    **Owner: the Operator, then the story that routes it.** **Trigger: the first demo upload the
+    tournament needs.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-placement-tournament-on-the-box.md`
+  id: DW-288
+  summary: >-
+    The tournament's `/api/health`, which the compose healthcheck probes, is liveness only and asks
+    nothing of Supabase, so a rollout could drain a serving container for one that cannot reach its data.
+  evidence: |-
+    Carried from DW-280, which said the readiness probe would be written with the data's home. The home is
+    now decided (Supabase Cloud, Operator ruling 2026-09-29), and the placement changes no application
+    code, so the probe is still `apps/tournament/app/api/health/route.ts` as merged. Rollouts are by hand
+    and recreate both containers (DW-275), so no rollout drains on this probe's word today.
+
+    **Owner: the story that wires the tournament into a deploy (DW-275), or its Epic 8 restyle.**
+    **Trigger: the first `docker rollout` of `tournament`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-placement-tournament-on-the-box.md`
+  id: DW-289
+  summary: >-
+    `AGENTS.md` still says of `apps/tournament` "two images in CI, neither placed", and of the tracker
+    that it serves only once the Operator runs the cutover, both stale once the placement runs.
+  evidence: |-
+    Found 2026-09-29 by the placement's review (Blind Hunter), at `AGENTS.md` lines 16 to 20. An
+    agent-context file, so the build's triage defers it rather than patching it; the refresh
+    `/bmad-project-context` is already due before Epic 4 (Epic 3 context), and it should also name
+    `ops/tournament-placement.md` beside `ops/tracker-cutover.md`.
+
+    **Owner: the `/bmad-project-context` refresh before Epic 4.** **Trigger: that refresh.**
   status: open

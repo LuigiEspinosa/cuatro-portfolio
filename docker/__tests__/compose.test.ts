@@ -264,10 +264,12 @@ describe('the tracker services', () => {
   });
 });
 
-// Story 3-7: the tournament, merged and imaged, and placed by nothing. Two deploy units (AD-7), the Next.js
-// server and the Go demo worker, each its own image by the sha in TOURNAMENT_TAG under a profile no deploy
-// activates. Neither reaches `anchor-db` nor the shared proxy until the placement decides where its data
-// lives and which hostnames it answers to.
+// Story 3-7: the tournament, merged and imaged, and placed by hand (`ops/tournament-placement.md`). Two
+// deploy units (AD-7), the Next.js server and the Go demo worker, each its own image by the sha in
+// TOURNAMENT_TAG under a profile no deploy activates. Its data stays in Supabase Cloud (Operator ruling
+// 2026-09-29), so neither reaches `anchor-db`. The server answers to `tournament` on the shared network,
+// the upstream the tournament.cuatro.dev site block proxies; the worker has no public hostname and joins
+// the project's own network alone.
 describe('the tournament services', () => {
   const service = (name: string): string => parts(compose, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
   const tournament = service('tournament');
@@ -287,9 +289,14 @@ describe('the tournament services', () => {
     expect(worker).toContain("    test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8080/healthz']");
   });
 
-  it('joins no network the shared proxy reaches, reaches no anchor-db, and migrates nothing', () => {
+  it('answers to tournament on the shared network and keeps default; the worker joins default alone', () => {
+    expect(tournament).toMatch(/^ {4}networks:\n {6}default:\n {6}cs-tracker_default:\n {8}aliases:\n {10}- tournament\n {4}healthcheck:/m);
+    expect(worker).toMatch(/^ {4}networks:\n {6}default:\n {4}healthcheck:/m);
+    expect(worker).not.toContain('cs-tracker_default');
+  });
+
+  it('reaches no anchor-db and migrates nothing', () => {
     for (const part of [tournament, worker]) {
-      expect(part).not.toContain('cs-tracker_default');
       expect(part).not.toContain('anchor-db');
       expect(part).not.toContain('migrate');
     }
