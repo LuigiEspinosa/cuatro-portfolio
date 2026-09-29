@@ -133,8 +133,8 @@ performed, not when it was decided.
 | Start | 14 | n/a | superseded; recorded 2026-08-16 as 15, corrected 2026-09-02 |
 | After archiving | 12 | `Lumen` and `tcg-tracker` archived | **yes, by 2026-09-02** |
 | After listing | 14 | `covidmap` and `future-vizion` admitted by Operator ruling 2026-09-25 | **yes, 2026-09-26** |
-| After absorption | **13** | `connect-four-react` absorbed into the Anchor | not yet: unarchived at 2026-09-29T17:02:30Z |
-| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor and their repositories archived | not yet: merged on `dev` 2026-09-29, none archived at 2026-09-29T17:02:30Z |
+| After absorption | **13** | `connect-four-react` absorbed into the Anchor | reached 2026-09-29T21:43:05Z, when the Operator archived it (public) |
+| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor and their repositories archived | not yet: merged on `dev` 2026-09-29 and on `main` in PR #84 that day; `cuatro-finance` and `cs-tournament` archived 2026-09-29T21:43:05Z (public), so the count reads 11; `cuatro-tracker` waits a week after its cutover of 2026-09-29 (`ops/tracker-cutover.md` action 4) |
 
 **Amended 2026-09-26.** The `After listing` row is new, and the two rows below it each carry two more
 than they did (11 and 8 until that date): the ruling admitted two repositories and changed nothing
@@ -147,6 +147,10 @@ and 10, both repositories kept permanently, so 10 is SM-7's end state; § The en
 rather than `Today` for that reason: it was true until the two archives landed and is now
 history. **Amended 2026-09-29 by Story 3-8:** the estate sits on the `After listing` row, at an
 observed 14 at 2026-09-29T17:02:30Z, and 13 is the next station; the second row is history too.
+**Amended 2026-09-29, evening:** the estate passed the `After absorption` row at 21:43:05Z, when the
+Operator archived `connect-four-react`, `cuatro-finance` and `cs-tournament` in one sitting, and sits
+between it and the end state at an observed 11; `cuatro-tracker`'s archive, a week after its cutover,
+takes it to 10.
 
 **The two 12s in this file are different numbers and it is a coincidence that they match.** One
 is SM-7's MVP target of 12 repositories, discussed above as a ceiling. The other is the observed
@@ -183,7 +187,12 @@ and 10 at end state (DW-249, closed that day). It is a decision, not an observat
 reached**: the observed count is **14**, read at **2026-09-29T17:02:30Z** by
 `gh api repos/LuigiEspinosa/<name>` for each of the sixteen governed repositories, which found `Lumen`
 and `tcg-tracker` archived and every other one, `connect-four-react` and the three merged applications
-among them, not archived.
+among them, not archived. **Amended 2026-09-29, evening:** `connect-four-react`, `cuatro-finance` and
+`cs-tournament` were archived at 21:43:05Z (`gh repo archive`, all three still public), so the observed
+count is **11**; the scheduled Registry verification, dispatched on `main` right after (run
+36635143162), passed 40 of 40 with each archived `source` still resolving. `cuatro-tracker` is the
+one archive outstanding, due a week after its cutover (DW-285 then carries `absorbed_into` for all
+three entries in one Registry release).
 
 The ten are the Anchor, `cuatro-portfolio`; the seven Satellites, `cs-tracker`, `digital-library`,
 `StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and `list-wheel`; and `covidmap` and
