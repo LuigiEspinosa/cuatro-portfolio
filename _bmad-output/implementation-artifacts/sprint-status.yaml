@@ -615,7 +615,14 @@ development_status:
   # Decision 2 (the two Umami inputs as literals in image.yml), keeping the package public, DW-253
   # (the Image run's build log prints both telemetry notices), DW-259, DW-261 and the oversized
   # spec's Keep are open rulings that gate no criterion.
-  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed Decision 1 (anchor-app keeps its name) and criterion 1's
+  # publishing reading, and every other recorded decision, on 2026-09-29; the four other packages were
+  # made public that day too. Reached main in PR #84 (dev at 57103a0, merged as 5117673 by the
+  # Operator, thirteen checks green: the eight required plus hub, finance, tracker, tournament and
+  # tournament-worker). The merge run's image job built ghcr.io/luigiespinosa/hub:5117673f... and the
+  # dispatch run 36627964371 pulled it on the box: the Hub now runs a sha tag and no floating tag
+  # anywhere in the estate, so criterion 1 holds in full.
+  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: done
   # 3-4 built and pushed 2026-09-28: dev at 7c1ca53, CI run 36519484227 green on seven jobs, every
   # one on Node 24.21.0, and Image run 36519484191 green. b3b72d6 (code, workflows, suites) and the
   # docs commits after it. deploy.yml is one chain: gate (the ref refusal,
@@ -668,7 +675,21 @@ development_status:
   # login under ops/contract-serving.md § The deploy pulls a tag and rolls it runs before the
   # dispatch), Decisions 2, 3 and 5 (anchor-app and DW-260, the designed red first run, DW-130),
   # DW-259, DW-261, DW-265 and the oversized spec's Keep are open rulings that gate no criterion.
-  3-4-deploy-by-pulling-a-tag-with-docker-rollout: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed Decision 1 and every other recorded decision on
+  # 2026-09-29. Reached main in PR #84 (merged as 5117673). As designed (Decision 3, DW-264), that
+  # merge's Deploy run 36627621601 passed gate and image and failed its deploy job at HUB_TAG, the
+  # box's Epic 2 script having reset the checkout first; issue #85 opened and was closed after the
+  # dispatch. The dispatch, run 36627964371 (gate, image / hub, deploy all green, report skipped),
+  # ran the new script on the box: it installed docker-rollout v0.14 into ~/.docker/cli-plugins,
+  # pulled ghcr.io/luigiespinosa/hub:5117673f..., scaled anchor-app to two, waited for health and
+  # removed the old container, with no build output; the deploy job completed 2026-09-29T20:41:37Z,
+  # which is KV-1's Anchor-half date in ops/known-violations.md. cuatro.dev was probed at one
+  # request per second from the workstation through the run with no non-200 answer (the count is in
+  # ops/contract-serving.md action 11); afterwards every route answered as before, /api/health 3.0.0
+  # from the new container, the four contract files byte-identical, and docker ps on the box showed
+  # anchor-app running the sha's image alone. DW-259 closed the same day (bmad-build.toml's build
+  # command); DW-261 (.env.example) stays the Operator's, since agent sessions cannot open .env files.
+  3-4-deploy-by-pulling-a-tag-with-docker-rollout: done
   # 3-5 done 2026-09-29: cuatro-finance's dev history merged into apps/finance by filter-repo and
   # --allow-unrelated-histories (merge 6d5929f), the workspace finance under the one lockfile, its
   # typecheck and suite in ci.yml's test job, apps/finance/Dockerfile and image-finance.yml (build,
