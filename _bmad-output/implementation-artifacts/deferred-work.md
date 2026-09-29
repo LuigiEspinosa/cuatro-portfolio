@@ -838,6 +838,13 @@ the next free id, one above the highest in the file, and a status line.
     breach is tolerated, and no story has taken that ruling. Either it is ruled and promoted
     to the register, or the healthcheck is added, or `ARCHITECTURE-SPINE.md:128` stops
     claiming it is already true. Story 3.4 is the natural forcing point.
+
+    **Not forced by Story 3-4, 2026-09-28.** Its deploy rolls `anchor-app` alone, the one id it names
+    (AD-7), and runs no `up` over the stack, so nothing rolls `anchor-umami` and a deploy changes
+    nothing about it: the gap is as it was, and `docker-rollout` needs the healthcheck only once
+    something rolls that service. It stays open for the ruling above: add the healthcheck, record the
+    breach, or stop `ARCHITECTURE-SPINE.md` claiming it is true. Epic 4's rebuild is the next point at
+    which a rollout could reach it.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
@@ -7349,6 +7356,15 @@ status: done
     `30e5e8b`), and ran `@v1` before it, which pointed at that commit when read on 2026-09-24, so the
     same unverified binary holds that repository's key. The same closer applies there, and Story 4.3 is
     the story booked to rewrite that step.
+
+    **Not taken by Story 3-4, 2026-09-28** (its Decision 5). The owner line assumed that story rewrites
+    the SSH step, and the DW-94 amendment of 2026-09-24 moved the compose line into
+    `ops/deploy-remote.sh` so that it would not: the step and its string are unchanged. The closer's
+    pinned `known_hosts` line needs the box's host key, which no session here can read, and since
+    `ops/contract-serving.md` Pending Operator action 7 (2026-09-25) the key this binary holds deploys a
+    commit already on `main` and nothing else. **Owner: Epic 4's rebuild, whose new box brings the host
+    key a pin needs, or an Operator ruling before it.** **Trigger: either, or the next edit to the
+    `ssh-action` pin.**
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-dw-90-list-wheel-hardening.md`
@@ -7966,6 +7982,17 @@ status: done
     (Story 3.2 moves `docker/Dockerfile` for paths only and changes no dependency); **Story 3.4 for
     `deploy.yml`**, which rewrites the deploy; **unassigned for `registry-verification.yml`**.
     **Trigger: each owner's story, or the next edit to the file.**
+
+    **The Dockerfile half closed 2026-09-28 by Story 3-3, committed on `dev` and live at the Epic 3
+    merge.** `apps/hub/Dockerfile` builds and runs on `node:24-slim` in all four stages, and a new
+    `ops/__tests__/workflow-hardening.test.ts` case holds every `FROM node:` stage to the major the
+    workflows pin, so the next Node move in CI fails until the image moves with it. `deploy.yml`
+    (Story 3.4) and `registry-verification.yml` (unassigned) stay on 22 and keep the entry open.
+
+    **The deploy half closed 2026-09-28 by Story 3-4, committed on `dev` and live at the Epic 3
+    merge.** `deploy.yml`'s `gate` job sets up Node 24, and `deploy.yml` left `STILL_ON_NODE_22` in
+    `ops/__tests__/workflow-hardening.test.ts`, so a return to 22 fails there.
+    `registry-verification.yml` (unassigned) stays on 22 and keeps the entry open.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
@@ -8024,6 +8051,18 @@ status: done
 
     **Owner: the Operator, a ruling.** **Trigger: the next pass over NFR-8, or Story 3.3, whose image
     build is the first to run turbo tasks in CI.**
+
+    **Trigger reached 2026-09-28 by Story 3-3, committed on `dev`.** `.github/workflows/image.yml`
+    builds `apps/hub/Dockerfile` on every push, whose prune stage runs `turbo prune` and whose builder
+    runs `next build`, each with its telemetry at the default, as every build before it ran; the build
+    logs print both notices. The ruling is still the Operator's. If it is to turn both off, the image's
+    half is `ENV TURBO_TELEMETRY_DISABLED=1` in the prune stage and `ENV NEXT_TELEMETRY_DISABLED=1` in
+    the builder.
+
+    **Widened 2026-09-29 by Story 3-5, committed on `dev`.** `apps/finance/Dockerfile`, built by
+    `.github/workflows/image-finance.yml` on every push, runs `turbo prune` and `next build` the same
+    way, and its build runs `prisma generate` first. The ruling is still the Operator's, and if it is to
+    turn telemetry off, the finance image takes the same two `ENV` lines as the Hub's.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
@@ -8045,7 +8084,13 @@ status: done
     **Owner: Story 3.3**, whose image is built from the root narrowed by `turbo prune --docker`, a
     context that never holds either directory, which leaves only the local root-context build of
     `docker/Dockerfile` to settle. **Trigger: Story 3.3, or the next edit to `.dockerignore`.**
-  status: open
+
+    **Closed 2026-09-28 by Story 3-3, committed on `dev` and live at the Epic 3 merge.** The prune runs
+    inside the image build rather than before it, so the context is still the whole root and the
+    prune stage's `COPY . .` still takes whatever it carries; `.dockerignore` now lists `.pnpm-store`
+    and `**/.turbo`, so neither enters it. The final image carries neither in any case: it holds
+    `apps/hub/` and the traced `node_modules` alone (observed in the spec's Verification).
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1-introduce-turborepo-and-pin-the-toolchain.md`
   id: DW-255
@@ -8110,7 +8155,16 @@ status: done
     3-2's review, row 13), and the box builds them first at the Epic 3 merge.
 
     **Owner: Story 3.3**, whose image is built from that context (AD-8). **Trigger: Story 3.3.**
-  status: open
+
+    **Closed 2026-09-28 by Story 3-3, committed on `dev` and live at the Epic 3 merge.**
+    `apps/hub/Dockerfile`'s builder copies `contracts/` and `packages/contracts-serve/` from the prune
+    stage beside turbo's `full/`, because neither is a workspace (the spec's Decision 3). Built that way
+    on this host, the image published 11 files, served every route as Story 3-2's image did and every
+    file under `/contracts/` byte for byte, and its `deps` stage installed 526 packages against the
+    base commit's 588, with no `style-dictionary`. `.github/workflows/image.yml` builds and starts the
+    image on every push and pushes it only once `/api/health` answers, which gives the runner stage's
+    command and standalone copies the executing check this entry said nothing gave them.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
   id: DW-258
@@ -8126,7 +8180,14 @@ status: done
     Nothing is wrong today: `apps/hub` is the only application.
 
     **Owner: Story 3.5**, the first merge. **Trigger: its first unit run.**
-  status: open
+
+    **Closed 2026-09-29 by Story 3-5, committed on `dev`.** The root `vitest.config.ts` excludes
+    `apps/finance/**` and the root `tsconfig.json` excludes `apps/finance`, and `ci.yml`'s `test` job
+    runs `pnpm --filter finance typecheck` and `pnpm --filter finance test` after the root's, each under
+    finance's own `@` alias and node environment. `ops/__tests__/workflow-hardening.test.ts` holds both
+    steps and resolves each to a script the `finance` manifest defines. The next merge (Story 3.6) adds
+    its own exclusion and its own two steps the same way.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-2-move-the-hub-to-apps-hub.md`
   id: DW-259
@@ -8146,4 +8207,595 @@ status: done
 
     **Owner: the Operator**, or the `/bmad-project-context` refresh the board schedules before Epic 4.
     **Trigger: the next edit to `_bmad/custom/bmad-build.toml`, or Story 3.3's Build run.**
+
+    **Trigger reached 2026-09-28 by Story 3-3's Build run,** whose ECC layer ran
+    `corepack pnpm --filter hub build`, the command `AGENTS.md` verifies, as Story 3-2's did. The
+    customization file still names the retired one, and the fix is still the Operator's.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
+  id: DW-260
+  summary: >-
+    The Hub's compose service is `anchor-app`, while AD-3 derives a service name from the
+    application id and Story 3.3's criterion calls it "the `hub` service", so the Hub carries three
+    names: Registry `cuatro-portfolio`, workspace and image `hub`, and service `anchor-app`.
+  evidence: |-
+    Decided 2026-09-28 by Story 3-3 (its Decision 1): the service keeps its name. `docker-compose.yml`
+    records the `anchor-*` names as load-bearing, because a service name is also a DNS alias on the
+    shared `cs-tracker_default` network, where `app` already collides (`ops/routing-inventory.md`
+    § The shared network), and the box's Caddyfile reverse-proxies `anchor-app:3000`. A rename changes
+    the live container name at the next deploy, and every record naming `anchor-app` with it. Nothing
+    fails today: the image name does not depend on the service's, and `docker-rollout` rolls a service
+    by whatever name it has.
+
+    **Owner: Story 3.4**, whose `docker-rollout` invocation names the service, or an Operator ruling on
+    the Hub's one id (AD-3). **Trigger: Story 3.4.**
+
+    **Not taken by Story 3-4, 2026-09-28** (its Decision 2). Its rollout names the service, and the
+    service keeps `anchor-app`: the box's Caddyfile reverse-proxies `anchor-app:3000`, which no session
+    here can read or edit, and a rename would start the Hub under a new name outside any rollout and
+    leave the old container running beside it, since the deploy no longer removes orphans.
+    **Owner: an Operator ruling on the Hub's one id (AD-3), or Epic 4's rebuild, whose Traefik routers
+    are named afresh.** **Trigger: either.**
+
+    **Noted 2026-09-29 by Story 3-5.** The finance application follows AD-3 where the Hub cannot:
+    workspace, image, compose service, database and role are all `finance`, and its migration service
+    is `finance-migrate`. Its Registry id stays `cuatro-finance`, as the Hub's stays
+    `cuatro-portfolio`. `finance` joins only the stack's own network today, so the shared-network
+    collision that keeps `anchor-app` does not arise until it is placed, when its alias there is chosen
+    with its router (DW-269).
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
+  id: DW-261
+  summary: >-
+    `.env.example` still names `docker/Dockerfile` as where the Umami website id is a build argument,
+    and Story 3-3 moved that file to `apps/hub/Dockerfile`.
+  evidence: |-
+    Found 2026-09-28 by Story 3-3, whose recursive search for `docker/Dockerfile` matched
+    `.env.example:4`. The session's permissions refuse any command that names an `.env` file, the
+    example included, so the one-path fix was not made, and not worked around. The comment is
+    otherwise right: the id is baked in at build time. Nothing reads the comment.
+
+    **Owner: the Operator.** **Trigger: the next edit to `.env.example`.**
+
+    **Amended 2026-09-28 by Story 3-4, committed on `dev`:** from the Epic 3 merge the box no longer
+    builds the image, so `.env.example`'s account of the two `NEXT_PUBLIC_UMAMI_*` values as build
+    inputs on the box goes stale with its Dockerfile path: CI's `.github/workflows/image.yml` carries
+    both, and the box's `.env.production` copies become unread. `docker-compose.yml` now also needs
+    `HUB_TAG`, which `ops/deploy-remote.sh` sets and no env file holds. This session's permissions
+    refuse `.env*` files too, so the entry stays the Operator's.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
+  id: DW-262
+  summary: >-
+    That the Hub's compose healthcheck fails when the application is not serving is shown by one
+    demonstration on 2026-09-28 and held by no gate, so an edit that makes it always pass would ship
+    green, and `docker-rollout` would then drain the old container for a new one that serves nothing.
+  evidence: |-
+    Found 2026-09-28 by Story 3-3's verification-gap review. `docker/__tests__/compose.test.ts` reads
+    the healthcheck as text: it holds that the Hub's service has one, that it requests `/api/health`
+    and that it is not disabled, and it cannot see what the command does with the answer. A probe
+    rewritten to exit 0 on a refused connection (`.catch(()=>process.exit(0))`) passes every suite.
+    The failing half was observed once, on this host: the service run from `docker-compose.yml` with a
+    process that serves nothing turned `unhealthy` after 107 s, and the real image turned `healthy`
+    after 8 s (Story 3-3's Verification). `.github/workflows/image.yml` checks that the image answers
+    `/api/health`, which is the endpoint, not the healthcheck's handling of it. Story 3.4 is the first
+    story whose deploy depends on the healthcheck failing, since `docker-rollout` removes the old
+    container only once the new one reports healthy.
+
+    **Owner: Story 3.4**, which adopts `docker-rollout`, for instance by running the rollout's own
+    failure path against a container that serves nothing. **Trigger: Story 3.4.**
+
+    **Closed 2026-09-28 by Story 3-4, committed on `dev`.** `docker/__tests__/compose.test.ts` reads the
+    probe out of the healthcheck and runs it under node against a server on `127.0.0.2:3000` that
+    answers 200, one that answers 503 and a port nothing serves, and holds that it passes the first and
+    fails the other two. The probe this entry names, rewritten to exit 0 on a refused connection, is
+    shown passing the refused port, so the suite fails it: planted in the real file that day, 2 of the
+    suite's 8 cases failed, and the file was restored byte for byte. The rollout's own failure path ran
+    the same day on this host, against an image that serves nothing: `docker rollout` exited 1 after
+    134 s, "New containers are not healthy. Rolling back.", removed the new container and left the
+    serving one untouched, while 2,506 requests through Caddy across it and the rollout before it all
+    answered 200 (`_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`, Verification).
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
+  id: DW-263
+  summary: >-
+    `ops/routing-inventory.md` § Where the deploy goes gives a checkout of `docker-compose.yml`,
+    `docker/Dockerfile` and `.dockerignore` from `origin/dev` as the way to recover the box's
+    configuration, and once Story 3-3 is pushed that command recovers nothing.
+  evidence: |-
+    Found 2026-09-28 by Story 3-3's independent verification, and observed that day in a scratch
+    clone at `origin/main` (`bda92cc`). With `b2fb599`, Story 3-3's commits, as the source, the
+    checkout exits 1, "pathspec 'docker/Dockerfile' did not match any file(s) known to git", and
+    restores none of the three files, since Story 3-3 moved the Dockerfile to `apps/hub/Dockerfile`.
+    With `0aec0fb`, `origin/dev` that day, it restores all three, but that Dockerfile copies
+    `apps/hub/package.json`, which a `main` checkout does not have, so the block was already unfit
+    once Story 3-2 was pushed. Story 3-3's Code Map counted the record's mentions of
+    `docker/Dockerfile` as dated observations, and this one is a procedure. It carries a dated
+    amendment saying it no longer recovers the box, and is otherwise left as written, because the
+    configuration it recovers is the build-on-the-box deploy Story 3.4 replaces with a pulled image.
+
+    **Owner: Story 3.4**, which replaces that deploy and retires KV-1, the violation the section
+    records. **Trigger: Story 3.4.**
+
+    **Closed 2026-09-28 by Story 3-4, committed on `dev`.** `ops/routing-inventory.md` § Where the
+    deploy goes carries the replacement as a dated amendment below the old block: recovering the box's
+    configuration is a deploy, since every file the Anchor runs from is in git at the commit a deploy
+    resets to, save `.env.production`, which that record's § Configuration that exists only on the box
+    lists. The procedure is a dispatch of `deploy.yml` on `main`, or the script run by hand over the
+    Operator's own key with `main`'s head as its argument, after a clone if the checkout is gone.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
+  id: DW-264
+  summary: >-
+    Under the deploy key's forced command a change to `ops/deploy-remote.sh` first runs on the deploy
+    after the one that brings it, so the first Deploy run after the Epic 3 merge runs the Epic 2 script
+    against the new compose file and fails, by design.
+  evidence: |-
+    Designed and observed 2026-09-28 by Story 3-4 (its Decision 3). sshd runs the checkout's copy of
+    the script, the one the previous deploy left, and that copy's reset brings a new one in only for
+    the next run. At the Epic 3 merge the copy is the Epic 2 script, whose compose line
+    `docker compose --env-file .env.production up --build -d --remove-orphans` exits 1 at `HUB_TAG`
+    against the new `docker-compose.yml` before touching a container (observed on this host with
+    Docker 29.8.1 and Compose v5.5.1: "required variable HUB_TAG is missing a value", the running
+    container's id unchanged). A dispatch then runs the new script, as `ops/contract-serving.md`
+    Pending Operator action 11 says. The same lag delays every later change to the script by one
+    deploy, and a script that breaks before its reset blocks the deploy of its own fix, which that
+    record's "If a broken script reaches `main`" already names.
+
+    A closer would have the script, once its refusals pass, hand over to the target commit's copy
+    before doing anything else, so a deploy always runs the script of the commit it deploys; it needs a
+    guard against handing over twice, and a case in `ops/__tests__/deploy-remote.test.ts` for each way
+    in.
+
+    **Owner: unassigned.** **Trigger: the next edit to `ops/deploy-remote.sh`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
+  id: DW-265
+  summary: >-
+    If GitHub concludes a job that passes its `timeout-minutes` as cancelled rather than failed, a Deploy
+    run whose image job hangs past its 20 minutes ends with no issue, because the report job runs on
+    `failure()` alone.
+  evidence: |-
+    Unverified. Found 2026-09-28 by Story 3-4's review (Blind Hunter). `deploy.yml`'s `report` job runs
+    `if: failure()`, which holds when an ancestor job failed, and the `image` job it needs carries
+    `image.yml`'s `timeout-minutes: 20`; GitHub documents that a job past its timeout is cancelled.
+    Whether that job's conclusion then counts for `failure()` was not settled here: no run in this
+    repository has timed out, and this session cannot push a throwaway workflow. If it does not, a hung
+    build ends the run with no issue, the silence DW-20 ended for a failed deploy. One throwaway run
+    settles it: a job with `timeout-minutes: 1` running `sleep 120` and a job that needs it under
+    `if: failure()`. If the second is skipped, widen the report to `if: failure() || cancelled()`,
+    accepting an issue for a run the Operator cancels by hand, and move the one-condition case in
+    `ops/__tests__/capacity-gate.test.ts` with it. Medium if true.
+
+    **Owner: unassigned.** **Trigger: the first Deploy run that times out, or the next edit to the report
+    job.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-4-deploy-by-pulling-a-tag-with-docker-rollout.md`
+  id: DW-266
+  summary: >-
+    The Deploy chain's `image` job, `image.yml` run through `workflow_call`, first executes at the Epic 3
+    merge, so a runtime refusal of the call would show only there.
+  evidence: |-
+    Found 2026-09-28 by Story 3-4's verification-gap review. `deploy.yml` runs on `main` alone and its
+    gate job refuses any other ref before the image job starts, so no push or dispatch on `dev` reaches
+    the call, and `image.yml`'s own push trigger builds `dev` directly, not through `workflow_call`.
+    Checked before the merge: actionlint 1.7.7 over both files, 0 errors; the suites holding the chain,
+    the call, the trigger and both token grants; and GitHub's documented rule that a called workflow may
+    only narrow the caller's token, which the `image` job grants exactly as the `hub` job asks. If
+    GitHub refuses the call anyway, the merge's run fails at the image job, deploys nothing and opens an
+    issue, and `cuatro.dev` keeps serving. `ops/contract-serving.md` Pending Operator action 11 reads
+    that run.
+
+    **Owner: the Operator, at the Epic 3 merge.** **Trigger: that merge.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-267
+  summary: >-
+    `apps/finance` has not adopted the token contract: it keeps its own shadcn palette in
+    `app/tokens.css` and its own fonts in `app/layout.tsx`, and the Hub's literal and alias gates do not
+    read it until it does.
+  evidence: |-
+    Decided 2026-09-29 by Story 3-5 (its Decision 3), which the story's criterion allows in so many
+    words: AD-14 makes adoption all-or-nothing, so the story records the deferral rather than
+    half-applying `contracts/tailwind.css`. `app/tokens.css` carries 78 `oklch` literals and names
+    `--accent` and `--font-mono`, two of the names Story 2-22 deleted from the Hub. That is why
+    `OTHER_APPLICATIONS` in `ops/literal-conformance.mjs` lists `apps/finance/`, and why
+    `apps/hub/app/__tests__/anchor-contract.test.ts` skips it. The application is `In progress` and
+    unrendered, and AD-25 gives it no restyle until it renders. Adoption means importing
+    `contracts/tailwind.css`, replacing the palette and the fonts with contract roles, and deleting the
+    `OTHER_APPLICATIONS` entry in the same change, so the gate reads finance from then on.
+
+    **Owner: the Epic 8 wave that restyles finance, or an Operator ruling to adopt earlier.**
+    **Trigger: finance moving towards `Live`, or its first placement.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-268
+  summary: >-
+    The finance image installs its migration toolchain (the Prisma CLI and `dotenv`) with `npm` from
+    the registry at pinned versions, outside `pnpm-lock.yaml`'s integrity hashes.
+  evidence: |-
+    Decided 2026-09-29 by Story 3-5 (its Decision 8). The traced standalone server carries no Prisma
+    CLI, and `finance-migrate` needs one (AD-23). `npm install prisma@7.6.0 dotenv@17.3.1` in the
+    Dockerfile's `migrate` stage is the smallest working form, and
+    `docker/__tests__/finance-image.test.ts` holds both versions equal to what the lockfile resolves
+    for `apps/finance`. What it does not hold: npm resolves the CLI's own dependencies afresh on every
+    build, and verifies them against the registry rather than the lockfile. The lockfile-faithful
+    alternative is `pnpm --filter finance deploy --prod` into that stage, at the cost of copying every
+    production dependency beside the traced output. Low: the versions are exact, the stage never
+    serves traffic, and CI runs the toolchain against a real database before any push.
+
+    **Owner: finance's placement story.** **Trigger: that story, or a Prisma upgrade.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-269
+  summary: >-
+    Placing finance on the box needs inputs the merge deliberately did not create: a hostname and
+    router, runtime secrets, the provision run, and a build input the image inlines.
+  evidence: |-
+    Recorded 2026-09-29 by Story 3-5, which merges and images finance and places nothing (AD-9). The
+    placement story owns, in one change: an `ops/capacity-gate.yml` placement for `finance` and its
+    wiring into `deploy.yml`; a hostname in the Registry and a `Host` router on the shared Caddy (never
+    a `PathPrefix`), with a `cs-tracker_default` alias chosen against `ops/routing-inventory.md`;
+    `NEXT_PUBLIC_BETTER_AUTH_URL` as a build argument of `apps/finance/Dockerfile`, since
+    `lib/auth-client.ts` reads it at build time and falls back to `http://localhost:3000` without it;
+    the runtime `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and `ENCRYPTION_KEY` (64 hex characters,
+    `lib/crypto.ts`) in the `finance` service, and `FINANCE_DB_PASSWORD` in the box's
+    `.env.production`, each an Operator item set through the gitignored env-file route; running
+    `apps/finance/prisma/provision.sql` once against `anchor-db` as its superuser
+    (`psql -U umami -d umami -v password=...`); and the first admin seed. Observed 2026-09-29: the image
+    started without `BETTER_AUTH_SECRET` logs Better Auth's default-secret error and keeps serving.
+
+    **Owner: finance's placement story.** **Trigger: an AD-9 decision to place finance.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-270
+  summary: >-
+    One lockfile links optional peers of the Hub's packages that finance brings: `next` now links
+    `@opentelemetry/api`, and `vitest` and `jsdom` link `msw` and `@noble/hashes`.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-5. pnpm links an optional peer wherever the workspace carries a
+    matching version, so the root importer's `next` snapshot gained `(@opentelemetry/api@1.9.1)`. No
+    version the Hub declares or resolves changed (every root importer entry compared before and after).
+    The Hub's build changed in form only: its `.next/static` chunks embed the pnpm directory name of
+    `next`, which the peer suffix changes, and after masking that name, the chunk names and the module
+    ids, 28 of 31 chunks are byte-identical and the other three differ only in minifier-chosen local
+    names. The Hub's traced server now carries `@opentelemetry/api`, which Next loads when present;
+    with no SDK registered its tracer is a no-op. Nothing fails. If the Operator wants the Hub's
+    closure unchanged by a merge, pnpm's `peerDependencyRules` is the lever.
+
+    **Owner: unassigned.** **Trigger: an unexplained change in the Hub's server bundle, or Story 3.6's
+    merge, which will move peers the same way.**
+
+    **Trigger reached 2026-09-29 by Story 3-6, as predicted.** Folding the tracker's lockfile moved
+    optional peers again and no version: the root importer's `vitest` and `@vitejs/plugin-react` now link
+    `terser@5.47.1` through Vite, finance's Prisma snapshots link `magicast@0.3.5`, and every one of the
+    tracker's own entries resolves to the version its own lockfile named. `apps/hub`'s and
+    `packages/tokens`' importers are unchanged. Two peers were added on purpose, not by accident, and are
+    DW-272's. The Hub builds (`corepack pnpm --filter hub build`, exit 0) and its image builds. Still no
+    `peerDependencyRules`, since nothing fails.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-271
+  summary: >-
+    `apps/finance` carries four leftovers from its own repository that the merge kept untouched: an
+    `eslint.config.mjs` no script runs, its local-development `docker-compose.yml` and
+    `docker/Caddyfile`, and a Prisma seed path that names a missing file.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-5. The `lint` script (`next lint`) went, because `next lint` left
+    Next 16 and `ops/__tests__/turborepo.test.ts` refuses any lint script while CI runs no lint
+    (`AGENTS.md`); `eslint.config.mjs` stays for the lint gate a later story may land.
+    `apps/finance/docker-compose.yml` publishes Postgres, Redis and Caddy ports for local development
+    and is not the Anchor's compose file; nothing reads it in CI or on the box. `prisma.config.ts`
+    names `seed: "tsx prisma/seed.ts"` while the seed is `prisma/seed/admin.ts`, which
+    `package.json`'s `prisma.seed` names correctly. None is fixed here, since the merge moves code
+    without rewriting it.
+
+    **Owner: finance's placement story (the seed path), and the story that lands a lint gate.**
+    **Trigger: either.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-272
+  summary: >-
+    Finance's typecheck depends on pnpm's hoisting order: `@hookform/resolvers` imports `zod` without
+    declaring it, so it resolves whichever `zod` pnpm hoists into `node_modules/.pnpm/node_modules`.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-5's independent verifier. The lockfile carries `zod@3.25.76` (the
+    Hub's tooling) and `zod@4.3.6` (finance). A fresh frozen install hoists 4.3.6 and
+    `corepack pnpm --filter finance typecheck` exits 0; this host's `node_modules` had 3.25.76 hoisted,
+    and the same command failed with exit 2, TS2769 in `AddTransactionModal`, `EditAccountModal`,
+    `AddAccountModal` and `LoginForm` (`_zod.version.minor` 3 not assignable to 0). Relinking the
+    hoisted `zod` to 4.3.6 made it exit 0. CI installs fresh and is unaffected today, but a lockfile
+    change can flip which version is hoisted, in CI too. The durable fix is a `packageExtensions`
+    entry in `pnpm-workspace.yaml` giving `@hookform/resolvers@5` a `zod` peer, so it resolves
+    finance's own `zod`; not made here, because it rewrites the lockfile the Hub's pruned image
+    installs from, and that change wants its own Image run.
+
+    **Owner: Story 3.6, whose merge changes the lockfile next.** **Trigger: that merge, or a finance
+    typecheck failing on TS2769 against `zod`.**
+
+    **Closed 2026-09-29 by Story 3-6, committed on `dev`.** `pnpm-workspace.yaml` carries the
+    `packageExtensions` entry this names, `@hookform/resolvers@5` with a `zod` peer, so finance's
+    importer now links `@hookform/resolvers@5.2.2(...)(zod@4.3.6)` in `pnpm-lock.yaml` and resolves its
+    own `zod` whatever pnpm hoists; `corepack pnpm --filter finance typecheck` exits 0 on the new lockfile.
+    The same merge met the same shape once more, and closed it the same way: `@testing-library/jest-dom`
+    augments `vitest` without declaring it, so it augmented the root's Vitest 4 from every workspace and
+    the tracker's Vitest 3 typecheck lost its matchers (TS2339 on `toBeInTheDocument`); a `vitest` peer
+    beside the first entry fixed it. Both are one lockfile change, which the next Image runs exercise.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-273
+  summary: >-
+    `apps/tracker` has not adopted the token contract: it keeps its own palette in `app/tokens.css` and
+    names `--font-mono` in `app/global.css`, and the Hub's literal and alias gates do not read it until
+    it does.
+  evidence: |-
+    Decided 2026-09-29 by Story 3-6 (its Decision 8), on DW-267's reasoning for finance: AD-14 makes
+    adoption all-or-nothing, so the merge records the deferral rather than half-applying
+    `contracts/tailwind.css`. `app/tokens.css` carries 48 colour literals, and `app/global.css` names
+    `--font-mono`, one of the names Story 2-22 deleted from the Hub. That is why `OTHER_APPLICATIONS`
+    in `ops/literal-conformance.mjs` lists `apps/tracker/`, and why
+    `apps/hub/app/__tests__/anchor-contract.test.ts` skips it. Unlike finance the tracker is `Live` and
+    rendered, and Epic 8 wave 2 restyles it once its merge ships (`epics.md`). Adoption means importing
+    `contracts/tailwind.css`, replacing the palette and the fonts with contract roles, and deleting the
+    `OTHER_APPLICATIONS` entry in the same change.
+
+    **Owner: the Epic 8 wave that restyles the tracker.** **Trigger: that wave.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-274
+  summary: >-
+    Findings against Story 1.7: `ops/routing-inventory.md` records the effect of the tracker's box-only
+    ingress override but not its text, lists `~/cuatro-redeploy.sh` without its contents, and has not
+    re-observed the `cuatro-tracker` project since 2026-08-24.
+  evidence: |-
+    Found 2026-09-29 by Story 3-6, whose criterion makes the inventory the reference for how
+    `tracker.cuatro.dev` reaches the box and makes any gap a recorded finding rather than a workaround.
+    (1) `/home/deploy/cuatro-tracker/docker-compose.override.yml` is gitignored and box-only; the
+    inventory records its effect (the `cs-tracker_default` attachment and the `cuatro-app` alias, § The
+    shared network) and never its text, so a rollback that rebuilt the old project from its repository
+    would come back with no ingress. (2) `~/cuatro-redeploy.sh` appears in § Configuration that exists
+    only on the box and nowhere else; what it runs is unknown, and if it runs `docker compose up` in the
+    old project after the cutover it starts the old app and worker beside the new ones. (3) Every
+    `cuatro-tracker` fact is dated 2026-08-24, 36 days before the cutover was written. None blocks the
+    cutover: `ops/tracker-cutover.md` step 1 reads all three on the box before anything changes, and
+    step 8 retires the script. No session here can reach the box to read them.
+
+    **Owner: the Operator, at `ops/tracker-cutover.md` step 1, whose output closes this.** **Trigger:
+    that step.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-275
+  summary: >-
+    After the cutover the tracker is rolled by hand: `deploy.yml` deploys the Hub alone, and
+    `ops/capacity-gate.yml` still names its placement `cuatro-tracker` while its image, workspace and
+    compose service are `tracker`.
+  evidence: |-
+    Decided 2026-09-29 by Story 3-6, whose orchestration forbids wiring a merged application into
+    `deploy.yml` or the gate's placements (AD-9). The tracker is already placed, so the cutover replaces
+    the deploy unit of an existing placement and places nothing new; `ops/tracker-cutover.md` gives the
+    later rollout by hand (`tracker-migrate`, then `docker rollout ... tracker`, then the worker), which
+    was not rehearsed here because `docker-rollout` is not installed on the authoring machine. AD-7 wants
+    a deploy that names exactly one id; `ops/deploy-remote.sh` names `anchor-app`. Closing this means a
+    deploy path per id, the gate's entry renamed or aliased in one change with it, and the Registry id
+    question DW-260 already holds for the Hub.
+
+    **Owner: Story 3.8 or Epic 4 (Story 4.8 moves the tracker onto the rebuilt topology).** **Trigger:
+    the cutover, or the first tracker change that needs to ship.**
+
+    **Passed to Epic 4 on 2026-09-29 by Story 3-8.** Story 3.8 records the end state and changes no
+    deploy path, and its orchestration forbids wiring a merged application into `deploy.yml` or the
+    gate's placements (AD-9), so the owner is now Story 4.8 alone.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-276
+  summary: >-
+    `apps/tracker` carries its repository's own delivery files, which the merge kept untouched and
+    nothing here runs: its `.github/workflows/ci.yml`, `docker/` and three compose files, two ESLint
+    configurations, a Playwright e2e suite, a `CLAUDE.md`, and a Prisma seed that needs `tsx` on PATH.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-6. GitHub runs workflows from the repository root only, so
+    `apps/tracker/.github/workflows/ci.yml` is inert; its unit half now runs in the Anchor's `ci.yml`
+    (with a Redis service), and its e2e half (Playwright 1.60 against Postgres, Redis and a worker) runs
+    nowhere, which is lost coverage. `docker/Dockerfile`, `docker/Dockerfile.caddy`, the Caddyfiles and
+    `docker-compose*.yml` describe the old build-on-the-box deploy the cutover retires. `lint` went from
+    `package.json` because CI runs no lint (`AGENTS.md`), leaving `eslint.config.mjs` and `.eslintrc.json`.
+    `prisma db seed` runs `tsx prisma/seed.ts` from PATH, and the image puts no `node_modules/.bin` on
+    PATH, so it fails there with ENOENT (observed); the live database is already seeded. None is fixed
+    here, since the merge moves code without rewriting it. Two files the Anchor's `.gitattributes` names
+    (`eslint.config.mjs`, `postcss.config.mjs`) were renormalised to LF by it; the migrations were not
+    touched, since Prisma checksums them.
+
+    **Owner: the Epic 8 wave that restyles the tracker, or a story that lands the Anchor's e2e for it.**
+    **Trigger: either, or the cutover retiring the old deploy files.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-277
+  summary: >-
+    The tracker image is 2.32 GB unpacked, because it carries the whole pruned install, the root's own
+    dependencies (Next 16, three.js, turbo) among them, for its worker and migration commands.
+  evidence: |-
+    Measured 2026-09-29 by Story 3-6 (`docker image ls`, after dropping Next's 0.4 GB build cache from
+    the image). The worker runs `tsx worker.ts` and `tracker-migrate` runs the Prisma CLI, so the image
+    carries the install rather than a traced server (Decision 5), and `pnpm install --filter tracker`
+    over the pruned root still installed the root importer when tried. The box had about 80 GB free
+    (`ops/routing-inventory.md`, 2026-08-24). The smaller shape is `pnpm --filter tracker deploy --prod`
+    into the runner with `tsx` and `prisma` moved to `dependencies`, which changes the application's
+    manifest; not done here.
+
+    **Owner: unassigned.** **Trigger: disk pressure on the box, or the next change to
+    `apps/tracker/Dockerfile`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-278
+  summary: >-
+    Unverified: `image-tracker.yml` and `image-finance.yml` push a new sha tag on every push to any
+    branch, and both packages start private, so if GHCR bills private storage the tracker's 2.32 GB
+    image could exhaust the account's included storage within days and turn both Image runs red.
+  evidence: |-
+    Found 2026-09-29 by Story 3-6's review (Blind Hunter); not settled here, because no session here can
+    read the account's billing page. GitHub has documented Container registry storage as free, and
+    whether that still holds on the Operator's plan in 2026 was not checked. If it does not, the
+    exposure is real and medium: nothing prunes old tags, the tracker image is 2.32 GB unpacked
+    (DW-277), and a push refused for quota fails the Image run, which the orchestration treats as a
+    gate. Settled by reading Settings, Billing, Packages for the account after the first pushes. The
+    closers are making the packages public, as `hub` is (the tracker's cutover action 1 already asks
+    for it), or pushing only from `main`, or a retention job.
+
+    **Owner: the Operator.** **Trigger: the first Image (tracker) push, or a GHCR quota message.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-279
+  summary: >-
+    `apps/tournament` keeps its own palette (65 colour literals in `app/globals.css` and its CSS modules)
+    and is listed in `OTHER_APPLICATIONS`, so neither the FR-17 gate nor the alias search reads it; its
+    token adoption is deferred whole.
+  evidence: |-
+    Merged by Story 3-7 on 2026-09-29. AD-14 names `cs-tournament` a Tailwind consumer, but the merged
+    source uses CSS modules and no Tailwind at all, so adoption is the plain `tokens.css` and
+    `fonts.css` pair rather than `tailwind.css`, or a Tailwind setup first. AD-14 makes adoption
+    all-or-nothing and AD-25 gives it no restyle until Epic 8 wave 2, which restyles it after its merge.
+    The change that adopts the contract deletes the `apps/tournament/` entry in
+    `ops/literal-conformance.mjs` and its pins in `ops/__tests__/literal-conformance.test.ts` and
+    `apps/hub/app/__tests__/anchor-contract.test.ts`.
+
+    **Owner: Epic 8 wave 2 (the `cs-tournament` restyle).** **Trigger: that story.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-280
+  summary: >-
+    Where the tournament's data lives once it is placed is undecided: it is Supabase (Auth, PostgREST,
+    Realtime, RLS on `auth.jwt()`, Postgres 17) plus Cloudflare R2 for demos, and AD-10 wants one
+    Postgres on the box with other stores declared and backed up offsite. Its health route is liveness
+    only until this is decided.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7 in the merged source: `lib/supabase/{admin,server,browser}.ts`,
+    `supabase/migrations/0002_rls.sql` (`is_admin()`, `jwt_steamid64()`), the browser's Realtime channel,
+    and the Go worker's direct owner connection (`worker/config/config.go`). Keeping Supabase makes it a
+    declared external store (`Supabase` is in its Registry `tech` already) that needs its own offsite
+    backup path under AD-10, and the placement can then proceed with the images as built. Moving onto
+    the box replaces Supabase Auth, PostgREST and Realtime, a rewrite of the data layer, which is a story
+    of its own, not a placement step. Either way the compose healthcheck probes
+    `apps/tournament/app/api/health/route.ts`, which asks nothing of the data, so a rollout could drain
+    a serving container for one that cannot reach Supabase; the readiness probe is written with the
+    answer. `anchor-db` holds no `tournament` database and no `tournament-migrate` service exists until then.
+
+    **Owner: the Operator, then the story that places `cs-tournament`.** **Trigger: that placement.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-281
+  summary: >-
+    The tournament image is built without `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+    which Next inlines into the browser bundle at build time, so the browser's Realtime client refuses to
+    start in the image `image-tournament.yml` pushes.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7: `lib/supabase/browser.ts` reads both from `process.env` in a client
+    module and throws at first use when either is absent. The server reads the same two at runtime
+    through `lib/env.ts`, which compose supplies. Both values are public by design (the anon key is
+    meant for the browser), but they belong to whichever Supabase project DW-280 settles on, so no
+    value is committed here. The shape is finance's `NEXT_PUBLIC_BETTER_AUTH_URL` (DW-269): build
+    arguments in the workflow, set at placement.
+
+    **Owner: the story that places `cs-tournament`.** **Trigger: that placement.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-282
+  summary: >-
+    `tsc --noEmit` over all of `apps/tournament` reports 21 errors, every one in a test file (nine
+    `lib/**/*.test.ts`), so its `typecheck` script checks the application's sources only, through
+    `apps/tournament/tsconfig.typecheck.json`.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7, identically in an untouched clone of the source installed from its
+    own `package-lock.json`: the source repository had no `typecheck` script and never ran `tsc` over its
+    tests, and `next build`, which it did run, checks the application only and passes. The errors are
+    stale fixture shapes (`revealedSpins` on `RevealModelInput`), `Dirent.path`, empty-tuple mock calls
+    and `Uint8Array` against `BufferSource`. The suite itself passes (1980 tests), since Vitest strips
+    types. Fixing them edits the application's tests, which the merge does not. The change that clears
+    them deletes `tsconfig.typecheck.json` and points `typecheck` at `tsconfig.json`.
+
+    **Owner: unassigned, or Epic 8 wave 2.** **Trigger: the next change to a tournament test file.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-283
+  summary: >-
+    `apps/tournament` carries its repository's own delivery files, kept untouched by the merge and run by
+    nothing here: `.claude/` (BMAD skills), `_bmad/`, `_bmad-output/`, `docs/`, `vercel.json`,
+    `eslint.config.mjs`, a README describing a kickoff phase, and `worker/cmd/qa54`.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7. `vercel.json` describes the host the Operator left on 2026-09-24.
+    `lint` went from `package.json` because CI runs no lint (`AGENTS.md`, DW-271), leaving
+    `eslint.config.mjs`. The worker's README names Railway as its host, which it never reached. The
+    BMAD tree is that project's planning history. None is fixed here, since the merge moves code
+    without rewriting it; the README carries a note that it is now part of the Anchor.
+
+    **Owner: Epic 8 wave 2, or Story 3.8's end-state record.** **Trigger: either.**
+
+    **Passed to Epic 8 wave 2 on 2026-09-29 by Story 3-8.** Removing files from `apps/tournament` edits
+    the merged application, which a record story does not, so the owner is now Epic 8 wave 2 alone.
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-284
+  summary: >-
+    `EXPORT_SQL` in `ops/tournament-identity.mjs` runs against a real Postgres only by hand, never in an
+    automated test, so a regression in the query passes CI; only `mapIdentities` is unit tested.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7's independent verification, which reran the manual
+    `postgres:17-alpine` export recorded in the spec's Verification and found no automated case for it
+    (the story's review triage #14 had rejected one as more than a direct fix). A wrong join would show
+    as a role mismatch that `verify` refuses at the Operator's placement, which bounds the harm. The
+    change that closes it adds a Postgres-backed case for the export (a CI service container, as the
+    tracker's suite has beside `redis:7-alpine`) holding migration `0001_core_schema.sql`, a minimal
+    `auth.users` and a user carrying a password hash.
+
+    **Owner: unassigned.** **Trigger: the next change to `EXPORT_SQL`, or the Operator's placement of
+    `cs-tournament`, whichever comes first.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-8-record-the-estate-end-state.md`
+  id: DW-285
+  summary: >-
+    Once the Operator archives `cuatro-finance`, `cuatro-tracker` and `cs-tournament`, their Registry
+    entries take `absorbed_into: cuatro-portfolio` and a `source` that names where the code now lives,
+    and the Story 2.23 verification job cannot yet accept the obvious value for that `source`.
+  evidence: |-
+    Found 2026-09-29 by Story 3-8. `gh api repos/LuigiEspinosa/<name>` at 2026-09-29T17:02:30Z found
+    all three unarchived, so the story wrote no `absorbed_into` (its criterion is conditional on the
+    archive) and left Registry 1.5.0 untouched. `ops/estate.md` (seven places) and `ops/tracker-cutover.md`
+    action 4 promised "Story 3.8 then writes `absorbed_into` and moves `source`"; they now name this item. The `source` half is not a one-line
+    edit: `GITHUB_SOURCE` in `ops/registry-verification.mjs` accepts only
+    `https://github.com/<owner>/<repository>` and fails any deeper path by name, and
+    `https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/finance` answered 404 on
+    2026-09-29 because `apps/` reaches `main` only at the Epic 3 merge. The options: point `source` at
+    `https://github.com/LuigiEspinosa/cuatro-portfolio` (passes the job, loses the application's
+    directory); widen `GITHUB_SOURCE` and the `source exists` check to a `tree/<branch>/<path>` URL
+    and point at `apps/<id>` (a change to Story 2.23's job and its suite); or keep the archived
+    repository as `source` (resolves, but names frozen history rather than the code). The change is a
+    Registry MINOR release carrying all three entries at once, after the Epic 3 merge has deployed.
+
+    **Owner: the Operator for the archives, then whichever story next edits the Registry.** **Trigger:
+    the last of the three archives.**
   status: open

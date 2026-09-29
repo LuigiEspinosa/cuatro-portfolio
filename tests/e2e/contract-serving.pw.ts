@@ -9,7 +9,7 @@ import { extname, join, resolve } from 'node:path';
  * `playwright.config.ts` starts with the Hub's `build` and `start` (by
  * `--filter hub` since Story 3-2). The publish step is the first half of
  * `build`, so the tree under test is the one a deploy ships rather than a
- * scratch copy this file assembled: `docker/Dockerfile` runs the same build in
+ * scratch copy this file assembled: `apps/hub/Dockerfile` runs the same build in
  * its builder stage and copies `apps/hub/public` into the runner stage, which
  * `docker/__tests__/runner-stage.test.ts` holds.
  *

@@ -17,21 +17,24 @@
 # Both were observed happening on 2026-08-17: `app` resolved to this stack's
 # container instead of cs-tracker's, and Umami authenticated against
 # cs-tracker's Postgres and failed with 28P01. Do not rename these back.
+#
+# The merged applications below keep their ids (AD-3) because none takes a name another stack answers
+# to by accident: `finance` joins no shared network, and `tracker` joins it as `tracker`, which
+# `ops/routing-inventory.md` § The shared network lists for no other container, and as `cuatro-app`,
+# which it shares on purpose with the container it replaces (`ops/tracker-cutover.md`, Story 3-6).
+# `tournament` and `tournament-worker` join no shared network until they are placed (Story 3-7).
 name: cuatro-portfolio
 
 services:
   anchor-app:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args:
-        # Both are baked into the client bundle at build time, and the tracking
-        # script renders only if both are present. The `:?` guards are deliberate:
-        # Compose substitutes an empty string for an unset variable and only warns,
-        # which is how this project shipped a site that served correctly and
-        # measured nothing. Fail the build instead. See .env.example.
-        - NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID:?set it in .env.production; the tracking script needs it at build time}
-        - NEXT_PUBLIC_UMAMI_URL=${NEXT_PUBLIC_UMAMI_URL:?set it in .env.production; the tracking script needs it at build time}
+    # The box never builds this (AD-8). CI builds `apps/hub/Dockerfile` from the repository root and
+    # pushes it tagged with the commit sha (`.github/workflows/image.yml`, Story 3-3), and
+    # `ops/deploy-remote.sh` pulls the sha it deploys and rolls this service onto it with
+    # `docker-rollout` (Story 3-4). HUB_TAG is that sha, which the script sets. The `:?` guard makes
+    # compose refuse to start without it rather than run a floating tag (AD-3), so a compose command
+    # run by hand needs it too: `ps` and `logs` take any value, and whatever starts a container is the
+    # deploy's to run. The two Umami build inputs are the image's, set in the workflow.
+    image: ghcr.io/luigiespinosa/hub:${HUB_TAG:?ops/deploy-remote.sh sets it to the sha it deploys}
     environment:
       - NODE_ENV=production
     networks:
@@ -44,6 +47,13 @@ services:
       # The Hub is the hostname this whole stack exists to serve, and it has a
       # purpose-built endpoint. Without this, a build that produces a broken
       # server still reports as running and only the external probe notices.
+      #
+      # It is also a requirement now, and so are the absent `container_name` and
+      # published ports. `docker-rollout` (Story 3-4) starts a second container
+      # beside the first and waits for this check before it removes the old one,
+      # and a second container could take neither a fixed name nor a host port.
+      # `docker/__tests__/compose.test.ts` holds all three (Story 3-3), and runs the probe below
+      # against a server that answers, one that fails and a port nothing serves (Story 3-4, DW-262).
       #
       # The probe reads `process.env.HOSTNAME` inside node, never 127.0.0.1.
       # Next's standalone `server.js` binds to `process.env.HOSTNAME`, which Docker
@@ -95,8 +105,8 @@ services:
       # so a socket check can report healthy while network connections are still
       # refused.
       #
-      # The budget is sized for the worst case this box actually presents: the
-      # deploy runs a Next build on the same two cores while Postgres runs initdb
+      # The budget was sized for the worst case this box presented until Story 3-4:
+      # a deploy ran a Next build on the same two cores while Postgres ran initdb
       # on a fresh volume. 60s of grace plus 30 retries at 5s is roughly three and
       # a half minutes before the dependency is declared failed.
       test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U umami -d umami']
@@ -108,8 +118,197 @@ services:
     # from this project's own network.
     restart: unless-stopped
 
+  # The finance application (`apps/finance`, Story 3-5): merged into the Anchor and imaged by
+  # `.github/workflows/image-finance.yml`, NOT placed on the box. Placement is a separate decision under
+  # AD-9, and nothing starts these two today. `finance` sits under a profile no deploy activates;
+  # `finance-migrate` sits under `migrate`, which `ops/deploy-remote.sh` lists and from which it runs
+  # only `anchor-app-migrate`, and the script rolls `anchor-app` alone.
+  #
+  # FINANCE_TAG is the commit sha to run (AD-3). It carries `-` rather than the Hub's `:?`, because
+  # compose interpolates every service, profiled ones included, whatever command runs: a `:?` here would
+  # fail every compose command the Hub's deploy runs. Unset, the reference ends in `:`, which Docker
+  # refuses as invalid, so finance still never starts on a floating tag.
+  #
+  # AD-10: database and role `finance` in `anchor-db`, which `apps/finance/prisma/provision.sql`
+  # creates with CONNECTION LIMIT 10: the app pools five per container (`apps/finance/lib/db.ts`) and a
+  # rollout runs two. No router and no `cs-tracker_default` alias until it is placed.
+  finance:
+    image: ghcr.io/luigiespinosa/finance:${FINANCE_TAG-}
+    profiles: [finance]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://finance:${FINANCE_DB_PASSWORD-}@anchor-db:5432/finance
+    depends_on:
+      anchor-db:
+        condition: service_healthy
+    healthcheck:
+      # The Hub's probe, for the same reason: the standalone server binds the container's own address.
+      # `/api/health` answers 200 only when the database answers.
+      test:
+        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # AD-23: migrations run here, as a discrete step before a rollout, and never on the server's boot. The
+  # `<service>-migrate` name under the `migrate` profile is the one `ops/deploy-remote.sh` runs before
+  # it rolls a service. `apps/finance/prisma/__tests__/migrations.test.ts` refuses a migration that
+  # both expands and contracts the schema, so each one works with the version still serving.
+  finance-migrate:
+    image: ghcr.io/luigiespinosa/finance:${FINANCE_TAG-}
+    profiles: [migrate]
+    working_dir: /app/migrate
+    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
+    environment:
+      - DATABASE_URL=postgresql://finance:${FINANCE_DB_PASSWORD-}@anchor-db:5432/finance
+    depends_on:
+      anchor-db:
+        condition: service_healthy
+    restart: 'no'
+
+  # The tracker (`apps/tracker`, Story 3-6): merged into the Anchor and imaged by
+  # `.github/workflows/image-tracker.yml`. It is live at tracker.cuatro.dev from the box's own
+  # `cuatro-tracker` project, and nothing here starts it: the Operator's cutover in
+  # `ops/tracker-cutover.md` does, once, and no deploy activates the `tracker` profile. `tracker-migrate`
+  # sits under `migrate`, from which `ops/deploy-remote.sh` runs only `anchor-app-migrate`.
+  #
+  # TRACKER_TAG is the commit sha to run (AD-3), with `-` rather than `:?` for FINANCE_TAG's reason:
+  # compose interpolates every service, and an unset tag is an invalid reference Docker refuses.
+  #
+  # Its data stays where it serves until Stories 4.4 and 4.8: Postgres, Redis and qBittorrent keep
+  # running in the `cuatro-tracker` project, reached over its network by container name, since
+  # `postgres` and `redis` are service names another project could also answer to. The secrets are
+  # that project's `.env` values, copied into `.env.production` with a `TRACKER_` prefix.
+  #
+  # On `cs-tracker_default` the service answers to `cuatro-app`, the upstream the shared Caddyfile
+  # proxies tracker.cuatro.dev to, so the cutover edits no Caddyfile: while the old and the new
+  # container both run, both serve the same data.
+  tracker:
+    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
+    profiles: [tracker]
+    environment: &tracker-environment
+      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker
+      - DB_PASS=${TRACKER_DB_PASS-}
+      - REDIS_URL=redis://cuatro-tracker-redis-1:6379
+      - NEXTAUTH_SECRET=${TRACKER_NEXTAUTH_SECRET-}
+      - NEXTAUTH_URL=${TRACKER_NEXTAUTH_URL-}
+      - ADMIN_PASS=${TRACKER_ADMIN_PASS-}
+      - TMDB_API_KEY=${TRACKER_TMDB_API_KEY-}
+      - TMDB_WATCH_PROVIDER_COUNTRY=${TRACKER_TMDB_WATCH_PROVIDER_COUNTRY:-CO}
+      - IGDB_CLIENT_ID=${TRACKER_IGDB_CLIENT_ID-}
+      - IGDB_CLIENT_SECRET=${TRACKER_IGDB_CLIENT_SECRET-}
+      - STEAM_API_KEY=${TRACKER_STEAM_API_KEY-}
+      - STEAM_USER_ID=${TRACKER_STEAM_USER_ID-}
+      - QBITTORRENT_HOST=http://cuatro-tracker-qbittorrent-1:8080
+      - QBITTORRENT_USER=${TRACKER_QBITTORRENT_USER-}
+      - QBITTORRENT_PASS=${TRACKER_QBITTORRENT_PASS-}
+      - DOWNLOAD_PATH=${TRACKER_DOWNLOAD_PATH-}
+      - LOG_LEVEL=${TRACKER_LOG_LEVEL:-info}
+    networks:
+      cuatro-tracker_default:
+      cs-tracker_default:
+        aliases:
+          - cuatro-app
+    healthcheck:
+      # The Hub's probe on `/api/ready`, which answers 200 only when Postgres and Redis both answer, so a
+      # rollout never drains a serving container for one that cannot reach its data.
+      test:
+        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/ready'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # The BullMQ worker, from the same image. It serves no traffic and joins no ingress network.
+  tracker-worker:
+    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
+    profiles: [tracker]
+    command: ['node', 'node_modules/tsx/dist/cli.mjs', 'worker.ts']
+    environment: *tracker-environment
+    networks:
+      cuatro-tracker_default:
+    restart: unless-stopped
+
+  # AD-23: migrations run here, before a rollout, never on the server's boot.
+  tracker-migrate:
+    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
+    profiles: [migrate]
+    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
+    environment:
+      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker
+    networks:
+      cuatro-tracker_default:
+    restart: 'no'
+
+  # The tournament (`apps/tournament`, Story 3-7): merged into the Anchor and imaged by
+  # `.github/workflows/image-tournament.yml`, NOT placed on the box. Placement is a separate decision
+  # under AD-9, and nothing starts these two today: both sit under a profile no deploy activates.
+  #
+  # Two deploy units (AD-7): the Next.js server and the Go demo worker, each its own image and service,
+  # both tagged with TOURNAMENT_TAG, the commit sha to run (AD-3), with `-` rather than `:?` for
+  # FINANCE_TAG's reason: compose interpolates every service, and an unset tag is an invalid reference
+  # Docker refuses.
+  #
+  # Its data stays in Supabase and its demos in Cloudflare R2 until the placement decides otherwise
+  # (DW-280), so neither service reaches `anchor-db` and neither has a migrate service: its SQL
+  # migrations are `supabase db push`, a discrete step, and nothing migrates on boot (AD-23). The
+  # secrets are that deployment's values, set in `.env.production` with a `TOURNAMENT_` prefix.
+  tournament:
+    image: ghcr.io/luigiespinosa/tournament:${TOURNAMENT_TAG-}
+    profiles: [tournament]
+    environment:
+      - NODE_ENV=production
+      - SUPABASE_URL=${TOURNAMENT_SUPABASE_URL-}
+      - SUPABASE_SERVICE_ROLE_KEY=${TOURNAMENT_SUPABASE_SERVICE_ROLE_KEY-}
+      - NEXT_PUBLIC_SUPABASE_URL=${TOURNAMENT_SUPABASE_URL-}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${TOURNAMENT_SUPABASE_ANON_KEY-}
+      - STEAM_API_KEY=${TOURNAMENT_STEAM_API_KEY-}
+      - STEAM_REALM=${TOURNAMENT_STEAM_REALM-}
+      - STEAM_RETURN_URL=${TOURNAMENT_STEAM_RETURN_URL-}
+      - AUTH_NONCE_SECRET=${TOURNAMENT_AUTH_NONCE_SECRET-}
+      - ADMIN_STEAMIDS=${TOURNAMENT_ADMIN_STEAMIDS-}
+    healthcheck:
+      # The Hub's probe, for the same reason: the standalone server binds the container's own address.
+      # `/api/health` is liveness only (`apps/tournament/app/api/health/route.ts`, DW-280).
+      test:
+        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # The Go demo worker (`apps/tournament/worker`): `worker serve`, MatchZy's upload receiver and the
+  # admin presign endpoint on 8080. It writes the tournament's Postgres directly, as its owner.
+  tournament-worker:
+    image: ghcr.io/luigiespinosa/tournament-worker:${TOURNAMENT_TAG-}
+    profiles: [tournament]
+    environment:
+      - DATABASE_URL=${TOURNAMENT_DATABASE_URL-}
+      - R2_ACCOUNT_ID=${TOURNAMENT_R2_ACCOUNT_ID-}
+      - R2_ACCESS_KEY_ID=${TOURNAMENT_R2_ACCESS_KEY_ID-}
+      - R2_SECRET_ACCESS_KEY=${TOURNAMENT_R2_SECRET_ACCESS_KEY-}
+      - R2_BUCKET=${TOURNAMENT_R2_BUCKET-}
+      - R2_S3_ENDPOINT=${TOURNAMENT_R2_S3_ENDPOINT-}
+      - WORKER_MATCHZY_SHARED_SECRET=${TOURNAMENT_WORKER_MATCHZY_SHARED_SECRET-}
+    healthcheck:
+      # Go's server listens on every address, so loopback answers here, unlike the Next servers'.
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8080/healthz']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
 networks:
   cs-tracker_default:
+    external: true
+  # The box's `cuatro-tracker` project owns it. Compose checks an external network only for a service
+  # that joins it, so the Hub's commands never need it.
+  cuatro-tracker_default:
     external: true
 
 volumes:

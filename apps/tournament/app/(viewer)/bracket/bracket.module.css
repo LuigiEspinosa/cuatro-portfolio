@@ -1,0 +1,353 @@
+/*
+ * Bracket surface — stacked sections, nodes, per-state badges, focused match (Story 5.7).
+ * Lifted ~1:1 from mock-bracket.html (.branch-label 203-208, .mmatch/.mslot/.seed/.pname/.pscore 216-235,
+ * .badge 237-244, .gfmatch/.champnode 246-272, .fmcard/.fmtop/.fmplayer/.fmscore 275-321, .verify 286-294,
+ * .seedfoot 427-430). Mobile-first, single column, NEVER a horizontal scroll (AC9): the three brackets
+ * STACK vertically (the flagged stacked-layout decision) — no pan/zoom canvas.
+ *
+ * ⚠ Gold discipline (UX-DR6): the ONLY gold on this screen is the resolved champion node (.champ). Any
+ * other gold pixel is a bug — badges, chrome, seeds, links all stay monochrome + hairline.
+ */
+.wrap {
+  padding: var(--sp-4) var(--sp-4) 28px;
+}
+
+/* section = one bracket (Ganadores / Perdedores / Gran final) */
+.section {
+  margin-bottom: var(--sp-6);
+}
+.branchLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ts);
+  margin: 0 0 var(--sp-3);
+}
+.branchLabel::before,
+.branchLabel::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.nodes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* a node = one match, a full-width tappable card (the focused view is a route away) */
+.node {
+  position: relative;
+  display: block;
+  background: var(--s1);
+  border: 0.5px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 9px 12px;
+  text-decoration: none;
+  color: inherit;
+  max-width: 100%;
+}
+.pos {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tm);
+  margin-bottom: 6px;
+}
+
+/* one competitor row inside a node */
+.slot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 3px 0;
+  min-width: 0;
+}
+.seed {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 9px;
+  color: var(--tm);
+  min-width: 15px;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 0;
+  flex: none;
+}
+.pname {
+  flex: 1;
+  min-width: 0;
+  color: var(--ts);
+  font-weight: 600;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pscore {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--tm);
+  flex: none;
+}
+.tbd .pname {
+  color: var(--tm);
+  font-style: italic;
+  font-weight: 500;
+}
+.win .pname {
+  color: var(--tp);
+}
+.win .pscore {
+  color: var(--win);
+}
+.win .seed {
+  border-color: rgba(63, 185, 80, 0.5);
+  color: var(--win);
+}
+.loss .pname {
+  color: var(--tm);
+}
+.loss .pscore {
+  color: var(--loss);
+}
+.divider {
+  height: 1px;
+  background: var(--line);
+  margin: 2px 0;
+}
+
+/* status / notes under the slots */
+.note {
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--tm);
+  letter-spacing: 0.02em;
+}
+.noteForfeit {
+  color: var(--loss);
+}
+
+/* per-state badges (top-right). Only .badgeLive carries color chrome; bye is neutral, forfeit is loss. */
+.badge {
+  position: absolute;
+  top: -7px;
+  right: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 2px 6px;
+  line-height: 1.4;
+}
+.badgeLive {
+  color: #04101f;
+  background: var(--blue);
+}
+.badgeBye {
+  color: var(--ts);
+  background: var(--s2);
+  border: 1px solid var(--line);
+}
+.badgeForfeit {
+  color: var(--loss);
+  background: rgba(240, 85, 106, 0.1);
+  border: 1px solid rgba(240, 85, 106, 0.45);
+}
+
+/* the resolved champion node — the ONLY gold chrome on the screen (UX-DR6) */
+.champ {
+  border-color: rgba(255, 178, 62, 0.55);
+  background: rgba(255, 178, 62, 0.07);
+}
+.champLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+
+/* ── focused match (route: /bracket?match=<id>) ── */
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--tm);
+  text-decoration: none;
+  margin-bottom: var(--sp-4);
+}
+.crumb .arrow {
+  color: var(--blue);
+  font-weight: 700;
+}
+.fmcard {
+  background: var(--s1);
+  border: 0.5px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.fmcard.champ {
+  border-color: rgba(255, 178, 62, 0.55);
+}
+.fmtop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.fmround {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tm);
+}
+.verify {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--blue);
+  white-space: nowrap;
+}
+.verify .chk {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(47, 129, 247, 0.15);
+  border: 1px solid var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  flex: none;
+}
+.fmplayer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+}
+.fmplayer + .fmplayer {
+  border-top: 1px solid var(--line);
+}
+.fmplayer.fmwin {
+  background: rgba(63, 185, 80, 0.06);
+}
+.fmname {
+  flex: 1;
+  min-width: 0;
+}
+.fmnm {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--tp);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fmnm.tbd {
+  color: var(--tm);
+  font-style: italic;
+  font-weight: 500;
+}
+.seedchip {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 9px;
+  color: var(--tm);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+.wtag {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--win);
+  border: 1px solid rgba(63, 185, 80, 0.5);
+  background: rgba(63, 185, 80, 0.1);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.fmscore {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--tm);
+  flex: none;
+}
+.fmwin .fmscore {
+  color: var(--win);
+}
+.fmlose .fmscore {
+  color: var(--loss);
+}
+.fmfoot {
+  padding: 12px 14px 14px;
+  font-size: 10.5px;
+  color: var(--tm);
+  line-height: 1.5;
+  border-top: 1px solid var(--line);
+}
+.fmfoot.forfeit {
+  color: var(--loss);
+}
+
+/* empty / error state (no match rows yet) */
+.empty {
+  padding: 54px 26px 60px;
+  text-align: center;
+}
+.emptyBody {
+  color: var(--tm);
+  font-size: 12.5px;
+  margin: 0 auto;
+  max-width: 260px;
+  line-height: 1.55;
+}
+
+/* visually-hidden live region (AC9). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

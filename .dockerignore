@@ -1,11 +1,15 @@
 # The deploy builds in /home/deploy/cuatro-portfolio, which is also where the
-# production secrets live. Without this file `COPY . .` in docker/Dockerfile
-# pulls .env.production and .umami-admin into the builder layer on every build.
-# The runner stage does not copy them forward, so the served image stays clean,
-# but the builder layer persists in the box's image cache.
+# production secrets live. Without this file `COPY . .` in the prune stage of
+# apps/hub/Dockerfile pulls .env.production and .umami-admin into that stage's
+# layer on every build. No later stage copies them forward, so the served image
+# stays clean, but the layer persists in the box's image cache.
 .env
 .env.*
 !.env.example
+# At any depth too: an application directory under apps/ can hold its own env file (Story 3-5).
+**/.env
+**/.env.*
+!**/.env.example
 .umami-admin
 
 .git
@@ -17,6 +21,10 @@
 node_modules
 **/node_modules
 **/.next
+# The pnpm store the container e2e command keeps at the root, and turbo's run
+# directory. Neither is a build input (DW-254).
+.pnpm-store
+**/.turbo
 out
 build
 coverage

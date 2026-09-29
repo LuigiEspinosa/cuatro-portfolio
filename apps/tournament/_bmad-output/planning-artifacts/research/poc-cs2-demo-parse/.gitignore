@@ -1,0 +1,6 @@
+# build artifacts
+poc.exe
+*.exe
+
+# demo files are large (50-170 MB) — never commit
+*.dem

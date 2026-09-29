@@ -51,8 +51,9 @@ import {
  *
  * **A waypoint change moves four things together**: the sentence in
  * `ops/estate.md` that `ESTATE_SENTENCE` names, `ESTATE_COUNT` in the module,
- * and both of the record's tables. `ops/estate.md` already schedules the next
- * waypoint at eight repositories; when it lands, all four move in one change.
+ * and both of the record's tables. `ops/estate.md` schedules the end state at
+ * ten repositories (its § The end state); when it lands, all four move in one
+ * change.
  */
 
 // Resolved from the repository root, which is where Vitest runs. Same treatment

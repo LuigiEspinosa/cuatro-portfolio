@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>InclusivCup — Double-elimination bracket (states spec)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --page:#0F1419;
+    --s1:#171E26;
+    --s2:#1E2832;
+    --hair:#232C36;
+    --t1:#F4F6F8;
+    --t2:#B7C2CE;
+    --t3:#8A97A6;
+    --blue:#2F81F7;
+    --gold:#FFB23E;
+    --win:#3FB950;
+    --loss:#F0556A;
+    --disp:'Archivo', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --body:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--page);
+    color:var(--t1);
+    font-family:var(--body);
+    font-size:14px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+
+  /* ---------- page shell ---------- */
+  .page{max-width:920px;margin:0 auto;padding:34px 20px 80px;}
+  h1{
+    font-family:var(--disp);
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.045em;
+    font-size:23px;
+    margin:0 0 8px;
+    color:var(--t1);
+  }
+  .subcap{
+    color:var(--t3);
+    font-size:12px;
+    max-width:680px;
+    line-height:1.6;
+    margin:0 0 4px;
+  }
+  .subcap b{color:var(--t2);font-weight:600;}
+  .wordmark{
+    font-family:var(--disp);
+    font-weight:800;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+  }
+  .legend{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+    margin:18px 0 30px;padding:12px 14px;
+    background:var(--s1);
+    border:1px solid var(--hair);
+    border-radius:10px;
+  }
+  .legend .lg{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--t2);}
+  .swatch{width:12px;height:12px;border-radius:3px;flex:none;}
+
+  /* ---------- states layout ---------- */
+  .states{
+    display:flex;
+    flex-wrap:wrap;
+    gap:34px 30px;
+    align-items:flex-start;
+    justify-content:center;
+  }
+  .state{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .cap{
+    max-width:330px;
+    text-align:center;
+  }
+  .cap .pill{
+    display:inline-block;
+    font-family:var(--disp);
+    font-weight:700;
+    font-size:10.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--blue);
+    border:1px solid rgba(47,129,247,0.4);
+    background:rgba(47,129,247,0.08);
+    border-radius:999px;
+    padding:3px 11px;
+    margin-bottom:7px;
+  }
+  .cap .desc{font-size:11.5px;color:var(--t3);line-height:1.55;}
+
+  /* ---------- phone frame ---------- */
+  .phone{
+    width:390px;
+    border-radius:42px;
+    background:#05080B;
+    border:1px solid #2A333D;
+    padding:11px;
+    box-shadow:0 0 0 1px #0B0F14, 0 24px 60px -20px rgba(0,0,0,0.8);
+  }
+  .screen{
+    position:relative;
+    border-radius:32px;
+    background:var(--page);
+    overflow:hidden;
+    height:760px;
+    display:flex;
+    flex-direction:column;
+  }
+  .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:128px;height:26px;background:#05080B;
+    border-radius:0 0 16px 16px;z-index:30;
+  }
+
+  /* ---------- status bar ---------- */
+  .statusbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:11px 22px 5px;
+    font-size:11.5px;color:var(--t2);font-weight:600;
+    flex:none;
+  }
+  .statusbar .right{display:flex;gap:6px;align-items:center;}
+  .dotrow{display:inline-flex;gap:2px;align-items:flex-end;height:10px;}
+  .dotrow i{width:3px;background:var(--t2);border-radius:1px;display:block;}
+
+  /* ---------- app header ---------- */
+  .apphead{
+    padding:6px 16px 12px;
+    border-bottom:1px solid var(--hair);
+    flex:none;
+  }
+  .apphead .brandrow{display:flex;align-items:center;justify-content:space-between;}
+  .brandrow .logo{
+    font-family:var(--disp);font-weight:800;font-size:15px;
+    letter-spacing:0.12em;text-transform:uppercase;color:var(--t1);
+  }
+  .brandrow .logo .cup{color:var(--gold);}
+  .admintag{
+    font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--blue);border:1px solid rgba(47,129,247,0.4);
+    background:rgba(47,129,247,0.07);border-radius:6px;padding:3px 7px;
+  }
+  .crumb{
+    margin-top:9px;display:flex;align-items:center;gap:8px;
+    font-size:11px;color:var(--t3);
+  }
+  .crumb .live{
+    display:inline-flex;align-items:center;gap:5px;
+    color:var(--blue);font-weight:700;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+    border:1px solid rgba(47,129,247,0.45);border-radius:999px;padding:2px 8px;
+  }
+  .blink{width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 3px rgba(47,129,247,0.25);}
+
+  /* ---------- map<->focus toggle (mobile-first) ---------- */
+  .viewtoggle{
+    margin:11px 16px 0;
+    display:flex;
+    background:var(--s1);
+    border:1px solid var(--hair);
+    border-radius:10px;
+    padding:3px;
+    flex:none;
+  }
+  .viewtoggle button{
+    flex:1;border:none;cursor:default;
+    font-family:var(--disp);font-weight:700;font-size:11.5px;
+    letter-spacing:0.06em;text-transform:uppercase;
+    padding:8px 4px;border-radius:7px;
+    background:transparent;color:var(--t3);
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .viewtoggle button.on{background:var(--blue);color:#04101F;}
+  .viewtoggle .ico{font-size:13px;line-height:1;}
+
+  /* scroll body */
+  .body{flex:1;overflow:hidden;position:relative;}
+  .bodypad{padding:14px 16px 18px;height:100%;overflow:hidden;}
+
+  /* ---------- bracket map ---------- */
+  .maphint{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:10.5px;color:var(--t3);margin-bottom:10px;
+  }
+  .maphint .zoom{display:flex;align-items:center;gap:5px;color:var(--t2);}
+  .zbtn{
+    width:22px;height:22px;border:1px solid var(--hair);border-radius:6px;
+    background:var(--s1);color:var(--t2);display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;line-height:1;
+  }
+  .branch-label{
+    font-family:var(--disp);font-weight:700;font-size:10px;letter-spacing:0.14em;
+    text-transform:uppercase;color:var(--t3);margin:0 0 7px;display:flex;align-items:center;gap:7px;
+  }
+  .branch-label.winners{color:var(--t2);}
+  .branch-label .tick{flex:1;height:1px;background:var(--hair);}
+
+  .cols{display:flex;gap:7px;}
+  .col{flex:1;display:flex;flex-direction:column;gap:7px;justify-content:space-around;}
+  .colcap{
+    font-family:var(--disp);font-weight:700;font-size:8.5px;letter-spacing:0.12em;
+    text-transform:uppercase;color:var(--t3);text-align:center;margin-bottom:2px;
+  }
+  .mmatch{
+    background:var(--s1);border:1px solid var(--hair);border-radius:7px;
+    padding:5px 6px;display:flex;flex-direction:column;gap:3px;position:relative;
+  }
+  .mmatch.sel{border-color:var(--blue);box-shadow:0 0 0 1px rgba(47,129,247,0.5);}
+  .mslot{display:flex;align-items:center;gap:5px;font-size:11px;line-height:1.1;}
+  .seed{
+    font-family:var(--disp);font-weight:700;font-size:9px;color:var(--t3);
+    min-width:13px;text-align:center;border:1px solid var(--hair);border-radius:3px;padding:1px 0;
+  }
+  .pname{flex:1;color:var(--t2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pscore{font-family:var(--disp);font-weight:700;font-size:11px;color:var(--t3);}
+  .mslot.w .pname{color:var(--t1);}
+  .mslot.w .pscore{color:var(--win);}
+  .mslot.w .seed{border-color:rgba(63,185,80,0.5);color:var(--win);}
+  .mslot.l .pname{color:var(--t3);}
+  .mslot.l .pscore{color:var(--loss);}
+  .mslot.tbd .pname{color:var(--t3);font-style:italic;font-weight:500;}
+  .mslot.tbd .seed{color:#566270;}
+  .mdiv{height:1px;background:var(--hair);margin:0 -1px;}
+
+  .badge{
+    font-family:var(--disp);font-weight:700;font-size:8px;letter-spacing:0.08em;
+    text-transform:uppercase;border-radius:4px;padding:1px 5px;line-height:1.4;
+    position:absolute;top:-7px;right:6px;
+  }
+  .badge.bye{color:var(--t2);background:var(--s2);border:1px solid var(--hair);}
+  .badge.ff{color:var(--loss);background:rgba(240,85,106,0.1);border:1px solid rgba(240,85,106,0.45);}
+  .badge.live{color:#04101F;background:var(--blue);}
+
+  .gfwrap{margin-top:13px;}
+  .gfmatch{
+    background:var(--s2);border:1px solid rgba(255,178,62,0.32);border-radius:9px;
+    padding:9px 11px;position:relative;
+  }
+  .gftitle{
+    font-family:var(--disp);font-weight:700;font-size:9.5px;letter-spacing:0.14em;
+    text-transform:uppercase;color:var(--gold);margin-bottom:7px;display:flex;align-items:center;gap:6px;
+  }
+  .gftitle .trophy{font-size:11px;}
+  .gfslot{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;}
+  .gfslot .seed{font-size:10px;min-width:16px;}
+  .gfslot .pname{font-weight:600;}
+  .gfslot.tbd .pname{color:var(--t3);font-style:italic;font-weight:500;}
+  .gfslot .pscore{font-size:13px;}
+
+  /* ---------- focused match ---------- */
+  .fmcard{
+    background:var(--s1);border:1px solid var(--hair);border-radius:14px;overflow:hidden;
+  }
+  .fmtop{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 14px;border-bottom:1px solid var(--hair);
+  }
+  .fmround{
+    font-family:var(--disp);font-weight:700;font-size:10px;letter-spacing:0.12em;
+    text-transform:uppercase;color:var(--t3);
+  }
+  .verify{
+    display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;
+    color:var(--blue);
+  }
+  .verify .chk{
+    width:14px;height:14px;border-radius:50%;background:rgba(47,129,247,0.15);
+    border:1px solid var(--blue);display:flex;align-items:center;justify-content:center;
+    font-size:9px;font-weight:800;color:var(--blue);line-height:1;
+  }
+  .fmplayer{
+    display:flex;align-items:center;gap:12px;padding:15px 16px;
+  }
+  .fmplayer + .fmplayer{border-top:1px solid var(--hair);}
+  .fmplayer.win{background:rgba(63,185,80,0.06);}
+  .ava{
+    width:42px;height:42px;border-radius:11px;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--disp);font-weight:800;font-size:16px;color:var(--t1);
+    background:var(--s2);border:1px solid var(--hair);
+  }
+  .fmplayer.win .ava{border-color:rgba(63,185,80,0.5);color:var(--win);}
+  .fmname{flex:1;min-width:0;}
+  .fmname .nm{font-family:var(--disp);font-weight:700;font-size:17px;color:var(--t1);display:flex;align-items:center;gap:7px;}
+  .fmname .sd{font-size:10px;color:var(--t3);font-weight:600;margin-top:2px;letter-spacing:0.04em;}
+  .seedchip{
+    font-family:var(--disp);font-weight:700;font-size:9px;color:var(--t3);
+    border:1px solid var(--hair);border-radius:4px;padding:1px 5px;
+  }
+  .fmscore{font-family:var(--disp);font-weight:800;font-size:30px;line-height:1;color:var(--t3);}
+  .fmplayer.win .fmscore{color:var(--win);}
+  .fmplayer.lose .fmscore{color:var(--loss);}
+  .wtag{
+    font-family:var(--disp);font-weight:700;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--win);border:1px solid rgba(63,185,80,0.5);background:rgba(63,185,80,0.1);
+    border-radius:4px;padding:1px 6px;
+  }
+
+  .statstrip{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--hair);border-top:1px solid var(--hair);
+  }
+  .stat{background:var(--s1);padding:9px 4px;text-align:center;}
+  .stat .sv{font-family:var(--disp);font-weight:700;font-size:14px;color:var(--t1);}
+  .stat .sl{font-size:8.5px;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;}
+
+  /* admin advance affordance */
+  .adminbar{
+    margin-top:13px;background:var(--s2);border:1px solid var(--hair);border-radius:12px;padding:12px 13px;
+  }
+  .adminbar .ahead{
+    display:flex;align-items:center;gap:7px;margin-bottom:9px;
+    font-size:11px;color:var(--t2);font-weight:600;
+  }
+  .adminbar .ahead .ic{color:var(--blue);font-size:13px;}
+  .adminhint{font-size:10.5px;color:var(--t3);margin-bottom:11px;line-height:1.5;}
+  .advrow{display:flex;gap:9px;}
+  .advbtn{
+    flex:1;border:1px solid var(--hair);border-radius:9px;background:var(--s1);
+    padding:10px 8px;display:flex;align-items:center;justify-content:center;gap:7px;
+    font-family:var(--disp);font-weight:700;font-size:11.5px;color:var(--t2);
+    position:relative;
+  }
+  .advbtn.pick{
+    border-color:var(--blue);background:var(--blue);color:#04101F;
+  }
+  .advbtn .grip{font-size:13px;opacity:0.7;}
+  .advbtn.pick .grip{opacity:0.9;}
+
+  /* live-advance confirmation */
+  .confirm{
+    margin-top:11px;background:rgba(47,129,247,0.08);border:1px solid rgba(47,129,247,0.4);
+    border-radius:11px;padding:11px 13px;display:flex;align-items:center;gap:10px;
+  }
+  .confirm .spin{
+    width:18px;height:18px;border-radius:50%;flex:none;
+    border:2px solid rgba(47,129,247,0.25);border-top-color:var(--blue);
+  }
+  .confirm .ctxt{flex:1;}
+  .confirm .ctxt .ct1{font-size:11.5px;color:var(--t1);font-weight:600;}
+  .confirm .ctxt .ct2{font-size:10px;color:var(--t2);margin-top:2px;}
+  .confirm .ceta{
+    font-family:var(--disp);font-weight:700;font-size:11px;color:var(--blue);
+    border:1px solid rgba(47,129,247,0.4);border-radius:6px;padding:3px 7px;white-space:nowrap;
+  }
+
+  /* ---------- no-show / forfeit ---------- */
+  .nshead{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 14px;border-bottom:1px solid var(--hair);
+  }
+  .nsmatchlabel{
+    font-family:var(--disp);font-weight:700;font-size:10px;letter-spacing:0.12em;
+    text-transform:uppercase;color:var(--t3);
+  }
+  .nstag{
+    display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:0.06em;
+    text-transform:uppercase;color:var(--loss);border:1px solid rgba(240,85,106,0.45);
+    background:rgba(240,85,106,0.1);border-radius:999px;padding:3px 9px;
+  }
+  .timerblock{
+    text-align:center;padding:20px 14px 18px;border-bottom:1px solid var(--hair);
+  }
+  .timerlabel{font-size:11px;color:var(--t2);margin-bottom:8px;}
+  .timerlabel b{color:var(--loss);font-weight:700;}
+  .timer{
+    font-family:var(--disp);font-weight:800;font-size:46px;line-height:1;color:var(--loss);
+    letter-spacing:0.02em;
+  }
+  .timersub{font-size:10px;color:var(--t3);margin-top:8px;}
+  .nsplayer{
+    display:flex;align-items:center;gap:12px;padding:13px 16px;
+  }
+  .nsplayer + .nsplayer{border-top:1px solid var(--hair);}
+  .nsplayer .ava{border-radius:11px;}
+  .nsplayer.present .ava{border-color:rgba(47,129,247,0.45);color:var(--blue);}
+  .nsplayer.absent{opacity:0.62;}
+  .nsname{flex:1;min-width:0;}
+  .nsname .nm{font-family:var(--disp);font-weight:700;font-size:16px;color:var(--t1);}
+  .nsplayer.absent .nm{color:var(--t3);}
+  .nsname .nsd{font-size:10px;color:var(--t3);font-weight:600;margin-top:2px;}
+  .statuschip{
+    font-family:var(--disp);font-weight:700;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;
+    border-radius:5px;padding:2px 7px;white-space:nowrap;
+  }
+  .statuschip.here{color:var(--blue);border:1px solid rgba(47,129,247,0.45);background:rgba(47,129,247,0.08);}
+  .statuschip.gone{color:var(--loss);border:1px solid rgba(240,85,106,0.45);background:rgba(240,85,106,0.1);}
+  .statuschip.adv{color:var(--t2);border:1px solid var(--hair);background:var(--s2);}
+
+  .ffaction{margin-top:13px;}
+  .ffbtn{
+    width:100%;border:1px solid rgba(240,85,106,0.5);border-radius:11px;
+    background:rgba(240,85,106,0.1);color:var(--loss);
+    font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:0.04em;
+    padding:13px;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .ffnote{
+    margin-top:9px;display:flex;align-items:flex-start;gap:7px;
+    font-size:10.5px;color:var(--t3);line-height:1.5;
+  }
+  .ffnote .ic{color:var(--t3);font-size:12px;margin-top:1px;}
+
+  .seedfoot{
+    margin-top:14px;font-size:10px;color:var(--t3);text-align:center;line-height:1.5;
+  }
+  .seedfoot .sha{font-family:var(--disp);font-weight:700;color:var(--t2);letter-spacing:0.02em;}
+
+  /* bottom tab bar */
+  .tabbar{
+    flex:none;display:flex;border-top:1px solid var(--hair);background:var(--page);
+    padding:8px 8px 16px;
+  }
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--t3);}
+  .tab.on{color:var(--blue);}
+  .tab .ti{font-size:18px;line-height:1;}
+  .tab .tl{font-size:9px;font-weight:600;letter-spacing:0.04em;}
+
+  .footnote{
+    margin-top:46px;text-align:center;color:#566270;font-size:10.5px;line-height:1.7;
+  }
+  .footnote .wordmark{color:var(--t3);font-size:11px;}
+
+  /* simple icon glyphs (no webfont dependency) */
+  .gi{font-style:normal;display:inline-block;line-height:1;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1><span class="wordmark">InclusivCup</span> — double-elimination bracket</h1>
+  <p class="subcap">Surface: <b>Double-elimination bracket</b> · serves <b>FR-5..FR-10, UJ-5</b>. The hard mobile IA problem is solved with a focused-match view plus a zoomable bracket-map toggle — everyone is on a phone mid-event.</p>
+  <p class="subcap">States below are stacked as a spec. All scores and stats are <b>verified from the final demo</b>; the bracket is <b>seeded by the final demo — reproducible</b>.</p>
+
+  <div class="legend">
+    <span class="lg"><span class="swatch" style="background:#2F81F7"></span>live / primary / advance</span>
+    <span class="lg"><span class="swatch" style="background:#FFB23E"></span>award + grand final only</span>
+    <span class="lg"><span class="swatch" style="background:#3FB950"></span>win</span>
+    <span class="lg"><span class="swatch" style="background:#F0556A"></span>loss / forfeit</span>
+    <span class="lg"><span class="swatch" style="background:#1E2832;border:1px solid #232C36"></span>raised surface</span>
+  </div>
+
+  <div class="states">
+
+    <!-- ============================================================ STATE A: BRACKET MAP ============================================================ -->
+    <div class="state">
+      <div class="cap">
+        <span class="pill">State a — bracket map</span>
+        <div class="desc">Zoomed-out, tappable overview. Winners + losers brackets and the grand final as compressed columns with seed numbers. Note the bye badge (Juan, R1) and the walkover badge (Vale → forfeit).</div>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar tnum">
+            <span>9:41</span>
+            <span class="right">
+              <span class="dotrow"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+              <span>5G</span>
+              <span class="gi">&#9646;&#9646;&#9646;</span>
+            </span>
+          </div>
+
+          <div class="apphead">
+            <div class="brandrow">
+              <span class="logo">Inclusiv<span class="cup">cup</span></span>
+              <span class="admintag">Mara · admin</span>
+            </div>
+            <div class="crumb">
+              <span class="live"><span class="blink"></span>live</span>
+              <span>8-player bracket · round 2 in progress</span>
+            </div>
+          </div>
+
+          <div class="viewtoggle">
+            <button class="on"><span class="ico gi">&#9707;</span>Bracket map</button>
+            <button><span class="ico gi">&#9737;</span>Focused match</button>
+          </div>
+
+          <div class="body">
+            <div class="bodypad">
+              <div class="maphint">
+                <span>tap any match to focus</span>
+                <span class="zoom">
+                  <span class="zbtn gi">&#8722;</span>
+                  <span class="tnum">85%</span>
+                  <span class="zbtn gi">&#43;</span>
+                </span>
+              </div>
+
+              <div class="branch-label winners"><span class="tick"></span>winners bracket<span class="tick"></span></div>
+              <div class="cols">
+                <div class="col">
+                  <div class="colcap">R1</div>
+                  <div class="mmatch sel">
+                    <span class="badge live">live</span>
+                    <div class="mslot w tnum"><span class="seed">1</span><span class="pname">Dex</span><span class="pscore">16</span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot l tnum"><span class="seed">4</span><span class="pname">Theo</span><span class="pscore">13</span></div>
+                  </div>
+                  <div class="mmatch">
+                    <div class="mslot w tnum"><span class="seed">5</span><span class="pname">Nico</span><span class="pscore">16</span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot l tnum"><span class="seed">3</span><span class="pname">Leo</span><span class="pscore">11</span></div>
+                  </div>
+                  <div class="mmatch">
+                    <div class="mslot w tnum"><span class="seed">2</span><span class="pname">Mara</span><span class="pscore">16</span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot l tnum"><span class="seed">7</span><span class="pname">Vale</span><span class="pscore">W/O</span></div>
+                    <span class="badge ff">walkover</span>
+                  </div>
+                  <div class="mmatch">
+                    <span class="badge bye">bye</span>
+                    <div class="mslot w tnum"><span class="seed">8</span><span class="pname">Juan</span><span class="pscore">—</span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot tbd tnum"><span class="seed">·</span><span class="pname">bye seed</span><span class="pscore"></span></div>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="colcap">W-semi</div>
+                  <div class="mmatch">
+                    <div class="mslot w tnum"><span class="seed">1</span><span class="pname">Dex</span><span class="pscore">·</span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot tnum"><span class="seed">5</span><span class="pname">Nico</span><span class="pscore">·</span></div>
+                  </div>
+                  <div class="mmatch">
+                    <div class="mslot tnum"><span class="seed">2</span><span class="pname">Mara</span><span class="pscore">·</span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot tnum"><span class="seed">8</span><span class="pname">Juan</span><span class="pscore">·</span></div>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="colcap">W-final</div>
+                  <div class="mmatch">
+                    <div class="mslot tbd tnum"><span class="seed">·</span><span class="pname">TBD</span><span class="pscore"></span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot tbd tnum"><span class="seed">·</span><span class="pname">TBD</span><span class="pscore"></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="branch-label" style="margin-top:14px"><span class="tick"></span>losers bracket<span class="tick"></span></div>
+              <div class="cols">
+                <div class="col">
+                  <div class="colcap">L-R1</div>
+                  <div class="mmatch">
+                    <div class="mslot tnum"><span class="seed">4</span><span class="pname">Theo</span><span class="pscore">·</span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot tnum"><span class="seed">3</span><span class="pname">Leo</span><span class="pscore">·</span></div>
+                  </div>
+                  <div class="mmatch">
+                    <div class="mslot l tnum"><span class="seed">7</span><span class="pname">Vale</span><span class="pscore">DQ</span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot tbd tnum"><span class="seed">6</span><span class="pname">Sam</span><span class="pscore">·</span></div>
+                    <span class="badge ff">forfeit</span>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="colcap">L-semi</div>
+                  <div class="mmatch">
+                    <div class="mslot tbd tnum"><span class="seed">·</span><span class="pname">TBD</span><span class="pscore"></span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot tbd tnum"><span class="seed">·</span><span class="pname">TBD</span><span class="pscore"></span></div>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="colcap">L-final</div>
+                  <div class="mmatch">
+                    <div class="mslot tbd tnum"><span class="seed">·</span><span class="pname">TBD</span><span class="pscore"></span></div>
+                    <div class="mdiv"></div>
+                    <div class="mslot tbd tnum"><span class="seed">·</span><span class="pname">TBD</span><span class="pscore"></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gfwrap">
+                <div class="gfmatch">
+                  <div class="gftitle"><span class="trophy gi">&#9819;</span>grand final · bracket reset possible</div>
+                  <div class="gfslot tbd tnum"><span class="seed">·</span><span class="pname">winners champ</span><span class="pscore" style="margin-left:auto">·</span></div>
+                  <div class="mdiv" style="margin:5px 0"></div>
+                  <div class="gfslot tbd tnum"><span class="seed">·</span><span class="pname">losers champ</span><span class="pscore" style="margin-left:auto">·</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabbar">
+            <div class="tab on"><span class="ti gi">&#9707;</span><span class="tl">Bracket</span></div>
+            <div class="tab"><span class="ti gi">&#9776;</span><span class="tl">Matches</span></div>
+            <div class="tab"><span class="ti gi">&#9737;</span><span class="tl">Awards</span></div>
+            <div class="tab"><span class="ti gi">&#9733;</span><span class="tl">Stats</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ STATE B: FOCUSED MATCH ============================================================ -->
+    <div class="state">
+      <div class="cap">
+        <span class="pill">State b — focused match</span>
+        <div class="desc">Tap a match to focus it. Dex (1) vs Theo (4), 16-13, Dex win in green, verified from demo. Admin advance affordance — tap winner or drag forward — with the live-advance confirmation.</div>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar tnum">
+            <span>9:42</span>
+            <span class="right">
+              <span class="dotrow"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+              <span>5G</span>
+              <span class="gi">&#9646;&#9646;&#9646;</span>
+            </span>
+          </div>
+
+          <div class="apphead">
+            <div class="brandrow">
+              <span class="logo">Inclusiv<span class="cup">cup</span></span>
+              <span class="admintag">Mara · admin</span>
+            </div>
+            <div class="crumb">
+              <span class="gi" style="color:var(--blue)">&#8592;</span>
+              <span>winners bracket · R1</span>
+            </div>
+          </div>
+
+          <div class="viewtoggle">
+            <button><span class="ico gi">&#9707;</span>Bracket map</button>
+            <button class="on"><span class="ico gi">&#9737;</span>Focused match</button>
+          </div>
+
+          <div class="body">
+            <div class="bodypad">
+              <div class="fmcard">
+                <div class="fmtop">
+                  <span class="fmround">winners · round 1</span>
+                  <span class="verify"><span class="chk gi">&#10003;</span>verified from demo</span>
+                </div>
+
+                <div class="fmplayer win">
+                  <div class="ava">D</div>
+                  <div class="fmname">
+                    <div class="nm">Dex <span class="seedchip">seed 1</span> <span class="wtag">win</span></div>
+                    <div class="sd">advances to winners semi</div>
+                  </div>
+                  <div class="fmscore tnum">16</div>
+                </div>
+
+                <div class="fmplayer lose">
+                  <div class="ava">T</div>
+                  <div class="fmname">
+                    <div class="nm">Theo <span class="seedchip">seed 4</span></div>
+                    <div class="sd">drops to losers bracket</div>
+                  </div>
+                  <div class="fmscore tnum">13</div>
+                </div>
+
+                <div class="statstrip">
+                  <div class="stat"><div class="sv tnum">124.1</div><div class="sl">Theo ADR</div></div>
+                  <div class="stat"><div class="sv tnum">48%</div><div class="sl">HS</div></div>
+                  <div class="stat"><div class="sv tnum">71%</div><div class="sl">KAST</div></div>
+                  <div class="stat"><div class="sv tnum">18/21/5</div><div class="sl">K/D/A</div></div>
+                </div>
+              </div>
+
+              <div class="adminbar">
+                <div class="ahead"><span class="ic gi">&#9737;</span>Admin · set the winner</div>
+                <div class="adminhint">Tap a winner or drag a player forward into the next slot. Result is already verified from demo — confirming pushes the advance live.</div>
+                <div class="advrow">
+                  <div class="advbtn pick"><span class="grip gi">&#8942;&#8942;</span>Advance Dex</div>
+                  <div class="advbtn"><span class="grip gi">&#8942;&#8942;</span>Advance Theo</div>
+                </div>
+
+                <div class="confirm">
+                  <div class="spin"></div>
+                  <div class="ctxt">
+                    <div class="ct1">Dex advancing to winners semi</div>
+                    <div class="ct2">advances to viewers in ~2s · everyone's bracket updates live</div>
+                  </div>
+                  <div class="ceta tnum">~2s</div>
+                </div>
+              </div>
+
+              <div class="seedfoot">
+                Seeded by the final demo — reproducible · <span class="sha tnum">a3f1c9e2…7b40</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabbar">
+            <div class="tab on"><span class="ti gi">&#9707;</span><span class="tl">Bracket</span></div>
+            <div class="tab"><span class="ti gi">&#9776;</span><span class="tl">Matches</span></div>
+            <div class="tab"><span class="ti gi">&#9737;</span><span class="tl">Awards</span></div>
+            <div class="tab"><span class="ti gi">&#9733;</span><span class="tl">Stats</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ STATE C: NO-SHOW / FORFEIT ============================================================ -->
+    <div class="state">
+      <div class="cap">
+        <span class="pill">State c — no-show / forfeit</span>
+        <div class="desc">Grace-timer counts down to an automatic forfeit. Admin can mark it now. The present player advances with a bye-style badge — no stats recorded.</div>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="statusbar tnum">
+            <span>9:48</span>
+            <span class="right">
+              <span class="dotrow"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+              <span>5G</span>
+              <span class="gi">&#9646;&#9646;&#9646;</span>
+            </span>
+          </div>
+
+          <div class="apphead">
+            <div class="brandrow">
+              <span class="logo">Inclusiv<span class="cup">cup</span></span>
+              <span class="admintag">Mara · admin</span>
+            </div>
+            <div class="crumb">
+              <span class="gi" style="color:var(--blue)">&#8592;</span>
+              <span>losers bracket · L-R1</span>
+            </div>
+          </div>
+
+          <div class="viewtoggle">
+            <button><span class="ico gi">&#9707;</span>Bracket map</button>
+            <button class="on"><span class="ico gi">&#9737;</span>Focused match</button>
+          </div>
+
+          <div class="body">
+            <div class="bodypad">
+              <div class="fmcard">
+                <div class="nshead">
+                  <span class="nsmatchlabel">losers · L-R1</span>
+                  <span class="nstag"><span class="gi">&#9888;</span>no-show</span>
+                </div>
+
+                <div class="timerblock">
+                  <div class="timerlabel">No-show — <b>forfeit in</b></div>
+                  <div class="timer tnum">2:41</div>
+                  <div class="timersub">Vale hasn't checked in. Auto-forfeit when the timer hits zero.</div>
+                </div>
+
+                <div class="nsplayer present">
+                  <div class="ava">S</div>
+                  <div class="nsname">
+                    <div class="nm">Sam</div>
+                    <div class="nsd">seed 6 · checked in 4m ago</div>
+                  </div>
+                  <span class="statuschip here">present</span>
+                </div>
+
+                <div class="nsplayer absent">
+                  <div class="ava">V</div>
+                  <div class="nsname">
+                    <div class="nm">Vale</div>
+                    <div class="nsd">seed 7 · last seen 11m ago</div>
+                  </div>
+                  <span class="statuschip gone">no-show</span>
+                </div>
+              </div>
+
+              <div class="ffaction">
+                <div class="ffbtn"><span class="gi">&#9873;</span>Mark forfeit now</div>
+                <div class="ffnote">
+                  <span class="ic gi">&#9432;</span>
+                  <span>Sam advances with a bye-style walkover badge. <b style="color:var(--t2)">No stats recorded</b> — forfeits don't count toward award eligibility floors (min 24 rounds / 20 kills).</span>
+                </div>
+              </div>
+
+              <div class="fmcard" style="margin-top:13px">
+                <div class="nshead" style="border-bottom:none">
+                  <span class="nsmatchlabel">on forfeit · L-semi slot</span>
+                  <span class="statuschip adv">advances</span>
+                </div>
+                <div class="nsplayer present" style="border-top:1px solid var(--hair)">
+                  <div class="ava">S</div>
+                  <div class="nsname">
+                    <div class="nm">Sam</div>
+                    <div class="nsd">advances to L-semi · walkover</div>
+                  </div>
+                  <span class="badge ff" style="position:static">walkover</span>
+                </div>
+              </div>
+
+              <div class="seedfoot">
+                Walkovers are logged but excluded from the demo seed · <span class="sha tnum">a3f1c9e2…7b40</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabbar">
+            <div class="tab on"><span class="ti gi">&#9707;</span><span class="tl">Bracket</span></div>
+            <div class="tab"><span class="ti gi">&#9776;</span><span class="tl">Matches</span></div>
+            <div class="tab"><span class="ti gi">&#9737;</span><span class="tl">Awards</span></div>
+            <div class="tab"><span class="ti gi">&#9733;</span><span class="tl">Stats</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footnote">
+    <span class="wordmark">InclusivCup</span> · strength in what others ignore<br/>
+    Broadcast Slate palette · gold reserved for grand final + award reveals · all stats verified from demo
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>InclusivCup — Inicio / Feed de la línea de tiempo (mock)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --page:#0F1419;
+    --s1:#171E26;
+    --s2:#1E2832;
+    --line:#232C36;
+    --tp:#F4F6F8;
+    --ts:#B7C2CE;
+    --tm:#8A97A6;
+    --blue:#2F81F7;
+    --gold:#FFB23E;
+    --win:#3FB950;
+    --loss:#F0556A;
+    --display:'Archivo', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --body: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--page);
+    color:var(--tp);
+    font-family:var(--body);
+    font-size:14px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 16px 60px;
+  }
+  .num{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+
+  /* ---- page header ---- */
+  h1{
+    font-family:var(--display);
+    font-weight:800;
+    font-size:18px;
+    letter-spacing:0.02em;
+    margin:0 0 6px;
+    color:var(--tp);
+  }
+  .pagecap{
+    color:var(--tm);
+    font-size:12px;
+    max-width:760px;
+    margin:0 0 26px;
+    line-height:1.55;
+  }
+  .pagecap b{ color:var(--ts); font-weight:600; }
+
+  /* ---- states layout ---- */
+  .states{
+    display:flex;
+    flex-wrap:wrap;
+    gap:34px 40px;
+    align-items:flex-start;
+  }
+  .state{ width:390px; max-width:100%; }
+  .cap{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0 0 12px 6px;
+    color:var(--tm);
+    font-size:11px;
+    letter-spacing:0.10em;
+    text-transform:uppercase;
+  }
+  .cap .dot{ width:5px; height:5px; border-radius:50%; background:var(--tm); }
+
+  /* ---- device frame ---- */
+  .phone{
+    width:390px;
+    max-width:100%;
+    background:var(--page);
+    border:1px solid var(--line);
+    border-radius:30px;
+    padding:9px;
+    box-shadow:0 0 0 1px #0b0f14, 0 18px 40px -22px #000;
+  }
+  .screen{
+    background:var(--page);
+    border-radius:22px;
+    overflow:hidden;
+    border:0.5px solid var(--line);
+  }
+  .statusbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 18px 4px;
+    color:var(--tm);
+    font-size:11px;
+  }
+  .statusbar .dots{ letter-spacing:1px; }
+
+  /* ---- app top bar ---- */
+  .topbar{
+    padding:8px 16px 12px;
+    border-bottom:0.5px solid var(--line);
+  }
+  .brandrow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .wordmark{
+    font-family:var(--display);
+    font-weight:800;
+    font-size:16px;
+    letter-spacing:0.12em;
+    color:var(--tp);
+  }
+  .wordmark .cup{ color:var(--blue); font-weight:600; }
+  .livepill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:3px 9px 3px 7px;
+    border-radius:999px;
+    border:0.5px solid rgba(47,129,247,0.45);
+    background:rgba(47,129,247,0.12);
+    color:var(--blue);
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
+  .livepill .pulse{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--blue);
+    box-shadow:0 0 0 0 rgba(47,129,247,0.6);
+    animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(47,129,247,0.55); }
+    70%{ box-shadow:0 0 0 6px rgba(47,129,247,0); }
+    100%{ box-shadow:0 0 0 0 rgba(47,129,247,0); }
+  }
+  .donepill{
+    border-color:rgba(255,178,62,0.45);
+    background:rgba(255,178,62,0.10);
+    color:var(--gold);
+  }
+  .donepill .pulse{ background:var(--gold); animation:none; box-shadow:none; }
+  .softpill{
+    border-color:var(--line);
+    background:transparent;
+    color:var(--tm);
+  }
+  .softpill .pulse{ background:var(--tm); animation:none; box-shadow:none; }
+
+  /* ---- nav ---- */
+  nav{
+    display:flex;
+    gap:4px;
+    margin-top:13px;
+  }
+  .navitem{
+    flex:1;
+    text-align:center;
+    padding:7px 4px 9px;
+    font-size:12px;
+    color:var(--tm);
+    border-bottom:1.5px solid transparent;
+    position:relative;
+  }
+  .navitem.active{
+    color:var(--tp);
+    font-weight:600;
+    border-bottom-color:var(--blue);
+  }
+  .navitem.locked{ color:#5d6875; }
+  .navitem .lock{ font-size:9px; vertical-align:1px; margin-left:3px; }
+
+  /* ---- feed body ---- */
+  .feed{
+    padding:14px 14px 20px;
+    background:var(--page);
+  }
+  .feed-day{
+    color:var(--tm);
+    font-size:10px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    margin:2px 2px 12px;
+  }
+
+  /* timeline rail */
+  .item{
+    position:relative;
+    padding:0 0 16px 26px;
+  }
+  .item:last-child{ padding-bottom:2px; }
+  .item::before{
+    content:"";
+    position:absolute;
+    left:6px; top:18px; bottom:-2px;
+    width:1px;
+    background:var(--line);
+  }
+  .item:last-child::before{ display:none; }
+  .node{
+    position:absolute;
+    left:0; top:11px;
+    width:13px; height:13px;
+    border-radius:50%;
+    background:var(--page);
+    border:1.5px solid var(--line);
+  }
+  .node.blue{ border-color:var(--blue); }
+  .node.blue::after{
+    content:""; position:absolute; inset:3px; border-radius:50%; background:var(--blue);
+  }
+  .node.win{ border-color:var(--win); }
+  .node.win::after{
+    content:""; position:absolute; inset:3px; border-radius:50%; background:var(--win);
+  }
+  .node.gold{ border-color:var(--gold); }
+  .node.gold::after{
+    content:""; position:absolute; inset:3px; border-radius:50%; background:var(--gold);
+  }
+  .node.muted{ border-color:#39434f; }
+
+  /* card */
+  .card{
+    background:var(--s1);
+    border:0.5px solid var(--line);
+    border-radius:12px;
+    padding:11px 12px;
+  }
+  .card.raised{ background:var(--s2); }
+  .time{
+    color:var(--tm);
+    font-size:10.5px;
+    letter-spacing:0.04em;
+    margin:0 0 5px;
+  }
+
+  /* match result */
+  .matchline{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .matchline .who{ font-size:13.5px; color:var(--tp); font-weight:600; }
+  .matchline .who .def{ color:var(--tm); font-weight:400; }
+  .score{
+    margin-left:auto;
+    font-family:var(--display);
+    font-weight:700;
+    font-size:15px;
+    color:var(--tp);
+  }
+  .score .w{ color:var(--win); }
+  .score .l{ color:var(--loss); }
+  .metarow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:8px;
+    flex-wrap:wrap;
+  }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:11px;
+    padding:3px 8px;
+    border-radius:999px;
+    border:0.5px solid var(--line);
+    color:var(--ts);
+  }
+  .chip.ok{ color:var(--win); border-color:rgba(63,185,80,0.35); background:rgba(63,185,80,0.08); }
+  .chip.verify{ color:var(--ts); }
+  .chip .tick{
+    width:13px; height:13px; border-radius:50%;
+    background:var(--win); color:#0b1410;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700;
+  }
+  .approved{ color:var(--win); font-weight:600; }
+
+  /* bracket advance */
+  .advance{
+    display:flex; align-items:center; gap:9px;
+    font-size:13px; color:var(--ts);
+  }
+  .advance .arr{
+    color:var(--blue); font-weight:700; font-size:14px;
+  }
+  .advance b{ color:var(--tp); font-weight:600; }
+
+  /* award teaser (greyed) */
+  .teaser{ background:#141a21; border-style:dashed; }
+  .teaser .trow{ display:flex; align-items:center; gap:10px; }
+  .shirt{
+    width:30px; height:30px; flex:none;
+    border-radius:7px;
+    border:0.5px solid #313b46;
+    display:flex; align-items:center; justify-content:center;
+    color:#5d6875;
+  }
+  .teaser .ttitle{ font-size:12.5px; color:#7f8b99; }
+  .teaser .tsub{ font-size:11px; color:#5d6875; margin-top:2px; }
+  .lockpill{
+    margin-left:auto;
+    font-size:10px; color:#5d6875;
+    border:0.5px solid #2a333d; border-radius:999px;
+    padding:3px 8px;
+    white-space:nowrap;
+  }
+
+  /* THEO hook personal card */
+  .hook{
+    background:var(--s2);
+    border:0.5px solid rgba(47,129,247,0.35);
+    border-radius:14px;
+    padding:13px 13px 12px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hook::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:var(--blue);
+  }
+  .hook-eyebrow{
+    display:flex; align-items:center; gap:7px;
+    font-size:10px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--blue); font-weight:600;
+    margin:0 0 8px;
+  }
+  .hook-eyebrow .av{
+    width:18px; height:18px; border-radius:50%;
+    background:rgba(47,129,247,0.18); color:var(--blue);
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700; letter-spacing:0;
+  }
+  .hook h3{
+    margin:0 0 6px;
+    font-family:var(--display);
+    font-weight:700;
+    font-size:15.5px;
+    line-height:1.25;
+    color:var(--tp);
+  }
+  .hook p{
+    margin:0 0 11px;
+    font-size:12.5px;
+    color:var(--ts);
+    line-height:1.5;
+  }
+  .hook p .out{ color:var(--loss); font-weight:600; }
+  .races{
+    display:flex; gap:8px; margin:0 0 12px;
+  }
+  .racepod{
+    flex:1;
+    border:0.5px solid var(--line);
+    border-radius:9px;
+    background:rgba(0,0,0,0.18);
+    padding:8px 9px;
+  }
+  .racepod .rk{
+    font-family:var(--display);
+    font-weight:700; font-size:18px; color:var(--gold);
+    line-height:1;
+  }
+  .racepod .rk.silver{ color:var(--ts); }
+  .racepod .rl{ font-size:10.5px; color:var(--tm); margin-top:5px; line-height:1.3; }
+  .hookfoot{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .livecount{
+    font-size:11px; color:var(--tm);
+  }
+  .livecount b{ color:var(--blue); font-weight:600; }
+  .seelink{
+    display:inline-flex; align-items:center; gap:5px;
+    color:var(--blue); font-size:12.5px; font-weight:600;
+    text-decoration:none;
+  }
+  .seelink .a{ font-weight:700; }
+
+  /* empty state */
+  .empty{
+    padding:54px 26px 60px;
+    text-align:center;
+  }
+  .empty .ring{
+    width:62px; height:62px; margin:0 auto 18px;
+    border-radius:50%;
+    border:1.5px dashed #313b46;
+    display:flex; align-items:center; justify-content:center;
+    color:#4d5763;
+    font-family:var(--display); font-weight:700; font-size:11px; letter-spacing:0.08em;
+  }
+  .empty h3{
+    font-family:var(--display); font-weight:700; font-size:16px;
+    margin:0 0 8px; color:var(--tp);
+  }
+  .empty p{
+    color:var(--tm); font-size:12.5px; margin:0 auto; max-width:250px; line-height:1.55;
+  }
+  .reg{
+    margin-top:22px;
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:11px; color:var(--ts);
+    border:0.5px solid var(--line); border-radius:999px;
+    padding:6px 12px;
+  }
+  .reg .n{ font-family:var(--display); font-weight:700; color:var(--blue); }
+
+  /* ceremony banner (end of event) */
+  .ceremony{
+    background:linear-gradient(180deg, rgba(255,178,62,0.10), rgba(255,178,62,0.03));
+    border:0.5px solid rgba(255,178,62,0.45);
+    border-radius:14px;
+    padding:14px 13px;
+    position:relative;
+    overflow:hidden;
+  }
+  .ceremony::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--gold);
+  }
+  .cer-eyebrow{
+    display:flex; align-items:center; gap:7px;
+    color:var(--gold); font-size:10px; font-weight:700;
+    letter-spacing:0.12em; text-transform:uppercase; margin:0 0 8px;
+  }
+  .cer-eyebrow .ringmini{
+    width:16px; height:16px; border-radius:50%;
+    border:1.5px solid var(--gold); position:relative; flex:none;
+  }
+  .cer-eyebrow .ringmini::after{
+    content:""; position:absolute; left:50%; top:-3px; transform:translateX(-50%);
+    border-left:3px solid transparent; border-right:3px solid transparent;
+    border-top:4px solid var(--gold);
+  }
+  .ceremony h3{
+    font-family:var(--display); font-weight:800; font-size:16px;
+    color:var(--tp); margin:0 0 5px; letter-spacing:0.01em;
+  }
+  .ceremony .eth{
+    font-size:11.5px; color:var(--gold); font-style:italic; margin:0 0 11px; opacity:0.9;
+  }
+  .cerbtn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%;
+    background:var(--gold); color:#2a1c06;
+    font-weight:700; font-size:13px;
+    border:none; border-radius:10px;
+    padding:11px 12px;
+    font-family:var(--display); letter-spacing:0.02em;
+  }
+  .cerbtn .a{ font-weight:800; }
+
+  .final-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11px; color:var(--gold);
+    border:0.5px solid rgba(255,178,62,0.35);
+    border-radius:999px; padding:3px 8px;
+    margin-top:9px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Inicio del torneo — feed de la línea de tiempo</h1>
+<p class="pagecap">
+  La única fuente de verdad en vivo, mobile-first (~390px). Atiende <b>FR-31</b> (feed cronológico del evento), <b>FR-32</b> (procedencia «verificado desde el demo» en los resultados) y <b>UJ-1</b> (Theo — eliminado, pero enganchado por las carreras de premios en vivo). Los estados de abajo se leen como una especificación: vacío previo al evento, feed en vivo, banner de ceremonia al final del evento.
+</p>
+
+<div class="states">
+
+  <!-- ================= STATE 1 — PRE-EVENT EMPTY ================= -->
+  <div class="state">
+    <div class="cap"><span class="dot"></span>Estado 1 · previo al evento (vacío)</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar">
+          <span class="num">9:41</span>
+          <span class="dots">• • •</span>
+        </div>
+        <div class="topbar">
+          <div class="brandrow">
+            <div class="wordmark">INCLUSIV<span class="cup">CUP</span></div>
+            <span class="livepill softpill"><span class="pulse"></span>sin transmisión</span>
+          </div>
+          <nav>
+            <div class="navitem active">Feed</div>
+            <div class="navitem">Llave</div>
+            <div class="navitem">Estadísticas</div>
+            <div class="navitem locked">Ceremonia<span class="lock">&#128274;</span></div>
+          </nav>
+        </div>
+        <div class="empty">
+          <div class="ring">360</div>
+          <h3>El feed está en silencio — por ahora</h3>
+          <p>El evento aún no empieza. Inscripciones abiertas. Resultados, avances y carreras de premios aterrizan aquí, lo más reciente primero.</p>
+          <div class="reg"><span class="num n">8</span>&nbsp;de 8 inscritos · esperando a que Mara fije las siembras</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= STATE 2 — LIVE FEED ================= -->
+  <div class="state">
+    <div class="cap"><span class="dot"></span>Estado 2 · feed en vivo (el evento principal)</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar">
+          <span class="num">9:41</span>
+          <span class="dots">• • •</span>
+        </div>
+        <div class="topbar">
+          <div class="brandrow">
+            <div class="wordmark">INCLUSIV<span class="cup">CUP</span></div>
+            <span class="livepill"><span class="pulse"></span>En vivo</span>
+          </div>
+          <nav>
+            <div class="navitem active">Feed</div>
+            <div class="navitem">Llave</div>
+            <div class="navitem">Estadísticas</div>
+            <div class="navitem locked">Ceremonia<span class="lock">&#128274;</span></div>
+          </nav>
+        </div>
+
+        <div class="feed">
+          <div class="feed-day">Hoy · llave de ganadores</div>
+
+          <!-- THEO HOOK — personal card, prominent -->
+          <div class="item">
+            <span class="node blue"></span>
+            <div class="hook">
+              <div class="hook-eyebrow"><span class="av">TH</span>para ti, Theo</div>
+              <h3>Quedaste fuera. Pero sigues vivo en 3 premios.</h3>
+              <p><span class="out">Eliminado</span> por Dex. El bracket terminó contigo. Las carreras de premios no.</p>
+              <div class="races">
+                <div class="racepod">
+                  <div class="rk num">#1</div>
+                  <div class="rl">Muertes a cuchillo<br>premio A Cuchillo</div>
+                </div>
+                <div class="racepod">
+                  <div class="rk silver num">#2</div>
+                  <div class="rl">El Más Generoso<br>más muertes, obvio</div>
+                </div>
+              </div>
+              <div class="hookfoot">
+                <span class="livecount"><b>3</b> carreras de premios siguen vivas</span>
+                <a class="seelink" href="#">Ver tus premios <span class="a">&rarr;</span></a>
+              </div>
+            </div>
+          </div>
+
+          <!-- bracket advance -->
+          <div class="item">
+            <span class="node blue"></span>
+            <div class="card">
+              <div class="time num">21:14 · justo ahora</div>
+              <div class="advance">
+                <span class="arr">&rarr;</span>
+                <span><b>Dex</b> avanza a Winners R2</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- match result — headline -->
+          <div class="item">
+            <span class="node win"></span>
+            <div class="card raised">
+              <div class="time num">21:12 · Winners R1</div>
+              <div class="matchline">
+                <span class="who">Dex <span class="def">venció a</span> Theo</span>
+                <span class="score num"><span class="w">16</span>&ndash;<span class="l">13</span></span>
+              </div>
+              <div class="metarow">
+                <span class="chip ok"><span class="tick">&#10003;</span>aprobado</span>
+                <span class="chip verify"><span class="tick">&#10003;</span>verificado desde el demo</span>
+                <span class="chip"><span class="num">a3f1c9e2&hellip;7b40</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- award reveal teaser (greyed) -->
+          <div class="item">
+            <span class="node muted"></span>
+            <div class="card teaser">
+              <div class="trow">
+                <span class="shirt">&#9650;</span>
+                <div>
+                  <div class="ttitle">Las carreras de premios se aprietan</div>
+                  <div class="tsub">A Cuchillo · El Más Generoso · Ojo de Halcón &mdash; 9 más</div>
+                </div>
+                <span class="lockpill">Se revela en la ceremonia</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- earlier advance -->
+          <div class="item">
+            <span class="node blue"></span>
+            <div class="card">
+              <div class="time num">20:48 · Winners R1</div>
+              <div class="advance">
+                <span class="arr">&rarr;</span>
+                <span><b>Mara</b> avanza a Winners R2</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= STATE 3 — END OF EVENT ================= -->
+  <div class="state">
+    <div class="cap"><span class="dot"></span>Estado 3 · fin del evento (ceremonia desbloqueada)</div>
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar">
+          <span class="num">23:58</span>
+          <span class="dots">• • •</span>
+        </div>
+        <div class="topbar">
+          <div class="brandrow">
+            <div class="wordmark">INCLUSIV<span class="cup">CUP</span></div>
+            <span class="livepill donepill"><span class="pulse"></span>final</span>
+          </div>
+          <nav>
+            <div class="navitem active">Feed</div>
+            <div class="navitem">Llave</div>
+            <div class="navitem">Estadísticas</div>
+            <div class="navitem">Ceremonia</div>
+          </nav>
+        </div>
+
+        <div class="feed">
+          <div class="feed-day">Esta noche · la llave está cerrada</div>
+
+          <!-- ceremony banner -->
+          <div class="item">
+            <span class="node gold"></span>
+            <div class="ceremony">
+              <div class="cer-eyebrow"><span class="ringmini"></span>INCLUSIV360 · ceremonia de premios</div>
+              <h3>La ceremonia está en vivo</h3>
+              <div class="eth">«Fuerza en lo que otros ignoran.»</div>
+              <button class="cerbtn">Entrar a la ceremonia <span class="a">&rarr;</span></button>
+              <div class="final-chip"><span class="tick" style="width:13px;height:13px;border-radius:50%;background:var(--gold);color:#2a1c06;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">&#10003;</span> Sembrado por el demo final · reproducible</div>
+            </div>
+          </div>
+
+          <!-- champion result -->
+          <div class="item">
+            <span class="node win"></span>
+            <div class="card raised">
+              <div class="time num">23:51 · gran final</div>
+              <div class="matchline">
+                <span class="who">Dex <span class="def">venció a</span> Mara</span>
+                <span class="score num"><span class="w">16</span>&ndash;<span class="l">11</span></span>
+              </div>
+              <div class="metarow">
+                <span class="chip ok"><span class="tick">&#10003;</span>aprobado</span>
+                <span class="chip verify"><span class="tick">&#10003;</span>verificado desde el demo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- closing advance -->
+          <div class="item">
+            <span class="node blue"></span>
+            <div class="card">
+              <div class="time num">23:51 · llave cerrada</div>
+              <div class="advance">
+                <span class="arr">&rarr;</span>
+                <span><b>Dex</b> es tu campeón — 12 premios esperando en la trastienda</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

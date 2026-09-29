@@ -1,0 +1,81 @@
+/*
+ * Viewer design tokens — the first styling foundation in the repo (Story 5.6, AC3/AC10).
+ * Palette + scales lifted VERBATIM from the authoritative UX mock
+ * (mock-home.html:11-25 / DESIGN.md:15-26). Stories 5.7 and 5.8 inherit these tokens —
+ * change them here, once. Dark-only by design (AD-24 / UX-DR2): there is no light theme.
+ *
+ * `--font-display` is set by next/font (Archivo) in app/layout.tsx; the fallback stack keeps
+ * text readable if the font fails to load.
+ */
+:root {
+  /* surfaces */
+  --page: #0f1419;
+  --s1: #171e26;
+  --s2: #1e2832;
+  --line: #232c36;
+
+  /* text */
+  --tp: #f4f6f8;
+  --ts: #b7c2ce;
+  --tm: #8a97a6;
+
+  /* accents (also the entry-type node colors — AC3) */
+  --blue: #2f81f7; /* bracket_advance */
+  --gold: #ffb23e; /* award_reveal (the single sanctioned gold-in-feed leak) */
+  --win: #3fb950; /* match_result / winner number */
+  --loss: #f0556a; /* loser number */
+
+  /* muted ink for locked/teaser affordances */
+  --ink-locked: #5d6875;
+  --node-muted: #39434f;
+
+  /* radii */
+  --r-sm: 6px;
+  --r-md: 12px; /* card */
+  --r-lg: 16px;
+  --r-pill: 999px;
+
+  /* spacing scale (4/8/12/16/24/32) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* type families — --font-display is injected by next/font (Archivo) */
+  --font-display: var(--font-archivo), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--page);
+  color: var(--tp);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular lining numerals on every numeric value (scores, times, hash, counters) — AC10. */
+.num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Never let a long name/score push the single column into a horizontal scroll (AC10). */
+a {
+  color: inherit;
+}

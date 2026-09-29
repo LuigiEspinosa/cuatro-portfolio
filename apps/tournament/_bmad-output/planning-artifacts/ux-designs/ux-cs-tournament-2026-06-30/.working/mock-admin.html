@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>InclusivCup — Admin console (ingest + evidence)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --page:#0F1419; --s1:#171E26; --s2:#1E2832; --line:#232C36;
+    --tx:#F4F6F8; --tx2:#B7C2CE; --mut:#8A97A6;
+    --blue:#2F81F7; --gold:#FFB23E; --win:#3FB950; --loss:#F0556A;
+    --disp:Archivo, system-ui, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--page); color:var(--tx);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px; line-height:1.5; letter-spacing:.01em;
+    -webkit-font-smoothing:antialiased; padding:36px 22px 72px;
+  }
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  h1{
+    font-family:var(--disp); font-weight:800; text-transform:uppercase;
+    letter-spacing:.06em; font-size:23px; margin:0 0 6px; color:var(--tx);
+  }
+  .sub{color:var(--mut); font-size:12px; margin:0 0 4px; max-width:960px}
+  .sub b{color:var(--tx2); font-weight:600}
+  .wrap{max-width:1080px; margin:0 auto}
+
+  /* state caption */
+  .cap{
+    display:flex; align-items:center; gap:10px;
+    margin:38px 0 12px; padding-bottom:9px; border-bottom:1px solid var(--line);
+  }
+  .cap .dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex:none}
+  .cap .k{
+    font-family:var(--disp); font-weight:700; text-transform:uppercase;
+    letter-spacing:.14em; font-size:11px; color:var(--tx2);
+  }
+  .cap .meta{color:var(--mut); font-size:11px; margin-left:auto}
+
+  /* app shell */
+  .app{
+    display:grid; grid-template-columns:212px 1fr;
+    background:var(--s1); border:1px solid var(--line); border-radius:14px;
+    overflow:hidden;
+  }
+  /* left nav */
+  .nav{
+    background:#131A21; border-right:1px solid var(--line);
+    padding:16px 12px; display:flex; flex-direction:column; gap:2px;
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:6px; padding:4px 8px 16px;
+  }
+  .brand .mark{
+    font-family:var(--disp); font-weight:800; text-transform:uppercase;
+    letter-spacing:.12em; font-size:15px; color:var(--tx);
+  }
+  .brand .ring{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid var(--gold); position:relative; flex:none;
+    transform:translateY(2px);
+  }
+  .brand .ring::after{
+    content:""; position:absolute; top:-3px; left:50%; transform:translateX(-50%);
+    width:0;height:0; border-left:3px solid transparent; border-right:3px solid transparent;
+    border-bottom:5px solid var(--gold);
+  }
+  .navlbl{
+    font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--mut); padding:10px 8px 6px;
+  }
+  .navitem{
+    display:flex; align-items:center; gap:10px; padding:8px 10px;
+    border-radius:8px; color:var(--tx2); font-size:13px; cursor:default;
+    text-decoration:none;
+  }
+  .navitem .ic{width:15px;height:15px;flex:none;opacity:.85}
+  .navitem.on{background:var(--s2); color:var(--tx); font-weight:600}
+  .navitem.on .ic{opacity:1}
+  .navitem .badge{
+    margin-left:auto; background:var(--blue); color:#06203f;
+    font-size:10px; font-weight:700; padding:1px 7px; border-radius:9px;
+    font-family:var(--disp);
+  }
+  .ro{
+    margin-top:auto; padding:11px 10px 4px; border-top:1px solid var(--line);
+    color:var(--mut); font-size:11px; line-height:1.5; display:flex; gap:7px;
+  }
+  .ro .ic{width:14px;height:14px;flex:none;margin-top:1px;opacity:.7}
+
+  /* main column */
+  .main{padding:20px 22px 24px; min-width:0}
+  .topbar{display:flex; align-items:center; gap:12px; margin-bottom:18px}
+  .topbar h2{
+    font-family:var(--disp); font-weight:700; font-size:16px; margin:0;
+    letter-spacing:.02em;
+  }
+  .topbar .crumb{color:var(--mut); font-size:12px}
+  .pill{
+    font-family:var(--disp); font-weight:700; text-transform:uppercase;
+    letter-spacing:.1em; font-size:10px; padding:4px 10px; border-radius:20px;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .pill .d{width:6px;height:6px;border-radius:50%}
+  .pill.pend{color:var(--gold); background:rgba(255,178,62,.10); border:1px solid rgba(255,178,62,.28)}
+  .pill.pend .d{background:var(--gold)}
+  .pill.live{color:var(--blue); background:rgba(47,129,247,.12); border:1px solid rgba(47,129,247,.30)}
+  .pill.live .d{background:var(--blue)}
+  .pill.ok{color:var(--win); background:rgba(63,185,80,.10); border:1px solid rgba(63,185,80,.28)}
+  .pill.ok .d{background:var(--win)}
+  .pill.cont{color:var(--loss); background:rgba(240,85,106,.10); border:1px solid rgba(240,85,106,.28)}
+  .pill.cont .d{background:var(--loss)}
+  .topbar .timer{margin-left:auto; color:var(--mut); font-size:11px; display:flex; align-items:center; gap:6px}
+  .topbar .timer b{color:var(--tx2); font-weight:600}
+
+  /* card */
+  .card{
+    background:var(--s2); border:1px solid var(--line); border-radius:12px;
+    padding:16px 18px; margin-bottom:14px;
+  }
+  .card.flush{padding:0; overflow:hidden}
+
+  /* score header */
+  .score{
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .score .side{display:flex; align-items:center; gap:11px}
+  .av{
+    width:34px;height:34px;border-radius:9px; background:var(--s1);
+    border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+    font-family:var(--disp); font-weight:700; font-size:13px; color:var(--tx2);
+  }
+  .score .nm{font-family:var(--disp); font-weight:700; font-size:16px; letter-spacing:.02em}
+  .score .seed{color:var(--mut); font-size:11px}
+  .score .vs{color:var(--mut); font-size:11px; letter-spacing:.18em; font-family:var(--disp)}
+  .score .nums{display:flex; align-items:baseline; gap:8px; font-family:var(--disp)}
+  .score .sc{font-weight:800; font-size:30px; line-height:1}
+  .score .sc.w{color:var(--win)}
+  .score .sc.l{color:var(--tx2)}
+  .score .dash{color:var(--mut); font-size:22px; font-weight:600}
+  .score .right{margin-left:auto; text-align:right}
+  .score .map{color:var(--tx2); font-size:12px; font-family:var(--disp); letter-spacing:.04em}
+  .verif{
+    display:inline-flex; align-items:center; gap:6px; margin-top:6px;
+    color:var(--win); font-size:11px;
+  }
+  .verif .ic{width:13px;height:13px}
+
+  /* stat table */
+  .tbl{width:100%; border-collapse:collapse; font-size:12.5px}
+  .tbl thead th{
+    text-align:right; color:var(--mut); font-weight:600; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.08em; padding:9px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .tbl thead th:first-child{text-align:left}
+  .tbl tbody td{padding:9px 10px; text-align:right; border-bottom:1px solid rgba(35,44,54,.6)}
+  .tbl tbody td:first-child{text-align:left; color:var(--tx)}
+  .tbl tbody tr:last-child td{border-bottom:none}
+  .tbl .who{display:flex; align-items:center; gap:9px}
+  .tbl .who .tav{
+    width:22px;height:22px;border-radius:6px;background:var(--s1);
+    border:1px solid var(--line); display:flex;align-items:center;justify-content:center;
+    font-family:var(--disp); font-weight:700; font-size:10px; color:var(--mut); flex:none;
+  }
+  .tbl .who .sd{color:var(--mut); font-size:10px; font-family:var(--disp)}
+  .tbl td.num{color:var(--tx2)}
+  .tbl tr.flag td{background:rgba(240,85,106,.06)}
+  .tbl tr.flag td:first-child{color:var(--tx)}
+  .tbl .miss{color:var(--loss); font-family:var(--disp); font-weight:700}
+  .tbl .star{color:var(--win)}
+  .thwrap{padding:2px 4px}
+
+  /* anomaly banner */
+  .anom{
+    display:flex; align-items:flex-start; gap:11px; margin-top:14px;
+    background:rgba(240,85,106,.07); border:1px solid rgba(240,85,106,.30);
+    border-radius:10px; padding:12px 14px;
+  }
+  .anom .ic{width:18px;height:18px;flex:none;color:var(--loss);margin-top:1px}
+  .anom .ttl{font-weight:600; font-size:13px; color:var(--tx)}
+  .anom .ttl b{color:var(--loss)}
+  .anom .desc{color:var(--tx2); font-size:12px; margin-top:2px}
+
+  /* action row */
+  .actions{
+    display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap;
+  }
+  .btn{
+    font-family:var(--disp); font-weight:700; letter-spacing:.03em; font-size:13px;
+    border-radius:9px; padding:11px 20px; border:1px solid transparent;
+    display:inline-flex; align-items:center; gap:8px; cursor:default; line-height:1;
+  }
+  .btn .ic{width:15px;height:15px}
+  .btn.primary{background:var(--blue); color:#fff; border-color:var(--blue)}
+  .btn.ghost{background:transparent; color:var(--tx2); border-color:var(--line)}
+  .btn.lg{padding:13px 26px; font-size:14px}
+  .actions .hint{color:var(--mut); font-size:11px; margin-left:auto; display:flex; align-items:center; gap:6px}
+  .actions .hint .ic{width:13px;height:13px;opacity:.7}
+
+  /* approved confirm */
+  .confirm{
+    display:flex; align-items:center; gap:16px; padding:20px 20px;
+  }
+  .confirm .seal{
+    width:46px;height:46px;border-radius:50%; flex:none;
+    background:rgba(63,185,80,.12); border:1.5px solid var(--win);
+    display:flex; align-items:center; justify-content:center; color:var(--win);
+  }
+  .confirm .seal .ic{width:24px;height:24px}
+  .confirm h3{
+    font-family:var(--disp); font-weight:700; font-size:16px; margin:0 0 3px;
+    letter-spacing:.01em;
+  }
+  .confirm p{color:var(--tx2); font-size:12.5px; margin:0}
+  .chips{display:flex; gap:8px; margin-top:9px; flex-wrap:wrap}
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px;
+    color:var(--tx2); background:var(--s1); border:1px solid var(--line);
+    border-radius:7px; padding:5px 9px;
+  }
+  .chip .ic{width:12px;height:12px; color:var(--win)}
+  .confirm .undo{margin-left:auto; color:var(--blue); font-size:12px; font-family:var(--disp); font-weight:600}
+
+  /* evidence view */
+  .ev-head{display:flex; align-items:center; gap:12px; margin-bottom:4px}
+  .ev-sub{color:var(--mut); font-size:12px; margin:0 0 14px}
+  .hashrow{
+    display:flex; align-items:center; gap:12px; padding:13px 14px;
+    background:var(--s1); border:1px solid var(--line); border-radius:10px;
+    margin-bottom:10px;
+  }
+  .hashrow .lab{
+    font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--mut); width:118px; flex:none;
+  }
+  .hashrow .val{
+    font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:13px; color:var(--tx); letter-spacing:.02em;
+  }
+  .hashrow .val .tail{color:var(--mut)}
+  .hashrow .copy{
+    margin-left:auto; color:var(--tx2); font-size:11px; display:inline-flex;
+    align-items:center; gap:6px; border:1px solid var(--line); border-radius:7px;
+    padding:6px 11px; font-family:var(--disp); font-weight:600;
+  }
+  .hashrow .copy .ic{width:13px;height:13px}
+  .reparse{
+    display:flex; align-items:center; gap:12px; padding:14px 16px;
+    background:rgba(63,185,80,.06); border:1px solid rgba(63,185,80,.28);
+    border-radius:10px; margin:12px 0 4px;
+  }
+  .reparse .ic{width:20px;height:20px;flex:none;color:var(--win)}
+  .reparse .ttl{font-weight:600; font-size:13.5px; color:var(--tx)}
+  .reparse .ttl b{color:var(--win)}
+  .reparse .desc{color:var(--tx2); font-size:12px; margin-top:2px}
+  .reparse .desc code{
+    font-family:ui-monospace,Consolas,monospace; color:var(--tx2);
+    background:var(--s1); padding:1px 5px; border-radius:4px; font-size:11px;
+  }
+  .settle{
+    display:flex; align-items:flex-start; gap:11px; margin-top:14px;
+    background:var(--s1); border:1px dashed var(--line); border-radius:10px;
+    padding:13px 15px;
+  }
+  .settle .ic{width:17px;height:17px;flex:none;color:var(--blue);margin-top:1px}
+  .settle .t{color:var(--tx); font-size:13px; font-weight:600}
+  .settle .t2{color:var(--tx2); font-size:12px; margin-top:2px}
+  .settle .t2 b{color:var(--tx); font-weight:600}
+  .ev-actions{display:flex; gap:10px; margin-top:16px; align-items:center}
+  .ev-actions .note{color:var(--mut); font-size:11px; margin-left:auto; max-width:280px; text-align:right}
+  svg{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Admin console — ingest &amp; evidence</h1>
+  <p class="sub">Serves <b>FR-11..FR-16</b> (approve ingestion, advance bracket, update leaderboards/feed) · <b>FR-33</b> (demo hash + reproducible re-parse) · <b>UJ-2</b> Mara approves a parsed match · <b>UJ-3</b> Dex inspects evidence on a contested result.</p>
+  <p class="sub">Admin assumes a larger screen — desktop / tablet layout (≥1024px). Phone admin falls back to a single-column stack of the same cards. Viewers never see this surface.</p>
+
+  <!-- ===================== STATE A — INGEST QUEUE ===================== -->
+  <div class="cap">
+    <span class="dot"></span>
+    <span class="k">A · Ingest queue — pending review</span>
+    <span class="meta">target: under ~2 min / match · one scan, one tap</span>
+  </div>
+
+  <div class="app">
+    <!-- nav -->
+    <aside class="nav">
+      <div class="brand">
+        <span class="ring"></span>
+        <span class="mark">InclusivCup</span>
+      </div>
+      <div class="navlbl">Admin</div>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 4a3 3 0 0 1 0 6M22 20a6 6 0 0 0-4-5.6"/></svg>Roster</a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h6M4 12h6M4 19h6M10 8h4v8h-4M14 12h6"/></svg>Bracket</a>
+      <a class="navitem on"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Ingest<span class="badge num">1</span></a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10v4a5 5 0 0 1-10 0zM5 4h2M17 4h2M9 13v3h6v-3M8 20h8"/></svg>Awards catalog</a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Ceremony control</a>
+      <div class="ro">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+        <span>Viewers see read-only — no approve, re-parse, or hashes.</span>
+      </div>
+    </aside>
+
+    <!-- main -->
+    <section class="main">
+      <div class="topbar">
+        <h2>Match R2-3</h2>
+        <span class="crumb">Winners bracket · round 2</span>
+        <span class="pill pend"><span class="d"></span>Pending</span>
+        <span class="timer"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Parsed <b>just now</b> · in queue 0:42</span>
+      </div>
+
+      <!-- score card -->
+      <div class="card">
+        <div class="score">
+          <div class="side">
+            <div class="av">D</div>
+            <div>
+              <div class="nm">Dex</div>
+              <div class="seed num">seed 1</div>
+            </div>
+          </div>
+          <div class="nums">
+            <span class="sc w num">16</span>
+            <span class="dash">–</span>
+            <span class="sc l num">13</span>
+          </div>
+          <div class="side">
+            <div class="av">T</div>
+            <div>
+              <div class="nm">Theo</div>
+              <div class="seed num">seed 4</div>
+            </div>
+          </div>
+          <div class="right">
+            <div class="map">de_mirage · MR12</div>
+            <div class="verif">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+              Verified from demo
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- stat table -->
+      <div class="card flush">
+        <div class="thwrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Player</th><th>K</th><th>D</th><th>A</th>
+                <th>ADR</th><th>HS%</th><th>KAST</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="who"><span class="tav">D</span>Dex <span class="sd">1</span></span></td>
+                <td class="num">22</td><td class="num">14</td><td class="num">6</td>
+                <td class="num">98.7</td><td class="num">41%</td><td class="num">78%</td>
+              </tr>
+              <tr>
+                <td><span class="who"><span class="tav">T</span>Theo <span class="sd">4</span></span></td>
+                <td class="num star">18</td><td class="num">21</td><td class="num">5</td>
+                <td class="num">124.1</td><td class="num">48%</td><td class="num">71%</td>
+              </tr>
+              <tr>
+                <td><span class="who"><span class="tav">N</span>Nico <span class="sd">5</span></span></td>
+                <td class="num">15</td><td class="num">17</td><td class="num">9</td>
+                <td class="num">86.4</td><td class="num">39%</td><td class="num">69%</td>
+              </tr>
+              <tr class="flag">
+                <td><span class="who"><span class="tav">V</span>Vale <span class="sd">7</span></span></td>
+                <td class="num miss">—</td><td class="num miss">—</td><td class="num miss">—</td>
+                <td class="num miss">—</td><td class="num miss">—</td><td class="num miss">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- anomaly -->
+      <div class="anom">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>
+        <div>
+          <div class="ttl">Parse anomaly — <b>Vale: 0 stats — did not load? review</b></div>
+          <div class="desc">Vale appears on the scoreboard but every stat is empty. Likely a mid-round reconnect or a corrupt slot in the demo. Re-parse before approving, or confirm Vale was AFK-idle (which DQs them from awards).</div>
+        </div>
+      </div>
+
+      <!-- actions -->
+      <div class="actions">
+        <button class="btn primary lg">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
+          Approve
+        </button>
+        <button class="btn ghost lg">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 0 1 14-5l3 1M20 12a8 8 0 0 1-14 5l-3-1"/><path d="M21 4v4h-4M3 20v-4h4"/></svg>
+          Re-parse
+        </button>
+        <span class="hint">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          Approve advances the bracket, posts the feed card, and recomputes leaderboards.
+        </span>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== STATE B — APPROVED ===================== -->
+  <div class="cap">
+    <span class="dot"></span>
+    <span class="k">B · Approved — confirmation</span>
+    <span class="meta">one tap done · downstream propagated</span>
+  </div>
+
+  <div class="app">
+    <aside class="nav">
+      <div class="brand">
+        <span class="ring"></span>
+        <span class="mark">InclusivCup</span>
+      </div>
+      <div class="navlbl">Admin</div>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 4a3 3 0 0 1 0 6M22 20a6 6 0 0 0-4-5.6"/></svg>Roster</a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h6M4 12h6M4 19h6M10 8h4v8h-4M14 12h6"/></svg>Bracket</a>
+      <a class="navitem on"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Ingest<span class="badge num" style="background:var(--mut);color:#0F1419">0</span></a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10v4a5 5 0 0 1-10 0zM5 4h2M17 4h2M9 13v3h6v-3M8 20h8"/></svg>Awards catalog</a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Ceremony control</a>
+      <div class="ro">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+        <span>Viewers see read-only — no approve, re-parse, or hashes.</span>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="topbar">
+        <h2>Match R2-3</h2>
+        <span class="crumb">Winners bracket · round 2</span>
+        <span class="pill ok"><span class="d"></span>Approved</span>
+        <span class="timer"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>By <b>Mara</b> · 0:51 ago</span>
+      </div>
+
+      <div class="card">
+        <div class="confirm">
+          <div class="seal">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
+          <div>
+            <h3>Approved — bracket advanced, leaderboards + feed updated.</h3>
+            <p>Dex <span class="num">16</span>–<span class="num">13</span> Theo is now official. Vale flagged AFK-idle and DQ'd from awards for this match.</p>
+            <div class="chips">
+              <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>Dex advances to winners R3</span>
+              <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>Theo drops to lower bracket</span>
+              <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>Leaderboards recomputed</span>
+              <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>Feed card posted</span>
+            </div>
+          </div>
+          <span class="undo">Undo</span>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:6px">
+        <button class="btn ghost">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          Next in queue
+        </button>
+        <span class="hint">Queue is clear — all 7 played matches approved. Awards roulette unlocks after the grand final.</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== STATE C — EVIDENCE VIEW ===================== -->
+  <div class="cap">
+    <span class="dot" style="background:var(--loss)"></span>
+    <span class="k">C · Evidence view — contested result (evidence-only)</span>
+    <span class="meta">UJ-3 Dex · no raise-dispute button — just the proof</span>
+  </div>
+
+  <div class="app">
+    <aside class="nav">
+      <div class="brand">
+        <span class="ring"></span>
+        <span class="mark">InclusivCup</span>
+      </div>
+      <div class="navlbl">Admin</div>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 4a3 3 0 0 1 0 6M22 20a6 6 0 0 0-4-5.6"/></svg>Roster</a>
+      <a class="navitem on"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h6M4 12h6M4 19h6M10 8h4v8h-4M14 12h6"/></svg>Bracket</a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Ingest</a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10v4a5 5 0 0 1-10 0zM5 4h2M17 4h2M9 13v3h6v-3M8 20h8"/></svg>Awards catalog</a>
+      <a class="navitem"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Ceremony control</a>
+      <div class="ro">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+        <span>Viewers see read-only — no approve, re-parse, or hashes.</span>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="topbar">
+        <h2>Match R2-3 — evidence</h2>
+        <span class="crumb">Dex def. Theo · 16–13</span>
+        <span class="pill cont"><span class="d"></span>Contested</span>
+        <span class="timer"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Theo flagged it in <b>#scores</b></span>
+      </div>
+
+      <div class="ev-head">
+        <span style="font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:.02em">Demo integrity</span>
+      </div>
+      <p class="ev-sub">The result is settled by the demo itself. Nothing here changes the score — it shows the file Theo doubts is exactly the file that produced it.</p>
+
+      <div class="card" style="padding:14px">
+        <div class="hashrow">
+          <span class="lab">Demo SHA-256</span>
+          <span class="val num">a3f1c9e2<span class="tail">…7b40</span></span>
+          <span class="copy"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy full 64-hex</span>
+        </div>
+        <div class="hashrow">
+          <span class="lab">Retained file</span>
+          <span class="val num">R2-3_dex-theo_mirage.dem</span>
+          <span class="copy" style="border-style:dashed">2.7 MB · stored</span>
+        </div>
+
+        <div class="reparse">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M20 6 9 17l-5-5" transform="scale(.62) translate(7.3 7.3)"/></svg>
+          <div>
+            <div class="ttl"><b>Re-parsed: identical · hash matches retained file</b></div>
+            <div class="desc">Ran the parser again on the stored demo. Output is byte-for-byte the same scoreboard, and the recomputed hash equals <code>a3f1c9e2…7b40</code>. Nothing was edited after the match.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settle">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <div>
+          <div class="t">Settle it in Discord with this.</div>
+          <div class="t2">Drop the hash and the re-parse result in <b>#scores</b>. Seeded by the final demo — reproducible: anyone can run the same parse and get the same numbers. The bracket stays as-is unless Mara overrides.</div>
+        </div>
+      </div>
+
+      <div class="ev-actions">
+        <button class="btn ghost">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          Copy evidence summary
+        </button>
+        <button class="btn ghost">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+          Download demo
+        </button>
+        <span class="note">Evidence-only view. To overturn a result an admin re-parses or edits the match — there is no one-click dispute here.</span>
+      </div>
+    </section>
+  </div>
+
+</div>
+</body>
+</html>

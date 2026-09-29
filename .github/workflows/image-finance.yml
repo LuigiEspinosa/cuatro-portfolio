@@ -1,0 +1,75 @@
+name: Image (finance)
+
+# AD-8: the finance application's image, built here from the repository root that
+# `apps/finance/Dockerfile` narrows to the `finance` workspace with `turbo prune --docker`, and pushed
+# to GHCR tagged with the commit it was built from (AD-3). It is merged and imaged, not placed: no
+# deploy pulls this tag until AD-9 places finance on the box (Story 3-5). It builds on every push,
+# `main` included, since no deploy builds it the way `deploy.yml` builds the Hub's. No third-party
+# action is used: the runner's own `docker` builds, runs, logs in and pushes.
+# `docker/__tests__/finance-image.test.ts` holds the trigger, the tag and the order of the steps.
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  finance:
+    runs-on: ubuntu-latest
+
+    # The ceiling turns a hung install into a failure with a cause, as `image.yml` argues for the Hub's.
+    timeout-minutes: 20
+
+    # `packages: write` is for the push alone.
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE: ghcr.io/luigiespinosa/finance:${{ github.sha }}
+      # A throwaway Postgres on this runner, torn down with it. The passwords below guard nothing.
+      DATABASE_URL: postgresql://finance:throwaway@finance-db:5432/finance
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        run: docker build --file apps/finance/Dockerfile --tag "$IMAGE" .
+
+      # AD-10 and AD-23 run for real before anything is pushed: the role and database `finance` are
+      # provisioned by the file placement will run, and the image's own migration toolchain applies every
+      # migration, as `finance-migrate` does before a rollout.
+      - name: Provision a throwaway finance database
+        run: |
+          docker network create finance
+          docker run --detach --name finance-db --network finance --env POSTGRES_PASSWORD=throwaway postgres:16-alpine
+          for _ in $(seq 1 30); do
+            docker exec finance-db pg_isready -h 127.0.0.1 -U postgres && break
+            sleep 1
+          done
+          docker run --rm --interactive --network finance --env PGPASSWORD=throwaway postgres:16-alpine \
+            psql -h finance-db -U postgres -v ON_ERROR_STOP=1 -v password=throwaway < apps/finance/prisma/provision.sql
+
+      - name: Migrate
+        run: |
+          docker run --rm --network finance --workdir /app/migrate --env DATABASE_URL "$IMAGE" \
+            node node_modules/prisma/build/index.js migrate deploy
+
+      # The image is pushed only once it has served and its data answered: `/api/health` is 200 only
+      # when the database is reachable. Every error is retried while the server starts, as in `image.yml`.
+      - name: Answer /api/health
+        run: |
+          docker run --detach --name finance --network finance --publish 3000:3000 --env DATABASE_URL "$IMAGE"
+          curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-all-errors \
+            http://127.0.0.1:3000/api/health || { docker logs finance; exit 1; }
+
+      # The token reaches `docker login` on stdin, never on its command line.
+      - name: Log in to GHCR
+        run: printf '%s' "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          TOKEN: ${{ github.token }}
+
+      - name: Push
+        run: docker push "$IMAGE"

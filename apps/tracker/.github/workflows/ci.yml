@@ -1,0 +1,220 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tracker_test
+          POSTGRES_USER: tracker
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate prisma client
+        run: pnpm prisma generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgresql://tracker:test@localhost:5432/tracker_test
+        run: pnpm prisma migrate deploy
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://tracker:test@localhost:5432/tracker_test
+        run: pnpm test --coverage
+
+      - name: Build
+        # Env block exists ONLY to satisfy lib/env.ts Zod validation at build-time module load.
+        # All values are CI-only placeholders. NEXTAUTH_SECRET is 64 a's (clears min(32) gate);
+        # never copy this shape into staging/prod. Real secrets land via the VPS .env file.
+        env:
+          DATABASE_URL: postgresql://tracker:test@localhost:5432/tracker_test
+          DB_PASS: test
+          REDIS_URL: redis://localhost:6379
+          NEXTAUTH_SECRET: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          NEXTAUTH_URL: http://localhost:3000
+          ADMIN_PASS: testpass123
+          TMDB_API_KEY: test
+          IGDB_CLIENT_ID: test
+          IGDB_CLIENT_SECRET: test
+          STEAM_API_KEY: test
+          STEAM_USER_ID: test
+          QBITTORRENT_HOST: http://localhost:8080
+          QBITTORRENT_USER: admin
+          QBITTORRENT_PASS: test
+          DOWNLOAD_PATH: /downloads
+          SENTRY_DSN: https://placeholder@example.com/0
+          NEXT_PUBLIC_SENTRY_DSN: https://placeholder@example.com/0
+          NEXT_PUBLIC_UMAMI_WEBSITE_ID: placeholder-website-id
+        run: pnpm build
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tracker_test
+          POSTGRES_USER: tracker
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://tracker:test@localhost:5432/tracker_test
+      DB_PASS: test
+      REDIS_URL: redis://localhost:6379
+      NEXTAUTH_SECRET: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      ADMIN_PASS: testpass123
+      TMDB_API_KEY: test
+      IGDB_CLIENT_ID: test
+      IGDB_CLIENT_SECRET: test
+      STEAM_API_KEY: test
+      STEAM_USER_ID: test
+      QBITTORRENT_HOST: http://localhost:8080
+      QBITTORRENT_USER: admin
+      QBITTORRENT_PASS: test
+      DOWNLOAD_PATH: /downloads
+      SENTRY_DSN: https://placeholder@example.com/0
+      NEXT_PUBLIC_SENTRY_DSN: https://placeholder@example.com/0
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: placeholder-website-id
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate prisma client
+        run: pnpm prisma generate
+
+      - name: Apply migrations
+        run: pnpm prisma migrate deploy
+
+      - name: Seed admin user
+        run: pnpm prisma db seed
+
+      # The seeded /admin/import e2e drives an SSE progress page that only
+      # advances when a worker consumes the bulkImport job. The worker also
+      # registers the two cron schedulers on this ephemeral Redis, but
+      # upsertJobScheduler only books the NEXT occurrence, so neither fires
+      # inside a job unless the run straddles one of their boundaries:
+      # 03:00 UTC for igdbTokenRefresh, and 00:00 / 06:00 / 12:00 / 18:00 UTC
+      # for steamAchievementSync. Either way the result is a logged job error,
+      # not a test failure.
+      - name: Start BullMQ worker
+        run: nohup pnpm exec tsx worker.ts > worker.log 2>&1 & echo $! > worker.pid
+
+      # Without this the previous step exits 0 no matter what: `&` backgrounds
+      # the process, so a worker that dies at boot (a missing env var reaching
+      # lib/env.ts, an unreachable Redis) is indistinguishable from a slow
+      # import, and surfaces 90s later as an opaque e2e timeout.
+      - name: Wait for worker ready
+        run: |
+          for _ in $(seq 1 60); do
+            if grep -q 'worker.ready' worker.log; then
+              echo "worker ready"
+              exit 0
+            fi
+            if ! kill -0 "$(cat worker.pid)" 2>/dev/null; then
+              echo "worker exited during boot"
+              cat worker.log
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "worker did not report ready within 60s"
+          cat worker.log
+          exit 1
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: pnpm test:e2e
+
+      - name: Print worker log
+        if: always()
+        run: cat worker.log || true
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

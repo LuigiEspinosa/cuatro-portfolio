@@ -1,0 +1,8 @@
+// The `typecheck` script's scope (Story 3-7): the application's sources, as `next build` checks them.
+// The source repository never ran `tsc` over its tests, and 21 errors in nine `*.test.ts` files came
+// with the merge (DW-282); the change that clears them deletes this file and points `typecheck` at
+// `tsconfig.json`.
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "**/*.test.ts"]
+}

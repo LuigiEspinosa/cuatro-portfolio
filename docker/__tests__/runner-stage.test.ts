@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// `docker/Dockerfile` is not TypeScript, so `tsconfig.json:34-41` cannot
-// typecheck it and no import can reach it. This file asserts the runner stage's
-// one standing obligation, on the same precedent
+// `apps/hub/Dockerfile` (`docker/Dockerfile` until Story 3-3) is not TypeScript,
+// so `tsc` cannot typecheck it and no import can reach it. This file asserts the
+// runner stage's one standing obligation, on the same precedent
 // `docker/__tests__/deps-stage.test.ts` set one stage up. It is a sibling
 // rather than an addition to that file, and imports nothing from it, so the two
 // stages have two independent readers: a change that breaks one reader cannot
@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
-const DOCKERFILE = join(REPO_ROOT, 'docker', 'Dockerfile');
+const DOCKERFILE = join(REPO_ROOT, 'apps', 'hub', 'Dockerfile');
 
 /** The stage that runs the publish, and the stage that has to carry its output forward. */
 const BUILDER = 'builder';
@@ -70,7 +70,7 @@ const asDirectory = (destination: string): string => {
 const stageNamed = (dockerfile: string, name: string): string => {
   const lines = dockerfile.split(/\r?\n/);
   const start = lines.findIndex((line) => new RegExp(String.raw`^FROM\s.+\sAS\s+${name}\s*$`, 'i').test(line));
-  if (start === -1) throw new Error(`docker/Dockerfile has no stage named ${name}`);
+  if (start === -1) throw new Error(`apps/hub/Dockerfile has no stage named ${name}`);
   const rest = lines.slice(start + 1);
   const next = rest.findIndex((line) => /^FROM\s/i.test(line));
   return (next === -1 ? rest : rest.slice(0, next)).join('\n');
@@ -93,7 +93,7 @@ const copiesIn = (stage: string): Copy[] => {
     const rest = copy[1].trim();
     if (rest.endsWith('\\') || rest.startsWith('[')) {
       throw new Error(
-        `docker/Dockerfile uses a COPY form this check cannot read: ${line.trim()}. Teach ` +
+        `apps/hub/Dockerfile uses a COPY form this check cannot read: ${line.trim()}. Teach ` +
           `docker/__tests__/runner-stage.test.ts about it rather than leaving the published-surface ` +
           `obligation unchecked.`
       );
@@ -147,7 +147,7 @@ describe('the Dockerfile runner stage', () => {
   it('runs the build in the builder stage, which is what writes the served copy', () => {
     expect(
       runsBuild(builder),
-      `docker/Dockerfile's builder stage no longer runs \`${BUILD}\`, so nothing publishes contracts/ into ` +
+      `apps/hub/Dockerfile's builder stage no longer runs \`${BUILD}\`, so nothing publishes contracts/ into ` +
         `${builderWorkdir}/${PUBLIC}/contracts and the image carries no published surface`
     ).toBe(true);
   });
@@ -157,14 +157,14 @@ describe('the Dockerfile runner stage', () => {
     const copy = copyOfDirectory(runnerCopies, BUILDER, absolute);
     expect(
       copy,
-      `docker/Dockerfile's runner stage does not COPY --from=${BUILDER} ${absolute}. That line is the single hop ` +
+      `apps/hub/Dockerfile's runner stage does not COPY --from=${BUILDER} ${absolute}. That line is the single hop ` +
         `carrying the published surface into the deployed image: \`${BUILD}\` writes ${absolute}/contracts in the ` +
         `builder and nothing else copies it forward. Without it the deploy from main serves 404 at every ` +
         `/contracts/ URL while every CI job stays green (Story 1-16, AD-1, AD-4).`
     ).toBeDefined();
     expect(
       copy!.destination,
-      `docker/Dockerfile's runner stage copies ${absolute} to "${copy!.destination}" rather than to "${PUBLIC}". ` +
+      `apps/hub/Dockerfile's runner stage copies ${absolute} to "${copy!.destination}" rather than to "${PUBLIC}". ` +
         `Next serves its public directory from the working directory, so any other destination leaves ` +
         `/contracts/ answering 404 from an image that built cleanly.`
     ).toBe(PUBLIC);

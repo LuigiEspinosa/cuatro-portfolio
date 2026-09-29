@@ -22,7 +22,7 @@
 // **Why this is wired into the `build` script itself** rather than into a pnpm
 // `prebuild` lifecycle hook: `enable-pre-post-scripts` is a pnpm setting this
 // repository does not pin, and a build that quietly skipped the copy would ship
-// a working site serving 404s at `/contracts/`. `docker/Dockerfile` runs
+// a working site serving 404s at `/contracts/`. `apps/hub/Dockerfile` runs
 // `pnpm --filter hub build` in its builder stage and its runner stage copies
 // `apps/hub/public`, so the served image carries this with no layer of its own.
 // `docker/__tests__/runner-stage.test.ts` is what holds that second half.

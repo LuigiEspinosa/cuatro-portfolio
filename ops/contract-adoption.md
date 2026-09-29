@@ -857,7 +857,7 @@ cell and the configuration land in one commit, because the test holds them equal
 and that commit also moves the two literal pins in `ops/__tests__/contract-adoption.test.ts` § the
 Anchor row matches the tree (the cell at `none`, the present list empty), which state today's state
 and go red on their own otherwise.
-When the estate moves to its next waypoint (`ops/estate.md` already schedules eight), four things
+When the estate moves to its next waypoint (`ops/estate.md` schedules ten, § The end state), four things
 move together: the sentence in `ops/estate.md` that names the repositories, `ESTATE_COUNT` in
 `ops/contract-adoption.mjs`, and both the adopted-versions and the policy table here. Deletion is not
 used here.

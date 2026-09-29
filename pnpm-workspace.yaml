@@ -7,3 +7,35 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - unrs-resolver
+
+# apps/finance and apps/tracker bring these with install scripts, and none runs: `prisma generate` and
+# each image's migration toolchain fetch what they need, so no install depends on Prisma's download
+# host. The tracker's Prisma 6 does fetch its query engine there, at its first `prisma generate` in
+# CI's `test` job and in its image build, as the skipped script would have (Story 3-6).
+# `@prisma/client`'s script is a `prisma generate` the tracker's `build`, `typecheck`, `test` and `dev`
+# run themselves; `@sentry/cli` fetches a binary only a source-map upload uses, and the tracker uploads none;
+# `msgpackr-extract` is BullMQ's optional native codec, which falls back to JavaScript (Story 3-6).
+ignoredBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@sentry/cli'
+  - msgpackr-extract
+  - msw
+  - prisma
+
+# apps/tracker's own override, carried from its manifest's `pnpm` field, which pnpm reads only at the
+# root: one `ioredis` for the application and BullMQ, so their connection types agree (Story 3-6).
+overrides:
+  ioredis: 5.10.1
+
+# `@hookform/resolvers` imports `zod` without declaring it, so it resolved whichever `zod` pnpm hoisted,
+# and finance's typecheck turned on that order (DW-272). Declared as a peer, it resolves finance's own.
+packageExtensions:
+  '@hookform/resolvers@5':
+    peerDependencies:
+      zod: '*'
+  # `@testing-library/jest-dom/vitest` augments `vitest` without declaring it, so it augmented the root's
+  # Vitest 4 from every workspace, and the tracker's Vitest 3 assertions lost its matchers (Story 3-6).
+  '@testing-library/jest-dom@6':
+    peerDependencies:
+      vitest: '*'

@@ -9,6 +9,15 @@ second application, `cs-tracker`, renders, and the App Registry the Hub's Suite 
 Next.js 16 / React 19 / TypeScript, Sass, pnpm, Turborepo, Vitest, Playwright, deployed by Docker
 Compose over SSH to one Hostinger KVM 2 box. The Hub is the workspace `hub` in `apps/hub/`; the
 contracts, `packages/`, `ops/`, the browser suite and every gate's configuration stay at the root.
+`apps/finance/` is the workspace `finance`, merged from `cuatro-finance` in Story 3-5 (Next.js 16,
+Prisma 7, Tailwind 4): imaged in CI, not placed on the box. The root `tsc`, Vitest and the Hub's
+literal and alias gates exclude it; it runs `corepack pnpm --filter finance typecheck` and `test`.
+`apps/tracker/` is the workspace `tracker`, merged from `cuatro-tracker` in Story 3-6 (Next.js 15,
+Prisma 6, BullMQ): imaged in CI, and serving `tracker.cuatro.dev` only once the Operator runs
+`ops/tracker-cutover.md`. Excluded the same way; its suite needs a Redis on `localhost:6379`.
+`apps/tournament/` is the workspace `tournament`, merged from `cs-tournament` in Story 3-7 (Next.js 16
+on Supabase), with its Go demo worker in `apps/tournament/worker/`, a module of its own that Turborepo
+never runs (AD-2): two images in CI, neither placed. Excluded the same way; its suite runs Python 3.
 Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually runs is in
 `ops/`.
 
@@ -140,12 +149,14 @@ Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate act
 - A story that moves the host changes the three secrets `deploy.yml` reads together:
   `SERVER_HOST`, `SERVER_USER` and `SSH_PRIVATE_KEY`. Audit all three against the new box, never
   one; Story 1-21 repointed `SERVER_HOST` alone, and that is the twelve days above.
-- `ops/deploy-remote.sh`, which `deploy.yml` runs over SSH, runs `docker compose up --build -d`,
-  so the serving two-core box compiles. This is a recorded standing violation of AD-8, not an
-  oversight: it is in `ops/known-violations.md` and closes in Epic 3. Do not fix it out of
-  sequence, because the replacement needs GHCR images that do not exist yet. The script is also the
-  deploy key's forced command: keep the sha the last word of the workflow's command string, and
-  never move the file.
+- `ops/deploy-remote.sh`, which `deploy.yml` runs over SSH, pulls `ghcr.io/luigiespinosa/hub:<sha>`
+  and rolls `anchor-app` with `docker-rollout` v0.14 (Story 3-4). It never builds, and
+  `docker-compose.yml` declares no `build:` and refuses to start without `HUB_TAG`. `deploy.yml`'s
+  `image` job builds that tag first by calling `.github/workflows/image.yml`, whose context must be
+  the repository root. Until the Epic 3 merge the box still runs the old `up --build` line (KV-1 in
+  `ops/known-violations.md`). The script is the deploy key's forced command, so the box runs the
+  checkout's copy and a change to it first runs one deploy late (DW-264): keep the sha the last word
+  of the workflow's command string, and never move the file.
 - `docker/Caddyfile` is the Anchor's fragment of the one shared Caddyfile on the box
   (`/home/deploy/cs-tracker/Caddyfile`), and no process here reads it: editing it changes nothing
   live, and the box's copy is not in git. Read `ops/routing-inventory.md` for the real routing

@@ -50,6 +50,34 @@ export const PERMITTED = [
 ];
 
 /**
+ * Other applications merged into the Anchor, which this gate does not read at all. FR-17 binds the
+ * Hub's stylesheets; an application under `apps/` beside it keeps its own palette until it adopts the
+ * token contract, which AD-14 makes all-or-nothing, so reading it now would refuse a whole palette whose
+ * adoption is deferred rather than one stray literal. Each entry names the change that deletes it.
+ * `apps/hub/app/__tests__/anchor-contract.test.ts` skips the same paths in its alias search.
+ */
+export const OTHER_APPLICATIONS = [
+  {
+    path: 'apps/finance/',
+    reason:
+      'Merged by Story 3-5 with its own shadcn palette in app/tokens.css. Its token adoption is ' +
+      'deferred whole (DW-267), and the change that adopts the contract deletes this entry.',
+  },
+  {
+    path: 'apps/tracker/',
+    reason:
+      'Merged by Story 3-6 with its own palette in app/tokens.css, 48 colour literals. Its token adoption is ' +
+      'deferred whole to its Epic 8 restyle (DW-273), and the change that adopts the contract deletes this entry.',
+  },
+  {
+    path: 'apps/tournament/',
+    reason:
+      'Merged by Story 3-7 with its own palette in app/globals.css and CSS modules, 65 colour literals. Its token ' +
+      'adoption is deferred whole to its Epic 8 restyle (DW-279), and the change that adopts the contract deletes this entry.',
+  },
+];
+
+/**
  * The one alpha allowance, written against the palette declaration and never against the role.
  * The alpha check reads every stylesheet, the permitted set included, so this is the only alpha
  * that passes anywhere.
@@ -507,7 +535,9 @@ export function inspect(root) {
     return { read: false, error: `git ls-files exited ${run.status} (${reason})`, ...empty };
   }
 
-  const paths = [...new Set(run.stdout.split('\0').filter((path) => path !== ''))].sort();
+  const paths = [...new Set(run.stdout.split('\0').filter((path) => path !== ''))]
+    .filter((path) => !OTHER_APPLICATIONS.some((entry) => path.startsWith(entry.path)))
+    .sort();
   /** @type {Stylesheet[]} */
   const stylesheets = [];
   /** @type {Finding[]} */

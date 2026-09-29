@@ -121,7 +121,8 @@ this: the archives it performed were the real ones, and the fourth was never per
 ### The waypoint sequence
 
 14 to 8 is the decision. 12 and 11 are sequenced stations on the way, not competing
-decisions.
+decisions. **Amended 2026-09-29 by Story 3-8:** 10 is the decision, not 8, since the SM-7 amendment
+of 2026-09-26, and 13 is the next station on the way to it (the table below).
 
 **The Count column is governed repositories that are not archived**, which is the definition
 under "What the repository count counts" above. A row is reached when its change has been
@@ -129,26 +130,30 @@ performed, not when it was decided.
 
 | Point in sequence | Count | What changed | Reached |
 |---|---|---|---|
-| Start | 14 | n/a | superseded |
+| Start | 14 | n/a | superseded; recorded 2026-08-16 as 15, corrected 2026-09-02 |
 | After archiving | 12 | `Lumen` and `tcg-tracker` archived | **yes, by 2026-09-02** |
 | After listing | 14 | `covidmap` and `future-vizion` admitted by Operator ruling 2026-09-25 | **yes, 2026-09-26** |
-| After absorption | **13** | `connect-four-react` absorbed into the Anchor | not yet |
-| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor | not yet |
+| After absorption | **13** | `connect-four-react` absorbed into the Anchor | not yet: unarchived at 2026-09-29T17:02:30Z |
+| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor and their repositories archived | not yet: merged on `dev` 2026-09-29, none archived at 2026-09-29T17:02:30Z |
 
 **Amended 2026-09-26.** The `After listing` row is new, and the two rows below it each carry two more
 than they did (11 and 8 until that date): the ruling admitted two repositories and changed nothing
 about the absorption or the merge. **The end state reads 10, not SM-7's 8**, because nothing yet
 decides whether `covidmap` and `future-vizion` are part of it; that is DW-249 with the MVP figure.
+**Amended 2026-09-29 by Story 3-8:** it is decided. DW-249 closed on 2026-09-26 with SM-7 amended to 13
+and 10, both repositories kept permanently, so 10 is SM-7's end state; § The end state below.
 
 **The estate sits on the second row today**, at an observed 12. The first row is labelled `Start`
 rather than `Today` for that reason: it was true until the two archives landed and is now
-history.
+history. **Amended 2026-09-29 by Story 3-8:** the estate sits on the `After listing` row, at an
+observed 14 at 2026-09-29T17:02:30Z, and 13 is the next station; the second row is history too.
 
 **The two 12s in this file are different numbers and it is a coincidence that they match.** One
 is SM-7's MVP target of 12 repositories, discussed above as a ceiling. The other is the observed
 count on this row. That they are equal today says nothing: the target is a decision about what
 the estate may carry, the row is an observation of what it does carry, and the estate is heading
-to 8 regardless.
+to 8 regardless. **Amended 2026-09-29 by Story 3-8:** SM-7's target is 13 and the destination is
+10 (Operator ruling 2026-09-26), so the estate is heading to 10, not 8.
 
 **Amended 2026-09-02.** This table read `15` today and named three repositories in the
 archiving row, the third being `apple-music-workspace`. That repository does not exist, so
@@ -157,7 +162,9 @@ archive too many. Both errors cancelled, which is why **every waypoint below the
 unchanged**: 14 less two archives is the same 12 that 15 less three gave. The end state of 8
 never moved. Only the starting count and the archiving row were wrong, and a reader comparing
 this table against PRD section 5's "15, 12, 11 and 8" should expect the first number to
-differ and the rest to agree.
+differ and the rest to agree. **Amended 2026-09-29 by Story 3-8:** the end state of 8 did move,
+on 2026-09-26, to 10 (SM-7 amended, DW-249 closed); this paragraph records the 2026-09-02
+correction only, and § The end state below holds the current figure.
 
 The 13 repositories at this waypoint are `cuatro-portfolio`, `cuatro-finance`,
 `cuatro-tracker`, `cs-tournament`, `cs-tracker`, `digital-library`, `list-wheel`,
@@ -167,6 +174,63 @@ The 13 repositories at this waypoint are `cuatro-portfolio`, `cuatro-finance`,
 `ops/contract-adoption.mjs` parses it and pins its count, and both tables in
 `ops/contract-adoption.md` carry a row for each name, the two new ones observed that day by the same
 `gh api` sweep the record describes.
+
+### The end state
+
+**Recorded 2026-09-29 by Story 3-8 (ISO 8601 UTC).** The destination is **10 repositories** under
+Ecosystem governance, decided **2026-09-26** when the Operator amended PRD section 9's SM-7 to 13 at MVP
+and 10 at end state (DW-249, closed that day). It is a decision, not an observation, and it is **not
+reached**: the observed count is **14**, read at **2026-09-29T17:02:30Z** by
+`gh api repos/LuigiEspinosa/<name>` for each of the sixteen governed repositories, which found `Lumen`
+and `tcg-tracker` archived and every other one, `connect-four-react` and the three merged applications
+among them, not archived.
+
+The ten are the Anchor, `cuatro-portfolio`; the seven Satellites, `cs-tracker`, `digital-library`,
+`StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and `list-wheel`; and `covidmap` and
+`future-vizion`, which are neither Satellites nor merge candidates and which the Operator keeps
+permanently (the same ruling of 2026-09-26). The PRD's end state of the Anchor plus seven Satellites
+is these ten less those two.
+
+**The sequence is the table in § The waypoint sequence above**, where Story 3-8 dated every undated cell.
+A later reader must not mistake a waypoint for the destination, nor a decision for a performed act:
+the count falls when a repository is archived, never when its code is merged, which is why the
+merges of 2026-09-29 (Stories 3-5, 3-6 and 3-7) moved no figure.
+
+**The epic's own numbers are superseded, not copied.** Story 3.8 in `epics.md` asks for an end state
+of 8 and a sequence of 15, 11 and 8. The 15 counted a repository that does not exist (2026-09-02); the
+11 and the 8 each rose by two when the Operator listed `covidmap` and `future-vizion` (2026-09-25) and
+then raised SM-7 to match (2026-09-26). 13 and 10 are those same stations after the rulings.
+
+**No `absorbed_into` is written yet, on purpose.** The three merged applications keep their Registry
+entries under their own ids, as AD-6 requires, and this record promised `absorbed_into:
+cuatro-portfolio` once each source repository is archived. None is, so the Registry is unchanged at
+1.5.0 and each `source` still names the application's own repository, which resolves (200 to an
+anonymous request, and 40 of 40 checks passing in Story 2.23's Registry verification, run on `dev`
+at 2026-09-29T17:08:27Z; its scheduled run on `main` that day, 36571142029, was green too). Writing
+the field, and moving `source` to where the code now lives, is DW-285. The move is not a one-line
+edit: that job accepts only a `https://github.com/<owner>/<repository>` URL, and the Anchor's
+`tree/main/apps/<id>` pages answer 404 until the Epic 3 merge reaches `main`.
+
+**The Registry entry count and the repository count stay different numbers.** The Registry carries
+**16** entries today and will carry 16 at the end state: an archived or absorbed application keeps its
+entry (AD-6), so the end state's 10 repositories sit beside 16 entries, and neither number checks the
+other.
+
+**The Estate is shrinking on purpose, and more entries is not better.** SM-C2 counts Registry entries
+as a figure not to optimise: an entry is added because an application exists, never to fill the Suite
+Directory's grid, and a falling repository count is the goal of this record rather than a loss.
+
+**What moves the count from here is the Operator's**, in this order:
+
+1. Archive `connect-four-react`, kept public. That reaches the waypoint of 13 in fact, and the
+   observed-state reading and the tables above are re-dated in the same change.
+2. Merge Epic 3's `dev` into `main` and let the deploy run, so the merged code is public on `main`.
+3. Run `ops/tracker-cutover.md`.
+4. Archive `cuatro-finance` and `cs-tournament`, and `cuatro-tracker` a week after the cutover holds,
+   each kept public, recording each date at the time since GitHub does not keep it.
+5. Then DW-285: `absorbed_into` and `source` for the three, in one Registry change. With all four
+   archives done the count is 10, and the sentence naming the thirteen above moves to ten together with
+   `ESTATE_COUNT` and both tables of `ops/contract-adoption.md`, as `ops/contract-adoption.mjs` requires.
 
 ## Disposition of every application
 
@@ -215,9 +279,9 @@ estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 | `Lumen` | Archive: empty shell | `Archived` | n/a | In Registry, not rendered |
 | `tcg-tracker` | Archive, then fold as a domain inside `cuatro-tracker` | `Archived` | `cuatro-tracker` | In Registry, not rendered |
 | `connect-four-react` | Absorb: playable demo in the Hub | `Archived` | `cuatro-portfolio` | In Registry; not rendered as a directory entry, and not rendered as an embedded demo at MVP either. It will surface as the embedded demo (PRD section 4.7) only once FR-29 is taken up, and FR-29 is deferred to v2. See the note below. |
-| `cuatro-finance` | Merge into the Anchor | `In progress` | n/a today, see note below | Not rendered until Live |
-| `cuatro-tracker` | Merge into the Anchor | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
-| `cs-tournament` | Merge into the Anchor | `Complete`: deployed nowhere by the estate since the Operator ruling of 2026-09-24, until Story 3.7 places it on the box. `Live` at `inclusivcup.vercel.app` until then | n/a today, see note below | Rendered |
+| `cuatro-finance` | Merge into the Anchor: **merged into `apps/finance` on `dev` by Story 3-5 (2026-09-29), imaged in CI, not placed**. See the note below | `In progress` | n/a today, see note below | Not rendered until Live |
+| `cuatro-tracker` | Merge into the Anchor: **merged into `apps/tracker` on `dev` by Story 3-6 (2026-09-29) and imaged in CI; still served by the box's own build until the Operator runs `ops/tracker-cutover.md`**. See the note below | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
+| `cs-tournament` | Merge into the Anchor: **merged into `apps/tournament` on `dev` by Story 3-7 (2026-09-29), with its Go worker; both imaged in CI, neither placed**. See the note below | `Complete`: deployed nowhere since the Operator ruling of 2026-09-24. Its Vercel deployment at `inclusivcup.vercel.app` was deleted on 2026-09-25 (§ The Vercel decommission, step 3), and Story 3.7 placed it nowhere: placing it on the box is the Operator's (§ Pending Operator actions) | n/a today, see note below | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
 | `digital-library` | Satellite: Svelte/Fastify | `Live`: `library.cuatro.dev` | n/a | Rendered |
 | `list-wheel` | Satellite: Angular | `Live`: `wheel.cuatro.dev` since 2026-09-13. On GitHub Pages until that date; the old URL became a redirect page to the new hostname as the story's last step (`gh-pages` `52698eb`, 2026-09-13T18:25:47Z) | n/a | Rendered; see PRD section 5.3. **The Registry's `live` is `https://wheel.cuatro.dev` from Story 2-25**: `ops/registry-inputs.md` |
@@ -231,7 +295,8 @@ estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 End state is the Anchor plus seven Satellites: `cs-tracker`, `digital-library`,
 `StreamVault`, `MaiCoin`, `poketracker-go`, `Mutuo` and `list-wheel`. **Amended 2026-09-26:**
 `covidmap` and `future-vizion` are neither Satellites nor merge candidates; whether they belong to the
-end state is undecided (DW-249).
+end state is undecided (DW-249). **Amended 2026-09-29 by Story 3-8:** they belong to it, since DW-249
+closed on 2026-09-26, and the end state is 10 repositories (§ The end state).
 
 ### The two `[ASSUMPTION: ...]` Statuses are resolved
 
@@ -319,7 +384,123 @@ repository** and that link resolves there today.
 Anchor, which takes the Estate from 11 to 8. That merge is deferred beyond MVP, their code
 has not moved, and each stays rendered under its own application id. PRD section 5.1
 deliberately assigns them no `absorbed_into`, and this record follows it. They acquire one
-when the merge actually lands, and not before.
+when the merge actually lands, and not before. **Amended 2026-09-29 by Story 3-8:** the merge takes
+the Estate from 13 to 10, not 11 to 8, since the Operator rulings of 2026-09-25 and 2026-09-26
+(§ The waypoint sequence).
+
+**Amended 2026-09-29 by Story 3-5.** The merge was brought forward into Epic 3 (AD-20), and
+`cuatro-finance`'s code has now moved; the other two have not. The paragraph above holds for all
+three otherwise: `cuatro-finance` keeps no `absorbed_into`, because its repository is not archived,
+and Story 3.8 writes it once the Operator archives it.
+
+**Amended 2026-09-29 by Story 3-6.** `cuatro-tracker`'s code has moved too, on the same terms: no
+`absorbed_into` while its repository is unarchived, which now waits on the cutover as well.
+
+**Amended 2026-09-29 by Story 3-7.** `cs-tournament`'s code has moved too, the last of the three, on
+the same terms: no `absorbed_into` while its repository is unarchived.
+
+**Amended 2026-09-29 by Story 3-8.** Story 3.8 did not write the field, because no source repository
+was archived when it ran (§ The end state). The promise moves to DW-285, which writes `absorbed_into`
+and moves `source` for all three in one Registry change once the archives are done.
+
+### `cuatro-finance`, merged on `dev` and not placed
+
+**Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
+it: merging is not placing.
+
+- **History.** `git filter-repo --to-subdirectory-filter apps/finance` ran on a scratch clone of
+  `LuigiEspinosa/cuatro-finance` at `dev` `bcf7369e89d72af9cd34140ee6756ed700907edb` (whose root
+  commit is `main`, a lone `LICENSE`), and merge `6d5929f684472e37b64a36c87f2940b2dd5148a4` brought its
+  37 commits into the Anchor with `--allow-unrelated-histories`. `git log --follow` on
+  `apps/finance/lib/money.ts` lists its two source commits.
+- **Workspace.** It is the workspace `finance` under the one root lockfile, with its own typecheck and
+  suite in `ci.yml`'s `test` job. The root `tsc` and Vitest exclude it, and so do the Hub's literal and
+  alias gates (`OTHER_APPLICATIONS` in `ops/literal-conformance.mjs`).
+- **Deploy unit (AD-3, AD-8).** `apps/finance/Dockerfile` over `turbo prune finance --docker` gives
+  `ghcr.io/luigiespinosa/finance:<git-sha>`, built, provisioned, migrated and health-checked by
+  `.github/workflows/image-finance.yml` before it is pushed. The first push of these commits is what
+  puts the first tag in GHCR. `docker-compose.yml` declares `finance` and `finance-migrate` under
+  profiles no deploy activates, with no router, hostname or `ops/capacity-gate.yml` placement: whether
+  it runs on the box is a separate decision under AD-9.
+- **Migrations (AD-23).** Never on boot. The one-off `finance-migrate` runs `prisma migrate deploy`
+  from the image before a rollout, and the finance suite refuses a migration that both expands and
+  contracts the schema.
+- **Data (AD-10).** Database and role `finance` in `anchor-db`, created by
+  `apps/finance/prisma/provision.sql` with `CONNECTION LIMIT 10` on both; the application pools five
+  per container (`apps/finance/lib/db.ts`), two containers across a rollout. **The Anchor Postgres'
+  sum:** `anchor-db` sets no `max_connections`, so it runs Postgres 16's default of 100. Its one other
+  consumer is Umami, whose `umami` role carries no limit and whose URL names no `connection_limit`,
+  so it pools Prisma's documented default of twice the core count plus one (five on the two-core
+  box; a documented default, not an observed figure). With Postgres' three reserved superuser slots
+  that is at most 18 of 100.
+- **Tokens (AD-14).** Adoption is deferred whole, not half-applied: `apps/finance/app/tokens.css` keeps
+  its own palette, and `app/layout.tsx` its own fonts (DW-267). The application is `In progress` and
+  unrendered, and AD-25 gives it no restyle until it renders.
+- **Still the Operator's:** archiving `cuatro-finance`, after which DW-285 writes `absorbed_into:
+  cuatro-portfolio` and moves `source`; and every placement step (DW-269).
+
+### `cuatro-tracker`, merged on `dev`, served by the old build until the cutover
+
+**Committed on `dev`, not live.** Unlike finance it is already placed and serving, so what changes on
+the box is a cutover the Operator runs, `ops/tracker-cutover.md`, not a placement: `ops/capacity-gate.yml`
+already holds `cuatro-tracker` (AD-9).
+
+- **History.** `git filter-repo --to-subdirectory-filter apps/tracker` ran on a scratch clone of
+  `LuigiEspinosa/cuatro-tracker` at `main` `985e3c5580e150895ed68d751035c72ed5c14a0a` (equal to `dev`),
+  and merge `ff2b7952d9423ac49edf3f371140fcbb1645fd8a` brought its 131 commits into the Anchor with
+  `--allow-unrelated-histories`. `git log --follow` on `apps/tracker/app/api/ready/route.ts` lists its
+  source commit.
+- **Workspace.** The workspace `tracker` under the one root lockfile, every package at the version its
+  own lockfile named, with its typecheck and suite in `ci.yml`'s `test` job beside a Redis service.
+  The root `tsc` and Vitest exclude it, and so do the Hub's literal and alias gates.
+- **Deploy unit (AD-3, AD-8).** `apps/tracker/Dockerfile` over `turbo prune tracker --docker` gives
+  `ghcr.io/luigiespinosa/tracker:<git-sha>`, migrated, readied and its worker started by
+  `.github/workflows/image-tracker.yml` before it is pushed. One image runs the server, the worker and
+  the migration. `docker-compose.yml` declares `tracker` and `tracker-worker` under a profile no deploy
+  activates, and `tracker-migrate`; the cutover starts them once.
+- **Migrations (AD-23).** Never on boot; `tracker-migrate` runs `prisma migrate deploy` before a
+  rollout. The merged code carries no migration the box lacks.
+- **Data (AD-10).** It stays where it serves: database and role `tracker` in the old project's
+  `cuatro-tracker-postgres-1`, with its Redis and qBittorrent, until Stories 4.4 and 4.8 move it onto
+  the one Postgres. `ops/tracker-backup.sh` and `ops/tracker-restore-verify.sh` back it up and prove
+  the restore before the cutover.
+- **Hostname.** `tracker.cuatro.dev`, declared in the Registry, which this story does not change.
+- **Tokens (AD-14).** Adoption deferred whole to its Epic 8 restyle (DW-273).
+- **Still the Operator's:** the four actions at the end of `ops/tracker-cutover.md`, the archive among
+  them, after which DW-285 writes `absorbed_into: cuatro-portfolio` and moves `source`.
+
+### `cs-tournament`, merged on `dev` and not placed
+
+**Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
+it: it has served nowhere since the Operator removed Vercel on 2026-09-24, and placing it is a new
+placement the Capacity Gate decides (AD-9), which Story 3.7 left to the Operator.
+
+- **History.** `git filter-repo --to-subdirectory-filter apps/tournament` ran on a scratch clone of
+  `LuigiEspinosa/cs-tournament` at `main` `0d3e856f20c9d686b77d7a8ed001dafa123fed36`, its only branch,
+  and merge `b98dabb219b144084d8e95d4c73610a21f1d2ca7` brought its 102 commits into the Anchor with
+  `--allow-unrelated-histories`. `git log --follow` on `apps/tournament/lib/auth/session.ts` lists its
+  three source commits. The repository was published on 2026-09-24 after a clean full-history scan
+  (`ops/known-violations.md` KV-2), so the merge exposes nothing that was not public.
+- **Workspace.** The workspace `tournament` under the one root lockfile, every exact pin at the
+  version its npm lockfile named, with its typecheck and suite in `ci.yml`'s `test` job. The root
+  `tsc` and Vitest exclude it, and so do the Hub's literal and alias gates.
+- **Two deploy units (AD-7).** `apps/tournament/Dockerfile` over `turbo prune tournament --docker`
+  gives `ghcr.io/luigiespinosa/tournament:<git-sha>`; the Go demo worker, a module Turborepo never
+  runs (AD-2), gives `ghcr.io/luigiespinosa/tournament-worker:<git-sha>` from `apps/tournament/worker/`,
+  its `go vet` and `go test` in `ci.yml`. `.github/workflows/image-tournament.yml` pushes each only
+  after it answered its probe. `docker-compose.yml` declares `tournament` and `tournament-worker`
+  under a profile no deploy activates.
+- **Data (AD-10).** It stays where it was: Supabase (Auth, PostgREST, Realtime and Postgres) and
+  Cloudflare R2 for the demos. Where it lives once placed is the Operator's (DW-280). Its SQL
+  migrations are `supabase db push`, a discrete step; nothing migrates on boot (AD-23).
+- **Users.** None has a password: login is Steam OpenID, keyed by steamid64. `ops/tournament-identity.mjs`
+  exports and maps every Auth user, refusing a password hash, and verifies an existing user can
+  authenticate after the move; the Operator runs both at placement.
+- **Hostname and Registry.** None chosen. The Registry entry stays `Complete` with no `live`, and
+  moves to `Live` with its hostname in the change that places it (FR-28).
+- **Tokens (AD-14).** Adoption deferred whole to its Epic 8 restyle (DW-279).
+- **Still the Operator's:** every placement step, listed under Pending Operator actions, and the
+  archive, after which DW-285 writes `absorbed_into: cuatro-portfolio` and moves `source`.
 
 ## Pending Operator actions
 
@@ -332,10 +513,42 @@ afterwards.
 | Repository | Action | Constraint |
 |---|---|---|
 | `connect-four-react` | Archive on GitHub | Must stay publicly readable |
+| `cuatro-finance` | Archive on GitHub | Must stay publicly readable, so its `source` resolves; DW-285 then writes `absorbed_into` and moves `source` |
+| `cs-tournament` | Archive on GitHub | Stays public, so its `source` resolves (published 2026-09-24, KV-2); DW-285 then writes `absorbed_into` and moves `source` |
+| `cuatro-tracker` | Archive on GitHub, a week after `ops/tracker-cutover.md` has run | Must stay publicly readable, so its `source` resolves; the box keeps its checkout, which runs the stores until Story 4.8; DW-285 then writes `absorbed_into` and moves `source` |
 
 The `apple-music-workspace` row is gone rather than struck, because the action dissolved
 rather than completing: there is no repository to archive, and the application was removed
 from this record on 2026-09-02. Nothing is owed on it.
+
+**Amended 2026-09-29 by Story 3-5.** The `cuatro-finance` row is added: its code is merged into
+`apps/finance` on `dev` (§ `cuatro-finance`, merged on `dev` and not placed), and the archive is the
+Operator's. It is a step toward the end state of 10, not the waypoint of 13, so the one outstanding
+action the counts above name is still `connect-four-react`'s.
+
+**Amended 2026-09-29 by Story 3-6.** The `cuatro-tracker` row is added on the same terms, and waits on
+the cutover (§ `cuatro-tracker`, merged on `dev`, served by the old build until the cutover).
+
+**Amended 2026-09-29 by Story 3-7.** The `cs-tournament` row is added on the same terms (§ `cs-tournament`,
+merged on `dev` and not placed). Its placement is separate from the archive, and is the Operator's,
+in this order, each step after the Epic 3 merge has deployed:
+
+1. **Decide where its data lives** (DW-280): Supabase kept as a declared store with its own offsite
+   backup (AD-10's exception, declared in `tech` already), or moved onto the box, which replaces
+   Supabase Auth, PostgREST and Realtime and is a story of its own.
+2. **Choose its hostname**, and the worker's if MatchZy and the admin upload are to reach it; create
+   the DNS records and the routes on the box's shared Caddy.
+3. **Rebuild the server image with the public Supabase URL and anon key** (DW-281), set the
+   `TOURNAMENT_` values `docker-compose.yml` names in `.env.production`, and point `STEAM_REALM` and
+   `STEAM_RETURN_URL` at the hostname.
+4. **Move the data if it moves**, then run `node ops/tournament-identity.mjs export` against the
+   source and `verify` against the target for an admin and a viewer; both must exit 0.
+5. **Place it** under AD-9: the deploy refuses unless `ops/capacity-gate.yml` reads `status: open`;
+   on success append `cs-tournament` to `placements` (the gate lists applications, not deploy units,
+   so its two services are one entry), and record the load reading after placement against the
+   threshold, since SM-C4 wins every conflict with any other metric.
+6. **In the same change**, take the Registry entry from `Complete` to `Live` with its `live` value.
+7. **Delete the Vercel project**, if not already deleted (§ The Vercel decommission).
 
 `connect-four-react` stays **public**, not private. AD-6 keeps its Registry entry, and SM-4
 requires every Registry link to resolve, so making an archived repository private would

@@ -14,6 +14,20 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # The tracker's BullMQ suites enqueue and run jobs against a real Redis, as they did in its own
+    # repository's CI (Story 3-6). Nothing else here reads it; the Hub's and finance's suites mock theirs.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v7
 
@@ -32,6 +46,40 @@ jobs:
 
       - name: Unit tests
         run: pnpm test --run
+
+      # `apps/finance` is its own workspace with its own `@` alias and test environment, which the root
+      # `tsc` and Vitest above exclude, so it runs its own here (Story 3-5, DW-258).
+      - name: Finance type check
+        run: pnpm --filter finance typecheck
+
+      - name: Finance unit tests
+        run: pnpm --filter finance test
+
+      # `apps/tracker` likewise (Story 3-6).
+      - name: Tracker type check
+        run: pnpm --filter tracker typecheck
+
+      - name: Tracker unit tests
+        run: pnpm --filter tracker test
+
+      # `apps/tournament` likewise (Story 3-7). Its suite also runs its roulette vectors' Python
+      # generator in `--check` mode, on the runner's own `python3`.
+      - name: Tournament type check
+        run: pnpm --filter tournament typecheck
+
+      - name: Tournament unit tests
+        run: pnpm --filter tournament test
+
+      # The tournament's Go worker is its own module, which Turborepo never orchestrates (AD-2), at the
+      # Go release its `go.mod` names. Its tests use in-memory fakes only (Story 3-7).
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/tournament/worker/go.mod
+          cache-dependency-path: apps/tournament/worker/go.sum
+
+      - name: Tournament worker vet and tests
+        working-directory: apps/tournament/worker
+        run: go vet ./... && go test ./...
 
   tokens-contract:
     runs-on: ubuntu-latest

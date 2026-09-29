@@ -1,0 +1,78 @@
+{
+  "_comment": [
+    "Story 6.11, AC12 — the mutation table, as DATA rather than as a paragraph in a story file.",
+    "",
+    "Each entry names one property of the ceremony and the smallest edit that breaks it. The anchor",
+    "must match its file EXACTLY ONCE; the runner reports NOT-APPLIED as an outcome distinct from",
+    "killed rather than silently skipping, because a mutant that never landed is not evidence.",
+    "",
+    "The oracle is the SUITE RUNNER'S EXIT CODE, never a grep of its output — a prose oracle is how",
+    "two earlier runs in this epic scored mutations against a harness that had collected 0 tests."
+  ],
+  "mutants": [
+    {
+      "id": "G1",
+      "lang": "go",
+      "file": "worker/awards/ceremony.go",
+      "anchor": "\t\t\tshelf[sid]++",
+      "replacement": "\t\t\tshelf[sid] += 2",
+      "breaks": "the shelf advances by TWO per trophy, so FR-26's luck meter over-counts from spin 2 and every later weighting is wrong"
+    },
+    {
+      "id": "G2",
+      "lang": "go",
+      "file": "worker/awards/stage1.go",
+      "anchor": "\t\t\tif cum > r {",
+      "replacement": "\t\t\tif cum >= r {",
+      "breaks": "W3's cumulative walk becomes non-strict, so a draw landing exactly on a boundary picks the wrong candidate"
+    },
+    {
+      "id": "G3",
+      "lang": "go",
+      "file": "worker/awards/pity.go",
+      "anchor": "\tfor i := len(order) - 1; i >= 1; i-- {",
+      "replacement": "\tfor i := len(order) - 1; i >= 2; i-- {",
+      "breaks": "Durstenfeld stops one step early — the reveal order and the pity byte total both move"
+    },
+    {
+      "id": "G4",
+      "lang": "go",
+      "file": "worker/awards/sweep.go",
+      "anchor": "\tsort.Strings(sweptOut)",
+      "replacement": "\t_ = sweptOut",
+      "breaks": "`swept_out` is no longer byte-lex ordered, so the published set depends on map iteration order"
+    },
+    {
+      "id": "T1",
+      "lang": "ts",
+      "file": "lib/roulette/stage1.ts",
+      "anchor": "      if (cumulative > r) {",
+      "replacement": "      if (cumulative >= r) {",
+      "breaks": "W3's cumulative walk becomes non-strict, TypeScript side — the twin of G2"
+    },
+    {
+      "id": "T2",
+      "lang": "ts",
+      "file": "lib/roulette/pity.ts",
+      "anchor": "  for (let i = order.length - 1; i >= 1; i -= 1) {",
+      "replacement": "  for (let i = order.length - 1; i >= 2; i -= 1) {",
+      "breaks": "Durstenfeld stops one step early, TypeScript side — the twin of G3"
+    },
+    {
+      "id": "T3",
+      "lang": "ts",
+      "file": "lib/roulette/sweep.ts",
+      "anchor": "    sweptOut.sort();",
+      "replacement": "    /* mutant: sort removed */;",
+      "breaks": "`swept_out` is no longer byte-lex ordered, TypeScript side — the twin of G4"
+    },
+    {
+      "id": "T4",
+      "lang": "ts",
+      "file": "lib/roulette/stage1.ts",
+      "anchor": "        if (held < index) index = held;",
+      "replacement": "        if (held > index) index = held;",
+      "breaks": "W8 takes the MAXIMUM over the co-winners' shelves instead of the minimum, so a shared award weights against the luckiest winner rather than the unluckiest"
+    }
+  ]
+}

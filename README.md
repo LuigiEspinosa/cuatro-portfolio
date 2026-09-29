@@ -23,6 +23,13 @@ My Personal portfolio, deployed at [cuatro.dev](https://cuatro.dev). High-qualit
 
 The Hub is the workspace `hub` in `apps/hub/`, its unit suites beside its components; the contracts,
 the tooling, the browser suite and every gate's configuration stay at the repository root.
+`apps/finance/` is the finance application, the workspace `finance`, merged with its history from
+`cuatro-finance`; it runs its own `pnpm --filter finance typecheck`, `test` and `build`.
+`apps/tracker/` is the tracker, the workspace `tracker`, merged with its history from `cuatro-tracker`;
+it runs its own `pnpm --filter tracker typecheck`, `test` (with a Redis on `localhost:6379`) and `build`.
+`apps/tournament/` is the tournament manager, the workspace `tournament`, merged with its history from
+`cs-tournament`; it runs its own `pnpm --filter tournament typecheck`, `test` and `build`, and its Go
+worker runs `go test ./...` in `apps/tournament/worker/`.
 
 ```bash
 pnpm install
@@ -42,30 +49,36 @@ or 443 there is what took `cuatro.dev` down in August 2026. Use `pnpm --filter h
 To build the image alone, without the stack:
 
 ```bash
-docker build -f docker/Dockerfile \
+docker build -f apps/hub/Dockerfile \
   --build-arg NEXT_PUBLIC_UMAMI_WEBSITE_ID=local \
   --build-arg NEXT_PUBLIC_UMAMI_URL=https://analytics.cuatro.dev \
   -t cuatro-portfolio-app .
 docker run --rm -p 3000:3000 cuatro-portfolio-app   # http://localhost:3000
 ```
 
-Both build args are required by the stack and are inlined at build time. Three-stage build:
-deps to builder to runner (Node 22-slim)
+Both build args are required and are inlined at build time. The context must be the repository
+root: the first of four stages, all on `node:24-slim`, narrows it to the Hub's workspace with
+`turbo prune hub --docker`, and an `apps/hub` context fails there. CI builds the same image, with
+both build args, and pushes it to `ghcr.io/luigiespinosa/hub:<commit sha>`
+(`.github/workflows/image.yml`), on a push to any branch but `main` and before every deploy.
 
 ```mermaid
 flowchart LR
-    A[deps<br/>node:22-slim<br/>pnpm install] --> B[builder<br/>node:22-slim<br/>pnpm --filter hub build]
-    B --> C[runner<br/>node:22-slim<br/>node apps/hub/server.js]
+    P[prune<br/>node:24-slim<br/>turbo prune hub --docker] -- out/json --> A[deps<br/>node:24-slim<br/>pnpm install]
+    A --> B[builder<br/>node:24-slim<br/>pnpm --filter hub build]
+    P -- out/full, contracts/, contracts-serve --> B
+    B --> C[runner<br/>node:24-slim<br/>node apps/hub/server.js]
     B -- apps/hub/.next/standalone --> C
     B -- apps/hub/.next/static --> C
     B -- apps/hub/public/ --> C
 ```
 
-## One-command deploy
+## Deploy
 
-```bash
-docker compose --env-file .env.production up --build -d
-```
+A push to `main` that changes more than Markdown deploys itself, and the VPS never builds. `.github/workflows/deploy.yml` runs the
+Capacity Gate, builds and pushes the image, then runs `ops/deploy-remote.sh` on the VPS over SSH,
+which pulls `ghcr.io/luigiespinosa/hub:<commit sha>` and rolls the Hub onto it with `docker-rollout`.
+`ops/contract-serving.md` describes the deploy.
 
 ```mermaid
 graph LR

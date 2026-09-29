@@ -40,6 +40,9 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "apps/finance",
+    "apps/tracker",
+    "apps/tournament"
   ]
 }

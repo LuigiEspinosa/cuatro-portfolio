@@ -12,7 +12,11 @@ export default defineConfig({
     // them. This exclude is the second, independent guard: renaming one to `*.spec.ts` must
     // not drag a browser into `pnpm test`. `configDefaults.exclude` is spread back in so the
     // guard cannot itself drop `node_modules` and friends.
-    exclude: [...configDefaults.exclude, 'tests/e2e/**'],
+    //
+    // `apps/finance`, `apps/tracker` and `apps/tournament` are workspaces with their own aliases and
+    // environments, and run their suites by filter in CI's `test` job (Stories 3-5 to 3-7, DW-258).
+    // Under this config `@` would name the Hub.
+    exclude: [...configDefaults.exclude, 'tests/e2e/**', 'apps/finance/**', 'apps/tracker/**', 'apps/tournament/**'],
   },
   resolve: {
     alias: {

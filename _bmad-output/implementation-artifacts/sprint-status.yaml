@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-28-2026 17:28
+last_updated: 09-29-2026 17:20
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -514,7 +514,15 @@ development_status:
   # rather than turbo boundaries. Confirm the reading.
   # Decision 1 (DW-251), DW-253 and the oversized spec's Keep are open rulings that gate no criterion.
   # lighthouse.yml runs only against main, so its first Actions run on Node 24 is the Epic 3 merge.
-  3-1-introduce-turborepo-and-pin-the-toolchain: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed Decisions 2 and 3 as recorded, and every other reading
+  # and decision Stories 3-1 to 3-8 recorded, on 2026-09-29. Shipped alone as AD-20's first step:
+  # PR #82 (branch merge/3-1-turborepo at 857ac6b) merged into main as 5e132dd by the Operator, its
+  # eight required checks green, Lighthouse's first Actions run on Node 24 among them. Deploy run
+  # 36624830199 succeeded (the box's last compile before Story 3-4's script reaches it); the box's
+  # checkout reads 5e132dd and anchor-app is healthy. Probed afterwards: /, /cv, /work, /celeste and
+  # /api/health 200 (version 3.0.0), /projects 301 to /#suite, /recommendation and an unknown path
+  # 404, and tokens.css, fonts.css, registry.json and registry.schema.json byte-identical to contracts/.
+  3-1-introduce-turborepo-and-pin-the-toolchain: done
   # 3-2 built and pushed 2026-09-28: dev at 7eb9cc5, CI run 36491773743 green on seven jobs, every
   # one on Node 24.21.0. bc9cd25 and b5c4dd1 plus the verification's fix round:
   # the Hub is the workspace hub in apps/hub, moved by git mv (103 renames, git log --follow intact),
@@ -550,16 +558,209 @@ development_status:
   # with the gates they configure. Confirm the reading.
   # Decisions 2 to 5 and 7, DW-259 and the oversized spec's Keep are open rulings that gate no
   # criterion.
-  3-2-move-the-hub-to-apps-hub: awaiting-operator
-  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: backlog
-  3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
-  3-5-merge-cuatro-finance-into-apps-finance: backlog
-  3-6-merge-cuatro-tracker-into-apps-tracker: backlog
+  # 2026-09-29: done. The Operator confirmed Decisions 1 and 6 and every other recorded reading on
+  # 2026-09-29. Shipped alone as AD-20's own step, after 3-1's merge: PR #83 (branch
+  # merge/3-2-apps-hub at 0aec0fb) merged into main as bbc2ef2 by the Operator, eight required
+  # checks green, Lighthouse's first Actions run of pnpm --filter hub build among them. Deploy run
+  # 36626094452 succeeded; the box's checkout reads bbc2ef2 with apps/hub and anchor-app healthy.
+  # AC5's live proof: before (after 5e132dd's deploy) and after probes identical, every route as
+  # expected, /api/health 3.0.0, the four contract files byte-identical to contracts/. During: the
+  # Operator merged before the loop started, so it covered the run's last 48 s only, 19 requests to
+  # /api/health at one per second, all 200, and the container recreate fell inside that window
+  # (uptime 21 s at the after probe). Recorded as a partial during-probe, not a full one.
+  3-2-move-the-hub-to-apps-hub: done
+  # 3-3 built and pushed 2026-09-28: dev at 38f9a28, CI run 36507763564 green on seven jobs, every
+  # one on Node 24.21.0, and Image run 36507763627 green. apps/hub/Dockerfile (git mv from
+  # docker/Dockerfile, then rewritten) builds from the repository root, whose first stage runs turbo
+  # prune hub --docker, on node:24-slim in all four stages; .github/workflows/image.yml builds it on
+  # every push, needs /api/health to answer, and pushes ghcr.io/luigiespinosa/hub:<sha> with the job
+  # token (packages: write). Tests hold the tag, the trigger, the two Umami inputs, the pruned install,
+  # docker-rollout's requirements on docker-compose.yml and the image's Node. Observed on this host:
+  # the pruned deps stage +526 packages against the base commit's +588 (action 4), an app-directory
+  # context failing at the prune, the image holding apps/hub and node_modules alone and serving every
+  # route and /contracts/ byte for byte, the healthcheck unhealthy for a container serving nothing and
+  # healthy as built; 1,667 unit tests in 66 files, 343 e2e in the pinned image. Six review layers ran
+  # inline, not independent (no UI surface for the Design Review): nine patches, DW-262 deferred, no
+  # loopback. DW-254 and DW-257 closed, DW-251's Dockerfile half closed, DW-260 to DW-262 filed.
+  # The independent verification returned one blocking finding and two minor ones, all taken in a
+  # fix round (the spec's Spec Change Log): deps-stage.test.ts now plants the prune's turbo and
+  # workspace and the copy's destination on every run, as ops/token-contract.md says it does; the box
+  # recovery command in ops/routing-inventory.md carries a dated amendment, DW-263 filed for Story 3.4.
+  # A re-verification passed with three minor findings, taken in fix round 2: criterion 2 names the
+  # two root files turbo's prune writes into the builder's tree, and ops/token-contract.md action 5 says
+  # this row records the first Image run once read. The Hub stops running a floating tag at Story 3.4:
+  # the box builds and runs it as cuatro-portfolio-anchor-app:latest until that story's deploy, which
+  # pulls the sha tag, first runs, so criterion 1 holds the publishing half alone.
+  # The push was the orchestrator's, on the Operator's instruction of 2026-09-28 (push straight to
+  # dev). Its Image run, 36507763627, is where criterion 6 and action 5's CI half are read: success
+  # in 1m1s, turbo 2.10.13 pruning to hub ("Added hub"), deps "Scope: all 2 workspace projects",
+  # "Packages: +526", "Done in 6.3s using pnpm v10.31.0", /api/health answering
+  # {"status":"ok","version":"3.0.0","uptime":0}, and the push of
+  # ghcr.io/luigiespinosa/hub:38f9a2805efc0225285f6a9de9949063a45df0d8 at digest
+  # sha256:e2d9c610c616a02ca889fd9f79e5877f7e5edc0daf44804e26bb6604423f1547. Read afterwards with an
+  # anonymous registry token, GHCR serves that manifest at that digest and lists that tag alone
+  # (latest: "manifest unknown"), so the package is pullable without credentials and Story 3.4's
+  # pull needs no read token.
+  # 2026-09-28: awaiting-operator. Run 36507763564 ran compose.test.ts, image-workflow.test.ts and
+  # the rewritten deps-stage.test.ts on Actions: typecheck clean, 1,667 unit tests in 66 files, 343
+  # e2e in 7.6 min against the unchanged /work baseline. Every criterion is met in the repository,
+  # two of them only under a reading the Operator is asked to confirm, so exactly two actions remain:
+  # Decision 1 (DW-260), the fourth criterion ("the hub service defines a real healthcheck"): read
+  # as the Hub's service, which keeps its name anchor-app, the name the box's Caddyfile routes to.
+  # Confirm, or rule a rename to go with Story 3.4.
+  # The first criterion ("no estate application ever runs a floating tag"): held for publishing,
+  # where the Image run pushes the sha tag alone; the box runs the Hub as
+  # cuatro-portfolio-anchor-app:latest until Story 3.4's first pull-based deploy. Confirm the
+  # reading.
+  # Decision 2 (the two Umami inputs as literals in image.yml), keeping the package public, DW-253
+  # (the Image run's build log prints both telemetry notices), DW-259, DW-261 and the oversized
+  # spec's Keep are open rulings that gate no criterion.
+  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: awaiting-operator
+  # 3-4 built and pushed 2026-09-28: dev at 7c1ca53, CI run 36519484227 green on seven jobs, every
+  # one on Node 24.21.0, and Image run 36519484191 green. b3b72d6 (code, workflows, suites) and the
+  # docs commits after it. deploy.yml is one chain: gate (the ref refusal,
+  # then the Capacity Gate on Node 24), then image (calls image.yml, which no longer runs on a push to
+  # main), then deploy (the SSH step and its string unchanged), then report (the issue, on failure).
+  # ops/deploy-remote.sh keeps its path and refusals, installs docker-rollout v0.14 from its release
+  # asset against sha256 cdeaba6a..., pulls ghcr.io/luigiespinosa/hub:<sha> before the reset, runs a
+  # declared <service>-migrate (AD-23; the Hub has none), rolls anchor-app with docker rollout
+  # --timeout 120 and refuses unless the service then runs that image. docker-compose.yml names the
+  # image by HUB_TAG and builds nothing. Observed on this host: the real asset installed by the real
+  # script, a sha with no image refused before the reset, a rollout between two CI-built tags in 7 s
+  # and one to an image serving nothing rolled back after 134 s, 2,506 requests through Caddy across
+  # both, all 200; 1,683 unit tests in 66 files. Six review layers ran inline, not independent: eight
+  # patches, DW-265 and DW-266 deferred, no loopback. DW-262, DW-263 and DW-251's deploy half closed;
+  # DW-264 to DW-266 filed.
+  # The independent verification passed with two minor findings, both taken in a fix round (the
+  # spec's Spec Change Log): the two Story 3-3 amendments and image-workflow.test.ts's header said
+  # image.yml builds on every push, and now say a push to main builds only through deploy.yml's image
+  # job (353333e); action 11 now says the credential-free pull rests on the package staying public, and
+  # gives the deploy user's GHCR login to run before its dispatch if it is made private (92b7ec6).
+  # The push was the orchestrator's, on the Operator's instruction of 2026-09-28 (push straight to
+  # dev). Its Image run, 36519484191, is the first under image.yml's narrowed push trigger: success in
+  # 52 s, turbo 2.10.13 pruning to hub ("Added hub"), "Packages: +526", /api/health answering
+  # {"status":"ok","version":"3.0.0","uptime":0}, and the push of
+  # ghcr.io/luigiespinosa/hub:7c1ca53fcfa74a19361080f9ef90325d1566bc95 at digest
+  # sha256:9fb8de3067e05c9c629da79f15934efeef40aee16ca8f15a8413a62cd353d734. Read afterwards with an
+  # anonymous registry token, GHCR serves that manifest at that digest, so the package is still
+  # public. No Deploy run: deploy.yml runs on main alone, so the chain and its workflow_call first run
+  # at the Epic 3 merge (DW-266).
+  # 2026-09-28: awaiting-operator. Run 36519484227 ran deploy-remote.test.ts (28 tests),
+  # compose.test.ts (9), image-workflow.test.ts (5) and workflow-hardening.test.ts (32) on Actions:
+  # typecheck clean, 1,683 unit tests in 66 files, 343 e2e in 7.7 min against the unchanged /work
+  # baseline. Every criterion is met in the repository but what only the box and cuatro.dev can show,
+  # and one only under a reading the Operator is asked to confirm, so exactly three actions remain:
+  # The first and third criteria's live halves ("deployment pulls the git-sha tag", "no compile step
+  # reaches the box", "cuatro.dev serves continuously across a rollout, verified by requesting it
+  # throughout one"): ops/contract-serving.md Pending Operator action 11, at the merge that brings this
+  # story to main, which follows the separate 3-1 and 3-2 merges 3-2's row orders. That merge's Deploy
+  # run fails in its deploy job at HUB_TAG and opens an issue while cuatro.dev keeps serving
+  # (Decision 3, DW-264); if it fails in its image job instead, GitHub refused the workflow_call
+  # (DW-266). Then the probe, the dispatch, its four log lines and no build output, every probe line
+  # 200, docker ps on the box printing the sha's image, and the merge run's issue closed.
+  # The fifth criterion ("records it as closed with an ISO 8601 UTC date"): ops/known-violations.md
+  # Pending Operator action 3, that dispatch run's completion time written as KV-1's Anchor-half
+  # Retired on. Status stays Open until Story 4-3 dates the list-wheel half.
+  # Decision 1, the first criterion's third clause ("the misleading step name is corrected"): read as
+  # met by "Deploy over SSH to SERVER_HOST", which names no provider, as Story 1-21 left it. Confirm
+  # the reading.
+  # Keeping the package public (Story 3-3's open ruling; if it is made private, the deploy user's GHCR
+  # login under ops/contract-serving.md § The deploy pulls a tag and rolls it runs before the
+  # dispatch), Decisions 2, 3 and 5 (anchor-app and DW-260, the designed red first run, DW-130),
+  # DW-259, DW-261, DW-265 and the oversized spec's Keep are open rulings that gate no criterion.
+  3-4-deploy-by-pulling-a-tag-with-docker-rollout: awaiting-operator
+  # 3-5 done 2026-09-29: cuatro-finance's dev history merged into apps/finance by filter-repo and
+  # --allow-unrelated-histories (merge 6d5929f), the workspace finance under the one lockfile, its
+  # typecheck and suite in ci.yml's test job, apps/finance/Dockerfile and image-finance.yml (build,
+  # provision, migrate, /api/health, push by sha), compose finance and finance-migrate under profiles,
+  # role and database finance at CONNECTION LIMIT 10. Pushed at e3eb3eb: CI run 36581686568 (seven
+  # jobs), Image run 36581686545 and Image (finance) run 36581686710 green, the last pushing
+  # ghcr.io/luigiespinosa/finance:e3eb3eb (digest sha256:598736c5...). Committed on dev, not live;
+  # not placed (AD-9); token adoption deferred whole (DW-267). Operator actions that gate no
+  # criterion: decide the finance package's visibility (private by default); archive cuatro-finance
+  # (then 3.8 writes absorbed_into); rule on Decisions 1 to 15, DW-270 and DW-253; every placement
+  # input is DW-269; finance reaches main at the Epic 3 merge.
+  3-5-merge-cuatro-finance-into-apps-finance: done
+  # 3-6 awaiting-operator 2026-09-29: cuatro-tracker main (985e3c5, 131 commits) merged into
+  # apps/tracker by filter-repo and --allow-unrelated-histories (merge ff2b795), the workspace tracker
+  # under the one lockfile, its typecheck and suite (with a Redis service) in ci.yml's test job,
+  # apps/tracker/Dockerfile and image-tracker.yml (build, migrate, /api/ready, worker ready, push by
+  # sha), compose tracker, tracker-worker (profile tracker) and tracker-migrate, ops/tracker-backup.sh
+  # and ops/tracker-restore-verify.sh, and the runbook ops/tracker-cutover.md. Pushed at 2dfc099: CI
+  # run 36593368290 (seven jobs; unit 69 files, finance 5, tracker 105), Image run 36593368278, Image
+  # (finance) run 36593368281 and Image (tracker) run 36593368524 green, the last pushing
+  # ghcr.io/luigiespinosa/tracker:2dfc099 (digest sha256:76cf0e0b...). Committed on dev, not live:
+  # tracker.cuatro.dev is served by the box's own build until the Operator runs the cutover. Not
+  # placed (AD-9).
+  # Every criterion is met in the repository but the second's live half ("the cutover keeps
+  # tracker.cuatro.dev serving throughout, verified by requesting it across the cutover"), which only
+  # the box can show, so exactly these Operator actions remain:
+  # 1. ops/tracker-cutover.md action 1: make ghcr.io/luigiespinosa/tracker public, as hub is, or log
+  #    the deploy user in to GHCR with a read:packages token.
+  # 2. Action 2: merge Epic 3 dev into main and let the deploy run; the tracker services and the
+  #    backup scripts reach the box only this way.
+  # 3. Action 3: run the runbook's steps 1 to 8 on the box (re-read the inventory and record the
+  #    override and cuatro-redeploy.sh text, closing DW-274; stop the old worker; backup and
+  #    restore-verify both exit 0 with migrations=11-applied-0-pending; scp the dump off the box;
+  #    keep the probe loop running; copy the 14 TRACKER_ secrets; migrate; start tracker then
+  #    tracker-worker; stop the old app; confirm 200 alone; retire cuatro-redeploy.sh) and record the
+  #    results in the runbook, then date amendments to ops/estate.md and ops/routing-inventory.md.
+  # 4. Action 4: archive cuatro-tracker a week after the cutover holds; Story 3.8 then writes
+  #    absorbed_into.
+  # Open rulings that gate no criterion: Decisions 1 to 14 (above all 3, the data stays in the old
+  # project's stores until Epic 4, and 4, the cuatro-app alias), DW-273, DW-275 (rollouts by hand,
+  # the capacity-gate id), DW-276, DW-277, DW-278 (GHCR private-storage billing) and DW-270.
+  3-6-merge-cuatro-tracker-into-apps-tracker: awaiting-operator
   # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this
   # key names is done. The key keeps its wording; the story is the merge and the placement on the box
   # (epics.md Story 3.7's amendment, spec-vercel-removal.md).
-  3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: backlog
-  3-8-record-the-estate-end-state: backlog
+  # 3-7 awaiting-operator 2026-09-29: cs-tournament main (0d3e856, 102 commits) merged into
+  # apps/tournament at b98dabb, the workspace tournament under the one lockfile, its typecheck, suite and
+  # Go worker tests in ci.yml, the tournament and tournament-worker images (image-tournament.yml, build,
+  # probe, push by sha), compose services no deploy starts, the identity export and verify in
+  # ops/tournament-identity.mjs. Pushed at c551767: CI run 36600318062 (seven jobs), Image run
+  # 36600318056, Image (finance) run 36600318034, Image (tracker) run 36600318039 and Image (tournament)
+  # run 36600318160 (both jobs) green, pushing ghcr.io/luigiespinosa/tournament:c551767 and
+  # tournament-worker:c551767. Committed on dev, not live; not placed (AD-9).
+  # The first two criteria (the merge, the worker as its own deploy unit) are met in the repository. The
+  # third's verification (authenticate as an existing user after the move), the fourth (placement under
+  # the gate) and the fifth (hostname and Live in the Registry) need the box, so exactly these Operator
+  # actions remain:
+  # 1. Decide where the data lives (DW-280): Supabase Cloud as a declared store with an offsite backup,
+  #    or onto the box (replacing Supabase Auth, PostgREST and Realtime, a story of its own).
+  # 2. Choose the hostname (and the worker's, if MatchZy and the demo upload must reach it), create DNS
+  #    and the routes on the box's shared Caddy.
+  # 3. Rebuild the server image with NEXT_PUBLIC_SUPABASE_URL and the anon key as build inputs (DW-281);
+  #    set the TOURNAMENT_ values in .env.production through the gitignored .env route, STEAM_REALM and
+  #    STEAM_RETURN_URL pointed at the hostname.
+  # 4. If the data moves: node ops/tournament-identity.mjs export against the source, then verify against
+  #    the target for one admin and one viewer; both exit 0.
+  # 5. Merge Epic 3 dev into main (the deploy), in the order the 3-1 and 3-2 rows prescribe.
+  # 6. Place it under AD-9 (status: open), append cs-tournament to placements, record the load reading
+  #    after placement (SM-C4), and in that same change move the Registry entry from Complete to Live
+  #    with its live value (FR-28).
+  # 7. Delete the inclusivcup Vercel project if it still exists; archive LuigiEspinosa/cs-tournament,
+  #    kept public; Story 3.8 then writes absorbed_into and moves source.
+  # Open rulings that gate no criterion: Decisions 1 to 10 (the ids tournament and tournament-worker,
+  # DW-260's split), DW-278 (the two private GHCR packages), DW-279 (token adoption in Epic 8 wave 2),
+  # DW-282 and DW-283.
+  3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: awaiting-operator
+  # 3-8 review 2026-09-29: ops/estate.md § The end state records 10 repositories (decided 2026-09-26,
+  # SM-7 amended, DW-249), the ten named, observed 14 at 2026-09-29T17:02:30Z, the waypoint table dated,
+  # the criterion's 8 and 15/11/8 noted against the rulings, SM-C2 stated, Registry 16 entries beside.
+  # No absorbed_into written: no source repository archived; the Registry change is DW-285. Stale
+  # "undecided" and "Story 3.8 then writes" sentences amended; DW-275 to Epic 4, DW-283 to Epic 8.
+  # Operator actions: archive connect-four-react (13); merge Epic 3 into main; run the tracker cutover;
+  # archive cuatro-finance, cs-tournament and, a week after the cutover, cuatro-tracker, all public;
+  # then DW-285 (absorbed_into, and the source shape Story 2.23's job accepts) and the count moves to 10.
+  # 3-8 awaiting-operator 2026-09-29: CI and the four image runs green at 0bd5f82 (Image (tracker)
+  # passed on a rerun after a next/font Google Fonts fetch failed at build). Operator actions, in order:
+  # archive connect-four-react, public, and re-date the ops/estate.md observed tables (13); merge Epic 3
+  # dev into main and confirm the Deploy ran; run ops/tracker-cutover.md; archive cuatro-finance and
+  # cs-tournament, and cuatro-tracker a week after the cutover holds, all public, each date recorded;
+  # then DW-285 in one Registry MINOR release, moving ESTATE_COUNT, the waypoint sentence and both
+  # ops/contract-adoption.md tables to 10. Confirm Decisions 1 to 5 and the DW-275 and DW-283 hand-offs.
+  3-8-record-the-estate-end-state: awaiting-operator
   epic-3-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
   # Epic 3 introduces Turborepo, moves the app to apps/hub, and retires the

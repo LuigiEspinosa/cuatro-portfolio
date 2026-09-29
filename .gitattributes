@@ -32,3 +32,9 @@
 contracts/**/*.css text eol=lf
 contracts/**/*.json text eol=lf
 contracts/**/*.txt text eol=lf
+
+# `apps/tournament`'s roulette vectors are compared byte for byte with what its Python generator writes
+# (`roulette/vectors/generate_vectors.py --check`, which its unit suite runs), and the generator writes
+# `\n`. Without this rule a checkout on the authoring machine holds CRLF and that suite fails on
+# Windows alone (Story 3-7). The committed bytes are already LF, so the rule changes no blob.
+apps/tournament/roulette/vectors/*.json text eol=lf
