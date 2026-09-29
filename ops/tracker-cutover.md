@@ -13,6 +13,11 @@ can reach the box (no key and no host entry exist on the authoring machine), and
 it starts reach the box only with the Epic 3 merge to `main`. Every box step is a Pending Operator
 action at the end, and until the last is dated the old containers serve `tracker.cuatro.dev`.
 
+**Amended 2026-09-29, the same day:** the sequence ran on the box that evening (§ Cutover run below),
+driven from the Operator's workstation over the `deploy` user's key in its Ubuntu WSL, which the
+authoring session had not found: the claim above that no session here could reach the box was wrong
+for that machine. Since 21:33:20Z `cuatro-portfolio-tracker-1` alone serves `tracker.cuatro.dev`.
+
 ## What serves it today
 
 **From `ops/routing-inventory.md`, observed 2026-08-24, not re-observed since.** Step 1 below re-reads
@@ -164,13 +169,97 @@ then `$C --profile tracker up -d tracker-worker`.
   DW-275's.
 - The nightly `~/cuatro-backup.sh` keeps dumping the same database, which never moved.
 
+## Cutover run
+
+**Observed 2026-09-29 on the box as `deploy`, over SSH from the Operator's WSL, with the Operator
+watching.** `HUB_TAG=5117673f3834f9368eecd7fe459bc0ca4ddd5b3c` (the merge commit the box ran) and
+`TRACKER_TAG=5117673f3834f9368eecd7fe459bc0ca4ddd5b3c` (Image (tracker) run 36627621124 on `main`,
+green).
+
+- **Step 1, no difference found.** `cs-tracker_default` listed `cuatro-tracker-app-1` among nine
+  members; its aliases there were `cuatro-tracker-app-1`, `app` and `cuatro-app`, and on
+  `cuatro-tracker_default` `cuatro-tracker-app-1` and `app`; `reverse_proxy cuatro-app:3000` sat at
+  `Caddyfile:46`; the five containers ran (`app`, `worker`, `postgres`, `redis`, `qbittorrent`);
+  `/home/deploy/cuatro-tracker` was clean at `5d49da7`; `.env` carried the fifteen names the inventory
+  lists. The two files DW-274 wanted recorded:
+
+  `docker-compose.override.yml`:
+  ```yaml
+  # Gitignored shared-host override (ops-1, E1). cuatro-tracker runs as its own
+  # stack with NO published ports; cs-tracker's Caddy (sole 80/443 ingress) fronts
+  # it. Attach `app` to cs-tracker's network so that Caddy can reach it by the
+  # alias `cuatro-app`, while keeping app on this project's default network for
+  # postgres/redis.
+  name: cuatro-tracker
+
+  services:
+    app:
+      networks:
+        default:
+        cs-tracker_default:
+          aliases:
+            - cuatro-app
+
+  networks:
+    cs-tracker_default:
+      external: true
+  ```
+
+  `~/cuatro-redeploy.sh` (592 bytes, dated 2026-07-30), which would have rebuilt and restarted the
+  old app and worker on every run:
+  ```bash
+  #!/usr/bin/env bash
+  # cuatro-tracker manual redeploy (ops-1). Pulls main, rebuilds, prunes, smokes.
+  # Release first from your workstation: git push origin dev:main
+  set -euo pipefail
+  cd /home/deploy/cuatro-tracker
+  git fetch origin
+  git reset --hard origin/main
+  docker compose up -d --build
+  docker image prune -f
+  echo "=== smoke ==="
+  for i in 1 2 3 4 5; do
+    if curl -fsS https://tracker.cuatro.dev/api/health >/dev/null; then
+      echo "health OK in $i/5"
+      curl -fsS https://tracker.cuatro.dev/api/ready && echo
+      exit 0
+    fi
+    sleep 5
+  done
+  echo "health FAILED after 5 attempts" >&2
+  exit 1
+  ```
+- **Step 2.** `cuatro-tracker-worker-1` stopped at 21:05Z. `tracker-backup.sh`:
+  `file=/home/deploy/backups/cuatro-tracker/tracker-20260929T210552Z.dump dump=ok list=ok tables=9
+  rows=12 bytes=22310 sha256=1cdb83bc... exit=0`. `tracker-restore-verify.sh`: `sha256=match
+  restore=ok tables=9 rows=12 migrations=11-applied-0-pending exit=0`. The dump, its counts and its
+  sha256 were copied to the workstation by `scp`.
+- **Step 3.** The probe ran from the workstation at one request per second to `/api/health` with a
+  browser user agent, in two windows because the first reached its 25-minute cap while the Operator
+  was consulted: 21:07Z to 21:32Z, **1,487 requests, all 200**, both servers answering the alias; then
+  21:32:27Z to 21:34:15Z across the switch, **108 requests, all 200**, every second from 21:33:10Z to
+  21:33:35Z answered, with the stop at 21:33:20Z inside it.
+- **Step 4.** Fourteen `TRACKER_` lines in `.env.production` (the `sed` first removed none, this being
+  the first attempt); `ghcr.io/luigiespinosa/tracker:5117673f...` pulled without credentials.
+- **Step 5.** `tracker-migrate`: "No pending migrations to apply."
+- **Step 6.** `cuatro-portfolio-tracker-1` healthy after 8 s; `cuatro-portfolio-tracker-worker-1`
+  logged `worker.ready` once. Before step 7, `cuatro-portfolio-tracker-1` was confirmed on
+  `cs-tracker_default` with the `cuatro-app` alias and answering `/api/health` 200 from that network.
+- **Step 7.** `cuatro-tracker-app-1` stopped at 21:33:20Z; `cuatro-app` then resolved to one address,
+  the new container's. From outside afterwards: `/api/health` 200 (`version 0.1.0`, the new
+  container's uptime), `/api/ready` 200 with `db ok` and `redis ok`, `/` 307 to `/login`.
+- **Step 8.** `~/cuatro-redeploy.sh` moved to `~/cuatro-redeploy.sh.retired-2026-09-29`.
+- **Left running in the old project:** `postgres`, `redis` and `qbittorrent`, with `app` and `worker`
+  exited (0), as the decision above says. The `app` alias collision on `cs-tracker_default` ended with
+  step 7. The optional reclaim of the old images was not run.
+
 ## Pending Operator actions
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Let the box pull `ghcr.io/luigiespinosa/tracker`.** Make the package public, as `hub` is, or log `deploy` in to GHCR with a `read:packages` token | A new package is private. Changing its visibility or creating a token is the Operator's | _not done_ |
-| 2 | **Merge Epic 3 into `main`** and let the deploy run | The compose services and both scripts reach the box only this way | _not done_ |
-| 3 | **Run steps 1 to 8 above**, on a day the Operator can watch the probe | Step 2's two exit codes and summary lines, step 7's count and step 1's two files go into this record | _not done_ |
+| 1 | **Let the box pull `ghcr.io/luigiespinosa/tracker`.** Make the package public, as `hub` is, or log `deploy` in to GHCR with a `read:packages` token | A new package is private. Changing its visibility or creating a token is the Operator's. Made public by the Operator, with the finance, tournament and tournament-worker packages; an anonymous manifest pull of `tracker:2dfc099...` answered 200 | 2026-09-29 |
+| 2 | **Merge Epic 3 into `main`** and let the deploy run | The compose services and both scripts reach the box only this way. PR #84 merged as `5117673`; the dispatch run 36627964371 was the deploy that put the checkout and the scripts on the box (`ops/contract-serving.md` action 11) | 2026-09-29T20:41:37Z |
+| 3 | **Run steps 1 to 8 above**, on a day the Operator can watch the probe | Step 2's two exit codes and summary lines, step 7's count and step 1's two files go into this record. Done: § Cutover run | 2026-09-29T21:34:15Z |
 | 4 | **Archive `cuatro-tracker`** once action 3 has held for a week | DW-285 then writes `absorbed_into` and moves `source` to the Anchor (AD-6); Story 3.8 left it there, no source repository being archived on 2026-09-29. The box's `/home/deploy/cuatro-tracker` checkout stays: it runs the stores until Story 4.8 | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and

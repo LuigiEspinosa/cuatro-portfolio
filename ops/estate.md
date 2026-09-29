@@ -280,7 +280,7 @@ estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 | `tcg-tracker` | Archive, then fold as a domain inside `cuatro-tracker` | `Archived` | `cuatro-tracker` | In Registry, not rendered |
 | `connect-four-react` | Absorb: playable demo in the Hub | `Archived` | `cuatro-portfolio` | In Registry; not rendered as a directory entry, and not rendered as an embedded demo at MVP either. It will surface as the embedded demo (PRD section 4.7) only once FR-29 is taken up, and FR-29 is deferred to v2. See the note below. |
 | `cuatro-finance` | Merge into the Anchor: **merged into `apps/finance` on `dev` by Story 3-5 (2026-09-29), imaged in CI, not placed**. See the note below | `In progress` | n/a today, see note below | Not rendered until Live |
-| `cuatro-tracker` | Merge into the Anchor: **merged into `apps/tracker` on `dev` by Story 3-6 (2026-09-29) and imaged in CI; still served by the box's own build until the Operator runs `ops/tracker-cutover.md`**. See the note below | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
+| `cuatro-tracker` | Merge into the Anchor: **merged into `apps/tracker` on `dev` by Story 3-6 (2026-09-29) and imaged in CI; still served by the box's own build until the Operator runs `ops/tracker-cutover.md`**. See the note below. **Amended 2026-09-29, evening:** the cutover ran; the CI image serves it (§ `cuatro-tracker` below) | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
 | `cs-tournament` | Merge into the Anchor: **merged into `apps/tournament` on `dev` by Story 3-7 (2026-09-29), with its Go worker; both imaged in CI, neither placed**. See the note below | `Complete`: deployed nowhere since the Operator ruling of 2026-09-24. Its Vercel deployment at `inclusivcup.vercel.app` was deleted on 2026-09-25 (§ The Vercel decommission, step 3), and Story 3.7 placed it nowhere: placing it on the box is the Operator's (§ Pending Operator actions) | n/a today, see note below | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
 | `digital-library` | Satellite: Svelte/Fastify | `Live`: `library.cuatro.dev` | n/a | Rendered |
@@ -440,6 +440,14 @@ it: merging is not placing.
   cuatro-portfolio` and moves `source`; and every placement step (DW-269).
 
 ### `cuatro-tracker`, merged on `dev`, served by the old build until the cutover
+
+**Amended 2026-09-29, evening:** the cutover ran (`ops/tracker-cutover.md` § Cutover run). Since
+21:33:20Z `tracker.cuatro.dev` is served by `cuatro-portfolio-tracker-1` and its worker
+`cuatro-portfolio-tracker-worker-1`, both from `ghcr.io/luigiespinosa/tracker:5117673f...` pulled from
+GHCR, reaching the old project's `postgres`, `redis` and `qbittorrent` over `cuatro-tracker_default`;
+`cuatro-tracker-app-1` and `cuatro-tracker-worker-1` are stopped, and `~/cuatro-redeploy.sh` is
+retired. The probe across the switch answered 200 on every request. The section below describes the
+state before that evening.
 
 **Committed on `dev`, not live.** Unlike finance it is already placed and serving, so what changes on
 the box is a cutover the Operator runs, `ops/tracker-cutover.md`, not a placement: `ops/capacity-gate.yml`

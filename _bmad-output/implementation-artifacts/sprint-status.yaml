@@ -731,7 +731,17 @@ development_status:
   # Open rulings that gate no criterion: Decisions 1 to 14 (above all 3, the data stays in the old
   # project's stores until Epic 4, and 4, the cuatro-app alias), DW-273, DW-275 (rollouts by hand,
   # the capacity-gate id), DW-276, DW-277, DW-278 (GHCR private-storage billing) and DW-270.
-  3-6-merge-cuatro-tracker-into-apps-tracker: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed the recorded decisions; the package was made public;
+  # Epic 3 reached main in PR #84 (5117673) and the dispatch deployed it; and the cutover ran that
+  # evening over the Operator's WSL key (ops/tracker-cutover.md § Cutover run): step 1 matched the
+  # inventory on every point and recorded the two files DW-274 wanted; backup 9 tables and 12 rows,
+  # restore verified with migrations=11-applied-0-pending; the new tracker and worker from
+  # ghcr.io/luigiespinosa/tracker:5117673f... started beside the old app; the old app stopped at
+  # 21:33:20Z; the probe answered 200 on all 1,487 requests while both served and on all 108 across
+  # the switch; cuatro-redeploy.sh retired. Every criterion is now observed. Remaining, gating no
+  # criterion: archive cuatro-tracker a week after the cutover holds (runbook action 4), after which
+  # DW-285 writes absorbed_into; DW-275 (rollouts by hand) belongs to Epic 4.
+  3-6-merge-cuatro-tracker-into-apps-tracker: done
   # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this
   # key names is done. The key keeps its wording; the story is the merge and the placement on the box
   # (epics.md Story 3.7's amendment, spec-vercel-removal.md).

@@ -1008,6 +1008,15 @@ which is already in the ledger as a live AD-8 breach.
 
 ### `cuatro-tracker`, services `postgres`, `migrate`, `redis`, `app`, `qbittorrent`, `worker`
 
+**Amended 2026-09-29:** `app` and `worker` are stopped (exited 0) since the tracker cutover that
+evening, and `tracker.cuatro.dev` is served by the Anchor project's `cuatro-portfolio-tracker-1`
+(alias `cuatro-app` on `cs-tracker_default`, the name Caddy proxies at line 46 unchanged) and
+`cuatro-portfolio-tracker-worker-1`, both `ghcr.io/luigiespinosa/tracker:5117673f...` from GHCR, on
+`cuatro-tracker_default` for the stores. `postgres`, `redis` and `qbittorrent` keep running here with
+their volumes, and `~/cuatro-redeploy.sh` is retired. The override's and the redeploy script's text
+are recorded in `ops/tracker-cutover.md` § Cutover run (DW-274). What follows describes the state
+observed 2026-08-24.
+
 | Container | Image | Runs | Restart | Health | Ports | Aliases | Volumes |
 |---|---|---|---|---|---|---|---|
 | `cuatro-tracker-app-1` | `cuatro-tracker-app` (**built on the box**) | `node server.js` | `unless-stopped` | yes | `3000/tcp` exposed | `cs-tracker_default`: `app` **and** `cuatro-app` at `172.18.0.5`; `cuatro-tracker_default`: `app` | none |
@@ -1252,6 +1261,10 @@ aliases by name.
 | `anchor-umami` | `cuatro-portfolio-anchor-umami-1` | `analytics.cuatro.dev` |
 | `list-wheel` | `list-wheel-list-wheel-1` (`172.18.0.10`). **Added 2026-09-13** by Story 2-25 | `wheel.cuatro.dev` proxies `list-wheel:80` |
 | `api`, `web`, `db`, `migrate` | the obvious containers | nothing routes to these |
+
+**Amended 2026-09-29:** the collision ended at 21:33:20Z that day, when the tracker cutover stopped
+`cuatro-tracker-app-1`; the Anchor's replacement service is named `tracker`, not `app`, so
+`cs-tracker_default` carries one `app` alias again, `cs-tracker-app-1`'s.
 
 **The `app` collision is still live on 2026-08-24.** Compose gives a service its own name as a
 DNS alias on every network it joins, and both `cs-tracker` and `cuatro-tracker` call their
