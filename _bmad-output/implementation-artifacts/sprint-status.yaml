@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-28-2026 19:35
+last_updated: 09-28-2026 20:37
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -551,7 +551,8 @@ development_status:
   # Decisions 2 to 5 and 7, DW-259 and the oversized spec's Keep are open rulings that gate no
   # criterion.
   3-2-move-the-hub-to-apps-hub: awaiting-operator
-  # 3-3 built 2026-09-28, committed on dev and not pushed. apps/hub/Dockerfile (git mv from
+  # 3-3 built and pushed 2026-09-28: dev at 38f9a28, CI run 36507763564 green on seven jobs, every
+  # one on Node 24.21.0, and Image run 36507763627 green. apps/hub/Dockerfile (git mv from
   # docker/Dockerfile, then rewritten) builds from the repository root, whose first stage runs turbo
   # prune hub --docker, on node:24-slim in all four stages; .github/workflows/image.yml builds it on
   # every push, needs /api/health to answer, and pushes ghcr.io/luigiespinosa/hub:<sha> with the job
@@ -572,15 +573,31 @@ development_status:
   # this row records the first Image run once read. The Hub stops running a floating tag at Story 3.4:
   # the box builds and runs it as cuatro-portfolio-anchor-app:latest until that story's deploy, which
   # pulls the sha tag, first runs, so criterion 1 holds the publishing half alone.
-  # Waits on the push, which in this run is the orchestrator's (the Operator's instruction of
-  # 2026-09-28: push straight to dev), not the Operator's. Its Image run is where criterion 6 and
-  # action 5's CI half are read: once read, this row records that run's id, its conclusion and the tag
-  # it pushed, ghcr.io/luigiespinosa/hub:<sha>.
-  # Waits on the Operator: the GHCR package's visibility after that first push (private by default:
-  # the box needs it public, or a read token, before Story 3.4 pulls); Decisions 1 and 2 (the service
-  # keeps its name anchor-app, and the Umami inputs live in the workflow); DW-261 (.env.example names
-  # the old path, and this session may not touch .env files).
-  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: review
+  # The push was the orchestrator's, on the Operator's instruction of 2026-09-28 (push straight to
+  # dev). Its Image run, 36507763627, is where criterion 6 and action 5's CI half are read: success
+  # in 1m1s, turbo 2.10.13 pruning to hub ("Added hub"), deps "Scope: all 2 workspace projects",
+  # "Packages: +526", "Done in 6.3s using pnpm v10.31.0", /api/health answering
+  # {"status":"ok","version":"3.0.0","uptime":0}, and the push of
+  # ghcr.io/luigiespinosa/hub:38f9a2805efc0225285f6a9de9949063a45df0d8 at digest
+  # sha256:e2d9c610c616a02ca889fd9f79e5877f7e5edc0daf44804e26bb6604423f1547. Read afterwards with an
+  # anonymous registry token, GHCR serves that manifest at that digest and lists that tag alone
+  # (latest: "manifest unknown"), so the package is pullable without credentials and Story 3.4's
+  # pull needs no read token.
+  # 2026-09-28: awaiting-operator. Run 36507763564 ran compose.test.ts, image-workflow.test.ts and
+  # the rewritten deps-stage.test.ts on Actions: typecheck clean, 1,667 unit tests in 66 files, 343
+  # e2e in 7.6 min against the unchanged /work baseline. Every criterion is met in the repository,
+  # two of them only under a reading the Operator is asked to confirm, so exactly two actions remain:
+  # Decision 1 (DW-260), the fourth criterion ("the hub service defines a real healthcheck"): read
+  # as the Hub's service, which keeps its name anchor-app, the name the box's Caddyfile routes to.
+  # Confirm, or rule a rename to go with Story 3.4.
+  # The first criterion ("no estate application ever runs a floating tag"): held for publishing,
+  # where the Image run pushes the sha tag alone; the box runs the Hub as
+  # cuatro-portfolio-anchor-app:latest until Story 3.4's first pull-based deploy. Confirm the
+  # reading.
+  # Decision 2 (the two Umami inputs as literals in image.yml), keeping the package public, DW-253
+  # (the Image run's build log prints both telemetry notices), DW-259, DW-261 and the oversized
+  # spec's Keep are open rulings that gate no criterion.
+  3-3-build-the-hub-image-in-ci-and-push-to-ghcr: awaiting-operator
   3-4-deploy-by-pulling-a-tag-with-docker-rollout: backlog
   3-5-merge-cuatro-finance-into-apps-finance: backlog
   3-6-merge-cuatro-tracker-into-apps-tracker: backlog
