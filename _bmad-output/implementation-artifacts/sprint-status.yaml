@@ -558,7 +558,17 @@ development_status:
   # with the gates they configure. Confirm the reading.
   # Decisions 2 to 5 and 7, DW-259 and the oversized spec's Keep are open rulings that gate no
   # criterion.
-  3-2-move-the-hub-to-apps-hub: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed Decisions 1 and 6 and every other recorded reading on
+  # 2026-09-29. Shipped alone as AD-20's own step, after 3-1's merge: PR #83 (branch
+  # merge/3-2-apps-hub at 0aec0fb) merged into main as bbc2ef2 by the Operator, eight required
+  # checks green, Lighthouse's first Actions run of pnpm --filter hub build among them. Deploy run
+  # 36626094452 succeeded; the box's checkout reads bbc2ef2 with apps/hub and anchor-app healthy.
+  # AC5's live proof: before (after 5e132dd's deploy) and after probes identical, every route as
+  # expected, /api/health 3.0.0, the four contract files byte-identical to contracts/. During: the
+  # Operator merged before the loop started, so it covered the run's last 48 s only, 19 requests to
+  # /api/health at one per second, all 200, and the container recreate fell inside that window
+  # (uptime 21 s at the after probe). Recorded as a partial during-probe, not a full one.
+  3-2-move-the-hub-to-apps-hub: done
   # 3-3 built and pushed 2026-09-28: dev at 38f9a28, CI run 36507763564 green on seven jobs, every
   # one on Node 24.21.0, and Image run 36507763627 green. apps/hub/Dockerfile (git mv from
   # docker/Dockerfile, then rewritten) builds from the repository root, whose first stage runs turbo
