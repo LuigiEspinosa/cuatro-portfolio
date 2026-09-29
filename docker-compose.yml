@@ -22,6 +22,7 @@
 # to by accident: `finance` joins no shared network, and `tracker` joins it as `tracker`, which
 # `ops/routing-inventory.md` § The shared network lists for no other container, and as `cuatro-app`,
 # which it shares on purpose with the container it replaces (`ops/tracker-cutover.md`, Story 3-6).
+# `tournament` and `tournament-worker` join no shared network until they are placed (Story 3-7).
 name: cuatro-portfolio
 
 services:
@@ -241,6 +242,66 @@ services:
     networks:
       cuatro-tracker_default:
     restart: 'no'
+
+  # The tournament (`apps/tournament`, Story 3-7): merged into the Anchor and imaged by
+  # `.github/workflows/image-tournament.yml`, NOT placed on the box. Placement is a separate decision
+  # under AD-9, and nothing starts these two today: both sit under a profile no deploy activates.
+  #
+  # Two deploy units (AD-7): the Next.js server and the Go demo worker, each its own image and service,
+  # both tagged with TOURNAMENT_TAG, the commit sha to run (AD-3), with `-` rather than `:?` for
+  # FINANCE_TAG's reason: compose interpolates every service, and an unset tag is an invalid reference
+  # Docker refuses.
+  #
+  # Its data stays in Supabase and its demos in Cloudflare R2 until the placement decides otherwise
+  # (DW-280), so neither service reaches `anchor-db` and neither has a migrate service: its SQL
+  # migrations are `supabase db push`, a discrete step, and nothing migrates on boot (AD-23). The
+  # secrets are that deployment's values, set in `.env.production` with a `TOURNAMENT_` prefix.
+  tournament:
+    image: ghcr.io/luigiespinosa/tournament:${TOURNAMENT_TAG-}
+    profiles: [tournament]
+    environment:
+      - NODE_ENV=production
+      - SUPABASE_URL=${TOURNAMENT_SUPABASE_URL-}
+      - SUPABASE_SERVICE_ROLE_KEY=${TOURNAMENT_SUPABASE_SERVICE_ROLE_KEY-}
+      - NEXT_PUBLIC_SUPABASE_URL=${TOURNAMENT_SUPABASE_URL-}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${TOURNAMENT_SUPABASE_ANON_KEY-}
+      - STEAM_API_KEY=${TOURNAMENT_STEAM_API_KEY-}
+      - STEAM_REALM=${TOURNAMENT_STEAM_REALM-}
+      - STEAM_RETURN_URL=${TOURNAMENT_STEAM_RETURN_URL-}
+      - AUTH_NONCE_SECRET=${TOURNAMENT_AUTH_NONCE_SECRET-}
+      - ADMIN_STEAMIDS=${TOURNAMENT_ADMIN_STEAMIDS-}
+    healthcheck:
+      # The Hub's probe, for the same reason: the standalone server binds the container's own address.
+      # `/api/health` is liveness only (`apps/tournament/app/api/health/route.ts`, DW-280).
+      test:
+        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # The Go demo worker (`apps/tournament/worker`): `worker serve`, MatchZy's upload receiver and the
+  # admin presign endpoint on 8080. It writes the tournament's Postgres directly, as its owner.
+  tournament-worker:
+    image: ghcr.io/luigiespinosa/tournament-worker:${TOURNAMENT_TAG-}
+    profiles: [tournament]
+    environment:
+      - DATABASE_URL=${TOURNAMENT_DATABASE_URL-}
+      - R2_ACCOUNT_ID=${TOURNAMENT_R2_ACCOUNT_ID-}
+      - R2_ACCESS_KEY_ID=${TOURNAMENT_R2_ACCESS_KEY_ID-}
+      - R2_SECRET_ACCESS_KEY=${TOURNAMENT_R2_SECRET_ACCESS_KEY-}
+      - R2_BUCKET=${TOURNAMENT_R2_BUCKET-}
+      - R2_S3_ENDPOINT=${TOURNAMENT_R2_S3_ENDPOINT-}
+      - WORKER_MATCHZY_SHARED_SECRET=${TOURNAMENT_WORKER_MATCHZY_SHARED_SECRET-}
+    healthcheck:
+      # Go's server listens on every address, so loopback answers here, unlike the Next servers'.
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8080/healthz']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
 networks:
   cs-tracker_default:

@@ -1,0 +1,103 @@
+name: Image (tournament)
+
+# AD-8: the tournament's two images, one per deploy unit (AD-7), each pushed to GHCR tagged with the
+# commit it was built from (AD-3). The Next.js server is built from the repository root that
+# `apps/tournament/Dockerfile` narrows to the `tournament` workspace with `turbo prune --docker`; the Go
+# demo worker from its own directory, outside Turborepo (AD-2). Both are merged and imaged, not placed:
+# no deploy pulls these tags until AD-9 places the tournament on the box (Story 3-7). They build on every
+# push, `main` included, as `image-finance.yml` does. No third-party action is used: the runner's own
+# `docker` builds, runs, logs in and pushes. `docker/__tests__/tournament-image.test.ts` holds the
+# trigger, the tags and the order of the steps.
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  tournament:
+    runs-on: ubuntu-latest
+
+    # The ceiling turns a hung install into a failure with a cause, as `image.yml` argues for the Hub's.
+    timeout-minutes: 20
+
+    # `packages: write` is for the push alone.
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE: ghcr.io/luigiespinosa/tournament:${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        run: docker build --file apps/tournament/Dockerfile --tag "$IMAGE" .
+
+      # The endpoint the compose healthcheck probes, through the same probe. It asks nothing of Supabase,
+      # which this runner cannot reach, so no Supabase value is set. Every error is retried while the
+      # server starts, as in `image.yml`.
+      - name: Answer /api/health
+        run: |
+          docker run --detach --name tournament --publish 3000:3000 "$IMAGE"
+          curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-all-errors \
+            http://127.0.0.1:3000/api/health || { docker logs tournament; exit 1; }
+          docker exec tournament node -e "fetch('http://'+process.env.HOSTNAME+':3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+      # The token reaches `docker login` on stdin, never on its command line.
+      - name: Log in to GHCR
+        run: printf '%s' "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          TOKEN: ${{ github.token }}
+
+      - name: Push
+        run: docker push "$IMAGE"
+
+  tournament-worker:
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 20
+
+    # `packages: write` is for the push alone.
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE: ghcr.io/luigiespinosa/tournament-worker:${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        run: docker build --file apps/tournament/worker/Dockerfile --tag "$IMAGE" apps/tournament/worker
+
+      # `worker serve` refuses to start without its configuration, so it gets placeholders that guard
+      # nothing and reach no third party: the database pool connects lazily and `/healthz` touches
+      # neither R2 nor Postgres. The probe is the compose healthcheck's own.
+      - name: Answer /healthz
+        run: |
+          docker run --detach --name tournament-worker \
+            --env R2_ACCOUNT_ID=placeholder --env R2_ACCESS_KEY_ID=placeholder \
+            --env R2_SECRET_ACCESS_KEY=placeholder --env R2_BUCKET=placeholder \
+            --env R2_S3_ENDPOINT=https://placeholder.invalid --env WORKER_MATCHZY_SHARED_SECRET=placeholder \
+            --env DATABASE_URL=postgresql://placeholder:placeholder@127.0.0.1:5432/placeholder "$IMAGE"
+          for _ in $(seq 1 30); do
+            docker exec tournament-worker wget -q --spider http://127.0.0.1:8080/healthz && exit 0
+            [ "$(docker inspect --format '{{.State.Running}}' tournament-worker)" = true ] || break
+            sleep 1
+          done
+          docker logs tournament-worker
+          exit 1
+
+      # The token reaches `docker login` on stdin, never on its command line.
+      - name: Log in to GHCR
+        run: printf '%s' "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          TOKEN: ${{ github.token }}
+
+      - name: Push
+        run: docker push "$IMAGE"

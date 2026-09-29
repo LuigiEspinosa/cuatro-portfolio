@@ -67,6 +67,8 @@ const DOCKERFILE = resolve(process.cwd(), 'apps/hub/Dockerfile');
 const FINANCE_DOCKERFILE = resolve(process.cwd(), 'apps/finance/Dockerfile');
 // Story 3-6: the tracker's, likewise.
 const TRACKER_DOCKERFILE = resolve(process.cwd(), 'apps/tracker/Dockerfile');
+// Story 3-7: the tournament server's, likewise. Its Go worker's image has no Node stage.
+const TOURNAMENT_DOCKERFILE = resolve(process.cwd(), 'apps/tournament/Dockerfile');
 /** The tag of every `FROM node:<tag>` stage, so a stage on another major than CI tests on is named. */
 const nodeBases = (text: string): string[] =>
   [...text.matchAll(/^FROM\s+(?:--\S+\s+)*node:(\S+)/gim)].map(([, tag]) => tag);
@@ -121,13 +123,15 @@ describe('every workflow', () => {
   // Story 3-4: the deploy builds its own image by calling `image.yml`, so the push's `packages: write` is
   // granted twice, once to the Image workflow's job and once to the deploy's job that calls it, and the
   // failure report moved into a job of its own. Story 3-5 adds the finance image's push, in its own workflow,
-  // and Story 3-6 the tracker's, in its own.
-  it("widens the token for five jobs only: the Hub image's push, alone and called by the deploy, the deploy's failure report, and the finance and tracker images' pushes", () => {
+  // and Story 3-6 the tracker's, in its own. Story 3-7 adds the tournament's two, one per deploy unit.
+  it("widens the token for seven jobs only: the Hub image's push, alone and called by the deploy, the deploy's failure report, and the finance, tracker, tournament and tournament worker images' pushes", () => {
     const widened = FILES.flatMap((name) => permissionBlocks(read(name), 'job').map((entries) => ({ name, entries })));
     expect(widened).toEqual([
       { name: 'deploy.yml', entries: ['contents: read', 'packages: write'] },
       { name: 'deploy.yml', entries: ['contents: read', 'issues: write'] },
       { name: 'image-finance.yml', entries: ['contents: read', 'packages: write'] },
+      { name: 'image-tournament.yml', entries: ['contents: read', 'packages: write'] },
+      { name: 'image-tournament.yml', entries: ['contents: read', 'packages: write'] },
       { name: 'image-tracker.yml', entries: ['contents: read', 'packages: write'] },
       { name: 'image.yml', entries: ['contents: read', 'packages: write'] },
     ]);
@@ -181,7 +185,7 @@ describe('every workflow', () => {
     expect(unresolved(pnpmSteps(read(name)), ROOT_MANIFEST, WORKSPACES)).toEqual([]);
   });
 
-  it.each([['finance', FINANCE_DOCKERFILE, '3-5'], ['tracker', TRACKER_DOCKERFILE, '3-6']])(`builds and runs the %s image on Node ${STACK_NODE} in every stage (Story %s)`, (id, path) => {
+  it.each([['finance', FINANCE_DOCKERFILE, '3-5'], ['tracker', TRACKER_DOCKERFILE, '3-6'], ['tournament', TOURNAMENT_DOCKERFILE, '3-7']])(`builds and runs the %s image on Node ${STACK_NODE} in every stage (Story %s)`, (id, path) => {
     const tags = nodeBases(readFileSync(path, 'utf8'));
     expect(tags.length, `apps/${id}/Dockerfile has no node stage`).toBeGreaterThan(0);
     expect(tags.filter((tag) => majorOf(tag) !== STACK_NODE)).toEqual([]);
@@ -189,7 +193,7 @@ describe('every workflow', () => {
 
   it('finds the unit gate and the Hub build it reads, so an empty read cannot pass', () => {
     expect(pnpmSteps(read('ci.yml'))).toEqual(
-      expect.arrayContaining(['//#typecheck', '//#test', 'finance#typecheck', 'finance#test', 'tracker#typecheck', 'tracker#test'])
+      expect.arrayContaining(['//#typecheck', '//#test', 'finance#typecheck', 'finance#test', 'tracker#typecheck', 'tracker#test', 'tournament#typecheck', 'tournament#test'])
     );
     expect(pnpmSteps(read('lighthouse.yml'))).toEqual(expect.arrayContaining(['hub#build', 'hub#start']));
   });

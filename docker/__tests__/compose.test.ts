@@ -263,3 +263,36 @@ describe('the tracker services', () => {
     expect(await runProbe(probeOf(tracker))).not.toBe(0);
   });
 });
+
+// Story 3-7: the tournament, merged and imaged, and placed by nothing. Two deploy units (AD-7), the Next.js
+// server and the Go demo worker, each its own image by the sha in TOURNAMENT_TAG under a profile no deploy
+// activates. Neither reaches `anchor-db` nor the shared proxy until the placement decides where its data
+// lives and which hostnames it answers to.
+describe('the tournament services', () => {
+  const service = (name: string): string => parts(compose, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
+  const tournament = service('tournament');
+  const worker = service('tournament-worker');
+
+  it('runs each deploy unit from its own image, by the sha in TOURNAMENT_TAG, under a profile no deploy activates', () => {
+    expect(tournament.split('\n')).toEqual(
+      expect.arrayContaining(['    image: ghcr.io/luigiespinosa/tournament:${TOURNAMENT_TAG-}', '    profiles: [tournament]'])
+    );
+    expect(worker.split('\n')).toEqual(
+      expect.arrayContaining(['    image: ghcr.io/luigiespinosa/tournament-worker:${TOURNAMENT_TAG-}', '    profiles: [tournament]'])
+    );
+  });
+
+  it("probes /api/health with the Hub's probe, and the worker its own /healthz", () => {
+    expect(probeOf(tournament)).toBe(probeOf(compose));
+    expect(worker).toContain("    test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8080/healthz']");
+  });
+
+  it('joins no network the shared proxy reaches, reaches no anchor-db, and migrates nothing', () => {
+    for (const part of [tournament, worker]) {
+      expect(part).not.toContain('cs-tracker_default');
+      expect(part).not.toContain('anchor-db');
+      expect(part).not.toContain('migrate');
+    }
+    expect(parts(compose, 2).some((part) => part.startsWith('  tournament-migrate:'))).toBe(false);
+  });
+});
