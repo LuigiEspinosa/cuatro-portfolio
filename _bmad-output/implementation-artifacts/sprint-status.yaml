@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-29-2026 17:20
+last_updated: 09-29-2026 18:40
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -776,6 +776,17 @@ development_status:
   # Open rulings that gate no criterion: Decisions 1 to 10 (the ids tournament and tournament-worker,
   # DW-260's split), DW-278 (the two private GHCR packages), DW-279 (token adoption in Epic 8 wave 2),
   # DW-282 and DW-283.
+  # 3-7 placement half 2026-09-29 (spec-3-7-placement-tournament-on-the-box.md), committed on dev, not pushed:
+  # 93949e6 puts the server on cs-tracker_default as tournament (worker on default only), passes the two
+  # public Supabase build inputs from repository variables and refuses an empty one (DW-281 closed),
+  # appends cs-tournament to placements, adds the tournament.cuatro.dev block to docker/Caddyfile, writes
+  # ops/tournament-placement.md and records the Operator's rulings (Supabase Cloud kept, DW-280 closed;
+  # the pooler; the hostname; no worker hostname, DW-287; DW-278 settled public). 9099973 is Registry
+  # 1.7.0, cs-tournament Live at https://tournament.cuatro.dev, which reaches main only after the URL
+  # serves (FR-28). Suite 1761 of 1761 on each. The identity export refused on the one admin holding a
+  # password hash, so the merge spec's premise is off by one; the proof is the Operator's Steam sign-in.
+  # Remaining, all the runbook's: merge 93949e6 to main, run its steps 1 to 8 on the box, the Steam
+  # sign-in, then merge 9099973.
   3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: awaiting-operator
   # 3-8 review 2026-09-29: ops/estate.md § The end state records 10 repositories (decided 2026-09-26,
   # SM-7 amended, DW-249), the ten named, observed 14 at 2026-09-29T17:02:30Z, the waypoint table dated,
