@@ -663,17 +663,36 @@ development_status:
   # (then 3.8 writes absorbed_into); rule on Decisions 1 to 15, DW-270 and DW-253; every placement
   # input is DW-269; finance reaches main at the Epic 3 merge.
   3-5-merge-cuatro-finance-into-apps-finance: done
-  # 3-6 review 2026-09-29: cuatro-tracker main (985e3c5, 131 commits) merged into apps/tracker by
-  # filter-repo and --allow-unrelated-histories (merge ff2b795), the workspace tracker under the one
-  # lockfile, its typecheck and suite (with a Redis service) in ci.yml's test job, apps/tracker/Dockerfile
-  # and image-tracker.yml (build, migrate, /api/ready, worker ready, push by sha), compose tracker,
-  # tracker-worker (profile tracker) and tracker-migrate, ops/tracker-backup.sh and
-  # ops/tracker-restore-verify.sh, and the runbook ops/tracker-cutover.md. Committed on dev, not pushed
-  # and not live: tracker.cuatro.dev is served by the box's own build until the Operator runs the cutover.
-  # Operator actions: ops/tracker-cutover.md actions 1 to 4 (package visibility or GHCR login, the Epic 3
-  # merge, the cutover with its backup and verified restore, the archive); rule on Decisions 1 to 14;
-  # DW-274 (the Story 1.7 findings, closed by cutover step 1), DW-275, DW-278; DW-272 closed.
-  3-6-merge-cuatro-tracker-into-apps-tracker: review
+  # 3-6 awaiting-operator 2026-09-29: cuatro-tracker main (985e3c5, 131 commits) merged into
+  # apps/tracker by filter-repo and --allow-unrelated-histories (merge ff2b795), the workspace tracker
+  # under the one lockfile, its typecheck and suite (with a Redis service) in ci.yml's test job,
+  # apps/tracker/Dockerfile and image-tracker.yml (build, migrate, /api/ready, worker ready, push by
+  # sha), compose tracker, tracker-worker (profile tracker) and tracker-migrate, ops/tracker-backup.sh
+  # and ops/tracker-restore-verify.sh, and the runbook ops/tracker-cutover.md. Pushed at 2dfc099: CI
+  # run 36593368290 (seven jobs; unit 69 files, finance 5, tracker 105), Image run 36593368278, Image
+  # (finance) run 36593368281 and Image (tracker) run 36593368524 green, the last pushing
+  # ghcr.io/luigiespinosa/tracker:2dfc099 (digest sha256:76cf0e0b...). Committed on dev, not live:
+  # tracker.cuatro.dev is served by the box's own build until the Operator runs the cutover. Not
+  # placed (AD-9).
+  # Every criterion is met in the repository but the second's live half ("the cutover keeps
+  # tracker.cuatro.dev serving throughout, verified by requesting it across the cutover"), which only
+  # the box can show, so exactly these Operator actions remain:
+  # 1. ops/tracker-cutover.md action 1: make ghcr.io/luigiespinosa/tracker public, as hub is, or log
+  #    the deploy user in to GHCR with a read:packages token.
+  # 2. Action 2: merge Epic 3 dev into main and let the deploy run; the tracker services and the
+  #    backup scripts reach the box only this way.
+  # 3. Action 3: run the runbook's steps 1 to 8 on the box (re-read the inventory and record the
+  #    override and cuatro-redeploy.sh text, closing DW-274; stop the old worker; backup and
+  #    restore-verify both exit 0 with migrations=11-applied-0-pending; scp the dump off the box;
+  #    keep the probe loop running; copy the 14 TRACKER_ secrets; migrate; start tracker then
+  #    tracker-worker; stop the old app; confirm 200 alone; retire cuatro-redeploy.sh) and record the
+  #    results in the runbook, then date amendments to ops/estate.md and ops/routing-inventory.md.
+  # 4. Action 4: archive cuatro-tracker a week after the cutover holds; Story 3.8 then writes
+  #    absorbed_into.
+  # Open rulings that gate no criterion: Decisions 1 to 14 (above all 3, the data stays in the old
+  # project's stores until Epic 4, and 4, the cuatro-app alias), DW-273, DW-275 (rollouts by hand,
+  # the capacity-gate id), DW-276, DW-277, DW-278 (GHCR private-storage billing) and DW-270.
+  3-6-merge-cuatro-tracker-into-apps-tracker: awaiting-operator
   # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this
   # key names is done. The key keeps its wording; the story is the merge and the placement on the box
   # (epics.md Story 3.7's amendment, spec-vercel-removal.md).
