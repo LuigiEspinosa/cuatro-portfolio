@@ -788,6 +788,13 @@ development_status:
   # password hash, so the merge spec's premise is off by one; the proof is the Operator's Steam sign-in.
   # Remaining, all the runbook's: push dev and merge it to main, run its steps 1 to 8 on the box, the
   # Steam sign-in, then revert 6d72963 and merge that release.
+  # 3-7 pushed 2026-09-29: dev pushed whole at 15c245b (8c16399..15c245b), the Registry still 1.6.0 there
+  # because 6d72963 holds 1.7.0 back, so no Registry verification run started. Green on 15c245b: CI
+  # 36645756300, Image 36645756211, Image (tournament) 36645756427 (both Supabase build inputs passed from
+  # the repository variables), Image (finance) 36645756329, Image (tracker) 36645756469. Remaining: merge
+  # dev to main and take TOURNAMENT_TAG from a green Image (tournament) on that main sha; the orchestrator
+  # runs ops/tournament-placement.md steps 1 to 8 on the box; the Operator signs in through Steam on
+  # https://tournament.cuatro.dev as the admin and dates action 4; then Registry 1.7.0 by reverting 6d72963.
   3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: awaiting-operator
   # 3-8 review 2026-09-29: ops/estate.md § The end state records 10 repositories (decided 2026-09-26,
   # SM-7 amended, DW-249), the ten named, observed 14 at 2026-09-29T17:02:30Z, the waypoint table dated,
