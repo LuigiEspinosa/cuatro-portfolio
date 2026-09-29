@@ -797,9 +797,9 @@ development_status:
   # reached and passed, observed 11). Registry verification run 36635143162 on main: 40 of 40, the
   # archived sources resolving. Still awaiting the Operator: archive cuatro-tracker on or after
   # 2026-10-06 (ops/tracker-cutover.md action 4), then DW-285 as one Registry MINOR release with
-  # absorbed_into on the three entries and the source shape ruled (bare Anchor URL, a widened
-  # verification check, or the archived repository), moving ESTATE_COUNT, the waypoint sentence and
-  # both ops/contract-adoption.md tables to 10.
+  # absorbed_into on the three entries and the source shape the Operator ruled on 2026-09-29 (the
+  # Anchor tree URL, with Story 2.23's check widened to accept it), moving ESTATE_COUNT, the
+  # waypoint sentence and both ops/contract-adoption.md tables to 10.
   3-8-record-the-estate-end-state: awaiting-operator
   epic-3-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.

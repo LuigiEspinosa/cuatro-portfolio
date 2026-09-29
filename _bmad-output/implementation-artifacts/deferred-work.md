@@ -8798,4 +8798,14 @@ status: done
 
     **Owner: the Operator for the archives, then whichever story next edits the Registry.** **Trigger:
     the last of the three archives.**
+
+    **Progress 2026-09-29, evening.** `cuatro-finance` and `cs-tournament` were archived at
+    21:43:05Z (public), and `connect-four-react` with them; `cuatro-tracker` waits a week after its
+    cutover of that evening (`ops/tracker-cutover.md` action 4), so the trigger is that archive, on or
+    after 2026-10-06. **Operator ruling 2026-09-29 on the `source` shape:** the second option. Each
+    absorbed entry takes `source: https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/<id>`
+    beside `absorbed_into: cuatro-portfolio`, and Story 2.23's job (`GITHUB_SOURCE` and the `source
+    exists` check in `ops/registry-verification.mjs`, with its suite) is widened to accept and probe a
+    `tree/<branch>/<path>` URL. `apps/finance`, `apps/tracker` and `apps/tournament` are on `main`
+    since PR #84 (`5117673`), so the URLs resolve now.
   status: open
