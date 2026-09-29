@@ -5,11 +5,11 @@ on:
     branches: [main]
     # A push that changes only Markdown ships nothing: `.dockerignore` keeps every `*.md` but
     # `README.md` out of the image, and nothing the build reads is Markdown. Without this such a push
-    # still compiled on the two-core box (KV-1) for no change (DW-93).
+    # would build the image and roll the Hub out for no change (DW-93).
     paths-ignore:
       - '**.md'
-  # A redeploy without a commit, after a box-side change. It deploys `main` only: the first step
-  # refuses any other ref, and the box refuses a commit that is not on `main` (DW-93).
+  # A redeploy without a commit, after a box-side change. It deploys `main` only: the gate job refuses
+  # any other ref, and the box refuses a commit that is not on `main` (DW-93).
   workflow_dispatch:
 
 # The token reads the checkout and nothing else. The repository's own default is `write`, so every
@@ -18,27 +18,25 @@ permissions:
   contents: read
 
 # One deploy at a time. A push that lands while a deploy runs waits for it rather than cancelling it,
-# since a compose `up` cut off halfway is worse than one that finishes; a third push replaces the one
+# since a rollout cut off halfway is worse than one that finishes; a third push replaces the one
 # waiting, and each run deploys its own sha, so the box ends on the newest (DW-93).
 concurrency:
   group: deploy
   cancel-in-progress: false
 
+# One chain (Story 3-4): the gate, then the image, then the deploy, each needing the one before it, so a
+# refused ref or placement builds nothing and no deploy starts before its image is in GHCR. The report
+# needs all three and runs only when one of them failed.
 jobs:
-  deploy:
+  gate:
     runs-on: ubuntu-latest
-    # `issues: write` is for the last step alone, which reports a failed run (DW-20).
-    permissions:
-      contents: read
-      issues: write
     steps:
       # `workflow_dispatch` runs on whatever ref it is given. This fails the run for any ref but
-      # `main` before anything reaches the box, and the issue step below then records it.
+      # `main` before anything is built or reaches the box, and the report job then records it.
       - name: Refuse any ref but main
         run: test "$GITHUB_REF" = refs/heads/main
 
       # The checkout and the node setup exist only for the Capacity Gate below.
-      # The deploy itself runs over SSH and needs neither.
       - uses: actions/checkout@v7
 
       # `package-manager-cache: false` because this job installs no dependencies
@@ -47,7 +45,7 @@ jobs:
       # does, so the automatic path would look for a pnpm that is not here.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           package-manager-cache: false
 
       # The Capacity Gate (AD-9) runs before the deploy rather than after,
@@ -64,19 +62,35 @@ jobs:
       - name: Capacity Gate
         run: node ops/capacity-gate.mjs cuatro-portfolio
 
+  # AD-8: the box pulls this commit's image and never builds it, so the image is built and pushed here
+  # first, by the Image workflow's own job, and the deploy job needs it. `packages: write` is for that
+  # push alone.
+  image:
+    needs: gate
+    uses: ./.github/workflows/image.yml
+    permissions:
+      contents: read
+      packages: write
+
+  deploy:
+    needs: image
+    runs-on: ubuntu-latest
+    steps:
       # The host is whatever SERVER_HOST resolves to. This workflow cannot verify
       # which provider that is, so it does not name one.
       #
-      # The deploy itself is `ops/deploy-remote.sh` (DW-94). This step sends the box one command
+      # The deploy itself is `ops/deploy-remote.sh` (DW-94), which pulls the image the job before
+      # this one pushed and rolls the Hub onto it (Story 3-4). This step sends the box one command
       # string, and the box runs it one of two ways. While the key is unrestricted the login shell
       # runs it: it fetches `main`, reads the script out of the commit being deployed and runs it with
       # that sha, which is how the first deploy after the script lands brings it onto the box. Once
       # the key's `authorized_keys` line forces the script (`ops/contract-serving.md` Pending Operator
       # action 7), sshd runs the checkout's copy instead and hands it this string, of which it reads
       # the last word alone. So the sha stays the last word. `${{ github.sha }}` is the pushed commit,
-      # or `main`'s head on a dispatch, which is the commit the gate above checked; the script resets
-      # to it, not to whatever `origin/main` is by then (DW-93). `ops/__tests__/deploy-remote.test.ts`
-      # runs this exact string both ways against a scratch repository.
+      # or `main`'s head on a dispatch, which is the commit the gate job checked and the image job
+      # built; the script resets to it, not to whatever `origin/main` is by then (DW-93).
+      # `ops/__tests__/deploy-remote.test.ts` runs this exact string both ways against a scratch
+      # repository.
       - name: Deploy over SSH to SERVER_HOST
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
@@ -89,14 +103,22 @@ jobs:
             s="$(git show ${{ github.sha }}:ops/deploy-remote.sh)" &&
             exec /bin/bash -c "$s" deploy-remote ${{ github.sha }}
 
-      # DW-20 and Epic 1 retrospective action 7: a failed deploy used to reach nobody. Any failed step
-      # above, the ref refusal and the gate included, opens an issue, which reaches the Operator
-      # through the repository's watch notifications. A deploy that never runs opens nothing.
+  # DW-20 and Epic 1 retrospective action 7: a failed deploy used to reach nobody. Any failed job
+  # above, the ref refusal, the gate and the image included, opens an issue, which reaches the
+  # Operator through the repository's watch notifications. A deploy that never runs opens nothing.
+  report:
+    needs: [gate, image, deploy]
+    if: failure()
+    runs-on: ubuntu-latest
+    # `issues: write` is for this job alone.
+    permissions:
+      contents: read
+      issues: write
+    steps:
       - name: Open an issue for the failed deploy
-        if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create --repo "$GITHUB_REPOSITORY" \
             --title "Deploy failed at ${GITHUB_SHA:0:7}" \
-            --body "Deploy run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID failed: $GITHUB_EVENT_NAME on $GITHUB_REF at $GITHUB_SHA, started by $GITHUB_ACTOR. The run's log names the step. Close this issue with the cause once it is fixed."
+            --body "Deploy run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID failed: $GITHUB_EVENT_NAME on $GITHUB_REF at $GITHUB_SHA, started by $GITHUB_ACTOR. The run's log names the job. Close this issue with the cause once it is fixed."

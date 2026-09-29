@@ -56,9 +56,9 @@ const unpinned = (text: string): string[] =>
 // criterion names. Two more copied Node 22 after the story was written and keep it until their owners move
 // them (DW-251). When one moves, delete its entry here and close its half of DW-251. DW-251's third place,
 // the image, moved in Story 3-3 and is held below: `apps/hub/Dockerfile` builds and runs on the same major.
+// `deploy.yml` moved in Story 3-4, which rewrote the deploy.
 const STACK_NODE = '24';
 const STILL_ON_NODE_22: Record<string, string> = {
-  'deploy.yml': 'Story 3.4, which rewrites the deploy',
   'registry-verification.yml': 'no story yet',
 };
 
@@ -114,9 +114,13 @@ describe('every workflow', () => {
     expect(permissionBlocks(read(name), 'top')).toEqual([['contents: read']]);
   });
 
-  it('widens the token for two jobs only: the deploy for its failure report, the Hub image for its push', () => {
+  // Story 3-4: the deploy builds its own image by calling `image.yml`, so the push's `packages: write` is
+  // granted twice, once to the Image workflow's job and once to the deploy's job that calls it, and the
+  // failure report moved into a job of its own.
+  it("widens the token for three jobs only: the Hub image's push, alone and called by the deploy, and the deploy's failure report", () => {
     const widened = FILES.flatMap((name) => permissionBlocks(read(name), 'job').map((entries) => ({ name, entries })));
     expect(widened).toEqual([
+      { name: 'deploy.yml', entries: ['contents: read', 'packages: write'] },
       { name: 'deploy.yml', entries: ['contents: read', 'issues: write'] },
       { name: 'image.yml', entries: ['contents: read', 'packages: write'] },
     ]);

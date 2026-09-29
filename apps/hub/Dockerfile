@@ -1,8 +1,9 @@
 # The Hub's image (AD-8). The build context is the repository root, and the first stage narrows it
 # to the `hub` workspace with `turbo prune --docker`: an app-directory context cannot see the
 # lockfile or the workspace, and the whole root would carry the monorepo into the build.
-# `.github/workflows/image.yml` builds this on every push and pushes it to GHCR tagged with the
-# commit sha (Story 3-3); until Story 3-4 the box builds it too, through `docker-compose.yml`.
+# `.github/workflows/image.yml` builds this and pushes it to GHCR tagged with the commit sha, on a
+# push to any branch but `main` and before every deploy (Stories 3-3 and 3-4), and the box pulls that
+# tag and never builds it.
 FROM node:24-slim AS prune
 WORKDIR /app
 COPY . .

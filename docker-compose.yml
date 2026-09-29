@@ -21,20 +21,14 @@ name: cuatro-portfolio
 
 services:
   anchor-app:
-    build:
-      # The root is the context: the Dockerfile's first stage prunes it to the Hub's workspace (AD-8).
-      # CI builds this Dockerfile on every push (Story 3-3), and the box builds it here until Story 3-4
-      # deploys by pulling CI's image instead.
-      context: .
-      dockerfile: apps/hub/Dockerfile
-      args:
-        # Both are baked into the client bundle at build time, and the tracking
-        # script renders only if both are present. The `:?` guards are deliberate:
-        # Compose substitutes an empty string for an unset variable and only warns,
-        # which is how this project shipped a site that served correctly and
-        # measured nothing. Fail the build instead. See .env.example.
-        - NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID:?set it in .env.production; the tracking script needs it at build time}
-        - NEXT_PUBLIC_UMAMI_URL=${NEXT_PUBLIC_UMAMI_URL:?set it in .env.production; the tracking script needs it at build time}
+    # The box never builds this (AD-8). CI builds `apps/hub/Dockerfile` from the repository root and
+    # pushes it tagged with the commit sha (`.github/workflows/image.yml`, Story 3-3), and
+    # `ops/deploy-remote.sh` pulls the sha it deploys and rolls this service onto it with
+    # `docker-rollout` (Story 3-4). HUB_TAG is that sha, which the script sets. The `:?` guard makes
+    # compose refuse to start without it rather than run a floating tag (AD-3), so a compose command
+    # run by hand needs it too: `ps` and `logs` take any value, and whatever starts a container is the
+    # deploy's to run. The two Umami build inputs are the image's, set in the workflow.
+    image: ghcr.io/luigiespinosa/hub:${HUB_TAG:?ops/deploy-remote.sh sets it to the sha it deploys}
     environment:
       - NODE_ENV=production
     networks:
@@ -52,7 +46,8 @@ services:
       # published ports. `docker-rollout` (Story 3-4) starts a second container
       # beside the first and waits for this check before it removes the old one,
       # and a second container could take neither a fixed name nor a host port.
-      # `docker/__tests__/compose.test.ts` holds all three (Story 3-3).
+      # `docker/__tests__/compose.test.ts` holds all three (Story 3-3), and runs the probe below
+      # against a server that answers, one that fails and a port nothing serves (Story 3-4, DW-262).
       #
       # The probe reads `process.env.HOSTNAME` inside node, never 127.0.0.1.
       # Next's standalone `server.js` binds to `process.env.HOSTNAME`, which Docker
@@ -104,8 +99,8 @@ services:
       # so a socket check can report healthy while network connections are still
       # refused.
       #
-      # The budget is sized for the worst case this box actually presents: the
-      # deploy runs a Next build on the same two cores while Postgres runs initdb
+      # The budget was sized for the worst case this box presented until Story 3-4:
+      # a deploy ran a Next build on the same two cores while Postgres ran initdb
       # on a fresh volume. 60s of grace plus 30 retries at 5s is roughly three and
       # a half minutes before the dependency is declared failed.
       test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U umami -d umami']

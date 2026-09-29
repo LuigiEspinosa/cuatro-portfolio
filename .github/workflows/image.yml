@@ -1,20 +1,23 @@
 name: Image
 
 # AD-8: the Hub's image is built here, in GitHub Actions, and pushed to GHCR tagged with the commit it
-# was built from, so the box never has to compile it once Story 3-4 deploys by pulling that tag. It is
-# its own workflow rather than a job in `ci.yml`, because two suites pin that file's seven-job set, and
-# because this job writes to a registry, which no job there may do (DW-87).
+# was built from, and the box pulls that tag and never compiles (Story 3-4). It is its own workflow
+# rather than a job in `ci.yml`, because two suites pin that file's seven-job set, and because this job
+# writes to a registry, which no job there may do (DW-87).
 #
-# Every push builds, `dev` included, so the image for a commit exists before that commit reaches
-# `main`. The tag is the full commit sha and nothing else, since no estate application runs a floating
-# tag (AD-3). The build context is the repository root, which `apps/hub/Dockerfile`'s first stage
-# narrows to the `hub` workspace with `turbo prune --docker` (AD-7, AD-8). No third-party action is
-# used: the runner's own `docker` builds, logs in and pushes. `docker/__tests__/image-workflow.test.ts`
-# holds the trigger, the tag and the two build inputs.
+# A push to any branch but `main` builds here, `dev` included. A push to `main` builds through
+# `.github/workflows/deploy.yml`, whose `image` job calls this workflow and whose deploy job needs it,
+# so a deploy never starts before its tag is in GHCR and no push to `main` builds its image twice. The
+# tag is the full commit sha and nothing else, since no estate application runs a floating tag (AD-3).
+# The build context is the repository root, which `apps/hub/Dockerfile`'s first stage narrows to the
+# `hub` workspace with `turbo prune --docker` (AD-7, AD-8). No third-party action is used: the runner's
+# own `docker` builds, logs in and pushes. `docker/__tests__/image-workflow.test.ts` holds the trigger,
+# the tag and the two build inputs.
 
 on:
   push:
-    branches: ['**']
+    branches: ['**', '!main']
+  workflow_call:
 
 permissions:
   contents: read

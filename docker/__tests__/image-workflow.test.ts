@@ -8,8 +8,10 @@ import { fileURLToPath } from 'node:url';
 // it to GHCR (AD-8, Story 3-3), and Story 3-4 deploys by pulling it. Three of its properties would
 // regress silently, since the run stays green through each, so they are held here:
 //
-// - Its trigger, a push to any branch, `dev` included, so the image for a commit exists before that
-//   commit reaches `main`.
+// - Its trigger: a push to any branch but `main`, `dev` included, and a call. A push to `main` builds
+//   through `.github/workflows/deploy.yml`, whose `image` job calls this workflow before the deploy job
+//   that needs it (Story 3-4), so no push to `main` builds its image twice, and it is built before the
+//   box pulls it.
 // - Its tag, `ghcr.io/luigiespinosa/hub` and the commit sha, the one tag it ever pushes. No estate
 //   application runs a floating tag (AD-3).
 // - Its two Umami build inputs. Next inlines `NEXT_PUBLIC_*` at build time, and an image built without
@@ -24,6 +26,7 @@ const REPO_ROOT = resolve(HERE, '..', '..');
 const WORKFLOW = join(REPO_ROOT, '.github', 'workflows', 'image.yml');
 
 const IMAGE = 'ghcr.io/luigiespinosa/hub:${{ github.sha }}';
+const TRIGGER = "on:\n  push:\n    branches: ['**', '!main']\n  workflow_call:";
 const UMAMI_INPUTS = ['NEXT_PUBLIC_UMAMI_WEBSITE_ID', 'NEXT_PUBLIC_UMAMI_URL'] as const;
 /** What each input must look like: a website id is a UUID, and the tracker is served over HTTPS. */
 const UMAMI_SHAPES: Record<(typeof UMAMI_INPUTS)[number], RegExp> = {
@@ -80,8 +83,8 @@ const umamiFaults = (text: string): string[] => {
 const workflow = instructionsOf(readFileSync(WORKFLOW, 'utf8'));
 
 describe('the image workflow', () => {
-  it('runs on a push to every branch and on nothing else', () => {
-    expect(triggerOf(workflow)).toBe("on:\n  push:\n    branches: ['**']");
+  it('runs on a push to every branch but main, and when the deploy calls it', () => {
+    expect(triggerOf(workflow)).toBe(TRIGGER);
   });
 
   it('pushes the Hub image by its commit sha and by nothing else (AD-3, AD-8)', () => {
@@ -92,10 +95,15 @@ describe('the image workflow', () => {
     expect(umamiFaults(workflow)).toEqual([]);
   });
 
-  it('names a narrowed trigger, a floating tag and a second push', () => {
-    expect(triggerOf(workflow.replace("branches: ['**']", 'branches: [main]'))).not.toBe(
-      "on:\n  push:\n    branches: ['**']"
-    );
+  it('names a changed trigger, a floating tag and a second push', () => {
+    for (const planted of [
+      workflow.replace("branches: ['**', '!main']", 'branches: [main]'),
+      workflow.replace("branches: ['**', '!main']", "branches: ['**']"),
+      workflow.replace('  workflow_call:\n', ''),
+    ]) {
+      expect(planted).not.toBe(workflow);
+      expect(triggerOf(planted)).not.toBe(TRIGGER);
+    }
     expect(tagFaults(workflow.replace(IMAGE, 'ghcr.io/luigiespinosa/hub:latest'))).toEqual(
       expect.arrayContaining([expect.stringContaining('IMAGE is ghcr.io/luigiespinosa/hub:latest')])
     );
