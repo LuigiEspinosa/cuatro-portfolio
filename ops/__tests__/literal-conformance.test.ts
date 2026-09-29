@@ -98,11 +98,11 @@ describe('the configuration', () => {
     for (const entry of PERMITTED) expect(entry.reason.trim(), `${entry.path} carries no reason`).not.toBe('');
   });
 
-  it('leaves exactly apps/finance/ unread, as another application, with its reason (Story 3-5)', () => {
+  it('leaves exactly apps/finance/ and apps/tracker/ unread, as other applications, with their reasons (Stories 3-5 and 3-6)', () => {
     expect(
       OTHER_APPLICATIONS.map((entry) => entry.path),
       'the gate reads every stylesheet but these; a new entry is a reviewed edit'
-    ).toEqual(['apps/finance/']);
+    ).toEqual(['apps/finance/', 'apps/tracker/']);
     for (const entry of OTHER_APPLICATIONS) expect(entry.reason.trim(), `${entry.path} carries no reason`).not.toBe('');
   });
 
@@ -580,12 +580,12 @@ describe('the listing', () => {
     expect(message).toContain('The stylesheets could not be listed');
   });
 
-  it('never reads another application, and still refuses the same literal in the Hub (Story 3-5)', () => {
+  it('never reads another application, and still refuses the same literal in the Hub (Stories 3-5 and 3-6)', () => {
     const literal = rule('color: #fff;');
-    withRepo({ [CONTRACT]: REAL_TOKENS, 'apps/finance/app/tokens.css': literal, 'apps/hub/app/Probe.scss': literal }, (root) => {
+    withRepo({ [CONTRACT]: REAL_TOKENS, 'apps/finance/app/tokens.css': literal, 'apps/tracker/app/tokens.css': literal, 'apps/hub/app/Probe.scss': literal }, (root) => {
       const inspection = inspect(root);
       expect(inspection.findings.map((finding) => finding.path)).toEqual(['apps/hub/app/Probe.scss']);
-      expect(inspection.outside, 'the finance stylesheet was read').toBe(1);
+      expect(inspection.outside, 'a finance or tracker stylesheet was read').toBe(1);
     });
   });
 

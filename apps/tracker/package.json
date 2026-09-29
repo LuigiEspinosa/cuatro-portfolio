@@ -1,19 +1,17 @@
 {
-  "name": "cuatro-tracker",
+  "name": "tracker",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "prisma generate && next dev --turbopack",
     "infra": "docker compose -f docker-compose.dev.yml up -d",
     "infra:down": "docker compose -f docker-compose.dev.yml down",
     "stack": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest --run --passWithNoTests",
-    "test:e2e": "playwright test",
-    "postinstall": "prisma generate"
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "prisma generate && vitest --run --passWithNoTests",
+    "test:e2e": "playwright test"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -63,20 +61,5 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.4"
-  },
-  "packageManager": "pnpm@10.4.1",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "esbuild",
-      "msgpackr-extract",
-      "prisma",
-      "sharp",
-      "unrs-resolver"
-    ],
-    "overrides": {
-      "ioredis": "5.10.1"
-    }
   }
 }

@@ -63,6 +63,12 @@ export const OTHER_APPLICATIONS = [
       'Merged by Story 3-5 with its own shadcn palette in app/tokens.css. Its token adoption is ' +
       'deferred whole (DW-267), and the change that adopts the contract deletes this entry.',
   },
+  {
+    path: 'apps/tracker/',
+    reason:
+      'Merged by Story 3-6 with its own palette in app/tokens.css, 48 colour literals. Its token adoption is ' +
+      'deferred whole to its Epic 8 restyle (DW-273), and the change that adopts the contract deletes this entry.',
+  },
 ];
 
 /**

@@ -119,5 +119,7 @@ describe('the Turborepo pipelines', () => {
       expect(run.status, 'turbo pruned the root package, so the reason the Hub moves no longer holds').not.toBe(0);
       expect(`${run.stdout}${run.stderr}`).toContain('Invalid scope');
     });
-  });
+    // One prune per workspace, each copying that workspace's whole tree, so the cost grows with every
+    // application merged into `apps/`; four took past Vitest's 5 s default on this host (Story 3-6).
+  }, 60_000);
 });

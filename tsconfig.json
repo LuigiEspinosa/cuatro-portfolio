@@ -41,6 +41,7 @@
   ],
   "exclude": [
     "node_modules",
-    "apps/finance"
+    "apps/finance",
+    "apps/tracker"
   ]
 }
