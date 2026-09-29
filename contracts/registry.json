@@ -1,6 +1,6 @@
 {
   "$schema": "./registry.schema.json",
-  "contract_version": "1.7.0",
+  "contract_version": "1.6.0",
   "applications": [
     {
       "id": "cuatro-portfolio",
@@ -54,12 +54,11 @@
       "id": "cs-tournament",
       "name": "CS Tournament",
       "description": "Runs a Counter-Strike tournament from sign-up through the bracket to a final result.",
-      "status": "Live",
-      "tech": ["Next.js", "React", "TypeScript", "Supabase", "PostgreSQL", "Go"],
+      "status": "Complete",
+      "tech": ["Next.js", "React", "TypeScript", "Supabase", "PostgreSQL"],
       "source": "https://github.com/LuigiEspinosa/cuatro-portfolio/tree/main/apps/tournament",
-      "demo": "none",
+      "demo": "not-deployed",
       "identity": "none",
-      "live": "https://tournament.cuatro.dev",
       "absorbed_into": "cuatro-portfolio"
     },
     {

@@ -104,7 +104,7 @@ describe('the Suite Directory', () => {
 
   it('heads the section with the string and the real count, never a literal', () => {
     // `EXPERIENCE.md` § UI strings: a real count, never an aspirational one. `Complete` renders
-    // (FR-35) and may run nowhere, `cs-tournament` from Registry 1.4.0 to 1.7.0, so only `Live` is counted
+    // (FR-35) and may run nowhere, `cs-tournament` since Registry 1.4.0, so only `Live` is counted
     // as running, the one status that means the entry can be opened right now.
     render(<SuiteDirectory />);
     expect(screen.getByRole('heading', { level: 2, name: 'The Suite' })).toBeInTheDocument();
@@ -256,8 +256,8 @@ describe('the Suite Directory', () => {
   });
 
   it('gives every other row two destinations, and never makes the row itself one', () => {
-    // Every other row that has somewhere to go: an entry with no `live`, `cs-tournament` from
-    // Registry 1.4.0 to 1.7.0, keeps its Source link alone (`EXPERIENCE.md` § Registry Entry).
+    // Every other row that has somewhere to go: an entry with no `live`, `cs-tournament` since
+    // Registry 1.4.0, keeps its Source link alone (`EXPERIENCE.md` § Registry Entry).
     const { container } = render(<SuiteDirectory />);
     for (const [index, row] of rows(container).entries()) {
       const application = drawn()[index];
@@ -416,7 +416,7 @@ describe('the visitor events the rows carry (Story 2-24)', () => {
 describe('a Complete entry, drawn over a fixture', () => {
   /**
    * FR-35 renders `Complete` beside `Live`, and AD-5 constrains `live` neither way there, so this
-   * is the shape a row has to survive. The committed Registry held one from 1.4.0 to 1.7.0, `cs-tournament`,
+   * is the shape a row has to survive. The committed Registry holds one from 1.4.0, `cs-tournament`,
    * and the fixture keeps these cases true whatever it holds. The claim under test is
    * the drawing one: **no live link at all, and not a disabled one. The slot does not render, and
    * it is never a placeholder or a dash.**
