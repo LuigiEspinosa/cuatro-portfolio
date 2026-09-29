@@ -247,7 +247,9 @@ Hub's build, `ops/__tests__/accent-fill.test.ts` reads finance's CSS and passes,
 - `corepack pnpm typecheck`: exit 0.
 - `corepack pnpm test --run`: "Test Files  67 passed (67)", "Tests  1703 passed (1703)", exit 0.
 - `corepack pnpm --filter finance typecheck`: "Generated Prisma Client (7.6.0)", then `tsc` clean,
-  exit 0. `corepack pnpm --filter finance test`: "Test Files  5 passed (5)", "Tests  70 passed (70)".
+  exit 0, on a `node_modules` whose hoisted `zod` is 4.3.6, as a fresh frozen install gives. With
+  3.25.76 hoisted, as this host's was after the story, it fails TS2769 in four forms (DW-272, found
+  by the independent verifier; the host was relinked). `corepack pnpm --filter finance test`: "Test Files  5 passed (5)", "Tests  70 passed (70)".
 - `corepack pnpm --filter hub build`: exit 0, twice from a clean `.next`, with identical
   `.next/static` hashes both times. Against the Hub built on the base lockfile with finance set
   aside: 28 of 31 chunks byte-identical after masking the pnpm directory name of `next`, chunk

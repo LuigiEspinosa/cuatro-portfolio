@@ -8497,3 +8497,24 @@ status: done
     **Owner: finance's placement story (the seed path), and the story that lands a lint gate.**
     **Trigger: either.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
+  id: DW-272
+  summary: >-
+    Finance's typecheck depends on pnpm's hoisting order: `@hookform/resolvers` imports `zod` without
+    declaring it, so it resolves whichever `zod` pnpm hoists into `node_modules/.pnpm/node_modules`.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-5's independent verifier. The lockfile carries `zod@3.25.76` (the
+    Hub's tooling) and `zod@4.3.6` (finance). A fresh frozen install hoists 4.3.6 and
+    `corepack pnpm --filter finance typecheck` exits 0; this host's `node_modules` had 3.25.76 hoisted,
+    and the same command failed with exit 2, TS2769 in `AddTransactionModal`, `EditAccountModal`,
+    `AddAccountModal` and `LoginForm` (`_zod.version.minor` 3 not assignable to 0). Relinking the
+    hoisted `zod` to 4.3.6 made it exit 0. CI installs fresh and is unaffected today, but a lockfile
+    change can flip which version is hoisted, in CI too. The durable fix is a `packageExtensions`
+    entry in `pnpm-workspace.yaml` giving `@hookform/resolvers@5` a `zod` peer, so it resolves
+    finance's own `zod`; not made here, because it rewrites the lockfile the Hub's pruned image
+    installs from, and that change wants its own Image run.
+
+    **Owner: Story 3.6, whose merge changes the lockfile next.** **Trigger: that merge, or a finance
+    typecheck failing on TS2769 against `zod`.**
+  status: open
