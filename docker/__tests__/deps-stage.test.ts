@@ -69,7 +69,7 @@ describe('the Dockerfile prune and deps stages', () => {
     expect(depsFaults(deps)).toEqual([]);
   });
 
-  it('names a copy from the build context, a copy of anything else, and the copy moved below the install', () => {
+  it('names a copy from the build context, of anything else, to anywhere else or below the install, and refuses a prune on another turbo or workspace', () => {
     // The checks above can only fail when someone edits the Dockerfile, which is exactly when nobody runs
     // them deliberately, so each shape of the regression they exist for is planted here on every run.
     const at = deps.indexOf(INSTALL);
@@ -80,8 +80,14 @@ describe('the Dockerfile prune and deps stages', () => {
       expect.stringContaining('COPY --from=prune /app/ ./: deps may copy'),
       `deps does not \`${COPY}\``,
     ]);
+    expect(depsFaults(deps.map((line) => (line === COPY ? 'COPY --from=prune /app/out/json/ ./json/' : line)))).toEqual([
+      expect.stringContaining('COPY --from=prune /app/out/json/ ./json/: deps may copy'),
+      `deps does not \`${COPY}\``,
+    ]);
     expect(depsFaults([...deps.filter((line) => line !== COPY), COPY])).toEqual([
       expect.stringContaining('comes after the install'),
     ]);
+    expect(stage(dockerfile.replace(PRUNE, PRUNE.replace(ROOT_TURBO, '2.9.0')), 'prune')).not.toContain(PRUNE);
+    expect(stage(dockerfile.replace(PRUNE, PRUNE.replace('prune hub', 'prune web')), 'prune')).not.toContain(PRUNE);
   });
 });
