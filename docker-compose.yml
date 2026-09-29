@@ -17,6 +17,11 @@
 # Both were observed happening on 2026-08-17: `app` resolved to this stack's
 # container instead of cs-tracker's, and Umami authenticated against
 # cs-tracker's Postgres and failed with 28P01. Do not rename these back.
+#
+# The merged applications below keep their ids (AD-3) because none takes a name another stack answers
+# to by accident: `finance` joins no shared network, and `tracker` joins it as `tracker`, which
+# `ops/routing-inventory.md` § The shared network lists for no other container, and as `cuatro-app`,
+# which it shares on purpose with the container it replaces (`ops/tracker-cutover.md`, Story 3-6).
 name: cuatro-portfolio
 
 services:
@@ -162,8 +167,87 @@ services:
         condition: service_healthy
     restart: 'no'
 
+  # The tracker (`apps/tracker`, Story 3-6): merged into the Anchor and imaged by
+  # `.github/workflows/image-tracker.yml`. It is live at tracker.cuatro.dev from the box's own
+  # `cuatro-tracker` project, and nothing here starts it: the Operator's cutover in
+  # `ops/tracker-cutover.md` does, once, and no deploy activates the `tracker` profile. `tracker-migrate`
+  # sits under `migrate`, from which `ops/deploy-remote.sh` runs only `anchor-app-migrate`.
+  #
+  # TRACKER_TAG is the commit sha to run (AD-3), with `-` rather than `:?` for FINANCE_TAG's reason:
+  # compose interpolates every service, and an unset tag is an invalid reference Docker refuses.
+  #
+  # Its data stays where it serves until Stories 4.4 and 4.8: Postgres, Redis and qBittorrent keep
+  # running in the `cuatro-tracker` project, reached over its network by container name, since
+  # `postgres` and `redis` are service names another project could also answer to. The secrets are
+  # that project's `.env` values, copied into `.env.production` with a `TRACKER_` prefix.
+  #
+  # On `cs-tracker_default` the service answers to `cuatro-app`, the upstream the shared Caddyfile
+  # proxies tracker.cuatro.dev to, so the cutover edits no Caddyfile: while the old and the new
+  # container both run, both serve the same data.
+  tracker:
+    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
+    profiles: [tracker]
+    environment: &tracker-environment
+      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker
+      - DB_PASS=${TRACKER_DB_PASS-}
+      - REDIS_URL=redis://cuatro-tracker-redis-1:6379
+      - NEXTAUTH_SECRET=${TRACKER_NEXTAUTH_SECRET-}
+      - NEXTAUTH_URL=${TRACKER_NEXTAUTH_URL-}
+      - ADMIN_PASS=${TRACKER_ADMIN_PASS-}
+      - TMDB_API_KEY=${TRACKER_TMDB_API_KEY-}
+      - TMDB_WATCH_PROVIDER_COUNTRY=${TRACKER_TMDB_WATCH_PROVIDER_COUNTRY:-CO}
+      - IGDB_CLIENT_ID=${TRACKER_IGDB_CLIENT_ID-}
+      - IGDB_CLIENT_SECRET=${TRACKER_IGDB_CLIENT_SECRET-}
+      - STEAM_API_KEY=${TRACKER_STEAM_API_KEY-}
+      - STEAM_USER_ID=${TRACKER_STEAM_USER_ID-}
+      - QBITTORRENT_HOST=http://cuatro-tracker-qbittorrent-1:8080
+      - QBITTORRENT_USER=${TRACKER_QBITTORRENT_USER-}
+      - QBITTORRENT_PASS=${TRACKER_QBITTORRENT_PASS-}
+      - DOWNLOAD_PATH=${TRACKER_DOWNLOAD_PATH-}
+      - LOG_LEVEL=${TRACKER_LOG_LEVEL:-info}
+    networks:
+      cuatro-tracker_default:
+      cs-tracker_default:
+        aliases:
+          - cuatro-app
+    healthcheck:
+      # The Hub's probe on `/api/ready`, which answers 200 only when Postgres and Redis both answer, so a
+      # rollout never drains a serving container for one that cannot reach its data.
+      test:
+        ['CMD-SHELL', 'node -e "fetch(''http://''+process.env.HOSTNAME+'':3000/api/ready'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # The BullMQ worker, from the same image. It serves no traffic and joins no ingress network.
+  tracker-worker:
+    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
+    profiles: [tracker]
+    command: ['node', 'node_modules/tsx/dist/cli.mjs', 'worker.ts']
+    environment: *tracker-environment
+    networks:
+      cuatro-tracker_default:
+    restart: unless-stopped
+
+  # AD-23: migrations run here, before a rollout, never on the server's boot.
+  tracker-migrate:
+    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}
+    profiles: [migrate]
+    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']
+    environment:
+      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker
+    networks:
+      cuatro-tracker_default:
+    restart: 'no'
+
 networks:
   cs-tracker_default:
+    external: true
+  # The box's `cuatro-tracker` project owns it. Compose checks an external network only for a service
+  # that joins it, so the Hub's commands never need it.
+  cuatro-tracker_default:
     external: true
 
 volumes:

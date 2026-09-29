@@ -1,0 +1,107 @@
+name: Image (tracker)
+
+# AD-8: the tracker's image, built here from the repository root that `apps/tracker/Dockerfile` narrows
+# to the `tracker` workspace with `turbo prune --docker`, and pushed to GHCR tagged with the commit it
+# was built from (AD-3). No deploy pulls it: the Operator's cutover in `ops/tracker-cutover.md` runs a
+# tag this workflow pushed (Story 3-6). It builds on every push, `main` included, as `image-finance.yml`
+# does. No third-party action is used: the runner's own `docker` builds, runs, logs in and pushes.
+# `docker/__tests__/tracker-image.test.ts` holds the trigger, the tag and the order of the steps.
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  tracker:
+    runs-on: ubuntu-latest
+
+    # The ceiling turns a hung install into a failure with a cause, as `image.yml` argues for the Hub's.
+    timeout-minutes: 25
+
+    # `packages: write` is for the push alone.
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE: ghcr.io/luigiespinosa/tracker:${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        run: docker build --file apps/tracker/Dockerfile --tag "$IMAGE" .
+
+      # A throwaway Postgres and Redis on this runner, torn down with it, under the container names the
+      # box's `cuatro-tracker` project gives its own, so the image reaches them as `docker-compose.yml`
+      # has it do. Every value in the environment file is a placeholder that guards nothing and reaches
+      # no third party: nothing here fires a scheduled job.
+      - name: Start a throwaway Postgres and Redis
+        run: |
+          docker network create cuatro-tracker_default
+          docker run --detach --name cuatro-tracker-postgres-1 --network cuatro-tracker_default \
+            --env POSTGRES_DB=tracker --env POSTGRES_USER=tracker --env POSTGRES_PASSWORD=throwaway postgres:16-alpine
+          docker run --detach --name cuatro-tracker-redis-1 --network cuatro-tracker_default redis:7-alpine
+          for _ in $(seq 1 30); do
+            docker exec cuatro-tracker-postgres-1 pg_isready -h 127.0.0.1 -U tracker -d tracker && break
+            sleep 1
+          done
+          cat > "$RUNNER_TEMP/tracker.env" <<'EOF'
+          DATABASE_URL=postgresql://tracker:throwaway@cuatro-tracker-postgres-1:5432/tracker
+          DB_PASS=throwaway
+          REDIS_URL=redis://cuatro-tracker-redis-1:6379
+          NEXTAUTH_SECRET=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          NEXTAUTH_URL=http://127.0.0.1:3000
+          ADMIN_PASS=throwaway
+          TMDB_API_KEY=placeholder
+          IGDB_CLIENT_ID=placeholder
+          IGDB_CLIENT_SECRET=placeholder
+          STEAM_API_KEY=placeholder
+          STEAM_USER_ID=placeholder
+          QBITTORRENT_HOST=http://cuatro-tracker-qbittorrent-1:8080
+          QBITTORRENT_USER=placeholder
+          QBITTORRENT_PASS=placeholder
+          DOWNLOAD_PATH=/downloads
+          EOF
+
+      # AD-23 runs for real before anything is pushed: the image's own Prisma CLI applies every migration,
+      # as `tracker-migrate` does before a rollout.
+      - name: Migrate
+        run: |
+          docker run --rm --network cuatro-tracker_default --env-file "$RUNNER_TEMP/tracker.env" "$IMAGE" \
+            node node_modules/prisma/build/index.js migrate deploy
+
+      # `/api/ready` is 200 only when Postgres and Redis both answer, the endpoint the compose healthcheck
+      # probes. Every error is retried while the server starts, as in `image.yml`.
+      - name: Answer /api/ready
+        run: |
+          docker run --detach --name tracker --network cuatro-tracker_default --publish 3000:3000 \
+            --env-file "$RUNNER_TEMP/tracker.env" "$IMAGE"
+          curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-all-errors \
+            http://127.0.0.1:3000/api/ready || { docker logs tracker; exit 1; }
+
+      # The worker's command from `docker-compose.yml`, held until it logs `worker.ready`, which it does
+      # only once its schedules are registered in Redis.
+      - name: Start the worker
+        run: |
+          docker run --detach --name tracker-worker --network cuatro-tracker_default \
+            --env-file "$RUNNER_TEMP/tracker.env" "$IMAGE" node node_modules/tsx/dist/cli.mjs worker.ts
+          for _ in $(seq 1 60); do
+            docker logs tracker-worker 2>&1 | grep -q '"event":"worker.ready"' && exit 0
+            [ "$(docker inspect --format '{{.State.Running}}' tracker-worker)" = true ] || break
+            sleep 1
+          done
+          docker logs tracker-worker
+          exit 1
+
+      # The token reaches `docker login` on stdin, never on its command line.
+      - name: Log in to GHCR
+        run: printf '%s' "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          TOKEN: ${{ github.token }}
+
+      - name: Push
+        run: docker push "$IMAGE"

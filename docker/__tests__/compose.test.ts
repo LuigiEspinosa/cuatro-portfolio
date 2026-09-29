@@ -213,3 +213,53 @@ describe('the finance services', () => {
     expect(migrate).not.toContain('cs-tracker_default');
   });
 });
+
+// Story 3-6: the tracker, merged and imaged, and started only by the Operator's cutover
+// (`ops/tracker-cutover.md`). Its server and worker sit under a profile no deploy activates, run its image
+// by the sha in TRACKER_TAG, and reach the stores the box's `cuatro-tracker` project keeps running, by
+// container name, over that project's network. The server answers to `cuatro-app`, the upstream the
+// shared Caddyfile already proxies, and its probe is the Hub's on `/api/ready`.
+describe('the tracker services', () => {
+  const service = (name: string): string => parts(compose, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
+  const tracker = service('tracker');
+  const worker = service('tracker-worker');
+  const migrate = service('tracker-migrate');
+  const IMAGE = '    image: ghcr.io/luigiespinosa/tracker:${TRACKER_TAG-}';
+  const DATABASE = '      - DATABASE_URL=postgresql://tracker:${TRACKER_DB_PASS-}@cuatro-tracker-postgres-1:5432/tracker';
+  const READY = '/api/ready';
+
+  it('runs the image by the sha in TRACKER_TAG, the server and worker under a profile no deploy activates', () => {
+    for (const part of [tracker, worker]) {
+      expect(part.split('\n')).toEqual(expect.arrayContaining([IMAGE, '    profiles: [tracker]']));
+    }
+    expect(tracker.split('\n')).toEqual(expect.arrayContaining([DATABASE, '      - REDIS_URL=redis://cuatro-tracker-redis-1:6379']));
+    expect(worker).toContain('    environment: *tracker-environment');
+  });
+
+  it('migrates as a one-off under the migrate profile, and never on the server or the worker', () => {
+    expect(migrate.split('\n')).toEqual(expect.arrayContaining([IMAGE, '    profiles: [migrate]', DATABASE]));
+    expect(tracker).not.toContain('migrate');
+    expect(worker).not.toContain('migrate');
+  });
+
+  it('answers to cuatro-app on the shared network, and reaches its stores over the tracker project network', () => {
+    expect(tracker).toMatch(/^ {4}networks:\n {6}cuatro-tracker_default:\n {6}cs-tracker_default:\n {8}aliases:\n {10}- cuatro-app$/m);
+    expect(worker).not.toContain('cs-tracker_default');
+    expect(migrate).not.toContain('cs-tracker_default');
+    expect(compose).toMatch(/^ {2}cuatro-tracker_default:\n {4}external: true$/m);
+  });
+
+  it(`probes ${READY} with the Hub's probe, so the runs above cover its handling`, () => {
+    expect(probeOf(tracker)).toBe(probeOf(compose).replace(HEALTH, READY));
+  });
+
+  it(`passes a server that answers ${READY}, and fails one that answers 503`, async () => {
+    await serve(200);
+    expect(await runProbe(probeOf(tracker))).toBe(0);
+    expect(requested).toEqual([READY]);
+    await new Promise<void>((closed) => server!.close(() => closed()));
+    server = undefined;
+    await serve(503);
+    expect(await runProbe(probeOf(tracker))).not.toBe(0);
+  });
+});

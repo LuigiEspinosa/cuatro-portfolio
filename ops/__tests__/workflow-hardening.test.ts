@@ -65,6 +65,8 @@ const STILL_ON_NODE_22: Record<string, string> = {
 const DOCKERFILE = resolve(process.cwd(), 'apps/hub/Dockerfile');
 // Story 3-5: the finance application's image, held to the same major.
 const FINANCE_DOCKERFILE = resolve(process.cwd(), 'apps/finance/Dockerfile');
+// Story 3-6: the tracker's, likewise.
+const TRACKER_DOCKERFILE = resolve(process.cwd(), 'apps/tracker/Dockerfile');
 /** The tag of every `FROM node:<tag>` stage, so a stage on another major than CI tests on is named. */
 const nodeBases = (text: string): string[] =>
   [...text.matchAll(/^FROM\s+(?:--\S+\s+)*node:(\S+)/gim)].map(([, tag]) => tag);
@@ -118,13 +120,15 @@ describe('every workflow', () => {
 
   // Story 3-4: the deploy builds its own image by calling `image.yml`, so the push's `packages: write` is
   // granted twice, once to the Image workflow's job and once to the deploy's job that calls it, and the
-  // failure report moved into a job of its own. Story 3-5 adds the finance image's push, in its own workflow.
-  it("widens the token for four jobs only: the Hub image's push, alone and called by the deploy, the deploy's failure report, and the finance image's push", () => {
+  // failure report moved into a job of its own. Story 3-5 adds the finance image's push, in its own workflow,
+  // and Story 3-6 the tracker's, in its own.
+  it("widens the token for five jobs only: the Hub image's push, alone and called by the deploy, the deploy's failure report, and the finance and tracker images' pushes", () => {
     const widened = FILES.flatMap((name) => permissionBlocks(read(name), 'job').map((entries) => ({ name, entries })));
     expect(widened).toEqual([
       { name: 'deploy.yml', entries: ['contents: read', 'packages: write'] },
       { name: 'deploy.yml', entries: ['contents: read', 'issues: write'] },
       { name: 'image-finance.yml', entries: ['contents: read', 'packages: write'] },
+      { name: 'image-tracker.yml', entries: ['contents: read', 'packages: write'] },
       { name: 'image.yml', entries: ['contents: read', 'packages: write'] },
     ]);
   });
@@ -177,15 +181,15 @@ describe('every workflow', () => {
     expect(unresolved(pnpmSteps(read(name)), ROOT_MANIFEST, WORKSPACES)).toEqual([]);
   });
 
-  it(`builds and runs the finance image on Node ${STACK_NODE} in every stage (Story 3-5)`, () => {
-    const tags = nodeBases(readFileSync(FINANCE_DOCKERFILE, 'utf8'));
-    expect(tags.length, 'apps/finance/Dockerfile has no node stage').toBeGreaterThan(0);
+  it.each([['finance', FINANCE_DOCKERFILE, '3-5'], ['tracker', TRACKER_DOCKERFILE, '3-6']])(`builds and runs the %s image on Node ${STACK_NODE} in every stage (Story %s)`, (id, path) => {
+    const tags = nodeBases(readFileSync(path, 'utf8'));
+    expect(tags.length, `apps/${id}/Dockerfile has no node stage`).toBeGreaterThan(0);
     expect(tags.filter((tag) => majorOf(tag) !== STACK_NODE)).toEqual([]);
   });
 
   it('finds the unit gate and the Hub build it reads, so an empty read cannot pass', () => {
     expect(pnpmSteps(read('ci.yml'))).toEqual(
-      expect.arrayContaining(['//#typecheck', '//#test', 'finance#typecheck', 'finance#test'])
+      expect.arrayContaining(['//#typecheck', '//#test', 'finance#typecheck', 'finance#test', 'tracker#typecheck', 'tracker#test'])
     );
     expect(pnpmSteps(read('lighthouse.yml'))).toEqual(expect.arrayContaining(['hub#build', 'hub#start']));
   });
