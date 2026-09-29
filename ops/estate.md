@@ -216,7 +216,7 @@ estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 | `tcg-tracker` | Archive, then fold as a domain inside `cuatro-tracker` | `Archived` | `cuatro-tracker` | In Registry, not rendered |
 | `connect-four-react` | Absorb: playable demo in the Hub | `Archived` | `cuatro-portfolio` | In Registry; not rendered as a directory entry, and not rendered as an embedded demo at MVP either. It will surface as the embedded demo (PRD section 4.7) only once FR-29 is taken up, and FR-29 is deferred to v2. See the note below. |
 | `cuatro-finance` | Merge into the Anchor: **merged into `apps/finance` on `dev` by Story 3-5 (2026-09-29), imaged in CI, not placed**. See the note below | `In progress` | n/a today, see note below | Not rendered until Live |
-| `cuatro-tracker` | Merge into the Anchor | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
+| `cuatro-tracker` | Merge into the Anchor: **merged into `apps/tracker` on `dev` by Story 3-6 (2026-09-29) and imaged in CI; still served by the box's own build until the Operator runs `ops/tracker-cutover.md`**. See the note below | `Live`: `tracker.cuatro.dev` | n/a today, see note below | Rendered; Tracker Family member |
 | `cs-tournament` | Merge into the Anchor | `Complete`: deployed nowhere by the estate since the Operator ruling of 2026-09-24, until Story 3.7 places it on the box. `Live` at `inclusivcup.vercel.app` until then | n/a today, see note below | Rendered |
 | `cs-tracker` | Satellite: Elixir/LiveView | `Live`: `cs-tracker.cuatro.dev` | n/a | Rendered; Tracker Family; identity demonstration partner (FR-21) |
 | `digital-library` | Satellite: Svelte/Fastify | `Live`: `library.cuatro.dev` | n/a | Rendered |
@@ -326,6 +326,9 @@ when the merge actually lands, and not before.
 three otherwise: `cuatro-finance` keeps no `absorbed_into`, because its repository is not archived,
 and Story 3.8 writes it once the Operator archives it.
 
+**Amended 2026-09-29 by Story 3-6.** `cuatro-tracker`'s code has moved too, on the same terms: no
+`absorbed_into` while its repository is unarchived, which now waits on the cutover as well.
+
 ### `cuatro-finance`, merged on `dev` and not placed
 
 **Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
@@ -362,6 +365,36 @@ it: merging is not placing.
 - **Still the Operator's:** archiving `cuatro-finance`, after which Story 3.8 writes `absorbed_into:
   cuatro-portfolio` and moves `source`; and every placement step (DW-269).
 
+### `cuatro-tracker`, merged on `dev`, served by the old build until the cutover
+
+**Committed on `dev`, not live.** Unlike finance it is already placed and serving, so what changes on
+the box is a cutover the Operator runs, `ops/tracker-cutover.md`, not a placement: `ops/capacity-gate.yml`
+already holds `cuatro-tracker` (AD-9).
+
+- **History.** `git filter-repo --to-subdirectory-filter apps/tracker` ran on a scratch clone of
+  `LuigiEspinosa/cuatro-tracker` at `main` `985e3c5580e150895ed68d751035c72ed5c14a0a` (equal to `dev`),
+  and merge `ff2b7952d9423ac49edf3f371140fcbb1645fd8a` brought its 131 commits into the Anchor with
+  `--allow-unrelated-histories`. `git log --follow` on `apps/tracker/app/api/ready/route.ts` lists its
+  source commit.
+- **Workspace.** The workspace `tracker` under the one root lockfile, every package at the version its
+  own lockfile named, with its typecheck and suite in `ci.yml`'s `test` job beside a Redis service.
+  The root `tsc` and Vitest exclude it, and so do the Hub's literal and alias gates.
+- **Deploy unit (AD-3, AD-8).** `apps/tracker/Dockerfile` over `turbo prune tracker --docker` gives
+  `ghcr.io/luigiespinosa/tracker:<git-sha>`, migrated, readied and its worker started by
+  `.github/workflows/image-tracker.yml` before it is pushed. One image runs the server, the worker and
+  the migration. `docker-compose.yml` declares `tracker` and `tracker-worker` under a profile no deploy
+  activates, and `tracker-migrate`; the cutover starts them once.
+- **Migrations (AD-23).** Never on boot; `tracker-migrate` runs `prisma migrate deploy` before a
+  rollout. The merged code carries no migration the box lacks.
+- **Data (AD-10).** It stays where it serves: database and role `tracker` in the old project's
+  `cuatro-tracker-postgres-1`, with its Redis and qBittorrent, until Stories 4.4 and 4.8 move it onto
+  the one Postgres. `ops/tracker-backup.sh` and `ops/tracker-restore-verify.sh` back it up and prove
+  the restore before the cutover.
+- **Hostname.** `tracker.cuatro.dev`, declared in the Registry, which this story does not change.
+- **Tokens (AD-14).** Adoption deferred whole to its Epic 8 restyle (DW-273).
+- **Still the Operator's:** the four actions at the end of `ops/tracker-cutover.md`, the archive among
+  them, after which Story 3.8 writes `absorbed_into: cuatro-portfolio` and moves `source`.
+
 ## Pending Operator actions
 
 Archiving a repository is a GitHub console action outside this repository. Of the four
@@ -374,6 +407,7 @@ afterwards.
 |---|---|---|
 | `connect-four-react` | Archive on GitHub | Must stay publicly readable |
 | `cuatro-finance` | Archive on GitHub | Must stay publicly readable, so its `source` resolves; Story 3.8 then writes `absorbed_into` and moves `source` |
+| `cuatro-tracker` | Archive on GitHub, a week after `ops/tracker-cutover.md` has run | Must stay publicly readable, so its `source` resolves; the box keeps its checkout, which runs the stores until Story 4.8; Story 3.8 then writes `absorbed_into` and moves `source` |
 
 The `apple-music-workspace` row is gone rather than struck, because the action dissolved
 rather than completing: there is no repository to archive, and the application was removed
@@ -383,6 +417,9 @@ from this record on 2026-09-02. Nothing is owed on it.
 `apps/finance` on `dev` (§ `cuatro-finance`, merged on `dev` and not placed), and the archive is the
 Operator's. It is a step toward the end state of 10, not the waypoint of 13, so the one outstanding
 action the counts above name is still `connect-four-react`'s.
+
+**Amended 2026-09-29 by Story 3-6.** The `cuatro-tracker` row is added on the same terms, and waits on
+the cutover (§ `cuatro-tracker`, merged on `dev`, served by the old build until the cutover).
 
 `connect-four-react` stays **public**, not private. AD-6 keeps its Registry entry, and SM-4
 requires every Registry link to resolve, so making an archived repository private would

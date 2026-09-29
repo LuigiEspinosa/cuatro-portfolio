@@ -12,6 +12,9 @@ contracts, `packages/`, `ops/`, the browser suite and every gate's configuration
 `apps/finance/` is the workspace `finance`, merged from `cuatro-finance` in Story 3-5 (Next.js 16,
 Prisma 7, Tailwind 4): imaged in CI, not placed on the box. The root `tsc`, Vitest and the Hub's
 literal and alias gates exclude it; it runs `corepack pnpm --filter finance typecheck` and `test`.
+`apps/tracker/` is the workspace `tracker`, merged from `cuatro-tracker` in Story 3-6 (Next.js 15,
+Prisma 6, BullMQ): imaged in CI, and serving `tracker.cuatro.dev` only once the Operator runs
+`ops/tracker-cutover.md`. Excluded the same way; its suite needs a Redis on `localhost:6379`.
 Planning artifacts are in `_bmad-output/planning-artifacts/`; how the estate actually runs is in
 `ops/`.
 

@@ -8476,6 +8476,14 @@ status: done
 
     **Owner: unassigned.** **Trigger: an unexplained change in the Hub's server bundle, or Story 3.6's
     merge, which will move peers the same way.**
+
+    **Trigger reached 2026-09-29 by Story 3-6, as predicted.** Folding the tracker's lockfile moved
+    optional peers again and no version: the root importer's `vitest` and `@vitejs/plugin-react` now link
+    `terser@5.47.1` through Vite, finance's Prisma snapshots link `magicast@0.3.5`, and every one of the
+    tracker's own entries resolves to the version its own lockfile named. `apps/hub`'s and
+    `packages/tokens`' importers are unchanged. Two peers were added on purpose, not by accident, and are
+    DW-272's. The Hub builds (`corepack pnpm --filter hub build`, exit 0) and its image builds. Still no
+    `peerDependencyRules`, since nothing fails.
   status: open
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-5-merge-cuatro-finance-into-apps-finance.md`
@@ -8517,4 +8525,136 @@ status: done
 
     **Owner: Story 3.6, whose merge changes the lockfile next.** **Trigger: that merge, or a finance
     typecheck failing on TS2769 against `zod`.**
+
+    **Closed 2026-09-29 by Story 3-6, committed on `dev`.** `pnpm-workspace.yaml` carries the
+    `packageExtensions` entry this names, `@hookform/resolvers@5` with a `zod` peer, so finance's
+    importer now links `@hookform/resolvers@5.2.2(...)(zod@4.3.6)` in `pnpm-lock.yaml` and resolves its
+    own `zod` whatever pnpm hoists; `corepack pnpm --filter finance typecheck` exits 0 on the new lockfile.
+    The same merge met the same shape once more, and closed it the same way: `@testing-library/jest-dom`
+    augments `vitest` without declaring it, so it augmented the root's Vitest 4 from every workspace and
+    the tracker's Vitest 3 typecheck lost its matchers (TS2339 on `toBeInTheDocument`); a `vitest` peer
+    beside the first entry fixed it. Both are one lockfile change, which the next Image runs exercise.
+  status: done
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-273
+  summary: >-
+    `apps/tracker` has not adopted the token contract: it keeps its own palette in `app/tokens.css` and
+    names `--font-mono` in `app/global.css`, and the Hub's literal and alias gates do not read it until
+    it does.
+  evidence: |-
+    Decided 2026-09-29 by Story 3-6 (its Decision 8), on DW-267's reasoning for finance: AD-14 makes
+    adoption all-or-nothing, so the merge records the deferral rather than half-applying
+    `contracts/tailwind.css`. `app/tokens.css` carries 48 colour literals, and `app/global.css` names
+    `--font-mono`, one of the names Story 2-22 deleted from the Hub. That is why `OTHER_APPLICATIONS`
+    in `ops/literal-conformance.mjs` lists `apps/tracker/`, and why
+    `apps/hub/app/__tests__/anchor-contract.test.ts` skips it. Unlike finance the tracker is `Live` and
+    rendered, and Epic 8 wave 2 restyles it once its merge ships (`epics.md`). Adoption means importing
+    `contracts/tailwind.css`, replacing the palette and the fonts with contract roles, and deleting the
+    `OTHER_APPLICATIONS` entry in the same change.
+
+    **Owner: the Epic 8 wave that restyles the tracker.** **Trigger: that wave.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-274
+  summary: >-
+    Findings against Story 1.7: `ops/routing-inventory.md` records the effect of the tracker's box-only
+    ingress override but not its text, lists `~/cuatro-redeploy.sh` without its contents, and has not
+    re-observed the `cuatro-tracker` project since 2026-08-24.
+  evidence: |-
+    Found 2026-09-29 by Story 3-6, whose criterion makes the inventory the reference for how
+    `tracker.cuatro.dev` reaches the box and makes any gap a recorded finding rather than a workaround.
+    (1) `/home/deploy/cuatro-tracker/docker-compose.override.yml` is gitignored and box-only; the
+    inventory records its effect (the `cs-tracker_default` attachment and the `cuatro-app` alias, § The
+    shared network) and never its text, so a rollback that rebuilt the old project from its repository
+    would come back with no ingress. (2) `~/cuatro-redeploy.sh` appears in § Configuration that exists
+    only on the box and nowhere else; what it runs is unknown, and if it runs `docker compose up` in the
+    old project after the cutover it starts the old app and worker beside the new ones. (3) Every
+    `cuatro-tracker` fact is dated 2026-08-24, 36 days before the cutover was written. None blocks the
+    cutover: `ops/tracker-cutover.md` step 1 reads all three on the box before anything changes, and
+    step 8 retires the script. No session here can reach the box to read them.
+
+    **Owner: the Operator, at `ops/tracker-cutover.md` step 1, whose output closes this.** **Trigger:
+    that step.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-275
+  summary: >-
+    After the cutover the tracker is rolled by hand: `deploy.yml` deploys the Hub alone, and
+    `ops/capacity-gate.yml` still names its placement `cuatro-tracker` while its image, workspace and
+    compose service are `tracker`.
+  evidence: |-
+    Decided 2026-09-29 by Story 3-6, whose orchestration forbids wiring a merged application into
+    `deploy.yml` or the gate's placements (AD-9). The tracker is already placed, so the cutover replaces
+    the deploy unit of an existing placement and places nothing new; `ops/tracker-cutover.md` gives the
+    later rollout by hand (`tracker-migrate`, then `docker rollout ... tracker`, then the worker), which
+    was not rehearsed here because `docker-rollout` is not installed on the authoring machine. AD-7 wants
+    a deploy that names exactly one id; `ops/deploy-remote.sh` names `anchor-app`. Closing this means a
+    deploy path per id, the gate's entry renamed or aliased in one change with it, and the Registry id
+    question DW-260 already holds for the Hub.
+
+    **Owner: Story 3.8 or Epic 4 (Story 4.8 moves the tracker onto the rebuilt topology).** **Trigger:
+    the cutover, or the first tracker change that needs to ship.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-276
+  summary: >-
+    `apps/tracker` carries its repository's own delivery files, which the merge kept untouched and
+    nothing here runs: its `.github/workflows/ci.yml`, `docker/` and three compose files, two ESLint
+    configurations, a Playwright e2e suite, a `CLAUDE.md`, and a Prisma seed that needs `tsx` on PATH.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-6. GitHub runs workflows from the repository root only, so
+    `apps/tracker/.github/workflows/ci.yml` is inert; its unit half now runs in the Anchor's `ci.yml`
+    (with a Redis service), and its e2e half (Playwright 1.60 against Postgres, Redis and a worker) runs
+    nowhere, which is lost coverage. `docker/Dockerfile`, `docker/Dockerfile.caddy`, the Caddyfiles and
+    `docker-compose*.yml` describe the old build-on-the-box deploy the cutover retires. `lint` went from
+    `package.json` because CI runs no lint (`AGENTS.md`), leaving `eslint.config.mjs` and `.eslintrc.json`.
+    `prisma db seed` runs `tsx prisma/seed.ts` from PATH, and the image puts no `node_modules/.bin` on
+    PATH, so it fails there with ENOENT (observed); the live database is already seeded. None is fixed
+    here, since the merge moves code without rewriting it. Two files the Anchor's `.gitattributes` names
+    (`eslint.config.mjs`, `postcss.config.mjs`) were renormalised to LF by it; the migrations were not
+    touched, since Prisma checksums them.
+
+    **Owner: the Epic 8 wave that restyles the tracker, or a story that lands the Anchor's e2e for it.**
+    **Trigger: either, or the cutover retiring the old deploy files.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-277
+  summary: >-
+    The tracker image is 2.32 GB unpacked, because it carries the whole pruned install, the root's own
+    dependencies (Next 16, three.js, turbo) among them, for its worker and migration commands.
+  evidence: |-
+    Measured 2026-09-29 by Story 3-6 (`docker image ls`, after dropping Next's 0.4 GB build cache from
+    the image). The worker runs `tsx worker.ts` and `tracker-migrate` runs the Prisma CLI, so the image
+    carries the install rather than a traced server (Decision 5), and `pnpm install --filter tracker`
+    over the pruned root still installed the root importer when tried. The box had about 80 GB free
+    (`ops/routing-inventory.md`, 2026-08-24). The smaller shape is `pnpm --filter tracker deploy --prod`
+    into the runner with `tsx` and `prisma` moved to `dependencies`, which changes the application's
+    manifest; not done here.
+
+    **Owner: unassigned.** **Trigger: disk pressure on the box, or the next change to
+    `apps/tracker/Dockerfile`.**
+  status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-6-merge-cuatro-tracker-into-apps-tracker.md`
+  id: DW-278
+  summary: >-
+    Unverified: `image-tracker.yml` and `image-finance.yml` push a new sha tag on every push to any
+    branch, and both packages start private, so if GHCR bills private storage the tracker's 2.32 GB
+    image could exhaust the account's included storage within days and turn both Image runs red.
+  evidence: |-
+    Found 2026-09-29 by Story 3-6's review (Blind Hunter); not settled here, because no session here can
+    read the account's billing page. GitHub has documented Container registry storage as free, and
+    whether that still holds on the Operator's plan in 2026 was not checked. If it does not, the
+    exposure is real and medium: nothing prunes old tags, the tracker image is 2.32 GB unpacked
+    (DW-277), and a push refused for quota fails the Image run, which the orchestration treats as a
+    gate. Settled by reading Settings, Billing, Packages for the account after the first pushes. The
+    closers are making the packages public, as `hub` is (the tracker's cutover action 1 already asks
+    for it), or pushing only from `main`, or a retention job.
+
+    **Owner: the Operator.** **Trigger: the first Image (tracker) push, or a GHCR quota message.**
   status: open

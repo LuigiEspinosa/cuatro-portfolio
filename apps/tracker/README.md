@@ -1,5 +1,11 @@
 # Cuatro Tracker
 
+> **Now part of the Anchor.** This application was merged with its history into
+> `cuatro-portfolio` at `apps/tracker/` (Story 3-6, 2026-09-29) and is the pnpm workspace `tracker`.
+> Install from the repository root, then run `pnpm --filter tracker dev`, `test`, `typecheck` or
+> `build`. Its image is built in CI; how it replaces the containers serving tracker.cuatro.dev is
+> `ops/tracker-cutover.md`. The Docker and CI notes below describe the repository it came from.
+
 A self-hosted, privacy-first media tracker. Tracks movies, TV shows, anime, manga, and video games in a unified
 PostgreSQL database.
 
