@@ -735,7 +735,14 @@ development_status:
   # Operator actions: archive connect-four-react (13); merge Epic 3 into main; run the tracker cutover;
   # archive cuatro-finance, cs-tournament and, a week after the cutover, cuatro-tracker, all public;
   # then DW-285 (absorbed_into, and the source shape Story 2.23's job accepts) and the count moves to 10.
-  3-8-record-the-estate-end-state: review
+  # 3-8 awaiting-operator 2026-09-29: CI and the four image runs green at 0bd5f82 (Image (tracker)
+  # passed on a rerun after a next/font Google Fonts fetch failed at build). Operator actions, in order:
+  # archive connect-four-react, public, and re-date the ops/estate.md observed tables (13); merge Epic 3
+  # dev into main and confirm the Deploy ran; run ops/tracker-cutover.md; archive cuatro-finance and
+  # cs-tournament, and cuatro-tracker a week after the cutover holds, all public, each date recorded;
+  # then DW-285 in one Registry MINOR release, moving ESTATE_COUNT, the waypoint sentence and both
+  # ops/contract-adoption.md tables to 10. Confirm Decisions 1 to 5 and the DW-275 and DW-283 hand-offs.
+  3-8-record-the-estate-end-state: awaiting-operator
   epic-3-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
   # Epic 3 introduces Turborepo, moves the app to apps/hub, and retires the
