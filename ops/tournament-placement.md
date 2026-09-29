@@ -94,9 +94,14 @@ C='docker compose --env-file .env.production'
    `$C --profile tournament config --services` lists `tournament` and `tournament-worker`;
    `docker ps --format '{{.Names}}' | grep tournament` prints nothing; and `uptime`, whose load
    averages are the before reading for step 7. A difference is a finding: record it here.
-2. **The gate.** `node ops/capacity-gate.mjs cs-tournament` exits 0, naming `placements`. The gate reads
-   only its own file (`ops/capacity-threshold.md` § limits), so the live check is step 1's `uptime`:
-   if its load15 reads 0.60 or more, stop and follow `ops/capacity-threshold.md` before placing.
+2. **The gate, from the workstation.** The box has no `node` (`ops/backup-digital-library.md`, observed
+   2026-08-24), so this step runs in a checkout on the workstation at the sha step 1's `HUB_TAG` names:
+   `node ops/capacity-gate.mjs cs-tournament` exits 0, naming `placements`, and
+   `grep -x 'status: open' ops/capacity-gate.yml` prints the line. The first command alone passes whatever
+   `status` says, because the id is already an incumbent (the run before the entry was appended is in the
+   Story 3-7 spec), so the second is the check that the gate is open. The gate reads only its own file
+   (`ops/capacity-threshold.md` § limits), so the live check is step 1's `uptime`: if its load15 reads
+   0.60 or more, stop and follow `ops/capacity-threshold.md` before placing.
 3. **Pull.** `docker pull ghcr.io/luigiespinosa/tournament:$TOURNAMENT_TAG` and
    `docker pull ghcr.io/luigiespinosa/tournament-worker:$TOURNAMENT_TAG`, both without credentials.
 4. **Start both, and wait for both healthchecks.**

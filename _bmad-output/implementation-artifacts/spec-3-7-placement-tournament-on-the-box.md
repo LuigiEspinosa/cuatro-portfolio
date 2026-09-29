@@ -155,6 +155,16 @@ One pass, no loopback; `review_loop_iteration` stays 0.
 | 15 | ECC verification loop | Build, types and the full suite pass on each commit; lint N/A (no lint command, `AGENTS.md`); no secret or connection string in the diff (a scan for JWTs, `service_role`, `supabase.co` refs and URLs with credentials found none) | no defect | none |
 | 16 | Design Review | No `.scss` or `.tsx` outside tests changed and no motion keyword was added | No UI surface in this diff. Design review skipped. | none |
 
+An independent verifier then read the committed placement half (`93949e6`, `9099973`, `2053c87`) and
+returned four findings, all patched in one follow-up commit:
+
+| # | Layer | Finding | Verdict | Route |
+|---|---|---|---|---|
+| 17 | Verifier | Runbook step 2 runs `node ops/capacity-gate.mjs` on the box, which has no `node` (`ops/backup-digital-library.md`, observed 2026-08-24), so the placement stops there | blocking: real | patch: step 2 runs from a workstation checkout at the box's sha |
+| 18 | Verifier | With `cs-tournament` already in `placements`, step 2's gate run exits 0 whatever `status` says, so the runbook never checks "fails unless `status: open`" | minor: real; the pre-append run above is the AC's evidence | patch: step 2 also asserts `grep -x 'status: open'`. The note keeps "serving": the suite pins every placed id's note to end with its Registry host, and row 2 above holds the date |
+| 19 | Verifier | `ops/registry-verification.md`'s expected-count row kept 40 checks and 7 `live` in its value cell under the 1.7.0 amendment | minor: real | patch: the cell reads 41 and 8 (5 by 2xx), the amendment names the old value |
+| 20 | Verifier | `ops/estate.md` called the four public GHCR packages "the four merged applications'" | minor: four packages of three merged applications | patch |
+
 ## Design Notes
 
 **Oversized, kept.** The draft measured about 1,902 tokens (7,608 characters over four; 997 words) against the SCOPE STANDARD's 1600. Answer **Keep**, relayed by the

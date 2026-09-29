@@ -570,8 +570,8 @@ Observations below were made by the Operator and the orchestrator and relayed; t
   (`ops/routing-inventory.md`), both before anything serves it. The Go worker has no public hostname
   (Operator ruling); what that leaves unrouted is DW-287.
 - **Build inputs and images.** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are
-  repository variables the image workflow passes as build arguments (DW-281, closed); the four merged
-  applications' GHCR packages are public (DW-278, settled); fifteen `TOURNAMENT_` values sit in the box's
+  repository variables the image workflow passes as build arguments (DW-281, closed); the four GHCR
+  packages of the three merged applications (`finance`, `tracker`, `tournament`, `tournament-worker`) are public (DW-278, settled); fifteen `TOURNAMENT_` values sit in the box's
   `.env.production`, moved without printing.
 - **Identity, and a premise corrected.** The merge said no user holds a password; the export refused, by
   design, on the project's only Auth user, the admin (created 2026-07-02, a Steam-style synthetic email),
