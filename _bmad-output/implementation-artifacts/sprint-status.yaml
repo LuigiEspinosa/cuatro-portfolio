@@ -514,7 +514,15 @@ development_status:
   # rather than turbo boundaries. Confirm the reading.
   # Decision 1 (DW-251), DW-253 and the oversized spec's Keep are open rulings that gate no criterion.
   # lighthouse.yml runs only against main, so its first Actions run on Node 24 is the Epic 3 merge.
-  3-1-introduce-turborepo-and-pin-the-toolchain: awaiting-operator
+  # 2026-09-29: done. The Operator confirmed Decisions 2 and 3 as recorded, and every other reading
+  # and decision Stories 3-1 to 3-8 recorded, on 2026-09-29. Shipped alone as AD-20's first step:
+  # PR #82 (branch merge/3-1-turborepo at 857ac6b) merged into main as 5e132dd by the Operator, its
+  # eight required checks green, Lighthouse's first Actions run on Node 24 among them. Deploy run
+  # 36624830199 succeeded (the box's last compile before Story 3-4's script reaches it); the box's
+  # checkout reads 5e132dd and anchor-app is healthy. Probed afterwards: /, /cv, /work, /celeste and
+  # /api/health 200 (version 3.0.0), /projects 301 to /#suite, /recommendation and an unknown path
+  # 404, and tokens.css, fonts.css, registry.json and registry.schema.json byte-identical to contracts/.
+  3-1-introduce-turborepo-and-pin-the-toolchain: done
   # 3-2 built and pushed 2026-09-28: dev at 7eb9cc5, CI run 36491773743 green on seven jobs, every
   # one on Node 24.21.0. bc9cd25 and b5c4dd1 plus the verification's fix round:
   # the Hub is the workspace hub in apps/hub, moved by git mv (103 renames, git log --follow intact),
