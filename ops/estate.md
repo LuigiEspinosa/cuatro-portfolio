@@ -373,10 +373,16 @@ afterwards.
 | Repository | Action | Constraint |
 |---|---|---|
 | `connect-four-react` | Archive on GitHub | Must stay publicly readable |
+| `cuatro-finance` | Archive on GitHub | Must stay publicly readable, so its `source` resolves; Story 3.8 then writes `absorbed_into` and moves `source` |
 
 The `apple-music-workspace` row is gone rather than struck, because the action dissolved
 rather than completing: there is no repository to archive, and the application was removed
 from this record on 2026-09-02. Nothing is owed on it.
+
+**Amended 2026-09-29 by Story 3-5.** The `cuatro-finance` row is added: its code is merged into
+`apps/finance` on `dev` (§ `cuatro-finance`, merged on `dev` and not placed), and the archive is the
+Operator's. It is a step toward the end state of 10, not the waypoint of 13, so the one outstanding
+action the counts above name is still `connect-four-react`'s.
 
 `connect-four-react` stays **public**, not private. AD-6 keeps its Registry entry, and SM-4
 requires every Registry link to resolve, so making an archived repository private would
