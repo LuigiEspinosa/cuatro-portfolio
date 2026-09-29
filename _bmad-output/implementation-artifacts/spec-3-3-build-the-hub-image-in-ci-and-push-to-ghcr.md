@@ -211,6 +211,38 @@ Implemented inline (a workflow sub-agent has no Agent tool), from this spec.
 
 ## Spec Change Log
 
+**2026-09-28, fix round 1, after the independent verification.** The verifier returned one blocking
+finding and two minor ones, all taken. No image, workflow, compose or product file changed.
+
+1. **Blocking.** `ops/token-contract.md`'s 2026-09-28 amendment said `deps-stage.test.ts`'s
+   assertions, the prune's included, were each observed rejecting a planted edit on every run, and
+   Implementation Notes said every check is shown refusing planted text on each run. The prune check
+   had no planted case: its one observed rejection was the manual `turbo@2.9.0` plant in
+   Verification, and the copy's destination was never planted on its own. The suite's third case now
+   also plants the prune on `turbo@2.9.0` and on the workspace `web`, and the copy to `./json/`, on
+   every run, so the record and the notes are true as written and neither changed (`5266f20`). It
+   stays one case, so the count is unchanged.
+2. `ops/routing-inventory.md` § Where the deploy goes gives a checkout of `docker-compose.yml`,
+   `docker/Dockerfile` and `.dockerignore` from `origin/dev` as the way to recover the box, which
+   stops at the pathspec once this story is pushed and was already unfit after Story 3-2's push.
+   The Code Map counted that record's mentions as dated observations, and this one is a procedure.
+   It carries a dated amendment, and its replacement is DW-263, Story 3.4's (`7ce2e3e`).
+3. The board's 3-3 row said the push waits on the Operator, and in this run the orchestrator pushes.
+   The row now says so, and that once that push's Image run is read the row records its run id, its
+   conclusion and the tag `ghcr.io/luigiespinosa/hub:<sha>`, where criterion 6 and action 5's CI
+   half are read (`ops/token-contract.md` action 5 points at the row for that).
+
+The round lands after the story's commits, as Stories 3-1 and 3-2's rounds did: none of `6a600f6`,
+`65ac0ac` or `b2fb599` was pushed (`origin/dev` read `0aec0fb`), so a push of `dev` carries them with
+this round. Observed on this tree: the two new shapes planted in the real Dockerfile, `prune web` in
+the prune stage and the copy to `./json/` in `deps`, each failing its case, then restored and
+`cmp`-identical; the new planted lines, made no-ops in a throwaway copy of the suite, failing;
+`corepack pnpm typecheck` exit 0; `corepack pnpm --filter hub build` exit 0 (11 files published,
+Next.js 16.2.1, the same six routes), and the root's `corepack pnpm build` exit 1, "Command "build"
+not found", as Story 3-2 designed; `corepack pnpm test --run` exit 0, "Test Files 66 passed (66)",
+"Tests 1667 passed (1667)"; `node ops/contract-purity.mjs`, `node ops/registry-schema.mjs` and
+`node ops/literal-conformance.mjs` exit 0.
+
 ## Review Triage Log
 
 Pass 1, 2026-09-28, over an 87.5 kB diff (Blind Hunter floor 10). Every layer ran inline in this
