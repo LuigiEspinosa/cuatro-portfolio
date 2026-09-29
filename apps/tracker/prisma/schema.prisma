@@ -1,0 +1,230 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ! Constraints below are enforced in raw SQL inside
+// ! prisma/migrations/20260508133713_phase2_constraint_hardening/migration.sql
+// ! and CANNOT be expressed in the Prisma DSL. Do not let `prisma migrate dev`
+// ! "fix" them - review the diff before applying any future migration that
+// ! touches these columns.
+// !   - User.email partial unique index (WHERE email IS NOT NULL)
+// !   - UserEntry.user_rating CHECK BETWEEN 1 AND 10 (NULL allowed)
+// !   - UserEntry.progress CHECK >= 0
+// !   - MergeSuggestion CHECK source_id <> target_id
+// !   - MergeSuggestion.confidence CHECK BETWEEN 0 AND 1
+// !   - MediaItem.playtime_minutes CHECK >= 0 (NULL allowed)
+
+// ---- Auth (NextAuth v4 Prisma adapter) ----
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String? // hashed with bcryptjs - used by credentials provider
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---- Media types ----
+
+enum MediaType {
+  MOVIE
+  TV_SHOW
+  TV_EPISODE
+  ANIME
+  MANGA
+  GAME
+}
+
+enum WatchStatus {
+  PLAN_TO_WATCH
+  WATCHING
+  COMPLETED
+  ON_HOLD
+  DROPPED
+}
+
+// ---- Core app models ----
+
+model MediaItem {
+  id             String    @id @default(cuid())
+  type           MediaType
+  title          String
+  original_title String?
+  release_date   DateTime // THE sort field - normaliser functions must never leave this null
+  end_date       DateTime? // series/manga: last air date or completion date
+  poster_path    String? // path only e.g. /abc.jpg - construct full URL at render time
+  backdrop_path  String? // path only
+  still_path     String? // path only — episode-level art (TMDB still_path); null on non-episode rows
+  overview       String?
+  genres         String[]
+  rating         Float? // source rating (TMDB vote_average, AniList meanScore, etc.)
+  popularity     Float?
+  status         String? // raw upstream status, e.g. "Ended", "Returning Series", "Finished Airing"
+  lifecycle_status String? // derived enum: 'ended' | 'continuing' | 'in_production' (Story 7.2 mapping; TV grid filter)
+
+  // Source API foreign keys - null for manually added items
+  tmdb_id      Int? @unique
+  anilist_id   Int? @unique
+  igdb_id      Int? @unique
+  steam_app_id Int? @unique
+
+  // Self-relation for TV_EPISODE -> TV_SHOW and anime episode -> series
+  parent_id String?
+  parent    MediaItem?  @relation("MediaHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
+  children  MediaItem[] @relation("MediaHierarchy")
+
+  // Franchise grouping for chronological sorting across a series
+  franchise_id String?
+
+  // Episode-specific fields (null on show / movie / game rows)
+  season_number  Int?
+  episode_number Int?
+  runtime        Int? // minutes; episode runtime or movie runtime (future-proofing)
+  unaired        Boolean @default(false) // true when source air_date is null/empty at insert time
+
+  // Anime + manga metadata (Story 8.2 — AniList normalisers).
+  // All nullable so existing MOVIE / TV_SHOW / TV_EPISODE / GAME rows remain valid.
+  // Anime is modelled as a single MediaItem (not per-episode rows like TV); progress
+  // on UserEntry tracks watched-count, and episode_count holds the aired total.
+  episode_count   Int? // anime: total aired / planned episodes per AniList
+  chapter_count   Int? // manga: total chapters
+  volume_count    Int? // manga: total volumes
+  format          String? // raw AniList format (TV, MOVIE, OVA, ONA, MANGA, NOVEL, ONE_SHOT, ...) - kept as string to avoid coupling to upstream enum churn
+  studio_name     String? // anime: first animation studio (AniList studios.nodes where isAnimationStudio = true)
+  author_name     String? // manga: first staff with role 'Story'
+  season          String? // AniList season enum string: WINTER / SPRING / SUMMER / FALL
+  season_year     Int? // AniList seasonYear (anime release / airing year)
+  source_material String? // AniList source: MANGA / LIGHT_NOVEL / ORIGINAL / VISUAL_NOVEL / etc.
+
+  // Games + Steam metadata (Story 9.3).
+  // screenshots / platforms default to '{}' at the database layer (see migration
+  // add_game_columns); @default([]) makes the DSL-level default explicit so
+  // future `prisma migrate dev` runs don't propose drift-correction migrations.
+  // playtime_minutes carries a raw-SQL CHECK (>= 0 or NULL); see top-of-file
+  // warning block.
+  screenshots      String[]  @default([]) // game: IGDB screenshot image_id strings (NFR15 - store id, build URL at render via lib/api/igdb-images.ts)
+  platforms        String[]  @default([]) // game: IGDB platforms.name (e.g. PC, PlayStation 5, Nintendo Switch)
+  developer_name   String? // game: first involved_company with developer = true (IGDB)
+  publisher_name   String? // game: first involved_company with publisher = true (IGDB)
+  playtime_minutes Int? // game: Steam playtime_forever (already in minutes); raw-SQL CHECK >= 0
+  last_played      DateTime? // game: Steam rtime_last_played -> Date; null when never played (Steam 0 sentinel coerces to null in the normaliser)
+
+  // Steam achievement sync status (Story 9.2). Raw SQL CHECK constraint in
+  // migration 20260521120000 restricts to ('ok', 'private_profile',
+  // 'never_synced', 'failed'); the Prisma DSL cannot express CHECK so the
+  // migration sql is the source of truth.
+  // ! Valid values: 'ok' | 'private_profile' | 'never_synced' | 'failed'
+  achievement_sync_status String @default("never_synced")
+
+  user_entry    UserEntry?
+  achievements  Achievement[]     @relation("AchievementGame")
+  merge_sources MergeSuggestion[] @relation("MergeSource")
+  merge_targets MergeSuggestion[] @relation("MergeTarget")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([season_number, episode_number]) // timeline chronological sort within a show (Epic 10)
+  @@index([lifecycle_status]) // TV grid 'Continuing' filter chip (Story 7.4)
+}
+
+model UserEntry {
+  id            String      @id @default(cuid())
+  media_item_id String      @unique
+  media_item    MediaItem   @relation(fields: [media_item_id], references: [id], onDelete: Cascade)
+  status         WatchStatus @default(PLAN_TO_WATCH)
+  user_rating    Float? // personal rating 1-10
+  progress       Int         @default(0) // episode / chapter / achievement count
+  volume_progress Int        @default(0) // manga: volumes completed (default 0 for non-manga; backfilled via Math.floor(progress / CHAPTERS_PER_VOLUME) for existing MANGA rows in the 20260520 migration)
+  notes          String?
+  started_at    DateTime?
+  completed_at  DateTime?
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+}
+
+model Achievement {
+  id             String    @id @default(cuid())
+  game_id        String // MediaItem.id of the parent game
+  game           MediaItem @relation("AchievementGame", fields: [game_id], references: [id], onDelete: Cascade)
+  steam_api_name String
+  display_name   String
+  description    String?
+  icon_url       String?
+  unlocked       Boolean   @default(false)
+  unlocked_at    DateTime?
+  percent_global Float? // Steam global achievement percentage (0-100, nullable; null when Steam returns 403/404 from GetGlobalAchievementPercentagesForApp).
+
+  @@index([game_id])
+  @@unique([game_id, steam_api_name])
+}
+
+model MergeSuggestion {
+  id         String    @id @default(cuid())
+  source_id  String // MediaItem to be merged away
+  source     MediaItem @relation("MergeSource", fields: [source_id], references: [id], onDelete: Cascade)
+  target_id  String // MediaItem to keep
+  target     MediaItem @relation("MergeTarget", fields: [target_id], references: [id], onDelete: Cascade)
+  confidence Float // 0-1 similarity score
+  resolved   Boolean   @default(false)
+  // Story 11.4: a dismissed suggestion is one an admin marked "not a duplicate".
+  // Both resolved and dismissed are set on a dismiss so the same pair never
+  // resurfaces; resolved alone (dismissed false) marks an accepted merge.
+  dismissed   Boolean   @default(false)
+  resolved_at DateTime? // stamped when the merge is accepted or the pair dismissed
+  created_at DateTime  @default(now())
+
+  // Story 11.6: the DB-level backstop against the scan job writing the same pair
+  // twice. It forbids a duplicate (A, B) but NOT the mirrored (B, A), so the
+  // either-orientation lookup in similarityScanProcessor stays the behavioural
+  // guarantee. Be precise about what this does NOT cover: two concurrent scans
+  // emitting (X, Y) and (Y, X) both pass that lookup and both insert, because
+  // the index sees two different keys. An orientation-independent index on
+  // (LEAST(source_id, target_id), GREATEST(...)) would close it and is logged as
+  // deferred work; today this constraint only catches a same-orientation repeat.
+  @@unique([source_id, target_id])
+}

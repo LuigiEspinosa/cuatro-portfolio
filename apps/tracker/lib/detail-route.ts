@@ -1,0 +1,26 @@
+import { MediaType } from '@prisma/client'
+
+type DetailRouteInput = {
+  mediaType: MediaType
+  mediaItemId: string
+  anilistId?: number | null
+}
+
+export function detailRouteFor(item: DetailRouteInput): string | null {
+  switch (item.mediaType) {
+    case MediaType.MOVIE:
+      return `/movies/${item.mediaItemId}`
+    case MediaType.TV_SHOW:
+      return `/tv/${item.mediaItemId}`
+    case MediaType.ANIME:
+      return `/anime/${item.mediaItemId}`
+    case MediaType.MANGA:
+      return `/manga/${item.mediaItemId}`
+    case MediaType.GAME:
+      return `/games/${item.mediaItemId}`
+    case MediaType.TV_EPISODE:
+    default:
+      // Episodes have no standalone detail route; the parent show owns it.
+      return null
+  }
+}
