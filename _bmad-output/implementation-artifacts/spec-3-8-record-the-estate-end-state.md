@@ -152,7 +152,7 @@ criterion is conditional on the archive, and the orchestrator's instruction limi
 claims to what is true today. Writing it now is a Registry release (`contract_version` bump, the
 Suite Directory's data) for no reader gain; DW-285 writes it with the `source` move in one change.
 
-**Independent verifier, 2026-09-29.** It found three stale sentences in § The waypoint sequence ("14 to 8 is the decision", "sits on the second row today, at an observed 12", "heading to 8 regardless") and the merge candidates paragraph's "from 11 to 8", all left unamended by the first pass. Each now carries a dated Story 3-8 amendment naming 10 as the decision, the `After listing` row at an observed 14, 13 as the next station and 13 to 10 for the merge; the parsed waypoint sentence is untouched.
+**Independent verifier, 2026-09-29.** It found three stale sentences in § The waypoint sequence ("14 to 8 is the decision", "sits on the second row today, at an observed 12", "heading to 8 regardless") and the merge candidates paragraph's "from 11 to 8", all left unamended by the first pass. Each now carries a dated Story 3-8 amendment naming 10 as the decision, the `After listing` row at an observed 14, 13 as the next station and 13 to 10 for the merge; the parsed waypoint sentence is untouched. A second verifier pass found the dated 2026-09-02 paragraph's "The end state of 8 never moved" unamended; it now carries a Story 3-8 amendment saying the end state moved to 10 on 2026-09-26.
 
 ## Verification
 

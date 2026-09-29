@@ -162,7 +162,9 @@ archive too many. Both errors cancelled, which is why **every waypoint below the
 unchanged**: 14 less two archives is the same 12 that 15 less three gave. The end state of 8
 never moved. Only the starting count and the archiving row were wrong, and a reader comparing
 this table against PRD section 5's "15, 12, 11 and 8" should expect the first number to
-differ and the rest to agree.
+differ and the rest to agree. **Amended 2026-09-29 by Story 3-8:** the end state of 8 did move,
+on 2026-09-26, to 10 (SM-7 amended, DW-249 closed); this paragraph records the 2026-09-02
+correction only, and § The end state below holds the current figure.
 
 The 13 repositories at this waypoint are `cuatro-portfolio`, `cuatro-finance`,
 `cuatro-tracker`, `cs-tournament`, `cs-tracker`, `digital-library`, `list-wheel`,
