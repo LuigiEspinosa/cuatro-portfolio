@@ -567,6 +567,11 @@ development_status:
   # fix round (the spec's Spec Change Log): deps-stage.test.ts now plants the prune's turbo and
   # workspace and the copy's destination on every run, as ops/token-contract.md says it does; the box
   # recovery command in ops/routing-inventory.md carries a dated amendment, DW-263 filed for Story 3.4.
+  # A re-verification passed with three minor findings, taken in fix round 2: criterion 2 names the
+  # two root files turbo's prune writes into the builder's tree, and ops/token-contract.md action 5 says
+  # this row records the first Image run once read. The Hub stops running a floating tag at Story 3.4:
+  # the box builds and runs it as cuatro-portfolio-anchor-app:latest until that story's deploy, which
+  # pulls the sha tag, first runs, so criterion 1 holds the publishing half alone.
   # Waits on the push, which in this run is the orchestrator's (the Operator's instruction of
   # 2026-09-28: push straight to dev), not the Operator's. Its Image run is where criterion 6 and
   # action 5's CI half are read: once read, this row records that run's id, its conclusion and the tag

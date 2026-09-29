@@ -244,6 +244,33 @@ not found", as Story 3-2 designed; `corepack pnpm test --run` exit 0, "Test File
 "Tests 1667 passed (1667)"; `node ops/contract-purity.mjs`, `node ops/registry-schema.mjs` and
 `node ops/literal-conformance.mjs` exit 0.
 
+**2026-09-28, fix round 2, after the re-verification, which passed.** It returned three minor
+findings, all taken as corrections to the records; no image, workflow, compose, test or product file
+changed.
+
+1. Criterion 2 said listings of the image and of the builder's tree show no part of the monorepo the
+   Hub does not build from, and Verification lists `.gitattributes` and `turbo.json` in the
+   builder's tree. Both are the prune's own output and neither reaches the image (Verification,
+   observed in this round). The criterion now names them as its exception, the Code Map's listing of
+   `full/` gains `.gitattributes`, and Verification says where the two come from. This reverses
+   review row 17, which kept the claim because the fix would edit the spec; the Dockerfile is
+   unchanged.
+2. Criterion 1 reads `epics.md`'s "no estate application ever runs a floating tag" as what this
+   story publishes, and neither this spec nor the board row said the Hub's runtime half waits for
+   Story 3.4: the box builds and runs it as `cuatro-portfolio-anchor-app:latest` until that story's
+   deploy pulls the sha tag. Design Notes § For Story 3.4 and the board row now say so.
+3. `ops/token-contract.md` action 5 said Story 3-3's board row records the first CI run, and the row
+   holds no run yet. The note now says the row records that run's id, conclusion and tag once it is
+   read, which is true before the push and after it.
+
+Observed on this tree, over `d69fd33`: the two Docker observations under Verification's "Not the
+whole monorepo", the throwaway images removed afterwards; `corepack pnpm typecheck` exit 0;
+`corepack pnpm --filter hub build` exit 0 (11 files published, Next.js 16.2.1, the same six routes),
+and the root's `corepack pnpm build` exit 1, "Command "build" not found", as Story 3-2 designed;
+`corepack pnpm test --run` exit 0, "Test Files 66 passed (66)", "Tests 1667 passed (1667)";
+`node ops/contract-purity.mjs`, `node ops/registry-schema.mjs` and `node ops/literal-conformance.mjs`
+exit 0.
+
 ## Review Triage Log
 
 Pass 1, 2026-09-28, over an 87.5 kB diff (Blind Hunter floor 10). Every layer ran inline in this
@@ -308,7 +335,11 @@ Story 3-2's image did, `/api/health` at 3.0.0. The base commit's `deps` stage, b
 directory the prototype failed "x Could not resolve workspace. Missing `devEngines.packageManager`
 or legacy `packageManager` field in package.json".
 
-**For Story 3.4.** The image for a commit is pushed by that commit's Image run, which runs beside
+**For Story 3.4.** Criterion 1 holds the publishing half of `epics.md`'s "no estate application ever
+runs a floating tag"; the Hub's runtime half is met at Story 3.4, since until that story's deploy
+pulls the sha tag the box builds and runs the Hub as `cuatro-portfolio-anchor-app:latest`
+(`ops/routing-inventory.md` § Image identity, observed 2026-08-24; `docker-compose.yml` names no
+`image:` for it). The image for a commit is pushed by that commit's Image run, which runs beside
 the Deploy run with no ordering between them, so a pull-based deploy has to wait for the tag. While
 the package is private the box needs a read token to pull; public, it needs none (Operator items).
 Turbo and Next telemetry run at their defaults in the image build, as in every build before it
