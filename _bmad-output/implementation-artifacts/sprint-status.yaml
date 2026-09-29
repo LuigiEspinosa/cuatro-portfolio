@@ -804,8 +804,11 @@ development_status:
   # 3-8 done 2026-09-29: DW-285 built as Registry 1.6.0 (absorbed_into: cuatro-portfolio and a source of
   # the Anchor's tree/main/apps/<dir> on cuatro-finance, cuatro-tracker and cs-tournament); Story 2.23's
   # job accepts a tree URL and proves its path on the named branch; ESTATE_COUNT, the estate sentence and
-  # both ops/contract-adoption.md tables at 10; ops/estate.md records the end state reached. Committed on
-  # dev, not pushed; the push run of registry-verification.yml is the first runner to read the sources.
+  # both ops/contract-adoption.md tables at 10; ops/estate.md records the end state reached. Pushed to dev
+  # 2026-09-29 at 2974ceb, every run green: CI 36639121657, Registry verification 36639121596 (Registry
+  # 1.6.0, 40 of 40, the three tree sources resolving anonymously), Image, Image (finance), Image
+  # (tournament), and Image (tracker) 36639121642 green on attempt 2 after a transient next/font Google
+  # Fonts fetch failure (nothing under apps/tracker changed). Reaches main at the next dev-to-main merge.
   3-8-record-the-estate-end-state: done
   epic-3-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
