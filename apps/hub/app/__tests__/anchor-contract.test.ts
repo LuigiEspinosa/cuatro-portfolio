@@ -1369,6 +1369,7 @@ describe('the migration is closed (Story 2-22, migration step 7)', () => {
     expect(isSearchExcluded('app/app.scss')).toBe(false);
     expect(isSearchExcluded('apps/finance/app/tokens.css')).toBe(true);
     expect(isSearchExcluded('apps/tracker/app/global.css')).toBe(true);
+    expect(isSearchExcluded('apps/tournament/app/globals.css')).toBe(true);
     expect(isSearchExcluded('apps/hub/app/app.scss')).toBe(false);
   });
 
