@@ -4,9 +4,10 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// `.github/workflows/image.yml` builds the Hub's image from `apps/hub/Dockerfile` on every push and pushes
-// it to GHCR (AD-8, Story 3-3), and Story 3-4 deploys by pulling it. Three of its properties would
-// regress silently, since the run stays green through each, so they are held here:
+// `.github/workflows/image.yml` builds the Hub's image from `apps/hub/Dockerfile` and pushes it to GHCR
+// (AD-8, Story 3-3) on a push to any branch but `main` and before every deploy, and Story 3-4 deploys
+// by pulling it. Three of its properties would regress silently, since the run stays green through
+// each, so they are held here:
 //
 // - Its trigger: a push to any branch but `main`, `dev` included, and a call. A push to `main` builds
 //   through `.github/workflows/deploy.yml`, whose `image` job calls this workflow before the deploy job
