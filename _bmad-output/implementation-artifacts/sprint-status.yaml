@@ -696,11 +696,37 @@ development_status:
   # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this
   # key names is done. The key keeps its wording; the story is the merge and the placement on the box
   # (epics.md Story 3.7's amendment, spec-vercel-removal.md).
-  # 3-7 review 2026-09-29: cs-tournament main (0d3e856, 102 commits) merged into apps/tournament at
-  # b98dabb, the workspace tournament and its Go worker two sha-tagged images in CI, compose services no
-  # deploy starts, the identity export and verify in ops/tournament-identity.mjs. Not pushed, not placed:
-  # the placement's seven steps are the Operator's (ops/estate.md, cs-tournament row), DW-279 to DW-283.
-  3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: review
+  # 3-7 awaiting-operator 2026-09-29: cs-tournament main (0d3e856, 102 commits) merged into
+  # apps/tournament at b98dabb, the workspace tournament under the one lockfile, its typecheck, suite and
+  # Go worker tests in ci.yml, the tournament and tournament-worker images (image-tournament.yml, build,
+  # probe, push by sha), compose services no deploy starts, the identity export and verify in
+  # ops/tournament-identity.mjs. Pushed at c551767: CI run 36600318062 (seven jobs), Image run
+  # 36600318056, Image (finance) run 36600318034, Image (tracker) run 36600318039 and Image (tournament)
+  # run 36600318160 (both jobs) green, pushing ghcr.io/luigiespinosa/tournament:c551767 and
+  # tournament-worker:c551767. Committed on dev, not live; not placed (AD-9).
+  # The first two criteria (the merge, the worker as its own deploy unit) are met in the repository. The
+  # third's verification (authenticate as an existing user after the move), the fourth (placement under
+  # the gate) and the fifth (hostname and Live in the Registry) need the box, so exactly these Operator
+  # actions remain:
+  # 1. Decide where the data lives (DW-280): Supabase Cloud as a declared store with an offsite backup,
+  #    or onto the box (replacing Supabase Auth, PostgREST and Realtime, a story of its own).
+  # 2. Choose the hostname (and the worker's, if MatchZy and the demo upload must reach it), create DNS
+  #    and the routes on the box's shared Caddy.
+  # 3. Rebuild the server image with NEXT_PUBLIC_SUPABASE_URL and the anon key as build inputs (DW-281);
+  #    set the TOURNAMENT_ values in .env.production through the gitignored .env route, STEAM_REALM and
+  #    STEAM_RETURN_URL pointed at the hostname.
+  # 4. If the data moves: node ops/tournament-identity.mjs export against the source, then verify against
+  #    the target for one admin and one viewer; both exit 0.
+  # 5. Merge Epic 3 dev into main (the deploy), in the order the 3-1 and 3-2 rows prescribe.
+  # 6. Place it under AD-9 (status: open), append cs-tournament to placements, record the load reading
+  #    after placement (SM-C4), and in that same change move the Registry entry from Complete to Live
+  #    with its live value (FR-28).
+  # 7. Delete the inclusivcup Vercel project if it still exists; archive LuigiEspinosa/cs-tournament,
+  #    kept public; Story 3.8 then writes absorbed_into and moves source.
+  # Open rulings that gate no criterion: Decisions 1 to 10 (the ids tournament and tournament-worker,
+  # DW-260's split), DW-278 (the two private GHCR packages), DW-279 (token adoption in Epic 8 wave 2),
+  # DW-282 and DW-283.
+  3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: awaiting-operator
   3-8-record-the-estate-end-state: backlog
   epic-3-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
