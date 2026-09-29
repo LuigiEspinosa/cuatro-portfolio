@@ -1674,6 +1674,16 @@ git checkout origin/dev -- docker-compose.yml docker/Dockerfile .dockerignore
 docker compose --env-file .env.production up -d --remove-orphans
 ```
 
+**Amended 2026-09-28** (Story 3-3, committed on `dev`): the command above no longer recovers the
+box. Story 3-3 moved `docker/Dockerfile` to `apps/hub/Dockerfile`, so once that commit reaches
+`origin/dev` the checkout stops at the pathspec ("pathspec 'docker/Dockerfile' did not match any
+file(s) known to git") and restores none of the three files; and since Story 3-2's push, `dev`'s
+Dockerfile copies `apps/hub/package.json`, which a `main` checkout does not have. **Observed
+2026-09-28** in a scratch clone at `origin/main` (`bda92cc`), with `b2fb599` (Story 3-3's commits)
+and then `0aec0fb` (`origin/dev` that day) as the source. The block stays as written: Story 3.4
+replaces the deploy whose configuration it recovers, so the replacement procedure is Story 3.4's
+(DW-263).
+
 ## The address the estate left
 
 | Field | Value | Nature |

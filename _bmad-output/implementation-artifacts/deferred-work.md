@@ -8234,3 +8234,25 @@ status: done
     **Owner: Story 3.4**, which adopts `docker-rollout`, for instance by running the rollout's own
     failure path against a container that serves nothing. **Trigger: Story 3.4.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-3-build-the-hub-image-in-ci-and-push-to-ghcr.md`
+  id: DW-263
+  summary: >-
+    `ops/routing-inventory.md` § Where the deploy goes gives a checkout of `docker-compose.yml`,
+    `docker/Dockerfile` and `.dockerignore` from `origin/dev` as the way to recover the box's
+    configuration, and once Story 3-3 is pushed that command recovers nothing.
+  evidence: |-
+    Found 2026-09-28 by Story 3-3's independent verification, and observed that day in a scratch
+    clone at `origin/main` (`bda92cc`). With `b2fb599`, Story 3-3's commits, as the source, the
+    checkout exits 1, "pathspec 'docker/Dockerfile' did not match any file(s) known to git", and
+    restores none of the three files, since Story 3-3 moved the Dockerfile to `apps/hub/Dockerfile`.
+    With `0aec0fb`, `origin/dev` that day, it restores all three, but that Dockerfile copies
+    `apps/hub/package.json`, which a `main` checkout does not have, so the block was already unfit
+    once Story 3-2 was pushed. Story 3-3's Code Map counted the record's mentions of
+    `docker/Dockerfile` as dated observations, and this one is a procedure. It carries a dated
+    amendment saying it no longer recovers the box, and is otherwise left as written, because the
+    configuration it recovers is the build-on-the-box deploy Story 3.4 replaces with a pulled image.
+
+    **Owner: Story 3.4**, which replaces that deploy and retires KV-1, the violation the section
+    records. **Trigger: Story 3.4.**
+  status: open
