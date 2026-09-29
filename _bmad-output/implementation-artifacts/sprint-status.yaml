@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-29-2026 12:10
+last_updated: 09-29-2026 17:20
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -727,7 +727,15 @@ development_status:
   # DW-260's split), DW-278 (the two private GHCR packages), DW-279 (token adoption in Epic 8 wave 2),
   # DW-282 and DW-283.
   3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel: awaiting-operator
-  3-8-record-the-estate-end-state: backlog
+  # 3-8 review 2026-09-29: ops/estate.md § The end state records 10 repositories (decided 2026-09-26,
+  # SM-7 amended, DW-249), the ten named, observed 14 at 2026-09-29T17:02:30Z, the waypoint table dated,
+  # the criterion's 8 and 15/11/8 noted against the rulings, SM-C2 stated, Registry 16 entries beside.
+  # No absorbed_into written: no source repository archived; the Registry change is DW-285. Stale
+  # "undecided" and "Story 3.8 then writes" sentences amended; DW-275 to Epic 4, DW-283 to Epic 8.
+  # Operator actions: archive connect-four-react (13); merge Epic 3 into main; run the tracker cutover;
+  # archive cuatro-finance, cs-tournament and, a week after the cutover, cuatro-tracker, all public;
+  # then DW-285 (absorbed_into, and the source shape Story 2.23's job accepts) and the count moves to 10.
+  3-8-record-the-estate-end-state: review
   epic-3-retrospective: optional
   # REMINDER: run /bmad-project-context (refresh) before starting epic-4.
   # Epic 3 introduces Turborepo, moves the app to apps/hub, and retires the
