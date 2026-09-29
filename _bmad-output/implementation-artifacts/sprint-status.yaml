@@ -740,7 +740,8 @@ development_status:
   # 21:33:20Z; the probe answered 200 on all 1,487 requests while both served and on all 108 across
   # the switch; cuatro-redeploy.sh retired. Every criterion is now observed. Remaining, gating no
   # criterion: archive cuatro-tracker a week after the cutover holds (runbook action 4), after which
-  # DW-285 writes absorbed_into; DW-275 (rollouts by hand) belongs to Epic 4.
+  # DW-285 writes absorbed_into; DW-275 (rollouts by hand) belongs to Epic 4. Archived the same
+  # evening at 21:53:16Z on the Operator's ruling (runbook action 4 dated).
   3-6-merge-cuatro-tracker-into-apps-tracker: done
   # 2026-09-25: the Operator ruling of 2026-09-24 removed Vercel from the estate, so the leaving this
   # key names is done. The key keeps its wording; the story is the merge and the placement on the box
@@ -795,8 +796,8 @@ development_status:
   # main (PR #84, 5117673) and deployed; the tracker cutover ran; and the Operator archived
   # connect-four-react, cuatro-finance and cs-tournament at 21:43:05Z, all public (the 13 waypoint
   # reached and passed, observed 11). Registry verification run 36635143162 on main: 40 of 40, the
-  # archived sources resolving. Still awaiting the Operator: archive cuatro-tracker on or after
-  # 2026-10-06 (ops/tracker-cutover.md action 4), then DW-285 as one Registry MINOR release with
+  # archived sources resolving. cuatro-tracker archived too at 21:53:16Z on the Operator's ruling
+  # not to wait the week (observed 10, the end state by count). Still awaiting: DW-285 as one Registry MINOR release with
   # absorbed_into on the three entries and the source shape the Operator ruled on 2026-09-29 (the
   # Anchor tree URL, with Story 2.23's check widened to accept it), moving ESTATE_COUNT, the
   # waypoint sentence and both ops/contract-adoption.md tables to 10.

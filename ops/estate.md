@@ -134,7 +134,7 @@ performed, not when it was decided.
 | After archiving | 12 | `Lumen` and `tcg-tracker` archived | **yes, by 2026-09-02** |
 | After listing | 14 | `covidmap` and `future-vizion` admitted by Operator ruling 2026-09-25 | **yes, 2026-09-26** |
 | After absorption | **13** | `connect-four-react` absorbed into the Anchor | reached 2026-09-29T21:43:05Z, when the Operator archived it (public) |
-| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor and their repositories archived | not yet: merged on `dev` 2026-09-29 and on `main` in PR #84 that day; `cuatro-finance` and `cs-tournament` archived 2026-09-29T21:43:05Z (public), so the count reads 11; `cuatro-tracker` waits a week after its cutover of 2026-09-29 (`ops/tracker-cutover.md` action 4) |
+| End state | 10 | `cuatro-finance`, `cuatro-tracker`, `cs-tournament` merged into the Anchor and their repositories archived | not yet: merged on `dev` 2026-09-29 and on `main` in PR #84 that day; `cuatro-finance` and `cs-tournament` archived 2026-09-29T21:43:05Z (public), so the count read 11; `cuatro-tracker` archived 2026-09-29T21:53:16Z (public) on the Operator's ruling not to wait the week `ops/tracker-cutover.md` action 4 asked for, so the count reads **10** and the end state is reached by repository count, with the Registry entries' `absorbed_into` and `source` to follow under DW-285 |
 
 **Amended 2026-09-26.** The `After listing` row is new, and the two rows below it each carry two more
 than they did (11 and 8 until that date): the ruling admitted two repositories and changed nothing
@@ -150,7 +150,9 @@ observed 14 at 2026-09-29T17:02:30Z, and 13 is the next station; the second row 
 **Amended 2026-09-29, evening:** the estate passed the `After absorption` row at 21:43:05Z, when the
 Operator archived `connect-four-react`, `cuatro-finance` and `cs-tournament` in one sitting, and sits
 between it and the end state at an observed 11; `cuatro-tracker`'s archive, a week after its cutover,
-takes it to 10.
+takes it to 10. **Later that evening**, at 21:53:16Z, the Operator archived `cuatro-tracker` without
+the week's wait, and the observed count is **10**: the end state, by repository count, with DW-285's
+Registry release the one step left.
 
 **The two 12s in this file are different numbers and it is a coincidence that they match.** One
 is SM-7's MVP target of 12 repositories, discussed above as a ceiling. The other is the observed
