@@ -8749,3 +8749,21 @@ status: done
 
     **Owner: Epic 8 wave 2, or Story 3.8's end-state record.** **Trigger: either.**
   status: open
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-7-merge-cs-tournament-into-apps-tournament-and-leave-vercel.md`
+  id: DW-284
+  summary: >-
+    `EXPORT_SQL` in `ops/tournament-identity.mjs` runs against a real Postgres only by hand, never in an
+    automated test, so a regression in the query passes CI; only `mapIdentities` is unit tested.
+  evidence: |-
+    Observed 2026-09-29 by Story 3-7's independent verification, which reran the manual
+    `postgres:17-alpine` export recorded in the spec's Verification and found no automated case for it
+    (the story's review triage #14 had rejected one as more than a direct fix). A wrong join would show
+    as a role mismatch that `verify` refuses at the Operator's placement, which bounds the harm. The
+    change that closes it adds a Postgres-backed case for the export (a CI service container, as the
+    tracker's suite has beside `redis:7-alpine`) holding migration `0001_core_schema.sql`, a minimal
+    `auth.users` and a user carrying a password hash.
+
+    **Owner: unassigned.** **Trigger: the next change to `EXPORT_SQL`, or the Operator's placement of
+    `cs-tournament`, whichever comes first.**
+  status: open
