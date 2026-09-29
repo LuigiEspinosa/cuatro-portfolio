@@ -612,6 +612,11 @@ development_status:
   # both, all 200; 1,683 unit tests in 66 files. Six review layers ran inline, not independent: eight
   # patches, DW-265 and DW-266 deferred, no loopback. DW-262, DW-263 and DW-251's deploy half closed;
   # DW-264 to DW-266 filed.
+  # The independent verification passed with two minor findings, both taken in a fix round (the
+  # spec's Spec Change Log): the two Story 3-3 amendments and image-workflow.test.ts's header said
+  # image.yml builds on every push, and now say a push to main builds only through deploy.yml's image
+  # job (353333e); action 11 now says the credential-free pull rests on the package staying public, and
+  # gives the deploy user's GHCR login to run before its dispatch if it is made private (92b7ec6).
   # Awaiting the Operator at the Epic 3 merge, ops/contract-serving.md Pending Operator action 11: the
   # merge's own Deploy run fails by design at HUB_TAG, since the box runs its old script (DW-264); a
   # dispatch runs the new one; watch cuatro.dev through it, then date KV-1's Anchor half from that run

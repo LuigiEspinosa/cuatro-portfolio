@@ -204,6 +204,36 @@ run on this host).
 
 ## Spec Change Log
 
+**2026-09-28, fix round 1, after the independent verification, which passed.** It returned two minor
+findings, both taken as corrections to the records and to one suite comment; no workflow, script,
+compose or product file changed, and no assertion either. Verification and Design Notes state neither
+corrected claim, so neither changed.
+
+1. Two Story 3-3 amendments said `image.yml` builds the image on every push: the "Reaches production
+   by" row in `ops/contract-serving.md`, and `ops/token-contract.md`'s note on what the `deps` check
+   does not do, with its action 5. Since this story it runs on a push to any branch but `main`, and
+   from the Epic 3 merge a push to `main` builds only through `deploy.yml`'s `image` job, before every
+   deploy. Each now carries a dated Story 3-4 amendment saying so, and `image-workflow.test.ts`'s
+   header, which contradicted its own trigger bullet, says the same (`353333e`).
+2. `ops/contract-serving.md` Pending Operator action 11 said nothing on the box is needed first, which
+   holds only while the package stays public, an open Operator ruling since Story 3-3. § The deploy
+   pulls a tag and rolls it now says so and gives the `deploy` user's GHCR login, with a personal
+   access token (classic) scoped `read:packages` alone and kept in the gitignored `.env`, and action 11
+   runs it before its dispatch if the ruling makes the package private first (`92b7ec6`). This takes
+   review row 12, which pass 1 rejected, as a record: the script still logs in to nothing.
+
+Observed on this tree, over `ff16632`: an anonymous registry token read the manifests of
+`hub:7cad084...` and `hub:38f9a28...`, HTTP 200 each, so the package is still public; the login's
+extraction, its `sed` and `tr` run on a throwaway file in CRLF and in LF, gave the value's bytes
+alone; GitHub's Container registry documentation names a personal access token (classic) and the
+`read:packages` scope for a pull; `grep -rn 'every push' ops/*.md docker/__tests__/image-workflow.test.ts`
+finds `image.yml` said to build on every push only in the Story 3-3 text each new amendment follows;
+`corepack pnpm typecheck` exit 0; `corepack pnpm --filter hub build` exit 0 (11 files published,
+Next.js 16.2.1, the same six routes), and the root's `corepack pnpm build` exit 1, "Command "build"
+not found", as Story 3-2 designed; `corepack pnpm test --run` exit 0, "Test Files 66 passed (66)",
+"Tests 1683 passed (1683)"; `node ops/contract-purity.mjs`, `node ops/registry-schema.mjs` and
+`node ops/literal-conformance.mjs` exit 0.
+
 ## Review Triage Log
 
 Pass 1, 2026-09-28, over a 135 kB diff (Blind Hunter floor: the square root of 132.3 kB plus one is
