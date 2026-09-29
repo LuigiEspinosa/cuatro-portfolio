@@ -6,9 +6,9 @@
 The Anchor of the Cuatro Ecosystem: the portfolio at cuatro.dev, plus the contracts in
 `contracts/`, published at `https://cuatro.dev/contracts/`: the design token contract, which a
 second application, `cs-tracker`, renders, and the App Registry the Hub's Suite Directory reads.
-Next.js 16 / React 19 / TypeScript, Sass, pnpm, Vitest, Playwright, deployed by Docker Compose
-over SSH to one Hostinger KVM 2 box. Planning artifacts are in `_bmad-output/planning-artifacts/`;
-how the estate actually runs is in `ops/`.
+Next.js 16 / React 19 / TypeScript, Sass, pnpm, Turborepo, Vitest, Playwright, deployed by Docker
+Compose over SSH to one Hostinger KVM 2 box. Planning artifacts are in
+`_bmad-output/planning-artifacts/`; how the estate actually runs is in `ops/`.
 
 ## Policy
 
@@ -51,6 +51,13 @@ how the estate actually runs is in `ops/`.
 
 - `pnpm` is not on PATH on this host. Prefix every command with `corepack`, as in
   `corepack pnpm build`.
+- Turborepo 2.10.13 (`turbo.json`) defines `build`, `test`, `typecheck` and `lint`, all uncached.
+  While the Hub is the root package its scripts run as the root tasks `//#build`, `//#test` and
+  `//#typecheck`, and no workspace defines `lint`. turbo spawns `pnpm` itself, so
+  `corepack pnpm turbo ...` fails here with "Unable to find package manager binary": run
+  `corepack enable --install-directory <dir> pnpm` once, put `<dir>` first on PATH, then
+  `pnpm turbo run test -- --run`. A task that resolves to no script exits 0 with "No tasks were
+  executed", so CI invokes the scripts directly and never gates through turbo (DW-252).
 - `corepack pnpm test` starts Vitest in watch mode and never exits. Always pass `--run`. The
   full suite is 1634 tests across 63 files in roughly 80 seconds on this host, so run all of it.
   Measured 2026-09-25 at `935df26`; it was 890 in 34 files on 2026-08-29, so treat this figure

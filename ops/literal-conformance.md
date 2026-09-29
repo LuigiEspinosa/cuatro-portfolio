@@ -103,7 +103,7 @@ numbers other records and specs cite in the jobs above it did not move. No other
 | Blocking | Yes. No `continue-on-error`, no `\|\| true`, no `if:` and no `needs:` | **Decision.** AD-21 |
 | **How far that reach goes** | A red job stops nothing mechanically: `main` names no required status check (`ops/contract-adoption.md`), and `deploy.yml` fires on the same push with no `needs:` | **Observed** in those records; unchanged by this story, as for every other job in the file |
 | Triggers | The file's own, `push` to `**` and `pull_request` to `main`; the job declares no `on:` | **Decision** |
-| Runner | `ubuntu-latest`, Node 22 through `setup-node` with `package-manager-cache: false` | **Decision.** The Node major every job pins |
+| Runner | `ubuntu-latest`, Node 24 through `setup-node` with `package-manager-cache: false` | **Decision.** The Node major every job pins. **Amended 2026-09-28:** Node 22 until Story 3-1 moved every job in the file to the stack's Node 24 LTS, committed on `dev` and live from the Epic 3 merge |
 | Installs | Nothing. The gate imports only `node:` builtins and lists the tree with the `git` the checkout carries | **Decision.** It still reports on the run where `pnpm install --frozen-lockfile` fails, as `contract-purity` and `registry-schema` do |
 | Ceiling | `timeout-minutes: 5` | **Decision.** The other two no-install gates' ceiling |
 | Command | `node ops/literal-conformance.mjs`, no argument and no `env:`. The root is the module's parent directory, so nothing reaching the runner redirects what it reads | **Decision** |

@@ -332,7 +332,7 @@ below exists because that instruction alone is not enforcement.
 |---|---|---|
 | Blocking | Yes. No `continue-on-error`, no `|| true`, no soft-fail | **Decision.** AD-21, and `AGENTS.md` under "Policy" |
 | Triggers | `push` to `**` and `pull_request` to `main` | **Observed 2026-08-24.** The job sits in the existing file and inherits that file's `on:` block at `:3-7` rather than declaring its own, so the two can never drift |
-| Runner | `ubuntu-latest`, Node 22 through `setup-node`, pnpm cache on | **Decision.** The same shape as the `test` job |
+| Runner | `ubuntu-latest`, Node 24 through `setup-node`, pnpm cache on | **Decision.** The same shape as the `test` job. **Amended 2026-09-28:** Node 22 until Story 3-1 moved every job in `ci.yml` to the stack's Node 24 LTS, committed on `dev` and live from the Epic 3 merge |
 | Ceiling | `timeout-minutes: 10` | **Decision.** The job installs, runs one Node script and reads `git status`, so it is the fastest thing in the file. A hung install becomes a failure with a cause rather than a job the platform eventually kills, which is the argument the `rendered-output` job already makes |
 | What it does | Installs, runs `pnpm tokens:build`, then fails if `git status --porcelain --ignored=matching -- contracts/` is not empty | **Decision** |
 | Why `git status` and not only `git diff` | `git diff --exit-code` is blind to a file the generator newly created, which is exactly the shape of mistake Stories 1.12 and 1.13 will make when they add a second and a third output. `git status --porcelain` also sees an untracked path and a deleted one | **Decision**, demonstrated by Probe 3 below |

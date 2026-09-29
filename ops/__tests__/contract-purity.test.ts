@@ -965,8 +965,8 @@ describe('the CI wiring', () => {
     // these two were not.
     const instructions = instructionsOf(JOB);
     expect(instructions, 'ops/contract-purity.md tables ubuntu-latest').toMatch(/^\s+runs-on: ubuntu-latest$/m);
-    expect(instructions, 'ops/contract-purity.md tables Node 22 through setup-node').toMatch(
-      /^\s+node-version: 22$/m
+    expect(instructions, 'ops/contract-purity.md tables Node 24 through setup-node').toMatch(
+      /^\s+node-version: 24$/m
     );
     expect(instructions, 'a container: would change what the recorded run means').not.toMatch(/^\s+container\s*:/m);
   });

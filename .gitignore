@@ -212,3 +212,12 @@ capacity-week/
 # Graphify knowledge graph, rebuilt from the tree by `graphify update .` (see
 # `_bmad/custom/bmad-build.toml`). Derived output, never committed.
 /graphify-out/
+
+# Turborepo's local state. Every `turbo` invocation creates the directory, even
+# with every task uncached (Story 3-1). Never committed.
+/.turbo/
+
+# The pnpm store of the container e2e command in AGENTS.md, which keeps it at the
+# repository root on the bind mount: a package the lockfile gains lands here on the
+# next container run (observed 2026-09-28, Story 3-1). Local state, never committed.
+/.pnpm-store/
