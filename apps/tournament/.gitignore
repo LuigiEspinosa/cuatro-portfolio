@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js / build output
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment variables / secrets
+.env*
+# ...but DO commit the example (variable names / placeholders only, never real values)
+!.env.example
+
+# Deploy
+.vercel/
+
+# Logs & debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing / coverage
+/coverage
+.nyc_output
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Claude Code local (machine-specific) settings
+.claude/settings.local.json
+
+# CS2 demo files — large binaries, keep out of git (store locally / object storage)
+*.dem
+*.dem.gz
+*.dem.bz2
+# Local match demo downloads
+demos/
+
+# Ops inventory with real refs/endpoints (keep account-specific values out of git)
+docs/ops/*.local.md
+
+# CLI working state (not source)
+.wrangler/
+supabase/.temp/
+
+# Go worker build artifacts (the module lives in worker/; source is committed, binaries are not)
+worker/worker
+worker/worker.exe
+worker/*.exe
+
+# Python bytecode. `roulette/vectors/independence/diff_independence.py` IMPORTS the re-derived
+# implementation beside it, so re-running Story 6.11's AC8 measurement drops a __pycache__ into a
+# directory the vector file-set pin watches. The pin skips directories, but an untracked folder
+# appearing after every run would dirty the scope proof for no reason.
+__pycache__/
+*.pyc

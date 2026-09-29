@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CS2 Tournament — Brainstorm Keepsake // 2026-06-29</title>
+<style>
+  /* ============================================================
+     CS2 / ESPORTS-BROADCAST KEEPSAKE
+     Self-contained. No external fonts, images, or network deps.
+     ============================================================ */
+
+  :root {
+    --bg:            #07090f;
+    --bg-2:          #0c1018;
+    --panel:         #11161f;
+    --panel-2:       #161d29;
+    --line:          #232c3b;
+    --line-bright:   #34465f;
+    --ink:           #e8eef7;
+    --ink-dim:       #9aa9bd;
+    --ink-faint:     #5e6b80;
+
+    /* tracer / neon accents */
+    --ct:            #4fc3f7;   /* CT blue */
+    --t:             #ffb02e;   /* T gold  */
+    --neon:          #00e5a0;   /* roulette green */
+    --pink:          #ff4d8d;
+    --purple:        #a06bff;
+    --danger:        #ff5252;
+
+    --glow-ct:       0 0 18px rgba(79,195,247,.45);
+    --glow-neon:     0 0 18px rgba(0,229,160,.45);
+    --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(79,195,247,.10), transparent 60%),
+      radial-gradient(900px 500px at 0% 10%, rgba(255,176,46,.07), transparent 55%),
+      radial-gradient(1000px 700px at 50% 120%, rgba(0,229,160,.08), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* faint arena grid */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(120,150,190,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,150,190,.05) 1px, transparent 1px);
+    background-size: 46px 46px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(circle at 50% 30%, #000 30%, transparent 85%);
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 0 22px 90px; }
+
+  .sr-only {
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
+  a { color: var(--ct); }
+
+  /* ---------- HEADER / BROADCAST BAR ---------- */
+  header.hero {
+    position: relative;
+    padding: 54px 0 30px;
+    text-align: center;
+  }
+  .ticker-bar {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .28em;
+    color: var(--ink-faint); text-transform: uppercase; margin-bottom: 22px;
+  }
+  .live-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--danger); box-shadow: 0 0 10px var(--danger);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.25;} }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .34em;
+    color: var(--neon); text-transform: uppercase; margin: 0 0 12px;
+  }
+  h1.title {
+    font-size: clamp(30px, 6.2vw, 62px);
+    line-height: 1.02; margin: 0 0 6px; font-weight: 900;
+    letter-spacing: -.5px;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, #ffffff 0%, var(--ct) 65%, #2a7fb0 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: var(--ct);
+    text-shadow: 0 0 38px rgba(79,195,247,.18);
+  }
+  .subtitle { color: var(--ink-dim); max-width: 760px; margin: 8px auto 0; font-size: 16px; }
+  .goal-chip {
+    display: inline-block; margin-top: 20px;
+    border: 1px solid var(--line-bright); border-radius: 999px;
+    padding: 8px 18px; font-size: 13px; color: var(--ink);
+    background: rgba(255,176,46,.06);
+  }
+  .goal-chip b { color: var(--t); }
+
+  /* stat strip */
+  .stat-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin: 34px auto 0; max-width: 760px;
+  }
+  .stat-strip .cell {
+    border: 1px solid var(--line); border-radius: 10px;
+    background: linear-gradient(180deg, var(--panel), var(--bg-2));
+    padding: 14px 8px;
+  }
+  .stat-strip .num {
+    font-family: var(--mono); font-size: 26px; font-weight: 800; color: var(--neon);
+    text-shadow: var(--glow-neon); display: block; line-height: 1;
+  }
+  .stat-strip .lab {
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-faint); margin-top: 7px;
+  }
+
+  /* ---------- SECTION / ROUND SCAFFOLD ---------- */
+  section.round { margin-top: 64px; scroll-margin-top: 20px; }
+  .round-head { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
+  .round-badge {
+    flex: 0 0 auto;
+    font-family: var(--mono); font-weight: 800; font-size: 13px;
+    letter-spacing: .1em;
+    padding: 7px 12px; border-radius: 7px;
+    border: 1px solid var(--accent, var(--ct));
+    color: var(--accent, var(--ct));
+    background: color-mix(in srgb, var(--accent, var(--ct)) 10%, transparent);
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .round-head h2 {
+    margin: 0; font-size: clamp(21px, 3.4vw, 30px); font-weight: 800;
+    letter-spacing: -.3px;
+  }
+  .round-sub {
+    margin: 4px 0 26px 0; color: var(--ink-dim); font-size: 15px;
+    border-left: 2px solid var(--accent, var(--ct)); padding-left: 14px;
+  }
+  .round-sub .tech { color: var(--accent, var(--ct)); font-family: var(--mono); font-size: 12px; letter-spacing:.12em; text-transform: uppercase; }
+
+  /* ---------- STAT CARDS (idea cards) ---------- */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 14px; }
+  .stat-card {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
+    padding: 16px 16px 16px 18px;
+    overflow: hidden;
+    transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  }
+  .stat-card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--accent, var(--ct)); opacity: .8;
+  }
+  .stat-card::after {
+    content: ""; position: absolute; right: -40px; top: -40px;
+    width: 90px; height: 90px; border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent, var(--ct)) 22%, transparent), transparent 70%);
+    opacity: 0; transition: opacity .2s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent, var(--line-bright));
+    box-shadow: 0 12px 28px rgba(0,0,0,.5), 0 0 0 1px color-mix(in srgb, var(--accent, var(--ct)) 30%, transparent);
+  }
+  .stat-card:hover::after { opacity: 1; }
+  .stat-card .kicker {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent, var(--ct)); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .stat-card .kicker .tag {
+    border: 1px solid var(--line-bright); border-radius: 4px; padding: 1px 6px;
+    color: var(--ink-faint); font-size: 9px;
+  }
+  .stat-card h3 { margin: 0 0 7px; font-size: 16px; font-weight: 700; line-height: 1.25; color: var(--ink); }
+  .stat-card p { margin: 0; font-size: 13.5px; color: var(--ink-dim); }
+
+  /* ---------- ROULETTE HERO ---------- */
+  .roulette-stage {
+    display: grid; grid-template-columns: 360px 1fr; gap: 30px; align-items: center;
+    margin: 8px 0 34px;
+    border: 1px solid var(--line); border-radius: 16px;
+    background:
+      radial-gradient(420px 280px at 12% 30%, rgba(0,229,160,.10), transparent 70%),
+      linear-gradient(180deg, var(--panel), var(--bg-2));
+    padding: 28px;
+  }
+  .wheel-col { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .wheel-frame { position: relative; width: 300px; height: 300px; }
+  .wheel-pointer {
+    position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; z-index: 5;
+    border-left: 13px solid transparent; border-right: 13px solid transparent;
+    border-top: 22px solid var(--t);
+    filter: drop-shadow(0 0 6px rgba(255,176,46,.7));
+  }
+  .wheel {
+    width: 300px; height: 300px; border-radius: 50%;
+    border: 6px solid #0a0d13;
+    box-shadow: 0 0 0 3px var(--line-bright), 0 0 40px rgba(0,229,160,.25), inset 0 0 30px rgba(0,0,0,.6);
+    transition: transform 4.6s cubic-bezier(.12,.62,.12,1);
+    position: relative;
+  }
+  .wheel-hub {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 56px; height: 56px; border-radius: 50%; z-index: 4;
+    background: radial-gradient(circle at 40% 35%, #1c2735, #090c11);
+    border: 2px solid var(--line-bright);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 9px; letter-spacing: .12em; color: var(--neon);
+    text-align: center;
+  }
+  .wheel-label {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; color: var(--ink-faint);
+    text-transform: uppercase; min-height: 18px; text-align: center;
+  }
+  .wheel-label b { color: var(--neon); }
+  .spin-btn {
+    cursor: pointer; font-family: var(--mono); font-weight: 800; font-size: 13px;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: #06231c; background: var(--neon);
+    border: none; border-radius: 8px; padding: 11px 24px;
+    box-shadow: var(--glow-neon);
+    transition: transform .12s ease, filter .12s ease;
+  }
+  .spin-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+  .spin-btn:active { transform: translateY(1px); }
+  .spin-btn:disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.4); }
+
+  .roulette-copy h3 { margin: 0 0 8px; font-size: 20px; }
+  .roulette-copy p { color: var(--ink-dim); margin: 0 0 14px; font-size: 14.5px; }
+  .bucket-row { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .bucket {
+    border: 1px solid var(--line); border-radius: 9px; padding: 11px 12px;
+    background: var(--panel-2);
+  }
+  .bucket .b-name { font-weight: 700; font-size: 13.5px; }
+  .bucket .b-name .swatch { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:7px; vertical-align: middle; }
+  .bucket .b-desc { font-size: 12px; color: var(--ink-faint); margin-top: 3px; }
+
+  /* ---------- SYNTHESIS / MAIN EVENT ---------- */
+  .main-event {
+    margin-top: 78px;
+    border: 1px solid var(--line-bright); border-radius: 18px;
+    background:
+      radial-gradient(700px 360px at 50% -10%, rgba(79,195,247,.12), transparent 65%),
+      linear-gradient(180deg, #0e1420, #090c12);
+    padding: 8px 6px 6px;
+    box-shadow: 0 0 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .me-inner { padding: 30px 28px 36px; }
+  .me-header { text-align: center; margin-bottom: 30px; }
+  .me-header .eyebrow { color: var(--t); }
+  .me-header h2 {
+    margin: 4px 0 0; font-size: clamp(26px, 5vw, 44px); font-weight: 900; text-transform: uppercase;
+    letter-spacing: -.5px;
+    background: linear-gradient(180deg,#fff,var(--t) 80%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color: var(--t);
+  }
+  .me-header p { color: var(--ink-dim); max-width: 680px; margin: 12px auto 0; }
+
+  /* keystone callout */
+  .keystone {
+    border: 1px solid var(--ct); border-radius: 14px;
+    background: linear-gradient(180deg, rgba(79,195,247,.10), rgba(79,195,247,.02));
+    padding: 22px 24px; margin-bottom: 26px; position: relative;
+  }
+  .keystone .key-tag {
+    position: absolute; top: -11px; left: 22px;
+    background: var(--ct); color: #04222f; font-family: var(--mono); font-weight: 800;
+    font-size: 10px; letter-spacing: .16em; padding: 3px 10px; border-radius: 5px; text-transform: uppercase;
+  }
+  .keystone h3 { margin: 6px 0 8px; font-size: 19px; }
+  .keystone p { margin: 0; color: var(--ink-dim); font-size: 14.5px; }
+  .keystone .pillars { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 16px; }
+  .keystone .pillar { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: rgba(7,9,15,.5); }
+  .keystone .pillar .pi { font-family: var(--mono); font-size: 11px; color: var(--ct); letter-spacing:.1em; text-transform: uppercase; }
+  .keystone .pillar .pt { font-size: 13px; color: var(--ink-dim); margin-top: 4px; }
+
+  /* synthesis move cards */
+  .moves { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 30px; }
+  .move {
+    border: 1px solid var(--line); border-radius: 12px; padding: 18px 18px;
+    background: var(--panel); position: relative;
+    transition: border-color .16s ease, transform .16s ease;
+  }
+  .move:hover { border-color: var(--line-bright); transform: translateY(-3px); }
+  .move .m-ic { font-size: 22px; }
+  .move h4 { margin: 8px 0 6px; font-size: 16px; }
+  .move p { margin: 0; color: var(--ink-dim); font-size: 13.5px; }
+  .move.wild { border-color: var(--purple); background: linear-gradient(180deg, rgba(160,107,255,.08), transparent); }
+  .move.wild .badge-wild {
+    position:absolute; top:14px; right:14px; font-family:var(--mono); font-size:9px; letter-spacing:.14em;
+    color: var(--purple); border:1px solid var(--purple); border-radius: 4px; padding:2px 7px; text-transform: uppercase;
+  }
+
+  /* the spine — three reward tracks */
+  .spine-title { text-align: center; margin: 6px 0 18px; }
+  .spine-title .eyebrow { color: var(--neon); }
+  .spine-title h3 { margin: 4px 0 0; font-size: 24px; font-weight: 800; }
+  .tracks { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .track {
+    border-radius: 14px; padding: 22px 20px 24px; position: relative; overflow: hidden;
+    border: 1px solid var(--tc, var(--ct));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--tc, var(--ct)) 12%, var(--panel)), var(--bg-2));
+  }
+  .track .t-num { font-family: var(--mono); font-size: 12px; color: var(--tc); letter-spacing: .2em; }
+  .track h4 { margin: 8px 0 4px; font-size: 19px; color: var(--ink); }
+  .track .t-tag { font-size: 11px; color: var(--tc); font-family: var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+  .track p { font-size: 13px; color: var(--ink-dim); margin: 12px 0 0; }
+  .track .t-glow {
+    position:absolute; bottom:-40px; right:-30px; width:120px; height:120px; border-radius:50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--tc) 30%, transparent), transparent 70%);
+  }
+
+  /* decision strip */
+  .decision {
+    margin-top: 30px; border: 1px dashed var(--line-bright); border-radius: 12px;
+    padding: 22px 24px; background: rgba(255,176,46,.04);
+  }
+  .decision h3 { margin: 0 0 14px; font-size: 17px; color: var(--t); font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+  .decision .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .decision h5 { margin: 0 0 8px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); }
+  .decision ul { margin: 0; padding-left: 18px; }
+  .decision li { font-size: 13px; color: var(--ink-dim); margin-bottom: 5px; }
+  .decision li b { color: var(--ink); }
+  .pill-v1 { color: var(--neon); }
+  .pill-later { color: var(--purple); }
+
+  /* footer */
+  footer.foot {
+    margin-top: 70px; text-align: center; color: var(--ink-faint);
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    border-top: 1px solid var(--line); padding-top: 26px;
+  }
+  footer.foot .gg { color: var(--neon); font-size: 13px; letter-spacing: .3em; }
+
+  /* responsive */
+  @media (max-width: 860px) {
+    .roulette-stage { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+    .roulette-copy { text-align: left; }
+    .bucket-row { grid-template-columns: 1fr; }
+    .keystone .pillars { grid-template-columns: 1fr; }
+    .moves { grid-template-columns: 1fr; }
+    .tracks { grid-template-columns: 1fr; }
+    .decision .cols { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .stat-strip { grid-template-columns: repeat(2,1fr); }
+    .round-head { flex-wrap: wrap; }
+    .wheel-frame, .wheel { width: 250px; height: 250px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wheel { transition: none; }
+    .live-dot { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <h2 class="sr-only">Keepsake from a brainstorming session about a Counter-Strike 2 tournament website for 8 to 16 friends, covering four ideation techniques and a final synthesis built around three independent reward tracks.</h2>
+
+  <div class="wrap">
+
+    <!-- ===================== HERO ===================== -->
+    <header class="hero">
+      <div class="ticker-bar"><span class="live-dot"></span> Broadcast Replay &nbsp;//&nbsp; Brainstorm Session &nbsp;//&nbsp; Status: COMPLETE</div>
+      <p class="eyebrow">Ideation Demo File &mdash; Parsed &amp; Archived</p>
+      <h1 class="title">CS2 Tournament<br>Site // Brainstorm</h1>
+      <p class="subtitle">An awards roulette, prize structure, engagement loops and bracket UX for a tournament of 8&ndash;16 friends &mdash; everything ideated, named and synthesized in one autonomous run.</p>
+      <div class="goal-chip">Goal &mdash; <b>Expand the product vision before writing the product brief</b></div>
+
+      <div class="stat-strip">
+        <div class="cell"><span class="num">4</span><span class="lab">Techniques</span></div>
+        <div class="cell"><span class="num">62</span><span class="lab">Ideas Logged</span></div>
+        <div class="cell"><span class="num">3</span><span class="lab">Reward Tracks</span></div>
+        <div class="cell"><span class="num" id="dateNum">06.29</span><span class="lab">2026 &mdash; Recorded</span></div>
+      </div>
+    </header>
+
+    <!-- ===================== ROUND 1 — MORPHOLOGICAL ===================== -->
+    <section class="round" id="r1" style="--accent: var(--neon);">
+      <div class="round-head">
+        <span class="round-badge">Round 01</span>
+        <h2>The Awards Roulette &amp; Prize Structure</h2>
+      </div>
+      <p class="round-sub"><span class="tech">Technique &middot; Morphological Analysis</span> &mdash; break the awards machine into mechanics, then recombine. The demo parser is the moat: it sees stats no human scoreboard ever could.</p>
+
+      <!-- ROULETTE HERO MOTIF -->
+      <div class="roulette-stage">
+        <div class="wheel-col">
+          <div class="wheel-frame">
+            <div class="wheel-pointer"></div>
+            <svg class="wheel" id="wheel" viewBox="0 0 200 200" role="img" aria-label="Awards roulette wheel">
+              <!-- 8 segments, drawn as pie slices -->
+              <g id="wheelG"></g>
+            </svg>
+            <div class="wheel-hub">SPIN<br>THE<br>FATE</div>
+          </div>
+          <div class="wheel-label" id="wheelLabel">Press spin &mdash; <b>luck sets the game</b></div>
+          <button class="spin-btn" id="spinBtn">Spin the wheel</button>
+        </div>
+
+        <div class="roulette-copy">
+          <h3>Two-stage draw &mdash; luck sets the game, skill wins it</h3>
+          <p>The roulette randomly picks <em>which</em> categories are live; the demo stats then deterministically pick each winner. Categories stay <strong>mystery-blurred</strong> until the ceremony so nobody games toward a known award mid-tournament. The ceremony itself is a literal spinning-wheel reveal &mdash; a dramatic per-category flip, recap- and stream-ready.</p>
+          <div class="bucket-row">
+            <div class="bucket"><div class="b-name"><span class="swatch" style="background:var(--ct)"></span>Skill</div><div class="b-desc">Pure-fragging excellence</div></div>
+            <div class="bucket"><div class="b-name"><span class="swatch" style="background:var(--pink)"></span>Anti-skill comedy</div><div class="b-desc">Banter fuel &amp; shame</div></div>
+            <div class="bucket"><div class="b-name"><span class="swatch" style="background:var(--t)"></span>Clutch / heroic</div><div class="b-desc">1vX moments of glory</div></div>
+            <div class="bucket"><div class="b-name"><span class="swatch" style="background:var(--purple)"></span>Weird demo-only</div><div class="b-desc">Knife kills, molly dmg, wallbangs</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="stat-card"><div class="kicker">Anti-sweep <span class="tag">rule</span></div><h3>One trophy per spin</h3><p>A winner is removed from the remaining draws that spin &mdash; nobody walks off with the whole shelf.</p></div>
+        <div class="stat-card"><div class="kicker">Anti-sweep <span class="tag">rule</span></div><h3>Hidden luck meter</h3><p>Draws are weighted toward players with empty trophy shelves, so the spotlight spreads.</p></div>
+        <div class="stat-card"><div class="kicker">Anti-farm <span class="tag">guard</span></div><h3>Comedy thresholds</h3><p>Min rounds / kills gates on comedy awards &mdash; you can't farm "worst" by going AFK.</p></div>
+        <div class="stat-card"><div class="kicker">Prize design</div><h3>Split the pots</h3><p>The big bracket prize is separate from awards; awards give badges &amp; tokens plus small real prizes.</p></div>
+        <div class="stat-card"><div class="kicker">Banter</div><h3>Cursed shame trophies</h3><p>The Wooden Spoon &amp; Team-Damage MVP &mdash; funny, brutal, pure friend-group fuel.</p></div>
+        <div class="stat-card"><div class="kicker">Pity system</div><h3>Participation Roulette</h3><p>Anyone finishing with zero awards enters a guaranteed consolation spin.</p></div>
+        <div class="stat-card"><div class="kicker">Loot feel</div><h3>Gacha rarity tiers</h3><p>Common vs rare award categories; rare pulls feel special and carry bigger prizes.</p></div>
+        <div class="stat-card"><div class="kicker">Fairness</div><h3>Normalized rate awards</h3><p>Per-round / normalized rates let early-eliminated players still win.</p></div>
+        <div class="stat-card"><div class="kicker">Anticipation</div><h3>Live odds board</h3><p>Pre-ceremony: "you're 2nd for Most Knife Kills" &mdash; tension before the wheel turns.</p></div>
+        <div class="stat-card"><div class="kicker">Integrity</div><h3>Provably-fair seed</h3><p>Seeded RNG where seed = hash of the final demo, published, defusing rigging claims.</p></div>
+        <div class="stat-card"><div class="kicker">Budget cap</div><h3>Stat-monster cap</h3><p>Cap how many awards count toward the real-prize budget per player &mdash; no hoovering.</p></div>
+      </div>
+    </section>
+
+    <!-- ===================== ROUND 2 — CROSS-POLLINATION ===================== -->
+    <section class="round" id="r2" style="--accent: var(--ct);">
+      <div class="round-head">
+        <span class="round-badge">Round 02</span>
+        <h2>Engagement, Borrowed</h2>
+      </div>
+      <p class="round-sub"><span class="tech">Technique &middot; Cross-Pollination</span> &mdash; steal the stickiest hooks from casinos, game shows, reality TV, fantasy sports and apps that already own retention.</p>
+
+      <div class="card-grid">
+        <div class="stat-card"><div class="kicker">Casino <span class="tag">economy</span></div><h3>House-chips predictions</h3><p>A prediction economy with an <em>Oddsmaker crown</em> for the best predictor &mdash; non-fraggers can win.</p></div>
+        <div class="stat-card"><div class="kicker">Game show</div><h3>Plinko &amp; Wheel-of-Fortune</h3><p>Game-show styling for the roulette; the Discord crowd calls the wheel.</p></div>
+        <div class="stat-card"><div class="kicker">Reality TV</div><h3>Confessional cam</h3><p>A 15-second loser-reaction feed builds rivalry and narrative between matches.</p></div>
+        <div class="stat-card"><div class="kicker">Esports</div><h3>Auto match-facts cards</h3><p>First blood, clutch, most-traded duel &mdash; posted automatically as the demo parses.</p></div>
+        <div class="stat-card"><div class="kicker">Fantasy sports</div><h3>Fantasy Fragger</h3><p>Spectators draft real players and earn their stats &mdash; skin in every game.</p></div>
+        <div class="stat-card"><div class="kicker">Airline status</div><h3>Season tiers</h3><p>Bronze&ndash;Diamond perks reward showing up across multiple tournaments.</p></div>
+        <div class="stat-card"><div class="kicker">Gacha</div><h3>Post-match stat packs</h3><p>Open a pack: highlights plus a random cosmetic for everyone, win or lose.</p></div>
+        <div class="stat-card"><div class="kicker">Duolingo</div><h3>Showed-up streaks</h3><p>Reliability &amp; streak badges directly combat no-shows.</p></div>
+        <div class="stat-card"><div class="kicker">Strava</div><h3>Map segments</h3><p>Claimable per-map records &mdash; <em>KING of A-site Mirage</em> &mdash; stolen each season.</p></div>
+        <div class="stat-card"><div class="kicker">Oscars</div><h3>Nominations reveal</h3><p>Announce the top 3 nominees per award before unveiling the winner.</p></div>
+        <div class="stat-card"><div class="kicker">RuneScape</div><h3>Achievement log</h3><p>Hundreds of tiny unlockable feats &mdash; a long tail for the non-elites.</p></div>
+        <div class="stat-card"><div class="kicker">Spotify Wrapped</div><h3>Player Wrapped card</h3><p>Nemesis, fav weapon, signature stat &mdash; an end-of-tournament shareable.</p></div>
+        <div class="stat-card"><div class="kicker">Poker</div><h3>Bad-beat bonus</h3><p>A prize for the most heartbreaking loss &mdash; lost while topping the scoreboard.</p></div>
+        <div class="stat-card"><div class="kicker">Debate fuel</div><h3>Eye-test vs numbers</h3><p>A human MVP vote next to the stat MVP &mdash; surface the disagreements.</p></div>
+        <div class="stat-card"><div class="kicker">Discord</div><h3>Native bot</h3><p>Match-time DMs, result posts, prediction polls, award announcements.</p></div>
+        <div class="stat-card"><div class="kicker">Board game</div><h3>Handicap + upset bonus</h3><p>A handicap plus an upset prize for the biggest seed-differential giant-killing.</p></div>
+        <div class="stat-card"><div class="kicker">Festival</div><h3>Lineup recap poster</h3><p>A collectible poster with handles sized by a chosen stat.</p></div>
+      </div>
+    </section>
+
+    <!-- ===================== ROUND 3 — SCAMPER ===================== -->
+    <section class="round" id="r3" style="--accent: var(--t);">
+      <div class="round-head">
+        <span class="round-badge">Round 03</span>
+        <h2>Bracket UX, Reworked</h2>
+      </div>
+      <p class="round-sub"><span class="tech">Technique &middot; SCAMPER</span> &mdash; Substitute, Combine, Adapt, Magnify, Modify, Put-to-other-use, Eliminate, Reverse, Rearrange the tournament bracket.</p>
+
+      <div class="card-grid">
+        <div class="stat-card"><div class="kicker">Substitute</div><h3>Draft-night ritual</h3><p>Swap the random seed for a streamed seeding ceremony &mdash; content, not coin-flip.</p></div>
+        <div class="stat-card"><div class="kicker">Combine</div><h3>Bracket IS the dashboard</h3><p>Hover a player to see a live stat card &mdash; bracket and stats become one surface.</p></div>
+        <div class="stat-card"><div class="kicker">Combine</div><h3>One-click auto-advance</h3><p>A demo-detected winner proposes a one-click bracket advance.</p></div>
+        <div class="stat-card"><div class="kicker">Adapt</div><h3>Redemption arc</h3><p>The loser bracket becomes a redemption narrative surfaced in the recap.</p></div>
+        <div class="stat-card"><div class="kicker">Magnify</div><h3>Now-playing ticker</h3><p>A live ticker plus a win-probability bar amplify the broadcast feel.</p></div>
+        <div class="stat-card"><div class="kicker">Modify</div><h3>Confetti &amp; tap-to-advance</h3><p>Confetti and sound on advance; mobile tap-to-advance since friends are on phones.</p></div>
+        <div class="stat-card"><div class="kicker">Put to other use</div><h3>Demo as referee</h3><p>The parser becomes the source of truth for disputed scores.</p></div>
+        <div class="stat-card"><div class="kicker">Put to other use</div><h3>Off-season ladders</h3><p>Re-use the bracket engine for off-season pugs and scrim ladders.</p></div>
+        <div class="stat-card"><div class="kicker">Eliminate</div><h3>No manual score entry</h3><p>Where demos exist, the score is derived from the demo &mdash; not typed.</p></div>
+        <div class="stat-card"><div class="kicker">Eliminate</div><h3>Kill the cold-start</h3><p>Animated TBD placeholder slots fill in as registration grows.</p></div>
+        <div class="stat-card"><div class="kicker">Reverse</div><h3>Bracket-reveal event</h3><p>Unveil the matchups one at a time as their own moment.</p></div>
+        <div class="stat-card"><div class="kicker">Rearrange</div><h3>Transparent re-seed</h3><p>Support re-draw with an audit log and a what-changed diff.</p></div>
+        <div class="stat-card"><div class="kicker">Edge case</div><h3>Byes done right</h3><p>Auto-compute byes for non-power-of-2; a bye is a badge, not a phantom stat win.</p></div>
+        <div class="stat-card"><div class="kicker">Edge case</div><h3>No-show handling</h3><p>Forfeit with a grace timer; lower-bracket no-show = elimination; tracked for reliability.</p></div>
+        <div class="stat-card"><div class="kicker">Fairness</div><h3>Walkover normalization</h3><p>Forfeits contribute no stats; leaderboards normalize for games actually played.</p></div>
+      </div>
+    </section>
+
+    <!-- ===================== ROUND 4 — REVERSE BRAINSTORMING ===================== -->
+    <section class="round" id="r4" style="--accent: var(--danger);">
+      <div class="round-head">
+        <span class="round-badge">Round 04</span>
+        <h2>Fairness Pitfalls, Inverted</h2>
+      </div>
+      <p class="round-sub"><span class="tech">Technique &middot; Reverse Brainstorming</span> &mdash; ask "how would we <em>break</em> fairness?" then flip every sabotage into a safeguard.</p>
+
+      <div class="card-grid">
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No award sweep</h3><p>Per-spin trophy cap plus nominee spotlight, as a core rule.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No farmable comedy</h3><p>Engagement thresholds plus demo-detected AFK/idle &mdash; DQ farmed stats.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No rigged draw</h3><p>Provably-fair seeded RNG, reproducible client-side.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No mis-matched stats</h3><p>SteamID64 enforced at registration (Steam OAuth) plus a reconciliation screen.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No poisoned leaderboard</h3><p>Staged pending-then-approve ingestion; easy re-parse and rollback for corrupt demos.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No award lockout</h3><p>Dual classes: rate awards (anyone) plus volume awards (grinders).</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No idle spectators</h3><p>Predictions, fantasy and chips keep them watching to the end.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No bracket-tie chaos</h3><p>Per-match tie-break policy set BEFORE the match, system-enforced and logged.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No award-tie confusion</h3><p>A defined tie-break ladder &mdash; and lean into FUN shared co-winner trophies.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No "wait, what's true?"</h3><p>A single tournament-home timeline feed as source of truth, mirrored to Discord.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No dead air</h3><p>Scheduled match windows plus auto Discord reminders plus an on-deck board.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No endless disputes</h3><p>Demo-as-truth plus an immutable result log plus a lightweight dispute-flag button.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No casual drop-off</h3><p>Three independent reward tracks: Champion, Awards roulette, Meta-games.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No privacy harm</h3><p>Opt-in visibility / gentle mode hides the most brutal negative awards.</p></div>
+        <div class="stat-card"><div class="kicker">Break &rarr; Guard</div><h3>No post-event amnesia</h3><p>Permanent shareable recap plus per-player Wrapped plus a persistent season hall-of-fame.</p></div>
+      </div>
+    </section>
+
+    <!-- ===================== MAIN EVENT — SYNTHESIS ===================== -->
+    <div class="main-event">
+      <div class="me-inner">
+        <div class="me-header">
+          <p class="eyebrow">// The Main Event &mdash; Synthesis</p>
+          <h2>One Demo File to Rule It All</h2>
+          <p>The session collapsed dozens of features into a handful of high-leverage moves. The breakthrough: most of the hard parts share a single source &mdash; the demo file &mdash; and most "fairness" features are really the same move wearing different jerseys.</p>
+        </div>
+
+        <!-- KEYSTONE -->
+        <div class="keystone">
+          <span class="key-tag">The Keystone Insight</span>
+          <h3>The demo file is the product keystone &mdash; one risk, one moat</h3>
+          <p>The recorded match demo is simultaneously the <strong>stats source</strong>, the <strong>match referee</strong> for disputes and scores, and the <strong>provably-fair RNG seed</strong>. Solve demo ingestion once and three problems collapse into a single defensible moat.</p>
+          <div class="pillars">
+            <div class="pillar"><div class="pi">Stats Source</div><div class="pt">Every award, leaderboard and Wrapped card flows from the parse.</div></div>
+            <div class="pillar"><div class="pi">Match Referee</div><div class="pt">Disputed scores resolve against the demo, not against arguments.</div></div>
+            <div class="pillar"><div class="pi">RNG Seed</div><div class="pt">seed = hash(final demo) &rarr; a draw anyone can reproduce.</div></div>
+          </div>
+        </div>
+
+        <!-- SYNTHESIS MOVES -->
+        <div class="moves">
+          <div class="move">
+            <div class="m-ic">&#128273;</div>
+            <h4>Steam OAuth is a triple-win</h4>
+            <p>One integration delivers <strong>login</strong>, <strong>SteamID64 stat-matching</strong>, and the <strong>reconciliation</strong> step &mdash; three problems, one button.</p>
+          </div>
+          <div class="move">
+            <div class="m-ic">&#127919;</div>
+            <h4>Manufacture spotlight for non-winners</h4>
+            <p>Wrapped, nominations, the achievement log and the pity-roulette are <strong>one pattern</strong>: make sure everyone gets a moment, not just the fraggers.</p>
+          </div>
+          <div class="move wild">
+            <span class="badge-wild">Wildcard</span>
+            <div class="m-ic">&#127922;</div>
+            <h4>The provably-fair draw</h4>
+            <p>Among friends the real threat isn't bad stats &mdash; it's <strong>rigging accusations</strong>. A reproducible, published seed quietly removes the whole class of argument.</p>
+          </div>
+          <div class="move">
+            <div class="m-ic">&#129302;</div>
+            <h4>The Discord bot is the front door</h4>
+            <p>The crowd already lives in Discord. Match DMs, polls and announcements make the bot the <strong>real entry point</strong>, not an afterthought.</p>
+          </div>
+        </div>
+
+        <!-- THE SPINE: THREE TRACKS -->
+        <div class="spine-title">
+          <p class="eyebrow">// The Spine</p>
+          <h3>Three Independent Reward Tracks</h3>
+        </div>
+        <p style="text-align:center;color:var(--ink-dim);max-width:640px;margin:0 auto 22px;font-size:14px;">The core design principle: keep three parallel ladders running so a non-elite player <em>always</em> has something live to chase.</p>
+        <div class="tracks">
+          <div class="track" style="--tc: var(--ct);">
+            <div class="t-glow"></div>
+            <div class="t-num">TRACK 01</div>
+            <h4>Champion</h4>
+            <div class="t-tag">Pure skill</div>
+            <p>The bracket. Win your matches, climb the double-elim tree, lift the trophy. The classic spine of any tournament.</p>
+          </div>
+          <div class="track" style="--tc: var(--neon);">
+            <div class="t-glow"></div>
+            <div class="t-num">TRACK 02</div>
+            <h4>Awards Roulette</h4>
+            <div class="t-tag">Luck + niche</div>
+            <p>Two-stage draw, four buckets, anti-sweep caps and rate awards. Even an early exit can spin into glory.</p>
+          </div>
+          <div class="track" style="--tc: var(--purple);">
+            <div class="t-glow"></div>
+            <div class="t-num">TRACK 03</div>
+            <h4>Meta-games</h4>
+            <div class="t-tag">For the crowd</div>
+            <p>Predictions, house-chips, fantasy fragger, streaks and map segments. You never had to frag to win.</p>
+          </div>
+        </div>
+
+        <!-- DECISION -->
+        <div class="decision">
+          <h3>&#9889; Chosen Direction &mdash; the build order</h3>
+          <div class="cols">
+            <div>
+              <h5 class="pill-v1">v1 &mdash; Must-have</h5>
+              <ul>
+                <li><b>Roster + Steam OAuth</b> (SteamID64)</li>
+                <li><b>Double-elim bracket</b> &mdash; random seed, drag/tap advance, live updates, byes, no-show handling</li>
+                <li><b>Staged pending&rarr;approve demo ingestion</b> as source of truth</li>
+                <li><b>Awards roulette</b> &mdash; two-stage draw, 4 buckets, one-trophy-per-spin cap, rate + volume classes, anti-farm thresholds, provably-fair seed, spinning ceremony, pity roulette</li>
+                <li><b>Tournament-home timeline feed</b></li>
+                <li><b>Admin vs viewer</b> roles</li>
+              </ul>
+            </div>
+            <div>
+              <h5 class="pill-later">Later &mdash; The expansion</h5>
+              <ul>
+                <li><b>Predictions / house-chips</b></li>
+                <li><b>Discord bot</b> front door</li>
+                <li><b>Player Wrapped + recap page</b></li>
+                <li><b>Season persistence</b> &mdash; status tiers, map segments, achievement log, hall of fame</li>
+                <li><b>Fantasy fragger</b></li>
+                <li><b>Gentle / privacy mode</b></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <footer class="foot">
+      <div class="gg">GG &mdash; WP</div>
+      <div style="margin-top:10px;">Brainstorm keepsake &middot; CS2 Tournament Site &middot; 2026-06-29 &middot; 4 techniques &middot; 62 ideas &middot; 3 reward tracks</div>
+      <div style="margin-top:6px;color:var(--ink-faint);">Next stop &mdash; the product brief.</div>
+    </footer>
+
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Roulette wheel build ----
+  var segs = [
+    { label: "Skill",        color: "#4fc3f7" },
+    { label: "Clutch",       color: "#ffb02e" },
+    { label: "Comedy",       color: "#ff4d8d" },
+    { label: "Demo-Only",    color: "#a06bff" },
+    { label: "Heroic",       color: "#00e5a0" },
+    { label: "Wildcard",     color: "#ff5252" },
+    { label: "Rare Pull",    color: "#4fc3f7" },
+    { label: "Pity Spin",    color: "#ffb02e" }
+  ];
+
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var g = document.getElementById("wheelG");
+  var n = segs.length;
+  var cx = 100, cy = 100, r = 96;
+  var step = (2 * Math.PI) / n;
+
+  function pt(angle, radius) {
+    return [cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)];
+  }
+
+  for (var i = 0; i < n; i++) {
+    var a0 = -Math.PI / 2 + i * step;       // start at top
+    var a1 = a0 + step;
+    var p0 = pt(a0, r);
+    var p1 = pt(a1, r);
+    var path = document.createElementNS(SVGNS, "path");
+    var d = "M" + cx + "," + cy +
+            " L" + p0[0].toFixed(2) + "," + p0[1].toFixed(2) +
+            " A" + r + "," + r + " 0 0 1 " + p1[0].toFixed(2) + "," + p1[1].toFixed(2) +
+            " Z";
+    path.setAttribute("d", d);
+    path.setAttribute("fill", segs[i].color);
+    path.setAttribute("fill-opacity", (i % 2 === 0) ? "0.92" : "0.78");
+    path.setAttribute("stroke", "#07090f");
+    path.setAttribute("stroke-width", "1.2");
+    g.appendChild(path);
+
+    // label
+    var mid = a0 + step / 2;
+    var lp = pt(mid, r * 0.62);
+    var txt = document.createElementNS(SVGNS, "text");
+    txt.setAttribute("x", lp[0].toFixed(2));
+    txt.setAttribute("y", lp[1].toFixed(2));
+    txt.setAttribute("fill", "#07090f");
+    txt.setAttribute("font-size", "7.5");
+    txt.setAttribute("font-weight", "700");
+    txt.setAttribute("font-family", "ui-monospace, monospace");
+    txt.setAttribute("text-anchor", "middle");
+    txt.setAttribute("dominant-baseline", "middle");
+    var deg = mid * 180 / Math.PI;
+    txt.setAttribute("transform", "rotate(" + deg.toFixed(1) + " " + lp[0].toFixed(2) + " " + lp[1].toFixed(2) + ")");
+    txt.textContent = segs[i].label;
+    g.appendChild(txt);
+  }
+
+  // ---- Spin logic ----
+  var wheel = document.getElementById("wheel");
+  var btn = document.getElementById("spinBtn");
+  var lbl = document.getElementById("wheelLabel");
+  var spinning = false;
+  var currentRot = 0;
+
+  function spin() {
+    if (spinning) return;
+    spinning = true;
+    btn.disabled = true;
+    lbl.innerHTML = "Spinning&hellip;";
+
+    var winner = Math.floor(Math.random() * n);
+    // angle that brings the center of `winner` segment to the top pointer
+    var segCenter = winner * (360 / n) + (360 / n) / 2; // degrees from top, clockwise
+    var extraTurns = 4 + Math.floor(Math.random() * 3); // 4-6 full turns
+    var target = currentRot + extraTurns * 360 + (360 - segCenter);
+    currentRot = target;
+    wheel.style.transform = "rotate(" + target + "deg)";
+
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var settle = reduce ? 50 : 4750;
+    window.setTimeout(function () {
+      lbl.innerHTML = "Category locked &mdash; <b>" + segs[winner].label + "</b>";
+      spinning = false;
+      btn.disabled = false;
+    }, settle);
+  }
+
+  if (btn) btn.addEventListener("click", spin);
+})();
+</script>
+</body>
+</html>

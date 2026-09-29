@@ -1,0 +1,271 @@
+/*
+ * Player stat detail — header, provenance line, base stats grid, weird demo-only stats, matches-behind.
+ * Lifted ~1:1 from mock-leaderboards.html player detail (.pd-head 229-242, .verify 244-249, .grpcap 251-256,
+ * .stats/.stat 258-266, .weirdwrap/.weird/.wstat 269-288, .demo-foot 290-294). Mobile-first ~390px, single
+ * column, no horizontal scroll (AC9); tabular numerals on every number. Dark-only tokens; NO gold anywhere.
+ */
+.body {
+  padding: var(--sp-4) var(--sp-4) 28px;
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--tm);
+  text-decoration: none;
+  margin-bottom: var(--sp-3);
+}
+.crumb .arrow {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 4px 2px 16px;
+}
+.av {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--s2);
+  border: 0.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--tp);
+}
+.id {
+  min-width: 0;
+}
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 21px;
+  letter-spacing: 0.02em;
+  color: var(--tp);
+}
+.seedchip {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--tm);
+  border: 0.5px solid var(--line);
+  border-radius: 5px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+.sub {
+  font-size: 11.5px;
+  color: var(--ts);
+  margin-top: 3px;
+}
+
+.verify {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 2px 16px;
+  font-size: 11px;
+  color: var(--tm);
+  flex-wrap: wrap;
+}
+.verify .vi {
+  color: var(--blue);
+  font-size: 13px;
+}
+.verify .sha {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--ts);
+  letter-spacing: 0.02em;
+}
+
+.grpcap {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tm);
+  margin: 6px 2px 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.grpcap.spaced {
+  margin-top: 18px;
+}
+.grpcap::after {
+  content: '';
+  flex: 1;
+  height: 0.5px;
+  background: var(--line);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+.stat {
+  background: var(--s1);
+  border: 0.5px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 12px;
+}
+.stat .l {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tm);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.stat .v {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 23px;
+  color: var(--tp);
+  margin-top: 3px;
+}
+.stat .v small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ts);
+}
+
+/* weird demo-only stats */
+.weirdwrap {
+  background: var(--s1);
+  border: 0.5px solid var(--line);
+  border-radius: 12px;
+  padding: 4px 13px;
+  margin-top: 2px;
+}
+.wstat {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 2px;
+  border-bottom: 0.5px solid var(--line);
+}
+.wstat:last-child {
+  border-bottom: 0;
+}
+.wl {
+  flex: 1;
+  min-width: 0;
+}
+.wl .wn {
+  font-size: 13px;
+  color: var(--tp);
+  font-weight: 600;
+}
+.wv {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--tp);
+  flex: none;
+}
+
+/* matches behind them (FR-23) */
+.matches {
+  display: flex;
+  flex-direction: column;
+}
+.mrow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 11px 2px;
+  border-bottom: 0.5px solid var(--line);
+}
+.mrow:last-child {
+  border-bottom: 0;
+}
+.mpos {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tm);
+  width: 92px;
+  flex: none;
+}
+.mopp {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ts);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mopp .res {
+  color: var(--tm);
+  font-weight: 400;
+}
+.mscore {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  flex: none;
+  color: var(--tm);
+}
+.mscore .w {
+  color: var(--win);
+}
+.mscore .l {
+  color: var(--loss);
+}
+
+.demoFoot {
+  margin-top: 11px;
+  font-size: 10.5px;
+  color: var(--tm);
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  padding: 0 2px;
+  line-height: 1.5;
+}
+.demoFoot .vi {
+  color: var(--blue);
+  font-size: 13px;
+  margin-top: 1px;
+}
+
+/* not-found / error */
+.empty {
+  padding: 54px 26px 60px;
+  text-align: center;
+}
+.emptyBody {
+  color: var(--tm);
+  font-size: 12.5px;
+  margin: 0 auto 16px;
+  max-width: 260px;
+  line-height: 1.55;
+}
+.backLink {
+  color: var(--blue);
+  font-size: 12.5px;
+  text-decoration: none;
+}

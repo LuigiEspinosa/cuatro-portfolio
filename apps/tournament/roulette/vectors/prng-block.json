@@ -1,0 +1,245 @@
+{
+  "vector": "prng-block",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "block_i(label) = HMAC_SHA256(key = seed (raw 32 bytes), msg = utf8(label) || LE64(i))",
+  "generated_by": "roulette/vectors/generate_vectors.py — python stdlib hmac+hashlib, a THIRD implementation written from the spec text, neither Go's crypto/hmac nor the browser's SubtleCrypto",
+  "invalid_seed_hex": [
+    {
+      "why": "uppercase hex",
+      "seed_hex": "1B3CD6782E42655756E3FF1A966DBDA04C7E07C4708608DCB214B8815DB3279C"
+    },
+    {
+      "why": "mixed case",
+      "seed_hex": "1B3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c"
+    },
+    {
+      "why": "0x prefix (66 chars — refused on length)",
+      "seed_hex": "0x1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c"
+    },
+    {
+      "why": "0x prefix truncated to 64 chars — refused on CHARSET, not length",
+      "seed_hex": "0x3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c"
+    },
+    {
+      "why": "leading space (65 chars — refused on length)",
+      "seed_hex": " 1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c"
+    },
+    {
+      "why": "leading space, truncated to 64 chars — refused on CHARSET, not length",
+      "seed_hex": " b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c"
+    },
+    {
+      "why": "31 bytes (62 chars)",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db327"
+    },
+    {
+      "why": "33 bytes (66 chars)",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279cab"
+    },
+    {
+      "why": "trailing newline",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c\n"
+    },
+    {
+      "why": "non-hex character",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279g"
+    },
+    {
+      "why": "empty",
+      "seed_hex": ""
+    }
+  ],
+  "invalid_stage1_spin": [
+    {
+      "why": "spin 0 — labels are 1-based, there is no spin 0",
+      "spin": 0
+    },
+    {
+      "why": "negative spin",
+      "spin": -1
+    },
+    {
+      "why": "negative spin (beyond the ceremony's range)",
+      "spin": -12
+    }
+  ],
+  "cases": [
+    {
+      "name": "real-seed/spin1/i0",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f310000000000000000",
+      "block_hex": "a9fb7aa6dbad259345c7ad8f1e3162a8cc27fb2f144038533c88d5e7e5d4bf1f"
+    },
+    {
+      "name": "real-seed/spin1/i1",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "i": 1,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f310100000000000000",
+      "block_hex": "3565d58c0d3cf6cf741fcfe1252e65023e1df200707cd90dc68162544295daf7"
+    },
+    {
+      "name": "real-seed/spin1/i2",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "i": 2,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f310200000000000000",
+      "block_hex": "eb11233fc59ed71eebfc1818383c9a5b5b61ca057ff741250994ce001272bf00"
+    },
+    {
+      "name": "real-seed/spin12/i0",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/12",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 12
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f31320000000000000000",
+      "block_hex": "7339f6dac701ac737a5dd95c8b6e35f557caba1963cf9b1a61ef5e7e704e7328"
+    },
+    {
+      "name": "real-seed/spin12/i1",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/12",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 12
+      },
+      "i": 1,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f31320100000000000000",
+      "block_hex": "0b11e733d5ddb3c96a5fd8d86104e16cb293ee2990217dce6c3acf4fe4f31d18"
+    },
+    {
+      "name": "real-seed/pity/i0",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/pity",
+      "label_source": {
+        "kind": "pity"
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f706974790000000000000000",
+      "block_hex": "11c43b844d48011f7f7ea62748d282735f8df2682aab2458bafeccf00796de7b"
+    },
+    {
+      "name": "real-seed/pity/i1",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/pity",
+      "label_source": {
+        "kind": "pity"
+      },
+      "i": 1,
+      "msg_hex": "696e636c757369766375702f76312f706974790100000000000000",
+      "block_hex": "92537ef2f26e8f768e29bc6ed3592d469cbb361aeb094a1a90875dd3f87a2c10"
+    },
+    {
+      "name": "real-seed/spin2/i0",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/2",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 2
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f320000000000000000",
+      "block_hex": "62929cef9c32a7cea624e42fff1fee8cec76a9013dd5a07d36dc7a0d8dce7ea4"
+    },
+    {
+      "name": "real-seed/spin8/i0",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/8",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 8
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f380000000000000000",
+      "block_hex": "854cbdf37383568685858c9e917d9902f9e271575d79c58a77d7e1f6e3f4cf77"
+    },
+    {
+      "name": "real-seed/spin10/i0",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/10",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 10
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f31300000000000000000",
+      "block_hex": "70e9a47bc0cdb952240727d21a1494d2994b17ff4c844f40997053dac854be95"
+    },
+    {
+      "name": "real-seed/spin11/i0",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/11",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 11
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f31310000000000000000",
+      "block_hex": "2e1dcf087aa3811d8a9391571baaa84fde1eeff0605ad2de0b8c5cd3f8c5c0e6"
+    },
+    {
+      "name": "zero-seed/spin1/i0",
+      "seed_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f310000000000000000",
+      "block_hex": "b39f6f4367522a213f7856ef7c1f2a7f672100a95582d3cadff0f942777ed867"
+    },
+    {
+      "name": "ff-seed/pity/i0",
+      "seed_hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "label": "inclusivcup/v1/pity",
+      "label_source": {
+        "kind": "pity"
+      },
+      "i": 0,
+      "msg_hex": "696e636c757369766375702f76312f706974790000000000000000",
+      "block_hex": "ff1765f0c442ca80aad0c4d641ab649bdd901418e5571522e6d635ccf33dd9fe"
+    },
+    {
+      "name": "real-seed/spin1/i255",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "i": 255,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f31ff00000000000000",
+      "block_hex": "c0dbbfb980274f65e9668f6b636caf57a3e87f399b3604dd6bc3106abe5c7685"
+    },
+    {
+      "name": "real-seed/spin1/i256",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "i": 256,
+      "msg_hex": "696e636c757369766375702f76312f7374616765312f7370696e2f310001000000000000",
+      "block_hex": "47b41fd465afb6f7749c844aecd27e63eb1d379a49ac1ceef480d822950381ca"
+    }
+  ]
+}

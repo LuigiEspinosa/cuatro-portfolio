@@ -1,0 +1,312 @@
+/*
+ * Timeline feed — rail, nodes, cards, chips, empty state.
+ * Lifted ~1:1 from mock-home.html (.feed 184-194, .item/.node 196-230, .card 233-245,
+ * .matchline/.score 247-264, .chip 272-290, .advance 293-300, teaser 302-320, empty 394-420).
+ * Mobile-first, single column, never a horizontal scroll (AC10).
+ */
+.feed {
+  padding: var(--sp-4) var(--sp-4) 20px;
+  background: var(--page);
+}
+
+.day {
+  color: var(--tm);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 2px 2px var(--sp-3);
+}
+
+/* Each item is the full-card tap target (a link) with the timeline rail behind it. */
+.item {
+  display: block;
+  position: relative;
+  padding: 0 0 var(--sp-4) 26px;
+  text-decoration: none;
+  color: inherit;
+}
+.item:last-child {
+  padding-bottom: 2px;
+}
+.item::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 18px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--line);
+}
+.item:last-child::before {
+  display: none;
+}
+
+.node {
+  position: absolute;
+  left: 0;
+  top: 11px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--page);
+  border: 1.5px solid var(--line);
+}
+.node::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+}
+.blue {
+  border-color: var(--blue);
+}
+.blue::after {
+  background: var(--blue);
+}
+.green {
+  border-color: var(--win);
+}
+.green::after {
+  background: var(--win);
+}
+.gold {
+  border-color: var(--gold);
+}
+.gold::after {
+  background: var(--gold);
+}
+.muted {
+  border-color: var(--node-muted);
+}
+.muted::after {
+  background: transparent;
+}
+
+/* card */
+.card {
+  background: var(--s1);
+  border: 0.5px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 11px 12px;
+  max-width: 100%;
+}
+.raised {
+  background: var(--s2);
+}
+.time {
+  color: var(--tm);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  margin: 0 0 5px;
+}
+
+/* match result */
+.matchline {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.who {
+  font-size: 13.5px;
+  color: var(--tp);
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.def {
+  color: var(--tm);
+  font-weight: 400;
+}
+.score {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--tp);
+}
+.w {
+  color: var(--win);
+}
+.l {
+  color: var(--loss);
+}
+
+.metarow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  flex-wrap: wrap;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 3px var(--sp-2);
+  border-radius: var(--r-pill);
+  border: 0.5px solid var(--line);
+  color: var(--ts);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.chipOk {
+  color: var(--win);
+  border-color: rgba(63, 185, 80, 0.35);
+  background: rgba(63, 185, 80, 0.08);
+}
+.tick {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--win);
+  color: #0b1410;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex: none;
+}
+
+/* bracket advance */
+.advance {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--ts);
+}
+.arr {
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 14px;
+}
+.advance b {
+  color: var(--tp);
+  font-weight: 600;
+}
+
+/* award teaser (greyed) */
+.teaser {
+  background: #141a21;
+  border-style: dashed;
+}
+.trow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ttitle {
+  font-size: 12.5px;
+  color: #7f8b99;
+}
+.tsub {
+  font-size: 11px;
+  color: var(--ink-locked);
+  margin-top: 2px;
+}
+.lockpill {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ink-locked);
+  border: 0.5px solid #2a333d;
+  border-radius: var(--r-pill);
+  padding: 3px var(--sp-2);
+  white-space: nowrap;
+}
+
+/* empty / cold-load state */
+.empty {
+  padding: 54px 26px 60px;
+  text-align: center;
+}
+.ring {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  border: 1.5px dashed #313b46;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4d5763;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.emptyTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0 0 var(--sp-2);
+  color: var(--tp);
+}
+.emptyBody {
+  color: var(--tm);
+  font-size: 12.5px;
+  margin: 0 auto;
+  max-width: 250px;
+  line-height: 1.55;
+}
+.reg {
+  margin-top: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--ts);
+  border: 0.5px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 6px var(--sp-3);
+}
+.regN {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--blue);
+}
+
+/* skeleton / loading shimmer for the cold load (never a blank flash — AC5). */
+.skeleton {
+  height: 74px;
+  border-radius: var(--r-md);
+  background: var(--s1);
+  border: 0.5px solid var(--line);
+  margin-bottom: var(--sp-4);
+  opacity: 0.6;
+}
+
+/* discrete auth entry point relocated from the old landing page. */
+.footer {
+  padding: 24px var(--sp-4) 40px;
+  text-align: center;
+}
+.signin {
+  color: var(--tm);
+  font-size: 12px;
+  text-decoration: none;
+}
+.alert {
+  margin: 0 var(--sp-4) var(--sp-3);
+  padding: 10px var(--sp-3);
+  border-radius: var(--r-sm);
+  border: 0.5px solid rgba(240, 85, 106, 0.4);
+  background: rgba(240, 85, 106, 0.08);
+  color: var(--loss);
+  font-size: 12.5px;
+}
+
+/* visually-hidden live region for screen readers (AC10). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

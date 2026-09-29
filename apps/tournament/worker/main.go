@@ -1,0 +1,231 @@
+// Command worker is the CS2 demo-ingestion worker (Epic 3). It runs off Vercel (Railway host) so the
+// 50–170 MB demo bytes bypass the ~4.5 MB Vercel request cap (SPEC Constraint 6). Two modes:
+//
+//	worker serve                        # HTTP: MatchZy auto-upload receiver + admin presign endpoint
+//	worker ingest <path.dem> --match <id>   # CLI: ingest a local .dem
+//	worker reparse --match <id>             # CLI: deliberately re-parse a match's RETAINED demo (Story 3.6)
+//
+// Story 3.1 covers acquisition (store the .dem in R2 + record the demo row); Story 3.2 hashing/dedup;
+// Story 3.3 parses a FRESH CLI ingest into stat_row (this file wires the parser + stat writer into
+// `worker ingest`); Story 3.6 adds `worker reparse`, which reads the RETAINED object back and re-derives
+// the rows in one atomic revert→reparse transaction (never re-acquires). The MatchZy-HTTP-triggered parse +
+// the bounded async job queue are Story 3.8.
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+
+	"cs-tournament/worker/config"
+	"cs-tournament/worker/db"
+	"cs-tournament/worker/ingest"
+	"cs-tournament/worker/store"
+)
+
+func main() {
+	if len(os.Args) < 2 {
+		usage()
+		os.Exit(2)
+	}
+	switch os.Args[1] {
+	case "serve":
+		if err := runServe(); err != nil {
+			log.Fatalf("serve: %v", err)
+		}
+	case "ingest":
+		if err := runIngest(os.Args[2:]); err != nil {
+			log.Fatalf("ingest: %v", err)
+		}
+	case "reparse":
+		if err := runReparse(os.Args[2:]); err != nil {
+			log.Fatalf("reparse: %v", err)
+		}
+	default:
+		usage()
+		os.Exit(2)
+	}
+}
+
+func usage() {
+	fmt.Fprintln(os.Stderr, "usage:")
+	fmt.Fprintln(os.Stderr, "  worker serve")
+	fmt.Fprintln(os.Stderr, "  worker ingest <path.dem> --match <id>")
+	fmt.Fprintln(os.Stderr, "  worker reparse --match <id>")
+}
+
+// build wires the real R2 store + pgx recorder from the environment (fail-fast on missing config).
+func build(ctx context.Context) (store.DemoStore, *db.PgxRecorder, config.Config, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, nil, config.Config{}, err
+	}
+	rec, err := db.NewPgxRecorder(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return nil, nil, config.Config{}, err
+	}
+	return store.NewR2Store(cfg), rec, cfg, nil
+}
+
+func runServe() error {
+	ctx := context.Background()
+	s, rec, cfg, err := build(ctx)
+	if err != nil {
+		return err
+	}
+	defer rec.Close()
+	if cfg.MatchZySharedSecret == "" {
+		return fmt.Errorf("WORKER_MATCHZY_SHARED_SECRET is required for serve mode")
+	}
+	// Story 3.8: build the bounded async parse-job Runner from the SAME shared pool the CLI paths use
+	// (DemoinfocsParser + stat writer + roster reader), plus the never-silent logging Alerter (the real
+	// admin:<id> Broadcast is Story 7.4). Start the worker pool and drain it on shutdown. The DemoReader
+	// backs the POST /ingest/parse manual/re-parse trigger (as runReparse builds it).
+	parser := ingest.DemoinfocsParser{}
+	statRec := db.NewPgxStatRecorder(rec.Pool())
+	roster := db.NewPgxRosterReader(rec.Pool())
+	reader := db.NewPgxDemoReader(rec.Pool())
+	runner := ingest.NewRunner(s, parser, statRec, roster, ingest.LogAlerter{})
+	runner.Start(ctx)
+	defer runner.Close()
+	srv := &ingest.Server{Store: s, Recorder: rec, Secret: cfg.MatchZySharedSecret, Enqueuer: runner, Demos: reader}
+	addr := ":" + port()
+	log.Printf("worker listening on %s (POST /ingest/matchzy, POST /ingest/parse, POST /ingest/presign)", addr)
+	return http.ListenAndServe(addr, srv.Routes())
+}
+
+func runIngest(args []string) error {
+	path, matchID, err := parseIngestArgs(args)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	s, rec, _, err := build(ctx)
+	if err != nil {
+		return err
+	}
+	defer rec.Close()
+	// The parse core (demoinfocs), the stat_row writer, and the roster reader all share the recorder's pool
+	// (rec owns Close). The roster reader supplies the active-roster set for the Story-3.4 validation gate.
+	parser := ingest.DemoinfocsParser{}
+	statRec := db.NewPgxStatRecorder(rec.Pool())
+	roster := db.NewPgxRosterReader(rec.Pool())
+	res, err := ingest.RunCLI(ctx, s, rec, parser, statRec, roster, path, matchID)
+	if err != nil {
+		return err
+	}
+	switch {
+	case res.Parsed && res.Anomalous:
+		log.Printf("ingested %s -> %s; parsed match %d: %d players, %d rounds -> stat_row ANOMALOUS (held): %v", path, res.StorageKey, matchID, res.Players, res.Rounds, res.Reasons)
+	case res.Parsed:
+		log.Printf("ingested %s -> %s; parsed match %d: %d players, %d rounds -> stat_row (validation=pending)", path, res.StorageKey, matchID, res.Players, res.Rounds)
+	default:
+		log.Printf("ingested %s -> %s (already_ingested=true; parse skipped)", path, res.StorageKey)
+	}
+	return nil
+}
+
+// runReparse deliberately re-parses a match's RETAINED demo (Story 3.6). It reuses build() + the same
+// shared-pool recorders as `ingest`, plus the new PgxDemoReader that looks up the match's demo of record.
+// RunReparse reads the retained object back (never re-acquires), re-hash-verifies it, re-validates, and
+// records the atomic revert→reparse (upsert + delete-missing + parse_generation bump).
+func runReparse(args []string) error {
+	matchID, err := parseReparseArgs(args)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	s, rec, _, err := build(ctx)
+	if err != nil {
+		return err
+	}
+	defer rec.Close()
+	parser := ingest.DemoinfocsParser{}
+	statRec := db.NewPgxStatRecorder(rec.Pool())
+	roster := db.NewPgxRosterReader(rec.Pool())
+	reader := db.NewPgxDemoReader(rec.Pool())
+	res, err := ingest.RunReparse(ctx, s, reader, parser, statRec, roster, matchID)
+	if err != nil {
+		return err
+	}
+	if res.Anomalous {
+		log.Printf("re-parsed match %d from retained %s: %d players, %d rounds -> stat_row ANOMALOUS (held): %v; parse_generation bumped", res.MatchID, res.StorageKey, res.Players, res.Rounds, res.Reasons)
+	} else {
+		log.Printf("re-parsed match %d from retained %s: %d players, %d rounds -> stat_row (validation=pending); parse_generation bumped", res.MatchID, res.StorageKey, res.Players, res.Rounds)
+	}
+	return nil
+}
+
+// parseReparseArgs parses the reparse flags — only `--match <id>` (no path: the retained object is looked
+// up, never a local file). Accepts --match <id> and --match=<id>.
+func parseReparseArgs(args []string) (matchID int64, err error) {
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--match" || a == "-match":
+			if i+1 >= len(args) {
+				return 0, fmt.Errorf("--match requires a value")
+			}
+			matchID, err = strconv.ParseInt(args[i+1], 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("--match: %w", err)
+			}
+			i++
+		case strings.HasPrefix(a, "--match="):
+			matchID, err = strconv.ParseInt(strings.TrimPrefix(a, "--match="), 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("--match: %w", err)
+			}
+		default:
+			return 0, fmt.Errorf("unexpected argument %q (usage: worker reparse --match <id>)", a)
+		}
+	}
+	if matchID <= 0 {
+		return 0, fmt.Errorf("--match <id> is required and must be a positive integer: worker reparse --match <id>")
+	}
+	return matchID, nil
+}
+
+// parseIngestArgs accepts the flag in any position (Go's flag package would stop at the first
+// positional), so both `ingest <path> --match <id>` and `ingest --match <id> <path>` work.
+func parseIngestArgs(args []string) (path string, matchID int64, err error) {
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--match" || a == "-match":
+			if i+1 >= len(args) {
+				return "", 0, fmt.Errorf("--match requires a value")
+			}
+			matchID, err = strconv.ParseInt(args[i+1], 10, 64)
+			if err != nil {
+				return "", 0, fmt.Errorf("--match: %w", err)
+			}
+			i++
+		case strings.HasPrefix(a, "--match="):
+			matchID, err = strconv.ParseInt(strings.TrimPrefix(a, "--match="), 10, 64)
+			if err != nil {
+				return "", 0, fmt.Errorf("--match: %w", err)
+			}
+		default:
+			if path != "" {
+				return "", 0, fmt.Errorf("unexpected extra argument %q", a)
+			}
+			path = a
+		}
+	}
+	if path == "" {
+		return "", 0, fmt.Errorf("path to a .dem file is required: worker ingest <path.dem> --match <id>")
+	}
+	return path, matchID, nil
+}
+
+func port() string {
+	if p := strings.TrimSpace(os.Getenv("PORT")); p != "" {
+		return p
+	}
+	return "8080"
+}

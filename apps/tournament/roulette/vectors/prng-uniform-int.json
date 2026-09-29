@@ -1,0 +1,891 @@
+{
+  "vector": "prng-uniform-int",
+  "algo_version": "inclusivcup-roulette-1.0.0",
+  "spec": "k = minimal int with 256^k >= n (n=1 -> k=0); limit = 256^k - (256^k mod n); x = big-endian of the next k stream bytes, CONSUMED; while x >= limit draw k fresh bytes; return x mod n",
+  "n_bounds": {
+    "min": 1,
+    "max": 4294967296
+  },
+  "generated_by": "roulette/vectors/generate_vectors.py — python stdlib hmac+hashlib, a THIRD implementation written from the spec text, neither Go's crypto/hmac nor the browser's SubtleCrypto",
+  "cases": [
+    {
+      "name": "plain-accept-n6",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "note": "n=6 -> k=1, limit=252. Eight successive draws; each consumes exactly 1 byte unless rejected.",
+      "draws": [
+        {
+          "n": 6,
+          "result": 1,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 6,
+          "result": 5,
+          "bytes_consumed_after": 2
+        },
+        {
+          "n": 6,
+          "result": 2,
+          "bytes_consumed_after": 3
+        },
+        {
+          "n": 6,
+          "result": 4,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 6,
+          "result": 3,
+          "bytes_consumed_after": 5
+        },
+        {
+          "n": 6,
+          "result": 5,
+          "bytes_consumed_after": 6
+        },
+        {
+          "n": 6,
+          "result": 1,
+          "bytes_consumed_after": 7
+        },
+        {
+          "n": 6,
+          "result": 3,
+          "bytes_consumed_after": 8
+        }
+      ]
+    },
+    {
+      "name": "real-rejection-n200",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "note": "n=200 -> k=1, limit=200: x in [200,255] is REJECTED (56/256 = 21.9% per byte). Draw #2 rejected at least once — proven by bytes_consumed_after minus the previous row exceeding k=1. A rejection CONSUMES its bytes and draws fresh ones.",
+      "draws": [
+        {
+          "n": 200,
+          "result": 169,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 200,
+          "result": 122,
+          "bytes_consumed_after": 3
+        },
+        {
+          "n": 200,
+          "result": 166,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 200,
+          "result": 173,
+          "bytes_consumed_after": 6
+        },
+        {
+          "n": 200,
+          "result": 37,
+          "bytes_consumed_after": 7
+        },
+        {
+          "n": 200,
+          "result": 147,
+          "bytes_consumed_after": 8
+        },
+        {
+          "n": 200,
+          "result": 69,
+          "bytes_consumed_after": 9
+        },
+        {
+          "n": 200,
+          "result": 199,
+          "bytes_consumed_after": 10
+        },
+        {
+          "n": 200,
+          "result": 173,
+          "bytes_consumed_after": 11
+        },
+        {
+          "n": 200,
+          "result": 143,
+          "bytes_consumed_after": 12
+        },
+        {
+          "n": 200,
+          "result": 30,
+          "bytes_consumed_after": 13
+        },
+        {
+          "n": 200,
+          "result": 49,
+          "bytes_consumed_after": 14
+        }
+      ]
+    },
+    {
+      "name": "exact-threshold-rejection-x-equals-limit",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/9",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 9
+      },
+      "note": "n=200 -> k=1, limit=200. Draw #1 reads the byte 0xc8 = 200, which is EXACTLY the threshold. The rule is `reject while x >= limit`, so it is REJECTED and fresh bytes are drawn. An implementation using `x > limit` accepts it instead and returns 200 mod 200 = 0 while consuming one byte fewer — the whole ceremony diverges from there. Every other rejection in this file has x strictly greater than limit and cannot tell the two apart.",
+      "draws": [
+        {
+          "n": 200,
+          "result": 72,
+          "bytes_consumed_after": 3
+        },
+        {
+          "n": 200,
+          "result": 41,
+          "bytes_consumed_after": 5
+        },
+        {
+          "n": 200,
+          "result": 87,
+          "bytes_consumed_after": 6
+        },
+        {
+          "n": 200,
+          "result": 4,
+          "bytes_consumed_after": 8
+        },
+        {
+          "n": 200,
+          "result": 21,
+          "bytes_consumed_after": 9
+        },
+        {
+          "n": 200,
+          "result": 144,
+          "bytes_consumed_after": 10
+        },
+        {
+          "n": 200,
+          "result": 147,
+          "bytes_consumed_after": 11
+        },
+        {
+          "n": 200,
+          "result": 48,
+          "bytes_consumed_after": 13
+        },
+        {
+          "n": 200,
+          "result": 196,
+          "bytes_consumed_after": 14
+        },
+        {
+          "n": 200,
+          "result": 87,
+          "bytes_consumed_after": 15
+        },
+        {
+          "n": 200,
+          "result": 137,
+          "bytes_consumed_after": 16
+        },
+        {
+          "n": 200,
+          "result": 79,
+          "bytes_consumed_after": 17
+        },
+        {
+          "n": 200,
+          "result": 101,
+          "bytes_consumed_after": 18
+        },
+        {
+          "n": 200,
+          "result": 173,
+          "bytes_consumed_after": 19
+        },
+        {
+          "n": 200,
+          "result": 97,
+          "bytes_consumed_after": 20
+        },
+        {
+          "n": 200,
+          "result": 85,
+          "bytes_consumed_after": 21
+        },
+        {
+          "n": 200,
+          "result": 26,
+          "bytes_consumed_after": 22
+        },
+        {
+          "n": 200,
+          "result": 87,
+          "bytes_consumed_after": 23
+        },
+        {
+          "n": 200,
+          "result": 32,
+          "bytes_consumed_after": 24
+        },
+        {
+          "n": 200,
+          "result": 187,
+          "bytes_consumed_after": 25
+        },
+        {
+          "n": 200,
+          "result": 145,
+          "bytes_consumed_after": 28
+        },
+        {
+          "n": 200,
+          "result": 68,
+          "bytes_consumed_after": 32
+        },
+        {
+          "n": 200,
+          "result": 179,
+          "bytes_consumed_after": 33
+        },
+        {
+          "n": 200,
+          "result": 88,
+          "bytes_consumed_after": 34
+        },
+        {
+          "n": 200,
+          "result": 98,
+          "bytes_consumed_after": 35
+        }
+      ]
+    },
+    {
+      "name": "block-boundary-straddle",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/1",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 1
+      },
+      "note": "One k=1 draw (n=6) sets the stream to an ODD position, then k=2 draws (n=257). A draw STARTS at byte 31 — it takes byte 31 of block_0 and byte 0 of block_1 — and a later draw starts at byte 63, straddling block_1 into block_2. Cumulative position passes 32 and 64, so the counter i advances 0 -> 1 -> 2.",
+      "draws": [
+        {
+          "n": 6,
+          "result": 1,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 257,
+          "result": 128,
+          "bytes_consumed_after": 3
+        },
+        {
+          "n": 257,
+          "result": 53,
+          "bytes_consumed_after": 5
+        },
+        {
+          "n": 257,
+          "result": 121,
+          "bytes_consumed_after": 7
+        },
+        {
+          "n": 257,
+          "result": 179,
+          "bytes_consumed_after": 9
+        },
+        {
+          "n": 257,
+          "result": 231,
+          "bytes_consumed_after": 11
+        },
+        {
+          "n": 257,
+          "result": 144,
+          "bytes_consumed_after": 13
+        },
+        {
+          "n": 257,
+          "result": 49,
+          "bytes_consumed_after": 15
+        },
+        {
+          "n": 257,
+          "result": 36,
+          "bytes_consumed_after": 17
+        },
+        {
+          "n": 257,
+          "result": 212,
+          "bytes_consumed_after": 19
+        },
+        {
+          "n": 257,
+          "result": 230,
+          "bytes_consumed_after": 21
+        },
+        {
+          "n": 257,
+          "result": 249,
+          "bytes_consumed_after": 23
+        },
+        {
+          "n": 257,
+          "result": 234,
+          "bytes_consumed_after": 25
+        },
+        {
+          "n": 257,
+          "result": 77,
+          "bytes_consumed_after": 27
+        },
+        {
+          "n": 257,
+          "result": 255,
+          "bytes_consumed_after": 29
+        },
+        {
+          "n": 257,
+          "result": 236,
+          "bytes_consumed_after": 31
+        },
+        {
+          "n": 257,
+          "result": 22,
+          "bytes_consumed_after": 33
+        },
+        {
+          "n": 257,
+          "result": 112,
+          "bytes_consumed_after": 35
+        },
+        {
+          "n": 257,
+          "result": 130,
+          "bytes_consumed_after": 37
+        },
+        {
+          "n": 257,
+          "result": 186,
+          "bytes_consumed_after": 39
+        },
+        {
+          "n": 257,
+          "result": 166,
+          "bytes_consumed_after": 41
+        },
+        {
+          "n": 257,
+          "result": 176,
+          "bytes_consumed_after": 43
+        },
+        {
+          "n": 257,
+          "result": 69,
+          "bytes_consumed_after": 45
+        },
+        {
+          "n": 257,
+          "result": 55,
+          "bytes_consumed_after": 47
+        },
+        {
+          "n": 257,
+          "result": 60,
+          "bytes_consumed_after": 49
+        },
+        {
+          "n": 257,
+          "result": 213,
+          "bytes_consumed_after": 51
+        },
+        {
+          "n": 257,
+          "result": 112,
+          "bytes_consumed_after": 53
+        },
+        {
+          "n": 257,
+          "result": 93,
+          "bytes_consumed_after": 55
+        },
+        {
+          "n": 257,
+          "result": 185,
+          "bytes_consumed_after": 57
+        },
+        {
+          "n": 257,
+          "result": 226,
+          "bytes_consumed_after": 59
+        },
+        {
+          "n": 257,
+          "result": 239,
+          "bytes_consumed_after": 61
+        },
+        {
+          "n": 257,
+          "result": 69,
+          "bytes_consumed_after": 63
+        },
+        {
+          "n": 257,
+          "result": 245,
+          "bytes_consumed_after": 65
+        },
+        {
+          "n": 257,
+          "result": 18,
+          "bytes_consumed_after": 67
+        },
+        {
+          "n": 257,
+          "result": 134,
+          "bytes_consumed_after": 69
+        },
+        {
+          "n": 257,
+          "result": 57,
+          "bytes_consumed_after": 71
+        },
+        {
+          "n": 257,
+          "result": 205,
+          "bytes_consumed_after": 73
+        },
+        {
+          "n": 257,
+          "result": 29,
+          "bytes_consumed_after": 75
+        },
+        {
+          "n": 257,
+          "result": 32,
+          "bytes_consumed_after": 77
+        },
+        {
+          "n": 257,
+          "result": 94,
+          "bytes_consumed_after": 79
+        },
+        {
+          "n": 257,
+          "result": 0,
+          "bytes_consumed_after": 81
+        }
+      ]
+    },
+    {
+      "name": "e1-n1-consumes-zero-bytes",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/pity",
+      "label_source": {
+        "kind": "pity"
+      },
+      "note": "DECISION A: minimal k with 256^k >= 1 is k=0, so n=1 reads NOTHING and returns 0. bytes_consumed_after is UNCHANGED across every n=1 row. An implementation that loops from k=1 returns the same ANSWER (0) and a different STREAM POSITION — invisible in the result, fatal from the next draw onward.",
+      "draws": [
+        {
+          "n": 6,
+          "result": 5,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 1,
+          "result": 0,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 1,
+          "result": 0,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 1,
+          "result": 0,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 6,
+          "result": 4,
+          "bytes_consumed_after": 2
+        },
+        {
+          "n": 1,
+          "result": 0,
+          "bytes_consumed_after": 2
+        },
+        {
+          "n": 6,
+          "result": 5,
+          "bytes_consumed_after": 3
+        }
+      ]
+    },
+    {
+      "name": "k-boundary-n256",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/4",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 4
+      },
+      "note": "n=256 -> k=1, 256^1 mod 256 = 0 so limit = 256: this draw can NEVER reject. Result is the raw byte.",
+      "draws": [
+        {
+          "n": 256,
+          "result": 241,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 256,
+          "result": 172,
+          "bytes_consumed_after": 2
+        },
+        {
+          "n": 256,
+          "result": 104,
+          "bytes_consumed_after": 3
+        },
+        {
+          "n": 256,
+          "result": 139,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 256,
+          "result": 191,
+          "bytes_consumed_after": 5
+        },
+        {
+          "n": 256,
+          "result": 49,
+          "bytes_consumed_after": 6
+        }
+      ]
+    },
+    {
+      "name": "k-boundary-n257",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/5",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 5
+      },
+      "note": "n=257 -> k=2 (256^1 = 256 < 257). limit = 65536 - (65536 mod 257) = 65535. Two bytes, BIG-endian.",
+      "draws": [
+        {
+          "n": 257,
+          "result": 190,
+          "bytes_consumed_after": 2
+        },
+        {
+          "n": 257,
+          "result": 139,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 257,
+          "result": 135,
+          "bytes_consumed_after": 6
+        },
+        {
+          "n": 257,
+          "result": 200,
+          "bytes_consumed_after": 8
+        },
+        {
+          "n": 257,
+          "result": 256,
+          "bytes_consumed_after": 10
+        },
+        {
+          "n": 257,
+          "result": 17,
+          "bytes_consumed_after": 12
+        }
+      ]
+    },
+    {
+      "name": "k-boundary-n255",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/6",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 6
+      },
+      "note": "n=255 -> k=1, limit = 256 - (256 mod 255) = 255: x=255 rejects.",
+      "draws": [
+        {
+          "n": 255,
+          "result": 152,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 255,
+          "result": 137,
+          "bytes_consumed_after": 2
+        },
+        {
+          "n": 255,
+          "result": 111,
+          "bytes_consumed_after": 3
+        },
+        {
+          "n": 255,
+          "result": 143,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 255,
+          "result": 88,
+          "bytes_consumed_after": 5
+        },
+        {
+          "n": 255,
+          "result": 154,
+          "bytes_consumed_after": 6
+        }
+      ]
+    },
+    {
+      "name": "k3-n65537-and-n16777216",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/8",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 8
+      },
+      "note": "THE k=3 WIDTH, which no other case reaches — the 6.3 review found k=3 was never exercised end-to-end in either language. n=65537 -> k=3 (256^2 = 65536 < 65537), limit = 16777216 - (16777216 mod 65537) = 16711935, so a rejection is possible (0.39% per draw). n=2^24 -> k=3 with 256^3 mod 2^24 = 0, so limit = 2^24 and it can never reject. Three bytes assembled BIG-endian; an implementation that assembles little-endian at k=3 diverges here and nowhere else.",
+      "draws": [
+        {
+          "n": 65537,
+          "result": 19512,
+          "bytes_consumed_after": 3
+        },
+        {
+          "n": 16777216,
+          "result": 15954819,
+          "bytes_consumed_after": 6
+        },
+        {
+          "n": 65537,
+          "result": 34351,
+          "bytes_consumed_after": 9
+        },
+        {
+          "n": 16777216,
+          "result": 8752286,
+          "bytes_consumed_after": 12
+        },
+        {
+          "n": 65537,
+          "result": 32008,
+          "bytes_consumed_after": 15
+        },
+        {
+          "n": 65537,
+          "result": 63968,
+          "bytes_consumed_after": 18
+        }
+      ]
+    },
+    {
+      "name": "n-upper-bound-2pow32",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/7",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 7
+      },
+      "note": "DECISION C upper bound. n=2^32 -> k=4, 256^4 mod 2^32 = 0 so limit = 2^32: never rejects. Four bytes assembled BIG-endian. n=0, n=2^32+1 and non-integer n are runtime-error assertions in each suite, not vector rows.",
+      "draws": [
+        {
+          "n": 4294967296,
+          "result": 322157328,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 4294967296,
+          "result": 1011812945,
+          "bytes_consumed_after": 8
+        },
+        {
+          "n": 4294967296,
+          "result": 295008380,
+          "bytes_consumed_after": 12
+        }
+      ]
+    },
+    {
+      "name": "k4-lower-edge-n16777217",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/11",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 11
+      },
+      "note": "The LOWER edge of k=4: n = 2^24 + 1 is one past the largest k=3 value, so minimal-k must step to 4. An off-by-one in the `while space < n` loop picks k=3 here and silently reads one byte fewer for every draw. limit = 2^32 - (2^32 mod 16777217) = 4294966912.",
+      "draws": [
+        {
+          "n": 16777217,
+          "result": 1953498,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 16777217,
+          "result": 10715299,
+          "bytes_consumed_after": 8
+        },
+        {
+          "n": 16777217,
+          "result": 9670861,
+          "bytes_consumed_after": 12
+        },
+        {
+          "n": 16777217,
+          "result": 11184180,
+          "bytes_consumed_after": 16
+        }
+      ]
+    },
+    {
+      "name": "mixed-n-continuity",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/stage1/spin/3",
+      "label_source": {
+        "kind": "stage1",
+        "spin": 3
+      },
+      "note": "Mixed widths on ONE stream: k goes 1,0,1,2,1,4,0,1,1. Proves the position accounting, not one draw.",
+      "draws": [
+        {
+          "n": 12,
+          "result": 0,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 1,
+          "result": 0,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 200,
+          "result": 176,
+          "bytes_consumed_after": 2
+        },
+        {
+          "n": 257,
+          "result": 158,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 6,
+          "result": 1,
+          "bytes_consumed_after": 5
+        },
+        {
+          "n": 4294967296,
+          "result": 3561955689,
+          "bytes_consumed_after": 9
+        },
+        {
+          "n": 1,
+          "result": 0,
+          "bytes_consumed_after": 9
+        },
+        {
+          "n": 12,
+          "result": 0,
+          "bytes_consumed_after": 10
+        },
+        {
+          "n": 256,
+          "result": 98,
+          "bytes_consumed_after": 11
+        }
+      ]
+    },
+    {
+      "name": "pity-stream-n12",
+      "seed_hex": "1b3cd6782e42655756e3ff1a966dbda04c7e07c4708608dcb214b8815db3279c",
+      "label": "inclusivcup/v1/pity",
+      "label_source": {
+        "kind": "pity"
+      },
+      "note": "The pity stream is INDEPENDENT of every stage1 stream and also starts at counter 0.",
+      "draws": [
+        {
+          "n": 12,
+          "result": 5,
+          "bytes_consumed_after": 1
+        },
+        {
+          "n": 12,
+          "result": 4,
+          "bytes_consumed_after": 2
+        },
+        {
+          "n": 12,
+          "result": 11,
+          "bytes_consumed_after": 3
+        },
+        {
+          "n": 12,
+          "result": 0,
+          "bytes_consumed_after": 4
+        },
+        {
+          "n": 12,
+          "result": 5,
+          "bytes_consumed_after": 5
+        },
+        {
+          "n": 12,
+          "result": 0,
+          "bytes_consumed_after": 6
+        },
+        {
+          "n": 12,
+          "result": 1,
+          "bytes_consumed_after": 7
+        },
+        {
+          "n": 12,
+          "result": 7,
+          "bytes_consumed_after": 8
+        },
+        {
+          "n": 12,
+          "result": 7,
+          "bytes_consumed_after": 9
+        },
+        {
+          "n": 12,
+          "result": 6,
+          "bytes_consumed_after": 10
+        },
+        {
+          "n": 12,
+          "result": 10,
+          "bytes_consumed_after": 11
+        },
+        {
+          "n": 12,
+          "result": 3,
+          "bytes_consumed_after": 12
+        }
+      ]
+    }
+  ]
+}

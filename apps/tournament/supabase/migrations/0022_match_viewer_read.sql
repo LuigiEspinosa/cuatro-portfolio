@@ -1,0 +1,54 @@
+-- supabase/migrations/0022_match_viewer_read.sql
+-- Logical migration 0022 — make `match` viewer-readable (Story 5.7, AC1). The Epic-5 grant 0010 deferred.
+--
+-- 0010 created `match` admin/worker-only and EXPLICITLY deferred the viewer read: "the anon/authenticated
+-- SELECT grant + the viewer bracket policy -> Epic 5 (the Spanish viewer surface)" (0010:30, 210-214).
+-- This story lands the Spanish bracket surface, so this migration closes that deferral: it turns ON the
+-- viewer-facing read of the bracket structure — nothing more.
+--
+-- SCOPE (whole deliverable): add a viewer SELECT PATH to public.match —
+--   (a) a LIVE, read-only viewer policy  match_viewer_read USING (true)  for anon + authenticated;
+--   (b) the anon/authenticated SELECT *grant* that makes it reachable (until now match had NO
+--       anon/authenticated grant, so every client read 42501'd at the grant gate before RLS ran).
+--   Two SEPARATE permissive policies, never OR'd (AD-7): the existing dormant match_admin_read (0010:216)
+--   stays exactly as it is; this adds match_viewer_read alongside it. Postgres ORs them at eval time
+--   (approved-for-all ∪ admin's-own), but keeping them separate means a malformed admin policy can only
+--   ever ADD admin's own rows — it can never widen or break the viewer's read (the 0004/0009 precedent).
+-- OUT OF SCOPE — do NOT add here:
+--   * NO write grant of any kind for anon/authenticated (no INSERT/UPDATE/DELETE grant, no write policy) —
+--     viewers never mutate the bracket (FR-34); the single-writer service_role path (0010:227) is untouched.
+--   * NO change to match_admin_read or to the service_role SELECT/INSERT/UPDATE grants (or the deliberate
+--     absence of a service_role DELETE grant) — all set in 0010, and left exactly as-is.
+--   * NO other table. stat rows stay gated at stat_row (the 0009 stat_view approved-only policy); the
+--     leaderboard/player surfaces read the already-anon-granted `leaderboard` view (0021) and `stat_row`
+--     (0009). This migration touches `match` and only `match`.
+--
+-- ── WHY `using (true)` (the flagged decision, confirmed at the recommended shape) ────────────────────
+-- The bracket STRUCTURE is public state — the same posture as the already-public `tournament`/`season`
+-- (0002) and the active roster (0004): who is playing whom, in which bracket slot, is not a secret. So the
+-- viewer policy admits every row unconditionally — every COLUMN of every row, including score_a/score_b/
+-- winner_entry/state, is directly readable by any anon caller via PostgREST (this policy is a row filter,
+-- not a column filter). Two things keep that from leaking anything sensitive:
+--   * SCORE columns carry no provisional value to leak: a match's score_a/score_b are written only in the
+--     Aprobar/resolve transaction (score_source_guard forbids a demo-derived score before demo_id is set),
+--     so a `pending`/`live` row's score columns are NULL. Note the state-gated *rendering* (score shown only
+--     for state ∈ ('resolved','manual_resolved'), Story 5.7 AC2) is an APP guard, not enforced by this grant —
+--     if a provisional score is ever written pre-resolve, it WOULD be raw-API readable, so the write path is
+--     the real boundary, not this policy.
+--   * the per-round STAT rows stay gated at `stat_row` by the 0009 approved-only policy (AD-7), which this
+--     migration does not touch — a viewer reading `match` gains no path to a pending stat row.
+-- A tighter DB predicate (e.g. hiding `void`/`pending` rows here) was considered and declined: it would
+-- duplicate the app's per-state rendering in a second place, and the honest, simplest shape is to expose
+-- the structure and let the surface decide what each state renders (AC3).
+
+-- (a) LIVE viewer policy: viewers (anon + authenticated) may read the whole bracket structure. Read-only —
+--     there is no accompanying write policy, and no is_admin() escape hatch (AD-7: admin Pending visibility,
+--     if it ever mattered for match, is the SEPARATE match_admin_read policy). A plain constant qual, so no
+--     (select …) init-plan wrap is needed (there is no function call to hoist).
+create policy match_viewer_read on public.match for select to anon, authenticated
+  using (true);
+
+-- (b) the base-table SELECT grant that makes match_viewer_read (and the dormant match_admin_read) reachable.
+--     SELECT ONLY — writes stay single-writer (AD-2): no anon/authenticated write grant or policy, unchanged
+--     from 0010. Fail-closed on every mutation, by grant absence AND policy absence (belt and suspenders).
+grant select on public.match to anon, authenticated;
