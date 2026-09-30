@@ -4,7 +4,7 @@
 
 ## Goal
 
-Rebuild the estate's serving layer on the one Hostinger KVM 2 box: Traefik replaces the shared Caddy as the proxy, one PostgreSQL instance replaces the per-project databases, every application deploys by pulling a CI-built image with `docker-rollout`, and the live subdomains keep serving through every step. The epic exists because the incumbent topology grew by hand (one Caddyfile owned by `cs-tracker`, four Postgres containers, a floating Umami tag) and cannot be reproduced from source. Whether the rebuild runs in place or on a temporary second box is not assumed; Story 4.1 decides it from the observed topology.
+Rebuild the estate's serving layer on the one Hostinger KVM 2 box: Traefik replaces the shared Caddy as the proxy, one PostgreSQL instance replaces the per-project databases, every application deploys by pulling a CI-built image with `docker-rollout`, and the live subdomains keep serving through every step. The epic exists because the incumbent topology grew by hand (one Caddyfile owned by `cs-tracker`, three Postgres containers (the tournament's store is Supabase Cloud), a floating Umami tag) and cannot be reproduced from source. Whether the rebuild runs in place or on a temporary second box is not assumed; Story 4.1 decides it from the observed topology.
 
 ## Stories
 
