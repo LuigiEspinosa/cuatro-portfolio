@@ -48,7 +48,7 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `ops/__tests__//traefik-config.test.ts`: one case: the apex service's upstream host is an alias `anchor-app` declares on `cs-tracker_default` in `docker-compose.yml`, not a container name, and no router rule names `/contracts`; the alias is what makes a rollout invisible to Traefik, and the ruling keeps `contracts/` on the Hub.
+- [x] `ops/__tests__/traefik-config.test.ts`: one case: the apex service's upstream host is an alias `anchor-app` declares on `cs-tracker_default` in `docker-compose.yml`, not a container name, and no router rule names `/contracts`; the alias is what makes a rollout invisible to Traefik, and the ruling keeps `contracts/` on the Hub.
 - [x] `ops/traefik-cutover.md`: a section `Moving cuatro.dev and www (Story 4-6)`: preconditions, the local rollout proof, the sequence (www rule, apex rule, a CI-built deploy through Traefik, verification, the record), rollback, and its Pending Operator actions; the runbook the box half runs from.
 - [x] `_bmad-output/implementation-artifacts/sprint-status.yaml`: 4-6 to `awaiting-operator` with a dated comment.
 
