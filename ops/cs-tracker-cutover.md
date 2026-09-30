@@ -405,8 +405,8 @@ printed. `$Q` counts every table but Oban's (decision 1); the old side's `conns`
    checkout, and never printing either password:
    ```bash
    cp -p .env /home/deploy/pg-move/cs-tracker.env.pre-4-10
-   awk -v f=/home/deploy/cuatro-portfolio/ops/postgres/.env 'BEGIN { while ((getline l < f) > 0) if (l ~ /^CS_TRACKER_DB_PASSWORD=/) { sub(/^CS_TRACKER_DB_PASSWORD=/, "", l); pw = l } }
-     /^DATABASE_URL=/ { print "DATABASE_URL=ecto://cs_tracker:" pw "@estate-postgres:5432/cs_tracker"; next } { print }' .env > .env.new && chmod --reference=.env .env.new && mv .env.new .env
+   (umask 077 && awk -v f=/home/deploy/cuatro-portfolio/ops/postgres/.env 'BEGIN { while ((getline l < f) > 0) if (l ~ /^CS_TRACKER_DB_PASSWORD=/) { sub(/^CS_TRACKER_DB_PASSWORD=/, "", l); pw = l } }
+     /^DATABASE_URL=/ { print "DATABASE_URL=ecto://cs_tracker:" pw "@estate-postgres:5432/cs_tracker"; next } { print }' .env > .env.new) && chmod --reference=.env .env.new && mv .env.new .env
    grep -q '^POOL_SIZE=' .env || printf '\nPOOL_SIZE=10\n' >> .env
    grep -c '^DATABASE_URL=ecto://cs_tracker:[0-9a-f]\{48\}@estate-postgres:5432/cs_tracker$' .env
    grep -c '^POOL_SIZE=10$' .env
