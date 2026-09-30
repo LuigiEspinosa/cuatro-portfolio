@@ -860,7 +860,7 @@ development_status:
   # the Operator may overrule: PostgreSQL 18 (19 at Beta 4), in place on the one box, and Traefik beside
   # Caddy on 8443 with one Cloudflare Origin Rule per hostname as Story 4.2's NFR-2 mechanism. Probes:
   # daisyUI 0, adoption 0, accessibility 1 on the standing 74 and 38; Registry verification dispatch
-  # 36690453047 green. No box half. Operator items 1 to 4 in the record (zone re-read, the three
+  # 36690453047 green. No box half. Operator items 1 to 4 in the record (zone SSL mode re-read, the three
   # decisions, DW-295, 4.2's firewall and token prerequisites).
   4-1-refresh-the-settled-inputs-and-choose-the-rebuild-topology: done
   4-2-traefik-with-host-matched-routers-and-dns-01: backlog
