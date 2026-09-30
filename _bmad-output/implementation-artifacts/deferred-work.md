@@ -9071,7 +9071,20 @@ status: done
 
     **Owner: the Operator (ruling), then a `fix(dw-295)` commit.** **Trigger: the Operator's ruling,
     or the next story that touches `packages/tokens`.**
-  status: open
+
+    **Closed 2026-09-30 by Operator ruling, landed as a security patch on one condition: the published
+    contract stays byte-identical.** `packages/tokens/package.json` and `pnpm-lock.yaml` now pin 5.5.5,
+    written by `corepack pnpm --filter @cuatro/tokens add -D -E style-dictionary@5.5.5`, whose
+    re-resolution also deduplicated four transitive entries onto versions the lockfile already held
+    (`qs` 6.15.0 to 6.15.3, `side-channel-list` 1.0.0 to 1.0.1, `lru-cache` under `path-scurry` to
+    11.3.6, and one `eslint-module-utils` snapshot key). `corepack pnpm tokens:build` rewrote
+    `contracts/tokens.css` and `contracts/tailwind.css`, and every file under `contracts/` hashed
+    equal to `HEAD` by sha256 with `git status` clean there. Typecheck, the Hub build and the full
+    suite (75 files, 1832 passed, 1 skipped) passed. The releases between: 5.5.3 limits nested
+    composite token expansion to the configured type filters and preserves alpha precision in
+    `color/css`; 5.5.4 patches `@bundled-es-modules/glob` for a transitive `qs` advisory; 5.5.5 fixes
+    GHSA-cr3w-v879-f973 in `convertTokenData`'s object output mode.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
   id: DW-296
   summary: >-

@@ -286,7 +286,7 @@ Verified 2026-08-15. The code owns these once it exists; AD-22 governs when they
 | GSAP + ScrollTrigger / lenis | 3.14.2 / 1.3.18 |
 | Vitest | 4.0.18 |
 | @playwright/test | 1.62.1 |
-| Style Dictionary | ≥ 5.5.5 (security floor, raised from 5.5.1 on 2026-09-30 under AD-22 by two advisories patched only in 5.5.5; the repository pins 5.5.2, DW-295) |
+| Style Dictionary | ≥ 5.5.5 (security floor, raised from 5.5.1 on 2026-09-30 under AD-22 by two advisories patched only in 5.5.5; the repository pins 5.5.5 since 2026-09-30, DW-295) |
 | DTCG format module | 2025.10 |
 | Tailwind CSS (cluster + Phoenix) | v4 |
 | Phoenix (`cs-tracker`) | ~> 1.8.7 |
