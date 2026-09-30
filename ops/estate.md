@@ -307,6 +307,12 @@ Operator choice**, the keep-live decision of 2026-09-25, their DNS records and V
 untouched. That is a deliberate exception to the ruling of 2026-09-24 that removed Vercel from the
 estate, and what it leaves in breach is KV-7 in `ops/known-violations.md`.
 
+**Amended 2026-09-30 by Story 4-2.** No row changes, but the box's ingress does: Traefik v3.7.13 runs
+beside the shared Caddy on 8443 and on loopback 8080 (its dashboard) since 2026-09-30T21:52Z. It serves no
+public request until an Origin Rule exists for a hostname, so every box row above is still served by
+Caddy, and the origin firewall admits 8443 for Cloudflare's ranges only. Traefik is ingress, not an
+application, and takes no row or `placements` entry. Readings in `ops/traefik-cutover.md` § Cutover run.
+
 | Application | Disposition | Status | `absorbed_into` | Registry treatment |
 |---|---|---|---|---|
 | `cuatro-portfolio` | Anchor | `Live` | n/a | The Hub itself; rendered |

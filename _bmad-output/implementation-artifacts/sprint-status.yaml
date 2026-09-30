@@ -868,7 +868,13 @@ development_status:
   # Operator's, ops/traefik-cutover.md § The sequence steps 1 to 8 and § Pending Operator actions 1 to 4
   # (merge to main, the DNS-01 token, the decisions and the certificate monitoring reading, the run).
   # No hostname moves in 4-2. DW-296 to DW-299 filed.
-  4-2-traefik-with-host-matched-routers-and-dns-01: awaiting-operator
+  # 4-2 done 2026-09-30: box half ran from 21:48Z with the Operator present, after PR #88 (f9ea578) and
+  # Deploy run 36779534561. Traefik v3.7.13 healthy beside Caddy on 8443 and loopback 8080, every step 5
+  # pair matched, DNS-01 issued a Let's Encrypt YR2 certificate for dns01-probe.scratch.cuatro.dev (no DNS
+  # record), origin firewall admits 8443 for Cloudflare's ranges. Readings in ops/traefik-cutover.md
+  # § Cutover run; Pending actions 1, 2 and 4 dated. Action 3 (confirm or overrule the decisions and the
+  # certificate monitoring reading) stays open: nothing overruled, an explicit word awaited.
+  4-2-traefik-with-host-matched-routers-and-dns-01: done
   # 4-3 awaiting-operator 2026-09-30: repository half built and verified on dev. No routing change and no
   # change in list-wheel: the committed router equals Caddy's block on the list-wheel alias, now pinned in
   # the traefik-config suite, and rehearsed with the real image. Box half is the Operator's,

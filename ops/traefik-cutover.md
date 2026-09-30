@@ -14,6 +14,9 @@ read the box but wrote nothing to it. The Operator runs the sequence below as `d
 Pending Operator action at the end. **No hostname moves in Story 4-2**: until a later story creates an
 Origin Rule, Caddy serves every public request exactly as today.
 
+**Amended 2026-09-30:** the sequence below ran on the box that evening from 21:48Z, and Traefik
+has run beside Caddy since; readings in § Cutover run. The sections for later stories have not run.
+
 ## What serves today
 
 **Observed 2026-09-30T09:45:54Z over SSH as `deploy`, read-only.**
@@ -272,6 +275,60 @@ T='docker compose -f ops/traefik/compose.yml'
    `ops/routing-inventory.md` § Ingress and `ops/estate.md` each take a dated amendment: Traefik runs
    beside Caddy on 8443 and loopback 8080, serves no public request until an Origin Rule exists, and the
    origin firewall admits 8443 for Cloudflare's ranges.
+
+## Cutover run
+
+**Observed 2026-09-30 from 21:48Z on the box (`deploy@177.7.52.248`, `srv1842312`), run
+by the orchestrating session with the Operator present.** Steps 1 to 7 as written above; no pair
+differed, so nothing stopped the run. No hostname moved: no Origin Rule exists, and Caddy still serves
+every public request.
+
+**Precondition.** PR #88 merged `dev` into `main` at `f9ea578` at 21:27Z; Deploy run 36779534561
+succeeded (gate, image / hub, deploy); the box checkout read `f9ea578` on `main` with `ops/traefik/`
+present.
+
+| Step | Time | Observed |
+|---|---|---|
+| 1 | 21:48Z | Volume `cs-tracker_caddy_data` present; 8 `tls` lines in `/home/deploy/cs-tracker/Caddyfile`; `cs-tracker_default` holds `cuatro-portfolio-anchor-umami-1`, `list-wheel-list-wheel-1`, `cs-tracker-app-1`, `cuatro-portfolio-tournament-1`, `digital-library-api-1`, `cuatro-portfolio-anchor-app-5`, `cuatro-portfolio-tracker-1`, `digital-library-web-1`, `cs-tracker-db-1`, `cs-tracker-caddy-1` (every one the step names, plus the `cs-tracker` database and Caddy); `origin.pem` sha256 `ebaa6304928bbe330165d0f65394f416d4781a7e6ba860bcadbbedd62b9306f9` in both the Caddy container and `/home/deploy/origin-ca`; nothing listening on 8443; load `0.39, 0.24, 0.20` |
+| 2 | before 21:50Z | `ops/traefik/.env` at mode 600, owned by `deploy`, two lines (`TRAEFIK_DASHBOARD_USERS`, `CF_DNS_API_TOKEN`), gitignored. The token is a new dedicated one named `traefik-dns01` (Zone, DNS, Edit and Zone, Zone, Read on `cuatro.dev`), created by the Operator that day; the file was built on the workstation from the gitignored `.env` and copied with `scp`, so no value was printed. The Operator keeps the dashboard password |
+| 3 | 21:50Z | Backup `/usr/local/sbin/cf-origin-firewall.sh.bak-4-2` taken; 4 lines edited to `80,443,8443`; the service active after restart; `DOCKER-USER` holds 16 IPv4 and 8 IPv6 rules on `80,443,8443`; `ufw` gained 22 rules `8443/tcp ALLOW`, one per Cloudflare range, mirrored from the `80,443/tcp` rules |
+| 4 | 21:52Z | `traefik-traefik-1` healthy; 0 `Error while building configuration` lines; `ss` shows 8443 listening on two sockets (IPv4 and IPv6); load `0.25, 0.20, 0.19`, so load15 under the Capacity Gate's 0.60; `docker stats`: `traefik-traefik-1` CPU 0.24%, memory 17.57 MiB; `cs-tracker-caddy-1` CPU 0.00%, memory 21.25 MiB |
+| 5 | after 21:52Z | Every pair matched (below). Certificate on 8443: `CN = CloudFlare Origin Certificate`, `notAfter=Aug 13 17:15:00 2041 GMT`. From the workstation, `https://cuatro.dev:8443/api/health` through the edge answered 200; `https://177.7.52.248:8443/` timed out after 5 seconds (`curl` exit 28) |
+| 6 | after 21:52Z | Over the SSH tunnel, `http://localhost:8080/dashboard/` answered 401 without credentials, 200 with the Operator's, 401 with a wrong password. `https://cuatro.dev/dashboard/` and `https://cuatro.dev:8443/dashboard/` both answered 308, the Hub's own answer, never Traefik's API |
+| 7 | 21:52Z | Log below. Served for `dns01-probe.scratch.cuatro.dev`: issuer `C = US, O = Let's Encrypt, CN = YR2`; subject `CN = dns01-probe.scratch.cuatro.dev`; `notBefore=Sep 30 20:53:47 2026 GMT`, `notAfter=Dec 29 20:53:46 2026 GMT` (90 days). `/acme/acme.json` 16015 bytes, mode 600. Cloudflare DoH for the name: `Status` 3 (NXDOMAIN), no `Answer` |
+
+Step 5's pairs, Caddy on 443 and Traefik on 8443, each `--resolve` to `127.0.0.1`:
+
+| Request | Caddy | Traefik |
+|---|---|---|
+| `cuatro.dev/api/health` | 200 | 200 |
+| `www.cuatro.dev/some/path?q=1` | 301 `https://cuatro.dev/some/path?q=1` | 301 `https://cuatro.dev/some/path?q=1`, no port |
+| `analytics.cuatro.dev/api/heartbeat` | 200 | 200 |
+| `cs-tracker.cuatro.dev/` | 302 `/auth/steam` | 302 `/auth/steam` |
+| `tracker.cuatro.dev/api/health` | 200 | 200 |
+| `library.cuatro.dev/` | 302 `/login` | 302 `/login` |
+| `library.cuatro.dev/api/health` | 200 | 200 |
+| `wheel.cuatro.dev/` | 200 | 200 |
+| `tournament.cuatro.dev/api/health` | 200 | 200 |
+
+On Traefik's side the two application redirects read `https://cs-tracker.cuatro.dev:8443/auth/steam` and
+`https://library.cuatro.dev:8443/login`. That is the probe, not a finding: the loop requests
+`https://$h:8443`, so the `Host` header carries the port and the application builds its redirect from
+it. Through the edge the `Host` carries no port.
+
+Step 7's log lines, in order:
+
+```
+21:52:08Z  dns01: waiting for record propagation
+21:52:16Z  The server validated our request
+           cleaning DNS-01 challenge
+           Validations succeeded; requesting certificates
+21:52:18Z  Server responded with a certificate
+```
+
+The `notBefore` an hour ahead of the log's 21:52:18Z is the CA backdating the certificate, not a clock
+fault. By the 720 hour renew window (§ Rehearsed off the box), the first box renewal is due from about
+2026-11-29; step 7's `openssl` line re-read after that date shows a later `notBefore`.
 
 ## Moving a hostname, and moving it back
 
@@ -785,10 +842,10 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
 
 | # | Action | Note | Completed (UTC) |
 |---|---|---|---|
-| 1 | **Merge the commit carrying `ops/traefik/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way | _not done_ |
-| 2 | **Create a Cloudflare API token** for the `cuatro.dev` zone with Zone, DNS, Edit and Zone, Zone, Read, for step 2 | DNS-01 writes only `_acme-challenge` TXT records. The Origin Rules token of the refresh record's action 4 is a separate question, needed from Story 4.3 | _not done_ |
-| 3 | **Confirm or overrule the decisions above**, and the certificate monitoring reading in § How certificate monitoring sees this | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning. The monitoring reading departs from the epic's "certificate-age monitoring sees the new certificates" | _not done_ |
-| 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half | _not done_ |
+| 1 | **Merge the commit carrying `ops/traefik/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way. Done by PR #88 (merge `f9ea578`, 21:27Z) and Deploy run 36779534561 | 2026-09-30 |
+| 2 | **Create a Cloudflare API token** for the `cuatro.dev` zone with Zone, DNS, Edit and Zone, Zone, Read, for step 2 | DNS-01 writes only `_acme-challenge` TXT records. The Origin Rules token of the refresh record's action 4 is a separate question, needed from Story 4.3. Done as a dedicated token, `traefik-dns01`, created by the Operator | 2026-09-30 |
+| 3 | **Confirm or overrule the decisions above**, and the certificate monitoring reading in § How certificate monitoring sees this | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning. The monitoring reading departs from the epic's "certificate-age monitoring sees the new certificates". **2026-09-30:** the Operator was present for the run and has overruled nothing; this waits on an explicit word | _not done_ |
+| 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half. Ran from 21:48Z: § Cutover run | 2026-09-30 |
 | 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change (www answering `308` to non-GET methods where Caddy answers `301`), www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning | _not done_ |
 | 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 1 sets monitor 803756083 to `GET`; step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
 | 7 | **Confirm or overrule Story 4-3's decisions** in § Moving wheel.cuatro.dev: this record rather than a new one, no routing change and no change in `list-wheel`, wheel before the apex, and KV-1's `list-wheel` half left open with its closer in DW-308 | The Story 4-3 spec's Design Notes carry the reasoning | _not done_ |

@@ -587,6 +587,14 @@ infrastructure outside the Registry by decision; the other two are Estate rows a
 | Admin API | `127.0.0.1:2019`, IPv4 only. `caddy reload` works; a probe to `localhost` fails because it resolves to `::1` first |
 | Network | `cs-tracker_default`, aliases `cs-tracker-caddy-1` and `caddy`, address `172.18.0.4` |
 
+**Amended 2026-09-30 (Story 4-2):** Caddy is no longer the only container publishing ports. Traefik
+v3.7.13 (`traefik-traefik-1`, compose project `traefik`, from `ops/traefik/`) runs beside it since
+2026-09-30T21:52Z, publishing `0.0.0.0:8443` and `[::]:8443` and the dashboard on loopback
+`127.0.0.1:8080` only. It serves no public request until an Origin Rule sends a hostname's HTTPS to
+8443; Caddy keeps 80 and 443 and every public request until then. The origin firewall
+(`/usr/local/sbin/cf-origin-firewall.sh`, `DOCKER-USER`, and `ufw` in step) admits 8443 for Cloudflare's
+ranges only, as it does 80 and 443. Readings in `ops/traefik-cutover.md` § Cutover run.
+
 ### The site blocks, as installed
 
 **Amended 2026-09-30:** an eighth block, `tournament.cuatro.dev`, was appended to
