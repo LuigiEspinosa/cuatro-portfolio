@@ -333,9 +333,21 @@ is how step 4 tells which proxy answered.
 
 **Decisions, Story 4-6** (the spec's Design Notes; the Operator may overrule each):
 
-- **No routing change.** The `cuatro-portfolio` and `www` routers in `dynamic/routes.yml` already match
-  Caddy's two blocks: the house headers, `anchor-app:3000`, and a permanent redirect keeping path and
-  query. `ops/__tests__/traefik-config.test.ts` now also holds the apex upstream to an alias
+- **No routing change.** The `cuatro-portfolio` and `www` routers in `dynamic/routes.yml` match Caddy's
+  two blocks in the house headers, `anchor-app:3000`, and a permanent redirect keeping path and query,
+  **with one difference in the www status code, accepted.** Caddy answers 301 to every method. Traefik
+  v3.7.13's `redirectRegex` with `permanent: true` answers 301 to GET only, and 308 to HEAD, POST and
+  every other method; it has no setting that answers 301 to them. **Observed 2026-09-30 on the authoring
+  machine**, a throwaway `traefik:v3.7.13` carrying the committed `www-to-apex` middleware:
+  `GET 301`, `HEAD 308`, `POST 308` for `/some/path?q=1`; live Caddy, `GET 301`, `HEAD 301`. Accepted
+  because 308 is the permanent redirect that keeps the method (RFC 9110 § 15.4.9), every browser and
+  crawler follows it to the same `Location`, and a browser navigation is a GET, which still reads 301.
+  Making www answer 301 to every method would need a service of its own behind the router, which is
+  code to answer a monitor. **The consequence is monitor 803756083:** it accepts `301` alone and its
+  method is unset (`httpMethodType: null`, read 2026-09-30), and UptimeRobot's HTTP monitors are
+  understood to default to HEAD (not confirmed against UptimeRobot's documentation). Step 1 of the sequence below
+  therefore sets it to GET before the move, so it keeps asserting 301 and reads the same from Caddy and
+  from Traefik. `ops/__tests__/traefik-config.test.ts` now also holds the apex upstream to an alias
   `docker-compose.yml` gives `anchor-app`, never a container name.
 - **`contracts/` stays the Hub's.** The Operator's ruling of 2026-09-24: Traefik does not serve
   `contracts/`. It reaches the Hub through the apex router like any other path, and the suite refuses a
@@ -390,7 +402,8 @@ X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 ```
 
-The three headers are the apex stylesheet's. The `www` line's `%{redirect_url}` printed empty for
+The three headers are the apex stylesheet's. The `www 301` was a GET; the same URL by HEAD reads `308`
+(§ What the move changes, and what it leaves alone). The `www` line's `%{redirect_url}` printed empty for
 `https://www.cuatro.dev:8443/contracts/tokens.css?q=1`; the response's own header, read afterwards, was
 `Location: https://cuatro.dev/contracts/tokens.css?q=1`, with the same three headers. Each rollout
 printed docker-rollout's three lines and left one container, numbered one higher:
@@ -458,6 +471,10 @@ rule() { printf '{"description":"Story 4-6: %s to Traefik on 8443","expression":
    baseline, normally `0`. On the workstation:
    `CF /phases/http_request_origin/entrypoint | jq '.success, [.result.rules[]?.expression]'` lists no
    rule for either hostname, and the UptimeRobot dashboard shows 803749849, 803756371 and 803756083 `UP`.
+   **Set monitor 803756083's HTTP method to `GET`** (UptimeRobot dashboard, the monitor's advanced
+   settings, or the API's `http_method`), leaving its accepted codes at `301` alone and redirect following
+   off. Traefik answers a HEAD to www with `308`, a GET with `301`; set now, while Caddy still answers,
+   the monitor must read `UP` after its next five-minute interval before step 3. If it does not, stop.
    Record `curl -s "https://cuatro.dev/contracts/tokens.css?v=$(date +%s)" | sha256sum`.
 2. **Start the request loop on the workstation, and leave it running to step 6.**
    ```bash
@@ -483,8 +500,11 @@ rule() { printf '{"description":"Story 4-6: %s to Traefik on 8443","expression":
    ```bash
    CF /phases/http_request_origin/entrypoint -X PUT --data "{\"rules\":[$(rule www.cuatro.dev)]}" | jq '.success, .errors'
    ```
-   `true` and `[]`. Then, after about a minute: `curl -sI 'https://www.cuatro.dev/some/path?q=1'` answers
-   `301` and `location: https://cuatro.dev/some/path?q=1`; on the box, the step 1 `netstat` count is above
+   `true` and `[]`. Then, after about a minute, a GET:
+   `curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' 'https://www.cuatro.dev/some/path?q=1'`
+   prints `301 https://cuatro.dev/some/path?q=1`, and the same URL by HEAD, `curl -sI`, now answers `308`
+   with the same `location` (it answered `301` from Caddy; that change is the sign Traefik answered, and is
+   accepted, § What the move changes); on the box, the step 1 `netstat` count is above
    its baseline (Cloudflare now holds connections to Traefik), and `uptime`. The probe's second column
    stays `301`.
 4. **Move `cuatro.dev`.** The same, with the apex, into the ruleset step 3 left:
@@ -513,6 +533,7 @@ rule() { printf '{"description":"Story 4-6: %s to Traefik on 8443","expression":
    step 5's run id and the container it left, and step 6's counts. `ops/routing-inventory.md` § Ingress and
    `ops/estate.md` each take a dated amendment: `cuatro.dev` and `www.cuatro.dev` are served by Traefik
    through an Origin Rule, and Caddy's two blocks remain, unreached, until Story 4.11.
+   `ops/monitoring.md`'s 803756083 row takes a dated note: method `GET`, set in step 1.
 
 **Rollback, at any step, one hostname at a time, apex first:**
 
@@ -572,8 +593,8 @@ Once a later story has moved a hostname, delete its Origin Rule first, then the 
 | 2 | **Create a Cloudflare API token** for the `cuatro.dev` zone with Zone, DNS, Edit and Zone, Zone, Read, for step 2 | DNS-01 writes only `_acme-challenge` TXT records. The Origin Rules token of the refresh record's action 4 is a separate question, needed from Story 4.3 | _not done_ |
 | 3 | **Confirm or overrule the decisions above**, and the certificate monitoring reading in § How certificate monitoring sees this | Each is a decision the Operator may overrule; the spec's Design Notes carry the reasoning. The monitoring reading departs from the epic's "certificate-age monitoring sees the new certificates" | _not done_ |
 | 4 | **Run steps 1 to 8 above** | Step 3 is also the refresh record's action 4, firewall half | _not done_ |
-| 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change, www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning | _not done_ |
-| 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
+| 5 | **Confirm or overrule Story 4-6's decisions** in § Moving cuatro.dev and www: this record rather than a new one, no routing change (www answering `308` to non-GET methods where Caddy answers `301`), www before the apex as two rules, Story 4.4 not a precondition | The Story 4-6 spec's Design Notes carry the reasoning | _not done_ |
+| 6 | **Run § Moving cuatro.dev and www steps 1 to 7**, after actions 1 to 4 here and the refresh record's action 4 (the origin rules token) | Step 1 sets monitor 803756083 to `GET`; step 5 dispatches the Deploy workflow; step 7 amends `ops/routing-inventory.md` and `ops/estate.md` | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

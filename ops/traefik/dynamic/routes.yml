@@ -18,7 +18,9 @@ http:
       middlewares: [house-headers]
       service: cuatro-portfolio
       tls: {}
-    # The apex is canonical; www answers 301 with the path and query kept, as Caddy's block does.
+    # The apex is canonical; www redirects there with the path and query kept. Caddy answers 301 to every
+    # method; `permanent: true` answers 301 to GET only and 308 to HEAD, POST and the rest, and Traefik has
+    # no setting for 301 on those (`ops/traefik-cutover.md` § What the move changes).
     www:
       rule: Host(`www.cuatro.dev`)
       entryPoints: [websecure]
