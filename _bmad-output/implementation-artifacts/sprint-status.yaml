@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 03:53
+last_updated: 09-30-2026 10:15
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -863,7 +863,11 @@ development_status:
   # 36690453047 green. No box half. Operator items 1 to 4 in the record (zone SSL mode re-read, the three
   # decisions, DW-295, 4.2's firewall and token prerequisites).
   4-1-refresh-the-settled-inputs-and-choose-the-rebuild-topology: done
-  4-2-traefik-with-host-matched-routers-and-dns-01: backlog
+  # 4-2 awaiting-operator 2026-09-30: repository half built and verified on dev (ops/traefik/, the
+  # traefik-config suite, the local Docker proof). Box half is the Operator's, ops/traefik-cutover.md
+  # § The sequence steps 1 to 8 and § Pending Operator actions 1 to 4 (merge to main, the DNS-01 token,
+  # the decisions, the run). No hostname moves in 4-2. DW-296 to DW-299 filed.
+  4-2-traefik-with-host-matched-routers-and-dns-01: awaiting-operator
   4-3-migrate-list-wheel-the-static-first-candidate: backlog
   4-4-one-postgres-one-database-and-one-role-per-consumer: backlog
   4-5-pg_dump-on-cron-plus-restic-offsite: backlog

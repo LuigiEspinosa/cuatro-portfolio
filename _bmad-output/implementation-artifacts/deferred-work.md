@@ -9072,3 +9072,65 @@ status: done
     **Owner: the Operator (ruling), then a `fix(dw-295)` commit.** **Trigger: the Operator's ruling,
     or the next story that touches `packages/tokens`.**
   status: open
+- id: DW-296
+  summary: >-
+    Traefik reads the Origin CA pair from the shared Caddy's volume `cs-tracker_caddy_data`, so retiring
+    Caddy must not remove that volume until the pair has moved.
+  evidence: |-
+    Found 2026-09-30 by Story 4-2. `ops/traefik/compose.yml` mounts `cs-tracker_caddy_data` read-only
+    with `subpath: origin-ca`, the exact files the shared Caddy serves today (eight
+    `tls /data/origin-ca/origin.pem /data/origin-ca/origin.key` lines, read 2026-09-30), declared
+    `external`. A `docker compose down -v` in `/home/deploy/cs-tracker`, or a volume prune after Caddy
+    stops, would take the certificate from under Traefik, and every moved hostname would then fail Full
+    (strict) with a 526. A second copy of the pair sits in `/home/deploy/origin-ca/` (observed by `ls`
+    the same day; `ops/traefik-cutover.md` step 1 compares the two digests).
+
+    **Owner: Story 4.11 (retire Caddy).** **Trigger: that story.** Move the pair to a volume or path the
+    Traefik stack owns, repoint the mount, then retire the old volume.
+  status: open
+- id: DW-297
+  summary: >-
+    Traefik 3.7's entrypoints default to a 60-second `readTimeout`, where the shared Caddy sets none, so
+    a slow upload may be cut off once its hostname moves.
+  evidence: |-
+    Found 2026-09-30 by Story 4-2 in Traefik v3.7.13's loaded static configuration (`DEBUG` start on the
+    authoring machine): `"respondingTimeouts":{"idleTimeout":"3m0s","readTimeout":"1m0s"}` on every
+    entrypoint. `ops/traefik/traefik.yml` leaves it at the default, since no hostname moves in 4-2 and no
+    upload size or duration for any application is recorded. `library.cuatro.dev` takes file uploads
+    through `/api/*`, and the tracker writes downloads, so either may carry a request body longer than
+    a minute on a slow client.
+
+    **Owner: each hostname's migration story, first Story 4.9 (library).** **Trigger: that hostname's
+    move.** Measure the longest legitimate request, then set
+    `entryPoints.websecure.transport.respondingTimeouts.readTimeout` only if it exceeds the default.
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
+  id: DW-298
+  summary: >-
+    AGENTS.md says `ops/` holds 31 records; Story 4-2's `ops/traefik-cutover.md` makes it 32, and the
+    list beside the count does not name it.
+  evidence: |-
+    Found 2026-09-30 by Story 4-2's review. `ls ops/*.md | wc -l` printed 32 with the runbook present;
+    AGENTS.md line 37 reads "holds 31 records". An agent-context file, so not edited by the story (the
+    build's review routes such a fix to the ledger).
+
+    **Owner: the next `bmad-project-context` refresh.** **Trigger: that refresh, or Epic 4's close.**
+  status: open
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-traefik-with-host-matched-routers-and-dns-01.md`
+  id: DW-299
+  summary: >-
+    No CI job starts Traefik, so a routing file that is well formed text but that Traefik rejects, or
+    routes wrongly, passes every gate and reaches the box at the next deploy.
+  evidence: |-
+    Found 2026-09-30 by Story 4-2's review (verification-gap layer). `ops/__tests__/traefik-config.test.ts`
+    reads `ops/traefik/dynamic/routes.yml` as text: it proves every hostname has a Host-led router and no
+    secret is committed, but not that Traefik loads the file or that a request reaches the right alias.
+    That was proven once, locally (`ops/traefik-cutover.md` § Rehearsed off the box). The box resets its
+    checkout to `main` on every deploy and Traefik watches `dynamic/`, so a merged change goes live
+    without a Traefik start anywhere in between. Until a hostname has an Origin Rule nothing public
+    depends on it; from Story 4.3 on, something does. Closing it is a CI job that runs
+    `traefik:v3.7.13` with the committed files against whoami stand-ins, as the local proof did, and a
+    new job is a change to both suites that pin `ci.yml`'s job names.
+
+    **Owner: Story 4.3 (the first hostname to move).** **Trigger: that story.**
+  status: open

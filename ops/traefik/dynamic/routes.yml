@@ -1,0 +1,157 @@
+# Traefik's routing (Story 4-2, AD-7): one router per hostname the box serves, each matching on Host.
+# PathPrefix never routes between applications. It appears once, to split library.cuatro.dev between
+# digital-library's own two containers, under that hostname's Host, exactly as the shared Caddyfile's
+# library block does. Upstreams are the aliases the shared Caddyfile proxies on `cs-tracker_default`
+# (`ops/routing-inventory.md` § The site blocks, as installed; § The shared network).
+#
+# `ops/__tests__/traefik-config.test.ts` reads this file as indented text: routers are four spaces in,
+# their keys six, and every rule is one line. Keep that shape.
+#
+# This file is served from the box checkout, which a deploy resets to `main`: a change merged there
+# reaches the running Traefik on the next deploy, because the directory is watched.
+
+http:
+  routers:
+    cuatro-portfolio:
+      rule: Host(`cuatro.dev`)
+      entryPoints: [websecure]
+      middlewares: [house-headers]
+      service: cuatro-portfolio
+      tls: {}
+    # The apex is canonical; www answers 301 with the path and query kept, as Caddy's block does.
+    www:
+      rule: Host(`www.cuatro.dev`)
+      entryPoints: [websecure]
+      middlewares: [house-headers, www-to-apex]
+      service: noop@internal
+      tls: {}
+    analytics:
+      rule: Host(`analytics.cuatro.dev`)
+      entryPoints: [websecure]
+      middlewares: [house-headers]
+      service: analytics
+      tls: {}
+    # Caddy's cs-tracker block sends no security headers (`ops/routing-inventory.md`); carried over as is.
+    cs-tracker:
+      rule: Host(`cs-tracker.cuatro.dev`)
+      entryPoints: [websecure]
+      service: cs-tracker
+      tls: {}
+    cuatro-tracker:
+      rule: Host(`tracker.cuatro.dev`)
+      entryPoints: [websecure]
+      middlewares: [house-headers]
+      service: cuatro-tracker
+      tls: {}
+    digital-library:
+      rule: Host(`library.cuatro.dev`)
+      entryPoints: [websecure]
+      middlewares: [library-headers]
+      service: digital-library-web
+      tls: {}
+    # The same application's API container, under the same Host (AD-7 permits a split inside one
+    # application; a Traefik service cannot carry a path rule, so this is a second router).
+    digital-library-api:
+      rule: Host(`library.cuatro.dev`) && (PathPrefix(`/api/`) || PathPrefix(`/files/`))
+      entryPoints: [websecure]
+      middlewares: [library-headers]
+      service: digital-library-api
+      tls: {}
+    list-wheel:
+      rule: Host(`wheel.cuatro.dev`)
+      entryPoints: [websecure]
+      middlewares: [house-headers]
+      service: list-wheel
+      tls: {}
+    cs-tournament:
+      rule: Host(`tournament.cuatro.dev`)
+      entryPoints: [websecure]
+      middlewares: [house-headers]
+      service: cs-tournament
+      tls: {}
+    # The DNS-01 proof (AD-26). This hostname has NO DNS record, so it is never proxied and nothing
+    # public reaches it; it exists so Traefik obtains and renews one public certificate over DNS-01,
+    # proving the capability a hostname needs before it may leave the proxy. It is the only router that
+    # names a certificate resolver. Two labels deep ON PURPOSE: Traefik requests no ACME certificate
+    # for a name a loaded certificate already covers, and the Origin CA's `*.cuatro.dev` covers every
+    # one-label name (observed 2026-09-30: "No ACME certificate generation required for domains").
+    dns01-probe:
+      rule: Host(`dns01-probe.scratch.cuatro.dev`)
+      entryPoints: [websecure]
+      service: noop@internal
+      tls:
+        certResolver: cloudflare
+    # The dashboard: loopback-only entrypoint, basic auth, reached as http://localhost:8080/dashboard/
+    # through an SSH tunnel. Never on websecure.
+    dashboard:
+      rule: Host(`localhost`)
+      entryPoints: [traefik]
+      middlewares: [dashboard-auth]
+      service: api@internal
+
+  middlewares:
+    # The estate's header set, as the shared Caddyfile sends it (`docker/Caddyfile`).
+    house-headers:
+      headers:
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: strict-origin-when-cross-origin
+    # library frames its own EPUB content, so SAMEORIGIN rather than DENY, as Caddy's block has it.
+    library-headers:
+      headers:
+        contentTypeNosniff: true
+        customFrameOptionsValue: SAMEORIGIN
+        referrerPolicy: strict-origin-when-cross-origin
+    www-to-apex:
+      redirectRegex:
+        regex: ^https?://www\.cuatro\.dev(?::\d+)?(.*)$
+        replacement: https://cuatro.dev${1}
+        permanent: true
+    # The htpasswd line comes from TRAEFIK_DASHBOARD_USERS in the gitignored `.env`; nothing here holds it.
+    dashboard-auth:
+      basicAuth:
+        users:
+          - '{{ env "TRAEFIK_DASHBOARD_USERS" }}'
+
+  services:
+    cuatro-portfolio:
+      loadBalancer:
+        servers:
+          - url: http://anchor-app:3000
+    analytics:
+      loadBalancer:
+        servers:
+          - url: http://anchor-umami:3000
+    cs-tracker:
+      loadBalancer:
+        servers:
+          - url: http://app:4000
+    cuatro-tracker:
+      loadBalancer:
+        servers:
+          - url: http://cuatro-app:3000
+    digital-library-web:
+      loadBalancer:
+        servers:
+          - url: http://library-web:3000
+    digital-library-api:
+      loadBalancer:
+        servers:
+          - url: http://library-api:4000
+    list-wheel:
+      loadBalancer:
+        servers:
+          - url: http://list-wheel:80
+    cs-tournament:
+      loadBalancer:
+        servers:
+          - url: http://tournament:3000
+
+# Every proxied hostname is served the Cloudflare Origin CA certificate for cuatro.dev and *.cuatro.dev
+# (AD-26), the pair the shared Caddy serves, mounted read-only from its volume.
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/origin-ca/origin.pem
+        keyFile: /etc/traefik/origin-ca/origin.key
