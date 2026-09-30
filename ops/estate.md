@@ -526,8 +526,12 @@ and the box on 2026-09-29, and `ops/tournament-placement.md` steps 1 to 8 ran on
 `tournament-worker:019394d...`, the shared Caddy routes `tournament.cuatro.dev` to the server, the
 worker stays internal, the load reading after placement was load15 0.19 against the 0.60 threshold,
 and UptimeRobot monitor 804128109 watches `/api/health`. The Registry entry goes `Live` at
-`https://tournament.cuatro.dev` in Registry 1.7.0, released after the placement (FR-28). What follows
-describes the state before that evening.
+`https://tournament.cuatro.dev` in Registry 1.7.0, released after the placement (FR-28). The store is
+the Supabase project the Operator's `.env.local` named, which proved to be the development project,
+26 migrations behind the code; on the Operator's ruling the missing migrations were applied from the
+box at 00:54Z after a dump (`ops/tournament-placement.md` § Placement run, step 9), and the Operator's
+Steam sign-in then completed at 01:01:26Z with the `steamid64` and `role` claims bound, which is the
+identity proof. What follows describes the state before that evening.
 
 **Committed on `dev`, not live.** It reaches `main` at the Epic 3 merge, and even then nothing serves
 it: it has served nowhere since the Operator removed Vercel on 2026-09-24, and placing it is a new

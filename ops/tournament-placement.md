@@ -211,6 +211,26 @@ Deploy run 36648915282 had put on the box (gate, image / hub and deploy green) a
   (`ops/monitoring.md`).
 - **`ops/capacity-gate.yml`:** the entry's `observed` moved from 2026-09-29 to 2026-09-30, the UTC
   day the placement ran, as § After the placement says.
+- **Step 9, and what it found.** The Operator's first two Steam sign-ins came back to `/` with no
+  `login=error` and no visible change. Server side, everything answered: the login route 307s to
+  Steam with realm `https://tournament.cuatro.dev` and the nonce cookie `SameSite=lax`; the container
+  reaches Steam and Supabase; the service role key is accepted. The container log carried
+  `Could not find the table 'public.leaderboard' in the schema cache`, and the Supabase project
+  turned out to hold migrations 0001 to 0003 only, against 0029 in `apps/tournament/supabase/migrations`:
+  the project the Operator's `.env.local` named is the development project, 26 migrations behind the
+  code, with one Auth user and one player. **Operator ruling 2026-09-30:** it is the store; apply the
+  migrations. Done as a discrete step from the box through the pooler at 00:54Z: a `pg_dump -Fc -n public`
+  first, kept at `/home/deploy/backups/cs-tournament/pre-migrations-20260930T005415Z.dump` (28,571
+  bytes), then `0004_roster.sql` to `0029_verification_bundle.sql` in order, one transaction each,
+  every one `OK`, each recorded in `supabase_migrations.schema_migrations` (29 rows after), then
+  `NOTIFY pgrst, 'reload schema'`; the `leaderboard` view then answered through the API and the home
+  page rendered with no error logged. The next sign-in completed: `auth.users.last_sign_in_at` reads
+  **2026-09-30T01:01:26Z** for the admin, whose `app_metadata` carries `steamid64` and `role`
+  (`admin`, matching `public.app_role`). That is the identity proof (action 4). The viewer surface
+  shows no signed-in state at all, since `app/(viewer)/page.tsx` renders the sign-in link
+  unconditionally and only the API routes read the session, which is why the Operator read a
+  working login as a failed one: filed as DW-290. That the app's schema changes have no discrete
+  step on this store is DW-291.
 
 ## Pending Operator actions
 
@@ -219,7 +239,7 @@ Deploy run 36648915282 had put on the box (gate, image / hub and deploy green) a
 | 1 | **Push `dev` and merge it into `main`** without the release, and let the Deploy run | The compose networks, the gate's placement and the build inputs reach the box and GHCR only this way. The Registry stays at 1.6.0 (`6d72963`). PR #86 merged as `019394d`; Deploy run 36648915282 green | 2026-09-29T23:58Z |
 | 2 | **Note the green Image (tournament) run** on a `main` sha carrying it | Its sha is `TOURNAMENT_TAG`. The workflow ran on the merge commit `019394d` itself, both jobs green | 2026-09-30T00:05Z |
 | 3 | **Run steps 1 to 8 above** | Step 1's and step 7's readings and step 6's codes go into this record. § Placement run | 2026-09-30T00:27Z |
-| 4 | **Sign in through Steam** on `https://tournament.cuatro.dev` as the admin | The identity proof (§ Identity) | |
+| 4 | **Sign in through Steam** on `https://tournament.cuatro.dev` as the admin | The identity proof (§ Identity). Observed server side as `last_sign_in_at` with the `steamid64` and `role` claims bound (§ Placement run, step 9), after the migration catch-up | 2026-09-30T01:01:26Z |
 | 5 | **Release Registry 1.7.0** (step 10: the revert of `6d72963`) and merge it into `main` after step 6 answered | FR-28 | |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
