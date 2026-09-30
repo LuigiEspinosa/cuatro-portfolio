@@ -470,7 +470,11 @@ it: merging is not placing.
   consumer is Umami, whose `umami` role carries no limit and whose URL names no `connection_limit`,
   so it pools Prisma's documented default of twice the core count plus one (five on the two-core
   box; a documented default, not an observed figure). With Postgres' three reserved superuser slots
-  that is at most 18 of 100.
+  that is at most 18 of 100. **Corrected 2026-09-30 (Story 4-7, DW-302):** Umami 3.4.0 pools
+  node-postgres's default of ten per container, not Prisma's five, and no environment option changes it
+  (read in the image, `ops/postgres.md` § The budget). Story 4-7 moves Umami to the estate's one Postgres
+  as role `umami` with limit 25 (`ops/postgres.md` § Moving Umami), after which finance is `anchor-db`'s
+  only named consumer.
 - **Tokens (AD-14).** Adoption is deferred whole, not half-applied: `apps/finance/app/tokens.css` keeps
   its own palette, and `app/layout.tsx` its own fonts (DW-267). The application is `In progress` and
   unrendered, and AD-25 gives it no restyle until it renders.

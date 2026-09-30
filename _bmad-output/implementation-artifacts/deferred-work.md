@@ -845,7 +845,15 @@ the next free id, one above the highest in the file, and a status line.
     something rolls that service. It stays open for the ruling above: add the healthcheck, record the
     breach, or stop `ARCHITECTURE-SPINE.md` claiming it is true. Epic 4's rebuild is the next point at
     which a rollout could reach it.
-  status: open
+
+    **Closed 2026-09-30 by Story 4-7, repository half.** `anchor-umami` carries a healthcheck on
+    `/api/heartbeat` (curl on loopback: the image sets `HOSTNAME=0.0.0.0`), held by
+    `docker/__tests__/compose.test.ts` § the Umami services, and reported `healthy` against Postgres 18.6
+    in the story's local proof (`ops/postgres.md` § Moving Umami, Rehearsed off the box). Every service in
+    `docker-compose.yml` that serves traffic or holds data now declares one (the one-shot migrations and
+    `tracker-worker` serve nothing), so the spine's claim holds in the file; the box runs it once the
+    Operator runs § Moving Umami step 10.
+  status: done
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-9-record-the-build-on-the-box-violation-as-a-tracked-item.md`
   id: DW-180
@@ -9190,6 +9198,10 @@ status: done
 
     **Owner: Stories 4.7, 4.8 and 4.10, each before its move.** **Trigger: the first of them to open.**
     Confirm 4.5 is done and its dump names the moved database, and repoint or retire the old backup.
+
+    **Story 4-7, 2026-09-30:** `ops/postgres.md` § Moving Umami names `ops/postgres-backup.md` § Install
+    and first run as a precondition; the nightly dump takes every database on the estate instance, so it
+    names `umami` without a change. No backup aimed at `anchor-db` exists to repoint. Open for 4.8 and 4.10.
   status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-one-postgres-one-database-and-one-role-per-consumer.md`
   id: DW-302
@@ -9212,7 +9224,14 @@ status: done
     `SKIP_DB_MIGRATION` on the server and run `prisma migrate deploy` from the same image as a one-shot
     before the roll, re-read the pool size of the pinned version against the `umami` limit, and correct
     the estate note.
-  status: open
+
+    **Closed 2026-09-30 by Story 4-7, repository half.** `docker-compose.yml` pins
+    `3.4.0@sha256:85909afc...` (the same digest read above), sets `SKIP_DB_MIGRATION=1` on the server and
+    runs `prisma migrate deploy` as `anchor-umami-migrate` under the `migrate` profile. The pool reading
+    stands for the pinned digest (ten per container, the role's 25 the cap) and `ops/estate.md`'s note
+    carries a dated correction. The box's digest `sha256:87312d33...` is GHCR's `3.3.0` manifest
+    (registry API, 2026-09-30). The box runs it from `ops/postgres.md` § Moving Umami.
+  status: done
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-5-pg-dump-on-cron-plus-restic-offsite.md`
   id: DW-303
   summary: >-

@@ -65,7 +65,7 @@ always have room.
 
 | Role and database | Limit | Consumer | Its pool today | Where it sets the limit | Changed by |
 |---|---|---|---|---|---|
-| `umami` | 25 | Umami, its server and its start-time migration | node-postgres's default `max` of 10 per container: Umami 3.4.0 builds its pool as `new PrismaPg({connectionString})` on Prisma 7.10.0 (observed 2026-09-30 in `ghcr.io/umami-software/umami:postgresql-latest`, digest `sha256:85909afc...`; the box runs the 2026-08-12 digest `sha256:87312d33...`, whose version was not read) | nowhere in 3.4.0: no pool option reaches it from the environment, so the role's limit is the cap. Two containers across a rollout at 10, plus the migration. Story 4.7 pins the version and re-reads this | Story 4.7 |
+| `umami` | 25 | Umami, its server and its start-time migration | node-postgres's default `max` of 10 per container: Umami 3.4.0 builds its pool as `new PrismaPg({connectionString})` on Prisma 7.10.0 (observed 2026-09-30 in `ghcr.io/umami-software/umami:postgresql-latest`, digest `sha256:85909afc...`; the box runs the 2026-08-12 digest `sha256:87312d33...`, whose version was not read; **amended 2026-09-30:** it is GHCR's `3.3.0`, § Moving Umami) | nowhere in 3.4.0: no pool option reaches it from the environment, so the role's limit is the cap. Two containers across a rollout at 10, plus the migration. Story 4.7 pins the version and re-reads this | Story 4.7 |
 | `cuatro_tracker` | 20 | the tracker: `tracker`, `tracker-worker`, `tracker-migrate` | Prisma 6 default, 5 per process, no limit (`apps/tracker/lib/db.ts`) | `connection_limit=4` on `DATABASE_URL`: two servers and two workers across a rollout at 4 each, plus one migrate | Story 4.8 |
 | `cs_tracker` | 25 | `cs-tracker`, its `app` and `migrate` | Ecto `pool_size` from `POOL_SIZE`, default 10 (`config/runtime.exs:208` in `cs-tracker`) | `POOL_SIZE=10` in its env file, stated: two containers across a rollout at 10, plus the migrator's pool | Story 4.10 |
 | `cuatro_finance` | 10 | finance, placed nowhere | `max: 5` per container (`apps/finance/lib/db.ts`) | already set; its `DATABASE_URL` and `provision.sql` name `finance` until it is placed (DW-300) | its placement (DW-269) |
@@ -335,6 +335,272 @@ new side (`pg_dump -a -t <table>`) before switching back. The new database stays
 attempt, and is emptied for it with `dropdb` and the three statements of the init script, never with
 `down -v` once another consumer has moved.
 
+## Moving Umami (Story 4-7)
+
+Umami, behind `analytics.cuatro.dev`, is the first consumer to move. Story 4-7 changes four things about
+it and one about its hostname, and this section is how the Operator runs them. It lives here rather than
+in a record of its own because this file owns every consumer move and already lists 4.7's row; the
+hostname half reuses `ops/traefik-cutover.md` § Moving a hostname.
+
+| What | Before | After | Kind |
+|---|---|---|---|
+| Image | `ghcr.io/umami-software/umami:postgresql-latest`; the box's copy has digest `sha256:87312d33...`, which is GHCR's manifest digest for `3.3.0` | `3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367`: the latest stable release (`gh release list`, published 2026-09-17) and the digest `postgresql-latest` resolved to on 2026-09-30 | Decision; both digests observed 2026-09-30 from the GHCR registry API |
+| Database | `umami` in `cuatro-portfolio-anchor-db-1`, Postgres 16.14 | `umami` in `postgres-estate-postgres-1`, Postgres 18.6, role limit 25 | Decision (§ The budget) |
+| Migrations | on every start: the image's `scripts/check-db.js` runs `prisma migrate deploy` | `SKIP_DB_MIGRATION=1` on the server; `anchor-umami-migrate` under the `migrate` profile runs it, from the same image, before the server starts | Decision (AD-23, DW-302) |
+| Healthcheck | none (DW-179) | `curl` to `/api/heartbeat` on loopback: the image sets `HOSTNAME=0.0.0.0`, and the route answers without the database | Decision |
+| Hostname | Caddy's `analytics.cuatro.dev` block | the committed `analytics` router in `ops/traefik/dynamic/routes.yml`, reached by one Origin Rule. It already matches Caddy's block (the same three headers, `anchor-umami:3000`), so nothing in `ops/traefik/` changes | Decision |
+
+What it leaves alone: `anchor-db` and its volume (the rollback, until Story 4.11; finance still names it,
+DW-300), Caddy's block, `UMAMI_APP_SECRET`, and the Hub's `NEXT_PUBLIC_UMAMI_*` build inputs, since the
+restore keeps every website id. Umami 3.4.0 applies migrations 24 to 26 over the box's 23 and, by its
+release notes, "binds authenticated sessions to password fingerprints": **every signed-in session ends,
+so the Operator needs the admin password before step 5.** It pools node-postgres's default of ten per
+container and takes no pool option from the environment (DW-302, read in this same digest), so the
+role's 25 is the cap: two containers across a later rollout, plus the migration.
+
+**Decisions, each one the Operator may overrule** (Pending action 4; the Story 4-7 spec's Design Notes
+carry the reasoning): the exact release and digest rather than a major; writes frozen for the window
+(Umami stopped from step 5 to step 10, a few minutes in which visitors' beacons fail silently) so the
+counts prove the copy exactly; the data move first, under Caddy, and the hostname second, each verified
+and rolled back on its own; the data rollback by an override file on the box rather than a revert through
+CI.
+
+### What serves it today
+
+**Observed 2026-09-30T14:22:50Z over SSH as `deploy`, read-only**: load average 0.20, 0.25, 0.20;
+`cuatro-portfolio-anchor-umami-1` on `postgresql-latest`, up six weeks, no health status;
+`PostgreSQL 16.14 on x86_64-pc-linux-musl`; the database 9455 kB; the last applied migration
+`23_update_session_data`; no `estate-postgres` network yet. The rows Story 2.24's metrics depend on
+(`event_type`, `event_name`, count):
+
+```
+1||79
+2|live-open|1
+2|source-open|1
+2|suite-reach|7
+event_data 5, website 1, user 1; website_event from 2026-08-17 12:08:05 to 2026-09-30 12:48:06 UTC
+```
+
+### Rehearsed off the box
+
+Run 2026-09-30 on the authoring host (Windows 11, Docker 29.8) from this checkout, with throwaway
+passwords in a throwaway `ops/postgres/.env` and env file, a throwaway `cs-tracker_default` network, and
+the rollback override of step 3 below. The box's shape: the estate instance from
+`ops/postgres/compose.yml`; `anchor-db` from `docker-compose.yml`; Umami 3.3.0 by the box's digest on it
+through the override, its 23 migrations applied, then seeded through its own API with four page views and
+the three events (a login, a website, `/api/send` with a browser user agent and each event's data). Then
+steps 5 to 10 as written, the fresh page view of step 11 through the API, and rollback R2. Output as
+printed, trimmed only where marked:
+
+```
+## freeze 2026-09-30T14:31:32Z
+ Container p47-anchor-umami-1 Stopped
+## dump
+exit=0 bytes=61161
+## restore
+exit=0
+## counts                                    (the source's lines, joined; then the diff)
+_prisma_migrations 23 app_setting 0 board 0 event_data 3 heatmap_event 0 link 0 pixel 0 report 0 revenue 0 segment 0 session 1 session_data 0 session_link 0 session_replay 0 session_replay_saved 0 share 0 team 0 team_user 0 two_factor_auth 0 two_factor_backup_code 0 two_factor_otp_used 0 two_factor_rate_limit 0 user 1 website 1 website_event 7
+counts-match
+## events restored
+live-open|1
+source-open|1
+suite-reach|1
+## migrate                                   (blank lines left out)
+Applying migration `24_lowercase_username`
+Applying migration `25_add_annotation`
+Applying migration `26_add_api_key`
+The following migration(s) have been applied:
+...                                          (the tree of the three migration.sql files)
+All migrations have been successfully applied.
+exit=0
+## roll
+ Container p47-anchor-umami-1 Healthy
+ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367
+## server log                                (the first lines; no migration runs)
+✓ DATABASE_URL is defined.
+✓ Database connection successful.
+✓ Database version check successful.
+▲ Next.js 16.3.4
+## heartbeat
+{"ok":true} 200
+## sign in                                   (POST /api/auth/login as the seeded admin)
+200
+## fresh page view                           (event_type 1 rows, before and after one /api/send)
+4
+200
+5
+/after-move
+## heartbeat with the database paused
+200
+## connections                               (pg_stat_activity for umami, idle server)
+umami|1
+## rollback                                  (R2 below)
+ Container p47-anchor-umami-1 Healthy
+ghcr.io/umami-software/umami:3.3.0@sha256:87312d334d009ee67ee0d2fba8fed01435547cc468e452243aef5133a9984d48 healthy
+{"ok":true} 200
+sign in 200
+7                                            (website_event in anchor-db: untouched since the freeze)
+23_update_session_data
+8                                            (website_event in the estate umami: the fresh view stays there)
+26_add_api_key
+```
+
+Also shown there: with `estate-postgres` and `cuatro-tracker_default` absent, `up -d --wait anchor-db`
+from `docker-compose.yml` started healthy (exit 0), so compose asks for `estate-postgres` only for a
+Umami service, and a Hub deploy on a box where § The placement has not run is unaffected. Everything was
+removed afterwards (`down -v` on each project, the network, both env files): `docker ps -a`,
+`docker volume ls` and `docker network ls` listed nothing named for the rehearsal, and no dangling volume
+was created that hour.
+
+### The sequence
+
+**Preconditions**, each recorded before step 1:
+
+- § The placement steps 1 to 5 here (Pending action 3): step 4 printed `umami umami 25`.
+- `ops/postgres-backup.md` § Install and first run: the nightly dump takes every database on the estate
+  instance, so the moved `umami` is backed up from its first night (DW-301).
+- For steps 12 and 13 only: `ops/traefik-cutover.md` § The sequence steps 1 to 8, and the Origin Rules
+  token (`ops/settled-inputs-refresh.md` Pending action 4). Steps 1 to 11 need neither.
+- `main` carries Story 4-7's commit and its Deploy ran (Pending action 5). The Deploy rolls `anchor-app`
+  alone, so the merge changes nothing about the running Umami.
+- The Umami admin password is at hand.
+
+On the box as `deploy` in `/home/deploy/cuatro-portfolio`:
+
+```bash
+C='docker compose --env-file .env.production'
+SRC=cuatro-portfolio-anchor-db-1; DST=postgres-estate-postgres-1
+Q="select table_name||' '||(xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text from information_schema.tables where table_schema='public' and table_type='BASE TABLE' order by 1"
+E="select event_name||' '||count(*) from website_event where event_type = 2 and event_name in ('suite-reach','live-open','source-open') group by event_name order by 1"
+install -d -m 700 /home/deploy/pg-move
+```
+
+1. **Read what the move stands on, and stop at the first difference.**
+   ```bash
+   uptime
+   docker inspect -f '{{.Config.Image}} {{.State.Status}}' cuatro-portfolio-anchor-umami-1
+   docker exec "$SRC" psql -U umami -d umami -Atc "select max(migration_name) from _prisma_migrations" -c "$E"
+   docker exec "$DST" psql -U umami -d umami -Atc "select count(*) from information_schema.tables where table_schema='public'"
+   grep -c 'umami:3.4.0@sha256:85909afc' docker-compose.yml
+   ```
+   Umami `running`; `23_update_session_data` and the three event names, each count at least the one in §
+   What serves it today; `0` tables in the target, so nothing is restored over anything; `2`.
+2. **Give the application its password**, copied without printing, once:
+   ```bash
+   grep -q '^UMAMI_DB_PASSWORD=' .env.production && echo "already set" || { echo; grep '^UMAMI_DB_PASSWORD=' ops/postgres/.env; } >> .env.production
+   grep -c '^UMAMI_DB_PASSWORD=.' .env.production
+   ```
+   `1`. The leading `echo` keeps the line its own if the file ends without a newline. `POSTGRES_PASSWORD` stays: `anchor-db` and the rollback still use it.
+3. **Write the data rollback**, the service as it runs today, pinned by the box's own digest:
+   ```bash
+   cat > /home/deploy/pg-move/umami-rollback.yml <<'YAML'
+   services:
+     anchor-umami:
+       image: ghcr.io/umami-software/umami:3.3.0@sha256:87312d334d009ee67ee0d2fba8fed01435547cc468e452243aef5133a9984d48
+       environment:
+         - DATABASE_URL=postgresql://umami:${POSTGRES_PASSWORD}@anchor-db:5432/umami
+       networks:
+         default:
+   YAML
+   R="$C -f docker-compose.yml -f /home/deploy/pg-move/umami-rollback.yml"
+   $R config --images anchor-umami; $R config anchor-umami | grep -c '@anchor-db:5432/umami'
+   ```
+   The 3.3.0 reference, and `1` (a count, so no password is printed). Compose merges the override's
+   environment by name, so `SKIP_DB_MIGRATION=1` stays, and `anchor-db` is already at 3.3.0's last
+   migration.
+4. **Pull ahead of the window**: `$C pull anchor-umami`. The migrate service runs the same reference.
+5. **Freeze.** `$C stop anchor-umami; FROZE=$(date -u +%FT%TZ); echo "$FROZE"; uptime`. Analytics is
+   dark from here to step 10.
+6. **Dump** with the source's own `pg_dump`:
+   ```bash
+   docker exec "$SRC" pg_dump -U umami -Fc umami > /home/deploy/pg-move/umami.dump; echo "exit=$?"
+   ls -l /home/deploy/pg-move/umami.dump
+   ```
+   `exit=0`, and a size of the order of the database's.
+7. **Restore** as `umami`:
+   ```bash
+   docker exec -i "$DST" pg_restore -U umami -d umami --no-owner --no-acl --exit-on-error < /home/deploy/pg-move/umami.dump; echo "exit=$?"
+   ```
+   `exit=0`. Anything else: stop, `$C start anchor-umami` (the old container, unchanged, back on
+   `anchor-db`), and bring the error back. The target is emptied for a retry with `dropdb` and the init
+   script's three statements (§ Moving a consumer, Rollback of one consumer), never by touching `$SRC`.
+8. **Verify by counting**:
+   ```bash
+   diff <(docker exec "$SRC" psql -U umami -d umami -Atc "$Q") <(docker exec "$DST" psql -U umami -d umami -Atc "$Q") && echo counts-match
+   docker exec "$DST" psql -U umami -d umami -Atc "$E"
+   ```
+   `counts-match`, and the three event names with step 1's counts. Anything else: step 7's recovery.
+9. **Migrate**, the discrete step: `$C --profile migrate run --rm anchor-umami-migrate`. It applies
+   `24_lowercase_username`, `25_add_annotation` and `26_add_api_key` and ends `All migrations have been
+   successfully applied.` Then `uptime`. A failure here: step 7's recovery.
+10. **Start the new server**: `$C up -d --wait anchor-umami`, then
+    ```bash
+    docker inspect -f '{{.Config.Image}} {{.State.Health.Status}}' cuatro-portfolio-anchor-umami-1
+    docker logs cuatro-portfolio-anchor-umami-1 2>&1 | grep -c 'Applying migration'
+    docker exec cuatro-portfolio-anchor-umami-1 curl -s http://127.0.0.1:3000/api/heartbeat
+    uptime
+    ```
+    The 3.4.0 reference and `healthy`; `0`; `{"ok":true}`. Analytics is back.
+11. **Verify, still through Caddy.** From the workstation, `https://analytics.cuatro.dev/api/heartbeat` and
+    `https://analytics.cuatro.dev/script.js` answer 200 (`ops/bot-mitigation.md` rule 4 exempts both; the
+    dashboard's 403 to a command line is the challenge). In a browser: **sign in** at
+    `https://analytics.cuatro.dev` (a fresh sign-in, as above) and see the history back to 2026-08-17;
+    then load `https://cuatro.dev` in a private window and scroll to the Suite Directory. On the box:
+    ```bash
+    docker exec "$DST" psql -U umami -d umami -Atc "select event_type||' '||count(*) from website_event where created_at > '$FROZE' group by event_type order by 1"
+    docker exec "$SRC" psql -U umami -d umami -Atc "select count(*) from website_event where created_at > '$FROZE'"
+    ```
+    A first line of `1 1` or more (the fresh page view landed in the estate database), and `0` (the old
+    store took nothing after the freeze).
+12. **Move the hostname.** On the box first,
+    `curl -sk -o /dev/null -w '%{http_code}\n' --resolve analytics.cuatro.dev:8443:127.0.0.1 https://analytics.cuatro.dev:8443/api/heartbeat`
+    prints `200` (Traefik reaches the new container). On the workstation, with `CF` defined as in
+    `ops/traefik-cutover.md` § Moving cuatro.dev and www, start a loop and leave it running to step 13:
+    ```bash
+    while :; do printf '%s %s %s\n' "$(date -u +%H:%M:%S)" \
+      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 https://analytics.cuatro.dev/api/heartbeat)" \
+      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "https://analytics.cuatro.dev/script.js?probe=$(date +%s%N)")"; sleep 1
+    done | tee analytics-cutover-probe.log
+    ```
+    Then add the rule to the ruleset Story 4-6 created. If `RS` prints `none`, that section's step 3 says
+    when the `PUT` that creates it is safe; never run it otherwise.
+    ```bash
+    RS=$(CF /phases/http_request_origin/entrypoint | jq -r 'select(.success) | .result.id'); echo "ruleset ${RS:-none}"
+    [ -n "$RS" ] && CF "/$RS/rules" -X POST --data '{"description":"Story 4-7: analytics.cuatro.dev to Traefik on 8443","expression":"(http.host eq \"analytics.cuatro.dev\" and ssl)","action":"route","action_parameters":{"origin":{"port":8443}}}' | jq '.success, .errors'
+    ```
+    `true` and `[]`; keep the time as `MOVED`. After about a minute,
+    `curl -sI "https://analytics.cuatro.dev/script.js?v=$(date +%s)" | grep -iE '^(HTTP|via)'` answers 200
+    with **no `via: 1.1 Caddy` line**; on the box, `uptime`.
+13. **Stop the loop and count**: `awk '{print $2, $3}' analytics-cutover-probe.log | sort | uniq -c` shows
+    `200 200` alone. Then in the browser, sign in again through the new path, load `https://cuatro.dev` in
+    a new private window, and re-run step 11's first query with `MOVED` in place of `FROZE`: a first line
+    of `1 1` or more. `uptime`.
+14. **Record** under a "Umami move run" heading here: the date, step 1's readings, `FROZE`, the step 6
+    size, step 8's `counts-match` and event counts, step 9's output, step 11's and step 13's counts, the
+    rule id (`CF "/$RS" | jq '.result.rules[] | {id, description}'`), and each `uptime`.
+    `ops/routing-inventory.md` § Ingress and § Image identity each take a dated amendment:
+    `analytics.cuatro.dev` served by Traefik through an Origin Rule, Umami 3.4.0 by digest on
+    `estate-postgres`; Caddy's block and `anchor-db` remain, unreached, until Story 4.11. Keep
+    `/home/deploy/pg-move/umami.dump` until Story 4.11.
+
+**Rollback, at any step, the hostname first:**
+
+- **R1, the hostname**: delete the rule. It takes effect at the edge; step 12's `curl -sI` shows
+  `via: 1.1 Caddy` again, and Caddy proxies the same container.
+  ```bash
+  RS=$(CF /phases/http_request_origin/entrypoint | jq -r 'select(.success) | .result.id')
+  ID=$(CF "/$RS" | jq -r '.result.rules[] | select(.description == "Story 4-7: analytics.cuatro.dev to Traefik on 8443") | .id')
+  echo "rule ${ID:-not found}"; [ -n "$RS" ] && [ -n "$ID" ] && CF "/$RS/rules/$ID" -X DELETE | jq '.success'
+  ```
+- **R2, the data**: `$R up -d --wait anchor-umami` (with `C` and `R` set as above). The 3.3.0 server
+  returns on `anchor-db`, which took no write after `FROZE` and was never migrated, so it serves exactly
+  what it held at the freeze. Page views written to the estate `umami` since step 10 stay there and are
+  not carried back: analytics rows, a loss stated and accepted. The estate `umami` stays as it is for the
+  next attempt, which empties it first (step 7's recovery). A plain `$C up` of `anchor-umami` moves it
+  forward again, so after R2 nobody runs one until the retry.
+- **Never** `down -v`, `dropdb` or any write against `$SRC`, and never delete the dump before Story 4.11.
+
 ## Rollback, whole
 
 Before any consumer moved: `$P down -v; rm -f ops/postgres/.env`. The box is as it was. After one has
@@ -347,6 +613,9 @@ moved, roll every moved consumer back first, one by one, then the same.
 | 1 | **Merge the commit carrying `ops/postgres/` into `main`** and let the Deploy run | The box checkout is `main`; nothing here reaches the box another way | _not done_ |
 | 2 | **Confirm or overrule the decisions above**: PostgreSQL `18.6-trixie`, a stack beside the Anchor's, `max_connections=100` and the budget, `umami` keeping its name, finance included, the tournament staying on Supabase, and no move before Story 4.5 | The spec's Design Notes carry the reasoning | _not done_ |
 | 3 | **Run § The placement, steps 1 to 5** | Nothing moves; only a fourth Postgres starts | _not done_ |
+| 4 | **Confirm or overrule Story 4-7's decisions** in § Moving Umami: 3.4.0 by release and digest, the freeze, data before hostname, the override-file rollback, the runbook here | The Story 4-7 spec's Design Notes carry the reasoning | _not done_ |
+| 5 | **Merge the commit carrying Story 4-7 into `main`** and let the Deploy run | It rolls the Hub alone; the running Umami is untouched until § Moving Umami step 5 | _not done_ |
+| 6 | **Run § Moving Umami steps 1 to 14**, after action 3 here and `ops/postgres-backup.md` § Install and first run; steps 12 and 13 also after `ops/traefik-cutover.md` actions 1 to 4 and the Origin Rules token | Step 14 amends `ops/routing-inventory.md` | _not done_ |
 
 **Maintaining this file.** When an action is performed, replace its cell with the ISO 8601 UTC date and
 leave the row in place.

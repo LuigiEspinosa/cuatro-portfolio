@@ -39,7 +39,7 @@
 #     different LLM), or on high-risk changes
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 08-15-2026 19:47
-last_updated: 09-30-2026 13:45
+last_updated: 09-30-2026 14:40
 # Amended 08-15-2026 by the restyle scope change.
 # Proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-08-15.md
 # Epic 1 is UNCHANGED and unblocked. All twenty stories survive verbatim; 1-1 can open now.
@@ -889,7 +889,14 @@ development_status:
   # unexplained timeout filed as DW-305. Box half is the Operator's, ops/traefik-cutover.md § Moving cuatro.dev
   # and www steps 1 to 7 and § Pending Operator actions 5 and 6, after actions 1 to 4 and the origin rules token.
   4-6-migrate-cuatro-dev: awaiting-operator
-  4-7-migrate-analytics-cuatro-dev-and-pin-umami: backlog
+  # 4-7 awaiting-operator 2026-09-30: repository half built and verified on dev. docker-compose.yml pins Umami
+  # 3.4.0 by digest (the box runs 3.3.0 on the floating tag), points it at estate-postgres as umami (limit 25,
+  # the role's), sets SKIP_DB_MIGRATION with anchor-umami-migrate as the discrete step, and adds the
+  # /api/heartbeat healthcheck. Local proof: a 3.3.0 database with the three Story 2.24 events dumped from
+  # Postgres 16 and restored into 18.6, counts-match, migrated, served, and rolled back. Box half is the
+  # Operator's, ops/postgres.md § Moving Umami steps 1 to 14 and § Pending Operator actions 4 to 6, after the
+  # 4-4 placement, the 4-5 install and, for the hostname, 4-2 and 4-6. DW-179 and DW-302 closed.
+  4-7-migrate-analytics-cuatro-dev-and-pin-umami: awaiting-operator
   4-8-migrate-tracker-cuatro-dev: backlog
   4-9-migrate-library-cuatro-dev: backlog
   4-10-migrate-cs-tracker-cuatro-dev: backlog

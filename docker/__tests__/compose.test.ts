@@ -175,6 +175,84 @@ describe("the Hub's healthcheck probe, run (DW-262)", () => {
   });
 });
 
+// Story 4-7: Umami, the estate's analytics, on the estate's one Postgres (`ops/postgres.md` § Moving Umami).
+// Its image is an exact release and registry digest, never the floating `postgresql-latest` it ran before
+// (DW-191). The image's start script migrates unless SKIP_DB_MIGRATION is set, so the server sets it and
+// the migration is its own one-off under the `migrate` profile, from the same image (AD-23, DW-302). Both
+// reach database and role `umami` at `estate-postgres` and never `anchor-db`, which stays only as the
+// move's rollback. The server's healthcheck lets the move's `up` report healthy and a rollout roll it
+// (AD-8, DW-179).
+describe('the Umami services', () => {
+  const PINNED = /^ {4}image: (ghcr\.io\/umami-software\/umami:\d+\.\d+\.\d+@sha256:[0-9a-f]{64})$/m;
+  const DATABASE = '      - DATABASE_URL=postgresql://umami:${UMAMI_DB_PASSWORD-}@estate-postgres:5432/umami';
+  const MIGRATE = "    command: ['node', 'node_modules/prisma/build/index.js', 'migrate', 'deploy']";
+
+  /** Why Umami's two services would not run pinned, migrate discretely and reach the estate database. */
+  const umamiFaults = (text: string): string[] => {
+    const service = (name: string): string => parts(text, 2).find((part) => part.startsWith(`  ${name}:\n`)) ?? '';
+    const server = service('anchor-umami');
+    const migrate = service('anchor-umami-migrate');
+    if (server === '') return ['no anchor-umami service'];
+    const faults: string[] = [];
+    const image = PINNED.exec(server)?.[1];
+    if (image === undefined) faults.push('the server image is not an exact release and digest');
+    if (migrate === '') return [...faults, 'no anchor-umami-migrate service'];
+    if (PINNED.exec(migrate)?.[1] !== image) faults.push("the migration does not run the server's pinned image");
+    if (!server.split('\n').includes('      - SKIP_DB_MIGRATION=1')) faults.push('the server migrates on boot');
+    const lines = migrate.split('\n');
+    if (!lines.includes('    profiles: [migrate]') || !lines.includes(MIGRATE) || !lines.includes("    restart: 'no'"))
+      faults.push('the migration is not a one-off prisma migrate deploy under the migrate profile');
+    for (const [name, part] of [['anchor-umami', server], ['anchor-umami-migrate', migrate]]) {
+      if (!part.split('\n').includes(DATABASE) || !/^ {6}estate-postgres:$/m.test(part))
+        faults.push(`${name} does not reach umami at estate-postgres`);
+      if (part.includes('anchor-db')) faults.push(`${name} names anchor-db`);
+    }
+    const check = parts(server, 4).find((part) => part.startsWith('    healthcheck:'));
+    if (check === undefined || !check.includes('/api/heartbeat') || /^ {6}disable:\s*true\b/m.test(check))
+      faults.push('the server has no healthcheck on /api/heartbeat');
+    return faults;
+  };
+
+  it('pins an exact release and digest, migrates as a one-off from it, and reaches umami at estate-postgres', () => {
+    expect(umamiFaults(compose)).toEqual([]);
+  });
+
+  it('declares estate-postgres external, since the estate Postgres stack owns it', () => {
+    const networks = parts(compose, 0).find((part) => part.startsWith('networks:'));
+    expect(networks).toMatch(/^ {2}estate-postgres:\n {4}external: true$/m);
+  });
+
+  it('names a floating tag, a boot migration, a missing one-off, the old database and a missing healthcheck', () => {
+    const image = /^( {4}image: ghcr\.io\/umami-software\/umami:)\S+$/m;
+    for (const floating of ['postgresql-latest', '3.4.0', '3', 'latest@sha256:0']) {
+      expect(umamiFaults(compose.replace(image, `$1${floating}`))[0], floating).toBe(
+        'the server image is not an exact release and digest'
+      );
+    }
+    const migrateImage = /^( {4}image: ghcr\.io\/umami-software\/umami:)\S+(\n {4}profiles: \[migrate\])$/m;
+    expect(umamiFaults(compose.replace(migrateImage, `$1${'3.3.0@sha256:' + '0'.repeat(64)}$2`))).toEqual([
+      "the migration does not run the server's pinned image",
+    ]);
+    expect(umamiFaults(compose.replace('      - SKIP_DB_MIGRATION=1\n', ''))).toEqual(['the server migrates on boot']);
+    expect(umamiFaults(compose.replace('  anchor-umami-migrate:', '  anchor-umami-migrated:'))).toEqual([
+      'no anchor-umami-migrate service',
+    ]);
+    const profile = /^( {4}image: ghcr\.io\/umami-software\/umami:\S+\n {4}profiles: )\[migrate\]$/m;
+    expect(umamiFaults(compose.replace(profile, '$1[umami]'))).toEqual([
+      'the migration is not a one-off prisma migrate deploy under the migrate profile',
+    ]);
+    expect(umamiFaults(compose.replace('@estate-postgres:5432/umami', '@anchor-db:5432/umami'))).toEqual([
+      'anchor-umami does not reach umami at estate-postgres',
+      'anchor-umami names anchor-db',
+    ]);
+    expect(umamiFaults(compose.replace('/api/heartbeat', '/'))).toEqual(['the server has no healthcheck on /api/heartbeat']);
+    const probe = "    healthcheck:\n      test: ['CMD', 'curl'";
+    expect(umamiFaults(compose.replace(probe, probe.replace('healthcheck:', 'healthcheck:\n      disable: true')))).toEqual([
+      'the server has no healthcheck on /api/heartbeat',
+    ]);
+  });
+});
+
 // Story 3-5: the finance application, merged and imaged but not placed. Its two services sit under
 // profiles no deploy activates, run its image by the sha in FINANCE_TAG, and reach database and role
 // `finance` in `anchor-db` (AD-10). The migration is its own one-off service under the `migrate` profile,
