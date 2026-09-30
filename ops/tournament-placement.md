@@ -337,8 +337,9 @@ both were set to mode 0700.
   installed at 2026-09-30T08:04:11Z. The first unattended run is 2026-10-01T03:45Z, and its line lands
   in `backup.log`.
 
-Named limit 1 stands until the Operator rules on AD-10's offsite requirement: the copy is on the box
-alone.
+**Operator ruling 2026-09-30 on named limit 1:** the nightly copy on the box counts as the store's
+offsite backup under AD-10 (it is off Supabase's side, which is what the exception needs); no third
+site is required. Retrospective action 4 is closed on that ruling.
 
 ## Pending Operator actions
 

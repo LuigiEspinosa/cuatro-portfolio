@@ -220,7 +220,8 @@ block above so a context refresh does not replace it.
   run is a required status check on the default branch, through branch protection or a
   ruleset, so a merge nobody is watching cannot land while the run is red. Observed on
   2026-08-27, that holds nowhere in the estate (this repository's `main` has required eight
-  checks since 2026-09-25, DW-172, so the fourth condition now holds here, and no automation is
+  checks since 2026-09-25, DW-172, and thirteen since 2026-09-30, the five image jobs added by
+  Operator ruling on DW-293, so the fourth condition now holds here, and no automation is
   enabled), and it cannot hold in the three private repositories on the current GitHub plan
   (four until `cs-tournament` was published on 2026-09-24). The definitions, the observed state
   of all ten repositories (eleven until 2026-09-26, thirteen until 2026-09-29) and the method are

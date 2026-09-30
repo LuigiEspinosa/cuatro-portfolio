@@ -580,8 +580,8 @@ Observations below were made by the Operator and the orchestrator and relayed; t
   `ops/tournament-restore-verify.sh` (`ops/tournament-placement.md` § Backup). **Running since
   2026-09-30T08:04Z:** the first dump (19 tables, 31 rows, 477,822 bytes, the ledger at 29) restored
   and verified, and the cron line is installed (`ops/tournament-placement.md` § First backup run). Its limit: one copy, on the box, so losing the box
-  and Supabase together loses both, and whether a copy held on the box meets AD-10's offsite
-  requirement is the Operator's ruling when action 4 closes.
+  and Supabase together loses both. **Operator ruling 2026-09-30:** that copy meets AD-10's offsite
+  requirement, being off Supabase's side; retrospective action 4 closed on it.
 - **The pooler, a decision.** `TOURNAMENT_DATABASE_URL` is Supabase's session pooler
   (`postgres.<ref>@aws-0-us-east-1.pooler.supabase.com:5432`, `sslmode=require`), because the direct host
   `db.<ref>.supabase.co` answers on IPv6 only and `cuatro-portfolio_default` has no IPv6 (`EnableIPv6`

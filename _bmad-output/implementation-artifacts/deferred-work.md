@@ -9005,6 +9005,9 @@ status: done
     `paths-ignore` for `apps/tracker/**`, `apps/tournament/**` and `apps/finance/**` alone would do it
     sooner, and must then be removed by that story.** **Trigger: that story, or the Operator's word to
     add the `paths-ignore` now.**
+
+    **Operator ruling 2026-09-30:** no `paths-ignore` now; the fix is Epic 4's, with DW-275. Owner and
+    trigger stand as the story.
   status: open
 - id: DW-293
   summary: >-
@@ -9025,7 +9028,12 @@ status: done
 
     **Owner: the Operator (ruling), then the story that wires the application deploys (DW-275).**
     **Trigger: the Operator's ruling, or the next image failure found after a merge.**
-  status: open
+
+    **Closed 2026-09-30 by Operator ruling:** the five image jobs (`hub`, `finance`, `tracker`,
+    `tournament`, `tournament-worker`) joined `main`'s required status checks that day through the
+    branch protection API, beside the eight of DW-172, thirteen in all, `strict` still false. A pull
+    request into `main` now waits for every image it ships to build and answer its probe.
+  status: done
 - id: DW-294
   summary: >-
     Image (tracker) fetches Google Fonts over the network at build (`next/font/google`), and that
