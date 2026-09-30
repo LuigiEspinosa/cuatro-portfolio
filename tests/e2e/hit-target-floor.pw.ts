@@ -142,7 +142,7 @@ const NOT_FOUND = '/a-route-that-does-not-exist';
  * moved; the other four surfaces did not move.
  */
 const SURFACES = [
-  { route: '/', status: 200, entrance: true, found: 21, skipped: 0, measured: 21 },
+  { route: '/', status: 200, entrance: true, found: 22, skipped: 0, measured: 22 },
   { route: '/work', status: 200, entrance: false, found: 8, skipped: 0, measured: 8 },
   { route: '/cv', status: 200, entrance: false, found: 10, skipped: 0, measured: 10 },
   { route: '/celeste', status: 200, entrance: false, found: 4, skipped: 4, measured: 0 },
